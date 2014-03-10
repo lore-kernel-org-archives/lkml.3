@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaCJTyK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:54:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54731 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752760AbaCJTyI (ORCPT
+	id S1753913AbaCJTyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:54:35 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:36365 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679AbaCJTyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:54:08 -0400
-Message-ID: <1394481241.23624.10.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: pppd service crash in linux-3.13.6
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Sree Harsha Totakura <sreeharsha@totakura.in>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Date: Mon, 10 Mar 2014 19:54:01 +0000
-In-Reply-To: <531DEEA6.4090808@totakura.in>
-References: <531A37FF.4000509@totakura.in> <531DEEA6.4090808@totakura.in>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-mu+P6VoeF++zp47Ncl5n"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.245
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 10 Mar 2014 15:54:31 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH/RFC] serial_core: Fix pm imbalance on unbind
+Date: Mon, 10 Mar 2014 20:54:25 +0100
+Message-Id: <1394481265-7275-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
---=-mu+P6VoeF++zp47Ncl5n
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+When a serial port is closed, uart_close() takes care of shutting down the
+hardware, and powering it down.
 
-On Mon, 2014-03-10 at 17:56 +0100, Sree Harsha Totakura wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->=20
-> Hi,
->=20
-> Using linux-3.13.6, I am observing the following output from the pppd
-> kernel thread.  This happens when I try to suspend my computer and it
-> *stops* the computer from suspending.
->=20
-> I am using ppp via a bluetooth modem.
->=20
-> Trace:
-> [22735.115313] PM: Syncing filesystems ... done.
-> [22735.665613] PM: Preparing system for mem sleep
-> [22735.665829] Freezing user space processes ...
-> [22755.659538] Freezing of tasks failed after 20.004 seconds (1 tasks
-> refusing to freeze, wq_
-> busy=3D0):
-> [22755.659555] pppd            D ffff8800376c9a58     0 16801      1
-> 0x00000006
-> [22755.659557]  ffff8800376c9750 0000000000000046 0000000000012e80
-> 0000000000012e80
-> [22755.659560]  ffff8802a1c1dfd8 ffff8800376c9750 0000000000000009
-> ffff8802a1c1dd78
-> [22755.659562]  0000000000000046 ffff8800376c9750 0000000000000028
-> ffff8800376c9750
-> [22755.659564] Call Trace:
-> [22755.659569]  [<ffffffff81048507>] ? do_exit+0x937/0xa50
-> [22755.659573]  [<ffffffff814bb6e1>] ? oops_end+0x91/0xd0
+When a serial port is unbound while in use, uart_close() bypasses all of
+this, as this is supposed to be done through uart_hangup() (invoked via
+tty_vhangup() in uart_remove_one_port()).
 
-pppd can't be frozen because it crashed earlier in kernel mode.
+However, uart_hangup() does not set the hardware's power state, leaving it
+powered up.  This may also lead to unbounded nesting counts in clock and
+power management, depending on their internal implementation.
 
-[...]
-> If you need any more info, I am happy to provide.
+Make sure to power down the port in uart_hangup(), except when the port is
+used as a serial console. For serial consoles, this must be postponed until
+after their deregistration in uart_remove_one_port() (symmetry with
+registration in uart_configure_port(), invoked from uart_add_one_port()).
 
-You should send the 'Oops' messages which should be further up the log
-file.
+After this, the module clock used by the sh-sci driver is disabled on
+unbind while the serial port is in use.
 
-Ben.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+ drivers/tty/serial/serial_core.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 8ece7f14d89d..a91cc2dcb66a 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -1452,6 +1452,8 @@ static void uart_hangup(struct tty_struct *tty)
+ 		clear_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
+ 		spin_unlock_irqrestore(&port->lock, flags);
+ 		tty_port_tty_set(port, NULL);
++		if (!uart_console(state->uart_port))
++			uart_change_pm(state, UART_PM_STATE_OFF);
+ 		wake_up_interruptible(&port->open_wait);
+ 		wake_up_interruptible(&port->delta_msr_wait);
+ 	}
+@@ -2677,10 +2679,12 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
+ 		tty_vhangup(port->tty);
+ 
+ 	/*
+-	 * If the port is used as a console, unregister it
++	 * If the port is used as a console, unregister it, and power it down
+ 	 */
+-	if (uart_console(uport))
++	if (uart_console(uport)) {
+ 		unregister_console(uport->cons);
++		uart_change_pm(state, UART_PM_STATE_OFF);
++	}
+ 
+ 	/*
+ 	 * Free the port IO and memory resources, if any.
+-- 
+1.7.9.5
 
---=-mu+P6VoeF++zp47Ncl5n
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUx4YWee/yOyVhhEJAQpnfBAArOzh0VLnqAsHTGFyLIsCjyqHCPhfDSto
-nf4UodBFqt9o/RDaIiV6pzNf/ynF7+fGb+le98yLza25jEhPjmE8M/TWwLhKqc7a
-gACN1J2+DHh7495ecQF4xE81t8d6GYnJRsBn4C5jiufL/CgWh9hODsGmeiZ9Iwoj
-IICvODRCaQ3Fvu8dfvucy5ZjRextN3ABSBfd5GEX2qP90M9J/x5A57IL5aRG4uTt
-JZowFZqodUwG2YlBQEMMP+T0MuS7RPtvpz8e44JVPtFbqvE2X94u5Y9yVVF+e+ik
-69j+2snFWtlyno4g3YSXrgtr6b0MAX3k0oFmN1TL9p+cvJ8eNn12wMFLpatNzIUX
-Hf0VBzMVYZqcFUHN3/msqrq/qOrU/DUxjA4Ae2vNWjkPiqUMpsAo3bKnYbH1j808
-ptmNjm8jQICBHUBwXRfgsdFoqjNHoVvu/T+ndsC4GMWUW1UIgL9RBZx5bVX4MbMT
-Dun185hUklWe0idY8EkAW1c0yJIJTpvc5ZP/xDYRywdoZO+mhjZAQOUftS8FNSqE
-mZwkN/yLsKHycEbRDtQjADe5snD+zj/N+l7q1WfICEuYfozrr2+L0Yak7Wl7dhAz
-1G6m7WVgstuxn4A60A1w1j9mok5iQTBPWYL8/9CMcFlNxOZnuRvfz0EgacTsl3W5
-RF4dV8eFQe8=
-=jZtd
------END PGP SIGNATURE-----
-
---=-mu+P6VoeF++zp47Ncl5n--
