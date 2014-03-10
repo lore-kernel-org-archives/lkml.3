@@ -1,158 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaCJKF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 06:05:29 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:56853 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293AbaCJKF1 (ORCPT
+	id S1752439AbaCJKHi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 06:07:38 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:55043 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812AbaCJKHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 06:05:27 -0400
-Date: Mon, 10 Mar 2014 11:03:21 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: sagar.a.kamble@intel.com
-Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, "G, Pallavi" <pallavi.g@intel.com>
-Subject: Re: [PATCH v3 1/1] drm/i915: Enabling 128x128 and 256x256 ARGB
- Cursor Support
-Message-ID: <20140310100321.GA30571@phenom.ffwll.local>
-Mail-Followup-To: sagar.a.kamble@intel.com, intel-gfx@lists.freedesktop.org,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, "G, Pallavi" <pallavi.g@intel.com>
-References: <20140224160628.GU3852@intel.com>
- <1394304546-19433-1-git-send-email-sagar.a.kamble@intel.com>
+	Mon, 10 Mar 2014 06:07:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394304546-19433-1-git-send-email-sagar.a.kamble@intel.com>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <20140310100425.GH20302@nuc-i3427.alporthouse.com>
+References: <20140224160628.GU3852@intel.com>
+	<1394304546-19433-1-git-send-email-sagar.a.kamble@intel.com>
+	<CADnq5_P_j66y2j3v8r9jHOffhfz3L3_fQpnP-OFdfOeLEWqs8A@mail.gmail.com>
+	<1394305472.18918.1.camel@sagar-desktop>
+	<1394305669.18918.3.camel@sagar-desktop>
+	<20140310092919.GG20302@nuc-i3427.alporthouse.com>
+	<CAKMK7uEFpkRs5euH_un=3MEstwO2PMwk0RAOhP-2+cgfMK1sgA@mail.gmail.com>
+	<20140310100425.GH20302@nuc-i3427.alporthouse.com>
+Date: Mon, 10 Mar 2014 11:07:36 +0100
+Message-ID: <CAKMK7uH8WnsoPVEHhARLHao3XS6wVT-=3aUU0BNrxTQBT5=qXA@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH v3 1/1] drm/i915: Enabling 128x128 and 256x256
+ ARGB Cursor Support
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Sagar Arun Kamble <sagar.a.kamble@intel.com>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 09, 2014 at 12:19:06AM +0530, sagar.a.kamble@intel.com wrote:
-> From: Sagar Kamble <sagar.a.kamble@intel.com>
-> 
-> With this patch we allow larger cursor planes of sizes 128x128
-> and 256x256.
-> 
-> v2: Added more precise check on size while setting cursor plane.
-> 
-> v3: Changes related to restructuring cursor size restrictions
-> and DRM_DEBUG usage.
-> 
-> Testcase: igt/kms_cursor_crc
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: Jani Nikula <jani.nikula@linux.intel.com>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: G, Pallavi <pallavi.g@intel.com>
-> Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
-> ---
->  drivers/gpu/drm/i915/i915_reg.h      |  4 ++++
->  drivers/gpu/drm/i915/intel_display.c | 36 +++++++++++++++++++++++++++++++-----
->  2 files changed, 35 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-> index 146609a..aee8258 100644
-> --- a/drivers/gpu/drm/i915/i915_reg.h
-> +++ b/drivers/gpu/drm/i915/i915_reg.h
-> @@ -3551,7 +3551,11 @@ enum punit_power_well {
->  /* New style CUR*CNTR flags */
->  #define   CURSOR_MODE		0x27
->  #define   CURSOR_MODE_DISABLE   0x00
-> +#define   CURSOR_MODE_128_32B_AX 0x02
-> +#define   CURSOR_MODE_256_32B_AX 0x03
->  #define   CURSOR_MODE_64_32B_AX 0x07
-> +#define   CURSOR_MODE_128_ARGB_AX ((1 << 5) | CURSOR_MODE_128_32B_AX)
-> +#define   CURSOR_MODE_256_ARGB_AX ((1 << 5) | CURSOR_MODE_256_32B_AX)
->  #define   CURSOR_MODE_64_ARGB_AX ((1 << 5) | CURSOR_MODE_64_32B_AX)
->  #define   MCURSOR_PIPE_SELECT	(1 << 28)
->  #define   MCURSOR_PIPE_A	0x00
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index 0868afb..e59e8fd 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -7440,10 +7440,22 @@ static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
->  	bool visible = base != 0;
->  
->  	if (intel_crtc->cursor_visible != visible) {
-> +		int16_t width = intel_crtc->cursor_width;
->  		uint32_t cntl = I915_READ(CURCNTR(pipe));
->  		if (base) {
->  			cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
-> -			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +
-> +			switch (width) {
-> +				case 64:
-> +					cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +					break;
+On Mon, Mar 10, 2014 at 11:04 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> > The cap exposes the max cursor size. Knowing our hardware we can infer
+>> > that pot sizes from 64 to max are supported, but it would be better if
+>> > we did expose that information through the cap as well.
+>>
+>> I think the right approach here is to expose this through the
+>> cursor-as-real-plane interface, which kinda has this already. On top
+>> of that we can then add a few fourcc enumerations of the fixed rgba
+>> cursor layouts like 64x64, 128x128, ... This helps if the plane is a
+>> general one with very high limits, but also with special support for
+>> cursor formats.
+>>
+>> If anyone wants to go crazy we could then also add new fourccs for all
+>> the other cursor layouts - atm only rgba with fixed dimensions can be
+>> support with the current cursor ioctl.
+>>
+>> So reviewing the overall situation I actually _don't_ want a new
+>> cap/ioctl/prop here just for now. As long as we need to go with intel
+>> specific hacks userspace might as well probe things manually and act
+>> upon the -EINVAL.
+>
+> Adding the cap allows existing userspace to dtrt...
 
-We don't needlessly indent case 64: and the following code. Even with that
-this indents a bit too far, so I suggest you extract the width->flags
-computation into a little helper and use it in both places. Also please
-extract the GAMMA flag, it's something else. Finally please add a default:
-case and put a WARN_ON(1) in there, to make sure our code doesn't let
-invalid cases slip through.
+1. Move cursor off-screen.
+2. Check desired cursor layout with set_cursor.
+3. Pick real cursor, set it.
+
+Or
+
+1. Use set_cursor on disabled crtc.
+
+Both aren't pretty, but that ugly should help to move
+cursors-as-real-planes forward ;-)
 -Daniel
-
-> +				case 128:
-> +					cntl |= CURSOR_MODE_128_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +					break;
-> +				case 256:
-> +					cntl |= CURSOR_MODE_256_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +					break;
-> +			}
->  			cntl |= pipe << 28; /* Connect to correct pipe */
->  		} else {
->  			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
-> @@ -7468,10 +7480,22 @@ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
->  	bool visible = base != 0;
->  
->  	if (intel_crtc->cursor_visible != visible) {
-> +		int16_t width = intel_crtc->cursor_width;
->  		uint32_t cntl = I915_READ(CURCNTR_IVB(pipe));
->  		if (base) {
->  			cntl &= ~CURSOR_MODE;
-> -			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +
-> +			switch (width) {
-> +				case 64:
-> +					cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +					break;
-> +				case 128:
-> +					cntl |= CURSOR_MODE_128_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +					break;
-> +				case 256:
-> +					cntl |= CURSOR_MODE_256_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +					break;
-> +			}
->  		} else {
->  			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
->  			cntl |= CURSOR_MODE_DISABLE;
-> @@ -7567,9 +7591,11 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
->  		goto finish;
->  	}
->  
-> -	/* Currently we only support 64x64 cursors */
-> -	if (width != 64 || height != 64) {
-> -		DRM_ERROR("we currently only support 64x64 cursors\n");
-> +	/* Check for which cursor types we support */
-> +	if (!((width == 64 && height == 64) ||
-> +			(width == 128 && height == 128 && !IS_GEN2(dev)) ||
-> +			(width == 256 && height == 256 && !IS_GEN2(dev)))) {
-> +		DRM_DEBUG("Cursor dimension not supported\n");
->  		return -EINVAL;
->  	}
->  
-> -- 
-> 1.8.5
-> 
-
 -- 
 Daniel Vetter
 Software Engineer, Intel Corporation
