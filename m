@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059AbaCJEr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 00:47:26 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:29141 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584AbaCJErY convert rfc822-to-8bit (ORCPT
+	id S1752562AbaCJEwJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 00:52:09 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:26873 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183AbaCJEwH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 00:47:24 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-da-531d43dabc61
+	Mon, 10 Mar 2014 00:52:07 -0400
+X-AuditID: cbfee690-b7f266d00000287c-f8-531d44f4de1a
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 8BIT
-Message-id: <1394426742.3870.89.camel@kjgkr>
-Subject: Re: [PATCH 4/5] f2fs: optimize restore_node_summary slightly
+Message-id: <1394427024.3870.94.camel@kjgkr>
+Subject: Re: [PATCH 5/5] f2fs: add a wait queue to avoid unnecessary,
+ build_free_nid
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Reply-to: jaegeuk.kim@samsung.com
 To: Gu Zheng <guz.fnst@cn.fujitsu.com>
 Cc: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Mar 2014 13:45:42 +0900
-In-reply-to: <5319A2D8.70409@cn.fujitsu.com>
-References: <5319A2D8.70409@cn.fujitsu.com>
+Date: Mon, 10 Mar 2014 13:50:24 +0900
+In-reply-to: <5319A2DB.8040705@cn.fujitsu.com>
+References: <5319A2DB.8040705@cn.fujitsu.com>
 Organization: Samsung
 X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zI91bzrLBBmd3Klg8bz/AbHFpkbvF
-	5V1z2ByYPf4fnMTssXvBZyaPz5vkApijuGxSUnMyy1KL9O0SuDJmzF7DVLBSrmLfiiVMDYyv
-	xboYOTkkBEwkWv91skPYYhIX7q1n62Lk4hASWMYosepmFxNMUd/rjewQiUWMEpNWn2IESfAK
-	CEr8mHyPBcRmFlCXmDRvETOELSJx8tA8KFtbYtnC18wQza8YJa7vXcYE0awj0fT+EpgtLOAq
-	0d55G2goBwcbUMPm/QYgYSEBRYm3+++ygtgiAmoSz95BlDMLJEg8PN8PFmcRUJXonNrCAtLK
-	CTTy62R1iFZtiYM7l7CB2PwCohKHF25nhvhFSWJ3eyfYLxICu9glTh1axgwxR0Di2+RDYHMk
-	BGQlNh2AqpeUOLjiBssERslZSD6eheTjWUg+noXk4wWMLKsYRVMLkguKk9KLDPWKE3OLS/PS
-	9ZLzczcxQuKydwfj7QPWhxiTgdZPZJYSTc4HxnVeSbyhsZmRhamJqbGRuaUZacJK4rxJD5OC
-	hATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDuZ7b6ky1/3eSESqild///oLSEBtGF0519mqdK
-	nHy6Q/e0qOHtF90esju1UnaJzEnzYA/8F7LKfDv7T4c94jeO8jAF2MdNcuQMDelIm3k/0rZm
-	1s/aw1tSZ0w2FVvxunn3jMK5QgkbythnvC35tmTZVr+rLWLttjbCzvP0Undl984/6Hil75IS
-	S3FGoqEWc1FxIgBL8BbG4QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd1bzrLBBuuOylg8bz/AbHFpkbvF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zfd0vLrLBBosW6Vo8bz/AbHFpkbvF
+	5V1z2ByYPf4fnMTssXvBZyaPz5vkApijuGxSUnMyy1KL9O0SuDI+P+tkK3goVbHiRUID4ynR
+	LkZODgkBE4nPk5+xQNhiEhfurWfrYuTiEBJYxihx8v0yNpii0482MEIkpjNKXJq1nQkkwSsg
+	KPFj8j2wbmYBdYlJ8xYxQ9giEn1v9jJB2NoSyxa+ZoZofsUoMWvnRzaIZh2Jzb/vM4LYwgJh
+	EofOzAQq4uBgA2rYvN8AJCwkoCjxdv9dVhBbREBN4tm7S1AzEyQenu9nBSlnEVCVmLLXFCTM
+	KaAn8fvcM3aQsJCArsSSM7YgYX4BUYnDC7czQ7yiJLG7vZMd5BoJgWPsEp9PbQS7hkVAQOLb
+	5EMsIL0SArISmw5A1UtKHFxxg2UCo+QsJA/PQvLwLCQPz0Ly8AJGllWMoqkFyQXFSelFJnrF
+	ibnFpXnpesn5uZsYITE5YQfjvQPWhxiTgdZPZJYSTc4HxnReSbyhsZmRhamJqbGRuaUZacJK
+	4rxqj5KChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTD6uApKcxzvm7lDrbuktazC5HxIQcXi
+	3KUnd5X+unw+Pq71xSX511NPTozv5a9P5osvKv9t0SD9qWiX7Q0Vyfu7uTrj9jTpnL255urJ
+	fdN//9TSLmdfYf0y8lV06Z/iuT9nLrq+kn2if1+s2GLBOwJZq1/NuqsTVyK2PnLme6OfQq17
+	i9UkfTyVWIozEg21mIuKEwFBtASI3wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQd0vLrLBBmtWaFo8bz/AbHFpkbvF
 	5V1z2ByYPf4fnMTssXvBZyaPz5vkApijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1
 	DS0tzJUU8hJzU22VXHwCdN0yc4AWKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEy
-	QAMJ6xgz3i54x1zQKFcxe+Eh5gbGw2JdjJwcEgImEn2vN7JD2GISF+6tZ+ti5OIQEljEKDFp
-	9SlGkASvgKDEj8n3WLoYOTiYBeQljlzKBgkzC6hLTJq3iBmi/hWjxPW9y5gg6nUkmt5fArOF
-	BVwl2jtvM4L0sgloS2zebwASFhJQlHi7/y4riC0ioCbx7B1EObNAgsTD8/1gcRYBVYnOqS1g
-	azmBRn6drA7Rqi1xcOcSNhCbX0BU4vDC7cwQ5ytJ7G7vZJ/AKDQLydGzEI6eheToBYzMqxhF
-	UwuSC4qT0nON9IoTc4tL89L1kvNzNzGCI/iZ9A7GVQ0WhxgFOBiVeHgPvJUJFmJNLCuuzD3E
-	KMHBrCTCy2UoGyzEm5JYWZValB9fVJqTWnyIMRno7onMUqLJ+cDkklcSb2hsYmZkaWRmYWRi
-	bk6asJI478FW60AhgfTEktTs1NSC1CKYLUwcnFINjE7Zl2Qd5ggyrdrl8v1IwYre0LMLF6Q6
-	L/l8hlXm6kxfpp0vXX0XL3bi819SYq+y+puhiWVG6QLNi3zaTz6xNU3/vkssn8U/gcc3eM2R
-	iqwAv8PPJJcsqEjxc61tv6dxmvtIG0PK25nr60se3Lm6ce5zy5U1W74L1Xx3ds6LMnS+FuOS
-	JHX/txJLcUaioRZzUXEiAL55J7kkAwAA
+	QAMJ6xgzlpyax1xwUqpi8fFF7A2Mm0S7GDk5JARMJE4/2sAIYYtJXLi3nq2LkYtDSGA6o8Sl
+	WduZQBK8AoISPybfY+li5OBgFpCXOHIpGyTMLKAuMWneImaI+leMErN2fmSDqNeR2Pz7PthQ
+	YYEwiUNnZjKD9LIJaEts3m8AEhYSUJR4u/8uK4gtIqAm8ezdJSaImQkSD8/3s4KUswioSkzZ
+	awoS5hTQk/h97hk7SFhIQFdiyRlbkDC/gKjE4YXbmSGuV5LY3d7JPoFRaBaSm2ch3DwLyc0L
+	GJlXMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgTH7zPpHYyrGiwOMQpwMCrx8B54KxMsxJpY
+	VlyZe4hRgoNZSYSXy1A2WIg3JbGyKrUoP76oNCe1+BBjMtDZE5mlRJPzgaklryTe0NjEzMjS
+	yMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYtb+UJJ7lS5p2rIHt/+t5U56t
+	Lrm+edKXJQZrV3z6doen8vXmo6Xb9x3JevykOPh+v2vnlA0vJ+0pjXp1Z7eW99Wp+97PrX8k
+	f/+KWO+emJWs2Ur663MlhMrDIwrvuHmtcZr8YY+qMP/R079nurMfN3pvLxzwYYGgRmEhg/De
+	v7OSZu7rmd1TfEiJpTgj0VCLuag4EQAtDMrSIwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,133 +59,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi Gu,
 
 2014-03-07 (금), 18:43 +0800, Gu Zheng:
-> Previously, we ra_sum_pages to pre-read contiguous pages as more
-> as possible, and if we fail to alloc more pages, an ENOMEM error
-> will be reported upstream, even though we have alloced some pages
-> yet. In fact, we can use the available pages to do the job partly,
-> and continue the rest in the following circle. Only reporting ENOMEM
-> upstream if we really can not alloc any available page.
+> Previously, when we try to alloc free nid while the build free nid
+> is going, the allocer will be run into the flow that waiting for
+> "nm_i->build_lock", see following:
+> 	/* We should not use stale free nids created by build_free_nids */
+> ---->	if (nm_i->fcnt && !on_build_free_nids(nm_i)) {
+> 		f2fs_bug_on(list_empty(&nm_i->free_nid_list));
+> 		list_for_each(this, &nm_i->free_nid_list) {
+> 			i = list_entry(this, struct free_nid, list);
+> 			if (i->state == NID_NEW)
+> 				break;
+> 		}
 > 
-> And another fix is ignoring dealing with the following pages if an
-> EIO occurs when reading page from page_list.
+> 		f2fs_bug_on(i->state != NID_NEW);
+> 		*nid = i->nid;
+> 		i->state = NID_ALLOC;
+> 		nm_i->fcnt--;
+> 		spin_unlock(&nm_i->free_nid_list_lock);
+> 		return true;
+> 	}
+> 	spin_unlock(&nm_i->free_nid_list_lock);
+> 
+> 	/* Let's scan nat pages and its caches to get free nids */
+> ---->	mutex_lock(&nm_i->build_lock);
+> 	build_free_nids(sbi);
+> 	mutex_unlock(&nm_i->build_lock);
+> and this will cause another unnecessary building free nid if the current
+> building free nid job is done.
+
+Could you support any performance number for this?
+Since, IMO, the contended building processes will be released right away
+because of the following condition check inside build_free_nids().
+
+if (nm_i->fcnt > NAT_ENTRY_PER_BLOCK)
+	return;
+
+So, I don't think this gives us any high latency.
+Can the wakeup_all() become another overhead all the time?
+Thanks,
+
+> So here we introduce a wait_queue to avoid this issue.
 > 
 > Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 > ---
->  fs/f2fs/node.c    |   44 ++++++++++++++++++++------------------------
->  fs/f2fs/segment.c |    7 +++++--
->  2 files changed, 25 insertions(+), 26 deletions(-)
+>  fs/f2fs/f2fs.h |    1 +
+>  fs/f2fs/node.c |   10 +++++++++-
+>  2 files changed, 10 insertions(+), 1 deletions(-)
 > 
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index f845e92..7ae193e 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -256,6 +256,7 @@ struct f2fs_nm_info {
+>  	spinlock_t free_nid_list_lock;	/* protect free nid list */
+>  	unsigned int fcnt;		/* the number of free node id */
+>  	struct mutex build_lock;	/* lock for build free nids */
+> +	wait_queue_head_t build_wq;	/* wait queue for build free nids */
+>  
+>  	/* for checkpoint */
+>  	char *nat_bitmap;		/* NAT bitmap pointer */
 > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index 8787469..4b7861d 100644
+> index 4b7861d..ab44711 100644
 > --- a/fs/f2fs/node.c
 > +++ b/fs/f2fs/node.c
-> @@ -1588,15 +1588,8 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
->  	for (; page_idx < start + nrpages; page_idx++) {
->  		/* alloc temporal page for read node summary info*/
->  		page = alloc_page(GFP_F2FS_ZERO);
-> -		if (!page) {
-> -			struct page *tmp;
-> -			list_for_each_entry_safe(page, tmp, pages, lru) {
-> -				list_del(&page->lru);
-> -				unlock_page(page);
-> -				__free_pages(page, 0);
-> -			}
-> -			return -ENOMEM;
-> -		}
-> +		if (!page)
-> +			break;
+> @@ -1422,7 +1422,13 @@ retry:
+>  	spin_lock(&nm_i->free_nid_list_lock);
 >  
->  		lock_page(page);
->  		page->index = page_idx;
-> @@ -1607,7 +1600,8 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
->  		f2fs_submit_page_mbio(sbi, page, page->index, &fio);
->  
->  	f2fs_submit_merged_bio(sbi, META, READ);
-> -	return 0;
+>  	/* We should not use stale free nids created by build_free_nids */
+> -	if (nm_i->fcnt && !on_build_free_nids(nm_i)) {
+> +	if (on_build_free_nids(nm_i)) {
+> +		spin_unlock(&nm_i->free_nid_list_lock);
+> +		wait_event(nm_i->build_wq, !on_build_free_nids(nm_i));
+> +		goto retry;
+> +	}
 > +
-> +	return page_idx - start;
+> +	if (nm_i->fcnt) {
+>  		f2fs_bug_on(list_empty(&nm_i->free_nid_list));
+>  		list_for_each(this, &nm_i->free_nid_list) {
+>  			i = list_entry(this, struct free_nid, list);
+> @@ -1443,6 +1449,7 @@ retry:
+>  	mutex_lock(&nm_i->build_lock);
+>  	build_free_nids(sbi);
+>  	mutex_unlock(&nm_i->build_lock);
+> +	wake_up_all(&nm_i->build_wq);
+>  	goto retry;
 >  }
 >  
->  int restore_node_summary(struct f2fs_sb_info *sbi,
-> @@ -1630,28 +1624,30 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
->  		nrpages = min(last_offset - i, bio_blocks);
+> @@ -1813,6 +1820,7 @@ static int init_node_manager(struct f2fs_sb_info *sbi)
+>  	INIT_LIST_HEAD(&nm_i->dirty_nat_entries);
 >  
->  		/* read ahead node pages */
-> -		err = ra_sum_pages(sbi, &page_list, addr, nrpages);
-> -		if (err)
-> -			return err;
-> +		nrpages = ra_sum_pages(sbi, &page_list, addr, nrpages);
-> +		if (!nrpages)
-> +			return -ENOMEM;
+>  	mutex_init(&nm_i->build_lock);
+> +	init_waitqueue_head(&nm_i->build_wq);
+>  	spin_lock_init(&nm_i->free_nid_list_lock);
+>  	rwlock_init(&nm_i->nat_tree_lock);
 >  
->  		list_for_each_entry_safe(page, tmp, &page_list, lru) {
-> -
-
-Here we can just add:
-			if (err)
-				goto skip;
-			lock_page();
-			...
-			unlock_page();
-		skip:
-			list_del();
-			__free_pages();
-
-IMO, it's more neat, so if you have any objection, let me know.
-Otherwise, I'll handle this by myself. :)
-Thanks,
-
-> -			lock_page(page);
-> -			if (unlikely(!PageUptodate(page))) {
-> -				err = -EIO;
-> -			} else {
-> -				rn = F2FS_NODE(page);
-> -				sum_entry->nid = rn->footer.nid;
-> -				sum_entry->version = 0;
-> -				sum_entry->ofs_in_node = 0;
-> -				sum_entry++;
-> +			if (!err) {
-> +				lock_page(page);
-> +				if (unlikely(!PageUptodate(page))) {
-> +					err = -EIO;
-> +				} else {
-> +					rn = F2FS_NODE(page);
-> +					sum_entry->nid = rn->footer.nid;
-> +					sum_entry->version = 0;
-> +					sum_entry->ofs_in_node = 0;
-> +					sum_entry++;
-> +				}
-> +				unlock_page(page);
->  			}
->  
->  			list_del(&page->lru);
-> -			unlock_page(page);
->  			__free_pages(page, 0);
->  		}
->  	}
-> +
->  	return err;
->  }
->  
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> index 199c964..b3f8431 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -1160,9 +1160,12 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int type)
->  				ns->ofs_in_node = 0;
->  			}
->  		} else {
-> -			if (restore_node_summary(sbi, segno, sum)) {
-> +			int err;
-> +
-> +			err = restore_node_summary(sbi, segno, sum);
-> +			if (err) {
->  				f2fs_put_page(new, 1);
-> -				return -EINVAL;
-> +				return err;
->  			}
->  		}
->  	}
 
 -- 
 Jaegeuk Kim
