@@ -1,35 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164AbaCJPyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:54:15 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:40375 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218AbaCJPyN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:54:13 -0400
-Date: Mon, 10 Mar 2014 17:54:06 +0200
-From: Muli Ben-Yehuda <muli@cs.technion.ac.il>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: WANG Chao <chaowang@redhat.com>, "Jon D. Mason" <jdmason@kudzu.us>,
-        "H. Peter Anvin" <hpa@zytor.com>, Baoquan He <bhe@redhat.com>,
-        kexec@lists.infradead.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] x86, calgary: use 8M TCE table size by default
-Message-ID: <20140310155406.GA5386@needle.strato>
-References: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
- <20140310154531.GC4352@redhat.com>
+	id S1754203AbaCJPz1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:55:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36326 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753705AbaCJPzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 11:55:24 -0400
+Date: Mon, 10 Mar 2014 16:55:23 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/8] memcg: charge path cleanups
+Message-ID: <20140310155523.GF5171@dhcp22.suse.cz>
+References: <1391792665-21678-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140310154531.GC4352@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1391792665-21678-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch looks good to me.
+On Fri 07-02-14 12:04:17, Johannes Weiner wrote:
+> Hi Michal,
+> 
+> I took some of your patches and combined them with the charge path
+> cleanups I already had and the changes I made after our discussion.
+> 
+> I'm really happy about where this is going:
+> 
+>  mm/memcontrol.c | 298 ++++++++++++++++--------------------------------------
+>  1 file changed, 87 insertions(+), 211 deletions(-)
+> 
+> let me know what you think!
+> 
+> Johannes
+ 
+What's happened with this series? Are you planning to repost it
+Johannes? I know it is late in the cycle but it would be nice to have it
+at least in mmotm tree because it shuffles the code a lot.
 
-Acked-by: Muli Ben-Yehuda <mulix@mulix.org>
-
-Cheers,
-Muli
+-- 
+Michal Hocko
+SUSE Labs
