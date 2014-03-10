@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092AbaCJPPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:15:34 -0400
-Received: from sauhun.de ([89.238.76.85]:56184 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753899AbaCJPPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:15:30 -0400
-Date: Mon, 10 Mar 2014 16:15:24 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] i2c: designware-pci: set ideal HCNT, LCNT and SDA
- hold time value
-Message-ID: <20140310151524.GA11592@katana>
-References: <1394201571-11681-1-git-send-email-chiau.ee.chew@intel.com>
- <1394201571-11681-3-git-send-email-chiau.ee.chew@intel.com>
- <20140309090339.GB4695@katana>
- <604BF5F4C5D71041942BC7E84ED659EA0155D5C4@PGSMSX103.gar.corp.intel.com>
+	id S1754032AbaCJPPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:15:19 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:33127 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753830AbaCJPPQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 11:15:16 -0400
+Date: Mon, 10 Mar 2014 11:08:58 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
+	<linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RC6 Bell Chime] Re: [PATCH 00/24] rfcomm fixes
+Message-ID: <20140310150858.GA25703@tuxdriver.com>
+References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
+ <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org>
+ <1259174563.20140212120644@eikelenboom.it>
+ <1335661753.20140303203853@eikelenboom.it>
+ <1295963563.20140310093843@eikelenboom.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <604BF5F4C5D71041942BC7E84ED659EA0155D5C4@PGSMSX103.gar.corp.intel.com>
+In-Reply-To: <1295963563.20140310093843@eikelenboom.it>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 10, 2014 at 09:38:43AM +0100, Sander Eikelenboom wrote:
+> Hi all,
+> 
+> Since:
+> - 3.14-RC6 has been cut
+> - this regression is known and reported since the merge window
+> - the fix (revert of 3 patches) is known for over a month now
+> - but it's still not in mainline
+> - my polite ping request from last week seems to have provoked exactly 0 (zero) response.
+> 
+> IT'S TIME TO CHIME SOME BELLS :-)
+> 
+> Hope that WILL be heard somewhere ...
+> 
+> --
+> Sander
+> 
+> PS. on the informative side the 3 commits to be reverted are:
+> 
+> f86772af6a0f643d3e13eb3f4f9213ae0c333ee4 Bluetooth: Remove rfcomm_carrier_raised()
+> 4a2fb3ecc7467c775b154813861f25a0ddc11aa0 Bluetooth: Always wait for a connection on RFCOMM open()
+> e228b63390536f5b737056059a9a04ea016b1abf Bluetooth: Move rfcomm_get_device() before rfcomm_dev_activate()
 
---NzB8fVQJ5HfG6fxh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Gustavo, should I be expecting a pull request?
 
-On Mon, Mar 10, 2014 at 11:34:49AM +0000, Chew, Chiau Ee wrote:
->=20
->=20
-> > -----Original Message-----
-> > From: Wolfram Sang [mailto:wsa@the-dreams.de]
-> > Sent: Sunday, March 09, 2014 5:04 PM
-> > To: Chew, Chiau Ee
-> > Cc: Mika Westerberg; linux-i2c@vger.kernel.org; linux-kernel@vger.kerne=
-l.org
-> > Subject: Re: [PATCH 2/2] i2c: designware-pci: set ideal HCNT, LCNT and =
-SDA
-> > hold time value
-> >=20
-> > On Fri, Mar 07, 2014 at 10:12:51PM +0800, Chew Chiau Ee wrote:
-> > > From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> > >
-> > > On Intel BayTrail, there was case whereby the resulting fast mode bus
-> > > speed becomes slower (~20% slower compared to expected speed) if using
-> > > the HCNT/LCNT calculated in the core layer. Thus, this patch is added
-> > > to allow pci glue layer to pass in optimal HCNT/LCNT/SDA hold time
-> > > values to core layer since the core layer supports cofigurable
-> > > HCNT/LCNT/SDA hold time values now.
-> > >
-> > > Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> >=20
-> > Can you make use of those instead?
-> >=20
-> >         u32                     sda_falling_time;
-> >         u32                     scl_falling_time;
-> >=20
-> > This is more consistent with using sda_hold_time and lets them have a c=
-ommon
-> > (and more readable) unit.
->=20
-> Would like to clarify on your statement above. So you are suggesting to c=
-hange the following=20
-> variable name in the code? As in:
-
-Nope. But I had a look and it doesn't make sense to use the above. So,
-just forget it :) Will send a second review.
-
-
---NzB8fVQJ5HfG6fxh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTHdcMAAoJEBQN5MwUoCm2qqcP/2Dn2J/aWSh9xwvNF5+kKw4t
-Sz7sNOp8V09BGzGD5VpA2VRrqB2UsMAhEZtASwLpFXruvZ4TSu9OGSLaeeEwgQnj
-nNLxx7twBEdFMfizd1va6TfJcXGbAIdBXVIX0HF64c0C7ohoqhxJ7oIKnz+sYtFf
-Y6tISLQNP+by7OZw++Q7Z0Xm4COPJlPvcYPvG83aKsZP7SbAh0Qi2Z5AFWyDDLgs
-Z8hQZVyzGBa46d/D/yB5GDIPlw4KrRK+/CU1rm9y7F+N78Zkcd3TPqsBlkdcBAkG
-w4bqZTFdiPgDBVMa5gD2V3fmPvkIPxwkn7pKWzUus3qc8WUG2UBmbLC0vPpTxk9j
-cV1yw0yrFD3us25XeDNzW4RMaUbic+Cx2f/odOjYBcjyxqvHM1mqfKZ6UrfoEpDr
-pZCrE/VOAVoG7QOZPChmMM6O562n0HeBUDXdT99mBpMmcVTxsM8TYXq0zXia5dXE
-+x4xxatdVxBBpJp+8eXwIGDn7px1CyhyoxoJ6OFiBSEt66eEjDbuPea1+DhFIBR1
-u94anrvVWSb6CMl2FqMATadDtuTCqTJOR+VPa9oA/VvDPvpkcEYXl9O4LEm19nAg
-EMVy8oImQ75M/03kNPQ37kSoDDbU8siwfkwoHDgNl5WyQ+8QbXQ+vbRzCixXE8n4
-VGtJe4qKtTGvRtWA6Fm7
-=WHK7
------END PGP SIGNATURE-----
-
---NzB8fVQJ5HfG6fxh--
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
