@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbaCJSLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 14:11:42 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:54869 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302AbaCJSLS (ORCPT
+	id S1753264AbaCJSNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 14:13:14 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:54139 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487AbaCJSNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 14:11:18 -0400
+	Mon, 10 Mar 2014 14:13:13 -0400
+Date: Mon, 10 Mar 2014 18:13:07 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com, linaro-kernel@lists.linaro.org,
+        Mark Brown <broonie@linaro.org>
+Subject: Re: [PATCH] mfd: wm5102: Mark register write sequencer control 3
+ readable
+Message-ID: <20140310181307.GC16697@lee--X1>
+References: <1394473334-22049-1-git-send-email-broonie@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <531DFD55.1070000@linux.intel.com>
-References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net>
- <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com>
- <1394229220.20013.13.camel@wall-e.seibold.net> <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com>
- <1394354848.1002.37.camel@wall-e.seibold.net> <531D044C.2090303@linux.intel.com>
- <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
- <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
- <531DD35A.5060202@linux.intel.com> <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
- <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
- <531DF549.2090403@linux.intel.com> <CALCETrV+3yCfOCJzRKN-woOyp2RF_=dW1V=9CwpYTUNGAiLoNQ@mail.gmail.com>
- <531DF896.8010305@linux.intel.com> <CALCETrVKfBpVHZcyccWRYM4rdOAETSQsxjiQuxn+0AeX78XiEw@mail.gmail.com>
- <531DFAF0.9070806@linux.intel.com> <CALCETrVkTtt5H9-0_mODcGyaLTusBfANkoANo+wKB4JAwjxU2g@mail.gmail.com>
- <531DFD55.1070000@linux.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 10 Mar 2014 11:10:57 -0700
-Message-ID: <CALCETrU0AUcjh5hEB1bVADbzmO+QySotBvpisnyF6Sj9BjQ=3Q@mail.gmail.com>
-Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394473334-22049-1-git-send-email-broonie@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 10:58 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 03/10/2014 10:52 AM, Andy Lutomirski wrote:
->>>
->>> Hint: where is your RIP?  Where is the RIP of other processes?
->>>
->>
->> Whoa there, I'm not suggesting anything nearly that crazy :)
->>
->> I'm suggesting changing out the vvar page *for that process*, which is
->> not executable.  The actual vdso code already supports this -- from
->> userspace's point of view it's the same thing as 'echo acpi_pm >
->> /sys/devices/system/clocksource/clocksource0/current_clocksource',
->> except that if the actual clocksource is HPET, the hpet page will be
->> switched out (presumably with a zero page) while being read.
->>
->> Other processes are totally irrelevant, unless they share the same
->> struct mm.  (This is why the vvar page can't be in the fixmap for this
->> to work.)
->>
->
-> I meant "threads" not "processes"...
+> From: Mark Brown <broonie@linaro.org>
+> 
+> During init the core checks if the wm5102 has finished starting by reading
+> register 0x19 and looking at the value. This read always fails since this
+> is not a readable register, mark it as being one. While we're at it provide
+> a constant for the register name (as supplied by Charles Keepax).
+> 
+> Signed-off-by: Mark Brown <broonie@linaro.org>
+> ---
+>  drivers/mfd/arizona-core.c            | 3 ++-
+>  drivers/mfd/wm5102-tables.c           | 1 +
+>  include/linux/mfd/arizona/registers.h | 1 +
+>  3 files changed, 4 insertions(+), 1 deletion(-)
 
-Still okay.  The vclock_gettime code does, more or less:
+Applied, thanks.
 
-        do {
-                seq = raw_read_seqcount_begin(&gtod->seq);
-                mode = gtod->clock.vclock_mode;
-                read the time;
-        } while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-
-Switching the clocksource in current code will make seq odd, then
-change vclock_mode, then make seq even again.  The prctl would zap the
-mapping, flush the TLB, and then map something else (with a different
-seq and vclock_mode) there.  User code will be hard pressed to tell
-the difference.
-
-To avoid having to carve out a special seq value, I'd actually propose
-just leaving seq odd for the TSC off case -- I think that the
-vclock_gettime code could move the branch for mode == NONE inside the
-loop with no loss in performance.
-
---Andy
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
