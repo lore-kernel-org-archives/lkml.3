@@ -1,156 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067AbaCJPtd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:49:33 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:32934 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880AbaCJPta (ORCPT
+	id S1753712AbaCJPvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:51:07 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.161]:58934 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752277AbaCJPvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:49:30 -0400
+	Mon, 10 Mar 2014 11:51:04 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-2.tower-38.messagelabs.com!1394466658!18290709!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Mark Brown <broonie@linaro.org>, Philipp Zabel <p.zabel@pengutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH V1 1/2] mfd: da9063: Upgrade of register definitions to
+ support production silicon
+Thread-Topic: [PATCH V1 1/2] mfd: da9063: Upgrade of register definitions to
+ support production silicon
+Thread-Index: AQHPPGlq4Xlvgtg6PUGqjRb7QXldQ5rad4OQ
+Date: Mon, 10 Mar 2014 15:50:57 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7A0C77018@SW-EX-MBX01.diasemi.com>
+References: <cover.1394124002.git.stwiss.opensource@diasemi.com>
+ <1e3f5e127c375a45b9a8e929fa99fa5c917b1dea.1394124002.git.stwiss.opensource@diasemi.com>
+ <20140310140238.GA15558@lee--X1>
+In-Reply-To: <20140310140238.GA15558@lee--X1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.61]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1394195917-25166-1-git-send-email-florian.vaussard@epfl.ch>
-References: <1394195917-25166-1-git-send-email-florian.vaussard@epfl.ch>
-Date: Mon, 10 Mar 2014 10:49:29 -0500
-Message-ID: <CAL_JsqJugFL6ZbRyZhC7hOWU+rSowzXB84=LjPso8jJ_2ohMHw@mail.gmail.com>
-Subject: Re: [PATCH] of: add missing major vendors
-From: Rob Herring <robherring2@gmail.com>
-To: Florian Vaussard <florian.vaussard@epfl.ch>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2AFpFGU017829
 
-On Fri, Mar 7, 2014 at 6:38 AM, Florian Vaussard
-<florian.vaussard@epfl.ch> wrote:
-> Looking at the current vendor strings used in the kernel's .dts/.dtsi
-> files, some vendors are used a high number of times without
-> being documented. Document the ones that are used more than 10 times.
+On 10 March 2014 14:03, Lee Jones wrote:
+
+>> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>>
+>> This patch updates the register definitions for DA9063 to support the
+>> production silicon variant code ID (0x5). These changes are not backwards
+>> compatible with the previous register definitions and can only be used
+>> with the production variant of DA9063.
+>>
+>> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>> ---
+>> Checks performed with next-20140306/scripts/checkpatch.pl
+>>  registers.h               total: 0 errors, 0 warnings, 1032 lines checked
+>>
+>> A brief summary of the changes include:
+>>
+>> - Introduction of a new DA9063_REG_ALARM_S register (now appearing at
+>>   addr=0x46) allowing alarm second resolutions and which causes a shift
+>>   in the register map for the RTC registers;
+>> - Two new configuration registers DA9063_REG_CONFIG_M/N at 0x112 & 0x113;
+>> - Modified register ranges for MON_REG_[1-6] which now appears at the
+>>   addr=0x114 onwards;
+>> - New register addresses for the general purpose registers GP_ID_[0-19]
+>>   (now appearing at 0x121 onwards);
+>> - Renaming of some definitions to match our hardware design conventions;
+>> - There are also some bit-pattern additions that define some functionality
+>>   alterations of the registers. One notable addition is:
+>>   DA9063_BUCK_SLOWSTART can also be found in the CONTROL_B register and
+>>   enables a BUCK slow start (reduced inrush current; increased startup
+>>   time);
+>>
+>>  include/linux/mfd/da9063/registers.h |  120 ++++++++++++++++++----------------
+>>  1 file changed, 62 insertions(+), 58 deletions(-)
 >
-> Note: a few inconsistencies were found, and thus not documented.
-> Here is the list:
-> - mrvl: duplicates "marvell"
-
-There was a whole thread on this change to marvell. We don't want mrvl
-documented.
-
-> - st-ericsson: duplicates "ste" _and_ "stericsson"
-
-We should make it clear which one is preferred. If there are a bunch
-of cases, then we should document and mark deprecated. If there are
-only a few, I would leave undocumented.
-
-> - pci8086: seems to be a unfortunate alias for "intel"
-> - pnpPNP: used on PowerPC?
-
-I believe these are special cases where the vendor and product IDs are
-used to form the compatible strings.
-
+>Well, as this doesn't seem to cause any issues when building and I'm
+>going to guess that the other patch in the set won't be a problem (as
+>you didn't send it to me, so I'm gussing it's insignificant), I'll
+>apply the patch.
 >
-> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-> ---
->  Documentation/devicetree/bindings/vendor-prefixes.txt | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
+>Applied, thanks.
 
-Thanks for fixing these and in particular my failure to document Calxeda. :)
+Hi Lee,
 
-Applied for 3.15.
+Thanks for this.
 
-Rob
+It looks like made a mess of the To: and Cc: e-mail list in my submission patches
+for this one. The second patch (the RTC driver) should have been CC'ed to you
+also. 
+Sorry. I will try to get my e-mail lists in order for my next submission.
 
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index 40ce2df..b5e7485 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -3,6 +3,7 @@ Device tree binding vendor prefix registry.  Keep list in alphabetical order.
->  This isn't an exhaustive list, but you should add new prefixes to it before
->  using them to avoid name-space collisions.
->
-> +abilis Abilis Systems
->  active-semi    Active-Semi International Inc
->  ad     Avionic Design GmbH
->  adi    Analog Devices, Inc.
-> @@ -11,14 +12,17 @@ ak  Asahi Kasei Corp.
->  allwinner      Allwinner Technology Co., Ltd.
->  altr   Altera Corp.
->  amcc   Applied Micro Circuits Corporation (APM, formally AMCC)
-> +amd    Advanced Micro Devices (AMD), Inc.
->  amstaos        AMS-Taos Inc.
->  apm    Applied Micro Circuits Corporation (APM)
->  arm    ARM Ltd.
-> +armadeus       ARMadeus Systems SARL
->  atmel  Atmel Corporation
->  auo    AU Optronics Corporation
->  avago  Avago Technologies
->  bosch  Bosch Sensortec GmbH
->  brcm   Broadcom Corporation
-> +calxeda        Calxeda
->  capella        Capella Microsystems, Inc
->  cavium Cavium, Inc.
->  cdns   Cadence Design Systems Inc.
-> @@ -26,8 +30,10 @@ chrp Common Hardware Reference Platform
->  chunghwa       Chunghwa Picture Tubes Ltd.
->  cirrus Cirrus Logic, Inc.
->  cortina        Cortina Systems, Inc.
-> +crystalfontz   Crystalfontz America, Inc.
->  dallas Maxim Integrated Products (formerly Dallas Semiconductor)
->  davicom        DAVICOM Semiconductor, Inc.
-> +dlink  D-Link Systems, Inc.
->  denx   Denx Software Engineering
->  edt    Emerging Display Technologies
->  emmicro        EM Microelectronic
-> @@ -37,7 +43,9 @@ est   ESTeem Wireless Modems
->  fsl    Freescale Semiconductor
->  GEFanuc        GE Fanuc Intelligent Platforms Embedded Systems, Inc.
->  gef    GE Fanuc Intelligent Platforms Embedded Systems, Inc.
-> +globalscale    Globalscale Technologies, Inc.
->  gmt    Global Mixed-mode Technology, Inc.
-> +google Google, Inc.
->  gumstix        Gumstix, Inc.
->  haoyu  Haoyu Microelectronic Co. Ltd.
->  hisilicon      Hisilicon Limited.
-> @@ -46,9 +54,12 @@ hp   Hewlett Packard
->  ibm    International Business Machines (IBM)
->  idt    Integrated Device Technologies, Inc.
->  img    Imagination Technologies Ltd.
-> +intel  Intel Corporation
->  intercontrol   Inter Control Group
->  isl    Intersil
->  karo   Ka-Ro electronics GmbH
-> +lacie  LaCie
-> +lantiq Lantiq Semiconductor
->  lg     LG Corporation
->  linux  Linux-specific binding
->  lsi    LSI Corp. (LSI Logic)
-> @@ -56,12 +67,16 @@ marvell     Marvell Technology Group Ltd.
->  maxim  Maxim Integrated Products
->  microchip      Microchip Technology Inc.
->  mosaixtech     Mosaix Technologies, Inc.
-> +moxa   Moxa
->  national       National Semiconductor
->  neonode                Neonode Inc.
-> +netgear        NETGEAR
->  nintendo       Nintendo
-> +nokia  Nokia
->  nvidia NVIDIA
->  nxp    NXP Semiconductors
->  onnn   ON Semiconductor Corp.
-> +opencores      OpenCores.org
->  panasonic      Panasonic Corporation
->  phytec PHYTEC Messtechnik GmbH
->  picochip       Picochip Ltd
-> @@ -94,4 +109,5 @@ via  VIA Technologies, Inc.
->  winbond Winbond Electronics corp.
->  wlf    Wolfson Microelectronics
->  wm     Wondermedia Technologies, Inc.
-> +xes    Extreme Engineering Solutions (X-ES)
->  xlnx   Xilinx
-> --
-> 1.8.5.3
->
+The RTC driver component relies on the register change patch which you just
+applied. This RTC component was reviewed and Ack'ed by Alessandro Zummo
+here:
+http://www.kernelhub.org/?p=2&msg=427642
+
+There was no way for you to know any of this because I had not CC'ed you
+properly on this part.
+
+It is possible to add the RTC component as well or shall I resend that part
+again?
+
+Regards,
+Steve
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
