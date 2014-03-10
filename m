@@ -1,287 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449AbaCJVTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:19:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36465 "EHLO mga11.intel.com"
+	id S1754480AbaCJVUE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:20:04 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45129 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752290AbaCJVTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:19:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,626,1389772800"; 
-   d="scan'208";a="495713218"
-Date: Mon, 10 Mar 2014 14:18:29 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 3/4] ntb: Split ntb_setup_msix() into separate BWD/SNB
- routines
-Message-ID: <20140310211828.GA30986@jonmason-lab>
-References: <cover.1392996332.git.agordeev@redhat.com>
- <bb2b61719e4dd15c29bc8022e76a9463d548f561.1392996332.git.agordeev@redhat.com>
- <20140304001224.GD9679@jonmason-lab>
- <20140304164127.GA18971@dhcp-26-207.brq.redhat.com>
+	id S1753468AbaCJVUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 17:20:01 -0400
+Message-ID: <531E2C55.70702@ti.com>
+Date: Tue, 11 Mar 2014 05:19:17 +0800
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140304164127.GA18971@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Herring <robherring2@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Sandeep Nair <sandeep_n@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 2/3] soc: keystone: add QMSS driver
+References: <1393629520-12713-1-git-send-email-santosh.shilimkar@ti.com>	<1393629520-12713-3-git-send-email-santosh.shilimkar@ti.com> <CAL_Jsq+O660oV9FtthG3gTkVOhL0ku-UHSrkt-ROauu1iNpbaA@mail.gmail.com>
+In-Reply-To: <CAL_Jsq+O660oV9FtthG3gTkVOhL0ku-UHSrkt-ROauu1iNpbaA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 05:41:28PM +0100, Alexander Gordeev wrote:
-> On Mon, Mar 03, 2014 at 05:12:25PM -0700, Jon Mason wrote:
-> > On Fri, Feb 21, 2014 at 04:49:31PM +0100, Alexander Gordeev wrote:
-> > > This is an cleanup effort to make ntb_setup_msix() more
-> > > readable - use ntb_setup_bwd_msix() to init MSI-Xs on
-> > > BWD hardware and ntb_setup_snb_msix() - on SNB hardware.
-> > > 
-> > > Function ntb_setup_snb_msix() also initializes MSI-Xs the
-> > > way it should has been done - looping pci_enable_msix()
-> > > until success or failure.
-> > > 
-> > > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> > > Cc: Jon Mason <jon.mason@intel.com>
-> > > Cc: linux-pci@vger.kernel.org
-> > > ---
-> > >  drivers/ntb/ntb_hw.c |  170 +++++++++++++++++++++++++++++++-------------------
-> > >  1 files changed, 106 insertions(+), 64 deletions(-)
-> > > 
-> > > diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-> > > index 53468f4..0472045 100644
-> > > --- a/drivers/ntb/ntb_hw.c
-> > > +++ b/drivers/ntb/ntb_hw.c
-> > > @@ -1079,6 +1079,107 @@ static irqreturn_t ntb_interrupt(int irq, void *dev)
-> > >  	return IRQ_HANDLED;
-> > >  }
-> > >  
-> > > +static int ntb_setup_snb_msix(struct ntb_device *ndev, int msix_entries)
-> > > +{
-> > > +	struct pci_dev *pdev = ndev->pdev;
-> > > +	struct msix_entry *msix;
-> > > +	int rc, i;
-> > > +
-> > > +	if (msix_entries < SNB_MSIX_CNT)
-> > 
-> > I would prefer ndev->limits.msix_cnt here to keep it generic.  I could
-> > foresee this number changing on upcoming hardware with a similar
-> > design.
-> > 
-> > > +		return -ENOSPC;
-> > > +
-> > > +	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> > > +	if (rc < 0)
-> > > +		return rc;
-> > > +	else if (rc > 0)
-> > > +		return -ENOSPC;
-> > > +
-> > > +	for (i = 0; i < msix_entries; i++) {
-> > > +		msix = &ndev->msix_entries[i];
-> > > +		WARN_ON(!msix->vector);
-> > > +
-> > > +		if (i == msix_entries - 1) {
-> > > +			rc = request_irq(msix->vector,
-> > > +					 xeon_event_msix_irq, 0,
-> > > +					 "ntb-event-msix", ndev);
-> > > +			if (rc)
-> > > +				goto err;
-> > > +		} else {
-> > > +			rc = request_irq(msix->vector,
-> > > +					 xeon_callback_msix_irq, 0,
-> > > +					 "ntb-callback-msix",
-> > > +					 &ndev->db_cb[i]);
-> > > +			if (rc)
-> > > +				goto err;
-> > > +		}
-> > > +	}
-> > > +
-> > > +	ndev->num_msix = msix_entries;
-> > > +	ndev->max_cbs = msix_entries - 1;
-> > > +
-> > > +	return 0;
-> > > +
-> > > +err:
-> > > +	while (--i >= 0) {
-> > > +		msix = &ndev->msix_entries[i];
-> > > +		WARN_ON(i == ndev->num_msix - 1);
-> > > +
-> > > +		if (i == ndev->num_msix - 1)
-> > 
-> > Why have a WARN followed by a if statement on the same condition?  As
-> > it stands right now, there is no way it could be hit.  So I'd say
-> > remove both of them.
+On Tuesday 11 March 2014 01:02 AM, Rob Herring wrote:
+> On Fri, Feb 28, 2014 at 5:18 PM, Santosh Shilimkar
+> <santosh.shilimkar@ti.com> wrote:
+>> From: Sandeep Nair <sandeep_n@ti.com>
+>>
+>> The QMSS (Queue Manager Sub System) found on Keystone SOCs is one of
+>> the main hardware sub system which forms the backbone of the Keystone
+>> Multi-core Navigator. QMSS consist of queue managers, packed-data structure
+>> processors(PDSP), linking RAM, descriptor pools and infrastructure
+>> Packet DMA.
+>>
+>> The Queue Manager is a hardware module that is responsible for accelerating
+>> management of the packet queues. Packets are queued/de-queued by writing or
+>> reading descriptor address to a particular memory mapped location. The PDSPs
+>> perform QMSS related functions like accumulation, QoS, or event management.
+>> Linking RAM registers are used to link the descriptors which are stored in
+>> descriptor RAM. Descriptor RAM is configurable as internal or external memory.
+>>
+>> The QMSS driver manages the PDSP setups, linking RAM regions,
+>> queue pool management (allocation, push, pop and notify) and descriptor
+>> pool management. The specifics on the device tree bindings for
+>> QMSS can be found in:
+>>         Documentation/devicetree/bindings/soc/keystone-qmss.txt
 > 
-> Right, WARN_ON() is stupid here. But we can not remove the condition,
-> because of 'dev_id' parameter for free_irq() is 'ndev' for the last
-> MSI-X, unlike &ndev->db_cb[i] for all other MSI-Xs, unless I am
-> missing something.
+> You are telling me where I can find a file that is added in this commit?
+> 
+> All this description of what the h/w block does should go into the binding doc.
+> 
+Sure. Will do.
 
-The "i == ndev->num_msix - 1" cannot be hit.  If a failure hits in
-request_irq with i < msix_entries - 1, then there is no need to free
-the irq for xeon_event_msix_irq allocation because it was never
-allocated.  If i == msix_entries - 1 when it fails, there is no need
-to free the irq because the allocation failed.  These 2 cases being
-true, it's never possible to hit the case and the clean-up code is
-unnecessary.
+>>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Kumar Gala <galak@codeaurora.org>
+>> Cc: Olof Johansson <olof@lixom.net>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: Grant Likely <grant.likely@linaro.org>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Cc: Mark Rutland <mark.rutland@arm.com>
+>> Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
+>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+>>  .../devicetree/bindings/soc/keystone-qmss.txt      |  209 +++
+>>  drivers/Kconfig                                    |    2 +
+>>  drivers/Makefile                                   |    3 +
+>>  drivers/soc/Kconfig                                |    2 +
+>>  drivers/soc/Makefile                               |    5 +
+>>  drivers/soc/keystone/Kconfig                       |   15 +
+>>  drivers/soc/keystone/Makefile                      |    5 +
+>>  drivers/soc/keystone/qmss_acc.c                    |  591 ++++++++
+>>  drivers/soc/keystone/qmss_queue.c                  | 1533 ++++++++++++++++++++
+>>  drivers/soc/keystone/qmss_queue.h                  |  236 +++
+>>  include/linux/soc/keystone_qmss.h                  |  390 +++++
+>>  11 files changed, 2991 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/soc/keystone-qmss.txt
+>>  create mode 100644 drivers/soc/Makefile
+>>  create mode 100644 drivers/soc/keystone/Kconfig
+>>  create mode 100644 drivers/soc/keystone/Makefile
+>>  create mode 100644 drivers/soc/keystone/qmss_acc.c
+>>  create mode 100644 drivers/soc/keystone/qmss_queue.c
+>>  create mode 100644 drivers/soc/keystone/qmss_queue.h
+>>  create mode 100644 include/linux/soc/keystone_qmss.h
+>>
+>> diff --git a/Documentation/devicetree/bindings/soc/keystone-qmss.txt b/Documentation/devicetree/bindings/soc/keystone-qmss.txt
+>> new file mode 100644
+>> index 0000000..f975207
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/soc/keystone-qmss.txt
+>> @@ -0,0 +1,209 @@
+>> +* Texas Instruments Keystone QMSS driver
+>> +
+>> +Required properties:
+>> +- compatible   : Must be "ti,keystone-qmss";
+>> +- clocks       : phandle to the reference clock for this device.
+>> +- queue-range  : <start number> total range of queue numbers for the device.
+>> +- linkram0     : <address size> for internal link ram, where size is the total
+>> +                 link ram entries.
+>> +- linkram1     : <address size> for external link ram, where size is the total
+>> +                 external link ram entries. If the address is specified as "0"
+>> +                 driver will allocate memory.
+>> +- qmgrs         : the number of individual queue managers in the device. On
+>> +                  keystone 1 range of devices there should be only one node.
+>> +                 On keystone 2 devices there can be more than 1 node.
+>> +  -- managed-queues    : the actual queues managed by each queue manager
+>> +                         instance, specified as <"base queue #" "# of queues">.
+>> +  -- reg               : Address and length of the register set for the device
+>> +                         for peek, status, config, region, push, pop regions.
+>> +  -- reg-names         : Names for the above register regions. The name to be
+>> +                         used is as follows:
+>> +                         - "config" : Queue configuration region.
+>> +                         - "status" : Queue status RAM.
+>> +                         - "region" : Descriptor memory setup region.
+>> +                         - "push"   : Queue Management/Queue Proxy region.
+>> +                         - "pop"    : Queue Management/Queue Proxy region.
+>> +                         - "peek"   : Queue Peek region.
+> 
+> reg-names should be optional. Also you have the order different from
+> reg. Be consistent as to what is the correct order.
+> 
+We thought of using reg-names to remove the ordering to index
+the regs. So if we make the reg-names optional, then indexing
+by order will be used. We can do that.
 
-Thanks,
-Jon
+>> +- queue-pools  : Queue ranges are grouped into 3 type of pools:
+>> +                 - qpend           : pool of qpend(interruptible) queues
+>> +                 - general-purpose : pool of general queues, primarly used
+>> +                                     as free descriptor queues or the
+>> +                                     transmit DMA queues.
+>> +                 - accumulator     : pool of queues on accumulator channel
+>> +                 Each range can have the following properties:
+>> +  -- values            : number of queues to use per queue range, specified as
+>> +                         <"base queue #" "# of queues">.
+> 
+> values of what? This needs a better name.
+ok. Will use 'qrange-values'
+> 
+>> +  -- interrupts                : Optional property to specify the interrupt mapping
+>> +                         for interruptible queues. The driver additionaly sets
+>> +                         the interrupt affinity based on the cpu mask.
+>> +  -- reserved          : Optional property used to reserve the range. Queues
+>> +                         in a reserved range can only be allocated by id.
+> 
+> reserved what? This needs a better name and description.
+>
+'qrange-reserved'. Will update the description.
+ 
+>> +  -- accumulator       : Accumulator channel property specified as:
+>> +                         <pdsp-id, channel, entries, pacing mode, latency>
+>> +                         pdsp-id     : QMSS PDSP running accumulator firmware
+>> +                                       on which the channel has to be
+>> +                                       configured
+>> +                         channel     : Accumulator channel number
+>> +                         entries     : Size of the accumulator descriptor list
+>> +                         pacing mode : Interrupt pacing mode
+>> +                                       0 : None, i.e interrupt on list full
+>> +                                       1 : Time delay since last interrupt
+>> +                                       2 : Time delay since first new packet
+>> +                                       3 : Time delay since last new packet
+>> +                         latency     : time to delay the interrupt, specified
+>> +                                       in microseconds.
+>> +  -- multi-queue       : Optional property to specify that the channel has to
+>> +                         monitor upto 32 queues starting at the base queue #.
+> 
+> What does the property contain? What's a channel in this context?
+>
+Its accumulator channel who can monitor multiple queues. Its a hardware
+off-load feature to monitor and accumulate the traffic on multiple queues.
+ 
+>> +- descriptor-regions   : Descriptor memory region specification.
+> 
+> huh?
+Ok. We will make the description bit more verbose to make it clear.
 
 > 
-> > 
-> > Aside from that it looks good.  Thanks for taking the time to cleanup
-> > the code!
-> > 
-> > Thanks,
-> > Jon
-> > 
-> > > +			free_irq(msix->vector, ndev);
-> > > +		else
-> > > +			free_irq(msix->vector, &ndev->db_cb[i]);
-> > > +	}
-> > > +
-> > > +	pci_disable_msix(pdev);
-> > > +	ndev->num_msix = 0;
-> > > +
-> > > +	return rc;
-> > > +}
-> > > +
-> > > +static int ntb_setup_bwd_msix(struct ntb_device *ndev, int msix_entries)
-> > > +{
-> > > +	struct pci_dev *pdev = ndev->pdev;
-> > > +	struct msix_entry *msix;
-> > > +	int rc, i;
-> > > +
-> > > +retry:
-> > > +	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> > > +	if (rc < 0)
-> > > +		return rc;
-> > > +	else if (rc > 0) {
-> > > +		dev_warn(&pdev->dev,
-> > > +			 "Only %d MSI-X vectors. "
-> > > +			 "Limiting the number of queues to that number.\n",
-> > > +			 rc);
-> > > +		msix_entries = rc;
-> > > +		goto retry;
-> > > +	}
-> > > +
-> > > +	for (i = 0; i < msix_entries; i++) {
-> > > +		msix = &ndev->msix_entries[i];
-> > > +		WARN_ON(!msix->vector);
-> > > +
-> > > +		rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
-> > > +				 "ntb-callback-msix", &ndev->db_cb[i]);
-> > > +		if (rc)
-> > > +			goto err;
-> > > +	}
-> > > +
-> > > +	ndev->num_msix = msix_entries;
-> > > +	ndev->max_cbs = msix_entries;
-> > > +
-> > > +	return 0;
-> > > +
-> > > +err:
-> > > +	while (--i >= 0)
-> > > +		free_irq(msix->vector, &ndev->db_cb[i]);
-> > > +
-> > > +	pci_disable_msix(pdev);
-> > > +	ndev->num_msix = 0;
-> > > +
-> > > +	return rc;
-> > > +}
-> > > +
-> > >  static int ntb_setup_msix(struct ntb_device *ndev)
-> > >  {
-> > >  	struct pci_dev *pdev = ndev->pdev;
-> > > @@ -1105,78 +1206,19 @@ static int ntb_setup_msix(struct ntb_device *ndev)
-> > >  	for (i = 0; i < msix_entries; i++)
-> > >  		ndev->msix_entries[i].entry = i;
-> > >  
-> > > -	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> > > -	if (rc < 0)
-> > > -		goto err1;
-> > > -	if (rc > 0) {
-> > > -		/* On SNB, the link interrupt is always tied to 4th vector.  If
-> > > -		 * we can't get all 4, then we can't use MSI-X.
-> > > -		 */
-> > > -		if (ndev->hw_type != BWD_HW) {
-> > > -			rc = -EIO;
-> > > -			goto err1;
-> > > -		}
-> > > -
-> > > -		dev_warn(&pdev->dev,
-> > > -			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
-> > > -			 rc);
-> > > -		msix_entries = rc;
-> > > -
-> > > -		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-> > > -		if (rc)
-> > > -			goto err1;
-> > > -	}
-> > > -
-> > > -	for (i = 0; i < msix_entries; i++) {
-> > > -		msix = &ndev->msix_entries[i];
-> > > -		WARN_ON(!msix->vector);
-> > > -
-> > > -		/* Use the last MSI-X vector for Link status */
-> > > -		if (ndev->hw_type == BWD_HW) {
-> > > -			rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
-> > > -					 "ntb-callback-msix", &ndev->db_cb[i]);
-> > > -			if (rc)
-> > > -				goto err2;
-> > > -		} else {
-> > > -			if (i == msix_entries - 1) {
-> > > -				rc = request_irq(msix->vector,
-> > > -						 xeon_event_msix_irq, 0,
-> > > -						 "ntb-event-msix", ndev);
-> > > -				if (rc)
-> > > -					goto err2;
-> > > -			} else {
-> > > -				rc = request_irq(msix->vector,
-> > > -						 xeon_callback_msix_irq, 0,
-> > > -						 "ntb-callback-msix",
-> > > -						 &ndev->db_cb[i]);
-> > > -				if (rc)
-> > > -					goto err2;
-> > > -			}
-> > > -		}
-> > > -	}
-> > > -
-> > > -	ndev->num_msix = msix_entries;
-> > >  	if (ndev->hw_type == BWD_HW)
-> > > -		ndev->max_cbs = msix_entries;
-> > > +		rc = ntb_setup_bwd_msix(ndev, msix_entries);
-> > >  	else
-> > > -		ndev->max_cbs = msix_entries - 1;
-> > > +		rc = ntb_setup_snb_msix(ndev, msix_entries);
-> > > +	if (rc)
-> > > +		goto err1;
-> > >  
-> > >  	return 0;
-> > >  
-> > > -err2:
-> > > -	while (--i >= 0) {
-> > > -		msix = &ndev->msix_entries[i];
-> > > -		if (ndev->hw_type != BWD_HW && i == ndev->num_msix - 1)
-> > > -			free_irq(msix->vector, ndev);
-> > > -		else
-> > > -			free_irq(msix->vector, &ndev->db_cb[i]);
-> > > -	}
-> > > -	pci_disable_msix(pdev);
-> > >  err1:
-> > >  	kfree(ndev->msix_entries);
-> > > -	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
-> > >  err:
-> > > -	ndev->num_msix = 0;
-> > > +	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
-> > >  	return rc;
-> > >  }
-> > >  
-> > > -- 
-> > > 1.7.7.6
-> > > 
+>> +  -- id                                : region number.
+>> +  -- values                    : number of descriptors in the region,
+>> +                                 specified as
+>> +                                 <"# of descriptors" "descriptor size">.
+>> +  -- link-index                        : start index, i.e. index of the first
+>> +                                 descriptor in the region.
+>> +
+>> +Optional properties:
+>> +- dma-coherent : Present if DMA operations are coherent.
+>> +- pdsps                : PDSP configuration, if any.
 > 
-> -- 
-> Regards,
-> Alexander Gordeev
-> agordeev@redhat.com
+> This is a child node? Make that clear and separate the description for
+> each node.
+>
+Sure.
+ 
+>> +  -- firmware          : firmware to be loaded on the PDSP.
+>> +  -- id                        : the qmss pdsp that will run the firmware.
+>> +  -- reg               : Address and length of the register set of the PDSP
+>> +                         for iram, intd, region, command regions.
+>> +  -- reg-names         : Names for the above register regions. The name to be
+>> +                         used is as follows:
+>> +                         - "iram"   : PDSP internal RAM region.
+>> +                         - "reg"    : PDSP control/status region registers.
+>> +                         - "intd"   : QMSS interrupt distributor registers.
+>> +                         - "cmd"    : PDSP command interface region.
+>> +
+>> +Example:
+> 
+> I probably have other comments, but address the above first.
+> 
+Thanks for the comments. We will address these in next version.
+
+Regards,
+Santosh
+
