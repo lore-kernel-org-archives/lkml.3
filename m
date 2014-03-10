@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680AbaCJMuW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 08:50:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48877 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753661AbaCJMuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 08:50:20 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: khali@linux-fr.org, akpm@linux-foundation.org
-Cc: jg1.han@samsung.com, chris.cheney@gmail.com, konrad.wilk@oracle.com,
-        geert@linux-m68k.org, joe@perches.com, gregkh@linuxfoundation.org,
-        davem@davemloft.net, m.chehab@samsung.com, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org, dhjeffery@gmail.com,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH v3] MAINTAINERS: update IBM ServeRAID RAID info
-Date: Mon, 10 Mar 2014 13:50:05 +0100
-Message-Id: <1394455805-12267-1-git-send-email-michael.opdenacker@free-electrons.com>
+	id S1753651AbaCJMuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 08:50:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47316 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752161AbaCJMuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 08:50:12 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <balbi@ti.com>, <kishon@ti.com>, <george.cherian@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <rogerq@ti.com>,
+        Mike Turquette <mturquette@linaro.org>, Tero Kristo <t-kristo@ti.com>
+Subject: [PATCH v2 1/8] ARM: dts: dra7: Initialize USB_DPLL
+Date: Mon, 10 Mar 2014 14:49:21 +0200
+Message-ID: <1394455761-19226-1-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <531DB414.5020301@free-electrons.com>
-References: <531DB414.5020301@free-electrons.com>
+In-Reply-To: <1394197751-28984-2-git-send-email-rogerq@ti.com>
+References: <1394197751-28984-2-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Invalid maintainer e-mail address:
-  Mail server reply:
-  Recipient address rejected: User unknown in virtual alias table
-- Remove no longer working webpage URL
-- Remove obsolete "Person" field
-- Move status to "Orphan"
-- Add Dave Jeffery and Jack Hammer to the CREDITS file
+USB_DPLL must be initialized and locked at boot so that
+USB modules can work.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Program USB_DLL_M2 output to half rate as well.
+
+Patch depends on
+https://www.mail-archive.com/linux-omap@vger.kernel.org/msg101300.html
+
+CC: Mike Turquette <mturquette@linaro.org>
+CC: Tero Kristo <t-kristo@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- CREDITS     | 7 +++++++
- MAINTAINERS | 5 +----
- 2 files changed, 8 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/dra7.dtsi | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/CREDITS b/CREDITS
-index e371c5504a50..0ffb4f68bb33 100644
---- a/CREDITS
-+++ b/CREDITS
-@@ -1370,6 +1370,9 @@ S: 17 rue Danton
- S: F - 94270 Le Kremlin-Bicêtre
- S: France
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 597979b..f376923 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -815,3 +815,11 @@
+ };
  
-+N: Jack Hammer
-+D: IBM ServeRAID RAID (ips) driver maintenance
+ /include/ "dra7xx-clocks.dtsi"
 +
- N: Greg Hankins
- E: gregh@cc.gatech.edu
- D: fixed keyboard driver to separate LED and locking status
-@@ -1680,6 +1683,10 @@ S: Reading
- S: RG6 2NU
- S: United Kingdom
- 
-+N: Dave Jeffery
-+E: dhjeffery@gmail.com
-+D: SCSI hacks and IBM ServeRAID RAID driver maintenance
++&dpll_usb_ck {
++        default-rate = <960000000>;
++};
 +
- N: Jakub Jelinek
- E: jakub@redhat.com
- W: http://sunsite.mff.cuni.cz/~jj
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b7befe758429..dbf4ca466efa 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4296,10 +4296,7 @@ F:	drivers/scsi/ibmvscsi/
- X:	drivers/scsi/ibmvscsi/ibmvstgt.c
- 
- IBM ServeRAID RAID DRIVER
--P:	Jack Hammer
--M:	Dave Jeffery <ipslinux@adaptec.com>
--W:	http://www.developer.ibm.com/welcome/netfinity/serveraid.html
--S:	Supported
-+S:	Orphan
- F:	drivers/scsi/ips.*
- 
- ICH LPC AND GPIO DRIVER
++&dpll_usb_m2_ck {
++	default-rate = <480000000>;
++};
 -- 
 1.8.3.2
 
