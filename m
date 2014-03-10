@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298AbaCJUlT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:41:19 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34979 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603AbaCJUlQ (ORCPT
+	id S1755310AbaCJUll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:41:41 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:56269 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754576AbaCJUli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:41:16 -0400
+	Mon, 10 Mar 2014 16:41:38 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 43/52] thermal,
- x86-pkg-temp: Fix CPU hotplug callback registration
+Subject: [PATCH v3 44/52] hwmon,
+ coretemp: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
         rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org
@@ -17,12 +17,12 @@ Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        srivatsa.bhat@linux.vnet.ibm.com, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-pm@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, Fenghua Yu <fenghua.yu@intel.com>,
+        Jean Delvare <jdelvare@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        lm-sensors@lm-sensors.org, Guenter Roeck <linux@roeck-us.net>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 11 Mar 2014 02:10:54 +0530
-Message-ID: <20140310204054.10746.57627.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 11 Mar 2014 02:11:11 +0530
+Message-ID: <20140310204111.10746.4119.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -31,7 +31,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031020-5140-0000-0000-000004B214E1
+x-cbid: 14031020-6102-0000-0000-0000051B2F81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -67,66 +67,67 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the thermal x86-pkg-temp code by using this latter form of callback
+Fix the hwmon coretemp code by using this latter form of callback
 registration.
 
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Jean Delvare <jdelvare@suse.de>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: linux-pm@vger.kernel.org
+Cc: lm-sensors@lm-sensors.org
+Acked-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- drivers/thermal/x86_pkg_temp_thermal.c |   14 +++++++-------
+ drivers/hwmon/coretemp.c |   14 +++++++-------
  1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/thermal/x86_pkg_temp_thermal.c b/drivers/thermal/x86_pkg_temp_thermal.c
-index 081fd7e..9ea3d9d 100644
---- a/drivers/thermal/x86_pkg_temp_thermal.c
-+++ b/drivers/thermal/x86_pkg_temp_thermal.c
-@@ -590,12 +590,12 @@ static int __init pkg_temp_thermal_init(void)
- 	platform_thermal_package_rate_control =
- 			pkg_temp_thermal_platform_thermal_rate_control;
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index bbb0b0d..746a6ad 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -849,20 +849,20 @@ static int __init coretemp_init(void)
+ 	if (err)
+ 		goto exit;
  
 -	get_online_cpus();
 +	cpu_notifier_register_begin();
  	for_each_online_cpu(i)
- 		if (get_core_online(i))
- 			goto err_ret;
--	register_hotcpu_notifier(&pkg_temp_thermal_notifier);
--	put_online_cpus();
-+	__register_hotcpu_notifier(&pkg_temp_thermal_notifier);
-+	cpu_notifier_register_done();
+ 		get_core_online(i);
  
- 	pkg_temp_debugfs_init(); /* Don't care if fails */
+ #ifndef CONFIG_HOTPLUG_CPU
+ 	if (list_empty(&pdev_list)) {
+-		put_online_cpus();
++		cpu_notifier_register_done();
+ 		err = -ENODEV;
+ 		goto exit_driver_unreg;
+ 	}
+ #endif
  
-@@ -604,7 +604,7 @@ static int __init pkg_temp_thermal_init(void)
- err_ret:
- 	for_each_online_cpu(i)
- 		put_core_offline(i);
+-	register_hotcpu_notifier(&coretemp_cpu_notifier);
 -	put_online_cpus();
++	__register_hotcpu_notifier(&coretemp_cpu_notifier);
 +	cpu_notifier_register_done();
- 	kfree(pkg_work_scheduled);
- 	platform_thermal_package_notify = NULL;
- 	platform_thermal_package_rate_control = NULL;
-@@ -617,8 +617,8 @@ static void __exit pkg_temp_thermal_exit(void)
- 	struct phy_dev_entry *phdev, *n;
- 	int i;
+ 	return 0;
+ 
+ #ifndef CONFIG_HOTPLUG_CPU
+@@ -877,8 +877,8 @@ static void __exit coretemp_exit(void)
+ {
+ 	struct pdev_entry *p, *n;
  
 -	get_online_cpus();
--	unregister_hotcpu_notifier(&pkg_temp_thermal_notifier);
+-	unregister_hotcpu_notifier(&coretemp_cpu_notifier);
 +	cpu_notifier_register_begin();
-+	__unregister_hotcpu_notifier(&pkg_temp_thermal_notifier);
- 	mutex_lock(&phy_dev_list_mutex);
- 	list_for_each_entry_safe(phdev, n, &phy_dev_list, list) {
- 		/* Retore old MSR value for package thermal interrupt */
-@@ -636,7 +636,7 @@ static void __exit pkg_temp_thermal_exit(void)
- 	for_each_online_cpu(i)
- 		cancel_delayed_work_sync(
- 			&per_cpu(pkg_temp_thermal_threshold_work, i));
++	__unregister_hotcpu_notifier(&coretemp_cpu_notifier);
+ 	mutex_lock(&pdev_list_mutex);
+ 	list_for_each_entry_safe(p, n, &pdev_list, list) {
+ 		platform_device_unregister(p->pdev);
+@@ -886,7 +886,7 @@ static void __exit coretemp_exit(void)
+ 		kfree(p);
+ 	}
+ 	mutex_unlock(&pdev_list_mutex);
 -	put_online_cpus();
 +	cpu_notifier_register_done();
- 
- 	kfree(pkg_work_scheduled);
+ 	platform_driver_unregister(&coretemp_driver);
+ }
  
 
