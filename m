@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881AbaCJRLL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:11:11 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47786 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244AbaCJRLJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:11:09 -0400
-Date: Mon, 10 Mar 2014 17:11:03 +0000
-From: Mark Brown <broonie@kernel.org>
-To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        David Dajun Chen <david.chen@diasemi.com>
-Message-ID: <20140310171103.GQ28112@sirena.org.uk>
-References: <201403041355.s24DtT1K045945@swsrvapps-02.lan>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IhaVjqNYhz9BDJmo"
-Content-Disposition: inline
-In-Reply-To: <201403041355.s24DtT1K045945@swsrvapps-02.lan>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC V3] drivers/base/regmap: Implementation for
- regmap_multi_reg_write
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1754213AbaCJRLa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:11:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46219 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751833AbaCJRL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 13:11:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,625,1389772800"; 
+   d="scan'208";a="489249619"
+Subject: [PATCH 3/7] x86: mm: fix missed global TLB flush stat
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, ak@linux.intel.com,
+        kirill.shutemov@linux.intel.com, mgorman@suse.de, alex.shi@linaro.org,
+        x86@kernel.org, linux-mm@kvack.org, davidlohr@hp.com,
+        Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com
+From: Dave Hansen <dave@sr71.net>
+Date: Mon, 10 Mar 2014 10:11:26 -0700
+References: <20140310171118.7E16CD45@viggo.jf.intel.com>
+In-Reply-To: <20140310171118.7E16CD45@viggo.jf.intel.com>
+Message-Id: <20140310171126.8F15E380@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---IhaVjqNYhz9BDJmo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-On Tue, Mar 04, 2014 at 01:54:02PM +0000, Opensource [Anthony Olech] wrote:
-> This is the implementation of regmap_multi_reg_write()
->=20
-> There is a new capability 'can_multi_write' that device drivers
-> must set in order to use this multi reg write mode.
+If we take the
 
-Applied, thanks.  Please use subject lines consistent with the general
-style for the subsystem.
+	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
+		local_flush_tlb();
+		goto out;
+	}
 
---IhaVjqNYhz9BDJmo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+path out of flush_tlb_mm_range(), we will have flushed the tlb,
+but not incremented NR_TLB_LOCAL_FLUSH_ALL.  This unifies the
+way out of the function so that we always take a single path when
+doing a full tlb flush.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
-iQIcBAEBAgAGBQJTHfIkAAoJELSic+t+oim9IYIP/3h85Cm49rtCodbRYCY422ve
-axY2cUOZonRDX6Fjb6b2/DlWMrkZlWYPaXiQo8+AFu2jwhO6ktE2E/oKRa55R8zT
-3nIUpT1+vkylGSK5rT1XArgRXqOs2dRrnWSwW8i7czGo94NofxAd+QL23ytyyoH+
-ZRwbu1HSAIkhNWBP/wybJzcTAvY0fwbyLiCH9Sk6dpyXJjxo6hM1tWcS/XUZz5pL
-pPkln9ZyWxAzQ7DuUUwbRp24QSj+J3JRGMBE7Jg4vbQiTnm/yje/oAxAJzAq0ED2
-BnF0cVejk0YJ+SzHu8Pts+dU+BK/Te11ENdWO2jo6fYsOFgmr74dA5G6JvJCWMF/
-dUkUPJx8J0KGBzKIp3MftoNNFcf0vjuzfcOKzu7CpJ8FNN/z/Ydk+C8+WMp+FjSc
-U3mxMSOCbYupIh9LWfMu4wJq3b5bBnZgtp9bguzAV/19zI3RSL+bkzhC+T1padrw
-VCJqCbS2bCKNcklTxV3GOHbGEqV8ik9tdSvC94P/oVJJWMg5wPgEhFYyUgiY5yoq
-/zWTcbCPxA7Ynks9pZgL6s6xLftN8UIJK1V26H5HGEE67n6F81ESg/tSyENIkaD/
-z8utjtDkAnvXq9T2X6pSPoSrZJYpcY1o5ctp2XE7CVMfz1qcyE7j15TIJnrEs7h/
-TtGkgtwHS5kVmGh53hQC
-=/OML
------END PGP SIGNATURE-----
+ b/arch/x86/mm/tlb.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
---IhaVjqNYhz9BDJmo--
+diff -puN arch/x86/mm/tlb.c~fix-missed-global-flush-stat arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~fix-missed-global-flush-stat	2014-03-05 16:10:10.171073453 -0800
++++ b/arch/x86/mm/tlb.c	2014-03-05 16:10:10.174073590 -0800
+@@ -164,8 +164,9 @@ unsigned long tlb_single_page_flush_ceil
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
+ {
+-	int need_flush_others_all = 1;
+ 	unsigned long addr;
++	/* do a global flush by default */
++	unsigned long base_pages_to_flush = TLB_FLUSH_ALL;
+ 
+ 	preempt_disable();
+ 	if (current->active_mm != mm)
+@@ -176,16 +177,14 @@ void flush_tlb_mm_range(struct mm_struct
+ 		goto out;
+ 	}
+ 
+-	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
+-		local_flush_tlb();
+-		goto out;
+-	}
++	if ((end != TLB_FLUSH_ALL) && !(vmflag & VM_HUGETLB))
++		base_pages_to_flush = (end - start) >> PAGE_SHIFT;
+ 
+-	if ((end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
++	if (base_pages_to_flush > tlb_single_page_flush_ceiling) {
++		base_pages_to_flush = TLB_FLUSH_ALL;
+ 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
+-		need_flush_others_all = 0;
+ 		/* flush range by one by one 'invlpg' */
+ 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+ 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+@@ -193,7 +192,7 @@ void flush_tlb_mm_range(struct mm_struct
+ 		}
+ 	}
+ out:
+-	if (need_flush_others_all) {
++	if (base_pages_to_flush == TLB_FLUSH_ALL) {
+ 		start = 0UL;
+ 		end = TLB_FLUSH_ALL;
+ 	}
+_
