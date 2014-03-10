@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaCJMLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 08:11:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48475 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975AbaCJMLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 08:11:45 -0400
-Date: Mon, 10 Mar 2014 13:11:30 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        alex.williamson@redhat.com, mtosatti@redhat.com, gleb@kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH 3/7] KVM: x86: Allow the guest to run with dirty debug
- registers
-Message-ID: <20140310121129.GA16023@potion.brq.redhat.com>
-References: <1394192571-11056-1-git-send-email-pbonzini@redhat.com>
- <1394192571-11056-4-git-send-email-pbonzini@redhat.com>
- <20140309182825.GA11078@potion.redhat.com>
- <531CC9EC.1000804@redhat.com>
+	id S1753198AbaCJMOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 08:14:32 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40914 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471AbaCJMOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 08:14:31 -0400
+Date: Mon, 10 Mar 2014 12:14:24 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140310121424.GG28112@sirena.org.uk>
+References: <1394350032.19772.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ukxn79E1+tniTzNx"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <531CC9EC.1000804@redhat.com>
+In-Reply-To: <1394350032.19772.1.camel@phoenix>
+X-Cookie: Oh no, not again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] regulator: max77693: Remove unnecessary **rdev from
+ struct max77693_pmic_dev
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-09 21:07+0100, Paolo Bonzini:
-> Il 09/03/2014 19:28, Radim Krčmář ha scritto:
-> >>>  	/*
-> >>> +	 * Do this here before restoring debug registers on the host.  And
-> >>> +	 * since we do this before handling the vmexit, a DR access vmexit
-> >>> +	 * can (a) read the correct value of the debug registers, (b) set
-> >>> +	 * KVM_DEBUGREG_WONT_EXIT again.
-> >We re-enable intercepts on the next exit for the sake of simplicity?
-> >(Batched accesses make perfect sense, but it seems we don't have to care
-> > about DRs at all, without guest-debug.)
-> 
-> It's not just for the sake of simplicity.  Synchronizing debug
-> registers on entry does have some cost, and it's required for
-> running without debug register intercepts.  You would incur this
-> cost always, since no-guest-debug is actually the common case.
 
-Good point, it's just this case that accesses them often, most guest
-won't use them at all ...
+--ukxn79E1+tniTzNx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> We're well into diminishing returns; Alex timed this patch vs. one
-> that completely ignores MOV DR exits and (to the surprise of both of
-> us) this patch completely restored performance despite still having
-> a few tens of thousands MOV DR exits/second.
-> 
-> In the problematic case, each context switch will do a save and
-> restore of debug registers; that's in total 13 debug register
-> accesses (read 6 registers, write DR7 to disable all registers,
-> write 6 registers including DR7 which enables breakpoints), all very
-> close in time.  It's quite likely that the final DR7 write is very
-> expensive (e.g. it might have to flush the pipeline).  Also, this
-> test case must be very heavy on context switches, and each context
-> switch already incurs a few exits (for example to inject the
-> interrupt that causes it, to read the current time).
+On Sun, Mar 09, 2014 at 03:27:12PM +0800, Axel Lin wrote:
+> Now we are using devm_regulator_register(), so we don't need to allocate *rdev[]
+> array to store return value of devm_regulator_register. Use a *rdev variable is
+> enough for checking return status.
 
-We would save just one exit and there are probably enough non-DR exits
-even in this case to balance it out.
-I've been carried too far away for design.
-(Thanks for the details.)
+This doesn't apply with Krzysztof's recent (and more comprehensive)
+patch - I think it's now redundant though?  If not can you please
+resubmit against current code.
 
-> A different optimization could be to skip the LOAD_DEBUG_CONTROLS
-> vm-entry control if DR7 == host DR7 == 0x400 && MOV DR exits are
-> enabled.  Not sure it's worthwhile though, and there's also the
-> DEBUGCTL MSR to take into account.  Better do these kinds of tweaks
-> if they actually show up in the profile: Alex's testcase shows that
-> when they do, the impact is massive.
+--ukxn79E1+tniTzNx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Yeah, we'd have to implement TRUE-VMX-MSR handling just for two
-load/stores ...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> >>+		kvm_x86_ops->sync_dirty_debug_regs(vcpu);
-> >
-> >Sneaky functionality ... it would be nicer to split 'enable DR
-> >intercepts' into a new kvm op.
-> 
-> Why?  "Disable DR intercepts" is already folded into the handler for
-> MOV DR exits.
+iQIcBAEBAgAGBQJTHaydAAoJELSic+t+oim9tqYP/1efTzV/nu2B4noBmWP7+v8i
+gjOFzTtBVxXf2S4OmT9i4pxAXplrECLEPdYG/kgf1F/pLamR4FYG2sRkag1V2bL/
+mBdoTR5hyL7pZSrypopiiGRc7/9DWDtZhdIv2UOLJMdENTBUpY0YNxsAzM5t2/1N
+3it55WF5z2XaFcpPq3R0qzUKcfcS+E8emViMj+a3ABCX04RQKYwhC5WYIMjY4XlW
+dodmemYRJGw1K3Elw5q2ISEdQQXBXnTBMoFmNuZqPeAXBEBGqWHh6dSuhshD0zBv
+nVrV8iNpJxdhD1APPPVD0TfTF3d06CZvl0BjC8sDNIrCBtytLVeu7E4A3CByoKyX
+PlXomHHjX2yFcBtPJqjfTeIo+pUPMmTp2zy0KdgmpZQsLkL8y0/WFCZegyNPhHda
+u22+K0PRfUUgZbMzkUVAkSu3gNfImQ4fsCr7nt77c455Z8EVM5QABMTBaWZlEAgb
+fyqKQmN7+PmJBBcFWPZhrVrZ+bf0g6Ftv2Ac1G1W5SO/F7a4jQlPVrKbT7R2/neQ
+fRdFPQ9EGvisGY5h3mN2Gete+UWeeRbm9isYViQ6E2wc1RkcqMaUiPSg1/N8YBNX
+O11HNZYDO35YyY7TbfNFtmEZW7zucaTLFipPXaQIKPazif0S+ddRm1X7zgTVSzTi
+GziRWpzU/dOYciTjkdnU
+=paHR
+-----END PGP SIGNATURE-----
 
-It's not obvious from the name that we also enable intercepts again,
-which is more important part, imho.
-(I don't like the folded code much, but considering the alternatives,
- it's a good solution.)
-
-> >And we don't have to modify DR intercepts then, which is probably the
-> >main reason why sync_dirty_debug_regs() does two things.
-> 
-> Another is that indirect calls are relatively expensive and add
-> complexity; in this case they would always be used back-to-back.
-
-True.
-(I could not come up with a good name to this function,
- intercept_debug_registers() does not reveal that we also save them, and
- a longer name would be hard to read without 'and', which looks weird.)
+--ukxn79E1+tniTzNx--
