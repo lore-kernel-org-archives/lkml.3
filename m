@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229AbaCJTSO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:18:14 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:47476 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984AbaCJTSK (ORCPT
+	id S1754316AbaCJTSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:18:50 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51198 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753979AbaCJTRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:18:10 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v6 4/8] of: Reduce indentation in of_graph_get_next_endpoint
-Date: Mon, 10 Mar 2014 20:19:44 +0100
-Message-ID: <1688746.6CaQoSDOni@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1394214054.16309.45.camel@paszta.hi.pengutronix.de>
-References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de> <31687163.hgTkcLrn0Z@avalon> <1394214054.16309.45.camel@paszta.hi.pengutronix.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 10 Mar 2014 15:17:44 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-doc@vger.kernel.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 6/8] ARM: at91/dt: at91sam9x5: remove useless adc properties
+Date: Mon, 10 Mar 2014 20:17:23 +0100
+Message-Id: <1394479045-31852-7-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+Remove the properties that are not used anymore by the at91_adc driver and fix
+the atmel,adc-use-external-triggers property name.
 
-On Friday 07 March 2014 18:40:54 Philipp Zabel wrote:
-> Am Freitag, den 07.03.2014, 01:12 +0100 schrieb Laurent Pinchart:
-> > Hi Philipp,
-> > 
-> > Thank you for the patch.
-> > 
-> > I've submitted a fix for the of_graph_get_next_endpoint() function, but it
-> > hasn't been applied yet due to the patch series that contained it needing
-> > more work.
-> > 
-> > The patch is available at https://patchwork.linuxtv.org/patch/21946/. I
-> > can rebase it on top of this series, but I still wanted to let you know
-> > about it in case you would like to integrate it.
-> 
-> Thank you for the pointer. A pity about the timing, this will mostly
-> revert my indentation patch. I'd be glad if you could rebase on top of
-> the merged series.
-> 
-> While we look at of_graph_get_next_endpoint(), could you explain the
-> reason behind the extra reference count increase on the prev node:
->
-> 	/*
-> 	 * Avoid dropping prev node refcount to 0 when getting the next
-> 	 * child below.
-> 	 */
-> 	of_node_get(prev);
->
-> This unfortunately makes using the function in for_each style macros a
-> hassle. If that part wasn't there and all users that want to keep using
-> prev after the call were expected to increase refcount themselves,
-> we could have a
->
-> #define of_graph_for_each_endpoint(parent, endpoint) \
-> 	for (endpoint = of_graph_get_next_endpoint(parent, NULL); \
-> 	     endpoint != NULL; \
-> 	     endpoint = of_graph_get_next_endpoint(parent, endpoint))
+Also, add #address-cells, #size-cells and a reg for each trigger to comply to
+the ePAPR.
 
-I don't know what the exact design decision was (Sylwester might know), but I 
-suspect it's mostly about historical reasons. I see no reason that would 
-prevent modifying the current behaviour to make a for-each loop easier to 
-implement.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/at91sam9x5.dtsi | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
+diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+index 174219de92fa..8ef774a045d2 100644
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -621,41 +621,42 @@
+ 			};
+ 
+ 			adc0: adc@f804c000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
+ 				compatible = "atmel,at91sam9260-adc";
+ 				reg = <0xf804c000 0x100>;
+ 				interrupts = <19 IRQ_TYPE_LEVEL_HIGH 0>;
+-				atmel,adc-use-external;
++				atmel,adc-use-external-triggers;
+ 				atmel,adc-channels-used = <0xffff>;
+ 				atmel,adc-vref = <3300>;
+-				atmel,adc-num-channels = <12>;
+ 				atmel,adc-startup-time = <40>;
+-				atmel,adc-channel-base = <0x50>;
+-				atmel,adc-drdy-mask = <0x1000000>;
+-				atmel,adc-status-register = <0x30>;
+-				atmel,adc-trigger-register = <0xc0>;
+ 				atmel,adc-res = <8 10>;
+ 				atmel,adc-res-names = "lowres", "highres";
+ 				atmel,adc-use-res = "highres";
+ 
+ 				trigger@0 {
++					reg = <0>;
+ 					trigger-name = "external-rising";
+ 					trigger-value = <0x1>;
+ 					trigger-external;
+ 				};
+ 
+ 				trigger@1 {
++					reg = <1>;
+ 					trigger-name = "external-falling";
+ 					trigger-value = <0x2>;
+ 					trigger-external;
+ 				};
+ 
+ 				trigger@2 {
++					reg = <2>;
+ 					trigger-name = "external-any";
+ 					trigger-value = <0x3>;
+ 					trigger-external;
+ 				};
+ 
+ 				trigger@3 {
++					reg = <3>;
+ 					trigger-name = "continuous";
+ 					trigger-value = <0x6>;
+ 				};
 -- 
-Regards,
-
-Laurent Pinchart
+1.8.3.2
 
