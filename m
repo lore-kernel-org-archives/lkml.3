@@ -1,190 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaCJPmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:42:24 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:41448 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaCJPmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:42:22 -0400
-Date: Mon, 10 Mar 2014 11:44:40 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>
-Subject: another perf_fuzzer hard lockup
-Message-ID: <alpine.DEB.2.10.1403101137050.30293@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1753769AbaCJPqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:46:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752277AbaCJPqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 11:46:01 -0400
+Date: Mon, 10 Mar 2014 11:45:31 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: WANG Chao <chaowang@redhat.com>
+Cc: Muli Ben-Yehuda <muli@cs.technion.ac.il>,
+        "Jon D. Mason" <jdmason@kudzu.us>, "H. Peter Anvin" <hpa@zytor.com>,
+        Baoquan He <bhe@redhat.com>, kexec@lists.infradead.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] x86, calgary: use 8M TCE table size by default
+Message-ID: <20140310154531.GC4352@redhat.com>
+References: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 10, 2014 at 10:52:00PM +0800, WANG Chao wrote:
+> New kexec-tools wants to pass kdump kernel needed memmap via E820
+> directly, instead of memmap=exactmap. This makes saved_max_pfn not
+> be passed down to 2nd kernel. To keep 1st kernel and 2nd kernel using
+> the same TCE table size, Muli suggest to hard code the size to max (8M).
+> 
+> We can't get rid of saved_max_pfn this time, for backward compatibility
+> with old first kernel and new second kernel. However new first kernel
+> and old second kernel can not work unfortunately.
+> 
+> v2->v1:
+> - retain saved_max_pfn so new 2nd kernel can work with old 1st kernel
+>   from Vivek
+> 
+> Signed-off-by: WANG Chao <chaowang@redhat.com>
 
-Triggered by the perf_fuzzer on a core2 machine, 3.14-rc6.
+This patch looks good to me. This will use saved_max_pfn to determine
+table size and retain backward compatibility with old kernel (if user
+uses right kexec cmdline option --pass-memmap).
 
-Hopefully the trace_do_page_fault in the stack trace is incidental and not
-showing that something was missed with the recent page fault tracing
-fixes.
+For others (majority of the cases), both first kernel and second kernel
+will use 8M of calgary table. 8M does sound a lot in terms of memory but
+assumption here is that there might be only some machines with calgary
+hardware and only these will pay the penalty of this increased memory 
+usage. This sounds better than exporting table size to user space.
 
-Vince
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-[ 7321.924284] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[ 7321.928004] IP: [<ffffffff81534f7b>] _raw_spin_lock_irqsave+0x11/0x2d
-[ 7321.928004] PGD 118d2b067 PUD 11952d067 PMD 0
-[ 7321.928004] Oops: 0002 [#1] SMP
-[ 7321.928004] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg mcs7830 usbnet evdev ohci_pci psmouse serio_raw coretemp pcspkr ohci_hcd video wmi i2c_nforce2 acpi_cpufreq button processor thermal_sys sg ehci_pci ehci_hcd sd_mod usbcore usb_common
-[ 7321.928004] CPU: 0 PID: 983 Comm: perf_fuzzer Not tainted 3.14.0-rc6 #36
-[ 7321.928004] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
-[ 7321.928004] task: ffff8801190b47e0 ti: ffff8800c7b28000 task.ti: ffff8800c7b28000
-[ 7321.928004] RIP: 0010:[<ffffffff81534f7b>]  [<ffffffff81534f7b>] _raw_spin_lock_irqsave+0x11/0x2d                                                            
-[ 7321.928004] RSP: 0018:ffff8800c7b29a08  EFLAGS: 00010046
-[ 7321.928004] RAX: 0000000000000046 RBX: ffff88011a592c00 RCX: 0000000000000000
-[ 7321.928004] RDX: 0000000000010000 RSI: ffff88011a592c00 RDI: 0000000000000000
-[ 7321.928004] RBP: ffff8800c7b29a08 R08: ffff88011a592c00 R09: 0000000000000000
-[ 7321.928004] R10: 0000000000000000 R11: ffff88011b280000 R12: ffff88011fc0b940
-[ 7321.928004] R13: 0000000000000000 R14: ffff88011a592d58 R15: 0000000000000000
-[ 7321.928004] FS:  0000000002195840(0063) GS:ffff88011fc00000(0000) knlGS:0000000000000000                                                                     
-[ 7321.928004] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
-[ 7321.928004] CR2: 0000000000000000 CR3: 0000000118dad000 CR4: 00000000000407f0
-[ 7321.928004] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 7321.928004] DR3: 0000000002197000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 7321.928004] Stack:
-[ 7321.928004]  ffff8800c7b29a58 ffffffff810198cc 0000000000000000 0000000000000000                                                                             
-[ 7321.928004]  ffff88011fff8d68 0000000000000000 ffff88011a592c00 ffff88011fc0b940                                                                             
-[ 7321.928004]  0000000000000040 0000000000000000 ffff8800c7b29a88 ffffffff81019a8f                                                                             
-[ 7321.928004] Call Trace:                                                      
-[ 7321.928004]  [<ffffffff810198cc>] __intel_shared_reg_get_constraints+0x5e/0x19c                                                                              
-[ 7321.928004]  [<ffffffff81019a8f>] intel_get_event_constraints+0x85/0x154     
-[ 7321.928004]  [<ffffffff8101434d>] x86_schedule_events+0x54/0x185             
-[ 7321.928004]  [<ffffffff81012de6>] x86_pmu_commit_txn+0x51/0x9a               
-[ 7321.928004]  [<ffffffff810dbb46>] ? __alloc_pages_nodemask+0x174/0x737       
-[ 7321.928004]  [<ffffffff810f3d50>] ? unmap_single_vma+0x605/0x669             
-[ 7321.928004]  [<ffffffff810cd121>] ? event_sched_in+0x11d/0x12d               
-[ 7321.928004]  [<ffffffff810cd1c9>] group_sched_in+0x98/0x147                  
-[ 7321.928004]  [<ffffffff810cd3d6>] ctx_sched_in+0x15e/0x185                   
-[ 7321.928004]  [<ffffffff810cd466>] perf_event_sched_in+0x69/0x72              
-[ 7321.928004]  [<ffffffff810cd537>] __perf_install_in_context+0xc8/0xf1        
-[ 7321.928004]  [<ffffffff810cdd6a>] ? perf_event_task_output+0x13d/0x13d       
-[ 7321.928004]  [<ffffffff810cdda6>] remote_function+0x3c/0x43                  
-[ 7321.928004]  [<ffffffff810954a3>] smp_call_function_single+0x8a/0x101        
-[ 7321.928004]  [<ffffffff810cddf1>] task_function_call+0x44/0x4e               
-[ 7321.928004]  [<ffffffff810cd46f>] ? perf_event_sched_in+0x72/0x72            
-[ 7321.928004]  [<ffffffff810cdf26>] perf_install_in_context+0x81/0xbc          
-[ 7321.928004]  [<ffffffff8153330b>] ? mutex_lock+0x16/0x37                     
-[ 7321.928004]  [<ffffffff810d21f5>] SYSC_perf_event_open+0x647/0x7f5           
-[ 7321.928004]  [<ffffffff810d23ac>] SyS_perf_event_open+0x9/0xb                
-[ 7321.928004]  [<ffffffff8153bf26>] system_call_fastpath+0x1a/0x1f             
-[ 7321.928004] Code: c1 07 89 c2 c1 ea 10 66 39 c2 74 0c 66 8b 07 66 39 d0 74 04 f3 90 eb f4 c9 c3 55 48 89 e5 66 66 66 66 90 9c 58 fa ba 00 00 01 00 <f0> 0f c1 17 89 d1 c1 e9 10 66 39 d1 74 0c 66 8b 17 66 39 ca 74                          
-[ 7321.928004] RIP  [<ffffffff81534f7b>] _raw_spin_lock_irqsave+0x11/0x2d       
-[ 7321.928004]  RSP <ffff8800c7b29a08>                                          
-[ 7321.928004] CR2: 0000000000000000                                            
-[ 7321.928004] ---[ end trace d36f8f2ae570dc66 ]---                             
-[ 7381.931999] INFO: rcu_sched detected stalls on CPUs/tasks: { 0} (detected by 1, t=15002 jiffies, g=55073, c=55072, q=25)                                     
-[ 7381.932000] sending NMI to all CPUs:                                         
-[ 7381.932000] NMI backtrace for cpu 1                                          
-[ 7381.932000] CPU: 1 PID: 1702 Comm: perf_fuzzer Tainted: G      D      3.14.0-rc6 #36                                                                         
-[ 7381.932000] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012                                                            
-[ 7381.932000] task: ffff880119785010 ti: ffff880119306000 task.ti: ffff880119306000                                                                            
-[ 7381.932000] RIP: 0010:[<ffffffff812a7277>]  [<ffffffff812a7277>] __const_udelay+0x1b/0x27                                                                    
-[ 7381.932000] RSP: 0000:ffff88011fc83d98  EFLAGS: 00000803                     
-[ 7381.932000] RAX: 0000000039558400 RBX: 0000000000000001 RCX: 0000000000000003
-[ 7381.932000] RDX: 00000000002658dc RSI: 0000000000000200 RDI: 0000000000418958
-[ 7381.932000] RBP: ffff88011fc83d98 R08: 0000000000000000 R09: 0000000000000008
-[ 7381.932000] R10: 0000000000000000 R11: 0000000000000005 R12: ffff88011fc8d510
-[ 7381.932000] R13: 0000000000000001 R14: ffffffff81a37300 R15: 0000000000000001
-[ 7381.932000] FS:  0000000002195840(0063) GS:ffff88011fc80000(0000) knlGS:0000000000000000                                                                     
-[ 7381.932000] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b                
-[ 7381.932000] CR2: 000000000040b040 CR3: 00000001196d2000 CR4: 00000000000407e0
-[ 7381.932000] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000002197000
-[ 7381.932000] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 7381.932000] Stack:                                                           
-[ 7381.932000]  ffff88011fc83db8 ffffffff8102c1ed 000000000000d720 ffffffff81a37300                                                                             
-[ 7381.932000]  ffff88011fc83e18 ffffffff81087ee3 0000000000000000 0000000000000019                                                                             
-[ 7381.932000]  ffffffff81a9eb60 0000000000000083 ffff88011fc83e08 ffff880119785010                                                                             
-[ 7381.932000] Call Trace:                                                      
-[ 7381.932000]  <IRQ>                                                           
-[ 7381.932000]  [<ffffffff8102c1ed>] arch_trigger_all_cpu_backtrace+0x79/0x8d   
-[ 7381.932000]  [<ffffffff81087ee3>] rcu_check_callbacks+0x462/0x5dd            
-[ 7381.932000]  [<ffffffff8104a14c>] update_process_times+0x41/0x6a             
-[ 7381.932000]  [<ffffffff81090ebd>] tick_sched_handle+0x4a/0x59                
-[ 7381.932000]  [<ffffffff8109108e>] tick_sched_timer+0x5d/0x7c                 
-[ 7381.932000]  [<ffffffff8105e5e4>] __run_hrtimer+0xba/0x145                   
-[ 7381.932000]  [<ffffffff81091031>] ? tick_nohz_handler+0xb0/0xb0              
-[ 7381.932000]  [<ffffffff8105e8b9>] hrtimer_interrupt+0xd5/0x1c3               
-[ 7381.932000]  [<ffffffff8102b2a3>] local_apic_timer_interrupt+0x58/0x5d       
-[ 7381.932000]  [<ffffffff8102bc5f>] smp_trace_apic_timer_interrupt+0x53/0x91   
-[ 7381.932000]  [<ffffffff8153cc3a>] trace_apic_timer_interrupt+0x6a/0x70       
-[ 7381.932000]  <EOI>                                                           
-[ 7381.932000] Code: 48 89 e5 66 66 66 66 90 ff 15 ee 8f 7b 00 c9 c3 55 48 8d 04 bd 00 00 00 00 65 48 8b 14 25 e0 22 01 00 48 89 e5 48 6b d2 3e f7 e2 <48> 8d 7a 01 ff 15 c7 8f 7b 00 c9 c3 55 48 89 e5 66 66 66 66 90                          
-[ 7322.969219] NMI backtrace for cpu 0                                          
-[ 7381.932000] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 692.154 msecs                                                   
-[ 7322.969219] CPU: 0 PID: 983 Comm: perf_fuzzer Tainted: G      D      3.14.0-rc6 #36                                                                          
-[ 7322.969219] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012                                                            
-[ 7322.969219] task: ffff8801190b47e0 ti: ffff8800c7b28000 task.ti: ffff8800c7b28000                                                                            
-[ 7322.969219] RIP: 0010:[<ffffffff81534ff3>]  [<ffffffff81534ff3>] _raw_spin_lock+0x26/0x2a                                                                    
-[ 7322.969219] RSP: 0018:ffff88011fc03e48  EFLAGS: 00000097                     
-[ 7322.969219] RAX: 000000006f8f6f8e RBX: ffff88011a2a92c0 RCX: ffff88011fc03e98
-[ 7322.969219] RDX: 0000000000006f8f RSI: ffff88011a2a92c0 RDI: ffff88011fc15b2c
-[ 7322.969219] RBP: ffff88011fc03e48 R08: ffff88011fc0d010 R09: 0000000000000104
-[ 7322.969219] R10: ffff88011fc12ae0 R11: ffff88011fc0d010 R12: ffff88011a2a92c0
-[ 7322.969219] R13: ffff88011fc15c08 R14: 0000000000000000 R15: ffff88011fc0d0c8
-[ 7322.969219] FS:  0000000002195840(0063) GS:ffff88011fc00000(0000) knlGS:0000000000000000                                                                     
-[ 7322.969219] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b                
-[ 7322.969219] CR2: 0000000000000000 CR3: 0000000118dad000 CR4: 00000000000407f0
-[ 7322.969219] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 7322.969219] DR3: 0000000002197000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 7322.969219] Stack:                                                           
-[ 7322.969219]  ffff88011fc03e68 ffffffff810cb8df ffff88011fc03e98 ffff88011fc15b20                                                                             
-[ 7322.969219]  ffff88011fc03e98 ffffffff810cd5da ffff88011fc15c08 ffff88011fc0d010                                                                             
-[ 7322.969219]  ffff88011fc0d050 ffff88011fc03f28 ffff88011fc03ee8 ffffffff8105e5e4                                                                             
-[ 7322.969219] Call Trace:                                                      
-[ 7322.969219]  <IRQ>                                                           
-[ 7322.969219]  [<ffffffff810cb8df>] perf_ctx_lock+0x15/0x27                    
-[ 7322.969219]  [<ffffffff810cd5da>] perf_cpu_hrtimer_handler+0x7a/0x1b0        
-[ 7322.969219]  [<ffffffff8105e5e4>] __run_hrtimer+0xba/0x145                   
-[ 7322.969219]  [<ffffffff810cd560>] ? __perf_install_in_context+0xf1/0xf1      
-[ 7322.969219]  [<ffffffff8105e8b9>] hrtimer_interrupt+0xd5/0x1c3               
-[ 7322.969219]  [<ffffffff8102b2a3>] local_apic_timer_interrupt+0x58/0x5d       
-[ 7322.969219]  [<ffffffff8102bc5f>] smp_trace_apic_timer_interrupt+0x53/0x91   
-[ 7322.969219]  [<ffffffff8153cc3a>] trace_apic_timer_interrupt+0x6a/0x70       
-[ 7322.969219]  <EOI>                                                           
-[ 7322.969219]  [<ffffffff8105f36d>] ? blocking_notifier_call_chain+0x14/0x16   
-[ 7322.969219]  [<ffffffff8109be4f>] ? acct_collect+0x175/0x17d                 
-[ 7322.969219]  [<ffffffff81041a14>] do_exit+0x22f/0x947                        
-[ 7322.969219]  [<ffffffff81535fd2>] oops_end+0xb5/0xbd                         
-[ 7322.969219]  [<ffffffff81034a30>] no_context+0x26d/0x27c                     
-[ 7322.969219]  [<ffffffff81034bfc>] __bad_area_nosemaphore+0x1bd/0x1dd         
-[ 7322.969219]  [<ffffffff81034c78>] bad_area+0x47/0x4e                         
-[ 7322.969219]  [<ffffffff8153831d>] __do_page_fault+0x25b/0x3ed                
-[ 7322.969219]  [<ffffffff810cd3d6>] ? ctx_sched_in+0x15e/0x185                 
-[ 7322.969219]  [<ffffffff810cd466>] ? perf_event_sched_in+0x69/0x72            
-[ 7322.969219]  [<ffffffff81538539>] trace_do_page_fault+0x8a/0x93              
-[ 7322.969219]  [<ffffffff81535572>] trace_page_fault+0x22/0x30                 
-[ 7322.969219]  [<ffffffff81534f7b>] ? _raw_spin_lock_irqsave+0x11/0x2d         
-[ 7322.969219]  [<ffffffff810198cc>] __intel_shared_reg_get_constraints+0x5e/0x19c                                                                              
-[ 7322.969219]  [<ffffffff81019a8f>] intel_get_event_constraints+0x85/0x154     
-[ 7322.969219]  [<ffffffff8101434d>] x86_schedule_events+0x54/0x185             
-[ 7322.969219]  [<ffffffff81012de6>] x86_pmu_commit_txn+0x51/0x9a               
-[ 7322.969219]  [<ffffffff810dbb46>] ? __alloc_pages_nodemask+0x174/0x737       
-[ 7322.969219]  [<ffffffff810f3d50>] ? unmap_single_vma+0x605/0x669             
-[ 7322.969219]  [<ffffffff810cd121>] ? event_sched_in+0x11d/0x12d               
-[ 7322.969219]  [<ffffffff810cd1c9>] group_sched_in+0x98/0x147                  
-[ 7322.969219]  [<ffffffff810cd3d6>] ctx_sched_in+0x15e/0x185                   
-[ 7322.969219]  [<ffffffff810cd466>] perf_event_sched_in+0x69/0x72              
-[ 7322.969219]  [<ffffffff810cd537>] __perf_install_in_context+0xc8/0xf1        
-[ 7322.969219]  [<ffffffff810cdd6a>] ? perf_event_task_output+0x13d/0x13d       
-[ 7322.969219]  [<ffffffff810cdda6>] remote_function+0x3c/0x43                  
-[ 7322.969219]  [<ffffffff810954a3>] smp_call_function_single+0x8a/0x101        
-[ 7322.969219]  [<ffffffff810cddf1>] task_function_call+0x44/0x4e               
-[ 7322.969219]  [<ffffffff810cd46f>] ? perf_event_sched_in+0x72/0x72            
-[ 7322.969219]  [<ffffffff810cdf26>] perf_install_in_context+0x81/0xbc          
-[ 7322.969219]  [<ffffffff8153330b>] ? mutex_lock+0x16/0x37                     
-[ 7322.969219]  [<ffffffff810d21f5>] SYSC_perf_event_open+0x647/0x7f5           
-[ 7322.969219]  [<ffffffff810d23ac>] SyS_perf_event_open+0x9/0xb                
-[ 7322.969219]  [<ffffffff8153bf26>] system_call_fastpath+0x1a/0x1f             
-[ 7322.969219] Code: 90 eb f4 c9 c3 55 48 89 e5 66 66 66 66 90 b8 00 00 01 00 f0 0f c1 07 89 c2 c1 ea 10 66 39 c2 74 0c 66 8b 07 66 39 d0 74 04 f3 90 <eb> f4 c9 c3 55 48 89 e5 41 56 41 55 41 54 53 66 66 66 66 90 48                          
-[ 7322.969219] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 1971.954 msecs                                                  
+Thanks
+Vivek
 
-
+> ---
+>  arch/x86/kernel/pci-calgary_64.c | 31 +++++++++++++++++++------------
+>  1 file changed, 19 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+> index 299d493..0497f71 100644
+> --- a/arch/x86/kernel/pci-calgary_64.c
+> +++ b/arch/x86/kernel/pci-calgary_64.c
+> @@ -1207,23 +1207,31 @@ error:
+>  	return ret;
+>  }
+>  
+> -static inline int __init determine_tce_table_size(u64 ram)
+> +static inline int __init determine_tce_table_size(void)
+>  {
+>  	int ret;
+>  
+>  	if (specified_table_size != TCE_TABLE_SIZE_UNSPECIFIED)
+>  		return specified_table_size;
+>  
+> -	/*
+> -	 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
+> -	 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
+> -	 * larger table size has twice as many entries, so shift the
+> -	 * max ram address by 13 to divide by 8K and then look at the
+> -	 * order of the result to choose between 0-7.
+> -	 */
+> -	ret = get_order(ram >> 13);
+> -	if (ret > TCE_TABLE_SIZE_8M)
+> +	if (is_kdump_kernel() && saved_max_pfn) {
+> +		/*
+> +		 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
+> +		 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
+> +		 * larger table size has twice as many entries, so shift the
+> +		 * max ram address by 13 to divide by 8K and then look at the
+> +		 * order of the result to choose between 0-7.
+> +		 */
+> +		ret = get_order((saved_max_pfn * PAGE_SIZE) >> 13);
+> +		if (ret > TCE_TABLE_SIZE_8M)
+> +			ret = TCE_TABLE_SIZE_8M;
+> +	} else {
+> +		/*
+> +		 * Use 8M by default (suggested by Muli) if it's not
+> +		 * kdump kernel and saved_max_pfn isn't set.
+> +		 */
+>  		ret = TCE_TABLE_SIZE_8M;
+> +	}
+>  
+>  	return ret;
+>  }
+> @@ -1418,8 +1426,7 @@ int __init detect_calgary(void)
+>  		return -ENOMEM;
+>  	}
+>  
+> -	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
+> -					saved_max_pfn : max_pfn) * PAGE_SIZE);
+> +	specified_table_size = determine_tce_table_size();
+>  
+>  	for (bus = 0; bus < MAX_PHB_BUS_NUM; bus++) {
+>  		struct calgary_bus_info *info = &bus_info[bus];
+> -- 
+> 1.8.5.3
