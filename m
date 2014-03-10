@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784AbaCJQ3H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 12:29:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60381 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753362AbaCJQ3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 12:29:04 -0400
-Date: Mon, 10 Mar 2014 18:29:01 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: jbenc@redhat.com, netdev@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Subject: [PATCH 0/5] skbuff: fix skb_segment with zero copy skbs
-Message-ID: <1394468807-25980-1-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+	id S1754018AbaCJQ3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 12:29:51 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42836 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858AbaCJQ3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 12:29:46 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
+Date: Mon, 10 Mar 2014 16:29:37 +0000
+Message-Id: <1394468977-23149-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.9.0
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] mfd: wm5102: Mark register 0x19 readable
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a bug in skb_segment where it moves frags
-between skbs without orphaning them.
-This causes userspace to assume it's safe to
-reuse the buffer, and receiver gets corrupted data.
-This further might leak information from the
-transmitter on the wire.
+From: Mark Brown <broonie@linaro.org>
 
-To fix track which skb does a copied frag belong
-to, and orphan frags when copying them.
+During init the core checks if the wm5102 has finished starting by reading
+register 0x19 and looking at the value. This read always fails since this
+is not a readable register, mark it as being one.
 
-As we are tracking multiple skbs here, using
-short names (skb,nskb,fskb,skb_frag,frag) becomes confusing.
-So before adding another one, I refactor these names
-slightly.
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/mfd/wm5102-tables.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Patch is split out to make it easier to
-verify that all trasformations are trivially correct.
-
-The problem was observed in the field,
-so I think that the patch is necessary on stable
-as well.
-
-Michael S. Tsirkin (5):
-  skbuff: skb_segment: s/frag/nskb_frag/
-  skbuff: skb_segment: s/skb_frag/frag/
-  skbuff: skb_segment: s/skb/head_skb/
-  skbuff: skb_segment: s/fskb/list_skb/
-  skbuff: skb_segment: orphan frags before copying
-
- net/core/skbuff.c | 100 +++++++++++++++++++++++++++++-------------------------
- 1 file changed, 54 insertions(+), 46 deletions(-)
-
+diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+index f4668d39e542..07f024fd4ded 100644
+--- a/drivers/mfd/wm5102-tables.c
++++ b/drivers/mfd/wm5102-tables.c
+@@ -1016,6 +1016,7 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
+ 	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
+ 	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
++	case 0x19:
+ 	case ARIZONA_WRITE_SEQUENCER_PROM:
+ 	case ARIZONA_TONE_GENERATOR_1:
+ 	case ARIZONA_TONE_GENERATOR_2:
 -- 
-MST
+1.9.0
 
