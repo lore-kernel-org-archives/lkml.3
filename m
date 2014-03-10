@@ -1,162 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277AbaCJG3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 02:29:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:44169 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236AbaCJG3F convert rfc822-to-8bit (ORCPT
+	id S1752204AbaCJGf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 02:35:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33735 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaCJGfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 02:29:05 -0400
-X-IronPort-AV: E=Sophos;i="4.97,622,1389715200"; 
-   d="scan'208";a="9670275"
-Message-ID: <531D5B84.6080203@cn.fujitsu.com>
-Date: Mon, 10 Mar 2014 14:28:20 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
+	Mon, 10 Mar 2014 02:35:24 -0400
+Message-ID: <531D5D0E.8000605@ti.com>
+Date: Mon, 10 Mar 2014 08:34:54 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Gioh Kim <gioh.kim@lge.com>, "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Joonsoo Kim'" <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, chanho.min@lge.com,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH][RFC] mm: warning message for vm_map_ram about vm size
-References: <001a01cf3c1d$310716a0$931543e0$@lge.com> <20140310054743.GH14370@bbox>
-In-Reply-To: <20140310054743.GH14370@bbox>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/10 14:26:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/10 14:26:21
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Grant Likely <grant.likely@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [PATCH v4 1/3] [media] of: move graph helpers from drivers/media/v4l2-core
+ to drivers/of
+References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de> < 1393340304-19005-2-git-send-email-p.zabel@pengutronix.de> <20140226113729. A9D5AC40A89@trevor.secretlab.ca> <1393428297.3248.92.camel@paszta.hi. pengutronix.de> <20140307171804.EF245C40A32@trevor.secretlab.ca> <531AF4ED. 5020608@ti.com> <20140308122321.9D433C40612@trevor.secretlab.ca>
+In-Reply-To: <20140308122321.9D433C40612@trevor.secretlab.ca>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="geFLiFodre9MAPFuUJV74UQT9Qala7crh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2014 01:47 PM, Minchan Kim wrote:
-> Hi Giho,
-> 
-> On Mon, Mar 10, 2014 at 01:57:07PM +0900, Gioh Kim wrote:
->> Hi,
->>
->> I have a failure of allocation of virtual memory on ARMv7 based platform.
->>
->> I called alloc_page()/vm_map_ram() for allocation/mapping pages.
->> Virtual memory space exhausting problem occurred.
->> I checked virtual memory space and found that there are too many 4MB chunks.
->>
->> I thought that if just one page in the 4MB chunk lives long, 
->> the entire chunk cannot be freed. Therefore new chunk is created again and again.
->>
->> In my opinion, the vm_map_ram() function should be used for temporary mapping
->> and/or short term memory mapping. Otherwise virtual memory is wasted.
->>
->> I am not sure if my opinion is correct. If it is, please add some warning message
->> about the vm_map_ram().
->>
->>
->>
->> ---8<---
->>
->> Subject: [PATCH] mm: warning comment for vm_map_ram
->>
->> vm_map_ram can occur locking of virtual memory space
->> because if only one page lives long in one vmap_block,
->> it takes 4MB (1024-times more than one page) space.
-> 
-> For clarification, vm_map_ram has fragment problem because it
-> couldn't purge a chunk(ie, 4M address space) if there is a pinning
-> object in that addresss space so it could consume all VMALLOC
-> address space easily.
-> 
-> We can fix the fragementaion problem with using vmap instead of
-> vm_map_ram but it wouldn't a good solution because vmap is much
-> slower than vm_map_ram for VMAP_MAX_ALLOC below. In my x86 machine,
-> vm_map_ram is 5 times faster than vmap.
-> 
-> AFAICR, some proprietary GPU driver uses that function heavily so
-> performance would be really important so I want to stick to use
-> vm_map_ram.
-> 
-> Another option is that caller should separate long-life and short-life
-> object and use vmap for long-life but vm_map_ram for short-life.
-> But it's not a good solution because it's hard for allocator layer
-> to detect it that how customer lives with the object.
+--geFLiFodre9MAPFuUJV74UQT9Qala7crh
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Indeed. So at least the note comment should be added.
+On 08/03/14 14:23, Grant Likely wrote:
 
-> 
-> So I thought to fix that problem with revert [1] and adding more
-> logic to solve fragmentation problem and make bitmap search
-> operation more efficient by caching the hole. It might handle
-> fragmentation at the moment but it would make more IPI storm for
-> TLB flushing as time goes by so that it would mitigate API itself
-> so using for only temporal object is too limited but it's best at the
-> moment. I am supporting your opinion.
-> 
-> Let's add some notice message to user.
-> 
-> [1] [3fcd76e8028, mm/vmalloc.c: remove dead code in vb_alloc]
-> 
+>>> That's fine. In that case the driver would specifically require the
+>>> endpoint to be that one node.... although the above looks a little we=
+ird
 >>
->> Change-Id: I6f5919848cf03788b5846b7d850d66e4d93ac39a
->> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
->> ---
->>  mm/vmalloc.c |    4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
->> index 0fdf968..2de1d1b 100644
->> --- a/mm/vmalloc.c
->> +++ b/mm/vmalloc.c
->> @@ -1083,6 +1083,10 @@ EXPORT_SYMBOL(vm_unmap_ram);
->>   * @node: prefer to allocate data structures on this node
->>   * @prot: memory protection to use. PAGE_KERNEL for regular RAM
->>   *
->> + * This function should be used for TEMPORARY mapping. If just one page lives i
->> + * long, it would occupy 4MB vm size permamently. 100 pages (just 400KB) could
->> + * takes 400MB with bad luck.
->> + *
-> 
->     If you use this function for below VMAP_MAX_ALLOC pages, it could be faster
->     than vmap so it's good but if you mix long-life and short-life object
->     with vm_map_ram, it could consume lots of address space by fragmentation(
->     expecially, 32bit machine) so you could see failure in the end.
->     So, please use this function for short-life object.
+>> The driver can't require that. It's up to the board designer to decide=
 
-Minchan's is better. So I suggest Giho post another patch with this comment
-and take what Minchan said above to the commit log. And you can feel free to
-add:
+>> how many endpoints are used. A driver may say that it has a single inp=
+ut
+>> port. But the number of endpoints for that port is up to the use case.=
 
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+>=20
+> Come now, when you're writing a driver you know if it will ever be
+> possible to have more than one port. If that is the case then the
+> binding should be specifically laid out for that. If there will never b=
+e
+> multiple ports and the binding is unambiguous, then, and only then,
+> should the shortcut be used, and only the shortcut should be accepted.
 
-Thanks.
+I was talking about endpoints, not ports. There's no unclarity about the
+number of ports, that comes directly from the hardware for that specific
+component. The number of endpoints, however, come from the board
+hardware. The driver writer cannot know that.
 
-> 
->>   * Returns: a pointer to the address that has been mapped, or %NULL on failure
->>   */
->>  void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t prot)
->> --
->> 1.7.9.5
+>>> to me. I would recommend that if there are other non-port child nodes=
+
+>>> then the ports should still be encapsulated by a ports node.  The dev=
+ice
+>>> binding should not be ambiguous about which nodes are ports.
 >>
->> Gioh Kim / 김 기 오
->> Research Engineer
->> Advanced OS Technology Team
->> Software Platform R&D Lab.
->> Mobile: 82-10-7322-5548  
->> E-mail: gioh.kim@lge.com 
->> 19, Yangjae-daero 11gil
->> Seocho-gu, Seoul 137-130, Korea
->>
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+>> Hmm, ambiguous in what way?
+>=20
+> Parsing the binding now consists of a ladder of 'ifs' that gives three
+> distinct different behaviours for no benefit. You don't want that in
+
+It considerably lessens the amount of text in the DT for many use cases,
+making it easier to write and maintain the dts files.
+
+> bindings because it makes it more difficult to get the parsing right in=
+
+> the first place, and to make sure that all users parse it in the same
+> way (Linux, U-Boot, BSD, etc). Bindings should be as absolutely simple
+> as possible.
+
+Well, yes, I agree there. This is not the simplest of bindings. I'd be
+more than happy if we would come up with simpler version of this, which
+would still allow us to have the same descriptive power.
+
+> Just to be clear, I have no problem with having the option in the
+> pattern, but the driver needs to be specific about what layout it
+> expects.
+
+If we forget the shortened endpoint format, I think it can be quite
+specific.
+
+A device has either one port, in which case it should require the
+'ports' node to be omitted, or the device has more than one port, in
+which case it should require 'ports' node.
+
+Note that the original v4l2 binding doc says that 'ports' is always
+optional.
+
+ Tomi
 
 
--- 
-Thanks.
-Zhang Yanfei
+
+--geFLiFodre9MAPFuUJV74UQT9Qala7crh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTHV0OAAoJEPo9qoy8lh71HDgQAKM2fQOi/eKLuN2FOb5ogNqK
+I4aWC5M4WkeBaba5U2g0lPESu2g0x9hrOvWQOFgd/GpKctRZI1DmB4Rc+rSAv/UN
+0Cbzm+KB+RnGNfjaHmEzBNQDcv+a20I/jCLDWOcwJIm5kSW2gByBXSdsyXHuJpYP
+uMbbZa3Yql1+FF3Y+5FIf5NpFpVlrXI2tMTPHZw/5gAwFSe2laFIcBslRAsz8wwL
+4n3CkpJayQJSUG26wNsIdJnceCZ+QHEAWSSYXxyQCZ4rDG2x6+czUX4Dq3Jd46V+
+F6Hx2tuQIBZZsiZVLVDbCJvnAcT60WwvA0F8Vzd5FCl+Mn8GA4GXXot22HhBLHd2
+roUaSbMtd1iV51AfEw9d1St/QRKD0aiVL6xabAtSHvBUIuk2ICFUoOviG82Rl0cS
+JtNVcCjbE9Q/mXxoiXWDgyGVbaFjKU5e6CxiBT6Xf6zJOV5w6NRgw3IsC8ITLe+F
+RdSLKYCCr1+u31njpuZ37jST+MtkNr1UI9ocCQHT1SncYDFrHNbxabTfwN/f77S0
+gDADeDi6Y5LKlv8tnZLXp70gQuY/+BJonvyIDZkLMcUv/0n9771yWD0IFPtYl1kK
+bByZnSSuPPAy8zkwRRr2AOybasaLQ7xtVm/qouS+ydoAq3Rx8z/TZxVbJUDGMbik
+pbR/OIiW3ZDUpIjWk2+d
+=2Hm0
+-----END PGP SIGNATURE-----
+
+--geFLiFodre9MAPFuUJV74UQT9Qala7crh--
