@@ -1,82 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103AbaCJKjx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 06:39:53 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:46052 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105AbaCJKjv (ORCPT
+	id S1753249AbaCJKkQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 06:40:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43967 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198AbaCJKkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 06:39:51 -0400
+	Mon, 10 Mar 2014 06:40:12 -0400
+Date: Mon, 10 Mar 2014 10:40:07 +0000
+From: =?iso-8859-1?Q?Lu=EDs?= Henriques <luis.henriques@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Tony Breeds <tony@bakeyournoodle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 3.4 25/99] powerpc/le: Ensure that the stop-self RTAS
+ token is handled correctly
+Message-ID: <20140310104007.GB2742@hercules>
+References: <20140308010611.468206150@linuxfoundation.org>
+ <20140308010612.425643961@linuxfoundation.org>
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <CAKMK7uH8WnsoPVEHhARLHao3XS6wVT-=3aUU0BNrxTQBT5=qXA@mail.gmail.com>
-References: <20140224160628.GU3852@intel.com>
-	<1394304546-19433-1-git-send-email-sagar.a.kamble@intel.com>
-	<CADnq5_P_j66y2j3v8r9jHOffhfz3L3_fQpnP-OFdfOeLEWqs8A@mail.gmail.com>
-	<1394305472.18918.1.camel@sagar-desktop>
-	<1394305669.18918.3.camel@sagar-desktop>
-	<20140310092919.GG20302@nuc-i3427.alporthouse.com>
-	<CAKMK7uEFpkRs5euH_un=3MEstwO2PMwk0RAOhP-2+cgfMK1sgA@mail.gmail.com>
-	<20140310100425.GH20302@nuc-i3427.alporthouse.com>
-	<CAKMK7uH8WnsoPVEHhARLHao3XS6wVT-=3aUU0BNrxTQBT5=qXA@mail.gmail.com>
-Date: Mon, 10 Mar 2014 11:39:51 +0100
-Message-ID: <CAKMK7uE-p_fEjLBjBA-gmvyOYWB=kh21dmWHkaO7GmNgCxh1qQ@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH v3 1/1] drm/i915: Enabling 128x128 and 256x256
- ARGB Cursor Support
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Sagar Arun Kamble <sagar.a.kamble@intel.com>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140308010612.425643961@linuxfoundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 11:07 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> On Mon, Mar 10, 2014 at 11:04 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->>> > The cap exposes the max cursor size. Knowing our hardware we can infer
->>> > that pot sizes from 64 to max are supported, but it would be better if
->>> > we did expose that information through the cap as well.
->>>
->>> I think the right approach here is to expose this through the
->>> cursor-as-real-plane interface, which kinda has this already. On top
->>> of that we can then add a few fourcc enumerations of the fixed rgba
->>> cursor layouts like 64x64, 128x128, ... This helps if the plane is a
->>> general one with very high limits, but also with special support for
->>> cursor formats.
->>>
->>> If anyone wants to go crazy we could then also add new fourccs for all
->>> the other cursor layouts - atm only rgba with fixed dimensions can be
->>> support with the current cursor ioctl.
->>>
->>> So reviewing the overall situation I actually _don't_ want a new
->>> cap/ioctl/prop here just for now. As long as we need to go with intel
->>> specific hacks userspace might as well probe things manually and act
->>> upon the -EINVAL.
->>
->> Adding the cap allows existing userspace to dtrt...
->
-> 1. Move cursor off-screen.
-> 2. Check desired cursor layout with set_cursor.
-> 3. Pick real cursor, set it.
->
-> Or
->
-> 1. Use set_cursor on disabled crtc.
->
-> Both aren't pretty, but that ugly should help to move
-> cursors-as-real-planes forward ;-)
+On Fri, Mar 07, 2014 at 05:07:21PM -0800, Greg Kroah-Hartman wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
+> 
 
-I stand corrected, there's now a cursor size cap in the drm-next
-branch (which is included in -nightly), so we need support this and
-also make sure it works correctly in the igt.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+As per Tony request, I've dropped this patch from the 3.5 kernel.  Looks
+like it is applicable to kernels >= 3.10, so I guess you can drop it from
+3.4 as well.
+
+Cheers,
+--
+Luís
+
+> ------------------
+> 
+> From: Tony Breeds <tony@bakeyournoodle.com>
+> 
+> commit 41dd03a94c7d408d2ef32530545097f7d1befe5c upstream.
+> 
+> Currently we're storing a host endian RTAS token in
+> rtas_stop_self_args.token.  We then pass that directly to rtas.  This is
+> fine on big endian however on little endian the token is not what we
+> expect.
+> 
+> This will typically result in hitting:
+> 	panic("Alas, I survived.\n");
+> 
+> To fix this we always use the stop-self token in host order and always
+> convert it to be32 before passing this to rtas.
+> 
+> Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  arch/powerpc/platforms/pseries/hotplug-cpu.c |   22 +++++++++++-----------
+>  1 file changed, 11 insertions(+), 11 deletions(-)
+> 
+> --- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
+> +++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
+> @@ -34,12 +34,7 @@
+>  #include "offline_states.h"
+>  
+>  /* This version can't take the spinlock, because it never returns */
+> -static struct rtas_args rtas_stop_self_args = {
+> -	.token = RTAS_UNKNOWN_SERVICE,
+> -	.nargs = 0,
+> -	.nret = 1,
+> -	.rets = &rtas_stop_self_args.args[0],
+> -};
+> +static int rtas_stop_self_token = RTAS_UNKNOWN_SERVICE;
+>  
+>  static DEFINE_PER_CPU(enum cpu_state_vals, preferred_offline_state) =
+>  							CPU_STATE_OFFLINE;
+> @@ -92,15 +87,20 @@ void set_default_offline_state(int cpu)
+>  
+>  static void rtas_stop_self(void)
+>  {
+> -	struct rtas_args *args = &rtas_stop_self_args;
+> +	struct rtas_args args = {
+> +		.token = cpu_to_be32(rtas_stop_self_token),
+> +		.nargs = 0,
+> +		.nret = 1,
+> +		.rets = &args.args[0],
+> +	};
+>  
+>  	local_irq_disable();
+>  
+> -	BUG_ON(args->token == RTAS_UNKNOWN_SERVICE);
+> +	BUG_ON(rtas_stop_self_token == RTAS_UNKNOWN_SERVICE);
+>  
+>  	printk("cpu %u (hwid %u) Ready to die...\n",
+>  	       smp_processor_id(), hard_smp_processor_id());
+> -	enter_rtas(__pa(args));
+> +	enter_rtas(__pa(&args));
+>  
+>  	panic("Alas, I survived.\n");
+>  }
+> @@ -383,10 +383,10 @@ static int __init pseries_cpu_hotplug_in
+>  		}
+>  	}
+>  
+> -	rtas_stop_self_args.token = rtas_token("stop-self");
+> +	rtas_stop_self_token = rtas_token("stop-self");
+>  	qcss_tok = rtas_token("query-cpu-stopped-state");
+>  
+> -	if (rtas_stop_self_args.token == RTAS_UNKNOWN_SERVICE ||
+> +	if (rtas_stop_self_token == RTAS_UNKNOWN_SERVICE ||
+>  			qcss_tok == RTAS_UNKNOWN_SERVICE) {
+>  		printk(KERN_INFO "CPU Hotplug not supported by firmware "
+>  				"- disabling.\n");
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
