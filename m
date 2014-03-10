@@ -1,105 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024AbaCJCwC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 22:52:02 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52210 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752697AbaCJCvn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 22:51:43 -0400
-Message-ID: <1394419893.15968.88.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] net: phy: fix uninitalized WOL parameters in
- phy_ethtool_get_wol
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 10 Mar 2014 02:51:33 +0000
-In-Reply-To: <1394413270-7169-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1394413270-7169-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-M2iU1wxOH00rdU/TUKFB"
-X-Mailer: Evolution 3.8.5-2+b3 
+	id S1753138AbaCJCwq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 22:52:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37228 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752771AbaCJCwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 22:52:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,621,1389772800"; 
+   d="scan'208";a="469348330"
+Message-ID: <1394419468.10554.20.camel@rzhang1-mobl4>
+Subject: Re: [RFC PATCH 6/8] ACPI: use platform bus as the default bus for
+ _HID enumeration
+From: Zhang Rui <rui.zhang@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
+In-Reply-To: <6354388.qLqPjcP6yZ@vostro.rjw.lan>
+References: <1393405874-3266-1-git-send-email-rui.zhang@intel.com>
+	 <1393405874-3266-7-git-send-email-rui.zhang@intel.com>
+	 <1394380237.9269.31.camel@rzhang1-mobl4>
+	 <6354388.qLqPjcP6yZ@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Mar 2014 10:44:28 +0800
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.245
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2014-03-09 at 19:04 +0100, Rafael J. Wysocki wrote:
+> On Sunday, March 09, 2014 11:50:37 PM Zhang Rui wrote:
+> > On Wed, 2014-02-26 at 17:11 +0800, Zhang Rui wrote:
+> > > Because of the growing demand for enumerating ACPI devices to platform bus,
+> > > this patch changes the code to enumerate ACPI devices with _HID/_CID to
+> > > platform bus by default, unless the device already has a scan handler attached.
+> > > 
+> > > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> > > ---
+> > >  drivers/acpi/acpi_platform.c |   28 ----------------------------
+> > >  drivers/acpi/scan.c          |   12 ++++++------
+> > >  2 files changed, 6 insertions(+), 34 deletions(-)
+> > > 
+> > > diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
+> > > index dbfe49e..33376a9 100644
+> > > --- a/drivers/acpi/acpi_platform.c
+> > > +++ b/drivers/acpi/acpi_platform.c
+> > > @@ -22,24 +22,6 @@
+> > >  
+> > >  ACPI_MODULE_NAME("platform");
+> > >  
+> > > -/*
+> > > - * The following ACPI IDs are known to be suitable for representing as
+> > > - * platform devices.
+> > > - */
+> > > -static const struct acpi_device_id acpi_platform_device_ids[] = {
+> > > -
+> > > -	{ "PNP0D40" },
+> > > -	{ "ACPI0003" },
+> > > -	{ "VPC2004" },
+> > > -	{ "BCM4752" },
+> > > -
+> > > -	/* Intel Smart Sound Technology */
+> > > -	{ "INT33C8" },
+> > > -	{ "80860F28" },
+> > > -
+> > > -	{ }
+> > > -};
+> > > -
+> > >  /**
+> > >   * acpi_create_platform_device - Create platform device for ACPI device node
+> > >   * @adev: ACPI device node to create a platform device for.
+> > > @@ -125,13 +107,3 @@ int acpi_create_platform_device(struct acpi_device *adev,
+> > >  	kfree(resources);
+> > >  	return 1;
+> > >  }
+> > > -
+> > > -static struct acpi_scan_handler platform_handler = {
+> > > -	.ids = acpi_platform_device_ids,
+> > > -	.attach = acpi_create_platform_device,
+> > > -};
+> > > -
+> > > -void __init acpi_platform_init(void)
+> > > -{
+> > > -	acpi_scan_add_handler(&platform_handler);
+> > > -}
+> > > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > > index 5967338..61af32e 100644
+> > > --- a/drivers/acpi/scan.c
+> > > +++ b/drivers/acpi/scan.c
+> > > @@ -2022,14 +2022,15 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
+> > >  		handler = acpi_scan_match_handler(hwid->id, &devid);
+> > >  		if (handler) {
+> > >  			ret = handler->attach(device, devid);
+> > > -			if (ret > 0) {
+> > > +			if (ret > 0)
+> > >  				device->handler = handler;
+> > > -				break;
+> > > -			} else if (ret < 0) {
+> > > -				break;
+> > > -			}
+> > > +			if (ret)
+> > > +				goto end;
+> > >  		}
+> > >  	}
+> > > +end:
+> > > +	if (!list_empty(&device->pnp.ids) && !device->handler)
+> > > +		acpi_create_platform_device(device, NULL);
+> > 
+> > I just found a big problem in this proposal, which affects all the
+> > optional scan handlers.
+> 
+> What do you mean by "optional"?  Such that can be compiled out?
+> 
+yes.
 
---=-M2iU1wxOH00rdU/TUKFB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> > The problem is that, if we disable a scan handler, platform device nodes
+> > would be created instead by the code above, because there is no scan
+> > handler attached for those ACPI nodes.
+> 
+> If "we disable a scan handled" means "we compile it out", I'm not sure
+> why creating platform devices for the device objects in question will
+> be incorrect?
+> 
+take lpss scan handler and 80860F0A device for example,
+acpi_lpss_create_device() would invoke lpss_uart_setup() first and then
+register 80860F0A as a platform device.
+if the lpss scan handler is compiled out, we would do nothing but
+register a platform device directly, thus the dw8250_platform_driver
+driver is still loaded, but probably breaks.
 
-On Mon, 2014-03-10 at 02:01 +0100, Sebastian Hesselbarth wrote:
-> phy_ethtool_get_wol is a helper to get current WOL settings from
-> a phy device. When using this helper on a PHY without .get_wol
-> callback, struct ethtool_wolinfo is never set-up correctly and
-> may contain misleading information about WOL status.
->=20
-> To fix this, always zero relevant fields of struct ethtool_wolinfo
-> regardless of .get_wol callback availability.
+IMO, we should either have a full functional platform device (if the
+scan handler is compiled in) or nothing (if the scan handler is compiled
+out).
 
-I think it's the caller's responsibility to zero out struct
-ethtool_wolinfo.  That is what ethtool_get_wol() does.
+thanks,
+rui
+> Rafael
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Maybe you could split ethtool_get_wol() like we did
-ethtool_get_settings(), to support in-kernel invocation of ETHTOOL_GWOL?
 
-Ben.
-
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/phy/phy.c | 1 +
->  1 file changed, 1 insertion(+)
->=20
-> diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
-> index 19c9eca0ef26..62a7cd401e1c 100644
-> --- a/drivers/net/phy/phy.c
-> +++ b/drivers/net/phy/phy.c
-> @@ -1092,6 +1092,7 @@ EXPORT_SYMBOL(phy_ethtool_set_wol);
-> =20
->  void phy_ethtool_get_wol(struct phy_device *phydev, struct ethtool_wolin=
-fo *wol)
->  {
-> +	wol->supported =3D wol->wolopts =3D 0;
->  	if (phydev->drv->get_wol)
->  		phydev->drv->get_wol(phydev, wol);
->  }
-
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
-
---=-M2iU1wxOH00rdU/TUKFB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUx0otee/yOyVhhEJAQrXcg/+MTq4nMnpSS2NdDvwc4Gg5u0eDaU4q96k
-CaGXoGCyBNTf6wCXhpsmP1gxmVkwdQ/ZsIj+S8Gvrpf3OFlLMn8GXce6R11U4Y+0
-NT2V6H1YGls4jpryTAdm95ZnbFtBldNfeOGSkZ5dJHoehKrtnFTu4bB0jhFM50+p
-PoWdOEfw8dbJsdKYE2SuRG17sSDpFptLDWjFyn2GTMBsai4WNoMFNoG6+pfp3Q2l
-wDErIcasn5zck7YmG+/vbtnb6IH4a6gre8ah0OBka+5vhlCzmgMudtYSpW0S1ACZ
-m/X3iq1r7Kh4HhInCW7inwEpXncAUxBbI9im3vPFuLjTEJqqwgXelzmPVOPvRewg
-Y3VXXSmu5GZY4A6RQthu8derZrRvRLiM/ry6uKWQdUs1DwPKpl2loFnP/GCptiEr
-bezv/P4LaKZHfm0FhQshwBAp0tT/hG9kJKocmbjl6cKdVdDRdP7Y8RiG9Fg7o7+C
-IYW3k+sq7u15vTextN+irjwVgZnYfgt9fAMGNnJNd/RaMf1LCc6jIWkkV5ZwEUyZ
-p/Ae/jFnBQZLTRJjtrCcFt3YTH8gR2nGQSDQZe0xiFsDCPlecNDiHLKYlDDVGBU/
-aKp4g5+nlcgxhQf5nXLf/SDPVfZKq/BA4HEKkSra6dU6MzGRv636hpEKi8q/u1yZ
-VDU8U5wXvLc=
-=1+Ux
------END PGP SIGNATURE-----
-
---=-M2iU1wxOH00rdU/TUKFB--
