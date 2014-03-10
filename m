@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941AbaCJOAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:00:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53522 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651AbaCJN76 (ORCPT
+	id S1753564AbaCJOBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:01:52 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37387 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628AbaCJOBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 09:59:58 -0400
-Message-ID: <531DC51F.50309@ti.com>
-Date: Mon, 10 Mar 2014 19:28:55 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>, <dmaengine@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, <rnayak@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>, Vinod Koul <vinod.koul@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [RFC PATCH 0/9] drivers: dma: Add support for dma-channel router
-References: <1394194576-23741-1-git-send-email-r.sricharan@ti.com> <CAL_JsqLF6Ey1t1BV4tnFcFK-KmOU9H2nQE+ZHoZRq2r_nRTxNw@mail.gmail.com>
-In-Reply-To: <CAL_JsqLF6Ey1t1BV4tnFcFK-KmOU9H2nQE+ZHoZRq2r_nRTxNw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Mar 2014 10:01:50 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: gleb@kernel.org
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v4 0/5] KVM: x86: flush tlb out of mmu-lock after write protection
+Date: Mon, 10 Mar 2014 22:01:44 +0800
+Message-Id: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031014-7014-0000-0000-0000047B18ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+This patchset is splited from my previous patchset:
+[PATCH v3 00/15] KVM: MMU: locklessly write-protect
+that can be found at:
+https://lkml.org/lkml/2013/10/23/265
 
-On Sunday 09 March 2014 01:23 AM, Rob Herring wrote:
-> On Fri, Mar 7, 2014 at 6:16 AM, Sricharan R <r.sricharan@ti.com> wrote:
->> In some SoCs the dma request lines from the peripherals are
->> routed to the dma-controller through a crossbar. With this the
->> dma controller's available request lines are shared between the
->> peripherals.
->>
->> This adds support to register the crossbar router associated with
->> a dma-channel and let the dma-controller driver map/unmap
->> the peripheral dma crossbar line to dma-controller's request
->> line.
-> This is not a unique concept and should follow some existing pattern.
-> Perhaps something like interrupt-map. For the dmas property, the
-> parent should be the crossbar and then the crossbar block has to
-> translate that into the DMA controller request. All the DMA ctrlr
-> request connections should be described in the crossbar node. In
-> theory, you could have chained crossbars. This should be documented as
-> part of the generic DMA binding.
-  The idea here was to do the map/unmap crossbar<->dma-request
- from the  dma-controller at runtime just like any other resource, unlike
-  interrupt-map fixed in DTS. I did not think about the chained
-  crossbars case. I will add this here. And as you have suggested will
-  make it work like irq_parse_and_map.
+Changelog v4 :
+- add more comments for patch 5 and thank for Marcelo's review
 
-Regards,
- Sricharan
-> There are also other similar IP like CoreSight CTI which are just
-> signal routers. So there is probably some possibility of common code
-> here.
->
-> Rob
+Xiao Guangrong (5):
+  Revert "KVM: Simplify kvm->tlbs_dirty handling"
+  KVM: MMU: properly check last spte in fast_page_fault()
+  KVM: MMU: lazily drop large spte
+  KVM: MMU: flush tlb if the spte can be locklessly modified
+  KVM: MMU: flush tlb out of mmu lock when write-protect the sptes
+
+ arch/x86/kvm/mmu.c         | 72 ++++++++++++++++++++++++++++++----------------
+ arch/x86/kvm/mmu.h         | 14 +++++++++
+ arch/x86/kvm/paging_tmpl.h |  7 ++---
+ arch/x86/kvm/x86.c         | 20 ++++++++++---
+ include/linux/kvm_host.h   |  4 +--
+ virt/kvm/kvm_main.c        |  5 +++-
+ 6 files changed, 85 insertions(+), 37 deletions(-)
+
+-- 
+1.8.1.4
 
