@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785AbaCJViX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:38:23 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51520 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264AbaCJViU (ORCPT
+	id S1754800AbaCJVjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:39:22 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:41748 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882AbaCJVjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:38:20 -0400
-Date: Mon, 10 Mar 2014 16:35:24 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, linux-arm-msm@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH v2 2/6] rtc: pm8xxx: use regmap API for register accesses
-Message-ID: <20140310213524.GL18529@joshc.qualcomm.com>
-References: <1394477089-3996-1-git-send-email-joshc@codeaurora.org>
- <1394477089-3996-3-git-send-email-joshc@codeaurora.org>
- <20140310134741.e5b97d12d47e1b990501f8bc@linux-foundation.org>
+	Mon, 10 Mar 2014 17:39:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140310134741.e5b97d12d47e1b990501f8bc@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140310222528.Horde.tMG70UcHgBuz9DV3W9_aaA1@webmail.your-server.de>
+References: <20140307013833.GD8427@localhost>
+	<1394176888.1018.3.camel@wall-e.seibold.net>
+	<CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com>
+	<1394229220.20013.13.camel@wall-e.seibold.net>
+	<CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com>
+	<1394354848.1002.37.camel@wall-e.seibold.net>
+	<531D044C.2090303@linux.intel.com>
+	<CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
+	<CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
+	<531DD35A.5060202@linux.intel.com>
+	<CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
+	<CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
+	<1394481804.980.9.camel@wall-e.seibold.net>
+	<531E1B53.5090205@linux.intel.com>
+	<CA+55aFyxbuhPKgB=U8R5C5T_iKVvju-oQDS4kHz6McW45B+1bA@mail.gmail.com>
+	<20140310222528.Horde.tMG70UcHgBuz9DV3W9_aaA1@webmail.your-server.de>
+Date: Mon, 10 Mar 2014 14:39:19 -0700
+X-Google-Sender-Auth: lL1Ko46mqNzVd2297RJLIk5BXdQ
+Message-ID: <CA+55aFygdFWCVzsSNT6v-8Mnsq8rrFwz0d1ydOLRthv4JsBaBQ@mail.gmail.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 01:47:41PM -0700, Andrew Morton wrote:
-> On Mon, 10 Mar 2014 13:44:45 -0500 Josh Cartwright <joshc@codeaurora.org> wrote:
-> > Now that the parent mfd driver has been made to work again, and has been
-> > reworked to create a regmap instance intended for it's children to use,
-> > rework the pm8xxx driver to use the regmap API for it's register
-> > accesses.
-> 
-> Do we need a 
-> 
-> 	depends on REGMAP
-> 
-> in Kconfig?
+On Mon, Mar 10, 2014 at 2:25 PM,  <stefani@seibold.net> wrote:
+>
+> This was discovered by me.
 
-Good question.  This driver already gets the REGMAP dependency through
-it's parent (MFD_PM8XXX), which does 'select REGMAP'.
+Sorry for the misattribution.
 
-I recall there being some history as to why individual drivers shouldn't
-explicitly depend on REGMAP, as it's the parent drivers/subsystem
-responsibility to select it when needed, however I can't recall details.
-Perhaps it's due to REGMAP not being a user-selectable option.
+> But this is not a real solution, at least when vcpu function support
+> will be added, then the code size will exceed the page size. Reserving
+> two pages for the VDSO is a good option.
 
-(FWIW, I did force a build of this driver with !REGMAP, and it builds
-just fine with the regmap_write()/_read() stubs, but of course it
-wouldn't do anything meaningful at runtime)
+Quite frankly, there is no way in hell I will take a patch like that
+for 3.14 any more, and I would argue against it for stable.
 
-Thanks,
-  Josh
+Now, if this problem never happens with current kernels (because it's
+purely due to the patch in -tip), then I don't much care.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+That said, I don't understand why we are even adding new features like
+this to 32-bit mode in the first place, so if that patch is the sole
+source of all this headache, then why not just throw the patch away?
+
+             Linus
