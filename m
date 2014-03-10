@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaCJLgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:36:12 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:44897 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780AbaCJLgK (ORCPT
+	id S1752846AbaCJLii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 07:38:38 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33807 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365AbaCJLih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:36:10 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v6 2/8] Documentation: of: Document graph bindings
-Date: Mon, 10 Mar 2014 12:37:42 +0100
-Message-ID: <2406124.RniJY1n1Xd@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1394443690.7380.10.camel@paszta.hi.pengutronix.de>
-References: <1394011242-16783-1-git-send-email-p.zabel@pengutronix.de> <20140307182717.67596C40B43@trevor.secretlab.ca> <1394443690.7380.10.camel@paszta.hi.pengutronix.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 10 Mar 2014 07:38:37 -0400
+Message-ID: <1394451471.6627.10.camel@weser.hi.pengutronix.de>
+Subject: Re: [linux-sunxi] Re: [RFC PATCH v2 08/14] mtd: nand: add sunxi
+ NAND flash controller support
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Boris BREZILLON <b.brezillon.dev@gmail.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Rob Landley <rob@landley.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        linux-mtd@lists.infradead.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org
+Date: Mon, 10 Mar 2014 12:37:51 +0100
+In-Reply-To: <531D9F4B.6040505@gmail.com>
+References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
+	 <1391006064-28890-9-git-send-email-b.brezillon.dev@gmail.com>
+	 <20140129175641.GF1427@obsidianresearch.com>
+	 <20140129184619.GC27143@localhost>
+	 <20140129191005.GG1427@obsidianresearch.com> <531D9F4B.6040505@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+Am Montag, den 10.03.2014, 12:17 +0100 schrieb Boris BREZILLON:
+> Hello Jason,
+> 
+> Le 29/01/2014 20:10, Jason Gunthorpe a écrit :
+> > On Wed, Jan 29, 2014 at 03:46:20PM -0300, Ezequiel Garcia wrote:
+> >
+> >> After CE# has been pulled high and then transitioned low again, the host
+> >> should issue a Set Features to select the appropriate asynchronous timing mode.
+> >> """
+> > Oh, I had forgot you should do a set feature too
+> >
+> > Boris, I think the core core should handle this dance and the driver
+> > should just implement a call back to change the timing mode on the
+> > interface..
+> >
+> > If I ever get a moment I can work on support for timing setting in the
+> > mvebu driver, I have boards here with ONFI NAND..
+> 
+> Any progress on this ?
+> I'm about to post the 3rd version of this series and if you already have
+> something working I could base my work on your proposal.
+> 
 
-On Monday 10 March 2014 10:28:10 Philipp Zabel wrote:
-> Hi Grant,
-> 
-> Am Freitag, den 07.03.2014, 18:27 +0000 schrieb Grant Likely:
-> > On Wed,  5 Mar 2014 10:20:36 +0100, Philipp Zabel wrote:
-> > > The device tree graph bindings as used by V4L2 and documented in
-> > > Documentation/device-tree/bindings/media/video-interfaces.txt contain
-> > > generic parts that are not media specific but could be useful for any
-> > > subsystem with data flow between multiple devices. This document
-> > > describes the generic bindings.
-> > > 
-> > > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > 
-> > See my comments on the previous version. My concerns are the handling of
-> > the optional 'ports' node and the usage of reverse links.
-> 
-> would this change address your concern about the reverse links? As the
-> preexisting video-interfaces.txt bindings mandate the reverse links, I
-> worry about introducing a second, subtly different binding. It should be
-> noted somewhere in video-interfaces.txt that the reverse links are
-> deprecated for the but still supported by the code for backwards
-> compatibility.
+I'm also interested in seeing this moving forward. I'm currently porting
+the Tegra NAND drive to mainline and at least the OF ONFI mode and ONFI
+mode to timing converter parts of this series are really helpful.
 
-I'm very much against removing the reverse links. Without them the graph will 
-become much more complex to parse. You can try to convince me, but for now I'm 
-afraid it's a NACK.
-
-> diff --git a/Documentation/devicetree/bindings/graph.txt
-> b/Documentation/devicetree/bindings/graph.txt index 1a69c07..eb6cae5 100644
-> --- a/Documentation/devicetree/bindings/graph.txt
-> +++ b/Documentation/devicetree/bindings/graph.txt
-> @@ -87,12 +87,13 @@ device {
->  Links between endpoints
->  -----------------------
-> 
-> -Each endpoint should contain a 'remote-endpoint' phandle property that
-> points -to the corresponding endpoint in the port of the remote device. In
-> turn, the -remote endpoint should contain a 'remote-endpoint' property. If
-> it has one, -it must not point to another than the local endpoint. Two
-> endpoints with their -'remote-endpoint' phandles pointing at each other
-> form a link between the -containing ports.
-> +Two endpoint nodes form a link between the two ports they are contained in
-> +if one contains a 'remote-endpoint' phandle property, pointing to the other
-> +endpoint. The endpoint pointed to should not contain a 'remote-endpoint'
-> +property itself. Which direction the phandle should point in depends on
-> the +device type. In general, links should be pointing outwards from
-> central +devices that provide DMA memory interfaces, such as display
-> controller, +video capture interface, or serial digital audio interface
-> cores.
-> 
->  device-1 {
->          port {
-> @@ -104,8 +105,8 @@ device-1 {
-> 
->  device-2 {
->          port {
-> -                device_2_input: endpoint {
-> -                        remote-endpoint = <&device_1_output>;
-> +                device_2_input: endpoint { };
-> +                       /* no remote-endpoint, this endpoint is pointed at
-> */ };
->          };
->  };
-
--- 
 Regards,
-
-Laurent Pinchart
+Lucas
+-- 
+Pengutronix e.K.                           | Lucas Stach                 |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-5076 |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
