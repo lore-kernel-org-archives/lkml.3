@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003AbaCJKji (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 06:39:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49209 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121AbaCJKjh (ORCPT
+	id S1753103AbaCJKjx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 06:39:53 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:46052 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105AbaCJKjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 06:39:37 -0400
-Date: Mon, 10 Mar 2014 11:39:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Julian Wollrath <jwollrath@web.de>
-cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-In-Reply-To: <20140310110410.5b2218f6@ilfaris>
-Message-ID: <alpine.DEB.2.02.1403101123470.18573@ionos.tec.linutronix.de>
-References: <20140310110410.5b2218f6@ilfaris>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 10 Mar 2014 06:39:51 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <CAKMK7uH8WnsoPVEHhARLHao3XS6wVT-=3aUU0BNrxTQBT5=qXA@mail.gmail.com>
+References: <20140224160628.GU3852@intel.com>
+	<1394304546-19433-1-git-send-email-sagar.a.kamble@intel.com>
+	<CADnq5_P_j66y2j3v8r9jHOffhfz3L3_fQpnP-OFdfOeLEWqs8A@mail.gmail.com>
+	<1394305472.18918.1.camel@sagar-desktop>
+	<1394305669.18918.3.camel@sagar-desktop>
+	<20140310092919.GG20302@nuc-i3427.alporthouse.com>
+	<CAKMK7uEFpkRs5euH_un=3MEstwO2PMwk0RAOhP-2+cgfMK1sgA@mail.gmail.com>
+	<20140310100425.GH20302@nuc-i3427.alporthouse.com>
+	<CAKMK7uH8WnsoPVEHhARLHao3XS6wVT-=3aUU0BNrxTQBT5=qXA@mail.gmail.com>
+Date: Mon, 10 Mar 2014 11:39:51 +0100
+Message-ID: <CAKMK7uE-p_fEjLBjBA-gmvyOYWB=kh21dmWHkaO7GmNgCxh1qQ@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH v3 1/1] drm/i915: Enabling 128x128 and 256x256
+ ARGB Cursor Support
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Sagar Arun Kamble <sagar.a.kamble@intel.com>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Mar 2014, Julian Wollrath wrote:
-> on a Thinkpad x121e (AMD E-450 APU) with version 3.13.5 and earlier of
-> the kernel I get:
-> [...]
-> [    0.000000] tsc: Fast TSC calibration using PIT
-> [    0.001000] tsc: Detected 1646.619 MHz processor
-> [    0.000004] Calibrating delay loop (skipped), value calculated using
-> timer frequency.. 3293.23 BogoMIPS (lpj=1646619)
-> [...]
-> 
-> 
-> but starting with v3.14-rc1 the fast TSC calibration fails:
-> [...]
-> [    0.000000] tsc: Fast TSC calibration failed
-> [    0.000000] tsc: PIT calibration matches HPET. 1 loops
-> [    0.000000] tsc: Detected 1646.490 MHz processor
-> [...]
+On Mon, Mar 10, 2014 at 11:07 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> On Mon, Mar 10, 2014 at 11:04 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>>> > The cap exposes the max cursor size. Knowing our hardware we can infer
+>>> > that pot sizes from 64 to max are supported, but it would be better if
+>>> > we did expose that information through the cap as well.
+>>>
+>>> I think the right approach here is to expose this through the
+>>> cursor-as-real-plane interface, which kinda has this already. On top
+>>> of that we can then add a few fourcc enumerations of the fixed rgba
+>>> cursor layouts like 64x64, 128x128, ... This helps if the plane is a
+>>> general one with very high limits, but also with special support for
+>>> cursor formats.
+>>>
+>>> If anyone wants to go crazy we could then also add new fourccs for all
+>>> the other cursor layouts - atm only rgba with fixed dimensions can be
+>>> support with the current cursor ioctl.
+>>>
+>>> So reviewing the overall situation I actually _don't_ want a new
+>>> cap/ioctl/prop here just for now. As long as we need to go with intel
+>>> specific hacks userspace might as well probe things manually and act
+>>> upon the -EINVAL.
+>>
+>> Adding the cap allows existing userspace to dtrt...
+>
+> 1. Move cursor off-screen.
+> 2. Check desired cursor layout with set_cursor.
+> 3. Pick real cursor, set it.
+>
+> Or
+>
+> 1. Use set_cursor on disabled crtc.
+>
+> Both aren't pretty, but that ugly should help to move
+> cursors-as-real-planes forward ;-)
 
-The only change in the calibration code post 3.13 is that we added the
-MSR based calibration for ATOM:
-
-@@ -419,6 +651,13 @@ unsigned long native_calibrate_tsc(void)
- 	unsigned long flags, latch, ms, fast_calibrate;
- 	int hpet = is_hpet_enabled(), i, loopmin;
- 
-+	/* Calibrate TSC using MSR for Intel Atom SoCs */
-+	local_irq_save(flags);
-+	fast_calibrate = try_msr_calibrate_tsc();
-+	local_irq_restore(flags);
-+	if (fast_calibrate)
-+		return fast_calibrate;
-+
- 	local_irq_save(flags);
- 	fast_calibrate = quick_pit_calibrate();
- 	local_irq_restore(flags);
-
-And that definitely does not affect the quick calibration. No idea,
-except bisecting.
-
-Thanks,
-
-	tglx
-
-
+I stand corrected, there's now a cursor size cap in the drm-next
+branch (which is included in -nightly), so we need support this and
+also make sure it works correctly in the igt.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
