@@ -1,65 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbaCJPBV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:01:21 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:40256 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666AbaCJPBQ (ORCPT
+	id S1753799AbaCJPFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:05:10 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:34588 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480AbaCJPFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:01:16 -0400
-Date: Mon, 10 Mar 2014 11:01:06 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: deadlock in lru_add_drain ? (3.14rc5)
-Message-ID: <20140310150106.GD25290@htj.dyndns.org>
-References: <20140308220024.GA814@redhat.com>
- <CA+55aFzLxY8Xsn90v1OAsmVBWYPZTiJ74YE=HaCPYR2hvRfk+g@mail.gmail.com>
+	Mon, 10 Mar 2014 11:05:06 -0400
+Message-ID: <531DD493.3030306@monstr.eu>
+Date: Mon, 10 Mar 2014 16:04:51 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzLxY8Xsn90v1OAsmVBWYPZTiJ74YE=HaCPYR2hvRfk+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: Kedareswara rao Appana <appana.durga.rao@xilinx.com>, wg@grandegger.com,
+        michal.simek@xilinx.com, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Subject: Re: [PATCH v5] can: xilinx CAN controller support.
+References: <5254bfec-c6fd-4681-a34d-706d51e60fbb@VA3EHSMHS004.ehs.local> <531DD2C4.5060109@pengutronix.de>
+In-Reply-To: <531DD2C4.5060109@pengutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="28123aDbw4E4PW0pDFFffk3LqkX9oJfrI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--28123aDbw4E4PW0pDFFffk3LqkX9oJfrI
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On Sat, Mar 08, 2014 at 05:18:34PM -0800, Linus Torvalds wrote:
-> Adding more appropriate people to the cc.
-> 
-> That semaphore was added by commit 5fbc461636c3 ("mm: make
-> lru_add_drain_all() selective"), and acked by Tejun. But we've had
+Hi Marc,
 
-It's essentially custom static implementation of
-schedule_on_each_cpu() which uses the mutex to protect the static
-buffers.  schedule_on_each_cpu() is different in that it uses dynamic
-allocation and can be reentered.
+On 03/10/2014 03:57 PM, Marc Kleine-Budde wrote:
+> On 03/04/2014 02:20 PM, Kedareswara rao Appana wrote:
+>> This patch adds xilinx CAN controller support.
+>> This driver supports both ZYNQ CANPS and Soft IP
+>> AXI CAN controller.
+>>
+>> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+>> ---
+>> This patch is rebased on the 3.14 rc5 kernel.
+>> Changes for v5:
+>> - Updated the driver with the review comments.
+>> - Remove the check for the tx fifo full interrupt condition
+>>   form Tx interrupt routine as we are checking it in the _xmit
+>>   routine.
+>> - Clearing the txok interrupt in the tx interrupt routine for
+>>   every Tx can frame.
+>> Changes for v4:
+>> - Added check for the tx fifo full interrupt condition in
+>>   Tx interrupt routine.
+>> - Added be iohelper functions.
+>> - Moved the clock enable/disable to probe/remove because of
+>>   Added big endian support for AXI CAN controller case(reading
+>>   a register during probe for that we need to enable clock).
+>> Changes for v3:
+>> - Updated the driver with the review comments.
+>> - Modified the tranmit logic as per Marc suggestion.
+>> - Enabling the clock when the interface is up to reduce the
+>>   Power consumption.
+>> Changes for v2:
+>> - Updated with the review comments.
+>> - Removed the unnecessary debug prints.
+>> - include tx,rx fifo depths in ZYNQ CANPS case also.
+>> ---
+>>  .../devicetree/bindings/net/can/xilinx_can.txt     |   45 +
+>>  drivers/net/can/Kconfig                            |    7 +
+>>  drivers/net/can/Makefile                           |    1 +
+>>  drivers/net/can/xilinx_can.c                       | 1195 +++++++++++=
++++++++++
+>>  4 files changed, 1248 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/net/can/xilinx_c=
+an.txt
+>>  create mode 100644 drivers/net/can/xilinx_can.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt =
+b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>> new file mode 100644
+>> index 0000000..0e57103
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+>> @@ -0,0 +1,45 @@
+>> +Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
+>> +---------------------------------------------------------
+>> +
+>> +Required properties:
+>> +- compatible		: Should be "xlnx,zynq-can-1.00.a" for Zynq CAN
+>> +			  controllers and "xlnx,axi-can-1.00.a" for Axi CAN
+>> +			  controllers.
+>> +- reg			: Physical base address and size of the Axi CAN/Zynq
+>> +			  CANPS registers map.
+>> +- interrupts		: Property with a value describing the interrupt
+>> +			  number.
+>> +- interrupt-parent	: Must be core interrupt controller
+>> +- clock-names		: List of input clock names - "ref_clk", "aper_clk"
+>> +			  (See clock bindings for details. Two clocks are
+>> +			   required for Zynq CAN. For Axi CAN
+>> +			   case it is one(ref_clk)).
+>> +- clocks		: Clock phandles (see clock bindings for details).
+>> +- tx-fifo-depth		: Can Tx fifo depth.
+>> +- rx-fifo-depth		: Can Rx fifo depth.
+>> +
+>> +
+>> +Example:
+>> +
+>> +For Zynq CANPS Dts file:
+>> +	zynq_can_0: zynq-can@e0008000 {
+>> +			compatible =3D "xlnx,zynq-can-1.00.a";
+>> +			clocks =3D <&clkc 19>, <&clkc 36>;
+>> +			clock-names =3D "ref_clk", "aper_clk";
+>> +			reg =3D <0xe0008000 0x1000>;
+>> +			interrupts =3D <0 28 4>;
+>> +			interrupt-parent =3D <&intc>;
+>> +			tx-fifo-depth =3D <0x40>;
+>> +			rx-fifo-depth =3D <0x40>;
+>> +		};
+>> +For Axi CAN Dts file:
+>> +	axi_can_0: axi-can@40000000 {
+>> +			compatible =3D "xlnx,axi-can-1.00.a";
+>> +			clocks =3D <&clkc 0>;
+>> +			clock-names =3D "ref_clk" ;
+>> +			reg =3D <0x40000000 0x10000>;
+>> +			interrupt-parent =3D <&intc>;
+>> +			interrupts =3D <0 59 1>;
+>> +			tx-fifo-depth =3D <0x40>;
+>> +			rx-fifo-depth =3D <0x40>;
+>> +		};
+>> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+>> index 9e7d95d..b180239 100644
+>> --- a/drivers/net/can/Kconfig
+>> +++ b/drivers/net/can/Kconfig
+>> @@ -125,6 +125,13 @@ config CAN_GRCAN
+>>  	  endian syntheses of the cores would need some modifications on
+>>  	  the hardware level to work.
+>> =20
+>> +config CAN_XILINXCAN
+>> +	tristate "Xilinx CAN"
+>> +	depends on ARCH_ZYNQ || MICROBLAZE
+>=20
+> Is Zynq multiarch already?
 
-> problems before with holding locks and then calling flush_work(),
-> since that has had a tendency of deadlocking. I think we have various
-> lockdep hacks in place to make "flush_work()" trigger some of the
-> problems, but I'm not convinced it necessarily works.
+let me just answer this. Zynq is device with hardcoded dual arm cortex-a9=
+ + some IPs
+and programmable logic.
+It means if you add Microblaze to PL or another CPU then you get multi ar=
+chitecture setup.
 
-If this were caused by lru_add_drain_all() entering itself, the
-offender must be pretty clear in its stack trace.  It probably
-involves more elaborate dependency chain.  No idea why wq lockdep
-annotation would trigger on it tho.  The flush_work() annotation is
-pretty straight-forward.
+Thanks,
+Michal
 
-> On Sat, Mar 8, 2014 at 2:00 PM, Dave Jones <davej@redhat.com> wrote:
-> > I left my fuzzing box running for the weekend, and checked in on it this evening,
-> > to find that none of the child processes were making any progress.
-> > cat'ing /proc/n/stack shows them all stuck in the same place..
-> > Some examples:
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-Dave, any chance you can post full sysrq-t dump?
 
-Thanks.
 
--- 
-tejun
+--28123aDbw4E4PW0pDFFffk3LqkX9oJfrI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlMd1JQACgkQykllyylKDCEt9gCfUBv4Gadu/W/Y8D3k3145gW7H
+kKYAoI7QyXZKjK9hbvwovkpq3EyWYr0a
+=vpLT
+-----END PGP SIGNATURE-----
+
+--28123aDbw4E4PW0pDFFffk3LqkX9oJfrI--
