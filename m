@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbaCJDkr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 23:40:47 -0400
-Received: from mga14.intel.com ([143.182.124.37]:17128 "EHLO mga14.intel.com"
+	id S1753076AbaCJDkW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 23:40:22 -0400
+Received: from mout.web.de ([212.227.17.12]:59172 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211AbaCJDko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 23:40:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,621,1389772800"; 
-   d="scan'208";a="416766837"
-Date: Mon, 10 Mar 2014 09:10:37 +0530
-From: Jenny Tc <jenny.tc@intel.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        freemangordon@abv.bg, linux-omap@vger.kernel.org
-Subject: Re: [PATCHv8 1/4] power_supply: Add inlmt,iterm, min/max temp props
-Message-ID: <20140310034037.GA27798@jenny-desktop>
-References: <1394170174-21959-1-git-send-email-jenny.tc@intel.com>
- <1394170174-21959-2-git-send-email-jenny.tc@intel.com>
- <20140307201240.GC27645@amd.pavel.ucw.cz>
+	id S1752851AbaCJDkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 23:40:21 -0400
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+To: netdev@vger.kernel.org
+Cc: bridge@lists.linux-foundation.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        Jan Stancek <jstancek@redhat.com>,
+        Florian Westphal <fwestpha@redhat.com>,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+Subject: [PATCH 2/2] bridge: multicast: enable snooping on general queries only
+Date: Mon, 10 Mar 2014 04:39:46 +0100
+Message-Id: <1394422786-1683-2-git-send-email-linus.luessing@web.de>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394422786-1683-1-git-send-email-linus.luessing@web.de>
+References: <1394422786-1683-1-git-send-email-linus.luessing@web.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140307201240.GC27645@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:9G/ywY8feHcfvMLY+mUR9JBAflPJ36+r5WOiwMPubrreqBswgXE
+ bsqyGSJLMAaDzpkeMA+DINJvkfq3yQVMRh5qvkuYr//QuJXzuWwdi9b5vhQJtihu+j0b9zs
+ 6XIELNSKeWWDUsLygPgz/1BrORUc12EfGJuB3LxBBgkUhxQ/C9HL0ib3i9dbidooxCFDZdc
+ fiCFUOcMRs45RR6V436vQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 09:12:40PM +0100, Pavel Machek wrote:
-> On Fri 2014-03-07 10:59:31, Jenny TC wrote:
-> > Add new power supply properties for input current, charge termination
-> > current, min and max temperature
-> > 
-> > POWER_SUPPLY_PROP_TEMP_MIN - minimum operatable temperature
-> > POWER_SUPPLY_PROP_TEMP_MAX - maximum operatable temperature
-> > 
-> > POWER_SUPPLY_PROP_INLMT - input current limit programmed by charger. Indicates
-> > the input current for a charging source.
-> > 
-> > POWER_SUPPLY_PROP_CHARGE_TERM_CUR - Charge termination current used to detect
-> > the end of charge condition
-> > 
-> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
-> 
-> The patch no longer matches the description, otherwise it looks good.
+Without this check someone could easily create a denial of service
+by injecting multicast-specific queries to enable the bridge
+snooping part if no real querier issuing periodic general queries
+is present on the link which would result in the bridge wrongly
+shutting down ports for multicast traffic as the bridge did not learn
+about these listeners.
 
-Will fix it in next patch set
+With this patch the snooping code is enabled upon receiving valid,
+general queries only.
+
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+---
+ net/bridge/br_multicast.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index c77f073..5dd4fec 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1127,9 +1127,10 @@ static void br_multicast_query_received(struct net_bridge *br,
+ 					struct net_bridge_port *port,
+ 					struct bridge_mcast_querier *querier,
+ 					int saddr,
++					bool is_general_query,
+ 					unsigned long max_delay)
+ {
+-	if (saddr)
++	if (saddr && is_general_query)
+ 		br_multicast_update_querier_timer(br, querier, max_delay);
+ 	else if (timer_pending(&querier->timer))
+ 		return;
+@@ -1190,7 +1191,7 @@ static int br_ip4_multicast_query(struct net_bridge *br,
+ 	}
+ 
+ 	br_multicast_query_received(br, port, &br->ip4_querier, !!iph->saddr,
+-				    max_delay);
++				    !group, max_delay);
+ 
+ 	if (!group)
+ 		goto out;
+@@ -1282,7 +1283,8 @@ static int br_ip6_multicast_query(struct net_bridge *br,
+ 	}
+ 
+ 	br_multicast_query_received(br, port, &br->ip6_querier,
+-				    !ipv6_addr_any(&ip6h->saddr), max_delay);
++				    !ipv6_addr_any(&ip6h->saddr),
++				    is_general_query, max_delay);
+ 
+ 	if (!group)
+ 		goto out;
+-- 
+1.7.10.4
+
