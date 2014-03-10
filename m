@@ -1,60 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaCJL3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:29:42 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45075 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752556AbaCJL3k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:29:40 -0400
-Date: Mon, 10 Mar 2014 11:29:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Subject: Re: [PATCH] i2c: mv64xxx: Fix compilation breakage
-Message-ID: <20140310112929.GY21483@n2100.arm.linux.org.uk>
-References: <1394204370-22979-1-git-send-email-maxime.ripard@free-electrons.com> <20140307160836.GM21483@n2100.arm.linux.org.uk> <20140310105808.GE2815@lukather>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140310105808.GE2815@lukather>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752558AbaCJLdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 07:33:10 -0400
+Received: from smtp207.alice.it ([82.57.200.103]:53357 "EHLO smtp207.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751632AbaCJLdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 07:33:07 -0400
+Date: Mon, 10 Mar 2014 12:32:53 +0100
+From: Antonio Ospite <ao2@ao2.it>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        David Barksdale <dbarksdale@uplogix.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/4] HID: sony: do not rely on hid_output_raw_report
+Message-Id: <20140310123253.0b728251617d599b852ac23a@ao2.it>
+In-Reply-To: <1394337163-32478-4-git-send-email-benjamin.tissoires@redhat.com>
+References: <1394337163-32478-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1394337163-32478-4-git-send-email-benjamin.tissoires@redhat.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 11:58:08AM +0100, Maxime Ripard wrote:
-> On Fri, Mar 07, 2014 at 04:08:36PM +0000, Russell King - ARM Linux wrote:
-> > On Fri, Mar 07, 2014 at 03:59:30PM +0100, Maxime Ripard wrote:
-> > > @@ -900,7 +902,8 @@ mv64xxx_i2c_probe(struct platform_device *pd)
-> > >  exit_free_irq:
-> > >  	free_irq(drv_data->irq, drv_data);
-> > >  exit_reset:
-> > > -	if (pd->dev.of_node && !IS_ERR(drv_data->rstc))
-> > > +	if (pd->dev.of_node && IS_ENABLED(CONFIG_RESET_CONTROLLER) &&
-> > > +	    !IS_ERR(drv_data->rstc))
-> > >  		reset_control_assert(drv_data->rstc);
-> > 
-> > Another question is... why do we need to check pd->dev.of_node here?
-> > If CONFIG_RESET_CONTROLLER is set, we always try to get the reset
-> > controller node, so drv_data->rstc is either going to be a valid
-> > pointer, or it's going to be an error pointer - neither
-> > reset_control_get() nor devm_reset_control_get return NULL.
-> 
-> Following back on this as I was doing the patch, actually,
-> drv_data->rstc will be NULL if we're not probed by DT, and hence never
-> call reset_control_get, that would set an error pointer.
-> 
-> But then, we can use IS_ERR_OR_NULL on drv_data->rstc.
+On Sat,  8 Mar 2014 22:52:42 -0500
+Benjamin Tissoires <benjamin.tissoires@redhat.com> wrote:
 
-I think you can also move the devm_reset_control_get() into the main
-probe function: you're only checking for -EPROBE_DEFER from it to fail,
-allowing other errors to continue with the driver init.  This means
-that on non-OF, devm_reset_control_get() will fail with -ENOENT.
+> hid_out_raw_report is going to be obsoleted as it is not part of the
+> unified HID low level transport documentation
+> (Documentation/hid/hid-transport.txt)
+> 
+> To do so, we need to introduce two new quirks:
+> * HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP: this quirks prevents the
+>   transport driver to use the interrupt channel to send output report
+>   (and thus force to use HID_REQ_SET_REPORT command)
+> * HID_QUIRK_SKIP_OUTPUT_REPORT_ID: this one forces usbhid to not
+>   include the report ID in the buffer it sends to the device through
+>   HID_REQ_SET_REPORT in case of an output report
+> 
+> This also fixes a regression introduced in commit 3a75b24949a8
+> (HID: hidraw: replace hid_output_raw_report() calls by appropriates ones).
+> The hidraw API was not able to communicate with the PS3 SixAxis
+> controllers in USB mode.
+> 
+> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>
+
+I confirm that using hidraw via USB works again now, thanks, so the
+patch is OK:
+
+Tested-by: Antonio Ospite <ao2@ao2.it>
+
+However I still get the failure with hidraw via BT, I am going to look
+into that.
+
+> ---
+> changes in v3:
+> - no changes
+> 
+> changes in v2:
+> - removed usb.h include
+> - renamed HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP
+> - fix typo
+> 
+> 
+>  drivers/hid/hid-sony.c        | 60 ++++++++++---------------------------------
+>  drivers/hid/hidraw.c          |  3 ++-
+>  drivers/hid/usbhid/hid-core.c |  7 ++++-
+>  include/linux/hid.h           |  2 ++
+>  4 files changed, 24 insertions(+), 48 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+> index b5fe65e..4884bb5 100644
+> --- a/drivers/hid/hid-sony.c
+> +++ b/drivers/hid/hid-sony.c
+> @@ -29,7 +29,6 @@
+>  #include <linux/hid.h>
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+> -#include <linux/usb.h>
+>  #include <linux/leds.h>
+>  #include <linux/power_supply.h>
+>  #include <linux/spinlock.h>
+> @@ -1007,45 +1006,6 @@ static int sony_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  }
+>  
+>  /*
+> - * The Sony Sixaxis does not handle HID Output Reports on the Interrupt EP
+> - * like it should according to usbhid/hid-core.c::usbhid_output_raw_report()
+> - * so we need to override that forcing HID Output Reports on the Control EP.
+> - *
+> - * There is also another issue about HID Output Reports via USB, the Sixaxis
+> - * does not want the report_id as part of the data packet, so we have to
+> - * discard buf[0] when sending the actual control message, even for numbered
+> - * reports, humpf!
+> - */
+> -static int sixaxis_usb_output_raw_report(struct hid_device *hid, __u8 *buf,
+> -		size_t count, unsigned char report_type)
+> -{
+> -	struct usb_interface *intf = to_usb_interface(hid->dev.parent);
+> -	struct usb_device *dev = interface_to_usbdev(intf);
+> -	struct usb_host_interface *interface = intf->cur_altsetting;
+> -	int report_id = buf[0];
+> -	int ret;
+> -
+> -	if (report_type == HID_OUTPUT_REPORT) {
+> -		/* Don't send the Report ID */
+> -		buf++;
+> -		count--;
+> -	}
+> -
+> -	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+> -		HID_REQ_SET_REPORT,
+> -		USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+> -		((report_type + 1) << 8) | report_id,
+> -		interface->desc.bInterfaceNumber, buf, count,
+> -		USB_CTRL_SET_TIMEOUT);
+> -
+> -	/* Count also the Report ID, in case of an Output report. */
+> -	if (ret > 0 && report_type == HID_OUTPUT_REPORT)
+> -		ret++;
+> -
+> -	return ret;
+> -}
+> -
+> -/*
+>   * Sending HID_REQ_GET_REPORT changes the operation mode of the ps3 controller
+>   * to "operational".  Without this, the ps3 controller will not report any
+>   * events.
+> @@ -1305,11 +1265,8 @@ static void sixaxis_state_worker(struct work_struct *work)
+>  	buf[10] |= sc->led_state[2] << 3;
+>  	buf[10] |= sc->led_state[3] << 4;
+>  
+> -	if (sc->quirks & SIXAXIS_CONTROLLER_USB)
+> -		hid_output_raw_report(sc->hdev, buf, sizeof(buf), HID_OUTPUT_REPORT);
+> -	else
+> -		hid_hw_raw_request(sc->hdev, 0x01, buf, sizeof(buf),
+> -				HID_OUTPUT_REPORT, HID_REQ_SET_REPORT);
+> +	hid_hw_raw_request(sc->hdev, 0x01, buf, sizeof(buf), HID_OUTPUT_REPORT,
+> +			HID_REQ_SET_REPORT);
+>  }
+>  
+>  static void dualshock4_state_worker(struct work_struct *work)
+> @@ -1659,7 +1616,18 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	}
+>  
+>  	if (sc->quirks & SIXAXIS_CONTROLLER_USB) {
+> -		hdev->hid_output_raw_report = sixaxis_usb_output_raw_report;
+> +		/*
+> +		 * The Sony Sixaxis does not handle HID Output Reports on the
+> +		 * Interrupt EP like it could, so we need to force HID Output
+> +		 * Reports to use HID_REQ_SET_REPORT on the Control EP.
+> +		 *
+> +		 * There is also another issue about HID Output Reports via USB,
+> +		 * the Sixaxis does not want the report_id as part of the data
+> +		 * packet, so we have to discard buf[0] when sending the actual
+> +		 * control message, even for numbered reports, humpf!
+> +		 */
+> +		hdev->quirks |= HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP;
+> +		hdev->quirks |= HID_QUIRK_SKIP_OUTPUT_REPORT_ID;
+>  		ret = sixaxis_set_operational_usb(hdev);
+>  		sc->worker_initialized = 1;
+>  		INIT_WORK(&sc->state_worker, sixaxis_state_worker);
+> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+> index 2cc484c..ffa648c 100644
+> --- a/drivers/hid/hidraw.c
+> +++ b/drivers/hid/hidraw.c
+> @@ -149,7 +149,8 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
+>  		goto out_free;
+>  	}
+>  
+> -	if (report_type == HID_OUTPUT_REPORT) {
+> +	if ((report_type == HID_OUTPUT_REPORT) &&
+> +	    !(dev->quirks & HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP)) {
+>  		ret = hid_hw_output_report(dev, buf, count);
+>  		/*
+>  		 * compatibility with old implementation of USB-HID and I2C-HID:
+> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+> index 0d1d875..3bc7cad 100644
+> --- a/drivers/hid/usbhid/hid-core.c
+> +++ b/drivers/hid/usbhid/hid-core.c
+> @@ -894,7 +894,12 @@ static int usbhid_set_raw_report(struct hid_device *hid, unsigned int reportnum,
+>  	int ret, skipped_report_id = 0;
+>  
+>  	/* Byte 0 is the report number. Report data starts at byte 1.*/
+> -	buf[0] = reportnum;
+> +	if ((rtype == HID_OUTPUT_REPORT) &&
+> +	    (hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORT_ID))
+> +		buf[0] = 0;
+> +	else
+> +		buf[0] = reportnum;
+> +
+>  	if (buf[0] == 0x0) {
+>  		/* Don't send the Report ID */
+>  		buf++;
+> diff --git a/include/linux/hid.h b/include/linux/hid.h
+> index e224516..2cd7174 100644
+> --- a/include/linux/hid.h
+> +++ b/include/linux/hid.h
+> @@ -290,6 +290,8 @@ struct hid_item {
+>  #define HID_QUIRK_NO_EMPTY_INPUT		0x00000100
+>  #define HID_QUIRK_NO_INIT_INPUT_REPORTS		0x00000200
+>  #define HID_QUIRK_SKIP_OUTPUT_REPORTS		0x00010000
+> +#define HID_QUIRK_SKIP_OUTPUT_REPORT_ID		0x00020000
+> +#define HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP	0x00040000
+>  #define HID_QUIRK_FULLSPEED_INTERVAL		0x10000000
+>  #define HID_QUIRK_NO_INIT_REPORTS		0x20000000
+>  #define HID_QUIRK_NO_IGNORE			0x40000000
+> -- 
+> 1.8.5.3
+> 
+
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Antonio Ospite
+http://ao2.it
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
