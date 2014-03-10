@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaCJOp3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:45:29 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:49033 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616AbaCJOpX convert rfc822-to-8bit (ORCPT
+	id S1754035AbaCJOpO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:45:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49538 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753993AbaCJOpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:45:23 -0400
-Date: Mon, 10 Mar 2014 14:45:19 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>
-Subject: Re: [PATCH v5 1/7] pci: Introduce pci_register_io_range() helper
- function.
-Message-ID: <20140310144519.GU6457@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>
-References: <1393948204-11555-1-git-send-email-Liviu.Dudau@arm.com>
- <201403042330.09607.arnd@arndb.de>
- <20140306160442.GG6457@e106497-lin.cambridge.arm.com>
- <201403070124.13139.arnd@arndb.de>
-MIME-Version: 1.0
-In-Reply-To: <201403070124.13139.arnd@arndb.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 10 Mar 2014 14:45:20.0607 (UTC) FILETIME=[5C631EF0:01CF3C6F]
-X-MC-Unique: 114031014452112601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Mon, 10 Mar 2014 10:45:08 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 5/7] ARM: sun6i: Protect SDRAM gating bit
+Date: Mon, 10 Mar 2014 15:41:50 +0100
+Message-Id: <1394462512-11620-6-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394462512-11620-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1394462512-11620-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 12:24:12AM +0000, Arnd Bergmann wrote:
-> On Thursday 06 March 2014, Liviu Dudau wrote:
-> > On Tue, Mar 04, 2014 at 10:30:09PM +0000, Arnd Bergmann wrote:
-> > > On Tuesday 04 March 2014, Liviu Dudau wrote:
-> > > > +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
-> > > > +{
-> > > > +       return 0;
-> > > > +}
-> > > > +
-> > > 
-> > > How about returning an error here? You don't actually register the range.
-> > 
-> > That's not the intention here. I basically want a nop, as by default (read x86)
-> > we do nothing with the IO range.
-> 
-> I think x86 is a bad default though, because that is the exception rather than
-> the rule. I also think that on x86, you shouldn't have an entry for the I/O
-> space in the "ranges" property since there is no translation, and then we don't
-> call this function.
-> 
-> PCI devices described in DT on x86 would still be able to list their I/O BARs
-> in DT, but you don't ever translate them into MMIO ranges.
-> 
-> 	Arnd
-> 
+Prevent the SDRAM controller from being gated by force-enabling it in the
+machine code.
 
-So, if I understand you correctly, you would prefer to fail here and hence stop the
-parsing for the x86, rather than pretending everything is OK and going through the
-motions?
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/mach-sunxi/sun6i.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-That was not my original thinking when I've introduced this function here. The main
-purpose of the function is to help the correct translation of IO addresses in
-pci_address_to_pio(). As Jason has explained very nicely, we have 3 types of
-architectures here that we try to support:
-  - the ones that have separate IO address space (x86)
-  - the ones that have 1:1 mapping between physical IO addresses and logical ports
-  - the architectures that memory map the IO addresses in virtual address space
-    and then translate the logical addresses into virtual based on a given offset.
-
-For the first two types we don't want to do anything special. Architectures that
-fall in the last category will have to provide their own version of this function,
-with the arm64 version being generic enough to be used as de facto?
-
-But I can see your point of view as well. I just don't know if that is good enough
-for powerpc and microblaze. With the way things are in my patch, they should be able
-to switch to of_create_pci_host_bridge() easily*, with your suggestion they will
-have to provide their implementation for pci_register_io_range().
-
-We really need to get another architecture converted. If there are no other takers I
-will make a stab once the current push towards upstreaming AArch64 hardware support
-slows down.
-
-* says the newby with confidence in his voice ;)
-
-Liviu
-
-
+diff --git a/arch/arm/mach-sunxi/sun6i.c b/arch/arm/mach-sunxi/sun6i.c
+index 6b3905505fe0..1ccb27524a9e 100644
+--- a/arch/arm/mach-sunxi/sun6i.c
++++ b/arch/arm/mach-sunxi/sun6i.c
+@@ -34,6 +34,11 @@ static void __init sun6i_dt_init(void)
+ 	clk = clk_get(NULL, "cpu");
+ 	if (!IS_ERR(clk))
+ 		clk_prepare_enable(clk);
++
++	/* DDR gating clock */
++	clk = clk_get(NULL, "ahb1_sdram");
++	if (!IS_ERR(clk))
++		clk_prepare_enable(clk);
+ }
+ 
+ extern void __init sun6i_reset_init(void);
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+1.9.0
 
