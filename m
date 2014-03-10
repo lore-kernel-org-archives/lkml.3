@@ -1,77 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030AbaCJJ3c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 05:29:32 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:60135 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752120AbaCJJ3a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 05:29:30 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Mon, 10 Mar 2014 09:29:19 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Sagar Arun Kamble <sagar.a.kamble@intel.com>
-Cc: Alex Deucher <alexdeucher@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>
-Subject: Re: [Intel-gfx] [PATCH v3 1/1] drm/i915: Enabling 128x128 and
- 256x256 ARGB Cursor Support
-Message-ID: <20140310092919.GG20302@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Sagar Arun Kamble <sagar.a.kamble@intel.com>,
-	Alex Deucher <alexdeucher@gmail.com>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Maling list - DRI developers <dri-devel@lists.freedesktop.org>
-References: <20140224160628.GU3852@intel.com>
- <1394304546-19433-1-git-send-email-sagar.a.kamble@intel.com>
- <CADnq5_P_j66y2j3v8r9jHOffhfz3L3_fQpnP-OFdfOeLEWqs8A@mail.gmail.com>
- <1394305472.18918.1.camel@sagar-desktop>
- <1394305669.18918.3.camel@sagar-desktop>
+	id S1753137AbaCJJaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 05:30:04 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:32935 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752393AbaCJJaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 05:30:01 -0400
+Message-ID: <531D85E7.2060409@ti.com>
+Date: Mon, 10 Mar 2014 11:29:11 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394305669.18918.3.camel@sagar-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrzej Hajda <a.hajda@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH v4 1/3] [media] of: move graph helpers from drivers/media/v4l2-core
+ to drivers/of
+References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de> <20140307171804.EF245C40A32@trevor.secretlab.ca> <CA+gwMcfgKre8S4KHPvTVuAuz672aehGrN1UfFpwKAueTAcrMZQ@mail.gmail.com> <1536567.OYzyi25bjL@avalon> <531D7E9F.3090708@samsung.com>
+In-Reply-To: <531D7E9F.3090708@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="bIh8W89TUIJmlfTSEVOve9C1uhLTE6eBG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 09, 2014 at 12:37:49AM +0530, Sagar Arun Kamble wrote:
-> On Sun, 2014-03-09 at 00:34 +0530, Sagar Arun Kamble wrote:
-> > On Sat, 2014-03-08 at 13:51 -0500, Alex Deucher wrote:
-> > > On Sat, Mar 8, 2014 at 1:49 PM,  <sagar.a.kamble@intel.com> wrote:
-> > > > From: Sagar Kamble <sagar.a.kamble@intel.com>
-> > > >
-> > > > With this patch we allow larger cursor planes of sizes 128x128
-> > > > and 256x256.
-> > > >
-> > > > v2: Added more precise check on size while setting cursor plane.
-> > > >
-> > > > v3: Changes related to restructuring cursor size restrictions
-> > > > and DRM_DEBUG usage.
-> > > >
-> > > 
-> > > I'm not sure how useful it is since you appear to be able to
-> > > selectively adjust the cursor size, but I recently added support for
-> > > exposing the cursor size as a drm cap:
-> > > http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8716ed4e7bed4e4c7e3f37940e950ddc0362f450
-> > > 
-> > > Alex
-> > Thanks Alex. This is useful for cursor test to enumerate sub-tests based
-> > on these caps.
-> Realized after sending mail that we just get to know current cursor
-> width and height. Can we have capability that exposes all supported
-> cursor sizes?
+--bIh8W89TUIJmlfTSEVOve9C1uhLTE6eBG
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-The cap exposes the max cursor size. Knowing our hardware we can infer
-that pot sizes from 64 to max are supported, but it would be better if
-we did expose that information through the cap as well.
--Chris
+On 10/03/14 10:58, Andrzej Hajda wrote:
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+> I want to propose another solution to simplify bindings, in fact I have=
+
+> few ideas to consider:
+>=20
+> 1. Use named ports instead of address-cells/regs. Ie instead of
+> port@number schema, use port-function. This will allow to avoid ports
+> node and #address-cells, #size-cells, reg properties.
+> Additionally it should increase readability of the bindings.
+>=20
+> device {
+> 	port-dsi {
+> 		endpoint { ... };
+> 	};
+> 	port-rgb {
+> 		endpoint { ... };
+> 	};
+> };
+>=20
+> It is little bit like with gpios vs reset-gpios properties.
+> Another advantage I see we do not need do mappings of port numbers
+> to functions between dts, drivers and documentation.
+
+That makes it more difficult to iterate the ports. You need to go
+through all the nodes and use partial name matching. I think for things
+like gpios, the driver always gives the full name, so there's no need
+for any kind of partial matching or searching.
+
+It looks nice when just looking at the DT, though.
+
+ Tomi
+
+
+
+--bIh8W89TUIJmlfTSEVOve9C1uhLTE6eBG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTHYXqAAoJEPo9qoy8lh71bKAP/0BLKbGZuSlBttYPCuKE2QgJ
+3TrJWDTyxsLwyHZlaRf7r8E9uP15CpGiYdu3ki1uxs3JAfp6ISNWodcCTdBxBcIi
+z7IzB9mrjkQ6pYBxA7wMqAbVBCyJSmQxBMUVkpC5ZhiFxXvphpzjDDCk/Ps4mAHu
+RGVBWSfoijqjOkZFzqqSCbjeiOgDYTcBI9Q1Vl7T+g6hurVJ9QHq8Fa3dUzDXFZ8
+zGqhVdSP5hDA9CpX5T4t668hx5LS6PQ9TZK/FAYTJ0FyJeELmuB3P+WOR4RwzcGA
+zyhWIIA4FvwvS+BdUO430mVFs7u2wf7PrEkNknxvHiXjsZOxp+DkaV1E6xpJhqxL
+IR4kMx5cW1bWMEoAz3op3xOFvtyzWQR4ycpAoQZirFl1AveyxW5xajGt1NYCKl03
+Hq3bsUBsrnAt4ttSgprQudq45bd5wVKJK0NailEuKPwynmXiNphUVVqHTgDIPh8k
+0oUw86GHYFXizJaDK3eLesiW1mnLL2SRs+fAf/5Pj4ZviBbKJHexgdcjR439xp0U
+64eIEN7wGMbyFpFR9R8lJBdTS+Wqrlo6r01EOb3tZMcn/fanJomx75OCFO09vD3z
+KFFWguKUx1GvL6q0Zx6vB/MYdifYnk1kQmt7dSW6vY630yRKJKHKj3rZ7Rvokycb
+k5/gKLojCM7fmZaItMmo
+=Yge3
+-----END PGP SIGNATURE-----
+
+--bIh8W89TUIJmlfTSEVOve9C1uhLTE6eBG--
