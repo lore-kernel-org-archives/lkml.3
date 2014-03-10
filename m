@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784AbaCJOMj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:12:39 -0400
-Received: from smtp03.stone-is.org ([87.238.162.6]:40221 "EHLO
-	smtpgw.stone-is.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628AbaCJOMi (ORCPT
+	id S1753871AbaCJOM7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:12:59 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:65364 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814AbaCJOM5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:12:38 -0400
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-Message-ID: <531DC851.5060400@acm.org>
-Date: Mon, 10 Mar 2014 15:12:33 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 10 Mar 2014 10:12:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Krogerus, Heikki" <heikki.krogerus@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, yuanyabin1978@sina.com,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Peter Pearse <peter.pearse@arm.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
+Date: Mon, 10 Mar 2014 15:11:57 +0100
+Message-ID: <5345792.VhzckVI5HA@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1394459790.2270.39.camel@shinybook.infradead.org>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <20110101151545.GC25924@n2100.arm.linux.org.uk> <1394459790.2270.39.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Kent Overstreet <kmo@daterainc.com>, Shaohua Li <shli@kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] percpu_ida: Handle out-of-tags gracefully
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:hF5i2NZVFL6Sy8tpsT1YkUDZev61yLUi2im8G+ZNeUc
+ Ul1l/I5iN9Bk6pO+dyqTBQCjBs++oXv3oDLCVo4A+9y7M2YeKX
+ Jsp7Ng9DR1ICUmWAmKBMYB4DFUXYbVjeNKPhqIgD8Ir3KNLaU6
+ DqHOwzYz3tydPaYNiPH7qKSyLK8hyiLCbsuFZEJcwkq1A5pwBA
+ Z77smOEsXrva3adIF4uH5xndonVQ+b/oBZsotPphUBRkcZ6cZ2
+ 3hsU6m9YQaZwlfHqN+479W0kgkUl03t+630OIZ4rC3WLbDUPUw
+ trw3c1PkuHHngt6VstUA2LrQ9fsIjI8Z+4nfnSYT2U8Z1SI/M6
+ VrA0+mlsMxH2b72WnD7M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid that percpu_ida_alloc() hangs or crashes if there are still
-tags are available. Wait until a tag becomes available instead of
-giving up when running out of tags temporarily. This patch fixes
-the following kernel bug:
+On Monday 10 March 2014 06:56:30 David Woodhouse wrote:
+> It is not impossible for the DMA controller to "delegate" transactions
+> so that (to the IOMMU) they appear to come from the individual slave
+> device rather than from itself.
+> 
+> The Intel IOMMU has now gained support for DMA mapping for devices
+> enumerated by ACPI — essentially the ACPI "DMAR" table just has a lookup
+> table of ACPI device paths, and tells us the PCI bus/devfn that their
+> DMA transactions will *appear* to be from.
 
-------------[ cut here ]------------
-kernel BUG at lib/percpu_ida.c:81!
-invalid opcode: 0000 [#1] SMP
-RIP: 0010:[<ffffffff8120f00e>]  [<ffffffff8120f00e>] percpu_ida_alloc+0x33e/0x370
-Call Trace:
- [<ffffffff811ef95f>] blk_mq_get_tag+0x2f/0x50
- [<ffffffff811ed79c>] blk_mq_alloc_rq.isra.17+0x1c/0x90
- [<ffffffff811eeb9b>] blk_mq_alloc_request_pinned+0x9b/0x110
- [<ffffffff811ef4c6>] blk_mq_make_request+0x426/0x480
- [<ffffffff811e28f0>] generic_make_request+0xc0/0x110
- [<ffffffff811e29ab>] submit_bio+0x6b/0x140
- [<ffffffff8117aabb>] _submit_bh+0x13b/0x220
- [<ffffffff8117d70f>] block_read_full_page+0x1ff/0x300
- [<ffffffff81181128>] blkdev_readpage+0x18/0x20
- [<ffffffff811067b7>] __do_page_cache_readahead+0x277/0x280
- [<ffffffff81106d1d>] force_page_cache_readahead+0x8d/0xc0
- [<ffffffff81106d9b>] page_cache_sync_readahead+0x4b/0x50
- [<ffffffff810fdf05>] generic_file_aio_read+0x4c5/0x700
- [<ffffffff8118147b>] blkdev_aio_read+0x4b/0x70
- [<ffffffff8114a28a>] do_sync_read+0x5a/0x90
- [<ffffffff8114a8cb>] vfs_read+0x9b/0x160
- [<ffffffff8114b389>] SyS_read+0x49/0xa0
- [<ffffffff81416049>] tracesys+0xd0/0xd5
----[ end trace cdd1a8a7968266cf ]---
+This makes a lot of sense for standalone DMA masters enumerated by ACPI,
+but I fail to see what the purpose of that would be when the DMA
+is delegated to a separate DMA engine devices. Do you have an idea?
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Shaohua Li <shli@kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>
----
- lib/percpu_ida.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+It sounds to me that they are trying to isolate the DMA masters
+because the slave driver is not trusted for some reason, yet the
+DMA engine driver that does the DMA is trusted.
 
-diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
-index 93d145e..170d27c 100644
---- a/lib/percpu_ida.c
-+++ b/lib/percpu_ida.c
-@@ -73,7 +73,7 @@ static inline void steal_tags(struct percpu_ida *pool,
- 		if (cpu >= nr_cpu_ids) {
- 			cpu = cpumask_first(&pool->cpus_have_tags);
- 			if (cpu >= nr_cpu_ids)
--				BUG();
-+				break;
- 		}
- 
- 		pool->cpu_last_stolen = cpu;
-@@ -189,6 +189,9 @@ int percpu_ida_alloc(struct percpu_ida *pool, int state)
- 		spin_unlock(&pool->lock);
- 		local_irq_restore(flags);
- 
-+		if (tags->nr_free)
-+			wake_up(&pool->wait);
-+
- 		if (tag >= 0 || state == TASK_RUNNING)
- 			break;
- 
--- 
-1.8.4.5
+> Of course, it's also possible that all these BIOSes are broken and they
+> *should* just list the DMA controller itself, instead of all the slave
+> devices. But while I'm always quick to jump to the conclusion that it's
+> the BIOS at fault, that doesn't necessarily seem likely here...
 
+It would be good to verify this anyway. There are multiple reasons why
+we have to pass the dmaengine device to the dma-mapping API at the moment
+rather than the slave device, but in essence it comes down to the engine
+being the one that is the master on its parent bus. A trivial example
+where it goes wrong would be the slave living on a 32-bit noncoherent bus
+and the master living on a 64-bit coherent bus.
+
+	Arnd
