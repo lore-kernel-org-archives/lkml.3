@@ -1,148 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138AbaCJCwq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 22:52:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37228 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752771AbaCJCwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 22:52:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,621,1389772800"; 
-   d="scan'208";a="469348330"
-Message-ID: <1394419468.10554.20.camel@rzhang1-mobl4>
-Subject: Re: [RFC PATCH 6/8] ACPI: use platform bus as the default bus for
- _HID enumeration
-From: Zhang Rui <rui.zhang@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
-In-Reply-To: <6354388.qLqPjcP6yZ@vostro.rjw.lan>
-References: <1393405874-3266-1-git-send-email-rui.zhang@intel.com>
-	 <1393405874-3266-7-git-send-email-rui.zhang@intel.com>
-	 <1394380237.9269.31.camel@rzhang1-mobl4>
-	 <6354388.qLqPjcP6yZ@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Mar 2014 10:44:28 +0800
-Mime-Version: 1.0
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1753198AbaCJCyJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 22:54:09 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:58070 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803AbaCJCyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 22:54:07 -0400
+Message-ID: <531D28E4.70002@huawei.com>
+Date: Mon, 10 Mar 2014 10:52:20 +0800
+From: Qin Chuanyu <qinchuanyu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Jason Wang <jasowang@redhat.com>, <mst@redhat.com>, <kvm@vger.kernel.org>,
+        <virtio-dev@lists.oasis-open.org>,
+        <virtualization@lists.linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net V2] vhost: net: switch to use data copy if pending
+ DMAs exceed the limit
+References: <1394170107-12018-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1394170107-12018-1-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.21.101]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-03-09 at 19:04 +0100, Rafael J. Wysocki wrote:
-> On Sunday, March 09, 2014 11:50:37 PM Zhang Rui wrote:
-> > On Wed, 2014-02-26 at 17:11 +0800, Zhang Rui wrote:
-> > > Because of the growing demand for enumerating ACPI devices to platform bus,
-> > > this patch changes the code to enumerate ACPI devices with _HID/_CID to
-> > > platform bus by default, unless the device already has a scan handler attached.
-> > > 
-> > > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> > > ---
-> > >  drivers/acpi/acpi_platform.c |   28 ----------------------------
-> > >  drivers/acpi/scan.c          |   12 ++++++------
-> > >  2 files changed, 6 insertions(+), 34 deletions(-)
-> > > 
-> > > diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
-> > > index dbfe49e..33376a9 100644
-> > > --- a/drivers/acpi/acpi_platform.c
-> > > +++ b/drivers/acpi/acpi_platform.c
-> > > @@ -22,24 +22,6 @@
-> > >  
-> > >  ACPI_MODULE_NAME("platform");
-> > >  
-> > > -/*
-> > > - * The following ACPI IDs are known to be suitable for representing as
-> > > - * platform devices.
-> > > - */
-> > > -static const struct acpi_device_id acpi_platform_device_ids[] = {
-> > > -
-> > > -	{ "PNP0D40" },
-> > > -	{ "ACPI0003" },
-> > > -	{ "VPC2004" },
-> > > -	{ "BCM4752" },
-> > > -
-> > > -	/* Intel Smart Sound Technology */
-> > > -	{ "INT33C8" },
-> > > -	{ "80860F28" },
-> > > -
-> > > -	{ }
-> > > -};
-> > > -
-> > >  /**
-> > >   * acpi_create_platform_device - Create platform device for ACPI device node
-> > >   * @adev: ACPI device node to create a platform device for.
-> > > @@ -125,13 +107,3 @@ int acpi_create_platform_device(struct acpi_device *adev,
-> > >  	kfree(resources);
-> > >  	return 1;
-> > >  }
-> > > -
-> > > -static struct acpi_scan_handler platform_handler = {
-> > > -	.ids = acpi_platform_device_ids,
-> > > -	.attach = acpi_create_platform_device,
-> > > -};
-> > > -
-> > > -void __init acpi_platform_init(void)
-> > > -{
-> > > -	acpi_scan_add_handler(&platform_handler);
-> > > -}
-> > > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > > index 5967338..61af32e 100644
-> > > --- a/drivers/acpi/scan.c
-> > > +++ b/drivers/acpi/scan.c
-> > > @@ -2022,14 +2022,15 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
-> > >  		handler = acpi_scan_match_handler(hwid->id, &devid);
-> > >  		if (handler) {
-> > >  			ret = handler->attach(device, devid);
-> > > -			if (ret > 0) {
-> > > +			if (ret > 0)
-> > >  				device->handler = handler;
-> > > -				break;
-> > > -			} else if (ret < 0) {
-> > > -				break;
-> > > -			}
-> > > +			if (ret)
-> > > +				goto end;
-> > >  		}
-> > >  	}
-> > > +end:
-> > > +	if (!list_empty(&device->pnp.ids) && !device->handler)
-> > > +		acpi_create_platform_device(device, NULL);
-> > 
-> > I just found a big problem in this proposal, which affects all the
-> > optional scan handlers.
-> 
-> What do you mean by "optional"?  Such that can be compiled out?
-> 
-yes.
-
-> > The problem is that, if we disable a scan handler, platform device nodes
-> > would be created instead by the code above, because there is no scan
-> > handler attached for those ACPI nodes.
-> 
-> If "we disable a scan handled" means "we compile it out", I'm not sure
-> why creating platform devices for the device objects in question will
-> be incorrect?
-> 
-take lpss scan handler and 80860F0A device for example,
-acpi_lpss_create_device() would invoke lpss_uart_setup() first and then
-register 80860F0A as a platform device.
-if the lpss scan handler is compiled out, we would do nothing but
-register a platform device directly, thus the dw8250_platform_driver
-driver is still loaded, but probably breaks.
-
-IMO, we should either have a full functional platform device (if the
-scan handler is compiled in) or nothing (if the scan handler is compiled
-out).
-
-thanks,
-rui
-> Rafael
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+On 2014/3/7 13:28, Jason Wang wrote:
+> We used to stop the handling of tx when the number of pending DMAs
+> exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
+> of both host and guest. But it was too aggressive in some cases, since
+> any delay or blocking of a single packet may delay or block the guest
+> transmission. Consider the following setup:
+>
+>      +-----+        +-----+
+>      | VM1 |        | VM2 |
+>      +--+--+        +--+--+
+>         |              |
+>      +--+--+        +--+--+
+>      | tap0|        | tap1|
+>      +--+--+        +--+--+
+>         |              |
+>      pfifo_fast   htb(10Mbit/s)
+>         |              |
+>      +--+--------------+---+
+>      |     bridge          |
+>      +--+------------------+
+>         |
+>      pfifo_fast
+>         |
+>      +-----+
+>      | eth0|(100Mbit/s)
+>      +-----+
+>
+> - start two VMs and connect them to a bridge
+> - add an physical card (100Mbit/s) to that bridge
+> - setup htb on tap1 and limit its throughput to 10Mbit/s
+> - run two netperfs in the same time, one is from VM1 to VM2. Another is
+>    from VM1 to an external host through eth0.
+> - result shows that not only the VM1 to VM2 traffic were throttled but
+>    also the VM1 to external host through eth0 is also throttled somehow.
+>
+> This is because the delay added by htb may lead the delay the finish
+> of DMAs and cause the pending DMAs for tap0 exceeds the limit
+> (VHOST_MAX_PEND). In this case vhost stop handling tx request until
+> htb send some packets. The problem here is all of the packets
+> transmission were blocked even if it does not go to VM2.
+>
+> We can solve this issue by relaxing it a little bit: switching to use
+> data copy instead of stopping tx when the number of pending DMAs
+> exceed half of the vq size. This is safe because:
+>
+> - The number of pending DMAs were still limited (half of the vq size)
+> - The out of order completion during mode switch can make sure that
+>    most of the tx buffers were freed in time in guest.
+>
+> So even if about 50% packets were delayed in zero-copy case, vhost
+> could continue to do the transmission through data copy in this case.
+>
+> Test result:
+>
+> Before this patch:
+> VM1 to VM2 throughput is 9.3Mbit/s
+> VM1 to External throughput is 40Mbit/s
+> CPU utilization is 7%
+>
+> After this patch:
+> VM1 to VM2 throughput is 9.3Mbit/s
+> Vm1 to External throughput is 93Mbit/s
+> CPU utilization is 16%
+>
+> Completed performance test on 40gbe shows no obvious changes in both
+> throughput and cpu utilization with this patch.
+>
+> The patch only solve this issue when unlimited sndbuf. We still need a
+> solution for limited sndbuf.
+>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Qin Chuanyu <qinchuanyu@huawei.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+> Changes from V1:
+> - Remove VHOST_MAX_PEND and switch to use half of the vq size as the limit
+> - Add cpu utilization in commit log
+> ---
+>   drivers/vhost/net.c | 19 +++++++------------
+>   1 file changed, 7 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index a0fa5de..2925e9a 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -38,8 +38,6 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
+>    * Using this limit prevents one virtqueue from starving others. */
+>   #define VHOST_NET_WEIGHT 0x80000
+>
+> -/* MAX number of TX used buffers for outstanding zerocopy */
+> -#define VHOST_MAX_PEND 128
+>   #define VHOST_GOODCOPY_LEN 256
+>
+>   /*
+> @@ -345,7 +343,7 @@ static void handle_tx(struct vhost_net *net)
+>   		.msg_flags = MSG_DONTWAIT,
+>   	};
+>   	size_t len, total_len = 0;
+> -	int err;
+> +	int err, num_pends;
+>   	size_t hdr_size;
+>   	struct socket *sock;
+>   	struct vhost_net_ubuf_ref *uninitialized_var(ubufs);
+> @@ -366,13 +364,6 @@ static void handle_tx(struct vhost_net *net)
+>   		if (zcopy)
+>   			vhost_zerocopy_signal_used(net, vq);
+>
+> -		/* If more outstanding DMAs, queue the work.
+> -		 * Handle upend_idx wrap around
+> -		 */
+> -		if (unlikely((nvq->upend_idx + vq->num - VHOST_MAX_PEND)
+> -			      % UIO_MAXIOV == nvq->done_idx))
+> -			break;
+> -
+>   		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+>   					 ARRAY_SIZE(vq->iov),
+>   					 &out, &in,
+> @@ -405,9 +396,13 @@ static void handle_tx(struct vhost_net *net)
+>   			break;
+>   		}
+>
+> +		num_pends = likely(nvq->upend_idx >= nvq->done_idx) ?
+> +			    (nvq->upend_idx - nvq->done_idx) :
+> +			    (nvq->upend_idx + UIO_MAXIOV -
+> +			     nvq->done_idx);
+> +
+>   		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
+> -				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
+> -				      nvq->done_idx
+> +				   && num_pends <= vq->num >> 1
+>   				   && vhost_net_tx_select_zcopy(net);
+>
+>   		/* use msg_control to pass vhost zerocopy ubuf info to skb */
+>
+Reviewed-by: Qin chuanyu <qinchuanyu@huawei.com>
 
