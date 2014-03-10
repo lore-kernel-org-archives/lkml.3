@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256AbaCJU5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:57:08 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:61966 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755214AbaCJU5B (ORCPT
+	id S1755313AbaCJU56 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:57:58 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56575 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565AbaCJUfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:57:01 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmsGAGomHlNbsHk5/2dsb2JhbABagwbCV4EgF3SCZhwjGIECJBOHfQHPcI5bhD8EmEQBilaHV4MuPA
-Date: Mon, 10 Mar 2014 21:56:58 +0100
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 1/1] HFSPLUS: add __init to hfsplus_create_attr_tree_cache()
-Message-Id: <20140310215658.965a9750989dc3866713afd0@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 10 Mar 2014 16:35:03 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v3 06/52] ia64, palinfo: Fix CPU hotplug callback registration
+To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
+        rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org
+Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
+        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        srivatsa.bhat@linux.vnet.ibm.com, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-ia64@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Tue, 11 Mar 2014 02:04:52 +0530
+Message-ID: <20140310203451.10746.45775.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
+References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031020-2674-0000-0000-00000D1A6401
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hfsplus_create_attr_tree_cache is only called by __init init_hfsplus_fs
+Subsystems that want to register CPU hotplug callbacks, as well as perform
+initialization for the CPUs that are already online, often do it as shown
+below:
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+	get_online_cpus();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	register_cpu_notifier(&foobar_cpu_notifier);
+
+	put_online_cpus();
+
+This is wrong, since it is prone to ABBA deadlocks involving the
+cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
+with CPU hotplug operations).
+
+Instead, the correct and race-free way of performing the callback
+registration is:
+
+	cpu_notifier_register_begin();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	/* Note the use of the double underscored version of the API */
+	__register_cpu_notifier(&foobar_cpu_notifier);
+
+	cpu_notifier_register_done();
+
+
+Fix the palinfo code in ia64 by using this latter form of callback
+registration.
+
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: linux-ia64@vger.kernel.org
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- fs/hfsplus/attributes.c | 2 +-
- fs/hfsplus/hfsplus_fs.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/hfsplus/attributes.c b/fs/hfsplus/attributes.c
-index 0f47890..caf89a7 100644
---- a/fs/hfsplus/attributes.c
-+++ b/fs/hfsplus/attributes.c
-@@ -11,7 +11,7 @@
+ arch/ia64/kernel/palinfo.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/arch/ia64/kernel/palinfo.c b/arch/ia64/kernel/palinfo.c
+index ab33328..c39c3cd 100644
+--- a/arch/ia64/kernel/palinfo.c
++++ b/arch/ia64/kernel/palinfo.c
+@@ -996,13 +996,17 @@ palinfo_init(void)
+ 	if (!palinfo_dir)
+ 		return -ENOMEM;
  
- static struct kmem_cache *hfsplus_attr_tree_cachep;
++	cpu_notifier_register_begin();
++
+ 	/* Create palinfo dirs in /proc for all online cpus */
+ 	for_each_online_cpu(i) {
+ 		create_palinfo_proc_entries(i);
+ 	}
  
--int hfsplus_create_attr_tree_cache(void)
-+int __init hfsplus_create_attr_tree_cache(void)
- {
- 	if (hfsplus_attr_tree_cachep)
- 		return -EEXIST;
-diff --git a/fs/hfsplus/hfsplus_fs.h b/fs/hfsplus/hfsplus_fs.h
-index 08846425b..bb75586 100644
---- a/fs/hfsplus/hfsplus_fs.h
-+++ b/fs/hfsplus/hfsplus_fs.h
-@@ -366,7 +366,7 @@ typedef int (*search_strategy_t)(struct hfs_bnode *,
-  */
+ 	/* Register for future delivery via notify registration */
+-	register_hotcpu_notifier(&palinfo_cpu_notifier);
++	__register_hotcpu_notifier(&palinfo_cpu_notifier);
++
++	cpu_notifier_register_done();
  
- /* attributes.c */
--int hfsplus_create_attr_tree_cache(void);
-+int __init hfsplus_create_attr_tree_cache(void);
- void hfsplus_destroy_attr_tree_cache(void);
- hfsplus_attr_entry *hfsplus_alloc_attr_entry(void);
- void hfsplus_destroy_attr_entry(hfsplus_attr_entry *entry_p);
--- 
-1.8.1.4
+ 	return 0;
+ }
 
