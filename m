@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937AbaCJK5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 06:57:17 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62636 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752304AbaCJK5O (ORCPT
+	id S1753058AbaCJK5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 06:57:52 -0400
+Received: from fallback1.mail.ru ([94.100.176.18]:45503 "EHLO
+	fallback1.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbaCJK5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 06:57:14 -0400
-Date: Mon, 10 Mar 2014 10:56:56 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-Cc: "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "kpc528@gmail.com" <kpc528@gmail.com>,
-        "kalluripunnaiahchoudary@gmail.com" 
-	<kalluripunnaiahchoudary@gmail.com>,
-        "punnaia@xilinx.com" <punnaia@xilinx.com>
-Subject: Re: [RFC PATCH] edac: zynq: Added EDAC support for zynq ddr ecc
- controller
-Message-ID: <20140310105655.GH14999@e106331-lin.cambridge.arm.com>
-References: <4adb2b4b-2ad6-42b9-929e-cc062f817245@TX2EHSMHS021.ehs.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4adb2b4b-2ad6-42b9-929e-cc062f817245@TX2EHSMHS021.ehs.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 10 Mar 2014 06:57:51 -0400
+From: Alexander Shiyan <shc_work@mail.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH] mfd: syscon: Simplify syscon_match_pdevname()
+Date: Mon, 10 Mar 2014 14:57:33 +0400
+Message-Id: <1394449053-27818-1-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.8.3.2
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 09, 2014 at 02:57:16AM +0000, Punnaiah Choudary Kalluri wrote:
-> Added EDAC support for reporting the ecc errors of zynq ddr controller.
-> The ddr ecc controller corrects single bit errors and detects double bit
-> errors
-> 
-> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-> ---
->  .../devicetree/bindings/edac/zynq_edac.txt         |   18 +
->  drivers/edac/Kconfig                               |    7 +
->  drivers/edac/Makefile                              |    1 +
->  drivers/edac/zynq_edac.c                           |  613 ++++++++++++++++++++
->  4 files changed, 639 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/edac/zynq_edac.txt
->  create mode 100644 drivers/edac/zynq_edac.c
-> 
-> diff --git a/Documentation/devicetree/bindings/edac/zynq_edac.txt b/Documentation/devicetree/bindings/edac/zynq_edac.txt
-> new file mode 100644
-> index 0000000..c21ff83
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/edac/zynq_edac.txt
-> @@ -0,0 +1,18 @@
-> +Zynq EDAC driver, it does reports the DDR ECC single bit errors that are
-> +corrected and double bit ecc errors that are detected by the DDR ECC controller.
-> +ECC support for DDR is available in half-bus width(16 bit) configuration only.
-> +
-> +Required properties:
-> +- compatible: Should be "xlnx,ps7-ddrc" or "xlnx,ps7-ddrc-1.00.a"
+Since we do not want to add new platform IDs for the syscon driver,
+there is no reason to iterate over IDs. This patch simplifies
+syscon_match_pdevname() function to remove such iteration.
 
-Is this an or or a xor?
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+---
+ drivers/mfd/syscon.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-For the former case, which is the most general, which can be used as a
-fallback?
+diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+index 2620056..dbea55d 100644
+--- a/drivers/mfd/syscon.c
++++ b/drivers/mfd/syscon.c
+@@ -69,13 +69,6 @@ EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
+ 
+ static int syscon_match_pdevname(struct device *dev, void *data)
+ {
+-	struct platform_device *pdev = to_platform_device(dev);
+-	const struct platform_device_id *id = platform_get_device_id(pdev);
+-
+-	if (id)
+-		if (!strcmp(id->name, (const char *)data))
+-			return 1;
+-
+ 	return !strcmp(dev_name(dev), (const char *)data);
+ }
+ 
+-- 
+1.8.3.2
 
-How about something like:
-
-- compatible: should contain:
-  * "xlnx,ps7-ddrc-1.00.a" for <DESCRIPTION HERE>
-  * "xlnx,ps7-ddrc" for any compatible variant
-
-Is there any need at all for the "xlnx,ps7-ddrc" string? The driver
-doesn't care about it.
-
-Cheers,
-Mark.
