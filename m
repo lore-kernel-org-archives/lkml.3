@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837AbaCJRDG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:03:06 -0400
-Received: from mail-out1.informatik.tu-muenchen.de ([131.159.0.8]:41640 "EHLO
-	smtp1.informatik.tu-muenchen.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753399AbaCJRDD (ORCPT
+	id S1753970AbaCJRD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:03:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51841 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847AbaCJRDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:03:03 -0400
-Message-ID: <531DEEA6.4090808@totakura.in>
-Date: Mon, 10 Mar 2014 17:56:06 +0100
-From: Sree Harsha Totakura <sreeharsha@totakura.in>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Mon, 10 Mar 2014 13:03:55 -0400
+Date: Mon, 10 Mar 2014 18:04:03 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+In-Reply-To: <1394465314.12752.18.camel@x220>
+Message-ID: <alpine.DEB.2.02.1403101757320.18573@ionos.tec.linutronix.de>
+References: <20140310110410.5b2218f6@ilfaris>  <1394447253.2979.12.camel@x220>  <alpine.DEB.2.02.1403101504590.18573@ionos.tec.linutronix.de> <1394465314.12752.18.camel@x220>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: pppd service crash in linux-3.13.6
-References: <531A37FF.4000509@totakura.in>
-In-Reply-To: <531A37FF.4000509@totakura.in>
-X-Enigmail-Version: 1.6
-X-Forwarded-Message-Id: <531A37FF.4000509@totakura.in>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Mon, 10 Mar 2014, Paul Bolle wrote:
 
-Hi,
+> On Mon, 2014-03-10 at 15:06 +0100, Thomas Gleixner wrote:
+> > And how is this related to Julians observation, that fast calibration
+> > works in 3.13, but stopped to work in 3.14-rc ?
+> 
+> In the rest of my message - which you didn't quote - I stated that "the
+> error need not be v3.14-rc1 specific. But perhaps something changed in
+> v3.14-rc1 that makes it easier to trigger that error. I haven't
+> checked". (I didn't add that, in my experience, this message is not seen
+> at every boot.) So I'm basically advising Julian to double check whether
+> this is really a change in behavior between v3.13 and v3.14-rc1. But
+> perhaps Julian already did.
 
-Using linux-3.13.6, I am observing the following output from the pppd
-kernel thread.  This happens when I try to suspend my computer and it
-*stops* the computer from suspending.
+Oh, yes.
 
-I am using ppp via a bluetooth modem.
+> > on a Thinkpad x121e (AMD E-450 APU) with version 3.13.5 and earlier of
+> > the kernel I get:
+> > [...]
+> > but starting with v3.14-rc1 the fast TSC calibration fails:
 
-Trace:
-[22735.115313] PM: Syncing filesystems ... done.
-[22735.665613] PM: Preparing system for mem sleep
-[22735.665829] Freezing user space processes ...
-[22755.659538] Freezing of tasks failed after 20.004 seconds (1 tasks
-refusing to freeze, wq_
-busy=0):
-[22755.659555] pppd            D ffff8800376c9a58     0 16801      1
-0x00000006
-[22755.659557]  ffff8800376c9750 0000000000000046 0000000000012e80
-0000000000012e80
-[22755.659560]  ffff8802a1c1dfd8 ffff8800376c9750 0000000000000009
-ffff8802a1c1dd78
-[22755.659562]  0000000000000046 ffff8800376c9750 0000000000000028
-ffff8800376c9750
-[22755.659564] Call Trace:
-[22755.659569]  [<ffffffff81048507>] ? do_exit+0x937/0xa50
-[22755.659573]  [<ffffffff814bb6e1>] ? oops_end+0x91/0xd0
-[22755.659575]  [<ffffffff814b1f4f>] ? no_context+0x1f3/0x1ff
-[22755.659577]  [<ffffffff814bdb69>] ? __do_page_fault+0x89/0x500
-[22755.659581]  [<ffffffff811017dc>] ? free_pcppages_bulk+0x17c/0x3b0
-[22755.659584]  [<ffffffff81101cce>] ? free_hot_cold_page_list+0x3e/0x90
-[22755.659586]  [<ffffffff814babf8>] ? page_fault+0x28/0x30
-[22755.659591]  [<ffffffffa06fd5a3>] ? ppp_register_channel+0x13/0x20
-[ppp_generic]
-[22755.659594]  [<ffffffffa07062ab>] ? ppp_asynctty_open+0x12b/0x170
-[ppp_async]
-[22755.659596]  [<ffffffff812ec907>] ? tty_ldisc_open.isra.2+0x27/0x60
-[22755.659598]  [<ffffffff812ed1d3>] ? tty_ldisc_hangup+0x1e3/0x220
-[22755.659601]  [<ffffffff812e4614>] ? __tty_hangup+0x2c4/0x440
-[22755.659603]  [<ffffffff812e56a1>] ? disassociate_ctty+0x61/0x270
-[22755.659605]  [<ffffffff810483c2>] ? do_exit+0x7f2/0xa50
-[22755.659607]  [<ffffffff81053ad2>] ? recalc_sigpending+0x12/0x50
-[22755.659609]  [<ffffffff81054308>] ? __set_task_blocked+0x28/0x70
-[22755.659611]  [<ffffffff81048684>] ? do_group_exit+0x34/0xa0
-[22755.659613]  [<ffffffff810486fb>] ? SyS_exit_group+0xb/0x10
-[22755.659615]  [<ffffffff814c1eb9>] ? system_call_fastpath+0x16/0x1b
-[22755.659618]
-[22755.659619] Restarting tasks ... done.
+ 
+> And I'm also telling Julian that, as far as I can tell, there's no
+> reason to print this message at KERN_ERR level because what subsequently
+> will happen is that an alternative calibration strategy is tried. So a
+> failure of fast TSC calibration is apparently not so severe. See
 
-If you need any more info, I am happy to provide.
+And that does exactly make the regression he's observing go
+away?
 
-Regards,
-Sree
+We want to know why stuff which worked and actually should still work
+suddenly fails. Sure, the machine boots and nothing explodes, but it's
+still a regression.
+
+> https://lkml.org/lkml/2012/9/24/221 . Is that analysis incorrect?
+
+Kinda. But there is no reason for the fast calibration to fail except
+BIOS induced SMI nonsense.
+
+Thanks,
+
+	tglx
+
+
+
 
 
