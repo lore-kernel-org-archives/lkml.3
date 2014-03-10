@@ -1,85 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaCJH4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 03:56:22 -0400
-Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:23449
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752445AbaCJH4V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 03:56:21 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@kernel.org>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [PATCHv3 1/3] ASoC: codec: Simplify ASoC probe
- code.
-Thread-Topic: [alsa-devel] [PATCHv3 1/3] ASoC: codec: Simplify ASoC probe
- code.
-Thread-Index: AQHPNpOHBWw5RTyHRUi7LlXismLKZJrOzasAgAAnM/CAAWR6gIAJX3lQgAA2EwCAAAtmAIAAAqUAgAABkcA=
-Date: Mon, 10 Mar 2014 07:56:17 +0000
-Message-ID: <dda8dfdd78154f9ab68a2b1639727493@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1393814545-15002-1-git-send-email-Li.Xiubo@freescale.com>
- <1393814545-15002-2-git-send-email-Li.Xiubo@freescale.com>
- <20140303045952.GO2411@sirena.org.uk>
- <5bc570ec866541a68df5813ffbe3168e@BY2PR03MB505.namprd03.prod.outlook.com>
- <20140304043603.GI2411@sirena.org.uk>
- <0dbba1debfd149a6a5e3985349a95793@BY2PR03MB505.namprd03.prod.outlook.com>
- <531D6262.3070201@metafoo.de> <20140310073826.GA28112@sirena.org.uk>
- <531D6E2A.9060606@metafoo.de>
-In-Reply-To: <531D6E2A.9060606@metafoo.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 014617085B
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(479174003)(377454003)(189002)(199002)(164054003)(95416001)(94946001)(15202345003)(87936001)(81342001)(69226001)(65816001)(81542001)(85852003)(80022001)(63696002)(66066001)(85306002)(56776001)(80976001)(83072002)(49866001)(97336001)(56816005)(90146001)(54356001)(47736001)(76786001)(74366001)(51856001)(76796001)(47446002)(53806001)(77982001)(59766001)(92566001)(33646001)(19580405001)(76576001)(97186001)(47976001)(50986001)(15975445006)(81816001)(95666003)(79102001)(74502001)(74706001)(81686001)(31966008)(94316002)(46102001)(2656002)(74662001)(83322001)(4396001)(74316001)(76482001)(54316002)(87266001)(93516002)(74876001)(93136001)(19580395003)(86362001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB412;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:ECE4F820.ADD21D29.31D0B3CC.CE44DE0.201DD;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752616AbaCJIDU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 04:03:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29347 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750890AbaCJIDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 04:03:16 -0400
+Date: Mon, 10 Mar 2014 10:03:10 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Qin Chuanyu <qinchuanyu@huawei.com>
+Subject: Re: [PATCH net V2] vhost: net: switch to use data copy if pending
+ DMAs exceed the limit
+Message-ID: <20140310080310.GA754@redhat.com>
+References: <1394170107-12018-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394170107-12018-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Subject: Re: [alsa-devel] [PATCHv3 1/3] ASoC: codec: Simplify ASoC probe code.
+On Fri, Mar 07, 2014 at 01:28:27PM +0800, Jason Wang wrote:
+> We used to stop the handling of tx when the number of pending DMAs
+> exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
+> of both host and guest. But it was too aggressive in some cases, since
+> any delay or blocking of a single packet may delay or block the guest
+> transmission. Consider the following setup:
 > 
-> On 03/10/2014 08:38 AM, Mark Brown wrote:
-> > On Mon, Mar 10, 2014 at 07:57:38AM +0100, Lars-Peter Clausen wrote:
-> >> On 03/10/2014 04:51 AM, Li.Xiubo@freescale.com wrote:
-> >
-> >>> Has there any other problems about this patch series? And this I had
-> tested on
-> >>> our Vybrid-Twr board based on SGTL5000 codec and SAI drivers. If not, I
-> can
-> >>> continue with my second patches series about " Remove set_cache_io
-> entirely from
-> >>> ASoC probe".
-> >
-> >> It looks good to me.
-> >
-> > I don't have the patches any more.
+>     +-----+        +-----+
+>     | VM1 |        | VM2 |
+>     +--+--+        +--+--+
+>        |              |
+>     +--+--+        +--+--+
+>     | tap0|        | tap1|
+>     +--+--+        +--+--+
+>        |              |
+>     pfifo_fast   htb(10Mbit/s)
+>        |              |
+>     +--+--------------+---+
+>     |     bridge          |
+>     +--+------------------+
+>        |
+>     pfifo_fast
+>        |
+>     +-----+
+>     | eth0|(100Mbit/s)
+>     +-----+
 > 
-> Xiubo, when you resend the patch series can you make refresh your patch 3
-> against these two patches. They should preferably go in before we change the
-> signature.
+> - start two VMs and connect them to a bridge
+> - add an physical card (100Mbit/s) to that bridge
+> - setup htb on tap1 and limit its throughput to 10Mbit/s
+> - run two netperfs in the same time, one is from VM1 to VM2. Another is
+>   from VM1 to an external host through eth0.
+> - result shows that not only the VM1 to VM2 traffic were throttled but
+>   also the VM1 to external host through eth0 is also throttled somehow.
 > 
-> http://mailman.alsa-project.org/pipermail/alsa-devel/2014-March/073785.html
-> http://mailman.alsa-project.org/pipermail/alsa-devel/2014-March/073786.html
+> This is because the delay added by htb may lead the delay the finish
+> of DMAs and cause the pending DMAs for tap0 exceeds the limit
+> (VHOST_MAX_PEND). In this case vhost stop handling tx request until
+> htb send some packets. The problem here is all of the packets
+> transmission were blocked even if it does not go to VM2.
 > 
+> We can solve this issue by relaxing it a little bit: switching to use
+> data copy instead of stopping tx when the number of pending DMAs
+> exceed half of the vq size. This is safe because:
+> 
+> - The number of pending DMAs were still limited (half of the vq size)
+> - The out of order completion during mode switch can make sure that
+>   most of the tx buffers were freed in time in guest.
+> 
+> So even if about 50% packets were delayed in zero-copy case, vhost
+> could continue to do the transmission through data copy in this case.
+> 
+> Test result:
+> 
+> Before this patch:
+> VM1 to VM2 throughput is 9.3Mbit/s
+> VM1 to External throughput is 40Mbit/s
+> CPU utilization is 7%
+> 
+> After this patch:
+> VM1 to VM2 throughput is 9.3Mbit/s
+> Vm1 to External throughput is 93Mbit/s
+> CPU utilization is 16%
+> 
+> Completed performance test on 40gbe shows no obvious changes in both
+> throughput and cpu utilization with this patch.
+> 
+> The patch only solve this issue when unlimited sndbuf. We still need a
+> solution for limited sndbuf.
+> 
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Qin Chuanyu <qinchuanyu@huawei.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-@Lars,
-Yes, certainly.
+I thought hard about this.
+Here's what worries me: if there are still head of line
+blocking issues lurking in the stack, they will still
+hurt guests such as windows which rely on timely
+completion of buffers, but it makes it
+that much harder to reproduce the problems with
+linux guests which don't.
+And this will make even it harder to figure out
+whether zero copy is actually active to diagnose
+high cpu utilization cases.
 
-@Mark, @Lars,
-This two patch above should be applied firstly. And I will resent my patch
-Series later.
 
-Thanks,
+So I think this is a good trick, but let's make
+this path conditional on a new debugging module parameter:
+how about head_of_line_blocking with default off?
+This way if we suspect packets are delayed forever
+somewhere, we can enable that and see guest networking block.
 
---
-Best Regards,
-Xiubo
+Additionally, I think we should add a way to count zero copy
+and non zero copy packets.
+I see two ways to implement this: add tracepoints in vhost-net
+or add counters in tun accessible with ethtool.
+This can be a patch on top and does not have to block
+this one though.
 
+> ---
+> Changes from V1:
+> - Remove VHOST_MAX_PEND and switch to use half of the vq size as the limit
+> - Add cpu utilization in commit log
+> ---
+>  drivers/vhost/net.c | 19 +++++++------------
+>  1 file changed, 7 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index a0fa5de..2925e9a 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -38,8 +38,6 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
+>   * Using this limit prevents one virtqueue from starving others. */
+>  #define VHOST_NET_WEIGHT 0x80000
+>  
+> -/* MAX number of TX used buffers for outstanding zerocopy */
+> -#define VHOST_MAX_PEND 128
+>  #define VHOST_GOODCOPY_LEN 256
+>  
+>  /*
+> @@ -345,7 +343,7 @@ static void handle_tx(struct vhost_net *net)
+>  		.msg_flags = MSG_DONTWAIT,
+>  	};
+>  	size_t len, total_len = 0;
+> -	int err;
+> +	int err, num_pends;
+>  	size_t hdr_size;
+>  	struct socket *sock;
+>  	struct vhost_net_ubuf_ref *uninitialized_var(ubufs);
+> @@ -366,13 +364,6 @@ static void handle_tx(struct vhost_net *net)
+>  		if (zcopy)
+>  			vhost_zerocopy_signal_used(net, vq);
+>  
+> -		/* If more outstanding DMAs, queue the work.
+> -		 * Handle upend_idx wrap around
+> -		 */
+> -		if (unlikely((nvq->upend_idx + vq->num - VHOST_MAX_PEND)
+> -			      % UIO_MAXIOV == nvq->done_idx))
+> -			break;
+> -
+>  		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+>  					 ARRAY_SIZE(vq->iov),
+>  					 &out, &in,
+> @@ -405,9 +396,13 @@ static void handle_tx(struct vhost_net *net)
+>  			break;
+>  		}
+>  
+> +		num_pends = likely(nvq->upend_idx >= nvq->done_idx) ?
+> +			    (nvq->upend_idx - nvq->done_idx) :
+> +			    (nvq->upend_idx + UIO_MAXIOV -
+> +			     nvq->done_idx);
+> +
+>  		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
+> -				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
+> -				      nvq->done_idx
+> +				   && num_pends <= vq->num >> 1
+>  				   && vhost_net_tx_select_zcopy(net);
+>  
+>  		/* use msg_control to pass vhost zerocopy ubuf info to skb */
+> -- 
+> 1.8.3.2
