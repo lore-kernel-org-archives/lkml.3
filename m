@@ -1,214 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536AbaCJTUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:20:45 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51178 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753204AbaCJTRl (ORCPT
+	id S1753800AbaCJTWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:22:52 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46408 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624AbaCJTWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:17:41 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv3 2/8] Documentation: dt: iio: move arm/atmel-adc.txt to iio/adc/at91_adc.txt
-Date: Mon, 10 Mar 2014 20:17:19 +0100
-Message-Id: <1394479045-31852-3-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 10 Mar 2014 15:22:50 -0400
+Date: Mon, 10 Mar 2014 15:22:42 -0400 (EDT)
+Message-Id: <20140310.152242.340501323969517196.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: dborkman@redhat.com, mingo@kernel.org, wad@chromium.org,
+        rostedt@goodmis.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
+        hagen@jauu.net, jesse@nicira.com, tglx@linutronix.de,
+        masami.hiramatsu.pt@hitachi.com, tom.zanussi@linux.intel.com,
+        jovi.zhangwei@gmail.com, edumazet@google.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        fweisbec@gmail.com, acme@infradead.org, penberg@iki.fi,
+        arjan@infradead.org, hch@infradead.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v6 net-next 1/3] filter: add Extended BPF interpreter
+ and converter
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAMEtUuzgM5xKAXZaC+Up9bKy6MaS8V6jFGq49QY7VxQOSFgcBw@mail.gmail.com>
+References: <1394076617-8108-2-git-send-email-ast@plumgrid.com>
+	<20140307.153808.649644634357014854.davem@davemloft.net>
+	<CAMEtUuzgM5xKAXZaC+Up9bKy6MaS8V6jFGq49QY7VxQOSFgcBw@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 10 Mar 2014 12:22:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- .../devicetree/bindings/arm/atmel-adc.txt          | 82 ----------------------
- .../devicetree/bindings/iio/adc/at91_adc.txt       | 82 ++++++++++++++++++++++
- 2 files changed, 82 insertions(+), 82 deletions(-)
- delete mode 100644 Documentation/devicetree/bindings/arm/atmel-adc.txt
- create mode 100644 Documentation/devicetree/bindings/iio/adc/at91_adc.txt
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Fri, 7 Mar 2014 14:19:39 -0800
 
-diff --git a/Documentation/devicetree/bindings/arm/atmel-adc.txt b/Documentation/devicetree/bindings/arm/atmel-adc.txt
-deleted file mode 100644
-index 82061c7e4fea..000000000000
---- a/Documentation/devicetree/bindings/arm/atmel-adc.txt
-+++ /dev/null
-@@ -1,82 +0,0 @@
--* AT91's Analog to Digital Converter (ADC)
--
--Required properties:
--  - compatible: Should be "atmel,<chip>-adc"
--    <chip> can be "at91sam9260", "at91sam9g45" or "at91sam9x5"
--  - reg: Should contain ADC registers location and length
--  - interrupts: Should contain the IRQ line for the ADC
--  - atmel,adc-channels-used: Bitmask of the channels muxed and enabled for this
--    device
--  - atmel,adc-startup-time: Startup Time of the ADC in microseconds as
--    defined in the datasheet
--  - atmel,adc-vref: Reference voltage in millivolts for the conversions
--  - atmel,adc-res: List of resolutions in bits supported by the ADC. List size
--		   must be two at least.
--  - atmel,adc-res-names: Contains one identifier string for each resolution
--			 in atmel,adc-res property. "lowres" and "highres"
--			 identifiers are required.
--
--Optional properties:
--  - atmel,adc-use-external-triggers: Boolean to enable the external triggers
--  - atmel,adc-use-res: String corresponding to an identifier from
--		       atmel,adc-res-names property. If not specified, the highest
--		       resolution will be used.
--  - atmel,adc-sleep-mode: Boolean to enable sleep mode when no conversion
--  - atmel,adc-sample-hold-time: Sample and Hold Time in microseconds
--  - atmel,adc-ts-wires: Number of touchscreen wires. Should be 4 or 5. If this
--                        value is set, then the adc driver will enable touchscreen
--                        support.
--    NOTE: when adc touchscreen is enabled, the adc hardware trigger will be
--          disabled. Since touchscreen will occupy the trigger register.
--  - atmel,adc-ts-pressure-threshold: a pressure threshold for touchscreen. It
--                                     makes touch detection more precise.
--
--Optional trigger Nodes:
--  - Required properties:
--    * trigger-name: Name of the trigger exposed to the user
--    * trigger-value: Value to put in the Trigger register
--      to activate this trigger
--  - Optional properties:
--    * trigger-external: Is the trigger an external trigger?
--
--Examples:
--adc0: adc@fffb0000 {
--	#address-cells = <1>;
--	#size-cells = <0>;
--	compatible = "atmel,at91sam9260-adc";
--	reg = <0xfffb0000 0x100>;
--	interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
--	atmel,adc-channels-used = <0xff>;
--	atmel,adc-startup-time = <40>;
--	atmel,adc-use-external-triggers;
--	atmel,adc-vref = <3300>;
--	atmel,adc-res = <8 10>;
--	atmel,adc-res-names = "lowres", "highres";
--	atmel,adc-use-res = "lowres";
--
--	trigger@0 {
--		reg = <0>;
--		trigger-name = "external-rising";
--		trigger-value = <0x1>;
--		trigger-external;
--	};
--	trigger@1 {
--		reg = <1>;
--		trigger-name = "external-falling";
--		trigger-value = <0x2>;
--		trigger-external;
--	};
--
--	trigger@2 {
--		reg = <2>;
--		trigger-name = "external-any";
--		trigger-value = <0x3>;
--		trigger-external;
--	};
--
--	trigger@3 {
--		reg = <3>;
--		trigger-name = "continuous";
--		trigger-value = <0x6>;
--	};
--};
-diff --git a/Documentation/devicetree/bindings/iio/adc/at91_adc.txt b/Documentation/devicetree/bindings/iio/adc/at91_adc.txt
-new file mode 100644
-index 000000000000..82061c7e4fea
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/adc/at91_adc.txt
-@@ -0,0 +1,82 @@
-+* AT91's Analog to Digital Converter (ADC)
-+
-+Required properties:
-+  - compatible: Should be "atmel,<chip>-adc"
-+    <chip> can be "at91sam9260", "at91sam9g45" or "at91sam9x5"
-+  - reg: Should contain ADC registers location and length
-+  - interrupts: Should contain the IRQ line for the ADC
-+  - atmel,adc-channels-used: Bitmask of the channels muxed and enabled for this
-+    device
-+  - atmel,adc-startup-time: Startup Time of the ADC in microseconds as
-+    defined in the datasheet
-+  - atmel,adc-vref: Reference voltage in millivolts for the conversions
-+  - atmel,adc-res: List of resolutions in bits supported by the ADC. List size
-+		   must be two at least.
-+  - atmel,adc-res-names: Contains one identifier string for each resolution
-+			 in atmel,adc-res property. "lowres" and "highres"
-+			 identifiers are required.
-+
-+Optional properties:
-+  - atmel,adc-use-external-triggers: Boolean to enable the external triggers
-+  - atmel,adc-use-res: String corresponding to an identifier from
-+		       atmel,adc-res-names property. If not specified, the highest
-+		       resolution will be used.
-+  - atmel,adc-sleep-mode: Boolean to enable sleep mode when no conversion
-+  - atmel,adc-sample-hold-time: Sample and Hold Time in microseconds
-+  - atmel,adc-ts-wires: Number of touchscreen wires. Should be 4 or 5. If this
-+                        value is set, then the adc driver will enable touchscreen
-+                        support.
-+    NOTE: when adc touchscreen is enabled, the adc hardware trigger will be
-+          disabled. Since touchscreen will occupy the trigger register.
-+  - atmel,adc-ts-pressure-threshold: a pressure threshold for touchscreen. It
-+                                     makes touch detection more precise.
-+
-+Optional trigger Nodes:
-+  - Required properties:
-+    * trigger-name: Name of the trigger exposed to the user
-+    * trigger-value: Value to put in the Trigger register
-+      to activate this trigger
-+  - Optional properties:
-+    * trigger-external: Is the trigger an external trigger?
-+
-+Examples:
-+adc0: adc@fffb0000 {
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	compatible = "atmel,at91sam9260-adc";
-+	reg = <0xfffb0000 0x100>;
-+	interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
-+	atmel,adc-channels-used = <0xff>;
-+	atmel,adc-startup-time = <40>;
-+	atmel,adc-use-external-triggers;
-+	atmel,adc-vref = <3300>;
-+	atmel,adc-res = <8 10>;
-+	atmel,adc-res-names = "lowres", "highres";
-+	atmel,adc-use-res = "lowres";
-+
-+	trigger@0 {
-+		reg = <0>;
-+		trigger-name = "external-rising";
-+		trigger-value = <0x1>;
-+		trigger-external;
-+	};
-+	trigger@1 {
-+		reg = <1>;
-+		trigger-name = "external-falling";
-+		trigger-value = <0x2>;
-+		trigger-external;
-+	};
-+
-+	trigger@2 {
-+		reg = <2>;
-+		trigger-name = "external-any";
-+		trigger-value = <0x3>;
-+		trigger-external;
-+	};
-+
-+	trigger@3 {
-+		reg = <3>;
-+		trigger-name = "continuous";
-+		trigger-value = <0x6>;
-+	};
-+};
--- 
-1.8.3.2
+> On Fri, Mar 7, 2014 at 12:38 PM, David Miller <davem@davemloft.net> wrote:
+> 2.
+> Another alternative is to do
+> struct sk_filter {
+>   ..
+> union {
+>     unsigned int (*bpf_func)(const struct sk_buff *skb,const struct
+> sock_filter *filter);
+>     unsigned int (*bpf_func_ext)(void*, const struct sock_filter_ext *filter);
+>     unsigned int (*bpf_func_generic)(void *, void*);
+> };
+> 
+> assignments into sk_filter will use correct field like:
+> fp->bpf_func_ext = sk_run_filter_ext;
+> and the hot call macro will look like:
+> #define SK_RUN_FILTER(F, CTX) (*F->bpf_func_generic)(CTX, F->insns)
+> 
+> I think current typecasts are equally ugly, but 'union' style
+> will be cleaner from gcc point of view.
 
+The main point is that we should only bypass the type protection provided
+by the C language as an absolute last resort.
+
+But in some cases, we can consider making an exception.
+
+The problem with letting sk_check_filter() do the verification is that the
+type is also determined by the call site.  That requires some kind of type
+based or run time verification.
+
+Although it doesn't use C typing, one thing you could do is encoded the
+pointer into an unsigned long.  Then you encode the context in the lowest
+bits of that value, masking them out when derferencing at run time.
+
+So that way we can make sure seccomp _only_ runs seccomd filters.
+
+And sockets only run socket filters with SKBs in the second argument.
+
+> btw, ebpf jit coming in the next diff (it was also previewed in V1 series).
+> 
+> In the 1/3 commit log of this patch I explain the current relation
+> between bpf_ext_enable and bpf_jit_enable flags.
+> 
+> In the next patch with ebpf jit, single bpf_jit_enable flag will act for both:
+>   if (bpf_ext_enable) {
+>         convert to new
+>         sk_chk_filter() - check old bpf
+>         if (bpf_jit_enable)
+>              use new jit
+>         else
+>              use new interpreter
+>      } else {
+>         sk_chk_filter() - check old bpf
+>         if (bpf_jit_enable)
+>             use old jit
+>         else
+>             use old interpreter
+>      }
+> 
+> I believe Daniel oked this approach, but if you object, I can do it differently.
+> Are you saying 'bpf_jit_enable' flag should mean: do old jit no matter what?
+> Then we would need another flag 'bpf_ext_jit_enable' as well?
+> Seems overkill to me.
+
+It is not OK to create a temporary regression in between patch sets.
+
+You can make JIT higher priority than EBPF in this series, then once every
+single JIT is converted to EBPF, you can just adjust things accordingly.
