@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403AbaCJL5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:57:41 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:33593 "EHLO
-	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaCJL5j (ORCPT
+	id S1753425AbaCJL6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 07:58:35 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:43218 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752193AbaCJL6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:57:39 -0400
-Date: Mon, 10 Mar 2014 19:57:21 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>
-Subject: Re: [PATCH] crypto: avoid module request when lookup crypto larval
- of template
-Message-ID: <20140310115721.GA9657@gondor.apana.org.au>
-References: <1394443371-12181-1-git-send-email-jlee@suse.com>
+	Mon, 10 Mar 2014 07:58:33 -0400
+Date: Mon, 10 Mar 2014 11:58:18 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the arm-soc tree
+Message-ID: <20140310115817.GA10240@arm.com>
+References: <20140309115514.GY28112@sirena.org.uk>
+ <20140310104558.GB8830@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394443371-12181-1-git-send-email-jlee@suse.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140310104558.GB8830@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 05:22:51PM +0800, Lee, Chun-Yi wrote:
-> When allocate crypto algorithms, e.g. crypto_alloc_shash(), using
-> template model will run into the path that call module_request().
-> But there have no any module alias that match with the template name.
+On Mon, Mar 10, 2014 at 10:45:58AM +0000, Will Deacon wrote:
+> On Sun, Mar 09, 2014 at 11:55:14AM +0000, Mark Brown wrote:
+> > Hi all,
+> 
+> Hi Mark,
+> 
+> > After merging the arm-soc tree, today's linux-next build (20140309)
+> > failed for arm64 defconfig like this:
+> > 
+> > /home/broonie/next/next/drivers/irqchip/irq-gic.c: In function 'gic_raise_softirq':
+> > /home/broonie/next/next/drivers/irqchip/irq-gic.c:666:2: error: implicit declaration of function 'dmb' [-Werror=implicit-function-declaration]
+> >   dmb(ishst);
+> >   ^
+> 
+> Damnit, that's because we ended up going with dmb instead of dsb after it
+> (surprisingly) turned out to be sufficient. The simple patch below fixes the
+> problem -- Catalin, can we get this into -next please?
 
-There aren't any but there could be.  For example, as it is
-all direct implementations of cbc(aes) rely on the fact that
-they also happen to provide aes to autoload themselves.
+Done.
 
-We may well have a case where it makes sense for a module to
-provide just cbc(aes) for example, in which case it would need
-such an alias for it to be loaded automatically.
-
-Thanks,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Catalin
