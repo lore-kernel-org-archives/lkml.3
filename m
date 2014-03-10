@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaCJC3U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 22:29:20 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60346 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831AbaCJC3S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 22:29:18 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <531D237C.5070400@roeck-us.net>
-Date: Sun, 09 Mar 2014 19:29:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
+	id S1752992AbaCJCkt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 22:40:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44146 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752403AbaCJCkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 22:40:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,621,1389772800"; 
+   d="scan'208";a="469344467"
+Message-ID: <531D2623.1030200@linux.intel.com>
+Date: Sun, 09 Mar 2014 19:40:35 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Marc van der Wal <x0r+kernel@x0r.fr>, Wim Van Sebroeck <wim@iguana.be>
-CC: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] it87_wdt: Work around non-working CIR interrupts
-References: <20140306093659.GA24854@freyja>
-In-Reply-To: <20140306093659.GA24854@freyja>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>, Russ Anderson <rja@sgi.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vince Weaver <vincent.weaver@maine.edu>
+Subject: Re: [GIT PULL] x86 fixes for v3.14-rc6 - bad patch dropped
+References: <201403100015.s2A0FM4Z015106@terminus.zytor.com> <CA+55aFx36NkGNSNdLfyrdFAv2s_Ay6wUCoh57H-XR0o+vzT2Fw@mail.gmail.com>
+In-Reply-To: <CA+55aFx36NkGNSNdLfyrdFAv2s_Ay6wUCoh57H-XR0o+vzT2Fw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2014 01:36 AM, Marc van der Wal wrote:
-> From: Marc van der Wal <x0r+kernel@x0r.fr>
->
-> On some hardware platforms, the it87_wdt watchdog resets the machine
-> despite the watchdog daemon running and writing to /dev/watchdog.
->
-> This is due to Consumer IR buffer underrun interrupts being used as
-> triggers to reset the timer.  On some buggy hardware implementations
-> such as the iEi AFL-12A-N270 single-board computer, this method does
-> not work.
->
-> However, resetting the timer by writing its original timeout value in
-> its configuration register over and over again suppresses the unwanted
-> reboots.
->
-> Add a module option (nocir), 0 by default in order not to break existing
-> setups.  Setting it to 1 enables the workaround.
->
-> Fixes bug #42801 <https://bugzilla.kernel.org/show_bug.cgi?id=42801>.
-> Tested primarily on Linux 3.5.7, applies cleanly on Linux 3.13.5.
->
-> Signed-off-by: Marc van der Wal <x0r+kernel@x0r.fr>
+On 03/09/2014 06:51 PM, Linus Torvalds wrote:
+> On Sun, Mar 9, 2014 at 5:15 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>>
+>> The same collection of fixes except the broken NMI patch dropped.  I
+>> will send a fixed version of that plus Suresh' FPU fix in a few days,
+>> to get them some testing, plus I will be on a trip (part of why I got
+>> unduly rushed this past Friday.  Sorry again for that.)
+> 
+> I already pulled the broken one, and had actually pushed it out in
+> that broken format, which was so upsetting. Normally I tend to delay
+> pushing things out until I've done my compile tests, but I had
+> stupidly thought I didn't need to that time.
+> 
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+So I see.  Thanks and sorry again.
+
+	-hpa
 
 
