@@ -1,251 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465AbaCJVtm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:49:42 -0400
-Received: from smtp208.alice.it ([82.57.200.104]:14979 "EHLO smtp208.alice.it"
+	id S1754399AbaCJVvn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:51:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10798 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752703AbaCJVtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:49:40 -0400
-Date: Mon, 10 Mar 2014 22:49:18 +0100
-From: Antonio Ospite <ao2@ao2.it>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
-        David Barksdale <dbarksdale@uplogix.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/4] HID: sony: do not rely on hid_output_raw_report
-Message-Id: <20140310224918.0757eb439d8043c2e2a1ed2e@ao2.it>
-In-Reply-To: <20140310123253.0b728251617d599b852ac23a@ao2.it>
-References: <1394337163-32478-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1394337163-32478-4-git-send-email-benjamin.tissoires@redhat.com>
-	<20140310123253.0b728251617d599b852ac23a@ao2.it>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753108AbaCJVvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 17:51:42 -0400
+Date: Mon, 10 Mar 2014 17:51:11 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at
+ d34bd000
+Message-ID: <20140310215111.GA27749@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"H. Peter Anvin" <hpa@linux.intel.com>,
+	Stefani Seibold <stefani@seibold.net>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+	Martin Runge <Martin.Runge@rohde-schwarz.com>
+References: <531D044C.2090303@linux.intel.com>
+ <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
+ <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
+ <531DD35A.5060202@linux.intel.com>
+ <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
+ <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
+ <1394481804.980.9.camel@wall-e.seibold.net>
+ <531E1B53.5090205@linux.intel.com>
+ <CA+55aFyxbuhPKgB=U8R5C5T_iKVvju-oQDS4kHz6McW45B+1bA@mail.gmail.com>
+ <CA+55aFwuVYds=ssv755WKBvux1ru6fcDLGi+ORSFyU8xYP7+=w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwuVYds=ssv755WKBvux1ru6fcDLGi+ORSFyU8xYP7+=w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Mar 2014 12:32:53 +0100
-Antonio Ospite <ao2@ao2.it> wrote:
+On Mon, Mar 10, 2014 at 02:20:34PM -0700, Linus Torvalds wrote:
 
-> On Sat,  8 Mar 2014 22:52:42 -0500
-> Benjamin Tissoires <benjamin.tissoires@redhat.com> wrote:
-> 
-> > hid_out_raw_report is going to be obsoleted as it is not part of the
-> > unified HID low level transport documentation
-> > (Documentation/hid/hid-transport.txt)
-> > 
-> > To do so, we need to introduce two new quirks:
-> > * HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP: this quirks prevents the
-> >   transport driver to use the interrupt channel to send output report
-> >   (and thus force to use HID_REQ_SET_REPORT command)
-> > * HID_QUIRK_SKIP_OUTPUT_REPORT_ID: this one forces usbhid to not
-> >   include the report ID in the buffer it sends to the device through
-> >   HID_REQ_SET_REPORT in case of an output report
-> > 
-> > This also fixes a regression introduced in commit 3a75b24949a8
-> > (HID: hidraw: replace hid_output_raw_report() calls by appropriates ones).
-> > The hidraw API was not able to communicate with the PS3 SixAxis
-> > controllers in USB mode.
-> > 
-> > Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> >
-> 
-> I confirm that using hidraw via USB works again now, thanks, so the
-> patch is OK:
-> 
-> Tested-by: Antonio Ospite <ao2@ao2.it>
-> 
-> However I still get the failure with hidraw via BT, I am going to look
-> into that.
->
+ > I also suspect we should get rid of CONFIG_X86_OOSTORE, or at least
+ > limit it to !SMP - I don't think anybody ever made SMP systems with
+ > those IDT/Centaur Winchip chips in them.
 
-OK, it's all good even with hidraw via BT.
+Given the number of people who ever used that code when it was new could
+probably be counted on a couple hands, I'd be amazed if a) anyone was still
+using it, and b) that it hasn't regressed in some way in the last 15 years.
 
-I was compiling the wrong branch which didn't contain the changes from
-for-3.15/hid-core-ll-transport-cleanup. Sorry for the noise.
+Even when it worked, it was only a small performance increase anyway,
+and anyone who notices a circa 1998 CPU is now slightly slower on benchmarks
+in 2014 probably needs psychiatric help.
 
-> > ---
-> > changes in v3:
-> > - no changes
-> > 
-> > changes in v2:
-> > - removed usb.h include
-> > - renamed HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP
-> > - fix typo
-> > 
-> > 
-> >  drivers/hid/hid-sony.c        | 60 ++++++++++---------------------------------
-> >  drivers/hid/hidraw.c          |  3 ++-
-> >  drivers/hid/usbhid/hid-core.c |  7 ++++-
-> >  include/linux/hid.h           |  2 ++
-> >  4 files changed, 24 insertions(+), 48 deletions(-)
-> > 
-> > diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-> > index b5fe65e..4884bb5 100644
-> > --- a/drivers/hid/hid-sony.c
-> > +++ b/drivers/hid/hid-sony.c
-> > @@ -29,7 +29,6 @@
-> >  #include <linux/hid.h>
-> >  #include <linux/module.h>
-> >  #include <linux/slab.h>
-> > -#include <linux/usb.h>
-> >  #include <linux/leds.h>
-> >  #include <linux/power_supply.h>
-> >  #include <linux/spinlock.h>
-> > @@ -1007,45 +1006,6 @@ static int sony_mapping(struct hid_device *hdev, struct hid_input *hi,
-> >  }
-> >  
-> >  /*
-> > - * The Sony Sixaxis does not handle HID Output Reports on the Interrupt EP
-> > - * like it should according to usbhid/hid-core.c::usbhid_output_raw_report()
-> > - * so we need to override that forcing HID Output Reports on the Control EP.
-> > - *
-> > - * There is also another issue about HID Output Reports via USB, the Sixaxis
-> > - * does not want the report_id as part of the data packet, so we have to
-> > - * discard buf[0] when sending the actual control message, even for numbered
-> > - * reports, humpf!
-> > - */
-> > -static int sixaxis_usb_output_raw_report(struct hid_device *hid, __u8 *buf,
-> > -		size_t count, unsigned char report_type)
-> > -{
-> > -	struct usb_interface *intf = to_usb_interface(hid->dev.parent);
-> > -	struct usb_device *dev = interface_to_usbdev(intf);
-> > -	struct usb_host_interface *interface = intf->cur_altsetting;
-> > -	int report_id = buf[0];
-> > -	int ret;
-> > -
-> > -	if (report_type == HID_OUTPUT_REPORT) {
-> > -		/* Don't send the Report ID */
-> > -		buf++;
-> > -		count--;
-> > -	}
-> > -
-> > -	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
-> > -		HID_REQ_SET_REPORT,
-> > -		USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-> > -		((report_type + 1) << 8) | report_id,
-> > -		interface->desc.bInterfaceNumber, buf, count,
-> > -		USB_CTRL_SET_TIMEOUT);
-> > -
-> > -	/* Count also the Report ID, in case of an Output report. */
-> > -	if (ret > 0 && report_type == HID_OUTPUT_REPORT)
-> > -		ret++;
-> > -
-> > -	return ret;
-> > -}
-> > -
-> > -/*
-> >   * Sending HID_REQ_GET_REPORT changes the operation mode of the ps3 controller
-> >   * to "operational".  Without this, the ps3 controller will not report any
-> >   * events.
-> > @@ -1305,11 +1265,8 @@ static void sixaxis_state_worker(struct work_struct *work)
-> >  	buf[10] |= sc->led_state[2] << 3;
-> >  	buf[10] |= sc->led_state[3] << 4;
-> >  
-> > -	if (sc->quirks & SIXAXIS_CONTROLLER_USB)
-> > -		hid_output_raw_report(sc->hdev, buf, sizeof(buf), HID_OUTPUT_REPORT);
-> > -	else
-> > -		hid_hw_raw_request(sc->hdev, 0x01, buf, sizeof(buf),
-> > -				HID_OUTPUT_REPORT, HID_REQ_SET_REPORT);
-> > +	hid_hw_raw_request(sc->hdev, 0x01, buf, sizeof(buf), HID_OUTPUT_REPORT,
-> > +			HID_REQ_SET_REPORT);
-> >  }
-> >  
-> >  static void dualshock4_state_worker(struct work_struct *work)
-> > @@ -1659,7 +1616,18 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
-> >  	}
-> >  
-> >  	if (sc->quirks & SIXAXIS_CONTROLLER_USB) {
-> > -		hdev->hid_output_raw_report = sixaxis_usb_output_raw_report;
-> > +		/*
-> > +		 * The Sony Sixaxis does not handle HID Output Reports on the
-> > +		 * Interrupt EP like it could, so we need to force HID Output
-> > +		 * Reports to use HID_REQ_SET_REPORT on the Control EP.
-> > +		 *
-> > +		 * There is also another issue about HID Output Reports via USB,
-> > +		 * the Sixaxis does not want the report_id as part of the data
-> > +		 * packet, so we have to discard buf[0] when sending the actual
-> > +		 * control message, even for numbered reports, humpf!
-> > +		 */
-> > +		hdev->quirks |= HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP;
-> > +		hdev->quirks |= HID_QUIRK_SKIP_OUTPUT_REPORT_ID;
-> >  		ret = sixaxis_set_operational_usb(hdev);
-> >  		sc->worker_initialized = 1;
-> >  		INIT_WORK(&sc->state_worker, sixaxis_state_worker);
-> > diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-> > index 2cc484c..ffa648c 100644
-> > --- a/drivers/hid/hidraw.c
-> > +++ b/drivers/hid/hidraw.c
-> > @@ -149,7 +149,8 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
-> >  		goto out_free;
-> >  	}
-> >  
-> > -	if (report_type == HID_OUTPUT_REPORT) {
-> > +	if ((report_type == HID_OUTPUT_REPORT) &&
-> > +	    !(dev->quirks & HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP)) {
-> >  		ret = hid_hw_output_report(dev, buf, count);
-> >  		/*
-> >  		 * compatibility with old implementation of USB-HID and I2C-HID:
-> > diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-> > index 0d1d875..3bc7cad 100644
-> > --- a/drivers/hid/usbhid/hid-core.c
-> > +++ b/drivers/hid/usbhid/hid-core.c
-> > @@ -894,7 +894,12 @@ static int usbhid_set_raw_report(struct hid_device *hid, unsigned int reportnum,
-> >  	int ret, skipped_report_id = 0;
-> >  
-> >  	/* Byte 0 is the report number. Report data starts at byte 1.*/
-> > -	buf[0] = reportnum;
-> > +	if ((rtype == HID_OUTPUT_REPORT) &&
-> > +	    (hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORT_ID))
-> > +		buf[0] = 0;
-> > +	else
-> > +		buf[0] = reportnum;
-> > +
-> >  	if (buf[0] == 0x0) {
-> >  		/* Don't send the Report ID */
-> >  		buf++;
-> > diff --git a/include/linux/hid.h b/include/linux/hid.h
-> > index e224516..2cd7174 100644
-> > --- a/include/linux/hid.h
-> > +++ b/include/linux/hid.h
-> > @@ -290,6 +290,8 @@ struct hid_item {
-> >  #define HID_QUIRK_NO_EMPTY_INPUT		0x00000100
-> >  #define HID_QUIRK_NO_INIT_INPUT_REPORTS		0x00000200
-> >  #define HID_QUIRK_SKIP_OUTPUT_REPORTS		0x00010000
-> > +#define HID_QUIRK_SKIP_OUTPUT_REPORT_ID		0x00020000
-> > +#define HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP	0x00040000
-> >  #define HID_QUIRK_FULLSPEED_INTERVAL		0x10000000
-> >  #define HID_QUIRK_NO_INIT_REPORTS		0x20000000
-> >  #define HID_QUIRK_NO_IGNORE			0x40000000
-> > -- 
-> > 1.8.5.3
-> > 
-> 
-> 
-> -- 
-> Antonio Ospite
-> http://ao2.it
-> 
-> A: Because it messes up the order in which people normally read text.
->    See http://en.wikipedia.org/wiki/Posting_style
-> Q: Why is top-posting such a bad thing?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+I'd say rip it out completely.
 
+	Dave
 
--- 
-Antonio Ospite
-http://ao2.it
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
