@@ -1,111 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646AbaCJVke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:40:34 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51649 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271AbaCJVkb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:40:31 -0400
-From: Andy Gross <agross@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        dmaengine@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org,
-        Andy Gross <agross@codeaurora.org>
-Subject: [Patch v9 0/2] Add Qualcomm BAM dmaengine driver
-Date: Mon, 10 Mar 2014 16:40:18 -0500
-Message-Id: <1394487622-1679-1-git-send-email-agross@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754465AbaCJVtm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:49:42 -0400
+Received: from smtp208.alice.it ([82.57.200.104]:14979 "EHLO smtp208.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752703AbaCJVtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 17:49:40 -0400
+Date: Mon, 10 Mar 2014 22:49:18 +0100
+From: Antonio Ospite <ao2@ao2.it>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        David Barksdale <dbarksdale@uplogix.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/4] HID: sony: do not rely on hid_output_raw_report
+Message-Id: <20140310224918.0757eb439d8043c2e2a1ed2e@ao2.it>
+In-Reply-To: <20140310123253.0b728251617d599b852ac23a@ao2.it>
+References: <1394337163-32478-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1394337163-32478-4-git-send-email-benjamin.tissoires@redhat.com>
+	<20140310123253.0b728251617d599b852ac23a@ao2.it>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set introduces the dmaengine driver for the Qualcomm Bus Access
-Manager (BAM) DMA controller present on MSM 8x74 devices.  A number of the
-on-chip devices have their own BAM DMA controller and use it to move data
-between system memory and peripherals or between two peripherals.
+On Mon, 10 Mar 2014 12:32:53 +0100
+Antonio Ospite <ao2@ao2.it> wrote:
 
-The initial version of this driver will only support slave DMA operations
-between system memory and peripherals.
+> On Sat,  8 Mar 2014 22:52:42 -0500
+> Benjamin Tissoires <benjamin.tissoires@redhat.com> wrote:
+> 
+> > hid_out_raw_report is going to be obsoleted as it is not part of the
+> > unified HID low level transport documentation
+> > (Documentation/hid/hid-transport.txt)
+> > 
+> > To do so, we need to introduce two new quirks:
+> > * HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP: this quirks prevents the
+> >   transport driver to use the interrupt channel to send output report
+> >   (and thus force to use HID_REQ_SET_REPORT command)
+> > * HID_QUIRK_SKIP_OUTPUT_REPORT_ID: this one forces usbhid to not
+> >   include the report ID in the buffer it sends to the device through
+> >   HID_REQ_SET_REPORT in case of an output report
+> > 
+> > This also fixes a regression introduced in commit 3a75b24949a8
+> > (HID: hidraw: replace hid_output_raw_report() calls by appropriates ones).
+> > The hidraw API was not able to communicate with the PS3 SixAxis
+> > controllers in USB mode.
+> > 
+> > Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> >
+> 
+> I confirm that using hidraw via USB works again now, thanks, so the
+> patch is OK:
+> 
+> Tested-by: Antonio Ospite <ao2@ao2.it>
+> 
+> However I still get the failure with hidraw via BT, I am going to look
+> into that.
+>
 
-Changes from v8:
-	- Fix macro to use ee instead of pipe for variable name
-	- Fixed various nit comments
-	- Fixed probe clock release issue on error case
+OK, it's all good even with hidraw via BT.
 
-Changes from v7:
-        - Fix shift issue when reading NUM_EEs field.
-        - Unmask global BAM interrupt during BAM initialization.
+I was compiling the wrong branch which didn't contain the changes from
+for-3.15/hid-core-ll-transport-cleanup. Sorry for the noise.
 
-Changes from v6:
-        - Changed KConfig dependency from ARCH_MSM_DT to ARCH_QCOM.
-        - Incorporated comments on DT binding.
-        - Changed driver source file to accomodate DT changes.
+> > ---
+> > changes in v3:
+> > - no changes
+> > 
+> > changes in v2:
+> > - removed usb.h include
+> > - renamed HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP
+> > - fix typo
+> > 
+> > 
+> >  drivers/hid/hid-sony.c        | 60 ++++++++++---------------------------------
+> >  drivers/hid/hidraw.c          |  3 ++-
+> >  drivers/hid/usbhid/hid-core.c |  7 ++++-
+> >  include/linux/hid.h           |  2 ++
+> >  4 files changed, 24 insertions(+), 48 deletions(-)
+> > 
+> > diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+> > index b5fe65e..4884bb5 100644
+> > --- a/drivers/hid/hid-sony.c
+> > +++ b/drivers/hid/hid-sony.c
+> > @@ -29,7 +29,6 @@
+> >  #include <linux/hid.h>
+> >  #include <linux/module.h>
+> >  #include <linux/slab.h>
+> > -#include <linux/usb.h>
+> >  #include <linux/leds.h>
+> >  #include <linux/power_supply.h>
+> >  #include <linux/spinlock.h>
+> > @@ -1007,45 +1006,6 @@ static int sony_mapping(struct hid_device *hdev, struct hid_input *hi,
+> >  }
+> >  
+> >  /*
+> > - * The Sony Sixaxis does not handle HID Output Reports on the Interrupt EP
+> > - * like it should according to usbhid/hid-core.c::usbhid_output_raw_report()
+> > - * so we need to override that forcing HID Output Reports on the Control EP.
+> > - *
+> > - * There is also another issue about HID Output Reports via USB, the Sixaxis
+> > - * does not want the report_id as part of the data packet, so we have to
+> > - * discard buf[0] when sending the actual control message, even for numbered
+> > - * reports, humpf!
+> > - */
+> > -static int sixaxis_usb_output_raw_report(struct hid_device *hid, __u8 *buf,
+> > -		size_t count, unsigned char report_type)
+> > -{
+> > -	struct usb_interface *intf = to_usb_interface(hid->dev.parent);
+> > -	struct usb_device *dev = interface_to_usbdev(intf);
+> > -	struct usb_host_interface *interface = intf->cur_altsetting;
+> > -	int report_id = buf[0];
+> > -	int ret;
+> > -
+> > -	if (report_type == HID_OUTPUT_REPORT) {
+> > -		/* Don't send the Report ID */
+> > -		buf++;
+> > -		count--;
+> > -	}
+> > -
+> > -	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+> > -		HID_REQ_SET_REPORT,
+> > -		USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+> > -		((report_type + 1) << 8) | report_id,
+> > -		interface->desc.bInterfaceNumber, buf, count,
+> > -		USB_CTRL_SET_TIMEOUT);
+> > -
+> > -	/* Count also the Report ID, in case of an Output report. */
+> > -	if (ret > 0 && report_type == HID_OUTPUT_REPORT)
+> > -		ret++;
+> > -
+> > -	return ret;
+> > -}
+> > -
+> > -/*
+> >   * Sending HID_REQ_GET_REPORT changes the operation mode of the ps3 controller
+> >   * to "operational".  Without this, the ps3 controller will not report any
+> >   * events.
+> > @@ -1305,11 +1265,8 @@ static void sixaxis_state_worker(struct work_struct *work)
+> >  	buf[10] |= sc->led_state[2] << 3;
+> >  	buf[10] |= sc->led_state[3] << 4;
+> >  
+> > -	if (sc->quirks & SIXAXIS_CONTROLLER_USB)
+> > -		hid_output_raw_report(sc->hdev, buf, sizeof(buf), HID_OUTPUT_REPORT);
+> > -	else
+> > -		hid_hw_raw_request(sc->hdev, 0x01, buf, sizeof(buf),
+> > -				HID_OUTPUT_REPORT, HID_REQ_SET_REPORT);
+> > +	hid_hw_raw_request(sc->hdev, 0x01, buf, sizeof(buf), HID_OUTPUT_REPORT,
+> > +			HID_REQ_SET_REPORT);
+> >  }
+> >  
+> >  static void dualshock4_state_worker(struct work_struct *work)
+> > @@ -1659,7 +1616,18 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+> >  	}
+> >  
+> >  	if (sc->quirks & SIXAXIS_CONTROLLER_USB) {
+> > -		hdev->hid_output_raw_report = sixaxis_usb_output_raw_report;
+> > +		/*
+> > +		 * The Sony Sixaxis does not handle HID Output Reports on the
+> > +		 * Interrupt EP like it could, so we need to force HID Output
+> > +		 * Reports to use HID_REQ_SET_REPORT on the Control EP.
+> > +		 *
+> > +		 * There is also another issue about HID Output Reports via USB,
+> > +		 * the Sixaxis does not want the report_id as part of the data
+> > +		 * packet, so we have to discard buf[0] when sending the actual
+> > +		 * control message, even for numbered reports, humpf!
+> > +		 */
+> > +		hdev->quirks |= HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP;
+> > +		hdev->quirks |= HID_QUIRK_SKIP_OUTPUT_REPORT_ID;
+> >  		ret = sixaxis_set_operational_usb(hdev);
+> >  		sc->worker_initialized = 1;
+> >  		INIT_WORK(&sc->state_worker, sixaxis_state_worker);
+> > diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+> > index 2cc484c..ffa648c 100644
+> > --- a/drivers/hid/hidraw.c
+> > +++ b/drivers/hid/hidraw.c
+> > @@ -149,7 +149,8 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
+> >  		goto out_free;
+> >  	}
+> >  
+> > -	if (report_type == HID_OUTPUT_REPORT) {
+> > +	if ((report_type == HID_OUTPUT_REPORT) &&
+> > +	    !(dev->quirks & HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP)) {
+> >  		ret = hid_hw_output_report(dev, buf, count);
+> >  		/*
+> >  		 * compatibility with old implementation of USB-HID and I2C-HID:
+> > diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+> > index 0d1d875..3bc7cad 100644
+> > --- a/drivers/hid/usbhid/hid-core.c
+> > +++ b/drivers/hid/usbhid/hid-core.c
+> > @@ -894,7 +894,12 @@ static int usbhid_set_raw_report(struct hid_device *hid, unsigned int reportnum,
+> >  	int ret, skipped_report_id = 0;
+> >  
+> >  	/* Byte 0 is the report number. Report data starts at byte 1.*/
+> > -	buf[0] = reportnum;
+> > +	if ((rtype == HID_OUTPUT_REPORT) &&
+> > +	    (hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORT_ID))
+> > +		buf[0] = 0;
+> > +	else
+> > +		buf[0] = reportnum;
+> > +
+> >  	if (buf[0] == 0x0) {
+> >  		/* Don't send the Report ID */
+> >  		buf++;
+> > diff --git a/include/linux/hid.h b/include/linux/hid.h
+> > index e224516..2cd7174 100644
+> > --- a/include/linux/hid.h
+> > +++ b/include/linux/hid.h
+> > @@ -290,6 +290,8 @@ struct hid_item {
+> >  #define HID_QUIRK_NO_EMPTY_INPUT		0x00000100
+> >  #define HID_QUIRK_NO_INIT_INPUT_REPORTS		0x00000200
+> >  #define HID_QUIRK_SKIP_OUTPUT_REPORTS		0x00010000
+> > +#define HID_QUIRK_SKIP_OUTPUT_REPORT_ID		0x00020000
+> > +#define HID_QUIRK_NO_OUTPUT_REPORTS_ON_INTR_EP	0x00040000
+> >  #define HID_QUIRK_FULLSPEED_INTERVAL		0x10000000
+> >  #define HID_QUIRK_NO_INIT_REPORTS		0x20000000
+> >  #define HID_QUIRK_NO_IGNORE			0x40000000
+> > -- 
+> > 1.8.5.3
+> > 
+> 
+> 
+> -- 
+> Antonio Ospite
+> http://ao2.it
+> 
+> A: Because it messes up the order in which people normally read text.
+>    See http://en.wikipedia.org/wiki/Posting_style
+> Q: Why is top-posting such a bad thing?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Changes from v5:
-        - Separated copyright from BAM description
-        - Removed usage of slave dma direction
-        - Reworked slave config interface
-        - Removed max segment size restriction in slave_sg
-        - Added acked-by on DT patch
-        - Fixed nit comments
-
-Changes from v4:
-        - Add devm_free_irq() to .remove to avoid race condition
-        - Free FIFO memory in .remove
-
-Changes from v3:
-        - Remove unused bam_channel_dir.
-        - Remove incorrect write to BAM_IRQ_SRCS_EE (read only).
-        - Remove dma direction from DT binding and revise driver to use
-          direction from prep_slave_sg.
-        - Remove unnecessary channel reset from channel_init.  This could affect
-          channels controlled from other execution environments.
-        - Change terminate_all to also take care of the current active
-          descriptor.
-        - Rework .remove function to correctly mask interrupts and clean up
-          resources and tasklets.
-
-Changes from v2:
-        - Corrected Kconfig dependencies
-        - Moved execution environment ID to controller DT binding.  The EE is
-          a global setting across all of the channels on the controller.
-        - Combined header into source file.
-        - Corrected copyright date.
-        - Moved channel hardware initialization to occur when channel is used
-          for the first time.
-        - Converted dma_alloc_coherent to dma_alloc_writecombine
-        - Removed unecessary reset of channel from the dma terminate_all
-        - Corrected usage of EE in irq handler and channel configuration
-          functions.
-        - Changed resource functions inside probe to use correct APIs.
-        - Removed dma filter function and modified dma_xlate to use
-          dma_get_slave_channel API
-        - Fixed various nit comments
-
-Changes from v1:
-        - Converted driver to use virt-dma
-        - Reworked probe function per review comments
-        - tx_status function now computes and returns residuals
-        - Removed proprietary slave config.  Removed associated include file.
-        - Renamed files to reflect vendor name instead of specific device
-        - Converted to use (readl|writel)_relaxed w/ appropriate barriers
-        - Removed unions in favor of standard types.
-
-Andy Gross (2):
-  dmaengine: qcom_bam_dma: Add device tree binding
-  dmaengine: add Qualcomm BAM dma driver
-
- .../devicetree/bindings/dma/qcom_bam_dma.txt       |   41 +
- drivers/dma/Kconfig                                |    9 +
- drivers/dma/Makefile                               |    1 +
- drivers/dma/qcom_bam_dma.c                         | 1111 ++++++++++++++++++++
- 4 files changed, 1162 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
- create mode 100644 drivers/dma/qcom_bam_dma.c
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Antonio Ospite
+http://ao2.it
 
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
