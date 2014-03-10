@@ -1,223 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288AbaCJQCm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 12:02:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53939 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035AbaCJQCh (ORCPT
+	id S1754328AbaCJQCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 12:02:52 -0400
+Received: from smtprelay0073.hostedemail.com ([216.40.44.73]:49294 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754301AbaCJQCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 12:02:37 -0400
-Message-Id: <20140310155543.537361784@infradead.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 10 Mar 2014 16:42:39 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: arnd@arndb.de, linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        akpm@linux-foundation.org, walken@google.com, andi@firstfloor.org,
-        riel@redhat.com, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, oleg@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [RFC][PATCH 3/7] qspinlock: Add pending bit
-References: <20140310154236.038181843@infradead.org>
-Content-Disposition: inline; filename=peterz-qspinlock-pending.patch
+	Mon, 10 Mar 2014 12:02:49 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:1:41:355:379:421:541:960:966:973:982:988:989:1042:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1593:1594:1605:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:2636:2693:2828:2895:3138:3139:3140:3141:3142:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4385:4605:4823:5007:6119:6691:7652:7875:7903:8825:8957:9165:10007:10848:11026:11232:11473:11658:11914:12043:12050:12296:12438:12517:12519:12555:12740:13141:13230:21067,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: scene68_329879b8b093b
+X-Filterd-Recvd-Size: 11295
+Message-ID: <1394467346.24244.14.camel@joe-AO722>
+Subject: Treewide frequency of various checkpatch messages
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, apw@canonical.com,
+        devel@linuxdriverproject.org, David Miller <davem@davemloft.net>
+Date: Mon, 10 Mar 2014 09:02:26 -0700
+In-Reply-To: <1394184637.16156.58.camel@joe-AO722>
+References: <1394104358-23438-1-git-send-email-kys@microsoft.com>
+	 <1394104390-23477-1-git-send-email-kys@microsoft.com>
+	 <20140306.142919.763823800315842610.davem@davemloft.net>
+	 <1394148520.16156.8.camel@joe-AO722> <20140307075247.GA29018@mwanda>
+	 <1394184637.16156.58.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the qspinlock needs to touch a second cacheline; add a pending
-bit and allow a single in-word spinner before we punt to the second
-cacheline.
+On Fri, 2014-03-07 at 01:30 -0800, Joe Perches wrote:
+> On Fri, 2014-03-07 at 10:54 +0300, Dan Carpenter wrote:
+ (a question about a new message warning of a missing
+  blank line between variable declaration blocks and
+  code in a function)
+> > How many warnings does this generate does this generate when you run it
+> > across the whole tree?
+> A lot.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- include/asm-generic/qspinlock_types.h |   12 +++-
- kernel/locking/qspinlock.c            |   92 ++++++++++++++++++++++++++++------
- 2 files changed, 87 insertions(+), 17 deletions(-)
+Turns out it's 20,210 and it's the 14th
+most common checkpatch message type.
 
---- a/include/asm-generic/qspinlock_types.h
-+++ b/include/asm-generic/qspinlock_types.h
-@@ -38,15 +38,20 @@ typedef struct qspinlock {
-  * Bitfields in the atomic value:
-  *
-  *  0- 7: locked byte
-- *  8- 9: tail index
-- * 10-31: tail cpu (+1)
-+ *     8: pending
-+ *  9-10: tail index
-+ * 11-31: tail cpu (+1)
-  */
- 
- #define _Q_LOCKED_OFFSET	0
- #define _Q_LOCKED_BITS		8
- #define _Q_LOCKED_MASK		(((1U << _Q_LOCKED_BITS) - 1) << _Q_LOCKED_OFFSET)
- 
--#define _Q_TAIL_IDX_OFFSET	(_Q_LOCKED_OFFSET + _Q_LOCKED_BITS)
-+#define _Q_PENDING_OFFSET	(_Q_LOCKED_OFFSET + _Q_LOCKED_BITS)
-+#define _Q_PENDING_BITS		1
-+#define _Q_PENDING_MASK		(((1U << _Q_PENDING_BITS) - 1) << _Q_PENDING_OFFSET)
-+
-+#define _Q_TAIL_IDX_OFFSET	(_Q_PENDING_OFFSET + _Q_PENDING_BITS)
- #define _Q_TAIL_IDX_BITS	2
- #define _Q_TAIL_IDX_MASK	(((1U << _Q_TAIL_IDX_BITS) - 1) << _Q_TAIL_IDX_OFFSET)
- 
-@@ -55,5 +60,6 @@ typedef struct qspinlock {
- #define _Q_TAIL_CPU_MASK	(((1U << _Q_TAIL_CPU_BITS) - 1) << _Q_TAIL_CPU_OFFSET)
- 
- #define _Q_LOCKED_VAL		(1U << _Q_LOCKED_OFFSET)
-+#define _Q_PENDING_VAL		(1U << _Q_PENDING_OFFSET)
- 
- #endif /* __ASM_GENERIC_QSPINLOCK_TYPES_H */
---- a/kernel/locking/qspinlock.c
-+++ b/kernel/locking/qspinlock.c
-@@ -83,6 +83,8 @@ static inline struct mcs_spinlock *decod
- 	return per_cpu_ptr(&mcs_nodes[idx], cpu);
- }
- 
-+#define _Q_LOCKED_PENDING_MASK	(_Q_LOCKED_MASK | _Q_PENDING_MASK)
-+
- /**
-  * queue_spin_lock_slowpath - acquire the queue spinlock
-  * @lock: Pointer to queue spinlock structure
-@@ -91,13 +93,16 @@ static inline struct mcs_spinlock *decod
-  *
-  *              fast      :    slow                                  :    unlock
-  *                        :                                          :
-- * uncontended  (0,0)   --:--> (0,1) --------------------------------:--> (*,0)
-- *                        :       | ^--------.                    /  :
-- *                        :       v           \                   |  :
-- * uncontended            :    (n,x) --+--> (n,0)                 |  :
-+ * uncontended  (0,0,0) --:--> (0,0,1) ------------------------------:--> (*,*,0)
-+ *                        :       | ^--------.------.             /  :
-+ *                        :       v           \      \            |  :
-+ * pending                :    (0,1,1) +--> (0,1,0)   \           |  :
-+ *                        :       | ^--'              |           |  :
-+ *                        :       v                   |           |  :
-+ * uncontended            :    (n,x,y) +--> (n,0,0) --'           |  :
-  *   queue                :       | ^--'                          |  :
-  *                        :       v                               |  :
-- * contended              :    (*,x) --+--> (*,0) -----> (*,1) ---'  :
-+ * contended              :    (*,x,y) +--> (*,0,0) ---> (*,0,1) -'  :
-  *   queue                :         ^--'                             :
-  *
-  */
-@@ -109,6 +114,61 @@ void queue_spin_lock_slowpath(struct qsp
- 
- 	BUILD_BUG_ON(CONFIG_NR_CPUS >= (1U << _Q_TAIL_CPU_BITS));
- 
-+	/*
-+	 * trylock || pending
-+	 *
-+	 * 0,0,0 -> 0,0,1 ; trylock
-+	 * 0,0,1 -> 0,1,1 ; pending
-+	 */
-+	for (;;) {
-+		/*
-+		 * If we observe any contention; queue.
-+		 */
-+		if (val & ~_Q_LOCKED_MASK)
-+			goto queue;
-+
-+		new = _Q_LOCKED_VAL;
-+		if (val == new)
-+			new |= _Q_PENDING_VAL;
-+
-+		old = atomic_cmpxchg(&lock->val, val, new);
-+		if (old == val)
-+			break;
-+
-+		val = old;
-+	}
-+
-+	/*
-+	 * we won the trylock
-+	 */
-+	if (new == _Q_LOCKED_VAL)
-+		return;
-+
-+	/*
-+	 * we're pending, wait for the owner to go away.
-+	 *
-+	 * *,1,1 -> *,1,0
-+	 */
-+	while ((val = atomic_read(&lock->val)) & _Q_LOCKED_MASK)
-+		cpu_relax();
-+
-+	/*
-+	 * take ownership and clear the pending bit.
-+	 *
-+	 * *,1,0 -> *,0,1
-+	 */
-+	for (;;) {
-+		new = (val & ~_Q_PENDING_MASK) | _Q_LOCKED_VAL;
-+
-+		old = atomic_cmpxchg(&lock->val, val, new);
-+		if (old == val)
-+			break;
-+
-+		val = old;
-+	}
-+	return;
-+
-+queue:
- 	node = this_cpu_ptr(&mcs_nodes[0]);
- 	idx = node->count++;
- 	tail = encode_tail(smp_processor_id(), idx);
-@@ -118,15 +178,18 @@ void queue_spin_lock_slowpath(struct qsp
- 	node->next = NULL;
- 
- 	/*
-+	 * we already touched the queueing cacheline; don't bother with pending
-+	 * stuff.
-+	 *
- 	 * trylock || xchg(lock, node)
- 	 *
--	 * 0,0 -> 0,1 ; trylock
--	 * p,x -> n,x ; prev = xchg(lock, node)
-+	 * 0,0,0 -> 0,0,1 ; trylock
-+	 * p,y,x -> n,y,x ; prev = xchg(lock, node)
- 	 */
- 	for (;;) {
- 		new = _Q_LOCKED_VAL;
- 		if (val)
--			new = tail | (val & _Q_LOCKED_MASK);
-+			new = tail | (val & _Q_LOCKED_PENDING_MASK);
- 
- 		old = atomic_cmpxchg(&lock->val, val, new);
- 		if (old == val)
-@@ -144,7 +207,7 @@ void queue_spin_lock_slowpath(struct qsp
- 	/*
- 	 * if there was a previous node; link it and wait.
- 	 */
--	if (old & ~_Q_LOCKED_MASK) {
-+	if (old & ~_Q_LOCKED_PENDING_MASK) {
- 		prev = decode_tail(old);
- 		ACCESS_ONCE(prev->next) = node;
- 
-@@ -152,18 +215,19 @@ void queue_spin_lock_slowpath(struct qsp
- 	}
- 
- 	/*
--	 * we're at the head of the waitqueue, wait for the owner to go away.
-+	 * we're at the head of the waitqueue, wait for the owner & pending to
-+	 * go away.
- 	 *
--	 * *,x -> *,0
-+	 * *,x,y -> *,0,0
- 	 */
--	while ((val = atomic_read(&lock->val)) & _Q_LOCKED_MASK)
-+	while ((val = atomic_read(&lock->val)) & _Q_LOCKED_PENDING_MASK)
- 		cpu_relax();
- 
- 	/*
- 	 * claim the lock:
- 	 *
--	 * n,0 -> 0,1 : lock, uncontended
--	 * *,0 -> *,1 : lock, contended
-+	 * n,0,0 -> 0,0,1 : lock, uncontended
-+	 * *,0,0 -> *,0,1 : lock, contended
- 	 */
- 	for (;;) {
- 		new = _Q_LOCKED_VAL;
+    14    20210  WARNING:SPACING: Missing a blank line after declarations
+
+> Check back with me after the week or so
+> it'll take to run on this little netboook.
+
+I ran a variant of this over the weekend
+over next-20140306.  It just finished.
+
+$ git ls-files | grep "\.[ch]$"| \
+  while read file ; do \
+    ./scripts/checkpatch.pl -f --strict --show-types --no-summary --emacs --terse $file ; \
+  done | \
+  tee -a checkpatch.all
+
+Here are the top 100 types of messages:
+
+(for    2377922 total LOC)
+
+     1   241524  WARNING:LONG_LINE: line over 80 characters
+     2   238492  ERROR:SPACING: space required after that ',' (ctx:VxV)
+     3   152039  WARNING:LEADING_SPACE: please, no spaces at the start of a line
+     4   117364  CHECK:CAMELCASE: Avoid CamelCase
+     5    67761  CHECK:PARENTHESIS_ALIGNMENT: Alignment should match open parenthesis
+     6    53673  ERROR:CODE_INDENT: code indent should use tabs where possible
+     7    30981  ERROR:TRAILING_WHITESPACE: trailing whitespace
+     8    30443  ERROR:C99_COMMENTS: do not use C99 // comments
+     9    26928  WARNING:SPACE_BEFORE_TAB: please, no space before tabs
+    10    25546  CHECK:AVOID_EXTERNS: extern prototypes should be avoided in .h files
+    11    25384  WARNING:SPACING: space prohibited between function name and open parenthesis '('
+    12    25209  WARNING:SPLIT_STRING: quoted string split across lines
+    13    21410  WARNING:NETWORKING_BLOCK_COMMENT_STYLE: networking block comments don't use an empty /* line, use /* Comment...
+    14    20210  WARNING:SPACING: Missing a blank line after declarations
+    15    19881  CHECK:SPACING: No space is necessary after a cast
+    16    18045  ERROR:SPACING: space prohibited after that open parenthesis '('
+    17    17009  ERROR:COMPLEX_MACRO: Macros with complex values should be enclosed in parenthesis
+    18    16674  ERROR:SPACING: space prohibited before that close parenthesis ')'
+    19    14364  ERROR:SPACING: space required before the open parenthesis '('
+    20    13331  ERROR:TRAILING_STATEMENTS: trailing statements should be on next line
+    21    12619  CHECK:BRACES: braces {} should be used on all arms of this statement
+    22    12605  CHECK:FSF_MAILING_ADDRESS: Do not include the paragraph about writing to the Free Software Foundation's mailing address from the sample GPL notice. The
+    23    11194  ERROR:SPACING: spaces prohibited around that ':' (ctx:WxW)
+    24    10192  ERROR:OPEN_BRACE: that open brace { should be on the previous line
+    25     9941  WARNING:PREFER_PR_LEVEL: Prefer [subsystem eg: netdev]_err([subsystem]dev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+    26     9355  CHECK:BRACES: Blank lines aren't necessary after an open brace '{'
+    27     9215  WARNING:NEW_TYPEDEFS: do not add new typedefs
+    28     8733  ERROR:POINTER_LOCATION: "foo * bar" should be "foo *bar"
+    29     8129  WARNING:PRINTK_WITHOUT_KERN_LEVEL: printk() should include KERN_ facility level
+    30     7676  WARNING:BRACES: braces {} are not necessary for single statement blocks
+    31     7339  CHECK:LOGICAL_CONTINUATIONS: Logical continuations should be on the previous line
+    32     7247  ERROR:ASSIGN_IN_IF: do not use assignment in if condition
+    33     6918  WARNING:NETWORKING_BLOCK_COMMENT_STYLE: networking block comments put the trailing */ on a separate line
+    34     6750  ERROR:SPACING: spaces required around that '=' (ctx:VxV)
+    35     6446  WARNING:SPACING: space prohibited before semicolon
+    36     6289  WARNING:PREFER_PR_LEVEL: Prefer [subsystem eg: netdev]_info([subsystem]dev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+    37     6276  CHECK:MULTIPLE_ASSIGNMENTS: multiple assignments should be avoided
+    38     6204  WARNING:VOLATILE: Use of volatile is usually wrong: see Documentation/volatile-considered-harmful.txt
+    39     5921  CHECK:BRACES: Blank lines aren't necessary before a close brace '}'
+    40     5262  WARNING:QUOTED_WHITESPACE_BEFORE_NEWLINE: unnecessary whitespace before a quoted newline
+    41     5050  WARNING:NETWORKING_BLOCK_COMMENT_STYLE: networking block comments start with * on subsequent lines
+    42     4740  WARNING:PREFER_PR_LEVEL: Prefer [subsystem eg: netdev]_warn([subsystem]dev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+    43     4409  WARNING:PREFER_PR_LEVEL: Prefer [subsystem eg: netdev]_dbg([subsystem]dev, ... then dev_dbg(dev, ... then pr_debug(...  to printk(KERN_DEBUG ...
+    44     4248  ERROR:SPACING: space required after that close brace '}'
+    45     4237  ERROR:POINTER_LOCATION: "foo* bar" should be "foo *bar"
+    46     4224  WARNING:EXPORT_SYMBOL: EXPORT_SYMBOL(foo); should immediately follow its function/variable
+    47     4164  ERROR:RETURN_PARENTHESES: return is not a function, parentheses are not required
+    48     3734  CHECK:ALLOC_SIZEOF_STRUCT: Prefer
+    49     3651  CHECK:USLEEP_RANGE: usleep_range is preferred over udelay; see Documentation/timers/timers-howto.txt
+    50     3597  WARNING:AVOID_EXTERNS: externs should be avoided in .c files
+    51     3515  WARNING:SPACING: Unnecessary space before function pointer arguments
+    52     3241  ERROR:ELSE_AFTER_BRACE: else should follow close brace '}'
+    53     2995  WARNING:MEMORY_BARRIER: memory barrier without comment
+    54     2713  ERROR:SPACING: space prohibited before that close square bracket ']'
+    55     2337  ERROR:POINTER_LOCATION: "(foo*)" should be "(foo *)"
+    56     2329  CHECK:UNCOMMENTED_DEFINITION: spinlock_t definition without comment
+    57     2298  WARNING:PREFER_PACKED: __packed is preferred over __attribute__((packed))
+    58     2180  ERROR:OPEN_BRACE: open brace '{' following struct go on the same line
+    59     2032  CHECK:REDUNDANT_CODE: if this code is redundant consider removing it
+    60     2017  ERROR:SPACING: space prohibited after that open square bracket '['
+    61     1945  WARNING:BRACES: braces {} are not necessary for any arm of this statement
+    62     1898  WARNING:MSLEEP: msleep < 20ms can sleep for up to 20ms; see Documentation/timers/timers-howto.txt
+    63     1884  WARNING:MISSING_BREAK: Possible switch case/default not preceeded by break or fallthrough comment
+    64     1869  WARNING:CONSTANT_CONVERSION: __constant_cpu_to_le32 should be cpu_to_le32
+    65     1855  WARNING:PREFER_ETHER_ADDR_COPY: Prefer ether_addr_copy() over memcpy() if the Ethernet addresses are __aligned(2)
+    66     1800  WARNING:SUSPECT_CODE_INDENT: suspect code indent for conditional statements (8, 12)
+    67     1779  ERROR:SPACING: space required after that ',' (ctx:VxO)
+    68     1773  ERROR:BRACKET_SPACE: space prohibited before open square bracket '['
+    69     1664  WARNING:INDENTED_LABEL: labels should not be indented
+    70     1620  ERROR:SPACING: need consistent spacing around '%' (ctx:WxV)
+    71     1594  CHECK:SPACING: spaces required around that ':' (ctx:VxV)
+    72     1519  ERROR:SPACING: space required before the open brace '{'
+    73     1414  WARNING:STATIC_CONST_CHAR_ARRAY: static const char * array should probably be static const char * const
+    74     1392  ERROR:SPACING: space required after that ';' (ctx:VxV)
+    75     1376  WARNING:PREFER_SEQ_PUTS: Prefer seq_puts to seq_printf
+    76     1363  WARNING:DEEP_INDENTATION: Too many leading tabs - consider code refactoring
+    77     1328  CHECK:UNCOMMENTED_DEFINITION: struct mutex definition without comment
+    78     1316  ERROR:INITIALISED_STATIC: do not initialise statics to 0 or NULL
+    79     1287  WARNING:LINE_CONTINUATIONS: Avoid unnecessary line continuations
+    80     1239  ERROR:SPACING: spaces required around that '<' (ctx:VxV)
+    81     1181  ERROR:SWITCH_CASE_INDENT_LEVEL: switch and case should be at the same indent
+    82     1129  ERROR:MULTISTATEMENT_MACRO_USE_DO_WHILE: Macros with multiple statements should be enclosed in a do - while loop
+    83     1036  WARNING:PREFER_PR_LEVEL: Prefer pr_warn(... to pr_warning(...
+    84      942  ERROR:SPACING: spaces required around that '==' (ctx:VxV)
+    85      941  WARNING:INCLUDE_LINUX: Use #include <linux/io.h> instead of <asm/io.h>
+    86      906  WARNING:CONSIDER_KSTRTO: simple_strtoul is obsolete, use kstrtoul instead
+    87      836  ERROR:SPACING: spaces prohibited around that ':' (ctx:WxV)
+    88      805  WARNING:PREFER_PR_LEVEL: Prefer [subsystem eg: netdev]_notice([subsystem]dev, ... then dev_notice(dev, ... then pr_notice(...  to printk(KERN_NOTICE ..
+    89      803  ERROR:SPACING: space prohibited after that '!' (ctx:BxW)
+    90      787  ERROR:SPACING: space required before that '-' (ctx:OxV)
+    91      776  ERROR:SPACING: spaces required around that ':' (ctx:VxW)
+    92      765  WARNING:INCLUDE_LINUX: Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
+    93      759  CHECK:INVALID_UTF8: Invalid UTF-8, patch and commit message should be encoded in UTF-8
+    94      754  ERROR:SPACING: space required before that '&' (ctx:OxV)
+    95      723  WARNING:SINGLE_STATEMENT_DO_WHILE_MACRO: Single statement macros should not use a do {} while (0) loop
+    96      710  CHECK:ARCH_INCLUDE_LINUX: Consider using #include <linux/io.h> instead of <asm/io.h>
+    97      707  ERROR:SPACING: spaces required around that '=' (ctx:VxW)
+    98      691  WARNING:CVS_KEYWORD: CVS style keyword markers, these will _not_ be updated
+    99      644  WARNING:SUSPECT_CODE_INDENT: suspect code indent for conditional statements (2, 4)
+   100      641  ERROR:OPEN_BRACE: open brace '{' following function declarations go on the next line
 
 
