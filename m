@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033AbaCJUMC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:12:02 -0400
-Received: from smtprelay0212.hostedemail.com ([216.40.44.212]:56548 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751818AbaCJUMA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:12:00 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3872:4250:4321:4605:5007:7652:8603:10004:10226:10400:10450:10455:10848:11026:11232:11658:11914:12517:12519:12740:13069:13161:13229:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: walk70_2e3b50fbf8136
-X-Filterd-Recvd-Size: 1905
-Message-ID: <1394482316.21085.8.camel@joe-AO722>
-Subject: Re: Treewide frequency of various checkpatch messages
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, apw@canonical.com,
-        devel@linuxdriverproject.org,
+	id S1753581AbaCJUPv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:15:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3210 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752954AbaCJUPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 16:15:49 -0400
+Date: Mon, 10 Mar 2014 16:15:08 -0400
+From: Dave Jones <davej@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Mon, 10 Mar 2014 13:11:56 -0700
-In-Reply-To: <20140310193346.GA2850@kroah.com>
-References: <1394104358-23438-1-git-send-email-kys@microsoft.com>
-	 <1394104390-23477-1-git-send-email-kys@microsoft.com>
-	 <20140306.142919.763823800315842610.davem@davemloft.net>
-	 <1394148520.16156.8.camel@joe-AO722> <20140307075247.GA29018@mwanda>
-	 <1394184637.16156.58.camel@joe-AO722> <1394467346.24244.14.camel@joe-AO722>
-	 <20140310165046.GA12687@kroah.com> <1394477330.24244.34.camel@joe-AO722>
-	 <20140310193346.GA2850@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: deadlock in lru_add_drain ? (3.14rc5)
+Message-ID: <20140310201508.GA16200@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, Tejun Heo <tj@kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Chris Metcalf <cmetcalf@tilera.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	linux-mm <linux-mm@kvack.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
+References: <20140308220024.GA814@redhat.com>
+ <CA+55aFzLxY8Xsn90v1OAsmVBWYPZTiJ74YE=HaCPYR2hvRfk+g@mail.gmail.com>
+ <20140310150106.GD25290@htj.dyndns.org>
+ <20140310155053.GA26188@redhat.com>
+ <20140310200957.GF25290@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140310200957.GF25290@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-10 at 12:33 -0700, Greg KH wrote:
-> On Mon, Mar 10, 2014 at 11:48:50AM -0700, Joe Perches wrote:
-[]
-> > I've no strong opinion of the need to write code
-> > like:
-> > 
-> > {
-> >         u32 iterations = 0;
-> > 
-> >         while (arch_spin_is_locked(lock))
-> >                 delay_backoff(iterations++);
-> > }
-> 
-> I wonder if there's a way to "count" the size of the function, and only
-> complain if it's longer than 4-5 lines long?
+On Mon, Mar 10, 2014 at 04:09:57PM -0400, Tejun Heo wrote:
 
-No, there's isn't really.
-checkpatch works on patch hunks.
-The function scope isn't necessarily visible.
+ > Hmmm... this is puzzling.  At least according to the slightly
+ > truncated (pids < 13) sysrq-t output, there's no kworker running
+ > lru_add_drain_per_cpu() and nothing blocked on lru_add_drain_all::lock
+ > can introduce any complex dependency.  Also, at least from glancing
+ > over, I don't see anything behind lru_add_rain_per_cpu() which can get
+ > involved in a complex dependency chain.
+ > 
+ > Assuming that the handful lost traces didn't reveal serious ah-has, it
+ > almost looks like workqueue either failed to initiate execution of a
+ > queued work item or flush_work() somehow got confused on a work item
+ > which already finished, both of which are quite unlikely given that we
+ > haven't had any simliar report on any other work items.
+ > 
+ > I think it'd be wise to extend sysrq-t output to include the states of
+ > workqueue if for nothing else to easily rule out doubts about basic wq
+ > functions.  Dave, is this as much information we're gonna get from the
+ > trinity instance?  I assume trying to reproduce the case isn't likely
+ > to work?
+ 
+I tried enabling the function tracer, and ended up locking up the box entirely,
+so had to reboot.  Rerunning it now on rc6, will let you know if it reproduces
+(though it took like a day or so last time).
 
+	Dave
 
