@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206AbaCJDki (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 23:40:38 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38481 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149AbaCJDkf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 23:40:35 -0400
-Date: Sun, 09 Mar 2014 23:40:32 -0400 (EDT)
-Message-Id: <20140309.234032.873557698878535571.davem@davemloft.net>
-To: sebastian.hesselbarth@gmail.com
-Cc: rob@landley.net, andrew@lunn.ch, f.fainelli@gmail.com,
-        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: phy: Add sysfs attribute to prevent PHY suspend
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <531D0D0D.4050703@gmail.com>
-References: <531D094C.1090205@gmail.com>
-	<20140309.204101.47552917508273123.davem@davemloft.net>
-	<531D0D0D.4050703@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 09 Mar 2014 20:40:35 -0700 (PDT)
+	id S1753234AbaCJDkr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 23:40:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:17128 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753211AbaCJDko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 23:40:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,621,1389772800"; 
+   d="scan'208";a="416766837"
+Date: Mon, 10 Mar 2014 09:10:37 +0530
+From: Jenny Tc <jenny.tc@intel.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        freemangordon@abv.bg, linux-omap@vger.kernel.org
+Subject: Re: [PATCHv8 1/4] power_supply: Add inlmt,iterm, min/max temp props
+Message-ID: <20140310034037.GA27798@jenny-desktop>
+References: <1394170174-21959-1-git-send-email-jenny.tc@intel.com>
+ <1394170174-21959-2-git-send-email-jenny.tc@intel.com>
+ <20140307201240.GC27645@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307201240.GC27645@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Date: Mon, 10 Mar 2014 01:53:33 +0100
-
-> On 03/10/2014 01:41 AM, David Miller wrote:
->> From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> Date: Mon, 10 Mar 2014 01:37:32 +0100
->>
->>> The mechanism is manual, no automatic way to determine it.
->>
->> We recognize BIOS and ACPI bugs and work around them, by looking at
->> version information and whatnot, so you really can't convince me that
->> something similar can't be done here perhaps in the platform code.
+On Fri, Mar 07, 2014 at 09:12:40PM +0100, Pavel Machek wrote:
+> On Fri 2014-03-07 10:59:31, Jenny TC wrote:
+> > Add new power supply properties for input current, charge termination
+> > current, min and max temperature
+> > 
+> > POWER_SUPPLY_PROP_TEMP_MIN - minimum operatable temperature
+> > POWER_SUPPLY_PROP_TEMP_MAX - maximum operatable temperature
+> > 
+> > POWER_SUPPLY_PROP_INLMT - input current limit programmed by charger. Indicates
+> > the input current for a charging source.
+> > 
+> > POWER_SUPPLY_PROP_CHARGE_TERM_CUR - Charge termination current used to detect
+> > the end of charge condition
+> > 
+> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
 > 
-> Hmm, if the is a way to determine the version of that particual u-boot
-> I'd be happy to exploit that information. But I honestly doubt that.
-> Compared to u-boot bootloader and kernel interaction, BIOS and ACPI
-> are well-defined protocols.
-> 
-> I personally, would prefer everybody should update his broken
-> bootloaders, but that will just not happen.
+> The patch no longer matches the description, otherwise it looks good.
 
-What you can do is have a test that _perhaps_ covers a "broader than
-reality" list of broken bootloader cases.
-
-Then you have something the bootloader can provide which indicates
-that it has been fixed.
+Will fix it in next patch set
