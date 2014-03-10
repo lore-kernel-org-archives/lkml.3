@@ -1,52 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474AbaCJR2i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:28:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37697 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754339AbaCJR2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754361AbaCJR2g (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 10 Mar 2014 13:28:36 -0400
-Subject: Re: [PATCH] mfd: Fix cs5535 dependencies
-From: Jean Delvare <jdelvare@suse.de>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-In-Reply-To: <1394466966.5848.48.camel@chaos.site>
-References: <20140307220051.0b004abf@endymion.delvare>
-	 <20140307212545.6c1dab79@alan.etchedpixels.co.uk>
-	 <1394466966.5848.48.camel@chaos.site>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Mon, 10 Mar 2014 18:28:33 +0100
-Message-ID: <1394472513.5848.122.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+Received: from mx1.redhat.com ([209.132.183.28]:56328 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753679AbaCJR2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 13:28:33 -0400
+Date: Mon, 10 Mar 2014 19:27:59 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: jbenc@redhat.com, David Miller <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Simon Horman <horms@verge.net.au>,
+        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        =?us-ascii?Q?=3D=3Fus-ascii=3FB=3FPT9VVEYtOD9xP1BldGVyPTIwUGFuPTI4PUU2?=
+	 =?us-ascii?Q?PUJEPTk4PUU1PThEPUFC=3F=3D_=3D=3Fus-ascii=3FB=3FPUU1PUI5PUIz?=
+	 =?us-ascii?Q?PTI5Pz0=3D=3F=3D?= <panweiping3@gmail.com>,
+        netdev@vger.kernel.org
+Subject: [PATCH 4/5] skbuff: skb_segment: s/fskb/list_skb/
+Message-ID: <1394468807-25980-5-git-send-email-mst@redhat.com>
+References: <1394468807-25980-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394468807-25980-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Monday 10 March 2014 à 16:56 +0100, Jean Delvare a écrit :
-> Le Friday 07 March 2014 à 21:25 +0000, One Thousand Gnomes a écrit :
-> > On Fri, 7 Mar 2014 22:00:51 +0100
-> > Jean Delvare <jdelvare@suse.de> wrote:
-> > 
-> > > As far as I know, the CS5535 and CS5536 chipsets are companions of the
-> > > Geode series of processors, which are 32-bit only. So the CS5535
-> > > drivers are not needed on x86-64, except for build testing purpose.
-> > > 
-> > > This aligns the dependencies to what FB_GEODE already uses.
-> > > 
-> > > Signed-off-by: Jean Delvare <jdelvare@suse.de>
-> > 
-> > This looks correct to me. Also true for the ATA driver and a few others
-> > plus for the CS5510 and 5520.
-> 
-> And probably CONFIG_GEODE_WDT and CONFIG_SND_CS5535AUDIO as well?
+fskb is unrelated to frag: it's coming from
+frag_list. Rename it list_skb to avoid confusion.
 
-... and CONFIG_PATA_CS5530?
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ net/core/skbuff.c | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index af386e1..64ee4e6 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2853,7 +2853,7 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+ {
+ 	struct sk_buff *segs = NULL;
+ 	struct sk_buff *tail = NULL;
+-	struct sk_buff *fskb = skb_shinfo(head_skb)->frag_list;
++	struct sk_buff *list_skb = skb_shinfo(head_skb)->frag_list;
+ 	skb_frag_t *frag = skb_shinfo(head_skb)->frags;
+ 	unsigned int mss = skb_shinfo(head_skb)->gso_size;
+ 	unsigned int doffset = head_skb->data - skb_mac_header(head_skb);
+@@ -2894,14 +2894,14 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+ 		if (hsize > len || !sg)
+ 			hsize = len;
+ 
+-		if (!hsize && i >= nfrags && skb_headlen(fskb) &&
+-		    (skb_headlen(fskb) == len || sg)) {
+-			BUG_ON(skb_headlen(fskb) > len);
++		if (!hsize && i >= nfrags && skb_headlen(list_skb) &&
++		    (skb_headlen(list_skb) == len || sg)) {
++			BUG_ON(skb_headlen(list_skb) > len);
+ 
+ 			i = 0;
+-			nfrags = skb_shinfo(fskb)->nr_frags;
+-			frag = skb_shinfo(fskb)->frags;
+-			pos += skb_headlen(fskb);
++			nfrags = skb_shinfo(list_skb)->nr_frags;
++			frag = skb_shinfo(list_skb)->frags;
++			pos += skb_headlen(list_skb);
+ 
+ 			while (pos < offset + len) {
+ 				BUG_ON(i >= nfrags);
+@@ -2915,8 +2915,8 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+ 				frag++;
+ 			}
+ 
+-			nskb = skb_clone(fskb, GFP_ATOMIC);
+-			fskb = fskb->next;
++			nskb = skb_clone(list_skb, GFP_ATOMIC);
++			list_skb = list_skb->next;
+ 
+ 			if (unlikely(!nskb))
+ 				goto err;
+@@ -2983,15 +2983,15 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+ 
+ 		while (pos < offset + len) {
+ 			if (i >= nfrags) {
+-				BUG_ON(skb_headlen(fskb));
++				BUG_ON(skb_headlen(list_skb));
+ 
+ 				i = 0;
+-				nfrags = skb_shinfo(fskb)->nr_frags;
+-				frag = skb_shinfo(fskb)->frags;
++				nfrags = skb_shinfo(list_skb)->nr_frags;
++				frag = skb_shinfo(list_skb)->frags;
+ 
+ 				BUG_ON(!nfrags);
+ 
+-				fskb = fskb->next;
++				list_skb = list_skb->next;
+ 			}
+ 
+ 			if (unlikely(skb_shinfo(nskb)->nr_frags >=
 -- 
-Jean Delvare
-SUSE L3 Support
+MST
 
