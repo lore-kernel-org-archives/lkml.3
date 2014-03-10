@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653AbaCJQ1z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 12:27:55 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:33800 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060AbaCJQ1x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 12:27:53 -0400
-Date: Mon, 10 Mar 2014 16:27:47 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: Mark Brown <broonie@linaro.org>, Philipp Zabel <p.zabel@pengutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1 1/2] mfd: da9063: Upgrade of register definitions to
- support production silicon
-Message-ID: <20140310162747.GH13661@lee--X1>
-References: <cover.1394124002.git.stwiss.opensource@diasemi.com>
- <1e3f5e127c375a45b9a8e929fa99fa5c917b1dea.1394124002.git.stwiss.opensource@diasemi.com>
- <20140310140238.GA15558@lee--X1>
- <6ED8E3B22081A4459DAC7699F3695FB7A0C77018@SW-EX-MBX01.diasemi.com>
+	id S1753784AbaCJQ3H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 12:29:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60381 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753362AbaCJQ3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 12:29:04 -0400
+Date: Mon, 10 Mar 2014 18:29:01 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: jbenc@redhat.com, netdev@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH 0/5] skbuff: fix skb_segment with zero copy skbs
+Message-ID: <1394468807-25980-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB7A0C77018@SW-EX-MBX01.diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> >>
-> >> This patch updates the register definitions for DA9063 to support the
-> >> production silicon variant code ID (0x5). These changes are not backwards
-> >> compatible with the previous register definitions and can only be used
-> >> with the production variant of DA9063.
-> >>
-> >> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> >> ---
-> >> Checks performed with next-20140306/scripts/checkpatch.pl
-> >>  registers.h               total: 0 errors, 0 warnings, 1032 lines checked
-> >>
-> >> A brief summary of the changes include:
-> >>
-> >> - Introduction of a new DA9063_REG_ALARM_S register (now appearing at
-> >>   addr=0x46) allowing alarm second resolutions and which causes a shift
-> >>   in the register map for the RTC registers;
-> >> - Two new configuration registers DA9063_REG_CONFIG_M/N at 0x112 & 0x113;
-> >> - Modified register ranges for MON_REG_[1-6] which now appears at the
-> >>   addr=0x114 onwards;
-> >> - New register addresses for the general purpose registers GP_ID_[0-19]
-> >>   (now appearing at 0x121 onwards);
-> >> - Renaming of some definitions to match our hardware design conventions;
-> >> - There are also some bit-pattern additions that define some functionality
-> >>   alterations of the registers. One notable addition is:
-> >>   DA9063_BUCK_SLOWSTART can also be found in the CONTROL_B register and
-> >>   enables a BUCK slow start (reduced inrush current; increased startup
-> >>   time);
-> >>
-> >>  include/linux/mfd/da9063/registers.h |  120 ++++++++++++++++++----------------
-> >>  1 file changed, 62 insertions(+), 58 deletions(-)
-> >
-> >Well, as this doesn't seem to cause any issues when building and I'm
-> >going to guess that the other patch in the set won't be a problem (as
-> >you didn't send it to me, so I'm gussing it's insignificant), I'll
-> >apply the patch.
-> >
-> >Applied, thanks.
-> 
-> Hi Lee,
-> 
-> Thanks for this.
-> 
-> It looks like made a mess of the To: and Cc: e-mail list in my submission patches
-> for this one. The second patch (the RTC driver) should have been CC'ed to you
-> also. 
-> Sorry. I will try to get my e-mail lists in order for my next submission.
-> 
-> The RTC driver component relies on the register change patch which you just
-> applied. This RTC component was reviewed and Ack'ed by Alessandro Zummo
-> here:
-> http://www.kernelhub.org/?p=2&msg=427642
-> 
-> There was no way for you to know any of this because I had not CC'ed you
-> properly on this part.
-> 
-> It is possible to add the RTC component as well or shall I resend that part
-> again?
+This fixes a bug in skb_segment where it moves frags
+between skbs without orphaning them.
+This causes userspace to assume it's safe to
+reuse the buffer, and receiver gets corrupted data.
+This further might leak information from the
+transmitter on the wire.
 
-It needs to be in my inbox for me to apply it.
+To fix track which skb does a copied frag belong
+to, and orphan frags when copying them.
 
-Can you send it again with Alessandro and my Acks applied please?
+As we are tracking multiple skbs here, using
+short names (skb,nskb,fskb,skb_frag,frag) becomes confusing.
+So before adding another one, I refactor these names
+slightly.
+
+Patch is split out to make it easier to
+verify that all trasformations are trivially correct.
+
+The problem was observed in the field,
+so I think that the patch is necessary on stable
+as well.
+
+Michael S. Tsirkin (5):
+  skbuff: skb_segment: s/frag/nskb_frag/
+  skbuff: skb_segment: s/skb_frag/frag/
+  skbuff: skb_segment: s/skb/head_skb/
+  skbuff: skb_segment: s/fskb/list_skb/
+  skbuff: skb_segment: orphan frags before copying
+
+ net/core/skbuff.c | 100 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 54 insertions(+), 46 deletions(-)
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+MST
+
