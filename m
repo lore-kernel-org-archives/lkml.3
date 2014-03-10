@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182AbaCJP2h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:28:37 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:61064 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753930AbaCJP2g (ORCPT
+	id S1754192AbaCJP3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:29:09 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:62989 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471AbaCJP3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:28:36 -0400
-Message-ID: <1394465314.12752.18.camel@x220>
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 10 Mar 2014 16:28:34 +0100
-In-Reply-To: <alpine.DEB.2.02.1403101504590.18573@ionos.tec.linutronix.de>
-References: <20140310110410.5b2218f6@ilfaris>
-	 <1394447253.2979.12.camel@x220>
-	 <alpine.DEB.2.02.1403101504590.18573@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Mar 2014 15:28:34.0753 (UTC) FILETIME=[669E6310:01CF3C75]
-X-RcptDomain: vger.kernel.org
+	Mon, 10 Mar 2014 11:29:06 -0400
+Date: Mon, 10 Mar 2014 08:28:59 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        kernel@stlinux.com, Giuseppe Condorelli <giuseppe.condorelli@st.com>
+Subject: Re: [PATCH 1/5] drivers: input: keyboard: st-keyscan: add keyscan
+ driver
+Message-ID: <20140310152859.GA29054@core.coreip.homeip.net>
+References: <1393990772-9567-1-git-send-email-gabriel.fernandez@st.com>
+ <1393990772-9567-2-git-send-email-gabriel.fernandez@st.com>
+ <20140310114819.GO14976@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140310114819.GO14976@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-10 at 15:06 +0100, Thomas Gleixner wrote:
-> And how is this related to Julians observation, that fast calibration
-> works in 3.13, but stopped to work in 3.14-rc ?
+Hi Lee,
 
-In the rest of my message - which you didn't quote - I stated that "the
-error need not be v3.14-rc1 specific. But perhaps something changed in
-v3.14-rc1 that makes it easier to trigger that error. I haven't
-checked". (I didn't add that, in my experience, this message is not seen
-at every boot.) So I'm basically advising Julian to double check whether
-this is really a change in behavior between v3.13 and v3.14-rc1. But
-perhaps Julian already did.
+On Mon, Mar 10, 2014 at 11:48:19AM +0000, Lee Jones wrote:
+> Hi Gabi,
+> 
+> Sorry for the delay. It was a hectic week last week.
+> 
+> As promised:
+> 
+> > This patch adds ST Keyscan driver to use the keypad hw a subset
+> > of ST boards provide. Specific board setup will be put in the
+> > given dt.
+> > 
+> > Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
+> > Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
+> 
+> Are you sure these are in the correct order?
+> 
+> What is the history of this commit?
+> 
+> > ---
+> >  .../devicetree/bindings/input/st-keypad.txt        |  50 ++++
+> 
+> This should be submitted as a seperate patch.
 
-And I'm also telling Julian that, as far as I can tell, there's no
-reason to print this message at KERN_ERR level because what subsequently
-will happen is that an alternative calibration strategy is tried. So a
-failure of fast TSC calibration is apparently not so severe. See
-https://lkml.org/lkml/2012/9/24/221 . Is that analysis incorrect?
+Why do we have such requirement? To me it would make more sense to add
+binding documentation in the same commit as the code that uses these
+bindings.
 
-Thanks,
+[...]
 
+> > +
+> > +	error = matrix_keypad_parse_of_params(dev, &pdata->num_out_pads,
+> > +			&pdata->num_in_pads);
+> > +	if (error) {
+> > +		dev_err(dev, "failed to parse keypad params\n");
+> > +		return error;
+> 
+> Nit: It's pretty unusual to use this for a standard error handling
+> variable. Consider 'ret' or 'err' as a replacement.
 
-Paul Bolle
+I like "error", in fact there are a lot of these in input. I use "error" for
+data that is only returned from error path and "retval" when the same
+variable is returned in both success and error paths.
 
+> > +
+> > +	input_dev->id.bustype = BUS_HOST;
+> > +	input_dev->id.vendor = 0x0001;
+> > +	input_dev->id.product = 0x0001;
+> > +	input_dev->id.version = 0x0100;
+> 
+> Any chance we can #define these?
+
+Even better would be not use 0x0001 as vendor as there (unfortunately)
+quite a few other drivers use it already. Either omit or chose something
+else. Does ST have PCI or USB VID assigned?
+
+Thanks.
+
+-- 
+Dmitry
