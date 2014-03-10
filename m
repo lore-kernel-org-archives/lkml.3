@@ -1,107 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377AbaCJRWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:22:44 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49172 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244AbaCJRWl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:22:41 -0400
-Date: Mon, 10 Mar 2014 17:22:21 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-Message-ID: <20140310172221.GT28112@sirena.org.uk>
-References: <1392755543-28335-1-git-send-email-nm@ti.com>
- <1392755543-28335-4-git-send-email-nm@ti.com>
- <20140224015826.GU25940@sirena.org.uk>
- <530B594F.2030500@ti.com>
- <20140303035426.GC2411@sirena.org.uk>
- <531DF250.5060100@ti.com>
+	id S1754205AbaCJRYe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:24:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3987 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753475AbaCJRYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 13:24:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,625,1389772800"; 
+   d="scan'208";a="469695333"
+Message-ID: <531DF549.2090403@linux.intel.com>
+Date: Mon, 10 Mar 2014 10:24:25 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8kUASS5K4BSNeq5L"
-Content-Disposition: inline
-In-Reply-To: <531DF250.5060100@ti.com>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH 3/6] PM / Voltagedomain: introduce voltage domain
- driver support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
+References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net> <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com> <1394229220.20013.13.camel@wall-e.seibold.net> <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com> <1394354848.1002.37.camel@wall-e.seibold.net> <531D044C.2090303@linux.intel.com> <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com> <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com> <531DD35A.5060202@linux.intel.com> <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com> <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
+In-Reply-To: <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/10/2014 10:12 AM, Andy Lutomirski wrote:
+> On Mon, Mar 10, 2014 at 8:11 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> On Mar 10, 2014 8:01 AM, "H. Peter Anvin" <hpa@linux.intel.com> wrote:
+>>>
+>>> I have mentioned in the past wanting to move the fixmap to the low part
+>>> of the kernel space, because the top isn't really fixed...
+>>
+>> How about the high part of the user address space, just above the stack?
+>> Leave a unmapped page in between, or something. The stack is already
+>> randomized, isn't it?
+> 
+> For the !compat_vdso case, I don't like it -- this will put the vdso
+> (which is executable) at a constant offset from the stack, which will
+> make it much easier to use the vdso to defeat ASLR.
+> 
+> For the compat_vdso case, this only works if the address is *not*
+> random, unless we're going to start giving each process its very own
+> relocated vdso.
+> 
 
---8kUASS5K4BSNeq5L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I presumed we were talking about compat_vdso, which thus simply turns
+into a "don't randomize the vdso flag."  A significant side benefit is
+that this should make the code more similar.
 
-On Mon, Mar 10, 2014 at 12:11:44PM -0500, Nishanth Menon wrote:
-> On 03/02/2014 09:54 PM, Mark Brown wrote:
-> > On Mon, Feb 24, 2014 at 08:38:07AM -0600, Nishanth Menon wrote:
+> For 64-bit, this is an entirely different story.  The vsyscall page is
+> stuck in the fixmap forever, although I want to add a way for
+> userspace to opt out.  The vvar page, hpet, etc could move into vmas,
+> though.  I kind of want to do that anyway to allow processes to turn
+> off the ability to read the clock.
 
-> >> Intent here is to allow drivers such as cpufreq-cpu0 to be reused on
-> >> platforms such as TI's OMAP derivatives, and other SoCs which differ
-> >> only by the sequence involved in voltage scale operations. So, this
-> >> patch provides a framework for registering the underlying
-> >> implementation of the SoC specific voltage change methodology.
+Wait... you want to do what?!
 
-> > That bit is clear, what's very opaque from the code is how this is going
-> > to be accomplished.
+	-hpa
 
-> The SoC specific voltage domain drivers register with
-> devm_voltdm_register. the fops provide the abstraction needed for the
-> SoC (example in patch #5 - which introduces OMAP specific voltage
-> domain which handles ABB and VDD regulators).
-
-> What would you suggest that we do to clarify the usage here?
-
-Probably saying something about this in the commit message would be
-enough - mentioning how the registration occurs and that things are
-triggered by clock frequency changes.
-
-> > So the first question I have here is what happens if multiple clocks
-> > need to be updated in lock step - if we're only triggering off clock
-> > notifiers that seems tricky.  The other thing here is that the fact that
-
-> Yes, that is true, however, there are ways to implement them, for
-> example: We could implement an higher level clock that takes care of
-> the multiple clock node control to handle this kind of scenario.
-
-That seems concerning given the fact that people seem to like describing
-their entire clock trees in DT, we shouldn't be putting implementation
-stuff there.
-
---8kUASS5K4BSNeq5L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTHfTKAAoJELSic+t+oim9/kUQAIUvz2655/fFegzVWJ0LDCLK
-ATWtEJA1/XIFOYBnPQvHtEaoVhCGToHJZD6pzmy8rT+7D15ZYXZQbvwybTHrQsp3
-A35Qms8i675kRHvvWT/1PpooKyBkJCQWQe5m/zqnR92HM/Ml/vdf+hqq6lqT8JFP
-AxEUY71U5TGyFrVp1ueUcoymDCu097tFeZ1JiWCF1B3680WSG4+opUs7IdrpWhEm
-sBLhpN04/XlPkfrT1tlvuwEtbnqDpUPw8Z5vQ1Mgc68U/CNweuZsJQKpZLPQsk+6
-G99asrG03LO/d7tms0vqGGGgpqDcUuR3371cNRjHvaRqHI4Qsdpj8ksNqVKeoZdq
-VAud/sse+++ODS6crhOG6PlJt8jgwytHS5MVCdBRk/pVTyDvvWEgVDiBKRW3nW/3
-Mt7XxryqnUdPZvjsdzbb5UZ5iYGtB5oVLyUAeqoY8r51b/BWcvlPYdyxBsOn0Ml5
-WUECc61s+jb3la6CxVXhulq/e+Gv+Ti1D63viVJsQGnV0B3TDSS0WHdUCMYxVbX1
-MEiObZ+Uo+GMpW4GgdFxEVwXGmD5nh48ggTSY1XbXfeLRokcJcP4w+AOoCLDMccM
-x3MBjFgVDTryGG/PrANkD9AQe2pOpSXoD3r9GeQVpT0XdYeDmBCpuoqFRb2XFXWI
-6DbVVfLPKWVtWMZJn+LN
-=K5n7
------END PGP SIGNATURE-----
-
---8kUASS5K4BSNeq5L--
