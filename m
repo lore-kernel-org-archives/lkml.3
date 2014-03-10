@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606AbaCJV0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:26:24 -0400
-Received: from mout.web.de ([212.227.15.3]:49988 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754317AbaCJV0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:26:21 -0400
-From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
-To: netdev@vger.kernel.org
-Cc: bridge@lists.linux-foundation.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Jan Stancek <jstancek@redhat.com>,
-        Florian Westphal <fwestpha@redhat.com>,
-        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
-Subject: [PATCHv2 2/2] bridge: multicast: enable snooping on general queries only
-Date: Mon, 10 Mar 2014 22:25:25 +0100
-Message-Id: <1394486725-4992-2-git-send-email-linus.luessing@web.de>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394486725-4992-1-git-send-email-linus.luessing@web.de>
-References: <1394486725-4992-1-git-send-email-linus.luessing@web.de>
+	id S1754285AbaCJV3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:29:10 -0400
+Received: from www84.your-server.de ([213.133.104.84]:49340 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaCJV3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 17:29:08 -0400
+Date: Mon, 10 Mar 2014 22:29:00 +0100
+Message-ID: <20140310222900.Horde.v9U-wjSperyf8zRvwBVchw8@webmail.your-server.de>
+From: stefani@seibold.net
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at
+ d34bd000
+References: <20140307013833.GD8427@localhost>
+ <1394176888.1018.3.camel@wall-e.seibold.net>
+ <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com>
+ <1394229220.20013.13.camel@wall-e.seibold.net>
+ <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com>
+ <1394354848.1002.37.camel@wall-e.seibold.net>
+ <531D044C.2090303@linux.intel.com>
+ <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
+ <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
+ <531DD35A.5060202@linux.intel.com>
+ <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
+ <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
+ <1394481804.980.9.camel@wall-e.seibold.net>
+ <531E1B53.5090205@linux.intel.com>
+In-Reply-To: <531E1B53.5090205@linux.intel.com>
+User-Agent: Internet Messaging Program (IMP) H5 (6.1.6)
+Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:DYwpeG8zfrxme4jbwEYi/PAEYdWWHTV7IHOEdVLZTgFY3v2hdMw
- FTYfR8qn06n25SVP1k5h6G1kCoB30r3JRWbRxMHLOptEQRMz0+8oT+bhquCiGGVtDndAiv0
- sTTlWChEVpMzQU7vmTK6N18i3n+xE35DJns/eKF5gCPv8A8Jb0kEGsomhumB6ibYw7c4lE7
- ZeiJ1+N0LPDEzGuYbwQEA==
+Content-Disposition: inline
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this check someone could easily create a denial of service
-by injecting multicast-specific queries to enable the bridge
-snooping part if no real querier issuing periodic general queries
-is present on the link which would result in the bridge wrongly
-shutting down ports for multicast traffic as the bridge did not learn
-about these listeners.
 
-With this patch the snooping code is enabled upon receiving valid,
-general queries only.
+Zitat von "H. Peter Anvin" <hpa@linux.intel.com>:
 
-Signed-off-by: Linus Lüssing <linus.luessing@web.de>
----
-v2: unchanged
+> On 03/10/2014 01:03 PM, Stefani Seibold wrote:
+>>
+>> What is now the next step? Kick out the compat VDSO? Or should i
+>> implement the dual VDSO. And what is now the preferred way to map the
+>> VDSO into the user space? Using install_special_mapping() or map it
+>> beyond the user stack?
+>>
+>> The is easiest and fastest way to get a working result is to do the non
+>> compat VDSO only mapping using install_special_mapping(). The dual VDSO
+>> would take a little bit more time.
+>>
+>> It would be great to have first a consensus about the design before i
+>> start to implement ;-)
+>>
+>
+> The quick way to get something working is simply to reserve more than
+> one page (two should presumably be enough) in the fixmap and adjust the
+> link address of the VDSO accordingly.  This is not where we want to go
+> in the long term, but it doesn't seem to make sense to try to do
+> everything all at once -- we are already starting to push way too close
+> to the 3.15 merge window.
+>
 
- net/bridge/br_multicast.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Do you except a complete new patch set or an incremental patch based on the
+current patch set?
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index e56bae4..93067ec 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1127,9 +1127,10 @@ static void br_multicast_query_received(struct net_bridge *br,
- 					struct net_bridge_port *port,
- 					struct bridge_mcast_querier *querier,
- 					int saddr,
-+					bool is_general_query,
- 					unsigned long max_delay)
- {
--	if (saddr)
-+	if (saddr && is_general_query)
- 		br_multicast_update_querier_timer(br, querier, max_delay);
- 	else if (timer_pending(&querier->timer))
- 		return;
-@@ -1190,7 +1191,7 @@ static int br_ip4_multicast_query(struct net_bridge *br,
- 	}
- 
- 	br_multicast_query_received(br, port, &br->ip4_querier, !!iph->saddr,
--				    max_delay);
-+				    !group, max_delay);
- 
- 	if (!group)
- 		goto out;
-@@ -1282,7 +1283,8 @@ static int br_ip6_multicast_query(struct net_bridge *br,
- 	}
- 
- 	br_multicast_query_received(br, port, &br->ip6_querier,
--				    !ipv6_addr_any(&ip6h->saddr), max_delay);
-+				    !ipv6_addr_any(&ip6h->saddr),
-+				    is_general_query, max_delay);
- 
- 	if (!group)
- 		goto out;
--- 
-1.7.10.4
+
 
