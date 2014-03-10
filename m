@@ -1,362 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700AbaCJSsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 14:48:53 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37179 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828AbaCJSrr (ORCPT
+	id S1753809AbaCJSs5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 14:48:57 -0400
+Received: from smtprelay0225.hostedemail.com ([216.40.44.225]:38206 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752828AbaCJSsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 14:47:47 -0400
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Cc: linux-arm-msm@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/6] rtc: pm8xxx: use regmap API for register accesses
-Date: Mon, 10 Mar 2014 13:44:45 -0500
-Message-Id: <1394477089-3996-3-git-send-email-joshc@codeaurora.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394477089-3996-1-git-send-email-joshc@codeaurora.org>
-References: <1394477089-3996-1-git-send-email-joshc@codeaurora.org>
+	Mon, 10 Mar 2014 14:48:55 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2736:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3872:3873:3874:4250:4321:4605:5007:7652:7903:8825:10004:10226:10400:10848:11026:11232:11658:11914:12043:12517:12519:12555:12679:12740:13019:13069:13095:13311:13357:13618,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: hole28_30583accabb37
+X-Filterd-Recvd-Size: 3128
+Message-ID: <1394477330.24244.34.camel@joe-AO722>
+Subject: Re: Treewide frequency of various checkpatch messages
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, apw@canonical.com,
+        devel@linuxdriverproject.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>
+Date: Mon, 10 Mar 2014 11:48:50 -0700
+In-Reply-To: <20140310165046.GA12687@kroah.com>
+References: <1394104358-23438-1-git-send-email-kys@microsoft.com>
+	 <1394104390-23477-1-git-send-email-kys@microsoft.com>
+	 <20140306.142919.763823800315842610.davem@davemloft.net>
+	 <1394148520.16156.8.camel@joe-AO722> <20140307075247.GA29018@mwanda>
+	 <1394184637.16156.58.camel@joe-AO722> <1394467346.24244.14.camel@joe-AO722>
+	 <20140310165046.GA12687@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the parent mfd driver has been made to work again, and has been
-reworked to create a regmap instance intended for it's children to use,
-rework the pm8xxx driver to use the regmap API for it's register
-accesses.
+On Mon, 2014-03-10 at 09:50 -0700, Greg KH wrote:
+> On Mon, Mar 10, 2014 at 09:02:26AM -0700, Joe Perches wrote:
+> > On Fri, 2014-03-07 at 01:30 -0800, Joe Perches wrote:
+> > > On Fri, 2014-03-07 at 10:54 +0300, Dan Carpenter wrote:
+> >  (a question about a new message warning of a missing
+> >   blank line between variable declaration blocks and
+> >   code in a function)
+> > > > How many warnings does this generate does this generate when you run it
+> > > > across the whole tree?
+> > > A lot.
+> > 
+> > Turns out it's 20,210 and it's the 14th
+> > most common checkpatch message type.
+> > 
+> >     14    20210  WARNING:SPACING: Missing a blank line after declarations
+> 
+> I think it's still worthwhile to clean up.
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
- drivers/rtc/rtc-pm8xxx.c | 145 +++++++++++++++++++----------------------------
- 1 file changed, 57 insertions(+), 88 deletions(-)
+Maybe.
 
-diff --git a/drivers/rtc/rtc-pm8xxx.c b/drivers/rtc/rtc-pm8xxx.c
-index af60ee4..cdc9dc2 100644
---- a/drivers/rtc/rtc-pm8xxx.c
-+++ b/drivers/rtc/rtc-pm8xxx.c
-@@ -13,11 +13,12 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/rtc.h>
-+#include <linux/platform_device.h>
- #include <linux/pm.h>
-+#include <linux/regmap.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- 
--#include <linux/mfd/pm8xxx/core.h>
- #include <linux/mfd/pm8xxx/rtc.h>
- 
- 
-@@ -37,6 +38,7 @@
- /**
-  * struct pm8xxx_rtc -  rtc driver internal structure
-  * @rtc:		rtc device for this driver.
-+ * @regmap:		regmap used to access RTC registers
-  * @rtc_alarm_irq:	rtc alarm irq number.
-  * @rtc_base:		address of rtc control register.
-  * @rtc_read_base:	base address of read registers.
-@@ -48,6 +50,7 @@
-  */
- struct pm8xxx_rtc {
- 	struct rtc_device *rtc;
-+	struct regmap *regmap;
- 	int rtc_alarm_irq;
- 	int rtc_base;
- 	int rtc_read_base;
-@@ -59,44 +62,6 @@ struct pm8xxx_rtc {
- };
- 
- /*
-- * The RTC registers need to be read/written one byte at a time. This is a
-- * hardware limitation.
-- */
--static int pm8xxx_read_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
--			       int base, int count)
--{
--	int i, rc;
--	struct device *parent = rtc_dd->rtc_dev->parent;
--
--	for (i = 0; i < count; i++) {
--		rc = pm8xxx_readb(parent, base + i, &rtc_val[i]);
--		if (rc < 0) {
--			dev_err(rtc_dd->rtc_dev, "PMIC read failed\n");
--			return rc;
--		}
--	}
--
--	return 0;
--}
--
--static int pm8xxx_write_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
--				int base, int count)
--{
--	int i, rc;
--	struct device *parent = rtc_dd->rtc_dev->parent;
--
--	for (i = 0; i < count; i++) {
--		rc = pm8xxx_writeb(parent, base + i, rtc_val[i]);
--		if (rc < 0) {
--			dev_err(rtc_dd->rtc_dev, "PMIC write failed\n");
--			return rc;
--		}
--	}
--
--	return 0;
--}
--
--/*
-  * Steps to write the RTC registers.
-  * 1. Disable alarm if enabled.
-  * 2. Write 0x00 to LSB.
-@@ -107,7 +72,7 @@ static int pm8xxx_rtc_set_time(struct device *dev, struct rtc_time *tm)
- {
- 	int rc, i;
- 	unsigned long secs, irq_flags;
--	u8 value[NUM_8_BIT_RTC_REGS], reg = 0, alarm_enabled = 0, ctrl_reg;
-+	u8 value[NUM_8_BIT_RTC_REGS], alarm_enabled = 0, ctrl_reg;
- 	struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
- 
- 	rtc_tm_to_time(tm, &secs);
-@@ -125,9 +90,8 @@ static int pm8xxx_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	if (ctrl_reg & PM8xxx_RTC_ALARM_ENABLE) {
- 		alarm_enabled = 1;
- 		ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
--		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
--					  1);
--		if (rc < 0) {
-+		rc = regmap_write(rtc_dd->regmap, rtc_dd->rtc_base, ctrl_reg);
-+		if (rc) {
- 			dev_err(dev, "Write to RTC control register failed\n");
- 			goto rtc_rw_fail;
- 		}
-@@ -137,33 +101,31 @@ static int pm8xxx_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	}
- 
- 	/* Write 0 to Byte[0] */
--	reg = 0;
--	rc = pm8xxx_write_wrapper(rtc_dd, &reg, rtc_dd->rtc_write_base, 1);
--	if (rc < 0) {
-+	rc = regmap_write(rtc_dd->regmap, rtc_dd->rtc_write_base, 0);
-+	if (rc) {
- 		dev_err(dev, "Write to RTC write data register failed\n");
- 		goto rtc_rw_fail;
- 	}
- 
- 	/* Write Byte[1], Byte[2], Byte[3] */
--	rc = pm8xxx_write_wrapper(rtc_dd, value + 1,
--				  rtc_dd->rtc_write_base + 1, 3);
--	if (rc < 0) {
-+	rc = regmap_bulk_write(rtc_dd->regmap, rtc_dd->rtc_write_base + 1,
-+			       &value[1], sizeof(value) - 1);
-+	if (rc) {
- 		dev_err(dev, "Write to RTC write data register failed\n");
- 		goto rtc_rw_fail;
- 	}
- 
- 	/* Write Byte[0] */
--	rc = pm8xxx_write_wrapper(rtc_dd, value, rtc_dd->rtc_write_base, 1);
--	if (rc < 0) {
-+	rc = regmap_write(rtc_dd->regmap, rtc_dd->rtc_write_base, value[0]);
-+	if (rc) {
- 		dev_err(dev, "Write to RTC write data register failed\n");
- 		goto rtc_rw_fail;
- 	}
- 
- 	if (alarm_enabled) {
- 		ctrl_reg |= PM8xxx_RTC_ALARM_ENABLE;
--		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
--					  1);
--		if (rc < 0) {
-+		rc = regmap_write(rtc_dd->regmap, rtc_dd->rtc_base, ctrl_reg);
-+		if (rc) {
- 			dev_err(dev, "Write to RTC control register failed\n");
- 			goto rtc_rw_fail;
- 		}
-@@ -180,13 +142,14 @@ rtc_rw_fail:
- static int pm8xxx_rtc_read_time(struct device *dev, struct rtc_time *tm)
- {
- 	int rc;
--	u8 value[NUM_8_BIT_RTC_REGS], reg;
-+	u8 value[NUM_8_BIT_RTC_REGS];
- 	unsigned long secs;
-+	unsigned int reg;
- 	struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
- 
--	rc = pm8xxx_read_wrapper(rtc_dd, value, rtc_dd->rtc_read_base,
--				 NUM_8_BIT_RTC_REGS);
--	if (rc < 0) {
-+	rc = regmap_bulk_read(rtc_dd->regmap, rtc_dd->rtc_read_base,
-+			      value, sizeof(value));
-+	if (rc) {
- 		dev_err(dev, "RTC read data register failed\n");
- 		return rc;
- 	}
-@@ -195,17 +158,16 @@ static int pm8xxx_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 	 * Read the LSB again and check if there has been a carry over.
- 	 * If there is, redo the read operation.
- 	 */
--	rc = pm8xxx_read_wrapper(rtc_dd, &reg, rtc_dd->rtc_read_base, 1);
-+	rc = regmap_read(rtc_dd->regmap, rtc_dd->rtc_read_base, &reg);
- 	if (rc < 0) {
- 		dev_err(dev, "RTC read data register failed\n");
- 		return rc;
- 	}
- 
- 	if (unlikely(reg < value[0])) {
--		rc = pm8xxx_read_wrapper(rtc_dd, value,
--					 rtc_dd->rtc_read_base,
--					 NUM_8_BIT_RTC_REGS);
--		if (rc < 0) {
-+		rc = regmap_bulk_read(rtc_dd->regmap, rtc_dd->rtc_read_base,
-+				      value, sizeof(value));
-+		if (rc) {
- 			dev_err(dev, "RTC read data register failed\n");
- 			return rc;
- 		}
-@@ -244,9 +206,9 @@ static int pm8xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
- 
- 	spin_lock_irqsave(&rtc_dd->ctrl_reg_lock, irq_flags);
- 
--	rc = pm8xxx_write_wrapper(rtc_dd, value, rtc_dd->alarm_rw_base,
--				  NUM_8_BIT_RTC_REGS);
--	if (rc < 0) {
-+	rc = regmap_bulk_write(rtc_dd->regmap, rtc_dd->alarm_rw_base, value,
-+			       sizeof(value));
-+	if (rc) {
- 		dev_err(dev, "Write to RTC ALARM register failed\n");
- 		goto rtc_rw_fail;
- 	}
-@@ -258,8 +220,8 @@ static int pm8xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
- 	else
- 		ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
- 
--	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
--	if (rc < 0) {
-+	rc = regmap_write(rtc_dd->regmap, rtc_dd->rtc_base, ctrl_reg);
-+	if (rc) {
- 		dev_err(dev, "Write to RTC control register failed\n");
- 		goto rtc_rw_fail;
- 	}
-@@ -282,9 +244,9 @@ static int pm8xxx_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
- 	unsigned long secs;
- 	struct pm8xxx_rtc *rtc_dd = dev_get_drvdata(dev);
- 
--	rc = pm8xxx_read_wrapper(rtc_dd, value, rtc_dd->alarm_rw_base,
--				 NUM_8_BIT_RTC_REGS);
--	if (rc < 0) {
-+	rc = regmap_bulk_read(rtc_dd->regmap, rtc_dd->alarm_rw_base, value,
-+			      sizeof(value));
-+	if (rc) {
- 		dev_err(dev, "RTC alarm time read failed\n");
- 		return rc;
- 	}
-@@ -323,8 +285,8 @@ static int pm8xxx_rtc_alarm_irq_enable(struct device *dev, unsigned int enable)
- 	else
- 		ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
- 
--	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
--	if (rc < 0) {
-+	rc = regmap_write(rtc_dd->regmap, rtc_dd->rtc_base, ctrl_reg);
-+	if (rc) {
- 		dev_err(dev, "Write to RTC control register failed\n");
- 		goto rtc_rw_fail;
- 	}
-@@ -346,7 +308,7 @@ static struct rtc_class_ops pm8xxx_rtc_ops = {
- static irqreturn_t pm8xxx_alarm_trigger(int irq, void *dev_id)
- {
- 	struct pm8xxx_rtc *rtc_dd = dev_id;
--	u8 ctrl_reg;
-+	unsigned int ctrl_reg;
- 	int rc;
- 	unsigned long irq_flags;
- 
-@@ -358,8 +320,8 @@ static irqreturn_t pm8xxx_alarm_trigger(int irq, void *dev_id)
- 	ctrl_reg = rtc_dd->ctrl_reg;
- 	ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
- 
--	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
--	if (rc < 0) {
-+	rc = regmap_write(rtc_dd->regmap, rtc_dd->rtc_base, ctrl_reg);
-+	if (rc) {
- 		spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
- 		dev_err(rtc_dd->rtc_dev,
- 			"Write to RTC control register failed\n");
-@@ -370,18 +332,20 @@ static irqreturn_t pm8xxx_alarm_trigger(int irq, void *dev_id)
- 	spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
- 
- 	/* Clear RTC alarm register */
--	rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base +
--				 PM8XXX_ALARM_CTRL_OFFSET, 1);
--	if (rc < 0) {
-+	rc = regmap_read(rtc_dd->regmap,
-+			 rtc_dd->rtc_base + PM8XXX_ALARM_CTRL_OFFSET,
-+			 &ctrl_reg);
-+	if (rc) {
- 		dev_err(rtc_dd->rtc_dev,
- 			"RTC Alarm control register read failed\n");
- 		goto rtc_alarm_handled;
- 	}
- 
- 	ctrl_reg &= ~PM8xxx_RTC_ALARM_CLEAR;
--	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base +
--				  PM8XXX_ALARM_CTRL_OFFSET, 1);
--	if (rc < 0)
-+	rc = regmap_write(rtc_dd->regmap,
-+			  rtc_dd->rtc_base + PM8XXX_ALARM_CTRL_OFFSET,
-+			  ctrl_reg);
-+	if (rc)
- 		dev_err(rtc_dd->rtc_dev,
- 			"Write to RTC Alarm control register failed\n");
- 
-@@ -392,7 +356,7 @@ rtc_alarm_handled:
- static int pm8xxx_rtc_probe(struct platform_device *pdev)
- {
- 	int rc;
--	u8 ctrl_reg;
-+	unsigned int ctrl_reg;
- 	bool rtc_write_enable = false;
- 	struct pm8xxx_rtc *rtc_dd;
- 	struct resource *rtc_resource;
-@@ -409,6 +373,12 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
- 	/* Initialise spinlock to protect RTC control register */
- 	spin_lock_init(&rtc_dd->ctrl_reg_lock);
- 
-+	rtc_dd->regmap = dev_get_regmap(pdev->dev.parent, NULL);
-+	if (!rtc_dd->regmap) {
-+		dev_err(&pdev->dev, "Parent regmap unavailable.\n");
-+		return -ENXIO;
-+	}
-+
- 	rtc_dd->rtc_alarm_irq = platform_get_irq(pdev, 0);
- 	if (rtc_dd->rtc_alarm_irq < 0) {
- 		dev_err(&pdev->dev, "Alarm IRQ resource absent!\n");
-@@ -432,17 +402,16 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
- 	rtc_dd->rtc_dev = &pdev->dev;
- 
- 	/* Check if the RTC is on, else turn it on */
--	rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
--	if (rc < 0) {
-+	rc = regmap_read(rtc_dd->regmap, rtc_dd->rtc_base, &ctrl_reg);
-+	if (rc) {
- 		dev_err(&pdev->dev, "RTC control register read failed!\n");
- 		return rc;
- 	}
- 
- 	if (!(ctrl_reg & PM8xxx_RTC_ENABLE)) {
- 		ctrl_reg |= PM8xxx_RTC_ENABLE;
--		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
--									1);
--		if (rc < 0) {
-+		rc = regmap_write(rtc_dd->regmap, rtc_dd->rtc_base, ctrl_reg);
-+		if (rc) {
- 			dev_err(&pdev->dev,
- 				"Write to RTC control register failed\n");
- 			return rc;
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Luckily, <smile> I don't have to deal with the
+patches that would be generated by this message.
+
+Some people are going to view patches for this as
+useless noise.
+
+Couple of things:
+
+It's kind of interesting how the messages vary by
+subsystem.  Let me know if you want any breakdowns.
+
+And there are a small number of false positives for
+this "Missing a blank line" test with declarations
+like:
+
+	typedef *foo;
+	DECLARE_BITMAP(foo);
+	__DECL_REG(foo);
+	LIST_HEAD(foo);
+
+So there could be a minor improvement to the test.
+
+I looked at some of the results using:
+
+This sort of match stands out a bit:
+
+---> arch/tile/lib/spinlock_32.c:68:
+{
+        u32 iterations = 0;
+        while (arch_spin_is_locked(lock))
+                delay_backoff(iterations++);
+}
+
+Instances like this may be fine, but adding blank
+lines to very short functions with a single
+declaration just adds to the overall line count.
+
+I've no strong opinion of the need to write code
+like:
+
+{
+        u32 iterations = 0;
+
+        while (arch_spin_is_locked(lock))
+                delay_backoff(iterations++);
+}
+
+
 
