@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaCJQTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 12:19:37 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33407 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699AbaCJQTf (ORCPT
+	id S1753800AbaCJQXE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 12:23:04 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:33580 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581AbaCJQXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 12:19:35 -0400
-Date: Mon, 10 Mar 2014 12:22:00 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: another perf_fuzzer hard lockup
-In-Reply-To: <alpine.DEB.2.10.1403101137050.30293@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1403101219060.30293@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1403101137050.30293@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 10 Mar 2014 12:23:02 -0400
+Date: Mon, 10 Mar 2014 16:22:54 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: mark.rutland@arm.com
+Cc: alexandre.torgue@st.com, devicetree@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/4] phy: miphy365x: Add Device Tree bindings for the
+ MiPHY365x
+Message-ID: <20140310162254.GG13661@lee--X1>
+References: <1392377036-12816-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1392377036-12816-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+phy: miphy365x: Add Device Tree bindings for the MiPHY365x
 
-Another one, not sure if related to the last one.
+The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+devices. It has 2 ports which it can use for either; both SATA, both
+PCIe or one of each in any configuration.
 
-These are easy to trigger, but not reproducible at all even with pretty 
-exact syscall trace matches.  So I'm not sure what's going on.
+Cc: devicetree@vger.kernel.org
+Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-3.14-rc6, core2
+diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+new file mode 100644
+index 0000000..15d105a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+@@ -0,0 +1,62 @@
++STMicroelectronics STi MIPHY365x PHY binding
++============================================
++
++This binding describes a miphy device that is used to control PHY hardware
++for SATA and PCIe.
++
++Required properties:
++- compatible :	Should be "st,miphy365x-phy"
++- #phy-cells :	Should be 2 (See second example)
++		First cell is the port number from:
++			- MIPHY_PORT_0
++			- MIPHY_PORT_1
++		Second cell is device type from:
++			- MIPHY_TYPE_SATA
++			- MIPHY_TYPE_PCI
++- reg       :	Address and length of register sets for each device in
++		"reg-names"
++- reg-names : 	The names of the register addresses corresponding to the
++		registers filled in "reg", from:
++			- sata0: For SATA port 0 registers
++			- sata1: For SATA port 1 registers
++			- pcie0: For PCIE port 0 registers
++			- pcie1: For PCIE port 1 registers
++- st,syscfg : 	Should be a phandle of the system configuration register group
++		which contain the SATA, PCIe mode setting bits
++
++Optional properties:
++- st,sata-gen	     :	Generation of locally attached SATA IP. Expected values
++			are {1,2,3). If not supplied generation 1 hardware will
++			be expected
++- st,pcie-tx-pol-inv :	Bool property to invert the polarity PCIe Tx (Txn/Txp)
++- st,sata-tx-pol-inv :	Bool property to invert the polarity SATA Tx (Txn/Txp)
++
++Example:
++
++	miphy365x_phy: miphy365x@0 {
++		compatible = "st,miphy365x-phy";
++		#phy-cells = <2>;
++		reg =	<0xfe382000 0x100>,
++			<0xfe38a000 0x100>,
++			<0xfe394000 0x100>,
++			<0xfe804000 0x100>;
++		reg-names = "sata0", "sata1", "pcie0", "pcie1";
++		st,syscfg = <&syscfg_rear>;
++	};
++
++Specifying phy control of devices
++=================================
++
++Device nodes should specify the configuration required in their "phys"
++property, containing a phandle to the miphy device node, a port number
++and a device type.
++
++Example:
++
++#include <dt-bindings/phy/phy-miphy365x.h>
++
++	sata0: sata@fe380000 {
++		...
++		phys	  = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
++		...
++	};
 
-[ 2696.228000] BUG: soft lockup - CPU#0 stuck for 23s! [perf_fuzzer:10256]      
-[ 2696.228000] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg ohci_pci acpi_cpufreq coretemp evdev video mcs7830 usbnet wmi psmouse processor button thermal_sys serio_raw pcspkr ohci_hcd i2c_nforce2 sg ehci_pci ehci_hcd sd_mod usbcore usb_common                       
-[ 2696.228000] CPU: 0 PID: 10256 Comm: perf_fuzzer Not tainted 3.14.0-rc6 #36   
-[ 2696.228000] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012                                                            
-[ 2696.228000] task: ffff88011a6a17e0 ti: ffff8800cbab6000 task.ti: ffff8800cbab6000                                                                            
-[ 2696.228000] RIP: 0010:[<ffffffff810d0767>]  [<ffffffff810d0767>] __perf_sw_event+0x117/0x192                                                                 
-[ 2696.228000] RSP: 0000:ffff8800cbab7c88  EFLAGS: 00000246                     
-[ 2696.228000] RAX: ffff88011a7b5cba RBX: 0000000000000000 RCX: ffff88011a9c4000
-[ 2696.228000] RDX: ffff88011a7b5c00 RSI: 0400000000000000 RDI: 4000000000000000
-[ 2696.228000] RBP: ffff8800cbab7d48 R08: 0010000000000000 R09: ffff88011fc12ac0
-[ 2696.228000] R10: 0000000000000000 R11: ffff880119dfcb60 R12: 0000000000000000
-[ 2696.228000] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
-[ 2696.228000] FS:  0000000000bd5840(0063) GS:ffff88011fc00000(0000) knlGS:0000000000000000                                                                     
-[ 2696.228000] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b                
-[ 2696.228000] CR2: 0000000000bd5ac8 CR3: 00000000ca4c8000 CR4: 00000000000407f0
-[ 2696.228000] DR0: 0000000000bd7000 DR1: 0000000000bd7000 DR2: 0000000000000000
-[ 2696.228000] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 2696.228000] Stack:                                                           
-[ 2696.228000]  0000000000000000 0000000000000000 0000000000000000 0000000000000000                                                                             
-[ 2696.228000]  0000000000bd5ac8 0000000000000000 0000000000000000 0000000000000000                                                                             
-[ 2696.228000]  0000000000000000 0000000000000000 0000000000000000 0000000000000000                                                                             
-[ 2696.228000] Call Trace:                                                      
-[ 2696.228000]  [<ffffffff81538273>] __do_page_fault+0x1b1/0x3ed                
-[ 2696.228000]  [<ffffffff81009ab2>] ? native_sched_clock+0x21/0x3e             
-[ 2696.228000]  [<ffffffff81069de7>] ? sched_clock_local+0x1c/0x82              
-[ 2696.228000]  [<ffffffff8106a0e2>] ? sched_clock_cpu+0x8e/0xaa                
-[ 2696.228000]  [<ffffffff8106a119>] ? local_clock+0x1b/0x24                    
-[ 2696.228000]  [<ffffffff810cd2ad>] ? ctx_sched_in+0x35/0x185                  
-[ 2696.228000]  [<ffffffff8153854e>] do_page_fault+0xc/0xe                      
-[ 2696.228000]  [<ffffffff815355a2>] page_fault+0x22/0x30                       
-[ 2696.228000]  [<ffffffff812a8280>] ? __put_user_4+0x20/0x30                   
-[ 2696.228000]  [<ffffffff81069373>] ? schedule_tail+0x5c/0x60                  
-[ 2696.228000]  [<ffffffff8153be0f>] ret_from_fork+0xf/0xb0                     
-[ 2696.228000] Code: 00 48 8d 50 c0 48 85 c0 4c 0f 45 ea eb 50 41 83 bd c0 00 00 00 01 75 39 4d 39 bd c8 00 00 00 75 30 41 f6 85 90 01 00 00 01 75 26 <48> 85 db 74 4d 41 8a 85 e8 00 00 00 a8 10 74 09 f6 83 88 00 00                          
-                                                                                
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
