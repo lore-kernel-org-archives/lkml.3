@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399AbaCJVvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:51:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10798 "EHLO mx1.redhat.com"
+	id S1754609AbaCJVxN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:53:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57493 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753108AbaCJVvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:51:42 -0400
-Date: Mon, 10 Mar 2014 17:51:11 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Stefani Seibold <stefani@seibold.net>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>
-Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at
- d34bd000
-Message-ID: <20140310215111.GA27749@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	Stefani Seibold <stefani@seibold.net>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-	Martin Runge <Martin.Runge@rohde-schwarz.com>
-References: <531D044C.2090303@linux.intel.com>
- <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
- <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
- <531DD35A.5060202@linux.intel.com>
- <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
- <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
- <1394481804.980.9.camel@wall-e.seibold.net>
- <531E1B53.5090205@linux.intel.com>
- <CA+55aFyxbuhPKgB=U8R5C5T_iKVvju-oQDS4kHz6McW45B+1bA@mail.gmail.com>
- <CA+55aFwuVYds=ssv755WKBvux1ru6fcDLGi+ORSFyU8xYP7+=w@mail.gmail.com>
+	id S1754464AbaCJVxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 17:53:11 -0400
+Date: Mon, 10 Mar 2014 23:52:36 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-kernel@vger.kernel.org, jbenc@redhat.com,
+        David Miller <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Simon Horman <horms@verge.net.au>,
+        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        =?us-ascii?B?PT9VVEYtOD9xP1BldGVyPTIwUGFuPTI4PUU2PUJEPTk4PUU1PThEPUFC?=
+	 =?us-ascii?B?PUU1PUI5PUIzPTI5Pz0=?= <panweiping3@gmail.com>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 5/5] skbuff: skb_segment: orphan frags before copying
+Message-ID: <20140310215236.GA7052@redhat.com>
+References: <1394468807-25980-1-git-send-email-mst@redhat.com>
+ <1394468807-25980-6-git-send-email-mst@redhat.com>
+ <20140310213404.GB15352@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwuVYds=ssv755WKBvux1ru6fcDLGi+ORSFyU8xYP7+=w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140310213404.GB15352@gondor.apana.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 02:20:34PM -0700, Linus Torvalds wrote:
+On Tue, Mar 11, 2014 at 05:34:05AM +0800, Herbert Xu wrote:
+> On Mon, Mar 10, 2014 at 06:29:36PM +0200, Michael S. Tsirkin wrote:
+> > skb_segment copies frags around, so we need
+> > to copy them carefully to avoid accessing
+> > user memory after reporting completion to userspace
+> > through a callback.
+> > 
+> > skb_segment doesn't normally happen on datapath:
+> > TSO needs to be disabled - so disabling zero copy
+> > in this case does not look like a big deal.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> Why do we need this patch at all?
 
- > I also suspect we should get rid of CONFIG_X86_OOSTORE, or at least
- > limit it to !SMP - I don't think anybody ever made SMP systems with
- > those IDT/Centaur Winchip chips in them.
+The cover letter has more detail:
+	skb_segment ... moves frags
+	between skbs without orphaning them.
+	This causes userspace to assume it's safe to
+	reuse the buffer, and receiver gets corrupted data.
+	This further might leak information from the
+	transmitter on the wire.
 
-Given the number of people who ever used that code when it was new could
-probably be counted on a couple hands, I'd be amazed if a) anyone was still
-using it, and b) that it hasn't regressed in some way in the last 15 years.
+if still unclear, pls let me know.
 
-Even when it worked, it was only a small performance increase anyway,
-and anyone who notices a circa 1998 CPU is now slightly slower on benchmarks
-in 2014 probably needs psychiatric help.
 
-I'd say rip it out completely.
+> Contrary to what you said,
+> this path is definitely performance-critical since the basis
+> of being able to enable GSO by default is that it causes no
+> regressions in non-TSO cases.
+> 
+> Cheers,
 
-	Dave
+Well it's a single non taken branch.
+If the branch is taken it's more expensive, but once we
+take it once callback is invoked and zero copy is
+disabled for future users, so it will be non taken from here on.
 
+
+> -- 
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
