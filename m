@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450AbaCJTTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:19:42 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:51916 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754415AbaCJTTj (ORCPT
+	id S1754527AbaCJTUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:20:11 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51184 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753932AbaCJTRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:19:39 -0400
-Message-ID: <1394479176.18058.10.camel@x41>
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
-        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 10 Mar 2014 20:19:36 +0100
-In-Reply-To: <alpine.DEB.2.02.1403101956250.18573@ionos.tec.linutronix.de>
-References: <20140310110410.5b2218f6@ilfaris>
-	 <1394447253.2979.12.camel@x220>
-	 <alpine.DEB.2.02.1403101504590.18573@ionos.tec.linutronix.de>
-	 <1394465314.12752.18.camel@x220>
-	 <alpine.DEB.2.02.1403101757320.18573@ionos.tec.linutronix.de>
-	 <1394476346.12752.43.camel@x220>
-	 <alpine.DEB.2.02.1403101956250.18573@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Mar 2014 19:19:37.0312 (UTC) FILETIME=[AD590600:01CF3C95]
-X-RcptDomain: vger.kernel.org
+	Mon, 10 Mar 2014 15:17:41 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-doc@vger.kernel.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Subject: [PATCHv3 3/8] ARM: at91/dt: at91-ariag25: remove useless adc properties
+Date: Mon, 10 Mar 2014 20:17:20 +0100
+Message-Id: <1394479045-31852-4-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner schreef op ma 10-03-2014 om 19:57 [+0100]:
-> On Mon, 10 Mar 2014, Paul Bolle wrote:
-> > 
-> > Or is there a way to handle the "SMI nonsense" (whatever that may be)?
-> 
-> No, there is none. That's "value add" from the BIOS/board manufacturer
-> which utilizes the System Management Interrupt and steals CPU time
-> from the OS.
+Remove the properties that are not used anymore by the at91_adc driver.
 
-So could you please consider downgrading this message?
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Douglas Gilbert <dgilbert@interlog.com>
+---
+ arch/arm/boot/dts/at91-ariag25.dts | 1 -
+ 1 file changed, 1 deletion(-)
 
-Yes, this will make regressions less visible, although I'm unsure we're
-actually seeing a regression here. But I think that this is better than
-scaring people about a situation they can't easily do something about,
-if at all. Especially since fast TSC calibration failures, apparently,
-can be worked around.
-
-
-Paul Bolle
+diff --git a/arch/arm/boot/dts/at91-ariag25.dts b/arch/arm/boot/dts/at91-ariag25.dts
+index cce45f5177f9..55ab6180e350 100644
+--- a/arch/arm/boot/dts/at91-ariag25.dts
++++ b/arch/arm/boot/dts/at91-ariag25.dts
+@@ -129,7 +129,6 @@
+ 			adc0: adc@f804c000 {
+ 				status = "okay";
+ 				atmel,adc-channels-used = <0xf>;
+-				atmel,adc-num-channels = <4>;
+ 			};
+ 
+ 			dbgu: serial@fffff200 {
+-- 
+1.8.3.2
 
