@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377AbaCJUmu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:42:50 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:49968 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960AbaCJUmr (ORCPT
+	id S1755399AbaCJUm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:42:59 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42520 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaCJUm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:42:47 -0400
+	Mon, 10 Mar 2014 16:42:56 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 49/52] mm, vmstat: Fix CPU hotplug callback registration
+Subject: [PATCH v3 50/52] mm, zswap: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
         rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org
@@ -16,16 +16,11 @@ Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        srivatsa.bhat@linux.vnet.ibm.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Toshi Kani <toshi.kani@hp.com>, Dave Hansen <dave@sr71.net>,
-        Ingo Molnar <mingo@kernel.org>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        srivatsa.bhat@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+        linux-mm@kvack.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 11 Mar 2014 02:12:27 +0530
-Message-ID: <20140310204226.10746.64059.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 11 Mar 2014 02:12:40 +0530
+Message-ID: <20140310204239.10746.94222.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -34,7 +29,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031020-9264-0000-0000-0000059CA59F
+x-cbid: 14031020-5490-0000-0000-0000052226E7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -70,45 +65,41 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the vmstat code in the MM subsystem by using this latter form of callback
-registration.
+Fix the zswap code by using this latter form of callback registration.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Toshi Kani <toshi.kani@hp.com>
-Cc: Dave Hansen <dave@sr71.net>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: linux-mm@kvack.org
-Acked-by: Christoph Lameter <cl@linux.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- mm/vmstat.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/zswap.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index def5dd2..58c6f3d 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -1292,14 +1292,14 @@ static int __init setup_vmstat(void)
- #ifdef CONFIG_SMP
- 	int cpu;
- 
--	register_cpu_notifier(&vmstat_notifier);
-+	cpu_notifier_register_begin();
-+	__register_cpu_notifier(&vmstat_notifier);
+diff --git a/mm/zswap.c b/mm/zswap.c
+index e55bab9..d7337fb 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -387,18 +387,18 @@ static int zswap_cpu_init(void)
+ {
+ 	unsigned long cpu;
  
 -	get_online_cpus();
- 	for_each_online_cpu(cpu) {
- 		start_cpu_timer(cpu);
- 		node_set_state(cpu_to_node(cpu), N_CPU);
- 	}
++	cpu_notifier_register_begin();
+ 	for_each_online_cpu(cpu)
+ 		if (__zswap_cpu_notifier(CPU_UP_PREPARE, cpu) != NOTIFY_OK)
+ 			goto cleanup;
+-	register_cpu_notifier(&zswap_cpu_notifier_block);
+-	put_online_cpus();
++	__register_cpu_notifier(&zswap_cpu_notifier_block);
++	cpu_notifier_register_done();
+ 	return 0;
+ 
+ cleanup:
+ 	for_each_online_cpu(cpu)
+ 		__zswap_cpu_notifier(CPU_UP_CANCELED, cpu);
 -	put_online_cpus();
 +	cpu_notifier_register_done();
- #endif
- #ifdef CONFIG_PROC_FS
- 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
+ 	return -ENOMEM;
+ }
+ 
 
