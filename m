@@ -1,240 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaCJGFI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 02:05:08 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:47328 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299AbaCJGEQ (ORCPT
+	id S1753261AbaCJGNH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 02:13:07 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:48806 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269AbaCJGNF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 02:04:16 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH v8 net-next 3/3] doc: filter: add Extended BPF documentation
-Date: Sun,  9 Mar 2014 23:04:04 -0700
-Message-Id: <1394431444-6987-4-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394431444-6987-1-git-send-email-ast@plumgrid.com>
-References: <1394431444-6987-1-git-send-email-ast@plumgrid.com>
+	Mon, 10 Mar 2014 02:13:05 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-ef-531d57ef2b79
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: "'Gu Zheng'" <guz.fnst@cn.fujitsu.com>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'f2fs'" <linux-f2fs-devel@lists.sourceforge.net>
+References: <5319A2D8.70409@cn.fujitsu.com> <1394426742.3870.89.camel@kjgkr>
+ <000901cf3c1f$9611b7b0$c2352710$@samsung.com> <1394429876.3870.97.camel@kjgkr>
+In-reply-to: <1394429876.3870.97.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH 4/5] f2fs: optimize restore_node_summary slightly
+Date: Mon, 10 Mar 2014 14:12:19 +0800
+Message-id: <000a01cf3c27$cb269c10$6173d430$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQJT06/+U02IP7V5r3rmNpSsYDt3pALd88hPAxIL5lsCIpGuMpmQEN0g
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t9jAd334bLBBm+vcVg8bz/AbHF9118m
+	i0uL3C0u75rD5sDi8f/gJGaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXRt/cyoJZ
+	JhW/9txmbWBcpNbFyMEhIWAisemcZhcjJ5ApJnHh3nq2LkYuDiGBRYwSX6esYIVwfjBK9Gye
+	xAhSxSagIrG84z8TiC0iIC0x69M8FhCbWaCHUWJ5Xx5Ew1xGiZ//D4M1cAroSnyYNYcdxBYW
+	CJD4s7abGcRmEVCVmLzmCFgNr4ClxKmeKVC2oMSPyfeghqpLTJq3iBnC1pZ48u4CK8SpChI7
+	zr5mhDjCTWLCxkWsEDXiEhuP3GKZwCg0C8moWUhGzUIyahaSlgWMLKsYRVMLkguKk9JzDfWK
+	E3OLS/PS9ZLzczcxgmPgmdQOxpUNFocYBTgYlXh4M17LBAuxJpYVV+YeYpTgYFYS4eUylA0W
+	4k1JrKxKLcqPLyrNSS0+xCjNwaIkznug1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwMh5rP+vzcJk
+	4SzN9H1inPfibIp2aLbKh/NO2v7mSZX8+r2PS9cnRx+yOW68ZZ/32oAF3z+f2s359VBIhPzz
+	73UM30q/LF9WXLCDdfJcafHXzvXOPt+D7V+fK192YMrHvUbvH0r8yvkxeY3Vo3WMeUmPr0+r
+	K8uRmP3o0MTfBkKXzj+IubdU4foEJZbijERDLeai4kQAtL0WmH0CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
----
- Documentation/networking/filter.txt |  181 +++++++++++++++++++++++++++++++++++
- 1 file changed, 181 insertions(+)
+Hi,
 
-diff --git a/Documentation/networking/filter.txt b/Documentation/networking/filter.txt
-index a06b48d2f5cc..6a0e29583a30 100644
---- a/Documentation/networking/filter.txt
-+++ b/Documentation/networking/filter.txt
-@@ -546,6 +546,186 @@ ffffffffa0069c8f + <x>:
- For BPF JIT developers, bpf_jit_disasm, bpf_asm and bpf_dbg provides a useful
- toolchain for developing and testing the kernel's JIT compiler.
- 
-+Extended BPF
-+------------
-+Extended BPF extends BPF in the following ways:
-+- from 2 to 10 registers
-+  Original BPF has two registers (A and X) and hidden frame pointer.
-+  Extended BPF has ten registers and read-only frame pointer.
-+- from 32-bit registers to 64-bit registers
-+  semantics of old 32-bit ALU operations are preserved via 32-bit
-+  subregisters
-+- if (cond) jump_true; else jump_false;
-+  old BPF insns are replaced with:
-+  if (cond) jump_true; /* else fallthrough */
-+- adds signed > and >= insns
-+- 16 4-byte stack slots for register spill-fill replaced with
-+  up to 512 bytes of multi-use stack space
-+- introduces bpf_call insn and register passing convention for zero
-+  overhead calls from/to other kernel functions (not part of this patch)
-+- adds arithmetic right shift insn
-+- adds swab32/swab64 insns
-+- adds atomic_add insn
-+- old tax/txa insns are replaced with 'mov dst,src' insn
-+
-+Extended BPF is designed to be JITed with one to one mapping, which
-+allows GCC/LLVM compilers to generate optimized BPF code that performs
-+almost as fast as natively compiled code
-+
-+sysctl net.core.bpf_ext_enable=1
-+controls whether filters attached to sockets will be automatically
-+converted to extended BPF or not.
-+
-+BPF is safe dynamically loadable program that can call fixed set
-+of kernel functions and takes a pointer to data as an input,
-+where data is skb, seccomp_data, kprobe function arguments or else.
-+
-+Extended Instruction Set was designed with these goals:
-+- write programs in restricted C and compile into BPF with GCC/LLVM
-+- just-in-time map to modern 64-bit CPU with minimal performance overhead
-+  over two steps: C -> BPF -> native code
-+- guarantee termination and safety of BPF program in kernel
-+  with simple algorithm
-+
-+GCC/LLVM-bpf backend is optional.
-+Extended BPF can be coded with macroses from filter.h just like original BPF,
-+though the same filter done in C is easier to understand.
-+sk_convert_filter() remaps original BPF insns into extended.
-+
-+Minimal performance overhead is achieved by having one to one mapping
-+between BPF insns and native insns, and one to one mapping between BPF
-+registers and native registers on 64-bit CPUs
-+
-+Extended BPF may allow jump forward and backward for two reasons:
-+to reduce branch mispredict penalty compiler moves cold basic blocks out of
-+fall-through path and to reduce code duplication that would be hard to avoid
-+if only jump forward was available.
-+To guarantee termination simple non-recursive depth-first-search verifies
-+that there are no back-edges (no loops in the program), program is a DAG
-+with root at the first insn, all branches end at the last RET insn and
-+all instructions are reachable.
-+Original BPF actually allows unreachable insns. Though it's safe, it will be
-+fixed when extended BPF replaces BPF completely.
-+
-+Original BPF has two registers (A and X) and hidden frame pointer.
-+Extended BPF has ten registers and read-only frame pointer.
-+Since 64-bit CPUs are passing arguments to the functions via registers
-+the number of args from BPF program to in-kernel function is restricted to 5
-+and one register is used to accept return value from in-kernel function.
-+x86_64 passes first 6 arguments in registers.
-+aarch64/sparcv9/mips64 have 7-8 registers for arguments.
-+x86_64 has 6 callee saved registers.
-+aarch64/sparcv9/mips64 have 11 or more callee saved registers.
-+
-+Therefore extended BPF calling convention is defined as:
-+R0 - return value from in-kernel function
-+R1-R5 - arguments from BPF program to in-kernel function
-+R6-R9 - callee saved registers that in-kernel function will preserve
-+R10 - read-only frame pointer to access stack
-+
-+so that all BPF registers map one to one to HW registers on x86_64,aarch64,etc
-+and BPF calling convention maps directly to ABIs used by kernel on 64-bit
-+architectures.
-+On 32-bit architectures JIT may map programs that use only 32-bit arithmetic
-+and let more complex programs to be interpreted.
-+
-+R0-R5 are scratch registers and BPF program needs spill/fill them if necessary
-+across calls.
-+Note that there is only one BPF program == one BPF function and it cannot call
-+other BPF functions. It can only call predefined in-kernel functions.
-+
-+All BPF registers are 64-bit with 32-bit lower subregister that zero-extends
-+into 64-bit if written to. That behavior maps directly to x86_64 and arm64
-+subregister defintion, but makes other JITs more difficult.
-+
-+Original BPF and extended BPF are two operand instructions, which helps
-+to do one-to-one mapping between BPF insn and x86 insn during JIT.
-+
-+Extended BPF doesn't have pre-defined endianness not to favor one
-+architecture vs another. Therefore bswap insn is available.
-+Original BPF doesn't have such insn and does bswap as part of sk_load_word call
-+which is often unnecessary if we want to compare the value with the constant.
-+Restricted C code might be written differently depending on endianness
-+and GCC/LLVM-bpf will take an endianness flag.
-+
-+32-bit architectures run 64-bit extended BPF programs via interpreter.
-+Their JITs may convert BPF programs that only use 32-bit subregs into native
-+instruction set and let the rest being interpreted.
-+
-+Extended BPF is 64-bit, because on 64-bit architectures, pointers are 64-bit
-+and we want to pass 64-bit values in/out kernel functions, so 32-bit BPF
-+registers would require to define register-pair ABI, there won't be a direct
-+BPF register to HW register mapping and JIT would need to do
-+combine/split/move operations for every register in and out of the function,
-+which is complex, bug prone and slow.
-+Another reason is atomic 64-bit counters
-+
-+Just like original BPF, extended BPF is safe, deterministic and kernel can
-+easily prove that. The safety of the program is determined in two steps.
-+First step does depth-first-search to disallow loops and other CFG validation.
-+Second step starts from the first insn and descends all possible paths.
-+It simulates execution of every insn and observes the state change of
-+registers and stack.
-+At the start of the program the register R1 contains a pointer to context
-+and has type PTR_TO_CTX. If checker sees an insn that does R2=R1, then R2 has
-+now type PTR_TO_CTX as well and can be used on right hand side of expression.
-+If R1=PTR_TO_CTX and insn is R2=R1+1, then R2=INVALID_PTR and it is readable.
-+If register was never written to, it's not readable.
-+After kernel function call, R1-R5 are reset to unreadable and R0 has a return
-+type of the function. Since R6-R9 are callee saved, their state is preserved
-+across the call.
-+load/store instructions are allowed only with registers of valid types, which
-+are PTR_TO_CTX, PTR_TO_TABLE, PTR_TO_STACK. They are bounds and alginment
-+checked.
-+
-+Input context pointer is generic. Its contents are defined by specific use case.
-+For seccomp R1 points to seccomp_data
-+For converted BPF filters R1 points to skb
-+Through get_context_access callback BPF checker is customized, so that BPF
-+program can only access certain fields of input context with specified size
-+and alignment.
-+For example, the following insn:
-+  BPF_INSN_LD(BPF_W, R0, R6, 8)
-+intends to load word from address R6 + 8 and store it into R0
-+If R6=PTR_TO_CTX, then get_context_access callback should let the checker know
-+that offset 8 of size 4 bytes can be accessed for reading, otherwise the checker
-+will reject the program.
-+
-+If R6=PTR_TO_STACK, then access should be aligned and be within stack bounds,
-+which are hard coded to [-512, 0]. In this example offset is 8, so it will fail
-+verification.
-+The checker will allow BPF program to read data from stack only after it wrote
-+into it.
-+Pointer register spill/fill is tracked as well, since four (R6-R9) callee saved
-+registers may not be enough for some programs.
-+
-+Allowed function calls are customized via get_func_proto callback.
-+
-+One of the useful functions that can be made available to BPF program
-+are bpf_table_lookup/bpf_table_update.
-+They can help tracing filters collect different types of statistics.
-+Example: pc addresses for drop_monitor filter
-+
-+In seccomp and socket filter use cases extended BPF program consists
-+of intructions only, but for tracing filters case BPF program may contain
-+BPF tables as well.
-+There are no special instructions to access BPF tables. The access is done
-+via function calls.
-+
-+BPF program identifies the table by table_id and accesses it in C like:
-+elem = bpf_table_lookup(ctx, table_id, key);
-+
-+BPF checker matches 'table_id' against known tables, verifies that 'key' points
-+to stack and table->key_size bytes are initialized.
-+bpf_table_lookup() is a normal kernel function. It needs to do a lookup and
-+return either valid pointer to the element or NULL.
-+BPF checker will verify that the program accesses the pointer only
-+after comparing it to NULL.
-+It's up to implementation to decide how lookup is done and meaning of the key.
-+
-+Just like original, extended BPF is limited to 4096 insns, which means that any
-+program will terminate quickly and will call fixed number of kernel functions.
-+
- Misc
- ----
- 
-@@ -561,3 +741,4 @@ the underlying architecture.
- 
- Jay Schulist <jschlst@samba.org>
- Daniel Borkmann <dborkman@redhat.com>
-+Alexei Starovoitov <ast@plumgrid.com>
--- 
-1.7.9.5
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Monday, March 10, 2014 1:38 PM
+> To: Chao Yu
+> Cc: 'Gu Zheng'; 'linux-kernel'; 'f2fs'
+> Subject: RE: [f2fs-dev] [PATCH 4/5] f2fs: optimize restore_node_summary slightly
+> 
+> Hi,
+> 
+> 2014-03-10 (월), 13:13 +0800, Chao Yu:
+> > Hi Gu, Kim:
+> >
+> > One more comment.
+> >
+> > > -----Original Message-----
+> > > From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> > > Sent: Monday, March 10, 2014 12:46 PM
+> > > To: Gu Zheng
+> > > Cc: linux-kernel; f2fs
+> > > Subject: Re: [f2fs-dev] [PATCH 4/5] f2fs: optimize restore_node_summary slightly
+> > >
+> > > Hi Gu,
+> > >
+> > > 2014-03-07 (금), 18:43 +0800, Gu Zheng:
+> > > > Previously, we ra_sum_pages to pre-read contiguous pages as more
+> > > > as possible, and if we fail to alloc more pages, an ENOMEM error
+> > > > will be reported upstream, even though we have alloced some pages
+> > > > yet. In fact, we can use the available pages to do the job partly,
+> > > > and continue the rest in the following circle. Only reporting ENOMEM
+> > > > upstream if we really can not alloc any available page.
+> > > >
+> > > > And another fix is ignoring dealing with the following pages if an
+> > > > EIO occurs when reading page from page_list.
+> > > >
+> > > > Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> >
+> > Reviewed-by: Chao Yu <chao2.yu@samsung.com>
+> >
+> > > > ---
+> > > >  fs/f2fs/node.c    |   44 ++++++++++++++++++++------------------------
+> > > >  fs/f2fs/segment.c |    7 +++++--
+> > > >  2 files changed, 25 insertions(+), 26 deletions(-)
+> > > >
+> > > > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> > > > index 8787469..4b7861d 100644
+> > > > --- a/fs/f2fs/node.c
+> > > > +++ b/fs/f2fs/node.c
+> > > > @@ -1588,15 +1588,8 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head
+> > > *pages,
+> > > >  	for (; page_idx < start + nrpages; page_idx++) {
+> > > >  		/* alloc temporal page for read node summary info*/
+> > > >  		page = alloc_page(GFP_F2FS_ZERO);
+> > > > -		if (!page) {
+> > > > -			struct page *tmp;
+> > > > -			list_for_each_entry_safe(page, tmp, pages, lru) {
+> > > > -				list_del(&page->lru);
+> > > > -				unlock_page(page);
+> > > > -				__free_pages(page, 0);
+> > > > -			}
+> > > > -			return -ENOMEM;
+> > > > -		}
+> > > > +		if (!page)
+> > > > +			break;
+> > > >
+> > > >  		lock_page(page);
+> > > >  		page->index = page_idx;
+> > > > @@ -1607,7 +1600,8 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head
+> > > *pages,
+> > > >  		f2fs_submit_page_mbio(sbi, page, page->index, &fio);
+> > > >
+> > > >  	f2fs_submit_merged_bio(sbi, META, READ);
+> > > > -	return 0;
+> > > > +
+> > > > +	return page_idx - start;
+> > > >  }
+> > > >
+> > > >  int restore_node_summary(struct f2fs_sb_info *sbi,
+> > > > @@ -1630,28 +1624,30 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+> > > >  		nrpages = min(last_offset - i, bio_blocks);
+> > > >
+> > > >  		/* read ahead node pages */
+> > > > -		err = ra_sum_pages(sbi, &page_list, addr, nrpages);
+> > > > -		if (err)
+> > > > -			return err;
+> > > > +		nrpages = ra_sum_pages(sbi, &page_list, addr, nrpages);
+> > > > +		if (!nrpages)
+> > > > +			return -ENOMEM;
+> > > >
+> > > >  		list_for_each_entry_safe(page, tmp, &page_list, lru) {
+> > > > -
+> > >
+> > > Here we can just add:
+> > > 			if (err)
+> > > 				goto skip;
+> > > 			lock_page();
+> > > 			...
+> > > 			unlock_page();
+> > > 		skip:
+> > > 			list_del();
+> > > 			__free_pages();
+> > >
+> > > IMO, it's more neat, so if you have any objection, let me know.
+> > > Otherwise, I'll handle this by myself. :)
+> > > Thanks,
+> > >
+> > > > -			lock_page(page);
+> > > > -			if (unlikely(!PageUptodate(page))) {
+> > > > -				err = -EIO;
+> > > > -			} else {
+> > > > -				rn = F2FS_NODE(page);
+> > > > -				sum_entry->nid = rn->footer.nid;
+> > > > -				sum_entry->version = 0;
+> > > > -				sum_entry->ofs_in_node = 0;
+> > > > -				sum_entry++;
+> > > > +			if (!err) {
+> >
+> > If we skip here, next round we will fill these summary page entries with
+> > wrong info because we skip the code 'sum_entry++;'.
+> 
+> There is no next round. Once err = -EIO, there's no route to make err =
+> 0.
+
+Ah, you're right. Only old code has this problem, this new patch can fix it well.
+Thanks for the mention. :)
+
+Thanks.
+
+> 
+> >
+> > > > +				lock_page(page);
+> > > > +				if (unlikely(!PageUptodate(page))) {
+> > > > +					err = -EIO;
+> > > > +				} else {
+> > > > +					rn = F2FS_NODE(page);
+> > > > +					sum_entry->nid = rn->footer.nid;
+> > > > +					sum_entry->version = 0;
+> > > > +					sum_entry->ofs_in_node = 0;
+> > > > +					sum_entry++;
+> > > > +				}
+> > > > +				unlock_page(page);
+> > > >  			}
+> > > >
+> > > >  			list_del(&page->lru);
+> > > > -			unlock_page(page);
+> > > >  			__free_pages(page, 0);
+> > > >  		}
+> >
+> > Maybe we should add code here.
+> > 			if (err)
+> > 				return err;
+> 
+> This can reduce unnecessary loop executions.
+> I'll add this.
+> Thanks,
+> 
+> >
+> > > >  	}
+> > > > +
+> > > >  	return err;
+> > > >  }
+> > > >
+> > > > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> > > > index 199c964..b3f8431 100644
+> > > > --- a/fs/f2fs/segment.c
+> > > > +++ b/fs/f2fs/segment.c
+> > > > @@ -1160,9 +1160,12 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int
+> type)
+> > > >  				ns->ofs_in_node = 0;
+> > > >  			}
+> > > >  		} else {
+> > > > -			if (restore_node_summary(sbi, segno, sum)) {
+> > > > +			int err;
+> > > > +
+> > > > +			err = restore_node_summary(sbi, segno, sum);
+> > > > +			if (err) {
+> > > >  				f2fs_put_page(new, 1);
+> > > > -				return -EINVAL;
+> > > > +				return err;
+> > > >  			}
+> > > >  		}
+> > > >  	}
+> > >
+> > > --
+> > > Jaegeuk Kim
+> > > Samsung
+> > >
+> > >
+> > > ------------------------------------------------------------------------------
+> > > Learn Graph Databases - Download FREE O'Reilly Book
+> > > "Graph Databases" is the definitive new guide to graph databases and their
+> > > applications. Written by three acclaimed leaders in the field,
+> > > this first edition is now available. Download your free book today!
+> > > http://p.sf.net/sfu/13534_NeoTech
+> > > _______________________________________________
+> > > Linux-f2fs-devel mailing list
+> > > Linux-f2fs-devel@lists.sourceforge.net
+> > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+> >
+> 
+> --
+> Jaegeuk Kim
+> Samsung
 
