@@ -1,105 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961AbaCJOoh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:44:37 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:45786 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705AbaCJOoe (ORCPT
+	id S1754057AbaCJOpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:45:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49591 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754032AbaCJOpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:44:34 -0400
-Date: Mon, 10 Mar 2014 14:44:29 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>, linux-doc@vger.kernel.org,
+	Mon, 10 Mar 2014 10:45:14 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
-Subject: Re: [PATCH v3 3/5] pinctrl: st: add pinctrl support for the STiH407
- SoC
-Message-ID: <20140310144429.GA13661@lee--X1>
-References: <1394203251-25361-1-git-send-email-maxime.coquelin@st.com>
- <1394203251-25361-4-git-send-email-maxime.coquelin@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394203251-25361-4-git-send-email-maxime.coquelin@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 0/7] Add support for the Allwinner A31 DMA Controller
+Date: Mon, 10 Mar 2014 15:41:45 +0100
+Message-Id: <1394462512-11620-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> 
-> This patch adds the initial support for pinctrl based on H407 SoC.
-> 
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Hi,
 
-SOBs should be in order of submission flow and author's should only be
-kept if the patch is unchanged. If it's been adapted you will require
-a re-review and they Acked-by or Reviewed-by tag.
+This patchset adds support for the DMA controller found in the
+Allwinner A31 and A23 SoCs.
 
-> ---
->  drivers/pinctrl/pinctrl-st.c | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-> index 1721611..d1886b4 100644
-> --- a/drivers/pinctrl/pinctrl-st.c
-> +++ b/drivers/pinctrl/pinctrl-st.c
-> @@ -390,6 +390,19 @@ static const struct st_pctl_data  stih416_data = {
->  	.alt = 0, .oe = 40, .pu = 50, .od = 60, .rt = 100,
->  };
->  
-> +static const struct st_pctl_data  stih407_flashdata = {
+This has been tested using the newly introduced SPI driver on an A31
+EVK. Support for DMA-driven SPI transfers will be the subject of
+another patch serie.
 
-Nit: Double space.
+Thanks,
+Maxime
 
-> +	.rt_style	= st_retime_style_none,
-> +	.input_delays	= stih416_delays,
-> +	.ninput_delays	= 14,
+Changes from v3:
+  - A few other comments made by Andy Shevchenko were fixed:
+    + Used references in %pa* printk formats
+    + Used is_slave_direction in prep_slave_sg to make sure we were
+      actually called for something, and to avoid making assumptions
+      that we were actually called with the expected directions
+    + A few others minor fixes: s/pr_err/dev_err/, etc.
 
-ARRAY_SIZE(stih416_delays)
+Changes from v2:
+  - Removed the clk_put calls in the clock protection functions
+  - Splitted out the sunxi machines into several files
+  - Moved the clock protection code into these new machine files
+  - Moved the PLL6 reparenting to the DMA driver
+  - Addressed various comments from Andy Shevchenko: switched to using
+    devm_kcalloc, used correct printk formats for physical and DMA
+    addresses, etc.
 
-> +	.output_delays	= stih416_delays,
-> +	.noutput_delays = 14,
+Changes from v1:
+  - Removed the clk_put call in the clocks protecting patches
+  - Minor fixes here and there as suggested by Andy Shevchenko: switch
+    to dmam_pool_create, switch to dev_dbg instead of pr_debug, etc.
 
-ARRAY_SIZE(stih416_delays)
 
-> +	.alt = 0,
-> +	.oe = -1, /* Not Available */
-> +	.pu = -1, /* Not Available */
-> +	.od = 60,
-> +	.rt = 100,
-> +};
-> +
->  /* Low level functions.. */
->  static inline int st_gpio_bank(int gpio)
->  {
-> @@ -1596,6 +1609,10 @@ static struct of_device_id st_pctl_of_match[] = {
->  	{ .compatible = "st,stih416-rear-pinctrl", .data = &stih416_data},
->  	{ .compatible = "st,stih416-fvdp-fe-pinctrl", .data = &stih416_data},
->  	{ .compatible = "st,stih416-fvdp-lite-pinctrl", .data = &stih416_data},
-> +	{ .compatible = "st,stih407-sbc-pinctrl", .data = &stih416_data},
-> +	{ .compatible = "st,stih407-front-pinctrl", .data = &stih416_data},
-> +	{ .compatible = "st,stih407-rear-pinctrl", .data = &stih416_data},
-> +	{ .compatible = "st,stih407-flash-pinctrl", .data = &stih407_flashdata},
->  	{ /* sentinel */ }
->  };
+Maxime Ripard (7):
+  clk: sunxi: Remove calls to clk_put
+  ARM: sunxi: Split out the various machines into separate files
+  ARM: sunxi: Move the clock protection to machine hooks
+  ARM: sun6i: Protect CPU clock
+  ARM: sun6i: Protect SDRAM gating bit
+  DMA: sun6i: Add driver for the Allwinner A31 DMA controller
+  ARM: sun6i: dt: Add A31 DMA controller to DTSI
 
-After the small changes above, feel free to add my:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+ .../devicetree/bindings/dma/sun6i-dma.txt          |  45 +
+ arch/arm/boot/dts/sun6i-a31.dtsi                   |  29 +
+ arch/arm/mach-sunxi/Makefile                       |   6 +-
+ arch/arm/mach-sunxi/restart.c                      | 104 +++
+ arch/arm/mach-sunxi/restart.h                      |  20 +
+ arch/arm/mach-sunxi/sun4i.c                        |  45 +
+ arch/arm/mach-sunxi/sun5i.c                        |  51 ++
+ arch/arm/mach-sunxi/sun6i.c                        |  63 ++
+ arch/arm/mach-sunxi/sun7i.c                        |  50 ++
+ arch/arm/mach-sunxi/sunxi.c                        | 164 ----
+ drivers/clk/sunxi/clk-sunxi.c                      |  28 -
+ drivers/dma/Kconfig                                |   8 +
+ drivers/dma/Makefile                               |   1 +
+ drivers/dma/sun6i-dma.c                            | 986 +++++++++++++++++++++
+ 14 files changed, 1407 insertions(+), 193 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/dma/sun6i-dma.txt
+ create mode 100644 arch/arm/mach-sunxi/restart.c
+ create mode 100644 arch/arm/mach-sunxi/restart.h
+ create mode 100644 arch/arm/mach-sunxi/sun4i.c
+ create mode 100644 arch/arm/mach-sunxi/sun5i.c
+ create mode 100644 arch/arm/mach-sunxi/sun6i.c
+ create mode 100644 arch/arm/mach-sunxi/sun7i.c
+ delete mode 100644 arch/arm/mach-sunxi/sunxi.c
+ create mode 100644 drivers/dma/sun6i-dma.c
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.0
+
