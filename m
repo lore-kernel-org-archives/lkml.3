@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaCJVhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:37:11 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:4403 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753503AbaCJVhE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:37:04 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzc89bhzz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h906i1155h)
-Date: Mon, 10 Mar 2014 14:36:50 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-serial@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 0/7] tty: xuartps: Rebranding + DT documentation
-References: <1394486478-31037-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S1754770AbaCJVhh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:37:37 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:60038 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753503AbaCJVhd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 17:37:33 -0400
+Date: Mon, 10 Mar 2014 17:37:31 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Juri Lelli <juri.lelli@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v2] sched: Fix broken setscheduler()
+Message-ID: <20140310173731.06d41157@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.02.1403102206520.18573@ionos.tec.linutronix.de>
+References: <20140305232931.449eef8c@gandalf.local.home>
+	<20140306115825.GS27965@twins.programming.kicks-ass.net>
+	<20140306132040.781dbf18c9385a6112fbab2b@gmail.com>
+	<20140306120438.638bfe94@gandalf.local.home>
+	<alpine.DEB.2.02.1403062143360.18573@ionos.tec.linutronix.de>
+	<20140310132940.78e556c7@gandalf.local.home>
+	<alpine.DEB.2.02.1403102206520.18573@ionos.tec.linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1394486478-31037-1-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <f9be7124-0c1e-4529-8ae5-bfe32d98ebf0@VA3EHSMHS014.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This seemed to have bounced for some recipients. I think the culprit was
-a missing '>' in one of the email addresses.
-I'll send a v2 with the same patches and hopefully fixed recipients
-list. Sorry for the noise.
+On Mon, 10 Mar 2014 22:18:56 +0100 (CET)
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Does anybody have some script/better method to assemble the recipients
-list? C&P the output of the get_maintainers script is apparently error
-prone.
 
-	Sören
+> Lemme look at it tomorrow again with an awake brain. This seems to be
+> some forward porting hickup which needs a closer look. Just look at
+
+Yep, I talked with Sebastian on IRC and that seems to be the case.
+
+> the 3.10-rt version of this:
+> 
+> @@ -3825,20 +3826,25 @@ static struct task_struct *find_process_by_pid(pid_t pid)
+>  	return pid ? find_task_by_vpid(pid) : current;
+>  }
+>  
+> -/* Actually do priority change: must hold rq lock. */
+> -static void
+> -__setscheduler(struct rq *rq, struct task_struct *p, int policy, int prio)
+> +static void __setscheduler_params(struct task_struct *p, int policy, int prio)
+>  {
+>  	p->policy = policy;
+>  	p->rt_priority = prio;
+>  	p->normal_prio = normal_prio(p);
+> +	set_load_weight(p);
+> +}
+> 
+> That code has changed significantly probably due to the EDF merge. We
+> need to figure out whether there is more damage due to that.
+
+Yeah, when I looked at the -rt version, it appeared to have my fix
+already. But in reality, the forward port broke it. Here's the problem
+part of the commit:
+
++       set_load_weight(p);
++}
+ 
+-       p->normal_prio = normal_prio(p);
+-       p->prio = rt_mutex_getprio(p);
+
+Your patch never deleted the above two. And it kept them in the
+locations that I placed them in, in my patch.
+
+-- Steve
+
+
++/* Actually do priority change: must hold pi & rq lock. */
++static void __setscheduler(struct rq *rq, struct task_struct *p,
++                          const struct sched_attr *attr)
++{
 
 
