@@ -1,94 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaCJRso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:48:44 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:52339 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675AbaCJRsk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:48:40 -0400
-X-Originating-IP: 172.56.33.14
-Date: Mon, 10 Mar 2014 10:48:27 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Dave Chinner <dchinner@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Dave Hansen <dave@sr71.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: Disable mm/balloon_compaction.c completely when
- !CONFIG_BALLOON_COMPACTION
-Message-ID: <20140310174738.GA2660@leaf>
+	id S1753722AbaCJRtm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:49:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13002 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751795AbaCJRtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 13:49:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,625,1389772800"; 
+   d="scan'208";a="469708385"
+Message-ID: <531DFB33.4030102@linux.intel.com>
+Date: Mon, 10 Mar 2014 10:49:39 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
+References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net> <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com> <1394229220.20013.13.camel@wall-e.seibold.net> <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com> <1394354848.1002.37.camel@wall-e.seibold.net> <531D044C.2090303@linux.intel.com> <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com> <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com> <531DD35A.5060202@linux.intel.com> <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com> <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com> <531DF549.2090403@linux.intel.com> <CALCETrV+3yCfOCJzRKN-woOyp2RF_=dW1V=9CwpYTUNGAiLoNQ@mail.gmail.com> <531DF896.8010305@linux.intel.com> <CALCETrVKfBpVHZcyccWRYM4rdOAETSQsxjiQuxn+0AeX78XiEw@mail.gmail.com>
+In-Reply-To: <CALCETrVKfBpVHZcyccWRYM4rdOAETSQsxjiQuxn+0AeX78XiEw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mm/balloon_compaction.c contains ifdefs around some of its functions
-when !CONFIG_BALLOON_COMPACTION, but the remaining functions aren't used
-in that case either.  Drop the ifdefs in the file, and move
-mm/balloon_compaction.o to obj-$(CONFIG_BALLOON_COMPACTION).
+On 03/10/2014 10:46 AM, Andy Lutomirski wrote:
+> 
+> It might be nice in general for there to be a /dev/vdso and for the
+> vdso to literally be a mapping of that device node.  I bet that CRIU
+> would appreciate this.  (The mmap flags would be a little odd, since
+> different pages have different protections.)
+> 
 
-In addition to eliminating that ifdef, this also saves some space;
-bloat-o-meter statistics:
-add/remove: 0/3 grow/shrink: 0/0 up/down: 0/-281 (-281)
-function                                     old     new   delta
-balloon_devinfo_alloc                         63       -     -63
-balloon_page_enqueue                          84       -     -84
-balloon_page_dequeue                         134       -    -134
+Actually, it presumably ought to be handled like any other (readonly)
+ELF file: that is, let the mapper handle the permissions.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- mm/Makefile             | 4 ++--
- mm/balloon_compaction.c | 2 --
- 2 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/mm/Makefile b/mm/Makefile
-index 310c90a..1e6ab7d 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -16,7 +16,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
- 			   readahead.o swap.o truncate.o vmscan.o shmem.o \
- 			   util.o mmzone.o vmstat.o backing-dev.o \
- 			   mm_init.o mmu_context.o percpu.o slab_common.o \
--			   compaction.o balloon_compaction.o \
-+			   compaction.o \
- 			   interval_tree.o list_lru.o $(mmu-y)
- 
- obj-y += init-mm.o
-@@ -28,7 +28,7 @@ else
- endif
- 
- obj-$(CONFIG_HAVE_MEMBLOCK) += memblock.o
--
-+obj-$(CONFIG_BALLOON_COMPACTION) += balloon_compaction.o
- obj-$(CONFIG_BOUNCE)	+= bounce.o
- obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o
- obj-$(CONFIG_FRONTSWAP)	+= frontswap.o
-diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
-index 6e45a50..8339787 100644
---- a/mm/balloon_compaction.c
-+++ b/mm/balloon_compaction.c
-@@ -131,7 +131,6 @@ struct page *balloon_page_dequeue(struct balloon_dev_info *b_dev_info)
- }
- EXPORT_SYMBOL_GPL(balloon_page_dequeue);
- 
--#ifdef CONFIG_BALLOON_COMPACTION
- /*
-  * balloon_mapping_alloc - allocates a special ->mapping for ballooned pages.
-  * @b_dev_info: holds the balloon device information descriptor.
-@@ -299,4 +298,3 @@ int balloon_page_migrate(struct page *newpage,
- 	unlock_page(newpage);
- 	return rc;
- }
--#endif /* CONFIG_BALLOON_COMPACTION */
--- 
-1.9.0
+	-hpa
 
