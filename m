@@ -1,301 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaCJNW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 09:22:26 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:41240 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277AbaCJNWU (ORCPT
+	id S1753469AbaCJN0E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 09:26:04 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:56185 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035AbaCJN0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 09:22:20 -0400
+	Mon, 10 Mar 2014 09:26:01 -0400
+Message-ID: <531DBD71.8040905@atmel.com>
+Date: Mon, 10 Mar 2014 14:26:09 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <531B0FDA.2040302@arm.com>
-References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org>
- <5317B092.7070805@arm.com> <CAKfTPtDGbT717Y5F1GoBgr4pnvApG5Gphu2Me_bAFrM0+qsfAg@mail.gmail.com>
- <53186A8A.9060406@arm.com> <CAKfTPtCspVk+X3O23ikTt3MZUHVrrp21PyhmrcLF-GwW3OjOqA@mail.gmail.com>
- <531B0FDA.2040302@arm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Mon, 10 Mar 2014 14:21:59 +0100
-Message-ID: <CAKfTPtCDaksnN4GOpWbS5jZS_o9K2bTJ+5ime3=S5KzQnBw5Kw@mail.gmail.com>
-Subject: Re: [RFC 0/6] rework sched_domain topology description
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Josh Wu <josh.wu@atmel.com>,
+        "Maxime Ripard" <maxime.ripard@free-electrons.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ARM: at91: at91sam9g45: change at91_adc name
+References: <1394038675-15809-1-git-send-email-alexandre.belloni@free-electrons.com> <1394038675-15809-3-git-send-email-alexandre.belloni@free-electrons.com> <5318C98C.1070702@kernel.org>
+In-Reply-To: <5318C98C.1070702@kernel.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 March 2014 13:40, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
-> On 07/03/14 02:47, Vincent Guittot wrote:
+On 06/03/2014 20:16, Jonathan Cameron :
+> On 05/03/14 16:57, Alexandre Belloni wrote:
+>> We can't use "at91_adc" to refer to the at91_adc driver anymore as the name is
+>> used to match an id_table.
 >>
->> On 6 March 2014 20:31, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->>>
->>> On 06/03/14 09:04, Vincent Guittot wrote:
->>>>
->>>>
->>>> On 6 March 2014 07:17, Dietmar Eggemann <dietmar.eggemann@arm.com>
->>>> wrote:
->>>>>
->>>>>
->>>>> On 05/03/14 07:18, Vincent Guittot wrote:
->>>>>>
->>>>>>
->>>>>>
->>>>>> This patchset was previously part of the larger tasks packing patchset
->>>>>> [1].
->>>>>> I have splitted the latter in 3 different patchsets (at least) to make
->>>>>> the
->>>>>> thing easier.
->>>>>> -configuration of sched_domain topology (this patchset)
->>>>>> -update and consolidation of cpu_power
->>>>>> -tasks packing algorithm
->>>>>>
->>>>>> Based on Peter Z's proposal [2][3], this patchset modifies the way to
->>>>>> configure
->>>>>> the sched_domain level in order to let architectures to add specific
->>>>>> level
->>>>>> like
->>>>>> the current BOOK level or the proposed power gating level for ARM
->>>>>> architecture.
->>>>>>
->>>>>> [1] https://lkml.org/lkml/2013/10/18/121
->>>>>> [2] https://lkml.org/lkml/2013/11/5/239
->>>>>> [3] https://lkml.org/lkml/2013/11/5/449
->>>>>>
->>>>>> Vincent Guittot (6):
->>>>>>      sched: remove unused SCHED_INIT_NODE
->>>>>>      sched: rework of sched_domain topology definition
->>>>>>      sched: s390: create a dedicated topology table
->>>>>>      sched: powerpc: create a dedicated topology table
->>>>>>      sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
->>>>>>      sched: ARM: create a dedicated scheduler topology table
->>>>>>
->>>>>>     arch/arm/kernel/topology.c        |   26 ++++
->>>>>>     arch/ia64/include/asm/topology.h  |   24 ----
->>>>>>     arch/metag/include/asm/topology.h |   27 -----
->>>>>>     arch/powerpc/kernel/smp.c         |   35 ++++--
->>>>>>     arch/s390/include/asm/topology.h  |   13 +-
->>>>>>     arch/s390/kernel/topology.c       |   25 ++++
->>>>>>     arch/tile/include/asm/topology.h  |   33 ------
->>>>>>     include/linux/sched.h             |   30 +++++
->>>>>>     include/linux/topology.h          |  128 ++------------------
->>>>>>     kernel/sched/core.c               |  235
->>>>>> ++++++++++++++++++-------------------
->>>>>>     10 files changed, 237 insertions(+), 339 deletions(-)
->>>>>>
->>>>>
->>>>> Hi Vincent,
->>>>>
->>>>> I reviewed your patch-set carefully (including test runs on TC2),
->>>>> especially
->>>>> due to the fact that we want to build our sd_energy stuff on top of it.
->>>>
->>>>
->>>>
->>>> Thanks
->>>>
->>>>>
->>>>>
->>>>> One thing I'm still not convinced of is the fact that specifying
->>>>> additional
->>>>> sd levels in the struct sched_domain_topology_level table has an
->>>>> advantage
->>>>> over a function pointer for sd topology flags similar to the one we're
->>>>> already using for the cpu mask in struct sched_domain_topology_level.
->>>>>
->>>>>     int (*sched_domain_flags_f)(int cpu);
->>>>>
->>>>
->>>> We have to create additional level for some kind of topology as
->>>> described in my trial https://lkml.org/lkml/2013/12/18/279 which is
->>>> not possible with function pointer.
->>>
->>>
->>>
->>> This is what I don't understand at the moment. In your example in the
->>> link
->>> above, (2 cluster of 4 cores with SMT), cpu 0-7 can powergate while cpu
->>> 8-15
->>> can't). Why can't we have
->>
->>
->> The 2nd example is a bit more complicated and needs an additional
->> level to describe the topology
->
->
-> I see. In the 2. example you want to have an additional MC level for cpu 2-7
-> because you want to do load balance between those cpus more often than for
-> cpu 0-7 for dst cpus from the set (2-7). Not sure if such topologies (only a
-> subset of cpus inside a cluster can't be powergated) exists today in the
-> real world though?
+>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> As stated in previous email, I'll take this along with the fix that 'broke'
+> this, if I get an Ack from one of the at91 maintainers.
 
-Be sure that such topology is studied and considered by HW guys
+Jonathan,
 
->
-> from https://lkml.org/lkml/2013/12/18/279:
->
-> CPU2:
-> domain 0: span 2-3 level: SMT
->     flags: SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
->     groups: 0 1              <-- Doesn't this have to be 'groups: 2 3'
->   domain 1: span 2-7 level: MC
->       flags: SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN
->       groups: 2-7 4-5 6-7
->     domain 2: span 0-7 level: MC
->         flags: SD_SHARE_PKG_RESOURCES
->         groups: 2-7 0-1
->       domain 3: span 0-15 level: CPU
->           flags:
->           groups: 0-7 8-15
->
->
->>
->>>
->>> static inline int cpu_coregroup_flags(int cpu)
->>> {
->>>      int flags = SD_SHARE_PKG_RESOURCES;
->>>
->>>      if (cpu >= 8)
->>>          flags |= SD_SHARE_POWERDOMAIN;
->>>
->>>      return flags;
->>> }
->>>
->>> inside the arch specific topology file and use it in the MC level as the
->>> int
->>> (*sched_domain_flags_f)(int cpu) member of struct
->>> sched_domain_topology_level?
->>>
->>>
->>>>
->>>> Have you got a situation in mind where it will be necessary to use the
->>>> function pointer with cpu number as an argument ?
->>>
->>>
->>>
->>> The one above. Fundamentally all situations where you want to set sd
->>> topology flags differently for different cpus in the same sd level.
->>> big.LITTLE is another example but it's the same as powergated/!powergated
->>> in
->>> this perspective.
->>
->>
->> You see the flag of a level as something that can be changed per cpu
->> whereas the proposal is to define a number of level with interesting
->> properties for the scheduler and to associate a mask of cpus to this
->> properties.
->
->
-> That's right.
->
->
->>
->> I don't have a strong opinion about using or not a cpu argument for
->> setting the flags of a level (it was part of the initial proposal
->> before we start to completely rework the build of sched_domain)
->> Nevertheless, I see one potential concern that you can have completely
->> different flags configuration of the same sd level of 2 cpus.
->
->
-> Could you elaborate a little bit further regarding the last sentence? Do you
-> think that those completely different flags configuration would make it
-> impossible, that the load-balance code could work at all at this sd?
+It is maybe more clear if I answer here:
+- so, yes, you can take the 3 patches yourself (if you do not mind)
+- you have, for the whole series::
 
-With such function, an arch could set differently some topology flags
-like SD_SHARE_PKG_RESOURCES and SD_SHARE_CPUPOWER in the same sd level
-which make the notion of sd level meaningless.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
->
->
->>
->> Peter,
->>
->> Was the use of the cpu as a parameter in the initialization of
->> sched_domain's flag a reason for asking for reworking the
->> initialization of sched_domain ?
->>
->>>
->>>
->>>>
->>>> In the current example of this patchset, the flags are statically set
->>>> in the table but nothing prevents an architecture to update the flags
->>>> value before being given to the scheduler
->>>
->>>
->>>
->>> What will be the infrastructure if the arch wants to do so?
->>
->>
->> I'm not sure to catch your point. The arch is now able to defines its
->> own table and fill it before giving it to the scheduler so nothing
->> prevents to set/update the flags field according the system
->> configuration during boot sequence.
->
->
-> Sorry, misunderstanding from my side in the first place. You just said that
-> the arch is able to change those flags (due to the arch specific topology
-> table) and I related it to the possibility for the arch to set the topology
-> flags per cpu.
+Thanks for your help with this issue.
 
-OK, i was not sure that your point was only about the cpu argument for
-the SD's flags configuration
+Bye,
 
-Vincent
+>> ---
+>>   arch/arm/mach-at91/at91sam9g45_devices.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+>> index cb36fa872d30..88554024eb2d 100644
+>> --- a/arch/arm/mach-at91/at91sam9g45_devices.c
+>> +++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+>> @@ -1203,7 +1203,7 @@ static struct resource adc_resources[] = {
+>>   };
+>>
+>>   static struct platform_device at91_adc_device = {
+>> -	.name		= "at91_adc",
+>> +	.name		= "at91sam9g45-adc",
+>>   	.id		= -1,
+>>   	.dev		= {
+>>   				.platform_data	= &adc_data,
+>>
+> 
+> 
 
->
->
->>
->> Thanks,
->> Vincent
->>>
->>>
->>> Thanks,
->>>
->>> -- Dietmar
->>>
->>>
->>>>
->>>>> This function pointer would be simply another member of struct
->>>>> sched_domain_topology_level and would replace int sd_flags.  AFAICS,
->>>>> you
->>>>> have to create additional cpu mask functions anyway for the additional
->>>>> sd
->>>>> levels, like cpu_corepower_mask() for the  GMC level in the ARM case.
->>>>> There
->>>>> could be a set of standard sd topology flags function for the default
->>>>> sd
->>>>> layer and archs which want to pass in something special define those
->>>>> function locally since they will use them only in their arch specific
->>>>> struct
->>>>> sched_domain_topology_level table anyway.  I know that you use the
->>>>> existing
->>>>> sd degenerate functionality for this and that the freeing of the
->>>>> redundant
->>>>> data structures (sched_domain, sched_group and sched_group_power) is
->>>>> there
->>>>> too but it still doesn't seem to me to be the right thing to do.
->>>>>
->>>>> The problem that we now expose internal data structures (struct sd_data
->>>>> and
->>>>> struct sched_domain_topology_level) could be dealt with later.
->>>>>
->>>>> -- Dietmar
->>>>>
->>>>
->>>
->>>
->>
->
->
+
+-- 
+Nicolas Ferre
