@@ -1,83 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203AbaCJKQK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 06:16:10 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57694 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaCJKQG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 06:16:06 -0400
-X-AuditID: 9c93016f-b7b09ae000000557-cf-531d90e48bab
-From: "Gioh Kim" <gioh.kim@lge.com>
-To: "'Zhang Yanfei'" <zhangyanfei@cn.fujitsu.com>,
-        "'Minchan Kim'" <minchan@kernel.org>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Joonsoo Kim'" <iamjoonsoo.kim@lge.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?J+ydtOqxtO2YuCc=?= <gunho.lee@lge.com>, <chanho.min@lge.com>,
-        "'Johannes Weiner'" <hannes@cmpxchg.org>
-Subject: Subject: [PATCH] mm: use vm_map_ram for only temporal object
-Date: Mon, 10 Mar 2014 19:16:03 +0900
-Message-ID: <002701cf3c49$be67da30$3b378e90$@lge.com>
+	id S1752616AbaCJKSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 06:18:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34972 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752092AbaCJKSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 06:18:42 -0400
+Message-ID: <531D916C.2010903@ti.com>
+Date: Mon, 10 Mar 2014 12:18:20 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac88STDBSMyaMY2USACryxK7Sf4thw==
-Content-Language: ko
-X-Brightmail-Tracker: AAAAAA==
+To: Grant Likely <grant.likely@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+CC: Sascha Hauer <s.hauer@pengutronix.de>, Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core
+ to drivers/of
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com> < 20140217181451.7EB7FC4044D@trevor.secretlab.ca> <20140218070624.GP17250@ pengutronix.de> <20140218162627.32BA4C40517@trevor.secretlab.ca> < 1393263389.3091.82.camel@pizza.hi.pengutronix.de> <20140226110114. CF2C7C40A89@trevor.secretlab.ca> <1393426129.3248.64.camel@paszta.hi. pengutronix.de> <20140307170550.1DFB2C40A0D@trevor.secretlab.ca> <531AF1E8. 50606@ti.com> <20140308114115.BB08EC40612@trevor.secretlab.ca>
+In-Reply-To: <20140308114115.BB08EC40612@trevor.secretlab.ca>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="m9agE5FH5X00TA97e9K7BvgiWLaTKpLWn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--m9agE5FH5X00TA97e9K7BvgiWLaTKpLWn
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-The vm_map_ram has fragment problem because it couldn't
-purge a chunk(ie, 4M address space) if there is a pinning object in
-that addresss space. So it could consume all VMALLOC address space
-easily.
-We can fix the fragmentation problem with using vmap instead of vm_map_ram
-but vmap is known to slow operation compared to vm_map_ram. Minchan said
-vm_map_ram is 5 times faster than vmap in his experiment. So I thought
-we should fix fragment problem of vm_map_ram because our proprietary
-GPU driver has used it heavily.
+On 08/03/14 13:41, Grant Likely wrote:
 
-On second thought, it's not an easy because we should reuse freed
-space for solving the problem and it could make more IPI and bitmap operation
-for searching hole. It could mitigate API's goal which is very fast mapping.
-And even fragmentation problem wouldn't show in 64 bit machine.
+>> Ok. If we go for single directional link, the question is then: which
+>> way? And is the direction different for display and camera, which are
+>> kind of reflections of each other?
+>=20
+> In general I would recommend choosing whichever device you would
+> sensibly think of as a master. In the camera case I would choose the
+> camera controller node instead of the camera itself, and in the display=
 
-Another option is that the user should separate long-life and short-life
-object and use vmap for long-life but vm_map_ram for short-life.
-If we inform the user about the characteristic of vm_map_ram
-the user can choose one according to the page lifetime.
+> case I would choose the display controller instead of the panel. The
+> binding author needs to choose what she things makes the most sense, bu=
+t
+> drivers can still use if it it turns out to be 'backwards'
 
-Let's add some notice messages to user.
+I would perhaps choose the same approach, but at the same time I think
+it's all but clear. The display controller doesn't control the panel any
+more than a DMA controller controls, say, the display controller.
 
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- mm/vmalloc.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+In fact, in earlier versions of OMAP DSS DT support I had a simpler port
+description, and in that I had the panel as the master (i.e. link from
+panel to dispc) because the panel driver uses the display controller's
+features to provide the panel device a data stream.
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 0fdf968..85b6687 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1083,6 +1083,12 @@ EXPORT_SYMBOL(vm_unmap_ram);
-  * @node: prefer to allocate data structures on this node
-  * @prot: memory protection to use. PAGE_KERNEL for regular RAM
-  *
-+ * If you use this function for below VMAP_MAX_ALLOC pages, it could be faster
-+ * than vmap so it's good. But if you mix long-life and short-life object
-+ * with vm_map_ram, it could consume lots of address space by fragmentation
-+ * (expecially, 32bit machine). You could see failure in the end.
-+ * Please use this function for short-life object.
-+ *
-  * Returns: a pointer to the address that has been mapped, or %NULL on failure
-  */
- void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t prot)
---
-1.7.9.5
+And even with the current OMAP DSS DT version, which uses the v4l2 style
+ports/endpoints, the driver model is still the same, and only links
+towards upstream are used.
+
+So one reason I'm happy with the dual-linking is that I can easily
+follow the links from the downstream entities to upstream entities, and
+other people, who have different driver model, can easily do the opposite=
+=2E
+
+But I agree that single-linking is enough and this can be handled at
+runtime, even if it makes the code more complex. And perhaps requires
+extra data in the dts, to give the start points for the graph.
+
+ Tomi
 
 
+
+--m9agE5FH5X00TA97e9K7BvgiWLaTKpLWn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTHZFsAAoJEPo9qoy8lh71TxgP/2VBc8qqL7gzkimED+kI2e+J
+tDApeGiLcqQEq7MW+Jgq9ssDxPUUY/zoIDEM2xzg1xO9fXVi++TziIXEGrp0vE/r
+JAYUT/YQ+St07VakXFrnBPAmvpIfph+mE841yr0gOXVyY+EJKFWK8RUwCCLBL6WJ
+jBTuy7gHUQpTcm+Y+gI2rUh12buP8i9kSaqTmI2qIEtV08GmDvQJm5d6u9uGKHk1
+kbzuV9IT3/3W2iBiiphIfjdeZ5n+qwxUbPNVy+fdzf8z9+mCl7cqwIQGV1fIdRK1
+wapu+JGFoqc36PdtGUiTImJDfkoInPfuyj2IEhEKzTSV2sDM2XYn0g0HNwuKvIro
+E9CEQXeqm2G0TUbmtxNPWgHGXu7GOkHa5PhfzYyQIBBoX3hQrS12bRkrsb3gmMM6
+tAMZQU/6Jkwjwl0qXXI8tH4p6nvxQbLIXxzkhpbv7Qh4Ue32C6AkD3I1zL043dCr
+N2qeWdNz7rVHRL0EFXnJQoem0n70R6SToCXreJiH4NWg9uiTcm1Ey0dc8Dc07cST
+ZV4Wxky+zDvnAIKXI7Aa26yHIdJXZPMIsr4carehvRfoLZVtoCoT4Fg7MnUDf2sz
+n91XgkSLqlPkzRcSiLf87DAzhuFEtGBE1tvYq924wGr6cPVGIt0ELPNKBofaMzra
+yQGD/2hoPCNBi/DVj9BW
+=leqH
+-----END PGP SIGNATURE-----
+
+--m9agE5FH5X00TA97e9K7BvgiWLaTKpLWn--
