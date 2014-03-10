@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaCJLRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:17:39 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:63902 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105AbaCJLRg (ORCPT
+	id S1752858AbaCJL3m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 07:29:42 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45075 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752556AbaCJL3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:17:36 -0400
-Message-ID: <531D9F4B.6040505@gmail.com>
-Date: Mon, 10 Mar 2014 12:17:31 +0100
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 10 Mar 2014 07:29:40 -0400
+Date: Mon, 10 Mar 2014 11:29:29 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
+Subject: Re: [PATCH] i2c: mv64xxx: Fix compilation breakage
+Message-ID: <20140310112929.GY21483@n2100.arm.linux.org.uk>
+References: <1394204370-22979-1-git-send-email-maxime.ripard@free-electrons.com> <20140307160836.GM21483@n2100.arm.linux.org.uk> <20140310105808.GE2815@lukather>
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: linux-sunxi@googlegroups.com,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
-        dev@linux-sunxi.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [linux-sunxi] Re: [RFC PATCH v2 08/14] mtd: nand: add sunxi NAND
- flash controller support
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com> <1391006064-28890-9-git-send-email-b.brezillon.dev@gmail.com> <20140129175641.GF1427@obsidianresearch.com> <20140129184619.GC27143@localhost> <20140129191005.GG1427@obsidianresearch.com>
-In-Reply-To: <20140129191005.GG1427@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140310105808.GE2815@lukather>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jason,
+On Mon, Mar 10, 2014 at 11:58:08AM +0100, Maxime Ripard wrote:
+> On Fri, Mar 07, 2014 at 04:08:36PM +0000, Russell King - ARM Linux wrote:
+> > On Fri, Mar 07, 2014 at 03:59:30PM +0100, Maxime Ripard wrote:
+> > > @@ -900,7 +902,8 @@ mv64xxx_i2c_probe(struct platform_device *pd)
+> > >  exit_free_irq:
+> > >  	free_irq(drv_data->irq, drv_data);
+> > >  exit_reset:
+> > > -	if (pd->dev.of_node && !IS_ERR(drv_data->rstc))
+> > > +	if (pd->dev.of_node && IS_ENABLED(CONFIG_RESET_CONTROLLER) &&
+> > > +	    !IS_ERR(drv_data->rstc))
+> > >  		reset_control_assert(drv_data->rstc);
+> > 
+> > Another question is... why do we need to check pd->dev.of_node here?
+> > If CONFIG_RESET_CONTROLLER is set, we always try to get the reset
+> > controller node, so drv_data->rstc is either going to be a valid
+> > pointer, or it's going to be an error pointer - neither
+> > reset_control_get() nor devm_reset_control_get return NULL.
+> 
+> Following back on this as I was doing the patch, actually,
+> drv_data->rstc will be NULL if we're not probed by DT, and hence never
+> call reset_control_get, that would set an error pointer.
+> 
+> But then, we can use IS_ERR_OR_NULL on drv_data->rstc.
 
-Le 29/01/2014 20:10, Jason Gunthorpe a écrit :
-> On Wed, Jan 29, 2014 at 03:46:20PM -0300, Ezequiel Garcia wrote:
->
->> After CE# has been pulled high and then transitioned low again, the host
->> should issue a Set Features to select the appropriate asynchronous timing mode.
->> """
-> Oh, I had forgot you should do a set feature too
->
-> Boris, I think the core core should handle this dance and the driver
-> should just implement a call back to change the timing mode on the
-> interface..
->
-> If I ever get a moment I can work on support for timing setting in the
-> mvebu driver, I have boards here with ONFI NAND..
+I think you can also move the devm_reset_control_get() into the main
+probe function: you're only checking for -EPROBE_DEFER from it to fail,
+allowing other errors to continue with the driver init.  This means
+that on non-OF, devm_reset_control_get() will fail with -ENOENT.
 
-Any progress on this ?
-I'm about to post the 3rd version of this series and if you already have
-something working I could base my work on your proposal.
-
-
-Best Regards,
-
-Boris
-> Regards,
-> Jason
->
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
