@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbaCJTLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:11:47 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:53485 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaCJTLo convert rfc822-to-8bit (ORCPT
+	id S1753503AbaCJTQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:16:29 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:43434 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136AbaCJTQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:11:44 -0400
-From: "Sumner, William" <bill.sumner@hp.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "indou.takao@jp.fujitsu.com" <indou.takao@jp.fujitsu.com>,
-        "bhe@redhat.com" <bhe@redhat.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ddutile@redhat.com" <ddutile@redhat.com>,
-        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "Hatch, Douglas B (HPS Linux PM)" <doug.hatch@hp.com>,
-        "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: RE: [PATCHv3 0/6] Crashdump Accepting Active IOMMU
-Thread-Topic: [PATCHv3 0/6] Crashdump Accepting Active IOMMU
-Thread-Index: AQHPDlBjPwJavIH01UGK8YIeAgS3uJrRWfSAgAmwuGA=
-Date: Mon, 10 Mar 2014 19:10:17 +0000
-Message-ID: <875D89B79D1D86448A583A7302C022A066E08AFE@G4W3212.americas.hpqcorp.net>
-References: <1389391652-52422-1-git-send-email-bill.sumner@hp.com>
- <20140304150611.GE2799@8bytes.org>
-In-Reply-To: <20140304150611.GE2799@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.21]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 Mar 2014 15:16:26 -0400
 MIME-Version: 1.0
+In-Reply-To: <1469359.kil5iaOqdU@wuerfel>
+References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com>
+	<2115856.ZTdgp5fkma@wuerfel>
+	<20140310163343.GY6457@e106497-lin.cambridge.arm.com>
+	<1469359.kil5iaOqdU@wuerfel>
+Date: Mon, 10 Mar 2014 20:16:25 +0100
+X-Google-Sender-Auth: 4e79h_NW-G1WmKoFxDZPXl6U_4c
+Message-ID: <CAMuHMdWzm1D83zquwuQVKwbqRdXmSw7u1ui7iZyC3VGdGhn0HA@mail.gmail.com>
+Subject: Re: [PATCH v6 6/6] pci: Add support for creating a generic
+ host_bridge from device tree
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
+On Mon, Mar 10, 2014 at 7:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> arch/avr32/include/asm/io.h:#define IO_SPACE_LIMIT    0xffffffff
+>> arch/frv/include/asm/io.h:#define IO_SPACE_LIMIT      0xffffffff
+>
+> They have no MMU, and the code relies on the port number to match
+> both the virtual and the physical address. You could be right about
+> these, but I would guess that the code also needs some other
+> changes if we want to make it work on nommu kernels. It also depends
+> on whether the I/O bus address is the same as the CPU address, or
+> if it starts at bus address 0.
 
-On Tue 3/4/2014 9:06 AM, Joerg Roedel wrote:
+>> arch/m68k/include/asm/io_no.h:#define IO_SPACE_LIMIT 0xffffffff
 >
->On Fri, Jan 10, 2014 at 03:07:26PM -0700, Bill Sumner wrote:
->> Bill Sumner (6):
->>   Crashdump-Accepting-Active-IOMMU-Flags-and-Prototype
->>   Crashdump-Accepting-Active-IOMMU-Utility-functions
->>   Crashdump-Accepting-Active-IOMMU-Domain-Interfaces
->>   Crashdump-Accepting-Active-IOMMU-Copy-Translations
->>   Crashdump-Accepting-Active-IOMMU-Debug-Print-IOMMU
->>   Crashdump-Accepting-Active-IOMMU-Call-From-Mainline
->>
->>  drivers/iommu/intel-iommu.c | 1293
->> ++++++++++++++++++++++++++++++++++++++++---
->>  1 file changed, 1225 insertions(+), 68 deletions(-)
->
->This is a pretty big change, before merging I would like to get more eyes on it. Please make sure you get more reviews on the code and the general concept. A few things I noticed while looking at it:
-Yes, as I was developing this, I realized that it is far more code than most Linux submissions.  In addition to more eyes reviewing the code, I hope to see additional members of the community trying it out -- testing it on a wide variety of system configurations.  Let me encourage additional reviewers and testers to look at this fix to crashdump.
->
->* You put a lot of code into #define CONFIG_CRASH_DUMP. Isn't the same approach necessary to for KEXEC?
-Until I saw your email, I had been focused only on the immediate problem of fixing crashdump and had not considered using this approach in the more-general context of KEXEC.  It certainly looks like it could be useful with KEXEC as well.  
+> This looks like a mistake, it should be smaller
 
-I would like to take-on the effort of expanding this technique into KEXEC as a separate follow-on project so that the original "fix crashdump" project is not delayed.  On a quick look, I believe that the amount of additional code would be minimal; but the expansion of the testing matrix might be quite large.
->
->* Please get rid of all the pr_debug stuff.
-Will do.
->
->* I think it makes sense to put the functions to access the IOMMU
->  configuration values of the old kernel into a new file. This is better
->  than adding over 1000 new lines to intel-iommu.c
-Sounds good.  I will move these functions into a new file.
->
->* I have seen your new single-patch for this change. A single patch with
->  more than 1200 changed lines is not something anyone is willing to
->  review. Please split the patches again in a meaningful and bisectable
->  way.
-I will return to a multiple-patch set for future submissions.
+io_no.h is for nommu.
 
+Gr{oetje,eeting}s,
 
--- Bill
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
