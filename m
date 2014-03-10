@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852AbaCJOiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:38:07 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:49536 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822AbaCJOiD (ORCPT
+	id S1753708AbaCJOiw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:38:52 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:64030 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467AbaCJOiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:38:03 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [GIT PULL] Move device tree graph parsing helpers to drivers/of
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-In-Reply-To: <20140310102630.3cb1bcd7@samsung.com>
-References: <1394126000.3622.66.camel@paszta.hi.pengutronix.de> < 20140307182330.75168C40AE3@trevor.secretlab.ca> <20140310102630.3cb1bcd7@ samsung.com>
-Date: Mon, 10 Mar 2014 14:37:58 +0000
-Message-Id: <20140310143758.3734FC405FA@trevor.secretlab.ca>
+	Mon, 10 Mar 2014 10:38:51 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <alpine.LNX.2.00.1403101525220.3690@pobox.suse.cz>
+References: <alpine.LNX.2.00.1402271153480.21399@pobox.suse.cz>
+	<alpine.LNX.2.00.1403031519500.7030@pobox.suse.cz>
+	<alpine.LNX.2.00.1403101525220.3690@pobox.suse.cz>
+Date: Mon, 10 Mar 2014 15:38:50 +0100
+Message-ID: <CAKMK7uG1PG=h8uiofNXt_-GOGgL354skaQeqA5OxK4VbYk2Vkg@mail.gmail.com>
+Subject: Re: i915 resume-from-hibernation problems on resume with current
+ Linus' tree
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Mar 2014 10:26:30 -0300, Mauro Carvalho Chehab <m.chehab@samsung.com> wrote:
-> Em Fri, 07 Mar 2014 18:23:30 +0000
-> Grant Likely <grant.likely@linaro.org> escreveu:
-> 
-> > On Thu, 06 Mar 2014 18:13:20 +0100, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> > > Hi Mauro, Russell,
-> > > 
-> > > I have temporarily removed the simplified bindings at Sylwester's
-> > > request and updated the branch with the acks. The following changes
-> > > since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
-> > > 
-> > >   Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
-> > > 
-> > > are available in the git repository at:
-> > > 
-> > >   git://git.pengutronix.de/git/pza/linux.git topic/of-graph
-> > > 
-> > > for you to fetch changes up to d484700a36952c6675aa47dec4d7a536929aa922:
-> > > 
-> > >   of: Warn if of_graph_parse_endpoint is called with the root node (2014-03-06 17:41:54 +0100)
-> > 
-> > Nak. I made comments that haven't been resolved yet. I've replied with
-> > more detail tonight. The big issues are how drivers handle the optional
-> > 'ports' node and I do not agree to the double-linkage in the binding
-> > description.
-> 
-> If I understood well, you're requesting to revert all those six patches
-> that were imported via git pull from my tree (and from Greg and Russell),
-> right?
-> 
-> E. g. reverting those changesets:
-> 	d484700a3695 f2a575f67695 4329b93b283c 6ff60d397b17 4d56ed5a009b fd9fdb78a9bf
-> 
-> as it seems that there's no easy way to revert a git pull.
+On Mon, Mar 10, 2014 at 3:25 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Mon, 3 Mar 2014, Jiri Kosina wrote:
+>> > first things first: this is hard to bisect, because it doesn't happen
+>> > reliably and I don't really know what is the first good version, as I had
+>> > a delay in following Linus' tree.
+>> >
+>> > What happens is that after resumption from S4 (disk), Xorg session is in
+>> > complete havoc -- the windows don't redraw properly, sometimes the mouse
+>> > pointer is "jailed" on a small rectangle in the middle of the screen, etc.
+>> >
+>> > I have captured 'drm.debug=14' output of the failing resume ... I guess
+>> > this is realted to the
+>> >
+>> > *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
+>> >
+>> > as it doesn't seem to be there in case of resumption that works properly.
+>> >
+>> > Please see the dmesg from the broken case below.
+>>
+>> I encountered this again with -rc5.
+>>
+>> If there is anything I can do to help debug this, please let me know.
+>
+> I hate to be doing this, but ... ping? :)
 
-All trees containing the branch would need to be reverted.
+gm45 and rendering ring init failures. We've seen this occasionally
+crop up due to rather unrelated changes. Some even hit stable
+backports and had to be backed out again. We essentially have no clue
+what's amiss, but it seems to /mostly/ work. Thus far I've only hear
+reports of this for gm45 and not yet really for upstream. Until
+someone digs up more evidence I think we need to classify this as a
+rare heisenbug and not really a regression :(
 
-> I suspect that this will likely cause some harm when merging from our
-> trees upstream.
-
-It means any tree containing that branch *must* be rewound. See my reply
-to rmk. I've made a proposal on how I could be happy with leaving the
-branches alone. I'm not particularly happy, but there is a way to
-resolve things without reverts or rewinds.
-
-g.
+One thing we could try is to simply repeat the ring init setup, maybe
+after a gpu reset or something like that.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
