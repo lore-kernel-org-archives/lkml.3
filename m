@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492AbaCJUpu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:45:50 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47363 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672AbaCJUps (ORCPT
+	id S1755504AbaCJUqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:46:04 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:64329 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853AbaCJUp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:45:48 -0400
-Date: Mon, 10 Mar 2014 16:45:44 -0400 (EDT)
-Message-Id: <20140310.164544.236071343888387921.davem@davemloft.net>
-To: mst@redhat.com
-Cc: linux-kernel@vger.kernel.org, jbenc@redhat.com, edumazet@google.com,
-        dborkman@redhat.com, horms@verge.net.au, Paul.Durrant@citrix.com,
-        tgraf@suug.ch, herbert@gondor.apana.org.au, mszeredi@suse.cz,
-        panweiping3@gmail.com, netdev@vger.kernel.org
-Subject: Re: [PATCH 4/5] skbuff: skb_segment: s/fskb/list_skb/
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140310175606.GA13907@redhat.com>
-References: <20140310.134054.2195508036199798660.davem@davemloft.net>
-	<20140310.134359.1940025401945824360.davem@davemloft.net>
-	<20140310175606.GA13907@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 10 Mar 2014 13:45:47 -0700 (PDT)
+	Mon, 10 Mar 2014 16:45:59 -0400
+Date: Mon, 10 Mar 2014 16:45:49 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Loc Ho <lho@apm.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Don Dutile <ddutile@redhat.com>, Jon Masters <jcm@redhat.com>,
+        "patches@apm.com" <patches@apm.com>, Tuan Phan <tphan@apm.com>,
+        Suman Tripathi <stripathi@apm.com>
+Subject: Re: [PATCH v15 3/3] arm64: Add APM X-Gene SoC 15Gbps Multi-purpose
+ PHY DTS entries
+Message-ID: <20140310204549.GJ25290@htj.dyndns.org>
+References: <1394213289-29565-1-git-send-email-lho@apm.com>
+ <1394213289-29565-2-git-send-email-lho@apm.com>
+ <1394213289-29565-3-git-send-email-lho@apm.com>
+ <1394213289-29565-4-git-send-email-lho@apm.com>
+ <CAPw-ZTmwFZjKT2+CUUp73TDXJcXy-bEY_sTNg-TtH-COzDnCfw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPw-ZTmwFZjKT2+CUUp73TDXJcXy-bEY_sTNg-TtH-COzDnCfw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Mon, 10 Mar 2014 19:56:06 +0200
-
-> On Mon, Mar 10, 2014 at 01:43:59PM -0400, David Miller wrote:
->> From: David Miller <davem@davemloft.net>
->> Date: Mon, 10 Mar 2014 13:40:54 -0400 (EDT)
->> 
->> > 
->> > As a netdev reader, I don't see patches 1-3, did you post them somewhere else
->> > and not CC: netdev?
->> > 
->> > If so, please don't do that without at least making a mention of what's going
->> > on in the 0/N posting.
->> 
->> Nevermind, I see them as older postings in my queue.
->> 
->> Are you using the commit date as the date for your outgoing emails?
+On Sun, Mar 09, 2014 at 10:23:33PM -0700, Loc Ho wrote:
+> Hi Tejun,
 > 
-> I don't really know, I just used git send-email to prepare them.
+> On Fri, Mar 7, 2014 at 9:28 AM, Loc Ho <lho@apm.com> wrote:
 > 
-> I saw a large delay after I sent them all until patches 4/5
-> appeared on list. Could just be some hiccup in the smtp server
-> (using ssmtp).
+> > This patch adds the DTS entries for the APM X-Gene SoC 15Gbps Multi-purpose
+> > PHY driver. The PHY for SATA controller 2 and 3 are enabled by default.
+> >
+> > Signed-off-by: Loc Ho <lho@apm.com>
+> > Signed-off-by: Tuan Phan <tphan@apm.com>
+> > Signed-off-by: Suman Tripathi <stripathi@apm.com>
+> > ---
+> >  arch/arm64/boot/dts/apm-storm.dtsi |   75
+> > ++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 75 insertions(+), 0 deletions(-)
+> >
+> >
+> Kishon had pulled in the PHY doc/driver patches. Will you pulling in the
+> PHY DTS and the SATA host driver patches soon?
 
-Yeah that sounds like a better explanation then.
+Kishon, is the following branch the right one to pull into
+libata/for-3.15?
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git next
+
+Thanks.
+
+-- 
+tejun
