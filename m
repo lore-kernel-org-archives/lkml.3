@@ -1,137 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666AbaCJQNv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 12:13:51 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:2842 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752277AbaCJQNu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 12:13:50 -0400
-Date: Mon, 10 Mar 2014 12:13:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] ktest: remove the misleading $buildonly and
- introduce $laststep.
-Message-ID: <20140310121300.485d2202@gandalf.local.home>
-In-Reply-To: <87eh2b30ce.wl%satoru.takeuchi@gmail.com>
-References: <87ha7730nw.wl%satoru.takeuchi@gmail.com>
-	<87fvmr30kb.wl%satoru.takeuchi@gmail.com>
-	<87eh2b30ce.wl%satoru.takeuchi@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	id S1753901AbaCJQOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 12:14:43 -0400
+Received: from f170.i.mail.ru ([94.100.178.89]:40358 "EHLO f170.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753411AbaCJQOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 12:14:41 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?Sm9uIFJpbmdsZQ==?= <jon@ringle.org>
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        =?UTF-8?B?Sm9uIFJpbmdsZQ==?= <jringle@gridpoint.com>
+Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gUkZDOiBXSVA6IHNjMTZpczd4eCBbdjAuNF0=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.134.40.128]
+Date: Mon, 10 Mar 2014 20:14:36 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1394468076.709210210@f170.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <alpine.DEB.2.02.1403100744230.23103@jringle-ubuntu>
+References: <1394432777-13005-1-git-send-email-jon@ringle.org>
+ <1394434945.519725450@f256.i.mail.ru>
+ <alpine.DEB.2.02.1403100744230.23103@jringle-ubuntu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2AGEnRR017974
 
-On Sun, 09 Mar 2014 23:36:49 +0900
-Satoru Takeuchi <satoru.takeuchi@gmail.com> wrote:
-
-> From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+ĞŸĞ¾Ğ½ĞµĞ´ĞµĞ»ÑŒĞ½Ğ¸Ğº, 10 Ğ¼Ğ°Ñ€Ñ‚Ğ° 2014, 7:50 -04:00 Ğ¾Ñ‚ Jon Ringle <jon@ringle.org>:
 > 
-> Each test of ktest consists of the following steps.
+> On Mon, 10 Mar 2014, Alexander Shiyan wrote:
 > 
->   build -> install -> boot -> run user defined tests.
+> > ĞŸĞ¾Ğ½ĞµĞ´ĞµĞ»ÑŒĞ½Ğ¸Ğº, 10 Ğ¼Ğ°Ñ€Ñ‚Ğ° 2014, 2:26 -04:00 Ğ¾Ñ‚ jon@ringle.org:
+> > > From: Jon Ringle <jringle@gridpoint.com>
+> > ...
+> > > +config SERIAL_SC16IS7XX
+> > > +	tristate "SC16IS7xx RS485 serial support"
+> > > +	  select SERIAL_CORE
+> > > +	  default n
+> > > +	  help
+> > > +	  This selects support for SC16IS7xx for use as a RS485 serial port
+> > 
+> > Documentation says:
+> > The SC16IS740/750/760 is a slave IÂ²C-bus/SPI interface to a single-channel
+> > high performance UART.
+> > ...
+> > The SC16IS740/750/760 also provides additional advanced features such
+> > as auto hardware and software flow control, automatic RS-485 support...
+> > 
+> > So why do you position this chip as RS485 only? Automatic direction for
+> > RS485 is just a feature as an addition for standart UART.
 > 
-> $buildonly means not whether the test is build onlyor not. Actually
-> this variable mean the last step of the test as follows.
-> 
->  0: boot or more
->  1: build
->  2: install
-> 
-> AS you can see, these are random numeric literals. In addition,
-> there is no explanation about them.
-> 
-> To improve readability, introduce $laststep instead of $buildonly.
-> This variable means the last step of the test as follows.
-> 
->  STEP_BUILD (=0):        build
->  STEP_INSTALL (=1):      install
->  STEP_BOOT_OR_MORE (=2): boot or more
+> You're right. This is just how we are using the chip in our board. Would a 
+> configuration flag in platform_data make sense to use the auto rs485 
+> direction?
 
-Nice clean up. But there's some bugs in this patch.
+You don't need a flag, just use IOCTLs.
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/tty/serial/max310x.c?id=55367c620aed6bc27a82bb1763366931d7f2ee66
 
- 
-> @@ -649,26 +651,20 @@ sub set_value {
->  
->      my $prvalue = process_variables($rvalue);
->  
-> -    if ($buildonly && $lvalue =~ /^TEST_TYPE(\[.*\])?$/ && $prvalue ne "build") {
-> -	# Note if a test is something other than build, then we
-> -	# will need other manditory options.
-> -	if ($prvalue ne "install") {
-> -	    # for bisect, we need to check BISECT_TYPE
-> -	    if ($prvalue ne "bisect") {
-> -		$buildonly = 0;
+> Any thoughts as to the latency issue I report?
 
-When prvalue ne "bisect" we set it to boot or more.
+I do not understand why you chose the sccnxp driver as a template.
+Use as a template max310x driver from linux-next branch.
+I'm sure it will be better.
 
-> +    if ($laststep <= STEP_INSTALL)  {
-> +	if ($lvalue =~ /^TEST_TYPE(\[.*\])?$/ && $prvalue ne "build") {
-> +	    # Note if a test is something other than build, then we
-> +	    # will need other manditory options.
-> +	    if ($prvalue eq "install") {
-> +		# install still limits some manditory options.
-> +		$laststep = STEP_INSTALL;
-> +	    } elsif ($prvalue ne "bisect") {
-> +		# for bisect, we need to check BISECT_TYPE
-> +		$laststep = STEP_BUILD;
+About latency.
+I'm not exactly understand the problem, but I can say the following:
+Since you're using the I2C bus, maximum UART daudrate can be
+predicted from the I2C bus bandwidth.
+Count how many I2C clocks spent on reception and transmission
+of one byte through UART.
 
-Here you set it back to build.
-
->  	    }
-> -	} else {
-> -	    # install still limits some manditory options.
-> -	    $buildonly = 2;
-> -	}
-> -    }
-> -
-> -    if ($buildonly && $lvalue =~ /^BISECT_TYPE(\[.*\])?$/ && $prvalue ne "build") {
-> -	if ($prvalue ne "install") {
-> -	    $buildonly = 0;
-> -	} else {
-> -	    # install still limits some manditory options.
-> -	    $buildonly = 2;
-> +	} elsif ($lvalue =~ /^BISECT_TYPE(\[.*\])?$/ &&
-> +		   $prvalue ne "build") {
-> +	    $laststep = ($prvalue eq "install") ? STEP_INSTALL : STEP_BUILD;
-
-Here too.
-
-In fact, with this patch, we never set to boot or more.
-
-Also, you can make it even cleaner, by having the outer if condition be:
-
-	if ($laststep <= STEP_INSTALL && $prvalue ne "build")
-
-And remove the prvalue check from the inner conditions.
-
-Just send a fix of this patch, I have already pulled in the other two.
-I just need to test them for a bit before I push them to my kernel.org
-repo. I don't actually have a test suite for ktest. My testing is that
-I use ktest on a daily basis, and I just use the latest devel ktest for
-my daily activities. If something breaks, I usually notice, unless it's
-affects something I haven't done recently (like a bisect).
-
-Thanks,
-
--- Steve
-
->  	}
->      }
->  
-> @@ -4045,7 +4041,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
->      $dmesg = "$tmpdir/dmesg-$machine";
->      $output_config = "$outputdir/.config";
->  
-> -    if (!$buildonly) {
-> +    if ($laststep >= STEP_BOOT_OR_MORE) {
->  	$target = "$ssh_user\@$machine";
->  	if ($reboot_type eq "grub") {
->  	    dodie "GRUB_MENU not defined" if (!defined($grub_menu));
-
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
