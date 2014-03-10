@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963AbaCJRgO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:36:14 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:51310 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781AbaCJRgM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:36:12 -0400
-X-IronPort-AV: E=Sophos;i="4.97,625,1389744000"; 
-   d="scan'208";a="108418383"
-Message-ID: <531DF7FE.1000708@citrix.com>
-Date: Mon, 10 Mar 2014 17:35:58 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1752841AbaCJRi6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:38:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65232 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751689AbaCJRi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 13:38:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,625,1389772800"; 
+   d="scan'208";a="469702762"
+Message-ID: <531DF896.8010305@linux.intel.com>
+Date: Mon, 10 Mar 2014 10:38:30 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Matt Wilson <msw@linux.com>,
-        Anthony Liguori <aliguori@amazon.com>,
-        =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
-        <x86@kernel.org>, <xen-devel@lists.xenproject.org>,
-        <virtualization@lists.linux-foundation.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/grant-table: Refactor gnttab_[un]map_refs to avoid
- m2p_override
-References: <1393516530-9145-1-git-send-email-zoltan.kiss@citrix.com>
-In-Reply-To: <1393516530-9145-1-git-send-email-zoltan.kiss@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
+References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net> <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com> <1394229220.20013.13.camel@wall-e.seibold.net> <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com> <1394354848.1002.37.camel@wall-e.seibold.net> <531D044C.2090303@linux.intel.com> <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com> <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com> <531DD35A.5060202@linux.intel.com> <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com> <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com> <531DF549.2090403@linux.intel.com> <CALCETrV+3yCfOCJzRKN-woOyp2RF_=dW1V=9CwpYTUNGAiLoNQ@mail.gmail.com>
+In-Reply-To: <CALCETrV+3yCfOCJzRKN-woOyp2RF_=dW1V=9CwpYTUNGAiLoNQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/02/14 15:55, Zoltan Kiss wrote:
-> (This is a continuation of "[PATCH v9] xen/grant-table: Avoid m2p_override
-> during mapping")
+On 03/10/2014 10:31 AM, Andy Lutomirski wrote:
+>>
+>>> For 64-bit, this is an entirely different story.  The vsyscall page is
+>>> stuck in the fixmap forever, although I want to add a way for
+>>> userspace to opt out.  The vvar page, hpet, etc could move into vmas,
+>>> though.  I kind of want to do that anyway to allow processes to turn
+>>> off the ability to read the clock.
+>>
+>> Wait... you want to do what?!
 > 
-> The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
-> for blkback and future netback patches it just cause a lock contention, as
-> those pages never go to userspace. Therefore this series does the following:
-> - the bulk of the original function (everything after the mapping hypercall)
->   is moved to arch-dependent set/clear_foreign_p2m_mapping
-> - the "if (xen_feature(XENFEAT_auto_translated_physmap))" brach goes to ARM
-> - therefore the ARM function could be much smaller, the m2p_override stubs
->   could be also removed
-> - on x86 the set_phys_to_machine calls were moved up to this new funcion
->   from m2p_override functions
-> - and m2p_override functions are only called when there is a kmap_ops param
+> This isn't even my idea:
 > 
-> It also removes a stray space from arch/x86/include/asm/xen/page.h.
+> commit 8fb402bccf203ecca8f9e0202b8fd3c937dece6f
+> Author: Erik Bosman <ebn310@few.vu.nl>
+> Date:   Fri Apr 11 18:54:17 2008 +0200
+> 
+>     generic, x86: add prctl commands PR_GET_TSC and PR_SET_TSC
+> 
+>     This patch adds prctl commands that make it possible
+>     to deny the execution of timestamp counters in userspace.
+>     If this is not implemented on a specific architecture,
+>     prctl will return -EINVAL.
+> 
+> Currently anything that tries to use the vdso will just crash if you
+> do that, and it fails to turn off direct HPET access.  Fixing this
+> might be nice, but the current vvar implementation makes it
+> impossible.  If you want to stick something in a seccomp sandbox and
+> make it very difficult for it to exploit timing side channels, then
+> this is important :)
+> 
 
-Applied to devel/for-linus-3.15.
+Yes, we'd have to switch the vdso to using syscall access.  Doing that
+from inside a system call is... "interesting".
 
-Thanks.
+	-hpa
 
-David
+
