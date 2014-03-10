@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaCJUTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:19:19 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:42994 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058AbaCJUTS (ORCPT
+	id S1754263AbaCJUTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:19:31 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:36946 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754094AbaCJUT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:19:18 -0400
+	Mon, 10 Mar 2014 16:19:29 -0400
+Date: Mon, 10 Mar 2014 16:19:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
+ set via debugfs
+Message-ID: <20140310161927.3e78e5c4@gandalf.local.home>
+In-Reply-To: <241011797.35066.1394481694124.JavaMail.zimbra@efficios.com>
+References: <20140307150920.881849073@goodmis.org>
+	<20140307151202.210588176@goodmis.org>
+	<241011797.35066.1394481694124.JavaMail.zimbra@efficios.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <531E1B53.5090205@linux.intel.com>
-References: <20140307013833.GD8427@localhost>
-	<1394176888.1018.3.camel@wall-e.seibold.net>
-	<CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com>
-	<1394229220.20013.13.camel@wall-e.seibold.net>
-	<CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com>
-	<1394354848.1002.37.camel@wall-e.seibold.net>
-	<531D044C.2090303@linux.intel.com>
-	<CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
-	<CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
-	<531DD35A.5060202@linux.intel.com>
-	<CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
-	<CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
-	<1394481804.980.9.camel@wall-e.seibold.net>
-	<531E1B53.5090205@linux.intel.com>
-Date: Mon, 10 Mar 2014 13:19:17 -0700
-X-Google-Sender-Auth: lTG3hVak8atC7zja4i8W8LoKu3E
-Message-ID: <CA+55aFyxbuhPKgB=U8R5C5T_iKVvju-oQDS4kHz6McW45B+1bA@mail.gmail.com>
-Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Stefani Seibold <stefani@seibold.net>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 1:06 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->
-> The quick way to get something working is simply to reserve more than
-> one page (two should presumably be enough) in the fixmap and adjust the
-> link address of the VDSO accordingly.  This is not where we want to go
-> in the long term, but it doesn't seem to make sense to try to do
-> everything all at once -- we are already starting to push way too close
-> to the 3.15 merge window.
+On Mon, 10 Mar 2014 20:01:34 +0000 (UTC)
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+ 
+> >  	mutex_lock(&tracepoints_mutex);
+> >  	old = tracepoint_add_probe(name, probe, data);
+> > @@ -388,9 +393,13 @@ int tracepoint_probe_register(const char *name, void
+> > *probe, void *data)
+> >  		return PTR_ERR(old);
+> >  	}
+> >  	tracepoint_update_probes();		/* may update entry */
+> > +	entry = get_tracepoint(name);
+> > +	/* Make sure the entry was enabled */
+> > +	if (!entry || !entry->enabled)
+> > +		ret = -ENODEV;
+> 
+> Hi Steven,
+> 
+> Returning -ENODEV when the probe is still registered might come as a
+> surprise to the caller. For instance, a caller may dynamically allocate
+> name, probe, and/or data, it may want to free them when
+> tracepoint_probe_register returns an error. But this "-ENODEV" return value
+> is not really an error, and the parameters passed are still used.
 
-If the only immediate problem is the code generation size, then Andy
-already had a (simpler) hack-around:
+It's an error when you wanted to enable a probe and the probe doesn't
+exist. There are no in tree users of this call that expect it to work
+when the probe does not exist.
 
-  #undef CONFIG_OPTIMIZE_INLINING
-  #undef CONFIG_X86_PPRO_FENCE
+> 
+> If we go down this route, we might want at the very least to add documentation
+> of tracepoint_probe_register() return values and their meaning
+> in a comment on top of this function (perhaps also in the header). But
+> even if we do so, this weird return value semantic with respect to use of the
+> received parameters will likely cause memory corruption at some point.
+> 
+> Thoughts ?
 
-in vclock_gettime.c.
+Send a patch to document the return values. Your module can expect this
+return value when it doesn't expect the probe to exist.
 
-I think we could make it a bit less hacky by just restricting the
-inlining of the paravirt case, since that's presumably the crap code
-that causes things to grow too large. Or find out what in there it is
-that explodes in size, and just try to de-crapify the code enough that
-it no longer does that.
+Again, it's really strange when you go to enable a probe, and there is
+no probe to enable.
 
-Or is there something else going on too?
+Note, I was nice. I removed the logic to unregister the probe in this
+case.
 
-           Linus
+Anyway, this should even help you. Before there was no way to enable a
+probe and know if it was enabled or not. That is, if it didn't exist,
+there was no feedback letting you know that.
+
+If you expect to enable a probe that doesn't exist, then you can expect
+this return value.
+
+-- Steve
