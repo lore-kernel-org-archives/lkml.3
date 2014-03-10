@@ -1,163 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663AbaCJHyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 03:54:40 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:44717 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaCJHyj (ORCPT
+	id S1752748AbaCJH4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 03:56:22 -0400
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:23449
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752445AbaCJH4V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 03:54:39 -0400
-Date: Mon, 10 Mar 2014 10:50:52 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: Re: [PATCH] zram: propagate error to user
-Message-ID: <20140310075052.GA2233@swordfish.minsk.epam.com>
-References: <1394157378-7718-1-git-send-email-minchan@kernel.org>
- <20140307092045.GA2571@swordfish.minsk.epam.com>
- <20140307095134.GG3787@bbox>
- <20140309165851.GA2185@swordfish.minsk.epam.com>
- <20140310020122.GD14370@bbox>
+	Mon, 10 Mar 2014 03:56:21 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@kernel.org>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [alsa-devel] [PATCHv3 1/3] ASoC: codec: Simplify ASoC probe
+ code.
+Thread-Topic: [alsa-devel] [PATCHv3 1/3] ASoC: codec: Simplify ASoC probe
+ code.
+Thread-Index: AQHPNpOHBWw5RTyHRUi7LlXismLKZJrOzasAgAAnM/CAAWR6gIAJX3lQgAA2EwCAAAtmAIAAAqUAgAABkcA=
+Date: Mon, 10 Mar 2014 07:56:17 +0000
+Message-ID: <dda8dfdd78154f9ab68a2b1639727493@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1393814545-15002-1-git-send-email-Li.Xiubo@freescale.com>
+ <1393814545-15002-2-git-send-email-Li.Xiubo@freescale.com>
+ <20140303045952.GO2411@sirena.org.uk>
+ <5bc570ec866541a68df5813ffbe3168e@BY2PR03MB505.namprd03.prod.outlook.com>
+ <20140304043603.GI2411@sirena.org.uk>
+ <0dbba1debfd149a6a5e3985349a95793@BY2PR03MB505.namprd03.prod.outlook.com>
+ <531D6262.3070201@metafoo.de> <20140310073826.GA28112@sirena.org.uk>
+ <531D6E2A.9060606@metafoo.de>
+In-Reply-To: <531D6E2A.9060606@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 014617085B
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(479174003)(377454003)(189002)(199002)(164054003)(95416001)(94946001)(15202345003)(87936001)(81342001)(69226001)(65816001)(81542001)(85852003)(80022001)(63696002)(66066001)(85306002)(56776001)(80976001)(83072002)(49866001)(97336001)(56816005)(90146001)(54356001)(47736001)(76786001)(74366001)(51856001)(76796001)(47446002)(53806001)(77982001)(59766001)(92566001)(33646001)(19580405001)(76576001)(97186001)(47976001)(50986001)(15975445006)(81816001)(95666003)(79102001)(74502001)(74706001)(81686001)(31966008)(94316002)(46102001)(2656002)(74662001)(83322001)(4396001)(74316001)(76482001)(54316002)(87266001)(93516002)(74876001)(93136001)(19580395003)(86362001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB412;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:ECE4F820.ADD21D29.31D0B3CC.CE44DE0.201DD;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140310020122.GD14370@bbox>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On (03/10/14 11:01), Minchan Kim wrote:
-> Hello Sergey,
+> Subject: Re: [alsa-devel] [PATCHv3 1/3] ASoC: codec: Simplify ASoC probe code.
 > 
-> On Sun, Mar 09, 2014 at 07:58:51PM +0300, Sergey Senozhatsky wrote:
-> > Hello Minchan,
-> > 
-> > On (03/07/14 18:51), Minchan Kim wrote:
-> > > Hello Sergey!
-> > > 
-> > > On Fri, Mar 07, 2014 at 12:20:45PM +0300, Sergey Senozhatsky wrote:
-> > > > On (03/07/14 10:56), Minchan Kim wrote:
-> > > > > When we initialized zcomp with single, we couldn't change
-> > > > > max_comp_streams without zram reset but current interface doesn't
-> > > > > show any error to user and even it changes max_comp_streams's value
-> > > > > without any effect so it would make user very confusing.
-> > > > > 
-> > > > > This patch prevents max_comp_streams's change when zcomp was
-> > > > > initialized as single zcomp and emit the error to user(ex, echo).
-> > > > > 
-> > > > > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > > > > ---
-> > > > >  Documentation/blockdev/zram.txt |  9 +++++----
-> > > > >  drivers/block/zram/zcomp.c      | 10 +++++-----
-> > > > >  drivers/block/zram/zcomp.h      |  4 ++--
-> > > > >  drivers/block/zram/zram_drv.c   | 15 +++++++++++----
-> > > > >  4 files changed, 23 insertions(+), 15 deletions(-)
-> > > > > 
-> > > > > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> > > > > index 2604ffed51db..0595c3f56ccf 100644
-> > > > > --- a/Documentation/blockdev/zram.txt
-> > > > > +++ b/Documentation/blockdev/zram.txt
-> > > > > @@ -37,10 +37,11 @@ Note:
-> > > > >  In order to enable compression backend's multi stream support max_comp_streams
-> > > > >  must be initially set to desired concurrency level before ZRAM device
-> > > > >  initialisation. Once the device initialised as a single stream compression
-> > > > > -backend (max_comp_streams equals to 0) changing the value of max_comp_streams
-> > > > > -will not take any effect, because single stream compression backend implemented
-> > > > > -as a special case and does not support dynamic max_comp_streams. Only multi
-> > > > > -stream backend supports dynamic max_comp_streams adjustment.
-> > > > > +backend (max_comp_streams equals to 1), you will see error if you try to change
-> > > > > +the value of max_comp_streams because single stream compression backend
-> > > > > +implemented as a special case by lock overhead issue and does not support
-> > > > > +dynamic max_comp_streams. Only multi stream backend supports dynamic
-> > > > > +max_comp_streams adjustment.
-> > > > >  
-> > > > >  3) Select compression algorithm
-> > > > >  	Using comp_algorithm device attribute one can see available and
-> > > > > diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
-> > > > > index 92a83df40a27..15fe6a27781b 100644
-> > > > > --- a/drivers/block/zram/zcomp.c
-> > > > > +++ b/drivers/block/zram/zcomp.c
-> > > > > @@ -152,7 +152,7 @@ static void zcomp_strm_multi_release(struct zcomp *comp, struct zcomp_strm *zstr
-> > > > >  }
-> > > > >  
-> > > > >  /* change max_strm limit */
-> > > > > -static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
-> > > > > +static bool zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
-> > > > >  {
-> > > > >  	struct zcomp_strm_multi *zs = comp->stream;
-> > > > >  	struct zcomp_strm *zstrm;
-> > > > > @@ -171,7 +171,7 @@ static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
-> > > > >  		zs->avail_strm--;
-> > > > >  	}
-> > > > >  	spin_unlock(&zs->strm_lock);
-> > > > > -	return 0;
-> > > > > +	return true;
-> > > > >  }
-> > > > >  
-> > > > >  static void zcomp_strm_multi_destroy(struct zcomp *comp)
-> > > > > @@ -231,10 +231,10 @@ static void zcomp_strm_single_release(struct zcomp *comp,
-> > > > >  	mutex_unlock(&zs->strm_lock);
-> > > > >  }
-> > > > >  
-> > > > > -static int zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
-> > > > > +static bool zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
-> > > > >  {
-> > > > >  	/* zcomp_strm_single support only max_comp_streams == 1 */
-> > > > > -	return -ENOTSUPP;
-> > > > > +	return 0;
-> > > > >  }
-> > > > 
-> > > > IMHO, -ENOTSUPP for unsupported operation fits better than `false'.
-> > > > yes, currently there are only two possible returns:
-> > > > 	0 -- success
-> > > > 	-ENOTSUPP - not supported operation
-> > > > 
-> > > > though, we can extend functions later and return additional codes, other
-> > > > than `false' and `true'.
-> > > 
-> > > Thing to expose to user isn't true and false but EINVAL.
-> > > 
-> > 
-> > sure. I mean we can return actual zcomp_set_max_streams() error (if any)
-> > back to user from max_comp_streams_store():
-> > 
-> > 	[..]
-> > 	ret = zcomp_set_max_streams(...);
-> > 	[..]
-> > 	return ret;
-> > 
-> > > > 
-> > > > for example, -E2BIG if user requested extremly large number of streams,
-> > > > like 5000 streams.
-> > > 
-> > > I'm not sure it's right example for E2BIG.
-> > > When I read the comment, it says "argument list too long".
-> > > Anyway, when I tried ENOTSUPP, echo doesn't show meaningful error to user
-> > > and I dont' know it's casual err number for userspace.
-> > > Pz, comment about that.
-> > > 
-> > 
-> > E2BIG (introduced by POSIX.1-2001) was a quick example and, probably, not
-> > the perfect one. In general, I'm not against this change and I can live
-> > with zcomp_set_max_streams() returning bool.
+> On 03/10/2014 08:38 AM, Mark Brown wrote:
+> > On Mon, Mar 10, 2014 at 07:57:38AM +0100, Lars-Peter Clausen wrote:
+> >> On 03/10/2014 04:51 AM, Li.Xiubo@freescale.com wrote:
+> >
+> >>> Has there any other problems about this patch series? And this I had
+> tested on
+> >>> our Vybrid-Twr board based on SGTL5000 codec and SAI drivers. If not, I
+> can
+> >>> continue with my second patches series about " Remove set_cache_io
+> entirely from
+> >>> ASoC probe".
+> >
+> >> It looks good to me.
+> >
+> > I don't have the patches any more.
 > 
-> Then, could you give me Acked-by?
-> I am hungry with that. :)
+> Xiubo, when you resend the patch series can you make refresh your patch 3
+> against these two patches. They should preferably go in before we change the
+> signature.
+> 
+> http://mailman.alsa-project.org/pipermail/alsa-devel/2014-March/073785.html
+> http://mailman.alsa-project.org/pipermail/alsa-devel/2014-March/073786.html
 > 
 
-sure :)
+@Lars,
+Yes, certainly.
 
-Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+@Mark, @Lars,
+This two patch above should be applied firstly. And I will resent my patch
+Series later.
 
+Thanks,
 
-	-ss
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
+--
+Best Regards,
+Xiubo
+
