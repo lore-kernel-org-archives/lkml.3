@@ -1,214 +1,534 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332AbaCJLke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:40:34 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:44938 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaCJLkc (ORCPT
+	id S1753032AbaCJLs3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 07:48:29 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:43884 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526AbaCJLs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:40:32 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: Philipp Zabel <philipp.zabel@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH v4 1/3] [media] of: move graph helpers from drivers/media/v4l2-core to drivers/of
-Date: Mon, 10 Mar 2014 12:42:04 +0100
-Message-ID: <1401949.AJnxRNDZ0C@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <531D7E9F.3090708@samsung.com>
-References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de> <1536567.OYzyi25bjL@avalon> <531D7E9F.3090708@samsung.com>
+	Mon, 10 Mar 2014 07:48:26 -0400
+Date: Mon, 10 Mar 2014 11:48:19 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        kernel@stlinux.com, Giuseppe Condorelli <giuseppe.condorelli@st.com>
+Subject: Re: [PATCH 1/5] drivers: input: keyboard: st-keyscan: add keyscan
+ driver
+Message-ID: <20140310114819.GO14976@lee--X1>
+References: <1393990772-9567-1-git-send-email-gabriel.fernandez@st.com>
+ <1393990772-9567-2-git-send-email-gabriel.fernandez@st.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1393990772-9567-2-git-send-email-gabriel.fernandez@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrzej,
+Hi Gabi,
 
-On Monday 10 March 2014 09:58:07 Andrzej Hajda wrote:
-> On 03/08/2014 04:54 PM, Laurent Pinchart wrote:
-> > On Saturday 08 March 2014 13:07:23 Philipp Zabel wrote:
-> >> On Fri, Mar 7, 2014 at 6:18 PM, Grant Likely wrote:
-> >>> On Wed, 26 Feb 2014 16:24:57 +0100, Philipp Zabel wrote:
-> >>>> The 'ports' node is optional. It is only needed if the parent node has
-> >>>> its own #address-cells and #size-cells properties. If the ports are
-> >>>> direct children of the device node, there might be other nodes than
-> >>>> 
-> >>>> ports:
-> >>>>       device {
-> >>>>               #address-cells = <1>;
-> >>>>               #size-cells = <0>;
-> >>>>               
-> >>>>               port@0 {
-> >>>>                       endpoint { ... };
-> >>>>               };
-> >>>>               port@1 {
-> >>>>                       endpoint { ... };
-> >>>>               };
-> >>>>               
-> >>>>               some-other-child { ... };
-> >>>>       };
-> >>>>       
-> >>>>       device {
-> >>>>               #address-cells = <x>;
-> >>>>               #size-cells = <y>;
-> >>>>               
-> >>>>               ports {
-> >>>>                       #address-cells = <1>;
-> >>>>                       #size-cells = <0>;
-> >>>>                       
-> >>>>                       port@0 {
-> >>>>                               endpoint { ... };
-> >>>>                       };
-> >>>>                       port@1 {
-> >>>>                               endpoint { ... };
-> >>>>                       };
-> >>>>               };
-> >>>>               
-> >>>>               some-other-child { ... };
-> >>>>       };
-> >>> 
-> >>> From a pattern perspective I have no problem with that.... From an
-> >>> individual driver binding perspective that is just dumb! It's fine for
-> >>> the ports node to be optional, but an individual driver using the
-> >>> binding should be explicit about which it will accept. Please use either
-> >>> a flag or a separate wrapper so that the driver can select the
-> >>> behaviour.
-> >> 
-> >> If the generic binding exists in both forms, most drivers should be
-> >> able to cope with both. Maybe it should be mentioned in the bindings
-> >> that the short form without ports node should be used where possible
-> >> (i.e. for devices that don't already have #address,size-cells != 1,0).
-> >> 
-> >> Having a separate wrapper to enforce the ports node for devices that
-> >> need it might be useful.
-> >> 
-> >>>> The helper should find the two endpoints in both cases.
-> >>>> 
-> >>>> Tomi suggests an even more compact form for devices with just one port:
-> >>>>
-> >>>>       device {
-> >>>>               endpoint { ... };
-> >>>>               
-> >>>>               some-other-child { ... };
-> >>>>       };
-> >>> 
-> >>> That's fine. In that case the driver would specifically require the
-> >>> endpoint to be that one node.... although the above looks a little weird
-> >>> to me. I would recommend that if there are other non-port child nodes
-> >>> then the ports should still be encapsulated by a ports node.  The device
-> >>> binding should not be ambiguous about which nodes are ports.
-> >> 
-> >> Sylwester suggested as an alternative, if I understood correctly, to
-> >> drop the endpoint node and instead keep the port:
-> >> 
-> >>     device-a {
-> >>         implicit_output_ep: port {
-> >>             remote-endpoint = <&explicit_input_ep>;
-> >>         };
-> >>     };
-> >>     
-> >>     device-b {
-> >>         port {
-> >>             explicit_input_ep: endpoint {
-> >>                 remote-endpoint = <&implicit_output_ep>;
-> >>             };
-> >>         };
-> >>     };
-> >> 
-> >> This would have the advantage to reduce verbosity for devices with
-> >> multiple ports that are only connected via one endport each, and you'd
-> >> always have the connected ports in the device tree as 'port' nodes.
-> > 
-> > I like that idea. I would prefer making the 'port' nodes mandatory and the
-> > 'ports' and 'endpoint' nodes optional. Leaving the 'port' node out
-> > slightly decreases readability in my opinion, but making the 'endpoint'
-> > node optional increases it. That's just my point of view though.
-> 
-> I want to propose another solution to simplify bindings, in fact I have
-> few ideas to consider:
-> 
-> 1. Use named ports instead of address-cells/regs. Ie instead of
-> port@number schema, use port-function. This will allow to avoid ports
-> node and #address-cells, #size-cells, reg properties.
-> Additionally it should increase readability of the bindings.
-> 
-> device {
-> 	port-dsi {
-> 		endpoint { ... };
-> 	};
-> 	port-rgb {
-> 		endpoint { ... };
-> 	};
-> };
-> 
-> It is little bit like with gpios vs reset-gpios properties.
-> Another advantage I see we do not need do mappings of port numbers
-> to functions between dts, drivers and documentation.
+Sorry for the delay. It was a hectic week last week.
 
-The problem with this approach is that ports are identified by a number inside 
-the kernel, so we would still need to define name to number mappings, or 
-switch to port names internally first.
+As promised:
 
-> 2. Similar approach can be taken to endpoint nodes, in fact
-> as endpoints are children of port node and as I understand port node
-> have no other children we can use any name instead of endpoint@number,
-> of course some convention can be helpful.
+> This patch adds ST Keyscan driver to use the keypad hw a subset
+> of ST boards provide. Specific board setup will be put in the
+> given dt.
 > 
-> device {
-> 	port-dsi {
-> 		ep-soc1 { ... };
-> 		ep-soc2 { ... };
-> 	};
-> 	port-rgb {
-> 		ep-panel { ... };
-> 	};
-> };
+> Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
 
-I see less issues here, as we don't need to number endpoints if I'm not 
-mistaken.
+Are you sure these are in the correct order?
 
-> I would like to add that those ideas would work nicely with Sylwester's
-> proposition of skipping endpoints nodes in case there is only one
-> endpoint - the most common cases are devices with one or two ports, each
-> port having only one remote endpoint.
-> The complete graph for DSI/LVDS bridge I work recently will look like:
+What is the history of this commit?
+
+> ---
+>  .../devicetree/bindings/input/st-keypad.txt        |  50 ++++
+
+This should be submitted as a seperate patch.
+
+>  drivers/input/keyboard/Kconfig                     |  12 +
+>  drivers/input/keyboard/Makefile                    |   1 +
+>  drivers/input/keyboard/st-keyscan.c                | 323 +++++++++++++++++++++
+>  4 files changed, 386 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/input/st-keypad.txt
+>  create mode 100644 drivers/input/keyboard/st-keyscan.c
 > 
-> dsim {
-> 	dsim_ep: port-dsi {
-> 		remote-endpoint = <&bridge_dsi_ep>;
-> 	};
-> };
-> 
-> bridge {
-> 	bridge_dsi_ep: port-dsi {
-> 		remote-endpoint = <&dsim_ep>;
-> 	};
-> 	bridge_lvds_ep: port-lvds {
-> 		remote-endpoint = <&panel_ep>;
-> 	};
-> };
-> 
-> panel {
-> 	port-lvds {
-> 		remote-endpoint <&bridge_lvds_ep>;
-> 	};
-> };
+> diff --git a/Documentation/devicetree/bindings/input/st-keypad.txt b/Documentation/devicetree/bindings/input/st-keypad.txt
+> new file mode 100644
+> index 0000000..63eb07a
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/input/st-keypad.txt
+> @@ -0,0 +1,50 @@
+> +* ST Keypad controller device tree bindings
+
+s/device tree/Device Tree
+
+> +
+> +The ST keypad controller device tree binding is based on the
+
+As above.
+
+> +matrix-keymap.
+> +
+> +Required properties:
+> +
+> +- compatible: "st,keypad"
+
+I think there will be subsequent st,keypad drivers? Is there any way
+we can make this compatible string more specific to _this_ device?
+
+st,stih4xx-keypad?
+
+> +- reg: Register base address of st-keypad controler.
+
+s/address/address and size AND s/controler/controller
+
+> +- interrupts: Interrupt numberof st-keypad controler.
+
+s/numberof/number for the
+
+> +- clocks: Must contain one entry, for the module clock.
+> +  See ../clocks/clock-bindings.txt for details.
+
+Great!
+
+> +- pinctrl-0: Should specify pin control groups used for this controller.
+> +
+> +- pinctrl-names: Should contain only one value - "default".
+
+Like to ../pinctrl/pinctrl-bindings.txt
+
+> +- linux,keymap: The keymap for keys as described in the binding document
+> +  devicetree/bindings/input/matrix-keymap.txt.
+> +
+> +- keypad,num-rows: Number of row lines connected to the keypad controller.
+> +
+> +- keypad,num-columns: Number of column lines connected to the keypad
+> +  controller.
+> +
+> +- st,debounce_us: Debouncing interval time in microseconds
+
+I'm sure there will be a shared binding for de-bounce.
+
+If not, there certainly should be.
+
+> +
+> +
+
+Superfluous new lines.
+
+> +Example:
+> +
+> +keyscan: keyscan@fe4b0000 {
+> +	compatible = "st,keypad";
+
+Is there any way we can make this more specific to _this_ IP?
+
+> +	reg = <0xfe4b0000 0x2000>;
+> +	interrupts = <GIC_SPI 212 IRQ_TYPE_NONE>;
+> +	clocks	= <&CLK_SYSIN>;
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&pinctrl_keyscan>;
+> +
+> +	keypad,num-rows = <4>;
+> +	keypad,num-columns = <4>;
+> +	st,debounce_us = <5000>;
+> +	linux,keymap = < /* in0	in1	in2	in3 */
+
+Do these line up in the file? I know Git can be a bit funny about this
+sometimes.
+
+> +		KEY_F13 KEY_F9  KEY_F5 KEY_F1		/* out0 */
+> +		KEY_F14 KEY_F10 KEY_F6 KEY_F2		/* out1 */
+> +		KEY_F15 KEY_F11 KEY_F7 KEY_F3		/* out2 */
+> +		KEY_F16 KEY_F12 KEY_F8 KEY_F4 >;	/* out3 */
+> +};
+> diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+> index a673c9f..9e29125 100644
+> --- a/drivers/input/keyboard/Kconfig
+> +++ b/drivers/input/keyboard/Kconfig
+> @@ -512,6 +512,18 @@ config KEYBOARD_STOWAWAY
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called stowaway.
+>  
+> +config KEYBOARD_ST_KEYSCAN
+> +	tristate "STMicroelectronics keyscan support"
+> +	depends on ARCH_STI
+> +	select INPUT_EVDEV
+> +	select INPUT_MATRIXKMAP
+> +	help
+> +	  Say Y here if you want to use a keypad attached to the keyscan block
+> +	  on some STMicroelectronics SoC devices.
+
+Might be worth mentioning which ones.
+
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called stm-keyscan.
+> +
+>  config KEYBOARD_SUNKBD
+>  	tristate "Sun Type 4 and Type 5 keyboard"
+>  	select SERIO
+> diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
+> index a699b61..5fd020a 100644
+> --- a/drivers/input/keyboard/Makefile
+> +++ b/drivers/input/keyboard/Makefile
+> @@ -50,6 +50,7 @@ obj-$(CONFIG_KEYBOARD_SH_KEYSC)		+= sh_keysc.o
+>  obj-$(CONFIG_KEYBOARD_SPEAR)		+= spear-keyboard.o
+>  obj-$(CONFIG_KEYBOARD_STMPE)		+= stmpe-keypad.o
+>  obj-$(CONFIG_KEYBOARD_STOWAWAY)		+= stowaway.o
+> +obj-$(CONFIG_KEYBOARD_ST_KEYSCAN)	+= st-keyscan.o
+>  obj-$(CONFIG_KEYBOARD_SUNKBD)		+= sunkbd.o
+>  obj-$(CONFIG_KEYBOARD_TC3589X)		+= tc3589x-keypad.o
+>  obj-$(CONFIG_KEYBOARD_TEGRA)		+= tegra-kbc.o
+> diff --git a/drivers/input/keyboard/st-keyscan.c b/drivers/input/keyboard/st-keyscan.c
+> new file mode 100644
+> index 0000000..606cc19
+> --- /dev/null
+> +++ b/drivers/input/keyboard/st-keyscan.c
+> @@ -0,0 +1,323 @@
+> +/*
+> + * STMicroelectronics Key Scanning driver
+> + *
+> + * Copyright (c) 2014 STMicroelectonics Ltd.
+> + * Author: Stuart Menefy <stuart.menefy@st.com>
+> + *
+> + * Based on sh_keysc.c, copyright 2008 Magnus Damm
+
+Did sh_keysc.c ever exist in Mainline?
+
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/input/matrix_keypad.h>
+> +
+> +#define ST_KEYSCAN_MAXKEYS 16
+> +
+> +#define KEYSCAN_CONFIG_OFF		0x000
+> +#define KEYSCAN_CONFIG_ENABLE		1
+
+0x001?
+
+> +#define KEYSCAN_DEBOUNCE_TIME_OFF	0x004
+> +#define KEYSCAN_MATRIX_STATE_OFF	0x008
+> +#define KEYSCAN_MATRIX_DIM_OFF		0x00c
+
+Odd that these are 3 digit padded? Is there a reason for that?
+
+> +#define KEYSCAN_MATRIX_DIM_X_SHIFT	0
+> +#define KEYSCAN_MATRIX_DIM_Y_SHIFT	2
+
+For all 'ST_KEYSCAN_...'?
+
+> +struct keypad_platform_data {
+> +	const struct matrix_keymap_data *keymap_data;
+> +	unsigned int num_out_pads;
+> +	unsigned int num_in_pads;
+> +	unsigned int debounce_us;
+> +};
+> +
+> +struct keyscan_priv {
+> +	void __iomem *base;
+> +	int irq;
+> +	struct clk *clk;
+> +	struct input_dev *input_dev;
+> +	struct keypad_platform_data *config;
+> +	unsigned int last_state;
+> +	u32 keycodes[ST_KEYSCAN_MAXKEYS];
+
+Seems odd to limit this. Can't the information come from DT
+i.e. keypad,num-rows and keypad,num-columns?
+
+> +};
+> +
+> +static irqreturn_t keyscan_isr(int irq, void *dev_id)
+> +{
+> +	struct platform_device *pdev = dev_id;
+> +	struct keyscan_priv *priv = platform_get_drvdata(pdev);
+> +	int state;
+> +	int change;
+> +
+> +	state = readl(priv->base + KEYSCAN_MATRIX_STATE_OFF) & 0xffff;
+> +	change = priv->last_state ^ state;
+> +
+> +	while (change) {
+> +		int scancode = __ffs(change);
+> +		int down = state & (1 << scancode);
+
+int down = state & BIT(scancode);
+
+> +		input_report_key(priv->input_dev, priv->keycodes[scancode],
+> +				 down);
+> +		change ^= 1 << scancode;
+
+change ^= BIT(scancode);
+
+> +	};
+> +
+> +	input_sync(priv->input_dev);
+> +
+> +	priv->last_state = state;
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static void keyscan_start(struct keyscan_priv *priv)
+> +{
+> +	clk_enable(priv->clk);
+> +
+> +	writel(priv->config->debounce_us * (clk_get_rate(priv->clk) / 1000000),
+> +	       priv->base + KEYSCAN_DEBOUNCE_TIME_OFF);
+> +
+> +	writel(((priv->config->num_in_pads - 1) << KEYSCAN_MATRIX_DIM_X_SHIFT) |
+> +	       ((priv->config->num_out_pads - 1) << KEYSCAN_MATRIX_DIM_Y_SHIFT),
+> +	       priv->base + KEYSCAN_MATRIX_DIM_OFF);
+> +
+> +	writel(KEYSCAN_CONFIG_ENABLE, priv->base + KEYSCAN_CONFIG_OFF);
+> +}
+> +
+> +static void keyscan_stop(struct keyscan_priv *priv)
+> +{
+> +	writel(0, priv->base + KEYSCAN_CONFIG_OFF);
+> +
+> +	clk_disable(priv->clk);
+> +}
+> +
+> +static int keypad_matrix_key_parse_dt(struct keyscan_priv *st_kp)
+> +{
+> +	struct device *dev = st_kp->input_dev->dev.parent;
+> +	struct device_node *np = dev->of_node;
+> +	struct keypad_platform_data *pdata;
+> +	int error;
+> +
+> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata) {
+> +		dev_err(dev, "failed to allocate driver pdata\n");
+
+If the system is OOM, this sort of error message will be pretty
+redundant. Just return -ENOMEM instead.
+
+> +		return -ENOMEM;
+> +	}
+> +
+> +	error = matrix_keypad_parse_of_params(dev, &pdata->num_out_pads,
+> +			&pdata->num_in_pads);
+> +	if (error) {
+> +		dev_err(dev, "failed to parse keypad params\n");
+> +		return error;
+
+Nit: It's pretty unusual to use this for a standard error handling
+variable. Consider 'ret' or 'err' as a replacement.
+
+> +	}
+> +
+> +	of_property_read_u32(np, "st,debounce_us", &pdata->debounce_us);
+
+Isn't this a required property? Might be worth checking the return
+value if so.
+
+> +	st_kp->config = pdata;
+> +
+> +	dev_info(dev, "rows=%d col=%d debounce=%d\n",
+> +			pdata->num_out_pads,
+> +			pdata->num_in_pads,
+> +			pdata->debounce_us);
+
+Might be worth moving this down passed the final point of failure.
+
+> +	error = of_property_read_u32_array(np, "linux,keymap",
+> +					st_kp->keycodes, ST_KEYSCAN_MAXKEYS);
+> +	if (error) {
+> +		dev_err(dev, "failed to parse keymap\n");
+> +		return error;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int __init keyscan_probe(struct platform_device *pdev)
+> +{
+> +	struct keypad_platform_data *pdata =
+> +		dev_get_platdata(&pdev->dev);
+
+Do we really support platform data still?
+
+> +	struct keyscan_priv *st_kp;
+> +	struct input_dev *input_dev;
+> +	struct device *dev = &pdev->dev;
+
+dev and pdev are used randomly in probe(). Just remove the dev
+de-reference and use &pdev->dev exclusively.
+
+It's pretty common to de-reference 'np = pdev->dev.of_node' though.
+
+> +	struct resource *res;
+> +	int len;
+> +	int error;
+> +	int i;
+> +
+> +	if (!pdata && !pdev->dev.of_node) {
+> +		dev_err(&pdev->dev, "no keymap defined\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	st_kp = devm_kzalloc(dev, sizeof(*st_kp), GFP_KERNEL);
+> +	if (!st_kp) {
+> +		dev_err(dev, "failed to allocate driver data\n");
+> +		return -ENOMEM;
+
+I wouldn't print any messages on -ENOMEM personally. It's not a driver
+failure per se, but a system one where the user will soon be notified.
+
+> +	}
+> +	st_kp->config = pdata;
+
+You only want to do this in the !np case.
+
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		dev_err(dev, "no I/O memory specified\n");
+> +		return -ENXIO;
+> +	}
+> +
+> +	len = resource_size(res);
+> +	if (!devm_request_mem_region(dev, res->start, len, pdev->name)) {
+> +		dev_err(dev, "failed to reserve I/O memory\n");
+> +		return -EBUSY;
+> +	}
+> +
+> +	st_kp->base = devm_ioremap_nocache(dev, res->start, len);
+> +	if (st_kp->base == NULL) {
+> +		dev_err(dev, "failed to remap I/O memory\n");
+> +		return -ENXIO;
+> +	}
+
+Replace the two above with devm_ioremap_resource().
+
+Make sure the IORESOURCE_CACHEABLE is set.
+
+> +	st_kp->irq = platform_get_irq(pdev, 0);
+> +	if (st_kp->irq < 0) {
+> +		dev_err(dev, "no IRQ specified\n");
+> +		return -ENXIO;
+
+No such device or address, are you sure?
+
+Perhaps -EINVAL would be better, as one should be specified.
+
+> +	}
+> +
+> +	error = devm_request_irq(dev, st_kp->irq, keyscan_isr, 0,
+> +				 pdev->name, pdev);
+> +	if (error) {
+> +		dev_err(dev, "failed to request IRQ\n");
+> +		return error;
+> +	}
+> +
+> +	input_dev = devm_input_allocate_device(&pdev->dev);
+> +	if (!input_dev) {
+> +		dev_err(&pdev->dev, "failed to allocate the input device\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	st_kp->clk = devm_clk_get(dev, NULL);
+> +	if (IS_ERR(st_kp->clk)) {
+> +		dev_err(dev, "cannot get clock");
+> +		return PTR_ERR(st_kp->clk);
+> +	}
+> +
+> +	input_dev = input_allocate_device();
+> +	if (!input_dev) {
+> +		dev_err(dev, "failed to allocate input device\n");
+> +		return -ENOMEM;
+> +	}
+
+Wasn't this done already?
+
+> +	st_kp->input_dev = input_dev;
+> +
+> +	input_dev->name = pdev->name;
+> +	input_dev->phys = "keyscan-keys/input0";
+> +	input_dev->dev.parent = dev;
+> +
+> +	input_dev->id.bustype = BUS_HOST;
+> +	input_dev->id.vendor = 0x0001;
+> +	input_dev->id.product = 0x0001;
+> +	input_dev->id.version = 0x0100;
+
+Any chance we can #define these?
+
+> +	if (!pdata) {
+> +		error = keypad_matrix_key_parse_dt(st_kp);
+> +		if (error)
+> +			return error;
+> +		pdata = st_kp->config;
+
+Is pdata used after this?
+
+> +	}
+> +
+> +	input_dev->keycode = st_kp->keycodes;
+> +	input_dev->keycodesize = sizeof(st_kp->keycodes[0]);
+> +	input_dev->keycodemax = ARRAY_SIZE(st_kp->keycodes);
+> +
+> +	for (i = 0; i < ST_KEYSCAN_MAXKEYS; i++)
+> +		input_set_capability(input_dev, EV_KEY, st_kp->keycodes[i]);
+> +	__clear_bit(KEY_RESERVED, input_dev->keybit);
+> +
+> +	error = input_register_device(input_dev);
+> +	if (error) {
+> +		dev_err(dev, "failed to register input device\n");
+> +		input_free_device(input_dev);
+> +		platform_set_drvdata(pdev, NULL);
+
+You don't need to do this anymore. It's taken care of elsewhere.
+
+> +		return error;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, st_kp);
+> +
+> +	keyscan_start(st_kp);
+> +
+> +	device_set_wakeup_capable(&pdev->dev, 1);
+> +
+> +	return 0;
+> +}
+> +
+> +static int __exit keyscan_remove(struct platform_device *pdev)
+> +{
+> +	struct keyscan_priv *priv = platform_get_drvdata(pdev);
+> +
+> +	keyscan_stop(priv);
+> +
+> +	input_unregister_device(priv->input_dev);
+> +	platform_set_drvdata(pdev, NULL);
+> +
+> +	return 0;
+
+I already saw that Dmitry commented on the rest of the file.
+
+<snip>
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
