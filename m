@@ -1,79 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbaCJHij (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 03:38:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36024 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675AbaCJHii (ORCPT
+	id S1752678AbaCJHoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 03:44:08 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:52385 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102AbaCJHoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 03:38:38 -0400
-Date: Mon, 10 Mar 2014 07:38:26 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140310073826.GA28112@sirena.org.uk>
-References: <1393814545-15002-1-git-send-email-Li.Xiubo@freescale.com>
- <1393814545-15002-2-git-send-email-Li.Xiubo@freescale.com>
- <20140303045952.GO2411@sirena.org.uk>
- <5bc570ec866541a68df5813ffbe3168e@BY2PR03MB505.namprd03.prod.outlook.com>
- <20140304043603.GI2411@sirena.org.uk>
- <0dbba1debfd149a6a5e3985349a95793@BY2PR03MB505.namprd03.prod.outlook.com>
- <531D6262.3070201@metafoo.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O7yGjEYpwrIKCenc"
-Content-Disposition: inline
-In-Reply-To: <531D6262.3070201@metafoo.de>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCHv3 1/3] ASoC: codec: Simplify ASoC probe code.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 10 Mar 2014 03:44:03 -0400
+X-AuditID: 9c93017d-b7c89ae000006ae1-db-531d6d427a1b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 1/9] perf tools: Pass evsel to hpp->header/width functions explicitly
+Date: Mon, 10 Mar 2014 16:43:52 +0900
+Message-Id: <1394437440-11609-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
+References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Those functions need evsel to investigate event group and it's passed
+via hpp->ptr.  However as it can be missed easily so it's better to
+pass it via an argument IMHO.
 
---O7yGjEYpwrIKCenc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-diff.c  |  7 ++++---
+ tools/perf/ui/gtk/hists.c  |  3 +--
+ tools/perf/ui/hist.c       | 24 ++++++++++--------------
+ tools/perf/ui/stdio/hist.c |  5 ++---
+ tools/perf/util/hist.h     |  6 ++++--
+ 5 files changed, 21 insertions(+), 24 deletions(-)
 
-On Mon, Mar 10, 2014 at 07:57:38AM +0100, Lars-Peter Clausen wrote:
-> On 03/10/2014 04:51 AM, Li.Xiubo@freescale.com wrote:
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index a77e31246c00..204fffe22532 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -952,8 +952,8 @@ static int hpp__entry_global(struct perf_hpp_fmt *_fmt, struct perf_hpp *hpp,
+ 				 dfmt->header_width, buf);
+ }
+ 
+-static int hpp__header(struct perf_hpp_fmt *fmt,
+-		       struct perf_hpp *hpp)
++static int hpp__header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
++		       struct perf_evsel *evsel __maybe_unused)
+ {
+ 	struct diff_hpp_fmt *dfmt =
+ 		container_of(fmt, struct diff_hpp_fmt, fmt);
+@@ -963,7 +963,8 @@ static int hpp__header(struct perf_hpp_fmt *fmt,
+ }
+ 
+ static int hpp__width(struct perf_hpp_fmt *fmt,
+-		      struct perf_hpp *hpp __maybe_unused)
++		      struct perf_hpp *hpp __maybe_unused,
++		      struct perf_evsel *evsel __maybe_unused)
+ {
+ 	struct diff_hpp_fmt *dfmt =
+ 		container_of(fmt, struct diff_hpp_fmt, fmt);
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 7912dab6e5fb..e395ef9b0ae0 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -165,7 +165,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	struct perf_hpp hpp = {
+ 		.buf		= s,
+ 		.size		= sizeof(s),
+-		.ptr		= hists_to_evsel(hists),
+ 	};
+ 
+ 	nr_cols = 0;
+@@ -192,7 +191,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	col_idx = 0;
+ 
+ 	perf_hpp__for_each_format(fmt) {
+-		fmt->header(fmt, &hpp);
++		fmt->header(fmt, &hpp, hists_to_evsel(hists));
+ 
+ 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
+ 							    -1, ltrim(s),
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index ac39313a3f0c..0f403b83e9d1 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -118,29 +118,27 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 
+ #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
+ static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
+-			       struct perf_hpp *hpp)			\
++			       struct perf_hpp *hpp,			\
++			       struct perf_evsel *evsel)		\
+ {									\
+ 	int len = _min_width;						\
+ 									\
+-	if (symbol_conf.event_group) {					\
+-		struct perf_evsel *evsel = hpp->ptr;			\
+-									\
++	if (symbol_conf.event_group)					\
+ 		len = max(len, evsel->nr_members * _unit_width);	\
+-	}								\
++									\
+ 	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);	\
+ }
+ 
+ #define __HPP_WIDTH_FN(_type, _min_width, _unit_width) 			\
+ static int hpp__width_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
+-			      struct perf_hpp *hpp __maybe_unused)	\
++			      struct perf_hpp *hpp __maybe_unused,	\
++			      struct perf_evsel *evsel)			\
+ {									\
+ 	int len = _min_width;						\
+ 									\
+-	if (symbol_conf.event_group) {					\
+-		struct perf_evsel *evsel = hpp->ptr;			\
+-									\
++	if (symbol_conf.event_group)					\
+ 		len = max(len, evsel->nr_members * _unit_width);	\
+-	}								\
++									\
+ 	return len;							\
+ }
+ 
+@@ -329,15 +327,13 @@ unsigned int hists__sort_list_width(struct hists *hists)
+ 	struct perf_hpp_fmt *fmt;
+ 	struct sort_entry *se;
+ 	int i = 0, ret = 0;
+-	struct perf_hpp dummy_hpp = {
+-		.ptr	= hists_to_evsel(hists),
+-	};
++	struct perf_hpp dummy_hpp;
+ 
+ 	perf_hpp__for_each_format(fmt) {
+ 		if (i)
+ 			ret += 2;
+ 
+-		ret += fmt->width(fmt, &dummy_hpp);
++		ret += fmt->width(fmt, &dummy_hpp, hists_to_evsel(hists));
+ 	}
+ 
+ 	list_for_each_entry(se, &hist_entry__sort_list, list)
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 9bad89228472..d59893edf031 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -379,7 +379,6 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 	struct perf_hpp dummy_hpp = {
+ 		.buf	= bf,
+ 		.size	= sizeof(bf),
+-		.ptr	= hists_to_evsel(hists),
+ 	};
+ 	bool first = true;
+ 	size_t linesz;
+@@ -398,7 +397,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		else
+ 			first = false;
+ 
+-		fmt->header(fmt, &dummy_hpp);
++		fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
+ 		fprintf(fp, "%s", bf);
+ 	}
+ 
+@@ -443,7 +442,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		else
+ 			first = false;
+ 
+-		width = fmt->width(fmt, &dummy_hpp);
++		width = fmt->width(fmt, &dummy_hpp, hists_to_evsel(hists));
+ 		for (i = 0; i < width; i++)
+ 			fprintf(fp, ".");
+ 	}
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 9e1cada45bb8..0c76bf972736 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -132,8 +132,10 @@ struct perf_hpp {
+ };
+ 
+ struct perf_hpp_fmt {
+-	int (*header)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp);
+-	int (*width)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp);
++	int (*header)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
++		      struct perf_evsel *evsel);
++	int (*width)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
++		     struct perf_evsel *evsel);
+ 	int (*color)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+ 		     struct hist_entry *he);
+ 	int (*entry)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+-- 
+1.7.11.7
 
-> >Has there any other problems about this patch series? And this I had tested on
-> >our Vybrid-Twr board based on SGTL5000 codec and SAI drivers. If not, I can
-> >continue with my second patches series about " Remove set_cache_io entirely from
-> >ASoC probe".
-
-> It looks good to me.
-
-I don't have the patches any more.
-
---O7yGjEYpwrIKCenc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTHWvuAAoJELSic+t+oim9DOQP/2uC004Rud7rRuhTf3EYs0Cj
-qQzuzB06p/aFJQIkpuaNkYkOEk5BN54KgMah/gJ13hMhdG5v4zKFuMCqmshejsPH
-9BMhY9E/L4YauozkEPoebqi6CdLLCEqWBlbvMdBxLHQe/e2hizlKbIhcvxwJ0uVi
-1eeNQUOaqUUxwhOQmSL5BocROqyLQIIbG+qg9Z3zxS7WLIJMPHmmXqEGwPOxsPzi
-xzare6CkSHGKVo5b91r0f7erLouOEG2AFifxHbi5ZenwVLP3bXn3SFmvnGy5kwN6
-O0Zp6/HsBsB/EG4/oYuwEJxLVgme1gUzxliL6Y3GjKKQ1obq6y3UdgX+kDSRjXjT
-+e02mxGOWA2krRi5OcakzA0hRRIiqGbUc39VS6mzpYMDbs+M1et2mKrIqdbRShNY
-whyI4gUnpDzBbIRByW769Xh8bkWwjl0KZ931Yoq50UPcrUxFeXb+LLxIoDZJ/d5x
-gTYtxHvNqTkHbBMvuGvdVprOZmziITc/fMcZ7m9EtpqoDmLfSr+HMWsgn0/N326q
-kTtRtXdbQkEM0MS/KgKvufbjw6TDhJPskRLRbL4VdAiDdQKtAXscna9+83GfaZij
-pMJs2zvBBdhh0pY6phi08i9AmZ6+4xSVUraJwrN4qMzAQ4XUikfWLKQ7uIRcGuu8
-hyhlOtG7akyWLAVtfYXz
-=9+jj
------END PGP SIGNATURE-----
-
---O7yGjEYpwrIKCenc--
