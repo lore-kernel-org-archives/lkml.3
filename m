@@ -1,63 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaCJCG3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Mar 2014 22:06:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:30686 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349AbaCJCG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Mar 2014 22:06:27 -0400
-X-IronPort-AV: E=Sophos;i="4.97,621,1389715200"; 
-   d="scan'208";a="9668905"
-Message-ID: <531D1C0E.6010507@cn.fujitsu.com>
-Date: Mon, 10 Mar 2014 09:57:34 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752936AbaCJCJG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Mar 2014 22:09:06 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:53171 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714AbaCJCJE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Mar 2014 22:09:04 -0400
+X-AuditID: 9c93017d-b7c89ae000006ae1-37-531d1ebfc5e6
+Date: Mon, 10 Mar 2014 11:09:14 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] zram: use scnprintf() in attrs show() methods
+Message-ID: <20140310020914.GE14370@bbox>
+References: <1394393228-14713-1-git-send-email-sergey.senozhatsky@gmail.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: add a pre-check of net_ns in sk_change_net()
-References: <5319A3C2.8080001@cn.fujitsu.com> <20140309.190941.472588800498066811.davem@davemloft.net>
-In-Reply-To: <20140309.190941.472588800498066811.davem@davemloft.net>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/10 10:03:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/10 10:03:40,
-	Serialize complete at 2014/03/10 10:03:40
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394393228-14713-1-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We do not need to switch the net_ns if the target net_ns the same
-as the current one, so here we add a pre-check of net_ns to avoid
-this as David suggested.
+On Sun, Mar 09, 2014 at 10:27:08PM +0300, Sergey Senozhatsky wrote:
+> sysfs.txt documentation lists the following requirements:
+> 
+>  - The buffer will always be PAGE_SIZE bytes in length. On i386, this
+>    is 4096.
+> 
+>  - show() methods should return the number of bytes printed into the
+>    buffer. This is the return value of scnprintf().
+> 
+>  - show() should always use scnprintf().
+> 
+> Use scnprintf() in show() functions.
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- include/net/sock.h |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 5c3f7c3..9678569 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -2252,8 +2252,12 @@ void sock_net_set(struct sock *sk, struct net *net)
-  */
- static inline void sk_change_net(struct sock *sk, struct net *net)
- {
--	put_net(sock_net(sk));
--	sock_net_set(sk, hold_net(net));
-+	struct net *current_net = sock_net(sk);
-+
-+	if (!net_eq(current_net, net)) {
-+		put_net(current_net);
-+		sock_net_set(sk, hold_net(net));
-+	}
- }
- 
- static inline struct sock *skb_steal_sock(struct sk_buff *skb)
+> ---
+>  drivers/block/zram/zcomp.c    |  8 +++++---
+>  drivers/block/zram/zram_drv.c | 12 ++++++------
+>  2 files changed, 11 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+> index 92a83df..ffcaff7 100644
+> --- a/drivers/block/zram/zcomp.c
+> +++ b/drivers/block/zram/zcomp.c
+> @@ -274,12 +274,14 @@ ssize_t zcomp_available_show(const char *comp, char *buf)
+>  
+>  	while (backends[i]) {
+>  		if (sysfs_streq(comp, backends[i]->name))
+> -			sz += sprintf(buf + sz, "[%s] ", backends[i]->name);
+> +			sz += scnprintf(buf + sz, PAGE_SIZE - sz - 2,
+> +					"[%s] ", backends[i]->name);
+>  		else
+> -			sz += sprintf(buf + sz, "%s ", backends[i]->name);
+> +			sz += scnprintf(buf + sz, PAGE_SIZE - sz - 2,
+> +					"%s ", backends[i]->name);
+>  		i++;
+>  	}
+> -	sz += sprintf(buf + sz, "\n");
+> +	sz += scnprintf(buf + sz, PAGE_SIZE - sz, "\n");
+>  	return sz;
+>  }
+>  
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 7631ef0..e6ff420 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -47,7 +47,7 @@ static ssize_t zram_attr_##name##_show(struct device *d,		\
+>  				struct device_attribute *attr, char *b)	\
+>  {									\
+>  	struct zram *zram = dev_to_zram(d);				\
+> -	return sprintf(b, "%llu\n",					\
+> +	return scnprintf(b, PAGE_SIZE, "%llu\n",			\
+>  		(u64)atomic64_read(&zram->stats.name));			\
+>  }									\
+>  static struct device_attribute dev_attr_##name =			\
+> @@ -68,7 +68,7 @@ static ssize_t disksize_show(struct device *dev,
+>  {
+>  	struct zram *zram = dev_to_zram(dev);
+>  
+> -	return sprintf(buf, "%llu\n", zram->disksize);
+> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", zram->disksize);
+>  }
+>  
+>  static ssize_t initstate_show(struct device *dev,
+> @@ -81,7 +81,7 @@ static ssize_t initstate_show(struct device *dev,
+>  	val = init_done(zram);
+>  	up_read(&zram->init_lock);
+>  
+> -	return sprintf(buf, "%u\n", val);
+> +	return scnprintf(buf, PAGE_SIZE, "%u\n", val);
+>  }
+>  
+>  static ssize_t orig_data_size_show(struct device *dev,
+> @@ -89,7 +89,7 @@ static ssize_t orig_data_size_show(struct device *dev,
+>  {
+>  	struct zram *zram = dev_to_zram(dev);
+>  
+> -	return sprintf(buf, "%llu\n",
+> +	return scnprintf(buf, PAGE_SIZE, "%llu\n",
+>  		(u64)(atomic64_read(&zram->stats.pages_stored)) << PAGE_SHIFT);
+>  }
+>  
+> @@ -105,7 +105,7 @@ static ssize_t mem_used_total_show(struct device *dev,
+>  		val = zs_get_total_size_bytes(meta->mem_pool);
+>  	up_read(&zram->init_lock);
+>  
+> -	return sprintf(buf, "%llu\n", val);
+> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+>  }
+>  
+>  static ssize_t max_comp_streams_show(struct device *dev,
+> @@ -118,7 +118,7 @@ static ssize_t max_comp_streams_show(struct device *dev,
+>  	val = zram->max_comp_streams;
+>  	up_read(&zram->init_lock);
+>  
+> -	return sprintf(buf, "%d\n", val);
+> +	return scnprintf(buf, PAGE_SIZE, "%d\n", val);
+>  }
+>  
+>  static ssize_t max_comp_streams_store(struct device *dev,
+> -- 
+> 1.9.0.477.g83111a0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 -- 
-1.7.7
-
-
+Kind regards,
+Minchan Kim
