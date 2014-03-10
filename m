@@ -1,75 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026AbaCJOCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:02:47 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:36539 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388AbaCJOCp (ORCPT
+	id S1753988AbaCJOCL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:02:11 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:45163 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753683AbaCJOCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:02:45 -0400
-Date: Mon, 10 Mar 2014 14:02:38 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: Mark Brown <broonie@linaro.org>, Philipp Zabel <p.zabel@pengutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1 1/2] mfd: da9063: Upgrade of register definitions to
- support production silicon
-Message-ID: <20140310140238.GA15558@lee--X1>
-References: <cover.1394124002.git.stwiss.opensource@diasemi.com>
- <1e3f5e127c375a45b9a8e929fa99fa5c917b1dea.1394124002.git.stwiss.opensource@diasemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1e3f5e127c375a45b9a8e929fa99fa5c917b1dea.1394124002.git.stwiss.opensource@diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Mar 2014 10:02:02 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: gleb@kernel.org
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH 3/5] KVM: MMU: lazily drop large spte
+Date: Mon, 10 Mar 2014 22:01:47 +0800
+Message-Id: <1394460109-3150-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+References: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031014-8878-0000-0000-00000B3FE372
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> 
-> This patch updates the register definitions for DA9063 to support the
-> production silicon variant code ID (0x5). These changes are not backwards
-> compatible with the previous register definitions and can only be used
-> with the production variant of DA9063.
-> 
-> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> ---
-> Checks performed with next-20140306/scripts/checkpatch.pl
->  registers.h               total: 0 errors, 0 warnings, 1032 lines checked
-> 
-> A brief summary of the changes include:
-> 
-> - Introduction of a new DA9063_REG_ALARM_S register (now appearing at
->   addr=0x46) allowing alarm second resolutions and which causes a shift
->   in the register map for the RTC registers;
-> - Two new configuration registers DA9063_REG_CONFIG_M/N at 0x112 & 0x113;
-> - Modified register ranges for MON_REG_[1-6] which now appears at the
->   addr=0x114 onwards;
-> - New register addresses for the general purpose registers GP_ID_[0-19]
->   (now appearing at 0x121 onwards);
-> - Renaming of some definitions to match our hardware design conventions;
-> - There are also some bit-pattern additions that define some functionality
->   alterations of the registers. One notable addition is:
->   DA9063_BUCK_SLOWSTART can also be found in the CONTROL_B register and
->   enables a BUCK slow start (reduced inrush current; increased startup
->   time);
-> 
->  include/linux/mfd/da9063/registers.h |  120 ++++++++++++++++++----------------
->  1 file changed, 62 insertions(+), 58 deletions(-)
+Currently, kvm zaps the large spte if write-protected is needed, the later
+read can fault on that spte. Actually, we can make the large spte readonly
+instead of making them un-present, the page fault caused by read access can
+be avoided
 
-Well, as this doesn't seem to cause any issues when building and I'm
-going to guess that the other patch in the set won't be a problem (as
-you didn't send it to me, so I'm gussing it's insignificant), I'll
-apply the patch.
+The idea is from Avi:
+| As I mentioned before, write-protecting a large spte is a good idea,
+| since it moves some work from protect-time to fault-time, so it reduces
+| jitter.  This removes the need for the return value.
 
-Applied, thanks.
+This version has fixed the issue reported in 6b73a9606, the reason of that
+issue is that fast_page_fault() directly sets the readonly large spte to
+writable but only dirty the first page into the dirty-bitmap that means
+other pages are missed. Fixed it by only the normal sptes (on the
+PT_PAGE_TABLE_LEVEL level) can be fast fixed
 
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c | 34 ++++++++++++++++++----------------
+ arch/x86/kvm/x86.c |  8 ++++++--
+ 2 files changed, 24 insertions(+), 18 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 046ef10..b8468c8 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1176,8 +1176,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
+ 
+ /*
+  * Write-protect on the specified @sptep, @pt_protect indicates whether
+- * spte writ-protection is caused by protecting shadow page table.
+- * @flush indicates whether tlb need be flushed.
++ * spte write-protection is caused by protecting shadow page table.
+  *
+  * Note: write protection is difference between drity logging and spte
+  * protection:
+@@ -1186,10 +1185,9 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
+  * - for spte protection, the spte can be writable only after unsync-ing
+  *   shadow page.
+  *
+- * Return true if the spte is dropped.
++ * Return true if tlb need be flushed.
+  */
+-static bool
+-spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
++static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool pt_protect)
+ {
+ 	u64 spte = *sptep;
+ 
+@@ -1199,17 +1197,11 @@ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
+ 
+ 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+ 
+-	if (__drop_large_spte(kvm, sptep)) {
+-		*flush |= true;
+-		return true;
+-	}
+-
+ 	if (pt_protect)
+ 		spte &= ~SPTE_MMU_WRITEABLE;
+ 	spte = spte & ~PT_WRITABLE_MASK;
+ 
+-	*flush |= mmu_spte_update(sptep, spte);
+-	return false;
++	return mmu_spte_update(sptep, spte);
+ }
+ 
+ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+@@ -1221,11 +1213,8 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+ 
+ 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
+ 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
+-		if (spte_write_protect(kvm, sptep, &flush, pt_protect)) {
+-			sptep = rmap_get_first(*rmapp, &iter);
+-			continue;
+-		}
+ 
++		flush |= spte_write_protect(kvm, sptep, pt_protect);
+ 		sptep = rmap_get_next(&iter);
+ 	}
+ 
+@@ -2877,6 +2866,19 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+ 		goto exit;
+ 
+ 	/*
++	 * Do not fix write-permission on the large spte since we only dirty
++	 * the first page into the dirty-bitmap in fast_pf_fix_direct_spte()
++	 * that means other pages are missed if its slot is dirty-logged.
++	 *
++	 * Instead, we let the slow page fault path create a normal spte to
++	 * fix the access.
++	 *
++	 * See the comments in kvm_arch_commit_memory_region().
++	 */
++	if (sp->role.level > PT_PAGE_TABLE_LEVEL)
++		goto exit;
++
++	/*
+ 	 * Currently, fast page fault only works for direct mapping since
+ 	 * the gfn is not stable for indirect shadow page.
+ 	 * See Documentation/virtual/kvm/locking.txt to get more detail.
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index d906391..6bcc343 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7301,8 +7301,12 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
+ 		kvm_mmu_change_mmu_pages(kvm, nr_mmu_pages);
+ 	/*
+ 	 * Write protect all pages for dirty logging.
+-	 * Existing largepage mappings are destroyed here and new ones will
+-	 * not be created until the end of the logging.
++	 *
++	 * All the sptes including the large sptes which point to this
++	 * slot are set to readonly. We can not create any new large
++	 * spte on this slot until the end of the logging.
++	 *
++	 * See the comments in fast_page_fault().
+ 	 */
+ 	if ((change != KVM_MR_DELETE) && (mem->flags & KVM_MEM_LOG_DIRTY_PAGES))
+ 		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.1.4
+
