@@ -1,260 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458AbaCJUnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:43:49 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:59374 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755423AbaCJUnW (ORCPT
+	id S1755466AbaCJUoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:44:14 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:63740 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643AbaCJUoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:43:22 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 52/52] net/iucv/iucv.c: Fix CPU hotplug callback
- registration
-To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
-        rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org
-Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
-        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        srivatsa.bhat@linux.vnet.ibm.com,
-        Ursula Braun <ursula.braun@de.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-s390@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 11 Mar 2014 02:12:57 +0530
-Message-ID: <20140310204257.10746.50242.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
-References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Mon, 10 Mar 2014 16:44:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031020-7014-0000-0000-0000047B6E83
+In-Reply-To: <CAMxnaaVfpJCW7e-b80y4wmVWcRDK5t7qY+pNn71CsLPRN2ojnA@mail.gmail.com>
+References: <CAMxnaaXd9-VbxSYa9q1YVT+fwfDFYKGG2Hq-1jkc-awLX-HwtQ@mail.gmail.com>
+ <CAErSpo5fkaFNq_qTZ+gTDMV554f4diOXQ7_4bsHqj06iAGTpHg@mail.gmail.com>
+ <CAE9FiQVNFqTw+92qy8zcwG1haiSZzU+KE3oh4YnjNc_aE6KUnA@mail.gmail.com>
+ <20140308010456.GA30660@google.com> <CAMxnaaVfpJCW7e-b80y4wmVWcRDK5t7qY+pNn71CsLPRN2ojnA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 10 Mar 2014 14:43:44 -0600
+Message-ID: <CAErSpo4MQsAer7FM0kU5mMOGRok0oFMWX1FqFijmswutjyNoRg@mail.gmail.com>
+Subject: Re: [Bug] PCI: Enable INTx if BIOS left them disabled - triggers
+ during rescan
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rajat Jain <rajatxjain@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subsystems that want to register CPU hotplug callbacks, as well as perform
-initialization for the CPUs that are already online, often do it as shown
-below:
+On Sat, Mar 8, 2014 at 2:55 AM, Andreas Noever <andreas.noever@gmail.com> wrote:
+> On Sat, Mar 8, 2014 at 2:04 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-	get_online_cpus();
+>> If we did that, INTX_DISABLE would be cleared by the first
+>> pci_enable_device() and pci_reenable_device() wouldn't do anything,
+>> leaving it cleared.  The resulting state (cleared) would be the same,
+>> but the transitions would be gone, and maybe those are important.
+> Just a quick note: With pci_intx_for_msi removed no hotplug events are
+> ever delivered. Everything else still works though. So it is either a
+> problem specific to Thunderbolt bridges or maybe it just affects
+> hotplug (and PME?) interrupts.
 
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
+Interesting.  This is on a MacBook, isn't it?  If you have Mac OS on
+it, is there a way you can do the equivalent of lspci on it?  I'm
+curious about whether it sets INTx_DISABLE when it enables MSI.
 
-	register_cpu_notifier(&foobar_cpu_notifier);
+I still haven't found any indication that INTx_DISABLE is intended or
+required as part of enabling MSI/MSI-X, so I'm quite dubious about
+Linux using it that way.  The references I've seen, e.g.,
+http://www.pcisig.com/reflector/msg05301.html,
+http://www.pcisig.com/reflector/msg05302.html, say the purpose is to
+better manage shared IRQs.
 
-	put_online_cpus();
+> I also attempted booting with pcie_hp=nomsi and now everything works.
+> Interestingly pciehp now also  gets an interrupt from 09 (event though
+> that card has just been removed). I suspect this is just pciehp not
+> noticing that it itself is gone.
+> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3-1)
+> pciehp 0000:09:00.0:pcie24: Latch open on Slot(9)
+> pciehp 0000:09:00.0:pcie24: Button pressed on Slot(9)
+> pciehp 0000:09:00.0:pcie24: Card present on Slot(9)
+> pciehp 0000:09:00.0:pcie24: Power fault on slot 9
+> pciehp 0000:09:00.0:pcie24: Power fault bit 0 set
+> pciehp 0000:09:00.0:pcie24: PCI slot #9 - powering on due to button press.
+> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
+> pciehp 0000:09:00.0:pcie24: Link Training Error occurs
+> pciehp 0000:09:00.0:pcie24: Failed to check link status
 
-This is wrong, since it is prone to ABBA deadlocks involving the
-cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
-with CPU hotplug operations).
+This is a good clue.  I think the portdrv registration thing is a bit
+more confusing than necessary.  I'll poke around in there a bit.
 
-Instead, the correct and race-free way of performing the callback
-registration is:
+Unfortunately, I don't think this is going to lead to a quick easy fix
+suitable for -rc7, so we'll probably have to do something simple like
+skipping the INTx enable if MSI is already enabled.
 
-	cpu_notifier_register_begin();
-
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
-
-	/* Note the use of the double underscored version of the API */
-	__register_cpu_notifier(&foobar_cpu_notifier);
-
-	cpu_notifier_register_done();
-
-
-Fix the code in net/iucv/iucv.c by using this latter form of callback
-registration. Also, provide helper functions to perform the common memory
-allocations and frees, to condense repetitive code.
-
-Cc: Ursula Braun <ursula.braun@de.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: linux-s390@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- net/iucv/iucv.c |  121 ++++++++++++++++++++++++++-----------------------------
- 1 file changed, 57 insertions(+), 64 deletions(-)
-
-diff --git a/net/iucv/iucv.c b/net/iucv/iucv.c
-index cd5b8ec..79a0ce9 100644
---- a/net/iucv/iucv.c
-+++ b/net/iucv/iucv.c
-@@ -621,6 +621,42 @@ static void iucv_disable(void)
- 	put_online_cpus();
- }
- 
-+static void free_iucv_data(int cpu)
-+{
-+	kfree(iucv_param_irq[cpu]);
-+	iucv_param_irq[cpu] = NULL;
-+	kfree(iucv_param[cpu]);
-+	iucv_param[cpu] = NULL;
-+	kfree(iucv_irq_data[cpu]);
-+	iucv_irq_data[cpu] = NULL;
-+}
-+
-+static int alloc_iucv_data(int cpu)
-+{
-+	/* Note: GFP_DMA used to get memory below 2G */
-+	iucv_irq_data[cpu] = kmalloc_node(sizeof(struct iucv_irq_data),
-+			     GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
-+	if (!iucv_irq_data[cpu])
-+		goto out_free;
-+
-+	/* Allocate parameter blocks. */
-+	iucv_param[cpu] = kmalloc_node(sizeof(union iucv_param),
-+			  GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
-+	if (!iucv_param[cpu])
-+		goto out_free;
-+
-+	iucv_param_irq[cpu] = kmalloc_node(sizeof(union iucv_param),
-+			  GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
-+	if (!iucv_param_irq[cpu])
-+		goto out_free;
-+
-+	return 0;
-+
-+out_free:
-+	free_iucv_data(cpu);
-+	return -ENOMEM;
-+}
-+
- static int iucv_cpu_notify(struct notifier_block *self,
- 				     unsigned long action, void *hcpu)
- {
-@@ -630,38 +666,14 @@ static int iucv_cpu_notify(struct notifier_block *self,
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
--		iucv_irq_data[cpu] = kmalloc_node(sizeof(struct iucv_irq_data),
--					GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_irq_data[cpu])
--			return notifier_from_errno(-ENOMEM);
--
--		iucv_param[cpu] = kmalloc_node(sizeof(union iucv_param),
--				     GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_param[cpu]) {
--			kfree(iucv_irq_data[cpu]);
--			iucv_irq_data[cpu] = NULL;
-+		if (alloc_iucv_data(cpu))
- 			return notifier_from_errno(-ENOMEM);
--		}
--		iucv_param_irq[cpu] = kmalloc_node(sizeof(union iucv_param),
--					GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_param_irq[cpu]) {
--			kfree(iucv_param[cpu]);
--			iucv_param[cpu] = NULL;
--			kfree(iucv_irq_data[cpu]);
--			iucv_irq_data[cpu] = NULL;
--			return notifier_from_errno(-ENOMEM);
--		}
- 		break;
- 	case CPU_UP_CANCELED:
- 	case CPU_UP_CANCELED_FROZEN:
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
--		kfree(iucv_param_irq[cpu]);
--		iucv_param_irq[cpu] = NULL;
--		kfree(iucv_param[cpu]);
--		iucv_param[cpu] = NULL;
--		kfree(iucv_irq_data[cpu]);
--		iucv_irq_data[cpu] = NULL;
-+		free_iucv_data(cpu);
- 		break;
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
-@@ -2025,33 +2037,20 @@ static int __init iucv_init(void)
- 		goto out_int;
- 	}
- 
--	for_each_online_cpu(cpu) {
--		/* Note: GFP_DMA used to get memory below 2G */
--		iucv_irq_data[cpu] = kmalloc_node(sizeof(struct iucv_irq_data),
--				     GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_irq_data[cpu]) {
--			rc = -ENOMEM;
--			goto out_free;
--		}
-+	cpu_notifier_register_begin();
- 
--		/* Allocate parameter blocks. */
--		iucv_param[cpu] = kmalloc_node(sizeof(union iucv_param),
--				  GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_param[cpu]) {
--			rc = -ENOMEM;
--			goto out_free;
--		}
--		iucv_param_irq[cpu] = kmalloc_node(sizeof(union iucv_param),
--				  GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_param_irq[cpu]) {
-+	for_each_online_cpu(cpu) {
-+		if (alloc_iucv_data(cpu)) {
- 			rc = -ENOMEM;
- 			goto out_free;
- 		}
--
- 	}
--	rc = register_hotcpu_notifier(&iucv_cpu_notifier);
-+	rc = __register_hotcpu_notifier(&iucv_cpu_notifier);
- 	if (rc)
- 		goto out_free;
-+
-+	cpu_notifier_register_done();
-+
- 	rc = register_reboot_notifier(&iucv_reboot_notifier);
- 	if (rc)
- 		goto out_cpu;
-@@ -2069,16 +2068,14 @@ static int __init iucv_init(void)
- out_reboot:
- 	unregister_reboot_notifier(&iucv_reboot_notifier);
- out_cpu:
--	unregister_hotcpu_notifier(&iucv_cpu_notifier);
-+	cpu_notifier_register_begin();
-+	__unregister_hotcpu_notifier(&iucv_cpu_notifier);
- out_free:
--	for_each_possible_cpu(cpu) {
--		kfree(iucv_param_irq[cpu]);
--		iucv_param_irq[cpu] = NULL;
--		kfree(iucv_param[cpu]);
--		iucv_param[cpu] = NULL;
--		kfree(iucv_irq_data[cpu]);
--		iucv_irq_data[cpu] = NULL;
--	}
-+	for_each_possible_cpu(cpu)
-+		free_iucv_data(cpu);
-+
-+	cpu_notifier_register_done();
-+
- 	root_device_unregister(iucv_root);
- out_int:
- 	unregister_external_interrupt(0x4000, iucv_external_interrupt);
-@@ -2105,15 +2102,11 @@ static void __exit iucv_exit(void)
- 		kfree(p);
- 	spin_unlock_irq(&iucv_queue_lock);
- 	unregister_reboot_notifier(&iucv_reboot_notifier);
--	unregister_hotcpu_notifier(&iucv_cpu_notifier);
--	for_each_possible_cpu(cpu) {
--		kfree(iucv_param_irq[cpu]);
--		iucv_param_irq[cpu] = NULL;
--		kfree(iucv_param[cpu]);
--		iucv_param[cpu] = NULL;
--		kfree(iucv_irq_data[cpu]);
--		iucv_irq_data[cpu] = NULL;
--	}
-+	cpu_notifier_register_begin();
-+	__unregister_hotcpu_notifier(&iucv_cpu_notifier);
-+	for_each_possible_cpu(cpu)
-+		free_iucv_data(cpu);
-+	cpu_notifier_register_done();
- 	root_device_unregister(iucv_root);
- 	bus_unregister(&iucv_bus);
- 	unregister_external_interrupt(0x4000, iucv_external_interrupt);
-
+Bjorn
