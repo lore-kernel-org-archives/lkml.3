@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaCJHph (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 03:45:37 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:46371 "EHLO
+	id S1752919AbaCJHpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 03:45:35 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51278 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504AbaCJHoF (ORCPT
+	with ESMTP id S1752535AbaCJHoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Mar 2014 03:44:05 -0400
-X-AuditID: 9c93017d-b7c89ae000006ae1-e6-531d6d424a1f
+X-AuditID: 9c93017d-b7c89ae000006ae1-e9-531d6d4293f6
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 5/9] perf top: Add --percentage option
-Date: Mon, 10 Mar 2014 16:43:56 +0900
-Message-Id: <1394437440-11609-6-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 6/9] perf diff: Add --percentage option
+Date: Mon, 10 Mar 2014 16:43:57 +0900
+Message-Id: <1394437440-11609-7-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
 References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
@@ -27,9 +27,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The --percentage option is for controlling overhead percentage
-displayed.  It can only receive either of "relative" or "absolute".
-Move the parser callback function into a common location since it's
-used by multiple commands now.
+displayed.  It can only receive either of "relative" or "absolute" and
+affects -c delta output only.
 
 For more information, please see previous commit same thing done to
 "perf report".
@@ -37,135 +36,148 @@ For more information, please see previous commit same thing done to
 Acked-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-top.txt | 18 +++++++++++++++---
- tools/perf/builtin-report.c           | 16 +---------------
- tools/perf/builtin-top.c              |  2 ++
- tools/perf/util/hist.c                | 13 +++++++++++++
- tools/perf/util/hist.h                |  5 +++++
- 5 files changed, 36 insertions(+), 18 deletions(-)
+ tools/perf/Documentation/perf-diff.txt | 21 ++++++++++++++++++---
+ tools/perf/builtin-diff.c              | 30 ++++++++++++++++++++++--------
+ 2 files changed, 40 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index cdd8d4946dba..0acf54f203f0 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -124,13 +124,16 @@ Default is to monitor all CPUS.
- 	Show a column with the sum of periods.
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index fdfceee0ffd0..fbfa1192923c 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -33,17 +33,20 @@ OPTIONS
+ -d::
+ --dsos=::
+ 	Only consider symbols in these dsos. CSV that understands
+-	file://filename entries.
++	file://filename entries.  This option will affect the percentage
++	of the Baseline/Delta column.  See --percentage for more info.
  
- --dsos::
--	Only consider symbols in these dsos.
-+	Only consider symbols in these dsos.  This option will affect the
-+	percentage of the overhead column.  See --percentage for more info.
+ -C::
+ --comms=::
+ 	Only consider symbols in these comms. CSV that understands
+-	file://filename entries.
++	file://filename entries.  This option will affect the percentage
++	of the Baseline/Delta column.  See --percentage for more info.
  
- --comms::
--	Only consider symbols in these comms.
-+	Only consider symbols in these comms.  This option will affect the
-+	percentage of the overhead column.  See --percentage for more info.
+ -S::
+ --symbols=::
+ 	Only consider these symbols. CSV that understands
+-	file://filename entries.
++	file://filename entries.  This option will affect the percentage
++	of the Baseline/Delta column.  See --percentage for more info.
  
- --symbols::
--	Only consider these symbols.
-+	Only consider these symbols.  This option will affect the
-+	percentage of the overhead column.  See --percentage for more info.
- 
- -M::
- --disassembler-style=:: Set disassembler style for objdump.
-@@ -166,6 +169,15 @@ Default is to monitor all CPUS.
- 	Do not show entries which have an overhead under that percent.
- 	(Default: 0).
+ -s::
+ --sort=::
+@@ -89,6 +92,14 @@ OPTIONS
+ --order::
+        Specify compute sorting column number.
  
 +--percentage::
 +	Determine how to display the overhead percentage of filtered entries.
-+	Filters can be applied by --comms, --dsos and/or --symbols options and
-+	Zoom operations on the TUI (thread, dso, etc).
++	Filters can be applied by --comms, --dsos and/or --symbols options.
 +
 +	"relative" means it's relative to filtered entries only so that the
-+	sum of shown entries will be always 100%. "absolute" means it retains
++	sum of shown entries will be always 100%.  "absolute" means it retains
 +	the original value before and after the filter is applied.
 +
- INTERACTIVE PROMPTING KEYS
- --------------------------
+ COMPARISON
+ ----------
+ The comparison is governed by the baseline file. The baseline perf.data
+@@ -157,6 +168,10 @@ with:
+   - period_percent being the % of the hist entry period value within
+     single data file
  
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index b8eb8c6431aa..8fa36182d87c 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -709,20 +709,6 @@ parse_percent_limit(const struct option *opt, const char *str,
- 	return 0;
++  - with filtering by -C, -d and/or -S, period_percent might be changed
++    relative to how entries are filtered.  Use --percentage=absolute to
++    prevent such fluctuation.
++
+ ratio
+ ~~~~~
+ If specified the 'Ratio' column is displayed with value 'r' computed as:
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 204fffe22532..c903fe13c173 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -220,7 +220,8 @@ static int setup_compute(const struct option *opt, const char *str,
+ 
+ static double period_percent(struct hist_entry *he, u64 period)
+ {
+-	u64 total = he->hists->stats.total_period;
++	u64 total = hists__total_period(he->hists);
++
+ 	return (period * 100.0) / total;
  }
  
--static int
--parse_percentage(const struct option *opt __maybe_unused, const char *str,
--		 int unset __maybe_unused)
--{
--	if (!strcmp(str, "relative"))
--		symbol_conf.filter_relative = true;
--	else if (!strcmp(str, "absolute"))
--		symbol_conf.filter_relative = false;
--	else
--		return -1;
--
--	return 0;
--}
--
- int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+@@ -259,11 +260,18 @@ static s64 compute_wdiff(struct hist_entry *he, struct hist_entry *pair)
+ static int formula_delta(struct hist_entry *he, struct hist_entry *pair,
+ 			 char *buf, size_t size)
  {
- 	struct perf_session *session;
-@@ -846,7 +832,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
- 		     "Don't show entries under that percent", parse_percent_limit),
- 	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
--		     "how to display percentage of filtered entries", parse_percentage),
-+		     "how to display percentage of filtered entries", parse_filter_percentage),
- 	OPT_END()
- 	};
- 	struct perf_data_file file = {
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index ed99ec4a309f..18a2467bdf00 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1114,6 +1114,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('u', "uid", &target->uid_str, "user", "user to profile"),
- 	OPT_CALLBACK(0, "percent-limit", &top, "percent",
- 		     "Don't show entries under that percent", parse_percent_limit),
++	u64 he_total = he->hists->stats.total_period;
++	u64 pair_total = pair->hists->stats.total_period;
++
++	if (symbol_conf.filter_relative) {
++		he_total = he->hists->stats.total_non_filtered_period;
++		pair_total = pair->hists->stats.total_non_filtered_period;
++	}
+ 	return scnprintf(buf, size,
+ 			 "(%" PRIu64 " * 100 / %" PRIu64 ") - "
+ 			 "(%" PRIu64 " * 100 / %" PRIu64 ")",
+-			  pair->stat.period, pair->hists->stats.total_period,
+-			  he->stat.period, he->hists->stats.total_period);
++			 pair->stat.period, pair_total,
++			 he->stat.period, he_total);
+ }
+ 
+ static int formula_ratio(struct hist_entry *he, struct hist_entry *pair,
+@@ -327,15 +335,16 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
+ 		return -1;
+ 	}
+ 
+-	if (al.filtered)
+-		return 0;
+-
+ 	if (hists__add_entry(&evsel->hists, &al, sample->period,
+ 			     sample->weight, sample->transaction)) {
+ 		pr_warning("problem incrementing symbol period, skipping event\n");
+ 		return -1;
+ 	}
+ 
++	if (al.filtered == 0) {
++		evsel->hists.stats.total_non_filtered_period += sample->period;
++		evsel->hists.nr_non_filtered_entries++;
++	}
+ 	evsel->hists.stats.total_period += sample->period;
+ 	return 0;
+ }
+@@ -565,7 +574,9 @@ static void hists__compute_resort(struct hists *hists)
+ 	next = rb_first(root);
+ 
+ 	hists->nr_entries = 0;
++	hists->nr_non_filtered_entries = 0;
+ 	hists->stats.total_period = 0;
++	hists->stats.total_non_filtered_period = 0;
+ 	hists__reset_col_len(hists);
+ 
+ 	while (next != NULL) {
+@@ -732,13 +743,16 @@ static const struct option options[] = {
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
+ 	OPT_UINTEGER('o', "order", &sort_compute, "Specify compute sorting."),
 +	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
 +		     "How to display percentage of filtered entries", parse_filter_percentage),
  	OPT_END()
- 	};
- 	const char * const top_usage[] = {
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 71078de683fe..6e7eb53d4bcc 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -943,3 +943,16 @@ u64 hists__total_period(struct hists *hists)
- 	return symbol_conf.filter_relative ? hists->stats.total_non_filtered_period :
- 		hists->stats.total_period;
- }
-+
-+int parse_filter_percentage(const struct option *opt __maybe_unused,
-+			    const char *arg, int unset __maybe_unused)
-+{
-+	if (!strcmp(arg, "relative"))
-+		symbol_conf.filter_relative = true;
-+	else if (!strcmp(arg, "absolute"))
-+		symbol_conf.filter_relative = false;
-+	else
-+		return -1;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 3191496bd3b7..a4ec336ae3fe 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -254,4 +254,9 @@ static inline int script_browse(const char *script_opt __maybe_unused)
- #endif
+ };
  
- unsigned int hists__sort_list_width(struct hists *hists);
+ static double baseline_percent(struct hist_entry *he)
+ {
+-	struct hists *hists = he->hists;
+-	return 100.0 * he->stat.period / hists->stats.total_period;
++	u64 total = hists__total_period(he->hists);
 +
-+struct option;
-+int parse_filter_percentage(const struct option *opt __maybe_unused,
-+			    const char *arg, int unset __maybe_unused);
-+
- #endif	/* __PERF_HIST_H */
++	return 100.0 * he->stat.period / total;
+ }
+ 
+ static int hpp__color_baseline(struct perf_hpp_fmt *fmt,
 -- 
 1.7.11.7
 
