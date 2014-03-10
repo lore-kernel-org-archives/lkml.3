@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbaCJOlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:41:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:56428 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616AbaCJOlO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:41:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "Krogerus, Heikki" <heikki.krogerus@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Linus Walleij <linus.walleij@stericsson.com>, yuanyabin1978@sina.com,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Peter Pearse <peter.pearse@arm.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Alessandro Rubini <rubini@unipv.it>
-Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
-Date: Mon, 10 Mar 2014 15:40:33 +0100
-Message-ID: <4828160.ZrKNlE4ee8@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1394461668.2270.47.camel@shinybook.infradead.org>
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <5345792.VhzckVI5HA@wuerfel> <1394461668.2270.47.camel@shinybook.infradead.org>
+	id S1753911AbaCJOmC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:42:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34536 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753147AbaCJOmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 10:42:01 -0400
+Date: Mon, 10 Mar 2014 15:41:59 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+cc: Jani Nikula <jani.nikula@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: i915 resume-from-hibernation problems on resume with current
+ Linus' tree
+In-Reply-To: <CAKMK7uG1PG=h8uiofNXt_-GOGgL354skaQeqA5OxK4VbYk2Vkg@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1403101540140.3690@pobox.suse.cz>
+References: <alpine.LNX.2.00.1402271153480.21399@pobox.suse.cz> <alpine.LNX.2.00.1403031519500.7030@pobox.suse.cz> <alpine.LNX.2.00.1403101525220.3690@pobox.suse.cz> <CAKMK7uG1PG=h8uiofNXt_-GOGgL354skaQeqA5OxK4VbYk2Vkg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ghahdsLTVFpQSt4luuCX+UktUzPZUXEcsPkoRB5+1q5
- t0q/XywHaFKwIIQOhg7GymjRucU1vy2cfBGZRVDjrhvfi8RgQq
- igYIafWQqwfVqClyDvk7h+ae663hAa1e/YvKzMGajlWllRogiG
- 40KyFwsWJZemCtVKn8rndoSN0ZqGGH/4fPXfsxxosTKT3f15Y1
- p/Z+2u0xcpcCDguCl9jGiaIXwx9LEK8cE9A2mWPCoUVJwUHDZA
- DU8qGzFO4Men/Pnl7QHzgd8UGhI0Y1F8pazsrj1/dm3nVKT1+c
- RzPrteQK4ZDa3pNUs4X2pg6lQWOAPvtLbQC6sac3IAHnqfL6zG
- asCLlpZcfLzc8ALOpGZI=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 March 2014 07:27:48 David Woodhouse wrote:
+On Mon, 10 Mar 2014, Daniel Vetter wrote:
+
+> >> > *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
+> >> >
+> >> > as it doesn't seem to be there in case of resumption that works properly.
+> >> >
+> >> > Please see the dmesg from the broken case below.
+> >>
+> >> I encountered this again with -rc5.
+> >>
+> >> If there is anything I can do to help debug this, please let me know.
+> >
+> > I hate to be doing this, but ... ping? :)
 > 
-> > There are multiple reasons why
-> > we have to pass the dmaengine device to the dma-mapping API at the moment
-> > rather than the slave device, but in essence it comes down to the engine
-> > being the one that is the master on its parent bus. A trivial example
-> > where it goes wrong would be the slave living on a 32-bit noncoherent bus
-> > and the master living on a 64-bit coherent bus.
-> 
-> That's true in the general case, certainly. But in this case we're
-> basically just talking about different functions of a multifunction
-> device. 
+> gm45 and rendering ring init failures. We've seen this occasionally
+> crop up due to rather unrelated changes. Some even hit stable
+> backports and had to be backed out again. We essentially have no clue
+> what's amiss, but it seems to /mostly/ work. Thus far I've only hear
+> reports of this for gm45 and not yet really for upstream. Until
+> someone digs up more evidence I think we need to classify this as a
+> rare heisenbug and not really a regression :(
 
-Ah, I thought you were talking about a generic SoC with lots of units
-on it.
+Thanks for getting back to me with this, Daniel.
 
-> It may turn out that we need the *flexibility* to specify which
-> device shall be used for DMA mappings for a given channel, even if in
-> *most* cases it ends up being the DMA controller itself.
+Well, this started to be rather regular sometime during the 3.14 
+development cycle on my system.
 
-Yes, that would probably work with a helper function that can
-pull the right device structure out of the ACPI description (or
-whatever the DMA engine needs) given the dma channel pointer, or
-fall back to the dma engine.
+I am able to reproduce it after ~20 suspend-resume cycles. Which is rather 
+inconvenient for bisect, but enough for making the kernel unusable on that 
+system.
 
-	Arnd
+> One thing we could try is to simply repeat the ring init setup, maybe
+> after a gpu reset or something like that.
+
+Will be happy to test any patches.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
