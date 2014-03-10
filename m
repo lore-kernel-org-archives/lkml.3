@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310AbaCJRmB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:42:01 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:61254 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230AbaCJRl6 (ORCPT
+	id S1754433AbaCJRm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:42:26 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51542 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357AbaCJRmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:41:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <531d3b0e.4MeVQMzUoamEWeW7%fengguang.wu@intel.com>
-References: <531d3b0e.4MeVQMzUoamEWeW7%fengguang.wu@intel.com>
-Date: Mon, 10 Mar 2014 10:41:57 -0700
-X-Google-Sender-Auth: iqoo9QXz-xLJnua2yj7DDobukUE
-Message-ID: <CAGXu5jJsyAHdiMfoAZHS-4w1+rGKGQH9s9FF83Y59VLmczfaXQ@mail.gmail.com>
-Subject: Re: [kees:format-security 2/3] arch/sh/kernel/dumpstack.c:118:2:
- error: format not a string literal and no format arguments
-From: Kees Cook <keescook@chromium.org>
-To: Matt Fleming <matt@console-pimps.org>, Paul Mundt <lethal@linux-sh.org>
-Cc: kbuild test robot <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 10 Mar 2014 13:42:24 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
+Date: Mon, 10 Mar 2014 17:42:14 +0000
+Message-Id: <1394473334-22049-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.9.0
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] mfd: wm5102: Mark register write sequencer control 3 readable
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 9, 2014 at 9:09 PM, kbuild test robot
-<fengguang.wu@intel.com> wrote:
-> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git format-security
-> head:   78ac7178787f348d93ac16cda556265af4b8ce17
-> commit: 3aac21c82091399e96c528c8ac4f337757d6e81b [2/3] Make all format string problems fail the build
-> config: make ARCH=sh allnoconfig
->
-> All error/warnings:
->
->    arch/sh/kernel/dumpstack.c: In function 'print_trace_address':
->>> arch/sh/kernel/dumpstack.c:118:2: error: format not a string literal and no format arguments [-Werror=format-security]
->    cc1: all warnings being treated as errors
->
-> vim +118 arch/sh/kernel/dumpstack.c
->
-> 4e14dfc7 Matt Fleming 2009-08-07  102                                           context, &graph);
-> 4e14dfc7 Matt Fleming 2009-08-07  103           }
-> 4e14dfc7 Matt Fleming 2009-08-07  104   }
-> 4e14dfc7 Matt Fleming 2009-08-07  105  }
-> 4e14dfc7 Matt Fleming 2009-08-07  106
-> 4e14dfc7 Matt Fleming 2009-08-07  107  static int print_trace_stack(void *data, char *name)
-> 4e14dfc7 Matt Fleming 2009-08-07  108  {
-> 4e14dfc7 Matt Fleming 2009-08-07  109   printk("%s <%s> ", (char *)data, name);
-> 4e14dfc7 Matt Fleming 2009-08-07  110   return 0;
-> 4e14dfc7 Matt Fleming 2009-08-07  111  }
-> 4e14dfc7 Matt Fleming 2009-08-07  112
-> 4e14dfc7 Matt Fleming 2009-08-07  113  /*
-> 4e14dfc7 Matt Fleming 2009-08-07  114   * Print one address/symbol entries per line.
-> 4e14dfc7 Matt Fleming 2009-08-07  115   */
-> 4e14dfc7 Matt Fleming 2009-08-07  116  static void print_trace_address(void *data, unsigned long addr, int reliable)
-> 4e14dfc7 Matt Fleming 2009-08-07  117  {
-> 4e14dfc7 Matt Fleming 2009-08-07 @118   printk(data);
+From: Mark Brown <broonie@linaro.org>
 
-This needs to be "printk("%s", data);" so there is no chance of having
-"data" interpreted as a format string itself.
+During init the core checks if the wm5102 has finished starting by reading
+register 0x19 and looking at the value. This read always fails since this
+is not a readable register, mark it as being one. While we're at it provide
+a constant for the register name (as supplied by Charles Keepax).
 
-Thanks!
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/mfd/arizona-core.c            | 3 ++-
+ drivers/mfd/wm5102-tables.c           | 1 +
+ include/linux/mfd/arizona/registers.h | 1 +
+ 3 files changed, 4 insertions(+), 1 deletion(-)
 
--Kees
-
-> 4e14dfc7 Matt Fleming 2009-08-07  119   printk_address(addr, reliable);
-> 4e14dfc7 Matt Fleming 2009-08-07  120  }
-> 4e14dfc7 Matt Fleming 2009-08-07  121
-> 4e14dfc7 Matt Fleming 2009-08-07  122  static const struct stacktrace_ops print_trace_ops = {
-> 4e14dfc7 Matt Fleming 2009-08-07  123   .stack = print_trace_stack,
-> 4e14dfc7 Matt Fleming 2009-08-07  124   .address = print_trace_address,
-> 4e14dfc7 Matt Fleming 2009-08-07  125  };
-> 4e14dfc7 Matt Fleming 2009-08-07  126
->
-> :::::: The code at line 118 was first introduced by commit
-> :::::: 4e14dfc722b8e9e07a355f97aa60a3d9f0739071 sh: Use the generalized stacktrace ops
->
-> :::::: TO: Matt Fleming <matt@console-pimps.org>
-> :::::: CC: Paul Mundt <lethal@linux-sh.org>
->
-> ---
-> 0-DAY kernel build testing backend              Open Source Technology Center
-> http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
-
-
-
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 1c3ae57082ed..d4919fa2797a 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -745,7 +745,8 @@ int arizona_dev_init(struct arizona *arizona)
+ 	/* Ensure device startup is complete */
+ 	switch (arizona->type) {
+ 	case WM5102:
+-		ret = regmap_read(arizona->regmap, 0x19, &val);
++		ret = regmap_read(arizona->regmap,
++				  ARIZONA_WRITE_SEQUENCER_CTRL_3, &val);
+ 		if (ret != 0)
+ 			dev_err(dev,
+ 				"Failed to check write sequencer state: %d\n",
+diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+index f4668d39e542..e32736c3ab57 100644
+--- a/drivers/mfd/wm5102-tables.c
++++ b/drivers/mfd/wm5102-tables.c
+@@ -1016,6 +1016,7 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
+ 	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
+ 	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_3:
+ 	case ARIZONA_WRITE_SEQUENCER_PROM:
+ 	case ARIZONA_TONE_GENERATOR_1:
+ 	case ARIZONA_TONE_GENERATOR_2:
+diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
+index 90d57aec34e7..f6ad81e923ac 100644
+--- a/include/linux/mfd/arizona/registers.h
++++ b/include/linux/mfd/arizona/registers.h
+@@ -27,6 +27,7 @@
+ #define ARIZONA_WRITE_SEQUENCER_CTRL_0           0x16
+ #define ARIZONA_WRITE_SEQUENCER_CTRL_1           0x17
+ #define ARIZONA_WRITE_SEQUENCER_CTRL_2           0x18
++#define ARIZONA_WRITE_SEQUENCER_CTRL_3           0x19
+ #define ARIZONA_WRITE_SEQUENCER_PROM             0x1A
+ #define ARIZONA_TONE_GENERATOR_1                 0x20
+ #define ARIZONA_TONE_GENERATOR_2                 0x21
 -- 
-Kees Cook
-Chrome OS Security
+1.9.0
+
