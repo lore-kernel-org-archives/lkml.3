@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880AbaCJKjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 06:39:12 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:42770 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525AbaCJKjK (ORCPT
+	id S1753003AbaCJKji (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 06:39:38 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49209 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121AbaCJKjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 06:39:10 -0400
-Date: Mon, 10 Mar 2014 10:39:05 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>, broonie@kernel.org
-Subject: Re: [PATCH v3 Resend 2/3] regulator: Add support for S2MPA01
- regulator
-Message-ID: <20140310103905.GK14976@lee--X1>
-References: <1394100057-32677-1-git-send-email-sachin.kamat@linaro.org>
- <1394100057-32677-2-git-send-email-sachin.kamat@linaro.org>
- <1394102406.25853.4.camel@AMDC1943>
- <CAK9yfHyv+PhLCfy131KCS4GWaAEgQ9qmS5X27bTYHWYUspkYjA@mail.gmail.com>
- <20140310093551.GE14976@lee--X1>
- <CAK9yfHy9iwCa7JPHTtJNw0pYhehUCd-GLPSW3Gw0G36ELBqsrA@mail.gmail.com>
- <20140310103812.GJ14976@lee--X1>
+	Mon, 10 Mar 2014 06:39:37 -0400
+Date: Mon, 10 Mar 2014 11:39:44 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Julian Wollrath <jwollrath@web.de>
+cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+In-Reply-To: <20140310110410.5b2218f6@ilfaris>
+Message-ID: <alpine.DEB.2.02.1403101123470.18573@ionos.tec.linutronix.de>
+References: <20140310110410.5b2218f6@ilfaris>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140310103812.GJ14976@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > >> >> Add support for S2MPA01 voltage and current regulator.
-> > >>
-> > >> >> +
-> > >> >> +struct s2mpa01_info {
-> > >> >> +     struct regulator_dev *rdev[S2MPA01_REGULATOR_MAX];
-> > >> >
-> > >> > Hi,
-> > >> >
-> > >> > It seems that s2mpa01_info->rdev is not used anywhere, except as return
-> > >> > value of devm_regulator_register. I think you can remove it completely.
-> > >>
-> > >> Yes. I will send a follow up patch for this.
-> > >
-> > > Let's not break things and fix them up later. Fix it in this patch.
-> > 
-> > Nothing is broken in this patch. What is suggested is just a code cleanup.
-> > I did not want to disturb the existing patch set as it is already reviewed
-> > and ready for merging. Anyway I can re-spin with this suggested change.
-> > 
-> > >
-> > >> > Beside that, can this driver be merged into existing s2mps11 regulator
-> > >> > driver?
-> > >>
-> > >> Haven't analyzed this yet. Will look into the possibility of consolidation
-> > >> later.
-> > >
-> > > As above. If consolidation is possible it should be take care of in
-> > > the first instance.
-> > 
-> > I need to analyze and see if this is really possible and the extent of
-> > re-usability.
-> > If possible, this might take a while for me before I start
-> > implementing it. Considering
-> > that this patch set is now over 2 months old and consolidations do
-> > happen subsequently
-> > I request you to queue this patch set in its current form (with the
-> > above change if you
-> > deem it necessary to be part of current patch set).
+On Mon, 10 Mar 2014, Julian Wollrath wrote:
+> on a Thinkpad x121e (AMD E-450 APU) with version 3.13.5 and earlier of
+> the kernel I get:
+> [...]
+> [    0.000000] tsc: Fast TSC calibration using PIT
+> [    0.001000] tsc: Detected 1646.619 MHz processor
+> [    0.000004] Calibrating delay loop (skipped), value calculated using
+> timer frequency.. 3293.23 BogoMIPS (lpj=1646619)
+> [...]
 > 
-> I think the suggestion above should be fixed-up.
 > 
-> Whether to consider consolidation or not is Mark's decision.
+> but starting with v3.14-rc1 the fast TSC calibration fails:
+> [...]
+> [    0.000000] tsc: Fast TSC calibration failed
+> [    0.000000] tsc: PIT calibration matches HPET. 1 loops
+> [    0.000000] tsc: Detected 1646.490 MHz processor
+> [...]
 
-Oh, Mark (the maintainer) isn't on CC? I think this is a mistake.
+The only change in the calibration code post 3.13 is that we added the
+MSR based calibration for ATOM:
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+@@ -419,6 +651,13 @@ unsigned long native_calibrate_tsc(void)
+ 	unsigned long flags, latch, ms, fast_calibrate;
+ 	int hpet = is_hpet_enabled(), i, loopmin;
+ 
++	/* Calibrate TSC using MSR for Intel Atom SoCs */
++	local_irq_save(flags);
++	fast_calibrate = try_msr_calibrate_tsc();
++	local_irq_restore(flags);
++	if (fast_calibrate)
++		return fast_calibrate;
++
+ 	local_irq_save(flags);
+ 	fast_calibrate = quick_pit_calibrate();
+ 	local_irq_restore(flags);
+
+And that definitely does not affect the quick calibration. No idea,
+except bisecting.
+
+Thanks,
+
+	tglx
+
+
