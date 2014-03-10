@@ -1,137 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaCJQdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 12:33:50 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:39789 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778AbaCJQdr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 12:33:47 -0400
-Date: Mon, 10 Mar 2014 16:33:44 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v6 6/6] pci: Add support for creating a generic
- host_bridge from device tree
-Message-ID: <20140310163343.GY6457@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Will Deacon <Will.Deacon@arm.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	Bjorn Helgaas <bhelgaas@google.com>
-References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com>
- <201403081815.08829.arnd@arndb.de>
- <20140310144414.GT6457@e106497-lin.cambridge.arm.com>
- <2115856.ZTdgp5fkma@wuerfel>
+	id S1754037AbaCJQej (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 12:34:39 -0400
+Received: from sauhun.de ([89.238.76.85]:46385 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753517AbaCJQeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 12:34:37 -0400
+Date: Mon, 10 Mar 2014 17:34:35 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@st.com, kernel@stlinux.com
+Subject: Re: [PATCH] drivers: i2c: i2c-st: Fix return in case of arbitration
+ lost
+Message-ID: <20140310163435.GH11592@katana>
+References: <1393591976-10771-1-git-send-email-maxime.coquelin@st.com>
 MIME-Version: 1.0
-In-Reply-To: <2115856.ZTdgp5fkma@wuerfel>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 10 Mar 2014 16:33:44.0908 (UTC) FILETIME=[8140B0C0:01CF3C7E]
-X-MC-Unique: 114031016334506801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uAgJxtfIS94j9H4T"
 Content-Disposition: inline
+In-Reply-To: <1393591976-10771-1-git-send-email-maxime.coquelin@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 03:21:01PM +0000, Arnd Bergmann wrote:
-> On Monday 10 March 2014 14:44:14 Liviu Dudau wrote:
-> > I will try to improve the error handling in the next patchset version.
-> > However I am still confused about the earlier discussion on
-> > pci_register_io_range(). Your suggestion initially was to return an
-> > error in the default weak implementation, but in your last email you
-> > are talking about returning 'port'.
-> 
-> You can do either one: 'port' should be positive or zero, while the
-> error would always be negative. We do the same thing in many interfaces
-> in the kernel.
-> 
-> > My idea when I've introduced the
-> > helper function was that it would return an error if it fails to
-> > register the IO range and zero otherwise. I agree that we can treat
-> > the default 'do nothing with the IO range' case as an error, with
-> > the caveat that will force architectures that use this code to
-> > provide their own implementation of pci_register_io_range() in order
-> > to avoid failure, even for the cases where the architecture has a 1:1
-> > mapping between IO and CPU addresses.
-> 
-> Which architectures are you thinking of? The only one I know that
-> does this is ia64, and we won't ever have to support this helper
-> on that architecture.
 
-I was thinking about architectures that have IO_SPACE_LIMIT >= 0xffffffff.
-While not an absolute indicator, with the default pci_address_to_pio()
-that means that they can use the CPU MMIO address as IO address directly.
+--uAgJxtfIS94j9H4T
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-$ git grep IO_SPACE_LIMIT | grep -i ffffffff
-arch/arm/include/asm/io.h:#define IO_SPACE_LIMIT ((resource_size_t)0xffffffff)
-arch/arm/mach-at91/include/mach/io.h:#define IO_SPACE_LIMIT		0xFFFFFFFF
-arch/arm/mach-omap1/include/mach/io.h:#define IO_SPACE_LIMIT 0xffffffff
-arch/arm/mach-pxa/include/mach/io.h:#define IO_SPACE_LIMIT 0xffffffff
-arch/arm/mach-s3c24xx/include/mach/io.h:#define IO_SPACE_LIMIT 0xffffffff
-arch/avr32/include/asm/io.h:#define IO_SPACE_LIMIT	0xffffffff
-arch/frv/include/asm/io.h:#define IO_SPACE_LIMIT	0xffffffff
-arch/ia64/include/asm/io.h:#define IO_SPACE_LIMIT		0xffffffffffffffffUL
-arch/m32r/include/asm/io.h:#define IO_SPACE_LIMIT  0xFFFFFFFF
-arch/m68k/include/asm/io_no.h:#define IO_SPACE_LIMIT 0xffffffff
-arch/microblaze/include/asm/io.h:#define IO_SPACE_LIMIT (0xFFFFFFFF)
-arch/mn10300/include/asm/io.h:#define IO_SPACE_LIMIT 0xffffffff
-arch/sh/include/asm/io.h:#define IO_SPACE_LIMIT 0xffffffff
-arch/sparc/include/asm/io_32.h:#define IO_SPACE_LIMIT 0xffffffff
-arch/sparc/include/asm/io_64.h:#define IO_SPACE_LIMIT 0xffffffffffffffffUL
-arch/tile/include/asm/io.h:#define IO_SPACE_LIMIT 0xffffffff
+On Fri, Feb 28, 2014 at 01:52:56PM +0100, Maxime COQUELIN wrote:
+> This patch fixes the error returned to the i2c_transfer function
+> to -EAGAIN in case of arbitratin lost, so that the retry mechanism
+> can be used.
+>=20
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+
+Applied to for-next, thanks!
 
 
-> 
-> I did not ask to treat 'do nothing with the IO range' as an error,
-> what I meant is that we should treat 'architecture cannot translate
-> from I/O space to memory space but DT lists a translation anyway'
-> as an error. On x86, you should never see an entry for the I/O space
-> in "ranges", so we will not call this function unless there is a
-> bug in DT.
+--uAgJxtfIS94j9H4T
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Ok, it's just that there is no "architecture cannot translate from I/O
-space to memory space" indicator anywhere and I don't want to make x86
-a special case.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-So, my proposal is this: default weak implementation of pci_register_io_range()
-returns an error (meaning I have no idea how to translate IO addresses
-to memory space) and anyone that wants this function to return success will
-have to provide their implementation.
+iQIcBAEBAgAGBQJTHembAAoJEBQN5MwUoCm2KC0P/jExj86oqGhV6DDEA5sUAUyS
+NiHePCfaoWOdZpqDdoonjSxtKhJoU5GxAij0UvabmCh/cnMfn5hfviFExwgwA45q
+IK2TLjPjVO3SNAu1+O5uyAv57aZRyFtaKCAe95+pvN7IvHOGYCdUMiezrV8sLCVq
+oGunhKEQqN5SRHsqMKUjAVq1MgfOrnqD5LKc/KvDEMyy0Fp67J8VlthnlxCXKKTl
+x/cGwxz7T8yc74+OXwvS+dhuQtzfEYruPgslXExwMpmOgo86yQD3FpQab2pQ8iTh
+1vo3r+qtZYmMph5BgnabG/RheNtAoqUb3HtotVpCK73pCXj22qd5zXnaymVZqzi7
+UmIrMPSolpGlwmZzocEweOky5R81CTyKfD78qxARpH0nTMbXyThh8Cf/0YjOm5Wm
+0RjhKuvuYI6c3sStywFL2LkMmL8OJEwFaMmEqchMEwZjSLLYYI3xzPs3DTkfqfDd
+vfQ3fBfW6EJjYAHV4+bjSuYyokv6RR0of4iN5SLDI0ZtAhSy8oYo6qF2B4b6UU9l
+hoHnVohgDeaAR2jOIVCY5Z2H8yqDfH0an13oLehOvNySFm7kiJcE/O/EJD8RKjnJ
+7FTVu00HRILafpX9+ghV2kv7WElgQujl8KX4vmuRiwGdmXoPA7IHUuf9rgjD/Cfg
+8vDvK8G4OT9gVTh5l+eL
+=qF2t
+-----END PGP SIGNATURE-----
 
-I will send an updated series.
-
-Best regards,
-Liviu
-
-> 
-> 	Arnd
-> 
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+--uAgJxtfIS94j9H4T--
