@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385AbaCJJ4l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 05:56:41 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:48804 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584AbaCJJ4h (ORCPT
+	id S1752976AbaCJJ7U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 05:59:20 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:55056 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020AbaCJJ7T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 05:56:37 -0400
+	Mon, 10 Mar 2014 05:59:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140310093551.GE14976@lee--X1>
-References: <1394100057-32677-1-git-send-email-sachin.kamat@linaro.org>
-	<1394100057-32677-2-git-send-email-sachin.kamat@linaro.org>
-	<1394102406.25853.4.camel@AMDC1943>
-	<CAK9yfHyv+PhLCfy131KCS4GWaAEgQ9qmS5X27bTYHWYUspkYjA@mail.gmail.com>
-	<20140310093551.GE14976@lee--X1>
-Date: Mon, 10 Mar 2014 15:26:37 +0530
-Message-ID: <CAK9yfHy9iwCa7JPHTtJNw0pYhehUCd-GLPSW3Gw0G36ELBqsrA@mail.gmail.com>
-Subject: Re: [PATCH v3 Resend 2/3] regulator: Add support for S2MPA01 regulator
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <531C2097.5020004@roeck-us.net>
+References: <CAOMwXhPXPN+21N11cHBENvw0QZ1qPvo9GTbM9V2SwDmgBQZssw@mail.gmail.com>
+	<20140307162524.6abd34be@endymion.delvare>
+	<CAOMwXhOB=1HA57jwKCx3-hU8A_ypjrm0J3R9huO25xa4B_gw8w@mail.gmail.com>
+	<20140307163717.336873f5@endymion.delvare>
+	<CAOMwXhPpObWqd1vR3t+ifKd-_ZbnGTm1TNNUakmVAR3CB=pzTg@mail.gmail.com>
+	<20140307181718.GA1027@roeck-us.net>
+	<531BACD9.9050206@roeck-us.net>
+	<CAOMwXhNcoe4oWbijJ7s3o-E6k0FtfJSXZM2g=RC3S2FzvX_VdQ@mail.gmail.com>
+	<531C2097.5020004@roeck-us.net>
+Date: Mon, 10 Mar 2014 09:59:18 +0000
+X-Google-Sender-Auth: MHATGuneG6QyKZj9wAfbsz65JCM
+Message-ID: <CAOMwXhPMnvc29VB0ViDc494CunKfmkKV+fvdBGNXoaAW+D+C9A@mail.gmail.com>
+Subject: Re: [lm-sensors] Tachometer speed returned rather than absolute fan speed?
+From: Laszlo Papp <lpapp@kde.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+> The reason is (most likely) that your fan input does not have a pull-up resistor. Per datasheet, the fan inputs need a 10kOhm pull-up resistor. I confirmed this with my test board - with the pull-up resistor, inputs read 0, Without pull-up, the reported value is 1, which translates to 30 RPM. You might also need the 10 uF capacitor on the FB pin.
 
-On 10 March 2014 15:05, Lee Jones <lee.jones@linaro.org> wrote:
->> >> Add support for S2MPA01 voltage and current regulator.
->>
->> >> +
->> >> +struct s2mpa01_info {
->> >> +     struct regulator_dev *rdev[S2MPA01_REGULATOR_MAX];
->> >
->> > Hi,
->> >
->> > It seems that s2mpa01_info->rdev is not used anywhere, except as return
->> > value of devm_regulator_register. I think you can remove it completely.
->>
->> Yes. I will send a follow up patch for this.
->
-> Let's not break things and fix them up later. Fix it in this patch.
+We have both of them in place as per requirement for the chip as far
+as I understand the datasheet. The circuit would not work properly
+without it.
+> sudo i2cdump -y -f 1 0x48
+> No size specified (using byte-data access)
+>      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
+> 00: 00 00 0a 0a ff ff 00 00 00 00 00 00 01 01 00 00    ..??........??..
+> 10: 01 01 01 01 1f 1f 02 02 91 91 91 91 91 91 91 91    ????????????????
+> 20: 00 00 0a 0a ff ff 00 00 00 00 00 00 01 01 00 00    ..??........??..
 
-Nothing is broken in this patch. What is suggested is just a code cleanup.
-I did not want to disturb the existing patch set as it is already reviewed
-and ready for merging. Anyway I can re-spin with this suggested change.
+/usr/sbin/i2cdump -y -f 1 0x48
+No size specified (using byte-data access)
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
+00: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+10: 09 09 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+20: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+30: 09 09 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+40: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+50: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+60: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+70: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+80: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+90: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+a0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+b0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+c0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+d0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
+e0: 00 00 3a 3a fc fc b4 b4 00 00 00 00 01 01 01 01    ..::????....????
+f0: 08 08 01 01 1c 1c 02 02 91 91 91 91 91 91 91 91    ????????????????
 
->
->> > Beside that, can this driver be merged into existing s2mps11 regulator
->> > driver?
->>
->> Haven't analyzed this yet. Will look into the possibility of consolidation
->> later.
->
-> As above. If consolidation is possible it should be take care of in
-> the first instance.
+> groeck@desktop:~$ sensors max6651-i2c-1-48
+> max6651-i2c-1-48
+> Adapter: i2c-diolan-u2c at bus 003 device 002
+> fan1:          30 RPM  (div = 4)
+> fan2:           0 RPM
+> fan3:          30 RPM
+> fan4:          30 RPM
 
-I need to analyze and see if this is really possible and the extent of
-re-usability.
-If possible, this might take a while for me before I start
-implementing it. Considering
-that this patch set is now over 2 months old and consolidations do
-happen subsequently
-I request you to queue this patch set in its current form (with the
-above change if you
-deem it necessary to be part of current patch set).
+sensors max6651-i2c-1-48
+max6651-i2c-1-48
+Adapter: DaVinci I2C adapter
+fan1:          30 RPM  (div = 4)
+fan2:          30 RPM
+fan3:         420 RPM
+fan4:          30 RPM
 
--- 
-With warm regards,
-Sachin
+> Only fan2 (TACH1 chip input) has the resistor installed.
+
+We have it both on fan1 and fan4.
+
+If I use our scope for checking the tachometer, I see level zero on
+the scope, but 1 when checking the open collector level, since that is
+the purpose of the pull-up resistor.
+
+I am currently clueless. Fwiw, I am now using linux kernel 3.2.1 for
+the moment. I cannot see any bugfixes in the log with regards to that,
+though. I am still not sure what is going on, so I cannot claim that
+it is a bug, nor can I exclude it. Any help would be appreciated.
