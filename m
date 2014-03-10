@@ -1,95 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaCJLFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:05:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42993 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752190AbaCJLFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:05:44 -0400
-Message-ID: <531D9C64.50809@ti.com>
-Date: Mon, 10 Mar 2014 13:05:08 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752535AbaCJLMd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 07:12:33 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:47033 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbaCJLMc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 07:12:32 -0400
+Message-ID: <531D9E3A.7040109@arm.com>
+Date: Mon, 10 Mar 2014 11:12:58 +0000
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Tero Kristo <t-kristo@ti.com>, <balbi@ti.com>, <tony@atomide.com>
-CC: <kishon@ti.com>, <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 2/8] ARM: dts: dra7-clock: Add "l3init_960m_gfclk" clock
- gate
-References: <1394197751-28984-1-git-send-email-rogerq@ti.com> <1394197751-28984-3-git-send-email-rogerq@ti.com> <5319D0B5.6060300@ti.com>
-In-Reply-To: <5319D0B5.6060300@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH RFC/RFT v3 6/9] powerpc: move cacheinfo sysfs to generic
+ cacheinfo infrastructure
+References: <1392825976-17633-1-git-send-email-sudeep.holla@arm.com> <1392825976-17633-7-git-send-email-sudeep.holla@arm.com> <531945D1.7010503@linux.vnet.ibm.com> <531963D9.5040701@linux.vnet.ibm.com>
+In-Reply-To: <531963D9.5040701@linux.vnet.ibm.com>
+X-OriginalArrivalTime: 10 Mar 2014 11:12:37.0131 (UTC) FILETIME=[A4C33DB0:01CF3C51]
+X-MC-Unique: 114031011122921501
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2014 03:59 PM, Tero Kristo wrote:
-> On 03/07/2014 03:09 PM, Roger Quadros wrote:
->> This clock gate description was missing in older Reference manuals.
->> It is present on the SoC to provide 960MHz reference clock to the
->> internal USB PHYs.
-> 
-> Can you provide a document reference here?
-> 
+Hi Anshuman,
 
-Unfortunately it hasn't yet been included in the TRM.
-I have the internal defect ID but I don't think it makes any sense here.
+On 07/03/14 06:14, Anshuman Khandual wrote:
+> On 03/07/2014 09:36 AM, Anshuman Khandual wrote:
+>> On 02/19/2014 09:36 PM, Sudeep Holla wrote:
+>>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>>
+>>> This patch removes the redundant sysfs cacheinfo code by making use of
+>>> the newly introduced generic cacheinfo infrastructure.
+>>>
+>>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>> Cc: Paul Mackerras <paulus@samba.org>
+>>> Cc: linuxppc-dev@lists.ozlabs.org
+>>> ---
+>>>   arch/powerpc/kernel/cacheinfo.c | 831 ++++++----------------------------------
+>>>   arch/powerpc/kernel/cacheinfo.h |   8 -
+>>>   arch/powerpc/kernel/sysfs.c     |   4 -
+>>>   3 files changed, 109 insertions(+), 734 deletions(-)
+>>>   delete mode 100644 arch/powerpc/kernel/cacheinfo.h
+>>>
+>>> diff --git a/arch/powerpc/kernel/cacheinfo.c b/arch/powerpc/kernel/cacheinfo.c
+>>> index 2912b87..05b7580 100644
+>>> --- a/arch/powerpc/kernel/cacheinfo.c
+>>> +++ b/arch/powerpc/kernel/cacheinfo.c
+>>> @@ -10,38 +10,10 @@
+>>>    * 2 as published by the Free Software Foundation.
+>>>    */
+>>>
+>>> +#include <linux/cacheinfo.h>
+>>>   #include <linux/cpu.h>
+>>> -#include <linux/cpumask.h>
+>>>   #include <linux/kernel.h>
+>>> -#include <linux/kobject.h>
+>>> -#include <linux/list.h>
+>>> -#include <linux/notifier.h>
+>>>   #include <linux/of.h>
+>>> -#include <linux/percpu.h>
+>>> -#include <linux/slab.h>
+>>> -#include <asm/prom.h>
+>>> -
+>>> -#include "cacheinfo.h"
+>>> -
+>>> -/* per-cpu object for tracking:
+>>> - * - a "cache" kobject for the top-level directory
+>>> - * - a list of "index" objects representing the cpu's local cache hierarchy
+>>> - */
+>>> -struct cache_dir {
+>>> -	struct kobject *kobj; /* bare (not embedded) kobject for cache
+>>> -			       * directory */
+>>> -	struct cache_index_dir *index; /* list of index objects */
+>>> -};
+>>> -
+>>> -/* "index" object: each cpu's cache directory has an index
+>>> - * subdirectory corresponding to a cache object associated with the
+>>> - * cpu.  This object's lifetime is managed via the embedded kobject.
+>>> - */
+>>> -struct cache_index_dir {
+>>> -	struct kobject kobj;
+>>> -	struct cache_index_dir *next; /* next index in parent directory */
+>>> -	struct cache *cache;
+>>> -};
+>>>
+>>>   /* Template for determining which OF properties to query for a given
+>>>    * cache type */
+>>> @@ -60,11 +32,6 @@ struct cache_type_info {
+>>>   	const char *nr_sets_prop;
+>>>   };
+>>>
+>>> -/* These are used to index the cache_type_info array. */
+>>> -#define CACHE_TYPE_UNIFIED     0
+>>> -#define CACHE_TYPE_INSTRUCTION 1
+>>> -#define CACHE_TYPE_DATA        2
+>>> -
+>>>   static const struct cache_type_info cache_type_info[] = {
+>>>   	{
+>>>   		/* PowerPC Processor binding says the [di]-cache-*
+>>> @@ -77,246 +44,115 @@ static const struct cache_type_info cache_type_info[] = {
+>>>   		.nr_sets_prop    = "d-cache-sets",
+>>>   	},
+>>>   	{
+>>> -		.name            = "Instruction",
+>>> -		.size_prop       = "i-cache-size",
+>>> -		.line_size_props = { "i-cache-line-size",
+>>> -				     "i-cache-block-size", },
+>>> -		.nr_sets_prop    = "i-cache-sets",
+>>> -	},
+>>> -	{
+>>>   		.name            = "Data",
+>>>   		.size_prop       = "d-cache-size",
+>>>   		.line_size_props = { "d-cache-line-size",
+>>>   				     "d-cache-block-size", },
+>>>   		.nr_sets_prop    = "d-cache-sets",
+>>>   	},
+>>> +	{
+>>> +		.name            = "Instruction",
+>>> +		.size_prop       = "i-cache-size",
+>>> +		.line_size_props = { "i-cache-line-size",
+>>> +				     "i-cache-block-size", },
+>>> +		.nr_sets_prop    = "i-cache-sets",
+>>> +	},
+>>>   };
+>>
+>>
+>> Hey Sudeep,
+>>
+>> After applying this patch, the cache_type_info array looks like this.
+>>
+>> static const struct cache_type_info cache_type_info[] = {
+>>          {
+>>                  /*
+>>                   * PowerPC Processor binding says the [di]-cache-*
+>>                   * must be equal on unified caches, so just use
+>>                   * d-cache properties.
+>>                   */
+>>                  .name            = "Unified",
+>>                  .size_prop       = "d-cache-size",
+>>                  .line_size_props = { "d-cache-line-size",
+>>                                       "d-cache-block-size", },
+>>                  .nr_sets_prop    = "d-cache-sets",
+>>          },
+>>          {
+>>                  .name            = "Data",
+>>                  .size_prop       = "d-cache-size",
+>>                  .line_size_props = { "d-cache-line-size",
+>>                                       "d-cache-block-size", },
+>>                  .nr_sets_prop    = "d-cache-sets",
+>>          },
+>>          {
+>>                  .name            = "Instruction",
+>>                  .size_prop       = "i-cache-size",
+>>                  .line_size_props = { "i-cache-line-size",
+>>                                       "i-cache-block-size", },
+>>                  .nr_sets_prop    = "i-cache-sets",
+>>          },
+>> };
+>>
+>> and this function computes the the array index for any given cache type
+>> define for PowerPC.
+>>
+>> static inline int get_cacheinfo_idx(enum cache_type type)
+>> {
+>>          if (type == CACHE_TYPE_UNIFIED)
+>>                  return 0;
+>>          else
+>>                  return type;
+>> }
+>>
+>> These types are define in include/linux/cacheinfo.h as
+>>
+>> enum cache_type {
+>>          CACHE_TYPE_NOCACHE = 0,
+>>          CACHE_TYPE_INST = BIT(0),		---> 1
+>>          CACHE_TYPE_DATA = BIT(1),		---> 2
+>>          CACHE_TYPE_SEPARATE = CACHE_TYPE_INST | CACHE_TYPE_DATA,
+>>          CACHE_TYPE_UNIFIED = BIT(2),
+>> };
+>>
+>> When it is UNIFIED we return index 0, which is correct. But the index
+>> for instruction and data cache seems to be swapped which wrong. This
+>> will fetch invalid properties for any given cache type.
+>>
 
-DRA7xx-TRMINC00203
+Ah, that's silly mistake on my side, will fix it.
 
-cheers,
--roger
+>> I have done some initial review and testing for this patch's impact on
+>> PowerPC (ppc64 POWER specifically). I am trying to do some code clean-up
+>> and re-arrangements. Will post out soon. Thanks !
 
-> 
->>
->> Use l3init_960m_gfclk as parent of usb_otg_ss1_refclk960m and
->> usb_otg_ss2_refclk960m.
->>
->> CC: Tero Kristo <t-kristo@ti.com>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>   arch/arm/boot/dts/dra7xx-clocks.dtsi | 12 ++++++++++--
->>   1 file changed, 10 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
->> index e96da9a..b8d3a9d 100644
->> --- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
->> +++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
->> @@ -1386,6 +1386,14 @@
->>           ti,dividers = <1>, <8>;
->>       };
->>
->> +    l3init_960m_gfclk: l3init_960m_gfclk {
->> +        #clock-cells = <0>;
->> +        compatible = "ti,gate-clock";
->> +        clocks = <&dpll_usb_clkdcoldo>;
->> +        ti,bit-shift = <8>;
->> +        reg = <0x06c0>;
->> +    };
->> +
->>       dss_32khz_clk: dss_32khz_clk {
->>           #clock-cells = <0>;
->>           compatible = "ti,gate-clock";
->> @@ -1533,7 +1541,7 @@
->>       usb_otg_ss1_refclk960m: usb_otg_ss1_refclk960m {
->>           #clock-cells = <0>;
->>           compatible = "ti,gate-clock";
->> -        clocks = <&dpll_usb_clkdcoldo>;
->> +        clocks = <&l3init_960m_gfclk>;
->>           ti,bit-shift = <8>;
->>           reg = <0x13f0>;
->>       };
->> @@ -1541,7 +1549,7 @@
->>       usb_otg_ss2_refclk960m: usb_otg_ss2_refclk960m {
->>           #clock-cells = <0>;
->>           compatible = "ti,gate-clock";
->> -        clocks = <&dpll_usb_clkdcoldo>;
->> +        clocks = <&l3init_960m_gfclk>;
->>           ti,bit-shift = <8>;
->>           reg = <0x1340>;
->>       };
->>
-> 
+Thanks for taking time for testing and reviewing these patches.
+
+>
+> It does not work correctly on POWER.
+>
+> The new patchset adds some more attributes for every cache entry apart from
+> what we used to have on PowerPC before. From the ABI perspective, the old ones
+> should reflect the correct value in the same manner as before. Looks like
+> the generic code will make any attribute as "Unknown" if the arch code does
+> not populate them in the respective callback.
+>
+
+Yes this is on my list, I need to avoid populating the sysfs files with 
+"Unknown" as value, will do that in next version.
+
+> Here are some problems found on a POWER7 system
+>
+> (1) L1 instruction cache (cpu<N>/cache/index1/)
+>
+> 	====== Before patch ======
+>
+> 	coherency_line_size: 	128
+> 	level:			1
+> 	shared_cpu_map:		00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+>          			00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+> 				00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+> 				00000000,00000000,00000000,00000000,00000f00
+> 	size:			32K
+> 	type:			Instruction
+>
+> 	===== After patch ========
+>
+> 	coherency_line_size:	Unknown						----> Wrong
+> 	level:			1
+> 	shared_cpu_map:		00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+>          			00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+> 				00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,
+> 				00000000,00000000,00000000,00000000,00ffffff	----> Wrong
+> 	size:			0K						----> Wrong
+> 	type:			Instruction	
+>
+> (2) L3 cache (cpu<N>/cache/index3/)
+>
+> 	====== Before patch ======
+>
+> 	number_of_sets:		1
+> 	size:			4096K
+> 	ways_of_associativity:	0
+>
+> 	===== After patch ========
+>
+> 	number_of_sets:		1
+> 	size:			4096K
+> 	ways_of_associativity:	Unknown		----> Wrong
+>
+> Need to revisit this implementation on PowerPC and figure out the cause of these problems.
+>
+
+Yes, based on the logs you have provided, I will check for the root 
+cause of these issues. I will get back with questions if I need 
+clarifications.
+
+Regards,
+Sudeep
 
