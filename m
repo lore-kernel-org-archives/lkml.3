@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782AbaCJUh1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:37:27 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:48730 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884AbaCJUhW (ORCPT
+	id S1754803AbaCJUha (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:37:30 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:60727 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754772AbaCJUh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:37:22 -0400
+	Mon, 10 Mar 2014 16:37:27 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v3 15/52] x86, msr: Fix CPU hotplug callback registration
+Subject: [PATCH v3 19/52] x86, mce: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
         rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org
@@ -16,11 +16,13 @@ Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
         ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        srivatsa.bhat@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        x86@kernel.org, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 11 Mar 2014 02:06:37 +0530
-Message-ID: <20140310203637.10746.41491.stgit@srivatsabhat.in.ibm.com>
+        srivatsa.bhat@linux.vnet.ibm.com, Tony Luck <tony.luck@intel.com>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-edac@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Tue, 11 Mar 2014 02:07:04 +0530
+Message-ID: <20140310203703.10746.30680.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,7 +31,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031020-8256-0000-0000-00000BDF8F93
+x-cbid: 14031020-6102-0000-0000-0000051B2E71
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -65,66 +67,44 @@ registration is:
 	cpu_notifier_register_done();
 
 
-Fix the msr code in x86 by using this latter form of callback registration.
+Fix the mce code in x86 by using this latter form of callback registration.
 
-Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
+Cc: linux-edac@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kernel/msr.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
-index 05266b5..c9603ac 100644
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -259,14 +259,15 @@ static int __init msr_init(void)
- 		goto out_chrdev;
- 	}
- 	msr_class->devnode = msr_devnode;
--	get_online_cpus();
-+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 4d5419b..9b7734b 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2434,14 +2434,18 @@ static __init int mcheck_init_device(void)
+ 	if (err)
+ 		return err;
+ 
 +	cpu_notifier_register_begin();
  	for_each_online_cpu(i) {
- 		err = msr_device_create(i);
- 		if (err != 0)
- 			goto out_class;
+ 		err = mce_device_create(i);
+-		if (err)
++		if (err) {
++			cpu_notifier_register_done();
+ 			return err;
++		}
  	}
--	register_hotcpu_notifier(&msr_class_cpu_notifier);
--	put_online_cpus();
-+	__register_hotcpu_notifier(&msr_class_cpu_notifier);
+ 
+ 	register_syscore_ops(&mce_syscore_ops);
+-	register_hotcpu_notifier(&mce_cpu_notifier);
++	__register_hotcpu_notifier(&mce_cpu_notifier);
 +	cpu_notifier_register_done();
  
- 	err = 0;
- 	goto out;
-@@ -275,7 +276,7 @@ out_class:
- 	i = 0;
- 	for_each_online_cpu(i)
- 		msr_device_destroy(i);
--	put_online_cpus();
-+	cpu_notifier_register_done();
- 	class_destroy(msr_class);
- out_chrdev:
- 	__unregister_chrdev(MSR_MAJOR, 0, NR_CPUS, "cpu/msr");
-@@ -286,13 +287,14 @@ out:
- static void __exit msr_exit(void)
- {
- 	int cpu = 0;
--	get_online_cpus();
-+
-+	cpu_notifier_register_begin();
- 	for_each_online_cpu(cpu)
- 		msr_device_destroy(cpu);
- 	class_destroy(msr_class);
- 	__unregister_chrdev(MSR_MAJOR, 0, NR_CPUS, "cpu/msr");
--	unregister_hotcpu_notifier(&msr_class_cpu_notifier);
--	put_online_cpus();
-+	__unregister_hotcpu_notifier(&msr_class_cpu_notifier);
-+	cpu_notifier_register_done();
- }
- 
- module_init(msr_init);
+ 	/* register character device /dev/mcelog */
+ 	misc_register(&mce_chrdev_device);
 
