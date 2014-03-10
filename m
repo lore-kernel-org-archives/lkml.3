@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaCJPVY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:21:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:63829 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830AbaCJPVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:21:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v6 6/6] pci: Add support for creating a generic host_bridge from device tree
-Date: Mon, 10 Mar 2014 16:21:01 +0100
-Message-ID: <2115856.ZTdgp5fkma@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140310144414.GT6457@e106497-lin.cambridge.arm.com>
-References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com> <201403081815.08829.arnd@arndb.de> <20140310144414.GT6457@e106497-lin.cambridge.arm.com>
+	id S1754024AbaCJPWz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:22:55 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:50380 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752880AbaCJPWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 11:22:54 -0400
+X-Greylist: delayed 1642 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Mar 2014 11:22:54 EDT
+Date: Mon, 10 Mar 2014 15:55:30 +0100
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: linux-kernel@vger.kernel.org
+Subject: 3.0 -> 3.10 regression? poweroff instead of reboot?
+Message-ID: <20140310145530.GA27230@pcnci.linuxbox.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:8pUeofrxQaE99DOZb0FavYkYrar7cIB3LQ6dMsb+l43
- yFlstpcf18piqJ502GWXPa4qwyCudg+aizqJR9vXfWfTcB2CTR
- k8A5IhHAxNSBpnG5OBZxE+k5qMcav50avFDKTfzorYrHU9LH+F
- VKSEgQE/nw5gUIcRW5E+QuIBMD9aDAzQ6PlysRsvivFYt14gMe
- x6lsaodpqgXXjmk/QR4Q3/m5RTTcp6ySPELfH2ucOx9PP7l2CD
- OJzOWKNunSYw9Jsh3HtJ2+JWOBVsYH8gDBg8DLVwx2I960gAJF
- mDaYxl3bkwNopBuezMQfsY+b1PI2NOCZME2SAbJqc0cdiBFaWc
- bigYsMpp+fXth1efMYgA=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on proxybox by F-Secure antivirus, database version 2014-03-10_01
+X-Milter-Copy-Status: I
+X-Milter-Copy-Status: I
+X-Spam-Score: N/A (imported whitelist)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 March 2014 14:44:14 Liviu Dudau wrote:
-> I will try to improve the error handling in the next patchset version.
-> However I am still confused about the earlier discussion on
-> pci_register_io_range(). Your suggestion initially was to return an
-> error in the default weak implementation, but in your last email you
-> are talking about returning 'port'.
 
-You can do either one: 'port' should be positive or zero, while the
-error would always be negative. We do the same thing in many interfaces
-in the kernel.
+--WIyZ46R2i8wDzkSu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> My idea when I've introduced the
-> helper function was that it would return an error if it fails to
-> register the IO range and zero otherwise. I agree that we can treat
-> the default 'do nothing with the IO range' case as an error, with
-> the caveat that will force architectures that use this code to
-> provide their own implementation of pci_register_io_range() in order
-> to avoid failure, even for the cases where the architecture has a 1:1
-> mapping between IO and CPU addresses.
+Hi,
 
-Which architectures are you thinking of? The only one I know that
-does this is ia64, and we won't ever have to support this helper
-on that architecture.
+after installing new server, we've noticed weird behaviour: when box is
+about to reboot, it powers off instead. This was with 3.10.33, downgrading
+to 3.0.101 seems to fix this problem. I didn't have time to play with it to=
+day
+and box had to be shipped today, so it'll take few days before I'll have ch=
+ance
+for further research, but I wanted to ask whether somebody has met similar
+problem and what I should check first?
 
-I did not ask to treat 'do nothing with the IO range' as an error,
-what I meant is that we should treat 'architecture cannot translate
-from I/O space to memory space but DT lists a translation anyway'
-as an error. On x86, you should never see an entry for the I/O space
-in "ranges", so we will not call this function unless there is a
-bug in DT.
+The system is x86_64 centos 6, HW is supermicro x9sci-ln4f.
 
-	Arnd
+Any help appreciated
+
+When I have chance to put my hands on this box again, I'll try
+latest kernel and I can also do bisect, if needed.
+
+BR
+
+nik
+
+
+
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28.rijna 168, 709 00 Ostrava
+
+tel.:   +420 591 166 214
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--WIyZ46R2i8wDzkSu
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
+
+iEYEARECAAYFAlMd0mIACgkQ3xdJJrLygV5C5QCgiSwKV2z5PQYYDh7MqCjZxXAk
+UOwAoNqFYbA+2NbT+MyBa5s7XKH8ZGf6
+=aX0r
+-----END PGP SIGNATURE-----
+
+--WIyZ46R2i8wDzkSu--
