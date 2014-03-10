@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466AbaCJUoO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:44:14 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:63740 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643AbaCJUoK (ORCPT
+	id S1755009AbaCJUpW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:45:22 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:39456 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753913AbaCJUmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:44:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMxnaaVfpJCW7e-b80y4wmVWcRDK5t7qY+pNn71CsLPRN2ojnA@mail.gmail.com>
-References: <CAMxnaaXd9-VbxSYa9q1YVT+fwfDFYKGG2Hq-1jkc-awLX-HwtQ@mail.gmail.com>
- <CAErSpo5fkaFNq_qTZ+gTDMV554f4diOXQ7_4bsHqj06iAGTpHg@mail.gmail.com>
- <CAE9FiQVNFqTw+92qy8zcwG1haiSZzU+KE3oh4YnjNc_aE6KUnA@mail.gmail.com>
- <20140308010456.GA30660@google.com> <CAMxnaaVfpJCW7e-b80y4wmVWcRDK5t7qY+pNn71CsLPRN2ojnA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 10 Mar 2014 14:43:44 -0600
-Message-ID: <CAErSpo4MQsAer7FM0kU5mMOGRok0oFMWX1FqFijmswutjyNoRg@mail.gmail.com>
-Subject: Re: [Bug] PCI: Enable INTx if BIOS left them disabled - triggers
- during rescan
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rajat Jain <rajatxjain@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 10 Mar 2014 16:42:16 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: rostedt@goodmis.org
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH v2 6/6] ftrace: Fix compilation warning about control_ops_free
+Date: Mon, 10 Mar 2014 21:42:11 +0100
+Message-Id: <1394484131-5107-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140306153151.4f7ca9ca@gandalf.local.home>
+References: <20140306153151.4f7ca9ca@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 8, 2014 at 2:55 AM, Andreas Noever <andreas.noever@gmail.com> wrote:
-> On Sat, Mar 8, 2014 at 2:04 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+With CONFIG_DYNAMIC_FTRACE=n, I see a warning:
+kernel/trace/ftrace.c:240:13: warning: 'control_ops_free' defined but not used
+ static void control_ops_free(struct ftrace_ops *ops)
+             ^
+Move that function around to an already existing #ifdef
+CONFIG_DYNAMIC_FTRACE block as the function is used solely from the
+dynamic function tracing functions.
 
->> If we did that, INTX_DISABLE would be cleared by the first
->> pci_enable_device() and pci_reenable_device() wouldn't do anything,
->> leaving it cleared.  The resulting state (cleared) would be the same,
->> but the transitions would be gone, and maybe those are important.
-> Just a quick note: With pci_intx_for_msi removed no hotplug events are
-> ever delivered. Everything else still works though. So it is either a
-> problem specific to Thunderbolt bridges or maybe it just affects
-> hotplug (and PME?) interrupts.
+[v2]
+* move the function to an existing block
 
-Interesting.  This is on a MacBook, isn't it?  If you have Mac OS on
-it, is there a way you can do the equivalent of lspci on it?  I'm
-curious about whether it sets INTx_DISABLE when it enables MSI.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
+ kernel/trace/ftrace.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-I still haven't found any indication that INTx_DISABLE is intended or
-required as part of enabling MSI/MSI-X, so I'm quite dubious about
-Linux using it that way.  The references I've seen, e.g.,
-http://www.pcisig.com/reflector/msg05301.html,
-http://www.pcisig.com/reflector/msg05302.html, say the purpose is to
-better manage shared IRQs.
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 5bd70e8b09b0..60346fb76664 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -237,11 +237,6 @@ static int control_ops_alloc(struct ftrace_ops *ops)
+ 	return 0;
+ }
+ 
+-static void control_ops_free(struct ftrace_ops *ops)
+-{
+-	free_percpu(ops->disabled);
+-}
+-
+ static void update_global_ops(void)
+ {
+ 	ftrace_func_t func = ftrace_global_list_func;
+@@ -2093,6 +2088,11 @@ static ftrace_func_t saved_ftrace_func;
+ static int ftrace_start_up;
+ static int global_start_up;
+ 
++static void control_ops_free(struct ftrace_ops *ops)
++{
++	free_percpu(ops->disabled);
++}
++
+ static void ftrace_startup_enable(int command)
+ {
+ 	if (saved_ftrace_func != ftrace_trace_function) {
+-- 
+1.9.0
 
-> I also attempted booting with pcie_hp=nomsi and now everything works.
-> Interestingly pciehp now also  gets an interrupt from 09 (event though
-> that card has just been removed). I suspect this is just pciehp not
-> noticing that it itself is gone.
-> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3-1)
-> pciehp 0000:09:00.0:pcie24: Latch open on Slot(9)
-> pciehp 0000:09:00.0:pcie24: Button pressed on Slot(9)
-> pciehp 0000:09:00.0:pcie24: Card present on Slot(9)
-> pciehp 0000:09:00.0:pcie24: Power fault on slot 9
-> pciehp 0000:09:00.0:pcie24: Power fault bit 0 set
-> pciehp 0000:09:00.0:pcie24: PCI slot #9 - powering on due to button press.
-> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
-> pciehp 0000:09:00.0:pcie24: Link Training Error occurs
-> pciehp 0000:09:00.0:pcie24: Failed to check link status
-
-This is a good clue.  I think the portdrv registration thing is a bit
-more confusing than necessary.  I'll poke around in there a bit.
-
-Unfortunately, I don't think this is going to lead to a quick easy fix
-suitable for -rc7, so we'll probably have to do something simple like
-skipping the INTx enable if MSI is already enabled.
-
-Bjorn
