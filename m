@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956AbaCJQtN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 12:49:13 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45171 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667AbaCJQtL (ORCPT
+	id S1754032AbaCJQt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 12:49:26 -0400
+Received: from smtprelay0222.hostedemail.com ([216.40.44.222]:39591 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753756AbaCJQtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 12:49:11 -0400
-Date: Mon, 10 Mar 2014 16:49:04 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, linaro-kernel@lists.linaro.org
-Message-ID: <20140310164904.GO28112@sirena.org.uk>
-References: <1394468977-23149-1-git-send-email-broonie@kernel.org>
- <20140310163811.GA16697@lee--X1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0fZDDgbv4XPjhm7m"
-Content-Disposition: inline
-In-Reply-To: <20140310163811.GA16697@lee--X1>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] mfd: wm5102: Mark register 0x19 readable
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 10 Mar 2014 12:49:22 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2196:2199:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3872:3873:4321:4385:5007:7652:7875:7974:8828:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13071:13095:13311:13357:13894:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: food31_1743bb34f8d5e
+X-Filterd-Recvd-Size: 2601
+Message-ID: <1394470158.24244.18.camel@joe-AO722>
+Subject: Re: [PATCH] cpufreq: Reformat printk() statement
+From: Joe Perches <joe@perches.com>
+To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Date: Mon, 10 Mar 2014 09:49:18 -0700
+In-Reply-To: <f29b7db5-e5a2-48d8-ae42-8ec562c4c4f6@CO9EHSMHS025.ehs.local>
+References: <1394127279-29871-1-git-send-email-soren.brinkmann@xilinx.com>
+	 <CAKohpo=E2PAD7XNm4y3tXv6-ArPCj+8RG-WsJLOfvJoZ7EkstQ@mail.gmail.com>
+	 <1394424432.30791.11.camel@joe-AO722>
+	 <f29b7db5-e5a2-48d8-ae42-8ec562c4c4f6@CO9EHSMHS025.ehs.local>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-03-10 at 09:35 -0700, Sören Brinkmann wrote:
+> Hi Joe,
 
---0fZDDgbv4XPjhm7m
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hello Sören:
 
-On Mon, Mar 10, 2014 at 04:38:11PM +0000, Lee Jones wrote:
+> On Sun, 2014-03-09 at 09:07PM -0700, Joe Perches wrote:
+> > On Mon, 2014-03-10 at 11:53 +0800, Viresh Kumar wrote:
+> > > On 7 March 2014 01:34, Soren Brinkmann <soren.brinkmann@xilinx.com> wrote:
+> > > > Reformat a printk statement to:
+> > > >  - use pr_warn
+> > > >  - bring the whole string into a single line in favor of being able to
+> > > >    grep for the message (ignoring the 80 char limit)
+> > > >
+> > > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > []
+> > > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> > 
+> > A more comprehensive patch would be to:
+> > 
+> > Add missing newlines
+> > Coalesce format fragments
+> > Convert printks to pr_<level>
+> > Align arguments
+> 
+> I agree. But I didn't want to spend time on "fixing" formatting without
+> knowing it will be accepted. Also, I was grepping for the message I
+> ended up changing because on an issue I actually needed to fix.
+> 
+> Do you want me to squash your changes into the patch I submitted? Or do
+> you wanna pick up mine and submit your patch?
 
-> Can we have a #define for these please?
+What I sent incorporates your change.
 
-It'd be nice but you'd need to ask the Wolfson guys to tell us what it's
-called, all the information I have is the read in the driver source.
-Meanwile we've got a bug.
+If Viresh or Rafael want me to sign it, I will,
 
---0fZDDgbv4XPjhm7m
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Original-patch-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+otherwise, feel free to resend it with your signature.
 
-iQIcBAEBAgAGBQJTHez9AAoJELSic+t+oim9ueMP/20Qjmycc0m8FHkL+PJcLNsm
-BDgaw1vFVKSXZzPHrKCjuHNKjnlpyrKKlEFHiFXV4p8Ow/dgYuciQOidsIorjrec
-rGVJVNbvPR/MvQxuYupHsVitYaN1y41UMw9PDyuLDrjsIIs0KQDcSBuR50mGJRXm
-B5mF4z2ECRsnLDAX/Fi4RJ4jbTAbBXDNs7SPF9HCzoSQ7UPvwiibKZseonARUj6E
-o5etapQmj2mmGzk4i5qgBpSiib5VsGcDNJ/H5O0e5s1JZrpk9+whl+YLS/43DEgj
-WfHXkpw693v96JZmxMWwTk2ZLMOy4eNePgzicBSpiP5WGk0OZN6+ngtTZq1JEigF
-QfQ5ZvT9D18tfdZ6I5+zq4tx5bz41JPoJcmPBTPnfRN5MfqGNqxoVosX/8yM5OaG
-s8Siq1sOieoOI77M8BFpATo2K4x2grfb5pxkehvmVqNV+jTiOLQfOomTL/MKZV0e
-1YyraUFDsgQsKQ+qlcXfNMIelY+XfJOsuKgNSAFFfkhMERkz92O1yqT5c7CHHIYD
-lp+BCC5PZ0CVeVUYtrRVLey0qwO3q6BiD/tZpVcGNGJG9nPMV444G2SWDBAcXXRw
-7VrfJgtXZ0t4K2pmDg10H6xg43/ueleFSersRjxEdz1pvuSHqpY7QYDEqXzlBCfZ
-TzLwgeC2rqs+Fzf7pE9H
-=OEAH
------END PGP SIGNATURE-----
+cheers, Joe
 
---0fZDDgbv4XPjhm7m--
+
