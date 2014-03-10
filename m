@@ -1,78 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaCJLfG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 07:35:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:18134 "EHLO mga01.intel.com"
+	id S1753232AbaCJLfa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 07:35:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12862 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752703AbaCJLfD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 07:35:03 -0400
+	id S1753147AbaCJLf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 07:35:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,623,1389772800"; 
-   d="scan'208";a="495404160"
-From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] i2c: designware-pci: set ideal HCNT, LCNT and SDA
- hold time value
-Thread-Topic: [PATCH 2/2] i2c: designware-pci: set ideal HCNT, LCNT and SDA
- hold time value
-Thread-Index: AQHPO3Z29tlwWgDHfUmXNkFYhTpCNpraL3hA
-Date: Mon, 10 Mar 2014 11:34:49 +0000
-Message-ID: <604BF5F4C5D71041942BC7E84ED659EA0155D5C4@PGSMSX103.gar.corp.intel.com>
-References: <1394201571-11681-1-git-send-email-chiau.ee.chew@intel.com>
- <1394201571-11681-3-git-send-email-chiau.ee.chew@intel.com>
- <20140309090339.GB4695@katana>
-In-Reply-To: <20140309090339.GB4695@katana>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+   d="scan'208";a="495404360"
+From: sagar.a.kamble@intel.com
+To: intel-gfx@lists.freedesktop.org
+Cc: Sagar Kamble <sagar.a.kamble@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, "G, Pallavi" <pallavi.g@intel.com>
+Subject: [PATCH v4 1/1] drm/i915: Enabling 128x128 and 256x256 ARGB Cursor Support
+Date: Mon, 10 Mar 2014 17:06:23 +0530
+Message-Id: <1394451383-27133-1-git-send-email-sagar.a.kamble@intel.com>
+X-Mailer: git-send-email 1.8.5
+In-Reply-To: <20140310100321.GA30571@phenom.ffwll.local>
+References: <20140310100321.GA30571@phenom.ffwll.local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Sagar Kamble <sagar.a.kamble@intel.com>
 
+With this patch we allow larger cursor planes of sizes 128x128
+and 256x256.
 
-> -----Original Message-----
-> From: Wolfram Sang [mailto:wsa@the-dreams.de]
-> Sent: Sunday, March 09, 2014 5:04 PM
-> To: Chew, Chiau Ee
-> Cc: Mika Westerberg; linux-i2c@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 2/2] i2c: designware-pci: set ideal HCNT, LCNT and SDA
-> hold time value
-> 
-> On Fri, Mar 07, 2014 at 10:12:51PM +0800, Chew Chiau Ee wrote:
-> > From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> >
-> > On Intel BayTrail, there was case whereby the resulting fast mode bus
-> > speed becomes slower (~20% slower compared to expected speed) if using
-> > the HCNT/LCNT calculated in the core layer. Thus, this patch is added
-> > to allow pci glue layer to pass in optimal HCNT/LCNT/SDA hold time
-> > values to core layer since the core layer supports cofigurable
-> > HCNT/LCNT/SDA hold time values now.
-> >
-> > Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> 
-> Can you make use of those instead?
-> 
->         u32                     sda_falling_time;
->         u32                     scl_falling_time;
-> 
-> This is more consistent with using sda_hold_time and lets them have a common
-> (and more readable) unit.
+v2: Added more precise check on size while setting cursor plane.
 
-Would like to clarify on your statement above. So you are suggesting to change the following 
-variable name in the code? As in:
-"u32 ss_hcnt;"   to  "u32 ss_scl_rising_time"
-"u32 fs_hcnt;"   to  "u32 fs_scl_rising_time"
-"u32 ss_lcnt;"    to   "u32 ss_scl_falling_time"
-"u32 fs_lcnt;"     to " u32 fs_scl_falling_time"
-"u32 sda_hold;"  to  "u32 sda_hold_time"
+v3: Changes related to restructuring cursor size restrictions
+and DRM_DEBUG usage.
+
+v4: Indentation related changes for setting cursor control and
+implementing DRM_CAP_CURSOR_WIDTH and DRM_CAP_CURSOR_HEIGHT
+
+Testcase: igt/kms_cursor_crc
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: G, Pallavi <pallavi.g@intel.com>
+Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
+---
+ drivers/gpu/drm/i915/i915_reg.h      |  4 +++
+ drivers/gpu/drm/i915/intel_display.c | 53 ++++++++++++++++++++++++++++++++----
+ drivers/gpu/drm/i915/intel_drv.h     |  7 +++++
+ 3 files changed, 59 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index 146609a..aee8258 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3551,7 +3551,11 @@ enum punit_power_well {
+ /* New style CUR*CNTR flags */
+ #define   CURSOR_MODE		0x27
+ #define   CURSOR_MODE_DISABLE   0x00
++#define   CURSOR_MODE_128_32B_AX 0x02
++#define   CURSOR_MODE_256_32B_AX 0x03
+ #define   CURSOR_MODE_64_32B_AX 0x07
++#define   CURSOR_MODE_128_ARGB_AX ((1 << 5) | CURSOR_MODE_128_32B_AX)
++#define   CURSOR_MODE_256_ARGB_AX ((1 << 5) | CURSOR_MODE_256_32B_AX)
+ #define   CURSOR_MODE_64_ARGB_AX ((1 << 5) | CURSOR_MODE_64_32B_AX)
+ #define   MCURSOR_PIPE_SELECT	(1 << 28)
+ #define   MCURSOR_PIPE_A	0x00
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 0868afb..ec6a073 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7440,10 +7440,26 @@ static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
+ 	bool visible = base != 0;
+ 
+ 	if (intel_crtc->cursor_visible != visible) {
++		int16_t width = intel_crtc->cursor_width;
+ 		uint32_t cntl = I915_READ(CURCNTR(pipe));
+ 		if (base) {
+ 			cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
+-			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++			cntl |= MCURSOR_GAMMA_ENABLE;
++
++			switch (width) {
++			case 64:
++				cntl |= CURSOR_MODE_64_ARGB_AX;
++				break;
++			case 128:
++				cntl |= CURSOR_MODE_128_ARGB_AX;
++				break;
++			case 256:
++				cntl |= CURSOR_MODE_256_ARGB_AX;
++				break;
++			default:
++				WARN_ON(1);
++				return;
++			}
+ 			cntl |= pipe << 28; /* Connect to correct pipe */
+ 		} else {
+ 			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
+@@ -7468,10 +7484,25 @@ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
+ 	bool visible = base != 0;
+ 
+ 	if (intel_crtc->cursor_visible != visible) {
++		int16_t width = intel_crtc->cursor_width;
+ 		uint32_t cntl = I915_READ(CURCNTR_IVB(pipe));
+ 		if (base) {
+ 			cntl &= ~CURSOR_MODE;
+-			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++			cntl |= MCURSOR_GAMMA_ENABLE;
++			switch (width) {
++			case 64:
++				cntl |= CURSOR_MODE_64_ARGB_AX;
++				break;
++			case 128:
++				cntl |= CURSOR_MODE_128_ARGB_AX;
++				break;
++			case 256:
++				cntl |= CURSOR_MODE_256_ARGB_AX;
++				break;
++			default:
++				WARN_ON(1);
++				return;
++			}
+ 		} else {
+ 			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
+ 			cntl |= CURSOR_MODE_DISABLE;
+@@ -7567,9 +7598,11 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 		goto finish;
+ 	}
+ 
+-	/* Currently we only support 64x64 cursors */
+-	if (width != 64 || height != 64) {
+-		DRM_ERROR("we currently only support 64x64 cursors\n");
++	/* Check for which cursor types we support */
++	if (!((width == 64 && height == 64) ||
++			(width == 128 && height == 128 && !IS_GEN2(dev)) ||
++			(width == 256 && height == 256 && !IS_GEN2(dev)))) {
++		DRM_DEBUG("Cursor dimension not supported\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -10331,6 +10364,16 @@ static void intel_crtc_init(struct drm_device *dev, int pipe)
+ 
+ 	drm_crtc_init(dev, &intel_crtc->base, &intel_crtc_funcs);
+ 
++	if (IS_GEN2(dev)) {
++		intel_crtc->max_cursor_width = GEN2_CURSOR_WIDTH;
++		intel_crtc->max_cursor_height = GEN2_CURSOR_HEIGHT;
++	} else {
++		intel_crtc->max_cursor_width = CURSOR_WIDTH;
++		intel_crtc->max_cursor_height = CURSOR_HEIGHT;
++	}
++	dev->mode_config.cursor_width = intel_crtc->max_cursor_width;
++	dev->mode_config.cursor_height = intel_crtc->max_cursor_height;
++
+ 	drm_mode_crtc_set_gamma_size(&intel_crtc->base, 256);
+ 	for (i = 0; i < 256; i++) {
+ 		intel_crtc->lut_r[i] = i;
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 9c70905..eca4a0a 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -78,6 +78,12 @@
+ #define MAX_OUTPUTS 6
+ /* maximum connectors per crtcs in the mode set */
+ 
++/* Maximum cursor sizes */
++#define GEN2_CURSOR_WIDTH 64
++#define GEN2_CURSOR_HEIGHT 64
++#define CURSOR_WIDTH 256
++#define CURSOR_HEIGHT 256
++
+ #define INTEL_I2C_BUS_DVO 1
+ #define INTEL_I2C_BUS_SDVO 2
+ 
+@@ -364,6 +370,7 @@ struct intel_crtc {
+ 	uint32_t cursor_addr;
+ 	int16_t cursor_x, cursor_y;
+ 	int16_t cursor_width, cursor_height;
++	int16_t max_cursor_width, max_cursor_height;
+ 	bool cursor_visible;
+ 
+ 	struct intel_crtc_config config;
+-- 
+1.8.5
 
