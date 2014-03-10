@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024AbaCJVmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:42:42 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:36302 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936AbaCJVmE (ORCPT
+	id S1755076AbaCJVnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:43:17 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:52647 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754885AbaCJVlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:42:04 -0400
+	Mon, 10 Mar 2014 17:41:55 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Russell King <linux@arm.linux.org.uk>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -22,52 +22,57 @@ Cc: Michal Simek <michal.simek@xilinx.com>,
         Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v2 6/7] tty: cadence: Document DT binding
-Date: Mon, 10 Mar 2014 14:40:09 -0700
-Message-Id: <1394487610-2419-7-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 4/7] tty: xuartps: Don't write IRQ disable register to enable interrupts
+Date: Mon, 10 Mar 2014 14:40:07 -0700
+Message-Id: <1394487610-2419-5-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.9.0.1.g4196000
 In-Reply-To: <1394487610-2419-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1394487610-2419-1-git-send-email-soren.brinkmann@xilinx.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add binding documentation for the Cadence UART.
+A comment states, that, according to the data sheet, to enable
+interrupts the disable register should be written, but the enable
+register could be left untouched. And it suspsects a HW bug requiring
+to write both.
+Reviewing the data sheet, these statements seem wrong. Just as one would
+expect. Writing to the enable/disable register enables/disables
+interrupts.
+Hence the misleading comment and needless write to the disable register
+are removed from the enable sequence.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-Acked-by: Rob Herring <robh@kernel.org>
 ---
- .../devicetree/bindings/serial/cdns,uart.txt         | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/serial/cdns,uart.txt
+I added a few lines to comment the change and altered the summary line.
+In case this causes issues it should show up a little easier as a
+candidate to revert.
 
-diff --git a/Documentation/devicetree/bindings/serial/cdns,uart.txt b/Documentation/devicetree/bindings/serial/cdns,uart.txt
-new file mode 100644
-index 000000000000..a3eb154c32ca
---- /dev/null
-+++ b/Documentation/devicetree/bindings/serial/cdns,uart.txt
-@@ -0,0 +1,20 @@
-+Binding for Cadence UART Controller
-+
-+Required properties:
-+- compatible : should be "cdns,uart-r1p8", or "xlnx,xuartps"
-+- reg: Should contain UART controller registers location and length.
-+- interrupts: Should contain UART controller interrupts.
-+- clocks: Must contain phandles to the UART clocks
-+  See ../clocks/clock-bindings.txt for details.
-+- clock-names: Tuple to identify input clocks, must contain "uart_clk" and "pclk"
-+  See ../clocks/clock-bindings.txt for details.
-+
-+
-+Example:
-+	uart@e0000000 {
-+		compatible = "cdns,uart-r1p8";
-+		clocks = <&clkc 23>, <&clkc 40>;
-+		clock-names = "uart_clk", "pclk";
-+		reg = <0xE0000000 0x1000>;
-+		interrupts = <0 27 4>;
-+	};
+	Sören
+---
+ drivers/tty/serial/xilinx_uartps.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
+index a4bd6242e72d..a39c2d290902 100644
+--- a/drivers/tty/serial/xilinx_uartps.c
++++ b/drivers/tty/serial/xilinx_uartps.c
+@@ -1082,11 +1082,7 @@ static void xuartps_console_write(struct console *co, const char *s,
+ 
+ 	xuartps_writel(ctrl, XUARTPS_CR_OFFSET);
+ 
+-	/* restore interrupt state, it seems like there may be a h/w bug
+-	 * in that the interrupt enable register should not need to be
+-	 * written based on the data sheet
+-	 */
+-	xuartps_writel(~imr, XUARTPS_IDR_OFFSET);
++	/* restore interrupt state */
+ 	xuartps_writel(imr, XUARTPS_IER_OFFSET);
+ 
+ 	if (locked)
 -- 
 1.9.0.1.g4196000
 
