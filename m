@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaCJTXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:23:20 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:51186 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753998AbaCJTXS (ORCPT
+	id S1754310AbaCJTYY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:24:24 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:22394 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216AbaCJTYW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:23:18 -0400
-Message-ID: <531E111A.8040207@hurleysoftware.com>
-Date: Mon, 10 Mar 2014 15:23:06 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 10 Mar 2014 15:24:22 -0400
+X-Greylist: delayed 775 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Mar 2014 15:24:22 EDT
+From: "Sumner, William" <bill.sumner@hp.com>
+To: Joerg Roedel <joro@8bytes.org>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "indou.takao@jp.fujitsu.com" <indou.takao@jp.fujitsu.com>,
+        "bhe@redhat.com" <bhe@redhat.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ddutile@redhat.com" <ddutile@redhat.com>,
+        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "Hatch, Douglas B (HPS Linux PM)" <doug.hatch@hp.com>,
+        "Li, Zhen-Hua" <zhen-hual@hp.com>
+Subject: RE: [PATCHv3 3/6] Crashdump-Accepting-Active-IOMMU-Domain-Interfaces
+Thread-Topic: [PATCHv3 3/6]
+ Crashdump-Accepting-Active-IOMMU-Domain-Interfaces
+Thread-Index: AQHPDlBlLtoZEP4Xx0itQZhvrRED4JrRV/2AgAm0MjA=
+Date: Mon, 10 Mar 2014 19:23:11 +0000
+Message-ID: <875D89B79D1D86448A583A7302C022A066E08B1B@G4W3212.americas.hpqcorp.net>
+References: <1389391652-52422-1-git-send-email-bill.sumner@hp.com>
+ <1389391652-52422-4-git-send-email-bill.sumner@hp.com>
+ <20140304145911.GD2799@8bytes.org>
+In-Reply-To: <20140304145911.GD2799@8bytes.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.21]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Sree Harsha Totakura <sreeharsha@totakura.in>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: pppd service crash in linux-3.13.6
-References: <531A37FF.4000509@totakura.in> <531DEEA6.4090808@totakura.in>
-In-Reply-To: <531DEEA6.4090808@totakura.in>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +cc Oleg Nesterov ]
-
-On 03/10/2014 12:56 PM, Sree Harsha Totakura wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
+On Tue 3/4/2014 8:59 AM, Joerg Roedel wrote
+>On Fri, Jan 10, 2014 at 03:07:29PM -0700, Bill Sumner wrote:
+>> +context_get_entry(struct context_entry *context_addr,
+>> +			struct intel_iommu *iommu, u32 bus, int devfn) {
+>> +	unsigned long long q;		/* quadword scratch */
+>> +	struct root_entry *root_phys;	/* Phys adr (root table entry) */
+>> +	struct root_entry  root_temp;	/* Local copy of root_entry */
+>> +	struct context_entry *context_phys;	/* Phys adr */
+>> +
+>> +	if (pr_dbg.domain_get)
+>> +		pr_debug("ENTER %s B:D:F=%2.2x:%2.2x:%1.1x &context_entry:0x%llx &intel_iommu:0x%llx\n",
+>> +			__func__, bus, devfn>>3, devfn&7,
+>> +			(u64)context_addr, (u64)iommu);
+>> +
+>> +	if (bus > 255)				/* Sanity check */
+>> +		return -5;
+>> +	if (devfn > 255 || devfn < 0)		/* Sanity check */
+>> +		return -6;
+>> +
+>> +	q = readq(iommu->reg + DMAR_RTADDR_REG);
+>> +	pr_debug("IOMMU %d: DMAR_RTADDR_REG:0x%16.16llx\n", iommu->seq_id, q);
+>> +	if (!q)
+>> +		return -1;
+>> +
+>> +	root_phys = (struct root_entry *) q;	/* Adr(base of vector) */
+>> +	root_phys += bus;			/* Adr(entry we want) */
+>> +
+>> +	oldcopy(&root_temp, root_phys, sizeof(root_temp));
+>> +
+>> +	pr_debug("root_temp.val:0x%llx .rsvd1:0x%llx root_phys:0x%llx\n",
+>> +		root_temp.val, root_temp.rsvd1, (u64)root_phys);
+>> +
+>> +	if (!root_present(&root_temp))
+>> +		return -2;
+>> +
+>> +	pr_debug("B:D:F=%2.2x:%2.2x:%1.1x root_temp.val: %llx .rsvd1: %llx\n",
+>> +		bus, devfn >> 3, devfn & 7, root_temp.val, root_temp.rsvd1);
+>> +
+>> +	if (root_temp.rsvd1)			/* If (root_entry is bad) */
+>> +		return -3;
+>> +
+>> +	context_phys = get_context_phys_from_root(&root_temp);
+>> +	if (!context_phys)
+>> +		return -4;
 >
-> Hi,
->
-> Using linux-3.13.6, I am observing the following output from the pppd
-> kernel thread.  This happens when I try to suspend my computer and it
-> *stops* the computer from suspending.
->
-> I am using ppp via a bluetooth modem.
->
-> Trace:
-> [22735.115313] PM: Syncing filesystems ... done.
-> [22735.665613] PM: Preparing system for mem sleep
-> [22735.665829] Freezing user space processes ...
-> [22755.659538] Freezing of tasks failed after 20.004 seconds (1 tasks
-> refusing to freeze, wq_
-> busy=0):
-> [22755.659555] pppd            D ffff8800376c9a58     0 16801      1
-> 0x00000006
-> [22755.659557]  ffff8800376c9750 0000000000000046 0000000000012e80
-> 0000000000012e80
-> [22755.659560]  ffff8802a1c1dfd8 ffff8800376c9750 0000000000000009
-> ffff8802a1c1dd78
-> [22755.659562]  0000000000000046 ffff8800376c9750 0000000000000028
-> ffff8800376c9750
-> [22755.659564] Call Trace:
-> [22755.659569]  [<ffffffff81048507>] ? do_exit+0x937/0xa50
-> [22755.659573]  [<ffffffff814bb6e1>] ? oops_end+0x91/0xd0
-> [22755.659575]  [<ffffffff814b1f4f>] ? no_context+0x1f3/0x1ff
-> [22755.659577]  [<ffffffff814bdb69>] ? __do_page_fault+0x89/0x500
-> [22755.659581]  [<ffffffff811017dc>] ? free_pcppages_bulk+0x17c/0x3b0
-> [22755.659584]  [<ffffffff81101cce>] ? free_hot_cold_page_list+0x3e/0x90
-> [22755.659586]  [<ffffffff814babf8>] ? page_fault+0x28/0x30
-> [22755.659591]  [<ffffffffa06fd5a3>] ? ppp_register_channel+0x13/0x20
-> [ppp_generic]
-> [22755.659594]  [<ffffffffa07062ab>] ? ppp_asynctty_open+0x12b/0x170
-> [ppp_async]
-> [22755.659596]  [<ffffffff812ec907>] ? tty_ldisc_open.isra.2+0x27/0x60
-> [22755.659598]  [<ffffffff812ed1d3>] ? tty_ldisc_hangup+0x1e3/0x220
-> [22755.659601]  [<ffffffff812e4614>] ? __tty_hangup+0x2c4/0x440
-> [22755.659603]  [<ffffffff812e56a1>] ? disassociate_ctty+0x61/0x270
-> [22755.659605]  [<ffffffff810483c2>] ? do_exit+0x7f2/0xa50
-> [22755.659607]  [<ffffffff81053ad2>] ? recalc_sigpending+0x12/0x50
-> [22755.659609]  [<ffffffff81054308>] ? __set_task_blocked+0x28/0x70
-> [22755.659611]  [<ffffffff81048684>] ? do_group_exit+0x34/0xa0
-> [22755.659613]  [<ffffffff810486fb>] ? SyS_exit_group+0xb/0x10
-> [22755.659615]  [<ffffffff814c1eb9>] ? system_call_fastpath+0x16/0x1b
-> [22755.659618]
-> [22755.659619] Restarting tasks ... done.
->
-> If you need any more info, I am happy to provide.
+>What do all these magic return values mean? 
 
-The NULL ptr dereference is from following the current->nsproxy ptr
-in ppp_register_channel().
+They all mean "No value to return".  The different negative values are an artifact of the development where I wanted to make it easy not only to tell that something went wrong, but also to have enough detail to figure-out what happened without having to add code and repeat the test.  I will clean-up these in the next submission -- along with a few additional places where there are similar "leftovers".  
 
-This was broken by
+Bill
 
-commit 8aac62706adaaf0fab02c4327761561c8bda9448
-Author: Oleg Nesterov <oleg@redhat.com>
-Date:   Fri Jun 14 21:09:49 2013 +0200
-
-     move exit_task_namespaces() outside of exit_notify()
-
-which moved the exit_task_namespaces(tsk) before disassociate_ctty().
-
-Regards,
-Peter Hurley
 
