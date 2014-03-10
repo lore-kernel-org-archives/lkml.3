@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326AbaCJOOA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:14:00 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34180 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258AbaCJON6 (ORCPT
+	id S1753457AbaCJOOf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:14:35 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:36913 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157AbaCJOOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:13:58 -0400
-Message-ID: <531DC89A.9010601@oracle.com>
-Date: Mon, 10 Mar 2014 10:13:46 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 10 Mar 2014 10:14:32 -0400
+Date: Mon, 10 Mar 2014 11:14:26 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3/3] perf trace: Decode architecture-specific signal
+ numbers
+Message-ID: <20140310141426.GB8859@ghostprotocols.net>
+References: <1391648361.3003.97.camel@deadeye.wl.decadent.org.uk>
+ <1391648441.3003.101.camel@deadeye.wl.decadent.org.uk>
+ <1394373333.2861.84.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: fs: gpf in simple_setattr
-References: <52B23CEA.7090405@oracle.com> <52CD762B.7020600@oracle.com> <53123D81.6080003@oracle.com> <20140303214040.GA15265@quack.suse.cz> <53166920.709@oracle.com> <20140305124536.GA32371@quack.suse.cz> <53189BF8.1010308@oracle.com> <531A7CFD.9030603@oracle.com> <20140310104350.GB28797@quack.suse.cz>
-In-Reply-To: <20140310104350.GB28797@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394373333.2861.84.camel@deadeye.wl.decadent.org.uk>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2014 06:43 AM, Jan Kara wrote:
->    By garbage, do you mean that it is a poison, completely random data or does
-> inode->i_sb look like a valid pointer but just superblock isn't where it
-> points to?
+Em Sun, Mar 09, 2014 at 01:55:33PM +0000, Ben Hutchings escreveu:
+> What's happening with this patch?  perf fails to build on alpha or sparc
+> since 3.13.
 
-It's poison.
+Grrr, I thought I had processed all of these, but this got missed, did
+it now, will push soon.
 
->> >Any way I could get anything useful any other way?
->    Hum, can you dump the whole contents of 'dentry' at that place? Maybe it
-> will tell us something.
+- Arnaldo
+ 
+> Ben.
+> 
+> On Thu, 2014-02-06 at 01:00 +0000, Ben Hutchings wrote:
+> > SIGSTKFLT is not defined on alpha, mips or sparc.
+> > SIGEMT and SIGSWI are defined on some architectures and should be
+> > decoded here if so.
+> > 
+> > Fixes: 8bad5b0abfdb ('perf trace: Beautify signal number arg in several syscalls')
+> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> > Cc: <stable@vger.kernel.org>
+> > ---
+> >  tools/perf/builtin-trace.c | 10 +++++++++-
+> >  1 file changed, 9 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+> > index 5c32dcf..25ea64c 100644
+> > --- a/tools/perf/builtin-trace.c
+> > +++ b/tools/perf/builtin-trace.c
+> > @@ -807,7 +807,6 @@ static size_t syscall_arg__scnprintf_signum(char *bf, size_t size, struct syscal
+> >  	P_SIGNUM(PIPE);
+> >  	P_SIGNUM(ALRM);
+> >  	P_SIGNUM(TERM);
+> > -	P_SIGNUM(STKFLT);
+> >  	P_SIGNUM(CHLD);
+> >  	P_SIGNUM(CONT);
+> >  	P_SIGNUM(STOP);
+> > @@ -823,6 +822,15 @@ static size_t syscall_arg__scnprintf_signum(char *bf, size_t size, struct syscal
+> >  	P_SIGNUM(IO);
+> >  	P_SIGNUM(PWR);
+> >  	P_SIGNUM(SYS);
+> > +#ifdef SIGEMT
+> > +	P_SIGNUM(EMT);
+> > +#endif
+> > +#ifdef SIGSTKFLT
+> > +	P_SIGNUM(STKFLT);
+> > +#endif
+> > +#ifdef SIGSWI
+> > +	P_SIGNUM(SWI);
+> > +#endif
+> >  	default: break;
+> >  	}
+> >  
+> > 
+> 
+> -- 
+> Ben Hutchings
+> I say we take off; nuke the site from orbit.  It's the only way to be sure.
 
-I'll give it a go, will update when it happens again.
 
-
-Thanks,
-Sasha
