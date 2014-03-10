@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985AbaCJQ3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 12:29:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27087 "EHLO mx1.redhat.com"
+	id S1753933AbaCJQ3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 12:29:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28861 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753856AbaCJQ3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753727AbaCJQ3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Mar 2014 12:29:46 -0400
-Date: Mon, 10 Mar 2014 18:29:04 +0200
+Date: Mon, 10 Mar 2014 18:29:14 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: jbenc@redhat.com, David Miller <davem@davemloft.net>,
@@ -19,8 +19,8 @@ Cc: jbenc@redhat.com, David Miller <davem@davemloft.net>,
         =?us-ascii?B?PT9VVEYtOD9xP1BldGVyPTIwUGFuPTI4PUU2PUJEPTk4PUU1PThEPUFC?=
 	 =?us-ascii?B?PUU1PUI5PUIzPTI5Pz0=?= <panweiping3@gmail.com>,
         netdev@vger.kernel.org
-Subject: [PATCH 1/5] skbuff: skb_segment: s/frag/nskb_frag/
-Message-ID: <1394468807-25980-2-git-send-email-mst@redhat.com>
+Subject: [PATCH 2/5] skbuff: skb_segment: s/skb_frag/frag/
+Message-ID: <1394468807-25980-3-git-send-email-mst@redhat.com>
 References: <1394468807-25980-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,68 +31,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-frag points at nskb, so name it appropriately
+skb_frag can in fact point at either skb
+or fskb so rename it generally "frag".
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- net/core/skbuff.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ net/core/skbuff.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 5976ef0..3bc6d75 100644
+index 3bc6d75..917cb60 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
-@@ -2879,7 +2879,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+@@ -2853,7 +2853,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 	struct sk_buff *segs = NULL;
+ 	struct sk_buff *tail = NULL;
+ 	struct sk_buff *fskb = skb_shinfo(skb)->frag_list;
+-	skb_frag_t *skb_frag = skb_shinfo(skb)->frags;
++	skb_frag_t *frag = skb_shinfo(skb)->frags;
+ 	unsigned int mss = skb_shinfo(skb)->gso_size;
+ 	unsigned int doffset = skb->data - skb_mac_header(skb);
+ 	unsigned int offset = doffset;
+@@ -2899,19 +2899,19 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
  
- 	do {
- 		struct sk_buff *nskb;
--		skb_frag_t *frag;
-+		skb_frag_t *nskb_frag;
- 		int hsize;
- 		int size;
+ 			i = 0;
+ 			nfrags = skb_shinfo(fskb)->nr_frags;
+-			skb_frag = skb_shinfo(fskb)->frags;
++			frag = skb_shinfo(fskb)->frags;
+ 			pos += skb_headlen(fskb);
  
-@@ -2972,7 +2972,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
- 			continue;
- 		}
+ 			while (pos < offset + len) {
+ 				BUG_ON(i >= nfrags);
  
--		frag = skb_shinfo(nskb)->frags;
-+		nskb_frag = skb_shinfo(nskb)->frags;
+-				size = skb_frag_size(skb_frag);
++				size = skb_frag_size(frag);
+ 				if (pos + size > offset + len)
+ 					break;
  
- 		skb_copy_from_linear_data_offset(skb, offset,
- 						 skb_put(nskb, hsize), hsize);
-@@ -3000,13 +3000,13 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 				i++;
+ 				pos += size;
+-				skb_frag++;
++				frag++;
+ 			}
+ 
+ 			nskb = skb_clone(fskb, GFP_ATOMIC);
+@@ -2985,7 +2985,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
+ 
+ 				i = 0;
+ 				nfrags = skb_shinfo(fskb)->nr_frags;
+-				skb_frag = skb_shinfo(fskb)->frags;
++				frag = skb_shinfo(fskb)->frags;
+ 
+ 				BUG_ON(!nfrags);
+ 
+@@ -3000,7 +3000,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
  				goto err;
  			}
  
--			*frag = *skb_frag;
--			__skb_frag_ref(frag);
--			size = skb_frag_size(frag);
-+			*nskb_frag = *skb_frag;
-+			__skb_frag_ref(nskb_frag);
-+			size = skb_frag_size(nskb_frag);
+-			*nskb_frag = *skb_frag;
++			*nskb_frag = *frag;
+ 			__skb_frag_ref(nskb_frag);
+ 			size = skb_frag_size(nskb_frag);
  
- 			if (pos < offset) {
--				frag->page_offset += offset - pos;
--				skb_frag_size_sub(frag, offset - pos);
-+				nskb_frag->page_offset += offset - pos;
-+				skb_frag_size_sub(nskb_frag, offset - pos);
- 			}
+@@ -3013,7 +3013,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
  
- 			skb_shinfo(nskb)->nr_frags++;
-@@ -3016,11 +3016,11 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
- 				skb_frag++;
+ 			if (pos + size <= offset + len) {
+ 				i++;
+-				skb_frag++;
++				frag++;
  				pos += size;
  			} else {
--				skb_frag_size_sub(frag, pos + size - (offset + len));
-+				skb_frag_size_sub(nskb_frag, pos + size - (offset + len));
- 				goto skip_fraglist;
- 			}
- 
--			frag++;
-+			nskb_frag++;
- 		}
- 
- skip_fraglist:
+ 				skb_frag_size_sub(nskb_frag, pos + size - (offset + len));
 -- 
 MST
 
