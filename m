@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476AbaCJUpl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:45:41 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:47084 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755052AbaCJUph (ORCPT
+	id S1755492AbaCJUpu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:45:50 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47363 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672AbaCJUps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:45:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <d117bf82ca277e0f6bd0b2a4f663d6c0dd7f11bb.1394483342.git.josh@joshtriplett.org>
-References: <5675f041c50dca1c214a4b315ccd18805ab121a8.1394483342.git.josh@joshtriplett.org>
-	<d117bf82ca277e0f6bd0b2a4f663d6c0dd7f11bb.1394483342.git.josh@joshtriplett.org>
-Date: Mon, 10 Mar 2014 13:45:37 -0700
-X-Google-Sender-Auth: Qd2QG9PAKywLXn_jW_iW4FBLZiQ
-Message-ID: <CAGXu5jJgoWk89Oh_RjQN7Kn7AZJt_g37O+X_K=7V+asW=8wsUg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] x86, boot: Don't compile aslr.c when !CONFIG_RANDOMIZE_BASE
-From: Kees Cook <keescook@chromium.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Jan Beulich <JBeulich@suse.com>, Kyungsik Lee <kyungsik.lee@lge.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 10 Mar 2014 16:45:48 -0400
+Date: Mon, 10 Mar 2014 16:45:44 -0400 (EDT)
+Message-Id: <20140310.164544.236071343888387921.davem@davemloft.net>
+To: mst@redhat.com
+Cc: linux-kernel@vger.kernel.org, jbenc@redhat.com, edumazet@google.com,
+        dborkman@redhat.com, horms@verge.net.au, Paul.Durrant@citrix.com,
+        tgraf@suug.ch, herbert@gondor.apana.org.au, mszeredi@suse.cz,
+        panweiping3@gmail.com, netdev@vger.kernel.org
+Subject: Re: [PATCH 4/5] skbuff: skb_segment: s/fskb/list_skb/
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140310175606.GA13907@redhat.com>
+References: <20140310.134054.2195508036199798660.davem@davemloft.net>
+	<20140310.134359.1940025401945824360.davem@davemloft.net>
+	<20140310175606.GA13907@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 10 Mar 2014 13:45:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 1:32 PM, Josh Triplett <josh@joshtriplett.org> wrote:
-> All the code in aslr.c gets compiled out if !CONFIG_RANDOMIZE_BASE, but
-> aslr.o itself still gets compiled in.  Eliminate it from the compile
-> entirely in that case.
->
-> This does not change the generated code at all, in either case.
->
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Mon, 10 Mar 2014 19:56:06 +0200
 
-Good clean-up! This makes things quite a bit more readable. Thanks!
+> On Mon, Mar 10, 2014 at 01:43:59PM -0400, David Miller wrote:
+>> From: David Miller <davem@davemloft.net>
+>> Date: Mon, 10 Mar 2014 13:40:54 -0400 (EDT)
+>> 
+>> > 
+>> > As a netdev reader, I don't see patches 1-3, did you post them somewhere else
+>> > and not CC: netdev?
+>> > 
+>> > If so, please don't do that without at least making a mention of what's going
+>> > on in the 0/N posting.
+>> 
+>> Nevermind, I see them as older postings in my queue.
+>> 
+>> Are you using the commit date as the date for your outgoing emails?
+> 
+> I don't really know, I just used git send-email to prepare them.
+> 
+> I saw a large delay after I sent them all until patches 4/5
+> appeared on list. Could just be some hiccup in the smtp server
+> (using ssmtp).
 
-Acked-by: Kees Cook <keescook@chromium.org>
-
--Kees
-
-> ---
->  arch/x86/boot/compressed/Makefile | 4 +++-
->  arch/x86/boot/compressed/aslr.c   | 3 ---
->  2 files changed, 3 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-> index 7c50279..42e738d 100644
-> --- a/arch/x86/boot/compressed/Makefile
-> +++ b/arch/x86/boot/compressed/Makefile
-> @@ -28,7 +28,9 @@ HOST_EXTRACFLAGS += -I$(srctree)/tools/include
->
->  vmlinux-objs-y := $(obj)/vmlinux.lds $(obj)/head_$(BITS).o $(obj)/misc.o \
->         $(obj)/string.o $(obj)/cmdline.o $(obj)/early_serial_console.o \
-> -       $(obj)/piggy.o $(obj)/cpuflags.o $(obj)/aslr.o
-> +       $(obj)/piggy.o $(obj)/cpuflags.o
-> +
-> +vmlinux-objs-$(CONFIG_RANDOMIZE_BASE) += $(obj)/aslr.o
->
->  $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
->
-> diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
-> index 4dbf967..d0f8923 100644
-> --- a/arch/x86/boot/compressed/aslr.c
-> +++ b/arch/x86/boot/compressed/aslr.c
-> @@ -1,6 +1,5 @@
->  #include "misc.h"
->
-> -#ifdef CONFIG_RANDOMIZE_BASE
->  #include <asm/msr.h>
->  #include <asm/archrandom.h>
->  #include <asm/e820.h>
-> @@ -313,5 +312,3 @@ unsigned char *choose_kernel_location(unsigned char *input,
->  out:
->         return (unsigned char *)choice;
->  }
-> -
-> -#endif /* CONFIG_RANDOMIZE_BASE */
-> --
-> 1.9.0
->
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+Yeah that sounds like a better explanation then.
