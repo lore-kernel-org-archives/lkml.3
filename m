@@ -1,133 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048AbaCJPj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 11:39:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.13]:50540 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880AbaCJPj6 convert rfc822-to-8bit (ORCPT
+	id S1754269AbaCJPkD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 11:40:03 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34389 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834AbaCJPj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 11:39:58 -0400
-Date: Mon, 10 Mar 2014 16:39:52 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Alan Cox <alan@linux.intel.com>
-cc: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        mikechan@google.com
-Subject: Re: [PATCH 00/10] goldfish: rebase/resend versus current -next
-In-Reply-To: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
-Message-ID: <Pine.LNX.4.64.1403101636060.2407@axis700.grange>
-References: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:r8BgXNfMNqgb2FRcmDTCwI+tyD3gluRMNGiCUIaQb0J
- WE7OmhcTXoxT+qj9lK3ZxvwfFXLeuM34LCeHAM7CRhb1uAR03G
- C75OxRf2H9CdHUWjo8Zk3ySt6bzPzpf0R7HbauHX67kYu3LLO+
- 3vdTAm4OW2pqep1RQXoKq/qoOBscxCDGMtWpYK4n/UpZzG6mGr
- 7nnDn2AVl3+XSaczfHvf6rUzJP+CtdUVZupZ470SJf1nBz+o3t
- N6yYY4+fJin1+6/+s8fXv6LSMj3VQ4p8JiUj3UWHxkZJFUxjiP
- aokh2eCN8PKdej07WrZ1WOZ47WYOQxLzkjGxr/UjAWV4OPEain
- /MfyWoh/V8p48xEHGcG787Ok1VPQcDy4I508wt68Im8Tyyh6rP
- 9RkQgCPPmFBTg==
+	Mon, 10 Mar 2014 11:39:59 -0400
+Date: Mon, 10 Mar 2014 15:39:50 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+        Roman Pen <r.peniaev@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-Id: <20140310153950.5567aa7b37066c1d083c20c3@kernel.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__10_Mar_2014_15_39_50_+0000_D6aFgsgAqK3j7Xdh"
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@kernel.org
+Subject: linux-next: manual merge of the block tree with Linus' tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+--Signature=_Mon__10_Mar_2014_15_39_50_+0000_D6aFgsgAqK3j7Xdh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm currently trying to build and run a recent kernel with x86 goldfish 
-and failing. The android emulator itself is running, I can also build and 
-run 3.4-based Google x86 goldfish branch, but not current (vanilla) 
-kernels. Did you run tests yourself? Do you remember, what was needed - 
-just the mainline kernel with these patches or any additional ones? Have 
-you got a kernel configuration and command line? Any idea what the last 
-working kernel version was?
+Hi Jens,
 
-Thanks
-Guennadi
+Today's linux-next merge of the block tree got a conflict in block/blk-mq.c=
+ between commit d6a25b31315327 (blk-mq: support partial I/O completions) fr=
+om Linus' tree and commit af5040da01ef (blktrace: fix accounting of partial=
+ly completed requests) from the block tree.
 
-On Wed, 9 Jan 2013, Alan Cox wrote:
+I fixed it up by dropping the hunk from af5040da01ef in a way git doesn't s=
+eem easily persuaded to show as a resolution and can carry the fix as neces=
+sary (no action is required).
 
-> And added the pipe driver
-> 
-> ---
-> 
-> Arve Hjønnevåg (4):
->       goldfish: tty driver
->       goldfish: framebuffer
->       goldfish: real time clock
->       goldfish: NAND flash driver
-> 
-> Brian Swetland (1):
->       goldfish: virtual input event driver
-> 
-> David 'Digit' Turner (1):
->       goldfish: add QEMU pipe driver
-> 
-> Jun Nakajima (2):
->       goldfish: definitions for Goldfish on x86 platforms
->       goldfish: add the goldfish virtual bus
-> 
-> Mike Lockwood (2):
->       goldfish: emulated MMC device
->       goldfish: power device
-> 
-> 
->  arch/x86/Kconfig                          |   12 +
->  arch/x86/include/asm/goldfish.h           |   40 ++
->  drivers/input/keyboard/Kconfig            |   11 +
->  drivers/input/keyboard/Makefile           |    1 
->  drivers/input/keyboard/goldfish_events.c  |  199 +++++++++
->  drivers/mmc/host/Kconfig                  |    7 
->  drivers/mmc/host/Makefile                 |    1 
->  drivers/mmc/host/goldfish.c               |  577 +++++++++++++++++++++++++++
->  drivers/mtd/devices/Kconfig               |    7 
->  drivers/mtd/devices/Makefile              |    3 
->  drivers/mtd/devices/goldfish_nand.c       |  475 ++++++++++++++++++++++
->  drivers/mtd/devices/goldfish_nand_reg.h   |   72 +++
->  drivers/platform/Kconfig                  |    4 
->  drivers/platform/Makefile                 |    1 
->  drivers/platform/goldfish/Kconfig         |    5 
->  drivers/platform/goldfish/Makefile        |    5 
->  drivers/platform/goldfish/goldfish_pipe.c |  631 +++++++++++++++++++++++++++++
->  drivers/platform/goldfish/pdev_bus.c      |  265 ++++++++++++
->  drivers/power/Kconfig                     |    8 
->  drivers/power/Makefile                    |    1 
->  drivers/power/goldfish_battery.c          |  262 ++++++++++++
->  drivers/rtc/Kconfig                       |    9 
->  drivers/rtc/Makefile                      |    1 
->  drivers/rtc/rtc-goldfish.c                |  144 +++++++
->  drivers/tty/Kconfig                       |    6 
->  drivers/tty/Makefile                      |    1 
->  drivers/tty/goldfish.c                    |  340 ++++++++++++++++
->  drivers/video/Kconfig                     |    9 
->  drivers/video/Makefile                    |    1 
->  drivers/video/goldfishfb.c                |  326 +++++++++++++++
->  30 files changed, 3422 insertions(+), 2 deletions(-)
->  create mode 100644 arch/x86/include/asm/goldfish.h
->  create mode 100644 drivers/input/keyboard/goldfish_events.c
->  create mode 100644 drivers/mmc/host/goldfish.c
->  create mode 100644 drivers/mtd/devices/goldfish_nand.c
->  create mode 100644 drivers/mtd/devices/goldfish_nand_reg.h
->  create mode 100644 drivers/platform/goldfish/Kconfig
->  create mode 100644 drivers/platform/goldfish/Makefile
->  create mode 100644 drivers/platform/goldfish/goldfish_pipe.c
->  create mode 100644 drivers/platform/goldfish/pdev_bus.c
->  create mode 100644 drivers/power/goldfish_battery.c
->  create mode 100644 drivers/rtc/rtc-goldfish.c
->  create mode 100644 drivers/tty/goldfish.c
->  create mode 100644 drivers/video/goldfishfb.c
-> 
-> -- 
-> Moo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+--Signature=_Mon__10_Mar_2014_15_39_50_+0000_D6aFgsgAqK3j7Xdh
+Content-Type: application/pgp-signature
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTHdzGAAoJELSic+t+oim9h6MP/jaz+CW05sdS3vGL9XQ300FY
+tKK41CNTkyjBpKkIhfCtkNVm/p8T0TjxEa2AG9B51+nykkWtxHa2Gsyxxv/gVZqN
+hhxjVDHCfd1errPEuOYtQrPy7ZvmYI1JxWWQVjgYz9ohpT4hQA4nnWxJijMA9/r8
+0FFP1T4WxfkafPCJ+Trqs9yne/uyjlggtTekDv5aOm7N8vm8xg+6vpG0LYCCP54a
+9cTCcLa5zd1Ml7qIV2gAZ/7140kS+XkJOFh3rlaPpVXGDH8DI2SOrn1dIj/WdID5
+X4Jxfy8ziiyvBE/qYlblu3SUWcg1n57ZHOJR4Ztk94xJVmhmSpD9FGYAFIyPByNO
+a0O2BB09INkgnVRuNdfDNEfQtq4eUWy3BKhbG7//XQ2dHIMRW5H4KU5p865CnlOw
+ndjRY9iMjVT5pThqcHTsQ8RSVVBjD34XBsZdt/dAlhfl+F8xjjjvKeCBz1NodOSS
+n+T88OdXv5z2Sb3WlwAU9HymDp8ExYEbtiMNc0j6Q96vPxmQXubg+SsNKat8byTl
+4z+bRnU2sT7zLfzRGeLHMbiARtb1cshbhfXQ8lYMkrmRgDbiATt/7In1g4Z2o57o
+0A5DYIFnyNjk5x/WFWXqdfyPnLcOqi6KKcawWbObXJVCRtbCs1wDSvUEfXj5ZXZg
+PpkTvIOced1H+c/U0fkW
+=D4TR
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__10_Mar_2014_15_39_50_+0000_D6aFgsgAqK3j7Xdh--
