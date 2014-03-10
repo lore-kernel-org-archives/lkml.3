@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404AbaCJTTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 15:19:37 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51190 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752760AbaCJTRm (ORCPT
+	id S1754450AbaCJTTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 15:19:42 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:51916 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754415AbaCJTTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 15:17:42 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv3 4/8] ARM: at91/dt: at91sam9260: remove useless adc properties
-Date: Mon, 10 Mar 2014 20:17:21 +0100
-Message-Id: <1394479045-31852-5-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 10 Mar 2014 15:19:39 -0400
+Message-ID: <1394479176.18058.10.camel@x41>
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 10 Mar 2014 20:19:36 +0100
+In-Reply-To: <alpine.DEB.2.02.1403101956250.18573@ionos.tec.linutronix.de>
+References: <20140310110410.5b2218f6@ilfaris>
+	 <1394447253.2979.12.camel@x220>
+	 <alpine.DEB.2.02.1403101504590.18573@ionos.tec.linutronix.de>
+	 <1394465314.12752.18.camel@x220>
+	 <alpine.DEB.2.02.1403101757320.18573@ionos.tec.linutronix.de>
+	 <1394476346.12752.43.camel@x220>
+	 <alpine.DEB.2.02.1403101956250.18573@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Mar 2014 19:19:37.0312 (UTC) FILETIME=[AD590600:01CF3C95]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the properties that are not used anymore by the at91_adc driver.
+Thomas Gleixner schreef op ma 10-03-2014 om 19:57 [+0100]:
+> On Mon, 10 Mar 2014, Paul Bolle wrote:
+> > 
+> > Or is there a way to handle the "SMI nonsense" (whatever that may be)?
+> 
+> No, there is none. That's "value add" from the BIOS/board manufacturer
+> which utilizes the System Management Interrupt and steals CPU time
+> from the OS.
 
-Also, add #address-cells, #size-cells and a reg for each trigger to comply to
-the ePAPR.
+So could you please consider downgrading this message?
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/boot/dts/at91sam9260.dtsi | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+Yes, this will make regressions less visible, although I'm unsure we're
+actually seeing a regression here. But I think that this is better than
+scaring people about a situation they can't easily do something about,
+if at all. Especially since fast TSC calibration failures, apparently,
+can be worked around.
 
-diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
-index 997901f7ed73..366fc2cbcd64 100644
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@ -608,37 +608,38 @@
- 			};
- 
- 			adc0: adc@fffe0000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
- 				compatible = "atmel,at91sam9260-adc";
- 				reg = <0xfffe0000 0x100>;
- 				interrupts = <5 IRQ_TYPE_LEVEL_HIGH 0>;
- 				atmel,adc-use-external-triggers;
- 				atmel,adc-channels-used = <0xf>;
- 				atmel,adc-vref = <3300>;
--				atmel,adc-num-channels = <4>;
- 				atmel,adc-startup-time = <15>;
--				atmel,adc-channel-base = <0x30>;
--				atmel,adc-drdy-mask = <0x10000>;
--				atmel,adc-status-register = <0x1c>;
--				atmel,adc-trigger-register = <0x04>;
- 				atmel,adc-res = <8 10>;
- 				atmel,adc-res-names = "lowres", "highres";
- 				atmel,adc-use-res = "highres";
- 
- 				trigger@0 {
-+					reg = <0>;
- 					trigger-name = "timer-counter-0";
- 					trigger-value = <0x1>;
- 				};
- 				trigger@1 {
-+					reg = <1>;
- 					trigger-name = "timer-counter-1";
- 					trigger-value = <0x3>;
- 				};
- 
- 				trigger@2 {
-+					reg = <2>;
- 					trigger-name = "timer-counter-2";
- 					trigger-value = <0x5>;
- 				};
- 
- 				trigger@3 {
-+					reg = <3>;
- 					trigger-name = "external";
- 					trigger-value = <0x13>;
- 					trigger-external;
--- 
-1.8.3.2
+
+Paul Bolle
 
