@@ -1,155 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbaCJFqn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 01:46:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:1460 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751183AbaCJFqm convert rfc822-to-8bit (ORCPT
+	id S1753280AbaCJFri (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 01:47:38 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:53000 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753186AbaCJFre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 01:46:42 -0400
-X-IronPort-AV: E=Sophos;i="4.97,622,1389715200"; 
-   d="scan'208";a="9670036"
-Message-ID: <531D4F9E.9070804@cn.fujitsu.com>
-Date: Mon, 10 Mar 2014 13:37:34 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Mon, 10 Mar 2014 01:47:34 -0400
+X-AuditID: 9c93017d-b7c89ae000006ae1-08-531d51f47e70
+Date: Mon, 10 Mar 2014 14:47:43 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Joonsoo Kim'" <iamjoonsoo.kim@lge.com>,
+        "'Zhang Yanfei'" <zhangyanfei@cn.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, chanho.min@lge.com,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH][RFC] mm: warning message for vm_map_ram about vm size
+Message-ID: <20140310054743.GH14370@bbox>
+References: <001a01cf3c1d$310716a0$931543e0$@lge.com>
 MIME-Version: 1.0
-To: jaegeuk.kim@samsung.com
-CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?5L+e6LaF?= <chao2.yu@samsung.com>
-Subject: Re: [PATCH 5/5] f2fs: add a wait queue to avoid unnecessary, build_free_nid
-References: <5319A2DB.8040705@cn.fujitsu.com> <1394427024.3870.94.camel@kjgkr>
-In-Reply-To: <1394427024.3870.94.camel@kjgkr>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/10 13:43:39,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/10 13:43:46
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <001a01cf3c1d$310716a0$931543e0$@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim,
-On 03/10/2014 12:50 PM, Jaegeuk Kim wrote:
+Hi Giho,
 
-> Hi Gu,
+On Mon, Mar 10, 2014 at 01:57:07PM +0900, Gioh Kim wrote:
+> Hi,
 > 
-> 2014-03-07 (금), 18:43 +0800, Gu Zheng:
->> Previously, when we try to alloc free nid while the build free nid
->> is going, the allocer will be run into the flow that waiting for
->> "nm_i->build_lock", see following:
->> 	/* We should not use stale free nids created by build_free_nids */
->> ---->	if (nm_i->fcnt && !on_build_free_nids(nm_i)) {
->> 		f2fs_bug_on(list_empty(&nm_i->free_nid_list));
->> 		list_for_each(this, &nm_i->free_nid_list) {
->> 			i = list_entry(this, struct free_nid, list);
->> 			if (i->state == NID_NEW)
->> 				break;
->> 		}
->>
->> 		f2fs_bug_on(i->state != NID_NEW);
->> 		*nid = i->nid;
->> 		i->state = NID_ALLOC;
->> 		nm_i->fcnt--;
->> 		spin_unlock(&nm_i->free_nid_list_lock);
->> 		return true;
->> 	}
->> 	spin_unlock(&nm_i->free_nid_list_lock);
->>
->> 	/* Let's scan nat pages and its caches to get free nids */
->> ---->	mutex_lock(&nm_i->build_lock);
->> 	build_free_nids(sbi);
->> 	mutex_unlock(&nm_i->build_lock);
->> and this will cause another unnecessary building free nid if the current
->> building free nid job is done.
+> I have a failure of allocation of virtual memory on ARMv7 based platform.
 > 
-> Could you support any performance number for this?
-
-I just run some common test via fio with simulated ssd(via loop).
-
-> Since, IMO, the contended building processes will be released right away
-> because of the following condition check inside build_free_nids().
+> I called alloc_page()/vm_map_ram() for allocation/mapping pages.
+> Virtual memory space exhausting problem occurred.
+> I checked virtual memory space and found that there are too many 4MB chunks.
 > 
-> if (nm_i->fcnt > NAT_ENTRY_PER_BLOCK)
-> 	return;
+> I thought that if just one page in the 4MB chunk lives long, 
+> the entire chunk cannot be freed. Therefore new chunk is created again and again.
+> 
+> In my opinion, the vm_map_ram() function should be used for temporary mapping
+> and/or short term memory mapping. Otherwise virtual memory is wasted.
+> 
+> I am not sure if my opinion is correct. If it is, please add some warning message
+> about the vm_map_ram().
+> 
+> 
+> 
+> ---8<---
+> 
+> Subject: [PATCH] mm: warning comment for vm_map_ram
+> 
+> vm_map_ram can occur locking of virtual memory space
+> because if only one page lives long in one vmap_block,
+> it takes 4MB (1024-times more than one page) space.
 
-It does. But, IMO, we can not promise nm_i->fcnt > NAT_ENTRY_PER_BLOCK when the
-contended building process entering, especially in high concurrency condition.
+For clarification, vm_map_ram has fragment problem because it
+couldn't purge a chunk(ie, 4M address space) if there is a pinning
+object in that addresss space so it could consume all VMALLOC
+address space easily.
+
+We can fix the fragementaion problem with using vmap instead of
+vm_map_ram but it wouldn't a good solution because vmap is much
+slower than vm_map_ram for VMAP_MAX_ALLOC below. In my x86 machine,
+vm_map_ram is 5 times faster than vmap.
+
+AFAICR, some proprietary GPU driver uses that function heavily so
+performance would be really important so I want to stick to use
+vm_map_ram.
+
+Another option is that caller should separate long-life and short-life
+object and use vmap for long-life but vm_map_ram for short-life.
+But it's not a good solution because it's hard for allocator layer
+to detect it that how customer lives with the object.
+
+So I thought to fix that problem with revert [1] and adding more
+logic to solve fragmentation problem and make bitmap search
+operation more efficient by caching the hole. It might handle
+fragmentation at the moment but it would make more IPI storm for
+TLB flushing as time goes by so that it would mitigate API itself
+so using for only temporal object is too limited but it's best at the
+moment. I am supporting your opinion.
+
+Let's add some notice message to user.
+
+[1] [3fcd76e8028, mm/vmalloc.c: remove dead code in vb_alloc]
 
 > 
-> So, I don't think this gives us any high latency.
-> Can the wakeup_all() become another overhead all the time?
-
-Yeah, maybe we must test whether it can also cause the performance regression,
-because the wakeup_all also introduce overhand as you said.
-But what is bad is that I do not have a production environment to test it, as you
-know the simulated environment is not strict.
-
-cc Yu,
-Could you please help to test it?
-
-Regards,
-Gu
-
-> Thanks,
+> Change-Id: I6f5919848cf03788b5846b7d850d66e4d93ac39a
+> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+> ---
+>  mm/vmalloc.c |    4 ++++
+>  1 file changed, 4 insertions(+)
 > 
->> So here we introduce a wait_queue to avoid this issue.
->>
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> ---
->>  fs/f2fs/f2fs.h |    1 +
->>  fs/f2fs/node.c |   10 +++++++++-
->>  2 files changed, 10 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
->> index f845e92..7ae193e 100644
->> --- a/fs/f2fs/f2fs.h
->> +++ b/fs/f2fs/f2fs.h
->> @@ -256,6 +256,7 @@ struct f2fs_nm_info {
->>  	spinlock_t free_nid_list_lock;	/* protect free nid list */
->>  	unsigned int fcnt;		/* the number of free node id */
->>  	struct mutex build_lock;	/* lock for build free nids */
->> +	wait_queue_head_t build_wq;	/* wait queue for build free nids */
->>  
->>  	/* for checkpoint */
->>  	char *nat_bitmap;		/* NAT bitmap pointer */
->> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
->> index 4b7861d..ab44711 100644
->> --- a/fs/f2fs/node.c
->> +++ b/fs/f2fs/node.c
->> @@ -1422,7 +1422,13 @@ retry:
->>  	spin_lock(&nm_i->free_nid_list_lock);
->>  
->>  	/* We should not use stale free nids created by build_free_nids */
->> -	if (nm_i->fcnt && !on_build_free_nids(nm_i)) {
->> +	if (on_build_free_nids(nm_i)) {
->> +		spin_unlock(&nm_i->free_nid_list_lock);
->> +		wait_event(nm_i->build_wq, !on_build_free_nids(nm_i));
->> +		goto retry;
->> +	}
->> +
->> +	if (nm_i->fcnt) {
->>  		f2fs_bug_on(list_empty(&nm_i->free_nid_list));
->>  		list_for_each(this, &nm_i->free_nid_list) {
->>  			i = list_entry(this, struct free_nid, list);
->> @@ -1443,6 +1449,7 @@ retry:
->>  	mutex_lock(&nm_i->build_lock);
->>  	build_free_nids(sbi);
->>  	mutex_unlock(&nm_i->build_lock);
->> +	wake_up_all(&nm_i->build_wq);
->>  	goto retry;
->>  }
->>  
->> @@ -1813,6 +1820,7 @@ static int init_node_manager(struct f2fs_sb_info *sbi)
->>  	INIT_LIST_HEAD(&nm_i->dirty_nat_entries);
->>  
->>  	mutex_init(&nm_i->build_lock);
->> +	init_waitqueue_head(&nm_i->build_wq);
->>  	spin_lock_init(&nm_i->free_nid_list_lock);
->>  	rwlock_init(&nm_i->nat_tree_lock);
->>  
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 0fdf968..2de1d1b 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -1083,6 +1083,10 @@ EXPORT_SYMBOL(vm_unmap_ram);
+>   * @node: prefer to allocate data structures on this node
+>   * @prot: memory protection to use. PAGE_KERNEL for regular RAM
+>   *
+> + * This function should be used for TEMPORARY mapping. If just one page lives i
+> + * long, it would occupy 4MB vm size permamently. 100 pages (just 400KB) could
+> + * takes 400MB with bad luck.
+> + *
+
+    If you use this function for below VMAP_MAX_ALLOC pages, it could be faster
+    than vmap so it's good but if you mix long-life and short-life object
+    with vm_map_ram, it could consume lots of address space by fragmentation(
+    expecially, 32bit machine) so you could see failure in the end.
+    So, please use this function for short-life object.
+
+>   * Returns: a pointer to the address that has been mapped, or %NULL on failure
+>   */
+>  void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t prot)
+> --
+> 1.7.9.5
 > 
+> Gioh Kim / 김 기 오
+> Research Engineer
+> Advanced OS Technology Team
+> Software Platform R&D Lab.
+> Mobile: 82-10-7322-5548  
+> E-mail: gioh.kim@lge.com 
+> 19, Yangjae-daero 11gil
+> Seocho-gu, Seoul 137-130, Korea
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-
+-- 
+Kind regards,
+Minchan Kim
