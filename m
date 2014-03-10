@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095AbaCJOsg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:48:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34669 "EHLO mx2.suse.de"
+	id S1753378AbaCJOwj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:52:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38528 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442AbaCJOsf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:48:35 -0400
-Date: Mon, 10 Mar 2014 15:48:31 +0100
-From: Jean Delvare <jdelvare@suse.de>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: akpm@linux-foundation.org, jg1.han@samsung.com, chris.cheney@gmail.com,
-        konrad.wilk@oracle.com, geert@linux-m68k.org, joe@perches.com,
-        gregkh@linuxfoundation.org, davem@davemloft.net, m.chehab@samsung.com,
-        swarren@nvidia.com, linux-kernel@vger.kernel.org, dhjeffery@gmail.com
-Subject: Re: [PATCH v3] MAINTAINERS: update IBM ServeRAID RAID info
-Message-ID: <20140310154831.05522ad6@endymion.delvare>
-In-Reply-To: <1394455805-12267-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <531DB414.5020301@free-electrons.com>
-	<1394455805-12267-1-git-send-email-michael.opdenacker@free-electrons.com>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752616AbaCJOwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 10:52:38 -0400
+From: WANG Chao <chaowang@redhat.com>
+To: Muli Ben-Yehuda <muli@cs.technion.ac.il>,
+        "Jon D. Mason" <jdmason@kudzu.us>, "H. Peter Anvin" <hpa@zytor.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Baoquan He <bhe@redhat.com>
+Cc: kexec@lists.infradead.org, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] x86, calgary: use 8M TCE table size by default
+Date: Mon, 10 Mar 2014 22:52:00 +0800
+Message-Id: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Mar 2014 13:50:05 +0100, Michael Opdenacker wrote:
-> - Invalid maintainer e-mail address:
->   Mail server reply:
->   Recipient address rejected: User unknown in virtual alias table
-> - Remove no longer working webpage URL
-> - Remove obsolete "Person" field
-> - Move status to "Orphan"
-> - Add Dave Jeffery and Jack Hammer to the CREDITS file
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  CREDITS     | 7 +++++++
->  MAINTAINERS | 5 +----
->  2 files changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/CREDITS b/CREDITS
-> index e371c5504a50..0ffb4f68bb33 100644
-> --- a/CREDITS
-> +++ b/CREDITS
-> @@ -1370,6 +1370,9 @@ S: 17 rue Danton
->  S: F - 94270 Le Kremlin-Bicêtre
->  S: France
->  
-> +N: Jack Hammer
-> +D: IBM ServeRAID RAID (ips) driver maintenance
-> +
->  N: Greg Hankins
->  E: gregh@cc.gatech.edu
->  D: fixed keyboard driver to separate LED and locking status
-> @@ -1680,6 +1683,10 @@ S: Reading
->  S: RG6 2NU
->  S: United Kingdom
->  
-> +N: Dave Jeffery
-> +E: dhjeffery@gmail.com
-> +D: SCSI hacks and IBM ServeRAID RAID driver maintenance
-> +
->  N: Jakub Jelinek
->  E: jakub@redhat.com
->  W: http://sunsite.mff.cuni.cz/~jj
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index b7befe758429..dbf4ca466efa 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -4296,10 +4296,7 @@ F:	drivers/scsi/ibmvscsi/
->  X:	drivers/scsi/ibmvscsi/ibmvstgt.c
->  
->  IBM ServeRAID RAID DRIVER
-> -P:	Jack Hammer
-> -M:	Dave Jeffery <ipslinux@adaptec.com>
-> -W:	http://www.developer.ibm.com/welcome/netfinity/serveraid.html
-> -S:	Supported
-> +S:	Orphan
->  F:	drivers/scsi/ips.*
->  
->  ICH LPC AND GPIO DRIVER
+New kexec-tools wants to pass kdump kernel needed memmap via E820
+directly, instead of memmap=exactmap. This makes saved_max_pfn not
+be passed down to 2nd kernel. To keep 1st kernel and 2nd kernel using
+the same TCE table size, Muli suggest to hard code the size to max (8M).
 
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+We can't get rid of saved_max_pfn this time, for backward compatibility
+with old first kernel and new second kernel. However new first kernel
+and old second kernel can not work unfortunately.
 
+v2->v1:
+- retain saved_max_pfn so new 2nd kernel can work with old 1st kernel
+  from Vivek
+
+Signed-off-by: WANG Chao <chaowang@redhat.com>
+---
+ arch/x86/kernel/pci-calgary_64.c | 31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+index 299d493..0497f71 100644
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -1207,23 +1207,31 @@ error:
+ 	return ret;
+ }
+ 
+-static inline int __init determine_tce_table_size(u64 ram)
++static inline int __init determine_tce_table_size(void)
+ {
+ 	int ret;
+ 
+ 	if (specified_table_size != TCE_TABLE_SIZE_UNSPECIFIED)
+ 		return specified_table_size;
+ 
+-	/*
+-	 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
+-	 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
+-	 * larger table size has twice as many entries, so shift the
+-	 * max ram address by 13 to divide by 8K and then look at the
+-	 * order of the result to choose between 0-7.
+-	 */
+-	ret = get_order(ram >> 13);
+-	if (ret > TCE_TABLE_SIZE_8M)
++	if (is_kdump_kernel() && saved_max_pfn) {
++		/*
++		 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
++		 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
++		 * larger table size has twice as many entries, so shift the
++		 * max ram address by 13 to divide by 8K and then look at the
++		 * order of the result to choose between 0-7.
++		 */
++		ret = get_order((saved_max_pfn * PAGE_SIZE) >> 13);
++		if (ret > TCE_TABLE_SIZE_8M)
++			ret = TCE_TABLE_SIZE_8M;
++	} else {
++		/*
++		 * Use 8M by default (suggested by Muli) if it's not
++		 * kdump kernel and saved_max_pfn isn't set.
++		 */
+ 		ret = TCE_TABLE_SIZE_8M;
++	}
+ 
+ 	return ret;
+ }
+@@ -1418,8 +1426,7 @@ int __init detect_calgary(void)
+ 		return -ENOMEM;
+ 	}
+ 
+-	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
+-					saved_max_pfn : max_pfn) * PAGE_SIZE);
++	specified_table_size = determine_tce_table_size();
+ 
+ 	for (bus = 0; bus < MAX_PHB_BUS_NUM; bus++) {
+ 		struct calgary_bus_info *info = &bus_info[bus];
 -- 
-Jean Delvare
-SUSE L3 Support
+1.8.5.3
+
