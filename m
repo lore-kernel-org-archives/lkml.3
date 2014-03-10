@@ -1,70 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaCJRMp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:12:45 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:56659 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343AbaCJRMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:12:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
-References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net>
- <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com>
- <1394229220.20013.13.camel@wall-e.seibold.net> <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com>
- <1394354848.1002.37.camel@wall-e.seibold.net> <531D044C.2090303@linux.intel.com>
- <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
- <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
- <531DD35A.5060202@linux.intel.com> <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 10 Mar 2014 10:12:17 -0700
-Message-ID: <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
-Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Anvin <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754480AbaCJRM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:12:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63476 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754432AbaCJRMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 13:12:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,625,1389772800"; 
+   d="scan'208";a="495584462"
+Subject: [PATCH 4/7] x86: mm: trace tlb flushes
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, ak@linux.intel.com,
+        kirill.shutemov@linux.intel.com, mgorman@suse.de, alex.shi@linaro.org,
+        x86@kernel.org, linux-mm@kvack.org, davidlohr@hp.com,
+        Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com
+From: Dave Hansen <dave@sr71.net>
+Date: Mon, 10 Mar 2014 10:11:27 -0700
+References: <20140310171118.7E16CD45@viggo.jf.intel.com>
+In-Reply-To: <20140310171118.7E16CD45@viggo.jf.intel.com>
+Message-Id: <20140310171127.2501E481@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 8:11 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> On Mar 10, 2014 8:01 AM, "H. Peter Anvin" <hpa@linux.intel.com> wrote:
->>
->> I have mentioned in the past wanting to move the fixmap to the low part
->> of the kernel space, because the top isn't really fixed...
->
-> How about the high part of the user address space, just above the stack?
-> Leave a unmapped page in between, or something. The stack is already
-> randomized, isn't it?
 
-For the !compat_vdso case, I don't like it -- this will put the vdso
-(which is executable) at a constant offset from the stack, which will
-make it much easier to use the vdso to defeat ASLR.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-For the compat_vdso case, this only works if the address is *not*
-random, unless we're going to start giving each process its very own
-relocated vdso.
+We don't have any good way to figure out what kinds of flushes
+are being attempted.  Right now, we can try to use the vm
+counters, but those only tell us what we actually did with the
+hardware (one-by-one vs full) and don't tell us what was actually
+_requested_.
 
->
-> That would actually be preferable in a few ways, notably not having to mark
-> page directories user accessible in the kennel space area.
+This allows us to select out "interesting" TLB flushes that we
+might want to optimize (like the ranged ones) and ignore the ones
+that we have very little control over (the ones at context
+switch).
 
-Is that where the rabid pte dogs live?
+Also, since we have a pair of tracepoint calls in
+flush_tlb_mm_range(), we can time the deltas between them to make
+sure that we got the "invlpg vs. global flush" balance correct in
+practice.
 
-We can already avoid making fixmap pages user-accessible in the
-!compat_vdso case for 32-bit tasks -- the vdso lives in a couple of
-more-or-less ordinary vmas.
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
-For 64-bit, this is an entirely different story.  The vsyscall page is
-stuck in the fixmap forever, although I want to add a way for
-userspace to opt out.  The vvar page, hpet, etc could move into vmas,
-though.  I kind of want to do that anyway to allow processes to turn
-off the ability to read the clock.
+ b/arch/x86/include/asm/mmu_context.h |    6 +++++
+ b/arch/x86/mm/tlb.c                  |   12 +++++++++--
+ b/include/linux/mm_types.h           |   10 +++++++++
+ b/include/trace/events/tlb.h         |   37 +++++++++++++++++++++++++++++++++++
+ b/mm/Makefile                        |    2 -
+ b/mm/trace_tlb.c                     |   12 +++++++++++
+ 6 files changed, 76 insertions(+), 3 deletions(-)
 
---Andy
+diff -puN arch/x86/include/asm/mmu_context.h~tlb-trace-flushes arch/x86/include/asm/mmu_context.h
+--- a/arch/x86/include/asm/mmu_context.h~tlb-trace-flushes	2014-03-05 16:10:10.423084949 -0800
++++ b/arch/x86/include/asm/mmu_context.h	2014-03-05 16:10:10.431085313 -0800
+@@ -3,6 +3,10 @@
+ 
+ #include <asm/desc.h>
+ #include <linux/atomic.h>
++#include <linux/mm_types.h>
++
++#include <trace/events/tlb.h>
++
+ #include <asm/pgalloc.h>
+ #include <asm/tlbflush.h>
+ #include <asm/paravirt.h>
+@@ -44,6 +48,7 @@ static inline void switch_mm(struct mm_s
+ 
+ 		/* Re-load page tables */
+ 		load_cr3(next->pgd);
++		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 
+ 		/* Stop flush ipis for the previous mm */
+ 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+@@ -71,6 +76,7 @@ static inline void switch_mm(struct mm_s
+ 			 * to make sure to use no freed page tables.
+ 			 */
+ 			load_cr3(next->pgd);
++			trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 			load_LDT_nolock(&next->context);
+ 		}
+ 	}
+diff -puN arch/x86/mm/tlb.c~tlb-trace-flushes arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~tlb-trace-flushes	2014-03-05 16:10:10.425085039 -0800
++++ b/arch/x86/mm/tlb.c	2014-03-05 16:10:10.432085359 -0800
+@@ -14,6 +14,8 @@
+ #include <asm/uv/uv.h>
+ #include <linux/debugfs.h>
+ 
++#include <trace/events/tlb.h>
++
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate)
+ 			= { &init_mm, 0, };
+ 
+@@ -49,6 +51,7 @@ void leave_mm(int cpu)
+ 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
+ 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
+ 		load_cr3(swapper_pg_dir);
++		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(leave_mm);
+@@ -105,9 +108,10 @@ static void flush_tlb_func(void *info)
+ 
+ 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+ 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+-		if (f->flush_end == TLB_FLUSH_ALL)
++		if (f->flush_end == TLB_FLUSH_ALL) {
+ 			local_flush_tlb();
+-		else if (!f->flush_end)
++			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, TLB_FLUSH_ALL);
++		} else if (!f->flush_end)
+ 			__flush_tlb_single(f->flush_start);
+ 		else {
+ 			unsigned long addr;
+@@ -152,7 +156,9 @@ void flush_tlb_current_task(void)
+ 	preempt_disable();
+ 
+ 	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
++	trace_tlb_flush(TLB_LOCAL_SHOOTDOWN, TLB_FLUSH_ALL);
+ 	local_flush_tlb();
++	trace_tlb_flush(TLB_LOCAL_SHOOTDOWN_DONE, TLB_FLUSH_ALL);
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+ 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+ 	preempt_enable();
+@@ -180,6 +186,7 @@ void flush_tlb_mm_range(struct mm_struct
+ 	if ((end != TLB_FLUSH_ALL) && !(vmflag & VM_HUGETLB))
+ 		base_pages_to_flush = (end - start) >> PAGE_SHIFT;
+ 
++	trace_tlb_flush(TLB_LOCAL_MM_SHOOTDOWN, base_pages_to_flush);
+ 	if (base_pages_to_flush > tlb_single_page_flush_ceiling) {
+ 		base_pages_to_flush = TLB_FLUSH_ALL;
+ 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+@@ -191,6 +198,7 @@ void flush_tlb_mm_range(struct mm_struct
+ 			__flush_tlb_single(addr);
+ 		}
+ 	}
++	trace_tlb_flush(TLB_LOCAL_MM_SHOOTDOWN_DONE, base_pages_to_flush);
+ out:
+ 	if (base_pages_to_flush == TLB_FLUSH_ALL) {
+ 		start = 0UL;
+diff -puN include/linux/mm_types.h~tlb-trace-flushes include/linux/mm_types.h
+--- a/include/linux/mm_types.h~tlb-trace-flushes	2014-03-05 16:10:10.426085085 -0800
++++ b/include/linux/mm_types.h	2014-03-05 16:10:10.432085359 -0800
+@@ -509,4 +509,14 @@ static inline void clear_tlb_flush_pendi
+ }
+ #endif
+ 
++enum tlb_flush_reason {
++	TLB_FLUSH_ON_TASK_SWITCH,
++	TLB_REMOTE_SHOOTDOWN,
++	TLB_LOCAL_SHOOTDOWN,
++	TLB_LOCAL_SHOOTDOWN_DONE,
++	TLB_LOCAL_MM_SHOOTDOWN,
++	TLB_LOCAL_MM_SHOOTDOWN_DONE,
++	NR_TLB_FLUSH_REASONS,
++};
++
+ #endif /* _LINUX_MM_TYPES_H */
+diff -puN /dev/null include/trace/events/tlb.h
+--- /dev/null	2014-01-15 16:08:30.019511980 -0800
++++ b/include/trace/events/tlb.h	2014-03-05 16:10:10.433085404 -0800
+@@ -0,0 +1,37 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM tlb
++
++#if !defined(_TRACE_TLB_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_TLB_H
++
++#include <linux/mm_types.h>
++#include <linux/tracepoint.h>
++
++extern const char * const tlb_flush_reason_desc[];
++
++TRACE_EVENT(tlb_flush,
++
++	TP_PROTO(int reason, unsigned long pages),
++	TP_ARGS(reason, pages),
++
++	TP_STRUCT__entry(
++		__field(	  int, reason)
++		__field(unsigned long,  pages)
++	),
++
++	TP_fast_assign(
++		__entry->reason = reason;
++		__entry->pages  = pages;
++	),
++
++	TP_printk("pages: %ld reason: %d (%s)",
++		__entry->pages,
++		__entry->reason,
++		tlb_flush_reason_desc[__entry->reason])
++);
++
++#endif /* _TRACE_TLB_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
++
+diff -puN mm/Makefile~tlb-trace-flushes mm/Makefile
+--- a/mm/Makefile~tlb-trace-flushes	2014-03-05 16:10:10.428085177 -0800
++++ b/mm/Makefile	2014-03-05 16:10:10.433085404 -0800
+@@ -5,7 +5,7 @@
+ mmu-y			:= nommu.o
+ mmu-$(CONFIG_MMU)	:= fremap.o highmem.o madvise.o memory.o mincore.o \
+ 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
+-			   vmalloc.o pagewalk.o pgtable-generic.o
++			   vmalloc.o pagewalk.o pgtable-generic.o trace_tlb.o
+ 
+ ifdef CONFIG_CROSS_MEMORY_ATTACH
+ mmu-$(CONFIG_MMU)	+= process_vm_access.o
+diff -puN /dev/null mm/trace_tlb.c
+--- /dev/null	2014-01-15 16:08:30.019511980 -0800
++++ b/mm/trace_tlb.c	2014-03-05 16:10:10.433085404 -0800
+@@ -0,0 +1,12 @@
++#define CREATE_TRACE_POINTS
++#include <trace/events/tlb.h>
++
++const char * const tlb_flush_reason_desc[] = {
++	__stringify(TLB_FLUSH_ON_TASK_SWITCH),
++	__stringify(TLB_REMOTE_SHOOTDOWN),
++	__stringify(TLB_LOCAL_SHOOTDOWN),
++	__stringify(TLB_LOCAL_SHOOTDOWN_DONE),
++	__stringify(TLB_LOCAL_MM_SHOOTDOWN),
++	__stringify(TLB_LOCAL_MM_SHOOTDOWN_DONE),
++};
++
+_
