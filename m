@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbaCJMen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 08:34:43 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:30975 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaCJMej (ORCPT
+	id S1753300AbaCJMem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 08:34:42 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:27943 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085AbaCJMej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Mar 2014 08:34:39 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-02-531db15de225
+X-AuditID: cbfec7f4-b7f796d000005a13-f8-531db15c4556
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org,
@@ -22,58 +22,51 @@ Cc: Tushar Behera <tushar.behera@linaro.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 2/3] mfd: sec-core: Add of_compatible strings for MFD cells
-Date: Mon, 10 Mar 2014 13:34:17 +0100
-Message-id: <1394454858-3139-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 0/3] clk: s2mps11: Add support for S2MPS14 clocks
+Date: Mon, 10 Mar 2014 13:34:15 +0100
+Message-id: <1394454858-3139-1-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1394454858-3139-1-git-send-email-k.kozlowski@samsung.com>
-References: <1394454858-3139-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xq7qxG2WDDdY91LbYOGM9q8XrF4YW
-	Z5vesFvc/3qU0WLT42usFpd3zWGzmHF+H5PF2iN32S2eTrjIZnHyTy+jxeluVouLK74wWayf
-	8ZrFov3vXjaLOdPfMTnwe9y5tofNY97JQI/NS+o9+rasYvT4vEkugDWKyyYlNSezLLVI3y6B
-	K2Pei3fsBTfZKq7/fczYwLiStYuRk0NCwERi8sOVzBC2mMSFe+vZuhi5OIQEljJKHD47jxnC
-	6WOSuPntLRNIFZuAscTm5UvAqkQEmpkk9n19zATiMAu8ZZK4c+gmO0iVsIC3xOm/3WBzWQRU
-	JbrmbwOzeQXcJD5tfA5UwwG0T0FiziQbkDCngLvE9Xnf2EBsIaCSCU/XMU5g5F3AyLCKUTS1
-	NLmgOCk910ivODG3uDQvXS85P3cTIyRAv+5gXHrM6hCjAAejEg/vgbcywUKsiWXFlbmHGCU4
-	mJVEeDMXywYL8aYkVlalFuXHF5XmpBYfYmTi4JRqYNyik3hqzReblMKiwN8b/p2XOMi8t9cr
-	WEoioXq3btaH+1NEfQU/Fst9Vyzi2Wd3R2q+2ex+rZ7lPJ+uCGkfd3B04/deKlB5dfvtE/lb
-	J6hFP1praqPzMkhy7rsHfepmanq/cvNZWK9PeTHZ+8Id1XWzP7VdvN47QyJIj63Iw523cWWt
-	dTy7sBJLcUaioRZzUXEiAKVw0k4uAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpiluLIzCtJLcpLzFFi42I5/e/4Vd2YjbLBBhv/iVpsnLGe1eL1C0OL
+	s01v2C3ufz3KaLHp8TVWi8u75rBZzDi/j8li7ZG77BZPJ1xkszj5p5fR4nQ3q8XFFV+YLNbP
+	eM1i0f53L5vFnOnvmBz4Pe5c28PmMe9koMfmJfUefVtWMXp83iQXwBrFZZOSmpNZllqkb5fA
+	lXHv8Be2gvdsFR9+/GZpYJzJ2sXIySEhYCLRsOIRM4QtJnHh3nq2LkYuDiGBpYwSK1c2sEM4
+	fUwSJ5qmMIJUsQkYS2xevgSsSkSgmUli39fHTCAOs8BbJok7h26yg1QJCzhKTH2ylQnEZhFQ
+	lbi8pxOom4ODV8BNYtW1XBBTQkBBYs4kmwmM3AsYGVYxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn
+	525ihITblx2Mi49ZHWIU4GBU4uE98FYmWIg1say4MvcQowQHs5IIb+Zi2WAh3pTEyqrUovz4
+	otKc1OJDjEwcnFINjF1J//cq/+9KWbDsoKz5Pc4W5q/7Ht6RapkR/TpgH2f0xcXqZ1d35JR5
+	pWW+rwn54Hf88vnOvTNPfDrBwenD4z7nwiF2C7mPsh4qaxTr1sg0a9f9kt//1sxluZaPI/+0
+	/7MKwiQz+OfWMh7u9574ZGaQXstFQxftp6Xf39c6bpX2+3m9c/tvNyWW4oxEQy3mouJEAPM/
+	qwIVAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_compatible strings for S5M8767 RTC, S5M8767 clock and S2MPS14
-clock MFD cells.
+Hi,
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/mfd/sec-core.c |    3 +++
- 1 file changed, 3 insertions(+)
+This patchset adds support for the S2MPS14 device to the s2mps11 clock
+driver.
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index d163c66edebb..e8ac2e3c1f58 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -57,8 +57,10 @@ static const struct mfd_cell s5m8767_devs[] = {
- 		.name = "s5m8767-pmic",
- 	}, {
- 		.name = "s5m-rtc",
-+		.of_compatible = "samsung,s5m8767-rtc",
- 	}, {
- 		.name = "s5m8767-clk",
-+		.of_compatible = "samsung,s5m8767-clk",
- 	}
- };
- 
-@@ -77,6 +79,7 @@ static const struct mfd_cell s2mps14_devs[] = {
- 		.name = "s2mps14-rtc",
- 	}, {
- 		.name = "s2mps14-clk",
-+		.of_compatible = "samsung,s2mps14-clk",
- 	}
- };
- 
+The patchset *depends on*:
+1. Work done by Tushar Behera:
+   [PATCH V2 0/2] Add support for clocks in S5M8767
+   http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27264
+2. Support for S2MPS14 in main sec-core MFD driver (already in linux-next
+   and Lee's tree).
+
+Best regards,
+Krzysztof
+
+
+Krzysztof Kozlowski (3):
+  clk: s2mps11: Add support for S2MPS14 clocks
+  mfd: sec-core: Add of_compatible strings for MFD cells
+  Documentation: mfd: s2mps11: Describe S5M8767 and S2MPS14 clocks
+
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   24 +++++---
+ drivers/clk/clk-s2mps11.c                         |   61 ++++++++++++++++-----
+ drivers/mfd/sec-core.c                            |    3 +
+ 3 files changed, 64 insertions(+), 24 deletions(-)
+
 -- 
 1.7.9.5
 
