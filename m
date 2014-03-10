@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802AbaCJOlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:41:09 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:33211 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651AbaCJOlH (ORCPT
+	id S1753518AbaCJOlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:41:17 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:56428 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616AbaCJOlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:41:07 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, Rob Herring <robherring2@gmail.com>,
+	Mon, 10 Mar 2014 10:41:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-arm-kernel@lists.infradead.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-In-Reply-To: <531D916C.2010903@ti.com>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com> < 20140217181451.7EB7FC4044D@trevor.secretlab.ca> <20140218070624.GP17250@ pengutronix.de> <20140218162627.32BA4C40517@trevor.secretlab.ca> < 1393263389.3091.82.camel@pizza.hi.pengutronix.de> <20140226110114. CF2C7C40A89@trevor.secretlab.ca> <1393426129.3248.64.camel@paszta.hi. pengutronix.de> <20140307170550.1DFB2C40A0D@trevor.secretlab.ca> <531AF1E8. 50606@ti.com> <20140308114115.BB08EC40612@trevor.secretlab.ca> <531D916C. 2010903@ti.com>
-Date: Mon, 10 Mar 2014 14:41:02 +0000
-Message-Id: <20140310144102.58C13C405FA@trevor.secretlab.ca>
+        "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Krogerus, Heikki" <heikki.krogerus@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, yuanyabin1978@sina.com,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Peter Pearse <peter.pearse@arm.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
+Date: Mon, 10 Mar 2014 15:40:33 +0100
+Message-ID: <4828160.ZrKNlE4ee8@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1394461668.2270.47.camel@shinybook.infradead.org>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <5345792.VhzckVI5HA@wuerfel> <1394461668.2270.47.camel@shinybook.infradead.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ghahdsLTVFpQSt4luuCX+UktUzPZUXEcsPkoRB5+1q5
+ t0q/XywHaFKwIIQOhg7GymjRucU1vy2cfBGZRVDjrhvfi8RgQq
+ igYIafWQqwfVqClyDvk7h+ae663hAa1e/YvKzMGajlWllRogiG
+ 40KyFwsWJZemCtVKn8rndoSN0ZqGGH/4fPXfsxxosTKT3f15Y1
+ p/Z+2u0xcpcCDguCl9jGiaIXwx9LEK8cE9A2mWPCoUVJwUHDZA
+ DU8qGzFO4Men/Pnl7QHzgd8UGhI0Y1F8pazsrj1/dm3nVKT1+c
+ RzPrteQK4ZDa3pNUs4X2pg6lQWOAPvtLbQC6sac3IAHnqfL6zG
+ asCLlpZcfLzc8ALOpGZI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Mar 2014 12:18:20 +0200, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> On 08/03/14 13:41, Grant Likely wrote:
+On Monday 10 March 2014 07:27:48 David Woodhouse wrote:
 > 
-> >> Ok. If we go for single directional link, the question is then: which
-> >> way? And is the direction different for display and camera, which are
-> >> kind of reflections of each other?
-> > 
-> > In general I would recommend choosing whichever device you would
-> > sensibly think of as a master. In the camera case I would choose the
-> > camera controller node instead of the camera itself, and in the display
-> > case I would choose the display controller instead of the panel. The
-> > binding author needs to choose what she things makes the most sense, but
-> > drivers can still use if it it turns out to be 'backwards'
+> > There are multiple reasons why
+> > we have to pass the dmaengine device to the dma-mapping API at the moment
+> > rather than the slave device, but in essence it comes down to the engine
+> > being the one that is the master on its parent bus. A trivial example
+> > where it goes wrong would be the slave living on a 32-bit noncoherent bus
+> > and the master living on a 64-bit coherent bus.
 > 
-> I would perhaps choose the same approach, but at the same time I think
-> it's all but clear. The display controller doesn't control the panel any
-> more than a DMA controller controls, say, the display controller.
+> That's true in the general case, certainly. But in this case we're
+> basically just talking about different functions of a multifunction
+> device. 
 
-In a sense it doesn't actually matter. You sensibly want to choose the
-most likely direction that drivers would go looking for a device it
-depends on, but it can be matched up at runtime regardless of the
-direction chosen by the binding.
+Ah, I thought you were talking about a generic SoC with lots of units
+on it.
 
-g.
+> It may turn out that we need the *flexibility* to specify which
+> device shall be used for DMA mappings for a given channel, even if in
+> *most* cases it ends up being the DMA controller itself.
+
+Yes, that would probably work with a helper function that can
+pull the right device structure out of the ACPI description (or
+whatever the DMA engine needs) given the dma channel pointer, or
+fall back to the dma engine.
+
+	Arnd
