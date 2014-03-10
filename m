@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbaCJODt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:03:49 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:34480 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840AbaCJOCI (ORCPT
+	id S1753919AbaCJOFT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:05:19 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:48271 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409AbaCJOFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:02:08 -0400
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-To: gleb@kernel.org
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH 2/5] KVM: MMU: properly check last spte in fast_page_fault()
-Date: Mon, 10 Mar 2014 22:01:46 +0800
-Message-Id: <1394460109-3150-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-References: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031014-2000-0000-0000-00001019EED1
+	Mon, 10 Mar 2014 10:05:16 -0400
+Date: Mon, 10 Mar 2014 15:05:11 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: =?iso-8859-1?B?U/hyZW5zZW4s?= Stefan 
+	<Stefan.Sorensen@spectralink.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
+        "christian.riesch@omicron.at" <christian.riesch@omicron.at>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH RFC net-next v1 0/9] ptp: dynamic pin control
+Message-ID: <20140310140511.GD19781@netboy>
+References: <cover.1394307303.git.richardcochran@gmail.com>
+ <1394455974.2296.22.camel@e37108.spectralink.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394455974.2296.22.camel@e37108.spectralink.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using sp->role.level instead of @level since @level is not got from the
-page table hierarchy
+On Mon, Mar 10, 2014 at 12:52:57PM +0000, Sørensen, Stefan wrote:
+> The implementation is limited to a single function for each pin - the
+> dp83640 supports an ext_ts and several periodic outputs on the same pin,
+> but I do not see that many real-world uses. 
 
-There is no issue in current code since the fast page fault currently only
-fixes the fault caused by dirty-log that is always on the last level
-(level = 1)
+So the main use case is to allow users to configure the auxiliary
+functions according to their needs. This series provides this without
+relying on DT, ACPI, etc. The sysfs control lets you put this into a
+boot script, for example.
 
-This patch makes the code more readable and avoids potential issue in the
-further development
+In addition, there are also less common use cases for re-configuring
+pins at run time. One use would be to switch from a PPS output to a
+time stamping input during automated PTP testing.
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/mmu.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index f5704d9..046ef10 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2802,9 +2802,9 @@ static bool page_fault_can_be_fast(u32 error_code)
- }
- 
- static bool
--fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, u64 *sptep, u64 spte)
-+fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-+			u64 *sptep, u64 spte)
- {
--	struct kvm_mmu_page *sp = page_header(__pa(sptep));
- 	gfn_t gfn;
- 
- 	WARN_ON(!sp->role.direct);
-@@ -2830,6 +2830,7 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
- 			    u32 error_code)
- {
- 	struct kvm_shadow_walk_iterator iterator;
-+	struct kvm_mmu_page *sp;
- 	bool ret = false;
- 	u64 spte = 0ull;
- 
-@@ -2853,7 +2854,8 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
- 		goto exit;
- 	}
- 
--	if (!is_last_spte(spte, level))
-+	sp = page_header(__pa(iterator.sptep));
-+	if (!is_last_spte(spte, sp->role.level))
- 		goto exit;
- 
- 	/*
-@@ -2879,7 +2881,7 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
- 	 * the gfn is not stable for indirect shadow page.
- 	 * See Documentation/virtual/kvm/locking.txt to get more detail.
- 	 */
--	ret = fast_pf_fix_direct_spte(vcpu, iterator.sptep, spte);
-+	ret = fast_pf_fix_direct_spte(vcpu, sp, iterator.sptep, spte);
- exit:
- 	trace_fast_page_fault(vcpu, gva, error_code, iterator.sptep,
- 			      spte, ret);
--- 
-1.8.1.4
-
+Thanks,
+Richard
