@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbaCJMfs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 08:35:48 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:35835 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162AbaCJMek (ORCPT
+	id S1752888AbaCJMh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 08:37:56 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62783 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001AbaCJMhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 08:34:40 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-0d-531db15ed434
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+	Mon, 10 Mar 2014 08:37:54 -0400
+Date: Mon, 10 Mar 2014 12:37:48 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH 3/3] Documentation: mfd: s2mps11: Describe S5M8767 and S2MPS14
- clocks
-Date: Mon, 10 Mar 2014 13:34:18 +0100
-Message-id: <1394454858-3139-4-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1394454858-3139-1-git-send-email-k.kozlowski@samsung.com>
-References: <1394454858-3139-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xq7pxG2WDDTpeKVtsnLGe1WL+kXOs
-	Fv1vFrJanHu1ktHi9QtDi7NNb9gt7n89ymix6fE1VovLu+awWcw4v4/JYu2Ru+wWS69fZLJ4
-	OuEim8WE6WtZLFr3HmG3OPmnl9HidDerxcUVX5gs1s94zWLR/ncvm8Wc6e+YHEQ91sxbw+hx
-	ua+XyWPl8i9sHptWdbJ53Lm2h81j3slAj81L6j36tqxi9Pi8SS6AM4rLJiU1J7MstUjfLoEr
-	4+aFq8wFLaIVBzq3sjUwPhHoYuTkkBAwkTi24AYLhC0mceHeerYuRi4OIYGljBJL751ignD6
-	mCRmLr3KDlLFJmAssXn5ErAqEYFmJol9Xx8zgSSYBU6xSEy+IQNiCwuES3y4uBosziKgKtFx
-	8CzYCl4BN4mpX6YD2RxA6xQk5kyyAQlzCrhLXJ/3jQ3EFgIqmfB0HeMERt4FjAyrGEVTS5ML
-	ipPSc430ihNzi0vz0vWS83M3MUJi4OsOxqXHrA4xCnAwKvHwHngrEyzEmlhWXJl7iFGCg1lJ
-	hDdzsWywEG9KYmVValF+fFFpTmrxIUYmDk6pBsbmyPaCctWCq/9UnqWrSXHPs669IKhR2cEk
-	ck9A5utGm8OvLxlc3he2PevatE2/v8nPXbRHLXTSt7uXveaybGxbcGWqo868+SGuxf+CN3Xc
-	WODcMOf5wUuyXwU/VD1fLbN7RdXmoohm5bbkL3sexPVM/lp7rUNMkvPD69oSt8QnLO0G4btX
-	u/ApsRRnJBpqMRcVJwIA+X9exV8CAAA=
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
+Subject: Re: [PATCH v3 5/5] ARM: dts: STiH407: Add B2120 board support
+Message-ID: <20140310123748.GV14976@lee--X1>
+References: <1394203251-25361-1-git-send-email-maxime.coquelin@st.com>
+ <1394203251-25361-6-git-send-email-maxime.coquelin@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394203251-25361-6-git-send-email-maxime.coquelin@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add bindings documentation for clocks on S5M8767 and S2MPS14 devices.
+> B2120 HDK is the reference board for STiH407 SoC.
+> It has the following characteristics:
+>  - 1GB DDR3
+>  - 8GB eMMC / SD-Card slot
+>  - 32MB NOR Flash
+>  - 1 x Gbit Ethernet
+>  - 1 x USB 3.0 port
+>  - 1 x Mini-PCIe
+>  - 1 x SATA
+>  - 1 x HDMI output
+>  - 1 x HDMI input
+>  - 1 x SPDIF
+> 
+> This patch only introduces basic functionnalities, such as I2C and UART.
+> 
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> ---
+>  arch/arm/boot/dts/Makefile          |  3 +-
+>  arch/arm/boot/dts/stih407-b2120.dts | 78 +++++++++++++++++++++++++++++++++++++
+>  2 files changed, 80 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/arm/boot/dts/stih407-b2120.dts
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>
-Cc: devicetree@vger.kernel.org
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
----
- Documentation/devicetree/bindings/mfd/s2mps11.txt |   24 +++++++++++++--------
- 1 file changed, 15 insertions(+), 9 deletions(-)
+Patch looks pretty inert:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-index 15ee89c3cc7b..67ea05ca8050 100644
---- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-+++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-@@ -16,20 +16,25 @@ Optional properties:
- - interrupts: Interrupt specifiers for interrupt sources.
- 
- Optional nodes:
--- clocks: s2mps11 provides three(AP/CP/BT) buffered 32.768 KHz outputs, so to
--  register these as clocks with common clock framework instantiate a sub-node
--  named "clocks". It uses the common clock binding documented in :
-+- clocks: s2mps11 and s5m8767 provide three(AP/CP/BT) buffered 32.768 KHz
-+  outputs, so to register these as clocks with common clock framework
-+  instantiate a sub-node named "clocks". It uses the common clock binding
-+  documented in :
-   [Documentation/devicetree/bindings/clock/clock-bindings.txt]
-+  The s2mps14 provides two (AP/BT) buffered 32.768 KHz outputs.
-   - #clock-cells: should be 1.
- 
-   - The following is the list of clocks generated by the controller. Each clock
-     is assigned an identifier and client nodes use this identifier to specify
-     the clock which they consume.
--    Clock               ID
--    ----------------------
--    32KhzAP		0
--    32KhzCP		1
--    32KhzBT		2
-+    Clock               ID           Devices
-+    ----------------------------------------------------------
-+    32KhzAP		0            S2MPS11, S2MPS14, S5M8767
-+    32KhzCP		1            S2MPS11, S5M8767
-+    32KhzBT		2            S2MPS11, S2MPS14, S5M8767
-+
-+  - compatible: Should be one of: "samsung,s2mps11-clk", "samsung,s2mps14-clk",
-+		"samsung,s5m8767-clk"
- 
- - regulators: The regulators of s2mps11 that have to be instantiated should be
- included in a sub-node named 'regulators'. Regulator nodes included in this
-@@ -71,7 +76,8 @@ Example:
- 		compatible = "samsung,s2mps11-pmic";
- 		reg = <0x66>;
- 
--		s2m_osc: clocks{
-+		s2m_osc: clocks {
-+			compatible = "samsung,s2mps11-clk";
- 			#clock-cells = 1;
- 			clock-output-names = "xx", "yy", "zz";
- 		};
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
