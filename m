@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaCJIdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 04:33:44 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:17541 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762AbaCJIdD (ORCPT
+	id S1753166AbaCJId6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 04:33:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:27056 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093AbaCJIdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 04:33:03 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-bb-531d78be64fd
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 8/8] regulator: max8973: Remove unused field from 'struct
- max8973_chip'
-Date: Mon, 10 Mar 2014 09:32:51 +0100
-Message-id: <1394440371-29588-8-git-send-email-k.kozlowski@samsung.com>
+	Mon, 10 Mar 2014 04:33:55 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-0b-531d78f26df1
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mina86@mina86.com,
+        m.szyprowski@samsung.com, andrzej.p@samsung.com,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH] usb: gadget: f_fs: add missing spinlock and mutex unlock
+Date: Mon, 10 Mar 2014 09:33:37 +0100
+Message-id: <1394440417-6100-1-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1394440371-29588-1-git-send-email-k.kozlowski@samsung.com>
-References: <1394440371-29588-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAJMWRmVeSWpSXmKPExsVy+t/xK7r7KmSDDeYv5baY+vAJm8XrF4YW
-	3650MFlc3jWHzYHFY+esu+wem1Z1snn0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxvn13ewF
-	t9gqzuw5xdrAeIi1i5GTQ0LAROLip6UsELaYxIV769m6GLk4hASWMkqsnn2HFcLpY5Jov3SZ
-	CaSKTcBYYvPyJWwgtohAhsTmeVPBJjELGEr8fPeHHcQWFoiUWD/lOCOIzSKgKnFg3RuwOK+A
-	u0TvvbtA9RxA2xQk5kyyAQlzCnhILNpzC6xECKhkd+cOlgmMvAsYGVYxiqaWJhcUJ6XnGuoV
-	J+YWl+al6yXn525ihITKlx2Mi49ZHWIU4GBU4uE98FYmWIg1say4MvcQowQHs5IIb0acbLAQ
-	b0piZVVqUX58UWlOavEhRiYOTqkGxl5d7uBwjsX1Ni+CffXZjT8+PpH+/c6+g0vW3qnvebtH
-	/Lvz0zb25StM33U/NZs0L/jKS2FzQ02/3G8q02t+RLyT9fPK45JZd+lG/4WG0q1qy/64X/p9
-	f2Kup+VNvhcnbesWqJkaTGNf5L0w7Zm7QeRM+/z3G4TDPip+YUuWefk3yMH2zCrVIiWW4oxE
-	Qy3mouJEAJimHzPzAQAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPJMWRmVeSWpSXmKPExsVy+t9jAd1PFbLBBp+fKVnMetnOYnHwfr1F
+	8+L1bBaXd81hs1i0rJXZYu2Ru+wWC463sFo8OLyT3YHDY//cNewe6/68YvLo27KK0eP4je1M
+	Hp83yQWwRnHZpKTmZJalFunbJXBlvFywh61gBlfF32Mr2RsYp3F0MXJySAiYSHQcm8gEYYtJ
+	XLi3nq2LkYtDSGARo0TXgwtQTjuTxOfXy8Cq2AR0JLZ8n8AIYosICEisf3GJHaSIWeA4o8TM
+	T1+Aijg4hAU8JR6+NwSpYRFQlfj74zg7iM0r4CJxt28RC0iJhICCxJxJNhMYuRcwMqxiFE0t
+	SC4oTkrPNdIrTswtLs1L10vOz93ECA6WZ9I7GFc1WBxiFOBgVOLhPfBWJliINbGsuDL3EKME
+	B7OSCG9GnGywEG9KYmVValF+fFFpTmrxIUZpDhYlcd6DrdaBQgLpiSWp2ampBalFMFkmDk6p
+	Bkb9R2riO/98XPotn6H9rhLHyng7vgmqMuLLm/w8KlInG959sHFC00TtO5f3H72yq1LK78H8
+	7DzjeenJ26T3vzD4v+jdw60beWeySJuv+VEs8zewdDf/zE2bFdef/WM94UvQn1dhfrMLbv0N
+	59vCeOO43oLDS9xu7g76LtfNd1Bg1bFWMZaX/FEPlViKMxINtZiLihMBBh+gbxICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'struct regulator_dev *rdev' of 'struct max8973_chip' isn't used
-anywhere in the driver so it can be removed safely.
+This patch adds missing spin_unlock and mutex_unlock calls in
+error handling code.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/regulator/max8973-regulator.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/usb/gadget/f_fs.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/max8973-regulator.c b/drivers/regulator/max8973-regulator.c
-index 892aa1e5b96c..552fb6d1850c 100644
---- a/drivers/regulator/max8973-regulator.c
-+++ b/drivers/regulator/max8973-regulator.c
-@@ -93,7 +93,6 @@
- struct max8973_chip {
- 	struct device *dev;
- 	struct regulator_desc desc;
--	struct regulator_dev *rdev;
- 	struct regmap *regmap;
- 	bool enable_external_control;
- 	int dvs_gpio;
-@@ -474,7 +473,6 @@ static int max8973_probe(struct i2c_client *client,
- 		return ret;
- 	}
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index b7d273a..d6bd0a3 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -802,7 +802,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
+ 		if (io_data->aio) {
+ 			req = usb_ep_alloc_request(ep->ep, GFP_KERNEL);
+ 			if (unlikely(!req))
+-				goto error;
++				goto error_lock;
  
--	max->rdev = rdev;
- 	return 0;
- }
+ 			req->buf      = data;
+ 			req->length   = io_data->len;
+@@ -817,7 +817,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
+ 			ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
+ 			if (unlikely(ret)) {
+ 				usb_ep_free_request(ep->ep, req);
+-				goto error;
++				goto error_lock;
+ 			}
+ 			ret = -EIOCBQUEUED;
  
+@@ -863,6 +863,10 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
+ 
+ 	mutex_unlock(&epfile->mutex);
+ 	return ret;
++
++error_lock:
++	spin_unlock_irq(&epfile->ffs->eps_lock);
++	mutex_unlock(&epfile->mutex);
+ error:
+ 	kfree(data);
+ 	return ret;
 -- 
 1.7.9.5
 
