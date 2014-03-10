@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424AbaCJIhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 04:37:08 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49404 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382AbaCJIhB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 04:37:01 -0400
-From: Valentina Manea <valentina.manea.m@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: tulinizer@gmail.com, stern@rowland.harvard.edu, mail@beyermatthias.de,
-        hdegoede@redhat.com, f.manzan@gmail.com, kurt@garloff.de,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        firefly@lists.rosedu.org, andy.grover@gmail.com,
-        Valentina Manea <valentina.manea.m@gmail.com>
-Subject: [PATCH 2/2] staging: usbip: rename struct dev_state to usb_dev_state
-Date: Mon, 10 Mar 2014 10:36:41 +0200
-Message-Id: <1394440601-13573-3-git-send-email-valentina.manea.m@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1394440601-13573-1-git-send-email-valentina.manea.m@gmail.com>
-References: <1394440601-13573-1-git-send-email-valentina.manea.m@gmail.com>
+	id S1753432AbaCJIhe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 04:37:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54607 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752411AbaCJIha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 04:37:30 -0400
+Date: Mon, 10 Mar 2014 09:37:29 +0100
+From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 4/4] x86: Fix order of warning messages when ftrace
+ modifies code
+Message-ID: <20140310083728.GA14361@pathway.suse.cz>
+References: <1392650573-3390-1-git-send-email-pmladek@suse.cz>
+ <1392650573-3390-5-git-send-email-pmladek@suse.cz>
+ <20140307131831.0eefb839@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307131831.0eefb839@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct dev_state definition in usbcore conflicted with
-enum dev_state definition in rt2x00 driver so it was
-renamed to usb_dev_state.
+On Fri 07-03-14 13:18:31, Steven Rostedt wrote:
+> H. Peter,
+> 
+> I just added this to my 3.16 queue. But can you give an Acked-by for it
+> too. That way I don't forget to ask you later (3.16 is a ways away ;-)
+> 
+> I'd add it to my 3.15 queue, but I'm trying not to make changes to it
+> unless they are more significant.
 
-Update usbip for this change.
+Sure, it makes sense.
 
-Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
----
- drivers/staging/usbip/stub_dev.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Acked-by: Petr Mladek <pmladek@suse.cz>
 
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index 952743c..773d8ca 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -395,7 +395,7 @@ static int stub_probe(struct usb_device *udev)
- 	 * (struct dev_state) as long as it is unique.
- 	 */
- 	rc = usb_hub_claim_port(udev->parent, udev->portnum,
--			(struct dev_state *) udev);
-+			(struct usb_dev_state *) udev);
- 	if (rc) {
- 		dev_dbg(&udev->dev, "unable to claim port\n");
- 		return rc;
-@@ -464,7 +464,7 @@ static void stub_disconnect(struct usb_device *udev)
- 
- 	/* release port */
- 	rc = usb_hub_release_port(udev->parent, udev->portnum,
--				  (struct dev_state *) udev);
-+				  (struct usb_dev_state *) udev);
- 	if (rc) {
- 		dev_dbg(&udev->dev, "unable to release port\n");
- 		return;
--- 
-1.8.1.2
+Best Regards,
+Petr
 
+> -- Steve
+> 
+> 
+> On Mon, 17 Feb 2014 16:22:53 +0100
+> Petr Mladek <pmladek@suse.cz> wrote:
+> 
+> > The colon at the end of the printk message suggests that it should get printed
+> > before the details printed by ftrace_bug().
+> > 
+> > When touching the line, let's use the preferred pr_warn() macro as suggested
+> > by checkpatch.pl.
+> > 
+> > Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> > ---
+> >  arch/x86/kernel/ftrace.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+> > index 525a9f954c8b..ad7c38f5206b 100644
+> > --- a/arch/x86/kernel/ftrace.c
+> > +++ b/arch/x86/kernel/ftrace.c
+> > @@ -622,8 +622,8 @@ void ftrace_replace_code(int enable)
+> >  	return;
+> >  
+> >   remove_breakpoints:
+> > +	pr_warn("Failed on %s (%d):\n", report, count);
+> >  	ftrace_bug(ret, rec ? rec->ip : 0);
+> > -	printk(KERN_WARNING "Failed on %s (%d):\n", report, count);
+> >  	for_ftrace_rec_iter(iter) {
+> >  		int err;
+> >  
+> 
