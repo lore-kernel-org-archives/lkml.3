@@ -1,93 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800AbaCJOnX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 10:43:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12922 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442AbaCJOnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 10:43:21 -0400
-Date: Mon, 10 Mar 2014 10:42:37 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, jkosina@suse.cz
-Subject: Re: [PATCH 10/11] kexec: Support for loading ELF x86_64 images
-Message-ID: <20140310144237.GA4352@redhat.com>
-References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
- <1390849071-21989-11-git-send-email-vgoyal@redhat.com>
- <20140228145832.GF4326@pd.tnic>
- <20140228171142.GI28744@redhat.com>
- <20140307171233.GD5255@pd.tnic>
- <20140307183959.GE5255@pd.tnic>
+	id S1753932AbaCJOoU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 10:44:20 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45409 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884AbaCJOoR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 10:44:17 -0400
+Date: Mon, 10 Mar 2014 14:44:14 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>
+Subject: Re: [PATCH v6 6/6] pci: Add support for creating a generic
+ host_bridge from device tree
+Message-ID: <20140310144414.GT6457@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Tanmay Inamdar <tinamdar@apm.com>
+References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394020137-1830-7-git-send-email-Liviu.Dudau@arm.com>
+ <201403081815.08829.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <201403081815.08829.arnd@arndb.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 10 Mar 2014 14:44:15.0419 (UTC) FILETIME=[358838B0:01CF3C6F]
+X-MC-Unique: 114031014441509001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20140307183959.GE5255@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 07:39:59PM +0100, Borislav Petkov wrote:
-
-[..]
-> > Well, this is mandated by the boot protocol, no?
-> > 
-> > "If the "HdrS" (0x53726448) magic number is not found at offset 0x202,
-> > the boot protocol version is "old".  Loading an old kernel, the
-> > following parameters should be assumed:
-> > 
-> >         Image type = zImage
-> >         initrd not supported
-> >         Real-mode kernel must be located at 0x90000."
-> > 
-> > About version 0x0206:
-> > 
-> > Field name:     cmdline_size
-> > Type:           read
-> > Offset/size:    0x238/4
-> > Protocol:       2.06+
-> > 
-> >   The maximum size of the command line without the terminating
-> >   zero. This means that the command line can contain at most
-> >   cmdline_size characters. With protocol version 2.05 and earlier, the
-> >   maximum size was 255.
-> > 
-> > So according to the protocol, cmdline_size should be set by
-> > kexec_file_load and not hardcoded to 2K, if we're mandating protocol
-> > version 2.06.
+On Sat, Mar 08, 2014 at 05:15:08PM +0000, Arnd Bergmann wrote:
+> On Wednesday 05 March 2014, Liviu Dudau wrote:
+> > +
+> > +	pr_debug("Parsing ranges property...\n");
+> > +	for_each_of_pci_range(&parser, &range) {
+> > +		/* Read next ranges element */
+> > +		pr_debug("pci_space: 0x%08x pci_addr:0x%016llx ",
+> > +				range.pci_space, range.pci_addr);
+> > +		pr_debug("cpu_addr:0x%016llx size:0x%016llx\n",
+> > +					range.cpu_addr, range.size);
+> > +
+> > +		/*
+> > +		 * If we failed translation or got a zero-sized region
+> > +		 * then skip this range
+> > +		 */
+> > +		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
+> > +			continue;
+> > +
+> > +		res = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> > +		if (!res)
+> > +			return -ENOMEM;
+> > +
+> > +		of_pci_range_to_resource(&range, dev, res);
+> > +
+> > +		if (resource_type(res) == IORESOURCE_IO)
+> > +			*io_base = range.cpu_addr;
+> > +
+> > +		pci_add_resource_offset(resources, res,
+> > +				res->start - range.pci_addr);
+> > +	}
 > 
-> Btw, all those fields above are of type "read", which means,
+> As mentioned regarding the pci_register_io_range() helper, x86
+> would not enter the 'resource_type(res) == IORESOURCE_IO' code path,
+> which on the one hand is fine so we can return an error from
+> pci_register_io_range() there, but I think it will lead to
+> io_base getting an uninitialized content.
 > 
-> "For each field, some are information from the kernel to the bootloader
-> ("read"),... "
+> There could also be other reasons why pci_register_io_range() fails,
+> e.g. because the space is exhausted, and I think we should try to
+> catch that here and skip the pci_add_resource_offset() and io_base
+> assignment then.
+
+Hi Arnd,
+
+I will try to improve the error handling in the next patchset version.
+However I am still confused about the earlier discussion on
+pci_register_io_range(). Your suggestion initially was to return an
+error in the default weak implementation, but in your last email you
+are talking about returning 'port'. My idea when I've introduced the
+helper function was that it would return an error if it fails to
+register the IO range and zero otherwise. I agree that we can treat
+the default 'do nothing with the IO range' case as an error, with
+the caveat that will force architectures that use this code to
+provide their own implementation of pci_register_io_range() in order
+to avoid failure, even for the cases where the architecture has a 1:1
+mapping between IO and CPU addresses.
+
+I've just noticed that my home server has silently dropped my reply
+to you from the 7th of March, so I'm going to resend it using ARM's
+setup.
+
+Best regards,
+Liviu
+
+
 > 
-> Now, if we assume that the first kernel is the bootloader and it loads
-> the second kernel, then the first kernel shouldn't be setting all those
-> fields *at* *all* because it violates the boot protocol. And that's a
-> no-no.
-
-Yes, that's a read only information for bootloader.
-
-> 
-> Generally, how important is that use case for loading ELF images? If no
-> one is actually using it, why even bother?
+> 	Arnd
 > 
 
-Distributions use bzImage for booting. Personally I have not seen anybody
-using ELF vmliux for booting.
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-When I posted V1 of patches, Eric Biederman had said that without ELF
-loader support this patchset should not go in. He said that ELF is very
-generic and if we are implementing a new system call we should support
-ELF loader.
-
-So I have put a basic ELF loader in patches to show that it can work. Not
-that I am very keen on it.
-
-I will gladly remove it if others are comfortable with the idea that we
-don't need an ELF loader at this point of time.
-
-Thanks
-Vivek
