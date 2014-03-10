@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaCJWSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 18:18:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41868 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaCJWSJ (ORCPT
+	id S1753537AbaCJWVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 18:21:06 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:33382 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaCJWVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 18:18:09 -0400
-Date: Mon, 10 Mar 2014 15:18:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH v2 6/6] documentation: bindings: document PMIC8921/8058
- RTC
-Message-Id: <20140310151807.7274d58d3c50b884585244b6@linux-foundation.org>
-In-Reply-To: <20140310221132.GN18529@joshc.qualcomm.com>
-References: <1394477089-3996-1-git-send-email-joshc@codeaurora.org>
-	<1394477089-3996-7-git-send-email-joshc@codeaurora.org>
-	<CAL_JsqJe7M6i0RKWVPHbvyHbHscMtZmW-xbJuaJTePqYRKWrUg@mail.gmail.com>
-	<20140310221132.GN18529@joshc.qualcomm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Mar 2014 18:21:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394484661-4554-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1394413270-7169-1-git-send-email-sebastian.hesselbarth@gmail.com> <1394484661-4554-1-git-send-email-sebastian.hesselbarth@gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Mon, 10 Mar 2014 15:20:23 -0700
+Message-ID: <CAGVrzcbBcbPLnRa8ausZzcSyFBaySt=UEL_QQCAOJomrkaz1rw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] net: phy: fix uninitalized WOL struct in phy_ethtool_get_wol
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Mar 2014 17:11:32 -0500 Josh Cartwright <joshc@codeaurora.org> wrote:
+2014-03-10 13:50 GMT-07:00 Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com>:
+> David,
+>
+> this is a small patch set based on a single patch sent earlier [1] to
+> fix uninitalized struct ethtool_wolinfo in phy_ethtool_get_wol.
+> Compared to the single patch, this clears the whole struct
+> ethtool_wolinfo passed to phy_ethtool_get_wol and adds a check for
+> non-NULL struct phy_device.
+>
+> I also added two cleanup patches for current users of
+> phy_ethtool_get_wol. Those two patches are also based on v3.14-rc1 but
+> aren't really part of the fix. They can wait for v3.15 and I'll rebase
+> on request.
 
-> On Mon, Mar 10, 2014 at 04:22:51PM -0500, Rob Herring wrote:
-> > On Mon, Mar 10, 2014 at 1:44 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
-> > > This RTC is found on the Qualcomm 8921 and 8058 PMICs.
-> > >
-> > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> > > ---
-> > >  .../devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt     | 21 +++++++++++++++++++++
-> > >  1 file changed, 21 insertions(+)
-> > >  create mode 100644 Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt
-> > >
-> > > diff --git a/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt b/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt
-> > > new file mode 100644
-> > > index 0000000..3eaa582
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/rtc/qcom,pm8xxx-rtc.txt
-> > > @@ -0,0 +1,21 @@
-> > > +* Real-Time Clock for Qualcomm 8058/8921 PMICs
-> > > +
-> > > +Required properties:
-> > > +- compatible: should be one of the following.
-> > > +    * "qcom,pm8058-rtc"
-> > > +    * "qcom,pm8921-rtc"
-> > > +- reg: base address of the register region
-> > 
-> > Wait a second. This is all part of an MFD device. I think this whole
-> > binding does not make sense on it's own. The DT should describe the
-> > PMIC, not necessarily some sub-component of it. Perhaps there are sub
-> > nodes of the PMIC node, but that would be all part of the PMIC
-> > binding. Having sub drivers for an MFD is really a Linux problem that
-> > doesn't belong in DT.
-> 
-> Okay, this makes sense, I can move this documentation to
-> Documentation/bindings/mfd/qcom,pm8xxx.txt where the PMIC binding
-> currently is.
-> 
-> Note that this does introduce a dependency on Lee Jones' mfd tree, where
-> DT support for the parent pm8921 driver is pending for 3.15.
-> 
-> Andrew, how would you prefer I proceed?  Would you like me to respin
-> this patch?  The whole series?  An incremental patch?
+Looks good to me, thanks Sebastian:
 
-A new version of [6/6] sounds appropriate.
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+
+>
+> [1] https://lkml.org/lkml/2014/3/9/169
+>
+> Sebastian Hesselbarth (3):
+>   net: phy: fix uninitalized WOL parameters in phy_ethtool_get_wol
+>   net: mv643xx_eth: simplify phy_ethtool_get_wol call
+>   net: cpsw: simplify phy_ethtool_get_wol call
+>
+>  drivers/net/ethernet/marvell/mv643xx_eth.c | 5 +----
+>  drivers/net/ethernet/ti/cpsw.c             | 7 +------
+>  drivers/net/phy/phy.c                      | 4 +++-
+>  3 files changed, 5 insertions(+), 11 deletions(-)
+>
+> ---
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Florian Fainelli <f.fainelli@gmail.com>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> --
+> 1.8.5.3
+>
+
+
+
+-- 
+Florian
