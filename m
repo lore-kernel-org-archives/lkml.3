@@ -1,51 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177AbaCJVoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 17:44:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41649 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138AbaCJVn7 (ORCPT
+	id S1754646AbaCJVke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 17:40:34 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51649 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271AbaCJVkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:43:59 -0400
-Date: Mon, 10 Mar 2014 14:43:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, linux-arm-msm@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH v2 2/6] rtc: pm8xxx: use regmap API for register
- accesses
-Message-Id: <20140310144358.127497cb2ba133d964bd43a2@linux-foundation.org>
-In-Reply-To: <20140310213524.GL18529@joshc.qualcomm.com>
-References: <1394477089-3996-1-git-send-email-joshc@codeaurora.org>
-	<1394477089-3996-3-git-send-email-joshc@codeaurora.org>
-	<20140310134741.e5b97d12d47e1b990501f8bc@linux-foundation.org>
-	<20140310213524.GL18529@joshc.qualcomm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Mar 2014 17:40:31 -0400
+From: Andy Gross <agross@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        dmaengine@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org,
+        Andy Gross <agross@codeaurora.org>
+Subject: [Patch v9 0/2] Add Qualcomm BAM dmaengine driver
+Date: Mon, 10 Mar 2014 16:40:18 -0500
+Message-Id: <1394487622-1679-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Mar 2014 16:35:24 -0500 Josh Cartwright <joshc@codeaurora.org> wrote:
+This patch set introduces the dmaengine driver for the Qualcomm Bus Access
+Manager (BAM) DMA controller present on MSM 8x74 devices.  A number of the
+on-chip devices have their own BAM DMA controller and use it to move data
+between system memory and peripherals or between two peripherals.
 
-> On Mon, Mar 10, 2014 at 01:47:41PM -0700, Andrew Morton wrote:
-> > On Mon, 10 Mar 2014 13:44:45 -0500 Josh Cartwright <joshc@codeaurora.org> wrote:
-> > > Now that the parent mfd driver has been made to work again, and has been
-> > > reworked to create a regmap instance intended for it's children to use,
-> > > rework the pm8xxx driver to use the regmap API for it's register
-> > > accesses.
-> > 
-> > Do we need a 
-> > 
-> > 	depends on REGMAP
-> > 
-> > in Kconfig?
-> 
-> Good question.  This driver already gets the REGMAP dependency through
-> it's parent (MFD_PM8XXX), which does 'select REGMAP'.
+The initial version of this driver will only support slave DMA operations
+between system memory and peripherals.
 
-OK, thanks, that sounds sufficient.
+Changes from v8:
+	- Fix macro to use ee instead of pipe for variable name
+	- Fixed various nit comments
+	- Fixed probe clock release issue on error case
+
+Changes from v7:
+        - Fix shift issue when reading NUM_EEs field.
+        - Unmask global BAM interrupt during BAM initialization.
+
+Changes from v6:
+        - Changed KConfig dependency from ARCH_MSM_DT to ARCH_QCOM.
+        - Incorporated comments on DT binding.
+        - Changed driver source file to accomodate DT changes.
+
+Changes from v5:
+        - Separated copyright from BAM description
+        - Removed usage of slave dma direction
+        - Reworked slave config interface
+        - Removed max segment size restriction in slave_sg
+        - Added acked-by on DT patch
+        - Fixed nit comments
+
+Changes from v4:
+        - Add devm_free_irq() to .remove to avoid race condition
+        - Free FIFO memory in .remove
+
+Changes from v3:
+        - Remove unused bam_channel_dir.
+        - Remove incorrect write to BAM_IRQ_SRCS_EE (read only).
+        - Remove dma direction from DT binding and revise driver to use
+          direction from prep_slave_sg.
+        - Remove unnecessary channel reset from channel_init.  This could affect
+          channels controlled from other execution environments.
+        - Change terminate_all to also take care of the current active
+          descriptor.
+        - Rework .remove function to correctly mask interrupts and clean up
+          resources and tasklets.
+
+Changes from v2:
+        - Corrected Kconfig dependencies
+        - Moved execution environment ID to controller DT binding.  The EE is
+          a global setting across all of the channels on the controller.
+        - Combined header into source file.
+        - Corrected copyright date.
+        - Moved channel hardware initialization to occur when channel is used
+          for the first time.
+        - Converted dma_alloc_coherent to dma_alloc_writecombine
+        - Removed unecessary reset of channel from the dma terminate_all
+        - Corrected usage of EE in irq handler and channel configuration
+          functions.
+        - Changed resource functions inside probe to use correct APIs.
+        - Removed dma filter function and modified dma_xlate to use
+          dma_get_slave_channel API
+        - Fixed various nit comments
+
+Changes from v1:
+        - Converted driver to use virt-dma
+        - Reworked probe function per review comments
+        - tx_status function now computes and returns residuals
+        - Removed proprietary slave config.  Removed associated include file.
+        - Renamed files to reflect vendor name instead of specific device
+        - Converted to use (readl|writel)_relaxed w/ appropriate barriers
+        - Removed unions in favor of standard types.
+
+Andy Gross (2):
+  dmaengine: qcom_bam_dma: Add device tree binding
+  dmaengine: add Qualcomm BAM dma driver
+
+ .../devicetree/bindings/dma/qcom_bam_dma.txt       |   41 +
+ drivers/dma/Kconfig                                |    9 +
+ drivers/dma/Makefile                               |    1 +
+ drivers/dma/qcom_bam_dma.c                         | 1111 ++++++++++++++++++++
+ 4 files changed, 1162 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+ create mode 100644 drivers/dma/qcom_bam_dma.c
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
