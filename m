@@ -1,68 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504AbaCJUqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:46:04 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:64329 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853AbaCJUp7 (ORCPT
+	id S1755246AbaCJUkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:40:47 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42377 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516AbaCJUkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:45:59 -0400
-Date: Mon, 10 Mar 2014 16:45:49 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Loc Ho <lho@apm.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Don Dutile <ddutile@redhat.com>, Jon Masters <jcm@redhat.com>,
-        "patches@apm.com" <patches@apm.com>, Tuan Phan <tphan@apm.com>,
-        Suman Tripathi <stripathi@apm.com>
-Subject: Re: [PATCH v15 3/3] arm64: Add APM X-Gene SoC 15Gbps Multi-purpose
- PHY DTS entries
-Message-ID: <20140310204549.GJ25290@htj.dyndns.org>
-References: <1394213289-29565-1-git-send-email-lho@apm.com>
- <1394213289-29565-2-git-send-email-lho@apm.com>
- <1394213289-29565-3-git-send-email-lho@apm.com>
- <1394213289-29565-4-git-send-email-lho@apm.com>
- <CAPw-ZTmwFZjKT2+CUUp73TDXJcXy-bEY_sTNg-TtH-COzDnCfw@mail.gmail.com>
+	Mon, 10 Mar 2014 16:40:42 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v3 40/52] intel-idle: Fix CPU hotplug callback registration
+To: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
+        rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org
+Cc: paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
+        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        srivatsa.bhat@linux.vnet.ibm.com, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ingo Molnar <mingo@kernel.org>, linux-pm@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Tue, 11 Mar 2014 02:10:30 +0530
+Message-ID: <20140310204030.10746.17666.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
+References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPw-ZTmwFZjKT2+CUUp73TDXJcXy-bEY_sTNg-TtH-COzDnCfw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031020-9574-0000-0000-00000C5C9604
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 09, 2014 at 10:23:33PM -0700, Loc Ho wrote:
-> Hi Tejun,
-> 
-> On Fri, Mar 7, 2014 at 9:28 AM, Loc Ho <lho@apm.com> wrote:
-> 
-> > This patch adds the DTS entries for the APM X-Gene SoC 15Gbps Multi-purpose
-> > PHY driver. The PHY for SATA controller 2 and 3 are enabled by default.
-> >
-> > Signed-off-by: Loc Ho <lho@apm.com>
-> > Signed-off-by: Tuan Phan <tphan@apm.com>
-> > Signed-off-by: Suman Tripathi <stripathi@apm.com>
-> > ---
-> >  arch/arm64/boot/dts/apm-storm.dtsi |   75
-> > ++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 75 insertions(+), 0 deletions(-)
-> >
-> >
-> Kishon had pulled in the PHY doc/driver patches. Will you pulling in the
-> PHY DTS and the SATA host driver patches soon?
+Subsystems that want to register CPU hotplug callbacks, as well as perform
+initialization for the CPUs that are already online, often do it as shown
+below:
 
-Kishon, is the following branch the right one to pull into
-libata/for-3.15?
+	get_online_cpus();
 
- git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git next
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
 
-Thanks.
+	register_cpu_notifier(&foobar_cpu_notifier);
 
--- 
-tejun
+	put_online_cpus();
+
+This is wrong, since it is prone to ABBA deadlocks involving the
+cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
+with CPU hotplug operations).
+
+Instead, the correct and race-free way of performing the callback
+registration is:
+
+	cpu_notifier_register_begin();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	/* Note the use of the double underscored version of the API */
+	__register_cpu_notifier(&foobar_cpu_notifier);
+
+	cpu_notifier_register_done();
+
+
+Fix the intel-idle code by using this latter form of callback registration.
+
+Cc: Len Brown <lenb@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: linux-pm@vger.kernel.org
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ drivers/idle/intel_idle.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 8e1939f..51493ed 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -681,14 +681,19 @@ static int __init intel_idle_init(void)
+ 	if (intel_idle_cpuidle_devices == NULL)
+ 		return -ENOMEM;
+ 
++	cpu_notifier_register_begin();
++
+ 	for_each_online_cpu(i) {
+ 		retval = intel_idle_cpu_init(i);
+ 		if (retval) {
++			cpu_notifier_register_done();
+ 			cpuidle_unregister_driver(&intel_idle_driver);
+ 			return retval;
+ 		}
+ 	}
+-	register_cpu_notifier(&cpu_hotplug_notifier);
++	__register_cpu_notifier(&cpu_hotplug_notifier);
++
++	cpu_notifier_register_done();
+ 
+ 	return 0;
+ }
+@@ -698,10 +703,13 @@ static void __exit intel_idle_exit(void)
+ 	intel_idle_cpuidle_devices_uninit();
+ 	cpuidle_unregister_driver(&intel_idle_driver);
+ 
++	cpu_notifier_register_begin();
+ 
+ 	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
+ 		on_each_cpu(__setup_broadcast_timer, (void *)false, 1);
+-	unregister_cpu_notifier(&cpu_hotplug_notifier);
++	__unregister_cpu_notifier(&cpu_hotplug_notifier);
++
++	cpu_notifier_register_done();
+ 
+ 	return;
+ }
+
