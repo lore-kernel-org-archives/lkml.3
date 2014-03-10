@@ -1,200 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663AbaCJRCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 13:02:15 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:64430 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753226AbaCJRCN (ORCPT
+	id S1753837AbaCJRDG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 13:03:06 -0400
+Received: from mail-out1.informatik.tu-muenchen.de ([131.159.0.8]:41640 "EHLO
+	smtp1.informatik.tu-muenchen.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753399AbaCJRDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 13:02:13 -0400
+	Mon, 10 Mar 2014 13:03:03 -0400
+Message-ID: <531DEEA6.4090808@totakura.in>
+Date: Mon, 10 Mar 2014 17:56:06 +0100
+From: Sree Harsha Totakura <sreeharsha@totakura.in>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-In-Reply-To: <1393629520-12713-3-git-send-email-santosh.shilimkar@ti.com>
-References: <1393629520-12713-1-git-send-email-santosh.shilimkar@ti.com>
-	<1393629520-12713-3-git-send-email-santosh.shilimkar@ti.com>
-Date: Mon, 10 Mar 2014 12:02:12 -0500
-Message-ID: <CAL_Jsq+O660oV9FtthG3gTkVOhL0ku-UHSrkt-ROauu1iNpbaA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] soc: keystone: add QMSS driver
-From: Rob Herring <robherring2@gmail.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Sandeep Nair <sandeep_n@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: pppd service crash in linux-3.13.6
+References: <531A37FF.4000509@totakura.in>
+In-Reply-To: <531A37FF.4000509@totakura.in>
+X-Enigmail-Version: 1.6
+X-Forwarded-Message-Id: <531A37FF.4000509@totakura.in>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 5:18 PM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> From: Sandeep Nair <sandeep_n@ti.com>
->
-> The QMSS (Queue Manager Sub System) found on Keystone SOCs is one of
-> the main hardware sub system which forms the backbone of the Keystone
-> Multi-core Navigator. QMSS consist of queue managers, packed-data structure
-> processors(PDSP), linking RAM, descriptor pools and infrastructure
-> Packet DMA.
->
-> The Queue Manager is a hardware module that is responsible for accelerating
-> management of the packet queues. Packets are queued/de-queued by writing or
-> reading descriptor address to a particular memory mapped location. The PDSPs
-> perform QMSS related functions like accumulation, QoS, or event management.
-> Linking RAM registers are used to link the descriptors which are stored in
-> descriptor RAM. Descriptor RAM is configurable as internal or external memory.
->
-> The QMSS driver manages the PDSP setups, linking RAM regions,
-> queue pool management (allocation, push, pop and notify) and descriptor
-> pool management. The specifics on the device tree bindings for
-> QMSS can be found in:
->         Documentation/devicetree/bindings/soc/keystone-qmss.txt
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-You are telling me where I can find a file that is added in this commit?
+Hi,
 
-All this description of what the h/w block does should go into the binding doc.
+Using linux-3.13.6, I am observing the following output from the pppd
+kernel thread.  This happens when I try to suspend my computer and it
+*stops* the computer from suspending.
 
->
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  .../devicetree/bindings/soc/keystone-qmss.txt      |  209 +++
->  drivers/Kconfig                                    |    2 +
->  drivers/Makefile                                   |    3 +
->  drivers/soc/Kconfig                                |    2 +
->  drivers/soc/Makefile                               |    5 +
->  drivers/soc/keystone/Kconfig                       |   15 +
->  drivers/soc/keystone/Makefile                      |    5 +
->  drivers/soc/keystone/qmss_acc.c                    |  591 ++++++++
->  drivers/soc/keystone/qmss_queue.c                  | 1533 ++++++++++++++++++++
->  drivers/soc/keystone/qmss_queue.h                  |  236 +++
->  include/linux/soc/keystone_qmss.h                  |  390 +++++
->  11 files changed, 2991 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/soc/keystone-qmss.txt
->  create mode 100644 drivers/soc/Makefile
->  create mode 100644 drivers/soc/keystone/Kconfig
->  create mode 100644 drivers/soc/keystone/Makefile
->  create mode 100644 drivers/soc/keystone/qmss_acc.c
->  create mode 100644 drivers/soc/keystone/qmss_queue.c
->  create mode 100644 drivers/soc/keystone/qmss_queue.h
->  create mode 100644 include/linux/soc/keystone_qmss.h
->
-> diff --git a/Documentation/devicetree/bindings/soc/keystone-qmss.txt b/Documentation/devicetree/bindings/soc/keystone-qmss.txt
-> new file mode 100644
-> index 0000000..f975207
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/soc/keystone-qmss.txt
-> @@ -0,0 +1,209 @@
-> +* Texas Instruments Keystone QMSS driver
-> +
-> +Required properties:
-> +- compatible   : Must be "ti,keystone-qmss";
-> +- clocks       : phandle to the reference clock for this device.
-> +- queue-range  : <start number> total range of queue numbers for the device.
-> +- linkram0     : <address size> for internal link ram, where size is the total
-> +                 link ram entries.
-> +- linkram1     : <address size> for external link ram, where size is the total
-> +                 external link ram entries. If the address is specified as "0"
-> +                 driver will allocate memory.
-> +- qmgrs         : the number of individual queue managers in the device. On
-> +                  keystone 1 range of devices there should be only one node.
-> +                 On keystone 2 devices there can be more than 1 node.
-> +  -- managed-queues    : the actual queues managed by each queue manager
-> +                         instance, specified as <"base queue #" "# of queues">.
-> +  -- reg               : Address and length of the register set for the device
-> +                         for peek, status, config, region, push, pop regions.
-> +  -- reg-names         : Names for the above register regions. The name to be
-> +                         used is as follows:
-> +                         - "config" : Queue configuration region.
-> +                         - "status" : Queue status RAM.
-> +                         - "region" : Descriptor memory setup region.
-> +                         - "push"   : Queue Management/Queue Proxy region.
-> +                         - "pop"    : Queue Management/Queue Proxy region.
-> +                         - "peek"   : Queue Peek region.
+I am using ppp via a bluetooth modem.
 
-reg-names should be optional. Also you have the order different from
-reg. Be consistent as to what is the correct order.
+Trace:
+[22735.115313] PM: Syncing filesystems ... done.
+[22735.665613] PM: Preparing system for mem sleep
+[22735.665829] Freezing user space processes ...
+[22755.659538] Freezing of tasks failed after 20.004 seconds (1 tasks
+refusing to freeze, wq_
+busy=0):
+[22755.659555] pppd            D ffff8800376c9a58     0 16801      1
+0x00000006
+[22755.659557]  ffff8800376c9750 0000000000000046 0000000000012e80
+0000000000012e80
+[22755.659560]  ffff8802a1c1dfd8 ffff8800376c9750 0000000000000009
+ffff8802a1c1dd78
+[22755.659562]  0000000000000046 ffff8800376c9750 0000000000000028
+ffff8800376c9750
+[22755.659564] Call Trace:
+[22755.659569]  [<ffffffff81048507>] ? do_exit+0x937/0xa50
+[22755.659573]  [<ffffffff814bb6e1>] ? oops_end+0x91/0xd0
+[22755.659575]  [<ffffffff814b1f4f>] ? no_context+0x1f3/0x1ff
+[22755.659577]  [<ffffffff814bdb69>] ? __do_page_fault+0x89/0x500
+[22755.659581]  [<ffffffff811017dc>] ? free_pcppages_bulk+0x17c/0x3b0
+[22755.659584]  [<ffffffff81101cce>] ? free_hot_cold_page_list+0x3e/0x90
+[22755.659586]  [<ffffffff814babf8>] ? page_fault+0x28/0x30
+[22755.659591]  [<ffffffffa06fd5a3>] ? ppp_register_channel+0x13/0x20
+[ppp_generic]
+[22755.659594]  [<ffffffffa07062ab>] ? ppp_asynctty_open+0x12b/0x170
+[ppp_async]
+[22755.659596]  [<ffffffff812ec907>] ? tty_ldisc_open.isra.2+0x27/0x60
+[22755.659598]  [<ffffffff812ed1d3>] ? tty_ldisc_hangup+0x1e3/0x220
+[22755.659601]  [<ffffffff812e4614>] ? __tty_hangup+0x2c4/0x440
+[22755.659603]  [<ffffffff812e56a1>] ? disassociate_ctty+0x61/0x270
+[22755.659605]  [<ffffffff810483c2>] ? do_exit+0x7f2/0xa50
+[22755.659607]  [<ffffffff81053ad2>] ? recalc_sigpending+0x12/0x50
+[22755.659609]  [<ffffffff81054308>] ? __set_task_blocked+0x28/0x70
+[22755.659611]  [<ffffffff81048684>] ? do_group_exit+0x34/0xa0
+[22755.659613]  [<ffffffff810486fb>] ? SyS_exit_group+0xb/0x10
+[22755.659615]  [<ffffffff814c1eb9>] ? system_call_fastpath+0x16/0x1b
+[22755.659618]
+[22755.659619] Restarting tasks ... done.
 
-> +- queue-pools  : Queue ranges are grouped into 3 type of pools:
-> +                 - qpend           : pool of qpend(interruptible) queues
-> +                 - general-purpose : pool of general queues, primarly used
-> +                                     as free descriptor queues or the
-> +                                     transmit DMA queues.
-> +                 - accumulator     : pool of queues on accumulator channel
-> +                 Each range can have the following properties:
-> +  -- values            : number of queues to use per queue range, specified as
-> +                         <"base queue #" "# of queues">.
+If you need any more info, I am happy to provide.
 
-values of what? This needs a better name.
+Regards,
+Sree
 
-> +  -- interrupts                : Optional property to specify the interrupt mapping
-> +                         for interruptible queues. The driver additionaly sets
-> +                         the interrupt affinity based on the cpu mask.
-> +  -- reserved          : Optional property used to reserve the range. Queues
-> +                         in a reserved range can only be allocated by id.
 
-reserved what? This needs a better name and description.
-
-> +  -- accumulator       : Accumulator channel property specified as:
-> +                         <pdsp-id, channel, entries, pacing mode, latency>
-> +                         pdsp-id     : QMSS PDSP running accumulator firmware
-> +                                       on which the channel has to be
-> +                                       configured
-> +                         channel     : Accumulator channel number
-> +                         entries     : Size of the accumulator descriptor list
-> +                         pacing mode : Interrupt pacing mode
-> +                                       0 : None, i.e interrupt on list full
-> +                                       1 : Time delay since last interrupt
-> +                                       2 : Time delay since first new packet
-> +                                       3 : Time delay since last new packet
-> +                         latency     : time to delay the interrupt, specified
-> +                                       in microseconds.
-> +  -- multi-queue       : Optional property to specify that the channel has to
-> +                         monitor upto 32 queues starting at the base queue #.
-
-What does the property contain? What's a channel in this context?
-
-> +- descriptor-regions   : Descriptor memory region specification.
-
-huh?
-
-> +  -- id                                : region number.
-> +  -- values                    : number of descriptors in the region,
-> +                                 specified as
-> +                                 <"# of descriptors" "descriptor size">.
-> +  -- link-index                        : start index, i.e. index of the first
-> +                                 descriptor in the region.
-> +
-> +Optional properties:
-> +- dma-coherent : Present if DMA operations are coherent.
-> +- pdsps                : PDSP configuration, if any.
-
-This is a child node? Make that clear and separate the description for
-each node.
-
-> +  -- firmware          : firmware to be loaded on the PDSP.
-> +  -- id                        : the qmss pdsp that will run the firmware.
-> +  -- reg               : Address and length of the register set of the PDSP
-> +                         for iram, intd, region, command regions.
-> +  -- reg-names         : Names for the above register regions. The name to be
-> +                         used is as follows:
-> +                         - "iram"   : PDSP internal RAM region.
-> +                         - "reg"    : PDSP control/status region registers.
-> +                         - "intd"   : QMSS interrupt distributor registers.
-> +                         - "cmd"    : PDSP command interface region.
-> +
-> +Example:
-
-I probably have other comments, but address the above first.
-
-Rob
