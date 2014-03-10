@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590AbaCJUvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 16:51:15 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:41807 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755562AbaCJUvM (ORCPT
+	id S1755706AbaCJUxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 16:53:19 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:8276 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754651AbaCJUxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 16:51:12 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/3] net: phy: fix uninitalized WOL struct in phy_ethtool_get_wol
-Date: Mon, 10 Mar 2014 21:50:58 +0100
-Message-Id: <1394484661-4554-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1394413270-7169-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1394413270-7169-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Mon, 10 Mar 2014 16:53:17 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmwGAMUlHlNbsHk5/2dsb2JhbABagwbCV4EgF3SCUxMcIxiBAiQTh30Bz22OW4Q/BJhEAYpWh1eDLjw
+Date: Mon, 10 Mar 2014 21:53:03 +0100
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, jaharkes <jaharkes@cs.cmu.edu>
+Subject: [PATCH 1/1] CODA: add __init to init_inodecache()
+Message-Id: <20140310215303.21c30508ed4808b4f2484c48@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+init_inodecache is only called by __init init_coda
 
-this is a small patch set based on a single patch sent earlier [1] to
-fix uninitalized struct ethtool_wolinfo in phy_ethtool_get_wol.
-Compared to the single patch, this clears the whole struct
-ethtool_wolinfo passed to phy_ethtool_get_wol and adds a check for
-non-NULL struct phy_device.
-
-I also added two cleanup patches for current users of
-phy_ethtool_get_wol. Those two patches are also based on v3.14-rc1 but
-aren't really part of the fix. They can wait for v3.15 and I'll rebase
-on request.
-
-[1] https://lkml.org/lkml/2014/3/9/169
-
-Sebastian Hesselbarth (3):
-  net: phy: fix uninitalized WOL parameters in phy_ethtool_get_wol
-  net: mv643xx_eth: simplify phy_ethtool_get_wol call
-  net: cpsw: simplify phy_ethtool_get_wol call
-
- drivers/net/ethernet/marvell/mv643xx_eth.c | 5 +----
- drivers/net/ethernet/ti/cpsw.c             | 7 +------
- drivers/net/phy/phy.c                      | 4 +++-
- 3 files changed, 5 insertions(+), 11 deletions(-)
-
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
-Cc: David Miller <davem@davemloft.net>
-Cc: Florian Fainelli <f.fainelli@gmail.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
--- 
-1.8.5.3
+ fs/coda/coda_int.h | 2 +-
+ fs/coda/inode.c    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/fs/coda/coda_int.h b/fs/coda/coda_int.h
+index b7143cf..381c993 100644
+--- a/fs/coda/coda_int.h
++++ b/fs/coda/coda_int.h
+@@ -10,7 +10,7 @@ extern int coda_hard;
+ extern int coda_fake_statfs;
+ 
+ void coda_destroy_inodecache(void);
+-int coda_init_inodecache(void);
++int __init coda_init_inodecache(void);
+ int coda_fsync(struct file *coda_file, loff_t start, loff_t end, int datasync);
+ void coda_sysctl_init(void);
+ void coda_sysctl_clean(void);
+diff --git a/fs/coda/inode.c b/fs/coda/inode.c
+index 506de34..ca688d2 100644
+--- a/fs/coda/inode.c
++++ b/fs/coda/inode.c
+@@ -73,7 +73,7 @@ static void init_once(void *foo)
+ 	inode_init_once(&ei->vfs_inode);
+ }
+ 
+-int coda_init_inodecache(void)
++int __init coda_init_inodecache(void)
+ {
+ 	coda_inode_cachep = kmem_cache_create("coda_inode_cache",
+ 				sizeof(struct coda_inode_info),
+-- 
+1.8.1.4
