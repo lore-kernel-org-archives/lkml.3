@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919AbaCJHpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 03:45:35 -0400
+	id S1753224AbaCJHqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 03:46:45 -0400
 Received: from lgeamrelo01.lge.com ([156.147.1.125]:51278 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535AbaCJHoF (ORCPT
+	with ESMTP id S1752363AbaCJHoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 03:44:05 -0400
-X-AuditID: 9c93017d-b7c89ae000006ae1-e9-531d6d4293f6
+	Mon, 10 Mar 2014 03:44:04 -0400
+X-AuditID: 9c93017d-b7c89ae000006ae1-de-531d6d42be48
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 6/9] perf diff: Add --percentage option
-Date: Mon, 10 Mar 2014 16:43:57 +0900
-Message-Id: <1394437440-11609-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 2/9] perf tools: Count periods of filtered entries separately
+Date: Mon, 10 Mar 2014 16:43:53 +0900
+Message-Id: <1394437440-11609-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
 References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
@@ -26,158 +26,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The --percentage option is for controlling overhead percentage
-displayed.  It can only receive either of "relative" or "absolute" and
-affects -c delta output only.
+Currently if a sample was filtered by command line option, it just
+dropped.  But this affects final output in that the percentage can be
+different since the filtered entries were not included to the total.
 
-For more information, please see previous commit same thing done to
-"perf report".
+But user might want to see the original percentages when filter
+applied so add new total_filtered_period filed to hists->stats in
+order to be controlled by user later.  It doesn't change the current
+behavior yet.
 
 Acked-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-diff.txt | 21 ++++++++++++++++++---
- tools/perf/builtin-diff.c              | 30 ++++++++++++++++++++++--------
- 2 files changed, 40 insertions(+), 11 deletions(-)
+ tools/perf/builtin-report.c |  2 +-
+ tools/perf/util/event.c     | 22 ++++++++++------------
+ tools/perf/util/hist.c      | 10 ++--------
+ tools/perf/util/hist.h      | 10 ++++++++++
+ tools/perf/util/symbol.h    |  2 +-
+ 5 files changed, 24 insertions(+), 22 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index fdfceee0ffd0..fbfa1192923c 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -33,17 +33,20 @@ OPTIONS
- -d::
- --dsos=::
- 	Only consider symbols in these dsos. CSV that understands
--	file://filename entries.
-+	file://filename entries.  This option will affect the percentage
-+	of the Baseline/Delta column.  See --percentage for more info.
- 
- -C::
- --comms=::
- 	Only consider symbols in these comms. CSV that understands
--	file://filename entries.
-+	file://filename entries.  This option will affect the percentage
-+	of the Baseline/Delta column.  See --percentage for more info.
- 
- -S::
- --symbols=::
- 	Only consider these symbols. CSV that understands
--	file://filename entries.
-+	file://filename entries.  This option will affect the percentage
-+	of the Baseline/Delta column.  See --percentage for more info.
- 
- -s::
- --sort=::
-@@ -89,6 +92,14 @@ OPTIONS
- --order::
-        Specify compute sorting column number.
- 
-+--percentage::
-+	Determine how to display the overhead percentage of filtered entries.
-+	Filters can be applied by --comms, --dsos and/or --symbols options.
-+
-+	"relative" means it's relative to filtered entries only so that the
-+	sum of shown entries will be always 100%.  "absolute" means it retains
-+	the original value before and after the filter is applied.
-+
- COMPARISON
- ----------
- The comparison is governed by the baseline file. The baseline perf.data
-@@ -157,6 +168,10 @@ with:
-   - period_percent being the % of the hist entry period value within
-     single data file
- 
-+  - with filtering by -C, -d and/or -S, period_percent might be changed
-+    relative to how entries are filtered.  Use --percentage=absolute to
-+    prevent such fluctuation.
-+
- ratio
- ~~~~~
- If specified the 'Ratio' column is displayed with value 'r' computed as:
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 204fffe22532..c903fe13c173 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -220,7 +220,8 @@ static int setup_compute(const struct option *opt, const char *str,
- 
- static double period_percent(struct hist_entry *he, u64 period)
- {
--	u64 total = he->hists->stats.total_period;
-+	u64 total = hists__total_period(he->hists);
-+
- 	return (period * 100.0) / total;
- }
- 
-@@ -259,11 +260,18 @@ static s64 compute_wdiff(struct hist_entry *he, struct hist_entry *pair)
- static int formula_delta(struct hist_entry *he, struct hist_entry *pair,
- 			 char *buf, size_t size)
- {
-+	u64 he_total = he->hists->stats.total_period;
-+	u64 pair_total = pair->hists->stats.total_period;
-+
-+	if (symbol_conf.filter_relative) {
-+		he_total = he->hists->stats.total_non_filtered_period;
-+		pair_total = pair->hists->stats.total_non_filtered_period;
-+	}
- 	return scnprintf(buf, size,
- 			 "(%" PRIu64 " * 100 / %" PRIu64 ") - "
- 			 "(%" PRIu64 " * 100 / %" PRIu64 ")",
--			  pair->stat.period, pair->hists->stats.total_period,
--			  he->stat.period, he->hists->stats.total_period);
-+			 pair->stat.period, pair_total,
-+			 he->stat.period, he_total);
- }
- 
- static int formula_ratio(struct hist_entry *he, struct hist_entry *pair,
-@@ -327,15 +335,16 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d882b6f96411..5f7f1a332186 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -223,7 +223,7 @@ static int process_sample_event(struct perf_tool *tool,
  		return -1;
  	}
  
--	if (al.filtered)
--		return 0;
+-	if (al.filtered || (rep->hide_unresolved && al.sym == NULL))
++	if (rep->hide_unresolved && al.sym == NULL)
+ 		return 0;
+ 
+ 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 55eebe936513..45859f5995db 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -3,6 +3,7 @@
+ #include "debug.h"
+ #include "machine.h"
+ #include "sort.h"
++#include "hist.h"
+ #include "string.h"
+ #include "strlist.h"
+ #include "thread.h"
+@@ -662,7 +663,7 @@ void thread__find_addr_map(struct thread *thread,
+ 	al->thread = thread;
+ 	al->addr = addr;
+ 	al->cpumode = cpumode;
+-	al->filtered = false;
++	al->filtered = 0;
+ 
+ 	if (machine == NULL) {
+ 		al->map = NULL;
+@@ -688,11 +689,11 @@ void thread__find_addr_map(struct thread *thread,
+ 		if ((cpumode == PERF_RECORD_MISC_GUEST_USER ||
+ 			cpumode == PERF_RECORD_MISC_GUEST_KERNEL) &&
+ 			!perf_guest)
+-			al->filtered = true;
++			al->filtered |= (1 << HIST_FILTER__GUEST);
+ 		if ((cpumode == PERF_RECORD_MISC_USER ||
+ 			cpumode == PERF_RECORD_MISC_KERNEL) &&
+ 			!perf_host)
+-			al->filtered = true;
++			al->filtered |= (1 << HIST_FILTER__HOST);
+ 
+ 		return;
+ 	}
+@@ -749,9 +750,6 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 	if (thread == NULL)
+ 		return -1;
+ 
+-	if (thread__is_filtered(thread))
+-		goto out_filtered;
 -
- 	if (hists__add_entry(&evsel->hists, &al, sample->period,
- 			     sample->weight, sample->transaction)) {
- 		pr_warning("problem incrementing symbol period, skipping event\n");
- 		return -1;
- 	}
+ 	dump_printf(" ... thread: %s:%d\n", thread__comm_str(thread), thread->tid);
+ 	/*
+ 	 * Have we already created the kernel maps for this machine?
+@@ -766,6 +764,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
  
-+	if (al.filtered == 0) {
-+		evsel->hists.stats.total_non_filtered_period += sample->period;
-+		evsel->hists.nr_non_filtered_entries++;
-+	}
- 	evsel->hists.stats.total_period += sample->period;
+ 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+ 			      sample->ip, al);
++
++	if (thread__is_filtered(thread))
++		al->filtered |= (1 << HIST_FILTER__THREAD);
++
+ 	dump_printf(" ...... dso: %s\n",
+ 		    al->map ? al->map->dso->long_name :
+ 			al->level == 'H' ? "[hypervisor]" : "<not found>");
+@@ -781,7 +783,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 			       (dso->short_name != dso->long_name &&
+ 				strlist__has_entry(symbol_conf.dso_list,
+ 						   dso->long_name)))))
+-			goto out_filtered;
++			al->filtered |= (1 << HIST_FILTER__DSO);
+ 
+ 		al->sym = map__find_symbol(al->map, al->addr,
+ 					   machine->symbol_filter);
+@@ -790,11 +792,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 	if (symbol_conf.sym_list &&
+ 		(!al->sym || !strlist__has_entry(symbol_conf.sym_list,
+ 						al->sym->name)))
+-		goto out_filtered;
+-
+-	return 0;
++		al->filtered |= (1 << HIST_FILTER__SYMBOL);
+ 
+-out_filtered:
+-	al->filtered = true;
  	return 0;
  }
-@@ -565,7 +574,9 @@ static void hists__compute_resort(struct hists *hists)
- 	next = rb_first(root);
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 0466efa71140..aa13aa9826d9 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -13,13 +13,6 @@ static bool hists__filter_entry_by_thread(struct hists *hists,
+ static bool hists__filter_entry_by_symbol(struct hists *hists,
+ 					  struct hist_entry *he);
  
- 	hists->nr_entries = 0;
-+	hists->nr_non_filtered_entries = 0;
- 	hists->stats.total_period = 0;
-+	hists->stats.total_non_filtered_period = 0;
- 	hists__reset_col_len(hists);
- 
- 	while (next != NULL) {
-@@ -732,13 +743,16 @@ static const struct option options[] = {
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		    "Look for files with symbols relative to this directory"),
- 	OPT_UINTEGER('o', "order", &sort_compute, "Specify compute sorting."),
-+	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
-+		     "How to display percentage of filtered entries", parse_filter_percentage),
- 	OPT_END()
- };
- 
- static double baseline_percent(struct hist_entry *he)
- {
--	struct hists *hists = he->hists;
--	return 100.0 * he->stat.period / hists->stats.total_period;
-+	u64 total = hists__total_period(he->hists);
-+
-+	return 100.0 * he->stat.period / total;
+-enum hist_filter {
+-	HIST_FILTER__DSO,
+-	HIST_FILTER__THREAD,
+-	HIST_FILTER__PARENT,
+-	HIST_FILTER__SYMBOL,
+-};
+-
+ struct callchain_param	callchain_param = {
+ 	.mode	= CHAIN_GRAPH_REL,
+ 	.min_percent = 0.5,
+@@ -330,6 +323,7 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
+ 		hists__calc_col_len(hists, h);
+ 		++hists->nr_entries;
+ 		hists->stats.total_period += h->stat.period;
++		hists->stats.total_non_filtered_period += h->stat.period;
+ 	}
  }
  
- static int hpp__color_baseline(struct perf_hpp_fmt *fmt,
+@@ -429,7 +423,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 			.weight = weight,
+ 		},
+ 		.parent = sym_parent,
+-		.filtered = symbol__parent_filter(sym_parent),
++		.filtered = symbol__parent_filter(sym_parent) | al->filtered,
+ 		.hists	= hists,
+ 		.branch_info = bi,
+ 		.mem_info = mi,
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 0c76bf972736..a149f1adaae4 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -14,6 +14,15 @@ struct hist_entry;
+ struct addr_location;
+ struct symbol;
+ 
++enum hist_filter {
++	HIST_FILTER__DSO,
++	HIST_FILTER__THREAD,
++	HIST_FILTER__PARENT,
++	HIST_FILTER__SYMBOL,
++	HIST_FILTER__GUEST,
++	HIST_FILTER__HOST,
++};
++
+ /*
+  * The kernel collects the number of events it couldn't send in a stretch and
+  * when possible sends this number in a PERF_RECORD_LOST event. The number of
+@@ -28,6 +37,7 @@ struct symbol;
+  */
+ struct events_stats {
+ 	u64 total_period;
++	u64 total_non_filtered_period;
+ 	u64 total_lost;
+ 	u64 total_invalid_chains;
+ 	u32 nr_events[PERF_RECORD_HEADER_MAX];
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 2553ae04b788..501e4e722e8e 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -186,7 +186,7 @@ struct addr_location {
+ 	struct symbol *sym;
+ 	u64	      addr;
+ 	char	      level;
+-	bool	      filtered;
++	u8	      filtered;
+ 	u8	      cpumode;
+ 	s32	      cpu;
+ };
 -- 
 1.7.11.7
 
