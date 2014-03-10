@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725AbaCJMuz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 08:50:55 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:51590 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753266AbaCJMuw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 08:50:52 -0400
-Date: Mon, 10 Mar 2014 08:50:49 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr =?UTF-8?B?TWzDoWRlaw==?= <pmladek@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 4/4] x86: Fix order of warning messages when ftrace
- modifies code
-Message-ID: <20140310085049.3bcc0d20@gandalf.local.home>
-In-Reply-To: <20140310083728.GA14361@pathway.suse.cz>
-References: <1392650573-3390-1-git-send-email-pmladek@suse.cz>
-	<1392650573-3390-5-git-send-email-pmladek@suse.cz>
-	<20140307131831.0eefb839@gandalf.local.home>
-	<20140310083728.GA14361@pathway.suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1753741AbaCJMxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 08:53:06 -0400
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:51129
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753162AbaCJMxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 08:53:04 -0400
+From: =?utf-8?B?U8O4cmVuc2VuLCBTdGVmYW4=?= 
+	<Stefan.Sorensen@spectralink.com>
+To: "richardcochran@gmail.com" <richardcochran@gmail.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
+        "christian.riesch@omicron.at" <christian.riesch@omicron.at>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH RFC net-next v1 0/9] ptp: dynamic pin control
+Thread-Topic: [PATCH RFC net-next v1 0/9] ptp: dynamic pin control
+Thread-Index: AQHPOwaKm3RAZk4Gt02S4K3iXflNdZraSUEA
+Date: Mon, 10 Mar 2014 12:52:57 +0000
+Message-ID: <1394455974.2296.22.camel@e37108.spectralink.com>
+References: <cover.1394307303.git.richardcochran@gmail.com>
+In-Reply-To: <cover.1394307303.git.richardcochran@gmail.com>
+Accept-Language: en-GB, de-DE, da-DK, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+x-originating-ip: [93.166.232.46]
+x-forefront-prvs: 014617085B
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377424004)(24454002)(189002)(199002)(95416001)(47446002)(97336001)(77156001)(77096001)(97186001)(74662001)(53806001)(76482001)(86362001)(76796001)(92726001)(76786001)(74876001)(74706001)(93136001)(92566001)(94946001)(56776001)(54316002)(33646001)(95666003)(69226001)(94316002)(93516002)(93916002)(87286001)(87266001)(74366001)(1411001)(74502001)(79102001)(62966002)(81542001)(4396001)(77982001)(59766001)(85306002)(50226001)(63696002)(47976001)(47736001)(50986001)(49866001)(81342001)(85202002)(2656002)(87936001)(85182001)(80976001)(83322001)(80022001)(65816001)(81816001)(51856001)(81686001)(66066001)(85852003)(83072002)(90146001)(89996001)(56816005)(88136002)(31966008)(46102001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR07MB510;H:DM2PR07MB334.namprd07.prod.outlook.com;CLIP:93.166.232.46;FPR:AC69523C.ACE25F5B.4DDD9D67.46E7E2B5.2022D;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <1135BF2B223B9046AB209E53BDFCBE82@namprd07.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+X-OriginatorOrg: spectralink.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2ACrGIJ016687
 
-On Mon, 10 Mar 2014 09:37:29 +0100
-Petr MlÃ¡dek <pmladek@suse.cz> wrote:
+On Sat, 2014-03-08 at 20:42 +0100, Richard Cochran wrote:
+> This patch series introduces a way of changing the auxiliary PTP
+> Hardware Clock functions (periodic output signals and time stamping
+> external signals) at run time. In the past on the netdev list, we have
+> discussed other ways to handle this, such as module parameters and
+> ethtool. This series implements a new PHC ioctl because that is the
+> most natural way. Users already activate the auxiliary functions via
+> the ioctls. The sysfs interface has also been expanded so that the pin
+> configuration can be programmed using shell scripts.
 
-> On Fri 07-03-14 13:18:31, Steven Rostedt wrote:
-> > H. Peter,
-> > 
-> > I just added this to my 3.16 queue. But can you give an Acked-by for it
-> > too. That way I don't forget to ask you later (3.16 is a ways away ;-)
-> > 
-> > I'd add it to my 3.15 queue, but I'm trying not to make changes to it
-> > unless they are more significant.
-> 
-> Sure, it makes sense.
-> 
-> Acked-by: Petr Mladek <pmladek@suse.cz>
+A few general questions / thoughts:
 
-Hi Petr, thanks, but you don't need to ack your own patch ;-)
+What are the n_ext_ts and n_per_out supposed to be set to now? The
+number of pins configured for the relevant function or the number of
+channels that are available for the function?
 
-I was asking H. Peter Anvin for an ack as he's the maintainer of x86.
+The implementation is limited to a single function for each pin - the
+dp83640 supports an ext_ts and several periodic outputs on the same pin,
+but I do not see that many real-world uses. 
 
--- Steve
+I have done a few short run-time tests, and so far everything is working
+as expected.
 
-> 
-> Best Regards,
-> Petr
-> 
-> > -- Steve
-> > 
-> > 
-> > On Mon, 17 Feb 2014 16:22:53 +0100
-> > Petr Mladek <pmladek@suse.cz> wrote:
-> > 
-> > > The colon at the end of the printk message suggests that it should get printed
-> > > before the details printed by ftrace_bug().
-> > > 
-> > > When touching the line, let's use the preferred pr_warn() macro as suggested
-> > > by checkpatch.pl.
-> > > 
-> > > Signed-off-by: Petr Mladek <pmladek@suse.cz>
-> > > ---
-> > >  arch/x86/kernel/ftrace.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> > > index 525a9f954c8b..ad7c38f5206b 100644
-> > > --- a/arch/x86/kernel/ftrace.c
-> > > +++ b/arch/x86/kernel/ftrace.c
-> > > @@ -622,8 +622,8 @@ void ftrace_replace_code(int enable)
-> > >  	return;
-> > >  
-> > >   remove_breakpoints:
-> > > +	pr_warn("Failed on %s (%d):\n", report, count);
-> > >  	ftrace_bug(ret, rec ? rec->ip : 0);
-> > > -	printk(KERN_WARNING "Failed on %s (%d):\n", report, count);
-> > >  	for_ftrace_rec_iter(iter) {
-> > >  		int err;
-> > >  
-> > 
-
+Stefan
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
