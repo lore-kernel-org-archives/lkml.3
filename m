@@ -1,77 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205AbaCKWp1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 18:45:27 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61085 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563AbaCKWpX (ORCPT
+	id S1756148AbaCKWqD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 18:46:03 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55824 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755966AbaCKWk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 18:45:23 -0400
-Date: Tue, 11 Mar 2014 22:45:17 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/5] mfd: add bcm590xx pmu driver
-Message-ID: <20140311224517.GA5672@lee--X1>
-References: <1394552775-31264-1-git-send-email-mporter@linaro.org>
- <1394552775-31264-3-git-send-email-mporter@linaro.org>
- <20140311160837.GP21216@lee--X1>
- <20140311221938.GO25092@beef>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140311221938.GO25092@beef>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Mar 2014 18:40:57 -0400
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: tglx@linutronix.de, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
+        ezequiel.garcia@free-electrons.com, ivan.khoronzhuk@ti.com,
+        linus.walleij@linaro.org, magnus.damm@gmail.com,
+        matthias.bgg@gmail.com, soren.brinkmann@xilinx.com,
+        sboyd@codeaurora.org
+Subject: [PATCH 04/17] ARM: sunxi: dt: Convert to the new clocksource compatible
+Date: Tue, 11 Mar 2014 23:40:40 +0100
+Message-Id: <1394577653-8615-4-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394577653-8615-1-git-send-email-daniel.lezcano@linaro.org>
+References: <531F8FAC.2040902@linaro.org>
+ <1394577653-8615-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Add a driver for the BCM590xx PMU multi-function devices. The driver
-> > > initially supports regmap initialization and instantiation of the
-> > > voltage regulator device function of the PMU.
-> > > 
-> > > Signed-off-by: Matt Porter <mporter@linaro.org>
-> > > Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-> > > Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> > > ---
-> > >  drivers/mfd/Kconfig          |  8 ++++
-> > >  drivers/mfd/Makefile         |  1 +
-> > >  drivers/mfd/bcm590xx.c       | 93 ++++++++++++++++++++++++++++++++++++++++++++
-> > >  include/linux/mfd/bcm590xx.h | 31 +++++++++++++++
-> > >  4 files changed, 133 insertions(+)
-> > >  create mode 100644 drivers/mfd/bcm590xx.c
-> > >  create mode 100644 include/linux/mfd/bcm590xx.h
-> > 
-> > I have a tiny nit that 'ret' doesn't need to be initialised before
-> > use in probe(), but apart from that...
-> > 
-> > Looks pretty sensible:
-> >   Acked-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Ok, thanks. When I get back in front of my desktop I'll send a v4 of
-> just this patch to address that nit. Mark already applied the regulator
-> driver from this series, will you be taking this through your tree? For
-> that matter, I wonder if the binding would also go through your tree
-> with this driver.
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-At least the MFD portion and the DT binding doc will go through the
-MFD tree.
+Switch the device tree to the new compatibles introduced in the timer driver
+to have a common pattern accross all Allwinner SoCs.
 
-Are there any inter-patch dependencies in the set? If so, we should
-know about them so we can coordinate a sensible solution.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ arch/arm/boot/dts/sun4i-a10.dtsi  |    2 +-
+ arch/arm/boot/dts/sun5i-a10s.dtsi |    2 +-
+ arch/arm/boot/dts/sun5i-a13.dtsi  |    2 +-
+ arch/arm/boot/dts/sun6i-a31.dtsi  |    2 +-
+ arch/arm/boot/dts/sun7i-a20.dtsi  |    2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
+index 040bb0e..dd64cc0 100644
+--- a/arch/arm/boot/dts/sun4i-a10.dtsi
++++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+@@ -403,7 +403,7 @@
+ 		};
+ 
+ 		timer@01c20c00 {
+-			compatible = "allwinner,sun4i-timer";
++			compatible = "allwinner,sun4i-a10-timer";
+ 			reg = <0x01c20c00 0x90>;
+ 			interrupts = <22>;
+ 			clocks = <&osc24M>;
+diff --git a/arch/arm/boot/dts/sun5i-a10s.dtsi b/arch/arm/boot/dts/sun5i-a10s.dtsi
+index ea16054..9cee110 100644
+--- a/arch/arm/boot/dts/sun5i-a10s.dtsi
++++ b/arch/arm/boot/dts/sun5i-a10s.dtsi
+@@ -366,7 +366,7 @@
+ 		};
+ 
+ 		timer@01c20c00 {
+-			compatible = "allwinner,sun4i-timer";
++			compatible = "allwinner,sun4i-a10-timer";
+ 			reg = <0x01c20c00 0x90>;
+ 			interrupts = <22>;
+ 			clocks = <&osc24M>;
+diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
+index 320335a..f5cba63 100644
+--- a/arch/arm/boot/dts/sun5i-a13.dtsi
++++ b/arch/arm/boot/dts/sun5i-a13.dtsi
+@@ -329,7 +329,7 @@
+ 		};
+ 
+ 		timer@01c20c00 {
+-			compatible = "allwinner,sun4i-timer";
++			compatible = "allwinner,sun4i-a10-timer";
+ 			reg = <0x01c20c00 0x90>;
+ 			interrupts = <22>;
+ 			clocks = <&osc24M>;
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index 5256ad9..996fff5 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -231,7 +231,7 @@
+ 		};
+ 
+ 		timer@01c20c00 {
+-			compatible = "allwinner,sun4i-timer";
++			compatible = "allwinner,sun4i-a10-timer";
+ 			reg = <0x01c20c00 0xa0>;
+ 			interrupts = <0 18 4>,
+ 				     <0 19 4>,
+diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
+index 119f066..4bc5c6f 100644
+--- a/arch/arm/boot/dts/sun7i-a20.dtsi
++++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+@@ -435,7 +435,7 @@
+ 		};
+ 
+ 		timer@01c20c00 {
+-			compatible = "allwinner,sun4i-timer";
++			compatible = "allwinner,sun4i-a10-timer";
+ 			reg = <0x01c20c00 0x90>;
+ 			interrupts = <0 22 4>,
+ 				     <0 23 4>,
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
