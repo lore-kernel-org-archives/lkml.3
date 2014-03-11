@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589AbaCKUBn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:01:43 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:53097 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755471AbaCKUBl (ORCPT
+	id S1755492AbaCKUHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:07:43 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51867 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755257AbaCKUHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:01:41 -0400
+	Tue, 11 Mar 2014 16:07:42 -0400
+Message-ID: <531F6D02.3060409@oracle.com>
+Date: Tue, 11 Mar 2014 16:07:30 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140311095910.GA5834@console-pimps.org>
-References: <531d3b0e.4MeVQMzUoamEWeW7%fengguang.wu@intel.com>
-	<CAGXu5jJsyAHdiMfoAZHS-4w1+rGKGQH9s9FF83Y59VLmczfaXQ@mail.gmail.com>
-	<20140311095910.GA5834@console-pimps.org>
-Date: Tue, 11 Mar 2014 13:01:40 -0700
-X-Google-Sender-Auth: dgac-Mqn2LSa4fJdJbHj-2HmPTc
-Message-ID: <CAGXu5jLLD7n0gWXUd-ME5iDYh=ywaG9eDjCkkcSY3Rk1pgfJTg@mail.gmail.com>
-Subject: Re: [kees:format-security 2/3] arch/sh/kernel/dumpstack.c:118:2:
- error: format not a string literal and no format arguments
-From: Kees Cook <keescook@chromium.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        kbuild test robot <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>
+Subject: mm: kernel BUG at mm/swap.c:609!
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 2:59 AM, Matt Fleming <matt@console-pimps.org> wrote:
-> On Mon, 10 Mar, at 10:41:57AM, Kees Cook wrote:
->> > 4e14dfc7 Matt Fleming 2009-08-07  113  /*
->> > 4e14dfc7 Matt Fleming 2009-08-07  114   * Print one address/symbol entries per line.
->> > 4e14dfc7 Matt Fleming 2009-08-07  115   */
->> > 4e14dfc7 Matt Fleming 2009-08-07  116  static void print_trace_address(void *data, unsigned long addr, int reliable)
->> > 4e14dfc7 Matt Fleming 2009-08-07  117  {
->> > 4e14dfc7 Matt Fleming 2009-08-07 @118   printk(data);
->>
->> This needs to be "printk("%s", data);" so there is no chance of having
->> "data" interpreted as a format string itself.
->
-> OMG, I suck. Thanks for the report Kees. Have you got a patch for x86?
-> I think that's where this code came from.
+Hi all,
 
-Your patch looks great, thanks!
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel
+I've stumbled on the following spew:
 
--Kees
+[  477.301955] kernel BUG at mm/swap.c:609!
+[  477.302564] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  477.303590] Dumping ftrace buffer:
+[  477.305022]    (ftrace buffer empty)
+[  477.305899] Modules linked in:
+[  477.306397] CPU: 35 PID: 10092 Comm: trinity-c374 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00010-g1f812cb #142
+[  477.307644] task: ffff8800a7f80000 ti: ffff8800a7f6a000 task.ti: ffff8800a7f6a000
+[  477.309124] RIP: 0010:[<ffffffff8127f311>]  [<ffffffff8127f311>] lru_cache_add+0x21/0x60
+[  477.310301] RSP: 0000:ffff8800a7f6bbc8  EFLAGS: 00010292
+[  477.311110] RAX: 000000000000003f RBX: ffffea0013d68000 RCX: 0000000000000006
+[  477.311110] RDX: 0000000000000006 RSI: ffff8800a7f80d60 RDI: 0000000000000282
+[  477.311110] RBP: ffff8800a7f6bbc8 R08: 0000000000000001 R09: 0000000000000001
+[  477.311110] R10: 0000000000000001 R11: 0000000000000001 R12: ffff8800ab9b0c00
+[  477.311110] R13: 0000000002400000 R14: ffff8800ab9b0c00 R15: 0000000000000001
+[  477.311110] FS:  00007ff2c047c700(0000) GS:ffff88042bc00000(0000) knlGS:0000000000000000
+[  477.311110] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  477.311110] CR2: 0000000003788a68 CR3: 00000000a7f68000 CR4: 00000000000006a0
+[  477.311110] DR0: 000000000069b000 DR1: 0000000000000000 DR2: 0000000000000000
+[  477.311110] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[  477.311110] Stack:
+[  477.311110]  ffff8800a7f6bbf8 ffffffff812adaec ffffea0013d68000 ffffea002bdb8000
+[  477.311110]  ffffea0013d68000 ffff8800a7f7c090 ffff8800a7f6bca8 ffffffff812db8ec
+[  477.311110]  0000000000000001 ffffffff812e1321 ffff8800a7f6bc48 ffffffff811ad632
+[  477.311110] Call Trace:
+[  477.311110]  [<ffffffff812adaec>] page_add_new_anon_rmap+0x1ec/0x210
+[  477.311110]  [<ffffffff812db8ec>] migrate_misplaced_transhuge_page+0x55c/0x830
+[  477.311110]  [<ffffffff812e1321>] ? do_huge_pmd_numa_page+0x311/0x460
+[  477.311110]  [<ffffffff811ad632>] ? __lock_release+0x1e2/0x200
+[  477.311110]  [<ffffffff812e133f>] do_huge_pmd_numa_page+0x32f/0x460
+[  477.311110]  [<ffffffff81af6aca>] ? delay_tsc+0xfa/0x120
+[  477.311110]  [<ffffffff812a31f4>] __handle_mm_fault+0x244/0x3a0
+[  477.311110]  [<ffffffff812e37ed>] ? rcu_read_unlock+0x5d/0x60
+[  477.311110]  [<ffffffff812a3463>] handle_mm_fault+0x113/0x1c0
+[  477.311110]  [<ffffffff844abd42>] ? __do_page_fault+0x302/0x5d0
+[  477.311110]  [<ffffffff844abfd1>] __do_page_fault+0x591/0x5d0
+[  477.311110]  [<ffffffff8118ab46>] ? vtime_account_user+0x96/0xb0
+[  477.311110]  [<ffffffff844ac492>] ? preempt_count_sub+0xe2/0x120
+[  477.311110]  [<ffffffff81269567>] ? context_tracking_user_exit+0x187/0x1d0
+[  477.311110]  [<ffffffff844ac0d5>] do_page_fault+0x45/0x70
+[  477.311110]  [<ffffffff844ab386>] do_async_page_fault+0x36/0x100
+[  477.311110]  [<ffffffff844a7f18>] async_page_fault+0x28/0x30
+[  477.311110] Code: 65 f0 4c 8b 6d f8 c9 c3 66 90 55 48 89 e5 66 66 66 66 90 48 8b 07 a8 40 74 18 48 8b 07 a9 00 00 10 00 74 0e 31 f6 e8 2f 20 ff ff <0f> 0b eb fe 0f 1f 00 48 8b 07 a8 20 74 19 31 f6 e8 1a 20 ff ff
+[  477.311110] RIP  [<ffffffff8127f311>] lru_cache_add+0x21/0x60
+[  477.311110]  RSP <ffff8800a7f6bbc8>
 
->
-> Including Andrew, because I'm not sure who else is going to take this
-> patch.
->
-> ---
->
-> From 2284f3a27f68cec665aa982c0a226cf3fbf96ddf Mon Sep 17 00:00:00 2001
-> From: Matt Fleming <matt.fleming@intel.com>
-> Date: Tue, 11 Mar 2014 09:50:26 +0000
-> Subject: [PATCH] sh: Fix format string bug in stack tracer
->
-> Kees reported the following error,
->
->    arch/sh/kernel/dumpstack.c: In function 'print_trace_address':
->>> arch/sh/kernel/dumpstack.c:118:2: error: format not a string literal and no format arguments [-Werror=format-security]
->
-> Use the "%s" format so that it's impossible to interpret 'data' as a
-> format string.
->
-> Reported-by: Kees Cook <keescook@chromium.org>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  arch/sh/kernel/dumpstack.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/sh/kernel/dumpstack.c b/arch/sh/kernel/dumpstack.c
-> index b959f5592604..8dfe645bcc4b 100644
-> --- a/arch/sh/kernel/dumpstack.c
-> +++ b/arch/sh/kernel/dumpstack.c
-> @@ -115,7 +115,7 @@ static int print_trace_stack(void *data, char *name)
->   */
->  static void print_trace_address(void *data, unsigned long addr, int reliable)
->  {
-> -       printk(data);
-> +       printk("%s", (char *)data);
->         printk_address(addr, reliable);
->  }
->
-> --
-> 1.8.5.3
->
-> --
-> Matt Fleming, Intel Open Source Technology Center
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+Thanks,
+Sasha
