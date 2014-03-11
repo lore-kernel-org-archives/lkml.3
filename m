@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629AbaCKVZA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 17:25:00 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:43566 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289AbaCKVY6 (ORCPT
+	id S1755404AbaCKV0K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 17:26:10 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:32879 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753479AbaCKV0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 17:24:58 -0400
-From: behanw@converseincode.com
-To: khali@linux-fr.org, rostedt@goodmis.org
-Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, dwmw2@infradead.org,
-        pageexec@freemail.hu, Mark Charlebois <charlebm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH v3] module: LLVMLinux: Remove unused function warning from __param_check macro
-Date: Tue, 11 Mar 2014 14:24:51 -0700
-Message-Id: <1394573091-4705-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <87y50hw9go.fsf@rustcorp.com.au>
-References: <87y50hw9go.fsf@rustcorp.com.au>
+	Tue, 11 Mar 2014 17:26:08 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:157d:c017:3fe5:a5f1:ca5e]
+In-Reply-To: <ae4583176ee5c9d8a8a2d53c000b86711eb66287.1389018985.git.michal.simek@xilinx.com>
+References: <cover.1389018985.git.michal.simek@xilinx.com>
+	<ae4583176ee5c9d8a8a2d53c000b86711eb66287.1389018985.git.michal.simek@xilinx.com>
+Date: Tue, 11 Mar 2014 14:26:07 -0700
+Message-ID: <CAOesGMjzNWXs26T2ZxGi=ASk2ETk0P5re-QdfwGT6O8M=5tDkA@mail.gmail.com>
+Subject: Re: [PATCH 3/7] ARM: zynq: Hang iomapped slcr address on device_node
+From: Olof Johansson <olof@lixom.net>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Michal Simek <monstr@monstr.eu>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Charlebois <charlebm@gmail.com>
+On Mon, Jan 6, 2014 at 6:36 AM, Michal Simek <michal.simek@xilinx.com> wrote:
+> From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+>
+> For later usage by zynq clk driver.
+>
+> Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>  arch/arm/mach-zynq/slcr.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
+> index 9746de7..2891dcf 100644
+> --- a/arch/arm/mach-zynq/slcr.c
+> +++ b/arch/arm/mach-zynq/slcr.c
+> @@ -121,6 +121,8 @@ int __init zynq_early_slcr_init(void)
+>                 BUG();
+>         }
+>
+> +       np->data = (__force void *)zynq_slcr_base;
 
-This code makes a compile time type check that is optimized away. Clang
-complains that it generates an unused function:
 
-linux/kernel/panic.c:471:1: warning: unused function '__check_panic'
-      [-Wunused-function]
-core_param(panic, panic_timeout, int, 0644);
-^
-linux/moduleparam.h:283:2: note: expanded from macro
-      'core_param'
-        param_check_##type(name, &(var));                               \
-        ^
-<scratch space>:87:1: note: expanded from here
-param_check_int
-^
-linux/moduleparam.h:369:34: note: expanded from macro
-      'param_check_int'
-#define param_check_int(name, p) __param_check(name, p, int)
-                                 ^
-linux/moduleparam.h:349:22: note: expanded from macro
-      '__param_check'
-        static inline type *__check_##name(void) { return(p); }
-                            ^
-<scratch space>:88:1: note: expanded from here
-__check_panic
+This is quite unusual, we normally remap again if needed. Is there a
+reason you can't just have the driver request the resource and map it
+like most other ones do?
 
-GCC won't complain for a static inline function but would if it was just
-a static function.
 
-Adding the unused attribute to the function declaration removes the warning.
-Per request from Rusty Russell it is marked as __always_unused as the code
-is meant to be optimized away.
-
-This code works for both GCC and clang.
-
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- include/linux/moduleparam.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index c3eb102..175f699 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -346,7 +346,7 @@ static inline void destroy_params(const struct kernel_param *params,
- /* The macros to do compile-time type checking stolen from Jakub
-    Jelinek, who IIRC came up with this idea for the 2.4 module init code. */
- #define __param_check(name, p, type) \
--	static inline type *__check_##name(void) { return(p); }
-+	static inline type __always_unused *__check_##name(void) { return(p); }
- 
- extern struct kernel_param_ops param_ops_byte;
- extern int param_set_byte(const char *val, const struct kernel_param *kp);
--- 
-1.8.3.2
-
+-Olof
