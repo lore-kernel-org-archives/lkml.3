@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586AbaCKWGe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 18:06:34 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:36603 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588AbaCKWGc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 18:06:32 -0400
+	id S1755824AbaCKWHg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 18:07:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753718AbaCKWHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 18:07:34 -0400
+Date: Tue, 11 Mar 2014 16:57:01 -0400
+From: Dave Jones <davej@redhat.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
+Message-ID: <20140311205701.GA16658@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Davidlohr Bueso <davidlohr@hp.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	"linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Michel Lespinasse <walken@google.com>,
+	Rik van Riel <riel@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <531F6689.60307@oracle.com>
+ <1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>
+ <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
+ <531F75D1.3060909@oracle.com>
+ <1394570844.2786.42.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXEuZ4HzXWB_Pf1+UZtQS3N70OeLuxDL+pwViwsT8URhA@mail.gmail.com>
-References: <20140311173556.23084.57635.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140311174249.23084.66300.stgit@bhelgaas-glaptop.roam.corp.google.com> <CAE9FiQXEuZ4HzXWB_Pf1+UZtQS3N70OeLuxDL+pwViwsT8URhA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 11 Mar 2014 16:06:12 -0600
-Message-ID: <CAErSpo5EX0eZRAoff=wN7K3oSiF_mYMgTjLe-uPKXGUngG35aA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] resources: Set type in __request_region()
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394570844.2786.42.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 3:44 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Mar 11, 2014 at 10:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> We don't set the type (I/O, memory, etc.) of resources added by
->> __request_region(), which leads to confusing messages like this:
->>
->>     address space collision: [io  0x1000-0x107f] conflicts with ACPI CPU throttle [??? 0x00001010-0x00001015 flags 0x80000000]
->>
->> Set the type of a new resource added by __request_region() (used by
->> request_region() and request_mem_region()) to the type of its parent.  This
->> makes the resource tree internally consistent and fixes messages like the
->> above, where the ACPI CPU throttle resource really is an I/O port region,
->> but request_region() didn't fill in the type, so %pR didn't know how to
->> print it.
->>
->> Sample dmesg showing the issue at the link below.
->>
->> Link: https://bugzilla.kernel.org/show_bug.cgi?id=71611
->> Reported-by: Paul Bolle <pebolle@tiscali.nl>
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> ---
->>  kernel/resource.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/resource.c b/kernel/resource.c
->> index a8344dda7049..ae1f742c860c 100644
->> --- a/kernel/resource.c
->> +++ b/kernel/resource.c
->> @@ -945,8 +945,8 @@ struct resource * __request_region(struct resource *parent,
->>         res->name = name;
->>         res->start = start;
->>         res->end = start + n - 1;
->> -       res->flags = IORESOURCE_BUSY;
->> -       res->flags |= flags;
->> +       res->flags = parent->flags;
->
-> can we use (parent->flags & IORESOURCE_TYPE_BITS) instead?
+On Tue, Mar 11, 2014 at 01:47:24PM -0700, Davidlohr Bueso wrote:
+ > On Tue, 2014-03-11 at 16:45 -0400, Sasha Levin wrote:
+ > > On 03/11/2014 04:30 PM, Andrew Morton wrote:
+ > > > All I can think is that find_vma() went and returned a vma from a
+ > > > different mm, which would be odd.  How about I toss this in there?
+ > > >
+ > > > --- a/mm/vmacache.c~a
+ > > > +++ a/mm/vmacache.c
+ > > > @@ -72,8 +72,10 @@ struct vm_area_struct *vmacache_find(str
+ > > >   	for (i = 0; i < VMACACHE_SIZE; i++) {
+ > > >   		struct vm_area_struct *vma = current->vmacache[i];
+ > > >
+ > > > -		if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+ > > > +		if (vma && vma->vm_start <= addr && vma->vm_end > addr) {
+ > > > +			BUG_ON(vma->vm_mm != mm);
+ > > >   			return vma;
+ > > > +		}
+ > > >   	}
+ > > 
+ > > [  243.565794] kernel BUG at mm/vmacache.c:76!
+ > 
+ > and this is also part of the DEBUG_PAGEALLOC + trinity combo! I suspect
+ > the root cause it the same as Fengguang's report.
 
-Yep, that seems like a good idea.  I changed it to:
+btw, I added a (ugly) script to trinity.git this afternoon:
+https://github.com/kernelslacker/trinity/commit/b6cfe63ea5b205a34bc6c5698e5b766dfcddad1d
+which should make reproducing VM related bugs happen a lot faster.
 
-+       res->flags = resource_type(parent);
+While chasing one particular issue, that script has hit 2-3 others in my
+testing so far today (All already known).
 
-Bjorn
+It would be really good if people other than me & Sasha started running stuff like this occasionally
+to try and get some of the more annoying things fixed up faster. Though it's only really
+useful with debug kernels, and I know from past experience that asking people to try running things
+with debug options enabled is like pulling teeth..
 
->> +       res->flags |= IORESOURCE_BUSY | flags;
->>
->>         write_lock(&resource_lock);
->>
->>
+	Dave
+
