@@ -1,989 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbaCKLk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 07:40:57 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:50076 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753027AbaCKLkz (ORCPT
+	id S1754677AbaCKLmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 07:42:14 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:52497 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220AbaCKLmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 07:40:55 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz154dIe0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchd2iz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: <broonie@kernel.org>, <brian.austin@cirrus.com>,
-        <Paul.Handrigan@cirrus.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <lgirdwood@gmail.com>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <lars@metafoo.de>
-Subject: [PATCH v3] ASoC: cs42888: Add codec driver support
-Date: Tue, 11 Mar 2014 19:41:31 +0800
-Message-ID: <1394538091-19513-1-git-send-email-Guangyu.Chen@freescale.com>
-X-Mailer: git-send-email 1.8.4
+	Tue, 11 Mar 2014 07:42:10 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
+Date: Tue, 11 Mar 2014 12:43:44 +0100
+Message-ID: <139468148.3QhLg3QYq1@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1394466030.7380.39.camel@paszta.hi.pengutronix.de>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <4339286.FzhQ2m6hoA@avalon> <1394466030.7380.39.camel@paszta.hi.pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the Cirrus Logic CS42888 Audio CODEC that
-has four 24-bit A/D and eight 24-bit D/A converters.
+Hi Philipp,
 
-[ CS42888 supports both I2C and SPI control ports. As initial patch,
-  this patch only adds the support for I2C. ]
+On Monday 10 March 2014 16:40:30 Philipp Zabel wrote:
+> Am Montag, den 10.03.2014, 16:15 +0100 schrieb Laurent Pinchart:
+> > On Monday 10 March 2014 14:58:15 Grant Likely wrote:
+> > > On Mon, 10 Mar 2014 14:52:53 +0100, Laurent Pinchart wrote:
+> > > > On Monday 10 March 2014 12:18:20 Tomi Valkeinen wrote:
+> > > > > On 08/03/14 13:41, Grant Likely wrote:
+> > > > > >> Ok. If we go for single directional link, the question is then:
+> > > > > >> which way? And is the direction different for display and camera,
+> > > > > >> which are kind of reflections of each other?
+> > > > > > 
+> > > > > > In general I would recommend choosing whichever device you would
+> > > > > > sensibly think of as a master. In the camera case I would choose
+> > > > > > the camera controller node instead of the camera itself, and in
+> > > > > > the display case I would choose the display controller instead of
+> > > > > > the panel. The binding author needs to choose what she things
+> > > > > > makes the most sense, but drivers can still use if it it turns out
+> > > > > > to be 'backwards'
+> > > > > 
+> > > > > I would perhaps choose the same approach, but at the same time I
+> > > > > think it's all but clear. The display controller doesn't control the
+> > > > > panel any more than a DMA controller controls, say, the display
+> > > > > controller.
+> > > > > 
+> > > > > In fact, in earlier versions of OMAP DSS DT support I had a simpler
+> > > > > port description, and in that I had the panel as the master (i.e.
+> > > > > link from panel to dispc) because the panel driver uses the display
+> > > > > controller's features to provide the panel device a data stream.
+> > > > > 
+> > > > > And even with the current OMAP DSS DT version, which uses the v4l2
+> > > > > style ports/endpoints, the driver model is still the same, and only
+> > > > > links towards upstream are used.
+> > > > > 
+> > > > > So one reason I'm happy with the dual-linking is that I can easily
+> > > > > follow the links from the downstream entities to upstream entities,
+> > > > > and other people, who have different driver model, can easily do the
+> > > > > opposite.
+> > > > > 
+> > > > > But I agree that single-linking is enough and this can be handled at
+> > > > > runtime, even if it makes the code more complex. And perhaps
+> > > > > requires extra data in the dts, to give the start points for the
+> > > > > graph.
+> > > > 
+> > > > In theory unidirectional links in DT are indeed enough. However, let's
+> > > > not forget the following.
+> > > > 
+> > > > - There's no such thing as single start points for graphs. Sure, in
+> > > > some simple cases the graph will have a single start point, but that's
+> > > > not a generic rule. For instance the camera graphs
+> > > > http://ideasonboard.org/media/omap3isp.ps and
+> > > > http://ideasonboard.org/media/eyecam.ps have two camera sensors, and
+> > > > thus two starting points from a data flow point of view. And if you
+> > > > want a better understanding of how complex media graphs can become,
+> > > > have a look at http://ideasonboard.org/media/vsp1.0.pdf (that's a real
+> > > > world example, albeit all connections are internal to the SoC in that
+> > > > particular case, and don't need to be described in DT).
+> > > > 
+> > > > - There's also no such thing as a master device that can just point to
+> > > > slave devices. Once again simple cases exist where that model could
+> > > > work, but real world examples exist of complex pipelines with dozens
+> > > > of elements all implemented by a separate IP core and handled by
+> > > > separate drivers, forming a graph with long chains and branches. We
+> > > > thus need real graph bindings.
+> > > > 
+> > > > - Finally, having no backlinks in DT would make the software
+> > > > implementation very complex. We need to be able to walk the graph in a
+> > > > generic way without having any of the IP core drivers loaded, and
+> > > > without any specific starting point. We would thus need to parse the
+> > > > complete DT tree, looking at all nodes and trying to find out whether
+> > > > they're part of the graph we're trying to walk. The complexity of the
+> > > > operation would be at best quadratic to the number of nodes in the
+> > > > whole DT and to the number of nodes in the graph.
+> > > 
+> > > Not really. To being with, you cannot determine any meaning of a node
+> > > across the tree (aside from it being an endpoint)
+> > 
+> > That's the important part. I can assume the target node of the
+> > remote-endpoint phandle to be an endpoint, and can thus assume that it
+> > implements the of-graph bindings. That's all I need to be able to walk
+> > the graph in a generic way.
+> >
+> > > without also understanding the binding that the node is a part of. That
+> > > means you need to have something matching against the compatible string
+> > > on both ends of the linkage. For instance:
+> > > 
+> > > panel {
+> > > 	compatible = "acme,lvds-panel";
+> > > 	lvds-port: port {
+> > > 	};
+> > > };
+> > > 
+> > > display-controller {
+> > > 	compatible = "encom,video";
+> > > 	port {
+> > > 		remote-endpoint = <&lvds-port>;
+> > > 	};
+> > > };
+> > > 
+> > > In the above example, the encom,video driver has absolutely zero
+> > > information about what the acme,lvds-panel binding actually implements.
+> > > There needs to be both a driver for the "acme,lvds-panel" binding and
+> > > one for the "encom,video" binding (even if the acme,lvds-panel binding
+> > > is very thin and defers the functionality to the video controller).
+> > 
+> > I absolutely agree with that. We need a driver for each device (in this
+> > case the acme panel and the encom display controller), and we need those
+> > drivers to register entities (in the generic sense of the term) for them
+> > to be able to communicate with each other. The display controller driver
+> > must not try to parse panel-specific properties from the panel node.
+> > However, as described above, I believe it can parse ports and endpoints
+> > to walk the graph.
+> >
+> > > What you want here is the drivers to register each side of the
+> > > connection. That could be modeled with something like the following
+> > > (pseudocode):
+> > > 
+> > > struct of_endpoint {
+> > > 	struct list_head list;
+> > > 	struct device_node *ep_node;
+> > > 	void *context;
+> > > 	void (*cb)(struct of_endpoint *ep, void *data);
+> > > }
+> > > 
+> > > int of_register_port(struct device *node, void (*cb)(struct of_endpoint
+> > > *ep, void *data), void *data) {
+> > > 	struct of_endpoint *ep = kzalloc(sizeof(*ep), GFP_KERNEL);
+> > > 	
+> > > 	ep->ep_node = node;
+> > > 	ep->data = data;
+> > > 	ep->callback = cb;
+> > > 	
+> > > 	/* store the endpoint to a list */
+> > > 	/* check if the endpoint has a remote-endpoint link */
+> > > 		/* If so, then link the two together and call the
+> > > 		 * callbacks */
+> > > }
+> > > 
+> > > That's neither expensive or complicated.
+> > > 
+> > > Originally I suggested walking the whole tree multiple times, but as
+> > > mentioned that doesn't scale, and as I thought about the above it isn't
+> > > even a valid thing to do. Everything has to be driven by drivers, so
+> > > even if the backlinks are there, nothing can be done with the link until
+> > > the other side goes through enumeration independently.
+> > 
+> > For such composite devices, what we need from a drivers point of view is a
+> > mechanism to wait for all components to be in place before proceeding.
+> > This isn't DT-related as such, but the graph is obviously described in DT
+> > for DT- based platforms.
+> > 
+> > There are at least two mainline implementation of such a mechanism. One of
+> > them can be found in drivers/media/v4l2-core/v4l2-async.c, another more
+> > recent one in drivers/base/component.c. Neither of them is DT-specific,
+> > and they don't try to parse DT content.
+> > 
+> > The main problem, from a DT point of view, is that we need to pick a
+> > master driver that will initiate the process of waiting for all components
+> > to be in place. This is usually the driver of the main component inside
+> > the SoC. For a camera capture pipeline the master is the SoC camera device
+> > driver that will create the V4L2 device node(s). For a display pipeline
+> > the master is the SoC display driver that will create the DRM/KMS
+> > devices.
+> > 
+> > The master device driver needs to create a list of all components it
+> > needs, and wait until all those components have been probed by their
+> > respective driver. Creating such a list requires walking the graph,
+> > starting at the master device (using a CPU-centric view as described by
+> > Russell). This is why we need the backlinks, as the master device can have
+> > inbound links.
+>
+> We could scan the whole tree for entities, ports and endpoints once, in
+> the base oftree code, and put that into a graph structure, adding the
+> backlinks.
+> The of_graph_* helpers could then use that graph instead of the device
+> tree.
 
-Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
----
+That could work. The complexity would still be quadratic, but we would parse 
+the full device tree once only.
 
-Changelog
-v3:
- * Refined document at 'clocks' section.
-v2:
- * Separated driver into I2C and main part drivers.
- * Added error out if failed to get clock.
- * Enabled Auto-mute function as default.
- * Disabled runtime-pm in remove().
- * Added return value checking for regcache_sync().
- * Fixed some trival parts like 'const' as Lars mentioned.
+The runtime complexity would still be increased, as the graph helpers would 
+need to find the endpoint object in the parsed graph corresponding to the DT 
+node they get as an argument. That's proportional to the number of graph 
+elements, not the total number of DT nodes, so I suppose it's not too bad.
 
+We also need to make sure this would work with insertion of DT fragments at 
+runtime. Probably not a big deal, but it has to be kept in mind.
 
- .../devicetree/bindings/sound/cs42888.txt          |  28 ++
- sound/soc/codecs/Kconfig                           |  10 +
- sound/soc/codecs/Makefile                          |   4 +
- sound/soc/codecs/cs42888-i2c.c                     |  68 +++
- sound/soc/codecs/cs42888.c                         | 536 +++++++++++++++++++++
- sound/soc/codecs/cs42888.h                         | 213 ++++++++
- 6 files changed, 859 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/cs42888.txt
- create mode 100644 sound/soc/codecs/cs42888-i2c.c
- create mode 100644 sound/soc/codecs/cs42888.c
- create mode 100644 sound/soc/codecs/cs42888.h
-
-diff --git a/Documentation/devicetree/bindings/sound/cs42888.txt b/Documentation/devicetree/bindings/sound/cs42888.txt
-new file mode 100644
-index 0000000..b20bd78
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/cs42888.txt
-@@ -0,0 +1,28 @@
-+CS42888 audio CODEC
-+
-+Required properties:
-+
-+  - compatible : "cirrus,cs42888"
-+
-+  - reg : the I2C address of the device for I2C
-+
-+  - clocks : a list of phandles + clock-specifiers, one for each entry in
-+    clock-names
-+
-+  - clock-names : must contain "mclk"
-+
-+  - VA-supply, VD-supply, VLS-supply, VLC-supply: power supplies for the device,
-+    as covered in Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+Example:
-+
-+codec: cs42888@48 {
-+	compatible = "cirrus,cs42888";
-+	reg = <0x48>;
-+	clocks = <&codec_mclk 0>;
-+	clock-names = "mclk";
-+	VA-supply = <&reg_audio>;
-+	VD-supply = <&reg_audio>;
-+	VLS-supply = <&reg_audio>;
-+	VLC-supply = <&reg_audio>;
-+};
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index 32d7a6f..1642578 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -44,6 +44,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_CS42L73 if I2C
- 	select SND_SOC_CS4270 if I2C
- 	select SND_SOC_CS4271 if SND_SOC_I2C_AND_SPI
-+	select SND_SOC_CS42888_I2C if I2C
- 	select SND_SOC_CX20442 if TTY
- 	select SND_SOC_DA7210 if I2C
- 	select SND_SOC_DA7213 if I2C
-@@ -303,6 +304,15 @@ config SND_SOC_CS4271
- 	tristate "Cirrus Logic CS4271 CODEC"
- 	depends on SND_SOC_I2C_AND_SPI
- 
-+config SND_SOC_CS42888
-+	tristate
-+
-+config SND_SOC_CS42888_I2C
-+	tristate "Cirrus Logic CS42888 CODEC (I2C)"
-+	depends on I2C
-+	select SND_SOC_CS42888
-+	select REGMAP_I2C
-+
- config SND_SOC_CX20442
- 	tristate
- 	depends on TTY
-diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-index cb46c4c..f5612fb 100644
---- a/sound/soc/codecs/Makefile
-+++ b/sound/soc/codecs/Makefile
-@@ -30,6 +30,8 @@ snd-soc-cs42l52-objs := cs42l52.o
- snd-soc-cs42l73-objs := cs42l73.o
- snd-soc-cs4270-objs := cs4270.o
- snd-soc-cs4271-objs := cs4271.o
-+snd-soc-cs42888-objs := cs42888.o
-+snd-soc-cs42888-i2c-objs := cs42888-i2c.o
- snd-soc-cx20442-objs := cx20442.o
- snd-soc-da7210-objs := da7210.o
- snd-soc-da7213-objs := da7213.o
-@@ -178,6 +180,8 @@ obj-$(CONFIG_SND_SOC_CS42L52)	+= snd-soc-cs42l52.o
- obj-$(CONFIG_SND_SOC_CS42L73)	+= snd-soc-cs42l73.o
- obj-$(CONFIG_SND_SOC_CS4270)	+= snd-soc-cs4270.o
- obj-$(CONFIG_SND_SOC_CS4271)	+= snd-soc-cs4271.o
-+obj-$(CONFIG_SND_SOC_CS42888)	+= snd-soc-cs42888.o
-+obj-$(CONFIG_SND_SOC_CS42888_I2C) += snd-soc-cs42888-i2c.o
- obj-$(CONFIG_SND_SOC_CX20442)	+= snd-soc-cx20442.o
- obj-$(CONFIG_SND_SOC_DA7210)	+= snd-soc-da7210.o
- obj-$(CONFIG_SND_SOC_DA7213)	+= snd-soc-da7213.o
-diff --git a/sound/soc/codecs/cs42888-i2c.c b/sound/soc/codecs/cs42888-i2c.c
-new file mode 100644
-index 0000000..54813bc
---- /dev/null
-+++ b/sound/soc/codecs/cs42888-i2c.c
-@@ -0,0 +1,68 @@
-+/*
-+ * Cirrus Logic CS42888 Audio CODEC Digital Audio Interface (DAI) I2C driver
-+ *
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Nicolin Chen <Guangyu.Chen@freescale.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2. This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/delay.h>
-+#include <linux/i2c.h>
-+#include <linux/module.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/regulator/consumer.h>
-+#include <sound/pcm_params.h>
-+#include <sound/soc.h>
-+#include <sound/tlv.h>
-+
-+#include "cs42888.h"
-+
-+static int cs42888_i2c_probe(struct i2c_client *i2c,
-+			     const struct i2c_device_id *id)
-+{
-+	u32 ret = cs42888_probe(&i2c->dev,
-+			devm_regmap_init_i2c(i2c, &cs42888_regmap_config));
-+	if (ret)
-+		return ret;
-+
-+	pm_runtime_enable(&i2c->dev);
-+	pm_request_idle(&i2c->dev);
-+
-+	return 0;
-+}
-+
-+static int cs42888_i2c_remove(struct i2c_client *i2c)
-+{
-+	snd_soc_unregister_codec(&i2c->dev);
-+	pm_runtime_disable(&i2c->dev);
-+
-+	return 0;
-+}
-+
-+static struct i2c_device_id cs42888_i2c_id[] = {
-+	{"cs42888", 0},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(i2c, cs42888_i2c_id);
-+
-+static struct i2c_driver cs42888_i2c_driver = {
-+	.driver = {
-+		.name = "cs42888",
-+		.owner = THIS_MODULE,
-+		.pm = &cs42888_pm,
-+	},
-+	.probe = cs42888_i2c_probe,
-+	.remove = cs42888_i2c_remove,
-+	.id_table = cs42888_i2c_id,
-+};
-+
-+module_i2c_driver(cs42888_i2c_driver);
-+
-+MODULE_DESCRIPTION("Cirrus Logic CS42888 ALSA SoC Codec I2C Driver");
-+MODULE_AUTHOR("Freescale Semiconductor, Inc.");
-+MODULE_LICENSE("GPL");
-diff --git a/sound/soc/codecs/cs42888.c b/sound/soc/codecs/cs42888.c
-new file mode 100644
-index 0000000..8cd3d4a
---- /dev/null
-+++ b/sound/soc/codecs/cs42888.c
-@@ -0,0 +1,536 @@
-+/*
-+ * Cirrus Logic CS42888 Audio CODEC Digital Audio Interface (DAI) driver
-+ *
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Nicolin Chen <Guangyu.Chen@freescale.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2. This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/regulator/consumer.h>
-+#include <sound/pcm_params.h>
-+#include <sound/soc.h>
-+#include <sound/tlv.h>
-+
-+#include "cs42888.h"
-+
-+#define CS42888_NUM_SUPPLIES 4
-+static const char *const cs42888_supply_names[CS42888_NUM_SUPPLIES] = {
-+	"VA",
-+	"VD",
-+	"VLS",
-+	"VLC",
-+};
-+
-+#define CS42888_FORMATS	(SNDRV_PCM_FMTBIT_S16_LE | \
-+			 SNDRV_PCM_FMTBIT_S20_3LE | \
-+			 SNDRV_PCM_FMTBIT_S24_LE | \
-+			 SNDRV_PCM_FMTBIT_S32_LE)
-+
-+/* codec private data */
-+struct cs42888_priv {
-+	struct regulator_bulk_data supplies[CS42888_NUM_SUPPLIES];
-+	struct regmap *regmap;
-+	struct clk *clk;
-+
-+	bool slave_mode;
-+	unsigned long sysclk;
-+};
-+
-+/* -127.5dB to 0dB with step of 0.5dB */
-+static const DECLARE_TLV_DB_SCALE(dac_tlv, -12750, 50, 1);
-+/* -64dB to 24dB with step of 0.5dB */
-+static const DECLARE_TLV_DB_SCALE(adc_tlv, -6400, 50, 0);
-+
-+static const char *const cs42888_adc_single[] = { "Differential", "Single-Ended" };
-+static const char *const cs42888_szc[] = { "Immediate Change", "Zero Cross",
-+					"Soft Ramp", "Soft Ramp on Zero Cross" };
-+
-+static const struct soc_enum adc1_single_enum =
-+	SOC_ENUM_SINGLE(CS42888_ADCCTL, 4, 2, cs42888_adc_single);
-+static const struct soc_enum adc2_single_enum =
-+	SOC_ENUM_SINGLE(CS42888_ADCCTL, 3, 2, cs42888_adc_single);
-+static const struct soc_enum dac_szc_enum =
-+	SOC_ENUM_SINGLE(CS42888_TXCTL, 5, 4, cs42888_szc);
-+static const struct soc_enum adc_szc_enum =
-+	SOC_ENUM_SINGLE(CS42888_TXCTL, 0, 4, cs42888_szc);
-+
-+static const struct snd_kcontrol_new cs42888_snd_controls[] = {
-+	SOC_DOUBLE_R_TLV("DAC1 Playback Volume", CS42888_VOLAOUT1,
-+			 CS42888_VOLAOUT2, 0, 0xff, 1, dac_tlv),
-+	SOC_DOUBLE_R_TLV("DAC2 Playback Volume", CS42888_VOLAOUT3,
-+			 CS42888_VOLAOUT4, 0, 0xff, 1, dac_tlv),
-+	SOC_DOUBLE_R_TLV("DAC3 Playback Volume", CS42888_VOLAOUT5,
-+			 CS42888_VOLAOUT6, 0, 0xff, 1, dac_tlv),
-+	SOC_DOUBLE_R_TLV("DAC4 Playback Volume", CS42888_VOLAOUT7,
-+			 CS42888_VOLAOUT8, 0, 0xff, 1, dac_tlv),
-+	SOC_DOUBLE_R_S_TLV("ADC1 Capture Volume", CS42888_VOLAIN1,
-+			   CS42888_VOLAIN2, 0, -0x80, 0x30, 7, 0, adc_tlv),
-+	SOC_DOUBLE_R_S_TLV("ADC2 Capture Volume", CS42888_VOLAIN3,
-+			   CS42888_VOLAIN4, 0, -0x80, 0x30, 7, 0, adc_tlv),
-+	SOC_DOUBLE("DAC1 Invert Switch", CS42888_DACINV, 0, 1, 1, 0),
-+	SOC_DOUBLE("DAC2 Invert Switch", CS42888_DACINV, 2, 3, 1, 0),
-+	SOC_DOUBLE("DAC3 Invert Switch", CS42888_DACINV, 4, 5, 1, 0),
-+	SOC_DOUBLE("DAC4 Invert Switch", CS42888_DACINV, 6, 7, 1, 0),
-+	SOC_DOUBLE("ADC1 Invert Switch", CS42888_ADCINV, 0, 1, 1, 0),
-+	SOC_DOUBLE("ADC2 Invert Switch", CS42888_ADCINV, 2, 3, 1, 0),
-+	SOC_SINGLE("ADC High-Pass Filter Switch", CS42888_ADCCTL, 7, 1, 1),
-+	SOC_SINGLE("DAC De-emphasis Switch", CS42888_ADCCTL, 5, 1, 0),
-+	SOC_ENUM("ADC1 Single Ended Mode Switch", adc1_single_enum),
-+	SOC_ENUM("ADC2 Single Ended Mode Switch", adc2_single_enum),
-+	SOC_SINGLE("DAC Single Volume Control Switch", CS42888_TXCTL, 7, 1, 0),
-+	SOC_ENUM("DAC Soft Ramp & Zero Cross Control Switch", dac_szc_enum),
-+	SOC_SINGLE("DAC Auto Mute Switch", CS42888_TXCTL, 4, 1, 0),
-+	SOC_SINGLE("Mute ADC Serial Port Switch", CS42888_TXCTL, 3, 1, 0),
-+	SOC_SINGLE("ADC Single Volume Control Switch", CS42888_TXCTL, 2, 1, 0),
-+	SOC_ENUM("ADC Soft Ramp & Zero Cross Control Switch", adc_szc_enum),
-+};
-+
-+static const struct snd_soc_dapm_widget cs42888_dapm_widgets[] = {
-+	SND_SOC_DAPM_DAC("DAC1", "Playback", CS42888_PWRCTL, 1, 1),
-+	SND_SOC_DAPM_DAC("DAC2", "Playback", CS42888_PWRCTL, 2, 1),
-+	SND_SOC_DAPM_DAC("DAC3", "Playback", CS42888_PWRCTL, 3, 1),
-+	SND_SOC_DAPM_DAC("DAC4", "Playback", CS42888_PWRCTL, 4, 1),
-+
-+	SND_SOC_DAPM_OUTPUT("AOUT1L"),
-+	SND_SOC_DAPM_OUTPUT("AOUT1R"),
-+	SND_SOC_DAPM_OUTPUT("AOUT2L"),
-+	SND_SOC_DAPM_OUTPUT("AOUT2R"),
-+	SND_SOC_DAPM_OUTPUT("AOUT3L"),
-+	SND_SOC_DAPM_OUTPUT("AOUT3R"),
-+	SND_SOC_DAPM_OUTPUT("AOUT4L"),
-+	SND_SOC_DAPM_OUTPUT("AOUT4R"),
-+
-+	SND_SOC_DAPM_ADC("ADC1", "Capture", CS42888_PWRCTL, 5, 1),
-+	SND_SOC_DAPM_ADC("ADC2", "Capture", CS42888_PWRCTL, 6, 1),
-+
-+	SND_SOC_DAPM_INPUT("AIN1L"),
-+	SND_SOC_DAPM_INPUT("AIN1R"),
-+	SND_SOC_DAPM_INPUT("AIN2L"),
-+	SND_SOC_DAPM_INPUT("AIN2R"),
-+
-+	SND_SOC_DAPM_SUPPLY("PWR", CS42888_PWRCTL, 0, 1, NULL, 0),
-+};
-+
-+static const struct snd_soc_dapm_route cs42888_dapm_routes[] = {
-+	/* Playback */
-+	{ "AOUT1L", NULL, "DAC1" },
-+	{ "AOUT1R", NULL, "DAC1" },
-+	{ "DAC1", NULL, "PWR" },
-+
-+	{ "AOUT2L", NULL, "DAC2" },
-+	{ "AOUT2R", NULL, "DAC2" },
-+	{ "DAC2", NULL, "PWR" },
-+
-+	{ "AOUT3L", NULL, "DAC3" },
-+	{ "AOUT3R", NULL, "DAC3" },
-+	{ "DAC3", NULL, "PWR" },
-+
-+	{ "AOUT4L", NULL, "DAC4" },
-+	{ "AOUT4R", NULL, "DAC4" },
-+	{ "DAC4", NULL, "PWR" },
-+
-+	/* Capture */
-+	{ "ADC1", NULL, "AIN1L" },
-+	{ "ADC1", NULL, "AIN1R" },
-+	{ "ADC1", NULL, "PWR" },
-+
-+	{ "ADC2", NULL, "AIN2L" },
-+	{ "ADC2", NULL, "AIN2R" },
-+	{ "ADC2", NULL, "PWR" },
-+};
-+
-+struct cs42888_ratios {
-+	unsigned int ratio;
-+	unsigned char speed;
-+	unsigned char mclk;
-+};
-+
-+static const struct cs42888_ratios cs42888_ratios[] = {
-+	{ 64, CS42888_FM_QUAD, CS42888_FUNCMOD_MFREQ_256(4) },
-+	{ 96, CS42888_FM_QUAD, CS42888_FUNCMOD_MFREQ_384(4) },
-+	{ 128, CS42888_FM_QUAD, CS42888_FUNCMOD_MFREQ_512(4) },
-+	{ 192, CS42888_FM_QUAD, CS42888_FUNCMOD_MFREQ_768(4) },
-+	{ 256, CS42888_FM_SINGLE, CS42888_FUNCMOD_MFREQ_256(1) },
-+	{ 384, CS42888_FM_SINGLE, CS42888_FUNCMOD_MFREQ_384(1) },
-+	{ 512, CS42888_FM_SINGLE, CS42888_FUNCMOD_MFREQ_512(1) },
-+	{ 768, CS42888_FM_SINGLE, CS42888_FUNCMOD_MFREQ_768(1) },
-+	{ 1024, CS42888_FM_SINGLE, CS42888_FUNCMOD_MFREQ_1024(1) }
-+};
-+
-+static int cs42888_set_dai_sysclk(struct snd_soc_dai *codec_dai,
-+				  int clk_id, unsigned int freq, int dir)
-+{
-+	struct snd_soc_codec *codec = codec_dai->codec;
-+	struct cs42888_priv *cs42888 = snd_soc_codec_get_drvdata(codec);
-+
-+	cs42888->sysclk = freq;
-+
-+	return 0;
-+}
-+
-+static int cs42888_set_dai_fmt(struct snd_soc_dai *codec_dai,
-+			      unsigned int format)
-+{
-+	struct snd_soc_codec *codec = codec_dai->codec;
-+	struct cs42888_priv *cs42888 = snd_soc_codec_get_drvdata(codec);
-+	u32 val;
-+
-+	/* Set DAI format */
-+	switch (format & SND_SOC_DAIFMT_FORMAT_MASK) {
-+	case SND_SOC_DAIFMT_LEFT_J:
-+		val = CS42888_INTF_DAC_DIF_LEFTJ | CS42888_INTF_ADC_DIF_LEFTJ;
-+		break;
-+	case SND_SOC_DAIFMT_I2S:
-+		val = CS42888_INTF_DAC_DIF_I2S | CS42888_INTF_ADC_DIF_I2S;
-+		break;
-+	case SND_SOC_DAIFMT_RIGHT_J:
-+		val = CS42888_INTF_DAC_DIF_RIGHTJ | CS42888_INTF_ADC_DIF_RIGHTJ;
-+		break;
-+	default:
-+		dev_err(codec->dev, "unsupported dai format\n");
-+		return -EINVAL;
-+	}
-+
-+	regmap_update_bits(cs42888->regmap, CS42888_INTF,
-+			   CS42888_INTF_DAC_DIF_MASK |
-+			   CS42888_INTF_ADC_DIF_MASK, val);
-+
-+	/* Set master/slave audio interface */
-+	switch (format & SND_SOC_DAIFMT_MASTER_MASK) {
-+	case SND_SOC_DAIFMT_CBS_CFS:
-+		cs42888->slave_mode = true;
-+		break;
-+	case SND_SOC_DAIFMT_CBM_CFM:
-+		cs42888->slave_mode = false;
-+		break;
-+	default:
-+		dev_err(codec->dev, "unsupported master/slave mode\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int cs42888_hw_params(struct snd_pcm_substream *substream,
-+			     struct snd_pcm_hw_params *params,
-+			     struct snd_soc_dai *dai)
-+{
-+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-+	struct snd_soc_codec *codec = rtd->codec;
-+	struct cs42888_priv *cs42888 = snd_soc_codec_get_drvdata(codec);
-+	bool tx = substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
-+	u32 ratio = cs42888->sysclk / params_rate(params);
-+	u32 i, fm, val, mask;
-+
-+	for (i = 0; i < ARRAY_SIZE(cs42888_ratios); i++) {
-+		if (cs42888_ratios[i].ratio == ratio)
-+			break;
-+	}
-+
-+	if (i == ARRAY_SIZE(cs42888_ratios)) {
-+		dev_err(codec->dev, "unsupported sysclk ratio\n");
-+		return -EINVAL;
-+	}
-+
-+	mask = CS42888_FUNCMOD_MFREQ_MASK;
-+	val = cs42888_ratios[i].mclk;
-+
-+	fm = cs42888->slave_mode ? CS42888_FM_AUTO : cs42888_ratios[i].speed;
-+
-+	regmap_update_bits(cs42888->regmap, CS42888_FUNCMOD,
-+			   CS42888_FUNCMOD_xC_FM_MASK(tx) | mask,
-+			   CS42888_FUNCMOD_xC_FM(tx, fm) | val);
-+
-+	return 0;
-+}
-+
-+static int cs42888_digital_mute(struct snd_soc_dai *dai, int mute)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+	struct cs42888_priv *cs42888 = snd_soc_codec_get_drvdata(codec);
-+
-+	regmap_update_bits(cs42888->regmap, CS42888_DACMUTE,
-+			   CS42888_DACMUTE_ALL, mute ? CS42888_DACMUTE_ALL : 0);
-+
-+	return 0;
-+}
-+
-+static const struct snd_soc_dai_ops cs42888_dai_ops = {
-+	.set_fmt	= cs42888_set_dai_fmt,
-+	.set_sysclk	= cs42888_set_dai_sysclk,
-+	.hw_params	= cs42888_hw_params,
-+	.digital_mute	= cs42888_digital_mute,
-+};
-+
-+static struct snd_soc_dai_driver cs42888_dai = {
-+	.name = "cs42888",
-+	.playback = {
-+		.stream_name = "Playback",
-+		.channels_min = 1,
-+		.channels_max = 8,
-+		.rates = SNDRV_PCM_RATE_8000_192000,
-+		.formats = CS42888_FORMATS,
-+	},
-+	.capture = {
-+		.stream_name = "Capture",
-+		.channels_min = 1,
-+		.channels_max = 4,
-+		.rates = SNDRV_PCM_RATE_8000_192000,
-+		.formats = CS42888_FORMATS,
-+	},
-+	.ops = &cs42888_dai_ops,
-+};
-+
-+static const struct reg_default cs42888_reg[] = {
-+	{ 0x01, 0x01 },   /* Chip I.D. and Revision Register */
-+	{ 0x02, 0x00 },   /* Power Control */
-+	{ 0x03, 0xF0 },   /* Functional Mode */
-+	{ 0x04, 0x46 },   /* Interface Formats */
-+	{ 0x05, 0x00 },   /* ADC Control & DAC De-Emphasis */
-+	{ 0x06, 0x10 },   /* Transition Control */
-+	{ 0x07, 0x00 },   /* DAC Channel Mute */
-+	{ 0x08, 0x00 },   /* Volume Control AOUT1 */
-+	{ 0x09, 0x00 },   /* Volume Control AOUT2 */
-+	{ 0x0a, 0x00 },   /* Volume Control AOUT3 */
-+	{ 0x0b, 0x00 },   /* Volume Control AOUT4 */
-+	{ 0x0c, 0x00 },   /* Volume Control AOUT5 */
-+	{ 0x0d, 0x00 },   /* Volume Control AOUT6 */
-+	{ 0x0e, 0x00 },   /* Volume Control AOUT7 */
-+	{ 0x0f, 0x00 },   /* Volume Control AOUT8 */
-+	{ 0x10, 0x00 },   /* DAC Channel Invert */
-+	{ 0x11, 0x00 },   /* Volume Control AIN1 */
-+	{ 0x12, 0x00 },   /* Volume Control AIN2 */
-+	{ 0x13, 0x00 },   /* Volume Control AIN3 */
-+	{ 0x14, 0x00 },   /* Volume Control AIN4 */
-+	{ 0x17, 0x00 },   /* ADC Channel Invert */
-+	{ 0x18, 0x00 },   /* Status Control */
-+	{ 0x1a, 0x00 },   /* Status Mask */
-+	{ 0x1b, 0x00 },   /* MUTEC Pin Control */
-+};
-+
-+static bool cs42888_volatile_register(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case CS42888_STATUS:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+
-+static bool cs42888_writeable_register(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case CS42888_CHIPID:
-+	case CS42888_STATUS:
-+		return false;
-+	default:
-+		return true;
-+	}
-+}
-+
-+const struct regmap_config cs42888_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = CS42888_LASTREG,
-+	.reg_defaults = cs42888_reg,
-+	.num_reg_defaults = ARRAY_SIZE(cs42888_reg),
-+	.volatile_reg = cs42888_volatile_register,
-+	.writeable_reg = cs42888_writeable_register,
-+	.cache_type = REGCACHE_RBTREE,
-+};
-+EXPORT_SYMBOL_GPL(cs42888_regmap_config);
-+
-+static int cs42888_codec_probe(struct snd_soc_codec *codec)
-+{
-+	struct cs42888_priv *cs42888 = snd_soc_codec_get_drvdata(codec);
-+
-+	/* Mute all DAC channels */
-+	regmap_write(cs42888->regmap, CS42888_DACMUTE, CS42888_DACMUTE_ALL);
-+
-+	return 0;
-+}
-+
-+static const struct snd_soc_codec_driver cs42888_driver = {
-+	.probe = cs42888_codec_probe,
-+	.idle_bias_off = true,
-+
-+	.controls = cs42888_snd_controls,
-+	.num_controls = ARRAY_SIZE(cs42888_snd_controls),
-+	.dapm_widgets = cs42888_dapm_widgets,
-+	.num_dapm_widgets = ARRAY_SIZE(cs42888_dapm_widgets),
-+	.dapm_routes = cs42888_dapm_routes,
-+	.num_dapm_routes = ARRAY_SIZE(cs42888_dapm_routes),
-+};
-+
-+int cs42888_probe(struct device *dev, struct regmap *regmap)
-+{
-+	struct cs42888_priv *cs42888;
-+	int ret, val, i;
-+
-+	cs42888 = devm_kzalloc(dev, sizeof(*cs42888), GFP_KERNEL);
-+	if (cs42888 == NULL)
-+		return -ENOMEM;
-+
-+	dev_set_drvdata(dev, cs42888);
-+
-+	cs42888->clk = devm_clk_get(dev, "mclk");
-+	if (IS_ERR(cs42888->clk)) {
-+		dev_err(dev, "failed to get the clock: %ld\n",
-+				PTR_ERR(cs42888->clk));
-+		return -EINVAL;
-+	}
-+
-+	cs42888->sysclk = clk_get_rate(cs42888->clk);
-+
-+	for (i = 0; i < ARRAY_SIZE(cs42888->supplies); i++)
-+		cs42888->supplies[i].supply = cs42888_supply_names[i];
-+
-+	ret = devm_regulator_bulk_get(dev,
-+			ARRAY_SIZE(cs42888->supplies), cs42888->supplies);
-+	if (ret) {
-+		dev_err(dev, "failed to request supplies: %d\n",	ret);
-+		return ret;
-+	}
-+
-+	ret = regulator_bulk_enable(ARRAY_SIZE(cs42888->supplies),
-+				    cs42888->supplies);
-+	if (ret) {
-+		dev_err(dev, "failed to enable supplies: %d\n", ret);
-+		return ret;
-+	}
-+
-+	/* Make sure hardware reset done */
-+	msleep(5);
-+
-+	cs42888->regmap = regmap;
-+	if (IS_ERR(cs42888->regmap)) {
-+		ret = PTR_ERR(cs42888->regmap);
-+		dev_err(dev, "failed to allocate regmap: %d\n", ret);
-+		goto err_enable;
-+	}
-+
-+	/*
-+	 * We haven't marked the chip revision as volatile due to
-+	 * sharing a register with the right input volume; explicitly
-+	 * bypass the cache to read it.
-+	 */
-+	regcache_cache_bypass(cs42888->regmap, true);
-+
-+	/* Validate the chip ID */
-+	regmap_read(cs42888->regmap, CS42888_CHIPID, &val);
-+	if (val < 0) {
-+		dev_err(dev, "failed to get device ID: %x", val);
-+		ret = -EINVAL;
-+		goto err_enable;
-+	}
-+
-+	/* The top four bits of the chip ID should be 0000 */
-+	if ((val & CS42888_CHIPID_CHIP_ID_MASK) != 0x00) {
-+		dev_err(dev, "unmatched chip ID: %d\n",
-+				val & CS42888_CHIPID_CHIP_ID_MASK);
-+		ret = -EINVAL;
-+		goto err_enable;
-+	}
-+
-+	dev_info(dev, "found device, revision %X\n",
-+			val & CS42888_CHIPID_REV_ID_MASK);
-+
-+	regcache_cache_bypass(cs42888->regmap, false);
-+
-+	ret = snd_soc_register_codec(dev, &cs42888_driver, &cs42888_dai, 1);
-+	if (ret) {
-+		dev_err(dev, "failed to register codec:%d\n", ret);
-+		goto err_enable;
-+	}
-+
-+	regcache_cache_only(cs42888->regmap, true);
-+
-+err_enable:
-+	regulator_bulk_disable(ARRAY_SIZE(cs42888->supplies),
-+			       cs42888->supplies);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(cs42888_probe);
-+
-+#ifdef CONFIG_PM_RUNTIME
-+static int cs42888_runtime_resume(struct device *dev)
-+{
-+	struct cs42888_priv *cs42888 = dev_get_drvdata(dev);
-+	int ret;
-+
-+	ret = clk_prepare_enable(cs42888->clk);
-+	if (ret) {
-+		dev_err(dev, "failed to enable mclk: %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = regulator_bulk_enable(ARRAY_SIZE(cs42888->supplies),
-+				    cs42888->supplies);
-+	if (ret) {
-+		dev_err(dev, "failed to enable supplies: %d\n", ret);
-+		goto err_clk;
-+	}
-+
-+	/* Make sure hardware reset done */
-+	msleep(5);
-+
-+	regcache_cache_only(cs42888->regmap, false);
-+
-+	ret = regcache_sync(cs42888->regmap);
-+	if (ret) {
-+		dev_err(dev, "failed to sync regmap: %d\n", ret);
-+		goto err_bulk;
-+	}
-+
-+	return 0;
-+
-+err_bulk:
-+	regulator_bulk_disable(ARRAY_SIZE(cs42888->supplies),
-+			       cs42888->supplies);
-+err_clk:
-+	clk_disable_unprepare(cs42888->clk);
-+
-+	return ret;
-+}
-+
-+static int cs42888_runtime_suspend(struct device *dev)
-+{
-+	struct cs42888_priv *cs42888 = dev_get_drvdata(dev);
-+
-+	regcache_cache_only(cs42888->regmap, true);
-+
-+	regulator_bulk_disable(ARRAY_SIZE(cs42888->supplies),
-+			       cs42888->supplies);
-+
-+	clk_disable_unprepare(cs42888->clk);
-+
-+	return 0;
-+}
-+#endif
-+
-+const struct dev_pm_ops cs42888_pm = {
-+	SET_RUNTIME_PM_OPS(cs42888_runtime_suspend, cs42888_runtime_resume, NULL)
-+};
-+EXPORT_SYMBOL_GPL(cs42888_pm);
-+
-+const struct of_device_id cs42888_of_match[] = {
-+	{ .compatible = "cirrus,cs42888", },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, cs42888_of_match);
-+EXPORT_SYMBOL_GPL(cs42888_of_match);
-+
-+MODULE_DESCRIPTION("Cirrus Logic CS42888 ALSA SoC Codec Driver");
-+MODULE_AUTHOR("Freescale Semiconductor, Inc.");
-+MODULE_LICENSE("GPL");
-diff --git a/sound/soc/codecs/cs42888.h b/sound/soc/codecs/cs42888.h
-new file mode 100644
-index 0000000..eda55ac
---- /dev/null
-+++ b/sound/soc/codecs/cs42888.h
-@@ -0,0 +1,213 @@
-+/*
-+ * cs42888.h - Cirrus Logic CS42888 Audio CODEC driver header file
-+ *
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ *
-+ * Author: Nicolin Chen <Guangyu.Chen@freescale.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2. This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+
-+#ifndef _CS42888_H
-+#define _CS42888_H
-+
-+extern const struct dev_pm_ops cs42888_pm;
-+extern const struct regmap_config cs42888_regmap_config;
-+int cs42888_probe(struct device *dev, struct regmap *regmap);
-+
-+/* CS42888 register map */
-+#define CS42888_CHIPID				0x01	/* Chip ID */
-+#define CS42888_PWRCTL				0x02	/* Power Control */
-+#define CS42888_FUNCMOD				0x03	/* Functional Mode */
-+#define CS42888_INTF				0x04	/* Interface Formats */
-+#define CS42888_ADCCTL				0x05	/* ADC Control */
-+#define CS42888_TXCTL				0x06	/* Transition Control */
-+#define CS42888_DACMUTE				0x07	/* DAC Mute Control */
-+#define CS42888_VOLAOUT1			0x08	/* Volume Control AOUT1 */
-+#define CS42888_VOLAOUT2			0x09	/* Volume Control AOUT2 */
-+#define CS42888_VOLAOUT3			0x0A	/* Volume Control AOUT3 */
-+#define CS42888_VOLAOUT4			0x0B	/* Volume Control AOUT4 */
-+#define CS42888_VOLAOUT5			0x0C	/* Volume Control AOUT5 */
-+#define CS42888_VOLAOUT6			0x0D	/* Volume Control AOUT6 */
-+#define CS42888_VOLAOUT7			0x0E	/* Volume Control AOUT7 */
-+#define CS42888_VOLAOUT8			0x0F	/* Volume Control AOUT8 */
-+#define CS42888_DACINV				0x10	/* DAC Channel Invert */
-+#define CS42888_VOLAIN1				0x11	/* Volume Control AIN1 */
-+#define CS42888_VOLAIN2				0x12	/* Volume Control AIN2 */
-+#define CS42888_VOLAIN3				0x13	/* Volume Control AIN3 */
-+#define CS42888_VOLAIN4				0x14	/* Volume Control AIN4 */
-+#define CS42888_ADCINV				0x17	/* ADC Channel Invert */
-+#define CS42888_STATUSCTL			0x18	/* Status Control */
-+#define CS42888_STATUS				0x19	/* Status */
-+#define CS42888_STATUSM				0x1A	/* Status Mask */
-+#define CS42888_MUTEC				0x1B	/* MUTEC Pin Control */
-+
-+#define CS42888_FIRSTREG			CS42888_CHIPID
-+#define CS42888_LASTREG				CS42888_MUTEC
-+#define CS42888_NUMREGS				(CS42888_LASTREG - CS42888_FIRSTREG + 1)
-+#define CS42888_I2C_INCR			0x80
-+
-+/* Chip I.D. and Revision Register (Address 01h) */
-+#define CS42888_CHIPID_CHIP_ID_MASK		0xF0
-+#define CS42888_CHIPID_REV_ID_MASK		0x0F
-+
-+/* Power Control (Address 02h) */
-+#define CS42888_PWRCTL_PDN_ADC2_SHIFT		6
-+#define CS42888_PWRCTL_PDN_ADC2_MASK		(1 << CS42888_PWRCTL_PDN_ADC2_SHIFT)
-+#define CS42888_PWRCTL_PDN_ADC2			(1 << CS42888_PWRCTL_PDN_ADC2_SHIFT)
-+#define CS42888_PWRCTL_PDN_ADC1_SHIFT		5
-+#define CS42888_PWRCTL_PDN_ADC1_MASK		(1 << CS42888_PWRCTL_PDN_ADC1_SHIFT)
-+#define CS42888_PWRCTL_PDN_ADC1			(1 << CS42888_PWRCTL_PDN_ADC1_SHIFT)
-+#define CS42888_PWRCTL_PDN_DAC4_SHIFT		4
-+#define CS42888_PWRCTL_PDN_DAC4_MASK		(1 << CS42888_PWRCTL_PDN_DAC4_SHIFT)
-+#define CS42888_PWRCTL_PDN_DAC4			(1 << CS42888_PWRCTL_PDN_DAC4_SHIFT)
-+#define CS42888_PWRCTL_PDN_DAC3_SHIFT		3
-+#define CS42888_PWRCTL_PDN_DAC3_MASK		(1 << CS42888_PWRCTL_PDN_DAC3_SHIFT)
-+#define CS42888_PWRCTL_PDN_DAC3			(1 << CS42888_PWRCTL_PDN_DAC3_SHIFT)
-+#define CS42888_PWRCTL_PDN_DAC2_SHIFT		2
-+#define CS42888_PWRCTL_PDN_DAC2_MASK		(1 << CS42888_PWRCTL_PDN_DAC2_SHIFT)
-+#define CS42888_PWRCTL_PDN_DAC2			(1 << CS42888_PWRCTL_PDN_DAC2_SHIFT)
-+#define CS42888_PWRCTL_PDN_DAC1_SHIFT		1
-+#define CS42888_PWRCTL_PDN_DAC1_MASK		(1 << CS42888_PWRCTL_PDN_DAC1_SHIFT)
-+#define CS42888_PWRCTL_PDN_DAC1			(1 << CS42888_PWRCTL_PDN_DAC1_SHIFT)
-+#define CS42888_PWRCTL_PDN_SHIFT		0
-+#define CS42888_PWRCTL_PDN_MASK			(1 << CS42888_PWRCTL_PDN_SHIFT)
-+#define CS42888_PWRCTL_PDN			(1 << CS42888_PWRCTL_PDN_SHIFT)
-+
-+/* Functional Mode (Address 03h) */
-+#define CS42888_FUNCMOD_DAC_FM_SHIFT		6
-+#define CS42888_FUNCMOD_DAC_FM_WIDTH		2
-+#define CS42888_FUNCMOD_DAC_FM_MASK		(((1 << CS42888_FUNCMOD_DAC_FM_WIDTH) - 1) << CS42888_FUNCMOD_DAC_FM_SHIFT)
-+#define CS42888_FUNCMOD_DAC_FM(v)		((v) << CS42888_FUNCMOD_DAC_FM_SHIFT)
-+#define CS42888_FUNCMOD_ADC_FM_SHIFT		4
-+#define CS42888_FUNCMOD_ADC_FM_WIDTH		2
-+#define CS42888_FUNCMOD_ADC_FM_MASK		(((1 << CS42888_FUNCMOD_ADC_FM_WIDTH) - 1) << CS42888_FUNCMOD_ADC_FM_SHIFT)
-+#define CS42888_FUNCMOD_ADC_FM(v)		((v) << CS42888_FUNCMOD_ADC_FM_SHIFT)
-+#define CS42888_FUNCMOD_xC_FM_MASK(x)		((x) ? CS42888_FUNCMOD_DAC_FM_MASK : CS42888_FUNCMOD_ADC_FM_MASK)
-+#define CS42888_FUNCMOD_xC_FM(x, v)		((x) ? CS42888_FUNCMOD_DAC_FM(v) : CS42888_FUNCMOD_ADC_FM(v))
-+#define CS42888_FUNCMOD_MFREQ_SHIFT		1
-+#define CS42888_FUNCMOD_MFREQ_WIDTH		3
-+#define CS42888_FUNCMOD_MFREQ_MASK		(((1 << CS42888_FUNCMOD_MFREQ_WIDTH) - 1) << CS42888_FUNCMOD_MFREQ_SHIFT)
-+#define CS42888_FUNCMOD_MFREQ_256(s)		((0 << CS42888_FUNCMOD_MFREQ_SHIFT) >> (s >> 1))
-+#define CS42888_FUNCMOD_MFREQ_384(s)		((1 << CS42888_FUNCMOD_MFREQ_SHIFT) >> (s >> 1))
-+#define CS42888_FUNCMOD_MFREQ_512(s)		((2 << CS42888_FUNCMOD_MFREQ_SHIFT) >> (s >> 1))
-+#define CS42888_FUNCMOD_MFREQ_768(s)		((3 << CS42888_FUNCMOD_MFREQ_SHIFT) >> (s >> 1))
-+#define CS42888_FUNCMOD_MFREQ_1024(s)		((4 << CS42888_FUNCMOD_MFREQ_SHIFT) >> (s >> 1))
-+
-+#define CS42888_FM_SINGLE			0
-+#define CS42888_FM_DOUBLE			1
-+#define CS42888_FM_QUAD				2
-+#define CS42888_FM_AUTO				3
-+
-+/* Interface Formats (Address 04h) */
-+#define CS42888_INTF_FREEZE_SHIFT		7
-+#define CS42888_INTF_FREEZE_MASK		(1 << CS42888_INTF_FREEZE_SHIFT)
-+#define CS42888_INTF_FREEZE			(1 << CS42888_INTF_FREEZE_SHIFT)
-+#define CS42888_INTF_AUX_DIF_SHIFT		6
-+#define CS42888_INTF_AUX_DIF_MASK		(1 << CS42888_INTF_AUX_DIF_SHIFT)
-+#define CS42888_INTF_AUX_DIF			(1 << CS42888_INTF_AUX_DIF_SHIFT)
-+#define CS42888_INTF_DAC_DIF_SHIFT		3
-+#define CS42888_INTF_DAC_DIF_WIDTH		3
-+#define CS42888_INTF_DAC_DIF_MASK		(((1 << CS42888_INTF_DAC_DIF_WIDTH) - 1) << CS42888_INTF_DAC_DIF_SHIFT)
-+#define CS42888_INTF_DAC_DIF_LEFTJ		(0 << CS42888_INTF_DAC_DIF_SHIFT)
-+#define CS42888_INTF_DAC_DIF_I2S		(1 << CS42888_INTF_DAC_DIF_SHIFT)
-+#define CS42888_INTF_DAC_DIF_RIGHTJ		(2 << CS42888_INTF_DAC_DIF_SHIFT)
-+#define CS42888_INTF_DAC_DIF_RIGHTJ_16		(3 << CS42888_INTF_DAC_DIF_SHIFT)
-+#define CS42888_INTF_DAC_DIF_ONELINE_20		(4 << CS42888_INTF_DAC_DIF_SHIFT)
-+#define CS42888_INTF_DAC_DIF_ONELINE_24		(6 << CS42888_INTF_DAC_DIF_SHIFT)
-+#define CS42888_INTF_DAC_DIF_TDM		(7 << CS42888_INTF_DAC_DIF_SHIFT)
-+#define CS42888_INTF_ADC_DIF_SHIFT		0
-+#define CS42888_INTF_ADC_DIF_WIDTH		3
-+#define CS42888_INTF_ADC_DIF_MASK		(((1 << CS42888_INTF_ADC_DIF_WIDTH) - 1) << CS42888_INTF_ADC_DIF_SHIFT)
-+#define CS42888_INTF_ADC_DIF_LEFTJ		(0 << CS42888_INTF_ADC_DIF_SHIFT)
-+#define CS42888_INTF_ADC_DIF_I2S		(1 << CS42888_INTF_ADC_DIF_SHIFT)
-+#define CS42888_INTF_ADC_DIF_RIGHTJ		(2 << CS42888_INTF_ADC_DIF_SHIFT)
-+#define CS42888_INTF_ADC_DIF_RIGHTJ_16		(3 << CS42888_INTF_ADC_DIF_SHIFT)
-+#define CS42888_INTF_ADC_DIF_ONELINE_20		(4 << CS42888_INTF_ADC_DIF_SHIFT)
-+#define CS42888_INTF_ADC_DIF_ONELINE_24		(6 << CS42888_INTF_ADC_DIF_SHIFT)
-+#define CS42888_INTF_ADC_DIF_TDM		(7 << CS42888_INTF_ADC_DIF_SHIFT)
-+
-+/* ADC Control & DAC De-Emphasis (Address 05h) */
-+#define CS42888_ADCCTL_ADC_HPF_FREEZE_SHIFT	7
-+#define CS42888_ADCCTL_ADC_HPF_FREEZE_MASK	(1 << CS42888_ADCCTL_ADC_HPF_FREEZE_SHIFT)
-+#define CS42888_ADCCTL_ADC_HPF_FREEZE		(1 << CS42888_ADCCTL_ADC_HPF_FREEZE_SHIFT)
-+#define CS42888_ADCCTL_DAC_DEM_SHIFT		5
-+#define CS42888_ADCCTL_DAC_DEM_MASK		(1 << CS42888_ADCCTL_DAC_DEM_SHIFT)
-+#define CS42888_ADCCTL_DAC_DEM			(1 << CS42888_ADCCTL_DAC_DEM_SHIFT)
-+#define CS42888_ADCCTL_ADC1_SINGLE_SHIFT	4
-+#define CS42888_ADCCTL_ADC1_SINGLE_MASK		(1 << CS42888_ADCCTL_ADC1_SINGLE_SHIFT)
-+#define CS42888_ADCCTL_ADC1_SINGLE		(1 << CS42888_ADCCTL_ADC1_SINGLE_SHIFT)
-+#define CS42888_ADCCTL_ADC2_SINGLE_SHIFT	3
-+#define CS42888_ADCCTL_ADC2_SINGLE_MASK		(1 << CS42888_ADCCTL_ADC2_SINGLE_SHIFT)
-+#define CS42888_ADCCTL_ADC2_SINGLE		(1 << CS42888_ADCCTL_ADC2_SINGLE_SHIFT)
-+
-+/* Transition Control (Address 06h) */
-+#define CS42888_TXCTL_DAC_SNGVOL_SHIFT		7
-+#define CS42888_TXCTL_DAC_SNGVOL_MASK		(1 << CS42888_TXCTL_DAC_SNGVOL_SHIFT)
-+#define CS42888_TXCTL_DAC_SNGVOL		(1 << CS42888_TXCTL_DAC_SNGVOL_SHIFT)
-+#define CS42888_TXCTL_DAC_SZC_SHIFT		5
-+#define CS42888_TXCTL_DAC_SZC_WIDTH		2
-+#define CS42888_TXCTL_DAC_SZC_MASK		(((1 << CS42888_TXCTL_DAC_SZC_WIDTH) - 1) << CS42888_TXCTL_DAC_SZC_SHIFT)
-+#define CS42888_TXCTL_DAC_SZC_IC		(0 << CS42888_TXCTL_DAC_SZC_SHIFT)
-+#define CS42888_TXCTL_DAC_SZC_ZC		(1 << CS42888_TXCTL_DAC_SZC_SHIFT)
-+#define CS42888_TXCTL_DAC_SZC_SR		(2 << CS42888_TXCTL_DAC_SZC_SHIFT)
-+#define CS42888_TXCTL_DAC_SZC_SRZC		(3 << CS42888_TXCTL_DAC_SZC_SHIFT)
-+#define CS42888_TXCTL_AMUTE_SHIFT		4
-+#define CS42888_TXCTL_AMUTE_MASK		(1 << CS42888_TXCTL_AMUTE_SHIFT)
-+#define CS42888_TXCTL_AMUTE			(1 << CS42888_TXCTL_AMUTE_SHIFT)
-+#define CS42888_TXCTL_MUTE_ADC_SP_SHIFT		3
-+#define CS42888_TXCTL_MUTE_ADC_SP_MASK		(1 << CS42888_TXCTL_MUTE_ADC_SP_SHIFT)
-+#define CS42888_TXCTL_MUTE_ADC_SP		(1 << CS42888_TXCTL_MUTE_ADC_SP_SHIFT)
-+#define CS42888_TXCTL_ADC_SNGVOL_SHIFT		2
-+#define CS42888_TXCTL_ADC_SNGVOL_MASK		(1 << CS42888_TXCTL_ADC_SNGVOL_SHIFT)
-+#define CS42888_TXCTL_ADC_SNGVOL		(1 << CS42888_TXCTL_ADC_SNGVOL_SHIFT)
-+#define CS42888_TXCTL_ADC_SZC_SHIFT		0
-+#define CS42888_TXCTL_ADC_SZC_MASK		(((1 << CS42888_TXCTL_ADC_SZC_WIDTH) - 1) << CS42888_TXCTL_ADC_SZC_SHIFT)
-+#define CS42888_TXCTL_ADC_SZC_IC		(0 << CS42888_TXCTL_ADC_SZC_SHIFT)
-+#define CS42888_TXCTL_ADC_SZC_ZC		(1 << CS42888_TXCTL_ADC_SZC_SHIFT)
-+#define CS42888_TXCTL_ADC_SZC_SR		(2 << CS42888_TXCTL_ADC_SZC_SHIFT)
-+#define CS42888_TXCTL_ADC_SZC_SRZC		(3 << CS42888_TXCTL_ADC_SZC_SHIFT)
-+
-+/* DAC Channel Mute (Address 07h) */
-+#define CS42888_DACMUTE_AOUT(n)			(0x1 << n)
-+#define CS42888_DACMUTE_ALL			0xff
-+
-+/* Status Control (Address 18h)*/
-+#define CS42888_STATUSCTL_INI_SHIFT		2
-+#define CS42888_STATUSCTL_INI_WIDTH		2
-+#define CS42888_STATUSCTL_INI_MASK		(((1 << CS42888_STATUSCTL_INI_WIDTH) - 1) << CS42888_STATUSCTL_INI_SHIFT)
-+#define CS42888_STATUSCTL_INT_ACTIVE_HIGH	(0 << CS42888_STATUSCTL_INI_SHIFT)
-+#define CS42888_STATUSCTL_INT_ACTIVE_LOW	(1 << CS42888_STATUSCTL_INI_SHIFT)
-+#define CS42888_STATUSCTL_INT_OPEN_DRAIN	(2 << CS42888_STATUSCTL_INI_SHIFT)
-+
-+/* Status (Address 19h)*/
-+#define CS42888_STATUS_DAC_CLK_ERR_SHIFT	4
-+#define CS42888_STATUS_DAC_CLK_ERR_MASK		(1 << CS42888_STATUS_DAC_CLK_ERR_SHIFT)
-+#define CS42888_STATUS_ADC_CLK_ERR_SHIFT	3
-+#define CS42888_STATUS_ADC_CLK_ERR_MASK		(1 << CS42888_STATUS_ADC_CLK_ERR_SHIFT)
-+#define CS42888_STATUS_ADC2_OVFL_SHIFT		1
-+#define CS42888_STATUS_ADC2_OVFL_MASK		(1 << CS42888_STATUS_ADC2_OVFL_SHIFT)
-+#define CS42888_STATUS_ADC1_OVFL_SHIFT		0
-+#define CS42888_STATUS_ADC1_OVFL_MASK		(1 << CS42888_STATUS_ADC1_OVFL_SHIFT)
-+
-+/* Status Mask (Address 1Ah) */
-+#define CS42888_STATUS_DAC_CLK_ERR_M_SHIFT	4
-+#define CS42888_STATUS_DAC_CLK_ERR_M_MASK	(1 << CS42888_STATUS_DAC_CLK_ERR_M_SHIFT)
-+#define CS42888_STATUS_ADC_CLK_ERR_M_SHIFT	3
-+#define CS42888_STATUS_ADC_CLK_ERR_M_MASK	(1 << CS42888_STATUS_ADC_CLK_ERR_M_SHIFT)
-+#define CS42888_STATUS_ADC2_OVFL_M_SHIFT	1
-+#define CS42888_STATUS_ADC2_OVFL_M_MASK		(1 << CS42888_STATUS_ADC2_OVFL_M_SHIFT)
-+#define CS42888_STATUS_ADC1_OVFL_M_SHIFT	0
-+#define CS42888_STATUS_ADC1_OVFL_M_MASK		(1 << CS42888_STATUS_ADC1_OVFL_M_SHIFT)
-+
-+/* MUTEC Pin Control (Address 1Bh) */
-+#define CS42888_MUTEC_MCPOLARITY_SHIFT		1
-+#define CS42888_MUTEC_MCPOLARITY_MASK		(1 << CS42888_MUTEC_MCPOLARITY_SHIFT)
-+#define CS42888_MUTEC_MCPOLARITY_ACTIVE_LOW	(0 << CS42888_MUTEC_MCPOLARITY_SHIFT)
-+#define CS42888_MUTEC_MCPOLARITY_ACTIVE_HIGH	(1 << CS42888_MUTEC_MCPOLARITY_SHIFT)
-+#define CS42888_MUTEC_MUTEC_ACTIVE_SHIFT	0
-+#define CS42888_MUTEC_MUTEC_ACTIVE_MASK		(1 << CS42888_MUTEC_MUTEC_ACTIVE_SHIFT)
-+#define CS42888_MUTEC_MUTEC_ACTIVE		(1 << CS42888_MUTEC_MUTEC_ACTIVE_SHIFT)
-+#endif /* _CS42888_H */
 -- 
-1.8.4
+Regards,
 
+Laurent Pinchart
 
