@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750AbaCKQvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 12:51:15 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:35133 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbaCKQui (ORCPT
+	id S1754429AbaCKQvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 12:51:45 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28497 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753924AbaCKQvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 12:50:38 -0400
+	Tue, 11 Mar 2014 12:51:44 -0400
+Message-ID: <531F3F15.8050206@oracle.com>
+Date: Tue, 11 Mar 2014 12:51:33 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>
-References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
- <CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
- <CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
- <CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
- <CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
- <CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
- <CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
- <CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>
- <531F365B.4060000@linux.intel.com> <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
- <531F3D02.30706@linux.intel.com> <CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 11 Mar 2014 09:50:16 -0700
-Message-ID: <CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com>
-Subject: Re: [PATCH v2] x86: Remove compat vdso support
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
+CC: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com,
+        knoel@redhat.com, aarcange@redhat.com
+Subject: Re: [PATCH -mm] mm,numa,mprotect: always continue after finding a
+ stable thp page
+References: <5318E4BC.50301@oracle.com> <20140306173137.6a23a0b2@cuia.bos.redhat.com> <5318FC3F.4080204@redhat.com> <20140307140650.GA1931@suse.de> <20140307150923.GB1931@suse.de> <20140307182745.GD1931@suse.de> <20140311162845.GA30604@suse.de>
+In-Reply-To: <20140311162845.GA30604@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looking forward, would it be reasonable to have an extensible set of
-flags that live in the ELF interpreter's headers somewhere that
-indicate compatibility hacks that the program in question doesn't
-need?  There are at least two things I can think of:
+On 03/11/2014 12:28 PM, Mel Gorman wrote:
+> On Fri, Mar 07, 2014 at 06:27:45PM +0000, Mel Gorman wrote:
+>>> This is a completely untested prototype. It rechecks pmd_trans_huge
+>>> under the lock and falls through if it hit a parallel split. It's not
+>>> perfect because it could decide to fall through just because there was
+>>> no prot_numa work to do but it's for illustration purposes. Secondly,
+>>> I noted that you are calling invalidate for every pmd range. Is that not
+>>> a lot of invalidations? We could do the same by just tracking the address
+>>> of the first invalidation.
+>>>
+>>
+>> And there were other minor issues. This is still untested but Sasha,
+>> can you try it out please? I discussed this with Rik on IRC for a bit and
+>> reckon this should be sufficient if the correct race has been identified.
+>>
+>
+> Any luck with this patch Sasha? It passed basic tests here but I had not
+> seen the issue trigger either.
+>
 
- - no_compat_vdso32: indicates an interpreter that can load a modern
-non-prelinked vdso
- - no_vsyscall64: indicates that the libc will not attempt to call
-into the vsyscall page on x86_64.
+Sorry, I've been stuck in my weekend project of getting lockdep to work with page locks :)
 
-I'm sure that there are more.  Think PT_GNU_STACK but for more than
-just the stack.
+It takes a moment to test, so just to be sure - I should have only this last patch applied?
+Without the one in the original mail?
 
-If we do something like this, there should probably be a prctl or
-similar that can change some of the flags at runtime, too.
+
+Thanks,
+Sasha
