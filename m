@@ -1,79 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178AbaCKSDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:03:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44156 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562AbaCKSDk (ORCPT
+	id S1755246AbaCKSDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:03:54 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62485 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744AbaCKSDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:03:40 -0400
-Date: Tue, 11 Mar 2014 11:03:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtio-dev@lists.oasis-open.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: mmotm 2014-03-10-15-35 uploaded (virtio_balloon)
-Message-Id: <20140311110338.333e1ee691cadb0f20dbb083@linux-foundation.org>
-In-Reply-To: <531F43F2.1030504@infradead.org>
-References: <20140310223701.0969C31C2AA@corp2gmr1-1.hot.corp.google.com>
-	<531F43F2.1030504@infradead.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Mar 2014 14:03:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <531F4A8C.3020403@parallels.com>
+References: <1394320530-3508-1-git-send-email-ast@plumgrid.com>
+	<1394320530-3508-2-git-send-email-ast@plumgrid.com>
+	<531C5EB5.2080507@iogearbox.net>
+	<CAMEtUux-Psz9NW+t7vf2-=iDE5TW7KDOag2TDbxTEvd6a=LKSw@mail.gmail.com>
+	<531CE47E.40700@iogearbox.net>
+	<531F4A8C.3020403@parallels.com>
+Date: Tue, 11 Mar 2014 11:03:47 -0700
+Message-ID: <CAMEtUuyh4_je-vbtZ91bG4Qo5rKAHMuVd1==TJFxQS1oR3L4Mg@mail.gmail.com>
+Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter and converter
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Daniel Borkmann <borkmann@iogearbox.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Mar 2014 10:12:18 -0700 Randy Dunlap <rdunlap@infradead.org> wrote:
+On Tue, Mar 11, 2014 at 10:40 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
+> On 03/10/2014 02:00 AM, Daniel Borkmann wrote:
+>> On 03/09/2014 06:08 PM, Alexei Starovoitov wrote:
+>>> On Sun, Mar 9, 2014 at 5:29 AM, Daniel Borkmann <borkmann@iogearbox.net> wrote:
+>>>> On 03/09/2014 12:15 AM, Alexei Starovoitov wrote:
+>>>>>
+>>>>> Extended BPF extends old BPF in the following ways:
+>>>>> - from 2 to 10 registers
+>>>>>     Original BPF has two registers (A and X) and hidden frame pointer.
+>>>>>     Extended BPF has ten registers and read-only frame pointer.
+>>>>> - from 32-bit registers to 64-bit registers
+>>>>>     semantics of old 32-bit ALU operations are preserved via 32-bit
+>>>>>     subregisters
+>>>>> - if (cond) jump_true; else jump_false;
+>>>>>     old BPF insns are replaced with:
+>>>>>     if (cond) jump_true; /* else fallthrough */
+>>>>> - adds signed > and >= insns
+>>>>> - 16 4-byte stack slots for register spill-fill replaced with
+>>>>>     up to 512 bytes of multi-use stack space
+>>>>> - introduces bpf_call insn and register passing convention for zero
+>>>>>     overhead calls from/to other kernel functions (not part of this patch)
+>>>>> - adds arithmetic right shift insn
+>>>>> - adds swab32/swab64 insns
+>>>>> - adds atomic_add insn
+>>>>> - old tax/txa insns are replaced with 'mov dst,src' insn
+>>>>>
+>>>>> Extended BPF is designed to be JITed with one to one mapping, which
+>>>>> allows GCC/LLVM backends to generate optimized BPF code that performs
+>>>>> almost as fast as natively compiled code
+>>>>>
+>>>>> sk_convert_filter() remaps old style insns into extended:
+>>>>> 'sock_filter' instructions are remapped on the fly to
+>>>>> 'sock_filter_ext' extended instructions when
+>>>>> sysctl net.core.bpf_ext_enable=1
+>>>>>
+>>>>> Old filter comes through sk_attach_filter() or
+>>>>> sk_unattached_filter_create()
+>>>>>    if (bpf_ext_enable) {
+>>>>>       convert to new
+>>>>>       sk_chk_filter() - check old bpf
+>>>>>       use sk_run_filter_ext() - new interpreter
+>>>>>    } else {
+>>>>>       sk_chk_filter() - check old bpf
+>>>>>       if (bpf_jit_enable)
+>>>>>           use old jit
+>>>>>       else
+>>>>>           use sk_run_filter() - old interpreter
+>>>>>    }
+>>>>>
+>>>>> sk_run_filter_ext() interpreter is noticeably faster
+>>>>> than sk_run_filter() for two reasons:
+>>>>>
+>>>>> 1.fall-through jumps
+>>>>>     Old BPF jump instructions are forced to go either 'true' or 'false'
+>>>>>     branch which causes branch-miss penalty.
+>>>>>     Extended BPF jump instructions have one branch and fall-through,
+>>>>>     which fit CPU branch predictor logic better.
+>>>>>     'perf stat' shows drastic difference for branch-misses.
+>>>>>
+>>>>> 2.jump-threaded implementation of interpreter vs switch statement
+>>>>>     Instead of single tablejump at the top of 'switch' statement, GCC will
+>>>>>     generate multiple tablejump instructions, which helps CPU branch
+>>>>> predictor
+>>>>>
+>>>>> Performance of two BPF filters generated by libpcap was measured
+>>>>> on x86_64, i386 and arm32.
+>>>>>
+>>>>> fprog #1 is taken from Documentation/networking/filter.txt:
+>>>>> tcpdump -i eth0 port 22 -dd
+>>>>>
+>>>>> fprog #2 is taken from 'man tcpdump':
+>>>>> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
+>>>>>      ((tcp[12]&0xf0)>>2)) != 0)' -dd
+>>>>>
+>>>>> Other libpcap programs have similar performance differences.
+>>>>>
+>>>>> Raw performance data from BPF micro-benchmark:
+>>>>> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
+>>>>> time in nsec per call, smaller is better
+>>>>> --x86_64--
+>>>>>            fprog #1  fprog #1   fprog #2  fprog #2
+>>>>>            cache-hit cache-miss cache-hit cache-miss
+>>>>> old BPF     90       101       192       202
+>>>>> ext BPF     31        71       47         97
+>>>>> old BPF jit 12        34       17         44
+>>>>> ext BPF jit TBD
+>>>>>
+>>>>> --i386--
+>>>>>            fprog #1  fprog #1   fprog #2  fprog #2
+>>>>>            cache-hit cache-miss cache-hit cache-miss
+>>>>> old BPF    107        136      227       252
+>>>>> ext BPF     40        119       69       172
+>>>>>
+>>>>> --arm32--
+>>>>>            fprog #1  fprog #1   fprog #2  fprog #2
+>>>>>            cache-hit cache-miss cache-hit cache-miss
+>>>>> old BPF    202        300      475       540
+>>>>> ext BPF    180        270      330       470
+>>>>> old BPF jit 26        182       37       202
+>>>>> new BPF jit TBD
+>>>>>
+>>>>> Tested with trinify BPF fuzzer
+>>>>>
+>>>>> Future work:
+>>>>>
+>>>>> 0. add bpf/ebpf testsuite to tools/testing/selftests/net/bpf
+>>>>>
+>>>>> 1. add extended BPF JIT for x86_64
+>>>>>
+>>>>> 2. add inband old/new demux and extended BPF verifier, so that new
+>>>>> programs
+>>>>>      can be loaded through old sk_attach_filter() and
+>>>>> sk_unattached_filter_create()
+>>>>>      interfaces
+>>>>>
+>>>>> 3. tracing filters systemtap-like with extended BPF
+>>>>>
+>>>>> 4. OVS with extended BPF
+>>>>>
+>>>>> 5. nftables with extended BPF
+>>>>>
+>>>>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+>>>>> Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
+>>>>> Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
+>>>>
+>>>>
+>>>> One more question or possible issue that came through my mind: When
+>>>> someone attaches a socket filter from user space, and bpf_ext_enable=1
+>>>> then the old filter will transparently be converted to the new
+>>>> representation. If then user space (e.g. through checkpoint restore)
+>>>> will issue a sk_get_filter() and thus we're calling sk_decode_filter()
+>>>> on sk->sk_filter and, therefore, try to decode what we stored in
+>>>> insns_ext[] with the assumption we still have the old code. Would that
+>>>> actually crash (or leak memory, or just return garbage), as we access
+>>>> decodes[] array with filt->code? Would be great if you could double-check.
+>>>
+>>> ohh. yes. missed that.
+>>> when bpf_ext_enable=1 I think it's cleaner to return ebpf filter.
+>>> This way the user space can see how old bpf filter was converted.
+>>>
+>>> Of course we can allocate extra memory and keep original bpf code there
+>>> just to return it via sk_get_filter(), but that seems overkill.
+>>
+>> Cc'ing Pavel for a8fc92778080 ("sk-filter: Add ability to get socket
+>> filter program (v2)").
+>>
+>> I think the issue can be that when applications could get migrated
+>> from one machine to another and their kernel won't support ebpf yet,
+>> then filter could not get loaded this way as it's expected to return
+>> what the user loaded. The trade-off, however, is that the original
+>> BPF code needs to be stored as well. :(
+>
+> Sorry if I miss the point, but isn't the original filter kept on socket?
+> The sk_attach_filter() does so, then calls __sk_prepare_filter, which
+> in turn calls bpf_jit_compile(), and the latter two keep the insns in place.
 
-> On 03/10/2014 03:37 PM, akpm@linux-foundation.org wrote:
-> > The mm-of-the-moment snapshot 2014-03-10-15-35 has been uploaded to
-> > 
-> >    http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> > mmotm-readme.txt says
-> > 
-> > README for mm-of-the-moment:
-> > 
-> > http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> > more than once a week.
-> > 
-> > You will need quilt to apply these patches to the latest Linus release (3.x
-> > or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-> > http://ozlabs.org/~akpm/mmotm/series
-> > 
-> > The file broken-out.tar.gz contains two datestamp files: .DATE and
-> > .DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-> > followed by the base kernel version against which this patch series is to
-> > be applied.
-> > 
-> > This tree is partially included in linux-next.  To see which patches are
-> > included in linux-next, consult the `series' file.  Only the patches
-> > within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-> > linux-next.
-> > 
-> 
-> on x86_64:
-> 
-> ERROR: "balloon_devinfo_alloc" [drivers/virtio/virtio_balloon.ko] undefined!
-> ERROR: "balloon_page_enqueue" [drivers/virtio/virtio_balloon.ko] undefined!
-> ERROR: "balloon_page_dequeue" [drivers/virtio/virtio_balloon.ko] undefined!
-> 
-> when loadable module
-> 
-> or
-> 
-> virtio_balloon.c:(.text+0x1fa26): undefined reference to `balloon_page_enqueue'
-> virtio_balloon.c:(.text+0x1fb87): undefined reference to `balloon_page_dequeue'
-> virtio_balloon.c:(.text+0x1fdf1): undefined reference to `balloon_devinfo_alloc'
-> 
-> when builtin.
+Yes. in V8/V9 series original filter is kept on socket.
+and your crtools/test/zdtm/live/static/socket_filter.c test passes.
+Let me know if there are any other tests I can try.
 
-OK, thanks, I'll drop
-http://ozlabs.org/~akpm/mmots/broken-out/mm-disable-mm-balloon_compactionc-completely-when-config_balloon_compaction.patch
+Thanks
+Alexei
+
+>
+> Thanks,
+> Pavel
+>
