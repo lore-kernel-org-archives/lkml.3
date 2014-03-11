@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984AbaCKXYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 19:24:23 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:22676 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755563AbaCKXYW (ORCPT
+	id S1756014AbaCKXZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 19:25:53 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:59049 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755958AbaCKXZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 19:24:22 -0400
-Date: Tue, 11 Mar 2014 19:24:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Juri Lelli <juri.lelli@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH v3] sched: Fix broken setscheduler()
-Message-ID: <20140311192420.39395358@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.02.1403111147540.18573@ionos.tec.linutronix.de>
-References: <20140305232931.449eef8c@gandalf.local.home>
-	<20140306115825.GS27965@twins.programming.kicks-ass.net>
-	<20140306132040.781dbf18c9385a6112fbab2b@gmail.com>
-	<20140306120438.638bfe94@gandalf.local.home>
-	<alpine.DEB.2.02.1403062143360.18573@ionos.tec.linutronix.de>
-	<20140310132940.78e556c7@gandalf.local.home>
-	<alpine.DEB.2.02.1403102206520.18573@ionos.tec.linutronix.de>
-	<20140310173731.06d41157@gandalf.local.home>
-	<20140311103545.fc7f0f6b1bf0eb1d3391c85c@gmail.com>
-	<alpine.DEB.2.02.1403111147540.18573@ionos.tec.linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 11 Mar 2014 19:25:52 -0400
+Date: Tue, 11 Mar 2014 19:25:45 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2/5] mfd: add bcm590xx pmu driver
+Message-ID: <20140311232545.GP25092@beef>
+References: <1394552775-31264-1-git-send-email-mporter@linaro.org>
+ <1394552775-31264-3-git-send-email-mporter@linaro.org>
+ <20140311160837.GP21216@lee--X1>
+ <20140311221938.GO25092@beef>
+ <20140311224517.GA5672@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140311224517.GA5672@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 11, 2014 at 10:45:17PM +0000, Lee Jones wrote:
+> > > > Add a driver for the BCM590xx PMU multi-function devices. The driver
+> > > > initially supports regmap initialization and instantiation of the
+> > > > voltage regulator device function of the PMU.
+> > > > 
+> > > > Signed-off-by: Matt Porter <mporter@linaro.org>
+> > > > Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+> > > > Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> > > > ---
+> > > >  drivers/mfd/Kconfig          |  8 ++++
+> > > >  drivers/mfd/Makefile         |  1 +
+> > > >  drivers/mfd/bcm590xx.c       | 93 ++++++++++++++++++++++++++++++++++++++++++++
+> > > >  include/linux/mfd/bcm590xx.h | 31 +++++++++++++++
+> > > >  4 files changed, 133 insertions(+)
+> > > >  create mode 100644 drivers/mfd/bcm590xx.c
+> > > >  create mode 100644 include/linux/mfd/bcm590xx.h
+> > > 
+> > > I have a tiny nit that 'ret' doesn't need to be initialised before
+> > > use in probe(), but apart from that...
+> > > 
+> > > Looks pretty sensible:
+> > >   Acked-by: Lee Jones <lee.jones@linaro.org>
+> > 
+> > Ok, thanks. When I get back in front of my desktop I'll send a v4 of
+> > just this patch to address that nit. Mark already applied the regulator
+> > driver from this series, will you be taking this through your tree? For
+> > that matter, I wonder if the binding would also go through your tree
+> > with this driver.
+> 
+> At least the MFD portion and the DT binding doc will go through the
+> MFD tree.
+> 
+> Are there any inter-patch dependencies in the set? If so, we should
+> know about them so we can coordinate a sensible solution.
 
-I decided to run my tests on linux-next, and my wakeup_rt tracer was
-broken. After running a bisect, I found that the problem commit was:
+Yes, the regulator driver (3/5) that Mark applied is dependent on this
+patch...the regulator driver includes include/linux/mfd/bcm590xx.h.
 
-   linux-next commit c365c292d059
-   "sched: Consider pi boosting in setscheduler()"
-
-And the reason the wake_rt tracer test was failing, was because it had
-no RT task to trace. I first noticed this when running with
-sched_switch event and saw that my RT task still had normal SCHED_OTHER
-priority. Looking at the problem commit, I found:
-
- -       p->normal_prio = normal_prio(p);
- -       p->prio = rt_mutex_getprio(p);
-
-With no
-
- +       p->normal_prio = normal_prio(p);
- +       p->prio = rt_mutex_getprio(p);
-
-Reading what the commit is suppose to do, I realize that the p->prio
-can't be set if the task is boosted with a higher prio, but the
-p->normal_prio still needs to be set regardless, otherwise, when the
-task is deboosted, it wont get the new priority.
-
-The p->prio has to be set before "check_class_changed()" is called,
-otherwise the class wont be changed.
-
-Also added fix to newprio to include a check for deadline policy that
-was missing. This change was suggested by Juri Lelli.
-
-Link: http://lkml.kernel.org/r/20140306120438.638bfe94@gandalf.local.home
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/sched/core.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ee8004c..f00a032 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3197,6 +3197,7 @@ static void __setscheduler_params(struct task_struct *p,
- 	 * getparam()/getattr() don't report silly values for !rt tasks.
- 	 */
- 	p->rt_priority = attr->sched_priority;
-+	p->normal_prio = normal_prio(p);
- 	set_load_weight(p);
- }
- 
-@@ -3206,6 +3207,12 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
- {
- 	__setscheduler_params(p, attr);
- 
-+	/*
-+	 * If we get here, there was no pi waiters boosting the
-+	 * task. It is safe to use the normal prio.
-+	 */
-+	p->prio = normal_prio(p);
-+
- 	if (dl_prio(p->prio))
- 		p->sched_class = &dl_sched_class;
- 	else if (rt_prio(p->prio))
-@@ -3264,7 +3271,8 @@ static int __sched_setscheduler(struct task_struct *p,
- 				const struct sched_attr *attr,
- 				bool user)
- {
--	int newprio = MAX_RT_PRIO - 1 - attr->sched_priority;
-+	int newprio = dl_policy(attr->sched_policy) ? MAX_DL_PRIO - 1 :
-+		      MAX_RT_PRIO - 1 - attr->sched_priority;
- 	int retval, oldprio, oldpolicy = -1, on_rq, running;
- 	int policy = attr->sched_policy;
- 	unsigned long flags;
--- 
-1.8.1.4
-
-
+-Matt
