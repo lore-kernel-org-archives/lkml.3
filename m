@@ -1,285 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123AbaCKR67 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:58:59 -0400
-Received: from mail.efficios.com ([78.47.125.74]:45761 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752562AbaCKR66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:58:58 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [RFC PATCH] Tracepoint cleanup: remove unused API functions
-Date: Tue, 11 Mar 2014 13:58:45 -0400
-Message-Id: <1394560725-17132-1-git-send-email-mathieu.desnoyers@efficios.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755007AbaCKR7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:59:46 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:55815 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754755AbaCKR7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 13:59:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <531EE5A2.7090501@redhat.com>
+References: <1394529560-3490-1-git-send-email-pablo@netfilter.org>
+	<531EE5A2.7090501@redhat.com>
+Date: Tue, 11 Mar 2014 10:59:42 -0700
+Message-ID: <CAMEtUuyJne-8uNtOAK7EcFFQNXz9m7J2DDLGH_GbYe6oWZx1pQ@mail.gmail.com>
+Subject: Re: [PATCH RFC 0/9] socket filtering using nf_tables
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>, netfilter-devel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>, kaber@trash.net,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the following commit:
+On Tue, Mar 11, 2014 at 3:29 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 03/11/2014 10:19 AM, Pablo Neira Ayuso wrote:
+>>
+>> Hi!
+>>
+>> The following patchset provides a socket filtering alternative to BPF
+>> which allows you to define your filter using the nf_tables expressions.
+>>
+>> Similarly to BPF, you can attach filters via setsockopt()
+>> SO_ATTACH_NFT_FILTER. The filter that is passed to the kernel is
+>> expressed in netlink TLV format which looks like:
+>>
+>>   expression list (nested attribute)
+>>    expression element (nested attribute)
+>>     expression name (string)
+>>     expression data (nested attribute)
+>>      ... specific attribute for this expression go here
+>>
+>> This is similar to the netlink format of the nf_tables rules, so we
+>> can re-use most of the infrastructure that we already have in userspace.
+>> The kernel takes the TLV representation and translates it to the native
+>> nf_tables representation.
+>>
+>> The patches 1-3 have helped to generalize the existing socket filtering
+>> infrastructure to allow pluging new socket filtering frameworks. Then,
+>> patches 4-8 generalize the nf_tables code by move the neccessary nf_tables
+>> expression and data initialization core infrastructure. Then, patch 9
+>> provides the nf_tables socket filtering capabilities.
+>>
+>> Patrick and I have been discussing for a while that part of this
+>> generalisation works should also help to add support for providing a
+>> replacement to the tc framework, so with the necessary work, nf_tables
+>> may provide in the near future packet a single packet classification
+>> framework for Linux.
+>
+>
+> I'm being curious here ;) as there's currently an ongoing effort on
+> netdev for Alexei's eBPF engine (part 1 at [1,2,3]), which addresses
+> shortcomings of current BPF and shall long term entirely replace the
+> current BPF engine code to let filters entirely run in eBPF resp.
+> eBPF's JIT engine, as I understand, which is also transparently usable
+> in cls_bpf for classification in tc w/o rewriting on a different filter
+> language. Performance figures have been posted/provided in [1] as well.
+>
+> So the plan on your side would be to have an alternative to eBPF, or
+> build on top of it to reuse its in-kernel JIT compiler?
+>
+>  [1] http://patchwork.ozlabs.org/patch/328927/
+>  [2] http://patchwork.ozlabs.org/patch/328926/
+>  [3] http://patchwork.ozlabs.org/patch/328928/
+>
+>
+>> There is an example of the userspace code available at:
+>>
+>>   http://people.netfilter.org/pablo/nft-sock-filter-test.c
+>>
+>> I'm currently reusing the existing libnftnl interfaces, my plan is to
+>> new interfaces in that library for easier and more simple filter
+>> definition for socket filtering.
+>>
+>> Note that the current nf_tables expression-set is also limited with
+>> regards to BPF, but the infrastructure that we have can be easily
+>> extended with new expressions.
+>>
+>> Comments welcome!
 
-commit b75ef8b44b1cb95f5a26484b0e2fe37a63b12b44
-Author: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date:   Wed Aug 10 15:18:39 2011 -0400
+Hi Pablo,
 
-    Tracepoint: Dissociate from module mutex
+Could you share what performance you're getting when doing nft
+filter equivalent to 'tcpdump port 22' ?
+Meaning your filter needs to parse eth->proto, ip or ipv6 header and
+check both ports. How will it compare with JITed bpf/ebpf ?
 
-The following functions became unnecessary:
+I was trying to go the other way: improve nft performance with ebpf.
+10/40G links are way to fast for interpreters. imo JIT is the only way.
 
-- tracepoint_probe_register_noupdate,
-- tracepoint_probe_unregister_noupdate,
-- tracepoint_probe_update_all.
+here are some comments about patches:
+1/9:
+-       if (fp->bpf_func != sk_run_filter)
+-               module_free(NULL, fp->bpf_func);
++       if (fp->run_filter != sk_run_filter)
++               module_free(NULL, fp->run_filter);
 
-In fact, none of the in-kernel tracers, nor LTTng, nor SystemTAP use
-them. Remove those.
+David suggested that these comparisons in all jits are ugly.
+I've fixed it in my patches. When they're in, you wouldn't need to
+mess with this.
 
-Moreover, the functions:
+2/9:
+-       atomic_sub(sk_filter_size(fp->len), &sk->sk_omem_alloc);
++       atomic_sub(fp->size, &sk->sk_omem_alloc);
 
-- tracepoint_iter_start,
-- tracepoint_iter_next,
-- tracepoint_iter_stop,
-- tracepoint_iter_reset.
+that's a big change in socket memory accounting.
+We used to account for the whole sk_filter... now you're counting
+filter size only.
+Is it valid?
 
-are unused by in-kernel tracers, LTTng and SystemTAP. Remove those too.
+7/9:
+whole nft_expr_autoload() looks scary from security point of view.
+If I'm reading it correctly, the code will do request_module() based on
+userspace request to attach filter?
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Frank Ch. Eigler <fche@redhat.com>
-CC: Johannes Berg <johannes.berg@intel.com>
----
- include/linux/tracepoint.h |   11 ---
- kernel/tracepoint.c        |  179 --------------------------------------------
- 2 files changed, 190 deletions(-)
+9/9:
++       case SO_NFT_GET_FILTER:
++               len = sk_nft_get_filter(sk, (struct sock_filter __user
+*)optval, len);
+with my patches there was a concern regarding socket checkpoint/restore
+and I had to preserve existing filter image to make sure it's not broken.
+Could you please coordinate with Pavel and co to test this piece?
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 7159a0a..d405195 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -48,12 +48,6 @@ extern int tracepoint_probe_register(const char *name, void *probe, void *data);
- extern int
- tracepoint_probe_unregister(const char *name, void *probe, void *data);
- 
--extern int tracepoint_probe_register_noupdate(const char *name, void *probe,
--					      void *data);
--extern int tracepoint_probe_unregister_noupdate(const char *name, void *probe,
--						void *data);
--extern void tracepoint_probe_update_all(void);
--
- #ifdef CONFIG_MODULES
- struct tp_module {
- 	struct list_head list;
-@@ -75,11 +69,6 @@ struct tracepoint_iter {
- 	struct tracepoint * const *tracepoint;
- };
- 
--extern void tracepoint_iter_start(struct tracepoint_iter *iter);
--extern void tracepoint_iter_next(struct tracepoint_iter *iter);
--extern void tracepoint_iter_stop(struct tracepoint_iter *iter);
--extern void tracepoint_iter_reset(struct tracepoint_iter *iter);
--
- /*
-  * tracepoint_synchronize_unregister must be called between the last tracepoint
-  * probe unregistration and the end of module exit to make sure there is no
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 031cc56..0faf2a4 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -451,185 +451,6 @@ static void tracepoint_add_old_probes(void *old)
- 	}
- }
- 
--/**
-- * tracepoint_probe_register_noupdate -  register a probe but not connect
-- * @name: tracepoint name
-- * @probe: probe handler
-- *
-- * caller must call tracepoint_probe_update_all()
-- */
--int tracepoint_probe_register_noupdate(const char *name, void *probe,
--				       void *data)
--{
--	struct tracepoint_func *old;
--
--	mutex_lock(&tracepoints_mutex);
--	old = tracepoint_add_probe(name, probe, data);
--	if (IS_ERR(old)) {
--		mutex_unlock(&tracepoints_mutex);
--		return PTR_ERR(old);
--	}
--	tracepoint_add_old_probes(old);
--	mutex_unlock(&tracepoints_mutex);
--	return 0;
--}
--EXPORT_SYMBOL_GPL(tracepoint_probe_register_noupdate);
--
--/**
-- * tracepoint_probe_unregister_noupdate -  remove a probe but not disconnect
-- * @name: tracepoint name
-- * @probe: probe function pointer
-- *
-- * caller must call tracepoint_probe_update_all()
-- */
--int tracepoint_probe_unregister_noupdate(const char *name, void *probe,
--					 void *data)
--{
--	struct tracepoint_func *old;
--
--	mutex_lock(&tracepoints_mutex);
--	old = tracepoint_remove_probe(name, probe, data);
--	if (IS_ERR(old)) {
--		mutex_unlock(&tracepoints_mutex);
--		return PTR_ERR(old);
--	}
--	tracepoint_add_old_probes(old);
--	mutex_unlock(&tracepoints_mutex);
--	return 0;
--}
--EXPORT_SYMBOL_GPL(tracepoint_probe_unregister_noupdate);
--
--/**
-- * tracepoint_probe_update_all -  update tracepoints
-- */
--void tracepoint_probe_update_all(void)
--{
--	LIST_HEAD(release_probes);
--	struct tp_probes *pos, *next;
--
--	mutex_lock(&tracepoints_mutex);
--	if (!need_update) {
--		mutex_unlock(&tracepoints_mutex);
--		return;
--	}
--	if (!list_empty(&old_probes))
--		list_replace_init(&old_probes, &release_probes);
--	need_update = 0;
--	tracepoint_update_probes();
--	mutex_unlock(&tracepoints_mutex);
--	list_for_each_entry_safe(pos, next, &release_probes, u.list) {
--		list_del(&pos->u.list);
--		call_rcu_sched(&pos->u.rcu, rcu_free_old_probes);
--	}
--}
--EXPORT_SYMBOL_GPL(tracepoint_probe_update_all);
--
--/**
-- * tracepoint_get_iter_range - Get a next tracepoint iterator given a range.
-- * @tracepoint: current tracepoints (in), next tracepoint (out)
-- * @begin: beginning of the range
-- * @end: end of the range
-- *
-- * Returns whether a next tracepoint has been found (1) or not (0).
-- * Will return the first tracepoint in the range if the input tracepoint is
-- * NULL.
-- */
--static int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
--	struct tracepoint * const *begin, struct tracepoint * const *end)
--{
--	if (!*tracepoint && begin != end) {
--		*tracepoint = begin;
--		return 1;
--	}
--	if (*tracepoint >= begin && *tracepoint < end)
--		return 1;
--	return 0;
--}
--
--#ifdef CONFIG_MODULES
--static void tracepoint_get_iter(struct tracepoint_iter *iter)
--{
--	int found = 0;
--	struct tp_module *iter_mod;
--
--	/* Core kernel tracepoints */
--	if (!iter->module) {
--		found = tracepoint_get_iter_range(&iter->tracepoint,
--				__start___tracepoints_ptrs,
--				__stop___tracepoints_ptrs);
--		if (found)
--			goto end;
--	}
--	/* Tracepoints in modules */
--	mutex_lock(&tracepoints_mutex);
--	list_for_each_entry(iter_mod, &tracepoint_module_list, list) {
--		/*
--		 * Sorted module list
--		 */
--		if (iter_mod < iter->module)
--			continue;
--		else if (iter_mod > iter->module)
--			iter->tracepoint = NULL;
--		found = tracepoint_get_iter_range(&iter->tracepoint,
--			iter_mod->tracepoints_ptrs,
--			iter_mod->tracepoints_ptrs
--				+ iter_mod->num_tracepoints);
--		if (found) {
--			iter->module = iter_mod;
--			break;
--		}
--	}
--	mutex_unlock(&tracepoints_mutex);
--end:
--	if (!found)
--		tracepoint_iter_reset(iter);
--}
--#else /* CONFIG_MODULES */
--static void tracepoint_get_iter(struct tracepoint_iter *iter)
--{
--	int found = 0;
--
--	/* Core kernel tracepoints */
--	found = tracepoint_get_iter_range(&iter->tracepoint,
--			__start___tracepoints_ptrs,
--			__stop___tracepoints_ptrs);
--	if (!found)
--		tracepoint_iter_reset(iter);
--}
--#endif /* CONFIG_MODULES */
--
--void tracepoint_iter_start(struct tracepoint_iter *iter)
--{
--	tracepoint_get_iter(iter);
--}
--EXPORT_SYMBOL_GPL(tracepoint_iter_start);
--
--void tracepoint_iter_next(struct tracepoint_iter *iter)
--{
--	iter->tracepoint++;
--	/*
--	 * iter->tracepoint may be invalid because we blindly incremented it.
--	 * Make sure it is valid by marshalling on the tracepoints, getting the
--	 * tracepoints from following modules if necessary.
--	 */
--	tracepoint_get_iter(iter);
--}
--EXPORT_SYMBOL_GPL(tracepoint_iter_next);
--
--void tracepoint_iter_stop(struct tracepoint_iter *iter)
--{
--}
--EXPORT_SYMBOL_GPL(tracepoint_iter_stop);
--
--void tracepoint_iter_reset(struct tracepoint_iter *iter)
--{
--#ifdef CONFIG_MODULES
--	iter->module = NULL;
--#endif /* CONFIG_MODULES */
--	iter->tracepoint = NULL;
--}
--EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
--
- #ifdef CONFIG_MODULES
- bool trace_module_has_bad_taint(struct module *mod)
- {
--- 
-1.7.10.4
+What will happen if nft_filter attached, but so_get_filter is called? crash?
 
++static int nft_sock_expr_autoload(const struct nft_ctx *ctx,
++                                 const struct nlattr *nla)
++{
++#ifdef CONFIG_MODULES
++       mutex_unlock(&nft_expr_info_mutex);
++       request_module("nft-expr-%.*s", nla_len(nla), (char *)nla_data(nla));
++       mutex_lock(&nft_expr_info_mutex);
+
+same security concern here...
+
++int sk_nft_attach_filter(char __user *optval, struct sock *sk)
++{
+
+what about sk_clone_lock()? since filter program is in nft, do you need to do
+special steps during copy of socket?
+
++       fp = sock_kmalloc(sk, sizeof(struct sk_filter) + size, GFP_KERNEL);
+
+this may allocate more memory then you need.
+Currently sk_filter_size() computes it in an accurate way.
+
+Also the same issue of optmem accounting as I mentioned in 2/9
+
++err4:
++       sock_kfree_s(sk, fp, size);
+
+a small bug: allocated sizeof(sk_filter)+size, but freeing 'size' only...
+
+Overall I think it's very interesting work.
+Not sure what's the use case for it though.
+
+I'll cook up a patch for the opposite approach (use ebpf inside nft)
+and will send you for review.
+I would prefer to work together to satisfy your and our user requests.
+
+Thanks
+Alexei
+
+>> Pablo Neira Ayuso (9):
+>>    net: rename fp->bpf_func to fp->run_filter
+>>    net: filter: account filter length in bytes
+>>    net: filter: generalise sk_filter_release
+>>    netfilter: nf_tables: move fast operations to header
+>>    netfilter: nf_tables: add nft_value_init
+>>    netfilter: nf_tables: rename nf_tables_core.c to nf_tables_nf.c
+>>    netfilter: nf_tables: move expression infrastructure to built-in core
+>>    netfilter: nf_tables: generalize verdict handling and introduce scopes
+>>    netfilter: nf_tables: add support for socket filtering
+>>
+>>   arch/arm/net/bpf_jit_32.c              |   25 +-
+>>   arch/powerpc/net/bpf_jit_comp.c        |   10 +-
+>>   arch/s390/net/bpf_jit_comp.c           |   16 +-
+>>   arch/sparc/net/bpf_jit_comp.c          |    8 +-
+>>   arch/x86/net/bpf_jit_comp.c            |    8 +-
+>>   include/linux/filter.h                 |   28 +-
+>>   include/net/netfilter/nf_tables.h      |   27 +-
+>>   include/net/netfilter/nf_tables_core.h |   84 +++++
+>>   include/net/netfilter/nft_reject.h     |    3 +-
+>>   include/net/sock.h                     |    8 +-
+>>   include/uapi/asm-generic/socket.h      |    4 +
+>>   net/core/filter.c                      |   28 +-
+>>   net/core/sock.c                        |   19 ++
+>>   net/core/sock_diag.c                   |    4 +-
+>>   net/netfilter/Kconfig                  |   13 +
+>>   net/netfilter/Makefile                 |    9 +-
+>>   net/netfilter/nf_tables_api.c          |  440 ++++---------------------
+>>   net/netfilter/nf_tables_core.c         |  564
+>> +++++++++++++++++++++-----------
+>>   net/netfilter/nf_tables_nf.c           |  189 +++++++++++
+>>   net/netfilter/nf_tables_sock.c         |  327 ++++++++++++++++++
+>>   net/netfilter/nft_bitwise.c            |   35 +-
+>>   net/netfilter/nft_byteorder.c          |   28 +-
+>>   net/netfilter/nft_cmp.c                |   43 ++-
+>>   net/netfilter/nft_compat.c             |    6 +-
+>>   net/netfilter/nft_counter.c            |    3 +-
+>>   net/netfilter/nft_ct.c                 |    9 +-
+>>   net/netfilter/nft_exthdr.c             |    3 +-
+>>   net/netfilter/nft_hash.c               |   12 +-
+>>   net/netfilter/nft_immediate.c          |   35 +-
+>>   net/netfilter/nft_limit.c              |    3 +-
+>>   net/netfilter/nft_log.c                |    3 +-
+>>   net/netfilter/nft_lookup.c             |    3 +-
+>>   net/netfilter/nft_meta.c               |   51 ++-
+>>   net/netfilter/nft_nat.c                |    3 +-
+>>   net/netfilter/nft_payload.c            |   29 +-
+>>   net/netfilter/nft_queue.c              |    3 +-
+>>   net/netfilter/nft_rbtree.c             |   12 +-
+>>   net/netfilter/nft_reject.c             |    3 +-
+>>   38 files changed, 1416 insertions(+), 682 deletions(-)
+>>   create mode 100644 net/netfilter/nf_tables_nf.c
+>>   create mode 100644 net/netfilter/nf_tables_sock.c
+>>
+>
