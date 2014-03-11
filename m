@@ -1,527 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619AbaCKPHW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 11:07:22 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:22894 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565AbaCKPHQ (ORCPT
+	id S1753707AbaCKPHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 11:07:33 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38299 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629AbaCKPH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 11:07:16 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-1a-531f26a1f0de
-Message-id: <1394550432.24263.26.camel@AMDC1943>
-Subject: Re: [PATCH 3/3] mfd: max8997: move regmap handling to function drivers
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, myungjoo.ham@samsung.com,
-        cw00.choi@samsung.com, dmitry.torokhov@gmail.com, cooloney@gmail.com,
-        rpurdie@rpsys.net, dbaryshkov@gmail.com, dwmw2@infradead.org,
-        lgirdwood@gmail.com, broonie@kernel.org, a.zummo@towertech.it,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-leds@vger.kernel.org,
-        rtc-linux@googlegroups.com, m.szyprowski@samsung.com
-Date: Tue, 11 Mar 2014 16:07:12 +0100
-In-reply-to: <1394546304-15191-4-git-send-email-r.baldyga@samsung.com>
-References: <1394546304-15191-1-git-send-email-r.baldyga@samsung.com>
- <1394546304-15191-4-git-send-email-r.baldyga@samsung.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t/xa7oL1eSDDQ7v0LNYcvEqu8XUh0/Y
-	LI7unMhkcf3Lc1aLSU/eM1scXvSC0WLiysnMFve/HmW0+Halg8ni5qdvrBaXd81hs9j6Zh2j
-	xdojd9ktbjeuYLO4tvc4s8WDwzvZLXbvespqsb+zg9HidDerg7DHzll32T32TDzJ5rF5hZbH
-	plWdbB53ru1h85h3MtBjz/wfrB59W1Yxekyf95PJ4/MmOY/1W7YyBXBHcdmkpOZklqUW6dsl
-	cGWs+C5bcLqRseLBjKusDYwzM7oYOTkkBEwkdkxcygphi0lcuLeerYuRi0NIYCmjxOaFhxgh
-	nM+MEk0vdjGDVPEKGEj8PLmcEcQWFvCXmLFhHxuIzSZgLLF5+RIwW0RAS+LOx/nsIM3MAoeZ
-	JfY96ABbwSKgKnFrYTs7iM0p4Cax7N02ZogNjYwSv3dNBtvALKAuMWneImaIm5Qkdrd3skPE
-	5SU2r3kLdYWgxI/J91gmMArMQtIyC0nZLCRlCxiZVzGKppYmFxQnpeca6RUn5haX5qXrJefn
-	bmKERObXHYxLj1kdYhTgYFTi4Z2pJB8sxJpYVlyZe4hRgoNZSYQ3WRwoxJuSWFmVWpQfX1Sa
-	k1p8iJGJg1OqgVH34T01/aPPpr5XWXTS+0fUKpHMDW8WZs76WBG+r2I65zO2r2+uqbmusToa
-	pH2BR+tS+q3A16Vf0wJc1/nMUBUW6n/rkvS7NlZr36W9CwQNpF3cH4Tv6MnXePwzxfVh0Oz1
-	PCpPLoUfnVEXM7No7tKM1ydiXFasELNKbeOtXP/Veou6u5nygnolluKMREMt5qLiRACq0zpz
-	qgIAAA==
+	Tue, 11 Mar 2014 11:07:29 -0400
+Message-ID: <1394550420.3772.29.camel@paszta.hi.pengutronix.de>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
+ drivers/media/v4l2-core to drivers/of
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Date: Tue, 11 Mar 2014 16:07:00 +0100
+In-Reply-To: <20140310145815.17595C405FA@trevor.secretlab.ca>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
+	 < 20140226110114.CF2C7C40A89@trevor.secretlab.ca> <531D916C.2010903@ti.com>
+	 < 5427810.BUKJ3iUXnO@avalon>
+	 <20140310145815.17595C405FA@trevor.secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-11 at 14:58 +0100, Robert Baldyga wrote:
-> This patch moves code creating new i2c clients and regmaps to function
-> drivers which uses them. It allow to avoid creating this instances when
-> intividual function drivers are not enabled.
+Hi Grant,
 
-s/which uses/which use/
-s/It allow/ It allows/
-s/intividual/individual/
-
-
+Am Montag, den 10.03.2014, 14:58 +0000 schrieb Grant Likely:
+> On Mon, 10 Mar 2014 14:52:53 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+> > On Monday 10 March 2014 12:18:20 Tomi Valkeinen wrote:
+> > > On 08/03/14 13:41, Grant Likely wrote:
+> > > >> Ok. If we go for single directional link, the question is then: which
+> > > >> way? And is the direction different for display and camera, which are
+> > > >> kind of reflections of each other?
+> > > > 
+> > > > In general I would recommend choosing whichever device you would
+> > > > sensibly think of as a master. In the camera case I would choose the
+> > > > camera controller node instead of the camera itself, and in the display
+> > > > case I would choose the display controller instead of the panel. The
+> > > > binding author needs to choose what she things makes the most sense, but
+> > > > drivers can still use if it it turns out to be 'backwards'
+> > > 
+> > > I would perhaps choose the same approach, but at the same time I think
+> > > it's all but clear. The display controller doesn't control the panel any
+> > > more than a DMA controller controls, say, the display controller.
+> > > 
+> > > In fact, in earlier versions of OMAP DSS DT support I had a simpler port
+> > > description, and in that I had the panel as the master (i.e. link from
+> > > panel to dispc) because the panel driver uses the display controller's
+> > > features to provide the panel device a data stream.
+> > > 
+> > > And even with the current OMAP DSS DT version, which uses the v4l2 style
+> > > ports/endpoints, the driver model is still the same, and only links
+> > > towards upstream are used.
+> > > 
+> > > So one reason I'm happy with the dual-linking is that I can easily
+> > > follow the links from the downstream entities to upstream entities, and
+> > > other people, who have different driver model, can easily do the opposite.
+> > > 
+> > > But I agree that single-linking is enough and this can be handled at
+> > > runtime, even if it makes the code more complex. And perhaps requires
+> > > extra data in the dts, to give the start points for the graph.
+> > 
+> > In theory unidirectional links in DT are indeed enough. However, let's not 
+> > forget the following.
+> > 
+> > - There's no such thing as single start points for graphs. Sure, in some 
+> > simple cases the graph will have a single start point, but that's not a 
+> > generic rule. For instance the camera graphs 
+> > http://ideasonboard.org/media/omap3isp.ps and 
+> > http://ideasonboard.org/media/eyecam.ps have two camera sensors, and thus two 
+> > starting points from a data flow point of view. And if you want a better 
+> > understanding of how complex media graphs can become, have a look at 
+> > http://ideasonboard.org/media/vsp1.0.pdf (that's a real world example, albeit 
+> > all connections are internal to the SoC in that particular case, and don't 
+> > need to be described in DT).
+> > 
+> > - There's also no such thing as a master device that can just point to slave 
+> > devices. Once again simple cases exist where that model could work, but real 
+> > world examples exist of complex pipelines with dozens of elements all 
+> > implemented by a separate IP core and handled by separate drivers, forming a 
+> > graph with long chains and branches. We thus need real graph bindings.
+> > 
+> > - Finally, having no backlinks in DT would make the software implementation 
+> > very complex. We need to be able to walk the graph in a generic way without 
+> > having any of the IP core drivers loaded, and without any specific starting 
+> > point. We would thus need to parse the complete DT tree, looking at all nodes 
+> > and trying to find out whether they're part of the graph we're trying to walk. 
+> > The complexity of the operation would be at best quadratic to the number of 
+> > nodes in the whole DT and to the number of nodes in the graph.
 > 
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> ---
->  drivers/extcon/extcon-max8997.c     |  118 +++++++++++++++++++++++++++--
->  drivers/input/misc/max8997_haptic.c |  113 ++++++++++++++++++++++-----
->  drivers/mfd/max8997.c               |  143 -----------------------------------
->  drivers/rtc/rtc-max8997.c           |   74 ++++++++++++------
->  include/linux/mfd/max8997-private.h |   14 ++--
->  5 files changed, 262 insertions(+), 200 deletions(-)
+> Not really. To being with, you cannot determine any meaning of a node
+> across the tree (aside from it being an endpoint) without also
+> understanding the binding that the node is a part of. That means you
+> need to have something matching against the compatible string on both
+> ends of the linkage. For instance:
 > 
-> diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-> index 5948061..a71581a 100644
-> --- a/drivers/extcon/extcon-max8997.c
-> +++ b/drivers/extcon/extcon-max8997.c
-> @@ -118,6 +118,9 @@ enum max8997_muic_charger_type {
->  struct max8997_muic_info {
->  	struct device *dev;
->  	struct max8997_dev *max8997;
-> +	struct i2c_client *i2c;
-> +	struct regmap *regmap;
-> +	struct regmap_irq_chip_data *irq_data;
->  	struct extcon_dev *edev;
->  	int prev_cable_type;
->  	int prev_chg_type;
-> @@ -144,6 +147,39 @@ struct max8997_muic_info {
->  	 */
->  	int path_usb;
->  	int path_uart;
-> +
-> +	unsigned int reg_dump[MAX8997_MUIC_REG_END];
-> +};
-> +
-> +static const struct regmap_config max8997_muic_regmap_config = {
-> +	.reg_bits = 8,
-> +	.val_bits = 8,
-> +	.max_register = MAX8997_MUIC_REG_END,
-> +};
-> +
-> +static const struct regmap_irq max8997_irqs_muic[] = {
-> +	/* MUIC_INT1 interrupts */
-> +	{ .reg_offset = 0, .mask = MUIC_INT1_ADC_MASK, },
-> +	{ .reg_offset = 0, .mask = MUIC_INT1_ADCLow_MASK, },
-> +	{ .reg_offset = 0, .mask = MUIC_INT1_ADCError_MASK, },
-> +	/* MUIC_INT2 interrupts */
-> +	{ .reg_offset = 1, .mask = MUIC_INT2_ChgTyp_MASK, },
-> +	{ .reg_offset = 1, .mask = MUIC_INT2_ChgDetRun_MASK, },
-> +	{ .reg_offset = 1, .mask = MUIC_INT2_DCDTmr_MASK, },
-> +	{ .reg_offset = 1, .mask = MUIC_INT2_DBChg_MASK, },
-> +	{ .reg_offset = 1, .mask = MUIC_INT2_VBVolt_MASK, },
-> +	/* MUIC_INT3 interrupts */
-> +	{ .reg_offset = 2, .mask = MUIC_INT3_OVP_MASK, },
-> +};
-> +
-> +static const struct regmap_irq_chip max8997_muic_irq_chip = {
-> +	.name                   = "max8997-muic",
-> +	.status_base            = MAX8997_MUIC_REG_INT1,
-> +	.mask_base              = MAX8997_MUIC_REG_INTMASK1,
-> +	.mask_invert            = true,
-> +	.num_regs               = 3,
-> +	.irqs                   = max8997_irqs_muic,
-> +	.num_irqs               = ARRAY_SIZE(max8997_irqs_muic),
->  };
->  
->  enum {
-> @@ -191,7 +227,7 @@ static int max8997_muic_set_debounce_time(struct max8997_muic_info *info,
->  	case ADC_DEBOUNCE_TIME_10MS:
->  	case ADC_DEBOUNCE_TIME_25MS:
->  	case ADC_DEBOUNCE_TIME_38_62MS:
-> -		ret = regmap_update_bits(info->max8997->regmap_muic,
-> +		ret = regmap_update_bits(info->regmap,
->  					  MAX8997_MUIC_REG_CONTROL3,
->  					  CONTROL3_ADCDBSET_MASK,
->  					  time << CONTROL3_ADCDBSET_SHIFT);
-> @@ -229,7 +265,7 @@ static int max8997_muic_set_path(struct max8997_muic_info *info,
->  	else
->  		ctrl1 = CONTROL1_SW_OPEN;
->  
-> -	ret = regmap_update_bits(info->max8997->regmap_muic,
-> +	ret = regmap_update_bits(info->regmap,
->  			MAX8997_MUIC_REG_CONTROL1, COMP_SW_MASK, ctrl1);
->  	if (ret < 0) {
->  		dev_err(info->dev, "failed to update MUIC register\n");
-> @@ -241,7 +277,7 @@ static int max8997_muic_set_path(struct max8997_muic_info *info,
->  	else
->  		ctrl2 |= CONTROL2_LOWPWR_MASK;	/* LowPwr=1, CPEn=0 */
->  
-> -	ret = regmap_update_bits(info->max8997->regmap_muic,
-> +	ret = regmap_update_bits(info->regmap,
->  			MAX8997_MUIC_REG_CONTROL2,
->  			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK, ctrl2);
->  	if (ret < 0) {
-> @@ -544,7 +580,7 @@ static void max8997_muic_irq_work(struct work_struct *work)
->  		if (info->irq == muic_irqs[i].virq)
->  			irq_type = muic_irqs[i].irq;
->  
-> -	ret = regmap_bulk_read(info->max8997->regmap_muic,
-> +	ret = regmap_bulk_read(info->regmap,
->  				MAX8997_MUIC_REG_STATUS1, info->status, 2);
->  	if (ret) {
->  		dev_err(info->dev, "failed to read muic register\n");
-> @@ -606,7 +642,7 @@ static int max8997_muic_detect_dev(struct max8997_muic_info *info)
->  	mutex_lock(&info->mutex);
->  
->  	/* Read STATUSx register to detect accessory */
-> -	ret = regmap_bulk_read(info->max8997->regmap_muic,
-> +	ret = regmap_bulk_read(info->regmap,
->  			MAX8997_MUIC_REG_STATUS1, info->status, 2);
->  	if (ret) {
->  		dev_err(info->dev, "failed to read MUIC register\n");
-> @@ -670,6 +706,27 @@ static int max8997_muic_probe(struct platform_device *pdev)
->  	info->dev = &pdev->dev;
->  	info->max8997 = max8997;
->  
-> +	info->i2c = i2c_new_dummy(max8997->i2c->adapter, MAX8997_I2C_ADDR_MUIC);
+> panel {
+> 	compatible = "acme,lvds-panel";
+> 	lvds-port: port {
+> 	};
+> };
+> 
+> display-controller {
+> 	compatible = "encom,video";
+> 	port {
+> 		remote-endpoint = <&lvds-port>;
+> 	};
+> };
+> 
+> In the above example, the encom,video driver has absolutely zero
+> information about what the acme,lvds-panel binding actually implements.
+> There needs to be both a driver for the "acme,lvds-panel" binding and
+> one for the "encom,video" binding (even if the acme,lvds-panel binding
+> is very thin and defers the functionality to the video controller).
+> 
+> What you want here is the drivers to register each side of the
+> connection. That could be modeled with something like the following
+> (pseudocode):
+> 
+> struct of_endpoint {
+> 	struct list_head list;
+> 	struct device_node *ep_node;
+> 	void *context;
+> 	void (*cb)(struct of_endpoint *ep, void *data);
+> }
+> 
+> int of_register_port(struct device *node, void (*cb)(struct of_endpoint *ep, void *data), void *data)
+> {
+> 	struct of_endpoint *ep = kzalloc(sizeof(*ep), GFP_KERNEL);
+> 
+> 	ep->ep_node = node;
+> 	ep->data = data;
+> 	ep->callback = cb;
+> 
+> 	/* store the endpoint to a list */
+> 	/* check if the endpoint has a remote-endpoint link */
+> 		/* If so, then link the two together and call the
+> 		 * callbacks */
+> }
+> 
+> That's neither expensive or complicated.
+> 
+> Originally I suggested walking the whole tree multiple times, but as
+> mentioned that doesn't scale, and as I thought about the above it isn't
+> even a valid thing to do. Everything has to be driven by drivers, so
+> even if the backlinks are there, nothing can be done with the link until
+> the other side goes through enumeration independently.
 
-Consider rebasing your patch on Lee Jones' MFD tree because there are
-minor fixes for possible NULL pointer dereference on i2c_new_dummy
-error. I didn't mentioned this before as this is actually the first
-place where you add such code :). So add with current fixes in
-linux-next/MFD tree.
+I have implemented your suggestion as follows. Basically, this allows
+either endpoint to contain the remote-endpoint link, as long as all
+drivers register their endpoints in the probe function and return
+-EPROBE_DEFER from their component framework bind callback until all
+their endpoints are connected.
 
-This applies also to other drivers (haptic etc.).
+>From fdda1fb2bd133200d4620adcbb28697cb360e1cb Mon Sep 17 00:00:00 2001
+From: Philipp Zabel <p.zabel@pengutronix.de>
+Date: Tue, 11 Mar 2014 15:56:18 +0100
+Subject: [PATCH] of: Implement of_graph_register_endpoint
 
-> +
-> +	info->regmap = devm_regmap_init_i2c(info->i2c,
-> +			&max8997_muic_regmap_config);
-> +	if (IS_ERR(info->regmap)) {
-> +		ret = PTR_ERR(info->regmap);
-> +		dev_err(info->dev,
-> +			"failed to allocate register map: %d\n", ret);
-> +		goto err_regmap;
-> +	}
-> +
-> +	ret = regmap_add_irq_chip(info->regmap, max8997->irq,
-> +				IRQF_ONESHOT | IRQF_SHARED |
-> +				IRQF_TRIGGER_FALLING, 0,
-> +				&max8997_muic_irq_chip,
-> +				&info->irq_data);
-> +	if (ret) {
-> +		dev_err(info->dev, "failed to add irq chip: %d\n", ret);
-> +		goto err_regmap;
-> +	}
-> +
+This patch adds a function that lets drivers register their endpoints in a
+global list. Newly registered endpoints are compared against known endpoints
+to check if a connection should be made. If so, the driver is notified via
+a simple callback.
 
-Same as in previous patch - please add regmap_del_irq_chip() in error
-paths and remove function.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+ drivers/of/base.c        | 69 +++++++++++++++++++++++++++++++++++++++++++++---
+ include/linux/of_graph.h | 20 +++++++++++++-
+ 2 files changed, 84 insertions(+), 5 deletions(-)
 
-This applies also to other drivers (haptic etc.).
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index ebb001a..77ae54a 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -29,6 +29,7 @@
+ #include "of_private.h"
+ 
+ LIST_HEAD(aliases_lookup);
++LIST_HEAD(endpoint_list);
+ 
+ struct device_node *of_allnodes;
+ EXPORT_SYMBOL(of_allnodes);
+@@ -2002,6 +2003,7 @@ int of_graph_parse_endpoint(const struct device_node *node,
+ 	memset(endpoint, 0, sizeof(*endpoint));
+ 
+ 	endpoint->local_node = node;
++	endpoint->remote_node = of_parse_phandle(node, "remote-endpoint", 0);
+ 	/*
+ 	 * It doesn't matter whether the two calls below succeed.
+ 	 * If they don't then the default value 0 is used.
+@@ -2126,6 +2128,19 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
+ }
+ EXPORT_SYMBOL(of_graph_get_next_endpoint);
+ 
++static struct of_endpoint *__of_graph_lookup_endpoint(
++				const struct device_node *node)
++{
++	struct of_endpoint *ep;
++
++	list_for_each_entry(ep, &endpoint_list, list) {
++		if (ep->local_node == node)
++			return ep;
++	}
++
++	return NULL;
++}
++
+ /**
+  * of_graph_get_remote_port_parent() - get remote port's parent node
+  * @node: pointer to a local endpoint device_node
+@@ -2136,11 +2151,15 @@ EXPORT_SYMBOL(of_graph_get_next_endpoint);
+ struct device_node *of_graph_get_remote_port_parent(
+ 			       const struct device_node *node)
+ {
++	struct of_endpoint *ep;
+ 	struct device_node *np;
+ 	unsigned int depth;
+ 
+ 	/* Get remote endpoint node. */
+-	np = of_parse_phandle(node, "remote-endpoint", 0);
++	ep = __of_graph_lookup_endpoint(node);
++	if (!ep || !ep->remote_node)
++		return NULL;
++	np = ep->remote_node;
+ 
+ 	/* Walk 3 levels up only if there is 'ports' node */
+ 	for (depth = 3; depth && np; depth--) {
+@@ -2163,13 +2182,14 @@ EXPORT_SYMBOL(of_graph_get_remote_port_parent);
+  */
+ struct device_node *of_graph_get_remote_port(const struct device_node *node)
+ {
++	struct of_endpoint *ep;
+ 	struct device_node *np;
+ 
+ 	/* Get remote endpoint node. */
+-	np = of_parse_phandle(node, "remote-endpoint", 0);
+-	if (!np)
++	ep = __of_graph_lookup_endpoint(node);
++	if (!ep || !ep->remote_node)
+ 		return NULL;
+-	np = of_get_next_parent(np);
++	np = of_get_next_parent(ep->remote_node);
+ 	if (of_node_cmp(np->name, "port")) {
+ 		of_node_put(np);
+ 		return NULL;
+@@ -2177,3 +2197,44 @@ struct device_node *of_graph_get_remote_port(const struct device_node *node)
+ 	return np;
+ }
+ EXPORT_SYMBOL(of_graph_get_remote_port);
++
++int of_graph_register_endpoint(const struct device_node *node,
++		void (*cb)(struct of_endpoint *ep, void *data), void *data)
++{
++	struct of_endpoint *remote_ep, *ep = kmalloc(sizeof(*ep), GFP_KERNEL);
++	if (!ep)
++		return -ENOMEM;
++
++	of_graph_parse_endpoint(node, ep);
++	ep->callback = cb;
++	ep->data = data;
++
++	list_add(&ep->list, &endpoint_list);
++
++	list_for_each_entry(remote_ep, &endpoint_list, list) {
++		struct of_endpoint *from, *to;
++		if (ep->remote_node) {
++			from = ep;
++			to = remote_ep;
++		} else {
++			from = remote_ep;
++			to = ep;
++		}
++		if (from->remote_node &&
++		    from->remote_node == to->local_node) {
++			WARN_ON(to->remote_node &&
++				to->remote_node != from->local_node);
++			to->remote_node = from->local_node;
++			to->remote_ep = from;
++			from->remote_ep = to;
++			if (from->callback)
++				from->callback(from, from->data);
++			if (to->callback)
++				to->callback(to, to->data);
++			return 0;
++		}
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(of_graph_register_endpoint);
+diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
+index 3a3c5a9..f00ac4e 100644
+--- a/include/linux/of_graph.h
++++ b/include/linux/of_graph.h
+@@ -23,7 +23,14 @@
+ struct of_endpoint {
+ 	unsigned int port;
+ 	unsigned int id;
+-	const struct device_node *local_node;
++	struct device_node *local_node;
++	struct device_node *remote_node;
++	struct of_endpoint *remote_ep;
++
++	/* Internal use only */
++	struct list_head list;
++	void (*callback)(struct of_endpoint *ep, void *data);
++	void *data;
+ };
+ 
+ #ifdef CONFIG_OF
+@@ -35,6 +42,10 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
+ struct device_node *of_graph_get_remote_port_parent(
+ 					const struct device_node *node);
+ struct device_node *of_graph_get_remote_port(const struct device_node *node);
++
++int of_graph_register_endpoint(const struct device_node *ep_node,
++				void (*cb)(struct of_endpoint *ep, void *data),
++				void *data);
+ #else
+ 
+ static inline int of_graph_parse_endpoint(const struct device_node *node,
+@@ -68,6 +79,13 @@ static inline struct device_node *of_graph_get_remote_port(
+ 	return NULL;
+ }
+ 
++static inline int of_graph_register_endpoint(const struct device_node *ep_node,
++				void (*cb)(struct of_endpoint *ep, void *data),
++				void *data);
++{
++	return -ENOSYS;
++}
++
+ #endif /* CONFIG_OF */
+ 
+ #endif /* __LINUX_OF_GRAPH_H */
+-- 
+1.9.0
 
->  	platform_set_drvdata(pdev, info);
->  	mutex_init(&info->mutex);
->  
-> @@ -679,8 +736,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
->  		struct max8997_muic_irq *muic_irq = &muic_irqs[i];
->  		unsigned int virq = 0;
->  
-> -		virq = regmap_irq_get_virq(max8997->irq_data_muic,
-> -					muic_irq->irq);
-> +		virq = regmap_irq_get_virq(info->irq_data, muic_irq->irq);
->  		if (!virq) {
->  			ret = -EINVAL;
->  			goto err_irq;
-> @@ -723,7 +779,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
->  
->  		/* Initialize registers according to platform data */
->  		for (i = 0; i < muic_pdata->num_init_data; i++) {
-> -			regmap_write(info->max8997->regmap_muic,
-> +			regmap_write(info->regmap,
->  					muic_pdata->init_data[i].addr,
->  					muic_pdata->init_data[i].data);
->  		}
-> @@ -779,6 +835,8 @@ static int max8997_muic_probe(struct platform_device *pdev)
->  err_irq:
->  	while (--i >= 0)
->  		free_irq(muic_irqs[i].virq, info);
-> +err_regmap:
-> +	i2c_unregister_device(info->i2c);
->  	return ret;
->  }
->  
-> @@ -796,10 +854,54 @@ static int max8997_muic_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +static u8 max8997_muic_dumpaddr[] = {
-> +	MAX8997_MUIC_REG_INTMASK1,
-> +	MAX8997_MUIC_REG_INTMASK2,
-> +	MAX8997_MUIC_REG_INTMASK3,
-> +	MAX8997_MUIC_REG_CDETCTRL,
-> +	MAX8997_MUIC_REG_CONTROL1,
-> +	MAX8997_MUIC_REG_CONTROL2,
-> +	MAX8997_MUIC_REG_CONTROL3,
-> +};
-> +
-> +static int max8997_muic_freeze(struct device *dev)
-> +{
-> +	struct platform_device *pdev =
-> +		container_of(dev, struct platform_device, dev);
-> +	struct max8997_muic_info *info = platform_get_drvdata(pdev);
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(max8997_muic_dumpaddr); i++)
-> +		regmap_read(info->regmap, max8997_muic_dumpaddr[i],
-> +				&info->reg_dump[i]);
-> +
-> +	return 0;
-> +}
-> +
-> +static int max8997_muic_restore(struct device *dev)
-> +{
-> +	struct platform_device *pdev =
-> +		container_of(dev, struct platform_device, dev);
-> +	struct max8997_muic_info *info = platform_get_drvdata(pdev);
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(max8997_muic_dumpaddr); i++)
-> +		regmap_write(info->regmap, max8997_muic_dumpaddr[i],
-> +				info->reg_dump[i]);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct dev_pm_ops max8997_muic_pm = {
-> +	.freeze = max8997_muic_freeze,
-> +	.restore = max8997_muic_restore,
-> +};
-> +
-
-Shouldn't it be inside #ifdef CONFIG_PM_SLEEP?
-
->  static struct platform_driver max8997_muic_driver = {
->  	.driver		= {
->  		.name	= DEV_NAME,
->  		.owner	= THIS_MODULE,
-> +		.pm	= &max8997_muic_pm,
->  	},
->  	.probe		= max8997_muic_probe,
->  	.remove		= max8997_muic_remove,
-> diff --git a/drivers/input/misc/max8997_haptic.c b/drivers/input/misc/max8997_haptic.c
-> index d3f7079..abb44f3 100644
-> --- a/drivers/input/misc/max8997_haptic.c
-> +++ b/drivers/input/misc/max8997_haptic.c
-> @@ -47,6 +47,8 @@
->  struct max8997_haptic {
->  	struct device *dev;
->  	struct max8997_dev *max8997;
-> +	struct i2c_client *i2c;
-> +	struct regmap *regmap;
->  	struct input_dev *input_dev;
->  	struct regulator *regulator;
->  
-> @@ -66,6 +68,14 @@ struct max8997_haptic {
->  	unsigned int internal_mode_pattern;
->  	unsigned int pattern_cycle;
->  	unsigned int pattern_signal_period;
-> +
-> +	unsigned int reg_dump[MAX8997_HAPTIC_REG_END];
-> +};
-> +
-> +static const struct regmap_config max8997_haptic_regmap_config = {
-> +	.reg_bits = 8,
-> +	.val_bits = 8,
-> +	.max_register = MAX8997_HAPTIC_REG_END,
->  };
->  
->  static int max8997_haptic_set_duty_cycle(struct max8997_haptic *chip)
-> @@ -87,19 +97,19 @@ static int max8997_haptic_set_duty_cycle(struct max8997_haptic *chip)
->  		}
->  		switch (chip->internal_mode_pattern) {
->  		case 0:
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_SIGPWMDC1, duty_index);
->  			break;
->  		case 1:
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_SIGPWMDC2, duty_index);
->  			break;
->  		case 2:
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_SIGPWMDC3, duty_index);
->  			break;
->  		case 3:
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_SIGPWMDC4, duty_index);
->  			break;
->  		default:
-> @@ -116,51 +126,49 @@ static void max8997_haptic_configure(struct max8997_haptic *chip)
->  	value = chip->type << MAX8997_MOTOR_TYPE_SHIFT |
->  		chip->enabled << MAX8997_ENABLE_SHIFT |
->  		chip->mode << MAX8997_MODE_SHIFT | chip->pwm_divisor;
-> -	regmap_write(chip->max8997->regmap_haptic,
-> -		MAX8997_HAPTIC_REG_CONF2, value);
-> +	regmap_write(chip->regmap, MAX8997_HAPTIC_REG_CONF2, value);
->  
->  	if (chip->mode == MAX8997_INTERNAL_MODE && chip->enabled) {
->  		value = chip->internal_mode_pattern << MAX8997_CYCLE_SHIFT |
->  			chip->internal_mode_pattern << MAX8997_SIG_PERIOD_SHIFT |
->  			chip->internal_mode_pattern << MAX8997_SIG_DUTY_SHIFT |
->  			chip->internal_mode_pattern << MAX8997_PWM_DUTY_SHIFT;
-> -		regmap_write(chip->max8997->regmap_haptic,
-> -			MAX8997_HAPTIC_REG_DRVCONF, value);
-> +		regmap_write(chip->regmap, MAX8997_HAPTIC_REG_DRVCONF, value);
->  
->  		switch (chip->internal_mode_pattern) {
->  		case 0:
->  			value = chip->pattern_cycle << 4;
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_CYCLECONF1, value);
->  			value = chip->pattern_signal_period;
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_SIGCONF1, value);
->  			break;
->  
->  		case 1:
->  			value = chip->pattern_cycle;
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_CYCLECONF1, value);
->  			value = chip->pattern_signal_period;
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_SIGCONF2, value);
->  			break;
->  
->  		case 2:
->  			value = chip->pattern_cycle << 4;
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_CYCLECONF2, value);
->  			value = chip->pattern_signal_period;
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_SIGCONF3, value);
->  			break;
->  
->  		case 3:
->  			value = chip->pattern_cycle;
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_CYCLECONF2, value);
->  			value = chip->pattern_signal_period;
-> -			regmap_write(chip->max8997->regmap_haptic,
-> +			regmap_write(chip->regmap,
->  				MAX8997_HAPTIC_REG_SIGCONF4, value);
->  			break;
->  
-> @@ -277,6 +285,17 @@ static int max8997_haptic_probe(struct platform_device *pdev)
->  	chip->mode = haptic_pdata->mode;
->  	chip->pwm_divisor = haptic_pdata->pwm_divisor;
->  
-> +	chip->i2c = i2c_new_dummy(iodev->i2c->adapter, MAX8997_I2C_ADDR_HAPTIC);
-> +
-
-Return value - use code from linux-next/MFD tree.
-
-> +	chip->regmap = devm_regmap_init_i2c(chip->i2c,
-> +			&max8997_haptic_regmap_config);
-> +	if (IS_ERR(chip->regmap)) {
-> +		error = PTR_ERR(chip->regmap);
-> +		dev_err(chip->dev,
-> +			"failed to allocate register map: %d\n", error);
-> +		goto err_free_i2c;
-> +	}
-> +
->  	switch (chip->mode) {
->  	case MAX8997_INTERNAL_MODE:
->  		chip->internal_mode_pattern =
-> @@ -294,7 +313,7 @@ static int max8997_haptic_probe(struct platform_device *pdev)
->  			dev_err(&pdev->dev,
->  				"unable to request PWM for haptic, error: %d\n",
->  				error);
-> -			goto err_free_mem;
-> +			goto err_free_i2c;
->  		}
->  		break;
->  
-> @@ -302,7 +321,7 @@ static int max8997_haptic_probe(struct platform_device *pdev)
->  		dev_err(&pdev->dev,
->  			"Invalid chip mode specified (%d)\n", chip->mode);
->  		error = -EINVAL;
-> -		goto err_free_mem;
-> +		goto err_free_i2c;
->  	}
->  
->  	chip->regulator = regulator_get(&pdev->dev, "inmotor");
-> @@ -348,6 +367,8 @@ err_put_regulator:
->  err_free_pwm:
->  	if (chip->mode == MAX8997_EXTERNAL_MODE)
->  		pwm_free(chip->pwm);
-> +err_free_i2c:
-> +	i2c_unregister_device(chip->i2c);
->  err_free_mem:
->  	input_free_device(input_dev);
->  	kfree(chip);
-> @@ -370,6 +391,24 @@ static int max8997_haptic_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +static u8 max8997_haptic_dumpaddr[] = {
-> +	MAX8997_HAPTIC_REG_CONF1,
-> +	MAX8997_HAPTIC_REG_CONF2,
-> +	MAX8997_HAPTIC_REG_DRVCONF,
-> +	MAX8997_HAPTIC_REG_CYCLECONF1,
-> +	MAX8997_HAPTIC_REG_CYCLECONF2,
-> +	MAX8997_HAPTIC_REG_SIGCONF1,
-> +	MAX8997_HAPTIC_REG_SIGCONF2,
-> +	MAX8997_HAPTIC_REG_SIGCONF3,
-> +	MAX8997_HAPTIC_REG_SIGCONF4,
-> +	MAX8997_HAPTIC_REG_SIGDC1,
-> +	MAX8997_HAPTIC_REG_SIGDC2,
-> +	MAX8997_HAPTIC_REG_SIGPWMDC1,
-> +	MAX8997_HAPTIC_REG_SIGPWMDC2,
-> +	MAX8997_HAPTIC_REG_SIGPWMDC3,
-> +	MAX8997_HAPTIC_REG_SIGPWMDC4,
-> +};
-> +
->  #ifdef CONFIG_PM_SLEEP
->  static int max8997_haptic_suspend(struct device *dev)
->  {
-> @@ -382,7 +421,41 @@ static int max8997_haptic_suspend(struct device *dev)
->  }
->  #endif
->  
-> -static SIMPLE_DEV_PM_OPS(max8997_haptic_pm_ops, max8997_haptic_suspend, NULL);
-> +static int max8997_haptic_freeze(struct device *dev)
-> +{
-> +	struct platform_device *pdev =
-> +		container_of(dev, struct platform_device, dev);
-> +	struct max8997_haptic *chip = platform_get_drvdata(pdev);
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(max8997_haptic_dumpaddr); i++)
-> +		regmap_read(chip->regmap, max8997_haptic_dumpaddr[i],
-> +				&chip->reg_dump[i]);
-> +
-> +	return 0;
-> +}
-> +
-> +static int max8997_haptic_restore(struct device *dev)
-> +{
-> +	struct platform_device *pdev =
-> +		container_of(dev, struct platform_device, dev);
-> +	struct max8997_haptic *chip = platform_get_drvdata(pdev);
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(max8997_haptic_dumpaddr); i++)
-> +		regmap_write(chip->regmap, max8997_haptic_dumpaddr[i],
-> +				chip->reg_dump[i]);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct dev_pm_ops max8997_haptic_pm = {
-> +#ifdef CONFIG_PM_SLEEP
-> +	.suspend = max8997_haptic_suspend,
-> +#endif
-> +	.freeze = max8997_haptic_freeze,
-> +	.restore = max8997_haptic_restore,
-> +};
-
-Freeze should be also in CONFIG_PM_SLEEP.
-
-Best regards,
-Krzysztof
 
