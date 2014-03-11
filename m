@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaCKRsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:48:16 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:40228 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbaCKRsL (ORCPT
+	id S1755120AbaCKRtR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:49:17 -0400
+Received: from smtprelay0236.hostedemail.com ([216.40.44.236]:35893 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754099AbaCKRtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:48:11 -0400
-Subject: [PATCH] PCI: Do not enable INTx in pci_reenable_device()
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Chris Cheng <chris.cheng@atrustcorp.com>,
-        Jamie Chen <jamie.chen@intel.com>,
-        Andreas Noever <andreas.noever@gmail.com>
-Date: Tue, 11 Mar 2014 11:48:09 -0600
-Message-ID: <20140311174809.23257.77363.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20140311174555.23257.66798.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140311174555.23257.66798.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Mar 2014 13:49:16 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:599:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2551:2553:2559:2562:2828:2895:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3873:3874:4321:4605:5007:7652:7875:7974:8957:9038:10004:10400:10848:11232:11657:11658:11914:12043:12050:12296:12438:12517:12519:12683:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: waves44_166fa2aa0d44d
+X-Filterd-Recvd-Size: 2617
+Message-ID: <1394560152.20021.3.camel@joe-AO722>
+Subject: Re: [PATCH v2] Staging: comedi: addi-data: Fix long CamelCase
+ function names
+From: Joe Perches <joe@perches.com>
+To: Hartley Sweeten <HartleyS@visionengravers.com>
+Cc: Fred Akers <knivey@botops.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Mar 2014 10:49:12 -0700
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825DAD0AF@P3PWEX4MB008.ex4.secureserver.net>
+References: <1394350009-23464-1-git-send-email-knivey@botops.net>
+	 <1394559177-14616-1-git-send-email-knivey@botops.net>
+	 <DC148C5AA1CEBA4E87973D432B1C2D8825DAD0AF@P3PWEX4MB008.ex4.secureserver.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas reported that after 1f42db786b14 ("PCI: Enable INTx if BIOS left
-them disabled"), pciehp surprise removal stopped working.
+On Tue, 2014-03-11 at 17:42 +0000, Hartley Sweeten wrote:
+> On Tuesday, March 11, 2014 10:33 AM, Fred Akers wrote:
+> > This patch fixes a few function names that are very long and are
+> > not in the correct naming style
+[]
+> > diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+[]
+> > @@ -111,7 +111,7 @@ static int i_Temp;
+> >  static int i_Flag = 1;
+> >  /*
+> >  +----------------------------------------------------------------------------+
+> > -| Function   Name   : int i_APCI035_ConfigTimerWatchdog                      |
+> > +| Function   Name   : int apci035_timer_config                      |
+> >  |			  (struct comedi_device *dev,struct comedi_subdevice *s,               |
+> >  |                      struct comedi_insn *insn,unsigned int *data)                     |
+> >  +----------------------------------------------------------------------------+
+> 
+> Nitpick... These obvious function comment blocks should be removed.
+> That should be a separate patch. Maybe a patch 1/2 before this one so
+> you don't have to update the comments.
 
-This happens because pci_reenable_device() on the hotplug bridge (used in
-the pciehp_configure_device() path) clears the Interrupt Disable bit, which
-apparently breaks the bridge's MSI hotplug event reporting.
+Maybe convert them to kernel-doc style?
 
-Previously we cleared the Interrupt Disable bit in do_pci_enable_device(),
-which is used by both pci_enable_device() and pci_reenable_device().  But
-we use pci_reenable_device() after the driver may have enabled MSI or
-MSI-X, and we *set* Interrupt Disable as part of enabling MSI/MSI-X.
+/**
+ * foobar() - short function description of foobar
+ * @arg1:	Describe the first argument to foobar.
+ * @arg2:	Describe the second argument to foobar.
+ *		One can provide multiple line descriptions
+ *		for arguments.
 
-This patch clears Interrupt Disable only when MSI/MSI-X has not been
-enabled.
-
-Fixes: 1f42db786b14 PCI: Enable INTx if BIOS left them disabled
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=71691
-Reported-and-tested-by: Andreas Noever <andreas.noever@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: stable@vger.kernel.org
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
----
- drivers/pci/pci.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 8dc3e701ec57..79fc89c6c3f3 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1192,6 +1192,9 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
- 		return err;
- 	pci_fixup_device(pci_fixup_enable, dev);
- 
-+	if (dev->msi_enabled || dev->msix_enabled)
-+		return 0;
-+
- 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
- 	if (pin) {
- 		pci_read_config_word(dev, PCI_COMMAND, &cmd);
 
