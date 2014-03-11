@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaCKNsd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:48:33 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37246 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889AbaCKNsc convert rfc822-to-8bit (ORCPT
+	id S1753019AbaCKNxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:53:32 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:44220 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752435AbaCKNxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:48:32 -0400
-Message-ID: <531F142C.2030203@arm.com>
-Date: Tue, 11 Mar 2014 13:48:28 +0000
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 11 Mar 2014 09:53:30 -0400
+Message-ID: <531F1550.3080401@mellanox.com>
+Date: Tue, 11 Mar 2014 15:53:20 +0200
+From: Or Gerlitz <ogerlitz@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/6] sched: rework of sched_domain topology definition
-References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org> <1394003906-11630-3-git-send-email-vincent.guittot@linaro.org> <53175A3C.8010100@arm.com> <CAKfTPtC1_t78hvOw9u-t1BqUZj_dO3WFYp2OjX=RFZP-A7zSbg@mail.gmail.com> <20140311103119.GW9987@twins.programming.kicks-ass.net> <CAKfTPtDHfXxheXBoPeAxMGROroHa7YrW7y_RCB9nSoKCeTa66w@mail.gmail.com>
-In-Reply-To: <CAKfTPtDHfXxheXBoPeAxMGROroHa7YrW7y_RCB9nSoKCeTa66w@mail.gmail.com>
-X-OriginalArrivalTime: 11 Mar 2014 13:48:37.0222 (UTC) FILETIME=[9A398860:01CF3D30]
-X-MC-Unique: 114031113483000401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+To: Roland Dreier <roland@kernel.org>, Jiri Kosina <jkosina@suse.cz>
+CC: Sagi Grimberg <sagig@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        Eli Cohen <eli@dev.mellanox.co.il>,
+        Eugenia Emantayev <eugenia@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Saeed Mahameed <saeedm@mellanox.com>,
+        Shlomo Pongratz <shlomop@mellanox.com>
+Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
+ creating the QP
+References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com> <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz> <CAG4TOxMw4siOqtjXrgUDaw8yWqYgSG4d8PqGuJ62AZBrC2O2AA@mail.gmail.com>
+In-Reply-To: <CAG4TOxMw4siOqtjXrgUDaw8yWqYgSG4d8PqGuJ62AZBrC2O2AA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.222.66.109]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/14 13:27, Vincent Guittot wrote:
-> On 11 March 2014 11:31, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Thu, Mar 06, 2014 at 04:32:35PM +0800, Vincent Guittot wrote:
->>>> Never got the new name DIE for CPU? Might confuse people when they use
->>>> /proc/sys/kernel/sched_domain/cpuX/domainY/name or sched_domain_debug_one().
->>>
->>> In fact, CPU is also confusing because it's used for different things.
->>> But if it makes things even more confusing, i can come back to CPU
->>
->> Yeah, not sure DIE is the right thing either; because there's multi-die
->> packages that get classified under CPU :-)
->>
->> Take for example the Core 2 Quad, which was 2 dual core dies glued
->> together in a single package.
->>
->> There's also the AMD bulldozer which glued two dies into a single
->> package; but for those its not a problem because each die is a separate
->> numa node, so there DIE would actually be the correct term and PACKAGE
->> would be wrong.
->>
->> So while CPU sucks, I'm not sure we can come up with anything that's
->> actually correct. That said; we could try for something less wrong than
->> CPU :-)
-> 
-> OK
-> 
-> Dietmar,
-> 
-> Have you got another naming that DIE that could suit better ?
-> otherwise i will keep it
+On 05/03/2014 21:25, Roland Dreier wrote:
+> It's quite clear that this is a general problem with IPoIB connected
+> mode on any IB device.  In connected mode, a packet send can trigger
+> establishing a new connection, which will allocate a new QP, which in
+> particular will allocate memory for the QP in the low-level IB device
+> driver.  Currently I'm positive that every driver will do GFP_KERNEL
+> allocations when allocating a QP (ehca does both a GFP_KERNEL
+> kmem_cache allocation and vmalloc in internal_create_qp(), mlx5 and
+> mthca are similar to mlx4 and qib does vmalloc() in qib_create_qp()).
+> So this patch needs to be extended to the other 4 IB device drivers in
+> the tree.
+>
+> Also, I don't think GFP_NOFS is enough -- it seems we need GFP_NOIO,
+> since we could be swapping to a block device over iSCSI over IPoIB-CM,
+> so even non-FS stuff could deadlock.
+>
+> I don't think it makes any sense to have a "do_not_deadlock" module
+> parameter, especially one that defaults to "false."  If this is the
+> right thing to do, then we should just unconditionally do it.
+>
+> It does seem that only using GFP_NOIO when we really need to would be
+> a very difficult problem--how can we carry information about whether a
+> particular packet is involved in freeing memory through all the layers
+> of, say, NFS, TCP, IPSEC, bonding, &c?
 
-If backward compatibility is not an issue here, keep it.
+Agree with all the above... next,
 
--- Dietmar
+If we don't have away to nicely overcome the layer violations here, 
+let's change IPoIB so they always ask the
+IB driver to allocate QPs used for Connected Mode in a GFP_NOIO manner, 
+to be practical I suggest the following:
 
-> 
-> Vincent
-> 
->>
->> I'm not sure there are a lot of people who see/know the names of these
->> domains to be bothered by a change in them; it might be limited to just
->> us for all I know.
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+1. Add new QP creation flag IB_QP_CREATE_USE_GFP to the existing 
+creation flags of struct ib_qp_init_attr
+and a new "gfp_t gfp" field to that structure too
 
+2. in the IPoIB CM code, do the vzalloc allocation for new connection in 
+GFP_NOIO manner and issue
+the call to create QP with setting the IB_QP_CREATE_USE_GFP flag and 
+GFO_NOIO to the gfp field
+
+3. If the QP creation fails, with -EINVAL, issue a warning and retry the 
+QP creation attempt without the GFP setting
+
+4. implement in the mlx4 driver the support for GFP directives on QP 
+creation
+
+5. for the rest of the IB drivers, return -EINVAL if 
+IB_QP_CREATE_USE_GFP is set
+
+This will allow to provide working solution for mlx4 users and gradually 
+add support for the rest of the IB drivers.
+
+as for proper patch planning
+
+patch #1 / items 1 and 5
+patch #2 / item 4
+patch #3 / item 3
+
+Re item 5 -- I made a check and the ehca, ipath and mthca driver already 
+return -EINVAL if provided with any creation flag, so you only need to 
+patch the qib driver in qib_create_qp() to do that as well which is trivial.
+
+As for the rest of the code, you practically have it all by now, just 
+need to port the mlx4 changes you did to the suggested framework, remove 
+the module param (which you don't like either) and add the new gfp_t 
+field to ib_qp_init_attr
+
+So sounds like a plan that makes sense?
+
+Or.
 
