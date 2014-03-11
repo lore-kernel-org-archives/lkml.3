@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaCKQOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 12:14:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60370 "EHLO mx1.redhat.com"
+	id S1753498AbaCKQWB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 12:22:01 -0400
+Received: from kolab.o2s.ch ([77.109.136.180]:47852 "EHLO kolab.o2s.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752346AbaCKQOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 12:14:12 -0400
-Message-ID: <531F364C.5020406@redhat.com>
-Date: Tue, 11 Mar 2014 17:14:04 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752357AbaCKQV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 12:21:58 -0400
+From: David =?ISO-8859-1?Q?Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: mr.nuke.me@gmail.com, linux-sunxi@googlegroups.com,
+        devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Simon Baatz <gmbnomis@gmail.com>,
+        Emilio =?ISO-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 6/8] ARM: dts: sun4i: Add support for mmc
+Date: Tue, 11 Mar 2014 17:20:07 +0100
+Message-ID: <42261272.Q7MxffSYhm@pagira.o2s.ch>
+User-Agent: KMail/4.11.5 (Linux/3.11.10-7-desktop; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <531F3203.3010807@redhat.com>
+References: <20140211190543.4568.83517.stgit@dizzy-6.o2s.ch> <ac47de94-92ef-4b53-9983-34dd2f9924ea@googlegroups.com> <531F3203.3010807@redhat.com>
 MIME-Version: 1.0
-To: "Li, Bin (Bin)" <bin.bl.li@alcatel-lucent.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Jatania, Neel (Neel)" <Neel.Jatania@alcatel-lucent.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Enhancement for PLE handler in KVM
-References: <530B9637.6030708@alcatel-lucent.com> <5314C8C3.3090607@alcatel-lucent.com> <5314D61B.9050407@redhat.com> <72F5E0D8DB6D83469579E473AD72DB23779EFF64@US70UWXCHMBA01.zam.alcatel-lucent.com> <53173961.6080301@redhat.com> <72F5E0D8DB6D83469579E473AD72DB23779F1B6B@US70UWXCHMBA01.zam.alcatel-lucent.com> <20140307030636.GA13701@amt.cnet> <72F5E0D8DB6D83469579E473AD72DB23779F63B3@US70UWXCHMBA01.zam.alcatel-lucent.com> <20140307174139.GB30738@amt.cnet> <72F5E0D8DB6D83469579E473AD72DB23779F88CA@US70UWXCHMBA01.zam.alcatel-lucent.com> <20140308015416.GA26349@amt.cnet> <531F19D7.6030909@alcatel-lucent.com>
-In-Reply-To: <531F19D7.6030909@alcatel-lucent.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="nextPart2551496.doVSr9qlEj"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/03/2014 15:12, Li, Bin (Bin) ha scritto:
->     - For the guest OS which doesn't use the hyper call interface, there
->     will be no impact to them. The proposed ple handler enhancement has
->     structured to use the hint only if the guest OS using the new
->     proposed hyper call. And it is per VM only.
->     The VM which running general guest OS ( linux / windows) will still
->     use the today's ple hanlder to boost vCPUs. While the other VM,
->     which using new hyper call indicating the lock get and release, the
->     ple handler for this VM will boost the lock holder only.
 
-No, if there is a jitter problem we want to fix it for all guest OSes, 
-not just for those that use a big kernel lock.
+--nextPart2551496.doVSr9qlEj
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
 
->     - The main advantage of this proposal is that, it reliably solves
->     the problem. Any other option which could prevent the problem from
->     happening thoroughly?
+Hi
+> Oh, good catch, thanks! Fixed in the sunxi-devel branch
+> in my *personal* git repo. I'll also push this to the official linux-=
+sunxi
+> sunxi-devel branch later today.
+Fixed it for the next patch set as well.
 
-You haven't proved this yet.  My impression is that, on a 
-non-overcommitted system, your proposal is exactly the same as a fair 
-lock with paravirtualization (except more expensive for the lock taker, 
-even when there is no contention).
+=2Ddavid
+--nextPart2551496.doVSr9qlEj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
 
-I think I understand why, on an overcommitted system, you could still 
-have jitter with pv ticketlocks and not with your infrastructure.  The 
-reason is that pv ticketlocks do not attempt to donate the quantum to 
-the lock holder.  Is there anything we can do to fix *this*?  I would 
-accept a new hypercall KVM_HC_HALT_AND_YIELD_TO_CPU that takes an APIC 
-id, donates the quantum to that CPU, and puts the originating CPU in 
-halted state.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-If this is not enough, it's up to you to disprove this and explain why 
-the two have different jitter characteristics.  To do this, you need to 
-implement paravirtualized fair locks in your kernel (and possibly 
-halt-and-yield), measure the difference in jitter, *trace what's 
-happening on the host to characterize the benefits of your solution*, etc.
+iEYEABECAAYFAlMfN8AACgkQAeZw77btGjrCUQCcDa/7l4czACrVLp/xW6ouXjkM
+fLcAnRgiCRQQMtgr2T49tHWovMLE1y5K
+=2X9L
+-----END PGP SIGNATURE-----
 
->     - Using hyper call to mark lock status does increase cpu
->     consumption. But the impact to the system is very much depending on
->     lock usage character in the guest OS.
->
->       For the guest OS, which typically doing less frequent kernel lock,
->     but longer operation for each kernel lock, the overall impact from
->     hype call could *NOT *be an issue.
+--nextPart2551496.doVSr9qlEj--
 
-Again, if there is a jitter problem we want to fix it for all locks, 
-like we did for pv ticketlocks.
-
-Paolo
