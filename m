@@ -1,142 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442AbaCKUTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:19:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34375 "EHLO mx2.suse.de"
+	id S1755649AbaCKUUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:20:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34404 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754862AbaCKUTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:19:06 -0400
-Date: Tue, 11 Mar 2014 21:19:02 +0100
+	id S1755144AbaCKUUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 16:20:43 -0400
 From: Jan Kara <jack@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        Derek Basehore <dbasehore@chromium.org>,
-        Alexander Viro <viro@zento.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, bleung@chromium.org,
-        sonnyrao@chromium.org, semenzato@chromium.org
-Subject: Re: [PATCH] backing_dev: Fix hung task on sync
-Message-ID: <20140311201902.GA17011@quack.suse.cz>
-References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
- <20140218225548.GI31892@mtj.dyndns.org>
- <20140219092731.GA4849@quack.suse.cz>
- <20140219190139.GQ10134@htj.dyndns.org>
- <20140311112355.d335295ed62cd480eb5ab33c@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140311112355.d335295ed62cd480eb5ab33c@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Tejun Heo <tj@kernel.org>, Derek Basehore <dbasehore@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, stable@vger.kernel.org
+Subject: [PATCH 2/2 RESEND] bdi: Avoid oops on device removal
+Date: Tue, 11 Mar 2014 21:20:39 +0100
+Message-Id: <1394569239-17276-2-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1394569239-17276-1-git-send-email-jack@suse.cz>
+References: <1394569239-17276-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 11-03-14 11:23:55, Andrew Morton wrote:
-> On Wed, 19 Feb 2014 14:01:39 -0500 Tejun Heo <tj@kernel.org> wrote:
-> 
-> > Hello, Jan.
-> > 
-> > On Wed, Feb 19, 2014 at 10:27:31AM +0100, Jan Kara wrote:
-> > >   You are the workqueue expert so you may know better ;) But the way I
-> > > understand it is that queue_delayed_work() does nothing if the timer is
-> > > already running. Since we queue flusher work to run either immediately or
-> > > after dirty_writeback_interval we are safe to run queue_delayed_work()
-> > > whenever we want it to run after dirty_writeback_interval and
-> > > mod_delayed_work() whenever we want to run it immediately.
-> > 
-> > Ah, okay, so it's always mod on immediate and queue on delayed.  Yeah,
-> > that should work.
-> > 
-> > > But it's subtle and some interface where we could say queue delayed work
-> > > after no later than X would be easier to grasp.
-> > 
-> > Yeah, I think it'd be better if we had something like
-> > mod_delayed_work_if_later().  Hmm...
-> 
-> The code comments which you asked for were not forthcoming.
-> 
-> Are you otherwise OK with merging this into 3.14 and -stable?
-  I have actually added the comment when nothing happened and have a patch
-with Tejun's Reviewed-by. Just noone picked it up. I'll send it your way
-together with another fix in flush work handling.
+After 839a8e8660b67 "writeback: replace custom worker pool
+implementation with unbound workqueue" when device is removed while we
+are writing to it we crash in bdi_writeback_workfn() ->
+set_worker_desc() because bdi->dev is NULL.  This can happen because
+even though bdi_unregister() cancels all pending flushing work, nothing
+really prevents new ones from being queued from balance_dirty_pages() or
+other places.
 
-								Honza
+Fix the problem by clearing BDI_registered bit in bdi_unregister() and
+checking it before scheduling of any flushing work.
 
+Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
+CC: stable@vger.kernel.org
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/fs-writeback.c           | 23 ++++++++++++++++++-----
+ include/linux/backing-dev.h |  2 +-
+ mm/backing-dev.c            | 13 +++++++++----
+ 3 files changed, 28 insertions(+), 10 deletions(-)
 
-> From: Derek Basehore <dbasehore@chromium.org>
-> Subject: backing_dev: fix hung task on sync
-> 
-> bdi_wakeup_thread_delayed() used mod_delayed_work() to schedule work to
-> writeback dirty inodes.  The problem with this is that it can delay work
-> that is scheduled for immediate execution, such as the work from
-> sync_inodes_sb().  This can happen since mod_delayed_work can now steal
-> work from a work_queue.  This fixes the problem by using
-> queue_delayed_work instead.  This is a regression from the move to the bdi
-> workqueue design.
-> 
-> The reason that this causes a problem is that laptop-mode will change the
-> delay, dirty_writeback_centisecs, to 60000 (10 minutes) by default.  In
-> the case that bdi_wakeup_thread_delayed races with sync_inodes_sb, sync
-> will be stopped for 10 minutes and trigger a hung task.  Even if
-> dirty_writeback_centisecs is not long enough to cause a hung task, we
-> still don't want to delay sync for that long.
-> 
-> For the same reason, this also changes bdi_writeback_workfn to immediately
-> queue the work again in the case that the work_list is not empty.  The
-> same problem can happen if the sync work is run on the rescue worker.
-> 
-> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-> Reviewed-by: Jan Kara <jack@suse.cz>
-> Cc: Alexander Viro <viro@zento.linux.org.uk>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: "Darrick J. Wong" <darrick.wong@oracle.com>
-> Cc: Derek Basehore <dbasehore@chromium.org>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Benson Leung <bleung@chromium.org>
-> Cc: Sonny Rao <sonnyrao@chromium.org>
-> Cc: Luigi Semenzato <semenzato@chromium.org>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Dave Chinner <david@fromorbit.com>
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  fs/fs-writeback.c |    5 +++--
->  mm/backing-dev.c  |    2 +-
->  2 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff -puN fs/fs-writeback.c~backing_dev-fix-hung-task-on-sync fs/fs-writeback.c
-> --- a/fs/fs-writeback.c~backing_dev-fix-hung-task-on-sync
-> +++ a/fs/fs-writeback.c
-> @@ -1039,8 +1039,9 @@ void bdi_writeback_workfn(struct work_st
->  		trace_writeback_pages_written(pages_written);
->  	}
->  
-> -	if (!list_empty(&bdi->work_list) ||
-> -	    (wb_has_dirty_io(wb) && dirty_writeback_interval))
-> +	if (!list_empty(&bdi->work_list))
-> +		mod_delayed_work(bdi_wq, &wb->dwork, 0);
-> +	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
->  		queue_delayed_work(bdi_wq, &wb->dwork,
->  			msecs_to_jiffies(dirty_writeback_interval * 10));
->  
-> diff -puN mm/backing-dev.c~backing_dev-fix-hung-task-on-sync mm/backing-dev.c
-> --- a/mm/backing-dev.c~backing_dev-fix-hung-task-on-sync
-> +++ a/mm/backing-dev.c
-> @@ -294,7 +294,7 @@ void bdi_wakeup_thread_delayed(struct ba
->  	unsigned long timeout;
->  
->  	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
-> -	mod_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-> +	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
->  }
->  
->  /*
-> _
-> 
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 8277b76be983..c24e7b8b521b 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -94,16 +94,29 @@ static inline struct inode *wb_inode(struct list_head *head)
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/writeback.h>
+ 
++static void bdi_wakeup_thread(struct backing_dev_info *bdi)
++{
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	spin_unlock_bh(&bdi->wb_lock);
++}
++
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 			   struct wb_writeback_work *work)
+ {
+ 	trace_writeback_queue(bdi, work);
+ 
+ 	spin_lock_bh(&bdi->wb_lock);
++	if (!test_bit(BDI_registered, &bdi->state)) {
++		if (work->done)
++			complete(work->done);
++		goto out_unlock;
++	}
+ 	list_add_tail(&work->list, &bdi->work_list);
+-	spin_unlock_bh(&bdi->wb_lock);
+-
+ 	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++out_unlock:
++	spin_unlock_bh(&bdi->wb_lock);
+ }
+ 
+ static void
+@@ -119,7 +132,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+ 	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+ 	if (!work) {
+ 		trace_writeback_nowork(bdi);
+-		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++		bdi_wakeup_thread(bdi);
+ 		return;
+ 	}
+ 
+@@ -166,7 +179,7 @@ void bdi_start_background_writeback(struct backing_dev_info *bdi)
+ 	 * writeback as soon as there is no other work to do.
+ 	 */
+ 	trace_writeback_wake_background(bdi);
+-	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	bdi_wakeup_thread(bdi);
+ }
+ 
+ /*
+@@ -1025,7 +1038,7 @@ void bdi_writeback_workfn(struct work_struct *work)
+ 	current->flags |= PF_SWAPWRITE;
+ 
+ 	if (likely(!current_is_workqueue_rescuer() ||
+-		   list_empty(&bdi->bdi_list))) {
++		   !test_bit(BDI_registered, &bdi->state))) {
+ 		/*
+ 		 * The normal path.  Keep writing back @bdi until its
+ 		 * work_list is empty.  Note that this path is also taken
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 24819001f5c8..e488e9459a93 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -95,7 +95,7 @@ struct backing_dev_info {
+ 	unsigned int max_ratio, max_prop_frac;
+ 
+ 	struct bdi_writeback wb;  /* default writeback info for this bdi */
+-	spinlock_t wb_lock;	  /* protects work_list */
++	spinlock_t wb_lock;	  /* protects work_list & wb.dwork scheduling */
+ 
+ 	struct list_head work_list;
+ 
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index fab8401fc54e..09d9591b7708 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -297,7 +297,10 @@ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+ 	unsigned long timeout;
+ 
+ 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+-	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_unlock_bh(&bdi->wb_lock);
+ }
+ 
+ /*
+@@ -310,9 +313,6 @@ static void bdi_remove_from_list(struct backing_dev_info *bdi)
+ 	spin_unlock_bh(&bdi_lock);
+ 
+ 	synchronize_rcu_expedited();
+-
+-	/* bdi_list is now unused, clear it to mark @bdi dying */
+-	INIT_LIST_HEAD(&bdi->bdi_list);
+ }
+ 
+ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
+@@ -363,6 +363,11 @@ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+ 	 */
+ 	bdi_remove_from_list(bdi);
+ 
++	/* Make sure nobody queues further work */
++	spin_lock_bh(&bdi->wb_lock);
++	clear_bit(BDI_registered, &bdi->state);
++	spin_unlock_bh(&bdi->wb_lock);
++
+ 	/*
+ 	 * Drain work list and shutdown the delayed_work.  At this point,
+ 	 * @bdi->bdi_list is empty telling bdi_Writeback_workfn() that @bdi
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.1.4
+
