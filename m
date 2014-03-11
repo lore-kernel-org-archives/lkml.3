@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457AbaCKNif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:38:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52864 "EHLO mx1.redhat.com"
+	id S1754847AbaCKNio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:38:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10671 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753339AbaCKNic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:38:32 -0400
-Date: Tue, 11 Mar 2014 14:37:51 +0100
+	id S1754481AbaCKNii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 09:38:38 -0400
+Date: Tue, 11 Mar 2014 14:38:01 +0100
 From: Jiri Olsa <jolsa@redhat.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         peterz@infradead.org, eranian@google.com, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
 Subject: Re: [PATCH 1/8] perf, tools: Add jsmn `jasmine' JSON parser
-Message-ID: <20140311133751.GC22678@krava.redhat.com>
+Message-ID: <20140311133801.GD22678@krava.redhat.com>
 References: <1394048978-15909-1-git-send-email-andi@firstfloor.org>
  <1394048978-15909-2-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
@@ -79,7 +79,37 @@ SNIP
 > +#include "json.h"
 > +
 > +#define roundup(x, y) (((x) + (y) - 1) & ~((y) - 1))
+> +
+> +static char *mapfile(const char *fn, size_t *size)
+> +{
+> +	unsigned ps = sysconf(_SC_PAGESIZE);
 
-this one is defined in util/include/linux/kernel.h
+you can use page_size instead
+
+> +	struct stat st;
+> +	char *map = NULL;
+> +	int err;
+> +	int fd = open(fn, O_RDONLY);
+> +
+> +	if (fd < 0)
+> +		return NULL;
+> +	err = fstat(fd, &st);
+> +	if (err < 0)
+> +		goto out;
+> +	*size = st.st_size;
+> +	map = mmap(NULL, roundup(st.st_size, ps),
+> +		   PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+> +	if (map == (char *)MAP_FAILED)
+> +		map = NULL;
+> +out:
+> +	close(fd);
+> +	return map;
+> +}
+> +
+> +static void unmapfile(char *map, size_t size)
+> +{
+> +	unsigned ps = sysconf(_SC_PAGESIZE);
+
+ditto
 
 jirka
