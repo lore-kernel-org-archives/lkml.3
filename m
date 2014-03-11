@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876AbaCKUrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:47:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8327 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755336AbaCKUrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:47:10 -0400
-Date: Tue, 11 Mar 2014 21:48:28 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
-        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] percpu_ida: Handle out-of-tags gracefully
-Message-ID: <20140311204826.GA30105@dhcp-26-207.brq.redhat.com>
-References: <531DC851.5060400@acm.org>
- <20140311135137.GA22995@dhcp-26-207.brq.redhat.com>
- <531F518A.1070808@acm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531F518A.1070808@acm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755569AbaCKUr1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:47:27 -0400
+Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:40671 "EHLO
+	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755336AbaCKUrZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 16:47:25 -0400
+Message-ID: <1394570844.2786.42.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Mar 2014 13:47:24 -0700
+In-Reply-To: <531F75D1.3060909@oracle.com>
+References: <531F6689.60307@oracle.com>
+		<1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>
+	 <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
+	 <531F75D1.3060909@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 07:10:18PM +0100, Bart Van Assche wrote:
-> > I assume the BUG() above hits? If so, I am failing to understand how
-> > the code gets here. Mind elaborate?
+On Tue, 2014-03-11 at 16:45 -0400, Sasha Levin wrote:
+> On 03/11/2014 04:30 PM, Andrew Morton wrote:
+> > All I can think is that find_vma() went and returned a vma from a
+> > different mm, which would be odd.  How about I toss this in there?
+> >
+> > --- a/mm/vmacache.c~a
+> > +++ a/mm/vmacache.c
+> > @@ -72,8 +72,10 @@ struct vm_area_struct *vmacache_find(str
+> >   	for (i = 0; i < VMACACHE_SIZE; i++) {
+> >   		struct vm_area_struct *vma = current->vmacache[i];
+> >
+> > -		if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+> > +		if (vma && vma->vm_start <= addr && vma->vm_end > addr) {
+> > +			BUG_ON(vma->vm_mm != mm);
+> >   			return vma;
+> > +		}
+> >   	}
+> >
+> >   	return NULL;
 > 
-> Hello Alexander,
+> Bingo! With the above patch:
 > 
-> You are correct, the BUG() mentioned in the call stack in the
-> description of this patch does indeed correspond with the BUG()
-> statement in the above code. That BUG() was encountered while testing
-> the scsi-mq patch series with a workload with a large queue depth. I
-> think the fact that I hit that BUG() statement means that my workload
-> was queueing requests faster than these were processed by the SCSI LLD
-> and hence that percpu_ida_alloc() ran out of tags.
+> [  243.565794] kernel BUG at mm/vmacache.c:76!
+> [  243.566720] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  243.568048] Dumping ftrace buffer:
+> [  243.568740]    (ftrace buffer empty)
+> [  243.569481] Modules linked in:
+> [  243.570203] CPU: 10 PID: 10073 Comm: trinity-c332 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00010-g1f812cb-dirty #143
 
-Function steal_tags() is entered with disabled interrupts and
-pool->lock taken. Then the 'for' cycle enters/loops while 'cpus_have_tags'
-is not zero. Which means we can not end up with no set bits at all -
-and that is the reason why BUG() is (legitimately) placed there.
+and this is also part of the DEBUG_PAGEALLOC + trinity combo! I suspect
+the root cause it the same as Fengguang's report.
 
-> Bart.
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
