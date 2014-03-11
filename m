@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297AbaCKMbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 08:31:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:32802 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752220AbaCKMbL (ORCPT
+	id S1755306AbaCKMcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 08:32:09 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:59877 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835AbaCKMcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 08:31:11 -0400
-Date: Tue, 11 Mar 2014 08:31:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Behan Webster <behanw@converseincode.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux@arm.linux.org.uk,
-        kpark3469@gmail.com, keun-o.park@windriver.com, dave.martin@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: LLVMLinux: use static inline in ARM ftrace.h
-Message-ID: <20140311083107.6aa2bba4@gandalf.local.home>
-In-Reply-To: <531EB4D8.6030207@converseincode.com>
-References: <1392949370-26422-1-git-send-email-behanw@converseincode.com>
-	<531EB4D8.6030207@converseincode.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 11 Mar 2014 08:32:06 -0400
+Date: Tue, 11 Mar 2014 08:32:02 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Silvan Jegen <s.jegen@gmail.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] pata_legacy: Remove dead code
+Message-ID: <20140311123202.GC11477@htj.dyndns.org>
+References: <531e3c9a.085e0e0a.4316.ffffe91d@mx.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <531e3c9a.085e0e0a.4316.ffffe91d@mx.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Mar 2014 00:01:44 -0700
-Behan Webster <behanw@converseincode.com> wrote:
+On Mon, Mar 10, 2014 at 10:33:50PM +0100, Silvan Jegen wrote:
+> The current flow of control prevents this function from being
+> called. Let's remove the call.
+> 
+> Signed-off-by: Silvan Jegen <s.jegen@gmail.com>
 
-> On 02/20/14 18:22, behanw@converseincode.com wrote:
-> > From: Behan Webster <behanw@converseincode.com>
-> >
-> > With compilers which follow the C99 standard (like modern versions of gcc and
-> > clang), "extern inline" does the wrong thing (emits code for an externally
-> > linkable version of the inline function). In this case using static inline
-> > and removing the NULL version of return_address in return_address.c does
-> > the right thing.
-> Any input? Is it good as it is?
+Applied to libata/for-3.15.
 
-I'm fine with it. But you need approval from the arm folks. I know
-there was some issues with the return_address() code in the past. But
-from the ftrace perspective:
+Thanks.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
+-- 
+tejun
