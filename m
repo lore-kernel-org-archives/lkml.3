@@ -1,161 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649AbaCKUUq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:20:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34404 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755144AbaCKUUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:20:43 -0400
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Derek Basehore <dbasehore@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, stable@vger.kernel.org
-Subject: [PATCH 2/2 RESEND] bdi: Avoid oops on device removal
-Date: Tue, 11 Mar 2014 21:20:39 +0100
-Message-Id: <1394569239-17276-2-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1394569239-17276-1-git-send-email-jack@suse.cz>
-References: <1394569239-17276-1-git-send-email-jack@suse.cz>
+	id S1755701AbaCKUUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:20:53 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:48261 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755662AbaCKUUt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 16:20:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140311194959.GB28112@sirena.org.uk>
+References: <1394541891-26469-1-git-send-email-jcmvbkbc@gmail.com>
+	<1394541891-26469-2-git-send-email-jcmvbkbc@gmail.com>
+	<20140311194959.GB28112@sirena.org.uk>
+Date: Wed, 12 Mar 2014 00:20:49 +0400
+Message-ID: <CAMo8BfLTn+pneF6_7XkP66+LzpZgcefnAo_FkwxpvtYdt9yduA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] spi: add xtfpga SPI controller driver
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        linux-spi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After 839a8e8660b67 "writeback: replace custom worker pool
-implementation with unbound workqueue" when device is removed while we
-are writing to it we crash in bdi_writeback_workfn() ->
-set_worker_desc() because bdi->dev is NULL.  This can happen because
-even though bdi_unregister() cancels all pending flushing work, nothing
-really prevents new ones from being queued from balance_dirty_pages() or
-other places.
+On Tue, Mar 11, 2014 at 11:49 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Tue, Mar 11, 2014 at 04:44:49PM +0400, Max Filippov wrote:
+>
+>> +static inline int xtfpga_spi_wait_busy(struct xtfpga_spi *xspi)
+>> +{
+>> +     unsigned long timeout = jiffies + msecs_to_jiffies(100);
+>> +     while (xtfpga_spi_read32(xspi, XTFPGA_SPI_BUSY)) {
+>> +             if (!time_before(jiffies, timeout))
+>> +                     return -EBUSY;
+>> +             else
+>> +                     cpu_relax();
+>> +     }
+>> +     return 0;
+>> +}
+>
+> So we'll busy wait for up to 100ms - that seems like an awfully long
+> time.  Perhaps fall back to msleep() if the delay is non-trivial (or
+> just reduce the timeout)?
 
-Fix the problem by clearing BDI_registered bit in bdi_unregister() and
-checking it before scheduling of any flushing work.
+The timeout is here for the unlikely case everything went wrong. Normally
+transfers get completed in about 10 useconds on 50 MHz hardware, it
+doesn't seem worth msleeping here. I put the timeout here just because
+otherwise infinite loop polling the device register looks scary.
 
-Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
-CC: stable@vger.kernel.org
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/fs-writeback.c           | 23 ++++++++++++++++++-----
- include/linux/backing-dev.h |  2 +-
- mm/backing-dev.c            | 13 +++++++++----
- 3 files changed, 28 insertions(+), 10 deletions(-)
+>  If there are large enough FIFOs dead
+> reckoning a sleep for the expected transfer time might be helpful but it
+> seems like there's no meaningful FIFO.
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 8277b76be983..c24e7b8b521b 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -94,16 +94,29 @@ static inline struct inode *wb_inode(struct list_head *head)
- #define CREATE_TRACE_POINTS
- #include <trace/events/writeback.h>
- 
-+static void bdi_wakeup_thread(struct backing_dev_info *bdi)
-+{
-+	spin_lock_bh(&bdi->wb_lock);
-+	if (test_bit(BDI_registered, &bdi->state))
-+		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+	spin_unlock_bh(&bdi->wb_lock);
-+}
-+
- static void bdi_queue_work(struct backing_dev_info *bdi,
- 			   struct wb_writeback_work *work)
- {
- 	trace_writeback_queue(bdi, work);
- 
- 	spin_lock_bh(&bdi->wb_lock);
-+	if (!test_bit(BDI_registered, &bdi->state)) {
-+		if (work->done)
-+			complete(work->done);
-+		goto out_unlock;
-+	}
- 	list_add_tail(&work->list, &bdi->work_list);
--	spin_unlock_bh(&bdi->wb_lock);
--
- 	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+out_unlock:
-+	spin_unlock_bh(&bdi->wb_lock);
- }
- 
- static void
-@@ -119,7 +132,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
- 	work = kzalloc(sizeof(*work), GFP_ATOMIC);
- 	if (!work) {
- 		trace_writeback_nowork(bdi);
--		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+		bdi_wakeup_thread(bdi);
- 		return;
- 	}
- 
-@@ -166,7 +179,7 @@ void bdi_start_background_writeback(struct backing_dev_info *bdi)
- 	 * writeback as soon as there is no other work to do.
- 	 */
- 	trace_writeback_wake_background(bdi);
--	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+	bdi_wakeup_thread(bdi);
- }
- 
- /*
-@@ -1025,7 +1038,7 @@ void bdi_writeback_workfn(struct work_struct *work)
- 	current->flags |= PF_SWAPWRITE;
- 
- 	if (likely(!current_is_workqueue_rescuer() ||
--		   list_empty(&bdi->bdi_list))) {
-+		   !test_bit(BDI_registered, &bdi->state))) {
- 		/*
- 		 * The normal path.  Keep writing back @bdi until its
- 		 * work_list is empty.  Note that this path is also taken
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index 24819001f5c8..e488e9459a93 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -95,7 +95,7 @@ struct backing_dev_info {
- 	unsigned int max_ratio, max_prop_frac;
- 
- 	struct bdi_writeback wb;  /* default writeback info for this bdi */
--	spinlock_t wb_lock;	  /* protects work_list */
-+	spinlock_t wb_lock;	  /* protects work_list & wb.dwork scheduling */
- 
- 	struct list_head work_list;
- 
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index fab8401fc54e..09d9591b7708 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -297,7 +297,10 @@ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
- 	unsigned long timeout;
- 
- 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
--	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-+	spin_lock_bh(&bdi->wb_lock);
-+	if (test_bit(BDI_registered, &bdi->state))
-+		queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-+	spin_unlock_bh(&bdi->wb_lock);
- }
- 
- /*
-@@ -310,9 +313,6 @@ static void bdi_remove_from_list(struct backing_dev_info *bdi)
- 	spin_unlock_bh(&bdi_lock);
- 
- 	synchronize_rcu_expedited();
--
--	/* bdi_list is now unused, clear it to mark @bdi dying */
--	INIT_LIST_HEAD(&bdi->bdi_list);
- }
- 
- int bdi_register(struct backing_dev_info *bdi, struct device *parent,
-@@ -363,6 +363,11 @@ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
- 	 */
- 	bdi_remove_from_list(bdi);
- 
-+	/* Make sure nobody queues further work */
-+	spin_lock_bh(&bdi->wb_lock);
-+	clear_bit(BDI_registered, &bdi->state);
-+	spin_unlock_bh(&bdi->wb_lock);
-+
- 	/*
- 	 * Drain work list and shutdown the delayed_work.  At this point,
- 	 * @bdi->bdi_list is empty telling bdi_Writeback_workfn() that @bdi
+Right, there's no FIFO in that device.
+
+>> +/* Unused: this device controls its only CS automatically,
+>> + * deactivating it after every 16 bit transfer completion.
+>> + */
+>
+> This is too limited to use with most SPI clients, they'll want to be
+> able to transmit more than one word (and the fact that only 16 bit words
+> are supported is also an issue, though that's easy enough to handle for
+> a bitbanging driver - I'd really strongly suggest supporting 8 bits per
+> word as well).  Clients are pretty much going to need to use GPIO based
+> chip select, you should make sure that's supported and covered in the
+> binding.
+
+There's no hardware for that. This device is really dumb, it is specifically
+suited to control TLV320AIC23 which expects exactly 16 bit words, SPI
+mode 0.
+
+>> +static void xtfpga_spi_chipselect(struct spi_device *spi, int is_on)
+>> +{
+>> +}
+>
+> Omit this since it's empty.
+
+The bitbang side doesn't like when this callback is NULL and returns
+-EINVAL from spi_bitbang_start.
+
 -- 
-1.8.1.4
-
+Thanks.
+-- Max
