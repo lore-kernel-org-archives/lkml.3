@@ -1,302 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839AbaCKLZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 07:25:28 -0400
-Received: from 7.mo2.mail-out.ovh.net ([188.165.48.182]:41027 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754791AbaCKLZX convert rfc822-to-8bit (ORCPT
+	id S1754862AbaCKL0j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 07:26:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58185 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831AbaCKL0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 07:25:23 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <B256D81BAE5131468A838E5D7A24364172FFBC8C@penmbx01>
-Date: Tue, 11 Mar 2014 19:13:57 +0800
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "b.brezillon@overkiz.com" <b.brezillon@overkiz.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "<linux-arm-kernel@lists.infradead.org> mailing list" 
-	<linux-arm-kernel@lists.infradead.org>,
-        DR Junmin LIN <JM.Lin@atmel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C90D6485-5915-4FC6-AA67-C035265057B6@jcrosoft.com>
-References: <1393984400-14687-1-git-send-email-wenyou.yang@atmel.com> <635C1A75-4651-4B2C-AB64-E1D170A1F5F9@jcrosoft.com> <B256D81BAE5131468A838E5D7A24364172FF4EC4@penmbx01> <B256D81BAE5131468A838E5D7A24364172FFB955@penmbx01> <F73ABBC2-BFD3-43D5-9BAB-5D17CD585E89@jcrosoft.com> <B256D81BAE5131468A838E5D7A24364172FFBC8C@penmbx01>
-To: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-X-Mailer: Apple Mail (2.1827)
-X-Ovh-Tracer-Id: 17292978145687415685
-X-Ovh-Remote: 193.138.220.107 (107.220.138.193.client.dyn.strong-ba1.blackoakcomputers.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrudelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrudelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 11 Mar 2014 07:26:38 -0400
+Date: Tue, 11 Mar 2014 12:26:42 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Amir Vadai <amirv@mellanox.com>
+cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yevgeny Petrilin <yevgenyp@mellanox.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Govindarajulu Varadarajan <gvaradar@cisco.com>
+Subject: Re: [PATCH net-next V5 1/2] irq: Utility function to get affinity_hint
+ by policy
+In-Reply-To: <1394523207-7338-2-git-send-email-amirv@mellanox.com>
+Message-ID: <alpine.DEB.2.02.1403111018330.18573@ionos.tec.linutronix.de>
+References: <1394523207-7338-1-git-send-email-amirv@mellanox.com> <1394523207-7338-2-git-send-email-amirv@mellanox.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 11 Mar 2014, Amir Vadai wrote:
+> +/**
+> + * irq_set_mq_dev_affinit_hint - set affinity hint of a queue in multi queue
+> + * device
 
-On Mar 11, 2014, at 2:54 PM, Yang, Wenyou <Wenyou.Yang@atmel.com> wrote:
+The function is a complete misnomer. It calculates a cpu number and
+sets that bit in the supplied cpumask. There is no connection to the
+affinity hint at all. 
 
-> 
-> 
->> -----Original Message-----
->> From: Jean-Christophe PLAGNIOL-VILLARD [mailto:plagnioj@jcrosoft.com]
->> Sent: Tuesday, March 11, 2014 12:16 PM
->> To: Yang, Wenyou
->> Cc: Jean-Christophe PLAGNIOL-VILLARD; mark.rutland@arm.com;
->> devicetree@vger.kernel.org; pawel.moll@arm.com;
->> ijc+devicetree@hellion.org.uk; linus.walleij@linaro.org; Linux Kernel
->> list; b.brezillon@overkiz.com; robh+dt@kernel.org; galak@codeaurora.org;
->> <linux-arm-kernel@lists.infradead.org> mailing list
->> Subject: Re: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
->> 
->> 
->> On Mar 11, 2014, at 9:28 AM, Yang, Wenyou <Wenyou.Yang@atmel.com> wrote:
->> 
->>> Hi JC,
->>> 
->>>> -----Original Message-----
->>>> From: Yang, Wenyou
->>>> Sent: Wednesday, March 05, 2014 1:32 PM
->>>> To: Jean-Christophe PLAGNIOL-VILLARD
->>>> Cc: linus.walleij@linaro.org; b.brezillon@overkiz.com; <linux-arm-
->>>> kernel@lists.infradead.org> mailing list; Linux Kernel list;
->>>> devicetree@vger.kernel.org; robh+dt@kernel.org; pawel.moll@arm.com;
->>>> mark.rutland@arm.com; ijc+devicetree@hellion.org.uk;
->>>> galak@codeaurora.org
->>>> Subject: RE: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
->>>> 
->>>> Hi JC,
->>>> 
->>>>> -----Original Message-----
->>>>> From: Jean-Christophe PLAGNIOL-VILLARD
->>>>> [mailto:plagnioj@jcrosoft.com]
->>>>> Sent: Wednesday, March 05, 2014 12:58 PM
->>>>> To: Yang, Wenyou
->>>>> Cc: Jean-Christophe PLAGNIOL-VILLARD; linus.walleij@linaro.org;
->>>>> b.brezillon@overkiz.com; <linux-arm-kernel@lists.infradead.org>
->>>>> mailing list; Linux Kernel list; devicetree@vger.kernel.org;
->>>>> robh+dt@kernel.org; pawel.moll@arm.com; mark.rutland@arm.com;
->>>>> ijc+devicetree@hellion.org.uk; galak@codeaurora.org
->>>>> Subject: Re: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
->>>>> 
->>>>> 
->>>>> On Mar 5, 2014, at 9:53 AM, Wenyou Yang <wenyou.yang@atmel.com>
->> wrote:
->>>>> 
->>>>>> In order to support the pinctrl sleep state.
->>>>> 
->>>>> As I said before NACK
->>>>> 
->>>>> this is not the job of the pinctrl to describe gpio output or input
->>>>> state
->>>> But according to what said in the section "GPIO mode pitfalls" of
->>>> Documentation/pinctrl.txt.
->>>> It should be handle by the pinctrl.
->>>> 
->>>> If not, to deal with the sleep state will be very complicated.
->>>> Muxing the pins for FUNCTION to enable peripheral, then twist them
->>>> over to GPIO mode and use gpio_direction_output() to drive it HIGH or
->>>> LOW during sleep.
->>>> 
->>>> --->8 ------------
->>>> The solution is to not think that what the datasheet calls "GPIO
->> mode"
->>>> has to be handled by the <linux/gpio.h> interface. Instead view this
->>>> as a certain pin config setting. Look in e.g. <linux/pinctrl/pinconf-
->>>> generic.h> and you find this in the documentation:
->>>> 
->>>> PIN_CONFIG_OUTPUT: this will configure the pin in output, use
->> argument
->>>>    1 to indicate high level, argument 0 to indicate low level.
->>>> 
->>>> So it is perfectly possible to push a pin into "GPIO mode" and drive
->>>> the line low as part of the usual pin control map.
->>>> ---<8 ------------
->>> 
->>> Do you have any feedback?
->> 
->> Here the issue is that you do drive the gpio and use as a gpio
->> 
->> which means you request it as a GPIO so after you can not reswitch it to
->> alternative function and the gpio is already requested as alternative
->> function
->> 
->> So basically you mess-up with the gpio API and pinctrl API by bypassing
->> both
-> 
-> But I don't agree with you.
-> 
-> As I known, in mainline the other SoC vendors provide such function, configure the gpio mode with output config by pinctrl.
-> 
-> For example, ST. nomadisk.
-> You can see it in the function: nmk_pin_config_set() of the file, pinctrl-nomadik.c.
-> It provides GPIO mode and OUTPUT config.
-> 
-> This is a good solution, as what said in Documentation/pinctrl.txt,
-> 
-> it is perfectly possible to push a pin into "GPIO mode" and drive the line low as part of the usual pin control map.
-> 
+> + * @q: queue index number
+> + * @numa_node: prefered numa_node
+> + * @affinity_mask: the relevant cpu bit is set according to the policy
+> + *
+> + * This function sets the affinity_mask according to a numa aware policy.
+> + * affinity_mask could be used as an affinity hint for the IRQ related to this
+> + * queue.
 
-This is simple if we use gpio mode as pinctrl tomorrow we will see gpio configuration in pinctrl
-such as chip reset, default led state etc…
+So why is this not directly setting the affinity hint?
 
-The pinctrl is not here to control a *GPIO* but to describe the configuration of pin.
+> + * The policy is to spread queues across cores - local cores first.
+> + *
+> + * Returns 0 on success, or a negative error code.
 
-> 
-> Best Regards,
-> Wenyou Yang
->> 
->> Best Regards,
->> J.
->> 
->>> 
->>> Thanks,
->>> Wenyou Yang
->>> 
->>>> 
->>>>> 
->>>>> Best Regards,
->>>>> J.
->>>>>> 
->>>>>> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
->>>>>> ---
->>>>>> Hi Linus,
->>>>>> 
->>>>>> The patch is based on branch: for-next
->>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl
->>>>>> 
->>>>>> Best Regards,
->>>>>> Wenyou Yang
->>>>>> 
->>>>>> drivers/pinctrl/pinctrl-at91.c     |   31
->>>>> +++++++++++++++++++++++++++++++
->>>>>> include/dt-bindings/pinctrl/at91.h |    2 ++
->>>>>> 2 files changed, 33 insertions(+)
->>>>>> 
->>>>>> diff --git a/drivers/pinctrl/pinctrl-at91.c
->>>>>> b/drivers/pinctrl/pinctrl-at91.c index 5d24aae..fc51e59 100644
->>>>>> --- a/drivers/pinctrl/pinctrl-at91.c
->>>>>> +++ b/drivers/pinctrl/pinctrl-at91.c
->>>>>> @@ -62,6 +62,8 @@ static int gpio_banks;
->>>>>> #define DEGLITCH	(1 << 2)
->>>>>> #define PULL_DOWN	(1 << 3)
->>>>>> #define DIS_SCHMIT	(1 << 4)
->>>>>> +#define GPIO_OUTPUT_HIGH	(1 << 5)
->>>>>> +#define GPIO_OUTPUT_LOW		(1 << 6)
->>>>>> #define DEBOUNCE	(1 << 16)
->>>>>> #define DEBOUNCE_VAL_SHIFT	17
->>>>>> #define DEBOUNCE_VAL	(0x3fff << DEBOUNCE_VAL_SHIFT)
->>>>>> @@ -152,12 +154,15 @@ struct at91_pinctrl_mux_ops {
->>>>>> 	void (*set_pulldown)(void __iomem *pio, unsigned mask, bool is_on);
->>>>>> 	bool (*get_schmitt_trig)(void __iomem *pio, unsigned pin);
->>>>>> 	void (*disable_schmitt_trig)(void __iomem *pio, unsigned mask);
->>>>>> +	bool (*get_gpio_output)(void __iomem *pio, unsigned mask);
->>>>>> +	void (*set_gpio_output)(void __iomem *pio, unsigned mask,
->> bool
->>>>>> +is_high);
->>>>>> 	/* irq */
->>>>>> 	int (*irq_type)(struct irq_data *d, unsigned type); };
->>>>>> 
->>>>>> static int gpio_irq_type(struct irq_data *d, unsigned type); static
->>>>>> int alt_gpio_irq_type(struct irq_data *d, unsigned type);
->>>>>> +static void at91_mux_gpio_enable(void __iomem *pio, unsigned mask,
->>>>>> +bool input);
->>>>>> 
->>>>>> struct at91_pinctrl {
->>>>>> 	struct device		*dev;
->>>>>> @@ -472,6 +477,20 @@ static bool
->>>>>> at91_mux_pio3_get_schmitt_trig(void
->>>>> __iomem *pio, unsigned pin)
->>>>>> 	return (__raw_readl(pio + PIO_SCHMITT) >> pin) & 0x1; }
->>>>>> 
->>>>>> +static bool at91_mux_pio3_get_gpio_output(void __iomem *pio,
->>>>>> +unsigned
->>>>>> +pin) {
->>>>>> +	return (__raw_readl(pio + PIO_ODSR) >> pin) & 0x1; }
->>>>>> +
->>>>>> +static void at91_mux_pio3_set_gpio_output(void __iomem *pio,
->>>>>> +						unsigned mask,
->>>>>> +						bool is_high)
->>>>>> +{
->>>>>> +	at91_mux_gpio_enable(pio, mask, 0);
->>>>>> +	writel_relaxed(mask, pio + (is_high ? PIO_SODR : PIO_CODR)); }
->>>>>> +
->>>>>> +
->>>>>> static struct at91_pinctrl_mux_ops at91rm9200_ops = {
->>>>>> 	.get_periph	= at91_mux_get_periph,
->>>>>> 	.mux_A_periph	= at91_mux_set_A_periph,
->>>>>> @@ -495,6 +514,8 @@ static struct at91_pinctrl_mux_ops
->>>>>> at91sam9x5_ops
->>>>> = {
->>>>>> 	.set_pulldown	= at91_mux_pio3_set_pulldown,
->>>>>> 	.get_schmitt_trig = at91_mux_pio3_get_schmitt_trig,
->>>>>> 	.disable_schmitt_trig = at91_mux_pio3_disable_schmitt_trig,
->>>>>> +	.get_gpio_output = at91_mux_pio3_get_gpio_output,
->>>>>> +	.set_gpio_output = at91_mux_pio3_set_gpio_output,
->>>>>> 	.irq_type	= alt_gpio_irq_type,
->>>>>> };
->>>>>> 
->>>>>> @@ -741,6 +762,10 @@ static int at91_pinconf_get(struct pinctrl_dev
->>>>> *pctldev,
->>>>>> 		*config |= PULL_DOWN;
->>>>>> 	if (info->ops->get_schmitt_trig &&
->>>>>> info->ops->get_schmitt_trig(pio,
->>>>> pin))
->>>>>> 		*config |= DIS_SCHMIT;
->>>>>> +	if (info->ops->get_gpio_output) {
->>>>>> +		*config |= info->ops->get_gpio_output(pio, pin) ?
->>>>>> +					GPIO_OUTPUT_HIGH : GPIO_OUTPUT_LOW;
->>>>>> +	}
->>>>>> 
->>>>>> 	return 0;
->>>>>> }
->>>>>> @@ -778,6 +803,12 @@ static int at91_pinconf_set(struct pinctrl_dev
->>>>> *pctldev,
->>>>>> 			info->ops->set_pulldown(pio, mask, config & PULL_DOWN);
->>>>>> 		if (info->ops->disable_schmitt_trig && config & DIS_SCHMIT)
->>>>>> 			info->ops->disable_schmitt_trig(pio, mask);
->>>>>> +		if (info->ops->set_gpio_output) {
->>>>>> +			if (config & GPIO_OUTPUT_HIGH)
->>>>>> +				info->ops->set_gpio_output(pio, mask, 1);
->>>>>> +			if (config & GPIO_OUTPUT_LOW)
->>>>>> +				info->ops->set_gpio_output(pio, mask, 0);
->>>>>> +		};
->>>>>> 
->>>>>> 	} /* for each config */
->>>>>> 
->>>>>> diff --git a/include/dt-bindings/pinctrl/at91.h
->>>>>> b/include/dt-bindings/pinctrl/at91.h
->>>>>> index 0fee6ff..e799268 100644
->>>>>> --- a/include/dt-bindings/pinctrl/at91.h
->>>>>> +++ b/include/dt-bindings/pinctrl/at91.h
->>>>>> @@ -15,6 +15,8 @@
->>>>>> #define AT91_PINCTRL_DEGLITCH		(1 << 2)
->>>>>> #define AT91_PINCTRL_PULL_DOWN		(1 << 3)
->>>>>> #define AT91_PINCTRL_DIS_SCHMIT		(1 << 4)
->>>>>> +#define AT91_PINCTRL_OUTPUT_HIGH	(1 << 5)
->>>>>> +#define AT91_PINCTRL_OUTPUT_LOW		(1 << 6)
->>>>>> #define AT91_PINCTRL_DEBOUNCE		(1 << 16)
->>>>>> #define AT91_PINCTRL_DEBOUNCE_VAL(x)	(x << 17)
->>>>>> 
->>>>>> --
->>>>>> 1.7.9.5
->>>>>> 
->>> 
->>> 
->>> _______________________________________________
->>> linux-arm-kernel mailing list
->>> linux-arm-kernel@lists.infradead.org
->>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+The ENOMEM error code is understandable, but what is the EINVAL for?
 
+> + */
+> +int irq_set_mq_dev_affinit_hint(int q, int numa_node,
+> +				cpumask_t *affinity_mask)
+> +{
+> +	cpumask_var_t mask;
+> +	int affinity_cpu;
+> +	int ret = 0;
+> +
+> +	if (!zalloc_cpumask_var(&mask, GFP_KERNEL))
+> +		return -ENOMEM;
+> +
+> +	q %= num_online_cpus();
+> +
+> +	if (!cpumask_of_node(numa_node)) {
+> +		cpumask_copy(mask, cpu_online_mask);
+> +	} else {
+> +		int n;
+> +
+> +		cpumask_and(mask,
+> +			    cpumask_of_node(numa_node), cpu_online_mask);
+> +
+> +		n = cpumask_weight(mask);
+> +		if (q >= n) {
+> +			q -= n;
+> +			cpumask_andnot(mask, cpu_online_mask, mask);
+> +		}
+
+This is completely uncommented magic hackery. What is this doing? And
+what's the logic here?
+
+If the node does not have enough cpus online to fulfill n > q then you
+mask off all online cpus of that node from the online mask and use
+some random cpu as target.
+
+And this is true for every q which is larger/equal than the number of cpus
+per node.
+
+So lets assume 8 cpus per node and 16 online CPUs. Now you have a card
+with 16 queues. So you want to put the first 8 on node 0 and the
+second 8 on node 1.
+
+For all q in 0..15
+
+    q %= num_online_cpus() -> q
+
+node 0, q 0  ->	 n = 8 -> cpu 0
+node 0, q 1  ->	 n = 8 -> cpu 1
+...
+node 7, q 7  ->	 n = 8 -> cpu 7
+
+So far so good. But
+
+node 1, q 8  ->	 n = 8 -> cpu 0
+node 1, q 9  ->	 n = 8 -> cpu 1
+...
+node 1, q 15 ->	 n = 8 -> cpu 7
+
+I'm not so impressed by the node aware spread.
+
+Thanks,
+
+	tglx
