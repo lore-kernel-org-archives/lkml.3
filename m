@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135AbaCKNfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:35:50 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60708 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445AbaCKNfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:35:48 -0400
-Date: Tue, 11 Mar 2014 13:35:42 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Trilok Soni <tsoni@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Anirudh Ghayal <aghayal@codeaurora.org>, linux-input@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Qualcomm PMIC8xxx keypad never worked?
-Message-ID: <20140311133542.GO21216@lee--X1>
-References: <5887114.1jrNo21sGX@wuerfel>
- <20140311120056.GH21216@lee--X1>
- <8206209.oc1V5pPVYT@wuerfel>
- <20140311130609.GL21216@lee--X1>
- <20140311132013.GO18529@joshc.qualcomm.com>
+	id S1753189AbaCKNi0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:38:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57327 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752058AbaCKNiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 09:38:24 -0400
+Date: Tue, 11 Mar 2014 14:37:41 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, eranian@google.com, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 3/8] perf, tools: Automatically look for event file name
+ for cpu
+Message-ID: <20140311133741.GB22678@krava.redhat.com>
+References: <1394048978-15909-1-git-send-email-andi@firstfloor.org>
+ <1394048978-15909-4-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140311132013.GO18529@joshc.qualcomm.com>
+In-Reply-To: <1394048978-15909-4-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > > Something in the MFD_PM8XXX driver must have changed recently that now allows
-> > > > > the KEYBOARD_PMIC8XXX driver to be enabled. Unfortunately, it does not build
-> > > > > because of a dependency on the <linux/mfd/pm8xxx/gpio.h> header file that
-> > > > > does not exist.
-> > 
-> > I think it's this commit that's causing your error:
-> > 
-> >   https://lkml.org/lkml/2013/12/10/903
-> > 
-> > ... but the MFD isn't broken, so I guess your solution is the most
-> > elegant. If it's not fixed soon, I guess we should think about ripping
-> > it out. It's obvoious that no-one cares, as it's been broken for
-> > nearly 3 years.
+On Wed, Mar 05, 2014 at 11:49:33AM -0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Stephen has a pending patchset to cleanup and actually make the pm8xxx
-> input drivers work, but they have not been picked up yet:
+
+SNIP
+
 > 
-> http://lkml.kernel.org/r/1393958088-1456-1-git-send-email-sboyd@codeaurora.org
+> diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+> index 1641542..0efeb14 100644
+> --- a/tools/perf/arch/x86/Makefile
+> +++ b/tools/perf/arch/x86/Makefile
+> @@ -14,4 +14,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
+>  endif
+>  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+>  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
+> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/cpustr.o
+>  LIB_H += arch/$(ARCH)/util/tsc.h
+> diff --git a/tools/perf/arch/x86/util/cpustr.c b/tools/perf/arch/x86/util/cpustr.c
+> new file mode 100644
+> index 0000000..0fb987a
+> --- /dev/null
+> +++ b/tools/perf/arch/x86/util/cpustr.c
+> @@ -0,0 +1,35 @@
+> +#define _GNU_SOURCE 1
 
-Ideal. Thanks for letting us know.
+_GNU_SOURCE is defined by default
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+jirka
