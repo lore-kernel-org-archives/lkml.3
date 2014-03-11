@@ -1,139 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140AbaCKSMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:12:53 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:57803 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471AbaCKSMt (ORCPT
+	id S1753881AbaCKSTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:19:16 -0400
+Received: from relay.parallels.com ([195.214.232.42]:43216 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136AbaCKSTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:12:49 -0400
+	Tue, 11 Mar 2014 14:19:14 -0400
+Message-ID: <531F539A.7030401@parallels.com>
+Date: Tue, 11 Mar 2014 22:19:06 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <5318D475.9040701@amd.com>
-References: <1394053603-3724-1-git-send-email-suravee.suthikulpanit@amd.com>
- <CAErSpo4MMJh9b0aivwGSbxCMVw24He1+Vo_LH0R0E+fYM5aThg@mail.gmail.com>
- <5317D9B0.1080502@amd.com> <5318160D.8070305@amd.com> <CAErSpo59=52bqgyvqk1x7kcgFmRtdZhT6faYTi3wy7KDtk5=Pw@mail.gmail.com>
- <5318D475.9040701@amd.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 11 Mar 2014 12:12:29 -0600
-Message-ID: <CAErSpo5Dq3M5ik=dgF5dLsZV87XJeT3nEiYptPBXPCyLZ9xhgA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] amd/pci: Add AMD hostbridge supports for newer AMD systems
-To: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        kim.naru@amd.com,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: Daniel Borkmann <borkmann@iogearbox.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter
+ and converter
+References: <1394320530-3508-1-git-send-email-ast@plumgrid.com> <1394320530-3508-2-git-send-email-ast@plumgrid.com> <531C5EB5.2080507@iogearbox.net> <CAMEtUux-Psz9NW+t7vf2-=iDE5TW7KDOag2TDbxTEvd6a=LKSw@mail.gmail.com> <531CE47E.40700@iogearbox.net> <531F4A8C.3020403@parallels.com> <CAMEtUuyh4_je-vbtZ91bG4Qo5rKAHMuVd1==TJFxQS1oR3L4Mg@mail.gmail.com>
+In-Reply-To: <CAMEtUuyh4_je-vbtZ91bG4Qo5rKAHMuVd1==TJFxQS1oR3L4Mg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [89.169.95.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 6, 2014 at 1:03 PM, Suravee Suthikulpanit
-<suravee.suthikulpanit@amd.com> wrote:
-> On 3/6/2014 11:40 AM, Bjorn Helgaas wrote:
->>
->> [+cc Yinghai, sorry I didn't think of it before]
->>
->> On Wed, Mar 5, 2014 at 11:30 PM, Suravee Suthikulpanit
->> <suravee.suthikulpanit@amd.com> wrote:
->>>
->>> On 3/5/2014 8:13 PM, Suravee Suthikulanit wrote:
->>>>
->>>>
->>>> On 3/5/2014 3:24 PM, Bjorn Helgaas wrote:
->>>>>
->>>>>
->>>>> [+cc linux-acpi]
->>>>>
->>>>> On Wed, Mar 5, 2014 at 2:06 PM,  <suravee.suthikulpanit@amd.com> wrote:
+On 03/11/2014 10:03 PM, Alexei Starovoitov wrote:
+> On Tue, Mar 11, 2014 at 10:40 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
+>> On 03/10/2014 02:00 AM, Daniel Borkmann wrote:
+>>> On 03/09/2014 06:08 PM, Alexei Starovoitov wrote:
+>>>> On Sun, Mar 9, 2014 at 5:29 AM, Daniel Borkmann <borkmann@iogearbox.net> wrote:
+>>>>> On 03/09/2014 12:15 AM, Alexei Starovoitov wrote:
 >>>>>>
+>>>>>> Extended BPF extends old BPF in the following ways:
+>>>>>> - from 2 to 10 registers
+>>>>>>     Original BPF has two registers (A and X) and hidden frame pointer.
+>>>>>>     Extended BPF has ten registers and read-only frame pointer.
+>>>>>> - from 32-bit registers to 64-bit registers
+>>>>>>     semantics of old 32-bit ALU operations are preserved via 32-bit
+>>>>>>     subregisters
+>>>>>> - if (cond) jump_true; else jump_false;
+>>>>>>     old BPF insns are replaced with:
+>>>>>>     if (cond) jump_true; /* else fallthrough */
+>>>>>> - adds signed > and >= insns
+>>>>>> - 16 4-byte stack slots for register spill-fill replaced with
+>>>>>>     up to 512 bytes of multi-use stack space
+>>>>>> - introduces bpf_call insn and register passing convention for zero
+>>>>>>     overhead calls from/to other kernel functions (not part of this patch)
+>>>>>> - adds arithmetic right shift insn
+>>>>>> - adds swab32/swab64 insns
+>>>>>> - adds atomic_add insn
+>>>>>> - old tax/txa insns are replaced with 'mov dst,src' insn
 >>>>>>
->>>>>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>>>>>> Extended BPF is designed to be JITed with one to one mapping, which
+>>>>>> allows GCC/LLVM backends to generate optimized BPF code that performs
+>>>>>> almost as fast as natively compiled code
 >>>>>>
->>>>>> The current code only supports upto AMD hostbridge for family11h.
->>>>>> This causes PCI numa_node information to be reported incorrectly
->>>>>> for newer family with multi sockets.
+>>>>>> sk_convert_filter() remaps old style insns into extended:
+>>>>>> 'sock_filter' instructions are remapped on the fly to
+>>>>>> 'sock_filter_ext' extended instructions when
+>>>>>> sysctl net.core.bpf_ext_enable=1
+>>>>>>
+>>>>>> Old filter comes through sk_attach_filter() or
+>>>>>> sk_unattached_filter_create()
+>>>>>>    if (bpf_ext_enable) {
+>>>>>>       convert to new
+>>>>>>       sk_chk_filter() - check old bpf
+>>>>>>       use sk_run_filter_ext() - new interpreter
+>>>>>>    } else {
+>>>>>>       sk_chk_filter() - check old bpf
+>>>>>>       if (bpf_jit_enable)
+>>>>>>           use old jit
+>>>>>>       else
+>>>>>>           use sk_run_filter() - old interpreter
+>>>>>>    }
+>>>>>>
+>>>>>> sk_run_filter_ext() interpreter is noticeably faster
+>>>>>> than sk_run_filter() for two reasons:
+>>>>>>
+>>>>>> 1.fall-through jumps
+>>>>>>     Old BPF jump instructions are forced to go either 'true' or 'false'
+>>>>>>     branch which causes branch-miss penalty.
+>>>>>>     Extended BPF jump instructions have one branch and fall-through,
+>>>>>>     which fit CPU branch predictor logic better.
+>>>>>>     'perf stat' shows drastic difference for branch-misses.
+>>>>>>
+>>>>>> 2.jump-threaded implementation of interpreter vs switch statement
+>>>>>>     Instead of single tablejump at the top of 'switch' statement, GCC will
+>>>>>>     generate multiple tablejump instructions, which helps CPU branch
+>>>>>> predictor
+>>>>>>
+>>>>>> Performance of two BPF filters generated by libpcap was measured
+>>>>>> on x86_64, i386 and arm32.
+>>>>>>
+>>>>>> fprog #1 is taken from Documentation/networking/filter.txt:
+>>>>>> tcpdump -i eth0 port 22 -dd
+>>>>>>
+>>>>>> fprog #2 is taken from 'man tcpdump':
+>>>>>> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
+>>>>>>      ((tcp[12]&0xf0)>>2)) != 0)' -dd
+>>>>>>
+>>>>>> Other libpcap programs have similar performance differences.
+>>>>>>
+>>>>>> Raw performance data from BPF micro-benchmark:
+>>>>>> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
+>>>>>> time in nsec per call, smaller is better
+>>>>>> --x86_64--
+>>>>>>            fprog #1  fprog #1   fprog #2  fprog #2
+>>>>>>            cache-hit cache-miss cache-hit cache-miss
+>>>>>> old BPF     90       101       192       202
+>>>>>> ext BPF     31        71       47         97
+>>>>>> old BPF jit 12        34       17         44
+>>>>>> ext BPF jit TBD
+>>>>>>
+>>>>>> --i386--
+>>>>>>            fprog #1  fprog #1   fprog #2  fprog #2
+>>>>>>            cache-hit cache-miss cache-hit cache-miss
+>>>>>> old BPF    107        136      227       252
+>>>>>> ext BPF     40        119       69       172
+>>>>>>
+>>>>>> --arm32--
+>>>>>>            fprog #1  fprog #1   fprog #2  fprog #2
+>>>>>>            cache-hit cache-miss cache-hit cache-miss
+>>>>>> old BPF    202        300      475       540
+>>>>>> ext BPF    180        270      330       470
+>>>>>> old BPF jit 26        182       37       202
+>>>>>> new BPF jit TBD
+>>>>>>
+>>>>>> Tested with trinify BPF fuzzer
+>>>>>>
+>>>>>> Future work:
+>>>>>>
+>>>>>> 0. add bpf/ebpf testsuite to tools/testing/selftests/net/bpf
+>>>>>>
+>>>>>> 1. add extended BPF JIT for x86_64
+>>>>>>
+>>>>>> 2. add inband old/new demux and extended BPF verifier, so that new
+>>>>>> programs
+>>>>>>      can be loaded through old sk_attach_filter() and
+>>>>>> sk_unattached_filter_create()
+>>>>>>      interfaces
+>>>>>>
+>>>>>> 3. tracing filters systemtap-like with extended BPF
+>>>>>>
+>>>>>> 4. OVS with extended BPF
+>>>>>>
+>>>>>> 5. nftables with extended BPF
+>>>>>>
+>>>>>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+>>>>>> Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
+>>>>>> Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
 >>>>>
 >>>>>
->>>>>
->>>>> Where is the incorrect reporting?  In ACPI tables?  Is this patch a
->>>>> way to cover up firmware defects in the ACPI description?  Or is this
->>>>> for machines without ACPI (it seems unlikely that machines with new
->>>>> AMD processors would not have ACPI)?
+>>>>> One more question or possible issue that came through my mind: When
+>>>>> someone attaches a socket filter from user space, and bpf_ext_enable=1
+>>>>> then the old filter will transparently be converted to the new
+>>>>> representation. If then user space (e.g. through checkpoint restore)
+>>>>> will issue a sk_get_filter() and thus we're calling sk_decode_filter()
+>>>>> on sk->sk_filter and, therefore, try to decode what we stored in
+>>>>> insns_ext[] with the assumption we still have the old code. Would that
+>>>>> actually crash (or leak memory, or just return garbage), as we access
+>>>>> decodes[] array with filt->code? Would be great if you could double-check.
 >>>>
+>>>> ohh. yes. missed that.
+>>>> when bpf_ext_enable=1 I think it's cleaner to return ebpf filter.
+>>>> This way the user space can see how old bpf filter was converted.
 >>>>
->>>>
->>>> This is incorrectly reported in the sysfs for each PCI device (e.g.
->>>> /devices/pci0000:50/0000:50:00.2/numa_node). Without the patch, they
->>>> return -1.
->>>>
->>>> In file arch/x86/pci/acpi.c, in function pci_acpi_scan_root(), it is
->>>> queries the node information as following:
->>>>
->>>> #ifdef CONFIG_ACPI_NUMA
->>>>       pxm = acpi_get_pxm(device->handle);
->>>>       if (pxm >= 0)
->>>>           node = pxm_to_node(pxm);
->>>>       if (node != -1)
->>>>           set_mp_bus_to_node(busnum, node);
->>>>       else
->>>> #endif
->>>>           node = get_mp_bus_to_node(busnum);
->>>>
->>>> In this case, I see that the acpi_get_pxm() returns -1.  Therefore, it
->>>> falls back to using the node information in mp_bus_to_node[].  So,
->>>> without this patch, it would also returning -1.
->>>>
->>>> Also, the spec mentioned that the _PXM is optional, so I am not sure if
->>>> this is a firmware bug.
+>>>> Of course we can allocate extra memory and keep original bpf code there
+>>>> just to return it via sk_get_filter(), but that seems overkill.
 >>>
+>>> Cc'ing Pavel for a8fc92778080 ("sk-filter: Add ability to get socket
+>>> filter program (v2)").
 >>>
->>> I am not quite familiar with the ACPI for this part.  However, after
->>> taking
->>> a look at the code (in driver/acpi/pci_root.c: acpi_pci_root_add()), I
->>> believe it's trying to locate _PXM method in the DSDT table, in which I
->>> don't see any _PXM methods.
+>>> I think the issue can be that when applications could get migrated
+>>> from one machine to another and their kernel won't support ebpf yet,
+>>> then filter could not get loaded this way as it's expected to return
+>>> what the user loaded. The trade-off, however, is that the original
+>>> BPF code needs to be stored as well. :(
 >>
->>
->> This sure looks like a firmware bug.  True, _PXM is optional, but if
->> the firmware doesn't provide it, nobody should be surprised that the
->> OS thinks everything is in the same proximity domain.
->>
->> I would not endorse extending amd_bus.c for new CPUs.  That just
->> covers up firmware problems like this, and if you ever run a different
->> OS on the box, you'll trip over them again.  And I don't think a patch
->> like this will even be a possibility for Windows.
->
-> I understand and am trying to verify this with the BIOS engineers. However,
-> this is currently affecting family15h servers out in the field.  We can try
-> to fix ACPI for newer generation of machines, but it won't be practical to
-> push this BIOS fix to all the BIOS vendors and system vendors for older
-> platforms, as they tend to.
->
-> What if I localize the extension to the changes to access node information
-> in the hostbridge for just the famil15h which is mostly used in our main
-> server products? Would that be acceptable?
+>> Sorry if I miss the point, but isn't the original filter kept on socket?
+>> The sk_attach_filter() does so, then calls __sk_prepare_filter, which
+>> in turn calls bpf_jit_compile(), and the latter two keep the insns in place.
+> 
+> Yes. in V8/V9 series original filter is kept on socket.
 
-I assume the system is fully functional even without these patches,
-right?  The only effect of these changes should be a performance
-improvement.
+Ah, I see :)
 
-So the choices are:
+> and your crtools/test/zdtm/live/static/socket_filter.c test passes.
+> Let me know if there are any other tests I can try.
 
-  1) Change the BIOS to provide _PXM
-  2) Change Linux with your patches
-
-Either way, the customer has to upgrade something.  Choice 1) gets you
-the performance improvement on all Linux and Windows releases, even
-the ones that are already in the field.  Choice 2) fixes future Linux
-distros and whatever old releases you can convince the distro to
-backport to, and doesn't help Windows at all.  It makes work for all
-the distros and we (i.e., I) have to worry about maintaining this in
-the future.
-
-I'm curious to see what your BIOS folks say.  It seems strange that
-after all these years, they wouldn't provide something relatively
-simple like _PXM, so I wonder if there's more to the story.
-
-Bjorn
+No, that's the only test we need wrt sk-filter.
+Thanks for keeping an eye on it :)
