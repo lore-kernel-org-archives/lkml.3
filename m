@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588AbaCKUUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:20:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34397 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753498AbaCKUUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:20:43 -0400
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Derek Basehore <dbasehore@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: [PATCH 1/2 RESEND] bdi: Fix hung task on sync
-Date: Tue, 11 Mar 2014 21:20:38 +0100
-Message-Id: <1394569239-17276-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
+	id S1755754AbaCKUVk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:21:40 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:28202 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755362AbaCKUVi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 16:21:38 -0400
+Message-ID: <1394569297.2786.36.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Mar 2014 13:21:37 -0700
+In-Reply-To: <531F6E43.40901@oracle.com>
+References: <531F6689.60307@oracle.com>
+	 <1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>
+	 <531F6E43.40901@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Derek Basehore <dbasehore@chromium.org>
+On Tue, 2014-03-11 at 16:12 -0400, Sasha Levin wrote:
+> On 03/11/2014 04:07 PM, Davidlohr Bueso wrote:
+> > On Tue, 2014-03-11 at 15:39 -0400, Sasha Levin wrote:
+> >> Hi all,
+> >>
+> >> I've ended up deleting the log file by mistake, but this bug does seem to be important
+> >> so I'd rather not wait before the same issue is triggered again.
+> >>
+> >> The call chain is:
+> >>
+> >> 	mlock (mm/mlock.c:745)
+> >> 		__mm_populate (mm/mlock.c:700)
+> >> 			__mlock_vma_pages_range (mm/mlock.c:229)
+> >> 				VM_BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
+> >
+> > So __mm_populate() is only called by mlock(2) and this VM_BUG_ON seems
+> > wrong as we call it without the lock held:
+> >
+> > 	up_write(&current->mm->mmap_sem);
+> > 	if (!error)
+> > 		error = __mm_populate(start, len, 0);
+> > 	return error;
+> > }
+> >
+> >>
+> >> It seems to be a rather simple trace triggered from userspace. The only recent patch
+> >> in the area (that I've noticed) was "mm/mlock: prepare params outside critical region".
+> >> I've reverted it and trying to testing without it.
+> >
+> > Odd, this patch should definitely *not* cause this. In any case every
+> > operation removed from the critical region is local to the function:
+> >
+> > 	lock_limit = rlimit(RLIMIT_MEMLOCK);
+> > 	lock_limit >>= PAGE_SHIFT;
+> > 	locked = len >> PAGE_SHIFT;
+> >
+> > 	down_write(&current->mm->mmap_sem);
+> 
+> Yeah, this patch doesn't look like it's causing it, I guess it was more of a "you touched this
+> code last - do you still remember what's going on here?" :).
 
-bdi_wakeup_thread_delayed() used the mod_delayed_work() function to
-schedule work to writeback dirty inodes. The problem with this is that
-it can delay work that is scheduled for immediate execution, such as the
-work from sync_inodes_sb().  This can happen since mod_delayed_work()
-can now steal work from a work_queue.  This fixes the problem by using
-queue_delayed_work() instead. This is a regression caused by
-839a8e8660b6 "writeback: replace custom worker pool implementation with
-unbound workqueue".
+How frequently do you trigger this issue? Could you verify if it still
+occurs by reverting my patch?
 
-The reason that this causes a problem is that laptop-mode will change
-the delay, dirty_writeback_centisecs, to 60000 (10 minutes) by default.
-In the case that bdi_wakeup_thread_delayed() races with
-sync_inodes_sb(), sync will be stopped for 10 minutes and trigger a hung
-task. Even if dirty_writeback_centisecs is not long enough to cause a
-hung task, we still don't want to delay sync for that long.
+> It's semi-odd because it seems like an obvious issue to hit with trinity but it's the first time
+> I've seen it and it's probably been there for a while (that BUG_ON is there from 2009).
 
-We fix the problem by using queue_delayed_work() when we want to
-schedule writeback sometime in future. This function doesn't change the
-timer if it is already armed.
+Actually that VM_BUG_ON is correct, because we do in fact take the
+mmap_sem (for reading) inside __mm_populate(), which in return calls
+__mlock_vma_pages_range() with the lock held. Now, the lock is taken
+within the for loop, which does the hole "if (!locked) down_read()"
+dance, but it's just making sure that we take the lock upon the first
+iteration. So besides doing the locking outside of the loop, which is
+just a cleanup, I don't really see how it could be triggered.
 
-For the same reason, we also change bdi_writeback_workfn() to
-immediately queue the work again in the case that the work_list is not
-empty. The same problem can happen if the sync work is run on the rescue
-worker.
-
-Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
-CC: stable@vger.kernel.org
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/fs-writeback.c | 8 ++++----
- mm/backing-dev.c  | 5 ++++-
- 2 files changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index e0259a163f98..8277b76be983 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -1047,10 +1047,10 @@ void bdi_writeback_workfn(struct work_struct *work)
- 		trace_writeback_pages_written(pages_written);
- 	}
- 
--	if (!list_empty(&bdi->work_list) ||
--	    (wb_has_dirty_io(wb) && dirty_writeback_interval))
--		queue_delayed_work(bdi_wq, &wb->dwork,
--			msecs_to_jiffies(dirty_writeback_interval * 10));
-+	if (!list_empty(&bdi->work_list))
-+		mod_delayed_work(bdi_wq, &wb->dwork, 0);
-+	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
-+		bdi_wakeup_thread_delayed(bdi);
- 
- 	current->flags &= ~PF_SWAPWRITE;
- }
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index ce682f7a4f29..fab8401fc54e 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -288,13 +288,16 @@ int bdi_has_dirty_io(struct backing_dev_info *bdi)
-  * Note, we wouldn't bother setting up the timer, but this function is on the
-  * fast-path (used by '__mark_inode_dirty()'), so we save few context switches
-  * by delaying the wake-up.
-+ *
-+ * We have to be careful not to postpone flush work if it is scheduled for
-+ * earlier. Thus we use queue_delayed_work().
-  */
- void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
- {
- 	unsigned long timeout;
- 
- 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
--	mod_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-+	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
- }
- 
- /*
--- 
-1.8.1.4
+Thanks,
+Davidlohr
 
