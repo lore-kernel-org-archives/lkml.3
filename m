@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092AbaCKAH1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 20:07:27 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:36768 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741AbaCKAHY (ORCPT
+	id S1753480AbaCKAKK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 20:10:10 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:39107 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327AbaCKAKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 20:07:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1394495121.1975.6.camel@x41>
-References: <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
- <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
- <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com>
- <1394185698.5608.5.camel@x41> <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
- <1394212609.1987.6.camel@x41> <20140307204021.GA9822@google.com>
- <CAErSpo7Np8oju1ENQA5EgEpN4=Vv7f3s4E823ecbyp6FCWPL_Q@mail.gmail.com>
- <1394289877.31006.2.camel@x41> <20140310182431.GA11424@google.com> <1394495121.1975.6.camel@x41>
+	Mon, 10 Mar 2014 20:10:07 -0400
+Date: Mon, 10 Mar 2014 18:10:03 -0600
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 10 Mar 2014 18:07:03 -0600
-Message-ID: <CAErSpo6Q0w0OAenw7Uh0bjiZucpxatkUuWzREHmEvsNKJYf-qw@mail.gmail.com>
-Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset flushing
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Steven Newbury <steve@snewbury.org.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rajat Jain <rajatxjain@gmail.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [Bug] PCI: Enable INTx if BIOS left them disabled - triggers
+ during rescan
+Message-ID: <20140311001003.GA14367@google.com>
+References: <CAMxnaaXd9-VbxSYa9q1YVT+fwfDFYKGG2Hq-1jkc-awLX-HwtQ@mail.gmail.com>
+ <CAErSpo5fkaFNq_qTZ+gTDMV554f4diOXQ7_4bsHqj06iAGTpHg@mail.gmail.com>
+ <CAE9FiQVNFqTw+92qy8zcwG1haiSZzU+KE3oh4YnjNc_aE6KUnA@mail.gmail.com>
+ <20140308010456.GA30660@google.com>
+ <CAMxnaaVfpJCW7e-b80y4wmVWcRDK5t7qY+pNn71CsLPRN2ojnA@mail.gmail.com>
+ <CAErSpo4MQsAer7FM0kU5mMOGRok0oFMWX1FqFijmswutjyNoRg@mail.gmail.com>
+ <CAMxnaaWr0z1zbpFQPX6UvYbnxhfA+3aj4ffhCBpp1i4ZLsGTPg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMxnaaWr0z1zbpFQPX6UvYbnxhfA+3aj4ffhCBpp1i4ZLsGTPg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Rafael]
+On Tue, Mar 11, 2014 at 12:10:02AM +0100, Andreas Noever wrote:
+> On Mon, Mar 10, 2014 at 9:43 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > On Sat, Mar 8, 2014 at 2:55 AM, Andreas Noever <andreas.noever@gmail.com> wrote:
+> >> On Sat, Mar 8, 2014 at 2:04 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> >
+> >>> If we did that, INTX_DISABLE would be cleared by the first
+> >>> pci_enable_device() and pci_reenable_device() wouldn't do anything,
+> >>> leaving it cleared.  The resulting state (cleared) would be the same,
+> >>> but the transitions would be gone, and maybe those are important.
+> >> Just a quick note: With pci_intx_for_msi removed no hotplug events are
+> >> ever delivered. Everything else still works though. So it is either a
+> >> problem specific to Thunderbolt bridges or maybe it just affects
+> >> hotplug (and PME?) interrupts.
+> >
+> > Interesting.  This is on a MacBook, isn't it?  If you have Mac OS on
+> > it, is there a way you can do the equivalent of lspci on it?  I'm
+> > curious about whether it sets INTx_DISABLE when it enables MSI.
+> 
+> lspci -vv and lspci -vv -xxxx attached (yes, someone made a port).
+> 
+> It looks like Mac OS sets DisINTx for all devices that have MSI
+> enabled. The only exception is the Thunderbolt controller (no
+> idea...). But the hotplug bridges all have DisINTx+.
 
-On Mon, Mar 10, 2014 at 5:45 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Bjorn Helgaas schreef op ma 10-03-2014 om 12:24 [-0600]:
->> Thanks.  Can you try the patch below?  I think it should fix the problem.
->>
->>
->> PCI: Don't check resource_size() in pci_bus_alloc_resource()
->>
->> From: Bjorn Helgaas <bhelgaas@google.com>
->>
->> When resource_size_t is 32 bits wide, e.g., when CONFIG_PHYS_ADDR_T_64BIT
->> is not defined, resource_size() on [mem 0x00000000-0xffffffff] returns 0
->> because (r->end - r->start + 1) overflows.
->>
->> Therefore, we can't use "resource_size() == 0" to decide that allocation
->> from this resource will fail.  allocate_resource() should fail anyway if it
->> can't satisfy the address constraints, so we should just depend on that.
->>
->> A [mem 0x00000000-0xffffffff] bus resource is obviously not really valid,
->> but we do fall back to it as a default when we don't have information about
->> host bridge apertures.
->>
->> Link: https://bugzilla.kernel.org/show_bug.cgi?id=71611
->> Fixes: f75b99d5a77d PCI: Enforce bus address limits in resource allocation
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> ---
->>  drivers/pci/bus.c |    2 --
->>  1 file changed, 2 deletions(-)
->>
->> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
->> index 00660cc502c5..38901665c770 100644
->> --- a/drivers/pci/bus.c
->> +++ b/drivers/pci/bus.c
->> @@ -162,8 +162,6 @@ static int pci_bus_alloc_from_region(struct pci_bus *bus, struct resource *res,
->>
->>               avail = *r;
->>               pci_clip_resource_to_region(bus, &avail, region);
->> -             if (!resource_size(&avail))
->> -                     continue;
->>
->>               /*
->>                * "min" is typically PCIBIOS_MIN_IO or PCIBIOS_MIN_MEM to
->
-> I've applied your patch on top of v3.14-rc6. The boot warning is gone.
-> And /proc/iomem once again has the lines:
->     [...]
->     80000000-801fffff : PCI Bus 0000:02
->     80200000-8027ffff : 0000:00:02.1
->     80280000-80280fff : Intel Flush Page
->     [...]
->
-> Which is what we want, don't we?
+OK, thanks.  I don't know what to make of that.
 
-Yep, that part looks good.
+Here's a possible patch; can you try it out?
 
-> A bit of doubt is caused by two new boot time messages:
->     pnp 00:00: unknown resource type 10 in _CRS
->     pnp 00:00: can't evaluate _CRS: 1
->
-> But I haven't yet tried v3.14-rc6 without your patch, so these might be
-> unrelated. They're unclear to me, anyway.
 
-Hmm, this is definitely concerning.  Resource type 10 is
-ACPI_RESOURCE_TYPE_FIXED_MEMORY32, which we do handle (unless it's
-length 0).  And your previous dmesg logs (at
-https://bugzilla.kernel.org/show_bug.cgi?id=71611) don't show anything
-like that.
+PCI: Do not enable INTx in pci_reenable_device()
 
-Can you attach an acpidump and the dmesg log with my patch to the bugzilla?
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-Bjorn
+Previously we cleared the Interrupt Disable bit in do_pci_enable_device(),
+which is used by both pci_enable_device() and pci_reenable_device().  But
+we use pci_reenable_device() after the driver may have enabled MSI or
+MSI-X, and we *set* Interrupt Disable as part of enabling MSI/MSI-X.
+
+The pciehp hot-plug path uses pci_reenable_device() on the hotplug bridge,
+and clearing its Interrupt Disable bit makes its hotplug event-reporting
+MSI stop working.
+
+Fixes: 1f42db786b14 PCI: Enable INTx if BIOS left them disabled
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=71691
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/pci/pci.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 8dc3e701ec57..79fc89c6c3f3 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1192,6 +1192,9 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+ 		return err;
+ 	pci_fixup_device(pci_fixup_enable, dev);
+ 
++	if (dev->msi_enabled || dev->msix_enabled)
++		return 0;
++
+ 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+ 	if (pin) {
+ 		pci_read_config_word(dev, PCI_COMMAND, &cmd);
