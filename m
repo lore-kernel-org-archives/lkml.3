@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668AbaCKUax (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:30:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44864 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755422AbaCKUaw (ORCPT
+	id S1755779AbaCKUbF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:31:05 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:42095 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755730AbaCKUbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:30:52 -0400
-Date: Tue, 11 Mar 2014 13:30:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
-Message-Id: <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
-In-Reply-To: <1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>
-References: <531F6689.60307@oracle.com>
-	<1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Mar 2014 16:31:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140311061519.GA11552@lskakaxi-intel>
+References: <20140311061519.GA11552@lskakaxi-intel>
+Date: Tue, 11 Mar 2014 13:30:59 -0700
+X-Google-Sender-Auth: fECwUuZLUD9CfrF3vDBq1rU48Bc
+Message-ID: <CAGXu5j+oYp7-1mOmQXrEcDhH5YY-Zm5fa4ccHZMNH_kwJVB9VQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pstore: fix NULL pointer fault if get NULL prz in ramoops_get_next_prz
+From: Kees Cook <keescook@chromium.org>
+To: Liu ShuoX <shuox.liu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        yanmin_zhang@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Mar 2014 13:07:33 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+On Mon, Mar 10, 2014 at 11:15 PM, Liu ShuoX <shuox.liu@intel.com> wrote:
+> These two patches are applied on top of patches:
+> https://lkml.org/lkml/2014/3/3/368
+> It has been added in -mm tree. Below is the first patch, and i will
+> send the second by replying this one.
+>
+> From: Liu ShuoX <shuox.liu@intel.com>
+>
+> ramoops_get_next_prz get the prz according the paramters. If it get a
+> uninitialized prz, access its members by following
+> persistent_ram_old_size(prz)
+> will cause a NULL pointer crash.
+> Ex: if ftrace_size is 0, fprz will be NULL.
+>
+> Fix it by return NULL in advance.
+>
+> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
 
-> On Tue, 2014-03-11 at 15:39 -0400, Sasha Levin wrote:
-> > Hi all,
-> > 
-> > I've ended up deleting the log file by mistake, but this bug does seem to be important
-> > so I'd rather not wait before the same issue is triggered again.
-> > 
-> > The call chain is:
-> > 
-> > 	mlock (mm/mlock.c:745)
-> > 		__mm_populate (mm/mlock.c:700)
-> > 			__mlock_vma_pages_range (mm/mlock.c:229)
-> > 				VM_BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
-> 
-> So __mm_populate() is only called by mlock(2) and this VM_BUG_ON seems
-> wrong as we call it without the lock held:
-> 
-> 	up_write(&current->mm->mmap_sem);
-> 	if (!error)
-> 		error = __mm_populate(start, len, 0);
-> 	return error;
-> }
+Thanks!
 
-__mm_populate() pretty clearly calls __mlock_vma_pages_range() under
-down_read(mm->mmap_sem).
+Acked-by: Kees Cook <keescook@chromium.org>
 
-I worry about what happens if __get_user_pages decides to do
+-Kees
 
-				if (ret & VM_FAULT_RETRY) {
-					if (nonblocking)
-						*nonblocking = 0;
-					return i;
-				}
-
-uh-oh, that just cleared __mm_populate()'s `locked' variable and we'll
-forget to undo mmap_sem.  That won't explain this result, but it's a
-potential problem.
+> ---
+>  fs/pstore/ram.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> index 1daed28..6f96d8c 100644
+> --- a/fs/pstore/ram.c
+> +++ b/fs/pstore/ram.c
+> @@ -119,6 +119,8 @@ ramoops_get_next_prz(struct persistent_ram_zone *przs[],
+> uint *c, uint max,
+>                 return NULL;
+>         prz = przs[i];
+> +       if (!prz)
+> +               return NULL;
+>         /* Update old/shadowed buffer. */
+>         if (update)
+> --
+> 1.8.3.2
 
 
-All I can think is that find_vma() went and returned a vma from a
-different mm, which would be odd.  How about I toss this in there?
 
---- a/mm/vmacache.c~a
-+++ a/mm/vmacache.c
-@@ -72,8 +72,10 @@ struct vm_area_struct *vmacache_find(str
- 	for (i = 0; i < VMACACHE_SIZE; i++) {
- 		struct vm_area_struct *vma = current->vmacache[i];
- 
--		if (vma && vma->vm_start <= addr && vma->vm_end > addr)
-+		if (vma && vma->vm_start <= addr && vma->vm_end > addr) {
-+			BUG_ON(vma->vm_mm != mm);
- 			return vma;
-+		}
- 	}
- 
- 	return NULL;
-_
-
+-- 
+Kees Cook
+Chrome OS Security
