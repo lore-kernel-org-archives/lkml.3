@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716AbaCKKba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:31:30 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:43668 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755185AbaCKKX7 (ORCPT
+	id S1755196AbaCKKdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:33:46 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:49894 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755156AbaCKKX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:23:59 -0400
+	Tue, 11 Mar 2014 06:23:58 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org
-Subject: [PATCH trivial 11/16] ath10k: Improve grammar in comments
-Date: Tue, 11 Mar 2014 11:23:45 +0100
-Message-Id: <1394533430-4746-11-git-send-email-geert@linux-m68k.org>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org
+Subject: [PATCH trivial 01/16] serial_core: Spelling s/contro/control/
+Date: Tue, 11 Mar 2014 11:23:35 +0100
+Message-Id: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
-References: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,34 +24,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Cc: John W. Linville <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-serial@vger.kernel.org
 ---
- drivers/net/wireless/ath/ath10k/wmi.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/tty/serial/serial_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/ath/ath10k/wmi.h b/drivers/net/wireless/ath/ath10k/wmi.h
-index 4b5e7d3d32b6..8bce1113b753 100644
---- a/drivers/net/wireless/ath/ath10k/wmi.h
-+++ b/drivers/net/wireless/ath/ath10k/wmi.h
-@@ -1265,7 +1265,7 @@ struct wmi_resource_config {
- 	 */
- 	__le32 rx_decap_mode;
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index a91cc2dcb66a..6735e5f074cf 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -1764,7 +1764,7 @@ uart_get_console(struct uart_port *ports, int nr, struct console *co)
+ }
  
--	/* what is the maximum scan requests than can be queued */
-+	/* what is the maximum number of scan requests that can be queued */
- 	__le32 scan_max_pending_reqs;
- 
- 	/* maximum VDEV that could use BMISS offload */
-@@ -1450,7 +1450,7 @@ struct wmi_resource_config_10x {
- 	 */
- 	__le32 rx_decap_mode;
- 
--	/* what is the maximum scan requests than can be queued */
-+	/* what is the maximum number of scan requests that can be queued */
- 	__le32 scan_max_pending_reqs;
- 
- 	/* maximum VDEV that could use BMISS offload */
+ /**
+- *	uart_parse_options - Parse serial port baud/parity/bits/flow contro.
++ *	uart_parse_options - Parse serial port baud/parity/bits/flow control.
+  *	@options: pointer to option string
+  *	@baud: pointer to an 'int' variable for the baud rate.
+  *	@parity: pointer to an 'int' variable for the parity.
 -- 
 1.7.9.5
 
