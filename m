@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbaCKOU7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 10:20:59 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:51891 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751250AbaCKOU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 10:20:58 -0400
-Message-ID: <531F1B76.6010608@mev.co.uk>
-Date: Tue, 11 Mar 2014 14:19:34 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Conrad Meyer <cemeyer@uw.edu>, Greg Kroah-Hartman <greg@kroah.com>
-CC: H Hartley Sweeten <hsweeten@visionengravers.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] Staging: comedi: Fix some raw printks with dev_warn()
-References: <20140308214239.36a60185@m>
-In-Reply-To: <20140308214239.36a60185@m>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752707AbaCKOVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 10:21:53 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:23848 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582AbaCKOVw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 10:21:52 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-ba-531f1bfdb0a0
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] mfd: max14577: Select REGMAP_IRQ
+Date: Tue, 11 Mar 2014 15:21:42 +0100
+Message-id: <1394547702-29775-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKJMWRmVeSWpSXmKPExsVy+t/xy7p/peWDDd7vMrB4/cLQ4v7Xo4wW
+	l3fNYbM43c3qwOJx59oeNo95JwM9+rasYvT4vEkugCWKyyYlNSezLLVI3y6BK+PsiguMBc9Y
+	Kpq/NzE2MH5m7mLk5JAQMJFY+2EXO4QtJnHh3nq2LkYuDiGBpYwS2898AEsICfQxSbR164LY
+	bALGEpuXL2EDsUUEsiR+TFvNAmIzCxhK/Hz3B6xeGMhe1HCACcRmEVCVeLLgOpjNK+AuceTi
+	N6BeDqBlChJzJtlMYORewMiwilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyPE6192MC4+ZnWI
+	UYCDUYmHd4W/XLAQa2JZcWXuIUYJDmYlEd5kcflgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYx8
+	ZUck9l1pe5lQV3Rt18kYExa/IyZ7zv2qjtNa9dBjujvHHA3bS8ul3KOWexVcy5fZIjMlbN48
+	9rKlv3ayF/2zOpqmWLogxzTtXezvfv378p364mbZq8qX2f7bfqfDU0/y//ZZ2le1Frh8mGLH
+	/P2+6KmfJbI7qlfqXM3SvOsgt+3grDsdeiFKLMUZiYZazEXFiQAvsvqp2AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-03-09 02:42, Conrad Meyer wrote:
-> Brought to you with the help of sed and manual clean-up after.
->
->    $ sed -i -e 's|printk("\\n|dev_warn(dev->hw_dev,\n\t"|' \
->      addi-data/hwdrv_apci1500.c
->
-> Since all of these printk()s were for invalid API inputs and most of
-> them returned -EINVAL, I fixed the rest of them to return -EINVAL as
-> well.
->
-> Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
+MAXIM 14577 MFD driver uses the regmap_irq_chip so it's Kconfig entry
+should select REGMAP_IRQ.
 
-In comedi, we usually use dev->class_dev as the device for these sorts 
-of messages.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/mfd/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 49bb445d846a..50dd5654d356 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -322,6 +322,7 @@ config MFD_MAX14577
+ 	depends on I2C=y
+ 	select MFD_CORE
+ 	select REGMAP_I2C
++	select REGMAP_IRQ
+ 	select IRQ_DOMAIN
+ 	help
+ 	  Say yes here to support for Maxim Semiconductor MAX14577.
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+1.7.9.5
+
