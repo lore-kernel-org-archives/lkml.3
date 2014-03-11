@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170AbaCKKOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:14:45 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41222 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754763AbaCKKLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:11:33 -0400
-X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9678281"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
-        tglx@linutronix.de, heiko.carstens@de.ibm.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        ocfs2-devel@oss.oracle.com, Dong Fang <yp.fangdong@gmail.com>
-Subject: [PATCH 09/17] fs/hearbeat: Replace hardcoding of -20 with MIN_NICE.
-Date: Tue, 11 Mar 2014 18:09:17 +0800
-Message-Id: <cd740e155ed224cabb6554e87d22cf94855ff6c2.1394532288.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:38,
-	Serialize complete at 2014/03/11 18:08:38
+	id S1755189AbaCKKPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:15:09 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:64839 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618AbaCKKPF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:15:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394018461-757-1-git-send-email-holler@ahsoftware.de>
+References: <5316FFCE.1060603@ti.com>
+	<1394018461-757-1-git-send-email-holler@ahsoftware.de>
+Date: Tue, 11 Mar 2014 11:15:04 +0100
+Message-ID: <CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: ocfs2-devel@oss.oracle.com
-cc: Dong Fang <yp.fangdong@gmail.com>
----
- fs/ocfs2/cluster/heartbeat.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, Mar 5, 2014 at 12:21 PM, Alexander Holler <holler@ahsoftware.de> wrote:
 
-diff --git a/fs/ocfs2/cluster/heartbeat.c b/fs/ocfs2/cluster/heartbeat.c
-index bf482df..7303929 100644
---- a/fs/ocfs2/cluster/heartbeat.c
-+++ b/fs/ocfs2/cluster/heartbeat.c
-@@ -1107,7 +1107,7 @@ static int o2hb_thread(void *data)
- 
- 	mlog(ML_HEARTBEAT|ML_KTHREAD, "hb thread running\n");
- 
--	set_user_nice(current, -20);
-+	set_user_nice(current, MIN_NICE);
- 
- 	/* Pin node */
- 	o2nm_depend_this_node();
--- 
-1.8.2.1
+> The driver missed an of_xlate function to translate gpio numbers
+> as found in the DT to the correct chip and number.
+>
+> While there I've set #gpio_cells to a fixed value of 2.
+>
+> I've used gpio-pxa.c as template for those changes and tested my changes
+> successfully on a da850 board using entries for gpio-leds in a DT. So I didn't
+> reinvent the wheel but just copied and tested stuff.
+>
+> Thanks to Grygorii Strashko for the hint to the existing code in gpio-pxa.
+>
+> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 
+This v2 version applied, thanks!
+
+Yours,
+Linus Walleij
