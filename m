@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244AbaCKK1Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:27:16 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:33129 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752831AbaCKK1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:27:11 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCHv6 1/6] ia64: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Tue, 11 Mar 2014 11:23:40 +0100
-Message-Id: <195ea19bd9d5fc1ed629dfcca9af9a8382d31cf1.1394532336.git.ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <cover.1394532336.git.ydroneaud@opteya.com>
-References: <cover.1394532336.git.ydroneaud@opteya.com>
-In-Reply-To: <cover.1394532336.git.ydroneaud@opteya.com>
-References: <cover.1394532336.git.ydroneaud@opteya.com>
+	id S1755415AbaCKK1p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:27:45 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:41311 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555AbaCKK1N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:27:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394114389-27106-1-git-send-email-chiau.ee.chew@intel.com>
+References: <1394114389-27106-1-git-send-email-chiau.ee.chew@intel.com>
+Date: Tue, 11 Mar 2014 11:27:13 +0100
+Message-ID: <CACRpkdajaffBOmc9KeUyLkwZth6vNu-Z0Ln+Xf4ZV0gZ9Ytf_g@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl-baytrail: add function mux checking in gpio pin request
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Macro get_unused_fd() is used to allocate a file descriptor with
-default flags. Those default flags (0) can be "unsafe":
-O_CLOEXEC must be used by default to not leak file descriptor
-across exec().
+On Thu, Mar 6, 2014 at 2:59 PM, Chew Chiau Ee <chiau.ee.chew@intel.com> wrote:
 
-Instead of macro get_unused_fd(), function get_unused_fd_flags()
-(or anon_inode_getfd()) should be used with flags given by userspace.
-If not possible, flags should be set to O_CLOEXEC to provide userspace
-with a default safe behavor.
+> From: Chew, Kean Ho <kean.ho.chew@intel.com>
+>
+> The requested gpio pin must has the func_pin_mux field set
+> to GPIO function by BIOS/FW in advanced. Else, the gpio pin
+> request would fail. This is to ensure that we do not expose
+> any gpio pins which shall be used for alternate functions,
+> for eg: wakeup pin, I/O interfaces for LPSS, etc.
+>
+> Signed-off-by: Chew, Kean Ho <kean.ho.chew@intel.com>
+> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-In a further patch, get_unused_fd() will be removed so that new code
-start using get_unused_fd_flags() (or anon_inode_getfd()) with correct
-flags.
+Patch applied with Darren's ACK.
 
-This patch replaces calls to get_unused_fd() with equivalent call to
-get_unused_fd_flags(0) to preserve current behavor for existing code.
+This confirms my suspicion that you will not be able to
+hide the pin control interface side of this hardware forever. ;-)
 
-The hard coded flag value (0) should be reviewed on a per-subsystem
-basis, and, if possible, set to O_CLOEXEC.
+Mika/Mathias: any comments?
 
-Link: http://lkml.kernel.org/r/cover.1394532336.git.ydroneaud@opteya.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
----
- arch/ia64/kernel/perfmon.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
-index cb592773c78b..44b148fbb560 100644
---- a/arch/ia64/kernel/perfmon.c
-+++ b/arch/ia64/kernel/perfmon.c
-@@ -2662,7 +2662,7 @@ pfm_context_create(pfm_context_t *ctx, void *arg, int count, struct pt_regs *reg
- 
- 	ret = -ENOMEM;
- 
--	fd = get_unused_fd();
-+	fd = get_unused_fd_flags(0);
- 	if (fd < 0)
- 		return fd;
- 
--- 
-1.8.5.3
-
+Yours,
+Linus Walleij
