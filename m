@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757AbaCKNVL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:21:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58205 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754604AbaCKNVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:21:08 -0400
-Message-ID: <1394544016.5094.68.camel@deneb.redhat.com>
-Subject: Re: [PATCH v6 0/6] mm: generic early_ioremap support
-From: Mark Salter <msalter@redhat.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Will Deacon <Will.Deacon@arm.com>, Dave Young <dyoung@redhat.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Date: Tue, 11 Mar 2014 09:20:16 -0400
-In-Reply-To: <20140311120845.GG31104@arm.com>
-References: <1394384444-23182-1-git-send-email-msalter@redhat.com>
-	 <20140311120845.GG31104@arm.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753082AbaCKNXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:23:12 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58575 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077AbaCKNXK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 09:23:10 -0400
+Date: Tue, 11 Mar 2014 08:20:13 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Trilok Soni <tsoni@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Anirudh Ghayal <aghayal@codeaurora.org>, linux-input@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Qualcomm PMIC8xxx keypad never worked?
+Message-ID: <20140311132013.GO18529@joshc.qualcomm.com>
+References: <5887114.1jrNo21sGX@wuerfel>
+ <20140311120056.GH21216@lee--X1>
+ <8206209.oc1V5pPVYT@wuerfel>
+ <20140311130609.GL21216@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140311130609.GL21216@lee--X1>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-11 at 12:08 +0000, Catalin Marinas wrote:
-> Mark,
+On Tue, Mar 11, 2014 at 01:06:09PM +0000, Lee Jones wrote:
+> > > > Something in the MFD_PM8XXX driver must have changed recently that now allows
+> > > > the KEYBOARD_PMIC8XXX driver to be enabled. Unfortunately, it does not build
+> > > > because of a dependency on the <linux/mfd/pm8xxx/gpio.h> header file that
+> > > > does not exist.
 > 
-> On Sun, Mar 09, 2014 at 05:00:38PM +0000, Mark Salter wrote:
-> > This patch series takes the common bits from the x86 early ioremap
-> > implementation and creates a generic implementation which may be used
-> > by other architectures. The early ioremap interfaces are intended for
-> > situations where boot code needs to make temporary virtual mappings
-> > before the normal ioremap interfaces are available. Typically, this
-> > means before paging_init() has run.
-> > 
-> > These patches are layered on top of generic fixmap patches which
-> > were pulled into upstream 3.14-rc kernels.
-> > 
-> > This is version 6 of the patch series. These patches fixmap patches
-> > may be found at:
-> > 
-> >   git://github.com/mosalter/linux.git (early-ioremap-v6 branch)
+> I think it's this commit that's causing your error:
 > 
-> Are there any acks still needed? I think the arch patches in this series
-> have been acked, so I'm happy if hpa or someone else takes the whole
-> series.
+>   https://lkml.org/lkml/2013/12/10/903
+> 
+> ... but the MFD isn't broken, so I guess your solution is the most
+> elegant. If it's not fixed soon, I guess we should think about ripping
+> it out. It's obvoious that no-one cares, as it's been broken for
+> nearly 3 years.
 
-v6 added a documentation patch which is the only one without an ack.
-I was going to give it a few days and then send a pull request
-tomorrow (12-Mar). This being mm related, I thought the mmotm tree
-may be the place for it, but hpa offered the tip tree and it really
-doesn't matter to me which one it goes through.
+Stephen has a pending patchset to cleanup and actually make the pm8xxx
+input drivers work, but they have not been picked up yet:
 
+http://lkml.kernel.org/r/1393958088-1456-1-git-send-email-sboyd@codeaurora.org
 
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
