@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269AbaCKSs3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:48:29 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:46701 "EHLO SMTP.CITRIX.COM"
+	id S1755354AbaCKSuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:50:16 -0400
+Received: from smtpsalv.cc.upv.es ([158.42.249.11]:60014 "EHLO smtpsalv.upv.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752058AbaCKSs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:48:28 -0400
-X-IronPort-AV: E=Sophos;i="4.97,632,1389744000"; 
-   d="scan'208";a="110337525"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        <xen-devel@lists.xenproject.org>,
-        Dietmar Hahn <dietmar.hahn@ts.fujitsu.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: [PATCHv2] mm/vmalloc: avoid soft lockup warnings when vunmap()'ing large ranges
-Date: Tue, 11 Mar 2014 18:40:23 +0000
-Message-ID: <1394563223-5045-1-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1754150AbaCKSuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 14:50:14 -0400
+X-Greylist: delayed 1087 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Mar 2014 14:50:14 EDT
+From: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, security@kernel.org,
+        =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>
+Subject: [PATCH] synclink: fix info leak in ioctl
+Date: Tue, 11 Mar 2014 19:31:23 +0100
+Message-Id: <1394562683-22498-1-git-send-email-speiro@ai2.upv.es>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If vunmap() is used to unmap a large (e.g., 50 GB) region, it may take
-sufficiently long that it triggers soft lockup warnings.
+The hdlcdev_ioctl() code fails to initialize the two padding bytes of
+struct sync_serial_settings after the ->loopback member. Add an explicit
+memset(0) before filling the structure to avoid the info leak.
 
-Add a cond_resched() into vunmap_pmd_range() so the calling task may
-be resheduled after unmapping each PMD entry.  This is how
-zap_pmd_range() fixes the same problem for userspace mappings.
-
-All callers may sleep except for the APEI GHES driver (apei/ghes.c)
-which calls unmap_kernel_range_no_flush() from NMI and IRQ contexts.
-This driver only unmaps a single pages so don't call cond_resched() if
-the unmap doesn't cross a PMD boundary.
-
-Reported-by: Dietmar Hahn <dietmar.hahn@ts.fujitsu.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
 ---
-v2: don't call cond_resched() at the end of a PMD range.
----
- mm/vmalloc.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/tty/synclink.c   |    1 +
+ drivers/tty/synclinkmp.c |    1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 0fdf968..1a8b162 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -75,6 +75,8 @@ static void vunmap_pmd_range(pud_t *pud, unsigned long addr, unsigned long end)
- 		if (pmd_none_or_clear_bad(pmd))
- 			continue;
- 		vunmap_pte_range(pmd, addr, next);
-+		if (next != end)
-+			cond_resched();
- 	} while (pmd++, addr = next, addr != end);
- }
+diff --git a/drivers/tty/synclink.c b/drivers/tty/synclink.c
+index 5ae14b4..d48e040 100644
+--- a/drivers/tty/synclink.c
++++ b/drivers/tty/synclink.c
+@@ -7866,6 +7866,7 @@ static int hdlcdev_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 					      HDLC_FLAG_TXC_TXCPIN | HDLC_FLAG_TXC_DPLL |
+ 					      HDLC_FLAG_TXC_BRG    | HDLC_FLAG_TXC_RXCPIN);
  
++		memset(&new_line, 0, sizeof(new_line));
+ 		switch (flags){
+ 		case (HDLC_FLAG_RXC_RXCPIN | HDLC_FLAG_TXC_TXCPIN): new_line.clock_type = CLOCK_EXT; break;
+ 		case (HDLC_FLAG_RXC_BRG    | HDLC_FLAG_TXC_BRG):    new_line.clock_type = CLOCK_INT; break;
+diff --git a/drivers/tty/synclinkmp.c b/drivers/tty/synclinkmp.c
+index 144202e..53ba853 100644
+--- a/drivers/tty/synclinkmp.c
++++ b/drivers/tty/synclinkmp.c
+@@ -1766,6 +1766,7 @@ static int hdlcdev_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 					      HDLC_FLAG_TXC_TXCPIN | HDLC_FLAG_TXC_DPLL |
+ 					      HDLC_FLAG_TXC_BRG    | HDLC_FLAG_TXC_RXCPIN);
+ 
++		memset(&new_line, 0, sizeof(new_line));
+ 		switch (flags){
+ 		case (HDLC_FLAG_RXC_RXCPIN | HDLC_FLAG_TXC_TXCPIN): new_line.clock_type = CLOCK_EXT; break;
+ 		case (HDLC_FLAG_RXC_BRG    | HDLC_FLAG_TXC_BRG):    new_line.clock_type = CLOCK_INT; break;
 -- 
-1.7.2.5
+1.7.10.4
 
