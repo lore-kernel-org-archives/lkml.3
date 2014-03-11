@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815AbaCKFGg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 01:06:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16108 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752486AbaCKFBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 01:01:38 -0400
-X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9676435"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: joe@perches.com, peterz@infradead.org, mingo@kernel.org,
-        tglx@linutronix.de, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 01/15] sched/prio: Add a macro named NICE_TO_RLIMIT in prio.h.
-Date: Tue, 11 Mar 2014 12:59:16 +0800
-Message-Id: <f475972d21de5738cf3302ab9c95c90fd4407815.1394513466.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1394513466.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1394513466.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 12:58:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 12:58:50,
-	Serialize complete at 2014/03/11 12:58:50
+	id S1754477AbaCKFIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 01:08:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26408 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752342AbaCKFII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 01:08:08 -0400
+Date: Tue, 11 Mar 2014 01:07:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: bad rss-counter message in 3.14rc5
+Message-ID: <20140311050752.GA14329@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	Cyrill Gorcunov <gorcunov@gmail.com>,
+	Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+	Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+	Bob Liu <bob.liu@oracle.com>,
+	Konstantin Khlebnikov <koct9i@gmail.com>
+References: <20140305174503.GA16335@redhat.com>
+ <20140305175725.GB16335@redhat.com>
+ <20140307002210.GA26603@redhat.com>
+ <20140311024906.GA9191@redhat.com>
+ <20140310201340.81994295.akpm@linux-foundation.org>
+ <20140310214612.3b4de36a.akpm@linux-foundation.org>
+ <20140311045109.GB12551@redhat.com>
+ <20140310220158.7e8b7f2a.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140310220158.7e8b7f2a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add a macro named NICE_TO_RLIMIT in prio.h to
-convert nice value [19,-20] to rlimit style value [1,40].
+On Mon, Mar 10, 2014 at 10:01:58PM -0700, Andrew Morton wrote:
+ > On Tue, 11 Mar 2014 00:51:09 -0400 Dave Jones <davej@redhat.com> wrote:
+ > 
+ > > On Mon, Mar 10, 2014 at 09:46:12PM -0700, Andrew Morton wrote:
+ > >  > On Mon, 10 Mar 2014 20:13:40 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
+ > >  > 
+ > >  > > > Anyone ? I'm hitting this trace on an almost daily basis, which is a pain
+ > >  > > > while trying to reproduce a different bug..
+ > >  > > 
+ > >  > > Damn, I thought we'd fixed that but it seems not.  Cc's added.
+ > >  > > 
+ > >  > > Guys, what stops the migration target page from coming unlocked in
+ > >  > > parallel with zap_pte_range()'s call to migration_entry_to_page()?
+ > >  > 
+ > >  > page_table_lock, sort-of.  At least, transitions of is_migration_entry()
+ > >  > and page_locked() happen under ptl.
+ > >  > 
+ > >  > I don't see any holes in regular migration.  Do you know if this is
+ > >  > reproducible with CONFIG_NUMA_BALANCING=n or CONFIG_NUMA=n?
+ > > 
+ > > CONFIG_NUMA_BALANCING was n already btw, so I'll do a NUMA=n run.
+ > 
+ > There probably isn't much point unless trinity is using
+ > sys_move_pages().  Is it?
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- include/linux/sched/prio.h | 5 +++++
- 1 file changed, 5 insertions(+)
+Trinity will do every syscall an arch has.
 
-diff --git a/include/linux/sched/prio.h b/include/linux/sched/prio.h
-index ac32258..8e78c47 100644
---- a/include/linux/sched/prio.h
-+++ b/include/linux/sched/prio.h
-@@ -41,4 +41,9 @@
- #define TASK_USER_PRIO(p)	USER_PRIO((p)->static_prio)
- #define MAX_USER_PRIO		(USER_PRIO(MAX_PRIO))
+In the test case I have so far, I've narrowed it down to the vm group of syscalls
+(so running with '-g vm' will do anything that I deemed 'vm'. Including.. sys_move_pages)
+I'll try to narrow it down further tomorrow.
+
+ >  If so it would be interesting to disable
+ > trinity's move_pages calls and see if it still fails.
  
-+/*
-+ * Convert nice value [19,-20] to rlimit style value [1,40].
-+ */
-+#define NICE_TO_RLIMIT(nice)	(MAX_NICE - nice + 1)
-+
- #endif /* _SCHED_PRIO_H */
--- 
-1.8.2.1
+Ok, I'll try that first.
+
+ > Grasping at straws here, trying to reduce the amount of code to look at :(
+
+*nod*, it's not helped by the fact that the trace happens at process exit time
+which could be considerably later after the syscall that buggers everything up
+has happened.
+
+	Dave
 
