@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262AbaCKFbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 01:31:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50156 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753000AbaCKFbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 01:31:04 -0400
-Date: Tue, 11 Mar 2014 01:30:17 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: bad rss-counter message in 3.14rc5
-Message-ID: <20140311053017.GB14329@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Cyrill Gorcunov <gorcunov@gmail.com>,
-	Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
-	Konstantin Khlebnikov <koct9i@gmail.com>
-References: <20140305174503.GA16335@redhat.com>
- <20140305175725.GB16335@redhat.com>
- <20140307002210.GA26603@redhat.com>
- <20140311024906.GA9191@redhat.com>
- <20140310201340.81994295.akpm@linux-foundation.org>
- <20140310214612.3b4de36a.akpm@linux-foundation.org>
- <20140311045109.GB12551@redhat.com>
- <20140310220158.7e8b7f2a.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140310220158.7e8b7f2a.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753456AbaCKFiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 01:38:51 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:12934 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514AbaCKFiu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 01:38:50 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-68-531ea1680b58
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev] [PATCH] f2fs: recover inline xattr data in roll-forward
+ process
+Date: Tue, 11 Mar 2014 13:37:38 +0800
+Message-id: <001401cf3cec$2daf5f10$890e1d30$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac8861nrJxY+t67bQ96bYWRVguqZUA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t9jQd2MhXLBBhs3WVpc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfHv3ALmguu8FfNu
+	PGJpYFzN3cXIySEhYCLRu6uZCcIWk7hwbz1bFyMXh5DAdEaJx/dmMUI4Pxgltp/7ClbFJqAi
+	sbzjP5gtIqAoseH9BnYQm1kgU+Je0wxmEFtYIFRi28MbrCA2i4CqxLPl7WD1vAKWEvcuX2aE
+	sAUlfky+xwLRqyWxfudxJghbXmLzmrfMEBcpSOw4+5oRYpeexIO1LcwQNeISG4/cYpnAKDAL
+	yahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCQ/mZ9A7GVQ0WhxgF
+	OBiVeHhX+MsFC7EmlhVX5h5ilOBgVhLhPW0BFOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6
+	UEggPbEkNTs1tSC1CCbLxMEp1cC44kbbtpPWWfV7fm77dnXJnme9+eKM298eOG8j/1Sy4pK1
+	tePb0he9HmvEVbYl7z3OFb+sWNGQN2RtyNHfvjN36rJPvlLTcjlhup2wRlBBU0Apl/YK+dnV
+	SbsfZ3NFtvTd1Nft4L71YfnEw4JB0qr9Zff39CddYuPQbpqlHawreENXwC/3/lklluKMREMt
+	5qLiRACv0dP4YQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 10:01:58PM -0700, Andrew Morton wrote:
- > On Tue, 11 Mar 2014 00:51:09 -0400 Dave Jones <davej@redhat.com> wrote:
- > 
- > > On Mon, Mar 10, 2014 at 09:46:12PM -0700, Andrew Morton wrote:
- > >  > On Mon, 10 Mar 2014 20:13:40 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
- > >  > 
- > >  > > > Anyone ? I'm hitting this trace on an almost daily basis, which is a pain
- > >  > > > while trying to reproduce a different bug..
- > >  > > 
- > >  > > Damn, I thought we'd fixed that but it seems not.  Cc's added.
- > >  > > 
- > >  > > Guys, what stops the migration target page from coming unlocked in
- > >  > > parallel with zap_pte_range()'s call to migration_entry_to_page()?
- > >  > 
- > >  > page_table_lock, sort-of.  At least, transitions of is_migration_entry()
- > >  > and page_locked() happen under ptl.
- > >  > 
- > >  > I don't see any holes in regular migration.  Do you know if this is
- > >  > reproducible with CONFIG_NUMA_BALANCING=n or CONFIG_NUMA=n?
- > > 
- > > CONFIG_NUMA_BALANCING was n already btw, so I'll do a NUMA=n run.
- > 
- > There probably isn't much point unless trinity is using
- > sys_move_pages().  Is it?  If so it would be interesting to disable
- > trinity's move_pages calls and see if it still fails.
+Previously we do not recover inline xattr data of inode after power-cut, so
+inline xattr data may be lost.
+We should recover the data during the roll-forward process.
 
-Ok, with move_pages excluded it still oopses.
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/node.c |   33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-	Dave
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index c415cec..e72b258 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1493,6 +1493,37 @@ void recover_node_page(struct f2fs_sb_info *sbi, struct page *page,
+ 	clear_node_page_dirty(page);
+ }
+ 
++void recover_inline_xattr(struct inode *inode, struct page *page)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	void *src_addr, *dst_addr;
++	size_t inline_size;
++	struct page *ipage;
++	struct f2fs_inode *ri;
++
++	if (!is_inode_flag_set(F2FS_I(inode), FI_INLINE_XATTR))
++		return;
++
++	if (!IS_INODE(page))
++		return;
++
++	ri = F2FS_INODE(page);
++	if (!(ri->i_inline & F2FS_INLINE_XATTR))
++		return;
++
++	ipage = get_node_page(sbi, inode->i_ino);
++	f2fs_bug_on(IS_ERR(ipage));
++
++	dst_addr = inline_xattr_addr(ipage);
++	src_addr = inline_xattr_addr(page);
++	inline_size = inline_xattr_size(inode);
++
++	memcpy(dst_addr, src_addr, inline_size);
++
++	update_inode(inode, ipage);
++	f2fs_put_page(ipage, 1);
++}
++
+ bool recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
+ {
+ 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+@@ -1500,6 +1531,8 @@ bool recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
+ 	nid_t new_xnid = nid_of_node(page);
+ 	struct node_info ni;
+ 
++	recover_inline_xattr(inode, page);
++
+ 	if (ofs_of_node(page) != XATTR_NODE_OFFSET)
+ 		return false;
+ 
+-- 
+1.7.9.5
+
 
