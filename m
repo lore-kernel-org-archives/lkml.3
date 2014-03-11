@@ -1,37 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604AbaCKCZY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 22:25:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49526 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382AbaCKCZV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 22:25:21 -0400
-Date: Mon, 10 Mar 2014 22:25:20 -0400 (EDT)
-Message-Id: <20140310.222520.814414646267623877.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next v2] r8152: add skb_cow_head
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394504432-998-1-git-send-email-hayeswang@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
-	<1394504432-998-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 10 Mar 2014 19:25:21 -0700 (PDT)
+	id S1754645AbaCKCZt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 22:25:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57459 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754310AbaCKCZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 22:25:23 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFx7rdm9DGOTTgAKTHNkdfrvQYhT9PRs5MhUPr1gQzWEgA@mail.gmail.com>
+References: <1394431444-6987-1-git-send-email-ast@plumgrid.com> <1394431444-6987-2-git-send-email-ast@plumgrid.com> <20140310.215104.2095195123238829635.davem@davemloft.net> <CA+55aFx7rdm9DGOTTgAKTHNkdfrvQYhT9PRs5MhUPr1gQzWEgA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH v8 net-next 1/3] filter: add Extended BPF interpreter and converter
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 10 Mar 2014 19:20:52 -0700
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>
+CC: ast@plumgrid.com, dborkman@redhat.com, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hagen Paul Pfeifer <hagen@jauu.net>, Jesse Gross <jesse@nicira.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>, penberg@iki.fi,
+        Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Message-ID: <9b7e4f89-468b-4d02-91ea-3e91d61934bd@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Tue, 11 Mar 2014 10:20:32 +0800
+Bool vs bitfield are orthogonal, at least under gcc, unless I'm completely out to sea.  It is probably not a good idea to create a bitfield when it doesn't buy you anything, lest you generate rmw instructions when byte stores would do.
 
-> Call skb_cow_head() before editing the tx packet header. The header
-> would be reallocated if it is shared.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+On March 10, 2014 7:02:18 PM PDT, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>On Mon, Mar 10, 2014 at 6:51 PM, David Miller <davem@davemloft.net>
+>wrote:
+>> From: Alexei Starovoitov <ast@plumgrid.com>
+>> Date: Sun,  9 Mar 2014 23:04:02 -0700
+>>
+>>> +     unsigned int            jited:1;
+>>
+>> The C language has a proper type for boolean states, please therefore
+>> use 'bool', true, and false.
+>
+>No, the C standard actually has no such thing.
+>
+>In a structure, a bitfield is actually better than bool, because it
+>takes only one bit. A "bool" takes at least a byte.
+>
+>Now, in this case it may not be an issue (looks like there are no
+>other uses that can use the better packing, so bit/byte/word is all
+>the same), but I really really want to make it clear that it is not at
+>all true that "bool" is somehow better than a single-bit bitfield. The
+>bitfield can pack *much* better, and I would actually say that it's
+>generally a *better* idea to use a bitfield, because you can much more
+>easily expand on it later by adding other bitfields.
+>
+>There are very few actual real advantages to "bool". The magic casting
+>behavior is arguably an advantage (the implicit cast in assigning to a
+>bitfield truncates to the low bits, the implicit cast on assignment to
+>"bool" does a test against zero), but is also quite arguably a
+>possible source of confusion and can cause problems down the line when
+>converting from bool to a bitfield (for the afore-mentioned packing
+>reasons).
+>
+>So please don't sell "bool" as some kind of panacea. It has at least
+>as many problems as it has advantages.
+>
+>I would generally suggest that people only use "bool" for function
+>return types, and absolutely nothing else. Seriously.
+>
+>              Linus
 
-Applied, thanks.
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
