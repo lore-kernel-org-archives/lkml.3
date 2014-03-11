@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaCKCHp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 22:07:45 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:52191 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753790AbaCKCHn (ORCPT
+	id S1753877AbaCKCMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 22:12:00 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:26970 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475AbaCKCL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 22:07:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1394496924.16134.40.camel@x220>
-References: <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
- <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
- <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com>
- <1394185698.5608.5.camel@x41> <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
- <1394212609.1987.6.camel@x41> <20140307204021.GA9822@google.com>
- <CAErSpo7Np8oju1ENQA5EgEpN4=Vv7f3s4E823ecbyp6FCWPL_Q@mail.gmail.com>
- <1394289877.31006.2.camel@x41> <20140310182431.GA11424@google.com>
- <1394495121.1975.6.camel@x41> <CAErSpo6Q0w0OAenw7Uh0bjiZucpxatkUuWzREHmEvsNKJYf-qw@mail.gmail.com>
- <1394496924.16134.40.camel@x220>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 10 Mar 2014 20:07:22 -0600
-Message-ID: <CAErSpo52b6BdGXVS36hxB4o_doqVONK3HkJu3U6OFVHj-YreWQ@mail.gmail.com>
-Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset flushing
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Steven Newbury <steve@snewbury.org.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 10 Mar 2014 22:11:58 -0400
+X-AuditID: cbfee68e-b7f566d000002344-84-531e70ec3aac
+Message-id: <531E74CF.7000602@samsung.com>
+Date: Tue, 11 Mar 2014 11:28:31 +0900
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308
+ Thunderbird/17.0.4
+MIME-version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, sbkim73@samsung.com
+Subject: Re: [PATCH] drivers: mfd: silence compiler warning in sec-core.c
+References: <1394017159-4851-1-git-send-email-pankaj.dubey@samsung.com>
+ <20140310150700.GC13661@lee--X1>
+In-reply-to: <20140310150700.GC13661@lee--X1>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBIsWRmVeSWpSXmKPExsVy+t8zY903BXLBBhdaZSzufz3KaHF51xw2
+	i9PdrBYXV3xhcmDxuHNtD5vHvJOBHn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJVx4GoHU8FT
+	nor3p1YzNzBu5epi5OSQEDCReHXmKguELSZx4d56ti5GLg4hgWWMEtNnrWaBKXp66w0TRGI6
+	o0TDnC/MEM5rRolHWx6xg1TxCmhJrN+ymgnEZhFQlXjbsAWsm01AV+LJ+7nMILaoQJjEpul9
+	rBD1ghI/Jt8DquHgEBFQkTj3xhwkzCzgIzHv9xawcmEBT4ntZzeBjRcSyJK4fmQB2EhOoJFL
+	Tu9mhag3k3jUso4ZwpaX2LzmLdhtEgLr2CVWXX7ICHGPgMS3yYfAdkkIyEpsOsAM8ZikxMEV
+	N1gmMIrNQnLRLCRjZyEZu4CReRWjaGpBckFxUnqRkV5xYm5xaV66XnJ+7iZGSCz17WC8ecD6
+	EGMy0MqJzFKiyfnAWMwriTc0NjOyMDUxNTYytzQjTVhJnHfRw6QgIYH0xJLU7NTUgtSi+KLS
+	nNTiQ4xMHJxSDYxlbRaqyTMOrQy5KftGs1Lv6Mzfxy9KsP9YdGeq7xoL2x3lqWH7tzPIaNns
+	kC29UGF+TuL8nvmuuQ7zoub2O5uqfZIP3mhzmf+9cPrndfIce2smc5jobNi0pSdZQu/s1Vsy
+	kwSMbvppiX8vmrJs9bX1e44yKUg8v2/zxutq6oqTug+4n6sqNzIosRRnJBpqMRcVJwIAgrrn
+	JrsCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42I5/e+xoO6bArlgg+2TJCzufz3KaHF51xw2
+	i9PdrBYXV3xhcmDxuHNtD5vHvJOBHn1bVjF6fN4kF8AS1cBok5GamJJapJCal5yfkpmXbqvk
+	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
+	Y4Sub0gQXI+RARpIWMeYceBqB1PBU56K96dWMzcwbuXqYuTkkBAwkXh66w0ThC0mceHeerYu
+	Ri4OIYHpjBINc74wQzivGSUebXnEDlLFK6AlsX7LarAOFgFVibcNW1hAbDYBXYkn7+cyg9ii
+	AmESm6b3sULUC0r8mHwPqIaDQ0RAReLcG3OQMLOAj8S831vAyoUFPCW2n90ENl5IIEvi+pEF
+	YCM5gUYuOb2bFaLeTOJRyzpmCFteYvOat8wTGAVmIdkwC0nZLCRlCxiZVzGKphYkFxQnpeca
+	6hUn5haX5qXrJefnbmIER+ozqR2MKxssDjEKcDAq8fAG+MoFC7EmlhVX5h5ilOBgVhLhPW0B
+	FOJNSaysSi3Kjy8qzUktPsSYDAyAicxSosn5wCSSVxJvaGxiZmRpZGZhZGJuTpqwkjjvgVbr
+	QCGB9MSS1OzU1ILUIpgtTBycUg2MXlNNWbL7A0R2m5QGSca9edjRd/XRdOU/PBVqBzTi2Ns/
+	/11jdFUqufDcwue/N51qzoi9WCoV2VDnlHw+LzRTQPt3y/ZJnLv8bq685XWbwflw4d8SvVM9
+	R+32Ln10uZBh36Jl36rcJ++es8Pj6AzfHYqVOxcwuu/YKqmfdXyFIsNLo0dvY4WZlViKMxIN
+	tZiLihMB+s+92xgDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 6:15 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Mon, 2014-03-10 at 18:07 -0600, Bjorn Helgaas wrote:
->> On Mon, Mar 10, 2014 at 5:45 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
->> > A bit of doubt is caused by two new boot time messages:
->> >     pnp 00:00: unknown resource type 10 in _CRS
->> >     pnp 00:00: can't evaluate _CRS: 1
->> >
->> > But I haven't yet tried v3.14-rc6 without your patch, so these might be
->> > unrelated. They're unclear to me, anyway.
+On 03/11/2014 12:07 AM, Lee Jones wrote:
+>> When used 64bit compiler GCC warns as
+>> drivers/mfd/sec-core.c:199:10: warning:
+>> cast from pointer to integer of different size [-Wpointer-to-int-cast]
 >>
->> Hmm, this is definitely concerning.  Resource type 10 is
->> ACPI_RESOURCE_TYPE_FIXED_MEMORY32, which we do handle (unless it's
->> length 0).  And your previous dmesg logs (at
->> https://bugzilla.kernel.org/show_bug.cgi?id=71611) don't show anything
->> like that.
+>> This patch fixes this by type-casting "match->data" into "long" before
+>> converting into "int"
 >>
->> Can you attach an acpidump and the dmesg log with my patch to the bugzilla?
+>> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+>> ---
+>>   drivers/mfd/sec-core.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+>> index a139798..2e7580bd 100644
+>> --- a/drivers/mfd/sec-core.c
+>> +++ b/drivers/mfd/sec-core.c
+>> @@ -187,7 +187,7 @@ static inline int sec_i2c_get_driver_data(struct i2c_client *i2c,
+>>   	if (i2c->dev.of_node) {
+>>   		const struct of_device_id *match;
+>>   		match = of_match_node(sec_dt_match, i2c->dev.of_node);
+>> -		return (int)match->data;
+>> +		return (int)(long)match->data;
+> I think using an unsigned long would be better.
+
+I could have done that but since "sec_i2c_get_driver_data" return type is
+"int" for me it make sense to return "int", and it does not make much sense
+to change this function signature as return value is used only for getting
+variant type. Also same has been done in "max8998_i2c_get_driver_data", if
+you still think it's better to typecast into "unsigned long" or
+"kernel_ulong_t" please let me know I will change accordingly.
+
+>>   	}
+>>   #endif
+>>   	return (int)id->driver_data;
+> Doesn't this give you the same error?
 >
-> It's getting rather late over here. So I'll try (quite) a few hours
-> later. But acpidump doesn't ring any bells right now. Any hints?
+No. As id->driver_data is of type "kernel_ulong_t" and not a pointer.
 
-There's acpidump info here: https://01.org/linux-acpi/utilities .  You
-don't need to extract the binary tables or anything; just attach the
-text dump to the bugzilla.
 
-It would be very interesting to try v3.14-rc6 without my patch.  I
-hope it has the same "unknown resource type" messages, because I don't
-see how my patch could be related to them.  There were no recent
-PNP-related changes, so then I start to worry about some sort of
-memory corruption from an unrelated patch.  But I hope that's not the
-case.
+-- 
+Best Regards,
+Pankaj Dubey
 
-Bjorn
