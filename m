@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779AbaCKUbF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:31:05 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:42095 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730AbaCKUbA (ORCPT
+	id S1755608AbaCKUgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:36:10 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23792 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755336AbaCKUgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:31:00 -0400
+	Tue, 11 Mar 2014 16:36:08 -0400
+Message-ID: <531F73AB.5060402@oracle.com>
+Date: Tue, 11 Mar 2014 16:35:55 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140311061519.GA11552@lskakaxi-intel>
-References: <20140311061519.GA11552@lskakaxi-intel>
-Date: Tue, 11 Mar 2014 13:30:59 -0700
-X-Google-Sender-Auth: fECwUuZLUD9CfrF3vDBq1rU48Bc
-Message-ID: <CAGXu5j+oYp7-1mOmQXrEcDhH5YY-Zm5fa4ccHZMNH_kwJVB9VQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pstore: fix NULL pointer fault if get NULL prz in ramoops_get_next_prz
-From: Kees Cook <keescook@chromium.org>
-To: Liu ShuoX <shuox.liu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        yanmin_zhang@linux.intel.com
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
+References: <531F6689.60307@oracle.com>	<1394568453.2786.28.camel@buesod1.americas.hpqcorp.net> <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
+In-Reply-To: <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 11:15 PM, Liu ShuoX <shuox.liu@intel.com> wrote:
-> These two patches are applied on top of patches:
-> https://lkml.org/lkml/2014/3/3/368
-> It has been added in -mm tree. Below is the first patch, and i will
-> send the second by replying this one.
+On 03/11/2014 04:30 PM, Andrew Morton wrote:
+> I worry about what happens if __get_user_pages decides to do
 >
-> From: Liu ShuoX <shuox.liu@intel.com>
+> 				if (ret & VM_FAULT_RETRY) {
+> 					if (nonblocking)
+> 						*nonblocking = 0;
+> 					return i;
+> 				}
 >
-> ramoops_get_next_prz get the prz according the paramters. If it get a
-> uninitialized prz, access its members by following
-> persistent_ram_old_size(prz)
-> will cause a NULL pointer crash.
-> Ex: if ftrace_size is 0, fprz will be NULL.
->
-> Fix it by return NULL in advance.
->
-> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+> uh-oh, that just cleared __mm_populate()'s `locked' variable and we'll
+> forget to undo mmap_sem.  That won't explain this result, but it's a
+> potential problem.
 
-Thanks!
-
-Acked-by: Kees Cook <keescook@chromium.org>
-
--Kees
-
-> ---
->  fs/pstore/ram.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-> index 1daed28..6f96d8c 100644
-> --- a/fs/pstore/ram.c
-> +++ b/fs/pstore/ram.c
-> @@ -119,6 +119,8 @@ ramoops_get_next_prz(struct persistent_ram_zone *przs[],
-> uint *c, uint max,
->                 return NULL;
->         prz = przs[i];
-> +       if (!prz)
-> +               return NULL;
->         /* Update old/shadowed buffer. */
->         if (update)
-> --
-> 1.8.3.2
+That's actually seems right because if 'ret & VM_FAULT_RETRY' is true it means that
+lock_page_or_retry() was supposed to release mmap_sem for us.
 
 
-
--- 
-Kees Cook
-Chrome OS Security
+Thanks,
+Sasha
