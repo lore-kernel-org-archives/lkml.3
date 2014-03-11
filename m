@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993AbaCKAjj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 20:39:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753106AbaCKAji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 20:39:38 -0400
-Date: Mon, 10 Mar 2014 20:38:56 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        X86 ML <x86@kernel.org>, Stefani Seibold <stefani@seibold.net>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: Remove compat vdso support
-Message-ID: <20140311003856.GA4203@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	X86 ML <x86@kernel.org>, Stefani Seibold <stefani@seibold.net>,
-	Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-	Martin Runge <Martin.Runge@rohde-schwarz.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <775280bd6cab6345a1d340e7038d2011763bf81b.1394492341.git.luto@amacapital.net>
- <531E5531.20409@linux.intel.com>
- <CALCETrX1RBVYAKyN_GdvF8w3S=A5wZ_XaMqR_MjdLim7RMR8NQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrX1RBVYAKyN_GdvF8w3S=A5wZ_XaMqR_MjdLim7RMR8NQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754157AbaCKAj6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 20:39:58 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:16080 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083AbaCKAj4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 20:39:56 -0400
+Message-ID: <1394497958.6784.204.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v6 06/22] Replace XIP read and write with DAX I/O
+From: Toshi Kani <toshi.kani@hp.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, willy@linux.intel.com
+Date: Mon, 10 Mar 2014 18:32:38 -0600
+In-Reply-To: <1393337918-28265-7-git-send-email-matthew.r.wilcox@intel.com>
+References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
+	 <1393337918-28265-7-git-send-email-matthew.r.wilcox@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 05:19:27PM -0700, Andy Lutomirski wrote:
- > On Mon, Mar 10, 2014 at 5:13 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
- > > On 03/10/2014 05:12 PM, Andy Lutomirski wrote:
- > >> The compat vDSO is a complicated hack that's needed to maintain
- > >> compatibility with a small range of never-released glibc versions.
- > >>
- > >> This removes it and replaces it with a much simpler hack: a config
- > >> option to disable the 32-bit vDSO by default.
- > >>
- > >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
- > >
- > > Can we verify this works correctly on the affected distributions?
- > 
- > It works correctly on Fedora 20 32-bit and 64-bit.
+On Tue, 2014-02-25 at 09:18 -0500, Matthew Wilcox wrote:
+> Use the generic AIO infrastructure instead of custom read and write
+> methods.  In addition to giving us support for AIO, this adds the missing
+> locking between read() and truncate().
+> 
+ :
+> +static void dax_new_buf(void *addr, unsigned size, unsigned first,
+> +					loff_t offset, loff_t end, int rw)
+> +{
+> +	loff_t final = end - offset;	/* The final byte in this buffer */
 
-I went and dug through the SRPMs at https://archives.fedoraproject.org
-Fedora hasn't ever shipped with COMPAT_VDSO enabled.
-Before FC6 (kernel 2.6.18), the option never existed.
+I may be missing something, but shouldn't it take first into account?
 
-	Dave
+	loff_t final = end - offset + first;
+
+Thanks,
+-Toshi
+
+
+> +	if (rw != WRITE) {
+> +		memset(addr, 0, size);
+> +		return;
+> +	}
+> +
+> +	if (first > 0)
+> +		memset(addr, 0, first);
+> +	if (final < size)
+> +		memset(addr + final, 0, size - final);
+> +}
+
+
 
