@@ -1,115 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaCKOvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 10:51:50 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61312 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831AbaCKOvs convert rfc822-to-8bit (ORCPT
+	id S1753121AbaCKOyL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 10:54:11 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:60698 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575AbaCKOyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 10:51:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,631,1389772800"; 
-   d="scan'208";a="470242395"
-From: "Zhang, Rui" <rui.zhang@intel.com>
-To: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "jwollrath@web.de" <jwollrath@web.de>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "pebolle@tiscali.nl" <pebolle@tiscali.nl>
-Subject: RE: [PATCH] PNPACPI: proper handling ACPI IO/Memory resources
-Thread-Topic: [PATCH] PNPACPI: proper handling ACPI IO/Memory resources
-Thread-Index: AQHPPTfe6V5KPDW51U6ywGW5kHui4prb97RA
-Date: Tue, 11 Mar 2014 14:50:42 +0000
-Message-ID: <744357E9AAD1214791ACBA4B0B90926301203865@SHSMSX103.ccr.corp.intel.com>
-References: <1394548827-15172-1-git-send-email-rui.zhang@intel.com>
-In-Reply-To: <1394548827-15172-1-git-send-email-rui.zhang@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Mar 2014 10:54:08 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
+ <CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
+ <CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
+ <CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
+ <CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com> <CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Mar 2014 07:53:47 -0700
+Message-ID: <CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Stefani Seibold <stefani@seibold.net>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julian, Markus and Paul,
+On Mar 11, 2014 2:36 AM, "Linus Torvalds" <torvalds@linux-foundation.org> wrote:
+>
+> On Mon, Mar 10, 2014 at 9:10 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >
+> > I suspect that a lot of 32-bit Linux users want syscall and/or
+> > sysenter, and Stefani certainly wants the fast timing that the vDSO
+> > can provide.  Also, presumably __kernel_sigreturn serves some purpose
+> > :)
+>
+> Are we talking about the same thing at all?
+>
+> We're talking about the *COMPAT* vdso, right?
+>
+> The one you were just told Fedora had never _ever_ enabled? And you
+> are seriously arguing that "peformance" is relevant, while at the same
+> time trying to claim that the fact that it DOES NOT WORK on SuSE -
+> which *did* enable it - is not such a big deal, and that we should
+> ignore the "don't break user space" rule?
 
-Can you please check if this patch fixes the problem for you or not?
+There isn't a separate "compat" vdso.  There may or may not be a vdso,
+and that vdso may or may not be "compat".  Since the kernel can't
+easily tell whether ld.so has the bug, the kernel can't easily decide
+which vdso to present, if any.  So current kernels use only the compat
+vdso by default.
 
-Thanks,
-rui
+The compat vdso *does* work on opensuse 9.  I'm arguing the the number
+of people who use opensuse 9 is low enough that we should support them
+by offering to turn off the vdso instead of by offering to fudge the
+address at which the vdso is mapped.  The compat vdso also works on
+modern glibc, but that comes at the expense of ASLR, some fixmap
+entries that no one likes, and general maintainability of the code.
 
-> -----Original Message-----
-> From: Zhang, Rui
-> Sent: Tuesday, March 11, 2014 10:40 PM
-> To: linux-acpi@vger.kernel.org; linux-kernel@vger.kernel.org
-> Cc: Wysocki, Rafael J; jwollrath@web.de; markus@trippelsdorf.de;
-> pebolle@tiscali.nl; Zhang, Rui
-> Subject: [PATCH] PNPACPI: proper handling ACPI IO/Memory resources
-> Importance: High
-> 
-> Before commit b355cee88e3b1a193f0e9a81db810f6f83ad728b,
-> if acpi_dev_resource_memory()/acpi_dev_resource_io() returns false, it
-> means the the resource is not a memeory/IO resource.
-> 
-> But after commit b355cee88e3b1a193f0e9a81db810f6f83ad728b,
-> if the memory/IO resource is invalid (the length of the resource is
-> zero),
-> acpi_dev_resource_memory()/acpi_dev_resource_io() returns false as well.
-> 
-> This breaks pnpacpi_allocated_resource(), because the current code
-> would recognize the invalid memory/io resource as unknown resource type.
-> Thus users will get warning messages on machines with zero length ACPI
-> memeory/IO resources.
-> 
-> This patch fixes the problem by invoking acpi_dev_resource_memory()/
-> acpi_dev_resource_io() for ACPI memory/IO resources only.
-> 
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> ---
->  drivers/pnp/pnpacpi/rsparser.c |   15 ++++++++++++---
->  1 file changed, 12 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/pnp/pnpacpi/rsparser.c
-> b/drivers/pnp/pnpacpi/rsparser.c index 167f3d0..66977eb 100644
-> --- a/drivers/pnp/pnpacpi/rsparser.c
-> +++ b/drivers/pnp/pnpacpi/rsparser.c
-> @@ -183,9 +183,7 @@ static acpi_status
-> pnpacpi_allocated_resource(struct acpi_resource *res,
->  	struct resource r = {0};
->  	int i, flags;
-> 
-> -	if (acpi_dev_resource_memory(res, &r)
-> -	    || acpi_dev_resource_io(res, &r)
-> -	    || acpi_dev_resource_address_space(res, &r)
-> +	if (acpi_dev_resource_address_space(res, &r)
->  	    || acpi_dev_resource_ext_address_space(res, &r)) {
->  		pnp_add_resource(dev, &r);
->  		return AE_OK;
-> @@ -217,6 +215,17 @@ static acpi_status
-> pnpacpi_allocated_resource(struct acpi_resource *res,
->  	}
-> 
->  	switch (res->type) {
-> +	case ACPI_RESOURCE_TYPE_MEMORY24:
-> +	case ACPI_RESOURCE_TYPE_MEMORY32:
-> +	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
-> +		if (acpi_dev_resource_memory(res, &r))
-> +			pnp_add_resource(dev, &r);
-> +		break;
-> +	case ACPI_RESOURCE_TYPE_IO:
-> +	case ACPI_RESOURCE_TYPE_FIXED_IO:
-> +		if (acpi_dev_resource_io(res, &r))
-> +			pnp_add_resource(dev, &r);
-> +		break;
->  	case ACPI_RESOURCE_TYPE_DMA:
->  		dma = &res->data.dma;
->  		if (dma->channel_count > 0 && dma->channels[0] != (u8) -1)
-> --
-> 1.7.9.5
 
+I wonder if we can actually detect buggy glibc versions at runtime.
+The relevant commits are:
+
+f866314b89d56845f55e6f365e18b31ec978ec3a: (Sun May 4 04:30:13 2003
++0000): add vdso support
+3b3ddb4f7db98ec9e912ccdf54d35df4aa30e04a (Thu Feb 26 20:06:58 2004
++0000): remove the buggy assertion
+49ad572a70b8aeb91e57483a11dd1b77e31c4468 (Sat Feb 28 17:56:22 2004
++0000): actually fix the code
+
+Unfortunately, I was wrong about the affected versions.  Glibc 2.3.3
+was released with the bug; glibc 2.3.2 and 2.3.4 appear to be okay.
+
+It's okay for a quirk to incorrectly flag older glibc versions -- they
+won't use a vdso regardless of what aux entries we set.  Incorrectly
+flagging versions that are too new as quirky is unfortunate.
+
+Checking for the text "(void *) ph->p_vaddr ==
+_rtld_local._dl_sysinfo_dso" in ld.so will detect all but two days
+worth of bad glibc versions.  I don't think that we actually want to
+fault in the whole ELF loader on each program load, though.
+
+We can detect glibc 2.3 in general by checking the symbol version
+definitions.  That will incorrectly penalize a large range of later
+versions, though.
+
+We could do something really weird: we could look at the *name* of the
+ELF loader.  This would have to resolve symlinks, which is rather ugly
+and probably a net loss of sanity.
+
+
+--Andy
+
+>
+> Seriously?
+>
+> WTF?
+>
+>                 Linus
