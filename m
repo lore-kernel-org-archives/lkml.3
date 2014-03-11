@@ -1,70 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936AbaCKKQS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:16:18 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:14566 "EHLO song.cn.fujitsu.com"
+	id S1755198AbaCKKQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:16:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:41078 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754809AbaCKKLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:11:30 -0400
+	id S1754755AbaCKKL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:11:29 -0400
 X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9678278"
+   d="scan'208";a="9678275"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
         tglx@linutronix.de, heiko.carstens@de.ibm.com,
         Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 08/17] ioprio: Add a macro named NICE_TO_IOPRIO.
-Date: Tue, 11 Mar 2014 18:09:16 +0800
-Message-Id: <73b55557223c09b0feb0979ac66340d162117555.1394532288.git.yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 02/17] kernel/sys: Fix the indent issue in switch.
+Date: Tue, 11 Mar 2014 18:09:10 +0800
+Message-Id: <cedf23016950ac4069a6dd18f93adf48095c7454.1394532288.git.yangds.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
 References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:34,
+ 2014/03/11 18:08:33,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:37,
-	Serialize complete at 2014/03/11 18:08:37
+ 2014/03/11 18:08:35,
+	Serialize complete at 2014/03/11 18:08:35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the task nice value is in [-20, 19] and the io priority is in [0, 7],
-and the convert method from niceval to ioprio is implemented with an
-opened code in task_nice_ioprio().
+From: Joe Perches <joe@perches.com>
 
-This patch move the implementation to a macro NICE_TO_IOPRIO, making
-it more readable and modular.
+Fix the indent issue and add a comment line for /* fall-through */.
 
+Signed-off-by: Joe Perches <joe@perches.com>
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 ---
- include/linux/ioprio.h | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ kernel/sys.c | 204 +++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 102 insertions(+), 102 deletions(-)
 
-diff --git a/include/linux/ioprio.h b/include/linux/ioprio.h
-index beb9ce1..c0faa0b 100644
---- a/include/linux/ioprio.h
-+++ b/include/linux/ioprio.h
-@@ -18,6 +18,11 @@
- #define ioprio_valid(mask)	(IOPRIO_PRIO_CLASS((mask)) != IOPRIO_CLASS_NONE)
- 
- /*
-+ * Convert the nice value [19,-20] to io priority value [0,7].
-+ */
-+#define NICE_TO_IOPRIO(nice)	(nice_to_rlimit(nice) / 5)
+diff --git a/kernel/sys.c b/kernel/sys.c
+index adaeab6..61a2ae9 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -182,39 +182,39 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
+ 	rcu_read_lock();
+ 	read_lock(&tasklist_lock);
+ 	switch (which) {
+-		case PRIO_PROCESS:
+-			if (who)
+-				p = find_task_by_vpid(who);
+-			else
+-				p = current;
+-			if (p)
+-				error = set_one_prio(p, niceval, error);
+-			break;
+-		case PRIO_PGRP:
+-			if (who)
+-				pgrp = find_vpid(who);
+-			else
+-				pgrp = task_pgrp(current);
+-			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
++	case PRIO_PROCESS:
++		if (who)
++			p = find_task_by_vpid(who);
++		else
++			p = current;
++		if (p)
++			error = set_one_prio(p, niceval, error);
++		break;
++	case PRIO_PGRP:
++		if (who)
++			pgrp = find_vpid(who);
++		else
++			pgrp = task_pgrp(current);
++		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
++			error = set_one_prio(p, niceval, error);
++		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
++		break;
++	case PRIO_USER:
++		uid = make_kuid(cred->user_ns, who);
++		user = cred->user;
++		if (!who)
++			uid = cred->uid;
++		else if (!uid_eq(uid, cred->uid) &&
++			 !(user = find_user(uid)))
++			goto out_unlock;	/* No processes for this user */
 +
-+/*
-  * These are the io priority groups as implemented by CFQ. RT is the realtime
-  * class, it always gets premium service. BE is the best-effort scheduling
-  * class, the default for any process. IDLE is the idle scheduling class, it
-@@ -52,7 +57,7 @@ enum {
-  */
- static inline int task_nice_ioprio(struct task_struct *task)
- {
--	return (task_nice(task) + 20) / 5;
-+	return NICE_TO_IOPRIO(task_nice(task));
- }
++		do_each_thread(g, p) {
++			if (uid_eq(task_uid(p), uid))
+ 				error = set_one_prio(p, niceval, error);
+-			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
+-			break;
+-		case PRIO_USER:
+-			uid = make_kuid(cred->user_ns, who);
+-			user = cred->user;
+-			if (!who)
+-				uid = cred->uid;
+-			else if (!uid_eq(uid, cred->uid) &&
+-				 !(user = find_user(uid)))
+-				goto out_unlock;	/* No processes for this user */
+-
+-			do_each_thread(g, p) {
+-				if (uid_eq(task_uid(p), uid))
+-					error = set_one_prio(p, niceval, error);
+-			} while_each_thread(g, p);
+-			if (!uid_eq(uid, cred->uid))
+-				free_uid(user);		/* For find_user() */
+-			break;
++		} while_each_thread(g, p);
++		if (!uid_eq(uid, cred->uid))
++			free_uid(user);		/* For find_user() */
++		break;
+ 	}
+ out_unlock:
+ 	read_unlock(&tasklist_lock);
+@@ -244,47 +244,47 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
+ 	rcu_read_lock();
+ 	read_lock(&tasklist_lock);
+ 	switch (which) {
+-		case PRIO_PROCESS:
+-			if (who)
+-				p = find_task_by_vpid(who);
+-			else
+-				p = current;
+-			if (p) {
++	case PRIO_PROCESS:
++		if (who)
++			p = find_task_by_vpid(who);
++		else
++			p = current;
++		if (p) {
++			niceval = 20 - task_nice(p);
++			if (niceval > retval)
++				retval = niceval;
++		}
++		break;
++	case PRIO_PGRP:
++		if (who)
++			pgrp = find_vpid(who);
++		else
++			pgrp = task_pgrp(current);
++		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
++			niceval = 20 - task_nice(p);
++			if (niceval > retval)
++				retval = niceval;
++		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
++		break;
++	case PRIO_USER:
++		uid = make_kuid(cred->user_ns, who);
++		user = cred->user;
++		if (!who)
++			uid = cred->uid;
++		else if (!uid_eq(uid, cred->uid) &&
++			 !(user = find_user(uid)))
++			goto out_unlock;	/* No processes for this user */
++
++		do_each_thread(g, p) {
++			if (uid_eq(task_uid(p), uid)) {
+ 				niceval = 20 - task_nice(p);
+ 				if (niceval > retval)
+ 					retval = niceval;
+ 			}
+-			break;
+-		case PRIO_PGRP:
+-			if (who)
+-				pgrp = find_vpid(who);
+-			else
+-				pgrp = task_pgrp(current);
+-			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
+-				niceval = 20 - task_nice(p);
+-				if (niceval > retval)
+-					retval = niceval;
+-			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
+-			break;
+-		case PRIO_USER:
+-			uid = make_kuid(cred->user_ns, who);
+-			user = cred->user;
+-			if (!who)
+-				uid = cred->uid;
+-			else if (!uid_eq(uid, cred->uid) &&
+-				 !(user = find_user(uid)))
+-				goto out_unlock;	/* No processes for this user */
+-
+-			do_each_thread(g, p) {
+-				if (uid_eq(task_uid(p), uid)) {
+-					niceval = 20 - task_nice(p);
+-					if (niceval > retval)
+-						retval = niceval;
+-				}
+-			} while_each_thread(g, p);
+-			if (!uid_eq(uid, cred->uid))
+-				free_uid(user);		/* for find_user() */
+-			break;
++		} while_each_thread(g, p);
++		if (!uid_eq(uid, cred->uid))
++			free_uid(user);		/* for find_user() */
++		break;
+ 	}
+ out_unlock:
+ 	read_unlock(&tasklist_lock);
+@@ -1541,41 +1541,41 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
+ 		return;
  
- /*
+ 	switch (who) {
+-		case RUSAGE_BOTH:
+-		case RUSAGE_CHILDREN:
+-			utime = p->signal->cutime;
+-			stime = p->signal->cstime;
+-			r->ru_nvcsw = p->signal->cnvcsw;
+-			r->ru_nivcsw = p->signal->cnivcsw;
+-			r->ru_minflt = p->signal->cmin_flt;
+-			r->ru_majflt = p->signal->cmaj_flt;
+-			r->ru_inblock = p->signal->cinblock;
+-			r->ru_oublock = p->signal->coublock;
+-			maxrss = p->signal->cmaxrss;
+-
+-			if (who == RUSAGE_CHILDREN)
+-				break;
+-
+-		case RUSAGE_SELF:
+-			thread_group_cputime_adjusted(p, &tgutime, &tgstime);
+-			utime += tgutime;
+-			stime += tgstime;
+-			r->ru_nvcsw += p->signal->nvcsw;
+-			r->ru_nivcsw += p->signal->nivcsw;
+-			r->ru_minflt += p->signal->min_flt;
+-			r->ru_majflt += p->signal->maj_flt;
+-			r->ru_inblock += p->signal->inblock;
+-			r->ru_oublock += p->signal->oublock;
+-			if (maxrss < p->signal->maxrss)
+-				maxrss = p->signal->maxrss;
+-			t = p;
+-			do {
+-				accumulate_thread_rusage(t, r);
+-			} while_each_thread(p, t);
++	case RUSAGE_BOTH:
++	case RUSAGE_CHILDREN:
++		utime = p->signal->cutime;
++		stime = p->signal->cstime;
++		r->ru_nvcsw = p->signal->cnvcsw;
++		r->ru_nivcsw = p->signal->cnivcsw;
++		r->ru_minflt = p->signal->cmin_flt;
++		r->ru_majflt = p->signal->cmaj_flt;
++		r->ru_inblock = p->signal->cinblock;
++		r->ru_oublock = p->signal->coublock;
++		maxrss = p->signal->cmaxrss;
++
++		if (who == RUSAGE_CHILDREN)
+ 			break;
++		/* fall-through */
++	case RUSAGE_SELF:
++		thread_group_cputime_adjusted(p, &tgutime, &tgstime);
++		utime += tgutime;
++		stime += tgstime;
++		r->ru_nvcsw += p->signal->nvcsw;
++		r->ru_nivcsw += p->signal->nivcsw;
++		r->ru_minflt += p->signal->min_flt;
++		r->ru_majflt += p->signal->maj_flt;
++		r->ru_inblock += p->signal->inblock;
++		r->ru_oublock += p->signal->oublock;
++		if (maxrss < p->signal->maxrss)
++			maxrss = p->signal->maxrss;
++		t = p;
++		do {
++			accumulate_thread_rusage(t, r);
++		} while_each_thread(p, t);
++		break;
+ 
+-		default:
+-			BUG();
++	default:
++		BUG();
+ 	}
+ 	unlock_task_sighand(p, &flags);
+ 
 -- 
 1.8.2.1
 
