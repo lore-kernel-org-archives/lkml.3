@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379AbaCKRuF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:50:05 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51688 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755318AbaCKRuC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:50:02 -0400
-Message-ID: <531F4CC8.5010202@codeaurora.org>
-Date: Tue, 11 Mar 2014 10:50:00 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753924AbaCKRxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:53:42 -0400
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:58339
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753189AbaCKRxl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 13:53:41 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Joe Perches <joe@perches.com>
+CC: Fred Akers <knivey@botops.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] Staging: comedi: addi-data: Fix long CamelCase
+ function names
+Thread-Topic: [PATCH v2] Staging: comedi: addi-data: Fix long CamelCase
+ function names
+Thread-Index: AQHPPU/6/O8B+isg3EKcFid9acWnCZrcJjpggAB46gD//4rs0A==
+Date: Tue, 11 Mar 2014 17:53:39 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825DAD114@P3PWEX4MB008.ex4.secureserver.net>
+References: <1394350009-23464-1-git-send-email-knivey@botops.net>
+	 <1394559177-14616-1-git-send-email-knivey@botops.net>
+	 <DC148C5AA1CEBA4E87973D432B1C2D8825DAD0AF@P3PWEX4MB008.ex4.secureserver.net>
+ <1394560152.20021.3.camel@joe-AO722>
+In-Reply-To: <1394560152.20021.3.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Josh Cartwright <joshc@codeaurora.org>, linux-input@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 0/9] Use regmap+devm+DT in pm8xxx input drivers
-References: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
+On Tuesday, March 11, 2014 10:49 AM, Joe Perches wrote:
+> On Tue, 2014-03-11 at 17:42 +0000, Hartley Sweeten wrote:
+>> On Tuesday, March 11, 2014 10:33 AM, Fred Akers wrote:
+>>> This patch fixes a few function names that are very long and are
+>>> not in the correct naming style
+> []
+>>> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+> []
+>>> @@ -111,7 +111,7 @@ static int i_Temp;
+>>>  static int i_Flag = 1;
+>>>  /*
+>>>  +----------------------------------------------------------------------------+
+>>> -| Function   Name   : int i_APCI035_ConfigTimerWatchdog                      |
+>>> +| Function   Name   : int apci035_timer_config                      |
+>>>  |			  (struct comedi_device *dev,struct comedi_subdevice *s,               |
+>>>  |                      struct comedi_insn *insn,unsigned int *data)                     |
+>>>  +----------------------------------------------------------------------------+
+>> 
+>> Nitpick... These obvious function comment blocks should be removed.
+>> That should be a separate patch. Maybe a patch 1/2 before this one so
+>> you don't have to update the comments.
+>
+> Maybe convert them to kernel-doc style?
+>
+> /**
+>  * foobar() - short function description of foobar
+>  * @arg1:	Describe the first argument to foobar.
+>  * @arg2:	Describe the second argument to foobar.
+>  *		One can provide multiple line descriptions
+>  *		for arguments.
 
-On 03/04/14 10:34, Stephen Boyd wrote:
-> These patches move the pm8xxx input drivers over to use devm_* APIs
-> and regmap. This breaks the dependency of these drivers on the pm8xxx
-> specific read/write calls and also simplifies the probe code a bit.
-> Finally we add devicetree support to these drivers so they can be probed
-> on the platforms that are supported upstream.
->
-> Changes since v4:
->  * Added reg property to bindings
->  * Added linux,* properties to keypad binding
->
-> Changes since v3:
->  * Dropped devm conversion patch for pwrkey
->  * Fixed compilation of keypad
->
-> Changes since v2:
->  * Rebased to v3.14-rc3
->
-> Changes since v1:
->  * Picked up Dmitry's version of devm for pwrkey
->  * Added DT bindings and parsing patches
->  * Dropped patches picked up by Dmitry
->
-> Stephen Boyd (9):
->   Input: pmic8xxx-keypad - Fix build by removing gpio configuration
->   Input: pmic8xxx-keypad - Migrate to devm_* APIs
->   Input: pmic8xxx-keypad - Migrate to regmap APIs
->   Input: pmic8xxx-keypad - Migrate to DT
->   Input: pmic8xxx-pwrkey - Migrate to DT
->   Input: pm8xxx-vibrator - Add DT match table
->   devicetree: bindings: Document PM8921/8058 keypads
->   devicetree: bindings: Document PM8921/8058 power keys
->   devicetree: bindings: Document PM8921/8058 vibrators
->
->  .../bindings/input/qcom,pm8xxx-keypad.txt          |  89 ++++++
->  .../bindings/input/qcom,pm8xxx-pwrkey.txt          |  46 +++
->  .../devicetree/bindings/input/qcom,pm8xxx-vib.txt  |  22 ++
->  drivers/input/keyboard/pmic8xxx-keypad.c           | 348 ++++++++-------------
->  drivers/input/misc/pm8xxx-vibrator.c               |   8 +
->  drivers/input/misc/pmic8xxx-pwrkey.c               |  33 +-
->  include/linux/input/pmic8xxx-keypad.h              |  52 ---
->  include/linux/input/pmic8xxx-pwrkey.h              |  31 --
->  8 files changed, 316 insertions(+), 313 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
->  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
->  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-vib.txt
->  delete mode 100644 include/linux/input/pmic8xxx-keypad.h
->  delete mode 100644 include/linux/input/pmic8xxx-pwrkey.h
->
+For exported functions I agree, but the (dev, s, insn, data) is athe standard
+parameter list for most of the comedi subdevice callbacks. I don't think
+these need any comments.
 
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Regards,
+Hartley
 
