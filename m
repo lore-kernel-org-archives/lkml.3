@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874AbaCKJ1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 05:27:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65276 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753901AbaCKJWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 05:22:48 -0400
-X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9677976"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: joe@perches.com, peterz@infradead.org, mingo@kernel.org,
+	id S1754653AbaCKJ3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 05:29:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46289 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955AbaCKJ3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 05:29:08 -0400
+Date: Tue, 11 Mar 2014 10:28:56 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, mingo@kernel.org,
         tglx@linutronix.de, heiko.carstens@de.ibm.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 05/16] tools/mq_perf_tests: Replace hardcoding of -20 with MIN_NICE.
-Date: Tue, 11 Mar 2014 17:20:26 +0800
-Message-Id: <d501cf102e90d1e7c94d31b196dc76e89a2d8d15.1394529373.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1394529373.git.yangds.fnst@cn.fujitsu.com>
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 07/16] ioprio: Add a macro named NICE_TO_IOPRIO.
+Message-ID: <20140311092856.GU9987@twins.programming.kicks-ass.net>
 References: <cover.1394529373.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 17:19:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 17:20:02,
-	Serialize complete at 2014/03/11 17:20:02
+ <008cf8bba167646424d0fca68d96463feace2aee.1394529373.git.yangds.fnst@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <008cf8bba167646424d0fca68d96463feace2aee.1394529373.git.yangds.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- tools/testing/selftests/mqueue/mq_perf_tests.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Tue, Mar 11, 2014 at 05:20:28PM +0800, Dongsheng Yang wrote:
+> As the task nice value is in [-20, 19] and the io priority is in [0, 7],
+> and the convert method from niceval to ioprio is implemented with an
+> opened code in task_nice_ioprio().
+> 
+> This patch move the implementation to a macro NICE_TO_IOPRIO, making
+> it more readable and modular.
+> 
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> ---
+>  include/linux/ioprio.h | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/ioprio.h b/include/linux/ioprio.h
+> index beb9ce1..c0faa0b 100644
+> --- a/include/linux/ioprio.h
+> +++ b/include/linux/ioprio.h
+> @@ -18,6 +18,11 @@
+>  #define ioprio_valid(mask)	(IOPRIO_PRIO_CLASS((mask)) != IOPRIO_CLASS_NONE)
+>  
+>  /*
+> + * Convert the nice value [19,-20] to io priority value [0,7].
+> + */
+> +#define NICE_TO_IOPRIO(nice)	(nice_to_rlimit(nice) / 5)
+> +
+> +/*
+>   * These are the io priority groups as implemented by CFQ. RT is the realtime
+>   * class, it always gets premium service. BE is the best-effort scheduling
+>   * class, the default for any process. IDLE is the idle scheduling class, it
+> @@ -52,7 +57,7 @@ enum {
+>   */
+>  static inline int task_nice_ioprio(struct task_struct *task)
+>  {
+> -	return (task_nice(task) + 20) / 5;
+> +	return NICE_TO_IOPRIO(task_nice(task));
+>  }
 
-diff --git a/tools/testing/selftests/mqueue/mq_perf_tests.c b/tools/testing/selftests/mqueue/mq_perf_tests.c
-index 2fadd4b..09dce51 100644
---- a/tools/testing/selftests/mqueue/mq_perf_tests.c
-+++ b/tools/testing/selftests/mqueue/mq_perf_tests.c
-@@ -527,9 +527,9 @@ void increase_limits(void)
- 	while (try_set(max_msgsize, cur_max_msgsize += 1024))
- 		;
- 	cur_max_msgsize = get(max_msgsize);
--	if (setpriority(PRIO_PROCESS, 0, -20) != 0)
-+	if (setpriority(PRIO_PROCESS, 0, MIN_NICE) != 0)
- 		shutdown(2, "setpriority()", __LINE__);
--	cur_nice = -20;
-+	cur_nice = MIN_NICE;
- }
- 
- int main(int argc, char *argv[])
--- 
-1.8.2.1
-
+How exactly is adding a macro and code complexity making this code
+better?
