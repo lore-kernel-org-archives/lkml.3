@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393AbaCKK1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:27:43 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:35111 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754708AbaCKK1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:27:42 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Jeremy Kerr <jk@ozlabs.org>, Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCHv6 2/6] ppc/cell: use get_unused_fd_flags(0) instead of get_unused_fd()
+	id S1755560AbaCKKbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:31:37 -0400
+Received: from albert.telenet-ops.be ([195.130.137.90]:43615 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754762AbaCKKX7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:23:59 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org
+Subject: [PATCH trivial 07/16] PM / Hibernate: Spelling s/anonymouns/anonymous/
 Date: Tue, 11 Mar 2014 11:23:41 +0100
-Message-Id: <2e1a8b1869ff86b1f238e6f4e6ce4b5f2b17b03f.1394532336.git.ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <cover.1394532336.git.ydroneaud@opteya.com>
-References: <cover.1394532336.git.ydroneaud@opteya.com>
-In-Reply-To: <cover.1394532336.git.ydroneaud@opteya.com>
-References: <cover.1394532336.git.ydroneaud@opteya.com>
+Message-Id: <1394533430-4746-7-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
+References: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Macro get_unused_fd() is used to allocate a file descriptor with
-default flags. Those default flags (0) can be "unsafe":
-O_CLOEXEC must be used by default to not leak file descriptor
-across exec().
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Instead of macro get_unused_fd(), function get_unused_fd_flags()
-(or anon_inode_getfd()) should be used with flags given by userspace.
-If not possible, flags should be set to O_CLOEXEC to provide userspace
-with a default safe behavor.
-
-In a further patch, get_unused_fd() will be removed so that new code
-start using get_unused_fd_flags() (or anon_inode_getfd()) with correct
-flags.
-
-This patch replaces calls to get_unused_fd() with equivalent call to
-get_unused_fd_flags(0) to preserve current behavor for existing code.
-
-The hard coded flag value (0) should be reviewed on a per-subsystem
-basis, and, if possible, set to O_CLOEXEC.
-
-Link: http://lkml.kernel.org/r/cover.1394532336.git.ydroneaud@opteya.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: linux-pm@vger.kernel.org
 ---
- arch/powerpc/platforms/cell/spufs/inode.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/power/snapshot.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
-index 87ba7cf99cd7..51effcec30d8 100644
---- a/arch/powerpc/platforms/cell/spufs/inode.c
-+++ b/arch/powerpc/platforms/cell/spufs/inode.c
-@@ -301,7 +301,7 @@ static int spufs_context_open(struct path *path)
- 	int ret;
- 	struct file *filp;
- 
--	ret = get_unused_fd();
-+	ret = get_unused_fd_flags(0);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -518,7 +518,7 @@ static int spufs_gang_open(struct path *path)
- 	int ret;
- 	struct file *filp;
- 
--	ret = get_unused_fd();
-+	ret = get_unused_fd_flags(0);
- 	if (ret < 0)
- 		return ret;
- 
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index d9f61a145802..149e745eaa52 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1268,7 +1268,7 @@ static void free_unnecessary_pages(void)
+  * [number of saveable pages] - [number of pages that can be freed in theory]
+  *
+  * where the second term is the sum of (1) reclaimable slab pages, (2) active
+- * and (3) inactive anonymouns pages, (4) active and (5) inactive file pages,
++ * and (3) inactive anonymous pages, (4) active and (5) inactive file pages,
+  * minus mapped file pages.
+  */
+ static unsigned long minimum_image_size(unsigned long saveable)
 -- 
-1.8.5.3
+1.7.9.5
 
