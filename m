@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561AbaCKW2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 18:28:11 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:41184 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347AbaCKW2J (ORCPT
+	id S1755657AbaCKWcT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 18:32:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63130 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753208AbaCKWcS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 18:28:09 -0400
-Date: Tue, 11 Mar 2014 23:28:02 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] r8169: fix the incorrect tx descriptor version
-Message-ID: <20140311222802.GA17770@electric-eye.fr.zoreil.com>
-References: <1394521919-4257-1-git-send-email-hayeswang@realtek.com>
+	Tue, 11 Mar 2014 18:32:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,633,1389772800"; 
+   d="scan'208";a="496534868"
+From: "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>
+To: Joe Perches <joe@perches.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "ellis@spinics.net" <ellis@spinics.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] MAINTAINERS: wimax@linuxwimax.org is subscribers-only
+Thread-Topic: [PATCH] MAINTAINERS: wimax@linuxwimax.org is subscribers-only
+Thread-Index: AQHPPXQ3vnJVfGw1+E+cKg2wmj+2pZrceGex
+Date: Tue, 11 Mar 2014 22:31:33 +0000
+Message-ID: <24E0806A-7CC5-48EA-A975-9AD1CC5288C2@intel.com>
+References: <CAMuHMdW0cojVgDmTK0nHpY=xGFkM=10fJFe=SFP6En8k7Uwxvw@mail.gmail.com>
+	 <201403112127.s2BLRT40024536@amd.spinics.net>
+	 <CAMuHMdUJvukW7kwgTr49Atutgv71Ogt1uTYGz-Bawobfaa82gg@mail.gmail.com>,<1394574757.20021.19.camel@joe-AO722>
+In-Reply-To: <1394574757.20021.19.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394521919-4257-1-git-send-email-hayeswang@realtek.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-> The tx descriptor version of RTL8111B belong to RTL_TD_0.
+(Sorry for the formatting, iPhone email)
+
+The mailing list is alive (judging for all the spam bounces I get) but valid traffic has been pretty much nothing for a long time. 
+
+Patches have trickled through for the last years with me maybe once having to ack. 
+
+So I'm ok with either. 
+
+> On Mar 11, 2014, at 14:53, "Joe Perches" <joe@perches.com> wrote:
+
+> The archive of the mailing list looks as if it's been
+> dead for years.
 > 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-
-All 8168b chipsets should had shared the same Tx descriptor layout.
-
-2b7b431858c284b62c18baaf2cea571be2797d5a ("r8169: TSO fixes.") got it
-right but it was broken after a couple of weeks by
-d58d46b5d85139d18eb939aa7279c160bab70484 ("r8169: jumbo fixes") in 2011:
-[...]
- 	[RTL_GIGA_MAC_VER_17] =
--		_R("RTL8168b/8111b",	RTL_TD_0, NULL),
-+		_R("RTL8168b/8111b",	RTL_TD_1, NULL, JUMBO_4K, false),
- 	[RTL_GIGA_MAC_VER_18] =
-
-Oops.
-
--- 
-Ueimor
+> https://lists.linuxwimax.org/pipermail/wimax/
+> 
+> Inaky, is this still alive at all?
+> 
+> If not, I suggest orphaning both WIMAX STACK and the
+> INTEL WIRELESS WIMAX sections and removing Inaky
+> as maintainer.
