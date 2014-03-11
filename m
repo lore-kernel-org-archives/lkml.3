@@ -1,45 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680AbaCKT7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 15:59:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55430 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755327AbaCKT7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 15:59:10 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH 1/2] audit: remove superfluous new- prefix in AUDIT_LOGIN messages
-Date: Tue, 11 Mar 2014 15:58:22 -0400
-Message-Id: <ebfca97e5d32fc1edf604b2a3137c18a0b13dba0.1394567663.git.rgb@redhat.com>
-In-Reply-To: <cover.1394567663.git.rgb@redhat.com>
-References: <cover.1394567663.git.rgb@redhat.com>
-In-Reply-To: <cover.1394567663.git.rgb@redhat.com>
-References: <cover.1394567663.git.rgb@redhat.com>
+	id S1755589AbaCKUBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:01:43 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:53097 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755471AbaCKUBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 16:01:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140311095910.GA5834@console-pimps.org>
+References: <531d3b0e.4MeVQMzUoamEWeW7%fengguang.wu@intel.com>
+	<CAGXu5jJsyAHdiMfoAZHS-4w1+rGKGQH9s9FF83Y59VLmczfaXQ@mail.gmail.com>
+	<20140311095910.GA5834@console-pimps.org>
+Date: Tue, 11 Mar 2014 13:01:40 -0700
+X-Google-Sender-Auth: dgac-Mqn2LSa4fJdJbHj-2HmPTc
+Message-ID: <CAGXu5jLLD7n0gWXUd-ME5iDYh=ywaG9eDjCkkcSY3Rk1pgfJTg@mail.gmail.com>
+Subject: Re: [kees:format-security 2/3] arch/sh/kernel/dumpstack.c:118:2:
+ error: format not a string literal and no format arguments
+From: Kees Cook <keescook@chromium.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        kbuild test robot <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new- prefix on ses and auid are un-necessary and break ausearch.
+On Tue, Mar 11, 2014 at 2:59 AM, Matt Fleming <matt@console-pimps.org> wrote:
+> On Mon, 10 Mar, at 10:41:57AM, Kees Cook wrote:
+>> > 4e14dfc7 Matt Fleming 2009-08-07  113  /*
+>> > 4e14dfc7 Matt Fleming 2009-08-07  114   * Print one address/symbol entries per line.
+>> > 4e14dfc7 Matt Fleming 2009-08-07  115   */
+>> > 4e14dfc7 Matt Fleming 2009-08-07  116  static void print_trace_address(void *data, unsigned long addr, int reliable)
+>> > 4e14dfc7 Matt Fleming 2009-08-07  117  {
+>> > 4e14dfc7 Matt Fleming 2009-08-07 @118   printk(data);
+>>
+>> This needs to be "printk("%s", data);" so there is no chance of having
+>> "data" interpreted as a format string itself.
+>
+> OMG, I suck. Thanks for the report Kees. Have you got a patch for x86?
+> I think that's where this code came from.
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- kernel/auditsc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Your patch looks great, thanks!
 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index eb01d47..3bc12d2 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1984,7 +1984,7 @@ static void audit_log_set_loginuid(kuid_t koldloginuid, kuid_t kloginuid,
- 	if (!ab)
- 		return;
- 	audit_log_format(ab, "pid=%d uid=%u"
--			 " old-auid=%u new-auid=%u old-ses=%u new-ses=%u"
-+			 " old-auid=%u auid=%u old-ses=%u ses=%u"
- 			 " res=%d",
- 			 task_pid_nr(current), uid,
- 			 oldloginuid, loginuid, oldsessionid, sessionid,
+-Kees
+
+>
+> Including Andrew, because I'm not sure who else is going to take this
+> patch.
+>
+> ---
+>
+> From 2284f3a27f68cec665aa982c0a226cf3fbf96ddf Mon Sep 17 00:00:00 2001
+> From: Matt Fleming <matt.fleming@intel.com>
+> Date: Tue, 11 Mar 2014 09:50:26 +0000
+> Subject: [PATCH] sh: Fix format string bug in stack tracer
+>
+> Kees reported the following error,
+>
+>    arch/sh/kernel/dumpstack.c: In function 'print_trace_address':
+>>> arch/sh/kernel/dumpstack.c:118:2: error: format not a string literal and no format arguments [-Werror=format-security]
+>
+> Use the "%s" format so that it's impossible to interpret 'data' as a
+> format string.
+>
+> Reported-by: Kees Cook <keescook@chromium.org>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> ---
+>  arch/sh/kernel/dumpstack.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/sh/kernel/dumpstack.c b/arch/sh/kernel/dumpstack.c
+> index b959f5592604..8dfe645bcc4b 100644
+> --- a/arch/sh/kernel/dumpstack.c
+> +++ b/arch/sh/kernel/dumpstack.c
+> @@ -115,7 +115,7 @@ static int print_trace_stack(void *data, char *name)
+>   */
+>  static void print_trace_address(void *data, unsigned long addr, int reliable)
+>  {
+> -       printk(data);
+> +       printk("%s", (char *)data);
+>         printk_address(addr, reliable);
+>  }
+>
+> --
+> 1.8.5.3
+>
+> --
+> Matt Fleming, Intel Open Source Technology Center
+
+
+
 -- 
-1.7.1
-
+Kees Cook
+Chrome OS Security
