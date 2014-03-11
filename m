@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729AbaCKKLY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:11:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41078 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751324AbaCKKLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:11:23 -0400
-X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9678271"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
-        tglx@linutronix.de, heiko.carstens@de.ibm.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 01/17] sched/prio: Add a inline function named nice_to_rlimit() in prio.h.
-Date: Tue, 11 Mar 2014 18:09:09 +0800
-Message-Id: <5ea9bc191ef5f47bef0623e2e11db24e4ea281c2.1394532288.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:35,
-	Serialize complete at 2014/03/11 18:08:35
+	id S1754692AbaCKKVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:21:45 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:41503 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaCKKVn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:21:43 -0400
+Message-ID: <531EE38D.7070105@linux.vnet.ibm.com>
+Date: Tue, 11 Mar 2014 15:51:01 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: Re: [PATCH] PM: Add missing "freeze" state
+References: <1394532270-4101-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1394532270-4101-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031110-5816-0000-0000-00000CC7F04C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add an inline function named nice_to_rlimit() in prio.h to
-convert nice value [19,-20] to rlimit style value [1,40].
+On 03/11/2014 03:34 PM, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- include/linux/sched/prio.h | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-diff --git a/include/linux/sched/prio.h b/include/linux/sched/prio.h
-index ac32258..29756f8 100644
---- a/include/linux/sched/prio.h
-+++ b/include/linux/sched/prio.h
-@@ -41,4 +41,12 @@
- #define TASK_USER_PRIO(p)	USER_PRIO((p)->static_prio)
- #define MAX_USER_PRIO		(USER_PRIO(MAX_PRIO))
- 
-+/*
-+ * Convert nice value [19,-20] to rlimit style value [1,40].
-+ */
-+static inline long nice_to_rlimit(long nice)
-+{
-+	return (MAX_NICE - nice + 1);
-+}
-+
- #endif /* _SCHED_PRIO_H */
--- 
-1.8.2.1
+While at it, can you also fix up the comment over the state_show()
+function in kernel/power/main.c? It is also similarly outdated.
+
+Regards,
+Srivatsa S. Bhat
+
+> ---
+>  Documentation/ABI/testing/sysfs-power |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-power b/Documentation/ABI/testing/sysfs-power
+> index 205a73878441..64c9276e9421 100644
+> --- a/Documentation/ABI/testing/sysfs-power
+> +++ b/Documentation/ABI/testing/sysfs-power
+> @@ -12,8 +12,9 @@ Contact:	Rafael J. Wysocki <rjw@rjwysocki.net>
+>  Description:
+>  		The /sys/power/state file controls the system power state.
+>  		Reading from this file returns what states are supported,
+> -		which is hard-coded to 'standby' (Power-On Suspend), 'mem'
+> -		(Suspend-to-RAM), and 'disk' (Suspend-to-Disk).
+> +		which is hard-coded to 'freeze' (Low-Power Idle), 'standby'
+> +		(Power-On Suspend), 'mem' (Suspend-to-RAM), and 'disk'
+> +		(Suspend-to-Disk).
+> 
+>  		Writing to this file one of these strings causes the system to
+>  		transition into that state. Please see the file
+> 
 
