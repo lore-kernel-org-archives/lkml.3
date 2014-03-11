@@ -1,80 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939AbaCKN1i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:27:38 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:57376 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845AbaCKN1e (ORCPT
+	id S1755003AbaCKN2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:28:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60975 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441AbaCKN2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:27:34 -0400
+	Tue, 11 Mar 2014 09:28:10 -0400
+Message-ID: <531F0F4F.3070008@ti.com>
+Date: Tue, 11 Mar 2014 15:27:43 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140311103119.GW9987@twins.programming.kicks-ass.net>
-References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org>
- <1394003906-11630-3-git-send-email-vincent.guittot@linaro.org>
- <53175A3C.8010100@arm.com> <CAKfTPtC1_t78hvOw9u-t1BqUZj_dO3WFYp2OjX=RFZP-A7zSbg@mail.gmail.com>
- <20140311103119.GW9987@twins.programming.kicks-ass.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 11 Mar 2014 14:27:12 +0100
-Message-ID: <CAKfTPtDHfXxheXBoPeAxMGROroHa7YrW7y_RCB9nSoKCeTa66w@mail.gmail.com>
-Subject: Re: [PATCH 2/6] sched: rework of sched_domain topology definition
-To: Peter Zijlstra <peterz@infradead.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: Philipp Zabel <p.zabel@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core
+ to drivers/of
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <139468148.3QhLg3QYq1@avalon> <531F08A8.300@ti.com> <1883687.VdfitvQEN3@avalon>
+In-Reply-To: <1883687.VdfitvQEN3@avalon>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="0Q6TkmB7CV19g7QLgQpItgpNRphxUoJ7W"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 March 2014 11:31, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Mar 06, 2014 at 04:32:35PM +0800, Vincent Guittot wrote:
->> > Never got the new name DIE for CPU? Might confuse people when they use
->> > /proc/sys/kernel/sched_domain/cpuX/domainY/name or sched_domain_debug_one().
->>
->> In fact, CPU is also confusing because it's used for different things.
->> But if it makes things even more confusing, i can come back to CPU
->
-> Yeah, not sure DIE is the right thing either; because there's multi-die
-> packages that get classified under CPU :-)
->
-> Take for example the Core 2 Quad, which was 2 dual core dies glued
-> together in a single package.
->
-> There's also the AMD bulldozer which glued two dies into a single
-> package; but for those its not a problem because each die is a separate
-> numa node, so there DIE would actually be the correct term and PACKAGE
-> would be wrong.
->
-> So while CPU sucks, I'm not sure we can come up with anything that's
-> actually correct. That said; we could try for something less wrong than
-> CPU :-)
+--0Q6TkmB7CV19g7QLgQpItgpNRphxUoJ7W
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-OK
+On 11/03/14 15:16, Laurent Pinchart wrote:
 
-Dietmar,
+>> And if I gathered Grant's opinion correctly (correct me if I'm wrong),=
 
-Have you got another naming that DIE that could suit better ?
-otherwise i will keep it
+>> he thinks things should be explicit, i.e. the bindings for, say, an
+>> encoder should state that the encoder's output endpoint _must_ contain=
+ a
+>> remote-endpoint property, whereas the encoder's input endpoint _must
+>> not_ contain a remote-endpoint property.
+>=20
+> Actually my understand was that DT links would have the same direction =
+as the=20
+> data flow. There would be no ambiguity in that case as the direction of=
+ the=20
 
-Vincent
+Ok. At least at some point in the discussion the rule of thumb was to
+have the "master" point at the "slave", which are a bit vague terms, but
+I think both display and camera controllers were given as examples of
+"master".
 
->
-> I'm not sure there are a lot of people who see/know the names of these
-> domains to be bothered by a change in them; it might be limited to just
-> us for all I know.
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> data flow is known. What happens for bidirectional data flows still nee=
+d to be=20
+> discussed though. And if we want to use the of-graph bindings to descri=
+be=20
+> graphs without a data flow, a decision will need to be taken there too.=
+
+
+Yep. My worry is that if the link direction is defined in the bindings
+for the device, somebody will at some point have a complex board which
+happens to use two devices in such a way, that either neither of them
+point to each other, or both point to each other.
+
+Maybe we can make sure that never happens, but I feel a bit nervous
+about it especially for bi-directional cases. If the link has no clear
+main-dataflow direction, it may be a bit difficult to say which way to li=
+nk.
+
+With double-linking all those concerns just disappear.
+
+ Tomi
+
+
+
+--0Q6TkmB7CV19g7QLgQpItgpNRphxUoJ7W
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTHw9PAAoJEPo9qoy8lh71xrIP/37RUXTwCDENqR3hT6yGCTh1
+0yc5WhysNkn71ov48iYGQdHZyA9Qb/SAXaLcNegr/f+0URNcV9AdQijWP59GdnE2
+G0qCzycaHdJDOP/r7GomjyI4gHn23oDpAGy+80JtWOEyRSQGwibgcxnouodJ6F71
+E/ZSTnWlMG/m+EgWpfL7HySwVnKUD1uC2kqawqrG+3IlsV0Hjeu0CK9R184zBdwm
+AiHmRdo+hgId0EP4xf27HovzkjT9U4OGPK6bqsEcgt7jTjp7D7PLWuzuo4RHZbic
+gFGmrua6biFN6qmMdUTzzLR7fq6CCDov8YGjsKUZXbuURWJH4XviPoHtaVarr0jZ
+C8AOM3bKwl4efSn/iAC/ms17wwfp0TxkoT06z44WhueLYMi+sKVh4xhiZErN63gZ
+opOusNWEAX73IFmOV9RjPbAT0iJ022cFshM4L4kOH2enpHC552vfv/ctgIpiliDB
+nSN2tc+ePjBDcHL+ygZ4iojydHKhChtOazcA0wd0qEyrcqoSvQsYzX+yagwxef34
+R7Gh7Jz2jhqBQkdswPLYbioy8FEowOtEKRiZgRuf4duW4stBzrDCOUO1foCB5vAK
+A+kxlcwnhMXyRSyF8uJ9/KDAnvm273Ohf2wfEvdcy85jLXr/AVHG79Xla+vYpLK6
+Gih+a+PMZx1pUt3I2SXK
+=Ze4i
+-----END PGP SIGNATURE-----
+
+--0Q6TkmB7CV19g7QLgQpItgpNRphxUoJ7W--
