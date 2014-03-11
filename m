@@ -1,122 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869AbaCKMoS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 08:44:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35745 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755238AbaCKMku (ORCPT
+	id S1755886AbaCKMoX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 08:44:23 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64957 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755238AbaCKMoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 08:40:50 -0400
-Date: Tue, 11 Mar 2014 05:39:28 -0700
-From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-734ff2a71f9e6aa6fedfa5a9a34818b8586516d5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, ktkhai@parallels.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        juri.lelli@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, ktkhai@parallels.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        juri.lelli@gmail.com
-In-Reply-To: <1393946746.3643.3.camel@tkhai>
-References: <1393946746.3643.3.camel@tkhai>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt:
-  Fix picking RT and DL tasks from empty queue
-Git-Commit-ID: 734ff2a71f9e6aa6fedfa5a9a34818b8586516d5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 11 Mar 2014 08:44:19 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-acpi@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: "can't evaluate _CRS: 1" messages since b355cee [ACPI / resources: ignore invalid ACPI device resources]
+Date: Tue, 11 Mar 2014 13:59:39 +0100
+Message-ID: <1586607.L4KMXXX471@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140311084409.GA282@x4>
+References: <20140311084409.GA282@x4>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  734ff2a71f9e6aa6fedfa5a9a34818b8586516d5
-Gitweb:     http://git.kernel.org/tip/734ff2a71f9e6aa6fedfa5a9a34818b8586516d5
-Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Tue, 4 Mar 2014 19:25:46 +0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 11 Mar 2014 12:05:35 +0100
+On Tuesday, March 11, 2014 09:44:09 AM Markus Trippelsdorf wrote:
+> Since:
+>  commit b355cee88e3b1a193f0e9a81db810f6f83ad728b
+>  Author: Zhang Rui <rui.zhang@intel.com>
+>  Date:   Thu Feb 27 11:37:15 2014 +0800
+> 
+>      ACPI / resources: ignore invalid ACPI device resources
+> 
+> The following error message is printed three times during boot on my
+> machine: "can't evaluate _CRS: 1"
 
-sched/rt: Fix picking RT and DL tasks from empty queue
+It may be catching a BIOS bug actually.
 
-The problems:
+Please attach the output of acpidump from that system.
 
-1) We check for rt_nr_running before call of put_prev_task().
-   If previous task is RT, its rt_rq may become throttled
-   and dequeued after this call.
+> Here's the dmesg diff:
+> 
+> @@ -308,6 +308,8 @@
+>  Switched to clocksource hpet
+>  pnp: PnP ACPI init
+>  ACPI: bus type PNP registered
+> +pnp 00:00: unknown resource type 10 in _CRS
+> +pnp 00:00: can't evaluate _CRS: 1
+>  system 00:00: Plug and Play ACPI device, IDs PNP0c02 (active)
+>  pnp 00:01: [dma 4]
+>  pnp 00:01: Plug and Play ACPI device, IDs PNP0200 (active)
+> @@ -318,6 +320,8 @@
+>  system 00:06: [mem 0xfec00000-0xfec00fff] could not be reserved
+>  system 00:06: [mem 0xfee00000-0xfee00fff] has been reserved
+>  system 00:06: Plug and Play ACPI device, IDs PNP0c02 (active)
+> +pnp 00:07: unknown resource type 4 in _CRS
+> +pnp 00:07: can't evaluate _CRS: 1
+>  system 00:07: [io  0x04d0-0x04d1] has been reserved
+>  system 00:07: [io  0x040b] has been reserved
+>  system 00:07: [io  0x04d6] has been reserved
+> @@ -334,19 +338,9 @@
+>  system 00:07: [io  0x0cd8-0x0cdf] has been reserved
+>  system 00:07: [io  0x0b00-0x0b3f] has been reserved
+>  system 00:07: [io  0x0800-0x089f] could not be reserved
+> -system 00:07: [io  0x0b00-0x0b0f] has been reserved
+> -system 00:07: [io  0x0b20-0x0b3f] has been reserved
+> -system 00:07: [io  0x0900-0x090f] has been reserved
+> -system 00:07: [io  0x0910-0x091f] has been reserved
+> -system 00:07: [io  0xfe00-0xfefe] has been reserved
+> -system 00:07: [mem 0xdff00000-0xdfffffff] has been reserved
+> -system 00:07: [mem 0xffb80000-0xffbfffff] has been reserved
+> -system 00:07: [mem 0xfec10000-0xfec1001f] has been reserved
+>  system 00:07: Plug and Play ACPI device, IDs PNP0c02 (active)
+> -system 00:08: [io  0x0230-0x023f] has been reserved
+> -system 00:08: [io  0x0290-0x029f] has been reserved
+> -system 00:08: [io  0x0f40-0x0f4f] has been reserved
+> -system 00:08: [io  0x0a30-0x0a3f] has been reserved
+> +pnp 00:08: unknown resource type 4 in _CRS
+> +pnp 00:08: can't evaluate _CRS: 1
+>  system 00:08: Plug and Play ACPI device, IDs PNP0c02 (active)
+>  system 00:09: [mem 0xe0000000-0xefffffff] has been reserved
+>  system 00:09: Plug and Play ACPI device, IDs PNP0c02 (active)
+> 
+> 
 
-In case of p is from rt->rq this just causes picking a task
-from throttled queue, but in case of its rt_rq is child
-we are guaranteed catch BUG_ON.
-
-2) The same with deadline class. The only difference we operate
-   on only dl_rq.
-
-This patch fixes all the above problems and it adds a small skip in the
-DL update like we've already done for RT class:
-
-	if (unlikely((s64)delta_exec <= 0))
-		return;
-
-This will optimize sequential update_curr_dl() calls a little.
-
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>
-Link: http://lkml.kernel.org/r/1393946746.3643.3.camel@tkhai
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/deadline.c | 10 ++++++++--
- kernel/sched/rt.c       |  7 +++++++
- 2 files changed, 15 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index e4f3ac3..27ef409 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -609,8 +609,8 @@ static void update_curr_dl(struct rq *rq)
- 	 * approach need further study.
- 	 */
- 	delta_exec = rq_clock_task(rq) - curr->se.exec_start;
--	if (unlikely((s64)delta_exec < 0))
--		delta_exec = 0;
-+	if (unlikely((s64)delta_exec <= 0))
-+		return;
- 
- 	schedstat_set(curr->se.statistics.exec_max,
- 		      max(curr->se.statistics.exec_max, delta_exec));
-@@ -1023,6 +1023,12 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
- 
- 	if (need_pull_dl_task(rq, prev))
- 		pull_dl_task(rq);
-+	/*
-+	 * When prev is DL, we may throttle it in put_prev_task().
-+	 * So, we update time before we check for dl_nr_running.
-+	 */
-+	if (prev->sched_class == &dl_sched_class)
-+		update_curr_dl(rq);
- 
- 	if (unlikely(!dl_rq->dl_nr_running))
- 		return NULL;
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index facc824..f3cee0a 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1379,6 +1379,13 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- 			return RETRY_TASK;
- 	}
- 
-+	/*
-+	 * We may dequeue prev's rt_rq in put_prev_task().
-+	 * So, we update time before rt_nr_running check.
-+	 */
-+	if (prev->sched_class == &rt_sched_class)
-+		update_curr_rt(rq);
-+
- 	if (!rt_rq->rt_nr_running)
- 		return NULL;
- 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
