@@ -1,106 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaCKNxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:53:32 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:44220 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752435AbaCKNxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:53:30 -0400
-Message-ID: <531F1550.3080401@mellanox.com>
-Date: Tue, 11 Mar 2014 15:53:20 +0200
-From: Or Gerlitz <ogerlitz@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753602AbaCKNzP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:55:15 -0400
+Received: from tundra.namei.org ([65.99.196.166]:55460 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752078AbaCKNzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 09:55:13 -0400
+Date: Wed, 12 Mar 2014 00:55:50 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+cc: rgb@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        laijs@cn.fujitsu.com, akpm@linux-foundation.org, joe@perches.com,
+        keescook@chromium.org, geert@linux-m68k.org, jkosina@suse.cz,
+        viro@zeniv.linux.org.uk, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, rostedt@goodmis.org,
+        tglx@linutronix.de, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] Change task_struct->comm to use RCU.
+In-Reply-To: <201403112116.HIJ21362.OFVQJFtHOSOFLM@I-love.SAKURA.ne.jp>
+Message-ID: <alpine.LRH.2.02.1403120052040.23883@tundra.namei.org>
+References: <201403072120.BJB73489.OFMSOFHQFtOJLV@I-love.SAKURA.ne.jp> <20140307155415.GB16640@madcap2.tricolour.ca> <201403082143.BIH86903.QtVMHJFFOOSFOL@I-love.SAKURA.ne.jp> <20140310202155.GR16640@madcap2.tricolour.ca> <201403112102.HCC48418.LSOQFJOFOtFVHM@I-love.SAKURA.ne.jp>
+ <201403112116.HIJ21362.OFVQJFtHOSOFLM@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Roland Dreier <roland@kernel.org>, Jiri Kosina <jkosina@suse.cz>
-CC: Sagi Grimberg <sagig@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
-        Eli Cohen <eli@dev.mellanox.co.il>,
-        Eugenia Emantayev <eugenia@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Saeed Mahameed <saeedm@mellanox.com>,
-        Shlomo Pongratz <shlomop@mellanox.com>
-Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
- creating the QP
-References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com> <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz> <CAG4TOxMw4siOqtjXrgUDaw8yWqYgSG4d8PqGuJ62AZBrC2O2AA@mail.gmail.com>
-In-Reply-To: <CAG4TOxMw4siOqtjXrgUDaw8yWqYgSG4d8PqGuJ62AZBrC2O2AA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.222.66.109]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2014 21:25, Roland Dreier wrote:
-> It's quite clear that this is a general problem with IPoIB connected
-> mode on any IB device.  In connected mode, a packet send can trigger
-> establishing a new connection, which will allocate a new QP, which in
-> particular will allocate memory for the QP in the low-level IB device
-> driver.  Currently I'm positive that every driver will do GFP_KERNEL
-> allocations when allocating a QP (ehca does both a GFP_KERNEL
-> kmem_cache allocation and vmalloc in internal_create_qp(), mlx5 and
-> mthca are similar to mlx4 and qib does vmalloc() in qib_create_qp()).
-> So this patch needs to be extended to the other 4 IB device drivers in
-> the tree.
->
-> Also, I don't think GFP_NOFS is enough -- it seems we need GFP_NOIO,
-> since we could be swapping to a block device over iSCSI over IPoIB-CM,
-> so even non-FS stuff could deadlock.
->
-> I don't think it makes any sense to have a "do_not_deadlock" module
-> parameter, especially one that defaults to "false."  If this is the
-> right thing to do, then we should just unconditionally do it.
->
-> It does seem that only using GFP_NOIO when we really need to would be
-> a very difficult problem--how can we carry information about whether a
-> particular packet is involved in freeing memory through all the layers
-> of, say, NFS, TCP, IPSEC, bonding, &c?
+On Tue, 11 Mar 2014, Tetsuo Handa wrote:
 
-Agree with all the above... next,
+> And the same phrase goes to James Morris...
+> 
+> If you are sure that it is safe to use get_task_comm() from
+> dump_common_audit_data() and you prefer locked version, please pick up below
+> patch via your git tree.
+> 
+> If you are unsure or prefer lockless version, I'll make a lockless version
+> using do_get_task_comm() proposed in this thread.
 
-If we don't have away to nicely overcome the layer violations here, 
-let's change IPoIB so they always ask the
-IB driver to allocate QPs used for Connected Mode in a GFP_NOIO manner, 
-to be practical I suggest the following:
+If you can't understand whether your patch is correct or not, don't ask me 
+to apply it to my tree.
 
-1. Add new QP creation flag IB_QP_CREATE_USE_GFP to the existing 
-creation flags of struct ib_qp_init_attr
-and a new "gfp_t gfp" field to that structure too
+If you're unsure, get it reviewed first.
 
-2. in the IPoIB CM code, do the vzalloc allocation for new connection in 
-GFP_NOIO manner and issue
-the call to create QP with setting the IB_QP_CREATE_USE_GFP flag and 
-GFO_NOIO to the gfp field
 
-3. If the QP creation fails, with -EINVAL, issue a warning and retry the 
-QP creation attempt without the GFP setting
 
-4. implement in the mlx4 driver the support for GFP directives on QP 
-creation
-
-5. for the rest of the IB drivers, return -EINVAL if 
-IB_QP_CREATE_USE_GFP is set
-
-This will allow to provide working solution for mlx4 users and gradually 
-add support for the rest of the IB drivers.
-
-as for proper patch planning
-
-patch #1 / items 1 and 5
-patch #2 / item 4
-patch #3 / item 3
-
-Re item 5 -- I made a check and the ehca, ipath and mthca driver already 
-return -EINVAL if provided with any creation flag, so you only need to 
-patch the qib driver in qib_create_qp() to do that as well which is trivial.
-
-As for the rest of the code, you practically have it all by now, just 
-need to port the mlx4 changes you did to the suggested framework, remove 
-the module param (which you don't like either) and add the new gfp_t 
-field to ib_qp_init_attr
-
-So sounds like a plan that makes sense?
-
-Or.
-
+- James
+-- 
+James Morris
+<jmorris@namei.org>
