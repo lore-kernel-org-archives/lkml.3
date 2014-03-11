@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498AbaCKPk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 11:40:27 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:44849 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751831AbaCKPk0 (ORCPT
+	id S1753860AbaCKPlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 11:41:47 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:21399
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751831AbaCKPlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 11:40:26 -0400
-Date: Tue, 11 Mar 2014 11:40:23 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
- set via debugfs
-Message-ID: <20140311114023.02fcf639@gandalf.local.home>
-In-Reply-To: <1448078225.73.1394550382164.JavaMail.zimbra@efficios.com>
-References: <20140307150920.881849073@goodmis.org>
-	<20140307151202.210588176@goodmis.org>
-	<241011797.35066.1394481694124.JavaMail.zimbra@efficios.com>
-	<y0mr469e9t0.fsf@fche.csb>
-	<20140310225820.0f02025d@gandalf.local.home>
-	<20140311142650.GB13756@redhat.com>
-	<1448078225.73.1394550382164.JavaMail.zimbra@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 11 Mar 2014 11:41:45 -0400
+X-Forefront-Antispam-Report: CIP:141.131.128.20;KIP:(null);UIP:(null);IPV:NLI;H:mail2.cirrus.com;RD:mail2.cirrus.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh7bh2a8h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h1155h)
+Date: Tue, 11 Mar 2014 10:41:32 -0500
+From: Brian Austin <brian.austin@cirrus.com>
+X-X-Sender: heelrod@heelrod
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+CC: <broonie@kernel.org>, <brian.austin@cirrus.com>,
+        <Paul.Handrigan@cirrus.com>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <lgirdwood@gmail.com>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <lars@metafoo.de>
+Subject: Re: [PATCH v2] ASoC: cs42888: Add codec driver support
+In-Reply-To: <1394536791-8381-1-git-send-email-Guangyu.Chen@freescale.com>
+Message-ID: <alpine.DEB.2.02.1403111026280.3558@heelrod>
+References: <1394536791-8381-1-git-send-email-Guangyu.Chen@freescale.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
+X-OriginatorOrg: cirrus.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Mar 2014 15:06:22 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
+On Tue, 11 Mar 2014, Nicolin Chen wrote:
 
-> Let's step back and look at the overall picture here, along with the
-> possible solutions that are available so far.
-> 
-> My intent is to let end users specify "I want to trace this specific
-> tracepoint" from the tracer interface as long as the tracepoint probe
-> provider module is loaded (the file with CREATE_TRACE_POINTS defined).
-> For instance, the tracepoint call site can be within a driver loaded by
-> the USB stack when a USB device is plugged in. While tracing is enabled,
-> the user may want to plug in the said USB device to investigate what is
-> the culprit of an issue he would be facing when the the device is plugged
-> in.
-> 
-> There seems to be 2 elegant ways to achieve this while giving feedback to
-> tracers about whether there are active tracepoint callsites or not:
-> 
-> 1) We add a trace_has_callsites_enabled() (or any better name) function to
->    tracepoint.h, which allows tracers to query whether a given tracepoint
->    name has any callsites enabled,
+> This patch adds support for the Cirrus Logic CS42888 Audio CODEC that
+> has four 24-bit A/D and eight 24-bit D/A converters.
+>
+> [ CS42888 supports both I2C and SPI control ports. As initial patch,
+>  this patch only adds the support for I2C. ]
+>
+> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+> ---
+So WRT the CS42888, this is one device in a series of 2 devices that are 
+register compatible with the only difference being that the CS42488 has 2 
+extra ADC's. Same die and same DeviceID.
 
-I don't find that one very elegant at all.
+Would it make more sense to submit the driver with the extra ADC's to make 
+it feature complete for both devices? Wouldn't be odd to have 2 drivers 
+that do the same for 98% of the code.
 
-> 2) We change tracepoint_probe_register() so it unregisters the tracepoint
->    and return -ENODEV if there are no callsites enabled, and deal with
->    the use-case I explain above with module coming and going within the
->    tracer. This duplicates part of the tracepoint infrastructure into the
->    tracer though, which is why I was not so keen on going for this
->    solution.
-
-I don't mind the above.
-
-> 
-> The other solution proposed by Steven (returning -ENODEV without
-> unregistering the tracepoint) does not appear to be an elegant solution,
-> as we discussed earlier in this thread. It kind of weird to have a negative
-> value treated as an OK special case.
-
-Right, but it was a compromise as you didn't like #2 earlier.
-
-> 
-> The other solution proposed by Steven in an earlier thread was to tie
-> tracepoints very deeply with module loading infrastructure and add module
-> parameters specifically to specify if tracepoint callsites need to be
-> enabled on module load. This approach unfortunately expect that everyone
-> interacts with module loading, as root, in a system-wide (no multi-session)
-
-Who can load modules not as root?? That is utterly broken. As once you
-can load a module, YOU ARE ROOT.
- 
-> fashion and is not suitable for the user-base we are targeting. I seems to
-> be a user experience disaster IMHO.
-
-For your case only. But it is normal operation for normal uses of Linux.
-
-> 
-> I'm OK as long as we have an elegant way forward. Ideally I would have
-> prefered (1) to eliminate code duplication between tracers and tracepoint
-> infrastructure (we have to reimplement a hash table similar to tracepoints
-> within the tracer with solution (2)), but (2) technically works too.
-
-Here's what I propose then. We implement 2 for now. You can "duplicate"
-the code into your own work. Then we should be able to simplify the
-tracepoint code as it no longer will have the requirement to enable
-tracepoints that do not exist.
-
-Also we can remove that tracepoint_probe_unregister_noupdate() as it
-has no in-tree users. Which, you have been lucky that no one noticed
-that yet, as that is a legitimate excuse to remove a function.
-
--- Steve
+Thoughts?
+Brian
 
