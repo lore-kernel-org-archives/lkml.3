@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771AbaCKMmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 08:42:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35807 "EHLO
+	id S1755793AbaCKMm1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 08:42:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35811 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755332AbaCKMmO (ORCPT
+	with ESMTP id S1755775AbaCKMmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 08:42:14 -0400
-Date: Tue, 11 Mar 2014 05:41:40 -0700
+	Tue, 11 Mar 2014 08:42:23 -0400
+Date: Tue, 11 Mar 2014 05:41:51 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-62hcl5wxydmjzd182zhvk89m@git.kernel.org>
+Message-ID: <tip-zah5eyn9gu7qlgwh9r6n2anc@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, jason.low2@hp.com, tglx@linutronix.de
+        peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, jason.low2@hp.com
+        peterz@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] locking/mutexes:
-  Introduce cancelable MCS lock for adaptive spinning
-Git-Commit-ID: fb0527bd5ea99bfeb2dd91e3c1433ecf745d6b99
+Subject: [tip:core/locking] locking/mutexes: Add extra reschedule point
+Git-Commit-ID: 34c6bc2c919a55e5ad4e698510a2f35ee13ab900
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,325 +29,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fb0527bd5ea99bfeb2dd91e3c1433ecf745d6b99
-Gitweb:     http://git.kernel.org/tip/fb0527bd5ea99bfeb2dd91e3c1433ecf745d6b99
+Commit-ID:  34c6bc2c919a55e5ad4e698510a2f35ee13ab900
+Gitweb:     http://git.kernel.org/tip/34c6bc2c919a55e5ad4e698510a2f35ee13ab900
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 29 Jan 2014 12:51:42 +0100
+AuthorDate: Mon, 3 Feb 2014 16:21:09 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 11 Mar 2014 12:14:56 +0100
+CommitDate: Tue, 11 Mar 2014 12:14:59 +0100
 
-locking/mutexes: Introduce cancelable MCS lock for adaptive spinning
+locking/mutexes: Add extra reschedule point
 
-Since we want a task waiting for a mutex_lock() to go to sleep and
-reschedule on need_resched() we must be able to abort the
-mcs_spin_lock() around the adaptive spin.
-
-Therefore implement a cancelable mcs lock.
+Add in an extra reschedule in an attempt to avoid getting reschedule
+the moment we've acquired the lock.
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: chegu_vinod@hp.com
-Cc: paulmck@linux.vnet.ibm.com
-Cc: Waiman.Long@hp.com
-Cc: torvalds@linux-foundation.org
-Cc: tglx@linutronix.de
-Cc: riel@redhat.com
-Cc: akpm@linux-foundation.org
-Cc: davidlohr@hp.com
-Cc: hpa@zytor.com
-Cc: andi@firstfloor.org
-Cc: aswin@hp.com
-Cc: scott.norton@hp.com
-Cc: Jason Low <jason.low2@hp.com>
-Link: http://lkml.kernel.org/n/tip-62hcl5wxydmjzd182zhvk89m@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-zah5eyn9gu7qlgwh9r6n2anc@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/mutex.h         |   4 +-
- kernel/locking/Makefile       |   2 +-
- kernel/locking/mcs_spinlock.c | 178 ++++++++++++++++++++++++++++++++++++++++++
- kernel/locking/mcs_spinlock.h |  15 ++++
- kernel/locking/mutex.c        |  10 ++-
- 5 files changed, 202 insertions(+), 7 deletions(-)
+ kernel/locking/mutex.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-index c482e1d..11692de 100644
---- a/include/linux/mutex.h
-+++ b/include/linux/mutex.h
-@@ -46,7 +46,7 @@
-  * - detects multi-task circular deadlocks and prints out all affected
-  *   locks and tasks (and only those tasks)
-  */
--struct mcs_spinlock;
-+struct optimistic_spin_queue;
- struct mutex {
- 	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
- 	atomic_t		count;
-@@ -56,7 +56,7 @@ struct mutex {
- 	struct task_struct	*owner;
- #endif
- #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
--	struct mcs_spinlock	*mcs_lock;	/* Spinner MCS lock */
-+	struct optimistic_spin_queue	*osq;	/* Spinner MCS lock */
- #endif
- #ifdef CONFIG_DEBUG_MUTEXES
- 	const char 		*name;
-diff --git a/kernel/locking/Makefile b/kernel/locking/Makefile
-index baab8e5..2a9ee96 100644
---- a/kernel/locking/Makefile
-+++ b/kernel/locking/Makefile
-@@ -1,5 +1,5 @@
- 
--obj-y += mutex.o semaphore.o rwsem.o lglock.o
-+obj-y += mutex.o semaphore.o rwsem.o lglock.o mcs_spinlock.o
- 
- ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_lockdep.o = -pg
-diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
-new file mode 100644
-index 0000000..838dc9e
---- /dev/null
-+++ b/kernel/locking/mcs_spinlock.c
-@@ -0,0 +1,178 @@
-+
-+#include <linux/percpu.h>
-+#include <linux/mutex.h>
-+#include <linux/sched.h>
-+#include "mcs_spinlock.h"
-+
-+#ifdef CONFIG_SMP
-+
-+/*
-+ * An MCS like lock especially tailored for optimistic spinning for sleeping
-+ * lock implementations (mutex, rwsem, etc).
-+ *
-+ * Using a single mcs node per CPU is safe because sleeping locks should not be
-+ * called from interrupt context and we have preemption disabled while
-+ * spinning.
-+ */
-+static DEFINE_PER_CPU_SHARED_ALIGNED(struct optimistic_spin_queue, osq_node);
-+
-+/*
-+ * Get a stable @node->next pointer, either for unlock() or unqueue() purposes.
-+ * Can return NULL in case we were the last queued and we updated @lock instead.
-+ */
-+static inline struct optimistic_spin_queue *
-+osq_wait_next(struct optimistic_spin_queue **lock,
-+	      struct optimistic_spin_queue *node,
-+	      struct optimistic_spin_queue *prev)
-+{
-+	struct optimistic_spin_queue *next = NULL;
-+
-+	for (;;) {
-+		if (*lock == node && cmpxchg(lock, node, prev) == node) {
-+			/*
-+			 * We were the last queued, we moved @lock back. @prev
-+			 * will now observe @lock and will complete its
-+			 * unlock()/unqueue().
-+			 */
-+			break;
-+		}
-+
-+		/*
-+		 * We must xchg() the @node->next value, because if we were to
-+		 * leave it in, a concurrent unlock()/unqueue() from
-+		 * @node->next might complete Step-A and think its @prev is
-+		 * still valid.
-+		 *
-+		 * If the concurrent unlock()/unqueue() wins the race, we'll
-+		 * wait for either @lock to point to us, through its Step-B, or
-+		 * wait for a new @node->next from its Step-C.
-+		 */
-+		if (node->next) {
-+			next = xchg(&node->next, NULL);
-+			if (next)
-+				break;
-+		}
-+
-+		arch_mutex_cpu_relax();
-+	}
-+
-+	return next;
-+}
-+
-+bool osq_lock(struct optimistic_spin_queue **lock)
-+{
-+	struct optimistic_spin_queue *node = this_cpu_ptr(&osq_node);
-+	struct optimistic_spin_queue *prev, *next;
-+
-+	node->locked = 0;
-+	node->next = NULL;
-+
-+	node->prev = prev = xchg(lock, node);
-+	if (likely(prev == NULL))
-+		return true;
-+
-+	ACCESS_ONCE(prev->next) = node;
-+
-+	/*
-+	 * Normally @prev is untouchable after the above store; because at that
-+	 * moment unlock can proceed and wipe the node element from stack.
-+	 *
-+	 * However, since our nodes are static per-cpu storage, we're
-+	 * guaranteed their existence -- this allows us to apply
-+	 * cmpxchg in an attempt to undo our queueing.
-+	 */
-+
-+	while (!smp_load_acquire(&node->locked)) {
-+		/*
-+		 * If we need to reschedule bail... so we can block.
-+		 */
-+		if (need_resched())
-+			goto unqueue;
-+
-+		arch_mutex_cpu_relax();
-+	}
-+	return true;
-+
-+unqueue:
-+	/*
-+	 * Step - A  -- stabilize @prev
-+	 *
-+	 * Undo our @prev->next assignment; this will make @prev's
-+	 * unlock()/unqueue() wait for a next pointer since @lock points to us
-+	 * (or later).
-+	 */
-+
-+	for (;;) {
-+		if (prev->next == node &&
-+		    cmpxchg(&prev->next, node, NULL) == node)
-+			break;
-+
-+		/*
-+		 * We can only fail the cmpxchg() racing against an unlock(),
-+		 * in which case we should observe @node->locked becomming
-+		 * true.
-+		 */
-+		if (smp_load_acquire(&node->locked))
-+			return true;
-+
-+		arch_mutex_cpu_relax();
-+
-+		/*
-+		 * Or we race against a concurrent unqueue()'s step-B, in which
-+		 * case its step-C will write us a new @node->prev pointer.
-+		 */
-+		prev = ACCESS_ONCE(node->prev);
-+	}
-+
-+	/*
-+	 * Step - B -- stabilize @next
-+	 *
-+	 * Similar to unlock(), wait for @node->next or move @lock from @node
-+	 * back to @prev.
-+	 */
-+
-+	next = osq_wait_next(lock, node, prev);
-+	if (!next)
-+		return false;
-+
-+	/*
-+	 * Step - C -- unlink
-+	 *
-+	 * @prev is stable because its still waiting for a new @prev->next
-+	 * pointer, @next is stable because our @node->next pointer is NULL and
-+	 * it will wait in Step-A.
-+	 */
-+
-+	ACCESS_ONCE(next->prev) = prev;
-+	ACCESS_ONCE(prev->next) = next;
-+
-+	return false;
-+}
-+
-+void osq_unlock(struct optimistic_spin_queue **lock)
-+{
-+	struct optimistic_spin_queue *node = this_cpu_ptr(&osq_node);
-+	struct optimistic_spin_queue *next;
-+
-+	/*
-+	 * Fast path for the uncontended case.
-+	 */
-+	if (likely(cmpxchg(lock, node, NULL) == node))
-+		return;
-+
-+	/*
-+	 * Second most likely case.
-+	 */
-+	next = xchg(&node->next, NULL);
-+	if (next) {
-+		ACCESS_ONCE(next->locked) = 1;
-+		return;
-+	}
-+
-+	next = osq_wait_next(lock, node, NULL);
-+	if (next)
-+		ACCESS_ONCE(next->locked) = 1;
-+}
-+
-+#endif
-+
-diff --git a/kernel/locking/mcs_spinlock.h b/kernel/locking/mcs_spinlock.h
-index f2a5c63..a2dbac4 100644
---- a/kernel/locking/mcs_spinlock.h
-+++ b/kernel/locking/mcs_spinlock.h
-@@ -111,4 +111,19 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- 	arch_mcs_spin_unlock_contended(&next->locked);
- }
- 
-+/*
-+ * Cancellable version of the MCS lock above.
-+ *
-+ * Intended for adaptive spinning of sleeping locks:
-+ * mutex_lock()/rwsem_down_{read,write}() etc.
-+ */
-+
-+struct optimistic_spin_queue {
-+	struct optimistic_spin_queue *next, *prev;
-+	int locked; /* 1 if lock acquired */
-+};
-+
-+extern bool osq_lock(struct optimistic_spin_queue **lock);
-+extern void osq_unlock(struct optimistic_spin_queue **lock);
-+
- #endif /* __LINUX_MCS_SPINLOCK_H */
 diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index dc3d6f2..2670b84 100644
+index 2670b84..02c61a9 100644
 --- a/kernel/locking/mutex.c
 +++ b/kernel/locking/mutex.c
-@@ -53,7 +53,7 @@ __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
- 	INIT_LIST_HEAD(&lock->wait_list);
- 	mutex_clear_owner(lock);
- #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
--	lock->mcs_lock = NULL;
-+	lock->osq = NULL;
- #endif
- 
- 	debug_mutex_init(lock, name, key);
-@@ -403,7 +403,9 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 	if (!mutex_can_spin_on_owner(lock))
- 		goto slowpath;
- 
--	mcs_spin_lock(&lock->mcs_lock, &node);
-+	if (!osq_lock(&lock->osq))
-+		goto slowpath;
-+
- 	for (;;) {
- 		struct task_struct *owner;
- 
-@@ -442,7 +444,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 			}
- 
- 			mutex_set_owner(lock);
--			mcs_spin_unlock(&lock->mcs_lock, &node);
-+			osq_unlock(&lock->osq);
- 			preempt_enable();
- 			return 0;
- 		}
-@@ -464,7 +466,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		 */
- 		arch_mutex_cpu_relax();
+@@ -468,6 +468,13 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
  	}
--	mcs_spin_unlock(&lock->mcs_lock, &node);
-+	osq_unlock(&lock->osq);
+ 	osq_unlock(&lock->osq);
  slowpath:
++	/*
++	 * If we fell out of the spin path because of need_resched(),
++	 * reschedule now, before we try-lock the mutex. This avoids getting
++	 * scheduled out right after we obtained the mutex.
++	 */
++	if (need_resched())
++		schedule_preempt_disabled();
  #endif
  	spin_lock_mutex(&lock->wait_lock, flags);
+ 
