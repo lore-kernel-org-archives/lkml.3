@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaCKKAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:00:33 -0400
-Received: from michel.telenet-ops.be ([195.130.137.88]:60729 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129AbaCKJ7V (ORCPT
+	id S1754677AbaCKKBM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:01:12 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55189 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753900AbaCKKBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 05:59:21 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH 3/3] spi: rspi: Add runtime PM support, using spi core auto_runtime_pm
-Date: Tue, 11 Mar 2014 10:59:12 +0100
-Message-Id: <1394531952-3905-3-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394531952-3905-1-git-send-email-geert@linux-m68k.org>
-References: <1394531952-3905-1-git-send-email-geert@linux-m68k.org>
+	Tue, 11 Mar 2014 06:01:10 -0400
+Date: Tue, 11 Mar 2014 10:00:57 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org, lars@metafoo.de,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140311100057.GK28112@sirena.org.uk>
+References: <1394513002-21946-1-git-send-email-Li.Xiubo@freescale.com>
+ <1394513002-21946-2-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QkLM45cka79H3O92"
+Content-Disposition: inline
+In-Reply-To: <1394513002-21946-2-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: Oh no, not again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv3 resend 1/3] ASoC: codec: Simplify ASoC probe code.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
----
- drivers/spi/spi-rspi.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+--QkLM45cka79H3O92
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
-index 92bec7e91046..1fb0ad213324 100644
---- a/drivers/spi/spi-rspi.c
-+++ b/drivers/spi/spi-rspi.c
-@@ -33,6 +33,7 @@
- #include <linux/dmaengine.h>
- #include <linux/dma-mapping.h>
- #include <linux/of_device.h>
-+#include <linux/pm_runtime.h>
- #include <linux/sh_dma.h>
- #include <linux/spi/spi.h>
- #include <linux/spi/rspi.h>
-@@ -1111,7 +1112,7 @@ static int rspi_remove(struct platform_device *pdev)
- 	struct rspi_data *rspi = platform_get_drvdata(pdev);
- 
- 	rspi_release_dma(rspi);
--	clk_disable_unprepare(rspi->clk);
-+	pm_runtime_disable(&pdev->dev);
- 
- 	return 0;
- }
-@@ -1242,16 +1243,13 @@ static int rspi_probe(struct platform_device *pdev)
- 		goto error1;
- 	}
- 
--	ret = clk_prepare_enable(rspi->clk);
--	if (ret < 0) {
--		dev_err(&pdev->dev, "unable to prepare/enable clock\n");
--		goto error1;
--	}
-+	pm_runtime_enable(&pdev->dev);
- 
- 	init_waitqueue_head(&rspi->wait);
- 
- 	master->bus_num = pdev->id;
- 	master->setup = rspi_setup;
-+	master->auto_runtime_pm = true;
- 	master->transfer_one = ops->transfer_one;
- 	master->prepare_message = rspi_prepare_message;
- 	master->unprepare_message = rspi_unprepare_message;
-@@ -1312,7 +1310,7 @@ static int rspi_probe(struct platform_device *pdev)
- error3:
- 	rspi_release_dma(rspi);
- error2:
--	clk_disable_unprepare(rspi->clk);
-+	pm_runtime_disable(&pdev->dev);
- error1:
- 	spi_master_put(master);
- 
--- 
-1.7.9.5
+On Tue, Mar 11, 2014 at 12:43:20PM +0800, Xiubo Li wrote:
+> For some CODEC drivers like who act as the MFDs children are ignored
+> by this patch.
 
+Applied all, thanks.  I'd generally recommend about putting things like
+"resend" in the subject, it can make the prefix awfully long and hide
+the actual subject.
+
+--QkLM45cka79H3O92
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTHt7WAAoJELSic+t+oim9YGMP+QHHEl4RtOlgTMJYiSw6/Cn2
+d1YTpcgYHr+Fp37nHt9qHDvOOW5lK2AxbVVsHWEr1+84zueCFb4/XFlkI3rocWBM
+tQj9hm3zzjRed9AYjD2j0aAAB/+qjYpzuu2J/S9auJUg1JUl+I3hx3ZN5dIH8PsZ
+fudzgtu0SY+vYI/eJkD7ITgG0MQSjudLn9XDba/R/hXPpWPHVBrGvXA8KgVmBuBO
+Ffq9H+SUKQiBZvAREpLFo0pnFIYaUf1ZPyl+aN00zhwEvaOtENeY7wXrSBoX9ljZ
+AzypGYcyy57EPSs1f0fj2o3Hy2KskByqR6o7+c+vrcvPmpNV5EX1Vz5L3fPEr6AX
+ELVYwgO01n8Ct7IuZKxkL2HRDFHFrQN9W/HS1BOzwFowPlHj5wwiORkbcnPDYG2T
+HI6st81pzzBhnJ+AMAD0hDNkAlBzW4ye0mqesJiAM4ASD3ShwsT/UNgtUg5tcp8b
+wDokYFhzW42uuPpMWwBz8OL8UpdxhzFsbGTm/3zzR5xRCdsniTL639KqLRsly2UD
+sSEMyyBH8LdxXk8t1RrY6O6PT7NlHm6EwZifdMghVQVAYqovbRF1oVYNguKR0B1V
+IA0lLgIJrxH2dwHNchDrtu2r+sP3yQ8y3mknFiaqEbiduMy2wXIMoXGgw7QOV6ID
+2SmM9sfH7vvFrYT8GHpt
+=y1nE
+-----END PGP SIGNATURE-----
+
+--QkLM45cka79H3O92--
