@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbaCKSZQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:25:16 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:62137 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233AbaCKSZN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:25:13 -0400
+	id S1754072AbaCKS3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:29:30 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:58571
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751221AbaCKS31 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 14:29:27 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371Ic89bh936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz8275ch17326ah8275dh1de097h186068hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h906i1155h)
+Date: Tue, 11 Mar 2014 11:29:13 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <monstr@monstr.eu>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-serial@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 0/7] tty: xuartps: Rebranding + DT documentation
+References: <1394487610-2419-1-git-send-email-soren.brinkmann@xilinx.com>
+ <531EE993.80400@monstr.eu>
 MIME-Version: 1.0
-In-Reply-To: <20140306172217.GB1269@krava.brq.redhat.com>
-References: <1393840403-26639-1-git-send-email-jean.pihet@linaro.org>
-	<1393840403-26639-2-git-send-email-jean.pihet@linaro.org>
-	<20140304110042.GD8766@mudshark.cambridge.arm.com>
-	<CAFrcx1=3+zZPErXC7dehwpKHnmwE=cWh1mR0kzN0PONpFZKaUw@mail.gmail.com>
-	<20140306113314.GD5202@mudshark.cambridge.arm.com>
-	<20140306172217.GB1269@krava.brq.redhat.com>
-Date: Tue, 11 Mar 2014 19:25:11 +0100
-Message-ID: <CAFrcx1mCTLzc1dcSZyk_GOENsD-QGbyU+4NHa3BZFLYxyk7n_Q@mail.gmail.com>
-Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on ARM
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <531EE993.80400@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <b4e6dfe6-ad49-4d81-855b-8dd905665616@VA3EHSMHS039.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI Will, Steve,
+On Tue, 2014-03-11 at 11:46AM +0100, Michal Simek wrote:
+> On 03/10/2014 10:40 PM, Soren Brinkmann wrote:
+> > Hi,
+> > 
+> > this series rebrands the Xilinx PS UART driver as Cadence UART and
+> > documents its DT bindings (+ some clean up along the way).
+> > 
+> > The rebranding goes as far as reasonable. Things like file name, kconfig
+> > symbols and other things with user space impact are left as is. Please
+> > refer to the discussion in the RFC threads[1-2] for more details.
+> > 
+> > Similar the DT binding has been extended. In addition to the new and
+> > preferred Cadence binding, the current xuartps binding is maintained.
+> > Though, only the Cadence names for clock-names are documented.
+> > 
+> > References:
+> >  [1]  https://lkml.org/lkml/2014/3/4/405
+> >  [2]  https://lkml.org/lkml/2014/3/7/450
+> > 
+> > v2:
+> >  - no changes regarding the patches
+> >  - fixed (I sincerely hope) email recipients
+> > 
+> > Changes from the latest RFC:
+> >  - squashed function/symbol renaming into 'tty: xuartps: Rebrand driver
+> >    as Cadence UART'
+> >  - Revised the commit message of 'tty: xuartps: Don't write IRQ disable
+> >    register to enable interrupts' (was 'tty: xuartps: Remove bogus
+> >    comment and register write'
+> 
+> One more thing. I was thinking this is based on my 3 patches I have
+> already sent to mainline. But as I see they are not applied yet.
+> 
+> https://lkml.org/lkml/2014/1/21/107
 
-On 6 March 2014 18:22, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Thu, Mar 06, 2014 at 11:33:15AM +0000, Will Deacon wrote:
->> On Wed, Mar 05, 2014 at 02:17:00AM +0000, Jean Pihet wrote:
->> > On 4 March 2014 12:00, Will Deacon <will.deacon@arm.com> wrote:
->> > > On Mon, Mar 03, 2014 at 09:53:21AM +0000, Jean Pihet wrote:
->> > >> +     str lr, [r0, #PC]       @ Save caller PC
->> > >
->> > > This isn't necessarily the `caller PC' (depending on how you define it).
->> > > It's the return address, which is probably (but not always) the instruction
->> > > following the branch to this function.
->> > Agreed. However the perf test code expects a registers buffer filled
->> > in with the caller's values.
->> > I can change the comment here, is that needed?
->>
->> It depends what the perf test code really expects. At the moment, you're not
->> providing it with anything consistent which doesn't sound correct.
->
-> the code expects caller's PC. That is what the x86 test code
-> expects from perf_regs_load. We take the return IP saved by
-> call instruction:
->
-> ENTRY(perf_regs_load)
->         ...
->         movq 0(%rsp), %rax
->         movq %rax, IP(%rdi)
->         ...
->
-> jirka
+I think my cleanup patch covers these changes as well. I'll see if it
+makes sense to separate out this patch.
 
-The perf built-in test code expects the caller PC to do the unwinding
-from. Does that sound correct to you?
+> https://lkml.org/lkml/2014/1/21/101
 
-Do you want me to add a note like this one (as done in the upcoming
-aarch64 patches, to be submitted asap after testing):
-"
-/*
- * Implementation of void perf_regs_load(u64 *regs);
- *
- * This functions fills in the 'regs' buffer from the actual registers values.
- *
- * Notes:
- *  1. the return value of the pc is retrieved from lr and stored, in order
- *  to skip the call to this function,
- *  2. the current value of lr is merely retrieved and stored because the
- *  value before the call to this function is unknown at this time; it will
- *  be unwound from the dwarf information in unwind__get_entries.
- */
-"
+This is obsolete with the rebranding, IMHO.
 
-Please let me know how to make this better.
+> http://www.spinics.net/lists/arm-kernel/msg302796.html
 
-Regards,
-Jean
+I can add this to this series.
+
+	Sören
+
+
