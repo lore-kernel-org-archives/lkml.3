@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791AbaCKKq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:46:57 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:35752 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972AbaCKKqx (ORCPT
+	id S1754912AbaCKKrW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:47:22 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60687 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129AbaCKKrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:46:53 -0400
-Message-ID: <531EE993.80400@monstr.eu>
-Date: Tue, 11 Mar 2014 11:46:43 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 11 Mar 2014 06:47:19 -0400
+Date: Tue, 11 Mar 2014 10:47:13 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Message-ID: <20140311104713.GN28112@sirena.org.uk>
+References: <1394531952-3905-1-git-send-email-geert@linux-m68k.org>
+ <1394531952-3905-3-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] tty: xuartps: Rebranding + DT documentation
-References: <1394487610-2419-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1394487610-2419-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="Uihq5Ov6SDStNcGpgA3iVBDBpLxmW1BK4"
+	protocol="application/pgp-signature"; boundary="yz2cksEFSLwGxgnH"
+Content-Disposition: inline
+In-Reply-To: <1394531952-3905-3-git-send-email-geert@linux-m68k.org>
+X-Cookie: Oh no, not again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/3] spi: rspi: Add runtime PM support, using spi core
+ auto_runtime_pm
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---Uihq5Ov6SDStNcGpgA3iVBDBpLxmW1BK4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
 
-On 03/10/2014 10:40 PM, Soren Brinkmann wrote:
-> Hi,
->=20
-> this series rebrands the Xilinx PS UART driver as Cadence UART and
-> documents its DT bindings (+ some clean up along the way).
->=20
-> The rebranding goes as far as reasonable. Things like file name, kconfi=
-g
-> symbols and other things with user space impact are left as is. Please
-> refer to the discussion in the RFC threads[1-2] for more details.
->=20
-> Similar the DT binding has been extended. In addition to the new and
-> preferred Cadence binding, the current xuartps binding is maintained.
-> Though, only the Cadence names for clock-names are documented.
->=20
-> References:
->  [1]  https://lkml.org/lkml/2014/3/4/405
->  [2]  https://lkml.org/lkml/2014/3/7/450
->=20
-> v2:
->  - no changes regarding the patches
->  - fixed (I sincerely hope) email recipients
->=20
-> Changes from the latest RFC:
->  - squashed function/symbol renaming into 'tty: xuartps: Rebrand driver=
+--yz2cksEFSLwGxgnH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->    as Cadence UART'
->  - Revised the commit message of 'tty: xuartps: Don't write IRQ disable=
+On Tue, Mar 11, 2014 at 10:59:12AM +0100, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
->    register to enable interrupts' (was 'tty: xuartps: Remove bogus
->    comment and register write'
+Applied, thanks, though...
 
-One more thing. I was thinking this is based on my 3 patches I have
-already sent to mainline. But as I see they are not applied yet.
+> -	ret = clk_prepare_enable(rspi->clk);
+> -	if (ret < 0) {
+> -		dev_err(&pdev->dev, "unable to prepare/enable clock\n");
+> -		goto error1;
+> -	}
+> +	pm_runtime_enable(&pdev->dev);
 
-https://lkml.org/lkml/2014/1/21/107
-https://lkml.org/lkml/2014/1/21/101
-http://www.spinics.net/lists/arm-kernel/msg302796.html
+...due to the runtime PM API being configurable you're supposed to start
+off with the device runtime enabled (this applies to some of the other
+patches too).  I'm not sure that's terribly realistic for these drivers
+though.
 
-Thanks,
-Michal
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---Uihq5Ov6SDStNcGpgA3iVBDBpLxmW1BK4
+--yz2cksEFSLwGxgnH
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iEYEARECAAYFAlMe6ZMACgkQykllyylKDCFrrwCfX/JsE2LZP0PX4Qk2Z4BmPGOV
-nyAAnjpT8J6IiMT2FGszoziPENhIZkNK
-=r6xw
+iQIcBAEBAgAGBQJTHumuAAoJELSic+t+oim9blYQAJMQLchaOBTQkKwCXy/KFVw4
+TVk28TcfSv3FZVKK6d9VwaW0onVIP13895pToQLgJ7aKYn2/j5RZyNFuAde7sMY0
+1n4aIqte6e/MnXZUSw+dLZbw41q2ZnYbY42fHHNeOjjTMzy3dUydwRXe4uXTDicK
+U8p3fRoD5mt3DaH15WMn/WZqo1yqnerICFDhXNMsr31pNTY2+cUyT2TXmV/WDOrz
+coKBk8BbB6tY51rca2DlQPW5/xezdVRTRuBdkpNkltovXqnQR/L8rXkiT/Q/I2pU
+Ql2HZTZReMpjyUUw6vdq17SJsgtlQRfBgAFA1Y3B7HlRQzr9ARxQuz+MXZcnHaXV
+b81c7adkmSJ5P49SN9XQ5rtzoi4ai0k0A5ghF5fGe94V1ky5IiWF9jOOFu3Cj9hl
+q0mBdfb2r4FiPrWcXeKhw5blpAzz+1IzejYcXx312YVIT3KicfIjl71G7GTwa1P8
+mOw42wLauP6LeOv6Ly5weIapa5FkT26awhdoM4rbR/EX9kqbk/m42yPC42aSZfaj
+mLPbeo8349bK8X0fmp7eV5rLYQn2GjaYHSa1AQySybn1qFj92H6wbwg2ekEw0uQG
+1DTZxgDxBYL9adIV8J1nQcoRxFMlPtWO4VrOyzVUvsyvyzD4avUYRdGwhQxIxRuI
+czIWmTdQGjTTosB0UxDa
+=AeiQ
 -----END PGP SIGNATURE-----
 
---Uihq5Ov6SDStNcGpgA3iVBDBpLxmW1BK4--
+--yz2cksEFSLwGxgnH--
