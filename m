@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803AbaCKXVq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 19:21:46 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51734 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755404AbaCKXVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 19:21:45 -0400
-Date: Tue, 11 Mar 2014 18:20:05 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Kees Cook <keescook@chromium.org>
-CC: <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: tcm_usb_gadget: stop format strings
-Message-ID: <20140311232005.GB23309@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140311202616.GA24575@www.outflux.net>
+	id S1755960AbaCKXXW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 19:23:22 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52872 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755861AbaCKXXU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 19:23:20 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rafael.j.wysocki@intel.com, jwollrath@web.de, markus@trippelsdorf.de,
+        pebolle@tiscali.nl
+Subject: Re: [PATCH] PNPACPI: proper handling ACPI IO/Memory resources
+Date: Wed, 12 Mar 2014 00:38:39 +0100
+Message-ID: <3883740.St1mC7IYnm@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1394548827-15172-1-git-send-email-rui.zhang@intel.com>
+References: <1394548827-15172-1-git-send-email-rui.zhang@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="v9Ux+11Zm5mwPlX6"
-Content-Disposition: inline
-In-Reply-To: <20140311202616.GA24575@www.outflux.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---v9Ux+11Zm5mwPlX6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday, March 11, 2014 10:40:27 PM Zhang Rui wrote:
+> Before commit b355cee88e3b1a193f0e9a81db810f6f83ad728b,
+> if acpi_dev_resource_memory()/acpi_dev_resource_io() returns false,
+> it means the the resource is not a memeory/IO resource.
+> 
+> But after commit b355cee88e3b1a193f0e9a81db810f6f83ad728b,
+> if the memory/IO resource is invalid (the length of the resource is zero),
+> acpi_dev_resource_memory()/acpi_dev_resource_io() returns false as well.
+> 
+> This breaks pnpacpi_allocated_resource(), because the current code would
+> recognize the invalid memory/io resource as unknown resource type.
+> Thus users will get warning messages on machines with zero length
+> ACPI memeory/IO resources.
+> 
+> This patch fixes the problem by invoking acpi_dev_resource_memory()/
+> acpi_dev_resource_io() for ACPI memory/IO resources only.
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 
-On Tue, Mar 11, 2014 at 01:26:16PM -0700, Kees Cook wrote:
-> This makes sure that the name coming out of configfs cannot be used
-> accidentally as a format string.
->=20
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+Applied, thanks Rui!
+
 > ---
->  drivers/usb/gadget/tcm_usb_gadget.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/usb/gadget/tcm_usb_gadget.c b/drivers/usb/gadget/tcm=
-_usb_gadget.c
-> index 0f8aad78b54f..460c266b8e24 100644
-> --- a/drivers/usb/gadget/tcm_usb_gadget.c
-> +++ b/drivers/usb/gadget/tcm_usb_gadget.c
-> @@ -1613,7 +1613,7 @@ static struct se_wwn *usbg_make_tport(
->  		return ERR_PTR(-ENOMEM);
+>  drivers/pnp/pnpacpi/rsparser.c |   15 ++++++++++++---
+>  1 file changed, 12 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
+> index 167f3d0..66977eb 100644
+> --- a/drivers/pnp/pnpacpi/rsparser.c
+> +++ b/drivers/pnp/pnpacpi/rsparser.c
+> @@ -183,9 +183,7 @@ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
+>  	struct resource r = {0};
+>  	int i, flags;
+>  
+> -	if (acpi_dev_resource_memory(res, &r)
+> -	    || acpi_dev_resource_io(res, &r)
+> -	    || acpi_dev_resource_address_space(res, &r)
+> +	if (acpi_dev_resource_address_space(res, &r)
+>  	    || acpi_dev_resource_ext_address_space(res, &r)) {
+>  		pnp_add_resource(dev, &r);
+>  		return AE_OK;
+> @@ -217,6 +215,17 @@ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
 >  	}
->  	tport->tport_wwpn =3D wwpn;
-> -	snprintf(tport->tport_name, sizeof(tport->tport_name), wnn_name);
-> +	snprintf(tport->tport_name, sizeof(tport->tport_name), "%s", wnn_name);
+>  
+>  	switch (res->type) {
+> +	case ACPI_RESOURCE_TYPE_MEMORY24:
+> +	case ACPI_RESOURCE_TYPE_MEMORY32:
+> +	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+> +		if (acpi_dev_resource_memory(res, &r))
+> +			pnp_add_resource(dev, &r);
+> +		break;
+> +	case ACPI_RESOURCE_TYPE_IO:
+> +	case ACPI_RESOURCE_TYPE_FIXED_IO:
+> +		if (acpi_dev_resource_io(res, &r))
+> +			pnp_add_resource(dev, &r);
+> +		break;
+>  	case ACPI_RESOURCE_TYPE_DMA:
+>  		dma = &res->data.dma;
+>  		if (dma->channel_count > 0 && dma->channels[0] != (u8) -1)
+> 
 
-Can you resend with Cc: <stable@vger.kernel.org> ?
-
-Looks like we need to backport this v3.4.
-
---=20
-balbi
-
---v9Ux+11Zm5mwPlX6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTH5olAAoJEIaOsuA1yqREruIQAK80cODT2A7/MBSjnKpuxYVN
-YPGTdkGo0DJ42bZZSUlq3F6yyJDZ4xCAWMCWWqeqLb3EV6Z0KaxGx8yKijfdgU/8
-XxqYK8Rot3zN3u0uNr3u4QLxe2FVI/YpmfIS10/G/GCRf8Btv0rWSzy3PZOqLjD1
-3zVNgthPJrbQ9vFu+BQwLUd2Khifds4kFMtg6jGRwxGOZTPPkwtpWO6tzXCXxr8Y
-nWmy2IZnoRBEN4prk2sTeOfQi2SSy85TuToHYUTHPIvTzDNhEHSsglMyFyd3M9pO
-2CVVn6EsZZgWZPPTOnKUAEXHNmJUhoIRChqrAdyW1oe0W0G1Feil3kfrtMzKfkD4
-U9RbRamOXWiPZEXt9YxR070aAzDffuDnxWD3cm/wVojrruocGixebPfCaF0bA4vB
-U5V/QimDVmKgypneM1gctI786DtmhL3vtm+KCmXOr+SOSCi4mDQXib2e5S/iOLcC
-PZQ4R+U9sejrpJYM/uPfWhkJTjkMUtWj7q5EWE/F6QCCux8kEFbj+3lq26xhjRd0
-dKPmY3MSoIutzBos+atritqSLrZXjRkA6sAqZPBVZtm+gNzqaEEEGTruDcFuDI9/
-rSakeEg6lAaGo1r4knHVc0Vs6ePZMCL82GrHKWHhL790eaz555NyoT3uQQan9+Br
-XrA+df7IKvCkek/Ezaf7
-=lSFd
------END PGP SIGNATURE-----
-
---v9Ux+11Zm5mwPlX6--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
