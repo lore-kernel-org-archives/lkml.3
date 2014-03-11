@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540AbaCKKbg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:31:36 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:43606 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755162AbaCKKX7 (ORCPT
+	id S1755370AbaCKKcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:32:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48191 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753AbaCKKcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:23:59 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org
-Subject: [PATCH trivial 06/16] PM / Runtime: Add missing "it" in comment
-Date: Tue, 11 Mar 2014 11:23:40 +0100
-Message-Id: <1394533430-4746-6-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
-References: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
+	Tue, 11 Mar 2014 06:32:00 -0400
+Date: Tue, 11 Mar 2014 11:31:19 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH 2/6] sched: rework of sched_domain topology definition
+Message-ID: <20140311103119.GW9987@twins.programming.kicks-ass.net>
+References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org>
+ <1394003906-11630-3-git-send-email-vincent.guittot@linaro.org>
+ <53175A3C.8010100@arm.com>
+ <CAKfTPtC1_t78hvOw9u-t1BqUZj_dO3WFYp2OjX=RFZP-A7zSbg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtC1_t78hvOw9u-t1BqUZj_dO3WFYp2OjX=RFZP-A7zSbg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+On Thu, Mar 06, 2014 at 04:32:35PM +0800, Vincent Guittot wrote:
+> > Never got the new name DIE for CPU? Might confuse people when they use
+> > /proc/sys/kernel/sched_domain/cpuX/domainY/name or sched_domain_debug_one().
+> 
+> In fact, CPU is also confusing because it's used for different things.
+> But if it makes things even more confusing, i can come back to CPU
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: linux-pm@vger.kernel.org
----
- drivers/base/power/runtime.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yeah, not sure DIE is the right thing either; because there's multi-die
+packages that get classified under CPU :-)
 
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index 4776cf528d08..67c7938e430b 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -1131,7 +1131,7 @@ EXPORT_SYMBOL_GPL(pm_runtime_barrier);
-  * @dev: Device to handle.
-  * @check_resume: If set, check if there's a resume request for the device.
-  *
-- * Increment power.disable_depth for the device and if was zero previously,
-+ * Increment power.disable_depth for the device and if it was zero previously,
-  * cancel all pending runtime PM requests for the device and wait for all
-  * operations in progress to complete.  The device can be either active or
-  * suspended after its runtime PM has been disabled.
--- 
-1.7.9.5
+Take for example the Core 2 Quad, which was 2 dual core dies glued
+together in a single package.
 
+There's also the AMD bulldozer which glued two dies into a single
+package; but for those its not a problem because each die is a separate
+numa node, so there DIE would actually be the correct term and PACKAGE
+would be wrong.
+
+So while CPU sucks, I'm not sure we can come up with anything that's
+actually correct. That said; we could try for something less wrong than
+CPU :-)
+
+I'm not sure there are a lot of people who see/know the names of these
+domains to be bothered by a change in them; it might be limited to just
+us for all I know.
