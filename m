@@ -1,132 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910AbaCKSX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:23:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44208 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558AbaCKSX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:23:57 -0400
-Date: Tue, 11 Mar 2014 11:23:55 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>, Derek Basehore <dbasehore@chromium.org>,
-        Alexander Viro <viro@zento.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, bleung@chromium.org,
-        sonnyrao@chromium.org, semenzato@chromium.org
-Subject: Re: [PATCH] backing_dev: Fix hung task on sync
-Message-Id: <20140311112355.d335295ed62cd480eb5ab33c@linux-foundation.org>
-In-Reply-To: <20140219190139.GQ10134@htj.dyndns.org>
-References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
-	<20140218225548.GI31892@mtj.dyndns.org>
-	<20140219092731.GA4849@quack.suse.cz>
-	<20140219190139.GQ10134@htj.dyndns.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755190AbaCKSY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:24:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753752AbaCKSYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 14:24:25 -0400
+From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, gleb@kernel.org,
+        mtosatti@redhat.com, stable@vger.kernel.org
+Subject: [PATCH] KVM: SVM: fix cr8 intercept window
+Date: Tue, 11 Mar 2014 19:11:18 +0100
+Message-Id: <1394561478-8815-1-git-send-email-rkrcmar@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014 14:01:39 -0500 Tejun Heo <tj@kernel.org> wrote:
+We always disable cr8 intercept in its handler, but only re-enable it
+if handling KVM_REQ_EVENT, so there can be a window where we do not
+intercept cr8 writes, which allows an interrupt to disrupt a higher
+priority task.
 
-> Hello, Jan.
-> 
-> On Wed, Feb 19, 2014 at 10:27:31AM +0100, Jan Kara wrote:
-> >   You are the workqueue expert so you may know better ;) But the way I
-> > understand it is that queue_delayed_work() does nothing if the timer is
-> > already running. Since we queue flusher work to run either immediately or
-> > after dirty_writeback_interval we are safe to run queue_delayed_work()
-> > whenever we want it to run after dirty_writeback_interval and
-> > mod_delayed_work() whenever we want to run it immediately.
-> 
-> Ah, okay, so it's always mod on immediate and queue on delayed.  Yeah,
-> that should work.
-> 
-> > But it's subtle and some interface where we could say queue delayed work
-> > after no later than X would be easier to grasp.
-> 
-> Yeah, I think it'd be better if we had something like
-> mod_delayed_work_if_later().  Hmm...
+Fix this by disabling intercepts in the same function that re-enables
+them when needed. This fixes BSOD in Windows 2008.
 
-The code comments which you asked for were not forthcoming.
-
-Are you otherwise OK with merging this into 3.14 and -stable?
-
-
-From: Derek Basehore <dbasehore@chromium.org>
-Subject: backing_dev: fix hung task on sync
-
-bdi_wakeup_thread_delayed() used mod_delayed_work() to schedule work to
-writeback dirty inodes.  The problem with this is that it can delay work
-that is scheduled for immediate execution, such as the work from
-sync_inodes_sb().  This can happen since mod_delayed_work can now steal
-work from a work_queue.  This fixes the problem by using
-queue_delayed_work instead.  This is a regression from the move to the bdi
-workqueue design.
-
-The reason that this causes a problem is that laptop-mode will change the
-delay, dirty_writeback_centisecs, to 60000 (10 minutes) by default.  In
-the case that bdi_wakeup_thread_delayed races with sync_inodes_sb, sync
-will be stopped for 10 minutes and trigger a hung task.  Even if
-dirty_writeback_centisecs is not long enough to cause a hung task, we
-still don't want to delay sync for that long.
-
-For the same reason, this also changes bdi_writeback_workfn to immediately
-queue the work again in the case that the work_list is not empty.  The
-same problem can happen if the sync work is run on the rescue worker.
-
-Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Cc: Alexander Viro <viro@zento.linux.org.uk>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: Derek Basehore <dbasehore@chromium.org>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Benson Leung <bleung@chromium.org>
-Cc: Sonny Rao <sonnyrao@chromium.org>
-Cc: Luigi Semenzato <semenzato@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>
 Cc: <stable@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
+ arch/x86/kvm/svm.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
- fs/fs-writeback.c |    5 +++--
- mm/backing-dev.c  |    2 +-
- 2 files changed, 4 insertions(+), 3 deletions(-)
-
-diff -puN fs/fs-writeback.c~backing_dev-fix-hung-task-on-sync fs/fs-writeback.c
---- a/fs/fs-writeback.c~backing_dev-fix-hung-task-on-sync
-+++ a/fs/fs-writeback.c
-@@ -1039,8 +1039,9 @@ void bdi_writeback_workfn(struct work_st
- 		trace_writeback_pages_written(pages_written);
- 	}
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 64d9bb9..f676c18 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3003,10 +3003,8 @@ static int cr8_write_interception(struct vcpu_svm *svm)
+ 	u8 cr8_prev = kvm_get_cr8(&svm->vcpu);
+ 	/* instruction emulation calls kvm_set_cr8() */
+ 	r = cr_interception(svm);
+-	if (irqchip_in_kernel(svm->vcpu.kvm)) {
+-		clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
++	if (irqchip_in_kernel(svm->vcpu.kvm))
+ 		return r;
+-	}
+ 	if (cr8_prev <= kvm_get_cr8(&svm->vcpu))
+ 		return r;
+ 	kvm_run->exit_reason = KVM_EXIT_SET_TPR;
+@@ -3568,6 +3566,8 @@ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
+ 	if (is_guest_mode(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
+ 		return;
  
--	if (!list_empty(&bdi->work_list) ||
--	    (wb_has_dirty_io(wb) && dirty_writeback_interval))
-+	if (!list_empty(&bdi->work_list))
-+		mod_delayed_work(bdi_wq, &wb->dwork, 0);
-+	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
- 		queue_delayed_work(bdi_wq, &wb->dwork,
- 			msecs_to_jiffies(dirty_writeback_interval * 10));
++	clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
++
+ 	if (irr == -1)
+ 		return;
  
-diff -puN mm/backing-dev.c~backing_dev-fix-hung-task-on-sync mm/backing-dev.c
---- a/mm/backing-dev.c~backing_dev-fix-hung-task-on-sync
-+++ a/mm/backing-dev.c
-@@ -294,7 +294,7 @@ void bdi_wakeup_thread_delayed(struct ba
- 	unsigned long timeout;
- 
- 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
--	mod_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-+	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
- }
- 
- /*
-_
+-- 
+1.8.5.3
 
