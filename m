@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892AbaCKP6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 11:58:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753646AbaCKP6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 11:58:37 -0400
-Date: Tue, 11 Mar 2014 17:00:35 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jon Mason <jon.mason@intel.com>, linux-pci@vger.kernel.org
-Subject: [PATCH v2 4/4] ntb: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Message-ID: <20140311160034.GB25638@dhcp-26-207.brq.redhat.com>
-References: <cover.1392996332.git.agordeev@redhat.com>
- <0afccb5cf0710f980b47e57c4e9b27eeb3033955.1392996332.git.agordeev@redhat.com>
+	id S1753565AbaCKQBG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 12:01:06 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:48664
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752685AbaCKQBD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 12:01:03 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(z54eehz98dIc89bh936eI1432Id799h1447Idbb0izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1d7338h1de098h177df4h17326ah8275bh8275dh1de097h186068hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h906i1155h)
+Date: Tue, 11 Mar 2014 09:00:44 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Looijmans <mike.looijmans@topic.nl>
+CC: <git@xilinx.com>, <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c-cadence: Do not let signals interrupt I2C transfers
+References: <1394449954-10797-1-git-send-email-mike.looijmans@topic.nl>
+ <1394521655-3444-1-git-send-email-mike.looijmans@topic.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <0afccb5cf0710f980b47e57c4e9b27eeb3033955.1392996332.git.agordeev@redhat.com>
+In-Reply-To: <1394521655-3444-1-git-send-email-mike.looijmans@topic.nl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <99d075e3-1694-4132-bdc8-22ea0a6e3521@VA3EHSMHS014.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+Hi Mike,
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Jon Mason <jon.mason@intel.com>
-Cc: linux-pci@vger.kernel.org
----
- drivers/ntb/ntb_hw.c |   20 +++++---------------
- 1 files changed, 5 insertions(+), 15 deletions(-)
+On Tue, 2014-03-11 at 08:07AM +0100, Mike Looijmans wrote:
+> Pressing CTRL-C while communicating with an I2C device leads to erratic
+> behaviour. The cause is that the controller will interrupt the I2C transfer
+> in progress, and leave the client device in an undefined state. Many
+> drivers do not handle error return codes on I2C transfers. The calling driver
+> has no way of telling how much of the transfer has actually completed, so
+> it cannot reliably determine the device's state.
+> 
+> The best solution here is to not handle signals in the I2C bus driver at all,
+> but always complete a transaction before returning control.
+> 
+> See for a related patch and discussion on this topic:
+> http://lkml.org/lkml/2014/1/9/246
+> 
+> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+Acked-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-index 1f8decd..ff5c0a3 100644
---- a/drivers/ntb/ntb_hw.c
-+++ b/drivers/ntb/ntb_hw.c
-@@ -1088,11 +1088,9 @@ static int ntb_setup_snb_msix(struct ntb_device *ndev, int msix_entries)
- 	if (msix_entries < ndev->limits.msix_cnt)
- 		return -ENOSPC;
- 
--	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-+	rc = pci_enable_msix_exact(pdev, ndev->msix_entries, msix_entries);
- 	if (rc < 0)
- 		return rc;
--	else if (rc > 0)
--		return -ENOSPC;
- 
- 	for (i = 0; i < msix_entries; i++) {
- 		msix = &ndev->msix_entries[i];
-@@ -1138,18 +1136,10 @@ static int ntb_setup_bwd_msix(struct ntb_device *ndev, int msix_entries)
- 	struct msix_entry *msix;
- 	int rc, i;
- 
--retry:
--	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
--	if (rc < 0)
--		return rc;
--	else if (rc > 0) {
--		dev_warn(&pdev->dev,
--			 "Only %d MSI-X vectors. "
--			 "Limiting the number of queues to that number.\n",
--			 rc);
--		msix_entries = rc;
--		goto retry;
--	}
-+	msix_entries = pci_enable_msix_range(pdev, ndev->msix_entries,
-+					     1, msix_entries);
-+	if (msix_entries < 0)
-+		return msix_entries;
- 
- 	for (i = 0; i < msix_entries; i++) {
- 		msix = &ndev->msix_entries[i];
--- 
-1.7.7.6
+Thanks for the update. I'll take these changes and resubmit the driver
+to LKML as well.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+	Sören
+
+
