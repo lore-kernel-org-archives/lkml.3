@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130AbaCKKOA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:14:00 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:14566 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754852AbaCKKLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755111AbaCKKN6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:13:58 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:58996 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858AbaCKKLd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Mar 2014 06:11:33 -0400
-X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9678283"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
-        tglx@linutronix.de, heiko.carstens@de.ibm.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 17/17] sched: Get rid of opened code implementation of funtion nice_to_rlimit().
-Date: Tue, 11 Mar 2014 18:09:25 +0800
-Message-Id: <220c27487540603b7af88ef327600804212a6706.1394532288.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:40,
-	Serialize complete at 2014/03/11 18:08:40
+Date: Tue, 11 Mar 2014 11:11:29 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at
+ d34bd000
+Message-ID: <20140311101129.GA10383@gmail.com>
+References: <531D044C.2090303@linux.intel.com>
+ <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com>
+ <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com>
+ <531DD35A.5060202@linux.intel.com>
+ <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com>
+ <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com>
+ <1394481804.980.9.camel@wall-e.seibold.net>
+ <531E1B53.5090205@linux.intel.com>
+ <CA+55aFyxbuhPKgB=U8R5C5T_iKVvju-oQDS4kHz6McW45B+1bA@mail.gmail.com>
+ <CA+55aFwuVYds=ssv755WKBvux1ru6fcDLGi+ORSFyU8xYP7+=w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwuVYds=ssv755WKBvux1ru6fcDLGi+ORSFyU8xYP7+=w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- kernel/sched/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ee8004c..d2735eb 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3046,7 +3046,7 @@ EXPORT_SYMBOL(set_user_nice);
- int can_nice(const struct task_struct *p, const int nice)
- {
- 	/* convert nice value [19,-20] to rlimit style value [1,40] */
--	int nice_rlim = 20 - nice;
-+	int nice_rlim = nice_to_rlimit(nice);
- 
- 	return (nice_rlim <= task_rlimit(p, RLIMIT_NICE) ||
- 		capable(CAP_SYS_NICE));
--- 
-1.8.2.1
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
+> On Mon, Mar 10, 2014 at 1:19 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > If the only immediate problem is the code generation size, then Andy
+> > already had a (simpler) hack-around:
+> >
+> >   #undef CONFIG_OPTIMIZE_INLINING
+> >   #undef CONFIG_X86_PPRO_FENCE
+> >
+> > in vclock_gettime.c
+> 
+> Btw, we should seriously consider getting rid of CONFIG_X86_PPRO_FENCE.
+> 
+> It was of questionable value to begin with, and I think that the
+> actual PPro bug is about one of
+> 
+>  - Errata 66, "Delayed line invalidation".
+>  - Errata 92, "Potential loss of data coherency"
+> 
+> both of which affect all PPro versions afaik (there is also a UP 
+> errata 51 wrt ordering of cached and uncached accesses that was 
+> fixed in the sB1 stepping).
+>
+> And as far as I know, we have never actually seen the bug in real 
+> life, EVEN WHEN PPRO WAS COMMON. The workaround was always based on 
+> knowledge of the errata afaik.
+
+I'm not aware of any active PPro testers either. Even P4 feedback has 
+become very rare. New systems have become so cheap and so fast, and 
+energy use an issue, that there's very little upside left to using old 
+CPUs, other than the vintage thrill factor.
+
+But ... when PPro was common our parallelization sucked, so I'd not be 
+surprised if it triggered more frequently with a modern kernel.
+
+Still I agree that it most likely does not matter:
+
+> So I do think we might want to consider retiring that config option 
+> entirely as a "historical oddity".
+
+Ack.
+
+> And very much so for the vdso case. Do we even do the asm 
+> alternative fixups for the vdso?
+> 
+> I also suspect we should get rid of CONFIG_X86_OOSTORE, or at least 
+> limit it to !SMP - I don't think anybody ever made SMP systems with 
+> those IDT/Centaur Winchip chips in them.
+
+Yeah.
+
+Thanks,
+
+	Ingo
