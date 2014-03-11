@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940AbaCKKLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:11:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41078 "EHLO song.cn.fujitsu.com"
+	id S1754924AbaCKKLi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:11:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:41222 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754889AbaCKKLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754887AbaCKKLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Mar 2014 06:11:36 -0400
 X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9678287"
+   d="scan'208";a="9678288"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
         tglx@linutronix.de, heiko.carstens@de.ibm.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        devel@driverdev.osuosl.org, Xiong Zhou <jencce.kernel@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Cyril Roelandt <tipecaml@gmail.com>,
-        Kent Overstreet <kmo@daterainc.com>, Peng Tao <bergwolf@gmail.com>
-Subject: [PATCH 15/17] driver/staging/lustre: Replace hardcoding of -20 with MIN_NICE.
-Date: Tue, 11 Mar 2014 18:09:23 +0800
-Message-Id: <78f19f62782fbc265db6f00215e38b2e0d9576d0.1394532288.git.yangds.fnst@cn.fujitsu.com>
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, fcoe-devel@open-fcoe.org,
+        James Smart <james.smart@emulex.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Robert Love <robert.w.love@intel.com>
+Subject: [PATCH 16/17] driver/scsi: Replace hardcoding of -20 with MIN_NICE.
+Date: Tue, 11 Mar 2014 18:09:24 +0800
+Message-Id: <17318227e62a5ca0f7e45a54ecf4b81e20181b00.1394532288.git.yangds.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
 References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
@@ -33,29 +32,120 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: devel@driverdev.osuosl.org
-cc: Xiong Zhou <jencce.kernel@gmail.com>
-cc: Andreas Dilger <andreas.dilger@intel.com>
-cc: Cyril Roelandt <tipecaml@gmail.com>
-cc: Kent Overstreet <kmo@daterainc.com>
-cc: Peng Tao <bergwolf@gmail.com>
+cc: fcoe-devel@open-fcoe.org
+cc: James Smart <james.smart@emulex.com>
+cc: Robert Jennings <rcj@linux.vnet.ibm.com>
+cc: Robert Love <robert.w.love@intel.com>
 ---
- drivers/staging/lustre/lustre/llite/lloop.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/bnx2fc/bnx2fc_fcoe.c | 4 ++--
+ drivers/scsi/bnx2i/bnx2i_hwi.c    | 2 +-
+ drivers/scsi/fcoe/fcoe.c          | 2 +-
+ drivers/scsi/ibmvscsi/ibmvfc.c    | 2 +-
+ drivers/scsi/ibmvscsi/ibmvscsi.c  | 2 +-
+ drivers/scsi/lpfc/lpfc_hbadisc.c  | 2 +-
+ drivers/scsi/qla2xxx/qla_os.c     | 2 +-
+ 7 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/llite/lloop.c b/drivers/staging/lustre/lustre/llite/lloop.c
-index 0718905..e40fc84 100644
---- a/drivers/staging/lustre/lustre/llite/lloop.c
-+++ b/drivers/staging/lustre/lustre/llite/lloop.c
-@@ -407,7 +407,7 @@ static int loop_thread(void *data)
- 	int refcheck;
- 	int ret = 0;
+diff --git a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+index 9b94850..d24067a 100644
+--- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
++++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+@@ -464,7 +464,7 @@ static int bnx2fc_l2_rcv_thread(void *arg)
+ 	struct fcoe_percpu_s *bg = arg;
+ 	struct sk_buff *skb;
+ 
+-	set_user_nice(current, -20);
++	set_user_nice(current, MIN_NICE);
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	while (!kthread_should_stop()) {
+ 		schedule();
+@@ -602,7 +602,7 @@ int bnx2fc_percpu_io_thread(void *arg)
+ 	struct bnx2fc_work *work, *tmp;
+ 	LIST_HEAD(work_list);
+ 
+-	set_user_nice(current, -20);
++	set_user_nice(current, MIN_NICE);
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	while (!kthread_should_stop()) {
+ 		schedule();
+diff --git a/drivers/scsi/bnx2i/bnx2i_hwi.c b/drivers/scsi/bnx2i/bnx2i_hwi.c
+index e4cf23d..9aaa325 100644
+--- a/drivers/scsi/bnx2i/bnx2i_hwi.c
++++ b/drivers/scsi/bnx2i/bnx2i_hwi.c
+@@ -1870,7 +1870,7 @@ int bnx2i_percpu_io_thread(void *arg)
+ 	struct bnx2i_work *work, *tmp;
+ 	LIST_HEAD(work_list);
  
 -	set_user_nice(current, -20);
 +	set_user_nice(current, MIN_NICE);
  
- 	lo->lo_state = LLOOP_BOUND;
+ 	while (!kthread_should_stop()) {
+ 		spin_lock_bh(&p->p_work_lock);
+diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
+index f317000..843a679 100644
+--- a/drivers/scsi/fcoe/fcoe.c
++++ b/drivers/scsi/fcoe/fcoe.c
+@@ -1872,7 +1872,7 @@ static int fcoe_percpu_receive_thread(void *arg)
  
+ 	skb_queue_head_init(&tmp);
+ 
+-	set_user_nice(current, -20);
++	set_user_nice(current, MIN_NICE);
+ 
+ retry:
+ 	while (!kthread_should_stop()) {
+diff --git a/drivers/scsi/ibmvscsi/ibmvfc.c b/drivers/scsi/ibmvscsi/ibmvfc.c
+index 23f5ba5..8dd4768 100644
+--- a/drivers/scsi/ibmvscsi/ibmvfc.c
++++ b/drivers/scsi/ibmvscsi/ibmvfc.c
+@@ -4515,7 +4515,7 @@ static int ibmvfc_work(void *data)
+ 	struct ibmvfc_host *vhost = data;
+ 	int rc;
+ 
+-	set_user_nice(current, -20);
++	set_user_nice(current, MIN_NICE);
+ 
+ 	while (1) {
+ 		rc = wait_event_interruptible(vhost->work_wait_q,
+diff --git a/drivers/scsi/ibmvscsi/ibmvscsi.c b/drivers/scsi/ibmvscsi/ibmvscsi.c
+index fa76440..2ebfb2b 100644
+--- a/drivers/scsi/ibmvscsi/ibmvscsi.c
++++ b/drivers/scsi/ibmvscsi/ibmvscsi.c
+@@ -2213,7 +2213,7 @@ static int ibmvscsi_work(void *data)
+ 	struct ibmvscsi_host_data *hostdata = data;
+ 	int rc;
+ 
+-	set_user_nice(current, -20);
++	set_user_nice(current, MIN_NICE);
+ 
+ 	while (1) {
+ 		rc = wait_event_interruptible(hostdata->work_wait_q,
+diff --git a/drivers/scsi/lpfc/lpfc_hbadisc.c b/drivers/scsi/lpfc/lpfc_hbadisc.c
+index 883ea2d..1f8f4a7 100644
+--- a/drivers/scsi/lpfc/lpfc_hbadisc.c
++++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
+@@ -733,7 +733,7 @@ lpfc_do_work(void *p)
+ 	struct lpfc_hba *phba = p;
+ 	int rc;
+ 
+-	set_user_nice(current, -20);
++	set_user_nice(current, MIN_NICE);
+ 	current->flags |= PF_NOFREEZE;
+ 	phba->data_flags = 0;
+ 
+diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
+index 89a5300..0e45568 100644
+--- a/drivers/scsi/qla2xxx/qla_os.c
++++ b/drivers/scsi/qla2xxx/qla_os.c
+@@ -4756,7 +4756,7 @@ qla2x00_do_dpc(void *data)
+ 	ha = (struct qla_hw_data *)data;
+ 	base_vha = pci_get_drvdata(ha->pdev);
+ 
+-	set_user_nice(current, -20);
++	set_user_nice(current, MIN_NICE);
+ 
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	while (!kthread_should_stop()) {
 -- 
 1.8.2.1
 
