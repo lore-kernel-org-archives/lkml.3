@@ -1,211 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881AbaCKSTQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:19:16 -0400
-Received: from relay.parallels.com ([195.214.232.42]:43216 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaCKSTO (ORCPT
+	id S1754981AbaCKSUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:20:50 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:62280 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744AbaCKSUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:19:14 -0400
-Message-ID: <531F539A.7030401@parallels.com>
-Date: Tue, 11 Mar 2014 22:19:06 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Tue, 11 Mar 2014 14:20:46 -0400
+Date: Tue, 11 Mar 2014 14:20:35 -0400 (EDT)
+From: Jon Ringle <jon@ringle.org>
+X-X-Sender: jringle@jringle-ubuntu
+To: Alexander Shiyan <shc_work@mail.ru>
+cc: Jon Ringle <jon@ringle.org>, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jon Ringle <jringle@gridpoint.com>
+Subject: Re: [PATCH] RFC: WIP: sc16is7xx [v0.4]
+In-Reply-To: <1394468076.709210210@f170.i.mail.ru>
+Message-ID: <alpine.DEB.2.02.1403111401440.17021@jringle-ubuntu>
+References: <1394432777-13005-1-git-send-email-jon@ringle.org> <1394434945.519725450@f256.i.mail.ru> <alpine.DEB.2.02.1403100744230.23103@jringle-ubuntu> <1394468076.709210210@f170.i.mail.ru>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: Daniel Borkmann <borkmann@iogearbox.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter
- and converter
-References: <1394320530-3508-1-git-send-email-ast@plumgrid.com> <1394320530-3508-2-git-send-email-ast@plumgrid.com> <531C5EB5.2080507@iogearbox.net> <CAMEtUux-Psz9NW+t7vf2-=iDE5TW7KDOag2TDbxTEvd6a=LKSw@mail.gmail.com> <531CE47E.40700@iogearbox.net> <531F4A8C.3020403@parallels.com> <CAMEtUuyh4_je-vbtZ91bG4Qo5rKAHMuVd1==TJFxQS1oR3L4Mg@mail.gmail.com>
-In-Reply-To: <CAMEtUuyh4_je-vbtZ91bG4Qo5rKAHMuVd1==TJFxQS1oR3L4Mg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [89.169.95.100]
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-2047570118-1394562044=:17021"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2014 10:03 PM, Alexei Starovoitov wrote:
-> On Tue, Mar 11, 2014 at 10:40 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
->> On 03/10/2014 02:00 AM, Daniel Borkmann wrote:
->>> On 03/09/2014 06:08 PM, Alexei Starovoitov wrote:
->>>> On Sun, Mar 9, 2014 at 5:29 AM, Daniel Borkmann <borkmann@iogearbox.net> wrote:
->>>>> On 03/09/2014 12:15 AM, Alexei Starovoitov wrote:
->>>>>>
->>>>>> Extended BPF extends old BPF in the following ways:
->>>>>> - from 2 to 10 registers
->>>>>>     Original BPF has two registers (A and X) and hidden frame pointer.
->>>>>>     Extended BPF has ten registers and read-only frame pointer.
->>>>>> - from 32-bit registers to 64-bit registers
->>>>>>     semantics of old 32-bit ALU operations are preserved via 32-bit
->>>>>>     subregisters
->>>>>> - if (cond) jump_true; else jump_false;
->>>>>>     old BPF insns are replaced with:
->>>>>>     if (cond) jump_true; /* else fallthrough */
->>>>>> - adds signed > and >= insns
->>>>>> - 16 4-byte stack slots for register spill-fill replaced with
->>>>>>     up to 512 bytes of multi-use stack space
->>>>>> - introduces bpf_call insn and register passing convention for zero
->>>>>>     overhead calls from/to other kernel functions (not part of this patch)
->>>>>> - adds arithmetic right shift insn
->>>>>> - adds swab32/swab64 insns
->>>>>> - adds atomic_add insn
->>>>>> - old tax/txa insns are replaced with 'mov dst,src' insn
->>>>>>
->>>>>> Extended BPF is designed to be JITed with one to one mapping, which
->>>>>> allows GCC/LLVM backends to generate optimized BPF code that performs
->>>>>> almost as fast as natively compiled code
->>>>>>
->>>>>> sk_convert_filter() remaps old style insns into extended:
->>>>>> 'sock_filter' instructions are remapped on the fly to
->>>>>> 'sock_filter_ext' extended instructions when
->>>>>> sysctl net.core.bpf_ext_enable=1
->>>>>>
->>>>>> Old filter comes through sk_attach_filter() or
->>>>>> sk_unattached_filter_create()
->>>>>>    if (bpf_ext_enable) {
->>>>>>       convert to new
->>>>>>       sk_chk_filter() - check old bpf
->>>>>>       use sk_run_filter_ext() - new interpreter
->>>>>>    } else {
->>>>>>       sk_chk_filter() - check old bpf
->>>>>>       if (bpf_jit_enable)
->>>>>>           use old jit
->>>>>>       else
->>>>>>           use sk_run_filter() - old interpreter
->>>>>>    }
->>>>>>
->>>>>> sk_run_filter_ext() interpreter is noticeably faster
->>>>>> than sk_run_filter() for two reasons:
->>>>>>
->>>>>> 1.fall-through jumps
->>>>>>     Old BPF jump instructions are forced to go either 'true' or 'false'
->>>>>>     branch which causes branch-miss penalty.
->>>>>>     Extended BPF jump instructions have one branch and fall-through,
->>>>>>     which fit CPU branch predictor logic better.
->>>>>>     'perf stat' shows drastic difference for branch-misses.
->>>>>>
->>>>>> 2.jump-threaded implementation of interpreter vs switch statement
->>>>>>     Instead of single tablejump at the top of 'switch' statement, GCC will
->>>>>>     generate multiple tablejump instructions, which helps CPU branch
->>>>>> predictor
->>>>>>
->>>>>> Performance of two BPF filters generated by libpcap was measured
->>>>>> on x86_64, i386 and arm32.
->>>>>>
->>>>>> fprog #1 is taken from Documentation/networking/filter.txt:
->>>>>> tcpdump -i eth0 port 22 -dd
->>>>>>
->>>>>> fprog #2 is taken from 'man tcpdump':
->>>>>> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
->>>>>>      ((tcp[12]&0xf0)>>2)) != 0)' -dd
->>>>>>
->>>>>> Other libpcap programs have similar performance differences.
->>>>>>
->>>>>> Raw performance data from BPF micro-benchmark:
->>>>>> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
->>>>>> time in nsec per call, smaller is better
->>>>>> --x86_64--
->>>>>>            fprog #1  fprog #1   fprog #2  fprog #2
->>>>>>            cache-hit cache-miss cache-hit cache-miss
->>>>>> old BPF     90       101       192       202
->>>>>> ext BPF     31        71       47         97
->>>>>> old BPF jit 12        34       17         44
->>>>>> ext BPF jit TBD
->>>>>>
->>>>>> --i386--
->>>>>>            fprog #1  fprog #1   fprog #2  fprog #2
->>>>>>            cache-hit cache-miss cache-hit cache-miss
->>>>>> old BPF    107        136      227       252
->>>>>> ext BPF     40        119       69       172
->>>>>>
->>>>>> --arm32--
->>>>>>            fprog #1  fprog #1   fprog #2  fprog #2
->>>>>>            cache-hit cache-miss cache-hit cache-miss
->>>>>> old BPF    202        300      475       540
->>>>>> ext BPF    180        270      330       470
->>>>>> old BPF jit 26        182       37       202
->>>>>> new BPF jit TBD
->>>>>>
->>>>>> Tested with trinify BPF fuzzer
->>>>>>
->>>>>> Future work:
->>>>>>
->>>>>> 0. add bpf/ebpf testsuite to tools/testing/selftests/net/bpf
->>>>>>
->>>>>> 1. add extended BPF JIT for x86_64
->>>>>>
->>>>>> 2. add inband old/new demux and extended BPF verifier, so that new
->>>>>> programs
->>>>>>      can be loaded through old sk_attach_filter() and
->>>>>> sk_unattached_filter_create()
->>>>>>      interfaces
->>>>>>
->>>>>> 3. tracing filters systemtap-like with extended BPF
->>>>>>
->>>>>> 4. OVS with extended BPF
->>>>>>
->>>>>> 5. nftables with extended BPF
->>>>>>
->>>>>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
->>>>>> Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
->>>>>> Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
->>>>>
->>>>>
->>>>> One more question or possible issue that came through my mind: When
->>>>> someone attaches a socket filter from user space, and bpf_ext_enable=1
->>>>> then the old filter will transparently be converted to the new
->>>>> representation. If then user space (e.g. through checkpoint restore)
->>>>> will issue a sk_get_filter() and thus we're calling sk_decode_filter()
->>>>> on sk->sk_filter and, therefore, try to decode what we stored in
->>>>> insns_ext[] with the assumption we still have the old code. Would that
->>>>> actually crash (or leak memory, or just return garbage), as we access
->>>>> decodes[] array with filt->code? Would be great if you could double-check.
->>>>
->>>> ohh. yes. missed that.
->>>> when bpf_ext_enable=1 I think it's cleaner to return ebpf filter.
->>>> This way the user space can see how old bpf filter was converted.
->>>>
->>>> Of course we can allocate extra memory and keep original bpf code there
->>>> just to return it via sk_get_filter(), but that seems overkill.
->>>
->>> Cc'ing Pavel for a8fc92778080 ("sk-filter: Add ability to get socket
->>> filter program (v2)").
->>>
->>> I think the issue can be that when applications could get migrated
->>> from one machine to another and their kernel won't support ebpf yet,
->>> then filter could not get loaded this way as it's expected to return
->>> what the user loaded. The trade-off, however, is that the original
->>> BPF code needs to be stored as well. :(
->>
->> Sorry if I miss the point, but isn't the original filter kept on socket?
->> The sk_attach_filter() does so, then calls __sk_prepare_filter, which
->> in turn calls bpf_jit_compile(), and the latter two keep the insns in place.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323329-2047570118-1394562044=:17021
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+
+
+
+On Mon, 10 Mar 2014, Alexander Shiyan wrote:
+
+> Понедельник, 10 марта 2014, 7:50 -04:00 от Jon Ringle <jon@ringle.org>:
+> > 
+> > On Mon, 10 Mar 2014, Alexander Shiyan wrote:
+> > 
+> > > Понедельник, 10 марта 2014, 2:26 -04:00 от jon@ringle.org:
+> > > > From: Jon Ringle <jringle@gridpoint.com>
+> > > ...
+> > > > +config SERIAL_SC16IS7XX
+> > > > +	tristate "SC16IS7xx RS485 serial support"
+> > > > +	  select SERIAL_CORE
+> > > > +	  default n
+> > > > +	  help
+> > > > +	  This selects support for SC16IS7xx for use as a RS485 serial port
+> > > 
+> > > Documentation says:
+> > > The SC16IS740/750/760 is a slave I²C-bus/SPI interface to a single-channel
+> > > high performance UART.
+> > > ...
+> > > The SC16IS740/750/760 also provides additional advanced features such
+> > > as auto hardware and software flow control, automatic RS-485 support...
+> > > 
+> > > So why do you position this chip as RS485 only? Automatic direction for
+> > > RS485 is just a feature as an addition for standart UART.
+> > 
+> > You're right. This is just how we are using the chip in our board. Would a 
+> > configuration flag in platform_data make sense to use the auto rs485 
+> > direction?
 > 
-> Yes. in V8/V9 series original filter is kept on socket.
+> You don't need a flag, just use IOCTLs.
+> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/tty/serial/max310x.c?id=55367c620aed6bc27a82bb1763366931d7f2ee66
+> 
+> > Any thoughts as to the latency issue I report?
+> 
+> I do not understand why you chose the sccnxp driver as a template.
+> Use as a template max310x driver from linux-next branch.
+> I'm sure it will be better.
 
-Ah, I see :)
+I followed your advice on using max310x as a template. One thing that I'm 
+struggling to get right is the regmap. The datasheet[1] specifies the 
+register bits as follows:
 
-> and your crtools/test/zdtm/live/static/socket_filter.c test passes.
-> Let me know if there are any other tests I can try.
+	Table 33. Register address byte (I2C)
+	Bit	Name	Function
+	7 	-	not used
+	6:3 	A[3:0]	UART's internal register select
+	2:1	CH1,0	channel select: CH1 = 0, CH0 = 0
+			Other values are reserved and should not be used.
+	0	-	not used
 
-No, that's the only test we need wrt sk-filter.
-Thanks for keeping an eye on it :)
+So, I need to shift the register address by 3. Here is how I have defined 
+the regmap stuff:
+
+------>8 [relevant code] >8-------
+/* SC16IS7XX register definitions */
+#define SC16IS7XX_RHR_REG		(0x00) /* RX FIFO */
+#define SC16IS7XX_THR_REG		(0x00) /* TX FIFO */
+#define SC16IS7XX_IER_REG		(0x01) /* Interrupt enable */
+#define SC16IS7XX_IIR_REG		(0x02) /* Interrupt Ident */
+#define SC16IS7XX_FCR_REG		(0x02) /* FIFO control */
+#define SC16IS7XX_LCR_REG		(0x03) /* Line Control */
+#define SC16IS7XX_MCR_REG		(0x04) /* Modem Control */
+#define SC16IS7XX_LSR_REG		(0x05) /* Line Status */
+#define SC16IS7XX_MSR_REG		(0x06) /* Modem Status */
+#define SC16IS7XX_SPR_REG		(0x07) /* Scratch Pad */
+#define SC16IS7XX_TXLVL_REG		(0x08) /* TX FIFO level */
+#define SC16IS7XX_RXLVL_REG		(0x09) /* RX FIFO level */
+#define SC16IS7XX_IODIR_REG		(0x0a) /* I/O Dir (750/760) */
+#define SC16IS7XX_IOSTATE_REG		(0x0b) /* I/O State (750/760) */
+#define SC16IS7XX_IOINTENA_REG		(0x0c) /* I/O Int Enable (750/760) */
+#define SC16IS7XX_IOCONTROL_REG		(0x0e) /* I/O Control (750/760) */
+#define SC16IS7XX_EFCR_REG		(0x0f) /* Extra Feature Control */
+
+/* TX/Trigger Registers: Only if ((MCR[2] == 0) && (EFR[4] == 1)) */
+#define SC16IS7XX_TCR_REG		(0x06) /* Transmit control */
+#define SC16IS7XX_TLR_REG		(0x07) /* Trigger level */
+
+/* Special Register set: Only if ((LCR[7] == 1) && (LCR != 0xBF)) */
+#define SC16IS7XX_DLL_REG		(0x00) /* Divisor Latch Low */
+#define SC16IS7XX_DLH_REG		(0x01) /* Divisor Latch High */
+
+/* Enhanced Register set: Only if (LCR == 0xBF) */
+#define SC16IS7XX_EFR_REG		(0x02) /* Enhanced Features */
+#define SC16IS7XX_XON1_REG		(0x04) /* Xon1 word */
+#define SC16IS7XX_XON2_REG		(0x05) /* Xon2 word */
+#define SC16IS7XX_XOFF1_REG		(0x06) /* Xoff1 word */
+#define SC16IS7XX_XOFF2_REG		(0x07) /* Xoff2 word */
+
+#define SC16IS7XX_REG_SHIFT		3
+
+static bool sc16is7xx_reg_writeable(struct device *dev, unsigned int reg)
+{
+	switch ((reg >> SC16IS7XX_REG_SHIFT) & 0xf) {
+	case SC16IS7XX_LSR_REG:
+	case SC16IS7XX_MSR_REG:
+	case SC16IS7XX_TXLVL_REG:
+	case SC16IS7XX_RXLVL_REG:
+		return false;
+	default:
+		break;
+	}
+
+	return true;
+}
+
+static bool sc16is7xx_reg_volatile(struct device *dev, unsigned int reg)
+{
+	switch ((reg >> SC16IS7XX_REG_SHIFT) & 0xf) {
+	case SC16IS7XX_RHR_REG:
+	case SC16IS7XX_IIR_REG:
+	case SC16IS7XX_LSR_REG:
+	case SC16IS7XX_MSR_REG:
+	case SC16IS7XX_TXLVL_REG:
+	case SC16IS7XX_RXLVL_REG:
+	case SC16IS7XX_IOSTATE_REG:
+		return true;
+	default:
+		break;
+	}
+
+	return false;
+}
+
+static bool sc16is7xx_reg_precious(struct device *dev, unsigned int reg)
+{
+	switch ((reg >> SC16IS7XX_REG_SHIFT) & 0xf) {
+	case SC16IS7XX_RHR_REG:
+	case SC16IS7XX_IIR_REG:
+	case SC16IS7XX_MSR_REG:
+		return true;
+	default:
+		break;
+	}
+
+	return false;
+}
+
+static struct regmap_config regcfg = {
+	.reg_bits = 8,
+	.reg_stride = (1 << SC16IS7XX_REG_SHIFT),
+	.val_bits = 8,
+	.max_register = (0xf << SC16IS7XX_REG_SHIFT),
+	.cache_type = REGCACHE_RBTREE,
+	.writeable_reg = sc16is7xx_reg_writeable,
+	.volatile_reg = sc16is7xx_reg_volatile,
+	.precious_reg = sc16is7xx_reg_precious,
+};
+------------->8-----------------
+
+I'm not sure that I have this defined correctly. I also saw in 
+regmap_config pad_bits, which I've tried setting to SC16IS7XX_REG_SHIFT, 
+but when I do that, I get -EINVAL failure.
+
+Thanks,
+Jon
+
+[1] http://www.nxp.com/documents/data_sheet/SC16IS740_750_760.pdf
+--8323329-2047570118-1394562044=:17021--
