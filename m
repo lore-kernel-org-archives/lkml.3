@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447AbaCKBFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 21:05:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10684 "EHLO mga09.intel.com"
+	id S1754508AbaCKBFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 21:05:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:55583 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754341AbaCKBFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 21:05:34 -0400
+	id S1754464AbaCKBFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 21:05:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,627,1389772800"; 
-   d="scan'208";a="469893772"
+   d="scan'208";a="497362301"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@infradead.org
 Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com
-Subject: Implement lbr-as-callgraph v5
-Date: Mon, 10 Mar 2014 18:05:13 -0700
-Message-Id: <1394499921-27668-1-git-send-email-andi@firstfloor.org>
+        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 8/8] tools, perf: Make srcline output address with -v
+Date: Mon, 10 Mar 2014 18:05:21 -0700
+Message-Id: <1394499921-27668-9-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1394499921-27668-1-git-send-email-andi@firstfloor.org>
+References: <1394499921-27668-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Even more review feedback and some bugs addressed.]
+From: Andi Kleen <ak@linux.intel.com>
 
-This patchkit implements lbr-as-callgraphs in per freport,
-as an alternative way to present LBR information.
+Requested by Jiri.
 
-Current perf report does a histogram over the branch edges,
-which is useful to look at basic blocks, but doesn't tell
-you anything about the larger control flow behaviour.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/srcline.c | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-This patchkit adds a new option --branch-history that
-adds the branch paths to the callgraph history instead.
-
-This allows to reason about individual branch paths leading
-to specific samples.
-
-Also available at
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/lbr-callgraph4
-
-v2:
-- rebased on perf/core
-- fix various issues
-- rename the option to --branch-history
-- various fixes to display the information more concise
-v3:
-- White space changes
-- Consolidate some patches
-- Update some descriptions
-v4:
-- Fix various display problems
-- Unknown srcline is now printed as symbol+offset
-- Refactor some code to address review feedback
-- Merge with latest tip
-- Fix missing srcline display in stdio hist output.
-v5:
-- Rename functions
-- Fix gtk build problem
-- Fix crash without -g
-- Improve error messages
-- Improve srcline display in various ways
-
-Example output:
-
-    % perf record -b -g ./tsrc/tcall
-    [ perf record: Woken up 1 times to write data ]
-    [ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
-    % perf report --branch-history
-    ...
-        54.91%  tcall.c:6  [.] f2                      tcall
-                |
-                |--65.53%-- f2 tcall.c:5
-                |          |
-                |          |--70.83%-- f1 tcall.c:11
-                |          |          f1 tcall.c:10
-                |          |          main tcall.c:18
-                |          |          main tcall.c:18
-                |          |          main tcall.c:17
-                |          |          main tcall.c:17
-                |          |          f1 tcall.c:13
-                |          |          f1 tcall.c:13
-                |          |          f2 tcall.c:7
-                |          |          f2 tcall.c:5
-                |          |          f1 tcall.c:12
-                |          |          f1 tcall.c:12
-                |          |          f2 tcall.c:7
-                |          |          f2 tcall.c:5
-                |          |          f1 tcall.c:11
-
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index 36a7aff..a22be7c 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -258,6 +258,12 @@ char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
+ 	unsigned line = 0;
+ 	char *srcline;
+ 	const char *dso_name;
++	char astr[50];
++
++	if (verbose)
++		snprintf(astr, sizeof astr, " %#lx", addr);
++	else
++		astr[0] = 0;
+ 
+ 	if (!dso->has_srcline)
+ 		goto out;
+@@ -276,7 +282,12 @@ char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
+ 	if (!addr2line(dso_name, addr, &file, &line, dso))
+ 		goto out;
+ 
+-	if (asprintf(&srcline, "%s:%u", basename(file), line) < 0) {
++	if (line == 0) {
++		free(file);
++		goto fallback;
++	}
++
++	if (asprintf(&srcline, "%s:%u%s", basename(file), line, astr) < 0) {
+ 		free(file);
+ 		goto out;
+ 	}
+@@ -291,9 +302,10 @@ out:
+ 		dso->has_srcline = 0;
+ 		dso__free_a2l(dso);
+ 	}
++fallback:
+ 	if (sym) {
+-		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
+-					addr - sym->start) < 0)
++		if (asprintf(&srcline, "%s+%ld%s", show_sym ? sym->name : "",
++					addr - sym->start, astr) < 0)
+ 			return SRCLINE_UNKNOWN;
+ 	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
+ 		return SRCLINE_UNKNOWN;
+-- 
+1.8.5.3
 
