@@ -1,87 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076AbaCKXeK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 19:34:10 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:42711 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756001AbaCKXeI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 19:34:08 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>
-Cc: Devicetree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 0/5] BCM59056 PMU regulator support
-Date: Tue, 11 Mar 2014 19:33:52 -0400
-Message-Id: <1394580837-8331-1-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
+	id S1755906AbaCKXnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 19:43:21 -0400
+Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:43475
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755628AbaCKXnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 19:43:19 -0400
+Message-ID: <1394581371.13761.62.camel@snotra.buserror.net>
+Subject: Re: [PATCH 3/9] powerpc/rcpm: add RCPM driver
+From: Scott Wood <scottwood@freescale.com>
+To: Chenhui Zhao <chenhui.zhao@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <leoli@freescale.com>, <Jason.Jin@freescale.com>
+Date: Tue, 11 Mar 2014 18:42:51 -0500
+In-Reply-To: <1394168285-32275-3-git-send-email-chenhui.zhao@freescale.com>
+References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
+	 <1394168285-32275-3-git-send-email-chenhui.zhao@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: DM2PR03CA009.namprd03.prod.outlook.com (10.141.52.157) To
+ DM2PR03MB400.namprd03.prod.outlook.com (10.141.84.153)
+X-Forefront-PRVS: 0147E151B5
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377424004)(51704005)(24454002)(199002)(189002)(74366001)(47776003)(85852003)(79102001)(19580395003)(31966008)(92566001)(88136002)(69226001)(20776003)(51856001)(95416001)(59766001)(77096001)(56816005)(81686001)(90146001)(63696002)(83072002)(87976001)(74876001)(77982001)(46102001)(83322001)(93516002)(85306002)(95666003)(97336001)(33646001)(81342001)(81542001)(93136001)(87266001)(97186001)(87286001)(77156001)(42186004)(74662001)(53806001)(89996001)(50466002)(80976001)(23676002)(47736001)(74502001)(47446002)(94316002)(50226001)(49866001)(62966002)(65816001)(50986001)(80022001)(76482001)(86362001)(93916002)(92726001)(94946001)(76796001)(76786001)(56776001)(54316002)(47976001)(81816001)(4396001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB400;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:F3EB72B5.2E1B971E.71DBB975.4656CB70.20383;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BCM59056 is a multi-function power management unit used with the
-BCM281xx family of SoCs. This series adds an MFD and voltage regulator
-driver to support the BCM59056. The bcm28155-ap DT support is updated
-to enable use of regulators on the otg and sdhci peripherals.
+On Fri, 2014-03-07 at 12:57 +0800, Chenhui Zhao wrote:
+> diff --git a/arch/powerpc/platforms/85xx/corenet_generic.c b/arch/powerpc/platforms/85xx/corenet_generic.c
+> index b756f3d..3fdf9f3 100644
+> --- a/arch/powerpc/platforms/85xx/corenet_generic.c
+> +++ b/arch/powerpc/platforms/85xx/corenet_generic.c
+> @@ -56,6 +56,8 @@ void __init corenet_gen_setup_arch(void)
+>  
+>  	swiotlb_detect_4g();
+>  
+> +	fsl_rcpm_init();
+> +
+>  	pr_info("%s board from Freescale Semiconductor\n", ppc_md.name);
 
-Changes since v3:
-	- remove needless init of local ret variable in mfd driver probe
+RCPM is not board-specific.  Why is this in board code?
 
-Changes since v2:
-	- Move to mfd_add_devices() approach, eliminating representation
-	  of the regulator block as a hardware subdevice. Regulators are
-	  listed in the PMU binding and referenced via the parent device
-	  of_node by the regulator driver.
-	- Allow mfd driver to build as module
-	- Remove regulator constraints from the .dtsi include only the
-	  board-specific constraints in the board .dts.
+> +static void rcpm_v1_cpu_enter_state(int cpu, int state)
+> +{
+> +	unsigned int hw_cpu = get_hard_smp_processor_id(cpu);
+> +	unsigned int mask = 1 << hw_cpu;
+> +
+> +	switch (state) {
+> +	case E500_PM_PH10:
+> +		setbits32(&rcpm_v1_regs->cdozcr, mask);
+> +		break;
+> +	case E500_PM_PH15:
+> +		setbits32(&rcpm_v1_regs->cnapcr, mask);
+> +		break;
+> +	default:
+> +		pr_err("Unknown cpu PM state\n");
+> +		break;
+> +	}
+> +}
 
-Changes since v1:
-        - renamed to bcm590xx to accomodate future family parts
-        - remove use of subsys_initcall
-        - fix BCM590XX_MAX_REGISTER value
-        - remove unused chip id in mfd of/i2c matching
-        - switch to of_platform_populate() in mfd
-        - update binding to single document with regulators as optional
-          properties in the regulator subdevice IP description
-        - remove unused regulator get/set mode ops
-        - remove unneeded regulator NULL constraint check
-        - regulators property is optional, allow the driver to probe
-          when it is missing
-        - move of_node presence check into bcm590xx_parse_dt_reg_data()
+Put __func__ in error messages -- and for "unknown value" type messages,
+print the value.
 
-Matt Porter (5):
-  mfd: add bcm590xx pmu DT binding
-  mfd: add bcm590xx pmu driver
-  regulator: add bcm590xx regulator driver
-  ARM: configs: bcm_defconfig: enable bcm590xx regulator support
-  ARM: dts: add bcm590xx pmu support and enable for bcm28155-ap
 
- Documentation/devicetree/bindings/mfd/bcm590xx.txt |  41 ++
- arch/arm/boot/dts/bcm28155-ap.dts                  |  47 ++-
- arch/arm/boot/dts/bcm59056.dtsi                    |  77 ++++
- arch/arm/configs/bcm_defconfig                     |   7 +
- drivers/mfd/Kconfig                                |   8 +
- drivers/mfd/Makefile                               |   1 +
- drivers/mfd/bcm590xx.c                             |  93 +++++
- drivers/regulator/Kconfig                          |   8 +
- drivers/regulator/Makefile                         |   1 +
- drivers/regulator/bcm590xx-regulator.c             | 413 +++++++++++++++++++++
- include/linux/mfd/bcm590xx.h                       |  31 ++
- 11 files changed, 726 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/bcm590xx.txt
- create mode 100644 arch/arm/boot/dts/bcm59056.dtsi
- create mode 100644 drivers/mfd/bcm590xx.c
- create mode 100644 drivers/regulator/bcm590xx-regulator.c
- create mode 100644 include/linux/mfd/bcm590xx.h
+> +static int rcpm_v1_plat_enter_state(int state)
+> +{
+> +	u32 *pmcsr_reg = &rcpm_v1_regs->powmgtcsr;
+> +	int ret = 0;
+> +	int result;
+> +
+> +	switch (state) {
+> +	case PLAT_PM_SLEEP:
+> +		setbits32(pmcsr_reg, RCPM_POWMGTCSR_SLP);
+> +
+> +		/* At this point, the device is in sleep mode. */
+> +
+> +		/* Upon resume, wait for RCPM_POWMGTCSR_SLP bit to be clear. */
+> +		result = spin_event_timeout(
+> +		  !(in_be32(pmcsr_reg) & RCPM_POWMGTCSR_SLP), 10000, 10);
+> +		if (!result) {
+> +			pr_err("%s: timeout waiting for SLP bit to be cleared\n",
+> +			  __func__);
 
--- 
-1.8.4
+Why are you indenting continuation lines with only two spaces (and yet
+still not aligning with anything)?
+
+> +			ret = -ETIMEDOUT;
+> +		}
+> +		break;
+> +	default:
+> +		pr_err("Unsupported platform PM state\n");
+> +		ret = -EINVAL;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static void rcpm_v1_freeze_time_base(int freeze)
+> +{
+> +	u32 *tben_reg = &rcpm_v1_regs->ctbenr;
+> +	static u32 mask;
+> +
+> +	if (freeze) {
+> +		mask = in_be32(tben_reg);
+> +		clrbits32(tben_reg, mask);
+> +	} else {
+> +		setbits32(tben_reg, mask);
+> +	}
+> +
+> +	/* read back to push the previous write */
+> +	in_be32(tben_reg);
+> +}
+> +
+> +static void rcpm_v2_freeze_time_base(int freeze)
+> +{
+> +	u32 *tben_reg = &rcpm_v2_regs->pctbenr;
+> +	static u32 mask;
+> +
+> +	if (freeze) {
+> +		mask = in_be32(tben_reg);
+> +		clrbits32(tben_reg, mask);
+> +	} else {
+> +		setbits32(tben_reg, mask);
+> +	}
+> +
+> +	/* read back to push the previous write */
+> +	in_be32(tben_reg);
+> +}
+
+It looks like the only difference between these two functions is how you
+calculate tben_reg -- factor the rest out into a single function.
+
+> +int fsl_rcpm_init(void)
+> +{
+> +	struct device_node *np;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "fsl,qoriq-rcpm-2.0");
+> +	if (np) {
+> +		rcpm_v2_regs = of_iomap(np, 0);
+> +		of_node_put(np);
+> +		if (!rcpm_v2_regs)
+> +			return -ENOMEM;
+> +
+> +		qoriq_pm_ops = &qoriq_rcpm_v2_ops;
+> +
+> +	} else {
+> +		np = of_find_compatible_node(NULL, NULL, "fsl,qoriq-rcpm-1.0");
+> +		if (np) {
+> +			rcpm_v1_regs = of_iomap(np, 0);
+> +			of_node_put(np);
+> +			if (!rcpm_v1_regs)
+> +				return -ENOMEM;
+> +
+> +			qoriq_pm_ops = &qoriq_rcpm_v1_ops;
+> +
+> +		} else {
+> +			pr_err("%s: can't find the rcpm node.\n", __func__);
+> +			return -EINVAL;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+
+Why isn't this a proper platform driver?
+
+-Scott
+
 
