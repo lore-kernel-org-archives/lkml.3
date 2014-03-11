@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355AbaCKSpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:45:31 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:46404 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609AbaCKSp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:45:28 -0400
-Date: Tue, 11 Mar 2014 12:45:13 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>
-Cc: linux-sunxi@googlegroups.com,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
-        dev@linux-sunxi.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [linux-sunxi] Re: [RFC PATCH v2 08/14] mtd: nand: add sunxi NAND
- flash controller support
-Message-ID: <20140311184513.GC31835@obsidianresearch.com>
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
- <1391006064-28890-9-git-send-email-b.brezillon.dev@gmail.com>
- <20140129175641.GF1427@obsidianresearch.com>
- <20140129184619.GC27143@localhost>
- <20140129191005.GG1427@obsidianresearch.com>
- <531D9F4B.6040505@gmail.com>
+	id S1755316AbaCKSqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:46:35 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59716 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052AbaCKSqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 14:46:32 -0400
+Date: Tue, 11 Mar 2014 18:46:06 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Brian Austin <brian.austin@cirrus.com>,
+        Nicolin Chen <Guangyu.Chen@freescale.com>, Paul.Handrigan@cirrus.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        lgirdwood@gmail.com, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Message-ID: <20140311184606.GW28112@sirena.org.uk>
+References: <1394536791-8381-1-git-send-email-Guangyu.Chen@freescale.com>
+ <alpine.DEB.2.02.1403111026280.3558@heelrod>
+ <531F320E.70605@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MUSEnV6akQk4QhdD"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <531D9F4B.6040505@gmail.com>
+In-Reply-To: <531F320E.70605@metafoo.de>
+X-Cookie: Oh no, not again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] ASoC: cs42888: Add codec driver support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 12:17:31PM +0100, Boris BREZILLON wrote:
-> Hello Jason,
-> 
-> Le 29/01/2014 20:10, Jason Gunthorpe a écrit :
-> >On Wed, Jan 29, 2014 at 03:46:20PM -0300, Ezequiel Garcia wrote:
-> >
-> >>After CE# has been pulled high and then transitioned low again, the host
-> >>should issue a Set Features to select the appropriate asynchronous timing mode.
-> >>"""
-> >Oh, I had forgot you should do a set feature too
-> >
-> >Boris, I think the core core should handle this dance and the driver
-> >should just implement a call back to change the timing mode on the
-> >interface..
-> >
-> >If I ever get a moment I can work on support for timing setting in the
-> >mvebu driver, I have boards here with ONFI NAND..
-> 
-> Any progress on this ?
-> I'm about to post the 3rd version of this series and if you already have
-> something working I could base my work on your proposal.
 
-Sorry, no, I will try to look over your v3 though.
+--MUSEnV6akQk4QhdD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Regards,
-Jason
+On Tue, Mar 11, 2014 at 04:55:58PM +0100, Lars-Peter Clausen wrote:
+> On 03/11/2014 04:41 PM, Brian Austin wrote:
+
+> >So WRT the CS42888, this is one device in a series of 2 devices that are
+> >register compatible with the only difference being that the CS42488 has 2
+> >extra ADC's. Same die and same DeviceID.
+
+> >Would it make more sense to submit the driver with the extra ADC's to make
+> >it feature complete for both devices? Wouldn't be odd to have 2 drivers that
+> >do the same for 98% of the code.
+
+> This should be in one driver. But support for the second device can
+> always be added in a follow up patch.
+
+Yes, we can add support later.  It might be helpful to name the driver
+with some generic name I guess.
+
+--MUSEnV6akQk4QhdD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTH1nqAAoJELSic+t+oim9C/gP/i5BAh0i6DINdS77d401B9NC
+PQQulo2Wjz08u6THrD0oASQB+4wOaM6xI1U+YMyXBtXbw4zYW0isO/3MmXTGhFcm
+Kj7+MMtZcSaLuxm/17n9WDNiErgqmxCwsBaemnIN3fLHX8mrJd8r9MBkGOI5Puc5
+RTn1fgig48xlGcnD+Or+14oUyUIGrZlKAZ7ybLBOlj6DEsLBAY6lja1Uc68qyC/f
+5wsijto7NLacEbQULXO3pxiAd4m3D4NO8btb7xWk8YTw2omyJFhOepzmGdaUFESU
+938ngC8XyWc5+BVWDnt29hBHP0vuzDq0Qvzsge6wEVsz/2XUl/Bm83mxxYW+q2kw
+5MB0+t6QJUeOWncvmd1mlNAo13QaXeXcD3KZiC+If7Zgpq2SoVAGqAgvxBDntY8x
+ukBbnLLVnEAr1uugmdNUvsz0O4AOdaEiYJycNRQQAszQxMEeBogyGMn/LJEjXY9U
+JqCHNGNIyiU2ptFXE9ISIDI9d1BzUFxfWjVY3zgWRqvTn2795X5Wdb1jwVcqv+Rb
+wasU2ncCCy43+ICORRCRACTQozmR5hfsDAxZNBf8oojg7us4CIhcDGDOM2EU7yLa
+UuSkEPWrzGi8KomI8zKlqnPeAYbNVmRlVHVfoe6pL+4H92EECgAHlnKoIuntw1os
+2PKpZFYXjt43jn4wkfvB
+=WB+k
+-----END PGP SIGNATURE-----
+
+--MUSEnV6akQk4QhdD--
