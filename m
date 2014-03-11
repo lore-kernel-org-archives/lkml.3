@@ -1,78 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463AbaCKTlJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 15:41:09 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:33566 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881AbaCKTlH (ORCPT
+	id S1755504AbaCKTlx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 15:41:53 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:39012 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755286AbaCKTlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 15:41:07 -0400
-X-IronPort-AV: E=Sophos;i="4.97,632,1389744000"; 
-   d="scan'208";a="108900544"
-Message-ID: <531F66D0.1050000@citrix.com>
-Date: Tue, 11 Mar 2014 19:41:04 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Thomas Graf <tgraf@redhat.com>, Pravin Shelar <pshelar@nicira.com>
-CC: Jesse Gross <jesse@nicira.com>,
-        "dev@openvswitch.org" <dev@openvswitch.org>,
-        <xen-devel@lists.xenproject.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] openvswitch: Orphan frags before sending to userspace
- via Netlink to avoid guest stall
-References: <1393615016-9187-1-git-send-email-zoltan.kiss@citrix.com>	<5319F272.1070101@redhat.com> <CALnjE+q=fejHPsjVj9+jnypJCUHfCDFc553U48WR48Tjcf3FZw@mail.gmail.com> <531A0911.4040304@redhat.com>
-In-Reply-To: <531A0911.4040304@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 11 Mar 2014 15:41:52 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgkOAJ5mH1NXQz0l/2dsb2JhbABagwaDRr8RAgKBIRd0glMTDQ8jGIECJBOHfQG0Op0DjlyEPwSYRAGKVodXgy48
+Date: Tue, 11 Mar 2014 20:43:25 +0100
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>
+Subject: [PATCH 1/1] BEFS: Global conversion to pr_foo()
+Message-Id: <20140311204325.59e6a3a26fc38b2184a06315@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/14 17:59, Thomas Graf wrote:
-> On 03/07/2014 06:28 PM, Pravin Shelar wrote:
->> Problem is mapping SKBTX_DEV_ZEROCOPY pages to userspace. skb_zerocopy
->> is not doing that.
->>
->> Unless I missing something, Current netlink code can not handle
->> skb-frags with zero copy. So we have to copy skb anyways and no need
->> to orphan-frags here.
->> If you are planning on handling skb-frags without copying then
->> skb_orphan_frags should be done in netlink.
->
-> If you look at the second part of skb_zerocopy() this is exactly what
-> it is doing unless the target skb has sufficient linear space
-> preallocated. At least unless mmap is enabled in which case we would
-> have to copy again until we have implemented a way to pass page refs
-> via the nl ring buffer.
->
-> So I think Zoltan is correct in orphaning frags that come from f.e.
-> a tun device via zerocopy_sg_from_iovec().
+-All printk(KERN_foo converted to pr_foo().
+-Add pr_fmt and remove redundant prefixes.
 
-Now as I'm checking how Netlink works, I might be wrong at some parts :) 
-skb_zerocopy correctly add the frags to the user_skb we are sending 
-upwards, however when the userspace receive it in netlink_recvmsg(), it 
-gets copied to the supplied buffer anyway. Is that correct? In which 
-case we don't need to worry that userspace will sit on that page 
-indefinitely. However we have to worry about userspace not calling recv 
-on that Netlink socket, so in the end we still need skb_orphan_frags, 
-just for a different reason :)
-We can put skb_orphan_frags into skb_zerocopy, skb_clone also do that.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/befs/debug.c    | 14 +++++++-------
+ fs/befs/linuxvfs.c | 27 +++++++++++++--------------
+ 2 files changed, 20 insertions(+), 21 deletions(-)
 
-However with Netlink mmapped IO, we should take a different approach, 
-and instead of calling skb_orphan_frags we should make sure user_skb can 
-hold any skb we get from the kernel, and copy the frags there. Even if 
-we would be able to pass page refs to userspace through the ring buffer 
-(AFAIK currently we can't), it would be fragile to just pass kernel 
-pages directly to userspace, even if they came without the 
-SKBTX_DEV_ZEROCOPY flag. And I think it would be quite rare that we need 
-that copy anyway, because the flow setup usually happens with small 
-packets without frags.
-If we choose the above approach with Netlink mmap, we don't need 
-skb_orphan_frags, in fact
+diff --git a/fs/befs/debug.c b/fs/befs/debug.c
+index 622e737..ebe9a28 100644
+--- a/fs/befs/debug.c
++++ b/fs/befs/debug.c
+@@ -10,6 +10,7 @@
+  * debug functions
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ #ifdef __KERNEL__
+ 
+ #include <stdarg.h>
+@@ -31,7 +32,7 @@ befs_error(const struct super_block *sb, const char *fmt, ...)
+ 	va_list args;
+ 	char *err_buf = kmalloc(ERRBUFSIZE, GFP_KERNEL);
+ 	if (err_buf == NULL) {
+-		printk(KERN_ERR "could not allocate %d bytes\n", ERRBUFSIZE);
++		pr_err("could not allocate %d bytes\n", ERRBUFSIZE);
+ 		return;
+ 	}
+ 
+@@ -39,7 +40,7 @@ befs_error(const struct super_block *sb, const char *fmt, ...)
+ 	vsnprintf(err_buf, ERRBUFSIZE, fmt, args);
+ 	va_end(args);
+ 
+-	printk(KERN_ERR "BeFS(%s): %s\n", sb->s_id, err_buf);
++	pr_err("(%s): %s\n", sb->s_id, err_buf);
+ 	kfree(err_buf);
+ }
+ 
+@@ -49,7 +50,7 @@ befs_warning(const struct super_block *sb, const char *fmt, ...)
+ 	va_list args;
+ 	char *err_buf = kmalloc(ERRBUFSIZE, GFP_KERNEL);
+ 	if (err_buf == NULL) {
+-		printk(KERN_ERR "could not allocate %d bytes\n", ERRBUFSIZE);
++		pr_err("could not allocate %d bytes\n", ERRBUFSIZE);
+ 		return;
+ 	}
+ 
+@@ -57,7 +58,7 @@ befs_warning(const struct super_block *sb, const char *fmt, ...)
+ 	vsnprintf(err_buf, ERRBUFSIZE, fmt, args);
+ 	va_end(args);
+ 
+-	printk(KERN_WARNING "BeFS(%s): %s\n", sb->s_id, err_buf);
++	pr_warn("(%s): %s\n", sb->s_id, err_buf);
+ 
+ 	kfree(err_buf);
+ }
+@@ -73,8 +74,7 @@ befs_debug(const struct super_block *sb, const char *fmt, ...)
+ 	if (BEFS_SB(sb)->mount_opts.debug) {
+ 		err_buf = kmalloc(ERRBUFSIZE, GFP_KERNEL);
+ 		if (err_buf == NULL) {
+-			printk(KERN_ERR "could not allocate %d bytes\n",
+-				ERRBUFSIZE);
++			pr_err("could not allocate %d bytes\n", ERRBUFSIZE);
+ 			return;
+ 		}
+ 
+@@ -82,7 +82,7 @@ befs_debug(const struct super_block *sb, const char *fmt, ...)
+ 		vsnprintf(err_buf, ERRBUFSIZE, fmt, args);
+ 		va_end(args);
+ 
+-		printk(KERN_DEBUG "BeFS(%s): %s\n", sb->s_id, err_buf);
++		pr_debug("(%s): %s\n", sb->s_id, err_buf);
+ 
+ 		kfree(err_buf);
+ 	}
+diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
+index 845d2d6..b762b30 100644
+--- a/fs/befs/linuxvfs.c
++++ b/fs/befs/linuxvfs.c
+@@ -5,6 +5,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/fs.h>
+@@ -454,11 +456,9 @@ befs_init_inodecache(void)
+ 						SLAB_MEM_SPREAD),
+ 					      init_once);
+ 	if (befs_inode_cachep == NULL) {
+-		printk(KERN_ERR "befs_init_inodecache: "
+-		       "Couldn't initialize inode slabcache\n");
++		pr_err("%s: Couldn't initialize inode slabcache\n", __func__);
+ 		return -ENOMEM;
+ 	}
+-
+ 	return 0;
+ }
+ 
+@@ -715,8 +715,8 @@ parse_options(char *options, befs_mount_options * opts)
+ 			if (option >= 0)
+ 				uid = make_kuid(current_user_ns(), option);
+ 			if (!uid_valid(uid)) {
+-				printk(KERN_ERR "BeFS: Invalid uid %d, "
+-						"using default\n", option);
++				pr_err("Invalid uid %d, "
++				       "using default\n", option);
+ 				break;
+ 			}
+ 			opts->uid = uid;
+@@ -729,8 +729,8 @@ parse_options(char *options, befs_mount_options * opts)
+ 			if (option >= 0)
+ 				gid = make_kgid(current_user_ns(), option);
+ 			if (!gid_valid(gid)) {
+-				printk(KERN_ERR "BeFS: Invalid gid %d, "
+-						"using default\n", option);
++				pr_err("Invalid gid %d, "
++				       "using default\n", option);
+ 				break;
+ 			}
+ 			opts->gid = gid;
+@@ -740,8 +740,8 @@ parse_options(char *options, befs_mount_options * opts)
+ 			kfree(opts->iocharset);
+ 			opts->iocharset = match_strdup(&args[0]);
+ 			if (!opts->iocharset) {
+-				printk(KERN_ERR "BeFS: allocation failure for "
+-						"iocharset string\n");
++				pr_err("allocation failure for "
++				       "iocharset string\n");
+ 				return 0;
+ 			}
+ 			break;
+@@ -749,8 +749,8 @@ parse_options(char *options, befs_mount_options * opts)
+ 			opts->debug = 1;
+ 			break;
+ 		default:
+-			printk(KERN_ERR "BeFS: Unrecognized mount option \"%s\" "
+-					"or missing value\n", p);
++			pr_err("Unrecognized mount option \"%s\" "
++			       "or missing value\n", p);
+ 			return 0;
+ 		}
+ 	}
+@@ -793,8 +793,7 @@ befs_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	sb->s_fs_info = kmalloc(sizeof (*befs_sb), GFP_KERNEL);
+ 	if (sb->s_fs_info == NULL) {
+-		printk(KERN_ERR
+-		       "BeFS(%s): Unable to allocate memory for private "
++		pr_err("(%s): Unable to allocate memory for private "
+ 		       "portion of superblock. Bailing.\n", sb->s_id);
+ 		goto unacquire_none;
+ 	}
+@@ -963,7 +962,7 @@ init_befs_fs(void)
+ {
+ 	int err;
+ 
+-	printk(KERN_INFO "BeFS version: %s\n", BEFS_VERSION);
++	pr_info("version: %s\n", BEFS_VERSION);
+ 
+ 	err = befs_init_inodecache();
+ 	if (err)
+-- 
+1.8.1.4
 
-Regards,
-
-Zoli
