@@ -1,62 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361AbaCKJid (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 05:38:33 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:17754
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753389AbaCKJia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 05:38:30 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzbb2dI98dI9371I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2fh95h839h947hc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25f6h2605h19b6n1155h)
-Date: Tue, 11 Mar 2014 10:38:14 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Michal Simek <michal.simek@xilinx.com>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, <monstr@monstr.eu>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-can@vger.kernel.org>,
-        <robh+dt@kernel.org>,
-        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
-        <grant.likely@linaro.org>, Kedareswara rao Appana <appanad@xilinx.com>,
-        <wg@grandegger.com>
-Subject: Re: [PATCH v5] can: xilinx CAN controller support.
-References: <5254bfec-c6fd-4681-a34d-706d51e60fbb@VA3EHSMHS004.ehs.local> <531DD493.3030306@monstr.eu> <531DD5E7.7090406@pengutronix.de> <3245971.RIuVmbVL0Z@wuerfel> <1964213d-6bd9-49fa-805e-42e1e0630fd5@VA3EHSMHS029.ehs.local> <20140311044555.GA12373@localhost>
-In-Reply-To: <20140311044555.GA12373@localhost>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <546dbc60-dd7b-4249-bab8-ad7e008b9aad@AM1EHSMHS001.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1753790AbaCKJqF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 05:46:05 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:15111 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752966AbaCKJqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 05:46:03 -0400
+X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
+   d="scan'208";a="9678157"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@kernel.org, tglx@linutronix.de,
+        Joe Perches <joe@perches.com>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH] kernel/sys: Fix the indent issue in switch.
+Date: Tue, 11 Mar 2014 17:44:03 +0800
+Message-Id: <1394531043-3438-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 17:43:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 17:43:17,
+	Serialize complete at 2014/03/11 17:43:17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2014 05:45 AM, Fengguang Wu wrote:
->>> You probably want something like
->>>
->>> 	config CAN_XILINX
->>> 	tristate "Xilinx CAN"
->>> 	depends on ARCH_ZYNQ || MICROBLAZE || COMPILE_TEST
->>> 	depends on COMMON_CLK && HAS_MMIO  # whatever you need for other architectures
->>
->> Fengguang: Are you use COMPILE_TEST in zero day testing system?
-> 
-> Yeah, the randconfig build/boot tests should cover both COMPILE_TEST
-> and !COMPILE_TEST cases.
+From: Joe Perches <joe@perches.com>
 
-But the point is that randconfig is really random it means it definitely can
-cover but not there is no certainty that for that build, you are running,
-has both option for all architectures enabled.
-Or do I read it wrongly?
+Fix the indent issue and add a comment line for /* fall-through */.
 
-Thanks,
-Michal
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ kernel/sys.c | 204 +++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 102 insertions(+), 102 deletions(-)
 
+diff --git a/kernel/sys.c b/kernel/sys.c
+index adaeab6..61a2ae9 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -182,39 +182,39 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
+ 	rcu_read_lock();
+ 	read_lock(&tasklist_lock);
+ 	switch (which) {
+-		case PRIO_PROCESS:
+-			if (who)
+-				p = find_task_by_vpid(who);
+-			else
+-				p = current;
+-			if (p)
+-				error = set_one_prio(p, niceval, error);
+-			break;
+-		case PRIO_PGRP:
+-			if (who)
+-				pgrp = find_vpid(who);
+-			else
+-				pgrp = task_pgrp(current);
+-			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
++	case PRIO_PROCESS:
++		if (who)
++			p = find_task_by_vpid(who);
++		else
++			p = current;
++		if (p)
++			error = set_one_prio(p, niceval, error);
++		break;
++	case PRIO_PGRP:
++		if (who)
++			pgrp = find_vpid(who);
++		else
++			pgrp = task_pgrp(current);
++		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
++			error = set_one_prio(p, niceval, error);
++		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
++		break;
++	case PRIO_USER:
++		uid = make_kuid(cred->user_ns, who);
++		user = cred->user;
++		if (!who)
++			uid = cred->uid;
++		else if (!uid_eq(uid, cred->uid) &&
++			 !(user = find_user(uid)))
++			goto out_unlock;	/* No processes for this user */
++
++		do_each_thread(g, p) {
++			if (uid_eq(task_uid(p), uid))
+ 				error = set_one_prio(p, niceval, error);
+-			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
+-			break;
+-		case PRIO_USER:
+-			uid = make_kuid(cred->user_ns, who);
+-			user = cred->user;
+-			if (!who)
+-				uid = cred->uid;
+-			else if (!uid_eq(uid, cred->uid) &&
+-				 !(user = find_user(uid)))
+-				goto out_unlock;	/* No processes for this user */
+-
+-			do_each_thread(g, p) {
+-				if (uid_eq(task_uid(p), uid))
+-					error = set_one_prio(p, niceval, error);
+-			} while_each_thread(g, p);
+-			if (!uid_eq(uid, cred->uid))
+-				free_uid(user);		/* For find_user() */
+-			break;
++		} while_each_thread(g, p);
++		if (!uid_eq(uid, cred->uid))
++			free_uid(user);		/* For find_user() */
++		break;
+ 	}
+ out_unlock:
+ 	read_unlock(&tasklist_lock);
+@@ -244,47 +244,47 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
+ 	rcu_read_lock();
+ 	read_lock(&tasklist_lock);
+ 	switch (which) {
+-		case PRIO_PROCESS:
+-			if (who)
+-				p = find_task_by_vpid(who);
+-			else
+-				p = current;
+-			if (p) {
++	case PRIO_PROCESS:
++		if (who)
++			p = find_task_by_vpid(who);
++		else
++			p = current;
++		if (p) {
++			niceval = 20 - task_nice(p);
++			if (niceval > retval)
++				retval = niceval;
++		}
++		break;
++	case PRIO_PGRP:
++		if (who)
++			pgrp = find_vpid(who);
++		else
++			pgrp = task_pgrp(current);
++		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
++			niceval = 20 - task_nice(p);
++			if (niceval > retval)
++				retval = niceval;
++		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
++		break;
++	case PRIO_USER:
++		uid = make_kuid(cred->user_ns, who);
++		user = cred->user;
++		if (!who)
++			uid = cred->uid;
++		else if (!uid_eq(uid, cred->uid) &&
++			 !(user = find_user(uid)))
++			goto out_unlock;	/* No processes for this user */
++
++		do_each_thread(g, p) {
++			if (uid_eq(task_uid(p), uid)) {
+ 				niceval = 20 - task_nice(p);
+ 				if (niceval > retval)
+ 					retval = niceval;
+ 			}
+-			break;
+-		case PRIO_PGRP:
+-			if (who)
+-				pgrp = find_vpid(who);
+-			else
+-				pgrp = task_pgrp(current);
+-			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
+-				niceval = 20 - task_nice(p);
+-				if (niceval > retval)
+-					retval = niceval;
+-			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
+-			break;
+-		case PRIO_USER:
+-			uid = make_kuid(cred->user_ns, who);
+-			user = cred->user;
+-			if (!who)
+-				uid = cred->uid;
+-			else if (!uid_eq(uid, cred->uid) &&
+-				 !(user = find_user(uid)))
+-				goto out_unlock;	/* No processes for this user */
+-
+-			do_each_thread(g, p) {
+-				if (uid_eq(task_uid(p), uid)) {
+-					niceval = 20 - task_nice(p);
+-					if (niceval > retval)
+-						retval = niceval;
+-				}
+-			} while_each_thread(g, p);
+-			if (!uid_eq(uid, cred->uid))
+-				free_uid(user);		/* for find_user() */
+-			break;
++		} while_each_thread(g, p);
++		if (!uid_eq(uid, cred->uid))
++			free_uid(user);		/* for find_user() */
++		break;
+ 	}
+ out_unlock:
+ 	read_unlock(&tasklist_lock);
+@@ -1541,41 +1541,41 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
+ 		return;
+ 
+ 	switch (who) {
+-		case RUSAGE_BOTH:
+-		case RUSAGE_CHILDREN:
+-			utime = p->signal->cutime;
+-			stime = p->signal->cstime;
+-			r->ru_nvcsw = p->signal->cnvcsw;
+-			r->ru_nivcsw = p->signal->cnivcsw;
+-			r->ru_minflt = p->signal->cmin_flt;
+-			r->ru_majflt = p->signal->cmaj_flt;
+-			r->ru_inblock = p->signal->cinblock;
+-			r->ru_oublock = p->signal->coublock;
+-			maxrss = p->signal->cmaxrss;
+-
+-			if (who == RUSAGE_CHILDREN)
+-				break;
+-
+-		case RUSAGE_SELF:
+-			thread_group_cputime_adjusted(p, &tgutime, &tgstime);
+-			utime += tgutime;
+-			stime += tgstime;
+-			r->ru_nvcsw += p->signal->nvcsw;
+-			r->ru_nivcsw += p->signal->nivcsw;
+-			r->ru_minflt += p->signal->min_flt;
+-			r->ru_majflt += p->signal->maj_flt;
+-			r->ru_inblock += p->signal->inblock;
+-			r->ru_oublock += p->signal->oublock;
+-			if (maxrss < p->signal->maxrss)
+-				maxrss = p->signal->maxrss;
+-			t = p;
+-			do {
+-				accumulate_thread_rusage(t, r);
+-			} while_each_thread(p, t);
++	case RUSAGE_BOTH:
++	case RUSAGE_CHILDREN:
++		utime = p->signal->cutime;
++		stime = p->signal->cstime;
++		r->ru_nvcsw = p->signal->cnvcsw;
++		r->ru_nivcsw = p->signal->cnivcsw;
++		r->ru_minflt = p->signal->cmin_flt;
++		r->ru_majflt = p->signal->cmaj_flt;
++		r->ru_inblock = p->signal->cinblock;
++		r->ru_oublock = p->signal->coublock;
++		maxrss = p->signal->cmaxrss;
++
++		if (who == RUSAGE_CHILDREN)
+ 			break;
++		/* fall-through */
++	case RUSAGE_SELF:
++		thread_group_cputime_adjusted(p, &tgutime, &tgstime);
++		utime += tgutime;
++		stime += tgstime;
++		r->ru_nvcsw += p->signal->nvcsw;
++		r->ru_nivcsw += p->signal->nivcsw;
++		r->ru_minflt += p->signal->min_flt;
++		r->ru_majflt += p->signal->maj_flt;
++		r->ru_inblock += p->signal->inblock;
++		r->ru_oublock += p->signal->oublock;
++		if (maxrss < p->signal->maxrss)
++			maxrss = p->signal->maxrss;
++		t = p;
++		do {
++			accumulate_thread_rusage(t, r);
++		} while_each_thread(p, t);
++		break;
+ 
+-		default:
+-			BUG();
++	default:
++		BUG();
+ 	}
+ 	unlock_task_sighand(p, &flags);
+ 
+-- 
+1.8.2.1
 
