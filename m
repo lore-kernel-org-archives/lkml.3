@@ -1,213 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246AbaCKSDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:03:54 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:62485 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744AbaCKSDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:03:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <531F4A8C.3020403@parallels.com>
-References: <1394320530-3508-1-git-send-email-ast@plumgrid.com>
-	<1394320530-3508-2-git-send-email-ast@plumgrid.com>
-	<531C5EB5.2080507@iogearbox.net>
-	<CAMEtUux-Psz9NW+t7vf2-=iDE5TW7KDOag2TDbxTEvd6a=LKSw@mail.gmail.com>
-	<531CE47E.40700@iogearbox.net>
-	<531F4A8C.3020403@parallels.com>
-Date: Tue, 11 Mar 2014 11:03:47 -0700
-Message-ID: <CAMEtUuyh4_je-vbtZ91bG4Qo5rKAHMuVd1==TJFxQS1oR3L4Mg@mail.gmail.com>
-Subject: Re: [PATCH v7 net-next 1/3] filter: add Extended BPF interpreter and converter
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Daniel Borkmann <borkmann@iogearbox.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1754915AbaCKSG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:06:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60842 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753314AbaCKSG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 14:06:57 -0400
+Date: Tue, 11 Mar 2014 18:06:52 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com,
+        knoel@redhat.com, aarcange@redhat.com
+Subject: Re: [PATCH -mm] mm,numa,mprotect: always continue after finding a
+ stable thp page
+Message-ID: <20140311180652.GM10663@suse.de>
+References: <5318E4BC.50301@oracle.com>
+ <20140306173137.6a23a0b2@cuia.bos.redhat.com>
+ <5318FC3F.4080204@redhat.com>
+ <20140307140650.GA1931@suse.de>
+ <20140307150923.GB1931@suse.de>
+ <20140307182745.GD1931@suse.de>
+ <20140311162845.GA30604@suse.de>
+ <531F3F15.8050206@oracle.com>
+ <531F4128.8020109@redhat.com>
+ <531F48CC.303@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <531F48CC.303@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 10:40 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
-> On 03/10/2014 02:00 AM, Daniel Borkmann wrote:
->> On 03/09/2014 06:08 PM, Alexei Starovoitov wrote:
->>> On Sun, Mar 9, 2014 at 5:29 AM, Daniel Borkmann <borkmann@iogearbox.net> wrote:
->>>> On 03/09/2014 12:15 AM, Alexei Starovoitov wrote:
->>>>>
->>>>> Extended BPF extends old BPF in the following ways:
->>>>> - from 2 to 10 registers
->>>>>     Original BPF has two registers (A and X) and hidden frame pointer.
->>>>>     Extended BPF has ten registers and read-only frame pointer.
->>>>> - from 32-bit registers to 64-bit registers
->>>>>     semantics of old 32-bit ALU operations are preserved via 32-bit
->>>>>     subregisters
->>>>> - if (cond) jump_true; else jump_false;
->>>>>     old BPF insns are replaced with:
->>>>>     if (cond) jump_true; /* else fallthrough */
->>>>> - adds signed > and >= insns
->>>>> - 16 4-byte stack slots for register spill-fill replaced with
->>>>>     up to 512 bytes of multi-use stack space
->>>>> - introduces bpf_call insn and register passing convention for zero
->>>>>     overhead calls from/to other kernel functions (not part of this patch)
->>>>> - adds arithmetic right shift insn
->>>>> - adds swab32/swab64 insns
->>>>> - adds atomic_add insn
->>>>> - old tax/txa insns are replaced with 'mov dst,src' insn
->>>>>
->>>>> Extended BPF is designed to be JITed with one to one mapping, which
->>>>> allows GCC/LLVM backends to generate optimized BPF code that performs
->>>>> almost as fast as natively compiled code
->>>>>
->>>>> sk_convert_filter() remaps old style insns into extended:
->>>>> 'sock_filter' instructions are remapped on the fly to
->>>>> 'sock_filter_ext' extended instructions when
->>>>> sysctl net.core.bpf_ext_enable=1
->>>>>
->>>>> Old filter comes through sk_attach_filter() or
->>>>> sk_unattached_filter_create()
->>>>>    if (bpf_ext_enable) {
->>>>>       convert to new
->>>>>       sk_chk_filter() - check old bpf
->>>>>       use sk_run_filter_ext() - new interpreter
->>>>>    } else {
->>>>>       sk_chk_filter() - check old bpf
->>>>>       if (bpf_jit_enable)
->>>>>           use old jit
->>>>>       else
->>>>>           use sk_run_filter() - old interpreter
->>>>>    }
->>>>>
->>>>> sk_run_filter_ext() interpreter is noticeably faster
->>>>> than sk_run_filter() for two reasons:
->>>>>
->>>>> 1.fall-through jumps
->>>>>     Old BPF jump instructions are forced to go either 'true' or 'false'
->>>>>     branch which causes branch-miss penalty.
->>>>>     Extended BPF jump instructions have one branch and fall-through,
->>>>>     which fit CPU branch predictor logic better.
->>>>>     'perf stat' shows drastic difference for branch-misses.
->>>>>
->>>>> 2.jump-threaded implementation of interpreter vs switch statement
->>>>>     Instead of single tablejump at the top of 'switch' statement, GCC will
->>>>>     generate multiple tablejump instructions, which helps CPU branch
->>>>> predictor
->>>>>
->>>>> Performance of two BPF filters generated by libpcap was measured
->>>>> on x86_64, i386 and arm32.
->>>>>
->>>>> fprog #1 is taken from Documentation/networking/filter.txt:
->>>>> tcpdump -i eth0 port 22 -dd
->>>>>
->>>>> fprog #2 is taken from 'man tcpdump':
->>>>> tcpdump -i eth0 'tcp port 22 and (((ip[2:2] - ((ip[0]&0xf)<<2)) -
->>>>>      ((tcp[12]&0xf0)>>2)) != 0)' -dd
->>>>>
->>>>> Other libpcap programs have similar performance differences.
->>>>>
->>>>> Raw performance data from BPF micro-benchmark:
->>>>> SK_RUN_FILTER on same SKB (cache-hit) or 10k SKBs (cache-miss)
->>>>> time in nsec per call, smaller is better
->>>>> --x86_64--
->>>>>            fprog #1  fprog #1   fprog #2  fprog #2
->>>>>            cache-hit cache-miss cache-hit cache-miss
->>>>> old BPF     90       101       192       202
->>>>> ext BPF     31        71       47         97
->>>>> old BPF jit 12        34       17         44
->>>>> ext BPF jit TBD
->>>>>
->>>>> --i386--
->>>>>            fprog #1  fprog #1   fprog #2  fprog #2
->>>>>            cache-hit cache-miss cache-hit cache-miss
->>>>> old BPF    107        136      227       252
->>>>> ext BPF     40        119       69       172
->>>>>
->>>>> --arm32--
->>>>>            fprog #1  fprog #1   fprog #2  fprog #2
->>>>>            cache-hit cache-miss cache-hit cache-miss
->>>>> old BPF    202        300      475       540
->>>>> ext BPF    180        270      330       470
->>>>> old BPF jit 26        182       37       202
->>>>> new BPF jit TBD
->>>>>
->>>>> Tested with trinify BPF fuzzer
->>>>>
->>>>> Future work:
->>>>>
->>>>> 0. add bpf/ebpf testsuite to tools/testing/selftests/net/bpf
->>>>>
->>>>> 1. add extended BPF JIT for x86_64
->>>>>
->>>>> 2. add inband old/new demux and extended BPF verifier, so that new
->>>>> programs
->>>>>      can be loaded through old sk_attach_filter() and
->>>>> sk_unattached_filter_create()
->>>>>      interfaces
->>>>>
->>>>> 3. tracing filters systemtap-like with extended BPF
->>>>>
->>>>> 4. OVS with extended BPF
->>>>>
->>>>> 5. nftables with extended BPF
->>>>>
->>>>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
->>>>> Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
->>>>> Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
->>>>
->>>>
->>>> One more question or possible issue that came through my mind: When
->>>> someone attaches a socket filter from user space, and bpf_ext_enable=1
->>>> then the old filter will transparently be converted to the new
->>>> representation. If then user space (e.g. through checkpoint restore)
->>>> will issue a sk_get_filter() and thus we're calling sk_decode_filter()
->>>> on sk->sk_filter and, therefore, try to decode what we stored in
->>>> insns_ext[] with the assumption we still have the old code. Would that
->>>> actually crash (or leak memory, or just return garbage), as we access
->>>> decodes[] array with filt->code? Would be great if you could double-check.
->>>
->>> ohh. yes. missed that.
->>> when bpf_ext_enable=1 I think it's cleaner to return ebpf filter.
->>> This way the user space can see how old bpf filter was converted.
->>>
->>> Of course we can allocate extra memory and keep original bpf code there
->>> just to return it via sk_get_filter(), but that seems overkill.
->>
->> Cc'ing Pavel for a8fc92778080 ("sk-filter: Add ability to get socket
->> filter program (v2)").
->>
->> I think the issue can be that when applications could get migrated
->> from one machine to another and their kernel won't support ebpf yet,
->> then filter could not get loaded this way as it's expected to return
->> what the user loaded. The trade-off, however, is that the original
->> BPF code needs to be stored as well. :(
->
-> Sorry if I miss the point, but isn't the original filter kept on socket?
-> The sk_attach_filter() does so, then calls __sk_prepare_filter, which
-> in turn calls bpf_jit_compile(), and the latter two keep the insns in place.
+On Tue, Mar 11, 2014 at 01:33:00PM -0400, Sasha Levin wrote:
+> Okay. So just this patch on top of the latest -next shows the following issues:
+> 
+> 1. BUG in task_numa_work:
+> 
+> [  439.417171] BUG: unable to handle kernel paging request at ffff880e17530c00
+> [  439.418216] IP: [<ffffffff81299385>] vmacache_find+0x75/0xa0
+> [  439.419073] PGD 8904067 PUD 1028fcb067 PMD 1028f10067 PTE 8000000e17530060
+> [  439.420340] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  439.420340] Dumping ftrace buffer:
+> [  439.420340]    (ftrace buffer empty)
+> [  439.420340] Modules linked in:
+> [  439.420340] CPU: 12 PID: 9937 Comm: trinity-c212 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00009-g3b24300-dirty #137
+> [  439.420340] task: ffff880e1a45b000 ti: ffff880e1a490000 task.ti: ffff880e1a490000
+> [  439.420340] RIP: 0010:[<ffffffff81299385>]  [<ffffffff81299385>] vmacache_find+0x75/0xa0
+> [  439.420340] RSP: 0018:ffff880e1a491e68  EFLAGS: 00010286
+> [  439.420340] RAX: ffff880e17530c00 RBX: 0000000000000000 RCX: 0000000000000001
+> [  439.420340] RDX: 0000000000000001 RSI: 0000000000000000 RDI: ffff880e1a45b000
+> [  439.420340] RBP: ffff880e1a491e68 R08: 0000000000000000 R09: 0000000000000000
+> [  439.420340] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880e1ab75000
+> [  439.420340] R13: ffff880e1ab75000 R14: 0000000000010000 R15: 0000000000000000
+> [  439.420340] FS:  00007f3458c05700(0000) GS:ffff880d2b800000(0000) knlGS:0000000000000000
+> [  439.420340] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  439.420340] CR2: ffff880e17530c00 CR3: 0000000e1a472000 CR4: 00000000000006a0
+> [  439.420340] Stack:
+> [  439.420340]  ffff880e1a491e98 ffffffff812a7610 ffffffff8118de40 0000000000000117
+> [  439.420340]  00000001000036da ffff880e1a45b000 ffff880e1a491ef8 ffffffff8118de4b
+> [  439.420340]  ffff880e1a491ec8 ffffffff81269575 ffff880e1ab750a8 ffff880e1a45b000
+> [  439.420340] Call Trace:
+> [  439.420340]  [<ffffffff812a7610>] find_vma+0x20/0x90
+> [  439.420340]  [<ffffffff8118de40>] ? task_numa_work+0x130/0x360
+> [  439.420340]  [<ffffffff8118de4b>] task_numa_work+0x13b/0x360
+> [  439.420340]  [<ffffffff81269575>] ? context_tracking_user_exit+0x195/0x1d0
+> [  439.420340]  [<ffffffff8116c5be>] task_work_run+0xae/0xf0
+> [  439.420340]  [<ffffffff8106ffbe>] do_notify_resume+0x8e/0xe0
+> [  439.420340]  [<ffffffff844b17a2>] int_signal+0x12/0x17
+> [  439.420340] Code: 42 10 00 00 00 00 48 c7 42 18 00 00 00 00 eb 38 66 0f 1f 44 00 00 31 d2 48 89 c7 48 63 ca 48 8b 84 cf b8 07 00 00 48 85 c0 74 0b <48> 39 30 77 06 48 3b 70 08 72 12 ff c2 83 fa 04 75 de 66 0f 1f
+> [  439.420340] RIP  [<ffffffff81299385>] vmacache_find+0x75/0xa0
+> [  439.420340]  RSP <ffff880e1a491e68>
+> [  439.420340] CR2: ffff880e17530c00
+> 
 
-Yes. in V8/V9 series original filter is kept on socket.
-and your crtools/test/zdtm/live/static/socket_filter.c test passes.
-Let me know if there are any other tests I can try.
+Ok, this does not look related. It looks like damage from the VMA caching
+patches, possibly a use-after free. I'm skeptical that it's related to
+automatic NUMA balancing as such based on the second trace you posted.
 
-Thanks
-Alexei
+What does addr2line -e vmlinux ffffffff81299385 say? I want to be sure
+it looks like a vma dereference without risking making a mistake
+decoding it.
 
->
-> Thanks,
-> Pavel
->
+1. Does this bug trigger even if automatic NUMA balancing is disabled?
+2. Does this bug trigger if DEBUG_PAGEALLOC is disabled? If it's a
+	use-after free then the bug would still be there.
+3. Can you test with the following patches reverted please?
+
+	e15d25d9c827b4346a36a3a78dd566d5ad353402 mm-per-thread-vma-caching-fix-fix
+	e440e20dc76803cdab616b4756c201d5c72857f2 mm-per-thread-vma-caching-fix
+	0d9ad4220e6d73f63a9eeeaac031b92838f75bb3 mm: per-thread vma caching
+
+The last patch will not revert cleanly (least it didn't for me) but it
+was just a case of git rm the two affected files, remove any include of
+vmacache.h and commit the rest.
+
+Thanks!
+
+-- 
+Mel Gorman
+SUSE Labs
