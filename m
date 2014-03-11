@@ -1,226 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927AbaCKCCL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 22:02:11 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:39167 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582AbaCKCCJ (ORCPT
+	id S1754286AbaCKCCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 22:02:22 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:51968 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993AbaCKCCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 22:02:09 -0400
-From: Ruchi Kandoi <kandoiruchi@google.com>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: rjw@rjwysocki.net, ghackmann@google.com,
-        Ruchi Kandoi <kandoiruchi@google.com>
-Subject: [PATCH] power: add an API to log wakeup reasons
-Date: Mon, 10 Mar 2014 19:02:02 -0700
-Message-Id: <1394503322-25210-1-git-send-email-kandoiruchi@google.com>
-X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
+	Mon, 10 Mar 2014 22:02:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140310.215104.2095195123238829635.davem@davemloft.net>
+References: <1394431444-6987-1-git-send-email-ast@plumgrid.com>
+	<1394431444-6987-2-git-send-email-ast@plumgrid.com>
+	<20140310.215104.2095195123238829635.davem@davemloft.net>
+Date: Mon, 10 Mar 2014 19:02:18 -0700
+X-Google-Sender-Auth: v6FB-NHjUyApKq-uDmlIpjRkV9I
+Message-ID: <CA+55aFx7rdm9DGOTTgAKTHNkdfrvQYhT9PRs5MhUPr1gQzWEgA@mail.gmail.com>
+Subject: Re: [PATCH v8 net-next 1/3] filter: add Extended BPF interpreter and converter
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: ast@plumgrid.com, dborkman@redhat.com, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Peter Anvin <hpa@zytor.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>, Jesse Gross <jesse@nicira.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>, penberg@iki.fi,
+        Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add API log_wakeup_reason() and expose it to userspace via sysfs path
-/sys/kernel/wakeup_reasons/last_resume_reason
-This is useful for power management diagnostic purposes.
+On Mon, Mar 10, 2014 at 6:51 PM, David Miller <davem@davemloft.net> wrote:
+> From: Alexei Starovoitov <ast@plumgrid.com>
+> Date: Sun,  9 Mar 2014 23:04:02 -0700
+>
+>> +     unsigned int            jited:1;
+>
+> The C language has a proper type for boolean states, please therefore
+> use 'bool', true, and false.
 
-Signed-off-by: Ruchi Kandoi <kandoiruchi@google.com>
-Signed-off-by: Greg Hackmann <ghackmann@google.com>
----
- include/linux/wakeup_reason.h |  23 +++++++
- kernel/power/Makefile         |   2 +-
- kernel/power/wakeup_reason.c  | 140 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 164 insertions(+), 1 deletion(-)
- create mode 100644 include/linux/wakeup_reason.h
- create mode 100644 kernel/power/wakeup_reason.c
+No, the C standard actually has no such thing.
 
-diff --git a/include/linux/wakeup_reason.h b/include/linux/wakeup_reason.h
-new file mode 100644
-index 0000000..7ce50f0
---- /dev/null
-+++ b/include/linux/wakeup_reason.h
-@@ -0,0 +1,23 @@
-+/*
-+ * include/linux/wakeup_reason.h
-+ *
-+ * Logs the reason which caused the kernel to resume
-+ * from the suspend mode.
-+ *
-+ * Copyright (C) 2014 Google, Inc.
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _LINUX_WAKEUP_REASON_H
-+#define _LINUX_WAKEUP_REASON_H
-+
-+void log_wakeup_reason(int irq);
-+
-+#endif /* _LINUX_WAKEUP_REASON_H */
-diff --git a/kernel/power/Makefile b/kernel/power/Makefile
-index 29472bf..f98f021 100644
---- a/kernel/power/Makefile
-+++ b/kernel/power/Makefile
-@@ -5,7 +5,7 @@ obj-y				+= qos.o
- obj-$(CONFIG_PM)		+= main.o
- obj-$(CONFIG_VT_CONSOLE_SLEEP)	+= console.o
- obj-$(CONFIG_FREEZER)		+= process.o
--obj-$(CONFIG_SUSPEND)		+= suspend.o
-+obj-$(CONFIG_SUSPEND)		+= suspend.o wakeup_reason.o
- obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
- obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
- 				   block_io.o
-diff --git a/kernel/power/wakeup_reason.c b/kernel/power/wakeup_reason.c
-new file mode 100644
-index 0000000..188a6bf
---- /dev/null
-+++ b/kernel/power/wakeup_reason.c
-@@ -0,0 +1,140 @@
-+/*
-+ * kernel/power/wakeup_reason.c
-+ *
-+ * Logs the reasons which caused the kernel to resume from
-+ * the suspend mode.
-+ *
-+ * Copyright (C) 2014 Google, Inc.
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/wakeup_reason.h>
-+#include <linux/kernel.h>
-+#include <linux/irq.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/kobject.h>
-+#include <linux/sysfs.h>
-+#include <linux/init.h>
-+#include <linux/spinlock.h>
-+#include <linux/notifier.h>
-+#include <linux/suspend.h>
-+
-+
-+#define MAX_WAKEUP_REASON_IRQS 32
-+static int irq_list[MAX_WAKEUP_REASON_IRQS];
-+static int irqcount;
-+static struct kobject *wakeup_reason;
-+static spinlock_t resume_reason_lock;
-+
-+static ssize_t reason_show(struct kobject *kobj, struct kobj_attribute *attr,
-+		char *buf)
-+{
-+	int irq_no, buf_offset = 0;
-+	struct irq_desc *desc;
-+	spin_lock(&resume_reason_lock);
-+	for (irq_no = 0; irq_no < irqcount; irq_no++) {
-+		desc = irq_to_desc(irq_list[irq_no]);
-+		if (desc && desc->action && desc->action->name)
-+			buf_offset += sprintf(buf + buf_offset, "%d %s\n",
-+					irq_list[irq_no], desc->action->name);
-+		else
-+			buf_offset += sprintf(buf + buf_offset, "%d\n",
-+					irq_list[irq_no]);
-+	}
-+	spin_unlock(&resume_reason_lock);
-+	return buf_offset;
-+}
-+
-+static struct kobj_attribute resume_reason = __ATTR(last_resume_reason, 0666,
-+		reason_show, NULL);
-+
-+static struct attribute *attrs[] = {
-+	&resume_reason.attr,
-+	NULL,
-+};
-+static struct attribute_group attr_group = {
-+	.attrs = attrs,
-+};
-+
-+/*
-+ * logs all the wake up reasons to the kernel
-+ * stores the irqs to expose them to the userspace via sysfs
-+ */
-+void log_wakeup_reason(int irq)
-+{
-+	struct irq_desc *desc;
-+	desc = irq_to_desc(irq);
-+	if (desc && desc->action && desc->action->name)
-+		printk(KERN_INFO "Resume caused by IRQ %d, %s\n", irq,
-+				desc->action->name);
-+	else
-+		printk(KERN_INFO "Resume caused by IRQ %d\n", irq);
-+
-+	spin_lock(&resume_reason_lock);
-+	if (irqcount == MAX_WAKEUP_REASON_IRQS) {
-+		spin_unlock(&resume_reason_lock);
-+		printk(KERN_WARNING "Resume caused by more than %d IRQs\n",
-+				MAX_WAKEUP_REASON_IRQS);
-+		return;
-+	}
-+
-+	irq_list[irqcount++] = irq;
-+	spin_unlock(&resume_reason_lock);
-+}
-+
-+/* Detects a suspend and clears all the previous wake up reasons*/
-+static int wakeup_reason_pm_event(struct notifier_block *notifier,
-+		unsigned long pm_event, void *unused)
-+{
-+	switch (pm_event) {
-+	case PM_SUSPEND_PREPARE:
-+		spin_lock(&resume_reason_lock);
-+		irqcount = 0;
-+		spin_unlock(&resume_reason_lock);
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block wakeup_reason_pm_notifier_block = {
-+	.notifier_call = wakeup_reason_pm_event,
-+};
-+
-+/* Initializes the sysfs parameter
-+ * registers the pm_event notifier
-+ */
-+int __init wakeup_reason_init(void)
-+{
-+	int retval;
-+	spin_lock_init(&resume_reason_lock);
-+	retval = register_pm_notifier(&wakeup_reason_pm_notifier_block);
-+	if (retval)
-+		printk(KERN_WARNING "[%s] failed to register PM notifier %d\n",
-+				__func__, retval);
-+
-+	wakeup_reason = kobject_create_and_add("wakeup_reasons", kernel_kobj);
-+	if (!wakeup_reason) {
-+		printk(KERN_WARNING "[%s] failed to create a sysfs kobject\n",
-+				__func__);
-+		return 1;
-+	}
-+	retval = sysfs_create_group(wakeup_reason, &attr_group);
-+	if (retval) {
-+		kobject_put(wakeup_reason);
-+		printk(KERN_WARNING "[%s] failed to create a sysfs group %d\n",
-+				__func__, retval);
-+	}
-+	return 0;
-+}
-+
-+late_initcall(wakeup_reason_init);
--- 
-1.9.0.279.gdc9e3eb
+In a structure, a bitfield is actually better than bool, because it
+takes only one bit. A "bool" takes at least a byte.
 
+Now, in this case it may not be an issue (looks like there are no
+other uses that can use the better packing, so bit/byte/word is all
+the same), but I really really want to make it clear that it is not at
+all true that "bool" is somehow better than a single-bit bitfield. The
+bitfield can pack *much* better, and I would actually say that it's
+generally a *better* idea to use a bitfield, because you can much more
+easily expand on it later by adding other bitfields.
+
+There are very few actual real advantages to "bool". The magic casting
+behavior is arguably an advantage (the implicit cast in assigning to a
+bitfield truncates to the low bits, the implicit cast on assignment to
+"bool" does a test against zero), but is also quite arguably a
+possible source of confusion and can cause problems down the line when
+converting from bool to a bitfield (for the afore-mentioned packing
+reasons).
+
+So please don't sell "bool" as some kind of panacea. It has at least
+as many problems as it has advantages.
+
+I would generally suggest that people only use "bool" for function
+return types, and absolutely nothing else. Seriously.
+
+              Linus
