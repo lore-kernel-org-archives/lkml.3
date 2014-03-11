@@ -1,173 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaCKG6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 02:58:25 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:53477 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708AbaCKG6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 02:58:20 -0400
-Message-ID: <531EB408.2070707@converseincode.com>
-Date: Mon, 10 Mar 2014 23:58:16 -0700
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754741AbaCKG7Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 02:59:24 -0400
+Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:52168 "EHLO
+	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752372AbaCKG7W convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 02:59:22 -0400
+X-Spam-scanned: scanned by InterNLnet Mail Scan System
+X-Spam-Flag: NO
+X-Spam-Score: -4.4
+X-Spam-Languages: en
+Message-ID: <531EB444.4090406@topic.nl>
+Date: Tue, 11 Mar 2014 07:59:16 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: mmarek@suse.cz, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, sparse@chrisli.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org,
-        torvalds@linux-foundation.org, dwmw2@infradead.org,
-        pageexec@freemail.hu,
-        =?ISO-8859-1?Q?Jan-Simon_M=F6ller?= <dl9pf@gmx.de>,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH 1/5] kbuild: LLVMLinux: Add Kbuild support for building
- kernel with Clang
-References: <1393376923-21892-1-git-send-email-behanw@converseincode.com> <1393376923-21892-2-git-send-email-behanw@converseincode.com> <20140309215834.GA29655@ravnborg.org>
-In-Reply-To: <20140309215834.GA29655@ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Suneel Garapati <suneel.garapati@xilinx.com>,
+        Soren Brinkmann <sorenb@xilinx.com>, Michal Simek <michals@xilinx.com>
+CC: git <git@xilinx.com>, "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c-cadence: Do not let signals interrupt I2C transfers
+References: <1394449954-10797-1-git-send-email-mike.looijmans@topic.nl> <20140310215952.GF13293@xsjandreislx> <b6f0755f-cfc9-4962-851f-5eeac767e93e@AM1EHSMHS008.ehs.local>
+In-Reply-To: <b6f0755f-cfc9-4962-851f-5eeac767e93e@AM1EHSMHS008.ehs.local>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/14 14:58, Sam Ravnborg wrote:
-> On Tue, Feb 25, 2014 at 05:08:39PM -0800, behanw@converseincode.com wrote:
->> From: Behan Webster <behanw@converseincode.com>
->>
->> Add support to toplevel Makefile for compiling with clang, both for
->> HOSTCC and CC. Use cc-option to prevent gcc option from breaking clang, and
->> from clang options from breaking gcc.
->>
->> Clang 3.4 semantics are the same as gcc semantics for unsupported flags. For
->> unsupported warnings clang 3.4 returns true but shows a warning and gcc shows
->> a warning and returns false.
->>
->> Signed-off-by: Behan Webster <behanw@converseincode.com>
->> Signed-off-by: Jan-Simon M�ller <dl9pf@gmx.de>
->> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
->> Cc: PaX Team <pageexec@freemail.hu>
->> ---
->>   Makefile | 32 +++++++++++++++++++++++++++++++-
->>   1 file changed, 31 insertions(+), 1 deletion(-)
->>
->> diff --git a/Makefile b/Makefile
->> index 831b36a..c4ab30d 100644
->> --- a/Makefile
->> +++ b/Makefile
->> @@ -247,6 +247,15 @@ HOSTCXX      = g++
->>   HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
->>   HOSTCXXFLAGS = -O2
->>   
->> +ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
->> +HOSTCOMPILER := clang
->> +HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
->> +		-Wno-missing-field-initializers -fno-delete-null-pointer-checks
->> +else
->> +HOSTCOMPILER := gcc
->> +endif
->> +export HOSTCOMPILER
-> I see no use of HOSTCOMPLIER anywhere in this patchset not in the kernel. Can we drop this?
-Actually, we're not using it anymore, though we were at one point. We'll 
-drop it.
-
->> +
->>   # Decide whether to build built-in, modular, or both.
->>   # Normally, just do built-in.
->>   
->> @@ -323,6 +332,12 @@ endif
->>   
->>   export quiet Q KBUILD_VERBOSE
->>   
->> +ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang version"), 1)
->> +COMPILER := clang
->> +else
->> +COMPILER := gcc
->> +endif
->> +export COMPILER
-> Likewise - COMPILER seems unsued- can it be dropped?
-We use COMPILER a lot in upcoming patches. :(
-
-It's here in order to be available early so that the other patches can 
-use it. I hope that's okay.
-
->> # Look for make include files relative to root of kernel src
->>   MAKEFLAGS += --include-dir=$(srctree)
->> @@ -382,7 +397,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
->>   		   -fno-strict-aliasing -fno-common \
->>   		   -Werror-implicit-function-declaration \
->>   		   -Wno-format-security \
->> -		   -fno-delete-null-pointer-checks
->> +		   $(call cc-option,-fno-delete-null-pointer-checks,)
->>   KBUILD_AFLAGS_KERNEL :=
->>   KBUILD_CFLAGS_KERNEL :=
->>   KBUILD_AFLAGS   := -D__ASSEMBLY__
->> @@ -620,9 +635,24 @@ else
->>   endif
->>   KBUILD_CFLAGS += $(stackp-flag)
->>   
->> +ifeq ($(COMPILER),clang)
-> Except that COMPILER is used here. But this does not warrant the export.
-Like I said. It is used in at least 4 other patches which are unrelated 
-to kbuild... Well, okay, one in the arm portion of kbuild.
-
-I don't actually like using it, and would prefer not to, but we needed 
-the equivalent of an "#ifdef __clang__" in the Makefiles for various 
-reasons. :(
-
->> +KBUILD_CPPFLAGS += $(call cc-option,-Qunused-arguments,)
-> Is this really needed today?
-> https://bugzilla.mozilla.org/show_bug.cgi?id=717713 suggest that this is default.
+﻿On 03/11/2014 05:49 AM, Suneel Garapati wrote:
+> Hi Mike/Soren,
 >
->> +KBUILD_CPPFLAGS += $(call cc-option,-Wno-unknown-warning-option,)
-> https://bugzilla.mozilla.org/show_bug.cgi?id=731316 seems to suggest this is default
-These haven't always been the defaults. I will check on when they became 
-defaults, retest, and reply back.
+>> 
 
-Though thanks for pointing this out! Very thorough. :)
+Met vriendelijke groet / kind regards,
 
->> +KBUILD_CFLAGS += $(call cc-disable-warning, unused-variable)
->> +KBUILD_CFLAGS += $(call cc-disable-warning, format-invalid-specifier)
->> +KBUILD_CFLAGS += $(call cc-disable-warning, gnu)
-> Is it really justified to disable these warnings?
-> # of warnign for a defconfig build would be a nice figure to judge from.
-To be honest, the number one complaint we get from kernel devs who've 
-tried clang is that there are too many warnings. We don't want to turn 
-them off, but merely to stem the tide for now so as not to put people 
-off. The idea is to turn them on once we've had time to address the 
-warnings more fully. I'd quite like to see all (most) of the clang 
-warnings on by default eventually. Does that make sense?
+Mike Looijmans
 
-However, the unused-variable warning will likely need to stay on IMHO. 
-There are quite a few things in the kernel which create variables which 
-are intended to be optimized away (last I checked). gcc doesn't complain 
-about this, but clang get's very noisy about it.
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
 
-Though if the consensus is to have more warnings on by default, I'm 
-happy to oblige.
+Please consider the environment before printing this e-mail
 
->> +# Quiet clang warning: comparison of unsigned expression < 0 is always false
->> +KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
-> Same with this.
-Actually, if is my understanding that comparing signed and unsigned 
-values are considered valid in the kernel code. Certainly I've seen many 
-patches rejected which were trying to fix "tautological compare errors".
+-----Original Message-----
+>> From: Sören Brinkmann [mailto:soren.brinkmann@xilinx.com]
+>> Sent: Tuesday, March 11, 2014 03:30
+>> To: Mike Looijmans; Michal Simek
+>> Cc: git; wsa@the-dreams.de; linux-i2c@vger.kernel.org; linux-
+>> kernel@vger.kernel.org
+>> Subject: Re: [PATCH] i2c-cadence: Do not let signals interrupt I2C transfers
+>>
+>> Hi Mike,
+>>
+>> The cadence driver is not in mainline yet. I think for our vendor tree we can
+>> pretty much take it this way.
+>> Regarding getting this into mainline, I'll send another iteration of the change
+>> set and include these changes.
+>>
+>> On Mon, 2014-03-10 at 12:12PM +0100, Mike Looijmans wrote:
+>>> Pressing CTRL-C while communicating with an I2C device leads to
+>>> erratic behaviour. The cause is that the controller will interrupt the
+>>> I2C transfer in progress, and leave the client device in an undefined
+>>> state. Many drivers do not handle error return codes on I2C transfers.
+>>> The calling driver has no way of telling how much of the transfer has
+>>> actually completed, so it cannot reliably determine the device's state.
+>>>
+>>> The best solution here is to not handle signals in the I2C bus driver
+>>> at all, but always complete a transaction before returning control.
+>>>
+>>> See for a related patch and discussion on this topic:
+>>> http://lkml.org/lkml/2014/1/9/246
+>>
+>> Can we get your Signed-off-by, please?
 
->> +# CLANG uses a _MergedGlobals as optimization, but this breaks modpost, as the
->> +# source of a reference will be _MergedGlobals and not on of the whitelisted names.
->> +# See modpost pattern 2
->> +KBUILD_CFLAGS += $(call cc-option, -mno-global-merge,)
-> Should we fix modpost?
-We looked at doing this, but the symbol name compares in modpost seem 
-like a Good Idea (tm). By using _MergedGlobals you lose information 
-which modpost relies on. I think modpost can catch more potential 
-problems by not using clang merged globals. But I'll easily be swayed by 
-someone who knows better. :)
+Sure, I forgot the -s, will add it in the next version.
 
-Thanks for the feedback,
+>>
+>>> ---
+>>>   drivers/i2c/busses/i2c-cadence.c |   12 ++++--------
+>>>   1 file changed, 4 insertions(+), 8 deletions(-)
+>>>
+>>> diff --git a/drivers/i2c/busses/i2c-cadence.c
+>>> b/drivers/i2c/busses/i2c-cadence.c
+>>> index 86713d6..32ce2ee 100644
+>>> --- a/drivers/i2c/busses/i2c-cadence.c
+>>> +++ b/drivers/i2c/busses/i2c-cadence.c
+>>> @@ -452,16 +452,12 @@ static int cdns_i2c_process_msg(struct cdns_i2c
+>> *id, struct i2c_msg *msg,
+>>>                      cdns_i2c_msend(id);
+>>>
+>>>              /* Wait for the signal of completion */
+>>> -           ret = wait_for_completion_interruptible_timeout(
+>>> -                                                   &id->xfer_done, HZ);
+>>> -           if (ret < 1) {
+>>> +           ret = wait_for_completion_timeout(&id->xfer_done, HZ);
+>>> +           if (ret == 0) {
+>>
+>> To match the style used throughout the file this should just be
+>>        if (!ret) {
 
-Behan
+Will do.
 
--- 
-Behan Webster
-behanw@converseincode.com
+> Instead of discarding Ctrl+C, Can we wait until the current msg transfer completes
+> [to avoid client undefined state or re-init the host to a known state]
+>
+> I see da-vinci driver handling in a similar way.
+
+My patch for the davinci should have completely ignored the signals too. I 
+haven't come across a driver that actually calls the xfer function with more 
+than one item anyway. If drivers check the result of the xfer at all, they 
+usually don't have a clue how to handle partial transfers. Many drivers just 
+ignore the return code completely and don't even report failure.
+
+The gain is a stable I2C system. The loss here is something like <1ms more 
+latency to interrupt a process in the case it was just transferring I2C data. 
+ From experience I can tell that the gain far outweighs that loss.
+
+Mike.
+
 
