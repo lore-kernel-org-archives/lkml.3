@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840AbaCKKLb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:11:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41222 "EHLO song.cn.fujitsu.com"
+	id S1754936AbaCKKQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:16:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:14566 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754763AbaCKKL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:11:29 -0400
+	id S1754809AbaCKKLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:11:30 -0400
 X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9678276"
+   d="scan'208";a="9678278"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
         tglx@linutronix.de, heiko.carstens@de.ibm.com,
         Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 03/17] kernel/sys: Replace opened code implementation with nice_to_rlimit().
-Date: Tue, 11 Mar 2014 18:09:11 +0800
-Message-Id: <899055f9b6fc82c7c6b824029f49be9ff00d160b.1394532288.git.yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 08/17] ioprio: Add a macro named NICE_TO_IOPRIO.
+Date: Tue, 11 Mar 2014 18:09:16 +0800
+Message-Id: <73b55557223c09b0feb0979ac66340d162117555.1394532288.git.yangds.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
 References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:33,
+ 2014/03/11 18:08:34,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:35,
-	Serialize complete at 2014/03/11 18:08:35
+ 2014/03/11 18:08:37,
+	Serialize complete at 2014/03/11 18:08:37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As the task nice value is in [-20, 19] and the io priority is in [0, 7],
+and the convert method from niceval to ioprio is implemented with an
+opened code in task_nice_ioprio().
+
+This patch move the implementation to a macro NICE_TO_IOPRIO, making
+it more readable and modular.
+
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 ---
- kernel/sys.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/linux/ioprio.h | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 61a2ae9..1bfe79a 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -250,7 +250,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
- 		else
- 			p = current;
- 		if (p) {
--			niceval = 20 - task_nice(p);
-+			niceval = nice_to_rlimit(task_nice(p));
- 			if (niceval > retval)
- 				retval = niceval;
- 		}
-@@ -261,7 +261,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
- 		else
- 			pgrp = task_pgrp(current);
- 		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
--			niceval = 20 - task_nice(p);
-+			niceval = nice_to_rlimit(task_nice(p));
- 			if (niceval > retval)
- 				retval = niceval;
- 		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
-@@ -277,7 +277,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
+diff --git a/include/linux/ioprio.h b/include/linux/ioprio.h
+index beb9ce1..c0faa0b 100644
+--- a/include/linux/ioprio.h
++++ b/include/linux/ioprio.h
+@@ -18,6 +18,11 @@
+ #define ioprio_valid(mask)	(IOPRIO_PRIO_CLASS((mask)) != IOPRIO_CLASS_NONE)
  
- 		do_each_thread(g, p) {
- 			if (uid_eq(task_uid(p), uid)) {
--				niceval = 20 - task_nice(p);
-+				niceval = nice_to_rlimit(task_nice(p));
- 				if (niceval > retval)
- 					retval = niceval;
- 			}
+ /*
++ * Convert the nice value [19,-20] to io priority value [0,7].
++ */
++#define NICE_TO_IOPRIO(nice)	(nice_to_rlimit(nice) / 5)
++
++/*
+  * These are the io priority groups as implemented by CFQ. RT is the realtime
+  * class, it always gets premium service. BE is the best-effort scheduling
+  * class, the default for any process. IDLE is the idle scheduling class, it
+@@ -52,7 +57,7 @@ enum {
+  */
+ static inline int task_nice_ioprio(struct task_struct *task)
+ {
+-	return (task_nice(task) + 20) / 5;
++	return NICE_TO_IOPRIO(task_nice(task));
+ }
+ 
+ /*
 -- 
 1.8.2.1
 
