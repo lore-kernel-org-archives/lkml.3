@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008AbaCKKMg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:12:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41222 "EHLO song.cn.fujitsu.com"
+	id S1754988AbaCKKMf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:12:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:14566 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754875AbaCKKLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754816AbaCKKLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Mar 2014 06:11:34 -0400
 X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9678285"
+   d="scan'208";a="9678286"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
         tglx@linutronix.de, heiko.carstens@de.ibm.com,
         Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        nbd-general@lists.sourceforge.net,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/17] driver/block: Replace hardcoding of -20 with MIN_NICE.
-Date: Tue, 11 Mar 2014 18:09:18 +0800
-Message-Id: <2377a753fed3ecca13bfd6680a0adb5385466ddb.1394532288.git.yangds.fnst@cn.fujitsu.com>
+        devel@driverdev.osuosl.org, Masanari Iida <standby24x7@gmail.com>,
+        Bojan Prtvar <prtvar.b@gmail.com>,
+        Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH 14/17] driver/staging/android: Use rlimit_to_nice to replace opened code implementation.
+Date: Tue, 11 Mar 2014 18:09:22 +0800
+Message-Id: <db433a18f236efbff13525b1e617d52413936b59.1394532288.git.yangds.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
 References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2014/03/11 18:08:34,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:38,
-	Serialize complete at 2014/03/11 18:08:38
+ 2014/03/11 18:08:40,
+	Serialize complete at 2014/03/11 18:08:40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: nbd-general@lists.sourceforge.net
-cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-cc: Tejun Heo <tj@kernel.org>
----
- drivers/block/loop.c    | 2 +-
- drivers/block/nbd.c     | 2 +-
- drivers/block/pktcdvd.c | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+There is a macro rlimit_to_nice in linux/sched/prio.h to convert priority in rlimit
+to nice value.
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 66e8c3b..c8bf270 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -548,7 +548,7 @@ static int loop_thread(void *data)
- 	struct loop_device *lo = data;
- 	struct bio *bio;
- 
--	set_user_nice(current, -20);
-+	set_user_nice(current, MIN_NICE);
- 
- 	while (!kthread_should_stop() || !bio_list_empty(&lo->lo_bio_list)) {
- 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 55298db..2a1f26b 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -533,7 +533,7 @@ static int nbd_thread(void *data)
- 	struct nbd_device *nbd = data;
- 	struct request *req;
- 
--	set_user_nice(current, -20);
-+	set_user_nice(current, MIN_NICE);
- 	while (!kthread_should_stop() || !list_empty(&nbd->waiting_queue)) {
- 		/* wait for something to do */
- 		wait_event_interruptible(nbd->waiting_wq,
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index a2af73d..ef166ad 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -1463,7 +1463,7 @@ static int kcdrwd(void *foobar)
- 	struct packet_data *pkt;
- 	long min_sleep_time, residue;
- 
--	set_user_nice(current, -20);
-+	set_user_nice(current, MIN_NICE);
- 	set_freezable();
- 
- 	for (;;) {
+This patch replace the opened implementation with rlimit_to_nice.
+
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+cc: devel@driverdev.osuosl.org
+cc: Masanari Iida <standby24x7@gmail.com>
+cc: Bojan Prtvar <prtvar.b@gmail.com>
+cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ drivers/staging/android/binder.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 1432d95..19e844b 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -436,12 +436,12 @@ static void binder_set_nice(long nice)
+ 		set_user_nice(current, nice);
+ 		return;
+ 	}
+-	min_nice = 20 - current->signal->rlim[RLIMIT_NICE].rlim_cur;
++	min_nice = rlimit_to_nice(current->signal->rlim[RLIMIT_NICE].rlim_cur);
+ 	binder_debug(BINDER_DEBUG_PRIORITY_CAP,
+ 		     "%d: nice value %ld not allowed use %ld instead\n",
+ 		      current->pid, nice, min_nice);
+ 	set_user_nice(current, min_nice);
+-	if (min_nice < 20)
++	if (min_nice <= MAX_NICE)
+ 		return;
+ 	binder_user_error("%d RLIMIT_NICE not set\n", current->pid);
+ }
 -- 
 1.8.2.1
 
