@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307AbaCKKTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:19:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41078 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752955AbaCKKLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:11:24 -0400
-X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9678272"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
-        tglx@linutronix.de, heiko.carstens@de.ibm.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 06/17] tools/mq_perf_tests: Replace hardcoding of -20 with MIN_NICE.
-Date: Tue, 11 Mar 2014 18:09:14 +0800
-Message-Id: <8e87e2407ab6c34b4ab3eee7f2a2d5c764dcb0cf.1394532288.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:35,
-	Serialize complete at 2014/03/11 18:08:35
+	id S1755286AbaCKKTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:19:09 -0400
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:44711 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754738AbaCKKLZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:11:25 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Simon Horman <horms+renesas@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-serial@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH 2/4] serial: sh-sci: Remove useless casts
+Date: Tue, 11 Mar 2014 11:11:18 +0100
+Message-Id: <1394532680-4264-2-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394532680-4264-1-git-send-email-geert@linux-m68k.org>
+References: <1394532680-4264-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- tools/testing/selftests/mqueue/mq_perf_tests.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-diff --git a/tools/testing/selftests/mqueue/mq_perf_tests.c b/tools/testing/selftests/mqueue/mq_perf_tests.c
-index 2fadd4b..09dce51 100644
---- a/tools/testing/selftests/mqueue/mq_perf_tests.c
-+++ b/tools/testing/selftests/mqueue/mq_perf_tests.c
-@@ -527,9 +527,9 @@ void increase_limits(void)
- 	while (try_set(max_msgsize, cur_max_msgsize += 1024))
- 		;
- 	cur_max_msgsize = get(max_msgsize);
--	if (setpriority(PRIO_PROCESS, 0, -20) != 0)
-+	if (setpriority(PRIO_PROCESS, 0, MIN_NICE) != 0)
- 		shutdown(2, "setpriority()", __LINE__);
--	cur_nice = -20;
-+	cur_nice = MIN_NICE;
- }
- 
- int main(int argc, char *argv[])
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+ drivers/tty/serial/sh-sci.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
+index 24ec6ef67984..4529dbca2287 100644
+--- a/drivers/tty/serial/sh-sci.c
++++ b/drivers/tty/serial/sh-sci.c
+@@ -2423,25 +2423,25 @@ struct sci_port_info {
+ static const struct of_device_id of_sci_match[] = {
+ 	{
+ 		.compatible = "renesas,scif",
+-		.data = (void *)&(const struct sci_port_info) {
++		.data = &(const struct sci_port_info) {
+ 			.type = PORT_SCIF,
+ 			.regtype = SCIx_SH4_SCIF_REGTYPE,
+ 		},
+ 	}, {
+ 		.compatible = "renesas,scifa",
+-		.data = (void *)&(const struct sci_port_info) {
++		.data = &(const struct sci_port_info) {
+ 			.type = PORT_SCIFA,
+ 			.regtype = SCIx_SCIFA_REGTYPE,
+ 		},
+ 	}, {
+ 		.compatible = "renesas,scifb",
+-		.data = (void *)&(const struct sci_port_info) {
++		.data = &(const struct sci_port_info) {
+ 			.type = PORT_SCIFB,
+ 			.regtype = SCIx_SCIFB_REGTYPE,
+ 		},
+ 	}, {
+ 		.compatible = "renesas,hscif",
+-		.data = (void *)&(const struct sci_port_info) {
++		.data = &(const struct sci_port_info) {
+ 			.type = PORT_HSCIF,
+ 			.regtype = SCIx_HSCIF_REGTYPE,
+ 		},
 -- 
-1.8.2.1
+1.7.9.5
 
