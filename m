@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515AbaCKRHl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:07:41 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:39608 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560AbaCKRHk (ORCPT
+	id S1753572AbaCKRJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:09:33 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:53910 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaCKRJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:07:40 -0400
+	Tue, 11 Mar 2014 13:09:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>
+In-Reply-To: <CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com>
 References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
 	<CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
 	<CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
@@ -21,9 +21,10 @@ References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacap
 	<CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
 	<531F3D02.30706@linux.intel.com>
 	<CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>
-Date: Tue, 11 Mar 2014 10:07:39 -0700
-X-Google-Sender-Auth: KJjUtj1YyXCBn8pyvCOAyCadCaw
-Message-ID: <CA+55aFy_tvDbfPpD53H4aAthYD74-FPzWb4R42J7xGHa=GRbcQ@mail.gmail.com>
+	<CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com>
+Date: Tue, 11 Mar 2014 10:09:31 -0700
+X-Google-Sender-Auth: 8MgqHS6Ld4BomHRr552i6FPTD6M
+Message-ID: <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
 Subject: Re: [PATCH v2] x86: Remove compat vdso support
 From: Linus Torvalds <torvalds@linux-foundation.org>
 To: Andy Lutomirski <luto@amacapital.net>
@@ -39,16 +40,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 9:45 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> We could even just relocate the damn thing wherever it ends up.  That
-> will waste one page of memory per process, though.
+On Tue, Mar 11, 2014 at 9:50 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Looking forward, would it be reasonable to have an extensible set of
+> flags that live in the ELF interpreter's headers somewhere
 
-I don't think we need to worry about the one page per process.  So
-*if* it is true that nobody actually cares about the exact address,
-maybe that's the right solution.
+No. Not reasonable. The whole "32-bit x86" and "looking forward"
+combination makes absolutely zero sense.
 
-I still don't get why people want to mess with the page in the first
-place, though.
+I can pretty much guarantee that even *phones* will be 64-bit if/when
+x86 ever gets there. They'll need it just for ARM emulation, I bet.
+
+So 32-bit x86 is dead, dead, dead. There's absolutely no future to it.
+We're not adding new stuff to "future-proof" it.
 
               Linus
