@@ -1,264 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaCKQHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 12:07:51 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:29392 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753621AbaCKQHs (ORCPT
+	id S1754355AbaCKQIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 12:08:24 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:29346 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350AbaCKQHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 12:07:48 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-3a-531f34d2de69
+	Tue, 11 Mar 2014 12:07:46 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-36-531f34d12dad
 From: Lukasz Pawelczyk <l.pawelczyk@partner.samsung.com>
 To: Casey Schaufler <casey@schaufler-ca.com>,
         James Morris <james.l.morris@oracle.com>,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: r.krypa@samsung.com, t.swierczek@samsung.com,
         Lukasz Pawelczyk <l.pawelczyk@partner.samsung.com>
-Subject: [PATCH 3/3] Smack: adds smackfs/ptrace interface
-Date: Tue, 11 Mar 2014 17:07:06 +0100
-Message-id: <1394554026-23924-4-git-send-email-l.pawelczyk@partner.samsung.com>
+Subject: [PATCH 2/3] Smack: unify all ptrace accesses in the smack
+Date: Tue, 11 Mar 2014 17:07:05 +0100
+Message-id: <1394554026-23924-3-git-send-email-l.pawelczyk@partner.samsung.com>
 X-Mailer: git-send-email 1.8.5.3
 In-reply-to: <1394554026-23924-1-git-send-email-l.pawelczyk@partner.samsung.com>
 References: <1394554026-23924-1-git-send-email-l.pawelczyk@partner.samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJMWRmVeSWpSXmKPExsVy+t/xK7qXTOSDDR6/FbK4t+0Xm0Xf4yCL
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJMWRmVeSWpSXmKPExsVy+t/xK7oXTeSDDQ6c4LG4t+0Xm0Xf4yCL
 	WQfXslpc3jWHzeJDzyM2i7eTVjBb/Lo9hdWB3ePj01ssHgff7WHy6NuyitHj6P5FbB6fN8kF
-	sEZx2aSk5mSWpRbp2yVwZey69Ial4IltxaeLrxkbGB8bdjFyckgImEh0z+lhhbDFJC7cW8/W
-	xcjFISSwlFHi66l5bCAJIYFeJon5Z31BbDYBC4l9026wghSJCMxnlJj/YzGQw8HBLJAmcfOD
-	PUiNsIClxK4DDSwgNouAqsSlZU/AbF4Bf4lfszrZIZYpSLQs2wVmcwoESBzvWsUCsctfYtq2
+	sEZx2aSk5mSWpRbp2yVwZSy+3Mhe8F6nonPeeqYGxqkqXYycHBICJhL3981igrDFJC7cW88G
+	YgsJLGWUeN6o1MXIBWT3Mkk0vn3DCpJgE7CQ2DftBitIQkRgPqPE/B+LgRwODmaBNImbH+xB
+	aoQFnCTenNvFDGKzCKhK3Hu4BWwor4C/xJT9s9gglilItCzbxQ5icwoESBzvWsUCsdhfYtq2
 	RewTGHkXMDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJqS87GBcfszrEKMDBqMTDO0NJ
-	PliINbGsuDL3EKMEB7OSCO9HTaAQb0piZVVqUX58UWlOavEhRiYOTqkGRpY49cmq29+e52j1
-	PV3p/fpL7euj3Azqi7rm+T3Yys7rr6+08et37q4t37yOTNV9ueqQ9slDlhNcgl2q2wUS/m4w
-	jWyxn3jI44v06akRyq8mpNRyLVWK7j59OXxGwrYpqn4Jk7OWutqxiGydaZGirNozh7O7/pTn
-	mYcpCkvbv65WVdxuI8GWpsRSnJFoqMVcVJwIAFxVkkgHAgAA
+	PliINbGsuDL3EKMEB7OSCO9HTaAQb0piZVVqUX58UWlOavEhRiYOTqkGxtUNgpmTFEv0Dv79
+	33JF4fn5G8U+k5bcU1bZ3cg492aYD7u34o369e++bdRcUK+yeEJJ103H6X4TT8VuKF/+/6Xb
+	Qt2XNnESAn84dPQf1WrfjmS42nSgpPhGk3CaxBKtiP64NXNVLu8+fXBN8/scix3FZ/wq5886
+	7XJNpIv906zS1/9T3vGdVVViKc5INNRiLipOBAAyr3DcBwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows to limit ptrace beyond the regular smack access rules.
-It adds a smackfs/ptrace interface that allows smack to be configured
-to require equal smack labels for PTRACE_MODE_ATTACH access.
-See the changes in Documentation/security/Smack.txt below for details.
+The decision whether we can trace a process is made in the following
+functions:
+	smack_ptrace_traceme()
+	smack_ptrace_access_check()
+	smack_bprm_set_creds() (in case the proces is traced)
+
+This patch unifies all those decisions by introducing one function that
+checks whether ptrace is allowed: smk_ptrace_rule_check().
+
+This makes possible to actually trace with TRACEME where first the
+TRACEME itself must be allowed and then exec() on a traced process.
+
+Additional bugs fixed:
+- The decision is made according to the mode parameter that is now correctly
+  translated from PTRACE_MODE_* to MAY_* instead of being treated 1:1.
+  PTRACE_MODE_READ requires MAY_READ.
+  PTRACE_MODE_ATTACH requires MAY_READWRITE.
+- Add a smack audit log in case of exec() refused by bprm_set_creds().
+- Honor the PTRACE_MODE_NOAUDIT flag and don't put smack audit info
+  in case this flag is set.
 
 Signed-off-by: Lukasz Pawelczyk <l.pawelczyk@partner.samsung.com>
 Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
 ---
- Documentation/security/Smack.txt | 10 ++++++
- security/smack/smack.h           |  9 +++++
- security/smack/smack_access.c    |  5 ++-
- security/smack/smack_lsm.c       | 22 +++++++++++-
- security/smack/smackfs.c         | 74 ++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 118 insertions(+), 2 deletions(-)
+ security/smack/smack_lsm.c | 84 +++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 71 insertions(+), 13 deletions(-)
 
-diff --git a/Documentation/security/Smack.txt b/Documentation/security/Smack.txt
-index 7a2d30c..5597917 100644
---- a/Documentation/security/Smack.txt
-+++ b/Documentation/security/Smack.txt
-@@ -204,6 +204,16 @@ onlycap
- 	these capabilities are effective at for processes with any
- 	label. The value is set by writing the desired label to the
- 	file or cleared by writing "-" to the file.
-+ptrace
-+	This is used to define the current ptrace policy
-+	0 - default: this is the policy that relies on smack access rules.
-+	    For the PTRACE_READ a subject needs to have a read access on
-+	    object. For the PTRACE_ATTACH a read-write access is required.
-+	1 - exact: this is the policy that limits PTRACE_ATTACH. Attach is
-+	    only allowed when subject's and object's labels are equal.
-+	    PTRACE_READ is not affected. Can be overriden with CAP_SYS_PTRACE.
-+	2 - draconian: this policy behaves like the 'exact' above with an
-+	    exception that it can't be overriden with CAP_SYS_PTRACE.
- revoke-subject
- 	Writing a Smack label here sets the access to '-' for all access
- 	rules with that subject label.
-diff --git a/security/smack/smack.h b/security/smack/smack.h
-index b9dfc4e..fade085 100644
---- a/security/smack/smack.h
-+++ b/security/smack/smack.h
-@@ -177,6 +177,14 @@ struct smk_port_label {
- #define SMACK_CIPSO_MAXCATNUM           184     /* 23 * 8 */
- 
- /*
-+ * Ptrace rules
-+ */
-+#define SMACK_PTRACE_DEFAULT	0
-+#define SMACK_PTRACE_EXACT	1
-+#define SMACK_PTRACE_DRACONIAN	2
-+#define SMACK_PTRACE_MAX	SMACK_PTRACE_DRACONIAN
-+
-+/*
-  * Flags for untraditional access modes.
-  * It shouldn't be necessary to avoid conflicts with definitions
-  * in fs.h, but do so anyway.
-@@ -245,6 +253,7 @@ extern struct smack_known *smack_net_ambient;
- extern struct smack_known *smack_onlycap;
- extern struct smack_known *smack_syslog_label;
- extern const char *smack_cipso_option;
-+extern int smack_ptrace_rule;
- 
- extern struct smack_known smack_known_floor;
- extern struct smack_known smack_known_hat;
-diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
-index f161deb..c062e94 100644
---- a/security/smack/smack_access.c
-+++ b/security/smack/smack_access.c
-@@ -304,7 +304,10 @@ static void smack_log_callback(struct audit_buffer *ab, void *a)
- 	audit_log_untrustedstring(ab, sad->subject);
- 	audit_log_format(ab, " object=");
- 	audit_log_untrustedstring(ab, sad->object);
--	audit_log_format(ab, " requested=%s", sad->request);
-+	if (sad->request[0] == '\0')
-+		audit_log_format(ab, " labels_differ");
-+	else
-+		audit_log_format(ab, " requested=%s", sad->request);
- }
- 
- /**
 diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 3da13fd..1876bfc 100644
+index 48d61f6..3da13fd 100644
 --- a/security/smack/smack_lsm.c
 +++ b/security/smack/smack_lsm.c
-@@ -178,7 +178,8 @@ static inline unsigned int smk_ptrace_mode(unsigned int mode)
- /**
-  * smk_ptrace_rule_check - helper for ptrace access
-  * @tracer: tracer process
-- * @tracee_label: label of the process that's about to be traced
-+ * @tracee_label: label of the process that's about to be traced,
-+ *                the pointer must originate from smack structures
-  * @mode: ptrace attachment mode (PTRACE_MODE_*)
-  * @func: name of the function that called us, used for audit
-  *
-@@ -201,6 +202,25 @@ static int smk_ptrace_rule_check(struct task_struct *tracer, char *tracee_label,
- 	tsp = task_security(tracer);
- 	skp = smk_of_task(tsp);
- 
-+	if ((mode & PTRACE_MODE_ATTACH) &&
-+	    (smack_ptrace_rule == SMACK_PTRACE_EXACT ||
-+	     smack_ptrace_rule == SMACK_PTRACE_DRACONIAN)) {
-+		if (skp->smk_known == tracee_label)
-+			rc = 0;
-+		else if (smack_ptrace_rule == SMACK_PTRACE_DRACONIAN)
-+			rc = -EACCES;
-+		else if (capable(CAP_SYS_PTRACE))
-+			rc = 0;
-+		else
-+			rc = -EACCES;
-+
-+		if (saip)
-+			smack_log(skp->smk_known, tracee_label, 0, rc, saip);
-+
-+		return rc;
-+	}
-+
-+	/* In case of rule==SMACK_PTRACE_DEFAULT or mode==PTRACE_MODE_READ */
- 	rc = smk_tskacc(tsp, tracee_label, smk_ptrace_mode(mode), saip);
+@@ -157,6 +157,54 @@ static int smk_copy_rules(struct list_head *nhead, struct list_head *ohead,
  	return rc;
  }
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 3198cfe..177d878 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -53,6 +53,7 @@ enum smk_inos {
- 	SMK_REVOKE_SUBJ	= 18,	/* set rules with subject label to '-' */
- 	SMK_CHANGE_RULE	= 19,	/* change or add rules (long labels) */
- 	SMK_SYSLOG	= 20,	/* change syslog label) */
-+	SMK_PTRACE	= 21,	/* set ptrace rule */
- };
  
- /*
-@@ -101,6 +102,15 @@ struct smack_known *smack_onlycap;
- struct smack_known *smack_syslog_label;
- 
- /*
-+ * Ptrace current rule
-+ * SMACK_PTRACE_DEFAULT    regular smack ptrace rules (/proc based)
-+ * SMACK_PTRACE_EXACT      labels must match, but can be overriden with
-+ *			   CAP_SYS_PTRACE
-+ * SMACK_PTRACE_DRACONIAN  lables must match, CAP_SYS_PTRACE has no effect
-+ */
-+int smack_ptrace_rule = SMACK_PTRACE_DEFAULT;
-+
-+/*
-  * Certain IP addresses may be designated as single label hosts.
-  * Packets are sent there unlabeled, but only from tasks that
-  * can write to the specified label.
-@@ -2244,6 +2254,68 @@ static const struct file_operations smk_syslog_ops = {
- 
- 
- /**
-+ * smk_read_ptrace - read() for /smack/ptrace
-+ * @filp: file pointer, not actually used
-+ * @buf: where to put the result
-+ * @count: maximum to send along
-+ * @ppos: where to start
++/**
++ * smk_ptrace_mode - helper function for converting PTRACE_MODE_* into MAY_*
++ * @mode - input mode in form of PTRACE_MODE_*
 + *
-+ * Returns number of bytes read or error code, as appropriate
++ * Returns a converted MAY_* mode usable by smack rules
 + */
-+static ssize_t smk_read_ptrace(struct file *filp, char __user *buf,
-+			       size_t count, loff_t *ppos)
++static inline unsigned int smk_ptrace_mode(unsigned int mode)
 +{
-+	char temp[32];
-+	ssize_t rc;
++	switch (mode) {
++	case PTRACE_MODE_READ:
++		return MAY_READ;
++	case PTRACE_MODE_ATTACH:
++		return MAY_READWRITE;
++	}
 +
-+	if (*ppos != 0)
-+		return 0;
++	return 0;
++}
 +
-+	sprintf(temp, "%d\n", smack_ptrace_rule);
-+	rc = simple_read_from_buffer(buf, count, ppos, temp, strlen(temp));
++/**
++ * smk_ptrace_rule_check - helper for ptrace access
++ * @tracer: tracer process
++ * @tracee_label: label of the process that's about to be traced
++ * @mode: ptrace attachment mode (PTRACE_MODE_*)
++ * @func: name of the function that called us, used for audit
++ *
++ * Returns 0 on access granted, -error on error
++ */
++static int smk_ptrace_rule_check(struct task_struct *tracer, char *tracee_label,
++				 unsigned int mode, const char *func)
++{
++	int rc;
++	struct smk_audit_info ad, *saip = NULL;
++	struct task_smack *tsp;
++	struct smack_known *skp;
++
++	if ((mode & PTRACE_MODE_NOAUDIT) == 0) {
++		smk_ad_init(&ad, func, LSM_AUDIT_DATA_TASK);
++		smk_ad_setfield_u_tsk(&ad, tracer);
++		saip = &ad;
++	}
++
++	tsp = task_security(tracer);
++	skp = smk_of_task(tsp);
++
++	rc = smk_tskacc(tsp, tracee_label, smk_ptrace_mode(mode), saip);
 +	return rc;
 +}
 +
-+/**
-+ * smk_write_ptrace - write() for /smack/ptrace
-+ * @file: file pointer
-+ * @buf: data from user space
-+ * @count: bytes sent
-+ * @ppos: where to start - must be 0
-+ */
-+static ssize_t smk_write_ptrace(struct file *file, const char __user *buf,
-+				size_t count, loff_t *ppos)
-+{
-+	char temp[32];
-+	int i;
+ /*
+  * LSM hooks.
+  * We he, that is fun!
+@@ -165,16 +213,15 @@ static int smk_copy_rules(struct list_head *nhead, struct list_head *ohead,
+ /**
+  * smack_ptrace_access_check - Smack approval on PTRACE_ATTACH
+  * @ctp: child task pointer
+- * @mode: ptrace attachment mode
++ * @mode: ptrace attachment mode (PTRACE_MODE_*)
+  *
+  * Returns 0 if access is OK, an error code otherwise
+  *
+- * Do the capability checks, and require read and write.
++ * Do the capability checks.
+  */
+ static int smack_ptrace_access_check(struct task_struct *ctp, unsigned int mode)
+ {
+ 	int rc;
+-	struct smk_audit_info ad;
+ 	struct smack_known *skp;
+ 
+ 	rc = cap_ptrace_access_check(ctp, mode);
+@@ -182,10 +229,8 @@ static int smack_ptrace_access_check(struct task_struct *ctp, unsigned int mode)
+ 		return rc;
+ 
+ 	skp = smk_of_task(task_security(ctp));
+-	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
+-	smk_ad_setfield_u_tsk(&ad, ctp);
+ 
+-	rc = smk_curacc(skp->smk_known, mode, &ad);
++	rc = smk_ptrace_rule_check(current, skp->smk_known, mode, __func__);
+ 	return rc;
+ }
+ 
+@@ -195,12 +240,11 @@ static int smack_ptrace_access_check(struct task_struct *ctp, unsigned int mode)
+  *
+  * Returns 0 if access is OK, an error code otherwise
+  *
+- * Do the capability checks, and require read and write.
++ * Do the capability checks, and require PTRACE_MODE_ATTACH.
+  */
+ static int smack_ptrace_traceme(struct task_struct *ptp)
+ {
+ 	int rc;
+-	struct smk_audit_info ad;
+ 	struct smack_known *skp;
+ 
+ 	rc = cap_ptrace_traceme(ptp);
+@@ -208,10 +252,9 @@ static int smack_ptrace_traceme(struct task_struct *ptp)
+ 		return rc;
+ 
+ 	skp = smk_of_task(current_security());
+-	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_TASK);
+-	smk_ad_setfield_u_tsk(&ad, ptp);
+ 
+-	rc = smk_tskacc(ptp, skp->smk_known, MAY_READWRITE, &ad);
++	rc = smk_ptrace_rule_check(ptp, skp->smk_known,
++				   PTRACE_MODE_ATTACH, __func__);
+ 	return rc;
+ }
+ 
+@@ -453,7 +496,7 @@ static int smack_sb_statfs(struct dentry *dentry)
+  * smack_bprm_set_creds - set creds for exec
+  * @bprm: the exec information
+  *
+- * Returns 0 if it gets a blob, -ENOMEM otherwise
++ * Returns 0 if it gets a blob, -EPERM if exec forbidden and -ENOMEM otherwise
+  */
+ static int smack_bprm_set_creds(struct linux_binprm *bprm)
+ {
+@@ -473,7 +516,22 @@ static int smack_bprm_set_creds(struct linux_binprm *bprm)
+ 	if (isp->smk_task == NULL || isp->smk_task == bsp->smk_task)
+ 		return 0;
+ 
+-	if (bprm->unsafe)
++	if (bprm->unsafe & (LSM_UNSAFE_PTRACE | LSM_UNSAFE_PTRACE_CAP)) {
++		struct task_struct *tracer;
++		rc = 0;
 +
-+	if (!smack_privileged(CAP_MAC_ADMIN))
-+		return -EPERM;
++		rcu_read_lock();
++		tracer = ptrace_parent(current);
++		if (likely(tracer != NULL))
++			rc = smk_ptrace_rule_check(tracer,
++						   isp->smk_task->smk_known,
++						   PTRACE_MODE_ATTACH,
++						   __func__);
++		rcu_read_unlock();
 +
-+	if (*ppos != 0 || count >= sizeof(temp) || count == 0)
-+		return -EINVAL;
-+
-+	if (copy_from_user(temp, buf, count) != 0)
-+		return -EFAULT;
-+
-+	temp[count] = '\0';
-+
-+	if (sscanf(temp, "%d", &i) != 1)
-+		return -EINVAL;
-+	if (i < SMACK_PTRACE_DEFAULT || i > SMACK_PTRACE_MAX)
-+		return -EINVAL;
-+	smack_ptrace_rule = i;
-+
-+	return count;
-+}
-+
-+static const struct file_operations smk_ptrace_ops = {
-+	.write		= smk_write_ptrace,
-+	.read		= smk_read_ptrace,
-+	.llseek		= default_llseek,
-+};
-+
-+/**
-  * smk_fill_super - fill the smackfs superblock
-  * @sb: the empty superblock
-  * @data: unused
-@@ -2296,6 +2368,8 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
- 			"change-rule", &smk_change_rule_ops, S_IRUGO|S_IWUSR},
- 		[SMK_SYSLOG] = {
- 			"syslog", &smk_syslog_ops, S_IRUGO|S_IWUSR},
-+		[SMK_PTRACE] = {
-+			"ptrace", &smk_ptrace_ops, S_IRUGO|S_IWUSR},
- 		/* last one */
- 			{""}
- 	};
++		if (rc != 0)
++			return rc;
++	} else if (bprm->unsafe)
+ 		return -EPERM;
+ 
+ 	bsp->smk_task = isp->smk_task;
 -- 
 1.8.5.3
 
