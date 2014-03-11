@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbaCKQk2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 12:40:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.130]:58720 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945AbaCKQk0 (ORCPT
+	id S1753640AbaCKQnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 12:43:00 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:51895 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073AbaCKQm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 12:40:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH v3 1/5] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and family
-Date: Tue, 11 Mar 2014 17:40:25 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <469b5dc113cb468232291527642f8dc47663e945.1393385236.git.josh@joshtriplett.org> <6915585.VegnvotSUi@wuerfel> <17c859aa7dcccec43df0a0c8908911b982764c76.1394412745.git.josh@joshtriplett.org>
-In-Reply-To: <17c859aa7dcccec43df0a0c8908911b982764c76.1394412745.git.josh@joshtriplett.org>
+	Tue, 11 Mar 2014 12:42:59 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403111740.25606.arnd@arndb.de>
-X-Provags-ID: V02:K0:7SCI134t7knr3KjzWwN9TlPpCb2APqcwHPcWkVajHIa
- hYLCeME+SWnD1j6abevCDfSvjmPllaRmauyB+gR4h8kaQU5lWH
- 1lHuUOsHwFaokQq1pD29rzR4elfWgOXsI7AtNXRTN8rm4MHZbr
- RXp8dH4akfw2HnsmzzsovjI3unesENIRlADnrPgWkKg3jS1ZO+
- tsxS8LStchbWHOxqndjzIcMAtC29FogyICel5+QnpkFMaWAFDi
- jiu/qiKSk4JcdjU5j/sF7RIQhvMLmkhprqoQCMKlTHTT9CWLVp
- H8AUCxhl3iyTGPxTXd6RveLcejHFORWK72qrqZhBB7AaSNcqk3
- Ho1F1+ognzfSr3hcO66RyZBILwfKkgg1g3glFpYta
+In-Reply-To: <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
+ <CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
+ <CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
+ <CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
+ <CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
+ <CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
+ <CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
+ <CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>
+ <531F365B.4060000@linux.intel.com> <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Mar 2014 09:42:38 -0700
+Message-ID: <CALCETrU+HNjsUf=QJEq9U4FhjqjdLq58f-AjSnwxWrfe2jOCxw@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 March 2014, Josh Triplett wrote:
-> 
-> When !CONFIG_BUG, WARN_ON and family become simple passthroughs of their
-> condition argument; however, WARN_ON_ONCE and family still have
-> conditions and a boolean to detect one-time invocation, even though the
-> warning they'd emit doesn't exist.  Make the existing definitions
-> conditional on CONFIG_BUG, and add definitions for !CONFIG_BUG that map
-> to the passthrough versions of WARN and WARN_ON.
-> 
-> This saves 4.4k on a minimized configuration (smaller than
-> allnoconfig), and 20.6k with defconfig plus CONFIG_BUG=n.
-> 
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> ---
-> v3: Patch unchanged from v2.
-> 
-> Andrew, can you please replace the entire v2 series currently in -mm
-> with this new series?
+On Tue, Mar 11, 2014 at 9:30 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Mar 11, 2014 at 9:14 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>>
+>> As much as I wouldn't mind getting rid of the compat vdso, I really
+>> don't understand why the trivial solution is being ruled out -- the
+>> trivial solution being to just reserve a little more space in the fixmap
+>> area.
+>
+> No, the trivial solution is to stop adding crap to it.
+>
+> And no, "just reserve a little more space for it" is neither trivial
+> nor a good idea. The fixed VDSO address is very much at the top of the
+> address space, so you can't allocate more space for it unless you do
+> one of
+>
+>  (a) make it non-contiguous
+>  (b) get rid of the hole that is the very last page
+>  (c) mess with the vsyscall pages and make it contiguous "backwards"
+>
+> all of which sound like *horrible* ideas. Certainly not "trivial solution".
+
+We can move it freely -- we just have to move it *once* when the
+system boots.  There isn't even any real requirement for it to live in
+the kernel range.
+
+Is there an address where it's more or less guaranteed to be possible
+to stick a vma?  The top of the non-randomized stack sounds like a
+decent place, but I'm not really familiar with the address space
+layout.
+
+>
+> No, the trivial solution is to not mess with that legacy page at all.
+>
+> Why is *that* trivial solution not on the table? Why the heck are
+> people hell-bent on changing this stupid legacy page around?
+>
+> I find this whole thread very annoying. We shouldn't care about
+> x86-32, and certainly not from a performance angle - we should
+> consider it a "it's done, don't touch it" issue.
+
+I'll let other people fight this particular battle :)
+
+>
+>                  Linus
 
 
-[all patches]
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
