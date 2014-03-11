@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565AbaCKQBG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 12:01:06 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:48664
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752685AbaCKQBD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 12:01:03 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(z54eehz98dIc89bh936eI1432Id799h1447Idbb0izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1d7338h1de098h177df4h17326ah8275bh8275dh1de097h186068hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h906i1155h)
-Date: Tue, 11 Mar 2014 09:00:44 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-CC: <git@xilinx.com>, <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-cadence: Do not let signals interrupt I2C transfers
-References: <1394449954-10797-1-git-send-email-mike.looijmans@topic.nl>
- <1394521655-3444-1-git-send-email-mike.looijmans@topic.nl>
+	id S1753592AbaCKQCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 12:02:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33316 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616AbaCKQCK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 12:02:10 -0400
+Date: Tue, 11 Mar 2014 17:02:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+In-Reply-To: <1394492789.16134.36.camel@x220>
+Message-ID: <alpine.DEB.2.02.1403111654340.18573@ionos.tec.linutronix.de>
+References: <20140310110410.5b2218f6@ilfaris>  <1394447253.2979.12.camel@x220>  <alpine.DEB.2.02.1403101504590.18573@ionos.tec.linutronix.de>  <1394465314.12752.18.camel@x220>  <alpine.DEB.2.02.1403101757320.18573@ionos.tec.linutronix.de>  <1394476346.12752.43.camel@x220>
+  <alpine.DEB.2.02.1403101956250.18573@ionos.tec.linutronix.de>  <1394479176.18058.10.camel@x41>  <alpine.DEB.2.02.1403102122310.18573@ionos.tec.linutronix.de> <1394492789.16134.36.camel@x220>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1394521655-3444-1-git-send-email-mike.looijmans@topic.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <99d075e3-1694-4132-bdc8-22ea0a6e3521@VA3EHSMHS014.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
-
-On Tue, 2014-03-11 at 08:07AM +0100, Mike Looijmans wrote:
-> Pressing CTRL-C while communicating with an I2C device leads to erratic
-> behaviour. The cause is that the controller will interrupt the I2C transfer
-> in progress, and leave the client device in an undefined state. Many
-> drivers do not handle error return codes on I2C transfers. The calling driver
-> has no way of telling how much of the transfer has actually completed, so
-> it cannot reliably determine the device's state.
+On Tue, 11 Mar 2014, Paul Bolle wrote:
+> On Mon, 2014-03-10 at 21:50 +0100, Thomas Gleixner wrote:
+> > Dammit no. We want to know WHY!
 > 
-> The best solution here is to not handle signals in the I2C bus driver at all,
-> but always complete a transaction before returning control.
-> 
-> See for a related patch and discussion on this topic:
-> http://lkml.org/lkml/2014/1/9/246
-> 
-> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
-Acked-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> Here I am one and half year after reporting seeing this error. I'm not
+> aware of anyone reporting it before me. Anyhow, I don't think things
+> were working fine up to v3.13. And in my report (I'm not going to link
 
-Thanks for the update. I'll take these changes and resubmit the driver
-to LKML as well.
+You can think what you want. 
 
-	Sören
+According to Julian things were working fine for him and he actually
+sat down and found out WHY things stopped working. That's what counts.
 
+I really have a hard time to understand why you are wasting everyones
+time with a completely pointless discussion about the printk level of
+this particular thing. It's not spewing a backtrace. It's one line of
+printk and there is no rule, that recoverable issues are not allowed
+to be printed at KERN_ERR level. 
+
+Julian noticed a change of behaviour due to that after 3.13. That's
+way more important than your personal dislike of a particular error
+level.
+
+Thanks,
+
+	tglx
 
