@@ -1,78 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbaCKOcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 10:32:52 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:41418 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868AbaCKOcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 10:32:22 -0400
-Message-ID: <531F1E7D.5060309@windriver.com>
-Date: Tue, 11 Mar 2014 10:32:29 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+	id S1753530AbaCKOeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 10:34:08 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:51966 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752685AbaCKOeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 10:34:06 -0400
+Message-ID: <531F1ED5.9010804@mev.co.uk>
+Date: Tue, 11 Mar 2014 14:33:57 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>, <kbuild-all@01.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [powerpc:next 45/53] warning: (PPC_C2K && ..) selects NOT_COHERENT_CACHE
- which has unmet direct dependencies (4xx || ..)
-References: <531acfa5.YesaRIJhSRvrw4/w%fengguang.wu@intel.com> <531DD0F4.6020000@windriver.com> <20140311045424.GB12373@localhost>
-In-Reply-To: <20140311045424.GB12373@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Conrad Meyer <cemeyer@uw.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Conrad Meyer <cse.cem@gmail.com>
+Subject: Re: [PATCH 1/2] Staging: comedi: Fix if/else style in hwdrv_apci1500.c
+References: <1394382281-22712-1-git-send-email-cse.cem@gmail.com>
+In-Reply-To: <1394382281-22712-1-git-send-email-cse.cem@gmail.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-03-11 12:54 AM, Fengguang Wu wrote:
-> On Mon, Mar 10, 2014 at 10:49:24AM -0400, Paul Gortmaker wrote:
->> On 14-03-08 03:07 AM, kbuild test robot wrote:
->>> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
->>> head:   c7e64b9ce04aa2e3fad7396d92b5cb92056d16ac
->>> commit: 3c8464a9b12bf83807b6e2c896d7e7b633e1cae7 [45/53] powerpc: Delete old PrPMC 280/2800 support
->>> config: make ARCH=powerpc c2k_defconfig
->>>
->>> All warnings:
->>>
->>> warning: (PPC_C2K && AMIGAONE) selects NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON)
->>
->> This _looks_ like a new warning, but it really is not.  If you look
->> at the tree prior to the above named commit, it generates this:
->>
->> $ make c2k_defconfig
->> warning: (PPC_PRPMC2800 && PPC_C2K && AMIGAONE) selects NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON)
->> warning: (PPC_PRPMC2800 && PPC_C2K && AMIGAONE) selects NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON)
->> #
->> # configuration written to .config
->>
->> So the warning is slightly different in text, but essentially
->> the exact same thing that was being warned about before.  We've
->> just removed one of the possible symbols from existence.
-> 
-> Yes, sorry, the kbuild robot is not smart enough to detect such
-> slightly changed error/warnings and will treat them as new ones.
+On 2014-03-09 16:24, Conrad Meyer wrote:
+> Also kill some useless comments while I was there, e.g.:
+>    if (foo) {
+>      ...
+>    }  /* if (foo) */
+>
+> With vim:
+>    :%s/}\t\t*\/\*\s\s*\(if\|else\|for\|while\|switch\).*$/}/
+>
+> Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
 
-No apology required.  I think we all appreciate the build test
-coverage, and I saw your mail where you said you sent out ~60
-reports yesterday- wow!
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-Thanks,
-Paul.
---
-
-> 
->> I'm not sure there would ever be a way to teach kbuild robot
->> about something as subtle as the above; just one of the false
->> positives that we'll have to live with, probably.
-> 
-> It is false positive: "this bug is not introduced by me!"
-> 
-> However if you take a broader view, it's still notifying the possibly
-> "relevant" people who may know the background about that bug, or whom
-> to further CC the report. :)
-> 
-> Thanks,
-> Fengguang
-> 
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
