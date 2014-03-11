@@ -1,48 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbaCKKI1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:08:27 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:59114 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014AbaCKKIZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:08:25 -0400
-Date: Tue, 11 Mar 2014 11:08:19 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Christian Riesch <christian.riesch@omicron.at>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Stefan =?iso-8859-1?Q?S=F8rensen?= 
-	<stefan.sorensen@spectralink.com>
-Subject: Re: [PATCH RFC net-next v1 1/9] ptp: introduce programmable pins.
-Message-ID: <20140311100818.GA4266@netboy>
-References: <cover.1394307303.git.richardcochran@gmail.com>
- <d9cb37a7d6e57d7f103dab78f98044697d3c4433.1394307304.git.richardcochran@gmail.com>
- <F85F72BA1EE25F8F7FB77295@[172.22.2.41]>
+	id S1754573AbaCKKJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:09:01 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:13260 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754055AbaCKKI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:08:59 -0400
+X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
+   d="scan'208";a="9678259"
+Message-ID: <531EE048.40501@cn.fujitsu.com>
+Date: Tue, 11 Mar 2014 18:07:04 +0800
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F85F72BA1EE25F8F7FB77295@[172.22.2.41]>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@kernel.org,
+        tglx@linutronix.de, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] kernel/sys: Fix the indent issue in switch.
+References: <1394531043-3438-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+In-Reply-To: <1394531043-3438-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 18:06:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 18:06:13,
+	Serialize complete at 2014/03/11 18:06:13
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 08:58:45AM +0100, Christian Riesch wrote:
-> >+	if (pin1 && pin1->func == PTP_PF_PHYSYNC) {
-> >+		pr_err("sorry, cannot reprogram the calibration pin\n");
-> >+		return -EINVAL;
-> 
->            ^^^^
-> Will this ever happen? pin1 && pin1->func == PTP_PF_PHYSYNC means
-> that func == PTP_PF_PHYSYNC, but in this case you already return
-> -EINVAL a few lines above.
+Peter,
 
-This a bug. I really meant to test (pin2->func == PTP_PF_PHYSYNC) to
-prevent clobbering the calibration function with some other function.
-I'll fix it for v2.
+     Sorry for the noise, I should add this patch into my thread 'A 
+series patchse about sched priority', as some patch depends on this 
+patch. Otherwise, there
+will be a conflict.
 
-Thanks,
-Richard
+Thanx.,
+
+
+On 03/11/2014 05:44 PM, Dongsheng Yang wrote:
+> From: Joe Perches <joe@perches.com>
+>
+> Fix the indent issue and add a comment line for /* fall-through */.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> ---
+>   kernel/sys.c | 204 +++++++++++++++++++++++++++++------------------------------
+>   1 file changed, 102 insertions(+), 102 deletions(-)
+>
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index adaeab6..61a2ae9 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -182,39 +182,39 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
+>   	rcu_read_lock();
+>   	read_lock(&tasklist_lock);
+>   	switch (which) {
+> -		case PRIO_PROCESS:
+> -			if (who)
+> -				p = find_task_by_vpid(who);
+> -			else
+> -				p = current;
+> -			if (p)
+> -				error = set_one_prio(p, niceval, error);
+> -			break;
+> -		case PRIO_PGRP:
+> -			if (who)
+> -				pgrp = find_vpid(who);
+> -			else
+> -				pgrp = task_pgrp(current);
+> -			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
+> +	case PRIO_PROCESS:
+> +		if (who)
+> +			p = find_task_by_vpid(who);
+> +		else
+> +			p = current;
+> +		if (p)
+> +			error = set_one_prio(p, niceval, error);
+> +		break;
+> +	case PRIO_PGRP:
+> +		if (who)
+> +			pgrp = find_vpid(who);
+> +		else
+> +			pgrp = task_pgrp(current);
+> +		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
+> +			error = set_one_prio(p, niceval, error);
+> +		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
+> +		break;
+> +	case PRIO_USER:
+> +		uid = make_kuid(cred->user_ns, who);
+> +		user = cred->user;
+> +		if (!who)
+> +			uid = cred->uid;
+> +		else if (!uid_eq(uid, cred->uid) &&
+> +			 !(user = find_user(uid)))
+> +			goto out_unlock;	/* No processes for this user */
+> +
+> +		do_each_thread(g, p) {
+> +			if (uid_eq(task_uid(p), uid))
+>   				error = set_one_prio(p, niceval, error);
+> -			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
+> -			break;
+> -		case PRIO_USER:
+> -			uid = make_kuid(cred->user_ns, who);
+> -			user = cred->user;
+> -			if (!who)
+> -				uid = cred->uid;
+> -			else if (!uid_eq(uid, cred->uid) &&
+> -				 !(user = find_user(uid)))
+> -				goto out_unlock;	/* No processes for this user */
+> -
+> -			do_each_thread(g, p) {
+> -				if (uid_eq(task_uid(p), uid))
+> -					error = set_one_prio(p, niceval, error);
+> -			} while_each_thread(g, p);
+> -			if (!uid_eq(uid, cred->uid))
+> -				free_uid(user);		/* For find_user() */
+> -			break;
+> +		} while_each_thread(g, p);
+> +		if (!uid_eq(uid, cred->uid))
+> +			free_uid(user);		/* For find_user() */
+> +		break;
+>   	}
+>   out_unlock:
+>   	read_unlock(&tasklist_lock);
+> @@ -244,47 +244,47 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
+>   	rcu_read_lock();
+>   	read_lock(&tasklist_lock);
+>   	switch (which) {
+> -		case PRIO_PROCESS:
+> -			if (who)
+> -				p = find_task_by_vpid(who);
+> -			else
+> -				p = current;
+> -			if (p) {
+> +	case PRIO_PROCESS:
+> +		if (who)
+> +			p = find_task_by_vpid(who);
+> +		else
+> +			p = current;
+> +		if (p) {
+> +			niceval = 20 - task_nice(p);
+> +			if (niceval > retval)
+> +				retval = niceval;
+> +		}
+> +		break;
+> +	case PRIO_PGRP:
+> +		if (who)
+> +			pgrp = find_vpid(who);
+> +		else
+> +			pgrp = task_pgrp(current);
+> +		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
+> +			niceval = 20 - task_nice(p);
+> +			if (niceval > retval)
+> +				retval = niceval;
+> +		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
+> +		break;
+> +	case PRIO_USER:
+> +		uid = make_kuid(cred->user_ns, who);
+> +		user = cred->user;
+> +		if (!who)
+> +			uid = cred->uid;
+> +		else if (!uid_eq(uid, cred->uid) &&
+> +			 !(user = find_user(uid)))
+> +			goto out_unlock;	/* No processes for this user */
+> +
+> +		do_each_thread(g, p) {
+> +			if (uid_eq(task_uid(p), uid)) {
+>   				niceval = 20 - task_nice(p);
+>   				if (niceval > retval)
+>   					retval = niceval;
+>   			}
+> -			break;
+> -		case PRIO_PGRP:
+> -			if (who)
+> -				pgrp = find_vpid(who);
+> -			else
+> -				pgrp = task_pgrp(current);
+> -			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
+> -				niceval = 20 - task_nice(p);
+> -				if (niceval > retval)
+> -					retval = niceval;
+> -			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
+> -			break;
+> -		case PRIO_USER:
+> -			uid = make_kuid(cred->user_ns, who);
+> -			user = cred->user;
+> -			if (!who)
+> -				uid = cred->uid;
+> -			else if (!uid_eq(uid, cred->uid) &&
+> -				 !(user = find_user(uid)))
+> -				goto out_unlock;	/* No processes for this user */
+> -
+> -			do_each_thread(g, p) {
+> -				if (uid_eq(task_uid(p), uid)) {
+> -					niceval = 20 - task_nice(p);
+> -					if (niceval > retval)
+> -						retval = niceval;
+> -				}
+> -			} while_each_thread(g, p);
+> -			if (!uid_eq(uid, cred->uid))
+> -				free_uid(user);		/* for find_user() */
+> -			break;
+> +		} while_each_thread(g, p);
+> +		if (!uid_eq(uid, cred->uid))
+> +			free_uid(user);		/* for find_user() */
+> +		break;
+>   	}
+>   out_unlock:
+>   	read_unlock(&tasklist_lock);
+> @@ -1541,41 +1541,41 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
+>   		return;
+>   
+>   	switch (who) {
+> -		case RUSAGE_BOTH:
+> -		case RUSAGE_CHILDREN:
+> -			utime = p->signal->cutime;
+> -			stime = p->signal->cstime;
+> -			r->ru_nvcsw = p->signal->cnvcsw;
+> -			r->ru_nivcsw = p->signal->cnivcsw;
+> -			r->ru_minflt = p->signal->cmin_flt;
+> -			r->ru_majflt = p->signal->cmaj_flt;
+> -			r->ru_inblock = p->signal->cinblock;
+> -			r->ru_oublock = p->signal->coublock;
+> -			maxrss = p->signal->cmaxrss;
+> -
+> -			if (who == RUSAGE_CHILDREN)
+> -				break;
+> -
+> -		case RUSAGE_SELF:
+> -			thread_group_cputime_adjusted(p, &tgutime, &tgstime);
+> -			utime += tgutime;
+> -			stime += tgstime;
+> -			r->ru_nvcsw += p->signal->nvcsw;
+> -			r->ru_nivcsw += p->signal->nivcsw;
+> -			r->ru_minflt += p->signal->min_flt;
+> -			r->ru_majflt += p->signal->maj_flt;
+> -			r->ru_inblock += p->signal->inblock;
+> -			r->ru_oublock += p->signal->oublock;
+> -			if (maxrss < p->signal->maxrss)
+> -				maxrss = p->signal->maxrss;
+> -			t = p;
+> -			do {
+> -				accumulate_thread_rusage(t, r);
+> -			} while_each_thread(p, t);
+> +	case RUSAGE_BOTH:
+> +	case RUSAGE_CHILDREN:
+> +		utime = p->signal->cutime;
+> +		stime = p->signal->cstime;
+> +		r->ru_nvcsw = p->signal->cnvcsw;
+> +		r->ru_nivcsw = p->signal->cnivcsw;
+> +		r->ru_minflt = p->signal->cmin_flt;
+> +		r->ru_majflt = p->signal->cmaj_flt;
+> +		r->ru_inblock = p->signal->cinblock;
+> +		r->ru_oublock = p->signal->coublock;
+> +		maxrss = p->signal->cmaxrss;
+> +
+> +		if (who == RUSAGE_CHILDREN)
+>   			break;
+> +		/* fall-through */
+> +	case RUSAGE_SELF:
+> +		thread_group_cputime_adjusted(p, &tgutime, &tgstime);
+> +		utime += tgutime;
+> +		stime += tgstime;
+> +		r->ru_nvcsw += p->signal->nvcsw;
+> +		r->ru_nivcsw += p->signal->nivcsw;
+> +		r->ru_minflt += p->signal->min_flt;
+> +		r->ru_majflt += p->signal->maj_flt;
+> +		r->ru_inblock += p->signal->inblock;
+> +		r->ru_oublock += p->signal->oublock;
+> +		if (maxrss < p->signal->maxrss)
+> +			maxrss = p->signal->maxrss;
+> +		t = p;
+> +		do {
+> +			accumulate_thread_rusage(t, r);
+> +		} while_each_thread(p, t);
+> +		break;
+>   
+> -		default:
+> -			BUG();
+> +	default:
+> +		BUG();
+>   	}
+>   	unlock_task_sighand(p, &flags);
+>   
 
