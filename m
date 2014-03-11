@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229AbaCKS4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:56:06 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:34960 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752213AbaCKS4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:56:03 -0400
-Date: Tue, 11 Mar 2014 12:55:54 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        dev@linux-sunxi.org
-Subject: Re: [RFC PATCH v2 04/14] mtd: nand: define struct nand_timings
-Message-ID: <20140311185554.GD31835@obsidianresearch.com>
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
- <1391006064-28890-5-git-send-email-b.brezillon.dev@gmail.com>
- <531DC1A4.7010208@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531DC1A4.7010208@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1754341AbaCKTEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 15:04:23 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49500 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718AbaCKTEV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 15:04:21 -0400
+Date: Tue, 11 Mar 2014 19:03:46 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-Id: <20140311190346.89aa11208f24e6abd10721b1@kernel.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__11_Mar_2014_19_03_46_+0000_R8J9bvw_pDkCuhU2"
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@kernel.org
+Subject: linux-next: manual merge of the tip tree with the  tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 02:44:04PM +0100, Boris BREZILLON wrote:
+--Signature=_Tue__11_Mar_2014_19_03_46_+0000_R8J9bvw_pDkCuhU2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Some timings are missing here (see Table 55 in the ONFI spec):
+Hi all,
 
-Right..
+Today's linux-next merge of the tip tree got a conflict in drivers/video/fb=
+dev/sgivwfb.c between commit 844901baede6b5 ("video: move fbdev to drivers/=
+video/fbdev") from the omap2_dss tree and commit c5f9ee3d665a76 ("x86, plat=
+forms: Remove SGI Visual Workstation") from the tip tree.
 
-The 'mode' covers only the raw electrical parameters needed to
-exchange commands, other timings cover the commands
-themselves. Notably the timing mode does not alter those parameters.
+I fixed it up by deleting the offending driver and can carry the fix as nec=
+essary (no action is required).
 
-To me it seems tidy to keep the 'mode' timings contained in their own
-struct and find other homes for the other parameters.
+--Signature=_Tue__11_Mar_2014_19_03_46_+0000_R8J9bvw_pDkCuhU2
+Content-Type: application/pgp-signature
 
-> -tR
-> -tBERS
-> -tCCS
-> -tPLEBSY
-> -...
-> 
-> I see at least 3 of those timings that could be useful (for the moment) :
-> - tR: this one should be used to fill the chip_delay field
-> - tPROG and tBERS: could be used within nand_wait to choose the timeo
->   value appropriately.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-IIRC these timing values are really only necessary if the controller
-does not support the READY/BUSY input, in that case drivers typically
-seem to use 'chip_delay' which is the maximum possible command
-execution time (a sleep long enough to guarentee that READY/BUSY is
-de-asserted).
+iQIcBAEBAgAGBQJTH14SAAoJELSic+t+oim9XQMP/08uTuRXvpg1+DdE95wTTVdt
+ZSkMupGWhkpsQbFXXjUtrMUlfCUzDAorZj16quSVvb3zE55kas7s4sLFC4NaT0mR
+ayQI8hapteG842AZaJeiph6WAc9i5zu8juhqHwYzDwpt44PsJcwCDeMdLJbWsEiU
+YKQjmSoJWSgIXG9j3Wu6+yTAf8mlPE8JTLIENRRZfP+b4kG/Cxpnsx/9M7T8rSU7
+PrFSauT+2kA9dbEKMvzl/bD9UnRenjalcE7nE5aE7lZEGpXoVx7O79A32c2NsFa+
+xqlG/EM8Ek3dxkPt38uuoHTpHg5YJTDdMavK0CdwL4HiXcxRBx4PBKLfHufV2D8k
+3YoOxNWxxLGyg914kZvI00FsfMEUnCZyf34hoKG4kcMIXkkLYoPrCWTC8dluB6ah
+HxiVorB0B+ARM1YrIlEeSdFBYlXWiynhg8zZH2/5jA5dnYMeg6XRSpLPRIlgc/vM
+qU9SHhq694MvjQ13akZGdAjDUFTTDrOSXgKAOa/EmMI5R0eAjsq0rnpOna06jcto
+gYbbJkwik9zvCj41+1IZgsoHfFQLsAoBj4Jjb60dd8uVLa2jBDjnAJ1wLSbtfLDF
+/ns51zhlCQ763KSXhZ82XIUk6GgYmauA4bMzoEdVC2QHzOXPWulfRCy7UVzbjJbv
+acMPRv6SXSL+pgDHXsU1
+=5pzu
+-----END PGP SIGNATURE-----
 
-> Or should I create a new struct for these timings ?
-> In the latter case how should I name it ?
-
-struct onfi_command_timings ?
-
-Regards,
-Jason
+--Signature=_Tue__11_Mar_2014_19_03_46_+0000_R8J9bvw_pDkCuhU2--
