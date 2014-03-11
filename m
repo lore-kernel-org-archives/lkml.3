@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968AbaCKKYp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:24:45 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:40860 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202AbaCKKYA (ORCPT
+	id S1754917AbaCKK0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:26:07 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:38102 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583AbaCKK0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:24:00 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
-        wimax@linuxwimax.org
-Subject: [PATCH trivial 13/16] wimax: Spelling s/than/that/, wording s/destinatary/recipient/
-Date: Tue, 11 Mar 2014 11:23:47 +0100
-Message-Id: <1394533430-4746-13-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
-References: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
+	Tue, 11 Mar 2014 06:26:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1402281151180.18573@ionos.tec.linutronix.de>
+References: <c439f5b6bbc2047e1662f4d523350531425bcf9d.1393576981.git.viresh.kumar@linaro.org>
+	<9144e10d7e854a0aa8a673332adec356d81a923c.1393576981.git.viresh.kumar@linaro.org>
+	<alpine.DEB.2.02.1402281151180.18573@ionos.tec.linutronix.de>
+Date: Tue, 11 Mar 2014 18:26:03 +0800
+Message-ID: <CAKohpomHXLVKqzFCbp8qt7gGpdDkc-s5wASRvw1EBwuB_fpceA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] timer: Make sure TIMER_FLAG_MASK bits are free in
+ allocated base
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Hi Thomas,
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Cc: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
-Cc: wimax@linuxwimax.org
----
- include/net/wimax.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On 28 February 2014 18:52, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Fri, 28 Feb 2014, Viresh Kumar wrote:
+>
+>> Currently we are using two lowest bit of base for internal purpose and so they
+>> both should be zero in the allocated address. The code was doing the right thing
+>> before this patch came in:
+>>
+>> commit c5f66e99b7cb091e3d51ae8e8156892e8feb7fa3
+>> Author: Tejun Heo <tj@kernel.org>
+>> Date:   Wed Aug 8 11:10:28 2012 -0700
+>>
+>>     timer: Implement TIMER_IRQSAFE
+>>
+>> Tejun probably forgot to update this piece of code which checks if the lowest
+>> 'n' bits are zero or not and so wasn't updated according to the new flag. Lets
+>> use TIMER_FLAG_MASK in the calculations here, so that this code wouldn't require
+>> a change later on with another flag in.
+>
+> Are you planning to introduce more flag horror? Don't go there. The
+> timer_list code is about to be rewritten completely and I'm not going
+> to add new features to the existing code base.
 
-diff --git a/include/net/wimax.h b/include/net/wimax.h
-index 98498e1daa06..e52ef5357e08 100644
---- a/include/net/wimax.h
-+++ b/include/net/wimax.h
-@@ -483,8 +483,8 @@ void wimax_report_rfkill_sw(struct wimax_dev *, enum wimax_rf_state);
-  * Be sure not to modify skb->data in the middle (ie: don't use
-  * skb_push()/skb_pull()/skb_reserve() on the skb).
-  *
-- * "pipe_name" is any string, than can be interpreted as the name of
-- * the pipe or destinatary; the interpretation of it is driver
-+ * "pipe_name" is any string, that can be interpreted as the name of
-+ * the pipe or recipient; the interpretation of it is driver
-  * specific, so the recipient can multiplex it as wished. It can be
-  * NULL, it won't be used - an example is using a "diagnostics" tag to
-  * send diagnostics information that a device-specific diagnostics
--- 
-1.7.9.5
+Do you already have stuff prepared that can be shared on that? I am asking
+because I am working on some CPU isolation stuff for Networking domain and
+it looks like I need to add another of these flags :( .. I know its
+just not acceptable
+and so wanted your thoughts on how can I get things fixed.
 
+Peter asked me to implement something like cpuset.quiesce to move away all
+timers/workqueues/etc from a cpuset. It was proposed here:
+
+https://lkml.org/lkml/2014/1/15/186
+
+Now, I was looking to migrate away the timers first but I obviously
+shouldn't migrate
+the pinned timers. One way out to identify PINNED timers is to mark them PINNED
+with the flag bits, which you wouldn't allow. Can you give some other idea with
+which I can get this solved.
+
+--
+viresh
