@@ -1,63 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784AbaCKD3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 23:29:50 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:39811 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018AbaCKD3r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 23:29:47 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2B3S157014949, This message is accepted by code: ctloc85258
-Message-ID: <531E82C9.3080303@realtek.com>
-Date: Tue, 11 Mar 2014 11:28:09 +0800
-From: Roger <rogerable@realtek.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Chris Ball <chris@printf.net>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <driverdev-devel@linuxdriverproject.org>,
-        <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
-Subject: Re: [PATCH v4 1/3] mfd: Add realtek USB card reader driver
-References: <1392199238-14500-1-git-send-email-rogerable@realtek.com>	<1392199238-14500-2-git-send-email-rogerable@realtek.com>	<20140214094427.GA7380@lee--X1> <5301A786.8040607@realtek.com>	<20140217082222.GA17875@lee--X1> <5301D369.5010100@realtek.com>	<20140217100211.GE17875@lee--X1> <5301E376.8010000@realtek.com>	<20140217120326.GC20218@lee--X1> <530AB4D3.4090103@realtek.com> <86mwhhrz9b.fsf@void.printf.net> <531441D8.8090209@realtek.com>
-In-Reply-To: <531441D8.8090209@realtek.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.21.81.189]
+	id S1754495AbaCKDbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 23:31:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38030 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754269AbaCKDbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 23:31:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,628,1389772800"; 
+   d="scan'208";a="497413308"
+From: Chew Chiau Ee <chiau.ee.chew@intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Lim Lee Booi <lee.booi.lim@intel.com>,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2 RESEND] i2c: designware-pci: set ideal HCNT, LCNT and SDA hold time value
+Date: Tue, 11 Mar 2014 19:33:45 +0800
+Message-Id: <1394537625-27205-1-git-send-email-chiau.ee.chew@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2014 04:48 PM, Roger wrote:
-> On 02/24/2014 11:00 AM, Chris Ball wrote:
->> Hi,
->>
->> On Mon, Feb 24 2014, Roger wrote:
->>> Would you please help comment PATCH 2/3 and 3/3 (for mmc and memstick,
->>> respectively) or give Acks? Thus we can proceed with applying or
->>> revision if necessary.
->>
->> For 2/3:
->>
->> Acked-by: Chris Ball <chris@printf.net>
->>
->> Thanks,
->>
->> - Chris.
->>
-> Hi Andrew,
->
-> Could you please give some comment to the 3/3(memstick) patch?
->
+From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-Lee has introduced and CC'ed AKPM for acking the memstick patch (3/3)
-several weeks ago but so far we haven't get any response. Thus the merge 
-of all 3 patches is blocked. Is there anyone else can help this or 
-anything else I could do?
+On Intel BayTrail, there was case whereby the resulting fast mode
+bus speed becomes slower (~20% slower compared to expected speed)
+if using the HCNT/LCNT calculated in the core layer. Thus, this
+patch is added to allow pci glue layer to pass in optimal
+HCNT/LCNT/SDA hold time values to core layer since the core
+layer supports cofigurable HCNT/LCNT/SDA hold time values now.
 
-Best regards,
-Roger Tseng
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+---
+v2 changelog:
+* Add 'dw_' prefix to struct scl_sda_cfg
+* Add Baytrail HCNT/LCNT/SDA hold time values directly in the
+  struct instead of using macro definition
+* Replace tab before "=" with space in struct
+
+ drivers/i2c/busses/i2c-designware-pcidrv.c |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
+index 094509bc..91d468f 100644
+--- a/drivers/i2c/busses/i2c-designware-pcidrv.c
++++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
+@@ -58,6 +58,14 @@ enum dw_pci_ctl_id_t {
+ 	baytrail,
+ };
+ 
++struct dw_scl_sda_cfg {
++	u32 ss_hcnt;
++	u32 fs_hcnt;
++	u32 ss_lcnt;
++	u32 fs_lcnt;
++	u32 sda_hold;
++};
++
+ struct dw_pci_controller {
+ 	u32 bus_num;
+ 	u32 bus_cfg;
+@@ -65,6 +73,7 @@ struct dw_pci_controller {
+ 	u32 rx_fifo_depth;
+ 	u32 clk_khz;
+ 	u32 functionality;
++	struct dw_scl_sda_cfg *scl_sda_cfg;
+ };
+ 
+ #define INTEL_MID_STD_CFG  (DW_IC_CON_MASTER |			\
+@@ -77,6 +86,15 @@ struct dw_pci_controller {
+ 					I2C_FUNC_SMBUS_WORD_DATA |	\
+ 					I2C_FUNC_SMBUS_I2C_BLOCK)
+ 
++/* BayTrail HCNT/LCNT/SDA hold time */
++static struct dw_scl_sda_cfg byt_config = {
++	.ss_hcnt = 0x200,
++	.fs_hcnt = 0x55,
++	.ss_lcnt = 0x200,
++	.fs_lcnt = 0x99,
++	.sda_hold = 0x6,
++};
++
+ static struct  dw_pci_controller  dw_pci_controllers[] = {
+ 	[moorestown_0] = {
+ 		.bus_num     = 0,
+@@ -148,6 +166,7 @@ static struct  dw_pci_controller  dw_pci_controllers[] = {
+ 		.rx_fifo_depth = 32,
+ 		.clk_khz = 100000,
+ 		.functionality = I2C_FUNC_10BIT_ADDR,
++		.scl_sda_cfg = &byt_config,
+ 	},
+ };
+ static struct i2c_algorithm i2c_dw_algo = {
+@@ -187,6 +206,7 @@ static int i2c_dw_pci_probe(struct pci_dev *pdev,
+ 	struct i2c_adapter *adap;
+ 	int r;
+ 	struct  dw_pci_controller *controller;
++	struct dw_scl_sda_cfg *cfg;
+ 
+ 	if (id->driver_data >= ARRAY_SIZE(dw_pci_controllers)) {
+ 		dev_err(&pdev->dev, "%s: invalid driver data %ld\n", __func__,
+@@ -224,6 +244,14 @@ static int i2c_dw_pci_probe(struct pci_dev *pdev,
+ 				DW_DEFAULT_FUNCTIONALITY;
+ 
+ 	dev->master_cfg =  controller->bus_cfg;
++	if (controller->scl_sda_cfg) {
++		cfg = controller->scl_sda_cfg;
++		dev->ss_hcnt = cfg->ss_hcnt;
++		dev->fs_hcnt = cfg->fs_hcnt;
++		dev->ss_lcnt = cfg->ss_lcnt;
++		dev->fs_lcnt = cfg->fs_lcnt;
++		dev->sda_hold_time = cfg->sda_hold;
++	}
+ 
+ 	pci_set_drvdata(pdev, dev);
+ 
+-- 
+1.7.4.4
+
