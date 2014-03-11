@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495AbaCKK2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:28:49 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:36846 "EHLO smtp3-g21.free.fr"
+	id S1755509AbaCKK3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:29:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54889 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754431AbaCKK2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:28:11 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCHv6 6/6] file: remove macro get_unused_fd()
-Date: Tue, 11 Mar 2014 11:23:45 +0100
-Message-Id: <1aac909bfb462d4e770c58e8bcfb4bb5cce8bfc8.1394532336.git.ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <cover.1394532336.git.ydroneaud@opteya.com>
-References: <cover.1394532336.git.ydroneaud@opteya.com>
-In-Reply-To: <cover.1394532336.git.ydroneaud@opteya.com>
-References: <cover.1394532336.git.ydroneaud@opteya.com>
+	id S1754431AbaCKK3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:29:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,629,1389772800"; 
+   d="scan'208";a="489681515"
+Date: Tue, 11 Mar 2014 12:36:41 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pinctrl-baytrail: add function mux checking in gpio pin
+ request
+Message-ID: <20140311103641.GX5018@intel.com>
+References: <1394114389-27106-1-git-send-email-chiau.ee.chew@intel.com>
+ <CACRpkdajaffBOmc9KeUyLkwZth6vNu-Z0Ln+Xf4ZV0gZ9Ytf_g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdajaffBOmc9KeUyLkwZth6vNu-Z0Ln+Xf4ZV0gZ9Ytf_g@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Macro get_unused_fd() allocates a file descriptor without enabling
-close-on-exec: it calls function get_unused_fd_flags() without
-O_CLOEXEC flag.
+On Tue, Mar 11, 2014 at 11:27:13AM +0100, Linus Walleij wrote:
+> On Thu, Mar 6, 2014 at 2:59 PM, Chew Chiau Ee <chiau.ee.chew@intel.com> wrote:
+> 
+> > From: Chew, Kean Ho <kean.ho.chew@intel.com>
+> >
+> > The requested gpio pin must has the func_pin_mux field set
+> > to GPIO function by BIOS/FW in advanced. Else, the gpio pin
+> > request would fail. This is to ensure that we do not expose
+> > any gpio pins which shall be used for alternate functions,
+> > for eg: wakeup pin, I/O interfaces for LPSS, etc.
+> >
+> > Signed-off-by: Chew, Kean Ho <kean.ho.chew@intel.com>
+> > Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+> 
+> Patch applied with Darren's ACK.
+> 
+> This confirms my suspicion that you will not be able to
+> hide the pin control interface side of this hardware forever. ;-)
+> 
+> Mika/Mathias: any comments?
 
-This can be seen as an unsafe default: in most case close-on-exec
-should be enabled to not leak file descriptor across exec().
-
-This patch removes get_unused_fd() instead of updating it to use
-O_CLOEXEC so that out of tree modules won't be affect by a runtime
-behavor change which might introduce other kind of bug. It's better
-to catch the change at build time, making it easier to fix.
-
-Removing the macro will also promote use of get_unused_fd_flags()
-(or anon_inode_getfd()) with flags provided by userspace. Or, if
-flags cannot be given by userspace, with flags set to O_CLOEXEC set
-by default.
-
-Link: http://lkml.kernel.org/r/cover.1394532336.git.ydroneaud@opteya.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
----
- include/linux/file.h | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/include/linux/file.h b/include/linux/file.h
-index cbacf4faf447..866600259c07 100644
---- a/include/linux/file.h
-+++ b/include/linux/file.h
-@@ -63,7 +63,6 @@ extern void set_close_on_exec(unsigned int fd, int flag);
- extern bool get_close_on_exec(unsigned int fd);
- extern void put_filp(struct file *);
- extern int get_unused_fd_flags(unsigned flags);
--#define get_unused_fd() get_unused_fd_flags(0)
- extern void put_unused_fd(unsigned int fd);
- 
- extern void fd_install(unsigned int fd, struct file *file);
--- 
-1.8.5.3
-
+No comments, looks good to me :)
