@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbaCKNXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:23:12 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58575 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077AbaCKNXK (ORCPT
+	id S1753832AbaCKNXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:23:19 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:40889 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077AbaCKNXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:23:10 -0400
-Date: Tue, 11 Mar 2014 08:20:13 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Trilok Soni <tsoni@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Anirudh Ghayal <aghayal@codeaurora.org>, linux-input@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Qualcomm PMIC8xxx keypad never worked?
-Message-ID: <20140311132013.GO18529@joshc.qualcomm.com>
-References: <5887114.1jrNo21sGX@wuerfel>
- <20140311120056.GH21216@lee--X1>
- <8206209.oc1V5pPVYT@wuerfel>
- <20140311130609.GL21216@lee--X1>
+	Tue, 11 Mar 2014 09:23:15 -0400
+Date: Tue, 11 Mar 2014 13:23:10 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@st.com
+Subject: Re: [PATCH 1/3] ARM: DT: STi: Add support to B2020 revision E board.
+Message-ID: <20140311132310.GN21216@lee--X1>
+References: <1394533324-20299-1-git-send-email-lee.jones@linaro.org>
+ <531EEA39.50504@st.com>
+ <20140311112342.GE21216@lee--X1>
+ <531EFE75.9010709@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140311130609.GL21216@lee--X1>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <531EFE75.9010709@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 01:06:09PM +0000, Lee Jones wrote:
-> > > > Something in the MFD_PM8XXX driver must have changed recently that now allows
-> > > > the KEYBOARD_PMIC8XXX driver to be enabled. Unfortunately, it does not build
-> > > > because of a dependency on the <linux/mfd/pm8xxx/gpio.h> header file that
-> > > > does not exist.
+> >>>From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> >>>
+> >>>This patch adds support to rev E board of B2020 which has few minor
+> >>>changes :
+> >>>	PHY reset PIO (Change from PIO30 to PIO07)
+> >>>	Power LED(Green) Control(Change from PIO47 to PIO13)
+> >>
+> >>I thought we decided last October to support only one revision of
+> >>the b2020 board.
+> >>
+> >>The idea was to create an external git to provide DTS for all our
+> >>boards, and only have a minimal subset in in the kernel.
+> >
+> >Ah, I was unaware of that conversation/decision. If that's the case we
+> >can scrap this submission along with the following patch.
 > 
-> I think it's this commit that's causing your error:
-> 
->   https://lkml.org/lkml/2013/12/10/903
-> 
-> ... but the MFD isn't broken, so I guess your solution is the most
-> elegant. If it's not fixed soon, I guess we should think about ripping
-> it out. It's obvoious that no-one cares, as it's been broken for
-> nearly 3 years.
+> In fact we had the discussion together with Arnd (IIRC) on #armlinux :)
 
-Stephen has a pending patchset to cleanup and actually make the pm8xxx
-input drivers work, but they have not been picked up yet:
+I remember discussing {cpu,machine}_is() implementations with regards
+to handling quirks. I wasn't aware that this culminated in the
+decision above. When it comes to things like PIO line or other key
+hardware changes through revisions, I fully expect this to be
+described inside a .dts file.
 
-http://lkml.kernel.org/r/1393958088-1456-1-git-send-email-sboyd@codeaurora.org
+> The reason is we wanted to avoid flooding arch/arm/dts/ with all the
+> possible combinations of board revisions.
+> 
+> The idea was to put in place a git repository at stlinux.com to
+> provide the DTS for all the STi boards, and try to keep
+> arch/arm/dts/sti* simple.
+
+I can certainly sympathise with the reasoning, but for me fetching DTS
+files from an external Git repo sounds unnecessarily tiresome. I had
+thought about creating some per-vendor directories in there to
+simplify the format a little, but then I guess we're back to square
+one of the old arch/arm/mach-* situation.
+
+> >JOOI, what happens if I want to boot Mainline on my revE board? It
+> >won't be fully functional will it? That will be a shame. The LEDs, not
+> >so much, but networking is a pretty big piece of functionality to
+> >lose.
+> 
+> I agree this is not comfortable.
+> 
+> The problem is that your patch is not enough. We would need to
+> create much more files, because for example, the i2c used are not
+> the same between rev. C and rev. E.
+> 
+> It gives theses files only for b2020 support:
+>   arch/arm/boot/dts/stih415-b2020.dts
+>   arch/arm/boot/dts/stih416-b2020e.dts
+>   arch/arm/boot/dts/stih41x-b2020e.dtsi
+>   arch/arm/boot/dts/stih416-b2020.dts
+>   arch/arm/boot/dts/stih41x-b2020.dtsi
+>   arch/arm/boot/dts/stih41x-b2020x.dtsi
+
+Right, but you're also talking about supporting two different SoCs
+there too, so I guess that's not so bad?
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
