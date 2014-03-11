@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341AbaCKRoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:44:07 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:54991 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754963AbaCKRnM (ORCPT
+	id S1755362AbaCKRo0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:44:26 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:37997 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754158AbaCKRoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:43:12 -0400
+	Tue, 11 Mar 2014 13:44:22 -0400
 MIME-Version: 1.0
-Date: Tue, 11 Mar 2014 10:43:11 -0700
-X-Google-Sender-Auth: hvDa9VbBzSOcFA3EPROw_i-RYzI
-Message-ID: <CA+55aFw_1Cw1hWVLB7HG_2SKW=7NXH8=DR3a96q4fqOhoOcdpQ@mail.gmail.com>
-Subject: On trying to drop X86_PPRO_FENCE..
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Stefani Seibold <stefani@seibold.net>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>
+In-Reply-To: <2274545.CyQ67zvVqo@avalon>
+References: <1394531952-3905-1-git-send-email-geert@linux-m68k.org>
+	<1802214.NxZUiJcWLG@avalon>
+	<CAMuHMdVOUuFsObEag_MwUT_jaqfOHMEcUScrkbaTEitmyJr+NQ@mail.gmail.com>
+	<2274545.CyQ67zvVqo@avalon>
+Date: Tue, 11 Mar 2014 18:44:21 +0100
+X-Google-Sender-Auth: NSpH7ScAb8LfARZK2d44Q3scDDo
+Message-ID: <CAMuHMdXEOygh0--niiLcXFgnRNPi_b0EGPKVBg2Q6Ws01YmNjw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] spi: sh-msiof: Convert to spi core auto_runtime_pm framework
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mark Brown <broonie@kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Magnus Damm <magnus.damm@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 3:11 AM, Ingo Molnar <mingo@kernel.org> wrote:
+Hi Laurent,
+
+On Tue, Mar 11, 2014 at 5:32 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> On Tuesday 11 March 2014 17:23:37 Geert Uytterhoeven wrote:
+>> On Tue, Mar 11, 2014 at 4:55 PM, Laurent Pinchart wrote:
+>> > Does this require drivers/sh/pm_runtime.c to be compiled in ?
+>>
+>> Let's check...
+>>
+>> My koelsch-legacy kernel has drivers/sh/pm_runtime.c compiled in.
+>> My koelsch-reference kernel hasn't.
+>>
+>> However, under the -reference kernel many MSTP clocks (incl. MSIOF)
+>> seem to be enabled all the time, while under -legacy they are enabled and
+>> disabled on demand.
 >
-> But ... when PPro was common our parallelization sucked, so I'd not be
-> surprised if it triggered more frequently with a modern kernel.
+> Is PM_RUNTIME enabled in both cases ?
 
-Agreed. It is certainly very possible that we had no reports of this
-simply because we never had any real concurrent cache accesses
-(outside of the BKL).
+Yes it is.
 
-That said, the Intel errata does do say that they never saw reports of
-it in any real loads either, so it really is debatable whether it ever
-made sense. Back in the PPro days, there were *other* x86 unixes
-around that might have hit it, including very much the Sequent NUMA-Q.
+> There's something fishy in there that we should try to fix without too further
+> much delay. Ben Dooks has pointed out the problem a couple of months ago, but
+> the discussion on the mailing list just died.
 
-I have this dim memory that the only reason I knew about the errata
-originally was that I was talking memory ordering for the spinlock
-code with Andy Glew from Intel, to verify that a simple store really
-does work as an unlock, and he dropped the "Yeah, except for some
-buggy old PPro cpu errata" bomb.
+Indeed. I'll look into it next week, unless someone beats me to it.
 
-(Although honestly, that whole thing is so long ago that my "dim
-memory" is very suspect, and it's possible the workaround actually
-came independently of that from Alan Cox. This all happened in
-v2.4.13-rc2 - late 2001 - and the PPro workaround came in together
-with the X86 OOSTORE code, which I *think* was Alan. Asking the gnomes
-in case they remember how it happened).
+Note that I dropped Ben's patch to include drivers/sh, as I can't boot into
+userspace with it.
 
-                 Linus
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
