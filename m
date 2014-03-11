@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777AbaCKKL2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:11:28 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:45788 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535AbaCKKLY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:11:24 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Simon Horman <horms+renesas@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-serial@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH 1/4] serial: sh-sci: Replace printk() by pr_*()
-Date: Tue, 11 Mar 2014 11:11:17 +0100
-Message-Id: <1394532680-4264-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755025AbaCKKSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:18:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:41222 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754744AbaCKKL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:11:26 -0400
+X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
+   d="scan'208";a="9678274"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
+        tglx@linutronix.de, heiko.carstens@de.ibm.com,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 04/17] workqueue: Replace hardcoding of -20 with MIN_NICE.
+Date: Tue, 11 Mar 2014 18:09:12 +0800
+Message-Id: <ff13819fd09b7a5dba5ab5ae797f2e7019bdfa17.1394532288.git.yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
+References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 18:08:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 18:08:35,
+	Serialize complete at 2014/03/11 18:08:35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-
-Make banner const while we're at it
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+cc: Tejun Heo <tj@kernel.org>
 ---
- drivers/tty/serial/sh-sci.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ kernel/workqueue.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
-index 7958115e6a51..24ec6ef67984 100644
---- a/drivers/tty/serial/sh-sci.c
-+++ b/drivers/tty/serial/sh-sci.c
-@@ -428,7 +428,7 @@ static int sci_probe_regmap(struct plat_sci_port *cfg)
- 		cfg->regtype = SCIx_HSCIF_REGTYPE;
- 		break;
- 	default:
--		printk(KERN_ERR "Can't probe register map for given port\n");
-+		pr_err("Can't probe register map for given port\n");
- 		return -EINVAL;
- 	}
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 3fa5b8f..7528bec 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -100,10 +100,10 @@ enum {
  
-@@ -2389,8 +2389,7 @@ static inline int sci_probe_earlyprintk(struct platform_device *pdev)
+ 	/*
+ 	 * Rescue workers are used only on emergencies and shared by
+-	 * all cpus.  Give -20.
++	 * all cpus.  Give MIN_NICE.
+ 	 */
+-	RESCUER_NICE_LEVEL	= -20,
+-	HIGHPRI_NICE_LEVEL	= -20,
++	RESCUER_NICE_LEVEL	= MIN_NICE,
++	HIGHPRI_NICE_LEVEL	= MIN_NICE,
  
- #endif /* CONFIG_SERIAL_SH_SCI_CONSOLE */
- 
--static char banner[] __initdata =
--	KERN_INFO "SuperH (H)SCI(F) driver initialized\n";
-+static const char banner[] __initconst = "SuperH (H)SCI(F) driver initialized";
- 
- static struct uart_driver sci_uart_driver = {
- 	.owner		= THIS_MODULE,
-@@ -2616,7 +2615,7 @@ static int __init sci_init(void)
- {
- 	int ret;
- 
--	printk(banner);
-+	pr_info("%s\n", banner);
- 
- 	ret = uart_register_driver(&sci_uart_driver);
- 	if (likely(ret == 0)) {
+ 	WQ_NAME_LEN		= 24,
+ };
 -- 
-1.7.9.5
+1.8.2.1
 
