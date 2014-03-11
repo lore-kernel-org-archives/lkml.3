@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961AbaCKXy7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 19:54:59 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:49079 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535AbaCKXy5 (ORCPT
+	id S1756007AbaCKXzX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 19:55:23 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46363 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535AbaCKXzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 19:54:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo5Xxr96hsNxO5HrxV31B4Uh=oTsTgfQ-CfHNXP+quM+kg@mail.gmail.com>
-References: <20140311173556.23084.57635.stgit@bhelgaas-glaptop.roam.corp.google.com>
-	<20140311174243.23084.77689.stgit@bhelgaas-glaptop.roam.corp.google.com>
-	<CAE9FiQVdk6Tg4tNPQihm2YJ5BQO8jrQXfQfgVOSXTaK3o76yqg@mail.gmail.com>
-	<CAErSpo5Xxr96hsNxO5HrxV31B4Uh=oTsTgfQ-CfHNXP+quM+kg@mail.gmail.com>
-Date: Tue, 11 Mar 2014 16:54:57 -0700
-X-Google-Sender-Auth: uHtGSEzRfTIysD98AdJhvjMxwvw
-Message-ID: <CAE9FiQVVEbHQGV0i_kXVFZFZLFH4sv0OsKLOVnDYDg30S9NrDA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] PCI: Don't check resource_size() in pci_bus_alloc_resource()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Mar 2014 19:55:21 -0400
+Date: Tue, 11 Mar 2014 23:55:13 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-Id: <20140311235513.57aadc3a23f88c64cdc92555@kernel.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__11_Mar_2014_23_55_13_+0000_._QCQNGxY1k6L4pG"
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@kernel.org
+Subject: linux-next: build failure after merge of the kvm tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 3:02 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Mar 11, 2014 at 3:39 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> how about replacing that with:
->>
->>         if (avail.start > avail.end)
->>                   continue;
->>
->> so we do not need to go deep into allocate_resource()
->
-> We could, but why bother?  This isn't a performance path, so there's
-> no need to add more code to optimize it.  Adding code means there's
-> more for human readers to look at and understand, so I prefer not to
-> add it unless it's needed.
+--Signature=_Tue__11_Mar_2014_23_55_13_+0000_._QCQNGxY1k6L4pG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-oh, i did not look further, if the code path could handle strange
-constraints properly.
-like min > max.
+Hi all,
 
-Thanks
+After merging the kvm tree, today's linux-next build (20140311)
+failed like this:
 
-Yinghai
+/home/broonie/next/next/arch/x86/kvm/vmx.c: In function 'nested_vmx_setup_c=
+tls_msrs':
+/home/broonie/next/next/arch/x86/kvm/vmx.c:2292:2: error: implicit declarat=
+ion of function 'vmx_mpx_supported' [-Werror=3Dimplicit-function-declaratio=
+n]
+  if (vmx_mpx_supported())
+  ^
+/home/broonie/next/next/arch/x86/kvm/vmx.c: At top level:
+/home/broonie/next/next/arch/x86/kvm/vmx.c:7036:13: error: conflicting type=
+s for 'vmx_mpx_supported'
+ static bool vmx_mpx_supported(void)
+             ^
+/home/broonie/next/next/arch/x86/kvm/vmx.c:2292:6: note: previous implicit =
+declaration of 'vmx_mpx_supported' was here
+  if (vmx_mpx_supported())
+      ^
+cc1: some warnings being treated as errors
+make[3]: *** [arch/x86/kvm/vmx.o] Error 1
+
+I have used the version from next-20140307 instead.
+
+--Signature=_Tue__11_Mar_2014_23_55_13_+0000_._QCQNGxY1k6L4pG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTH6JhAAoJELSic+t+oim9c78P+gNakwSWK38ZftdfQThsOlmZ
+GhR1i+o5XwnW0/S0pTReAdCEU8azer1n9/lQrLthf0GegJ+7gbAtZMmsCgHJItSQ
+Pq12R3QgIJ49w0FLgwCnNQV447/0IpoGW8UkkRNIo2VugJihaMV9/8H9rj/mYT44
+Zm+tdDotbW8mg3LHu+/cHAIVYgLXFOkmJbyfH3XT37JoXMByySdGAH3WX/AjAXuX
+ZqNWphk7F/PTsbbrJnutj5eqX6qLrG1Oaq8zmHyJOElzgykZb/nisUiG1ysFIgGY
+ts2kdncoUmLuKp2/cAEVas4AUeOKED4pi45YiTLe7I1OKMSsZEqGDT02zOZ3Kjoa
+nxSQULezKXFZfwdJcb0uV94SkeOjcFVuC8bgFbp5v7EyU8fYIbNS4IT7uOHqFWUw
+9ph9hvP+daICMxO5jRC6H01r3lka7ICh8Svuws7tIvV63n58Az8T9btJIquVtS2E
+EXrJ8cYSVExR9ty91CnTy5SNwsOxLiBJc5vqc2L4Y5dl/AQXV3Kc3LtdpN4HnKYX
+jAGgQl1dGHvwvv5A71/NsuklYI7eIrYksiyLf+bTctMDD9cHyhGWYfffbWlNBXNv
+ADoG81Q/xKwEZ5ANCpiFrxpb3u5VV/jbcrbiFUd6GRnqnDLlHFJ5dyTBd0979T6k
+Z21EuEifGbqTYeRwvnH9
+=cGAM
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__11_Mar_2014_23_55_13_+0000_._QCQNGxY1k6L4pG--
