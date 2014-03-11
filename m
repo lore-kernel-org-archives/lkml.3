@@ -1,120 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862AbaCKL0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 07:26:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58185 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831AbaCKL0i (ORCPT
+	id S1754310AbaCKLa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 07:30:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34744 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753438AbaCKLa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 07:26:38 -0400
-Date: Tue, 11 Mar 2014 12:26:42 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Amir Vadai <amirv@mellanox.com>
-cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yevgeny Petrilin <yevgenyp@mellanox.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Govindarajulu Varadarajan <gvaradar@cisco.com>
-Subject: Re: [PATCH net-next V5 1/2] irq: Utility function to get affinity_hint
- by policy
-In-Reply-To: <1394523207-7338-2-git-send-email-amirv@mellanox.com>
-Message-ID: <alpine.DEB.2.02.1403111018330.18573@ionos.tec.linutronix.de>
-References: <1394523207-7338-1-git-send-email-amirv@mellanox.com> <1394523207-7338-2-git-send-email-amirv@mellanox.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 11 Mar 2014 07:30:56 -0400
+Date: Tue, 11 Mar 2014 11:30:53 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+Cc: "broonie@kernel.org" <broonie@kernel.org>,
+        "brian.austin@cirrus.com" <brian.austin@cirrus.com>,
+        "Paul.Handrigan@cirrus.com" <Paul.Handrigan@cirrus.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "lars@metafoo.de" <lars@metafoo.de>
+Subject: Re: [PATCH v2] ASoC: cs42888: Add codec driver support
+Message-ID: <20140311113053.GA1036@e106331-lin.cambridge.arm.com>
+References: <1394536791-8381-1-git-send-email-Guangyu.Chen@freescale.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394536791-8381-1-git-send-email-Guangyu.Chen@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Mar 2014, Amir Vadai wrote:
-> +/**
-> + * irq_set_mq_dev_affinit_hint - set affinity hint of a queue in multi queue
-> + * device
-
-The function is a complete misnomer. It calculates a cpu number and
-sets that bit in the supplied cpumask. There is no connection to the
-affinity hint at all. 
-
-> + * @q: queue index number
-> + * @numa_node: prefered numa_node
-> + * @affinity_mask: the relevant cpu bit is set according to the policy
-> + *
-> + * This function sets the affinity_mask according to a numa aware policy.
-> + * affinity_mask could be used as an affinity hint for the IRQ related to this
-> + * queue.
-
-So why is this not directly setting the affinity hint?
-
-> + * The policy is to spread queues across cores - local cores first.
-> + *
-> + * Returns 0 on success, or a negative error code.
-
-The ENOMEM error code is understandable, but what is the EINVAL for?
-
-> + */
-> +int irq_set_mq_dev_affinit_hint(int q, int numa_node,
-> +				cpumask_t *affinity_mask)
-> +{
-> +	cpumask_var_t mask;
-> +	int affinity_cpu;
-> +	int ret = 0;
+On Tue, Mar 11, 2014 at 11:19:51AM +0000, Nicolin Chen wrote:
+> This patch adds support for the Cirrus Logic CS42888 Audio CODEC that
+> has four 24-bit A/D and eight 24-bit D/A converters.
+> 
+> [ CS42888 supports both I2C and SPI control ports. As initial patch,
+>   this patch only adds the support for I2C. ]
+> 
+> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+> ---
+> 
+> Changelog
+> v2:
+>  * Separated driver into I2C and main part drivers.
+>  * Added error out if failed to get clock.
+>  * Enabled Auto-mute function as default.
+>  * Disabled runtime-pm in remove().
+>  * Added return value checking for regcache_sync().
+>  * Fixed some trival parts like 'const' as Lars mentioned.
+> 
+>  .../devicetree/bindings/sound/cs42888.txt          |  27 ++
+>  sound/soc/codecs/Kconfig                           |  10 +
+>  sound/soc/codecs/Makefile                          |   4 +
+>  sound/soc/codecs/cs42888-i2c.c                     |  68 +++
+>  sound/soc/codecs/cs42888.c                         | 536 +++++++++++++++++++++
+>  sound/soc/codecs/cs42888.h                         | 213 ++++++++
+>  6 files changed, 858 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/sound/cs42888.txt
+>  create mode 100644 sound/soc/codecs/cs42888-i2c.c
+>  create mode 100644 sound/soc/codecs/cs42888.c
+>  create mode 100644 sound/soc/codecs/cs42888.h
+> 
+> diff --git a/Documentation/devicetree/bindings/sound/cs42888.txt b/Documentation/devicetree/bindings/sound/cs42888.txt
+> new file mode 100644
+> index 0000000..7736527
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/sound/cs42888.txt
+> @@ -0,0 +1,27 @@
+> +CS42888 audio CODEC
 > +
-> +	if (!zalloc_cpumask_var(&mask, GFP_KERNEL))
-> +		return -ENOMEM;
+> +Required properties:
 > +
-> +	q %= num_online_cpus();
+> +  - compatible : "cirrus,cs42888"
 > +
-> +	if (!cpumask_of_node(numa_node)) {
-> +		cpumask_copy(mask, cpu_online_mask);
-> +	} else {
-> +		int n;
+> +  - reg : the I2C address of the device for I2C
 > +
-> +		cpumask_and(mask,
-> +			    cpumask_of_node(numa_node), cpu_online_mask);
+> +  - clocks : phandle to the clock source for MCLK
 > +
-> +		n = cpumask_weight(mask);
-> +		if (q >= n) {
-> +			q -= n;
-> +			cpumask_andnot(mask, cpu_online_mask, mask);
-> +		}
+> +  - clock-names : must contain "mclk".
 
-This is completely uncommented magic hackery. What is this doing? And
-what's the logic here?
+If you use clock-names, please define the clocks property in terms of
+clock-names to avoid redundancy. e.g.
 
-If the node does not have enough cpus online to fulfill n > q then you
-mask off all online cpus of that node from the online mask and use
-some random cpu as target.
+- clocks: a list of phandles + clock-specifiers, one for each entry in
+  clock-names.
 
-And this is true for every q which is larger/equal than the number of cpus
-per node.
+It makes the relationship between the two clearer, and makes it far
+easier to alter the binding in future if required.
 
-So lets assume 8 cpus per node and 16 online CPUs. Now you have a card
-with 16 queues. So you want to put the first 8 on node 0 and the
-second 8 on node 1.
-
-For all q in 0..15
-
-    q %= num_online_cpus() -> q
-
-node 0, q 0  ->	 n = 8 -> cpu 0
-node 0, q 1  ->	 n = 8 -> cpu 1
-...
-node 7, q 7  ->	 n = 8 -> cpu 7
-
-So far so good. But
-
-node 1, q 8  ->	 n = 8 -> cpu 0
-node 1, q 9  ->	 n = 8 -> cpu 1
-...
-node 1, q 15 ->	 n = 8 -> cpu 7
-
-I'm not so impressed by the node aware spread.
-
-Thanks,
-
-	tglx
+Cheers,
+Mark.
