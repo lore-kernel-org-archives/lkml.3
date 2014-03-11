@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003AbaCKN2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:28:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60975 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441AbaCKN2K (ORCPT
+	id S1753782AbaCKN30 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:29:26 -0400
+Received: from mout.web.de ([212.227.17.12]:50608 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752392AbaCKN3Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:28:10 -0400
-Message-ID: <531F0F4F.3070008@ti.com>
-Date: Tue, 11 Mar 2014 15:27:43 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 11 Mar 2014 09:29:25 -0400
+Date: Tue, 11 Mar 2014 14:29:10 +0100
+From: Julian Wollrath <jwollrath@web.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+Message-ID: <20140311142910.27594027@ilfaris>
+In-Reply-To: <alpine.DEB.2.02.1403101123470.18573@ionos.tec.linutronix.de>
+References: <20140310110410.5b2218f6@ilfaris>
+ <alpine.DEB.2.02.1403101123470.18573@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Philipp Zabel <p.zabel@pengutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core
- to drivers/of
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <139468148.3QhLg3QYq1@avalon> <531F08A8.300@ti.com> <1883687.VdfitvQEN3@avalon>
-In-Reply-To: <1883687.VdfitvQEN3@avalon>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="0Q6TkmB7CV19g7QLgQpItgpNRphxUoJ7W"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V03:K0:NRecu9gJCQBD0lQzcIh+C/rqfdTV+2XJ+5uJXPBoXt5Szglv9lK
+ rN6/GS7ZdLLy/Ha1/KvHyyhnkQIq2t7aHP/h5mHDiBkcDrOwbpdEj+hCFCSz5KKjQwkfy6/
+ 7nRKUqDOhWz2x3IJIC59VVdZU3DR0C/aqjQwlTs1em3pQszYwrq/+KmvCQUa8RB+oUyiXoM
+ QtyBFic8CoV4OQ92IVepA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0Q6TkmB7CV19g7QLgQpItgpNRphxUoJ7W
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 11/03/14 15:16, Laurent Pinchart wrote:
-
->> And if I gathered Grant's opinion correctly (correct me if I'm wrong),=
-
->> he thinks things should be explicit, i.e. the bindings for, say, an
->> encoder should state that the encoder's output endpoint _must_ contain=
- a
->> remote-endpoint property, whereas the encoder's input endpoint _must
->> not_ contain a remote-endpoint property.
->=20
-> Actually my understand was that DT links would have the same direction =
-as the=20
-> data flow. There would be no ambiguity in that case as the direction of=
- the=20
-
-Ok. At least at some point in the discussion the rule of thumb was to
-have the "master" point at the "slave", which are a bit vague terms, but
-I think both display and camera controllers were given as examples of
-"master".
-
-> data flow is known. What happens for bidirectional data flows still nee=
-d to be=20
-> discussed though. And if we want to use the of-graph bindings to descri=
-be=20
-> graphs without a data flow, a decision will need to be taken there too.=
+Am Mon, 10 Mar 2014 11:39:44 +0100 (CET)
+schrieb Thomas Gleixner <tglx@linutronix.de>:
+> And that definitely does not affect the quick calibration. No idea,
+> except bisecting.
+Ok, via bisecting I found commit
+73f7d1ca32638028e3271f54616773727e2f9f26 (see below) to be the one that
+introduced this regression.
 
 
-Yep. My worry is that if the link direction is defined in the bindings
-for the device, somebody will at some point have a complex board which
-happens to use two devices in such a way, that either neither of them
-point to each other, or both point to each other.
+Cheers,
+Julian Wollrath
 
-Maybe we can make sure that never happens, but I feel a bit nervous
-about it especially for bi-directional cases. If the link has no clear
-main-dataflow direction, it may be a bit difficult to say which way to li=
-nk.
+>From 73f7d1ca32638028e3271f54616773727e2f9f26 Mon Sep 17 00:00:00 2001
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Date: Wed, 15 Jan 2014 15:25:48 +0800
+Subject: [PATCH] ACPI / init: Run acpi_early_init() before timekeeping_init()
 
-With double-linking all those concerns just disappear.
+This is a variant patch from Rafael J. Wysocki's
+ACPI / init: Run acpi_early_init() before efi_enter_virtual_mode()
 
- Tomi
+According to Matt Fleming, if acpi_early_init() was executed before
+efi_enter_virtual_mode(), the EFI initialization could benefit from
+it, so Rafael's patch makes that happen.
 
+And, we want accessing ACPI TAD device to set system clock, so move
+acpi_early_init() before timekeeping_init(). This final position is
+also before efi_enter_virtual_mode().
 
+Tested-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ init/main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---0Q6TkmB7CV19g7QLgQpItgpNRphxUoJ7W
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+diff --git a/init/main.c b/init/main.c
+index febc511e078a..b6d93c840154 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -565,6 +565,7 @@ asmlinkage void __init start_kernel(void)
+ 	init_timers();
+ 	hrtimers_init();
+ 	softirq_init();
++	acpi_early_init();
+ 	timekeeping_init();
+ 	time_init();
+ 	sched_clock_postinit();
+@@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void)
+ 
+ 	check_bugs();
+ 
+-	acpi_early_init(); /* before LAPIC and SMP init */
+ 	sfi_init_late();
+ 
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+-- 
+1.9.0
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTHw9PAAoJEPo9qoy8lh71xrIP/37RUXTwCDENqR3hT6yGCTh1
-0yc5WhysNkn71ov48iYGQdHZyA9Qb/SAXaLcNegr/f+0URNcV9AdQijWP59GdnE2
-G0qCzycaHdJDOP/r7GomjyI4gHn23oDpAGy+80JtWOEyRSQGwibgcxnouodJ6F71
-E/ZSTnWlMG/m+EgWpfL7HySwVnKUD1uC2kqawqrG+3IlsV0Hjeu0CK9R184zBdwm
-AiHmRdo+hgId0EP4xf27HovzkjT9U4OGPK6bqsEcgt7jTjp7D7PLWuzuo4RHZbic
-gFGmrua6biFN6qmMdUTzzLR7fq6CCDov8YGjsKUZXbuURWJH4XviPoHtaVarr0jZ
-C8AOM3bKwl4efSn/iAC/ms17wwfp0TxkoT06z44WhueLYMi+sKVh4xhiZErN63gZ
-opOusNWEAX73IFmOV9RjPbAT0iJ022cFshM4L4kOH2enpHC552vfv/ctgIpiliDB
-nSN2tc+ePjBDcHL+ygZ4iojydHKhChtOazcA0wd0qEyrcqoSvQsYzX+yagwxef34
-R7Gh7Jz2jhqBQkdswPLYbioy8FEowOtEKRiZgRuf4duW4stBzrDCOUO1foCB5vAK
-A+kxlcwnhMXyRSyF8uJ9/KDAnvm273Ohf2wfEvdcy85jLXr/AVHG79Xla+vYpLK6
-Gih+a+PMZx1pUt3I2SXK
-=Ze4i
------END PGP SIGNATURE-----
-
---0Q6TkmB7CV19g7QLgQpItgpNRphxUoJ7W--
