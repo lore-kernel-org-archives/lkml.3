@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319AbaCKRnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:43:46 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:46274 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755250AbaCKRnN (ORCPT
+	id S1755341AbaCKRoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:44:07 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:54991 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963AbaCKRnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:43:13 -0400
-Subject: [PATCH 5/5] PCI: Log IDE resource quirk in dmesg
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 11 Mar 2014 11:43:12 -0600
-Message-ID: <20140311174311.23084.15128.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20140311173556.23084.57635.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140311173556.23084.57635.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Tue, 11 Mar 2014 13:43:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Date: Tue, 11 Mar 2014 10:43:11 -0700
+X-Google-Sender-Auth: hvDa9VbBzSOcFA3EPROw_i-RYzI
+Message-ID: <CA+55aFw_1Cw1hWVLB7HG_2SKW=7NXH8=DR3a96q4fqOhoOcdpQ@mail.gmail.com>
+Subject: On trying to drop X86_PPRO_FENCE..
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make a note in dmesg when we overwrite legacy IDE BAR info.  We previously
-logged something like this:
+On Tue, Mar 11, 2014 at 3:11 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> But ... when PPro was common our parallelization sucked, so I'd not be
+> surprised if it triggered more frequently with a modern kernel.
 
-  pci 0000:00:1f.1: reg 0x10: [io  0x0000-0x0007]
+Agreed. It is certainly very possible that we had no reports of this
+simply because we never had any real concurrent cache accesses
+(outside of the BKL).
 
-and then silently overwrote the resource.  There's an example in the
-bugzilla below.  This doesn't fix the bugzilla; it just makes what's going
-on more obvious.
+That said, the Intel errata does do say that they never saw reports of
+it in any real loads either, so it really is debatable whether it ever
+made sense. Back in the PPro days, there were *other* x86 unixes
+around that might have hit it, including very much the Sequent NUMA-Q.
 
-No functional change; merely adds some dev_info() calls.
+I have this dim memory that the only reason I knew about the errata
+originally was that I was talking memory ordering for the spinlock
+code with Andy Glew from Intel, to verify that a simple store really
+does work as an unlock, and he dropped the "Yeah, except for some
+buggy old PPro cpu errata" bomb.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=48451
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/pci/probe.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+(Although honestly, that whole thing is so long ago that my "dim
+memory" is very suspect, and it's possible the workaround actually
+came independently of that from Alan Cox. This all happened in
+v2.4.13-rc2 - late 2001 - and the PPro workaround came in together
+with the X86 OOSTORE code, which I *think* was Alan. Asking the gnomes
+in case they remember how it happened).
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 02654b5ec1b9..6c69c9bb31fb 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1131,10 +1131,10 @@ int pci_setup_device(struct pci_dev *dev)
- 		pci_read_config_word(dev, PCI_SUBSYSTEM_ID, &dev->subsystem_device);
- 
- 		/*
--		 *	Do the ugly legacy mode stuff here rather than broken chip
--		 *	quirk code. Legacy mode ATA controllers have fixed
--		 *	addresses. These are not always echoed in BAR0-3, and
--		 *	BAR0-3 in a few cases contain junk!
-+		 * Do the ugly legacy mode stuff here rather than broken chip
-+		 * quirk code. Legacy mode ATA controllers have fixed
-+		 * addresses. These are not always echoed in BAR0-3, and
-+		 * BAR0-3 in a few cases contain junk!
- 		 */
- 		if (class == PCI_CLASS_STORAGE_IDE) {
- 			u8 progif;
-@@ -1145,11 +1145,15 @@ int pci_setup_device(struct pci_dev *dev)
- 				res = &dev->resource[0];
- 				res->flags = LEGACY_IO_RESOURCE;
- 				pcibios_bus_to_resource(dev->bus, res, &region);
-+				dev_info(&dev->dev, "legacy IDE quirk: reg 0x10: %pR\n",
-+					 res);
- 				region.start = 0x3F6;
- 				region.end = 0x3F6;
- 				res = &dev->resource[1];
- 				res->flags = LEGACY_IO_RESOURCE;
- 				pcibios_bus_to_resource(dev->bus, res, &region);
-+				dev_info(&dev->dev, "legacy IDE quirk: reg 0x14: %pR\n",
-+					 res);
- 			}
- 			if ((progif & 4) == 0) {
- 				region.start = 0x170;
-@@ -1157,11 +1161,15 @@ int pci_setup_device(struct pci_dev *dev)
- 				res = &dev->resource[2];
- 				res->flags = LEGACY_IO_RESOURCE;
- 				pcibios_bus_to_resource(dev->bus, res, &region);
-+				dev_info(&dev->dev, "legacy IDE quirk: reg 0x18: %pR\n",
-+					 res);
- 				region.start = 0x376;
- 				region.end = 0x376;
- 				res = &dev->resource[3];
- 				res->flags = LEGACY_IO_RESOURCE;
- 				pcibios_bus_to_resource(dev->bus, res, &region);
-+				dev_info(&dev->dev, "legacy IDE quirk: reg 0x1c: %pR\n",
-+					 res);
- 			}
- 		}
- 		break;
-
+                 Linus
