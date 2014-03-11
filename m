@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189AbaCKKPJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:15:09 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:64839 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754618AbaCKKPF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:15:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1394018461-757-1-git-send-email-holler@ahsoftware.de>
-References: <5316FFCE.1060603@ti.com>
-	<1394018461-757-1-git-send-email-holler@ahsoftware.de>
-Date: Tue, 11 Mar 2014 11:15:04 +0100
-Message-ID: <CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755007AbaCKKPo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:15:44 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:41078 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754004AbaCKKLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:11:33 -0400
+X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
+   d="scan'208";a="9678279"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
+        tglx@linutronix.de, heiko.carstens@de.ibm.com,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 13/17] sched/prio: Add an inline function named rlimit_to_nice in prio.h.
+Date: Tue, 11 Mar 2014 18:09:21 +0800
+Message-Id: <b686cdc4dfa14914ccaf247de51ccce59dc00151.1394532288.git.yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
+References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 18:08:34,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 18:08:37,
+	Serialize complete at 2014/03/11 18:08:37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 5, 2014 at 12:21 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+This patch add an inline function named rlimit_to_nice to convert
+rlimit style value in [1, 40] to nice value in [-20, 19].
 
-> The driver missed an of_xlate function to translate gpio numbers
-> as found in the DT to the correct chip and number.
->
-> While there I've set #gpio_cells to a fixed value of 2.
->
-> I've used gpio-pxa.c as template for those changes and tested my changes
-> successfully on a da850 board using entries for gpio-leds in a DT. So I didn't
-> reinvent the wheel but just copied and tested stuff.
->
-> Thanks to Grygorii Strashko for the hint to the existing code in gpio-pxa.
->
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ include/linux/sched/prio.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-This v2 version applied, thanks!
+diff --git a/include/linux/sched/prio.h b/include/linux/sched/prio.h
+index 29756f8..d9cf5a5 100644
+--- a/include/linux/sched/prio.h
++++ b/include/linux/sched/prio.h
+@@ -49,4 +49,12 @@ static inline long nice_to_rlimit(long nice)
+ 	return (MAX_NICE - nice + 1);
+ }
+ 
++/*
++ * Convert rlimit style value [1,40] to nice value [-20, 19].
++ */
++static inline long rlimit_to_nice(long prio)
++{
++	return (MAX_NICE - prio + 1);
++}
++
+ #endif /* _SCHED_PRIO_H */
+-- 
+1.8.2.1
 
-Yours,
-Linus Walleij
