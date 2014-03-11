@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025AbaCKLEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 07:04:55 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:59817 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957AbaCKLEw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 07:04:52 -0400
-Date: Tue, 11 Mar 2014 12:04:47 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Waiman Long <waiman.long@hp.com>, arnd@arndb.de,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        akpm@linux-foundation.org, walken@google.com, andi@firstfloor.org,
-        riel@redhat.com, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, oleg@redhat.com
-Subject: Re: [RFC][PATCH 0/7] locking: qspinlock
-Message-ID: <20140311110447.GA27009@gmail.com>
-References: <20140310154236.038181843@infradead.org>
- <20140311104503.GA10916@gmail.com>
- <20140311110202.GT27965@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140311110202.GT27965@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754247AbaCKLGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 07:06:34 -0400
+Received: from mail.zhinst.com ([212.126.164.98]:40362 "EHLO mail.zhinst.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752014AbaCKLGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 07:06:33 -0400
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daniel Borkmann <dborkman@redhat.com>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] MAINTAINERS: Add tools/net to NETWORKING [GENERAL]
+Date: Tue, 11 Mar 2014 12:06:24 +0100
+Message-Id: <1394535984-17924-1-git-send-email-tklauser@distanz.ch>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Make sure patches for these tools go to the netdev list as well.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+References: https://marc.info/?l=linux-kernel&m=139450284501328&w=2
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+---
+ MAINTAINERS |    1 +
+ 1 file changed, 1 insertion(+)
 
-> On Tue, Mar 11, 2014 at 11:45:03AM +0100, Ingo Molnar wrote:
-> > 
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > Hi Waiman,
-> > > 
-> > > I promised you this series a number of days ago; sorry for the delay 
-> > > I've been somewhat unwell :/
-> > > 
-> > > That said, these few patches start with a (hopefully) simple and 
-> > > correct form of the queue spinlock, and then gradually build upon 
-> > > it, explaining each optimization as we go.
-> > > 
-> > > Having these optimizations as separate patches helps twofold; 
-> > > firstly it makes one aware of which exact optimizations were done, 
-> > > and secondly it allows one to proove or disprove any one step; 
-> > > seeing how they should be mostly identity transforms.
-> > > 
-> > > The resulting code is near to what you posted I think; however it 
-> > > has one atomic op less in the pending wait-acquire case for NR_CPUS 
-> > > != huge. It also doesn't do lock stealing; its still perfectly fair 
-> > > afaict.
-> > > 
-> > > Have I missed any tricks from your code?
-> > 
-> > Waiman, you indicated in the other thread that these look good to 
-> > you, right? If so then I can queue them up so that they form a 
-> > base for further work.
-> 
-> Ah, no that was on the qrwlock; I think we managed to cross wires 
-> somewhere.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ab32ad5..fa7b379 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6042,6 +6042,7 @@ F:	include/linux/netdevice.h
+ F:	include/uapi/linux/in.h
+ F:	include/uapi/linux/net.h
+ F:	include/uapi/linux/netdevice.h
++F:	tools/net/
+ 
+ NETWORKING [IPv4/IPv6]
+ M:	"David S. Miller" <davem@davemloft.net>
+-- 
+1.7.9.5
 
-Oops, too many q-locks ;-)
 
-> I've got this entire pile waiting for something:
-> 
->   lkml.kernel.org/r/20140210195820.834693028@infradead.org
-> 
-> That's 5 mutex patches and the 2 qrwlock patches. Not sure what to 
-> do with them. To merge or not, that is the question.
-
-Can merge them in tip:core/locking if there's no objections.
-
-Thanks,
-
-	Ingo
