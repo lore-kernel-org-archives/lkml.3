@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaCKPQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 11:16:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27819 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981AbaCKPQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 11:16:05 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Frank Mayhar <fmayhar@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block:  Force sector and nr_sects to device alignment and granularity.
-References: <1394474492.31499.177.camel@bobble.lax.corp.google.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 11 Mar 2014 11:15:59 -0400
-In-Reply-To: <1394474492.31499.177.camel@bobble.lax.corp.google.com> (Frank
-	Mayhar's message of "Mon, 10 Mar 2014 11:01:32 -0700")
-Message-ID: <x49wqg0bwb4.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753467AbaCKPUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 11:20:20 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:27126 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270AbaCKPUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 11:20:16 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-6a-531f29ad0adc
+Message-id: <1394551211.24263.34.camel@AMDC1943>
+Subject: Re: [PATCH 1/3] mfd: max8997: use regmap to access registers
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Robert Baldyga <r.baldyga@samsung.com>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com, dmitry.torokhov@gmail.com, cooloney@gmail.com,
+        rpurdie@rpsys.net, dbaryshkov@gmail.com, dwmw2@infradead.org,
+        lgirdwood@gmail.com, broonie@kernel.org, a.zummo@towertech.it,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-leds@vger.kernel.org,
+        rtc-linux@googlegroups.com, m.szyprowski@samsung.com
+Date: Tue, 11 Mar 2014 16:20:11 +0100
+In-reply-to: <531F24C0.3070603@samsung.com>
+References: <1394546304-15191-1-git-send-email-r.baldyga@samsung.com>
+ <1394546304-15191-2-git-send-email-r.baldyga@samsung.com>
+ <1394548336.24263.7.camel@AMDC1943> <531F24C0.3070603@samsung.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t/xq7prNeWDDSZsZrdYcvEqu8XUh0/Y
+	LI7unMhkcf3Lc1aLSU/eM1scXvSC0WLiysnMFve/HmW0+Halg8ni5qdvrBaXd81hs9j6Zh2j
+	xdojd9ktbjeuYLO4tvc4s8WDwzvZLXbvespqsb+zg9HidDerg7DHzll32T32TDzJ5rF5hZbH
+	plWdbB53ru1h85h3MtBjz/wfrB59W1Yxekyf95PJ4/MmOY/1W7YyBXBHcdmkpOZklqUW6dsl
+	cGV83vKHtWA+X8XUrUfYGxjXcXcxcnJICJhIbP7zngXCFpO4cG89G4gtJLCUUaJ/rmEXIxeQ
+	/ZlR4n7vC3aQBK+AgcS/5b8ZQWxhAVeJSZu6WUFsNgFjic3Ll4A1iwhoSdz5OJ8dpJlZ4DCz
+	xL4HHWBFLAKqEtPuXgBr5hTQlth/di4bxIZjjBILJkwH62YWUJeYNG8RM8RJShK72zvZIeLy
+	EpvXvGWGuEJQ4sfkeywTGAVmIWmZhaRsFpKyBYzMqxhFU0uTC4qT0nMN9YoTc4tL89L1kvNz
+	NzFC4vLLDsbFx6wOMQpwMCrx8M5Qkg8WYk0sK67MPcQowcGsJMKbLA4U4k1JrKxKLcqPLyrN
+	SS0+xMjEwSnVwGhxeEtt2VcxSQNVnoz8GM94iRcLnsamWHOdjmRsSIr0aFiZfODWyxqdbfWq
+	2jabYv9ZyTdpvfjx62DwaSH9kr+NRS2q6cZXTPyfOj2aU82sfmlH8rY2zVBuafu1r7jbQqel
+	/NLrWC62ZeLh9+s9J72Zrvfh/72DDQ9knjJpL0h6uKR8Gvud50osxRmJhlrMRcWJAFRcG/ip	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frank Mayhar <fmayhar@google.com> writes:
+On Tue, 2014-03-11 at 15:59 +0100, Robert Baldyga wrote:
+> >> @@ -180,12 +167,12 @@ static struct irq_chip max8997_irq_chip = { 
+> >> static irqreturn_t max8997_irq_thread(int irq, void *data) {
+> >> struct max8997_dev *max8997 = data; -	u8
+> >> irq_reg[MAX8997_IRQ_GROUP_NR] = {}; -	u8 irq_src; +	unsigned int
+> >> irq_reg[MAX8997_IRQ_GROUP_NR] = {}; +	unsigned int irq_src; int
+> >> ret; int i, cur_irq;
+> >> 
+> >> -	ret = max8997_read_reg(max8997->i2c, MAX8997_REG_INTSRC, 
+> >> &irq_src); +	ret = regmap_read(max8997->regmap,
+> >> MAX8997_REG_INTSRC, &irq_src); if (ret < 0) { dev_err(max8997->dev,
+> >> "Failed to read interrupt source: %d\n", ret); @@ -194,8 +181,9 @@
+> >> static irqreturn_t max8997_irq_thread(int irq, void *data)
+> >> 
+> >> if (irq_src & MAX8997_IRQSRC_PMIC) { /* PMIC INT1 ~ INT4 */ - 
+> >> max8997_bulk_read(max8997->i2c, MAX8997_REG_INT1, 4, - 
+> >> &irq_reg[PMIC_INT1]); +		for (i = 0; i < 4; ++i) + 
+> >> regmap_read(max8997->regmap, +				MAX8997_REG_INT1+i, 
+> >> &irq_reg[PMIC_INT1+i]);
+> > 
+> > Can't you use here one bulk read instead of 4xregmap_read()?
+> 
+> Mixing regmap_read and regmap_bulk_read is not good idea, because the
+> first function returns register value as unsigned int, but the second
+> returns reg value to each single byte. So it would need to do some
+> additional operations, and makes things more complicated.
 
-> block:  Force sector and nr_sects to device alignment and granularity.
->
-> In blkdev_issue_discard(), rather than sending an improperly-
-> aligned discard to the device (where it may get an error),
-> adjust the start and length to the block device alignment and
-> granularity.  Don't fail if this leaves nothing to discard.
->
-> Without this change, certain flash drivers can report invalid
-> trim parameters (and will fail the command).  Per tytso, "given
-> that discards are advisory, any part of the storage stack is
-> free to drop discard requests silently."
+The only mixing I see would be in reading FLASHSTATUS register which
+could be resolved with:
 
-And how do you get here with misaligned discards?
+if (irq_src & MAX8997_IRQSRC_FLASH) {
+       /* Flash Status Interrupt */
+       unsigned int data;
+       ret = regmap_read(max8997->regmap, MAX8997_REG_FLASHSTATUS,
+		       &data);
+       irq_reg[FLASH_STATUS] = data;
+}
 
--Jeff
+This isn't more complicated than replacing bulk read with a loop :).
 
->
-> Signed-off-by: Frank Mayhar <fmayhar@google.com>
-> Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
->
->  block/blk-lib.c | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
->
-> diff --git a/block/blk-lib.c b/block/blk-lib.c
-> index 97a733c..a4472cd 100644
-> --- a/block/blk-lib.c
-> +++ b/block/blk-lib.c
-> @@ -61,6 +61,21 @@ int blkdev_issue_discard(struct block_device *bdev,
-> sector_t sector,
->  	alignment = (bdev_discard_alignment(bdev) >> 9) % granularity;
->  
->  	/*
-> +	 * Force sector and nr_sects to block device alignment and
-> +	 * granularity.
-> +	 */
-> +	if (alignment && (sector % alignment)) {
-> +		sector_t adj = alignment - (sector % alignment);
-> +
-> +		sector += adj;
-> +		nr_sects -= adj;
-> +	}
-> +	if (nr_sects % granularity)
-> +		nr_sects -= nr_sects % granularity;
-> +	if (!nr_sects)
-> +		return ret;
-> +
-> +	/*
->  	 * Ensure that max_discard_sectors is of the proper
->  	 * granularity, so that requests stay aligned after a split.
->  	 */
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Best regards,
+Krzysztof
+
