@@ -1,57 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025AbaCKKSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:18:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41222 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754744AbaCKKL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:11:26 -0400
-X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9678274"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, joe@perches.com, mingo@kernel.org,
-        tglx@linutronix.de, heiko.carstens@de.ibm.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/17] workqueue: Replace hardcoding of -20 with MIN_NICE.
-Date: Tue, 11 Mar 2014 18:09:12 +0800
-Message-Id: <ff13819fd09b7a5dba5ab5ae797f2e7019bdfa17.1394532288.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 18:08:35,
-	Serialize complete at 2014/03/11 18:08:35
+	id S1755325AbaCKKTM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:19:12 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:53425 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753542AbaCKKLY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:11:24 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Simon Horman <horms+renesas@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-serial@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH 3/4] serial: sh-sci: Add more register documentation
+Date: Tue, 11 Mar 2014 11:11:19 +0100
+Message-Id: <1394532680-4264-3-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394532680-4264-1-git-send-email-geert@linux-m68k.org>
+References: <1394532680-4264-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: Tejun Heo <tj@kernel.org>
----
- kernel/workqueue.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 3fa5b8f..7528bec 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -100,10 +100,10 @@ enum {
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+ drivers/tty/serial/sh-sci.c |   28 +++++++------
+ include/linux/serial_sci.h  |   93 +++++++++++++++++++++++++++----------------
+ 2 files changed, 73 insertions(+), 48 deletions(-)
+
+diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
+index 4529dbca2287..e0c7db0027b7 100644
+--- a/drivers/tty/serial/sh-sci.c
++++ b/drivers/tty/serial/sh-sci.c
+@@ -911,7 +911,7 @@ static irqreturn_t sci_rx_interrupt(int irq, void *ptr)
+ 		/* Disable future Rx interrupts */
+ 		if (port->type == PORT_SCIFA || port->type == PORT_SCIFB) {
+ 			disable_irq_nosync(irq);
+-			scr |= 0x4000;
++			scr |= SCSCR_RDRQE;
+ 		} else {
+ 			scr &= ~SCSCR_RIE;
+ 		}
+@@ -1200,7 +1200,9 @@ static void sci_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ 		 */
+ 		reg = sci_getreg(port, SCFCR);
+ 		if (reg->size)
+-			serial_port_out(port, SCFCR, serial_port_in(port, SCFCR) | 1);
++			serial_port_out(port, SCFCR,
++					serial_port_in(port, SCFCR) |
++					SCFCR_LOOP);
+ 	}
+ }
  
- 	/*
- 	 * Rescue workers are used only on emergencies and shared by
--	 * all cpus.  Give -20.
-+	 * all cpus.  Give MIN_NICE.
- 	 */
--	RESCUER_NICE_LEVEL	= -20,
--	HIGHPRI_NICE_LEVEL	= -20,
-+	RESCUER_NICE_LEVEL	= MIN_NICE,
-+	HIGHPRI_NICE_LEVEL	= MIN_NICE,
+@@ -1496,9 +1498,9 @@ static void sci_start_tx(struct uart_port *port)
+ 	if (port->type == PORT_SCIFA || port->type == PORT_SCIFB) {
+ 		u16 new, scr = serial_port_in(port, SCSCR);
+ 		if (s->chan_tx)
+-			new = scr | 0x8000;
++			new = scr | SCSCR_TDRQE;
+ 		else
+-			new = scr & ~0x8000;
++			new = scr & ~SCSCR_TDRQE;
+ 		if (new != scr)
+ 			serial_port_out(port, SCSCR, new);
+ 	}
+@@ -1525,7 +1527,7 @@ static void sci_stop_tx(struct uart_port *port)
+ 	ctrl = serial_port_in(port, SCSCR);
  
- 	WQ_NAME_LEN		= 24,
+ 	if (port->type == PORT_SCIFA || port->type == PORT_SCIFB)
+-		ctrl &= ~0x8000;
++		ctrl &= ~SCSCR_TDRQE;
+ 
+ 	ctrl &= ~SCSCR_TIE;
+ 
+@@ -1539,7 +1541,7 @@ static void sci_start_rx(struct uart_port *port)
+ 	ctrl = serial_port_in(port, SCSCR) | port_rx_irq_mask(port);
+ 
+ 	if (port->type == PORT_SCIFA || port->type == PORT_SCIFB)
+-		ctrl &= ~0x4000;
++		ctrl &= ~SCSCR_RDRQE;
+ 
+ 	serial_port_out(port, SCSCR, ctrl);
+ }
+@@ -1551,7 +1553,7 @@ static void sci_stop_rx(struct uart_port *port)
+ 	ctrl = serial_port_in(port, SCSCR);
+ 
+ 	if (port->type == PORT_SCIFA || port->type == PORT_SCIFB)
+-		ctrl &= ~0x4000;
++		ctrl &= ~SCSCR_RDRQE;
+ 
+ 	ctrl &= ~port_rx_irq_mask(port);
+ 
+@@ -1614,7 +1616,7 @@ static void rx_timer_fn(unsigned long arg)
+ 	u16 scr = serial_port_in(port, SCSCR);
+ 
+ 	if (port->type == PORT_SCIFA || port->type == PORT_SCIFB) {
+-		scr &= ~0x4000;
++		scr &= ~SCSCR_RDRQE;
+ 		enable_irq(s->irqs[SCIx_RXI_IRQ]);
+ 	}
+ 	serial_port_out(port, SCSCR, scr | SCSCR_RIE);
+@@ -1871,13 +1873,13 @@ static void sci_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	smr_val = serial_port_in(port, SCSMR) & 3;
+ 
+ 	if ((termios->c_cflag & CSIZE) == CS7)
+-		smr_val |= 0x40;
++		smr_val |= SCSMR_CHR;
+ 	if (termios->c_cflag & PARENB)
+-		smr_val |= 0x20;
++		smr_val |= SCSMR_PE;
+ 	if (termios->c_cflag & PARODD)
+-		smr_val |= 0x30;
++		smr_val |= SCSMR_PE | SCSMR_ODD;
+ 	if (termios->c_cflag & CSTOPB)
+-		smr_val |= 0x08;
++		smr_val |= SCSMR_STOP;
+ 
+ 	uart_update_timeout(port, termios->c_cflag, baud);
+ 
+@@ -1885,7 +1887,7 @@ static void sci_set_termios(struct uart_port *port, struct ktermios *termios,
+ 		__func__, smr_val, cks, t, s->cfg->scscr);
+ 
+ 	if (t >= 0) {
+-		serial_port_out(port, SCSMR, (smr_val & ~3) | cks);
++		serial_port_out(port, SCSMR, (smr_val & ~SCSMR_CKS) | cks);
+ 		serial_port_out(port, SCBRR, t);
+ 		reg = sci_getreg(port, HSSRR);
+ 		if (reg->size)
+diff --git a/include/linux/serial_sci.h b/include/linux/serial_sci.h
+index 22b3640c9424..6c5e3bb282b0 100644
+--- a/include/linux/serial_sci.h
++++ b/include/linux/serial_sci.h
+@@ -10,45 +10,59 @@
+ 
+ #define SCIx_NOT_SUPPORTED	(-1)
+ 
+-#define SCSCR_TIE	(1 << 7)
+-#define SCSCR_RIE	(1 << 6)
+-#define SCSCR_TE	(1 << 5)
+-#define SCSCR_RE	(1 << 4)
+-#define SCSCR_REIE	(1 << 3)	/* not supported by all parts */
+-#define SCSCR_TOIE	(1 << 2)	/* not supported by all parts */
+-#define SCSCR_CKE1	(1 << 1)
+-#define SCSCR_CKE0	(1 << 0)
+-
+-/* SCxSR SCI */
+-#define SCI_TDRE  0x80
+-#define SCI_RDRF  0x40
+-#define SCI_ORER  0x20
+-#define SCI_FER   0x10
+-#define SCI_PER   0x08
+-#define SCI_TEND  0x04
++/* SCSMR (Serial Mode Register) */
++#define SCSMR_CHR	(1 << 6)	/* 7-bit Character Length */
++#define SCSMR_PE	(1 << 5)	/* Parity Enable */
++#define SCSMR_ODD	(1 << 4)	/* Odd Parity */
++#define SCSMR_STOP	(1 << 3)	/* Stop Bit Length */
++#define SCSMR_CKS	0x0003		/* Clock Select */
++
++/* Serial Control Register (@ = not supported by all parts) */
++#define SCSCR_TIE	(1 << 7)	/* Transmit Interrupt Enable */
++#define SCSCR_RIE	(1 << 6)	/* Receive Interrupt Enable */
++#define SCSCR_TE	(1 << 5)	/* Transmit Enable */
++#define SCSCR_RE	(1 << 4)	/* Receive Enable */
++#define SCSCR_REIE	(1 << 3)	/* Receive Error Interrupt Enable @ */
++#define SCSCR_TOIE	(1 << 2)	/* Timeout Interrupt Enable @ */
++#define SCSCR_CKE1	(1 << 1)	/* Clock Enable 1 */
++#define SCSCR_CKE0	(1 << 0)	/* Clock Enable 0 */
++/* SCIFA/SCIFB only */
++#define SCSCR_TDRQE	(1 << 15)	/* Tx Data Transfer Request Enable */
++#define SCSCR_RDRQE	(1 << 14)	/* Rx Data Transfer Request Enable */
++
++/* SCxSR (Serial Status Register) on SCI */
++#define SCI_TDRE  0x80			/* Transmit Data Register Empty */
++#define SCI_RDRF  0x40			/* Receive Data Register Full */
++#define SCI_ORER  0x20			/* Overrun Error */
++#define SCI_FER   0x10			/* Framing Error */
++#define SCI_PER   0x08			/* Parity Error */
++#define SCI_TEND  0x04			/* Transmit End */
+ 
+ #define SCI_DEFAULT_ERROR_MASK (SCI_PER | SCI_FER)
+ 
+-/* SCxSR SCIF, HSCIF */
+-#define SCIF_ER    0x0080
+-#define SCIF_TEND  0x0040
+-#define SCIF_TDFE  0x0020
+-#define SCIF_BRK   0x0010
+-#define SCIF_FER   0x0008
+-#define SCIF_PER   0x0004
+-#define SCIF_RDF   0x0002
+-#define SCIF_DR    0x0001
++/* SCxSR (Serial Status Register) on SCIF, HSCIF */
++#define SCIF_ER    0x0080		/* Receive Error */
++#define SCIF_TEND  0x0040		/* Transmission End */
++#define SCIF_TDFE  0x0020		/* Transmit FIFO Data Empty */
++#define SCIF_BRK   0x0010		/* Break Detect */
++#define SCIF_FER   0x0008		/* Framing Error */
++#define SCIF_PER   0x0004		/* Parity Error */
++#define SCIF_RDF   0x0002		/* Receive FIFO Data Full */
++#define SCIF_DR    0x0001		/* Receive Data Ready */
+ 
+ #define SCIF_DEFAULT_ERROR_MASK (SCIF_PER | SCIF_FER | SCIF_ER | SCIF_BRK)
+ 
+-/* SCSPTR, optional */
+-#define SCSPTR_RTSIO	(1 << 7)
+-#define SCSPTR_CTSIO	(1 << 5)
+-#define SCSPTR_SPB2IO	(1 << 1)
+-#define SCSPTR_SPB2DT	(1 << 0)
++/* SCFCR (FIFO Control Register) */
++#define SCFCR_LOOP	(1 << 0)	/* Loopback Test */
++
++/* SCSPTR (Serial Port Register), optional */
++#define SCSPTR_RTSIO	(1 << 7)	/* Serial Port RTS Pin Input/Output */
++#define SCSPTR_CTSIO	(1 << 5)	/* Serial Port CTS Pin Input/Output */
++#define SCSPTR_SPB2IO	(1 << 1)	/* Serial Port Break Input/Output */
++#define SCSPTR_SPB2DT	(1 << 0)	/* Serial Port Break Data */
+ 
+ /* HSSRR HSCIF */
+-#define HSCIF_SRE	0x8000
++#define HSCIF_SRE	0x8000		/* Sampling Rate Register Enable */
+ 
+ enum {
+ 	SCIx_PROBE_REGTYPE,
+@@ -73,10 +87,19 @@ enum {
+  * Not all registers will exist on all parts.
+  */
+ enum {
+-	SCSMR, SCBRR, SCSCR, SCxSR,
+-	SCFCR, SCFDR, SCxTDR, SCxRDR,
+-	SCLSR, SCTFDR, SCRFDR, SCSPTR,
+-	HSSRR,
++	SCSMR,				/* Serial Mode Register */
++	SCBRR,				/* Bit Rate Register */
++	SCSCR,				/* Serial Control Register */
++	SCxSR,				/* Serial Status Register */
++	SCFCR,				/* FIFO Control Register */
++	SCFDR,				/* FIFO Data Count Register */
++	SCxTDR,				/* Transmit (FIFO) Data Register */
++	SCxRDR,				/* Receive (FIFO) Data Register */
++	SCLSR,				/* Line Status Register */
++	SCTFDR,				/* Transmit FIFO Data Count Register */
++	SCRFDR,				/* Receive FIFO Data Count Register */
++	SCSPTR,				/* Serial Port Register */
++	HSSRR,				/* Sampling Rate Register */
+ 
+ 	SCIx_NR_REGS,
  };
 -- 
-1.8.2.1
+1.7.9.5
 
