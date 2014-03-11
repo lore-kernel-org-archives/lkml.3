@@ -1,181 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665AbaCKFC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 01:02:57 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:61473 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464AbaCKFCG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 01:02:06 -0400
-X-Original-SENDERIP: 10.177.222.157
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 11 Mar 2014 14:02:18 +0900
-From: Minchan Kim <minchan@kernel.org>
+	id S1754460AbaCKFCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 01:02:04 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:30256 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753000AbaCKFCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 01:02:01 -0400
+X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
+   d="scan'208";a="9676446"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org
-Cc: mm-commits@vger.kernel.org, sergey.senozhatsky@gmail.com,
-        ngupta@vflare.org, jmarchan@redhat.com, akpm@linux-foundation.org
-Subject: Re: + zram-propagate-error-to-user-fix.patch added to -mm tree
-Message-ID: <20140311050218.GB19143@bbox>
-References: <531e1da6.LIOFFB/3fpRK4ekJ%akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531e1da6.LIOFFB/3fpRK4ekJ%akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: joe@perches.com, peterz@infradead.org, mingo@kernel.org,
+        tglx@linutronix.de, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        linux-mm@kvack.org, Bob Liu <lliubbo@gmail.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 06/15] mm: Replace hardcoding of 19 with MAX_NICE.
+Date: Tue, 11 Mar 2014 12:59:21 +0800
+Message-Id: <ff49e5b5c1fd6668d23272ce5aa067b8ecc25ee5.1394513466.git.yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1394513466.git.yangds.fnst@cn.fujitsu.com>
+References: <cover.1394513466.git.yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 12:58:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 12:59:01,
+	Serialize complete at 2014/03/11 12:59:01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*slaps self*
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+cc: linux-mm@kvack.org
+cc: Bob Liu <lliubbo@gmail.com>
+cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+cc: Mel Gorman <mgorman@suse.de>
+cc: Rik van Riel <riel@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ mm/huge_memory.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks Sergey and Andrew!
-
-On Mon, Mar 10, 2014 at 01:16:38PM -0700, akpm@linux-foundation.org wrote:
-> Subject: + zram-propagate-error-to-user-fix.patch added to -mm tree
-> To: akpm@linux-foundation.org,jmarchan@redhat.com,minchan@kernel.org,ngupta@vflare.org,sergey.senozhatsky@gmail.com
-> From: akpm@linux-foundation.org
-> Date: Mon, 10 Mar 2014 13:16:38 -0700
-> 
-> 
-> The patch titled
->      Subject: zram-propagate-error-to-user-fix
-> has been added to the -mm tree.  Its filename is
->      zram-propagate-error-to-user-fix.patch
-> 
-> This patch should soon appear at
->     http://ozlabs.org/~akpm/mmots/broken-out/zram-propagate-error-to-user-fix.patch
-> and later at
->     http://ozlabs.org/~akpm/mmotm/broken-out/zram-propagate-error-to-user-fix.patch
-> 
-> Before you just go and hit "reply", please:
->    a) Consider who else should be cc'ed
->    b) Prefer to cc a suitable mailing list as well
->    c) Ideally: find the original patch on the mailing list and do a
->       reply-to-all to that, adding suitable additional cc's
-> 
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> 
-> The -mm tree is included into linux-next and is updated
-> there every 3-4 working days
-> 
-> ------------------------------------------------------
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: zram-propagate-error-to-user-fix
-> 
-> don't return with the lock held, per Sergey
-> 
-> Cc: Jerome Marchand <jmarchan@redhat.com>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  drivers/block/zram/zram_drv.c |   18 ++++++++++--------
->  1 file changed, 10 insertions(+), 8 deletions(-)
-> 
-> diff -puN drivers/block/zram/zram_drv.c~zram-propagate-error-to-user-fix drivers/block/zram/zram_drv.c
-> --- a/drivers/block/zram/zram_drv.c~zram-propagate-error-to-user-fix
-> +++ a/drivers/block/zram/zram_drv.c
-> @@ -126,26 +126,28 @@ static ssize_t max_comp_streams_store(st
->  {
->  	int num;
->  	struct zram *zram = dev_to_zram(dev);
-> +	int ret;
->  
-> -	if (kstrtoint(buf, 0, &num))
-> -		goto out;
-> +	ret = kstrtoint(buf, 0, &num);
-> +	if (ret < 0)
-> +		return ret;
->  	if (num < 1)
-> -		goto out;
-> +		return -EINVAL;
->  
->  	down_write(&zram->init_lock);
->  	if (init_done(zram)) {
->  		if (!zcomp_set_max_streams(zram->comp, num)) {
->  			pr_info("Cannot change max compression streams\n");
-> -			goto out_unlock;
-> +			ret = -EINVAL;
-> +			goto out;
->  		}
->  	}
->  
->  	zram->max_comp_streams = num;
-> -	return len;
-> -out_unlock:
-> -	up_write(&zram->init_lock);
-> +	ret = len;
->  out:
-> -	return -EINVAL;
-> +	up_write(&zram->init_lock);
-> +	return ret;
->  }
->  
->  static ssize_t comp_algorithm_show(struct device *dev,
-> _
-> 
-> Patches currently in -mm which might be from akpm@linux-foundation.org are
-> 
-> arch-alpha-kernel-systblss-remove-debug-check.patch
-> i-need-old-gcc.patch
-> maintainers-akpm-maintenance.patch
-> revert-kallsyms-fix-absolute-addresses-for-kaslr.patch
-> input-route-kbd-leds-through-the-generic-leds-layer.patch
-> ocfs2-add-dlm_recover_callback_support-in-sysfs-fix.patch
-> ocfs2-flock-drop-cross-node-lock-when-failed-locally-checkpatch-fixes.patch
-> ocfs2-do-not-return-dlm_migrate_response_mastery_ref-to-avoid-endlessloop-during-umount-checkpatch-fixes.patch
-> mm.patch
-> mm-hugetlb-improve-page-fault-scalability-fix.patch
-> mm-vmstat-fix-up-zone-state-accounting-fix.patch
-> mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix.patch
-> mm-process_vm_accessc-mark-function-as-static-fix.patch
-> mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3-fix.patch
-> pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range-fix.patch
-> pagewalk-remove-argument-hmask-from-hugetlb_entry-fix-fix.patch
-> mm-introduce-do_shared_fault-and-drop-do_fault-fix-fix.patch
-> drop_caches-add-some-documentation-and-info-message.patch
-> mmnuma-reorganize-change_pmd_range-fix.patch
-> drivers-lguest-page_tablesc-rename-do_set_pte.patch
-> mm-add-debugfs-tunable-for-fault_around_order-checkpatch-fixes.patch
-> mm-per-thread-vma-caching.patch
-> mm-per-thread-vma-caching-fix-3.patch
-> mm-use-macros-from-compilerh-instead-of-__attribute__-fix.patch
-> mm-compactionc-isolate_freepages_block-small-tuneup.patch
-> zram-use-zcomp-compressing-backends-fix.patch
-> zram-return-error-valued-pointer-from-zcomp_create-fix.patch
-> zram-propagate-error-to-user-fix.patch
-> do_shared_fault-check-that-mmap_sem-is-held.patch
-> include-linux-syscallsh-add-sys32_quotactl-prototype-fix.patch
-> sys_sysfs-add-config_sysfs_syscall-fix.patch
-> kernel-groupsc-remove-return-value-of-set_groups-fix.patch
-> ncpfs-convert-dprintk-ddprintk-to-ncp_dbg-fix.patch
-> ncpfs-convert-dprintk-ddprintk-to-ncp_dbg-fix-fix.patch
-> hfsplus-fix-concurrent-acess-of-alloc_blocks-fix.patch
-> hfsplus-fix-concurrent-acess-of-alloc_blocks-fix-fix.patch
-> kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-fix.patch
-> kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-checkpatch-fixes.patch
-> include-linux-crash_dumph-add-vmcore_cleanup-prototype-fix.patch
-> kernel-panicc-display-reason-at-end-pr_emerg-fix.patch
-> fault-injection-set-bounds-on-what-proc-self-make-it-fail-accepts-fix.patch
-> initramfs-debug-detected-compression-method-fix.patch
-> linux-next.patch
-> linux-next-git-rejects.patch
-> drivers-gpio-gpio-zevioc-fix-build.patch
-> debugging-keep-track-of-page-owners.patch
-> journal_add_journal_head-debug.patch
-> journal_add_journal_head-debug-fix.patch
-> kernel-forkc-export-kernel_thread-to-modules.patch
-> mutex-subsystem-synchro-test-module.patch
-> slab-leaks3-default-y.patch
-> put_bh-debug.patch
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe mm-commits" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 1546655..dcdb6f9 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2803,7 +2803,7 @@ static int khugepaged(void *none)
+ 	struct mm_slot *mm_slot;
+ 
+ 	set_freezable();
+-	set_user_nice(current, 19);
++	set_user_nice(current, MAX_NICE);
+ 
+ 	while (!kthread_should_stop()) {
+ 		khugepaged_do_scan();
 -- 
-Kind regards,
-Minchan Kim
+1.8.2.1
+
