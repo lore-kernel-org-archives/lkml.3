@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796AbaCKH4J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 03:56:09 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:51985 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917AbaCKHzI (ORCPT
+	id S1753600AbaCKH4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 03:56:05 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:45819 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213AbaCKHzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 03:55:08 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-65-531ec1557f3e
+	Tue, 11 Mar 2014 03:55:06 -0400
+X-AuditID: cbfee690-b7f266d00000287c-53-531ec15876a2
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: kgene.kim@samsung.com, t.figa@samsung.com
 Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -16,37 +16,38 @@ Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         mark.rutland@arm.com, swarren@wwwdotorg.org,
         ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 1/5] ARM: dts: exynos4x12: Add ADC's dt data to read raw data
-Date: Tue, 11 Mar 2014 16:54:50 +0900
-Message-id: <1394524494-30641-2-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 4/5] ARM: dts: exynos: Move common dt data for interrupt
+ combiner controller
+Date: Tue, 11 Mar 2014 16:54:53 +0900
+Message-id: <1394524494-30641-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1394524494-30641-1-git-send-email-cw00.choi@samsung.com>
 References: <1394524494-30641-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOIsWRmVeSWpSXmKPExsWyRsSkUDf0oFywQfcleYvrX56zWsw/co7V
-	4tyrlYwWvQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8ni9mVei6XXLzJZTJi+lsXi8IoDTBav
-	DraxWKyf8ZrFgc9jzbw1jB4tzT1sHgs+X2H3WLn8C5vH5iX1Hn1bVjF6fN4k57FxbmgARxSX
-	TUpqTmZZapG+XQJXxv5X/awF7VwV7a/WMjcwzuLoYuTkkBAwkTiwoYMNwhaTuHBvPZDNxSEk
-	sJRR4tXeCywwRVentjFBJBYxSjx7uZkZwmlkklh36xgjSBWbgJbE/hc3wEaJCOhKTJl5hxWk
-	iFngPpPEj+OrwBLCAr4SVzfNZAexWQRUJZbunAdm8wq4SqzrusEEsU5O4sOeR2BxTgE3iae3
-	l7OC2EJANV+e3AQ7Q0LgEbvEkxkXWCEGCUh8m3wI6FYOoISsxKYDzBBzJCUOrrjBMoFReAEj
-	wypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MwEg6/e/ZxB2M9w9YH2JMBho3kVlKNDkfGIl5
-	JfGGxmZGFqYmpsZG5pZmpAkrifOmP0oKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cBo+2rC
-	1xOcl+Ya6lxcVXuf4ULBRr79DBs2PQzv8u1i+uZp6sR4SIQh1EjrXucU0+1PEp7dj/+kvj0o
-	RlRCRvVSq/N2tsxzBtt/ZufEuyv/Fbgxf9XOuFnSZ18eLsl++neL3FTeNTd3qT/orXZbWlDw
-	dKXFGX4Xe7/Wv7VXp+ScM1kWNeVE7H4LJZbijERDLeai4kQAzGSmOboCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+xgG7oQblgg8eXxCyuf3nOajH/yDlW
-	i3OvVjJa9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaL25d5LZZev8hkMWH6WhaLwysOMFm8
-	OtjGYrF+xmsWBz6PNfPWMHq0NPeweSz4fIXdY+XyL2wem5fUe/RtWcXo8XmTnMfGuaEBHFEN
-	jDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QGcrKZQl
-	5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwlrGDP2v+pnLWjnqmh/tZa5gXEWRxcj
-	J4eEgInE1altTBC2mMSFe+vZuhi5OIQEFjFKPHu5mRnCaWSSWHfrGCNIFZuAlsT+FzfYQGwR
-	AV2JKTPvsIIUMQvcZ5L4cXwVWEJYwFfi6qaZ7CA2i4CqxNKd88BsXgFXiXVdN6DWyUl82PMI
-	LM4p4Cbx9PZyVhBbCKjmy5ObTBMYeRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI7T
-	Z1I7GFc2WBxiFOBgVOLhDfCVCxZiTSwrrsw9xCjBwawkwuu0FijEm5JYWZValB9fVJqTWnyI
-	MRnoqonMUqLJ+cAUklcSb2hsYmZkaWRuaGFkbE6asJI474FW60AhgfTEktTs1NSC1CKYLUwc
-	nFINjAxZifsFf34uKc89tvr67nDfif8Zmh/PS9jfwbdOqCM2SDXicPpsrdvWMX9PijacvPDL
-	7/VKtxvdD7IavvRnK+1fNLemjEvR/ke+9odF2Zvfu0+vq+55IhXQdF7kBV8c40e7uHnKjSJc
-	m+Zce/rTeMnjLboL9BYt2aO0LOOsV8qJxzFNDCenaSixFGckGmoxFxUnAgBYNk4zFwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsWyRsSkRDfioFywwfk7VhbXvzxntZh/5Byr
+	xblXKxktehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PF7cu8FkuvX2SymDB9LYvF4RUHmCxe
+	HWxjsVg/4zWLA5/HmnlrGD1amnvYPBZ8vsLusXL5FzaPzUvqPfq2rGL0+LxJzmPj3NAAjigu
+	m5TUnMyy1CJ9uwSujFl/3rMVrJao+LM4voGxWbiLkYNDQsBEoqPbt4uRE8gUk7hwbz1bFyMX
+	h5DAUkaJRwu2sUEkTCQWnfjDApFYxChxakEXlNPIJNG25icLSBWbgJbE/hc3wDpEBHQlpsy8
+	wwpSxCxwn0nix/FVYAlhgTiJv3e2soPYLAKqEgsfHQKL8wq4Ssy8PJkFYp2cxIc9j8BqOAXc
+	JJ7eXs4KYgsB1Xx5cpMJZKiEwD12if2/QByQQQIS3yYfYoH4R1Zi0wFmiDmSEgdX3GCZwCi8
+	gJFhFaNoakFyQXFSepGJXnFibnFpXrpecn7uJkZgFJ3+92zCDsZ7B6wPMSYDjZvILCWanA+M
+	wrySeENjMyMLUxNTYyNzSzPShJXEedUeJQUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYHQ4
+	uPTqy8R3R7x+2n+//ViN3V7y5bndzze4CDJzCTPYHo9XlIsLupG5WZBxFmOlrtyZk2e+atRy
+	1f4u49zxPfQ4+0exR/P3vqjlUn2x68LUBXyP2m6FL2d6UHyXvewzi3nx6Yiv3nUnNXwL3dN2
+	9pxW/xSjwW6kfH2S36oUcYe0uUU9ivknjiixFGckGmoxFxUnAgCpQ5+5uAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+xgG7EQblggxc9RhbXvzxntZh/5Byr
+	xblXKxktehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PF7cu8FkuvX2SymDB9LYvF4RUHmCxe
+	HWxjsVg/4zWLA5/HmnlrGD1amnvYPBZ8vsLusXL5FzaPzUvqPfq2rGL0+LxJzmPj3NAAjqgG
+	RpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoLOVFMoS
+	c0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBmz/rxnK1gtUfFncXwDY7NwFyMn
+	h4SAicSiE39YIGwxiQv31rN1MXJxCAksYpQ4taCLBcJpZJJoW/MTrIpNQEti/4sbbCC2iICu
+	xJSZd1hBipgF7jNJ/Di+CiwhLBAn8ffOVnYQm0VAVWLho0NgcV4BV4mZlydDrZOT+LDnEVgN
+	p4CbxNPby1lBbCGgmi9PbjJNYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4Sp9J
+	7WBc2WBxiFGAg1GJhzfAVy5YiDWxrLgy9xCjBAezkgiv01qgEG9KYmVValF+fFFpTmrxIcZk
+	oKsmMkuJJucDE0heSbyhsYmZkaWRuaGFkbE5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBK
+	NTDKRj7LPPRzB/9lsRdsDvd6P64sdu43TVZ6s3hTTticbWvXvoxaWunjN+9WQ5pv+ZbIavne
+	PtcFgRunKLv+OFDIymc6Q+XKlo+L9G+f4Pze9zP6w76NjI01B2z8Nz45vHaH7HJJs10CgcKT
+	jq5atXT6rsDHX5h1Ev521Wk4Xfwav8W6vGntP6/lSizFGYmGWsxFxYkAZu4HfBYDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,49 +55,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add ADC(Analog to Digital Converter)'s dt data to get raw data
-with IIO subsystem. Usually, ADC is used to check temperature, jack type, and
-so on.
+This patch move common dt data of interrupt combiner controller to
+exynos4x12.dtsi. Each Exynos4x12 SoC has different number of interrput combiner
+as following:
+- Exynos4212 : interrput combiner 18(0 ~ 17)
+- Exynos4412 : interrput combiner 20(0 ~ 19)
 
-Register map
-- <0x126C0000 0x100> : ADC register's base address
-- <0x10020718 0x4> : ADC_PHY_CONTROL, TS-ADC control register address
+The exynos combiner driver initialize interrupt according to specific number
+of interrput combiner.
+- samsung,combiner-nr : The number of interrput combiners supported.
 
-Clock
-- <&clock 326> : ADC clock (clock name :'tsadc')
-
-Interrupt
-- INTG10[3] : ADC for General ADC
+Also,
+This patch arrange again the dt data according to register address
+in exynos4212/exynos4412.dtsi.
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/boot/dts/exynos4x12.dtsi | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/arm/boot/dts/exynos4212.dtsi | 13 ++++---------
+ arch/arm/boot/dts/exynos4412.dtsi | 14 ++++----------
+ arch/arm/boot/dts/exynos4x12.dtsi |  8 ++++++++
+ 3 files changed, 16 insertions(+), 19 deletions(-)
 
+diff --git a/arch/arm/boot/dts/exynos4212.dtsi b/arch/arm/boot/dts/exynos4212.dtsi
+index 94a43f9..ceefc71 100644
+--- a/arch/arm/boot/dts/exynos4212.dtsi
++++ b/arch/arm/boot/dts/exynos4212.dtsi
+@@ -22,16 +22,11 @@
+ / {
+ 	compatible = "samsung,exynos4212";
+ 
+-	gic: interrupt-controller@10490000 {
+-		cpu-offset = <0x8000>;
++	combiner: interrupt-controller@10440000 {
++		samsung,combiner-nr = <18>;
+ 	};
+ 
+-	interrupt-controller@10440000 {
+-		samsung,combiner-nr = <18>;
+-		interrupts = <0 0 0>, <0 1 0>, <0 2 0>, <0 3 0>,
+-			     <0 4 0>, <0 5 0>, <0 6 0>, <0 7 0>,
+-			     <0 8 0>, <0 9 0>, <0 10 0>, <0 11 0>,
+-			     <0 12 0>, <0 13 0>, <0 14 0>, <0 15 0>,
+-			     <0 107 0>, <0 108 0>;
++	gic: interrupt-controller@10490000 {
++		cpu-offset = <0x8000>;
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/exynos4412.dtsi b/arch/arm/boot/dts/exynos4412.dtsi
+index 87b339c..a40b6e2 100644
+--- a/arch/arm/boot/dts/exynos4412.dtsi
++++ b/arch/arm/boot/dts/exynos4412.dtsi
+@@ -22,17 +22,11 @@
+ / {
+ 	compatible = "samsung,exynos4412";
+ 
+-	gic: interrupt-controller@10490000 {
+-		cpu-offset = <0x4000>;
+-	};
+-
+-	interrupt-controller@10440000 {
++	combiner: interrupt-controller@10440000 {
+ 		samsung,combiner-nr = <20>;
+-		interrupts = <0 0 0>, <0 1 0>, <0 2 0>, <0 3 0>,
+-			     <0 4 0>, <0 5 0>, <0 6 0>, <0 7 0>,
+-			     <0 8 0>, <0 9 0>, <0 10 0>, <0 11 0>,
+-			     <0 12 0>, <0 13 0>, <0 14 0>, <0 15 0>,
+-			     <0 107 0>, <0 108 0>, <0 48 0>, <0 42 0>;
+ 	};
+ 
++	gic: interrupt-controller@10490000 {
++		cpu-offset = <0x4000>;
++	};
+ };
 diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-index 5c412aa..5a3e551 100644
+index 066eb35..6e17034 100644
 --- a/arch/arm/boot/dts/exynos4x12.dtsi
 +++ b/arch/arm/boot/dts/exynos4x12.dtsi
-@@ -80,6 +80,18 @@
+@@ -73,6 +73,14 @@
  		};
  	};
  
-+	adc: adc@126C0000 {
-+		compatible = "samsung,exynos-adc-v1";
-+		reg = <0x126C0000 0x100>, <0x10020718 0x4>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <10 3>;
-+		clocks = <&clock 326>;
-+		clock-names = "adc";
-+		#io-channel-cells = <1>;
-+		io-channel-ranges;
-+		status = "disabled";
++	combiner: interrupt-controller@10440000 {
++		interrupts = <0 0 0>, <0 1 0>, <0 2 0>, <0 3 0>,
++			     <0 4 0>, <0 5 0>, <0 6 0>, <0 7 0>,
++			     <0 8 0>, <0 9 0>, <0 10 0>, <0 11 0>,
++			     <0 12 0>, <0 13 0>, <0 14 0>, <0 15 0>,
++			     <0 107 0>, <0 108 0>, <0 48 0>, <0 42 0>;
 +	};
 +
- 	pinctrl_2: pinctrl@03860000 {
+ 	pinctrl_0: pinctrl@11400000 {
  		compatible = "samsung,exynos4x12-pinctrl";
- 		reg = <0x03860000 0x1000>;
+ 		reg = <0x11400000 0x1000>;
 -- 
 1.8.0
 
