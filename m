@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbaCKO1E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 10:27:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64575 "EHLO mx1.redhat.com"
+	id S1752975AbaCKO10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 10:27:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18306 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543AbaCKO1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 10:27:02 -0400
-Date: Tue, 11 Mar 2014 10:26:50 -0400
-From: "Frank Ch. Eigler" <fche@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not set via debugfs
-Message-ID: <20140311142650.GB13756@redhat.com>
-References: <20140307150920.881849073@goodmis.org> <20140307151202.210588176@goodmis.org> <241011797.35066.1394481694124.JavaMail.zimbra@efficios.com> <y0mr469e9t0.fsf@fche.csb> <20140310225820.0f02025d@gandalf.local.home>
-Mime-Version: 1.0
+	id S1751490AbaCKO1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 10:27:24 -0400
+Date: Tue, 11 Mar 2014 15:26:30 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, eranian@google.com, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, fweisbec@gmail.com
+Subject: Re: [PATCH 7/8] perf, tools, record: Always allow to overide default
+ period
+Message-ID: <20140311142630.GH22678@krava.redhat.com>
+References: <1394048978-15909-1-git-send-email-andi@firstfloor.org>
+ <1394048978-15909-8-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140310225820.0f02025d@gandalf.local.home>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1394048978-15909-8-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Steven -
-
-> > So it is a deferred-activation kind of call, with no way of knowing
-> > when or if the tracepoints will start coming in.  Why is that
-> > supported at all, considering that clients could monitor modules
-> > coming & going via the module_notifier chain, and update registration
-> > at that time?
+On Wed, Mar 05, 2014 at 11:49:37AM -0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> That's my argument.
-
-Was there an answer?
-
-
-> > >> +	entry = get_tracepoint(name);
-> > >> +	/* Make sure the entry was enabled */
-> > >> +	if (!entry || !entry->enabled)
-> > >> +		ret = -ENODEV;
-> > 
-> > For what it's worth, I agree with Mathieu that this sort of successful
-> > failure result code is a problem for tracking what needs cleanup and
-> > what doesn't.  (In systemtap's case, if this change gets merged, we'll
-> > have to treat -ENODEV as if it were 0.)
+> Fix the logic to allow overriding event default periods with -c or -F
+> on the command line. I'm not sure what the previous if was supposed
+> to do, it didn't work and seemed bogus. I just remove the extra
+> check and unconditionally allow overiding when the user set
+> an option.
 > 
-> Does systemtap enable tracepoints before they are created? That is, do
-> you allow enabling of a tracepoint in a module that is not loaded yet?
+> This fixed specifying -c / -F with json event list events,
+> which have a default period. It should do the same
+> for trace point events.
+> 
+> Cc: fweisbec@gmail.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  tools/perf/util/evsel.c | 18 +++++++-----------
+>  1 file changed, 7 insertions(+), 11 deletions(-)
+> 
+> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> index adc94dd..ca4b976 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -561,19 +561,15 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+>  	}
+>  
+>  	/*
+> -	 * We default some events to a 1 default interval. But keep
+> -	 * it a weak assumption overridable by the user.
+> +	 * Let the user override any default periods.
+>  	 */
+> -	if (!attr->sample_period || (opts->user_freq != UINT_MAX &&
+> -				     opts->user_interval != ULLONG_MAX)) {
+> -		if (opts->freq) {
+> -			perf_evsel__set_sample_bit(evsel, PERIOD);
+> -			attr->freq		= 1;
+> -			attr->sample_freq	= opts->freq;
+> -		} else {
+> -			attr->sample_period = opts->default_interval;
+> -		}
+> +	if (opts->user_freq != UINT_MAX) {
+> +		perf_evsel__set_sample_bit(evsel, PERIOD);
+> +		attr->freq		= 1;
+> +		attr->sample_freq	= opts->freq;
+>  	}
+> +	if (opts->user_interval != ULLONG_MAX)
+> +		attr->sample_period = opts->default_interval;
 
-We have no formal opinion on whether or not this makes sense.  If the
-kernel permits it, fine.
+and this also makes the default frequency not be set ;-)
 
-> If not, than you want this as an error.
+  $ ./perf record ls
+  ...
+  $ ./perf report -D | grep SAMPLE
+  $
 
-But it's not exactly an error!  It's a success of sorts, and means
-that later on we have to unregister the callback, just as if it were
-successful.
+and 'perf test attr' fails for this reason:
+  $ ./perf test attr
+  13: struct perf_event_attr setup                           :FAILED './tests/attr/test-record-branch-filter-k' - match failure
+ FAILED!
 
 
-- FChE
+jirka
