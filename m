@@ -1,56 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572AbaCKRJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:09:33 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:53910 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbaCKRJb (ORCPT
+	id S1754440AbaCKRKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:10:53 -0400
+Received: from smtprelay0051.hostedemail.com ([216.40.44.51]:59585 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751648AbaCKRKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:09:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com>
-References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
-	<CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
-	<CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
-	<CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
-	<CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
-	<CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
-	<CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
-	<CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>
-	<531F365B.4060000@linux.intel.com>
-	<CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
-	<531F3D02.30706@linux.intel.com>
-	<CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>
-	<CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com>
-Date: Tue, 11 Mar 2014 10:09:31 -0700
-X-Google-Sender-Auth: 8MgqHS6Ld4BomHRr552i6FPTD6M
-Message-ID: <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
-Subject: Re: [PATCH v2] x86: Remove compat vdso support
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Mar 2014 13:10:50 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1544:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2729:2828:3138:3139:3140:3141:3142:3354:3867:3868:4225:5007:6119:7652:7903:10004:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555:12683:13972:14110,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cry22_7b5b9fc60c02a
+X-Filterd-Recvd-Size: 5563
+Message-ID: <1394557846.21085.54.camel@joe-AO722>
+Subject: [PATCH] serial: sh-sci: Neaten dev_<level> uses
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-serial@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Date: Tue, 11 Mar 2014 10:10:46 -0700
+In-Reply-To: <1394548060.21085.45.camel@joe-AO722>
+References: <1394532680-4264-1-git-send-email-geert@linux-m68k.org>
+	 <1394548060.21085.45.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 9:50 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Looking forward, would it be reasonable to have an extensible set of
-> flags that live in the ELF interpreter's headers somewhere
+Add missing newlines and coalesce formats.
+Realign arguments.
 
-No. Not reasonable. The whole "32-bit x86" and "looking forward"
-combination makes absolutely zero sense.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/tty/serial/sh-sci.c | 38 ++++++++++++++++++--------------------
+ 1 file changed, 18 insertions(+), 20 deletions(-)
 
-I can pretty much guarantee that even *phones* will be 64-bit if/when
-x86 ever gets there. They'll need it just for ARM emulation, I bet.
+diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
+index 0cb5237..eee159c 100644
+--- a/drivers/tty/serial/sh-sci.c
++++ b/drivers/tty/serial/sh-sci.c
+@@ -788,7 +788,7 @@ static int sci_handle_errors(struct uart_port *port)
+ 		if (tty_insert_flip_char(tport, 0, TTY_OVERRUN))
+ 			copied++;
+ 
+-		dev_notice(port->dev, "overrun error");
++		dev_notice(port->dev, "overrun error\n");
+ 	}
+ 
+ 	if (status & SCxSR_FER(port)) {
+@@ -830,7 +830,7 @@ static int sci_handle_errors(struct uart_port *port)
+ 		if (tty_insert_flip_char(tport, 0, TTY_PARITY))
+ 			copied++;
+ 
+-		dev_notice(port->dev, "parity error");
++		dev_notice(port->dev, "parity error\n");
+ 	}
+ 
+ 	if (copied)
+@@ -1290,7 +1290,8 @@ static void sci_dma_rx_complete(void *arg)
+ 	unsigned long flags;
+ 	int count;
+ 
+-	dev_dbg(port->dev, "%s(%d) active #%d\n", __func__, port->line, s->active_rx);
++	dev_dbg(port->dev, "%s(%d) active #%d\n",
++		__func__, port->line, s->active_rx);
+ 
+ 	spin_lock_irqsave(&port->lock, flags);
+ 
+@@ -1366,8 +1367,8 @@ static void sci_submit_rx(struct sci_port *s)
+ 			sci_rx_dma_release(s, true);
+ 			return;
+ 		}
+-		dev_dbg(s->port.dev, "%s(): cookie %d to #%d\n", __func__,
+-			s->cookie_rx[i], i);
++		dev_dbg(s->port.dev, "%s(): cookie %d to #%d\n",
++			__func__, s->cookie_rx[i], i);
+ 	}
+ 
+ 	s->active_rx = s->cookie_rx[0];
+@@ -1426,8 +1427,8 @@ static void work_fn_rx(struct work_struct *work)
+ 
+ 	s->active_rx = s->cookie_rx[!new];
+ 
+-	dev_dbg(port->dev, "%s: cookie %d #%d, new active #%d\n", __func__,
+-		s->cookie_rx[new], new, s->active_rx);
++	dev_dbg(port->dev, "%s: cookie %d #%d, new active #%d\n",
++		__func__, s->cookie_rx[new], new, s->active_rx);
+ }
+ 
+ static void work_fn_tx(struct work_struct *work)
+@@ -1480,8 +1481,8 @@ static void work_fn_tx(struct work_struct *work)
+ 		return;
+ 	}
+ 
+-	dev_dbg(port->dev, "%s: %p: %d...%d, cookie %d\n", __func__,
+-		xmit->buf, xmit->tail, xmit->head, s->cookie_tx);
++	dev_dbg(port->dev, "%s: %p: %d...%d, cookie %d\n",
++		__func__, xmit->buf, xmit->tail, xmit->head, s->cookie_tx);
+ 
+ 	dma_async_issue_pending(chan);
+ }
+@@ -1600,8 +1601,8 @@ static bool filter(struct dma_chan *chan, void *slave)
+ {
+ 	struct sh_dmae_slave *param = slave;
+ 
+-	dev_dbg(chan->device->dev, "%s: slave ID %d\n", __func__,
+-		param->shdma_slave.slave_id);
++	dev_dbg(chan->device->dev, "%s: slave ID %d\n",
++		__func__, param->shdma_slave.slave_id);
+ 
+ 	chan->private = &param->shdma_slave;
+ 	return true;
+@@ -1630,8 +1631,7 @@ static void sci_request_dma(struct uart_port *port)
+ 	dma_cap_mask_t mask;
+ 	int nent;
+ 
+-	dev_dbg(port->dev, "%s: port %d\n", __func__,
+-		port->line);
++	dev_dbg(port->dev, "%s: port %d\n", __func__, port->line);
+ 
+ 	if (s->cfg->dma_slave_tx <= 0 || s->cfg->dma_slave_rx <= 0)
+ 		return;
+@@ -1659,7 +1659,8 @@ static void sci_request_dma(struct uart_port *port)
+ 		if (!nent)
+ 			sci_tx_dma_release(s, false);
+ 		else
+-			dev_dbg(port->dev, "%s: mapped %d@%p to %pad\n", __func__,
++			dev_dbg(port->dev, "%s: mapped %d@%p to %pad\n",
++				__func__,
+ 				sg_dma_len(&s->sg_tx), port->state->xmit.buf,
+ 				&sg_dma_address(&s->sg_tx));
+ 
+@@ -1933,8 +1934,7 @@ static void sci_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	if (s->chan_rx) {
+ 		s->rx_timeout = (port->timeout - HZ / 50) * s->buf_len_rx * 3 /
+ 			port->fifosize / 2;
+-		dev_dbg(port->dev,
+-			"DMA Rx t-out %ums, tty t-out %u jiffies\n",
++		dev_dbg(port->dev, "DMA Rx t-out %ums, tty t-out %u jiffies\n",
+ 			s->rx_timeout * 1000 / HZ, port->timeout);
+ 		if (s->rx_timeout < msecs_to_jiffies(20))
+ 			s->rx_timeout = msecs_to_jiffies(20);
+@@ -2502,11 +2502,9 @@ static int sci_probe_single(struct platform_device *dev,
+ 
+ 	/* Sanity check */
+ 	if (unlikely(index >= SCI_NPORTS)) {
+-		dev_notice(&dev->dev, "Attempting to register port "
+-			   "%d when only %d are available.\n",
++		dev_notice(&dev->dev, "Attempting to register port %d when only %d are available\n",
+ 			   index+1, SCI_NPORTS);
+-		dev_notice(&dev->dev, "Consider bumping "
+-			   "CONFIG_SERIAL_SH_SCI_NR_UARTS!\n");
++		dev_notice(&dev->dev, "Consider bumping CONFIG_SERIAL_SH_SCI_NR_UARTS!\n");
+ 		return -EINVAL;
+ 	}
+ 
 
-So 32-bit x86 is dead, dead, dead. There's absolutely no future to it.
-We're not adding new stuff to "future-proof" it.
 
-              Linus
