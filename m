@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079AbaCKOEc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 10:04:32 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34085 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631AbaCKOEa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 10:04:30 -0400
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH 2/3] soc: keystone: add QMSS driver
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <531E2C55.70702@ti.com>
-Date: Tue, 11 Mar 2014 09:04:24 -0500
-Cc: Rob Herring <robherring2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Sandeep Nair <sandeep_n@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <5EE98053-31B8-4679-AAE2-4F026C61D1D4@codeaurora.org>
-References: <1393629520-12713-1-git-send-email-santosh.shilimkar@ti.com>	<1393629520-12713-3-git-send-email-santosh.shilimkar@ti.com> <CAL_Jsq+O660oV9FtthG3gTkVOhL0ku-UHSrkt-ROauu1iNpbaA@mail.gmail.com> <531E2C55.70702@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-X-Mailer: Apple Mail (2.1874)
+	id S1753175AbaCKOFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 10:05:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28021 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751162AbaCKOFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 10:05:09 -0400
+Date: Tue, 11 Mar 2014 14:37:32 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, eranian@google.com, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/8] perf, tools: Add support for reading JSON event files
+Message-ID: <20140311133732.GA22678@krava.redhat.com>
+References: <1394048978-15909-1-git-send-email-andi@firstfloor.org>
+ <1394048978-15909-3-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394048978-15909-3-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 05, 2014 at 11:49:32AM -0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Add a parser for Intel style JSON event files. This allows
+> to use an Intel event list directly with perf. The Intel
+> event lists can be quite large and are too big to store
+> in unswappable kernel memory.
+> 
+> The parser code knows how to convert the JSON fields
+> to perf fields. The conversion code is straight forward.
+> It knows (very little) Intel specific information, and can be easily
+> extended to handle fields for other CPUs.
+> 
+> The parser code is partially shared with an independent parsing
+> library, which is 2-clause BSD licenced. To avoid any conflicts I marked
+> those files as BSD licenced too. As part of perf they become GPLv2.
+> 
+> The events are handled using the existing alias machinery.
+> 
+> We output the BriefDescription in perf list.
+> 
+> Right now the json file can be specified as an argument
+> to perf stat/record/list. Followon patches will automate this.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  tools/perf/Documentation/perf-list.txt   |   6 +
+>  tools/perf/Documentation/perf-record.txt |   3 +
+>  tools/perf/Documentation/perf-stat.txt   |   3 +
+>  tools/perf/Makefile.perf                 |   2 +
+>  tools/perf/builtin-list.c                |   2 +
+>  tools/perf/builtin-record.c              |   3 +
+>  tools/perf/builtin-stat.c                |   2 +
+>  tools/perf/util/jevents.c                | 248 +++++++++++++++++++++++++++++++
+>  tools/perf/util/jevents.h                |   3 +
+>  tools/perf/util/pmu.c                    | 141 ++++++++++++++----
+>  tools/perf/util/pmu.h                    |   2 +
 
-On Mar 10, 2014, at 4:19 PM, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+please put the alias code factoring (perf_pmu__new_alias)
+and print_pmu_events changes to separate commits
 
->>> +  -- reg-names         : Names for the above register regions. The name to be
->>> +                         used is as follows:
->>> +                         - "config" : Queue configuration region.
->>> +                         - "status" : Queue status RAM.
->>> +                         - "region" : Descriptor memory setup region.
->>> +                         - "push"   : Queue Management/Queue Proxy region.
->>> +                         - "pop"    : Queue Management/Queue Proxy region.
->>> +                         - "peek"   : Queue Peek region.
->> 
->> reg-names should be optional. Also you have the order different from
->> reg. Be consistent as to what is the correct order.
->> 
-> We thought of using reg-names to remove the ordering to index
-> the regs. So if we make the reg-names optional, then indexing
-> by order will be used. We can do that.
-
-We keep having this conversation, why does reg-names need to be optional for new bindings?
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+jirka
