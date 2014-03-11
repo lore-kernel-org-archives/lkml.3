@@ -1,93 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064AbaCKMSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 08:18:22 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:60052 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071AbaCKMSU (ORCPT
+	id S1754938AbaCKMUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 08:20:36 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:16803 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497AbaCKMUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 08:18:20 -0400
-X-Nat-Received: from [202.181.97.72]:54230 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1394540207.18162
-To: jmorris@namei.org
-Cc: rgb@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        laijs@cn.fujitsu.com, akpm@linux-foundation.org, joe@perches.com,
-        keescook@chromium.org, geert@linux-m68k.org, jkosina@suse.cz,
-        viro@zeniv.linux.org.uk, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, rostedt@goodmis.org,
-        tglx@linutronix.de, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Change task_struct->comm to use RCU.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201403072120.BJB73489.OFMSOFHQFtOJLV@I-love.SAKURA.ne.jp>
-	<20140307155415.GB16640@madcap2.tricolour.ca>
-	<201403082143.BIH86903.QtVMHJFFOOSFOL@I-love.SAKURA.ne.jp>
-	<20140310202155.GR16640@madcap2.tricolour.ca>
-	<201403112102.HCC48418.LSOQFJOFOtFVHM@I-love.SAKURA.ne.jp>
-In-Reply-To: <201403112102.HCC48418.LSOQFJOFOtFVHM@I-love.SAKURA.ne.jp>
-Message-Id: <201403112116.HIJ21362.OFVQJFtHOSOFLM@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 11 Mar 2014 21:16:44 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 11032014 #7489815, status: clean
+	Tue, 11 Mar 2014 08:20:32 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-19-531eff8d7830
+Message-id: <531EFF7F.9010405@samsung.com>
+Date: Tue, 11 Mar 2014 13:20:15 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>, kgene.kim@samsung.com
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk
+Subject: Re: [PATCH 1/5] ARM: dts: exynos4x12: Add ADC's dt data to read raw
+ data
+References: <1394524494-30641-1-git-send-email-cw00.choi@samsung.com>
+ <1394524494-30641-2-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1394524494-30641-2-git-send-email-cw00.choi@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t/xy7q9/+WCDVY1mVtc//Kc1WL+kXOs
+	FuderWS06F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWiy9fpHJYsL0tSwWh1ccYLJ4
+	dbCNxYHXY828NYweLc09bB4LPl9h91i5/Aubx+Yl9R59W1YxenzeJOexcW5oAEcUl01Kak5m
+	WWqRvl0CV8bB7qNsBYt4Ku4t/MjawPiQs4uRk0NCwETi/7ybLBC2mMSFe+vZuhi5OIQEljJK
+	zOnvZYVwPjNKrN78iw2kildAS2J+3w0mEJtFQFVi27X7rCA2m4CaxOeGR2A1ogIREn/nrWeE
+	qBeU+DH5HtgGEQF7iT0PNjCCDGUW2MkksWfpTrBBwgLBEq827mSB2NbIKHH96X+wbk4BN4m+
+	rtVgG5gFrCVWTtrGCGHLS2xe85Z5AqPALCRLZiEpm4WkbAEj8ypG0dTS5ILipPRcI73ixNzi
+	0rx0veT83E2MkPj5uoNx6TGrQ4wCHIxKPLwBvnLBQqyJZcWVuYcYJTiYlUR4L94DCvGmJFZW
+	pRblxxeV5qQWH2Jk4uCUamDs/8bBk3HnSNgGMSceR9FaP1Wxhnfcx7tDC0r5y1buCtrh4GMb
+	+XrXsb/OK/cmuWeysOturo4rnsjvI+Uxpcq7Z9OmolkdLvIiEbkKVxPc1f9WLd7ZYezGPEuq
+	IdaH+1zFnbNSfxVeax/VdQioy5lZVCv1TvPaVr/QG9aa77c9WR2k76RVoMRSnJFoqMVcVJwI
+	ABi8QBF9AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And the same phrase goes to James Morris...
+Hi Chanwoo,
 
-If you are sure that it is safe to use get_task_comm() from
-dump_common_audit_data() and you prefer locked version, please pick up below
-patch via your git tree.
+On 11.03.2014 08:54, Chanwoo Choi wrote:
+> This patch add ADC(Analog to Digital Converter)'s dt data to get raw data
+> with IIO subsystem. Usually, ADC is used to check temperature, jack type, and
+> so on.
+>
 
-If you are unsure or prefer lockless version, I'll make a lockless version
-using do_get_task_comm() proposed in this thread.
+8< ---
 
-----------
->From 1fe3dcd8792bc1296e337daba661200a8feaf706 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Tue, 11 Mar 2014 21:09:48 +0900
-Subject: [PATCH] LSM: Pass comm name via get_task_comm()
+> Register map
+> - <0x126C0000 0x100> : ADC register's base address
+> - <0x10020718 0x4> : ADC_PHY_CONTROL, TS-ADC control register address
+>
+> Clock
+> - <&clock 326> : ADC clock (clock name :'tsadc')
+>
+> Interrupt
+> - INTG10[3] : ADC for General ADC
 
-When we pass task->comm to audit_log_untrustedstring(), we need to pass
-a snapshot of it using get_task_comm(). Otherwise, we will lose fields
-after comm= if we raced with updating task->comm.
+--- >8
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- security/lsm_audit.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+I don't think there is a need to include such data in commit message. A 
+commit message should say what is done and why it's done (and sometimes 
+how it's done, in case of some complex code being added) and I guess 
+that's all.
 
-diff --git a/security/lsm_audit.c b/security/lsm_audit.c
-index 9a62045..6291c67 100644
---- a/security/lsm_audit.c
-+++ b/security/lsm_audit.c
-@@ -212,6 +212,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
- 				   struct common_audit_data *a)
- {
- 	struct task_struct *tsk = current;
-+	char name[TASK_COMM_LEN];
- 
- 	/*
- 	 * To keep stack sizes in check force programers to notice if they
-@@ -221,7 +222,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
- 	BUILD_BUG_ON(sizeof(a->u) > sizeof(void *)*2);
- 
- 	audit_log_format(ab, " pid=%d comm=", tsk->pid);
--	audit_log_untrustedstring(ab, tsk->comm);
-+	audit_log_untrustedstring(ab, get_task_comm(name, tsk));
- 
- 	switch (a->type) {
- 	case LSM_AUDIT_DATA_NONE:
-@@ -280,7 +281,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
- 		tsk = a->u.tsk;
- 		if (tsk && tsk->pid) {
- 			audit_log_format(ab, " pid=%d comm=", tsk->pid);
--			audit_log_untrustedstring(ab, tsk->comm);
-+			audit_log_untrustedstring(ab, get_task_comm(name, tsk));
- 		}
- 		break;
- 	case LSM_AUDIT_DATA_NET:
--- 
-1.7.9.5
+>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>   arch/arm/boot/dts/exynos4x12.dtsi | 12 ++++++++++++
+>   1 file changed, 12 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
+> index 5c412aa..5a3e551 100644
+> --- a/arch/arm/boot/dts/exynos4x12.dtsi
+> +++ b/arch/arm/boot/dts/exynos4x12.dtsi
+> @@ -80,6 +80,18 @@
+>   		};
+>   	};
+>
+> +	adc: adc@126C0000 {
+> +		compatible = "samsung,exynos-adc-v1";
+> +		reg = <0x126C0000 0x100>, <0x10020718 0x4>;
+> +		interrupt-parent = <&combiner>;
+> +		interrupts = <10 3>;
+> +		clocks = <&clock 326>;
+
+Please use clock macros instead of numbers, as introduced by Andrzej 
+Hajda's patches merged to Kgene's tree.
+
+Best regards,
+Tomasz
