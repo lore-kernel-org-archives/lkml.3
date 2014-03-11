@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411AbaCKMiS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 08:38:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35587 "EHLO
+	id S1755430AbaCKMi1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 08:38:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35593 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796AbaCKMiO (ORCPT
+	with ESMTP id S1753796AbaCKMiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 08:38:14 -0400
-Date: Tue, 11 Mar 2014 05:37:45 -0700
+	Tue, 11 Mar 2014 08:38:24 -0400
+Date: Tue, 11 Mar 2014 05:37:56 -0700
 From: tip-bot for Daniel Lezcano <tipbot@zytor.com>
-Message-ID: <tip-8ca3c6424f4988fc19ed1067b121fbaf2e884d77@git.kernel.org>
+Message-ID: <tip-a1d028bd6d2b7789d15eddfd07c5bea2aaf36040@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org
+        peterz@infradead.org, nico@linaro.org, tglx@linutronix.de,
+        daniel.lezcano@linaro.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org
-In-Reply-To: <1393832934-11625-4-git-send-email-daniel.lezcano@linaro.org>
-References: <1393832934-11625-4-git-send-email-daniel.lezcano@linaro.org>
+        peterz@infradead.org, nico@linaro.org, tglx@linutronix.de,
+        daniel.lezcano@linaro.org
+In-Reply-To: <1393832934-11625-5-git-send-email-daniel.lezcano@linaro.org>
+References: <1393832934-11625-5-git-send-email-daniel.lezcano@linaro.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/idle] sched/idle:
-  Move idle conditions in cpuidle_idle main function
-Git-Commit-ID: 8ca3c6424f4988fc19ed1067b121fbaf2e884d77
+Subject: [tip:sched/idle] sched/idle: Add more comments to the code
+Git-Commit-ID: a1d028bd6d2b7789d15eddfd07c5bea2aaf36040
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,141 +33,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8ca3c6424f4988fc19ed1067b121fbaf2e884d77
-Gitweb:     http://git.kernel.org/tip/8ca3c6424f4988fc19ed1067b121fbaf2e884d77
+Commit-ID:  a1d028bd6d2b7789d15eddfd07c5bea2aaf36040
+Gitweb:     http://git.kernel.org/tip/a1d028bd6d2b7789d15eddfd07c5bea2aaf36040
 Author:     Daniel Lezcano <daniel.lezcano@linaro.org>
-AuthorDate: Mon, 3 Mar 2014 08:48:53 +0100
+AuthorDate: Mon, 3 Mar 2014 08:48:54 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 11 Mar 2014 11:52:48 +0100
+CommitDate: Tue, 11 Mar 2014 11:52:49 +0100
 
-sched/idle: Move idle conditions in cpuidle_idle main function
+sched/idle: Add more comments to the code
 
-This patch moves the condition before entering idle into the cpuidle main
-function located in idle.c. That simplify the idle mainloop functions and
-increase the readibility of the conditions to enter truly idle.
-
-This patch is code reorganization and does not change the behavior of the
-function.
+The idle main function is a complex and a critical function. Added more
+comments to the code.
 
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Cc: tglx@linutronix.de
 Cc: rjw@rjwysocki.net
-Cc: nicolas.pitre@linaro.org
 Cc: preeti@linux.vnet.ibm.com
-Link: http://lkml.kernel.org/r/1393832934-11625-4-git-send-email-daniel.lezcano@linaro.org
+Link: http://lkml.kernel.org/r/1393832934-11625-5-git-send-email-daniel.lezcano@linaro.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/idle.c | 78 ++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 44 insertions(+), 34 deletions(-)
+ kernel/sched/idle.c | 59 +++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 57 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index dc8a246..cc7a6f3 100644
+index cc7a6f3..8f4390a 100644
 --- a/kernel/sched/idle.c
 +++ b/kernel/sched/idle.c
-@@ -76,44 +76,59 @@ static int cpuidle_idle_call(void)
+@@ -76,21 +76,49 @@ static int cpuidle_idle_call(void)
  	int next_state, entered_state, ret;
  	bool broadcast;
  
-+	if (current_clr_polling_and_test()) {
-+		local_irq_enable();
-+		__current_set_polling();
-+		return 0;
-+	}
-+
++	/*
++	 * Check if the idle task must be rescheduled. If it is the
++	 * case, exit the function after re-enabling the local irq and
++	 * set again the polling flag
++	 */
+ 	if (current_clr_polling_and_test()) {
+ 		local_irq_enable();
+ 		__current_set_polling();
+ 		return 0;
+ 	}
+ 
++	/*
++	 * During the idle period, stop measuring the disabled irqs
++	 * critical sections latencies
++	 */
  	stop_critical_timings();
++
++	/*
++	 * Tell the RCU framework we are entering an idle section,
++	 * so no more rcu read side critical sections and one more
++	 * step to the grace period
++	 */
  	rcu_idle_enter();
  
++	/*
++	 * Check if the cpuidle framework is ready, otherwise fallback
++	 * to the default arch specific idle method
++	 */
  	ret = cpuidle_enabled(drv, dev);
--	if (ret < 0) {
--		arch_cpu_idle();
--		goto out;
--	}
  
--	/* ask the governor for the next state */
--	next_state = cpuidle_select(drv, dev);
-+	if (!ret) {
-+		/* ask the governor for the next state */
-+		next_state = cpuidle_select(drv, dev);
+ 	if (!ret) {
+-		/* ask the governor for the next state */
++		/*
++		 * Ask the governor to choose an idle state it thinks
++		 * it is convenient to go to. There is *always* a
++		 * convenient idle state
++		 */
+ 		next_state = cpuidle_select(drv, dev);
  
--	if (need_resched()) {
--		dev->last_residency = 0;
--		/* give the governor an opportunity to reflect on the outcome */
--		cpuidle_reflect(dev, next_state);
--		local_irq_enable();
--		goto out;
--	}
-+		if (current_clr_polling_and_test()) {
-+			dev->last_residency = 0;
-+			entered_state = next_state;
-+			local_irq_enable();
-+		} else {
-+			broadcast = !!(drv->states[next_state].flags &
-+				       CPUIDLE_FLAG_TIMER_STOP);
-+
-+			if (broadcast)
-+				ret = clockevents_notify(
-+					CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
-+					&dev->cpu);
++		/*
++		 * The idle task must be scheduled, it is pointless to
++		 * go to idle, just update no idle residency and get
++		 * out of this function
++		 */
+ 		if (current_clr_polling_and_test()) {
+ 			dev->last_residency = 0;
+ 			entered_state = next_state;
+@@ -100,6 +128,14 @@ static int cpuidle_idle_call(void)
+ 				       CPUIDLE_FLAG_TIMER_STOP);
  
--	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
-+			if (!ret) {
-+				trace_cpu_idle_rcuidle(next_state, dev->cpu);
+ 			if (broadcast)
++				/*
++				 * Tell the time framework to switch
++				 * to a broadcast timer because our
++				 * local timer will be shutdown. If a
++				 * local timer is used from another
++				 * cpu as a broadcast timer, this call
++				 * may fail if it is not available
++				 */
+ 				ret = clockevents_notify(
+ 					CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
+ 					&dev->cpu);
+@@ -107,6 +143,14 @@ static int cpuidle_idle_call(void)
+ 			if (!ret) {
+ 				trace_cpu_idle_rcuidle(next_state, dev->cpu);
  
--	if (broadcast &&
--	    clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu))
--		return -EBUSY;
-+				entered_state = cpuidle_enter(drv, dev,
-+							      next_state);
++				/*
++				 * Enter the idle state previously
++				 * returned by the governor
++				 * decision. This function will block
++				 * until an interrupt occurs and will
++				 * take care of re-enabling the local
++				 * interrupts
++				 */
+ 				entered_state = cpuidle_enter(drv, dev,
+ 							      next_state);
  
--	trace_cpu_idle_rcuidle(next_state, dev->cpu);
-+				trace_cpu_idle_rcuidle(PWR_EVENT_EXIT,
-+						       dev->cpu);
+@@ -118,17 +162,28 @@ static int cpuidle_idle_call(void)
+ 						CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
+ 						&dev->cpu);
  
--	entered_state = cpuidle_enter(drv, dev, next_state);
-+				if (broadcast)
-+					clockevents_notify(
-+						CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
-+						&dev->cpu);
+-				/* give the governor an opportunity to reflect on the outcome */
++				/*
++				 * Give the governor an opportunity to reflect on the
++				 * outcome
++				 */
+ 				cpuidle_reflect(dev, entered_state);
+ 			}
+ 		}
+ 	}
  
--	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
-+				/* give the governor an opportunity to reflect on the outcome */
-+				cpuidle_reflect(dev, entered_state);
-+			}
-+		}
-+	}
-+
-+	if (ret)
-+		arch_cpu_idle();
++	/*
++	 * We can't use the cpuidle framework, let's use the default
++	 * idle routine
++	 */
+ 	if (ret)
+ 		arch_cpu_idle();
  
--	if (broadcast)
--		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
-+	__current_set_polling();
+ 	__current_set_polling();
  
--	/* give the governor an opportunity to reflect on the outcome */
--	cpuidle_reflect(dev, entered_state);
--out:
++	/*
++	 * It is up to the idle functions to enable back the local
++	 * interrupt
++	 */
  	if (WARN_ON_ONCE(irqs_disabled()))
  		local_irq_enable();
- 
-@@ -150,16 +165,11 @@ static void cpu_idle_loop(void)
- 			 * know that the IPI is going to arrive right
- 			 * away
- 			 */
--			if (cpu_idle_force_poll || tick_check_broadcast_expired()) {
-+			if (cpu_idle_force_poll || tick_check_broadcast_expired())
- 				cpu_idle_poll();
--			} else {
--				if (!current_clr_polling_and_test()) {
--					cpuidle_idle_call();
--				} else {
--					local_irq_enable();
--				}
--				__current_set_polling();
--			}
-+			else
-+				cpuidle_idle_call();
-+
- 			arch_cpu_idle_exit();
- 		}
  
