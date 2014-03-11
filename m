@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbaCKH4B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 03:56:01 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:45819 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183AbaCKHzF (ORCPT
+	id S1754435AbaCKH6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 03:58:51 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:54624 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098AbaCKH6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 03:55:05 -0400
-X-AuditID: cbfee68e-b7f566d000002344-c8-531ec156704a
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: kgene.kim@samsung.com, t.figa@samsung.com
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 2/5] ARM: dts: exynos4x12: Add PMU dt data to support
- PMU(Perforamnce Monitoring Unit)
-Date: Tue, 11 Mar 2014 16:54:51 +0900
-Message-id: <1394524494-30641-3-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1394524494-30641-1-git-send-email-cw00.choi@samsung.com>
-References: <1394524494-30641-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsWyRsSkUDfsoFywwc8nMhbXvzxntZh/5Byr
-	xblXKxktehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PF7cu8FkuvX2SymDB9LYvF4RUHmCxe
-	HWxjsVg/4zWLA5/HmnlrGD1amnvYPBZ8vsLusXL5FzaPzUvqPfq2rGL0+LxJzmPj3NAAjigu
-	m5TUnMyy1CJ9uwSujDcv37EVLOOsuH7rK2MD4xH2LkYODgkBE4nXEzO6GDmBTDGJC/fWs3Ux
-	cnEICSxllPj1fQYzTM3ppwkQ8UWMEpP+PIQqamSSuN62mQmkm01AS2L/ixtsILaIgK7ElJl3
-	WEGKmAXuM0n8OL4KLCEskCGxZ+J2ZhCbRUBV4tLfF2A2r4CrxJWDK5ggzpCT+LDnETuIzSng
-	JvH09nJWEFsIqObLk5tMIEMlBB6xS/TO/cgEMUhA4tvkQywQp8pKbDrADDFHUuLgihssExiF
-	FzAyrGIUTS1ILihOSi8y0itOzC0uzUvXS87P3cQIjKLT/5717WC8ecD6EGMy0LiJzFKiyfnA
-	KMwriTc0NjOyMDUxNTYytzQjTVhJnHfRw6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYxZ
-	mguNG3R6790ylZx1JGPjtd12WyIbZwpdmttXe95VkX2d9LkpWx8rvfTV+qW2vrxs1fHF+r5z
-	d6tf+iPIE833b1bL006xSTOmTdI6Zbu73vuM9NvM4veO+voGj5/M3GgUFv/+YK7eQk/tJxX9
-	zb3Rm8z3/HrEc6+uz/bOubcyvmofJ+rFJmxQYinOSDTUYi4qTgQAlvFm2LgCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+xgG7YQblgg10vRSyuf3nOajH/yDlW
-	i3OvVjJa9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaL25d5LZZev8hkMWH6WhaLwysOMFm8
-	OtjGYrF+xmsWBz6PNfPWMHq0NPeweSz4fIXdY+XyL2wem5fUe/RtWcXo8XmTnMfGuaEBHFEN
-	jDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QGcrKZQl
-	5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwlrGDPevHzHVrCMs+L6ra+MDYxH2LsY
-	OTgkBEwkTj9N6GLkBDLFJC7cW8/WxcjFISSwiFFi0p+HUE4jk8T1ts1MIFVsAloS+1/cYAOx
-	RQR0JabMvMMKUsQscJ9J4sfxVWAJYYEMiT0TtzOD2CwCqhKX/r4As3kFXCWuHFzBBLFOTuLD
-	nkfsIDangJvE09vLWUFsIaCaL09uMk1g5F3AyLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cT
-	IzhKn0ntYFzZYHGIUYCDUYmHN8BXLliINbGsuDL3EKMEB7OSCK/TWqAQb0piZVVqUX58UWlO
-	avEhxmSgqyYyS4km5wMTSF5JvKGxiZmRpZG5oYWRsTlpwkrivAdarQOFBNITS1KzU1MLUotg
-	tjBxcEo1MF7i218p9XDjGuuX7I7XrFk5yt9mOCjfrPgk7WS/UNHJfe4uj+wT9YdjppWVL7Nd
-	uN7N/ZNgVEBpSWLV+uPLJk5KLeZJDs8qDriyjjfsw1rmCTZipsf+Gcq9Zp36qa17plX8r4XL
-	2r8GhXxYWV3Z46zRv+i4+I+DKsaLjzrW816ocdO7xnJohhJLcUaioRZzUXEiANMqRLoWAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 11 Mar 2014 03:58:49 -0400
+Date: Tue, 11 Mar 2014 08:58:45 +0100
+From: Christian Riesch <christian.riesch@omicron.at>
+To: Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        =?UTF-8?Q?Stefan_S=C3=B8rensen?= <stefan.sorensen@spectralink.com>
+Subject: Re: [PATCH RFC net-next v1 1/9] ptp: introduce programmable pins.
+Message-ID: <F85F72BA1EE25F8F7FB77295@[172.22.2.41]>
+In-Reply-To: <d9cb37a7d6e57d7f103dab78f98044697d3c4433.1394307304.git.richardcochran@gmail.com>
+References: <cover.1394307303.git.richardcochran@gmail.com>
+ <d9cb37a7d6e57d7f103dab78f98044697d3c4433.1394307304.git.richardcochran@gmail.com>
+X-Mailer: Mulberry/4.0.8 (Win32)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARM CPU has its own performance profiling unit(PMU, Perforamnce Monitoring Unit).
-This patch add PMU dt data to support PMU which count cache hit and miss events.
+Hi Richard,
 
-PMU interrput list of Exynos4212
-- <2 2> : INTG2[2] - PMUIRQ[0] for CPU0
-- <3 2> : INTG3[2] - PMUIRQ[1] for CPU1
+--On March 08, 2014 20:42 +0100 Richard Cochran <richardcochran@gmail.com> 
+wrote:
 
-PMU interrput list of Exynos4412
-- <2 2> : INTG2[2], PMUIRQ[0] for CPU0
-- <3 2> : INTG3[2], PMUIRQ[1] for CPU1
-- <18 2> : INTG18[2], PMUIRQ[2] : CPU2
-- <19 2> : INTG19[2], PMUIRQ[3] : CPU3
+> This patch adds a pair of new ioctls to the PTP Hardware Clock device
+> interface. Using the ioctls, user space programs can query each pin to
+> find out its current function and also reprogram a different function
+> if desired.
+>
+> Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+> ---
+>  drivers/ptp/ptp_chardev.c        |  133
+> +++++++++++++++++++++++++++++++++++++-  drivers/ptp/ptp_clock.c
+> |   23 +++++++
+>  drivers/ptp/ptp_private.h        |    4 ++
+>  include/linux/ptp_clock_kernel.h |   33 ++++++++++
+>  include/uapi/linux/ptp_clock.h   |   39 ++++++++++-
+>  5 files changed, 230 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/ptp/ptp_chardev.c b/drivers/ptp/ptp_chardev.c
+> index 34a0c60..dc13d1e 100644
+> --- a/drivers/ptp/ptp_chardev.c
+> +++ b/drivers/ptp/ptp_chardev.c
+[...]
+> +int ptp_setpin(struct ptp_clock *ptp, unsigned int pin,
+> +	       enum ptp_pin_function func, unsigned int chan)
+> +{
+> +	struct ptp_clock_info *info = ptp->info;
+> +	struct ptp_pin_desc *pin1 = NULL, *pin2 = &info->pin_config[pin];
+> +	unsigned int i;
+> +
+> +	/* Check to see if any other pin previously had this function. */
+> +	if (mutex_lock_interruptible(&ptp->pincfg_mux))
+> +		return -ERESTARTSYS;
+> +	for (i = 0; i < info->n_pins; i++) {
+> +		if (info->pin_config[i].func == func &&
+> +		    info->pin_config[i].chan == chan) {
+> +			pin1 = &info->pin_config[i];
+> +			break;
+> +		}
+> +	}
+> +	mutex_unlock(&ptp->pincfg_mux);
+> +	if (pin1 && i == pin)
+> +		return 0;
+> +
+> +	/* Check the desired function and channel. */
+> +	switch (func) {
+> +	case PTP_PF_NONE:
+> +		break;
+> +	case PTP_PF_EXTTS:
+> +		if (chan >= info->n_ext_ts)
+> +			return -EINVAL;
+> +		break;
+> +	case PTP_PF_PEROUT:
+> +		if (chan >= info->n_per_out)
+> +			return -EINVAL;
+> +		break;
+> +	case PTP_PF_PHYSYNC:
+> +		pr_err("sorry, cannot reassign the calibration pin\n");
+> +		return -EINVAL;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (pin1 && pin1->func == PTP_PF_PHYSYNC) {
+> +		pr_err("sorry, cannot reprogram the calibration pin\n");
+> +		return -EINVAL;
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/boot/dts/exynos4x12.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+            ^^^^
+Will this ever happen? pin1 && pin1->func == PTP_PF_PHYSYNC means that func 
+== PTP_PF_PHYSYNC, but in this case you already return -EINVAL a few lines 
+above.
 
-diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-index 5a3e551..1ec77f6 100644
---- a/arch/arm/boot/dts/exynos4x12.dtsi
-+++ b/arch/arm/boot/dts/exynos4x12.dtsi
-@@ -31,6 +31,12 @@
- 		mshc0 = &mshc_0;
- 	};
- 
-+	pmu {
-+		compatible = "arm,cortex-a9-pmu";
-+		interrupt-parent = <&combiner>;
-+		interrupts = <2 2>, <3 2>, <18 2>, <19 2>;
-+	};
-+
- 	pd_isp: isp-power-domain@10023CA0 {
- 		compatible = "samsung,exynos4210-pd";
- 		reg = <0x10023CA0 0x20>;
--- 
-1.8.0
+Christian
 
