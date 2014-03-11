@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057AbaCKRPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:15:22 -0400
-Received: from mout.web.de ([212.227.17.12]:58722 "EHLO mout.web.de"
+	id S1754706AbaCKRPS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:15:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39981 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752744AbaCKRPU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:15:20 -0400
-Date: Tue, 11 Mar 2014 18:15:13 +0100
-From: Julian Wollrath <jwollrath@web.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>, Lee@linutronix.de,
-        Chun-Yi <jlee@suse.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-Message-ID: <20140311181513.0f73383c@ilfaris>
-In-Reply-To: <alpine.DEB.2.02.1403111454140.18573@ionos.tec.linutronix.de>
-References: <20140310110410.5b2218f6@ilfaris>
- <alpine.DEB.2.02.1403101123470.18573@ionos.tec.linutronix.de>
- <20140311142910.27594027@ilfaris>
- <alpine.DEB.2.02.1403111454140.18573@ionos.tec.linutronix.de>
+	id S1752744AbaCKRPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 13:15:13 -0400
+Message-ID: <531F447B.2020705@zytor.com>
+Date: Tue, 11 Mar 2014 10:14:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:H57QrV7TImx6M+3mSUzwN+ndxgpj8QQ7Y1OGLBT8yl6FO7TXUDF
- e/ik2OanEGcfv4YMptkadTWtHGGcSKPXtX63bV1IbOW/AS9rn3unX3YgLYxUjNz/LWsaWT6
- MdkG+70AyvBneD3bPYnWRuPCxehj5K6M6PwpVfis9wvEN55YV5hz2bgHimVkgmLkm5kl/5o
- 8/AMjWVofMPKSk7NQE/yw==
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>	<CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>	<CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>	<CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>	<CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>	<CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>	<CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>	<CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>	<531F365B.4060000@linux.intel.com>	<CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>	<531F3D02.30706@linux.intel.com>	<CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>	<CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com> <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
+In-Reply-To: <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Tue, 11 Mar 2014 14:56:41 +0100 (CET)
-schrieb Thomas Gleixner <tglx@linutronix.de>:
-> > Ok, via bisecting I found commit
-> > 73f7d1ca32638028e3271f54616773727e2f9f26 (see below) to be the one
-> > that introduced this regression.
+On 03/11/2014 10:09 AM, Linus Torvalds wrote:
 > 
-> Interesting. I have no idea what's going on. But maybe can the ACPI
-> folks shed some light on it.
+> So 32-bit x86 is dead, dead, dead. There's absolutely no future to it.
+> We're not adding new stuff to "future-proof" it.
+> 
 
-I have absolutely no idea, if it is the right thing to do and why it
-works, but the patch below fixes the problem. Thank you for your help.
+Quark and its derivatives will probably be 32 bit for some time to come.
 
+Now, I don't know what the motivation was for Stefani to start this work
+specifically.  Stefani, would you like to fill us in?
 
-Cheers,
-Julian Wollrath
+	-hpa
 
->From 7664f495039d93adfce073e58840a46549904f04 Mon Sep 17 00:00:00 2001
-From: Julian Wollrath <jwollrath@web.de>
-Date: Tue, 11 Mar 2014 18:05:43 +0100
-Subject: [PATCH] Fix fast TSC calibration
-
-Since commit 73f7d1ca32638028e3271f54616773727e2f9f26 the fast TSC calibration
-failed on a Thinkpad X121e with an AMD E450 APU. Moving acpi_early_init() after
-late_time_init() fixes this.
-
-Signed-off-by: Julian Wollrath <jwollrath@web.de>
----
- init/main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/init/main.c b/init/main.c
-index eb03090cdced..bf9d99148bd6 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -561,7 +561,6 @@ asmlinkage void __init start_kernel(void)
- 	init_timers();
- 	hrtimers_init();
- 	softirq_init();
--	acpi_early_init();
- 	timekeeping_init();
- 	time_init();
- 	sched_clock_postinit();
-@@ -609,6 +608,7 @@ asmlinkage void __init start_kernel(void)
- 	numa_policy_init();
- 	if (late_time_init)
- 		late_time_init();
-+	acpi_early_init();
- 	sched_clock_init();
- 	calibrate_delay();
- 	pidmap_init();
--- 
-1.9.0
 
