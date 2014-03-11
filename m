@@ -1,105 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435AbaCKH6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 03:58:51 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:54624 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098AbaCKH6t (ORCPT
+	id S1752740AbaCKIQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 04:16:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44529 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbaCKIQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 03:58:49 -0400
-Date: Tue, 11 Mar 2014 08:58:45 +0100
-From: Christian Riesch <christian.riesch@omicron.at>
-To: Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        =?UTF-8?Q?Stefan_S=C3=B8rensen?= <stefan.sorensen@spectralink.com>
-Subject: Re: [PATCH RFC net-next v1 1/9] ptp: introduce programmable pins.
-Message-ID: <F85F72BA1EE25F8F7FB77295@[172.22.2.41]>
-In-Reply-To: <d9cb37a7d6e57d7f103dab78f98044697d3c4433.1394307304.git.richardcochran@gmail.com>
-References: <cover.1394307303.git.richardcochran@gmail.com>
- <d9cb37a7d6e57d7f103dab78f98044697d3c4433.1394307304.git.richardcochran@gmail.com>
-X-Mailer: Mulberry/4.0.8 (Win32)
+	Tue, 11 Mar 2014 04:16:06 -0400
+Date: Tue, 11 Mar 2014 09:15:51 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando_b1@lab.ntt.co.jp>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/clock: prevent tracing recursion in
+ sched_clock_cpu()
+Message-ID: <20140311081551.GS9987@twins.programming.kicks-ass.net>
+References: <1394083528.4524.3.camel@nexus>
+ <20140306055113.2306397d@gandalf.local.home>
+ <531D66FE.20703@lab.ntt.co.jp>
+ <20140310234706.3faf282b@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140310234706.3faf282b@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+On Mon, Mar 10, 2014 at 11:47:06PM -0400, Steven Rostedt wrote:
+> On Mon, 10 Mar 2014 16:17:18 +0900
+> Fernando Luis Vázquez Cao <fernando_b1@lab.ntt.co.jp> wrote:
+> 
+> 
+> > Thank you four your review, Peter, Steven.
+> > 
+> > By the way, who is going to pick this patch? Do you want
+> > me to resend with Steven's Acked-by added?
+> 
+> I don't think you have to. I believe Peter got it. I know there's a
+> bunch of patches he's trying to get pushed forward.
 
---On March 08, 2014 20:42 +0100 Richard Cochran <richardcochran@gmail.com> 
-wrote:
-
-> This patch adds a pair of new ioctls to the PTP Hardware Clock device
-> interface. Using the ioctls, user space programs can query each pin to
-> find out its current function and also reprogram a different function
-> if desired.
->
-> Signed-off-by: Richard Cochran <richardcochran@gmail.com>
-> ---
->  drivers/ptp/ptp_chardev.c        |  133
-> +++++++++++++++++++++++++++++++++++++-  drivers/ptp/ptp_clock.c
-> |   23 +++++++
->  drivers/ptp/ptp_private.h        |    4 ++
->  include/linux/ptp_clock_kernel.h |   33 ++++++++++
->  include/uapi/linux/ptp_clock.h   |   39 ++++++++++-
->  5 files changed, 230 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/ptp/ptp_chardev.c b/drivers/ptp/ptp_chardev.c
-> index 34a0c60..dc13d1e 100644
-> --- a/drivers/ptp/ptp_chardev.c
-> +++ b/drivers/ptp/ptp_chardev.c
-[...]
-> +int ptp_setpin(struct ptp_clock *ptp, unsigned int pin,
-> +	       enum ptp_pin_function func, unsigned int chan)
-> +{
-> +	struct ptp_clock_info *info = ptp->info;
-> +	struct ptp_pin_desc *pin1 = NULL, *pin2 = &info->pin_config[pin];
-> +	unsigned int i;
-> +
-> +	/* Check to see if any other pin previously had this function. */
-> +	if (mutex_lock_interruptible(&ptp->pincfg_mux))
-> +		return -ERESTARTSYS;
-> +	for (i = 0; i < info->n_pins; i++) {
-> +		if (info->pin_config[i].func == func &&
-> +		    info->pin_config[i].chan == chan) {
-> +			pin1 = &info->pin_config[i];
-> +			break;
-> +		}
-> +	}
-> +	mutex_unlock(&ptp->pincfg_mux);
-> +	if (pin1 && i == pin)
-> +		return 0;
-> +
-> +	/* Check the desired function and channel. */
-> +	switch (func) {
-> +	case PTP_PF_NONE:
-> +		break;
-> +	case PTP_PF_EXTTS:
-> +		if (chan >= info->n_ext_ts)
-> +			return -EINVAL;
-> +		break;
-> +	case PTP_PF_PEROUT:
-> +		if (chan >= info->n_per_out)
-> +			return -EINVAL;
-> +		break;
-> +	case PTP_PF_PHYSYNC:
-> +		pr_err("sorry, cannot reassign the calibration pin\n");
-> +		return -EINVAL;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (pin1 && pin1->func == PTP_PF_PHYSYNC) {
-> +		pr_err("sorry, cannot reprogram the calibration pin\n");
-> +		return -EINVAL;
-
-            ^^^^
-Will this ever happen? pin1 && pin1->func == PTP_PF_PHYSYNC means that func 
-== PTP_PF_PHYSYNC, but in this case you already return -EINVAL a few lines 
-above.
-
-Christian
-
+Yeah, I do have it (and the scheduler patch you were after Steve), I
+just need to trick Ingo into actually looking at his computer somehow.
+He seems busy with real life stuff for a bit.
