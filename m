@@ -1,244 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaCKMtX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 08:49:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41437 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925AbaCKMtM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 08:49:12 -0400
-Message-ID: <531F0636.4050608@pengutronix.de>
-Date: Tue, 11 Mar 2014 13:48:54 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
-MIME-Version: 1.0
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Michal Simek <michals@xilinx.com>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
-Subject: Re: [PATCH v5] can: xilinx CAN controller support.
-References: <5254bfec-c6fd-4681-a34d-706d51e60fbb@VA3EHSMHS004.ehs.local> <531DD2C4.5060109@pengutronix.de> <f1e2f08f-05fc-40d3-8437-4c6817d631cb@AM1EHSMHS010.ehs.local>
-In-Reply-To: <f1e2f08f-05fc-40d3-8437-4c6817d631cb@AM1EHSMHS010.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="suD0cqq8XrJJSQR2n7FFKTRB1voTPGq4L"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753534AbaCKMuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 08:50:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59375 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752784AbaCKMuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 08:50:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,630,1389772800"; 
+   d="scan'208";a="497652262"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 1/3] mei: make me hw headers private to me hw.
+Date: Tue, 11 Mar 2014 14:49:23 +0200
+Message-Id: <1394542165-19362-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---suD0cqq8XrJJSQR2n7FFKTRB1voTPGq4L
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Remove includes of me-hw.h and me-hw-regs.h headers from
+the mei generic code.
+The mei layer should not depend on hw specific headers
 
-On 03/11/2014 01:34 PM, Appana Durga Kedareswara Rao wrote:
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/amthif.c    | 1 -
+ drivers/misc/mei/bus.c       | 1 -
+ drivers/misc/mei/hbm.c       | 1 -
+ drivers/misc/mei/hw-me.c     | 4 ++--
+ drivers/misc/mei/interrupt.c | 1 -
+ drivers/misc/mei/main.c      | 1 -
+ drivers/misc/mei/mei_dev.h   | 1 -
+ drivers/misc/mei/pci-me.c    | 3 ++-
+ drivers/misc/mei/wd.c        | 1 -
+ 9 files changed, 4 insertions(+), 10 deletions(-)
 
->>> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig index
->>> 9e7d95d..b180239 100644
->>> --- a/drivers/net/can/Kconfig
->>> +++ b/drivers/net/can/Kconfig
->>> @@ -125,6 +125,13 @@ config CAN_GRCAN
->>>       endian syntheses of the cores would need some modifications on
->>>       the hardware level to work.
->>>
->>> +config CAN_XILINXCAN
->>> +   tristate "Xilinx CAN"
->>> +   depends on ARCH_ZYNQ || MICROBLAZE
->>
->> Is Zynq multiarch already?
-> Discussions are going on this
-> So the final thing that Fengguang ( fengguang.wu@intel.com)
-> Proposed is
->         config CAN_XILINX
->         tristate "Xilinx CAN"
->         depends on ARCH_ZYNQ || MICROBLAZE || COMPILE_TEST
->         depends on COMMON_CLK && HAS_MMIO  # whatever you need for othe=
-r architectures
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index f05d54d..b75a7da 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -34,7 +34,6 @@
+ 
+ #include "mei_dev.h"
+ #include "hbm.h"
+-#include "hw-me.h"
+ #include "client.h"
+ 
+ const uuid_le mei_amthif_guid  = UUID_LE(0x12f80028, 0xb4b7, 0x4b2d,
+diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+index 463ae51..ddc5ac9 100644
+--- a/drivers/misc/mei/bus.c
++++ b/drivers/misc/mei/bus.c
+@@ -26,7 +26,6 @@
+ #include <linux/mei_cl_bus.h>
+ 
+ #include "mei_dev.h"
+-#include "hw-me.h"
+ #include "client.h"
+ 
+ #define to_mei_cl_driver(d) container_of(d, struct mei_cl_driver, driver)
+diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+index 9555791..5fa5ff9 100644
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -21,7 +21,6 @@
+ 
+ #include "mei_dev.h"
+ #include "hbm.h"
+-#include "hw-me.h"
+ #include "client.h"
+ 
+ static const char *mei_cl_conn_status_str(enum mei_cl_connect_status status)
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 7e769c5..d1994f6 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -20,10 +20,10 @@
+ #include <linux/interrupt.h>
+ 
+ #include "mei_dev.h"
+-#include "hw-me.h"
+-
+ #include "hbm.h"
+ 
++#include "hw-me.h"
++#include "hw-me-regs.h"
+ 
+ /**
+  * mei_me_reg_read - Reads 32bit data from the mei device
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 2fbf0c0..e9c3fa8 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -26,7 +26,6 @@
+ 
+ #include "mei_dev.h"
+ #include "hbm.h"
+-#include "hw-me.h"
+ #include "client.h"
+ 
+ 
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index 49e3bb8..63ca2d1 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -40,7 +40,6 @@
+ #include <linux/mei.h>
+ 
+ #include "mei_dev.h"
+-#include "hw-me.h"
+ #include "client.h"
+ 
+ /**
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 36640b9..2ef5593 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -24,7 +24,6 @@
+ #include <linux/mei_cl_bus.h>
+ 
+ #include "hw.h"
+-#include "hw-me-regs.h"
+ #include "hbm.h"
+ 
+ /*
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index 50d9cb5..19fa183 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -39,8 +39,9 @@
+ #include <linux/mei.h>
+ 
+ #include "mei_dev.h"
+-#include "hw-me.h"
+ #include "client.h"
++#include "hw-me-regs.h"
++#include "hw-me.h"
+ 
+ /* mei_pci_tbl - PCI Device ID Table */
+ static DEFINE_PCI_DEVICE_TABLE(mei_me_pci_tbl) = {
+diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
+index e084adf..ebf1cbc 100644
+--- a/drivers/misc/mei/wd.c
++++ b/drivers/misc/mei/wd.c
+@@ -25,7 +25,6 @@
+ 
+ #include "mei_dev.h"
+ #include "hbm.h"
+-#include "hw-me.h"
+ #include "client.h"
+ 
+ static const u8 mei_start_wd_params[] = { 0x02, 0x12, 0x13, 0x10 };
+-- 
+1.8.5.3
 
-> Are you Ok for this?
-
-You have to fill the 2nd depends on with some sane values, though.
-
-[...]
-
->>> +/**
->>> + * struct xcan_priv - This definition define CAN driver instance
->>> + * @can:                   CAN private data structure.
->>> + * @tx_head:                       Tx CAN packets ready to send on t=
-he
->> queue
->>> + * @tx_tail:                       Tx CAN packets successfully sende=
-d on the
->> queue
->>> + * @tx_max:                        Maximum number packets the driver=
- can
->> send
->>> + * @napi:                  NAPI structure
->>> + * @read_reg:                      For reading data from CAN registe=
-rs
->>> + * @write_reg:                     For writing data to CAN registers=
-
->>> + * @dev:                   Network device data structure
->>> + * @reg_base:                      Ioremapped address to registers
->>> + * @irq_flags:                     For request_irq()
->>> + * @aperclk:                       Pointer to struct clk
->>> + * @devclk:                        Pointer to struct clk
->>> + */
->>> +struct xcan_priv {
->>> +   struct can_priv can;
->>> +   unsigned int tx_head;
->>> +   unsigned int tx_tail;
->>> +   u32 tx_max;
->> Please make it an unsigned int, too.
->>
-> Ok
->=20
->=20
->>> +   struct napi_struct napi;
->>> +   u32 (*read_reg)(const struct xcan_priv *priv, enum xcan_reg reg);=
-
->>> +   void (*write_reg)(const struct xcan_priv *priv, enum xcan_reg reg=
-,
->>> +                   u32 val);
->>> +   struct net_device *dev;
->>> +   void __iomem *reg_base;
->>> +   unsigned long irq_flags;
->>> +   struct clk *aperclk;
->>> +   struct clk *devclk;
->>
->> Please rename the clock variables to match the names in the DT.
->>
-> The clock names are different for axi CAN and CANPS case.
-> So will make them as busclk and devclk
-> Are you ok with this?
-
-Why not "ref_clk" and "aper_clk" as used in the DT?
-
->>> +};
->>> +
-
-[...]
-
->>> +/**
->>> + * xcan_chip_start - This the drivers start routine
->>> + * @ndev:  Pointer to net_device structure
->>> + *
->>> + * This is the drivers start routine.
->>> + * Based on the State of the CAN device it puts
->>> + * the CAN device into a proper mode.
->>> + *
->>> + * Return: 0 on success and failure value on error  */ static int
->>> +xcan_chip_start(struct net_device *ndev) {
->>> +   struct xcan_priv *priv =3D netdev_priv(ndev);
->>> +   u32 err;
->>> +   unsigned long timeout;
->>> +
->>> +   /* Check if it is in reset mode */
->>> +   err =3D set_reset_mode(ndev);
->>> +   if (err < 0)
->>> +           return err;
->>> +
->>> +   err =3D xcan_set_bittiming(ndev);
->>> +   if (err < 0)
->>> +           return err;
->>> +
->>> +   /* Enable interrupts */
->>> +   priv->write_reg(priv, XCAN_IER_OFFSET, XCAN_INTR_ALL);
->>> +
->>> +   /* Check whether it is loopback mode or normal mode  */
->>> +   if (priv->can.ctrlmode & CAN_CTRLMODE_LOOPBACK)
->>> +           /* Put device into loopback mode */
->>> +           priv->write_reg(priv, XCAN_MSR_OFFSET,
->> XCAN_MSR_LBACK_MASK);
->>> +   else
->>> +           /* The device is in normal mode */
->>> +           priv->write_reg(priv, XCAN_MSR_OFFSET, 0);
->>> +
->>> +   if (priv->can.state =3D=3D CAN_STATE_STOPPED) {
->>
->> Your device is in stopped mode, add you go though set_reset_mode()
->> already.
->=20
-> Will remove this if condition I putted this condition here because in s=
-et_reset_mode we are putting the
-> Device state in Stopped state.
-
-So the device is in CAN_STATE_STOPPED, as this code just went through
-set_reset_mode() some lines ago. so it makes no sense to check if it
-(still) is (the code runs serialized here).
-
->>
->>> +           /* Enable Xilinx CAN */
->>> +           priv->write_reg(priv, XCAN_SRR_OFFSET,
->> XCAN_SRR_CEN_MASK);
->>> +           priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
->>> +           timeout =3D jiffies + XCAN_TIMEOUT;
->>> +           if (priv->can.ctrlmode & CAN_CTRLMODE_LOOPBACK) {
->>> +                   while ((priv->read_reg(priv, XCAN_SR_OFFSET)
->>> +                                   & XCAN_SR_LBACK_MASK) =3D=3D 0) {=
-
->>> +                           if (time_after(jiffies, timeout)) {
->>> +                                   netdev_warn(ndev,
->>> +                                           "timedout for loopback
->> mode\n");
->>> +                                   return -ETIMEDOUT;
->>> +                           }
->>> +                           usleep_range(500, 10000);
->>> +                   }
->>> +           } else {
->>> +                   while ((priv->read_reg(priv, XCAN_SR_OFFSET)
->>> +                                   & XCAN_SR_NORMAL_MASK) =3D=3D 0) =
-{
->>> +                           if (time_after(jiffies, timeout)) {
->>> +                                   netdev_warn(ndev,
->>> +                                           "timedout for normal
->> mode\n");
->>> +                                   return -ETIMEDOUT;
->>> +                           }
->>> +                           usleep_range(500, 10000);
->>> +                   }
->>> +           }
->>> +           netdev_dbg(ndev, "status:#x%08x\n",
->>> +                           priv->read_reg(priv, XCAN_SR_OFFSET));
->>> +   }
->>> +   priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
->>> +   return 0;
->>> +}
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---suD0cqq8XrJJSQR2n7FFKTRB1voTPGq4L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlMfBjYACgkQjTAFq1RaXHO3HgCdFPWt6PHc7gid8sZPzLaNhqLd
-sZwAn2WC+wU7uWOFt3SmS65rFhhX9zpL
-=DirU
------END PGP SIGNATURE-----
-
---suD0cqq8XrJJSQR2n7FFKTRB1voTPGq4L--
