@@ -1,148 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaCKIdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 04:33:13 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:42506 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203AbaCKIdI (ORCPT
+	id S1754361AbaCKIhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 04:37:07 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:33227 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861AbaCKIhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 04:33:08 -0400
-Message-ID: <531ECA33.8050803@monstr.eu>
-Date: Tue, 11 Mar 2014 09:32:51 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 11 Mar 2014 04:37:04 -0400
+Date: Tue, 11 Mar 2014 09:36:58 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, peterz@infradead.org,
+        mingo@kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 01/15] sched/prio: Add a macro named NICE_TO_RLIMIT in
+ prio.h.
+Message-ID: <20140311083658.GB4298@osiris>
+References: <cover.1394513466.git.yangds.fnst@cn.fujitsu.com>
+ <f475972d21de5738cf3302ab9c95c90fd4407815.1394513466.git.yangds.fnst@cn.fujitsu.com>
+ <20140311081730.GA4298@osiris>
+ <531EC748.5010600@cn.fujitsu.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        Punnaiah Choudary Kalluri 
-	<punnaiah.choudary.kalluri@xilinx.com>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "kpc528@gmail.com" <kpc528@gmail.com>,
-        "kalluripunnaiahchoudary@gmail.com" 
-	<kalluripunnaiahchoudary@gmail.com>,
-        "punnaia@xilinx.com" <punnaia@xilinx.com>
-Subject: Re: [RFC PATCH] edac: zynq: Added EDAC support for zynq ddr ecc controller
-References: <4adb2b4b-2ad6-42b9-929e-cc062f817245@TX2EHSMHS021.ehs.local> <20140310105655.GH14999@e106331-lin.cambridge.arm.com> <531DA900.5060202@monstr.eu> <fa35006e-055d-4ef2-9b65-a0f8cc6a0c8f@AM1EHSMHS016.ehs.local>
-In-Reply-To: <fa35006e-055d-4ef2-9b65-a0f8cc6a0c8f@AM1EHSMHS016.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="3dbUwieR7F5EVM6DstcsT09KmBooOenbK"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <531EC748.5010600@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031108-4966-0000-0000-000008B08E99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---3dbUwieR7F5EVM6DstcsT09KmBooOenbK
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 11, 2014 at 04:20:24PM +0800, Dongsheng Yang wrote:
+> On 03/11/2014 04:17 PM, Heiko Carstens wrote:
+> >On Tue, Mar 11, 2014 at 12:59:16PM +0800, Dongsheng Yang wrote:
+> >>+#define NICE_TO_RLIMIT(nice)	(MAX_NICE - nice + 1)
+> >Where is MAX_NICE defined? The s390 patch fails to compile.
+> 
+> MAX_NICE is defined in include/linux/sched/prio.h. It is applied in
+> tip tree, and not in mainline yet.
 
-On 03/10/2014 11:32 PM, S=C3=B6ren Brinkmann wrote:
-> On Mon, 2014-03-10 at 12:58PM +0100, Michal Simek wrote:
->> On 03/10/2014 11:56 AM, Mark Rutland wrote:
->>> On Sun, Mar 09, 2014 at 02:57:16AM +0000, Punnaiah Choudary Kalluri w=
-rote:
->>>> Added EDAC support for reporting the ecc errors of zynq ddr controll=
-er.
->>>> The ddr ecc controller corrects single bit errors and detects double=
- bit
->>>> errors
->>>>
->>>> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
->>>> ---
->>>>  .../devicetree/bindings/edac/zynq_edac.txt         |   18 +
->>>>  drivers/edac/Kconfig                               |    7 +
->>>>  drivers/edac/Makefile                              |    1 +
->>>>  drivers/edac/zynq_edac.c                           |  613 +++++++++=
-+++++++++++
->>>>  4 files changed, 639 insertions(+), 0 deletions(-)
->>>>  create mode 100644 Documentation/devicetree/bindings/edac/zynq_edac=
-=2Etxt
->>>>  create mode 100644 drivers/edac/zynq_edac.c
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/edac/zynq_edac.txt b/=
-Documentation/devicetree/bindings/edac/zynq_edac.txt
->>>> new file mode 100644
->>>> index 0000000..c21ff83
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/edac/zynq_edac.txt
->>>> @@ -0,0 +1,18 @@
->>>> +Zynq EDAC driver, it does reports the DDR ECC single bit errors tha=
-t are
->>>> +corrected and double bit ecc errors that are detected by the DDR EC=
-C controller.
->>>> +ECC support for DDR is available in half-bus width(16 bit) configur=
-ation only.
->>>> +
->>>> +Required properties:
->>>> +- compatible: Should be "xlnx,ps7-ddrc" or "xlnx,ps7-ddrc-1.00.a"
->>>
->>> Is this an or or a xor?
->>
->> Compatible string should be just xlnx,zynq-ddrc-1.00.a.
->> Nothing with ps7.
->=20
-> Isn't this vendor IP? IMHO, this should be something completely
-> different. Or if you want some Zynq-specific compat string it should
-> refer to an actual version string associated with Zynq. 1.00.a is not,
-> AFAIK.
+Ok.
 
-I have checked with Punnaiah that this is Synopsys DDR memory controller.=
+> >Also you probably want at least extra braces around the 'nice' usage to
+> >avoid subtle side effects. (or make NICE_TO.. a function, whatever).
+> 
+> Yes, agree. Another question is that I am not sure when I need to
+> use a macro and when I should use a inline function.
+> 
+> Could you help to give me some sugguestion?
 
-Zynq is based on 1.4 version with some customization.
-It means I think reasonable solution is
-call it drivers/edac/synopsys_edac.c
-rename zynq_ in driver to synopsys_ and
-use xlnx,zynq-ddrc-1.00.a compatible string because zynq is not using
-clean synopsys version.
+You can ask three people and get five opinions ;)
 
-I am not getting point why you don't like 1.00.a suffix here.
-Because of historical point of view compatible strings should be differen=
-t
-for early silicon, silicon v1, silicon v2, silicon v3, etc
-but we haven't used it at all that's why we can use xilinx scheme
-which we are using for our soft IPs.
+However if your above define would have been an inline function it
+wouldn't suffer from possible subtle side effects and it would have
+sane type checking etc.  So usually functions should be preferred.
 
-Does it sound reasonable?
-
-Thanks,
-Michal
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---3dbUwieR7F5EVM6DstcsT09KmBooOenbK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMeyjMACgkQykllyylKDCGCdQCeK8CWXc9HZeiQMIsnQTtK2PyN
-KkYAn01PI6POUb/yfXPn5iSvlSjdB1zs
-=eOSS
------END PGP SIGNATURE-----
-
---3dbUwieR7F5EVM6DstcsT09KmBooOenbK--
