@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583AbaCKJgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 05:36:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:33791 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382AbaCKJgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 05:36:21 -0400
-X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9678097"
-Message-ID: <531ED89C.4050408@cn.fujitsu.com>
-Date: Tue, 11 Mar 2014 17:34:20 +0800
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1753971AbaCKJge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 05:36:34 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:34138 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324AbaCKJgc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 05:36:32 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, joe@perches.com, mingo@kernel.org,
-        tglx@linutronix.de, heiko.carstens@de.ibm.com,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 07/16] ioprio: Add a macro named NICE_TO_IOPRIO.
-References: <cover.1394529373.git.yangds.fnst@cn.fujitsu.com> <008cf8bba167646424d0fca68d96463feace2aee.1394529373.git.yangds.fnst@cn.fujitsu.com> <20140311092856.GU9987@twins.programming.kicks-ass.net>
-In-Reply-To: <20140311092856.GU9987@twins.programming.kicks-ass.net>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 17:33:28,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 17:33:35,
-	Serialize complete at 2014/03/11 17:33:35
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
+	<CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
+	<CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
+	<CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
+	<CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
+Date: Tue, 11 Mar 2014 02:36:31 -0700
+X-Google-Sender-Auth: _2FFPgpYihC-EEqkywMyXFw9sM8
+Message-ID: <CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2014 05:28 PM, Peter Zijlstra wrote:
-> On Tue, Mar 11, 2014 at 05:20:28PM +0800, Dongsheng Yang wrote:
->> As the task nice value is in [-20, 19] and the io priority is in [0, 7],
->> and the convert method from niceval to ioprio is implemented with an
->> opened code in task_nice_ioprio().
->>
->> This patch move the implementation to a macro NICE_TO_IOPRIO, making
->> it more readable and modular.
->>
->> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
->> ---
->>   include/linux/ioprio.h | 7 ++++++-
->>   1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/include/linux/ioprio.h b/include/linux/ioprio.h
->> index beb9ce1..c0faa0b 100644
->> --- a/include/linux/ioprio.h
->> +++ b/include/linux/ioprio.h
->> @@ -18,6 +18,11 @@
->>   #define ioprio_valid(mask)	(IOPRIO_PRIO_CLASS((mask)) != IOPRIO_CLASS_NONE)
->>   
->>   /*
->> + * Convert the nice value [19,-20] to io priority value [0,7].
->> + */
->> +#define NICE_TO_IOPRIO(nice)	(nice_to_rlimit(nice) / 5)
->> +
->> +/*
->>    * These are the io priority groups as implemented by CFQ. RT is the realtime
->>    * class, it always gets premium service. BE is the best-effort scheduling
->>    * class, the default for any process. IDLE is the idle scheduling class, it
->> @@ -52,7 +57,7 @@ enum {
->>    */
->>   static inline int task_nice_ioprio(struct task_struct *task)
->>   {
->> -	return (task_nice(task) + 20) / 5;
->> +	return NICE_TO_IOPRIO(task_nice(task));
->>   }
-> How exactly is adding a macro and code complexity making this code
-> better?
-
-About this patch, I think convert a nice value in [-20, 19] to ioprio in 
-[0, 7]
-is a common requirement. So I add a macro NICE_TO_IOPRIO to achieve it.
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Mon, Mar 10, 2014 at 9:10 PM, Andy Lutomirski <luto@amacapital.net> wrote:
 >
+> I suspect that a lot of 32-bit Linux users want syscall and/or
+> sysenter, and Stefani certainly wants the fast timing that the vDSO
+> can provide.  Also, presumably __kernel_sigreturn serves some purpose
+> :)
 
+Are we talking about the same thing at all?
+
+We're talking about the *COMPAT* vdso, right?
+
+The one you were just told Fedora had never _ever_ enabled? And you
+are seriously arguing that "peformance" is relevant, while at the same
+time trying to claim that the fact that it DOES NOT WORK on SuSE -
+which *did* enable it - is not such a big deal, and that we should
+ignore the "don't break user space" rule?
+
+Seriously?
+
+WTF?
+
+                Linus
