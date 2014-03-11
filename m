@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934AbaCKWQA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 18:16:00 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:63251 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754576AbaCKWP5 (ORCPT
+	id S1755722AbaCKWSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 18:18:12 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:41027 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644AbaCKWSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 18:15:57 -0400
+	Tue, 11 Mar 2014 18:18:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AF8ED5D@HASMSX106.ger.corp.intel.com>
+References: <cover.1394304585.git.luto@amacapital.net> <9bdf4f25e7c57bccd20d7470271b7e385aac270a.1394304585.git.luto@amacapital.net>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AF8ED5D@HASMSX106.ger.corp.intel.com>
 From: Andy Lutomirski <luto@amacapital.net>
-To: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org
-Cc: Stefani Seibold <stefani@seibold.net>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 2/2] x86_32: Remove user bit from identity map PDE
-Date: Tue, 11 Mar 2014 15:15:22 -0700
-Message-Id: <7e195f444b07eacc67d62ab37919f88940717d40.1394575968.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <cover.1394575968.git.luto@amacapital.net>
-References: <cover.1394575968.git.luto@amacapital.net>
-In-Reply-To: <cover.1394575968.git.luto@amacapital.net>
-References: <cover.1394575968.git.luto@amacapital.net>
+Date: Tue, 11 Mar 2014 15:17:48 -0700
+Message-ID: <CALCETrUGP==etEj-Um=d-AJLaQqxUBzjN-s_nfsWrEng7k5WrQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] mei: Don't log an error when the MEI device is
+ quirked off
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "trivial@kernel.org" <trivial@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only reason that the user bit was set was to support userspace
-access to the compat vDSO in the fixmap.  The compat vDSO now lives
-in an ordinary vma, so the user bit can be removed.
+On Tue, Mar 11, 2014 at 3:03 AM, Winkler, Tomas <tomas.winkler@intel.com> wrote:
+>
+>
+>> -----Original Message-----
+>> From: Andy Lutomirski [mailto:luto@amacapital.net]
+>> Sent: Saturday, March 08, 2014 20:58
+>> To: linux-kernel@vger.kernel.org
+>> Cc: trivial@kernel.org; Andy Lutomirski; Winkler, Tomas
+>> Subject: [PATCH 1/4] mei: Don't log an error when the MEI device is quirked off
+>>
+>> If an administrator wants to use MEI, they can search the logs for
+>> 'mei'.  Otherwise they don't need a glaring reminder that their
+>> hardware doesn't actually support MEI.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>  drivers/misc/mei/pci-me.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+>> index ddadd08..809021e 100644
+>> --- a/drivers/misc/mei/pci-me.c
+>> +++ b/drivers/misc/mei/pci-me.c
+>> @@ -127,7 +127,7 @@ static int mei_me_probe(struct pci_dev *pdev, const
+>> struct pci_device_id *ent)
+>>
+>>       if (!mei_me_quirk_probe(pdev, ent)) {
+>>               err = -ENODEV;
+>> -             goto end;
+>> +             return err;  /* No point in logging an error. */
+>>       }
+>
+>
+> I would like to have at least some info/debug message logged,
+> the issue was discovered on specific DELL machines and there is a little worry
+> that on some systems it can be false positive.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/include/asm/pgtable_types.h | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+mei_me_quirk_probe logs "Device doesn't have valid ME Interface\n".
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 1aa9ccd..757f9c4 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -214,13 +214,8 @@
- #ifdef CONFIG_X86_64
- #define __PAGE_KERNEL_IDENT_LARGE_EXEC	__PAGE_KERNEL_LARGE_EXEC
- #else
--/*
-- * For PDE_IDENT_ATTR include USER bit. As the PDE and PTE protection
-- * bits are combined, this will alow user to access the high address mapped
-- * VDSO in the presence of CONFIG_COMPAT_VDSO
-- */
- #define PTE_IDENT_ATTR	 0x003		/* PRESENT+RW */
--#define PDE_IDENT_ATTR	 0x067		/* PRESENT+RW+USER+DIRTY+ACCESSED */
-+#define PDE_IDENT_ATTR	 0x063		/* PRESENT+RW+DIRTY+ACCESSED */
- #define PGD_IDENT_ATTR	 0x001		/* PRESENT (no other attributes) */
- #endif
- 
--- 
-1.8.5.3
-
+--Andy
