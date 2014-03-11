@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226AbaCKNKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:10:35 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:59132 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842AbaCKNKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:10:33 -0400
+	id S1755240AbaCKNLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:11:06 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51181 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752024AbaCKNLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 09:11:03 -0400
+Message-ID: <531F0B49.2070008@ti.com>
+Date: Tue, 11 Mar 2014 15:10:33 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140311104713.GN28112@sirena.org.uk>
-References: <1394531952-3905-1-git-send-email-geert@linux-m68k.org>
-	<1394531952-3905-3-git-send-email-geert@linux-m68k.org>
-	<20140311104713.GN28112@sirena.org.uk>
-Date: Tue, 11 Mar 2014 14:10:31 +0100
-X-Google-Sender-Auth: CRuGUJDkiZquz5Z6g4OTrc9801g
-Message-ID: <CAMuHMdWoPWebnyUu2uGebbnzu68Lh4qsgzpu-otnwMmvaeY1hQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] spi: rspi: Add runtime PM support, using spi core auto_runtime_pm
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi <linux-spi@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lee Jones <lee.jones@linaro.org>, <tony@atomide.com>
+CC: <bcousson@baylibre.com>, <balbi@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v9 0/9] USB Host support for OMAP5 uEVM
+References: <1393510711-4697-1-git-send-email-rogerq@ti.com> <531ECDCB.4060700@ti.com> <20140311120259.GI21216@lee--X1> <531EFE97.1090202@ti.com> <20140311130715.GM21216@lee--X1>
+In-Reply-To: <20140311130715.GM21216@lee--X1>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 03/11/2014 03:07 PM, Lee Jones wrote:
+> 
+>>>>> This patchset brings up USB Host ports and Ethernet port on
+>>>>> the OMAP5 uEVM board.
+>>>>>
+>>>>> It also does some cleanup with respect to DT clock binding
+>>>>> for the mfd/omap-usb-host driver.
+>>>>>
+>>>>> Please queue these for -next.
+>>>>>
+>>>>> Lee,
+>>>>>
+>>>>> I've folded some platform data dependent patches with mfd patches
+>>>>> so that they don't break functionality when applied individually.
+>>>>> You can safely pull in all MFD patches (1 to 6).
+>>>>>
+>>>>> Tony & Benoit,
+>>>>>
+>>>>> Can you please accept patches 7, 8 and 9?
+>>>>
+>>>> Tony has already picked up 7,8 and 9 through omap-soc tree.
+>>>>
+>>>> Since you acked most patches except 5 and 6, are you fine if Tony takes
+>>>> all the patches 1 to 4 in this series via omap-soc tree?
+>>>>
+>>>> What about patches 5 and 6?
+>>>
+>>> Any patches which are orthogonal can just be sucked into whichever tree
+>>> they belong in. If there are inter-subsystem dependencies I'd prefer
+>>> to take them and issue a immutable branch pull-request to the other
+>>> maintainers.
+>>>
+>> Awesome. That would be great, thanks.
+> 
+> That does mean I need a) all of the Maintainer Acks and b) you to tell
+> me which ones need to go through a single tree.
+> 
 
-On Tue, Mar 11, 2014 at 11:47 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Tue, Mar 11, 2014 at 10:59:12AM +0100, Geert Uytterhoeven wrote:
->> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->
-> Applied, thanks, though...
->
->> -     ret = clk_prepare_enable(rspi->clk);
->> -     if (ret < 0) {
->> -             dev_err(&pdev->dev, "unable to prepare/enable clock\n");
->> -             goto error1;
->> -     }
->> +     pm_runtime_enable(&pdev->dev);
->
-> ...due to the runtime PM API being configurable you're supposed to start
-> off with the device runtime enabled (this applies to some of the other
-> patches too).  I'm not sure that's terribly realistic for these drivers
-> though.
+You need to take patches 1 to 6 in the MFD tree. Out of these, patches 1 to 4
+need to be shared with Tony as an immutable branch.
 
-Can you please elaborate what should be fixed?
+Tony, could you please Ack patches 1 to 4? Thanks.
 
-If I disable CONFIG_PM_RUNTIME, the kernel prints:
-
-    Runtime PM disabled, clock forced on.
-
-and the clock is enabled all the time (verified by looking at the clock
-registers)?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+cheers,
+-roger
