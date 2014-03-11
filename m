@@ -1,125 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677AbaCKNo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:44:29 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:46267 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304AbaCKNo1 (ORCPT
+	id S1755080AbaCKNol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:44:41 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36305 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754772AbaCKNoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:44:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+mB=1J6Lzy5fZ6+fU0xY5zLyeDtrjtUpJCYdM7eL-tsQ+jUVA@mail.gmail.com>
-References: <1394104717-3100-1-git-send-email-sthokal@xilinx.com>
-	<1394104717-3100-3-git-send-email-sthokal@xilinx.com>
-	<CABb+yY1y1sOozVU=iAsotWG-q3N=SogjHjZ=iF04CiXF89eeOg@mail.gmail.com>
-	<CA+mB=1J6Lzy5fZ6+fU0xY5zLyeDtrjtUpJCYdM7eL-tsQ+jUVA@mail.gmail.com>
-Date: Tue, 11 Mar 2014 19:14:26 +0530
-Message-ID: <CAJe_Zhej0-i4uEPvXr3XH_8Qzd7SD-3yvJOp+MW4j+KJ8rt1PQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] dma: Add Xilinx AXI Video Direct Memory Access
- Engine driver support
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: Jassi Brar <jassisinghbrar@gmail.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
+	Tue, 11 Mar 2014 09:44:38 -0400
+Message-ID: <1394545463.3772.24.camel@paszta.hi.pengutronix.de>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
+ drivers/media/v4l2-core to drivers/of
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Date: Tue, 11 Mar 2014 14:44:23 +0100
+In-Reply-To: <531F0F4F.3070008@ti.com>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
+	 <139468148.3QhLg3QYq1@avalon> <531F08A8.300@ti.com>
+	 <1883687.VdfitvQEN3@avalon> <531F0F4F.3070008@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 March 2014 00:00, Srikanth Thokala <sthokal@xilinx.com> wrote:
-> On Mon, Mar 10, 2014 at 9:30 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->> On Thu, Mar 6, 2014 at 7:18 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
->>
->>> +static struct dma_async_tx_descriptor *
->>> +xilinx_vdma_dma_prep_interleaved(struct dma_chan *dchan,
->>> +                                struct dma_interleaved_template *xt,
->>> +                                unsigned long flags)
->>> +{
->>> +       struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
->>> +       struct xilinx_vdma_tx_descriptor *desc;
->>> +       struct xilinx_vdma_tx_segment *segment;
->>> +       struct xilinx_vdma_tx_segment *prev = NULL;
->>> +       int i;
->>> +
->>> +       if ((xt->dir != DMA_MEM_TO_DEV) && (xt->dir != DMA_DEV_TO_MEM))
->>> +               return NULL;
->>> +
->>> +       if (!xt->numf || !xt->sgl[0].size)
->>> +               return NULL;
->>> +
->>> +       /* Allocate a transaction descriptor. */
->>> +       desc = xilinx_vdma_alloc_tx_descriptor(chan);
->>> +       if (!desc)
->>> +               return NULL;
->>> +
->>> +       dma_async_tx_descriptor_init(&desc->async_tx, &chan->common);
->>> +       desc->async_tx.tx_submit = xilinx_vdma_tx_submit;
->>> +       desc->async_tx.cookie = 0;
->>> +       async_tx_ack(&desc->async_tx);
->>> +
->>> +       /* Build the list of transaction segments. */
->>> +       for (i = 0; i < xt->frame_size; i++) {
->>> +               struct xilinx_vdma_desc_hw *hw;
->>> +
->>> +               /* Allocate the link descriptor from DMA pool */
->>> +               segment = xilinx_vdma_alloc_tx_segment(chan);
->>> +               if (!segment)
->>> +                       goto error;
->>> +
->>> +               /* Fill in the hardware descriptor */
->>> +               hw = &segment->hw;
->>> +               hw->vsize = xt->numf;
->>> +               hw->hsize = xt->sgl[0].size;
->>> +               hw->stride = xt->sgl[0].icg <<
->>> +                               XILINX_VDMA_FRMDLY_STRIDE_STRIDE_SHIFT;
->>>
->> It seems the xt->frame_size is (should be?) always going to be 1?
->> If yes, the for-loop isn't needed.
->> If no, you should probably use 'i' as the index to sgl[], and not always 0.
->
-> It can be either
-> '1':  User can queue each segment and submit all the segments at once as a
->       single async tx descriptor.  I am using this for scatter-gather mode of
->       operation where the src_start/dst_start is different for each segment.
-> 'Number of frames':  In this case the driver gets contiguous frame buffer memory
->       and it prepares segments with addresses as multiples of
-> src_start/dst_start.
->
-Quoting you from earlier thread ....
-" In video frame context,
-chunk.size -> hsize
-chunk.icg -> stride
-numf -> vsize
-and frame_size is always 1 as it will have only one chunk in a line. "
- ... which makes sense.
+Hi,
 
-I hope you realize that, 'frame_size' denotes the number of chunks in
-a frame and 'numf' denotes the number of frames in the transfer
-request. It seems wrong when you assume  vsize:=numf  but
-frame_size>1 ... i.e, each horizontal video line has two or more
-dis-contiguous chunks?   This might work for client drivers written
-specifically for Xilinx AXI Video DMAC but will fail over any other
-controller driver.
+Am Dienstag, den 11.03.2014, 15:27 +0200 schrieb Tomi Valkeinen:
+> On 11/03/14 15:16, Laurent Pinchart wrote:
+> 
+> >> And if I gathered Grant's opinion correctly (correct me if I'm wrong),
+> >> he thinks things should be explicit, i.e. the bindings for, say, an
+> >> encoder should state that the encoder's output endpoint _must_ contain a
+> >> remote-endpoint property, whereas the encoder's input endpoint _must
+> >> not_ contain a remote-endpoint property.
+> > 
+> > Actually my understand was that DT links would have the same direction as the 
+> > data flow. There would be no ambiguity in that case as the direction of the 
+> 
+> Ok. At least at some point in the discussion the rule of thumb was to
+> have the "master" point at the "slave", which are a bit vague terms, but
+> I think both display and camera controllers were given as examples of
+> "master".
+> 
+> > data flow is known. What happens for bidirectional data flows still need to be 
+> > discussed though. And if we want to use the of-graph bindings to describe 
+> > graphs without a data flow, a decision will need to be taken there too.
+> 
+> Yep. My worry is that if the link direction is defined in the bindings
+> for the device, somebody will at some point have a complex board which
+> happens to use two devices in such a way, that either neither of them
+> point to each other, or both point to each other.
+> 
+> Maybe we can make sure that never happens, but I feel a bit nervous
+> about it especially for bi-directional cases. If the link has no clear
+> main-dataflow direction, it may be a bit difficult to say which way to link.
+> 
+> With double-linking all those concerns just disappear.
 
- IMO, xilinx_vdma.c should expect only 1 video frame per
-device_prep_interleaved_dma() call (i.e, vsize=numf and frame_size==1)
-  Let the client driver submit 1/2/.../16 requests before kick
-starting the DMA. Upon  dma_async_tx_descriptor.callback(), the client
-'refills' the frame and re-queues it back. This should work because
-the video-frames' attributes and locations are not going to change
-within a session.
+another possibility would be to just leave it open in the generic
+bindings:
 
-> Please let me know if you see any issues in this implementation.
->
-I am ok if you want the driver upstream now and want to 'fix' it when
-you actually start seeing problems :)
+"Two endpoints are considered linked together if any of them contains a
+ 'remote-endpoint' phandle property that points to the other. If both
+ contain a 'remote-endpoint' property, both must point at each other."
+
+As long as we make sure that the generic code is able to generate the
+undirected graph from this, we could then let more specific bindings
+(like video-interfaces.txt) define that the phandle links always should
+point in both directions, in data flow direction, north, or outwards
+from the 'master'.
+
+regards
+Philipp
+
