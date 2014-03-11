@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaCKDj2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 23:39:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54514 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752879AbaCKDj0 convert rfc822-to-8bit (ORCPT
+	id S1754443AbaCKDna (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 23:43:30 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53801 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753781AbaCKDn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 23:39:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,628,1389772800"; 
-   d="scan'208";a="497415821"
-From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Lim, Lee Booi" <lee.booi.lim@intel.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv2 RESEND] i2c: designware-pci: set ideal HCNT, LCNT and
- SDA hold time value
-Thread-Topic: [PATCHv2 RESEND] i2c: designware-pci: set ideal HCNT, LCNT and
- SDA hold time value
-Thread-Index: AQHPPNpz5BfKLzT1306ySfjPdujVX5rbO3KA
-Date: Tue, 11 Mar 2014 03:39:22 +0000
-Message-ID: <604BF5F4C5D71041942BC7E84ED659EA0155D80D@PGSMSX103.gar.corp.intel.com>
-References: <1394537625-27205-1-git-send-email-chiau.ee.chew@intel.com>
-In-Reply-To: <1394537625-27205-1-git-send-email-chiau.ee.chew@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 Mar 2014 23:43:28 -0400
+Message-ID: <531E865B.9090707@hurleysoftware.com>
+Date: Mon, 10 Mar 2014 23:43:23 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-serial@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 1/2] serial_core: Unregister console in uart_remove_one_port()
+References: <1393593694-30262-1-git-send-email-geert@linux-m68k.org> <531E61AC.6040706@hurleysoftware.com>
+In-Reply-To: <531E61AC.6040706@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/10/2014 09:06 PM, Peter Hurley wrote:
+> [ +cc Alan ]
+>
+> On 02/28/2014 08:21 AM, Geert Uytterhoeven wrote:
+>> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>>
+>> If the serial port being removed is used as a console, it must also be
+>> unregistered from the console subsystem using unregister_console().
+>>
+>> uart_ops.release_port() will release resources (e.g. iounmap() the serial
+>> port registers), causing a crash on subsequent kernel output if the console
+>> is still registered.
+>
+> This brings up an interesting point:  where are the serial_core drivers
+> indicating to the tty core that the port is bound to a console?
+> IOW, I cannot find a single 'port->console = 1' anywhere in the serial tree.
 
-> Subject: [PATCHv2 RESEND] i2c: designware-pci: set ideal HCNT, LCNT and SDA
-> hold time value
-> 
-> From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> 
-> On Intel BayTrail, there was case whereby the resulting fast mode bus speed
-> becomes slower (~20% slower compared to expected speed) if using the
-> HCNT/LCNT calculated in the core layer. Thus, this patch is added to allow pci
-> glue layer to pass in optimal HCNT/LCNT/SDA hold time values to core layer
-> since the core layer supports cofigurable HCNT/LCNT/SDA hold time values
-> now.
-> 
-> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> ---
-> v2 changelog:
-> * Add 'dw_' prefix to struct scl_sda_cfg
-> * Add Baytrail HCNT/LCNT/SDA hold time values directly in the
->   struct instead of using macro definition
-> * Replace tab before "=" with space in struct
-> 
->  drivers/i2c/busses/i2c-designware-pcidrv.c |   28
-> ++++++++++++++++++++++++++++
->  1 files changed, 28 insertions(+), 0 deletions(-)
-> 
+Answering half my own question: I see that serial_core doesn't use
+tty_port_shutdown() but rather has it's own uart_shutdown() equivalent, and
+thus doesn't use 'port->console'.
 
-I have misplaced the changelog in the previous v2 patch which would cause the removal of signed-off-by line. I'm resending this to fix that problem. Sorry for any confusion and inconvenience caused.
+Ok.
 
+But I still don't see what prevents a uart_port_shutdown() on a running
+serial console.
+
+Regards,
+Peter Hurley
+
+> It would be bad if the uart port disappears while a console is running
+> on it...
+>
+>> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>> ---
+>>   drivers/tty/serial/serial_core.c |    6 ++++++
+>>   1 file changed, 6 insertions(+)
+>>
+>> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+>> index ece2049bd270..8ece7f14d89d 100644
+>> --- a/drivers/tty/serial/serial_core.c
+>> +++ b/drivers/tty/serial/serial_core.c
+>> @@ -2677,6 +2677,12 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
+>>           tty_vhangup(port->tty);
+>>
+>>       /*
+>> +     * If the port is used as a console, unregister it
+>> +     */
+>> +    if (uart_console(uport))
+>> +        unregister_console(uport->cons);
+>> +
+>> +    /*
+>>        * Free the port IO and memory resources, if any.
+>>        */
+>>       if (uport->type != PORT_UNKNOWN)
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
