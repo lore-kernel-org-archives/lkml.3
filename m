@@ -1,169 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaCKBGi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 21:06:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54584 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754376AbaCKBFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 21:05:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,627,1389772800"; 
-   d="scan'208";a="469893776"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 7/8] tools, perf: Make get_srcline fall back to sym+offset
-Date: Mon, 10 Mar 2014 18:05:20 -0700
-Message-Id: <1394499921-27668-8-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1394499921-27668-1-git-send-email-andi@firstfloor.org>
-References: <1394499921-27668-1-git-send-email-andi@firstfloor.org>
+	id S1754662AbaCKBG5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 21:06:57 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:40389 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864AbaCKBGz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 21:06:55 -0400
+Date: Mon, 10 Mar 2014 18:06:52 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 5/8] watchdog: iTCO_wdt: Add support for v3 silicon
+Message-ID: <20140311010652.GE32676@roeck-us.net>
+References: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com>
+ <1394487298-14459-5-git-send-email-ptyser@xes-inc.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394487298-14459-5-git-send-email-ptyser@xes-inc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Mon, Mar 10, 2014 at 04:34:55PM -0500, Peter Tyser wrote:
+> Some new Atom's, eg Avoton and Bay Trail, have slightly different iTCO
+> functionality:
+> - The watchdog timer ticks at 1 second instead of .6 seconds
+> 
+> - Some 8 and 16-bit registers were combined into 32-bit registers
+> 
+> - Some registers were removed (DAT_IN, DAT_OUT, MESSAGE)
+> 
+> - The BOOT_STS field in TCO_STS was removed
+> 
+> - The NO_REBOOT bit is in the PMC area instead of GCS
+> 
+> Update the driver to support the above changes and bump the version to
+> 1.11.
+> 
+> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+> Tested-by: Rajat Jain <rajatjain@juniper.net>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> Cc: James Ralston <james.d.ralston@intel.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Wim Van Sebroeck <wim@iguana.be>
+> Cc: linux-watchdog@vger.kernel.org
 
-When the source line is not found fall back to sym + offset.
-This is generally much more useful than a raw address.
-For this we need to pass in the symbol from the caller.
-For some callers it's awkward to compute, so we stay
-at the old behaviour.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/util/annotate.c  |  2 +-
- tools/perf/util/callchain.c |  3 ++-
- tools/perf/util/map.c       |  2 +-
- tools/perf/util/sort.c      |  6 ++++--
- tools/perf/util/srcline.c   | 12 +++++++++---
- tools/perf/util/util.h      |  4 +++-
- 6 files changed, 20 insertions(+), 9 deletions(-)
-
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index f020110..6bc23bf 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -1185,7 +1185,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 			goto next;
- 
- 		offset = start + i;
--		src_line->path = get_srcline(map->dso, offset);
-+		src_line->path = get_srcline(map->dso, offset, NULL, false);
- 		insert_source_line(&tmp_root, src_line);
- 
- 	next:
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 56ab517..9ad5fc7 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -562,7 +562,8 @@ char *callchain_list__sym_name(struct callchain_list *cl,
- 		    cl->ms.map && !cl->srcline)
- 			cl->srcline = get_srcline(cl->ms.map->dso,
- 						  map__rip_2objdump(cl->ms.map,
--								    cl->ip));
-+								    cl->ip),
-+						  cl->ms.sym, false);
- 		if (cl->srcline)
- 			printed = scnprintf(bf, bfsize, "%s %s",
- 					cl->ms.sym->name, cl->srcline);
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 39cd2d0..9638e68 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -262,7 +262,7 @@ int map__fprintf_srcline(struct map *map, u64 addr, const char *prefix,
- 
- 	if (map && map->dso) {
- 		srcline = get_srcline(map->dso,
--				      map__rip_2objdump(map, addr));
-+				      map__rip_2objdump(map, addr), NULL, true);
- 		if (srcline != SRCLINE_UNKNOWN)
- 			ret = fprintf(fp, "%s%s", prefix, srcline);
- 		free_srcline(srcline);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index d273cf2..80e6dfa 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -265,7 +265,8 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 		else {
- 			struct map *map = left->ms.map;
- 			left->srcline = get_srcline(map->dso,
--					    map__rip_2objdump(map, left->ip));
-+					   map__rip_2objdump(map, left->ip),
-+						    left->ms.sym, true);
- 		}
- 	}
- 	if (!right->srcline) {
-@@ -274,7 +275,8 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 		else {
- 			struct map *map = right->ms.map;
- 			right->srcline = get_srcline(map->dso,
--					    map__rip_2objdump(map, right->ip));
-+					     map__rip_2objdump(map, right->ip),
-+						     right->ms.sym, true);
- 		}
- 	}
- 	return strcmp(left->srcline, right->srcline);
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index ac877f9..36a7aff 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -8,12 +8,13 @@
- #include "util/util.h"
- #include "util/debug.h"
- 
-+#include "symbol.h"
-+
- #ifdef HAVE_LIBBFD_SUPPORT
- 
- /*
-  * Implement addr2line using libbfd.
-  */
--#define PACKAGE "perf"
- #include <bfd.h>
- 
- struct a2l_data {
-@@ -250,7 +251,8 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
-  */
- #define A2L_FAIL_LIMIT 123
- 
--char *get_srcline(struct dso *dso, unsigned long addr)
-+char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
-+		  bool show_sym)
- {
- 	char *file = NULL;
- 	unsigned line = 0;
-@@ -289,7 +291,11 @@ out:
- 		dso->has_srcline = 0;
- 		dso__free_a2l(dso);
- 	}
--	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
-+	if (sym) {
-+		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
-+					addr - sym->start) < 0)
-+			return SRCLINE_UNKNOWN;
-+	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
- 		return SRCLINE_UNKNOWN;
- 	return srcline;
- }
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 6995d66..4b29ed1 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -317,8 +317,10 @@ unsigned long parse_tag_value(const char *str, struct parse_tag *tags);
- #define SRCLINE_UNKNOWN  ((char *) "??:0")
- 
- struct dso;
-+struct symbol;
- 
--char *get_srcline(struct dso *dso, unsigned long addr);
-+char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
-+		  bool show_sym);
- void free_srcline(char *srcline);
- 
- int filename__read_int(const char *filename, int *value);
--- 
-1.8.5.3
-
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
