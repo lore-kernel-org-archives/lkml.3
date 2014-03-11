@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860AbaCKPlr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 11:41:47 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:21399
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751831AbaCKPlp (ORCPT
+	id S1753699AbaCKPq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 11:46:28 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:45740 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304AbaCKPqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 11:41:45 -0400
-X-Forefront-Antispam-Report: CIP:141.131.128.20;KIP:(null);UIP:(null);IPV:NLI;H:mail2.cirrus.com;RD:mail2.cirrus.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh7bh2a8h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h1155h)
-Date: Tue, 11 Mar 2014 10:41:32 -0500
-From: Brian Austin <brian.austin@cirrus.com>
-X-X-Sender: heelrod@heelrod
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-CC: <broonie@kernel.org>, <brian.austin@cirrus.com>,
-        <Paul.Handrigan@cirrus.com>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <lgirdwood@gmail.com>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <lars@metafoo.de>
-Subject: Re: [PATCH v2] ASoC: cs42888: Add codec driver support
-In-Reply-To: <1394536791-8381-1-git-send-email-Guangyu.Chen@freescale.com>
-Message-ID: <alpine.DEB.2.02.1403111026280.3558@heelrod>
-References: <1394536791-8381-1-git-send-email-Guangyu.Chen@freescale.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-X-OriginatorOrg: cirrus.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Tue, 11 Mar 2014 11:46:24 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>
+Cc: Devicetree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 0/5] BCM59056 PMU regulator support
+Date: Tue, 11 Mar 2014 11:46:10 -0400
+Message-Id: <1394552775-31264-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The BCM59056 is a multi-function power management unit used with the
+BCM281xx family of SoCs. This series adds an MFD and voltage regulator
+driver to support the BCM59056. The bcm28155-ap DT support is updated
+to enable use of regulators on the otg and sdhci peripherals.
 
-On Tue, 11 Mar 2014, Nicolin Chen wrote:
+Changes since v2:
+	- Move to mfd_add_devices() approach, eliminating representation
+	  of the regulator block as a hardware subdevice. Regulators are
+	  listed in the PMU binding and referenced via the parent device
+	  of_node by the regulator driver.
+	- Allow mfd driver to build as module
+	- Remove regulator constraints from the .dtsi include only the
+	  board-specific constraints in the board .dts.
 
-> This patch adds support for the Cirrus Logic CS42888 Audio CODEC that
-> has four 24-bit A/D and eight 24-bit D/A converters.
->
-> [ CS42888 supports both I2C and SPI control ports. As initial patch,
->  this patch only adds the support for I2C. ]
->
-> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
-> ---
-So WRT the CS42888, this is one device in a series of 2 devices that are 
-register compatible with the only difference being that the CS42488 has 2 
-extra ADC's. Same die and same DeviceID.
+Changes since v1:
+        - renamed to bcm590xx to accomodate future family parts
+        - remove use of subsys_initcall
+        - fix BCM590XX_MAX_REGISTER value
+        - remove unused chip id in mfd of/i2c matching
+        - switch to of_platform_populate() in mfd
+        - update binding to single document with regulators as optional
+          properties in the regulator subdevice IP description
+        - remove unused regulator get/set mode ops
+        - remove unneeded regulator NULL constraint check
+        - regulators property is optional, allow the driver to probe
+          when it is missing
+        - move of_node presence check into bcm590xx_parse_dt_reg_data()
 
-Would it make more sense to submit the driver with the extra ADC's to make 
-it feature complete for both devices? Wouldn't be odd to have 2 drivers 
-that do the same for 98% of the code.
+Matt Porter (5):
+  mfd: add bcm590xx pmu DT binding
+  mfd: add bcm590xx pmu driver
+  regulator: add bcm590xx regulator driver
+  ARM: configs: bcm_defconfig: enable bcm590xx regulator support
+  ARM: dts: add bcm590xx pmu support and enable for bcm28155-ap
 
-Thoughts?
-Brian
+ Documentation/devicetree/bindings/mfd/bcm590xx.txt |  41 ++
+ arch/arm/boot/dts/bcm28155-ap.dts                  |  47 ++-
+ arch/arm/boot/dts/bcm59056.dtsi                    |  77 ++++
+ arch/arm/configs/bcm_defconfig                     |   7 +
+ drivers/mfd/Kconfig                                |   8 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/bcm590xx.c                             |  93 +++++
+ drivers/regulator/Kconfig                          |   8 +
+ drivers/regulator/Makefile                         |   1 +
+ drivers/regulator/bcm590xx-regulator.c             | 413 +++++++++++++++++++++
+ include/linux/mfd/bcm590xx.h                       |  31 ++
+ 11 files changed, 726 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/bcm590xx.txt
+ create mode 100644 arch/arm/boot/dts/bcm59056.dtsi
+ create mode 100644 drivers/mfd/bcm590xx.c
+ create mode 100644 drivers/regulator/bcm590xx-regulator.c
+ create mode 100644 include/linux/mfd/bcm590xx.h
+
+-- 
+1.8.4
 
