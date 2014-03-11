@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325AbaCKLYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 07:24:39 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:41742 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718AbaCKLYh (ORCPT
+	id S1754785AbaCKLZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 07:25:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50784 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803AbaCKLZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 07:24:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140311111350.GU27965@twins.programming.kicks-ass.net>
-References: <20140311104433.GA16207@quad>
-	<20140311111350.GU27965@twins.programming.kicks-ass.net>
-Date: Tue, 11 Mar 2014 12:24:36 +0100
-Message-ID: <CABPqkBT8tyS7ZZA_0nVzfeYZhQRSqdTpa2UTONYPkLs8B8LyOQ@mail.gmail.com>
-Subject: Re: [PATCH] perf/x86/uncore: fix compilation warning in snb_uncore_imc_init_box()
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, tglx <tglx@linuxtronic.de>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Mar 2014 07:25:11 -0400
+From: Colin King <colin.king@canonical.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] regulator: da9063: fix assignment of da9063_reg_matches to NULL
+Date: Tue, 11 Mar 2014 11:25:09 +0000
+Message-Id: <1394537109-25162-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 12:13 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Mar 11, 2014 at 11:44:33AM +0100, Stephane Eranian wrote:
->>
->>
->> This patches fixes a compilation problem (unused variable) with the
->> new SNB/IVB/HSW uncore IMC code.
->>
->> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->>
->> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> index b262c61..3846a37 100644
->> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> @@ -1722,15 +1722,19 @@ static struct attribute_group snb_uncore_imc_format_group = {
->>  static void snb_uncore_imc_init_box(struct intel_uncore_box *box)
->>  {
->>       struct pci_dev *pdev = box->pci_dev;
->> -     u32 addr_lo, addr_hi;
->> +     u32 addr_lo;
->>       resource_size_t addr;
->>
->>       pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET, &addr_lo);
->>       addr = addr_lo;
->>
->>  #ifdef CONFIG_PHYS_ADDR_T_64BIT
->> -     pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET+4, &addr_hi);
->> -     addr = ((resource_size_t)addr_hi << 32) | addr_lo;
->> +     { u32 addr_hi;
->> +       int where = SNB_UNCORE_PCI_IMC_BAR_OFFSET + 4;
->> +
->> +       pci_read_config_dword(pdev, where, &addr_hi);
->> +       addr = ((resource_size_t)addr_hi << 32) | addr_lo;
->> +     }
->>  #endif
->
-> How about something like:
->
-> - u32 addr_lo, addr_hi;
-> + u32 pci_dword;
->
->         pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET, &pci_dword);
->         addr = pci_dword;
->
-> #ifdef ..
->         pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET + 4, &pci_dword);
->         addr |= ((u64)pci_dword) << 32;
-> #endif
->
-> That avoids the need for the ugly {} thing.
-Okay, that's better.
-I will repost then.
-Thanks.
+From: Colin Ian King <colin.king@canonical.com>
+
+cppcheck detected an incorrect assignment:
+
+ drivers/regulator/da9063-regulator.c:711]: (warning) Assignment
+ of function parameter has no effect outside the function
+
+the original code didn't do anything, instead, *da9063_reg_matches
+needs to be set to NULL.
+
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ drivers/regulator/da9063-regulator.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/da9063-regulator.c b/drivers/regulator/da9063-regulator.c
+index 91e99a2..d3ccd54 100644
+--- a/drivers/regulator/da9063-regulator.c
++++ b/drivers/regulator/da9063-regulator.c
+@@ -710,7 +710,7 @@ static struct da9063_regulators_pdata *da9063_parse_regulators_dt(
+ 		struct platform_device *pdev,
+ 		struct of_regulator_match **da9063_reg_matches)
+ {
+-	da9063_reg_matches = NULL;
++	*da9063_reg_matches = NULL;
+ 	return ERR_PTR(-ENODEV);
+ }
+ #endif
+-- 
+1.9.0
+
