@@ -1,90 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492AbaCKMsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 08:48:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35648 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755055AbaCKMjP (ORCPT
+	id S1753371AbaCKMtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 08:49:23 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41437 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925AbaCKMtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 08:39:15 -0400
-Date: Tue, 11 Mar 2014 05:38:31 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-63c45f4ba533e9749da16298db53e491c25d805b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, peterz@infradead.org,
-        acme@ghostprotocols.net, jolsa@redhat.com, vincent.weaver@maine.edu,
-        rostedt@goodmis.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, peterz@infradead.org, jolsa@redhat.com,
-        vincent.weaver@maine.edu, rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <1393775800-13524-3-git-send-email-jolsa@redhat.com>
-References: <1393775800-13524-3-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf:
-  Disallow user-space stack dumps for function trace events
-Git-Commit-ID: 63c45f4ba533e9749da16298db53e491c25d805b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 11 Mar 2014 08:49:12 -0400
+Message-ID: <531F0636.4050608@pengutronix.de>
+Date: Tue, 11 Mar 2014 13:48:54 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Michal Simek <michals@xilinx.com>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [PATCH v5] can: xilinx CAN controller support.
+References: <5254bfec-c6fd-4681-a34d-706d51e60fbb@VA3EHSMHS004.ehs.local> <531DD2C4.5060109@pengutronix.de> <f1e2f08f-05fc-40d3-8437-4c6817d631cb@AM1EHSMHS010.ehs.local>
+In-Reply-To: <f1e2f08f-05fc-40d3-8437-4c6817d631cb@AM1EHSMHS010.ehs.local>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="suD0cqq8XrJJSQR2n7FFKTRB1voTPGq4L"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  63c45f4ba533e9749da16298db53e491c25d805b
-Gitweb:     http://git.kernel.org/tip/63c45f4ba533e9749da16298db53e491c25d805b
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Sun, 2 Mar 2014 16:56:39 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 11 Mar 2014 11:57:58 +0100
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--suD0cqq8XrJJSQR2n7FFKTRB1voTPGq4L
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-perf: Disallow user-space stack dumps for function trace events
+On 03/11/2014 01:34 PM, Appana Durga Kedareswara Rao wrote:
 
-Recent issues with user space callchains processing within
-page fault handler tracing showed as Peter said 'there's
-just too much fail surface'.
+>>> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig index
+>>> 9e7d95d..b180239 100644
+>>> --- a/drivers/net/can/Kconfig
+>>> +++ b/drivers/net/can/Kconfig
+>>> @@ -125,6 +125,13 @@ config CAN_GRCAN
+>>>       endian syntheses of the cores would need some modifications on
+>>>       the hardware level to work.
+>>>
+>>> +config CAN_XILINXCAN
+>>> +   tristate "Xilinx CAN"
+>>> +   depends on ARCH_ZYNQ || MICROBLAZE
+>>
+>> Is Zynq multiarch already?
+> Discussions are going on this
+> So the final thing that Fengguang ( fengguang.wu@intel.com)
+> Proposed is
+>         config CAN_XILINX
+>         tristate "Xilinx CAN"
+>         depends on ARCH_ZYNQ || MICROBLAZE || COMPILE_TEST
+>         depends on COMMON_CLK && HAS_MMIO  # whatever you need for othe=
+r architectures
 
-The user space stack dump is just another source of the this issue.
+> Are you Ok for this?
 
-Related list discussions:
-  http://marc.info/?t=139302086500001&r=1&w=2
-  http://marc.info/?t=139301437300003&r=1&w=2
+You have to fill the 2nd depends on with some sane values, though.
 
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1393775800-13524-3-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/trace/trace_event_perf.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+[...]
 
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index d5e01c3..c894614 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -42,6 +42,13 @@ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
- 		 */
- 		if (!p_event->attr.exclude_callchain_user)
- 			return -EINVAL;
-+
-+		/*
-+		 * Same reason to disable user stack dump as for user space
-+		 * callchains above.
-+		 */
-+		if (p_event->attr.sample_type & PERF_SAMPLE_STACK_USER)
-+			return -EINVAL;
- 	}
- 
- 	/* No tracing, just counting, so no obvious leak */
+>>> +/**
+>>> + * struct xcan_priv - This definition define CAN driver instance
+>>> + * @can:                   CAN private data structure.
+>>> + * @tx_head:                       Tx CAN packets ready to send on t=
+he
+>> queue
+>>> + * @tx_tail:                       Tx CAN packets successfully sende=
+d on the
+>> queue
+>>> + * @tx_max:                        Maximum number packets the driver=
+ can
+>> send
+>>> + * @napi:                  NAPI structure
+>>> + * @read_reg:                      For reading data from CAN registe=
+rs
+>>> + * @write_reg:                     For writing data to CAN registers=
+
+>>> + * @dev:                   Network device data structure
+>>> + * @reg_base:                      Ioremapped address to registers
+>>> + * @irq_flags:                     For request_irq()
+>>> + * @aperclk:                       Pointer to struct clk
+>>> + * @devclk:                        Pointer to struct clk
+>>> + */
+>>> +struct xcan_priv {
+>>> +   struct can_priv can;
+>>> +   unsigned int tx_head;
+>>> +   unsigned int tx_tail;
+>>> +   u32 tx_max;
+>> Please make it an unsigned int, too.
+>>
+> Ok
+>=20
+>=20
+>>> +   struct napi_struct napi;
+>>> +   u32 (*read_reg)(const struct xcan_priv *priv, enum xcan_reg reg);=
+
+>>> +   void (*write_reg)(const struct xcan_priv *priv, enum xcan_reg reg=
+,
+>>> +                   u32 val);
+>>> +   struct net_device *dev;
+>>> +   void __iomem *reg_base;
+>>> +   unsigned long irq_flags;
+>>> +   struct clk *aperclk;
+>>> +   struct clk *devclk;
+>>
+>> Please rename the clock variables to match the names in the DT.
+>>
+> The clock names are different for axi CAN and CANPS case.
+> So will make them as busclk and devclk
+> Are you ok with this?
+
+Why not "ref_clk" and "aper_clk" as used in the DT?
+
+>>> +};
+>>> +
+
+[...]
+
+>>> +/**
+>>> + * xcan_chip_start - This the drivers start routine
+>>> + * @ndev:  Pointer to net_device structure
+>>> + *
+>>> + * This is the drivers start routine.
+>>> + * Based on the State of the CAN device it puts
+>>> + * the CAN device into a proper mode.
+>>> + *
+>>> + * Return: 0 on success and failure value on error  */ static int
+>>> +xcan_chip_start(struct net_device *ndev) {
+>>> +   struct xcan_priv *priv =3D netdev_priv(ndev);
+>>> +   u32 err;
+>>> +   unsigned long timeout;
+>>> +
+>>> +   /* Check if it is in reset mode */
+>>> +   err =3D set_reset_mode(ndev);
+>>> +   if (err < 0)
+>>> +           return err;
+>>> +
+>>> +   err =3D xcan_set_bittiming(ndev);
+>>> +   if (err < 0)
+>>> +           return err;
+>>> +
+>>> +   /* Enable interrupts */
+>>> +   priv->write_reg(priv, XCAN_IER_OFFSET, XCAN_INTR_ALL);
+>>> +
+>>> +   /* Check whether it is loopback mode or normal mode  */
+>>> +   if (priv->can.ctrlmode & CAN_CTRLMODE_LOOPBACK)
+>>> +           /* Put device into loopback mode */
+>>> +           priv->write_reg(priv, XCAN_MSR_OFFSET,
+>> XCAN_MSR_LBACK_MASK);
+>>> +   else
+>>> +           /* The device is in normal mode */
+>>> +           priv->write_reg(priv, XCAN_MSR_OFFSET, 0);
+>>> +
+>>> +   if (priv->can.state =3D=3D CAN_STATE_STOPPED) {
+>>
+>> Your device is in stopped mode, add you go though set_reset_mode()
+>> already.
+>=20
+> Will remove this if condition I putted this condition here because in s=
+et_reset_mode we are putting the
+> Device state in Stopped state.
+
+So the device is in CAN_STATE_STOPPED, as this code just went through
+set_reset_mode() some lines ago. so it makes no sense to check if it
+(still) is (the code runs serialized here).
+
+>>
+>>> +           /* Enable Xilinx CAN */
+>>> +           priv->write_reg(priv, XCAN_SRR_OFFSET,
+>> XCAN_SRR_CEN_MASK);
+>>> +           priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
+>>> +           timeout =3D jiffies + XCAN_TIMEOUT;
+>>> +           if (priv->can.ctrlmode & CAN_CTRLMODE_LOOPBACK) {
+>>> +                   while ((priv->read_reg(priv, XCAN_SR_OFFSET)
+>>> +                                   & XCAN_SR_LBACK_MASK) =3D=3D 0) {=
+
+>>> +                           if (time_after(jiffies, timeout)) {
+>>> +                                   netdev_warn(ndev,
+>>> +                                           "timedout for loopback
+>> mode\n");
+>>> +                                   return -ETIMEDOUT;
+>>> +                           }
+>>> +                           usleep_range(500, 10000);
+>>> +                   }
+>>> +           } else {
+>>> +                   while ((priv->read_reg(priv, XCAN_SR_OFFSET)
+>>> +                                   & XCAN_SR_NORMAL_MASK) =3D=3D 0) =
+{
+>>> +                           if (time_after(jiffies, timeout)) {
+>>> +                                   netdev_warn(ndev,
+>>> +                                           "timedout for normal
+>> mode\n");
+>>> +                                   return -ETIMEDOUT;
+>>> +                           }
+>>> +                           usleep_range(500, 10000);
+>>> +                   }
+>>> +           }
+>>> +           netdev_dbg(ndev, "status:#x%08x\n",
+>>> +                           priv->read_reg(priv, XCAN_SR_OFFSET));
+>>> +   }
+>>> +   priv->can.state =3D CAN_STATE_ERROR_ACTIVE;
+>>> +   return 0;
+>>> +}
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--suD0cqq8XrJJSQR2n7FFKTRB1voTPGq4L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlMfBjYACgkQjTAFq1RaXHO3HgCdFPWt6PHc7gid8sZPzLaNhqLd
+sZwAn2WC+wU7uWOFt3SmS65rFhhX9zpL
+=DirU
+-----END PGP SIGNATURE-----
+
+--suD0cqq8XrJJSQR2n7FFKTRB1voTPGq4L--
