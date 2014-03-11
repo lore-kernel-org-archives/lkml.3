@@ -1,109 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbaCKOJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 10:09:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037AbaCKOJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 10:09:25 -0400
-Date: Tue, 11 Mar 2014 14:41:41 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, eranian@google.com, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 6/8] perf, tools: Query terminal width and use in perf
- list
-Message-ID: <20140311134141.GG22678@krava.redhat.com>
-References: <1394048978-15909-1-git-send-email-andi@firstfloor.org>
- <1394048978-15909-7-git-send-email-andi@firstfloor.org>
+	id S1752080AbaCKOSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 10:18:38 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56059 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250AbaCKOSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 10:18:36 -0400
+Date: Tue, 11 Mar 2014 14:18:24 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-spi <linux-spi@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Message-ID: <20140311141824.GT28112@sirena.org.uk>
+References: <1394531952-3905-1-git-send-email-geert@linux-m68k.org>
+ <1394531952-3905-3-git-send-email-geert@linux-m68k.org>
+ <20140311104713.GN28112@sirena.org.uk>
+ <CAMuHMdWoPWebnyUu2uGebbnzu68Lh4qsgzpu-otnwMmvaeY1hQ@mail.gmail.com>
+ <20140311132652.GS28112@sirena.org.uk>
+ <CAMuHMdVf_4TPf6YKuHLztrgFKWHTeoVi5agesO6tFU5h_56DOA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Rhuyk5QDIcoo2YDB"
 Content-Disposition: inline
-In-Reply-To: <1394048978-15909-7-git-send-email-andi@firstfloor.org>
+In-Reply-To: <CAMuHMdVf_4TPf6YKuHLztrgFKWHTeoVi5agesO6tFU5h_56DOA@mail.gmail.com>
+X-Cookie: Oh no, not again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/3] spi: rspi: Add runtime PM support, using spi core
+ auto_runtime_pm
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 11:49:36AM -0800, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Automatically adapt the now wider and word wrapped perf list
-> output to wider terminals. This requires querying the terminal
-> before the auto pager takes over, and exporting this
-> information from the pager subsystem.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  tools/perf/util/cache.h |  1 +
->  tools/perf/util/pager.c |  7 ++++++-
->  tools/perf/util/pmu.c   | 12 +++++++-----
->  3 files changed, 14 insertions(+), 6 deletions(-)
-> 
-> diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-> index 7b176dd..d40cd4d 100644
-> --- a/tools/perf/util/cache.h
-> +++ b/tools/perf/util/cache.h
-> @@ -31,6 +31,7 @@ extern void setup_pager(void);
->  extern const char *pager_program;
->  extern int pager_in_use(void);
->  extern int pager_use_color;
-> +extern int pager_columns;
->  
->  char *alias_lookup(const char *alias);
->  int split_cmdline(char *cmdline, const char ***argv);
-> diff --git a/tools/perf/util/pager.c b/tools/perf/util/pager.c
-> index 3322b84..5a771ab 100644
-> --- a/tools/perf/util/pager.c
-> +++ b/tools/perf/util/pager.c
-> @@ -1,13 +1,15 @@
->  #include "cache.h"
->  #include "run-command.h"
->  #include "sigchain.h"
-> +#include <sys/ioctl.h>
->  
->  /*
->   * This is split up from the rest of git so that we can do
->   * something different on Windows.
->   */
->  
-> -static int spawned_pager;
-> +int spawned_pager;
 
-this one can stay static
+--Rhuyk5QDIcoo2YDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-SNIP
+On Tue, Mar 11, 2014 at 02:35:15PM +0100, Geert Uytterhoeven wrote:
+> On Tue, Mar 11, 2014 at 2:26 PM, Mark Brown <broonie@kernel.org> wrote:
+> > On Tue, Mar 11, 2014 at 02:10:31PM +0100, Geert Uytterhoeven wrote:
 
-> index 5d69c29..a26ec85 100644
-> --- a/tools/perf/util/pmu.c
-> +++ b/tools/perf/util/pmu.c
-> @@ -9,6 +9,7 @@
->  #include "pmu.h"
->  #include "parse-events.h"
->  #include "cpumap.h"
-> +#include "cache.h"
->  #include "jevents.h"
->  
->  const char *json_file;
-> @@ -791,11 +792,12 @@ static void wordwrap(char *s, int start, int max, int corr)
->  
->  static int get_columns(void)
->  {
-> -	/*
-> -	 * Should ask the terminal with TIOCGWINSZ here, but we
-> -	 * need the original fd before the pager.
-> -	 */
-> -	return 79;
-> +	char *s;
-> +
-> +	s = getenv("COLUMNS");
-> +	if (s)
-> +		return atoi(s);
-> +	return (pager_columns ? pager_columns : 80) - 2;
->  }
+> >> Can you please elaborate what should be fixed?
 
-I think this function should move out of pmu.c
-to pager.c perhaps
+> >> If I disable CONFIG_PM_RUNTIME, the kernel prints:
 
-jirka
+> >>     Runtime PM disabled, clock forced on.
+
+> >> and the clock is enabled all the time (verified by looking at the clock
+> >> registers)?
+
+> > That's very SH specific and doesn't apply in the general case (I would
+> > not be surprised if future SH updates broke it...).
+
+> Note that this is from drivers/base/power/clock_ops.c
+
+> So what should I do instead?
+
+Oh, is this manipulating the clock managed by the power domains?  If
+that's the case don't worry about it, it's fine.  I'd thought it was
+another clock.
+
+--Rhuyk5QDIcoo2YDB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTHxssAAoJELSic+t+oim9CmwQAICD+Zs+I7xCa4Rxiywz7BOo
+tYaF299QomFfNAaCtJZIE1GhsApJVaSQ/6CIvpvO/myJHXOu3hIvfXC8mROjkQcw
+xQeLpN2qJhwp5fcqBYV0oHHEhaLCO5UpAmq2QbIx6iQZM3rTiJaSeJbrxoYEOAct
+QdWQX2aKoSbOT+EGRz3vqRJSNROQ1RV7DwvprPTmxgwxB3UhVqRezHDz0ZmTU42q
+glZpAQrzkddjTcagl8oipx+eq/KSgHLdroGyehbloHyb7MGU4Fb5wWIG+T+ZccWJ
+KDAfSyMWTuiA8T8X+9ule5NUbEoVmF39rdiqoDiRZsfbSioQy/KDqT80vNvEJRGp
+1EjBtMFOMe0/jnZ7Gr7Iqqq2XcSsjj+TgYJ2wfmP+5sTXR01/xH6dCIkFJv37R3g
+zQbKuHAY1snzGySMxKDEYEdcrouQk+P6oz1m5jSFXz275b/J0pN9EMRmgwi4hVUV
+ZrL3zgv4Wopm5XeXulTrMPoZfsTjT4KyqnlCZ+NI02qrhbRTZeAaEGgL1XEKxufR
+2KpRAZiG8pWDSMDsiLdOf4OhZ0wI550DD8Lq0PwcqWsoIzJUVvsedyn7KTtleZSR
+vVFxaiwd9s4eBkrpEtQ+mTnF1+mDwQyLM5dOuAaIJuDUQESAfraNLXgr/Md9pPu+
+7uoa0Tu+CToEcvmPXGC+
+=kgao
+-----END PGP SIGNATURE-----
+
+--Rhuyk5QDIcoo2YDB--
