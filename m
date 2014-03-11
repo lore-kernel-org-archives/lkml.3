@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410AbaCKHOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 03:14:12 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:52411 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203AbaCKHOK (ORCPT
+	id S1753106AbaCKHU0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 03:20:26 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:58639 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaCKHUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 03:14:10 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2B7E2v8009803, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH net] r8169: fix the incorrect tx descriptor version
-Date: Tue, 11 Mar 2014 15:11:59 +0800
-Message-ID: <1394521919-4257-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
+	Tue, 11 Mar 2014 03:20:24 -0400
+Date: Tue, 11 Mar 2014 07:20:19 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML-INPUT <linux-input@vger.kernel.org>,
+        LKML-KERNEL <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: Re: [PATCH V2] input: misc: da9063: OnKey driver
+Message-ID: <20140311072019.GI2839@lee--X1>
+References: <201403101740.s2AHebta017785@swsrvapps-01.diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201403101740.s2AHebta017785@swsrvapps-01.diasemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tx descriptor version of RTL8111B belong to RTL_TD_0.
+> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+> 
+> Add the OnKey driver for DA9063
+> 
+> Plus some minor dependencies:
+> - Addition of "ONKEY" name to OnKey IRQ resource structure;
+> - Bool key_power platform data driver configuration option.
+> 
+> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+> ---
+> 
+>  drivers/input/misc/Kconfig        |   10 ++
+>  drivers/input/misc/Makefile       |    1 +
+>  drivers/input/misc/da9063-onkey.c |  209 +++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/da9063-core.c         |    1 +
+>  include/linux/mfd/da9063/pdata.h  |    1 +
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+For the MFD parts:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index e977965..3ff7bc3 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -209,7 +209,7 @@ static const struct {
- 	[RTL_GIGA_MAC_VER_16] =
- 		_R("RTL8101e",		RTL_TD_0, NULL, JUMBO_1K, true),
- 	[RTL_GIGA_MAC_VER_17] =
--		_R("RTL8168b/8111b",	RTL_TD_1, NULL, JUMBO_4K, false),
-+		_R("RTL8168b/8111b",	RTL_TD_0, NULL, JUMBO_4K, false),
- 	[RTL_GIGA_MAC_VER_18] =
- 		_R("RTL8168cp/8111cp",	RTL_TD_1, NULL, JUMBO_6K, false),
- 	[RTL_GIGA_MAC_VER_19] =
 -- 
-1.8.4.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
