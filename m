@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014AbaCKXZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 19:25:53 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:59049 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755958AbaCKXZw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 19:25:52 -0400
-Date: Tue, 11 Mar 2014 19:25:45 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/5] mfd: add bcm590xx pmu driver
-Message-ID: <20140311232545.GP25092@beef>
-References: <1394552775-31264-1-git-send-email-mporter@linaro.org>
- <1394552775-31264-3-git-send-email-mporter@linaro.org>
- <20140311160837.GP21216@lee--X1>
- <20140311221938.GO25092@beef>
- <20140311224517.GA5672@lee--X1>
+	id S1755942AbaCKXaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 19:30:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8387 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755500AbaCKXaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 19:30:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,634,1389772800"; 
+   d="scan'208";a="490137636"
+Date: Wed, 12 Mar 2014 07:30:09 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, kbuild-all@01.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [powerpc:next 45/53] warning: (PPC_C2K && ..) selects
+ NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || ..)
+Message-ID: <20140311233009.GB8740@localhost>
+References: <531acfa5.YesaRIJhSRvrw4/w%fengguang.wu@intel.com>
+ <531DD0F4.6020000@windriver.com>
+ <20140311045424.GB12373@localhost>
+ <531F1E7D.5060309@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140311224517.GA5672@lee--X1>
+In-Reply-To: <531F1E7D.5060309@windriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 10:45:17PM +0000, Lee Jones wrote:
-> > > > Add a driver for the BCM590xx PMU multi-function devices. The driver
-> > > > initially supports regmap initialization and instantiation of the
-> > > > voltage regulator device function of the PMU.
-> > > > 
-> > > > Signed-off-by: Matt Porter <mporter@linaro.org>
-> > > > Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-> > > > Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> > > > ---
-> > > >  drivers/mfd/Kconfig          |  8 ++++
-> > > >  drivers/mfd/Makefile         |  1 +
-> > > >  drivers/mfd/bcm590xx.c       | 93 ++++++++++++++++++++++++++++++++++++++++++++
-> > > >  include/linux/mfd/bcm590xx.h | 31 +++++++++++++++
-> > > >  4 files changed, 133 insertions(+)
-> > > >  create mode 100644 drivers/mfd/bcm590xx.c
-> > > >  create mode 100644 include/linux/mfd/bcm590xx.h
-> > > 
-> > > I have a tiny nit that 'ret' doesn't need to be initialised before
-> > > use in probe(), but apart from that...
-> > > 
-> > > Looks pretty sensible:
-> > >   Acked-by: Lee Jones <lee.jones@linaro.org>
+On Tue, Mar 11, 2014 at 10:32:29AM -0400, Paul Gortmaker wrote:
+> On 14-03-11 12:54 AM, Fengguang Wu wrote:
+> > On Mon, Mar 10, 2014 at 10:49:24AM -0400, Paul Gortmaker wrote:
+> >> On 14-03-08 03:07 AM, kbuild test robot wrote:
+> >>> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
+> >>> head:   c7e64b9ce04aa2e3fad7396d92b5cb92056d16ac
+> >>> commit: 3c8464a9b12bf83807b6e2c896d7e7b633e1cae7 [45/53] powerpc: Delete old PrPMC 280/2800 support
+> >>> config: make ARCH=powerpc c2k_defconfig
+> >>>
+> >>> All warnings:
+> >>>
+> >>> warning: (PPC_C2K && AMIGAONE) selects NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON)
+> >>
+> >> This _looks_ like a new warning, but it really is not.  If you look
+> >> at the tree prior to the above named commit, it generates this:
+> >>
+> >> $ make c2k_defconfig
+> >> warning: (PPC_PRPMC2800 && PPC_C2K && AMIGAONE) selects NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON)
+> >> warning: (PPC_PRPMC2800 && PPC_C2K && AMIGAONE) selects NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON)
+> >> #
+> >> # configuration written to .config
+> >>
+> >> So the warning is slightly different in text, but essentially
+> >> the exact same thing that was being warned about before.  We've
+> >> just removed one of the possible symbols from existence.
 > > 
-> > Ok, thanks. When I get back in front of my desktop I'll send a v4 of
-> > just this patch to address that nit. Mark already applied the regulator
-> > driver from this series, will you be taking this through your tree? For
-> > that matter, I wonder if the binding would also go through your tree
-> > with this driver.
+> > Yes, sorry, the kbuild robot is not smart enough to detect such
+> > slightly changed error/warnings and will treat them as new ones.
 > 
-> At least the MFD portion and the DT binding doc will go through the
-> MFD tree.
+> No apology required.  I think we all appreciate the build test
+> coverage, and I saw your mail where you said you sent out ~60
+> reports yesterday- wow!
+
+Paul, thank you!  But let me clarify it a bit.
+
+The kernel test robots typically send out 30+ reports per day,
+including build/boot error/warnings, performance/power/functional
+regressions, and build test completion notifications.
+
+The ~60 emails I mentioned are the ones that I write up in mutt,
+most of them are on internal development and maintenance works of
+the test infrastructure.
+
+Thanks,
+Fengguang
+
+> Thanks,
+> Paul.
+> --
 > 
-> Are there any inter-patch dependencies in the set? If so, we should
-> know about them so we can coordinate a sensible solution.
-
-Yes, the regulator driver (3/5) that Mark applied is dependent on this
-patch...the regulator driver includes include/linux/mfd/bcm590xx.h.
-
--Matt
+> > 
+> >> I'm not sure there would ever be a way to teach kbuild robot
+> >> about something as subtle as the above; just one of the false
+> >> positives that we'll have to live with, probably.
+> > 
+> > It is false positive: "this bug is not introduced by me!"
+> > 
+> > However if you take a broader view, it's still notifying the possibly
+> > "relevant" people who may know the background about that bug, or whom
+> > to further CC the report. :)
+> > 
+> > Thanks,
+> > Fengguang
+> > 
