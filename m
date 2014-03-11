@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055AbaCKIoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 04:44:16 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:41534 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705AbaCKIoN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 04:44:13 -0400
-Date: Tue, 11 Mar 2014 09:44:09 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: linux-acpi@vger.kernel.org
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: "can't evaluate _CRS: 1" messages since b355cee [ACPI / resources:
- ignore invalid ACPI device resources]
-Message-ID: <20140311084409.GA282@x4>
+	id S1754458AbaCKIqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 04:46:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49820 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752725AbaCKIqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 04:46:14 -0400
+X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
+   d="scan'208";a="9677769"
+Message-ID: <531ECCD9.8050805@cn.fujitsu.com>
+Date: Tue, 11 Mar 2014 16:44:09 +0800
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: linux-kernel@vger.kernel.org, joe@perches.com, peterz@infradead.org,
+        mingo@kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 01/15] sched/prio: Add a macro named NICE_TO_RLIMIT in
+ prio.h.
+References: <cover.1394513466.git.yangds.fnst@cn.fujitsu.com> <f475972d21de5738cf3302ab9c95c90fd4407815.1394513466.git.yangds.fnst@cn.fujitsu.com> <20140311081730.GA4298@osiris> <531EC748.5010600@cn.fujitsu.com> <20140311083658.GB4298@osiris>
+In-Reply-To: <20140311083658.GB4298@osiris>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 16:43:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 16:43:25,
+	Serialize complete at 2014/03/11 16:43:25
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since:
- commit b355cee88e3b1a193f0e9a81db810f6f83ad728b
- Author: Zhang Rui <rui.zhang@intel.com>
- Date:   Thu Feb 27 11:37:15 2014 +0800
+On 03/11/2014 04:36 PM, Heiko Carstens wrote:
+> On Tue, Mar 11, 2014 at 04:20:24PM +0800, Dongsheng Yang wrote:
+>> On 03/11/2014 04:17 PM, Heiko Carstens wrote:
+>>> On Tue, Mar 11, 2014 at 12:59:16PM +0800, Dongsheng Yang wrote:
+>>>> +#define NICE_TO_RLIMIT(nice)	(MAX_NICE - nice + 1)
+>>> Where is MAX_NICE defined? The s390 patch fails to compile.
+>> MAX_NICE is defined in include/linux/sched/prio.h. It is applied in
+>> tip tree, and not in mainline yet.
+> Ok.
+>
+>>> Also you probably want at least extra braces around the 'nice' usage to
+>>> avoid subtle side effects. (or make NICE_TO.. a function, whatever).
+>> Yes, agree. Another question is that I am not sure when I need to
+>> use a macro and when I should use a inline function.
+>>
+>> Could you help to give me some sugguestion?
+> You can ask three people and get five opinions ;)
 
-     ACPI / resources: ignore invalid ACPI device resources
+Hehe :)
+>
+> However if your above define would have been an inline function it
+> wouldn't suffer from possible subtle side effects and it would have
+> sane type checking etc.  So usually functions should be preferred.
 
-The following error message is printed three times during boot on my
-machine: "can't evaluate _CRS: 1"
+I prefer to inline function too, it makes me feel more safe.
 
-Here's the dmesg diff:
+I will update this patch with an inline function.
 
-@@ -308,6 +308,8 @@
- Switched to clocksource hpet
- pnp: PnP ACPI init
- ACPI: bus type PNP registered
-+pnp 00:00: unknown resource type 10 in _CRS
-+pnp 00:00: can't evaluate _CRS: 1
- system 00:00: Plug and Play ACPI device, IDs PNP0c02 (active)
- pnp 00:01: [dma 4]
- pnp 00:01: Plug and Play ACPI device, IDs PNP0200 (active)
-@@ -318,6 +320,8 @@
- system 00:06: [mem 0xfec00000-0xfec00fff] could not be reserved
- system 00:06: [mem 0xfee00000-0xfee00fff] has been reserved
- system 00:06: Plug and Play ACPI device, IDs PNP0c02 (active)
-+pnp 00:07: unknown resource type 4 in _CRS
-+pnp 00:07: can't evaluate _CRS: 1
- system 00:07: [io  0x04d0-0x04d1] has been reserved
- system 00:07: [io  0x040b] has been reserved
- system 00:07: [io  0x04d6] has been reserved
-@@ -334,19 +338,9 @@
- system 00:07: [io  0x0cd8-0x0cdf] has been reserved
- system 00:07: [io  0x0b00-0x0b3f] has been reserved
- system 00:07: [io  0x0800-0x089f] could not be reserved
--system 00:07: [io  0x0b00-0x0b0f] has been reserved
--system 00:07: [io  0x0b20-0x0b3f] has been reserved
--system 00:07: [io  0x0900-0x090f] has been reserved
--system 00:07: [io  0x0910-0x091f] has been reserved
--system 00:07: [io  0xfe00-0xfefe] has been reserved
--system 00:07: [mem 0xdff00000-0xdfffffff] has been reserved
--system 00:07: [mem 0xffb80000-0xffbfffff] has been reserved
--system 00:07: [mem 0xfec10000-0xfec1001f] has been reserved
- system 00:07: Plug and Play ACPI device, IDs PNP0c02 (active)
--system 00:08: [io  0x0230-0x023f] has been reserved
--system 00:08: [io  0x0290-0x029f] has been reserved
--system 00:08: [io  0x0f40-0x0f4f] has been reserved
--system 00:08: [io  0x0a30-0x0a3f] has been reserved
-+pnp 00:08: unknown resource type 4 in _CRS
-+pnp 00:08: can't evaluate _CRS: 1
- system 00:08: Plug and Play ACPI device, IDs PNP0c02 (active)
- system 00:09: [mem 0xe0000000-0xefffffff] has been reserved
- system 00:09: Plug and Play ACPI device, IDs PNP0c02 (active)
+Thanx
+>
 
--- 
-Markus
