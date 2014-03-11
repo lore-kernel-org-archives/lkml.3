@@ -1,75 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057AbaCKFwP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 01:52:15 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:26420
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752749AbaCKFvh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 01:51:37 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <alsa-devel@alsa-project.org>
-CC: <lars@metafoo.de>, <linux-kernel@vger.kernel.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv3 resend 3/3] ASoC: core: Fix check before setting default I/O up try regmap
-Date: Tue, 11 Mar 2014 12:43:22 +0800
-Message-ID: <1394513002-21946-4-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1394513002-21946-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1394513002-21946-1-git-send-email-Li.Xiubo@freescale.com>
+	id S1752823AbaCKGCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 02:02:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23613 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751626AbaCKGCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 02:02:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,629,1389772800"; 
+   d="scan'208";a="495939204"
+Message-ID: <531EA70A.2070304@linux.intel.com>
+Date: Mon, 10 Mar 2014 23:02:50 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: stefani@seibold.net
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Subject: Re: [x86, vdso] BUG: unable to handle kernel paging request at d34bd000
+References: <20140307013833.GD8427@localhost> <1394176888.1018.3.camel@wall-e.seibold.net> <CALCETrVCwZWvd78urw+O4zD3PoNZTQxg8FMzTrUi4+5w9rC5=A@mail.gmail.com> <1394229220.20013.13.camel@wall-e.seibold.net> <CALCETrXB0G3aA1Usp4U-9-eN0z22YC4Sn+3z42mrU2ab0gE9gQ@mail.gmail.com> <1394354848.1002.37.camel@wall-e.seibold.net> <531D044C.2090303@linux.intel.com> <CALCETrXJobOnVB-ne9s57o3Z1KwK4fRtaYi8W=L4+UT065fKJw@mail.gmail.com> <CALCETrUyJWQnQsX22+wrvPbXkj67nhZ0SMP1_hCo2yZ+Z5tMyA@mail.gmail.com> <531DD35A.5060202@linux.intel.com> <CA+55aFwKpBybz9S9A=+tcr1BbdzAbagL30Br2cak2GrdPH=hhA@mail.gmail.com> <CALCETrW6CT2ceHiHzMaZUGkwEBFWQEemFS5Fj=V7Wg-cNArMLg@mail.gmail.com> <1394481804.980.9.camel@wall-e.seibold.net> <531E1B53.5090205@linux.intel.com> <20140310222900.Horde.v9U-wjSperyf8zRvwBVchw8@webmail.your-server.de>
+In-Reply-To: <20140310222900.Horde.v9U-wjSperyf8zRvwBVchw8@webmail.your-server.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the CODEC driver could specify its own I/O(read and write)
-while registering the CODEC for some reason, maybe the MFDs is
-used, etc.
+On 03/10/2014 02:29 PM, stefani@seibold.net wrote:
+> 
+> Do you except a complete new patch set or an incremental patch based on the
+> current patch set?
+> 
 
-So just do check it, if they are not specified by CODEC driver
-then try to set up the default regmap I/O if regmap is used.
+An incremental patch is probably easier.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
-
-This patch has nothing changed.
-
-
-
- sound/soc/soc-core.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index acef9bd..e692e98 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -1137,9 +1137,15 @@ static int soc_probe_codec(struct snd_soc_card *card,
- 
- 	codec->dapm.idle_bias_off = driver->idle_bias_off;
- 
--	/* Set the default I/O up try regmap */
--	if (dev_get_regmap(codec->dev, NULL))
--		snd_soc_codec_set_cache_io(codec, NULL);
-+	if (!codec->write && dev_get_regmap(codec->dev, NULL)) {
-+		/* Set the default I/O up try regmap */
-+		ret = snd_soc_codec_set_cache_io(codec, NULL);
-+		if (ret < 0) {
-+			dev_err(codec->dev,
-+				"Failed to set cache I/O: %d\n", ret);
-+			goto err_probe;
-+		}
-+	}
- 
- 	if (driver->probe) {
- 		ret = driver->probe(codec);
--- 
-1.8.4
+	-hpa
 
 
