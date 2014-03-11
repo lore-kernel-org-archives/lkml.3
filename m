@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341AbaCKNUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:20:30 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:64906 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154AbaCKNU1 (ORCPT
+	id S1754841AbaCKNVN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:21:13 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.170]:11490 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754586AbaCKNVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:20:27 -0400
-Date: Tue, 11 Mar 2014 17:20:24 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: bad rss-counter message in 3.14rc5
-Message-ID: <20140311132024.GC32390@moon>
-References: <20140305174503.GA16335@redhat.com>
- <20140305175725.GB16335@redhat.com>
- <20140307002210.GA26603@redhat.com>
- <20140311024906.GA9191@redhat.com>
- <20140310201340.81994295.akpm@linux-foundation.org>
- <20140310214612.3b4de36a.akpm@linux-foundation.org>
- <20140311045109.GB12551@redhat.com>
- <20140310220158.7e8b7f2a.akpm@linux-foundation.org>
- <20140311053017.GB14329@redhat.com>
+	Tue, 11 Mar 2014 09:21:07 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-6.tower-39.messagelabs.com!1394544064!7253436!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Alessandro Zummo <a.zummo@towertech.it>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RTC linux <rtc-linux@googlegroups.com>
+Subject: RE: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
+Thread-Topic: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
+Thread-Index: AQHPPSVKUI+aJH4Lh0O1h4CC/fc/HJrb3XpA
+Date: Tue, 11 Mar 2014 13:21:02 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7A0C7967F@SW-EX-MBX01.diasemi.com>
+References: <cover.1394124002.git.stwiss.opensource@diasemi.com>
+ <93327cde91bcaef9a467adc6c7b34c3231d9e1e7.1394124002.git.stwiss.opensource@diasemi.com>
+ <20140311122725.GK21216@lee--X1>
+In-Reply-To: <20140311122725.GK21216@lee--X1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.61]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140311053017.GB14329@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2BDLP8A025750
 
-On Tue, Mar 11, 2014 at 01:30:17AM -0400, Dave Jones wrote:
->  > >  > 
->  > >  > I don't see any holes in regular migration.  Do you know if this is
->  > >  > reproducible with CONFIG_NUMA_BALANCING=n or CONFIG_NUMA=n?
->  > > 
->  > > CONFIG_NUMA_BALANCING was n already btw, so I'll do a NUMA=n run.
->  > 
->  > There probably isn't much point unless trinity is using
->  > sys_move_pages().  Is it?  If so it would be interesting to disable
->  > trinity's move_pages calls and see if it still fails.
-> 
-> Ok, with move_pages excluded it still oopses.
+On 11 March 2014 12:27, Lee Jones wrote:
 
-Dave, is it possible to somehow figure out was someone reading pagemap file
-at moment of the bug triggering?
+>Subject: Re: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
+>
+>> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>>
+>> Add the RTC driver for DA9063.
+>>
+>> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>> Acked-by: Alessandro Zummo <a.zummo@towertech.it>
+>> Acked-by: Lee Jones <lee.jones@linaro.org>
+>
+>How could I have Acked a patch that I've never seen?
+>
+><snip>
+>
+>> The original patch is here:
+>>  - https://lkml.org/lkml/2014/3/6/346
+>>
+>> This patch resend is identical to the original patch, except it adds
+>> the Acked-by: line from Alessandro Zummo, previously provided here:
+>>  - https://lkml.org/lkml/2014/3/7/112
+>>
+>> Also, it adds an Acked-by line on behalf of Lee Jones, as requested:
+>>  - https://lkml.org/lkml/2014/3/10/369
+>
+>Ah, no. I meant send the set with my Ack applied to the patch I
+>actually reviewed.
+
+Oh, no! I'm sorry about that.
+I completely misunderstood.
+
+>
+>Alessandro,
+>  Are you happy for me to take this set through the MFD tree and send
+>  you a pull-request for an immutable branch?
+
+Alessandro & Lee,
+Please accept my apology on this one, I've really messed things up
+on this patch set.
+
+Regards,
+Steve
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
