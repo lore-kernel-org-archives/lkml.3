@@ -1,151 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238AbaCKShS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:37:18 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:39288 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498AbaCKShQ (ORCPT
+	id S1754863AbaCKSkV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:40:21 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:39963 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaCKSkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:37:16 -0400
+	Tue, 11 Mar 2014 14:40:19 -0400
+From: Sebastian Capella <sebastian.capella@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v8 0/2] hibernation support on ARM
+Date: Tue, 11 Mar 2014 11:40:12 -0700
+Message-Id: <1394563214-26007-1-git-send-email-sebastian.capella@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <CA+mB=1JMsUojCE4+AtR2D5znNBv=YXGiFxLkJeJ77cZdTgCuZw@mail.gmail.com>
-References: <1394104717-3100-1-git-send-email-sthokal@xilinx.com>
-	<1394104717-3100-3-git-send-email-sthokal@xilinx.com>
-	<CABb+yY1y1sOozVU=iAsotWG-q3N=SogjHjZ=iF04CiXF89eeOg@mail.gmail.com>
-	<CA+mB=1J6Lzy5fZ6+fU0xY5zLyeDtrjtUpJCYdM7eL-tsQ+jUVA@mail.gmail.com>
-	<CAJe_Zhej0-i4uEPvXr3XH_8Qzd7SD-3yvJOp+MW4j+KJ8rt1PQ@mail.gmail.com>
-	<CA+mB=1JMsUojCE4+AtR2D5znNBv=YXGiFxLkJeJ77cZdTgCuZw@mail.gmail.com>
-Date: Wed, 12 Mar 2014 00:07:14 +0530
-X-Google-Sender-Auth: hfxtMx_bZK8yBEggMJ8lrA0pWBA
-Message-ID: <CA+mB=1L0kgVgFhtfUryYtF_YYtzwWttvwN-eX6skVdsaxZ18Zw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] dma: Add Xilinx AXI Video Direct Memory Access
- Engine driver support
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: Jassi Brar <jaswinder.singh@linaro.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 12:02 AM, Srikanth Thokala <sthokal@xilinx.com> wrote:
-> On Tue, Mar 11, 2014 at 7:14 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
->> On 11 March 2014 00:00, Srikanth Thokala <sthokal@xilinx.com> wrote:
->>> On Mon, Mar 10, 2014 at 9:30 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->>>> On Thu, Mar 6, 2014 at 7:18 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
->>>>
->>>>> +static struct dma_async_tx_descriptor *
->>>>> +xilinx_vdma_dma_prep_interleaved(struct dma_chan *dchan,
->>>>> +                                struct dma_interleaved_template *xt,
->>>>> +                                unsigned long flags)
->>>>> +{
->>>>> +       struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
->>>>> +       struct xilinx_vdma_tx_descriptor *desc;
->>>>> +       struct xilinx_vdma_tx_segment *segment;
->>>>> +       struct xilinx_vdma_tx_segment *prev = NULL;
->>>>> +       int i;
->>>>> +
->>>>> +       if ((xt->dir != DMA_MEM_TO_DEV) && (xt->dir != DMA_DEV_TO_MEM))
->>>>> +               return NULL;
->>>>> +
->>>>> +       if (!xt->numf || !xt->sgl[0].size)
->>>>> +               return NULL;
->>>>> +
->>>>> +       /* Allocate a transaction descriptor. */
->>>>> +       desc = xilinx_vdma_alloc_tx_descriptor(chan);
->>>>> +       if (!desc)
->>>>> +               return NULL;
->>>>> +
->>>>> +       dma_async_tx_descriptor_init(&desc->async_tx, &chan->common);
->>>>> +       desc->async_tx.tx_submit = xilinx_vdma_tx_submit;
->>>>> +       desc->async_tx.cookie = 0;
->>>>> +       async_tx_ack(&desc->async_tx);
->>>>> +
->>>>> +       /* Build the list of transaction segments. */
->>>>> +       for (i = 0; i < xt->frame_size; i++) {
->>>>> +               struct xilinx_vdma_desc_hw *hw;
->>>>> +
->>>>> +               /* Allocate the link descriptor from DMA pool */
->>>>> +               segment = xilinx_vdma_alloc_tx_segment(chan);
->>>>> +               if (!segment)
->>>>> +                       goto error;
->>>>> +
->>>>> +               /* Fill in the hardware descriptor */
->>>>> +               hw = &segment->hw;
->>>>> +               hw->vsize = xt->numf;
->>>>> +               hw->hsize = xt->sgl[0].size;
->>>>> +               hw->stride = xt->sgl[0].icg <<
->>>>> +                               XILINX_VDMA_FRMDLY_STRIDE_STRIDE_SHIFT;
->>>>>
->>>> It seems the xt->frame_size is (should be?) always going to be 1?
->>>> If yes, the for-loop isn't needed.
->>>> If no, you should probably use 'i' as the index to sgl[], and not always 0.
->>>
->>> It can be either
->>> '1':  User can queue each segment and submit all the segments at once as a
->>>       single async tx descriptor.  I am using this for scatter-gather mode of
->>>       operation where the src_start/dst_start is different for each segment.
->>> 'Number of frames':  In this case the driver gets contiguous frame buffer memory
->>>       and it prepares segments with addresses as multiples of
->>> src_start/dst_start.
->>>
->> Quoting you from earlier thread ....
->> " In video frame context,
->> chunk.size -> hsize
->> chunk.icg -> stride
->> numf -> vsize
->> and frame_size is always 1 as it will have only one chunk in a line. "
->>  ... which makes sense.
->>
->> I hope you realize that, 'frame_size' denotes the number of chunks in
->> a frame and 'numf' denotes the number of frames in the transfer
->> request. It seems wrong when you assume  vsize:=numf  but
->> frame_size>1 ... i.e, each horizontal video line has two or more
->> dis-contiguous chunks?   This might work for client drivers written
->> specifically for Xilinx AXI Video DMAC but will fail over any other
->> controller driver.
->>
->>  IMO, xilinx_vdma.c should expect only 1 video frame per
->> device_prep_interleaved_dma() call (i.e, vsize=numf and frame_size==1)
->>   Let the client driver submit 1/2/.../16 requests before kick
->> starting the DMA. Upon  dma_async_tx_descriptor.callback(), the client
->> 'refills' the frame and re-queues it back. This should work because
->> the video-frames' attributes and locations are not going to change
->> within a session.
->>
->>> Please let me know if you see any issues in this implementation.
->>>
->> I am ok if you want the driver upstream now and want to 'fix' it when
->> you actually start seeing problems :)
->
-> I agree with you and I have no issues in fixing this now.  I will fix
-> it in my v6
 
-Apologies, it is v5.
+Patches adding support for hibernation on ARM
+ - ARM hibernation / suspend-to-disk
+ - Change soft_restart to use non-tracing raw_local_irq_disable
 
-> with the driver accepting only one frame/interleave_dma call.
->
-> But, I feel this information has to be documented to the description of
-> interleaved_dma API as it is leading to interpret the members of this
-> structure differently wrt video frame terminology.
->
-> Thanks
-> Srikanth
->
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Patches based on v3.14-rc5 tag, verified hibernation on beaglebone black on a
+branch based on 3.13 merged with initial omap support from Russ Dill which
+can be found here (includes v1 patchset):
+http://git.linaro.org/git-ro/people/sebastian.capella/linux.git hibernation_3.13_russMerge
+
+[PATCH v8 1/2] ARM: avoid tracers in soft_restart
+ arch/arm/kernel/process.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+ Use raw_local_irq_disable in place of local_irq_disable to avoid
+ infinite abort recursion while tracing. (unchanged since v3)
+
+[PATCH v8 2/2] ARM hibernation / suspend-to-disk
+ arch/arm/kernel/Makefile    |    1 +
+ arch/arm/kernel/hibernate.c |  107 +++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mm/Kconfig         |    5 ++
+ include/linux/suspend.h     |    2 +
+ 4 files changed, 115 insertions(+)
+
+ Adds support for ARM based hibernation
+
+
+Additional notes:
+-----------------
+
+There are two checkpatch warnings added by this patch.  These follow
+behavior in existing hibernation implementations on other platforms.
+
+
+    WARNING: externs should be avoided in .c files
+    #108: FILE: arch/arm/kernel/hibernate.c:25:
+    +extern const void __nosave_begin, __nosave_end;
+
+  This extern is picking up the linker nosave region definitions, only
+  used in hibernate.  Follows same extern line used mips, powerpc, s390,
+  sh, sparc, x86 & unicore32
+
+    WARNING: externs should be avoided in .c files
+    #186: FILE: arch/arm/kernel/hibernate.c:103:
+    +   extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
+
+  This extern is used in the arch/arm/ in hibernate, process and bL_switcher
+
+
+Changes in v8:
+--------------
+* remove definition and use of __pa_symbol
+
+Changes in v7:
+--------------
+* remove use of RELOC_HIDE macro
+* remove unused #includes
+* fixup comment for arch_restore_image
+* ensure alignment of resume stack on 8 byte boundary
+
+Changes in v6:
+--------------
+* Simplify static variable names
+
+Changes in v5:
+--------------
+* Fixed checkpatch warning on trailing whitespace
+
+Changes in v4:
+--------------
+* updated comment for soft_restart with review feedback
+* dropped freeze_processes patch which was queued separately
+  to 3.14 by Rafael Wysocki:
+  https://lkml.org/lkml/2014/2/25/683
+
+Changes in v3:
+--------------
+* added comment to use of soft_restart
+* drop irq disable soft_restart patch
+* add patch to avoid tracers in soft_restart by using raw_local_irq_*
+
+Changes in v2:
+--------------
+* Removed unneeded flush_thread, use of __naked and cpu_init.
+* dropped Cyril Chemparathy <cyril@ti.com> from Cc: list as
+  emails are bouncing.
+
+Thanks,
+
+Sebastian Capella
+
+
+
+
