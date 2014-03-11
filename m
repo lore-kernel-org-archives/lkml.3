@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361AbaCKIhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 04:37:07 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:33227 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861AbaCKIhE (ORCPT
+	id S1754461AbaCKIhw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 04:37:52 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:51239 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787AbaCKIhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 04:37:04 -0400
-Date: Tue, 11 Mar 2014 09:36:58 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, joe@perches.com, peterz@infradead.org,
-        mingo@kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 01/15] sched/prio: Add a macro named NICE_TO_RLIMIT in
- prio.h.
-Message-ID: <20140311083658.GB4298@osiris>
-References: <cover.1394513466.git.yangds.fnst@cn.fujitsu.com>
- <f475972d21de5738cf3302ab9c95c90fd4407815.1394513466.git.yangds.fnst@cn.fujitsu.com>
- <20140311081730.GA4298@osiris>
- <531EC748.5010600@cn.fujitsu.com>
+	Tue, 11 Mar 2014 04:37:48 -0400
+Date: Tue, 11 Mar 2014 09:37:44 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+Message-ID: <20140311083744.GA27605@gmail.com>
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
+ <CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
+ <CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
+ <CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
+ <CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <531EC748.5010600@cn.fujitsu.com>
+In-Reply-To: <CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031108-4966-0000-0000-000008B08E99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 04:20:24PM +0800, Dongsheng Yang wrote:
-> On 03/11/2014 04:17 PM, Heiko Carstens wrote:
-> >On Tue, Mar 11, 2014 at 12:59:16PM +0800, Dongsheng Yang wrote:
-> >>+#define NICE_TO_RLIMIT(nice)	(MAX_NICE - nice + 1)
-> >Where is MAX_NICE defined? The s390 patch fails to compile.
+
+* Andy Lutomirski <luto@amacapital.net> wrote:
+
+> [...]
 > 
-> MAX_NICE is defined in include/linux/sched/prio.h. It is applied in
-> tip tree, and not in mainline yet.
+> Currently there are three options: sane vDSO, no vDSO, and OpenSuSE 
+> 9-compatible vDSO.  The latter is a mess to maintain and breaks ASLR 
+> (even for users of modern glibc), and having a vDSO is apparently 
+> important enough that people are willing to pay to enhance it.  The 
+> default is OpenSuSE 9-compatible vDSO, which is IMO an odd choice.
 
-Ok.
+The 'odd choice' was to not break the ABI by default...
 
-> >Also you probably want at least extra braces around the 'nice' usage to
-> >avoid subtle side effects. (or make NICE_TO.. a function, whatever).
-> 
-> Yes, agree. Another question is that I am not sure when I need to
-> use a macro and when I should use a inline function.
-> 
-> Could you help to give me some sugguestion?
+> ISTM the right solution is to make OpenSuSE 9 users turn off the 
+> vDSO (which is a performance hit for them, but not a correctness 
+> issue) and let everyone else have a simpler kernel that has no ASLR 
+> issues.
 
-You can ask three people and get five opinions ;)
+Could we just remove the option and automagically disable the vdso on 
+OpenSuSE-9, without any boot flags? Is the segfault distinctive enough 
+to base a disable-vdso quirk on, either to disable the vdso, or to map 
+it into the compatibility position on demand?
 
-However if your above define would have been an inline function it
-wouldn't suffer from possible subtle side effects and it would have
-sane type checking etc.  So usually functions should be preferred.
+That would remove most of this complication. Being somewhat slower on 
+an old distro with a new kernel is perfectly OK. The question is, can 
+this be done easily enough - chances are that it cannot be done.
 
+Thanks,
+
+	Ingo
