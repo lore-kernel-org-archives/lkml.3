@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594AbaCKMkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 08:40:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35741 "EHLO
+	id S1755650AbaCKMlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 08:41:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35759 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244AbaCKMkq (ORCPT
+	with ESMTP id S1755581AbaCKMlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 08:40:46 -0400
-Date: Tue, 11 Mar 2014 05:39:51 -0700
-From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-4c6c4e38c4e9a454889298dcc498174968d14a09@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, ktkhai@parallels.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, ktkhai@parallels.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1394098321.19290.11.camel@tkhai>
-References: <1394098321.19290.11.camel@tkhai>
+	Tue, 11 Mar 2014 08:41:06 -0400
+Date: Tue, 11 Mar 2014 05:40:37 -0700
+From: tip-bot for Bjorn Helgaas <tipbot@zytor.com>
+Message-ID: <tip-070826820daf423eee83ee4e90bf3daf2cdd85c2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        bhelgaas@google.com, peterz@infradead.org, tglx@linutronix.de,
+        davem@davemloft.net
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, peterz@infradead.org, tglx@linutronix.de,
+        davem@davemloft.net
+In-Reply-To: <20140304210744.16893.75929.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140304210744.16893.75929.stgit@bhelgaas-glaptop.roam.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/core: Fix endless loop in pick_next_task()
-Git-Commit-ID: 4c6c4e38c4e9a454889298dcc498174968d14a09
+Subject: [tip:sched/core] sparc64, sched: Remove unused sparc64_multi_core
+Git-Commit-ID: 070826820daf423eee83ee4e90bf3daf2cdd85c2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,113 +33,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4c6c4e38c4e9a454889298dcc498174968d14a09
-Gitweb:     http://git.kernel.org/tip/4c6c4e38c4e9a454889298dcc498174968d14a09
-Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Thu, 6 Mar 2014 13:32:01 +0400
+Commit-ID:  070826820daf423eee83ee4e90bf3daf2cdd85c2
+Gitweb:     http://git.kernel.org/tip/070826820daf423eee83ee4e90bf3daf2cdd85c2
+Author:     Bjorn Helgaas <bhelgaas@google.com>
+AuthorDate: Tue, 4 Mar 2014 14:07:44 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 11 Mar 2014 12:05:39 +0100
+CommitDate: Tue, 11 Mar 2014 12:05:47 +0100
 
-sched/core: Fix endless loop in pick_next_task()
+sparc64, sched: Remove unused sparc64_multi_core
 
-1) Single cpu machine case.
+Remove sparc64_multi_core because it's not used any more.
 
-When rq has only RT tasks, but no one of them can be picked
-because of throttling, we enter in endless loop.
+It was added by a2f9f6bbb30e ("Fix {mc,smt}_capable()"), and the last uses
+were removed by e637d96bf462 ("sched: Remove unused mc_capable() and
+smt_capable()").
 
-pick_next_task_{dl,rt} return NULL.
-
-In pick_next_task_fair() we permanently go to retry
-
-	if (rq->nr_running != rq->cfs.h_nr_running)
-		return RETRY_TASK;
-
-(rq->nr_running is not being decremented when rt_rq becomes
-throttled).
-
-No chances to unthrottle any rt_rq or to wake fair here,
-because of rq is locked permanently and interrupts are
-disabled.
-
-2) In case of SMP this can cause a hang too. Although we unlock
-   rq in idle_balance(), interrupts are still disabled.
-
-The solution is to check for available tasks in DL and RT
-classes instead of checking for sum.
-
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1394098321.19290.11.camel@tkhai
+Acked-by: David S. Miller <davem@davemloft.net>
+Link: http://lkml.kernel.org/r/20140304210744.16893.75929.stgit@bhelgaas-glaptop.roam.corp.google.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c  |  4 +++-
- kernel/sched/rt.c    | 10 ----------
- kernel/sched/sched.h | 12 ++++++++++++
- 3 files changed, 15 insertions(+), 11 deletions(-)
+ arch/sparc/include/asm/smp_64.h | 1 -
+ arch/sparc/kernel/mdesc.c       | 4 ----
+ arch/sparc/kernel/prom_64.c     | 3 ---
+ arch/sparc/kernel/smp_64.c      | 2 --
+ 4 files changed, 10 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b956e70..10db4a8 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6728,7 +6728,9 @@ static int idle_balance(struct rq *this_rq)
+diff --git a/arch/sparc/include/asm/smp_64.h b/arch/sparc/include/asm/smp_64.h
+index dd3bef4..0571039 100644
+--- a/arch/sparc/include/asm/smp_64.h
++++ b/arch/sparc/include/asm/smp_64.h
+@@ -32,7 +32,6 @@
  
- out:
- 	/* Is there a task of a high priority class? */
--	if (this_rq->nr_running != this_rq->cfs.h_nr_running)
-+	if (this_rq->nr_running != this_rq->cfs.h_nr_running &&
-+	    (this_rq->dl.dl_nr_running ||
-+	     (this_rq->rt.rt_nr_running && !rt_rq_throttled(&this_rq->rt))))
- 		pulled_task = -1;
+ DECLARE_PER_CPU(cpumask_t, cpu_sibling_map);
+ extern cpumask_t cpu_core_map[NR_CPUS];
+-extern int sparc64_multi_core;
  
- 	if (pulled_task) {
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index f3cee0a..d8cdf16 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -470,11 +470,6 @@ static void sched_rt_rq_dequeue(struct rt_rq *rt_rq)
- 		dequeue_rt_entity(rt_se);
- }
+ extern void arch_send_call_function_single_ipi(int cpu);
+ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+diff --git a/arch/sparc/kernel/mdesc.c b/arch/sparc/kernel/mdesc.c
+index b90bf23..a1a4400 100644
+--- a/arch/sparc/kernel/mdesc.c
++++ b/arch/sparc/kernel/mdesc.c
+@@ -896,10 +896,6 @@ void mdesc_fill_in_cpu_data(cpumask_t *mask)
  
--static inline int rt_rq_throttled(struct rt_rq *rt_rq)
--{
--	return rt_rq->rt_throttled && !rt_rq->rt_nr_boosted;
--}
+ 	mdesc_iterate_over_cpus(fill_in_one_cpu, NULL, mask);
+ 
+-#ifdef CONFIG_SMP
+-	sparc64_multi_core = 1;
+-#endif
 -
- static int rt_se_boosted(struct sched_rt_entity *rt_se)
- {
- 	struct rt_rq *rt_rq = group_rt_rq(rt_se);
-@@ -545,11 +540,6 @@ static inline void sched_rt_rq_dequeue(struct rt_rq *rt_rq)
- {
- }
+ 	hp = mdesc_grab();
  
--static inline int rt_rq_throttled(struct rt_rq *rt_rq)
--{
--	return rt_rq->rt_throttled;
--}
+ 	set_core_ids(hp);
+diff --git a/arch/sparc/kernel/prom_64.c b/arch/sparc/kernel/prom_64.c
+index 6b39125..9a690d3 100644
+--- a/arch/sparc/kernel/prom_64.c
++++ b/arch/sparc/kernel/prom_64.c
+@@ -555,9 +555,6 @@ static void *fill_in_one_cpu(struct device_node *dp, int cpuid, int arg)
+ 
+ 		cpu_data(cpuid).core_id = portid + 1;
+ 		cpu_data(cpuid).proc_id = portid;
+-#ifdef CONFIG_SMP
+-		sparc64_multi_core = 1;
+-#endif
+ 	} else {
+ 		cpu_data(cpuid).dcache_size =
+ 			of_getintprop_default(dp, "dcache-size", 16 * 1024);
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index b085311..9781048 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -53,8 +53,6 @@
+ 
+ #include "cpumap.h"
+ 
+-int sparc64_multi_core __read_mostly;
 -
- static inline const struct cpumask *sched_rt_period_mask(void)
- {
- 	return cpu_online_mask;
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 378bff7..f2de7a1 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -423,6 +423,18 @@ struct rt_rq {
- #endif
- };
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
-+static inline int rt_rq_throttled(struct rt_rq *rt_rq)
-+{
-+	return rt_rq->rt_throttled && !rt_rq->rt_nr_boosted;
-+}
-+#else
-+static inline int rt_rq_throttled(struct rt_rq *rt_rq)
-+{
-+	return rt_rq->rt_throttled;
-+}
-+#endif
-+
- /* Deadline class' related fields in a runqueue */
- struct dl_rq {
- 	/* runqueue is an rbtree, ordered by deadline */
+ DEFINE_PER_CPU(cpumask_t, cpu_sibling_map) = CPU_MASK_NONE;
+ cpumask_t cpu_core_map[NR_CPUS] __read_mostly =
+ 	{ [0 ... NR_CPUS-1] = CPU_MASK_NONE };
