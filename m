@@ -1,55 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaCKPxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 11:53:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31893 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616AbaCKPxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 11:53:10 -0400
-Message-ID: <531F3159.6060607@redhat.com>
-Date: Tue, 11 Mar 2014 16:52:57 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753686AbaCKPxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 11:53:42 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:53859 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206AbaCKPxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 11:53:40 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH 2/3] spi: sh-msiof: Convert to spi core auto_runtime_pm framework
+Date: Tue, 11 Mar 2014 16:55:15 +0100
+Message-ID: <1802214.NxZUiJcWLG@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1394531952-3905-2-git-send-email-geert@linux-m68k.org>
+References: <1394531952-3905-1-git-send-email-geert@linux-m68k.org> <1394531952-3905-2-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-To: Tobias Klauser <tklauser@distanz.ch>
-CC: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: Add tools/net to NETWORKING [GENERAL]
-References: <1394535984-17924-1-git-send-email-tklauser@distanz.ch>
-In-Reply-To: <1394535984-17924-1-git-send-email-tklauser@distanz.ch>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2014 12:06 PM, Tobias Klauser wrote:
-> Make sure patches for these tools go to the netdev list as well.
->
-> References: https://marc.info/?l=linux-kernel&m=139450284501328&w=2
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Daniel Borkmann <dborkman@redhat.com>
-> Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+Hi Geert,
+
+Thank you for the patch.
+
+Does this require drivers/sh/pm_runtime.c to be compiled in ?
+
+On Tuesday 11 March 2014 10:59:11 Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> Cc: Magnus Damm <magnus.damm@gmail.com>
 > ---
->   MAINTAINERS |    1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index ab32ad5..fa7b379 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6042,6 +6042,7 @@ F:	include/linux/netdevice.h
->   F:	include/uapi/linux/in.h
->   F:	include/uapi/linux/net.h
->   F:	include/uapi/linux/netdevice.h
-> +F:	tools/net/
+>  drivers/spi/spi-sh-msiof.c |   25 +------------------------
+>  1 file changed, 1 insertion(+), 24 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
+> index 739eb2f12ecc..e850d03e7190 100644
+> --- a/drivers/spi/spi-sh-msiof.c
+> +++ b/drivers/spi/spi-sh-msiof.c
+> @@ -448,9 +448,6 @@ static int sh_msiof_prepare_message(struct spi_master
+> *master, struct sh_msiof_spi_priv *p = spi_master_get_devdata(master);
+>  	const struct spi_device *spi = msg->spi;
+> 
+> -	pm_runtime_get_sync(&p->pdev->dev);
+> -	clk_enable(p->clk);
+> -
+>  	/* Configure pins before asserting CS */
+>  	sh_msiof_spi_set_pin_regs(p, !!(spi->mode & SPI_CPOL),
+>  				  !!(spi->mode & SPI_CPHA),
+> @@ -460,16 +457,6 @@ static int sh_msiof_prepare_message(struct spi_master
+> *master, return 0;
+>  }
+> 
+> -static int sh_msiof_unprepare_message(struct spi_master *master,
+> -				      struct spi_message *msg)
+> -{
+> -	struct sh_msiof_spi_priv *p = spi_master_get_devdata(master);
+> -
+> -	clk_disable(p->clk);
+> -	pm_runtime_put(&p->pdev->dev);
+> -	return 0;
+> -}
+> -
+>  static int sh_msiof_spi_txrx_once(struct sh_msiof_spi_priv *p,
+>  				  void (*tx_fifo)(struct sh_msiof_spi_priv *,
+>  						  const void *, int, int),
+> @@ -742,12 +729,6 @@ static int sh_msiof_spi_probe(struct platform_device
+> *pdev) goto err1;
+>  	}
+> 
+> -	ret = clk_prepare(p->clk);
+> -	if (ret < 0) {
+> -		dev_err(&pdev->dev, "unable to prepare clock\n");
+> -		goto err1;
+> -	}
+> -
+>  	p->pdev = pdev;
+>  	pm_runtime_enable(&pdev->dev);
+> 
+> @@ -768,8 +749,8 @@ static int sh_msiof_spi_probe(struct platform_device
+> *pdev) master->num_chipselect = p->info->num_chipselect;
+>  	master->setup = sh_msiof_spi_setup;
+>  	master->prepare_message = sh_msiof_prepare_message;
+> -	master->unprepare_message = sh_msiof_unprepare_message;
+>  	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(8, 32);
+> +	master->auto_runtime_pm = true;
+>  	master->transfer_one = sh_msiof_transfer_one;
+> 
+>  	ret = devm_spi_register_master(&pdev->dev, master);
+> @@ -782,7 +763,6 @@ static int sh_msiof_spi_probe(struct platform_device
+> *pdev)
+> 
+>   err2:
+>  	pm_runtime_disable(&pdev->dev);
+> -	clk_unprepare(p->clk);
+>   err1:
+>  	spi_master_put(master);
+>  	return ret;
+> @@ -790,10 +770,7 @@ static int sh_msiof_spi_probe(struct platform_device
+> *pdev)
+> 
+>  static int sh_msiof_spi_remove(struct platform_device *pdev)
+>  {
+> -	struct sh_msiof_spi_priv *p = platform_get_drvdata(pdev);
+> -
+>  	pm_runtime_disable(&pdev->dev);
+> -	clk_unprepare(p->clk);
+>  	return 0;
+>  }
 
-We should perhaps also add an entry for networking
-selftests later on, that is:
+-- 
+Regards,
 
-   tools/testing/selftests/net/
+Laurent Pinchart
 
->   NETWORKING [IPv4/IPv6]
->   M:	"David S. Miller" <davem@davemloft.net>
->
