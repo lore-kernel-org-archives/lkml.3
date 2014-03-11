@@ -1,304 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaCKFCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 01:02:07 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:34290 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752609AbaCKFCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 01:02:02 -0400
-X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9676441"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+	id S1754665AbaCKFC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 01:02:57 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:61473 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464AbaCKFCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 01:02:06 -0400
+X-Original-SENDERIP: 10.177.222.157
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 11 Mar 2014 14:02:18 +0900
+From: Minchan Kim <minchan@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: joe@perches.com, peterz@infradead.org, mingo@kernel.org,
-        tglx@linutronix.de, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Robin Holt <holt@sgi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 02/15] kernel/sys: Replace opened code implementation with NICE_TO_RLIMIT macro.
-Date: Tue, 11 Mar 2014 12:59:17 +0800
-Message-Id: <cd5521508aff739398ac1ac098c61d9d86bc5cbc.1394513466.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <cover.1394513466.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1394513466.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 12:58:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 12:58:52,
-	Serialize complete at 2014/03/11 12:58:52
+Cc: mm-commits@vger.kernel.org, sergey.senozhatsky@gmail.com,
+        ngupta@vflare.org, jmarchan@redhat.com, akpm@linux-foundation.org
+Subject: Re: + zram-propagate-error-to-user-fix.patch added to -mm tree
+Message-ID: <20140311050218.GB19143@bbox>
+References: <531e1da6.LIOFFB/3fpRK4ekJ%akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <531e1da6.LIOFFB/3fpRK4ekJ%akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+*slaps self*
 
-Convert 20 - task_nice(p) to NICE_TO_RLIMIT(task_nice(p)).
+Thanks Sergey and Andrew!
 
-Reduce the indent the switch case labels while there.
+On Mon, Mar 10, 2014 at 01:16:38PM -0700, akpm@linux-foundation.org wrote:
+> Subject: + zram-propagate-error-to-user-fix.patch added to -mm tree
+> To: akpm@linux-foundation.org,jmarchan@redhat.com,minchan@kernel.org,ngupta@vflare.org,sergey.senozhatsky@gmail.com
+> From: akpm@linux-foundation.org
+> Date: Mon, 10 Mar 2014 13:16:38 -0700
+> 
+> 
+> The patch titled
+>      Subject: zram-propagate-error-to-user-fix
+> has been added to the -mm tree.  Its filename is
+>      zram-propagate-error-to-user-fix.patch
+> 
+> This patch should soon appear at
+>     http://ozlabs.org/~akpm/mmots/broken-out/zram-propagate-error-to-user-fix.patch
+> and later at
+>     http://ozlabs.org/~akpm/mmotm/broken-out/zram-propagate-error-to-user-fix.patch
+> 
+> Before you just go and hit "reply", please:
+>    a) Consider who else should be cc'ed
+>    b) Prefer to cc a suitable mailing list as well
+>    c) Ideally: find the original patch on the mailing list and do a
+>       reply-to-all to that, adding suitable additional cc's
+> 
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 
+> The -mm tree is included into linux-next and is updated
+> there every 3-4 working days
+> 
+> ------------------------------------------------------
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: zram-propagate-error-to-user-fix
+> 
+> don't return with the lock held, per Sergey
+> 
+> Cc: Jerome Marchand <jmarchan@redhat.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  drivers/block/zram/zram_drv.c |   18 ++++++++++--------
+>  1 file changed, 10 insertions(+), 8 deletions(-)
+> 
+> diff -puN drivers/block/zram/zram_drv.c~zram-propagate-error-to-user-fix drivers/block/zram/zram_drv.c
+> --- a/drivers/block/zram/zram_drv.c~zram-propagate-error-to-user-fix
+> +++ a/drivers/block/zram/zram_drv.c
+> @@ -126,26 +126,28 @@ static ssize_t max_comp_streams_store(st
+>  {
+>  	int num;
+>  	struct zram *zram = dev_to_zram(dev);
+> +	int ret;
+>  
+> -	if (kstrtoint(buf, 0, &num))
+> -		goto out;
+> +	ret = kstrtoint(buf, 0, &num);
+> +	if (ret < 0)
+> +		return ret;
+>  	if (num < 1)
+> -		goto out;
+> +		return -EINVAL;
+>  
+>  	down_write(&zram->init_lock);
+>  	if (init_done(zram)) {
+>  		if (!zcomp_set_max_streams(zram->comp, num)) {
+>  			pr_info("Cannot change max compression streams\n");
+> -			goto out_unlock;
+> +			ret = -EINVAL;
+> +			goto out;
+>  		}
+>  	}
+>  
+>  	zram->max_comp_streams = num;
+> -	return len;
+> -out_unlock:
+> -	up_write(&zram->init_lock);
+> +	ret = len;
+>  out:
+> -	return -EINVAL;
+> +	up_write(&zram->init_lock);
+> +	return ret;
+>  }
+>  
+>  static ssize_t comp_algorithm_show(struct device *dev,
+> _
+> 
+> Patches currently in -mm which might be from akpm@linux-foundation.org are
+> 
+> arch-alpha-kernel-systblss-remove-debug-check.patch
+> i-need-old-gcc.patch
+> maintainers-akpm-maintenance.patch
+> revert-kallsyms-fix-absolute-addresses-for-kaslr.patch
+> input-route-kbd-leds-through-the-generic-leds-layer.patch
+> ocfs2-add-dlm_recover_callback_support-in-sysfs-fix.patch
+> ocfs2-flock-drop-cross-node-lock-when-failed-locally-checkpatch-fixes.patch
+> ocfs2-do-not-return-dlm_migrate_response_mastery_ref-to-avoid-endlessloop-during-umount-checkpatch-fixes.patch
+> mm.patch
+> mm-hugetlb-improve-page-fault-scalability-fix.patch
+> mm-vmstat-fix-up-zone-state-accounting-fix.patch
+> mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix.patch
+> mm-process_vm_accessc-mark-function-as-static-fix.patch
+> mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3-fix.patch
+> pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range-fix.patch
+> pagewalk-remove-argument-hmask-from-hugetlb_entry-fix-fix.patch
+> mm-introduce-do_shared_fault-and-drop-do_fault-fix-fix.patch
+> drop_caches-add-some-documentation-and-info-message.patch
+> mmnuma-reorganize-change_pmd_range-fix.patch
+> drivers-lguest-page_tablesc-rename-do_set_pte.patch
+> mm-add-debugfs-tunable-for-fault_around_order-checkpatch-fixes.patch
+> mm-per-thread-vma-caching.patch
+> mm-per-thread-vma-caching-fix-3.patch
+> mm-use-macros-from-compilerh-instead-of-__attribute__-fix.patch
+> mm-compactionc-isolate_freepages_block-small-tuneup.patch
+> zram-use-zcomp-compressing-backends-fix.patch
+> zram-return-error-valued-pointer-from-zcomp_create-fix.patch
+> zram-propagate-error-to-user-fix.patch
+> do_shared_fault-check-that-mmap_sem-is-held.patch
+> include-linux-syscallsh-add-sys32_quotactl-prototype-fix.patch
+> sys_sysfs-add-config_sysfs_syscall-fix.patch
+> kernel-groupsc-remove-return-value-of-set_groups-fix.patch
+> ncpfs-convert-dprintk-ddprintk-to-ncp_dbg-fix.patch
+> ncpfs-convert-dprintk-ddprintk-to-ncp_dbg-fix-fix.patch
+> hfsplus-fix-concurrent-acess-of-alloc_blocks-fix.patch
+> hfsplus-fix-concurrent-acess-of-alloc_blocks-fix-fix.patch
+> kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-fix.patch
+> kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-checkpatch-fixes.patch
+> include-linux-crash_dumph-add-vmcore_cleanup-prototype-fix.patch
+> kernel-panicc-display-reason-at-end-pr_emerg-fix.patch
+> fault-injection-set-bounds-on-what-proc-self-make-it-fail-accepts-fix.patch
+> initramfs-debug-detected-compression-method-fix.patch
+> linux-next.patch
+> linux-next-git-rejects.patch
+> drivers-gpio-gpio-zevioc-fix-build.patch
+> debugging-keep-track-of-page-owners.patch
+> journal_add_journal_head-debug.patch
+> journal_add_journal_head-debug-fix.patch
+> kernel-forkc-export-kernel_thread-to-modules.patch
+> mutex-subsystem-synchro-test-module.patch
+> slab-leaks3-default-y.patch
+> put_bh-debug.patch
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe mm-commits" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-git diff -w shows 3 lines changed and a /* fall-through */ comment added
-
-  $ git diff -w -U0 kernel/sys.c
-  @@ -253 +253 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
-  -                               niceval = 20 - task_nice(p);
-  +                       niceval = NICE_TO_RLIMIT(task_nice(p));
-  @@ -264 +264 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
-  -                               niceval = 20 - task_nice(p);
-  +                       niceval = NICE_TO_RLIMIT(task_nice(p));
-  @@ -280 +280 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
-  -                                       niceval = 20 - task_nice(p);
-  +                               niceval = NICE_TO_RLIMIT(task_nice(p));
-  @@ -1558 +1558 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
-  -
-  +               /* fall-through */
-
-Signed-off-by: Joe Perches <joe@perches.com>
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Robin Holt <holt@sgi.com>
-cc: Oleg Nesterov <oleg@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>
----
- kernel/sys.c | 206 +++++++++++++++++++++++++++++------------------------------
- 1 file changed, 103 insertions(+), 103 deletions(-)
-
-diff --git a/kernel/sys.c b/kernel/sys.c
-index adaeab6..b03aba3 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -182,39 +182,39 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
- 	rcu_read_lock();
- 	read_lock(&tasklist_lock);
- 	switch (which) {
--		case PRIO_PROCESS:
--			if (who)
--				p = find_task_by_vpid(who);
--			else
--				p = current;
--			if (p)
--				error = set_one_prio(p, niceval, error);
--			break;
--		case PRIO_PGRP:
--			if (who)
--				pgrp = find_vpid(who);
--			else
--				pgrp = task_pgrp(current);
--			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
-+	case PRIO_PROCESS:
-+		if (who)
-+			p = find_task_by_vpid(who);
-+		else
-+			p = current;
-+		if (p)
-+			error = set_one_prio(p, niceval, error);
-+		break;
-+	case PRIO_PGRP:
-+		if (who)
-+			pgrp = find_vpid(who);
-+		else
-+			pgrp = task_pgrp(current);
-+		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
-+			error = set_one_prio(p, niceval, error);
-+		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
-+		break;
-+	case PRIO_USER:
-+		uid = make_kuid(cred->user_ns, who);
-+		user = cred->user;
-+		if (!who)
-+			uid = cred->uid;
-+		else if (!uid_eq(uid, cred->uid) &&
-+			 !(user = find_user(uid)))
-+			goto out_unlock;	/* No processes for this user */
-+
-+		do_each_thread(g, p) {
-+			if (uid_eq(task_uid(p), uid))
- 				error = set_one_prio(p, niceval, error);
--			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
--			break;
--		case PRIO_USER:
--			uid = make_kuid(cred->user_ns, who);
--			user = cred->user;
--			if (!who)
--				uid = cred->uid;
--			else if (!uid_eq(uid, cred->uid) &&
--				 !(user = find_user(uid)))
--				goto out_unlock;	/* No processes for this user */
--
--			do_each_thread(g, p) {
--				if (uid_eq(task_uid(p), uid))
--					error = set_one_prio(p, niceval, error);
--			} while_each_thread(g, p);
--			if (!uid_eq(uid, cred->uid))
--				free_uid(user);		/* For find_user() */
--			break;
-+		} while_each_thread(g, p);
-+		if (!uid_eq(uid, cred->uid))
-+			free_uid(user);		/* For find_user() */
-+		break;
- 	}
- out_unlock:
- 	read_unlock(&tasklist_lock);
-@@ -244,47 +244,47 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
- 	rcu_read_lock();
- 	read_lock(&tasklist_lock);
- 	switch (which) {
--		case PRIO_PROCESS:
--			if (who)
--				p = find_task_by_vpid(who);
--			else
--				p = current;
--			if (p) {
--				niceval = 20 - task_nice(p);
-+	case PRIO_PROCESS:
-+		if (who)
-+			p = find_task_by_vpid(who);
-+		else
-+			p = current;
-+		if (p) {
-+			niceval = NICE_TO_RLIMIT(task_nice(p));
-+			if (niceval > retval)
-+				retval = niceval;
-+		}
-+		break;
-+	case PRIO_PGRP:
-+		if (who)
-+			pgrp = find_vpid(who);
-+		else
-+			pgrp = task_pgrp(current);
-+		do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
-+			niceval = NICE_TO_RLIMIT(task_nice(p));
-+			if (niceval > retval)
-+				retval = niceval;
-+		} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
-+		break;
-+	case PRIO_USER:
-+		uid = make_kuid(cred->user_ns, who);
-+		user = cred->user;
-+		if (!who)
-+			uid = cred->uid;
-+		else if (!uid_eq(uid, cred->uid) &&
-+			 !(user = find_user(uid)))
-+			goto out_unlock;	/* No processes for this user */
-+
-+		do_each_thread(g, p) {
-+			if (uid_eq(task_uid(p), uid)) {
-+				niceval = NICE_TO_RLIMIT(task_nice(p));
- 				if (niceval > retval)
- 					retval = niceval;
- 			}
--			break;
--		case PRIO_PGRP:
--			if (who)
--				pgrp = find_vpid(who);
--			else
--				pgrp = task_pgrp(current);
--			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
--				niceval = 20 - task_nice(p);
--				if (niceval > retval)
--					retval = niceval;
--			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
--			break;
--		case PRIO_USER:
--			uid = make_kuid(cred->user_ns, who);
--			user = cred->user;
--			if (!who)
--				uid = cred->uid;
--			else if (!uid_eq(uid, cred->uid) &&
--				 !(user = find_user(uid)))
--				goto out_unlock;	/* No processes for this user */
--
--			do_each_thread(g, p) {
--				if (uid_eq(task_uid(p), uid)) {
--					niceval = 20 - task_nice(p);
--					if (niceval > retval)
--						retval = niceval;
--				}
--			} while_each_thread(g, p);
--			if (!uid_eq(uid, cred->uid))
--				free_uid(user);		/* for find_user() */
--			break;
-+		} while_each_thread(g, p);
-+		if (!uid_eq(uid, cred->uid))
-+			free_uid(user);		/* for find_user() */
-+		break;
- 	}
- out_unlock:
- 	read_unlock(&tasklist_lock);
-@@ -1541,41 +1541,41 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
- 		return;
- 
- 	switch (who) {
--		case RUSAGE_BOTH:
--		case RUSAGE_CHILDREN:
--			utime = p->signal->cutime;
--			stime = p->signal->cstime;
--			r->ru_nvcsw = p->signal->cnvcsw;
--			r->ru_nivcsw = p->signal->cnivcsw;
--			r->ru_minflt = p->signal->cmin_flt;
--			r->ru_majflt = p->signal->cmaj_flt;
--			r->ru_inblock = p->signal->cinblock;
--			r->ru_oublock = p->signal->coublock;
--			maxrss = p->signal->cmaxrss;
--
--			if (who == RUSAGE_CHILDREN)
--				break;
--
--		case RUSAGE_SELF:
--			thread_group_cputime_adjusted(p, &tgutime, &tgstime);
--			utime += tgutime;
--			stime += tgstime;
--			r->ru_nvcsw += p->signal->nvcsw;
--			r->ru_nivcsw += p->signal->nivcsw;
--			r->ru_minflt += p->signal->min_flt;
--			r->ru_majflt += p->signal->maj_flt;
--			r->ru_inblock += p->signal->inblock;
--			r->ru_oublock += p->signal->oublock;
--			if (maxrss < p->signal->maxrss)
--				maxrss = p->signal->maxrss;
--			t = p;
--			do {
--				accumulate_thread_rusage(t, r);
--			} while_each_thread(p, t);
-+	case RUSAGE_BOTH:
-+	case RUSAGE_CHILDREN:
-+		utime = p->signal->cutime;
-+		stime = p->signal->cstime;
-+		r->ru_nvcsw = p->signal->cnvcsw;
-+		r->ru_nivcsw = p->signal->cnivcsw;
-+		r->ru_minflt = p->signal->cmin_flt;
-+		r->ru_majflt = p->signal->cmaj_flt;
-+		r->ru_inblock = p->signal->cinblock;
-+		r->ru_oublock = p->signal->coublock;
-+		maxrss = p->signal->cmaxrss;
-+
-+		if (who == RUSAGE_CHILDREN)
- 			break;
-+		/* fall-through */
-+	case RUSAGE_SELF:
-+		thread_group_cputime_adjusted(p, &tgutime, &tgstime);
-+		utime += tgutime;
-+		stime += tgstime;
-+		r->ru_nvcsw += p->signal->nvcsw;
-+		r->ru_nivcsw += p->signal->nivcsw;
-+		r->ru_minflt += p->signal->min_flt;
-+		r->ru_majflt += p->signal->maj_flt;
-+		r->ru_inblock += p->signal->inblock;
-+		r->ru_oublock += p->signal->oublock;
-+		if (maxrss < p->signal->maxrss)
-+			maxrss = p->signal->maxrss;
-+		t = p;
-+		do {
-+			accumulate_thread_rusage(t, r);
-+		} while_each_thread(p, t);
-+		break;
- 
--		default:
--			BUG();
-+	default:
-+		BUG();
- 	}
- 	unlock_task_sighand(p, &flags);
- 
 -- 
-1.8.2.1
-
+Kind regards,
+Minchan Kim
