@@ -1,69 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874AbaCKAP3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 20:15:29 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:65441 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752562AbaCKAP1 (ORCPT
+	id S1753954AbaCKAQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 20:16:14 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62210 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753456AbaCKAQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 20:15:27 -0400
-Message-ID: <1394496924.16134.40.camel@x220>
-Subject: Re: [Intel-gfx] agp/intel: can't ioremap flush page - no chipset
- flushing
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Steven Newbury <steve@snewbury.org.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Date: Tue, 11 Mar 2014 01:15:24 +0100
-In-Reply-To: <CAErSpo6Q0w0OAenw7Uh0bjiZucpxatkUuWzREHmEvsNKJYf-qw@mail.gmail.com>
-References: <CAKMK7uFx2kksGgnuy9e0xiQRKpt=_+44O1V4wbX5yNBocvjBkg@mail.gmail.com>
-	 <1391951759.6036.7.camel@artifact> <1391952344.25424.4.camel@x220>
-	 <CAErSpo6uj_Kuk0_F97nRsnM1Pss4C7=HeEaVu6D-NwFFK=1cvA@mail.gmail.com>
-	 <1394185698.5608.5.camel@x41>
-	 <CAErSpo4jiq38P3TNuGLGS--nbV9NtUAmiuK=cwWyFAneY-=eOA@mail.gmail.com>
-	 <1394212609.1987.6.camel@x41> <20140307204021.GA9822@google.com>
-	 <CAErSpo7Np8oju1ENQA5EgEpN4=Vv7f3s4E823ecbyp6FCWPL_Q@mail.gmail.com>
-	 <1394289877.31006.2.camel@x41> <20140310182431.GA11424@google.com>
-	 <1394495121.1975.6.camel@x41>
-	 <CAErSpo6Q0w0OAenw7Uh0bjiZucpxatkUuWzREHmEvsNKJYf-qw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Mar 2014 00:15:25.0798 (UTC) FILETIME=[00451060:01CF3CBF]
-X-RcptDomain: vger.kernel.org
+	Mon, 10 Mar 2014 20:16:11 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rusty@rustcorp.com.au,
+        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
+        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH v3 00/52] CPU hotplug: Fix issues with callback registration
+Date: Tue, 11 Mar 2014 01:31:28 +0100
+Message-ID: <2714771.szsVpCAzkq@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
+References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-10 at 18:07 -0600, Bjorn Helgaas wrote:
-> On Mon, Mar 10, 2014 at 5:45 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > A bit of doubt is caused by two new boot time messages:
-> >     pnp 00:00: unknown resource type 10 in _CRS
-> >     pnp 00:00: can't evaluate _CRS: 1
-> >
-> > But I haven't yet tried v3.14-rc6 without your patch, so these might be
-> > unrelated. They're unclear to me, anyway.
+On Tuesday, March 11, 2014 02:03:52 AM Srivatsa S. Bhat wrote:
+> Hi,
+
+Hi,
+
+> Many subsystems and drivers have the need to register CPU hotplug callbacks
+> from their init routines and also perform initialization for the CPUs that are
+> already online. But unfortunately there is no race-free way to achieve this
+> today.
 > 
-> Hmm, this is definitely concerning.  Resource type 10 is
-> ACPI_RESOURCE_TYPE_FIXED_MEMORY32, which we do handle (unless it's
-> length 0).  And your previous dmesg logs (at
-> https://bugzilla.kernel.org/show_bug.cgi?id=71611) don't show anything
-> like that.
+> For example, consider this piece of code:
 > 
-> Can you attach an acpidump and the dmesg log with my patch to the bugzilla?
+> 	get_online_cpus();
+> 
+> 	for_each_online_cpu(cpu)
+> 		init_cpu(cpu);
+> 
+> 	register_cpu_notifier(&foobar_cpu_notifier);
+> 
+> 	put_online_cpus();
+> 
+> This is not safe because there is a possibility of an ABBA deadlock involving
+> the cpu_add_remove_lock and the cpu_hotplug.lock.
+> 
+>           CPU 0                                         CPU 1
+>           -----                                         -----
+> 
+>    Acquire cpu_hotplug.lock
+>    [via get_online_cpus()]
+> 
+>                                               CPU online/offline operation
+>                                               takes cpu_add_remove_lock
+>                                               [via cpu_maps_update_begin()]
+> 
+>    Try to acquire
+>    cpu_add_remove_lock
+>    [via register_cpu_notifier()]
+> 
+>                                               CPU online/offline operation
+>                                               tries to acquire cpu_hotplug.lock
+>                                               [via cpu_hotplug_begin()]
+> 
+>                             *** DEADLOCK! ***
+> 
+> 
+> Other combinations of callback registration also don't work correctly.
+> Examples:
+> 
+> 	register_cpu_notifier(&foobar_cpu_notifier);
+> 
+> 	get_online_cpus();
+> 
+> 	for_each_online_cpu(cpu)
+> 		init_cpu(cpu);
+> 
+> 	put_online_cpus();
+> 
+> This can lead to double initialization if a hotplug operation occurs after
+> registering the notifier and before invoking get_online_cpus().
+> 
+> On the other hand, the following piece of code can miss hotplug events
+> altogether:
+> 
+> 	get_online_cpus();
+> 
+> 	for_each_online_cpu(cpu)
+> 		init_cpu(cpu);
+> 
+> 	put_online_cpus();
+>               ^
+>               |   Race window; Can miss hotplug events here
+>               v
+> 	register_cpu_notifier(&foobar_cpu_notifier);
+> 
+> 
+> To solve these issues and provide a race-free method to register CPU hotplug
+> callbacks, this patchset introduces new variants of the callback registration
+> APIs that don't hold the cpu_add_remove_lock, and exports the
+> cpu_add_remove_lock via 2 new APIs cpu_notifier_register_begin/done() for use
+> by various subsystems. With this in place, the following code snippet will
+> register a hotplug callback as well as initialize already online CPUs without
+> any race conditions.
+> 
+> 	cpu_notifier_register_begin();
+> 
+> 	for_each_online_cpu(cpu)
+> 		init_cpu(cpu);
+> 
+> 	/* This doesn't take the cpu_add_remove_lock */
+> 	__register_cpu_notifier(&foobar_cpu_notifier);
+> 
+> 	cpu_notifier_register_done();
+> 
+> 
+> In this patchset, patch 1 adds lockdep annotations to catch the above mentioned
+> deadlock scenario. Patch 2 introduces the new APIs and infrastructure necessary
+> for race-free callback registration. The remaining patches perform tree-wide
+> conversions (to use this model).
+> 
+> This patchset has been hosted in the below git tree. It applies cleanly on
+> v3.14-rc6.
+> 
+> git://github.com/srivatsabhat/linux.git cpuhp-registration-fixes-v3
 
-It's getting rather late over here. So I'll try (quite) a few hours
-later. But acpidump doesn't ring any bells right now. Any hints?
+So to me, this is a useful patchset and it addresses a real problem.  It has
+gone through several rounds of review and recently I haven't really seen any
+objections against is from anyone.  On the contrary, I've seen ACKs from a
+number of people whom I trust.
 
-Thanks,
+Thus, if nobody objects, I'm going to take this series into the PM tree for 3.15.
 
+Thanks!
 
-Paul Bolle
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
