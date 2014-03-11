@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579AbaCKC61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 22:58:27 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:22290 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754422AbaCKC6Z (ORCPT
+	id S1754498AbaCKC6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 22:58:24 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:19278 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754422AbaCKC6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 22:58:25 -0400
-Message-ID: <1394506703.3867.22.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCHSET 0/9] perf tools: Update on filtered entries'
- percentage output (v7)
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Date: Mon, 10 Mar 2014 19:58:23 -0700
-In-Reply-To: <20140310220819.GL22728@two.firstfloor.org>
-References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
-	 <20140310220819.GL22728@two.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Mon, 10 Mar 2014 22:58:22 -0400
+Date: Mon, 10 Mar 2014 22:58:20 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: fche@redhat.com (Frank Ch. Eigler)
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
+ set via debugfs
+Message-ID: <20140310225820.0f02025d@gandalf.local.home>
+In-Reply-To: <y0mr469e9t0.fsf@fche.csb>
+References: <20140307150920.881849073@goodmis.org>
+	<20140307151202.210588176@goodmis.org>
+	<241011797.35066.1394481694124.JavaMail.zimbra@efficios.com>
+	<y0mr469e9t0.fsf@fche.csb>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-10 at 23:08 +0100, Andi Kleen wrote:
-> On Mon, Mar 10, 2014 at 04:43:51PM +0900, Namhyung Kim wrote:
-> > Hello,
-> > 
-> > I added --percentage option to perf report to control display of
-> > percentage of filtered entries.
-> > 
-> >  usage: perf report [<options>]
-> > 
-> >         --percentage <relative|absolute>
-> >                           how to display percentage of filtered entries
+On Mon, 10 Mar 2014 22:41:31 -0400
+fche@redhat.com (Frank Ch. Eigler) wrote:
+
 > 
-> Just as a high level comment. We have a lot of different display 
-> options now. It's hard to figure out what they all do for non experts.
+> Hi -
 > 
-> It may be useful to define a number of high level layout combinations
-> that are useful for different situations and have a single
-> option to select everything together.
+> 
+> >> From: Steven Rostedt <rostedt@goodmis.org>
+> >> 
+> >> Tracepoints were made to allow enabling a tracepoint in a module before that
+> >> module was loaded. When a tracepoint is enabled and it does not exist, the
+> >> name is stored and will be enabled when the tracepoint is created.
+> >> 
+> >> The problem with this approach is that when a tracepoint is enabled when
+> >> it expects to be there, it gives no warning that it does not exist.
+> 
+> So it is a deferred-activation kind of call, with no way of knowing
+> when or if the tracepoints will start coming in.  Why is that
+> supported at all, considering that clients could monitor modules
+> coming & going via the module_notifier chain, and update registration
+> at that time?
 
-Yes please, absolutely. The wiki page could use some love as well. I
-imagine the manpage is updated but it's also nice to have some examples
-of the newer features in perf.wiki.kernel.org.
+That's my argument.
 
-Thanks,
-Davidlohr
+> 
+> 
+> >> +	entry = get_tracepoint(name);
+> >> +	/* Make sure the entry was enabled */
+> >> +	if (!entry || !entry->enabled)
+> >> +		ret = -ENODEV;
+> 
+> For what it's worth, I agree with Mathieu that this sort of successful
+> failure result code is a problem for tracking what needs cleanup and
+> what doesn't.  (In systemtap's case, if this change gets merged, we'll
+> have to treat -ENODEV as if it were 0.)
 
+Does systemtap enable tracepoints before they are created? That is, do
+you allow enabling of a tracepoint in a module that is not loaded yet?
+
+If not, than you want this as an error.
+
+-- Steve
