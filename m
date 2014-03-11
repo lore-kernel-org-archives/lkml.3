@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaCKEIZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 00:08:25 -0400
-Received: from mail.efficios.com ([78.47.125.74]:43101 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910AbaCKEIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 00:08:24 -0400
-Date: Tue, 11 Mar 2014 04:08:27 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Message-ID: <288254692.35226.1394510907402.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140310225820.0f02025d@gandalf.local.home>
-References: <20140307150920.881849073@goodmis.org> <20140307151202.210588176@goodmis.org> <241011797.35066.1394481694124.JavaMail.zimbra@efficios.com> <y0mr469e9t0.fsf@fche.csb> <20140310225820.0f02025d@gandalf.local.home>
-Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
- set via debugfs
+	id S1753709AbaCKEKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 00:10:35 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:38029 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894AbaCKEKe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 00:10:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: tracing: Warn if a tracepoint is not set via debugfs
-Thread-Index: YJRgyO0U/JTFwm3qSYX/40EK2MtkOg==
+In-Reply-To: <CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
+ <CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
+ <CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com> <CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 10 Mar 2014 21:10:13 -0700
+Message-ID: <CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Frank Ch. Eigler" <fche@redhat.com>
-> Cc: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, linux-kernel@vger.kernel.org, "Ingo Molnar"
-> <mingo@kernel.org>, "Frederic Weisbecker" <fweisbec@gmail.com>, "Andrew Morton" <akpm@linux-foundation.org>,
-> "Johannes Berg" <johannes.berg@intel.com>
-> Sent: Monday, March 10, 2014 10:58:20 PM
-> Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not set via debugfs
-> 
-> On Mon, 10 Mar 2014 22:41:31 -0400
-> fche@redhat.com (Frank Ch. Eigler) wrote:
-> 
-> > 
-> > Hi -
-> > 
-> > 
-> > >> From: Steven Rostedt <rostedt@goodmis.org>
-> > >> 
-> > >> Tracepoints were made to allow enabling a tracepoint in a module before
-> > >> that
-> > >> module was loaded. When a tracepoint is enabled and it does not exist,
-> > >> the
-> > >> name is stored and will be enabled when the tracepoint is created.
-> > >> 
-> > >> The problem with this approach is that when a tracepoint is enabled when
-> > >> it expects to be there, it gives no warning that it does not exist.
-> > 
-> > So it is a deferred-activation kind of call, with no way of knowing
-> > when or if the tracepoints will start coming in.  Why is that
-> > supported at all, considering that clients could monitor modules
-> > coming & going via the module_notifier chain, and update registration
-> > at that time?
-> 
-> That's my argument.
+On Mon, Mar 10, 2014 at 8:09 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Mar 10, 2014 at 7:37 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> It does.  My patch breaks OpenSuSE 9 when
+>> CONFIG_ENABLE_VDSO32_BY_DEFAULT=y unless it's overridden by sysctl or
+>> boot option.
+>
+> Oh, I missed that "when =y" part.
+>
+> But why do we then want to have that "=y" as an option at all?
+>
+> If the situation is that everybody is fine with that being disabled by
+> default, let's just make it the default. And I'd even be ok with
+> removing it as an option *entirely*.
+>
+> That would seem to be *much* preferable that having an option that
+> nobody really wants anyway, and where the default value would break
+> some users. THAT just seems completely insane.
 
-So basically, all we'd have to do in LTTng is to add a hash table tracking the
-tracepoint probes which are registered, but for which there are no
-tracepoint call sites. Whenever registration of a probe would fail due to
--ENODEV (assuming we unregister the probe within tracepoint.c when we return
--ENODEV, as you initially proposed), we would put this probe in the hash table.
-Upon module coming, we would iterate on the module's tracepoints and check
-if any of those match the content of the hash table, and then register the
-probe.
+I suspect that a lot of 32-bit Linux users want syscall and/or
+sysenter, and Stefani certainly wants the fast timing that the vDSO
+can provide.  Also, presumably __kernel_sigreturn serves some purpose
+:)
 
-I guess I'd prefer that to the weird successful failure return value in
-tracepoint.c.
+The basic issue is that most old glibc versions (and all versions that
+were ever tagged in a release) work correctly regardless of whether
+there is a vDSO, and newer glibc versions (since 2004) will take
+advantage of a vDSO if one exists, but OpenSuSE 9 shipped with a
+creatively broken version that blows up if presented with a vDSO
+that's not prelinked to its actual address.
 
-Thanks,
+Currently there are three options: sane vDSO, no vDSO, and OpenSuSE
+9-compatible vDSO.  The latter is a mess to maintain and breaks ASLR
+(even for users of modern glibc), and having a vDSO is apparently
+important enough that people are willing to pay to enhance it.  The
+default is OpenSuSE 9-compatible vDSO, which is IMO an odd choice.
 
-Mathieu
+ISTM the right solution is to make OpenSuSE 9 users turn off the vDSO
+(which is a performance hit for them, but not a correctness issue) and
+let everyone else have a simpler kernel that has no ASLR issues.
 
-> 
-> > 
-> > 
-> > >> +	entry = get_tracepoint(name);
-> > >> +	/* Make sure the entry was enabled */
-> > >> +	if (!entry || !entry->enabled)
-> > >> +		ret = -ENODEV;
-> > 
-> > For what it's worth, I agree with Mathieu that this sort of successful
-> > failure result code is a problem for tracking what needs cleanup and
-> > what doesn't.  (In systemtap's case, if this change gets merged, we'll
-> > have to treat -ENODEV as if it were 0.)
-> 
-> Does systemtap enable tracepoints before they are created? That is, do
-> you allow enabling of a tracepoint in a module that is not loaded yet?
-> 
-> If not, than you want this as an error.
-> 
-> -- Steve
-> 
+I'm a bit heartened by the fact that the failure mode on OpenSuSE 9 is
+a rather distinctive and easily Googlable message.  Most of the hits
+offer abi.vsyscall32=0 or vdso=0 as suggestions, both of which
+continue to work with my patch.
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+
+--Andy
