@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110AbaCKHd4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 03:33:56 -0400
-Received: from mailp.voltaire.com ([193.47.165.129]:48540 "EHLO mellanox.co.il"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753513AbaCKHdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 03:33:54 -0400
-From: Amir Vadai <amirv@mellanox.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yevgeny Petrilin <yevgenyp@mellanox.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Amir Vadai <amirv@mellanox.com>
-Subject: [PATCH net-next V5 0/2] irq,net: Affinity hint helper function
-Date: Tue, 11 Mar 2014 09:33:25 +0200
-Message-Id: <1394523207-7338-1-git-send-email-amirv@mellanox.com>
-X-Mailer: git-send-email 1.8.3.4
+	id S1752904AbaCKHpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 03:45:11 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:45897 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaCKHpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 03:45:09 -0400
+X-AuditID: 9c93017d-b7c89ae000006ae1-f8-531ebf03f664
+From: Namhyung Kim <namhyung@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCHSET 0/9] perf tools: Update on filtered entries' percentage output (v7)
+In-Reply-To: <20140310220819.GL22728@two.firstfloor.org> (Andi Kleen's message
+	of "Mon, 10 Mar 2014 23:08:19 +0100")
+References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
+	<20140310220819.GL22728@two.firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+Date: Tue, 11 Mar 2014 16:45:07 +0900
+Message-ID: <877g81uqkc.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Andi,
 
-This patchset will set affinity hint to influence IRQs to be allocated on the
-same NUMA node as the one where the card resides. As discussed in
-http://www.spinics.net/lists/netdev/msg271497.html
+On Mon, 10 Mar 2014 23:08:19 +0100, Andi Kleen wrote:
+> On Mon, Mar 10, 2014 at 04:43:51PM +0900, Namhyung Kim wrote:
+>> Hello,
+>> 
+>> I added --percentage option to perf report to control display of
+>> percentage of filtered entries.
+>> 
+>>  usage: perf report [<options>]
+>> 
+>>         --percentage <relative|absolute>
+>>                           how to display percentage of filtered entries
+>
+> Just as a high level comment. We have a lot of different display 
+> options now. It's hard to figure out what they all do for non experts.
 
-If number of IRQs allocated is greater than the number of local NUMA cores, all
-local cores will be used first, and the rest of the IRQs will be on a remote
-NUMA node.
-If no NUMA support - IRQ's and cores will be mapped 1:1
+Absolutely agreed.
 
-This patchset was tested and applied on top of net-next since the first
-consumer is a network device (mlx4_en) - commit be14cc9: "vlan: use use
-ether_addr_equal_64bits to instead of ether_addr_equal"
+>
+> It may be useful to define a number of high level layout combinations
+> that are useful for different situations and have a single
+> option to select everything together.
+>
+> Perhaps --layout FOO and FOO a number of predefined layouts.
 
-Amir
+Yeah, that will be useful for me too :)
 
-Changes from V4:
-- Patch 1/2: irq: Utility function to get affinity_hint by policy
-  Thank you Ben for the great review:
-  - Moved the function it kernel/irq/manage.c since it could be useful for
-    block mq devices
-  - Fixed Typo's
-  - Use cpumask_t * instead of cpumask_var_t in function header  
-  - Restructured the function to remove NULL assignment in a cpumask_var_t
-  - Fix for offline local CPU's
+Btw, do you have concrete examples of the situations?  I'll also think
+about it too, but it'd be wonderful if you guys share how you use the
+perf tools for various purpose in detail.
 
-Changes from V3:
-- Patch 2/2: net/mlx4_en: Use affinity hint
-  - somehow patch file was corrupted
-
-Changes from V2:
-- Patch 1/2: net: Utility function to get affinity_hint by policy
-  - Fixed style issues
-
-Changes from V1:
-- Patch 1/2: net: Utility function to get affinity_hint by policy
-  - Fixed error flow to return -EINVAL on error (thanks govind)
-- Patch 2/2: net/mlx4_en: Use affinity hint
-  - Set ring->affinity_hint to NULL on error
-
-Changes from V0:
-- Fixed small style issues
-
-
-Amir Vadai (1):
-  irq: Utility function to get affinity_hint by policy
-
-Yuval Atias (1):
-  net/mlx4_en: Use affinity hint
-
- drivers/infiniband/hw/mlx4/main.c              |  2 +-
- drivers/net/ethernet/mellanox/mlx4/en_cq.c     |  6 ++-
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c | 30 +++++++++++++
- drivers/net/ethernet/mellanox/mlx4/eq.c        | 14 ++++++-
- drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |  1 +
- include/linux/interrupt.h                      |  9 ++++
- include/linux/mlx4/device.h                    |  2 +-
- kernel/irq/manage.c                            | 58 ++++++++++++++++++++++++++
- 8 files changed, 118 insertions(+), 4 deletions(-)
-
--- 
-1.8.3.4
-
+Thanks,
+Namhyung
