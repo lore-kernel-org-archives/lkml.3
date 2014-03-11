@@ -1,80 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaCKOle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 10:41:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64019 "EHLO mga01.intel.com"
+	id S1753186AbaCKOmV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 10:42:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63610 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751590AbaCKOlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 10:41:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,631,1389772800"; 
-   d="scan'208";a="496210042"
-From: Zhang Rui <rui.zhang@intel.com>
-To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: rafael.j.wysocki@intel.com, jwollrath@web.de, markus@trippelsdorf.de,
-        pebolle@tiscali.nl, Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH] PNPACPI: proper handling ACPI IO/Memory resources
-Date: Tue, 11 Mar 2014 22:40:27 +0800
-Message-Id: <1394548827-15172-1-git-send-email-rui.zhang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751113AbaCKOmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 10:42:20 -0400
+Date: Tue, 11 Mar 2014 14:51:38 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
+        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] percpu_ida: Handle out-of-tags gracefully
+Message-ID: <20140311135137.GA22995@dhcp-26-207.brq.redhat.com>
+References: <531DC851.5060400@acm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <531DC851.5060400@acm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before commit b355cee88e3b1a193f0e9a81db810f6f83ad728b,
-if acpi_dev_resource_memory()/acpi_dev_resource_io() returns false,
-it means the the resource is not a memeory/IO resource.
+On Mon, Mar 10, 2014 at 03:12:33PM +0100, Bart Van Assche wrote:
+> Avoid that percpu_ida_alloc() hangs or crashes if there are still
+> tags are available. Wait until a tag becomes available instead of
+> giving up when running out of tags temporarily. This patch fixes
+> the following kernel bug:
 
-But after commit b355cee88e3b1a193f0e9a81db810f6f83ad728b,
-if the memory/IO resource is invalid (the length of the resource is zero),
-acpi_dev_resource_memory()/acpi_dev_resource_io() returns false as well.
+Hi Bart,
 
-This breaks pnpacpi_allocated_resource(), because the current code would
-recognize the invalid memory/io resource as unknown resource type.
-Thus users will get warning messages on machines with zero length
-ACPI memeory/IO resources.
+Few comments below, but the changelog does not correspond to the
+actual change in 'Wait until a tag becomes available'.
 
-This patch fixes the problem by invoking acpi_dev_resource_memory()/
-acpi_dev_resource_io() for ACPI memory/IO resources only.
+> ------------[ cut here ]------------
+> kernel BUG at lib/percpu_ida.c:81!
+> invalid opcode: 0000 [#1] SMP
+> RIP: 0010:[<ffffffff8120f00e>]  [<ffffffff8120f00e>] percpu_ida_alloc+0x33e/0x370
+> Call Trace:
+>  [<ffffffff811ef95f>] blk_mq_get_tag+0x2f/0x50
+>  [<ffffffff811ed79c>] blk_mq_alloc_rq.isra.17+0x1c/0x90
+>  [<ffffffff811eeb9b>] blk_mq_alloc_request_pinned+0x9b/0x110
+>  [<ffffffff811ef4c6>] blk_mq_make_request+0x426/0x480
+>  [<ffffffff811e28f0>] generic_make_request+0xc0/0x110
+>  [<ffffffff811e29ab>] submit_bio+0x6b/0x140
+>  [<ffffffff8117aabb>] _submit_bh+0x13b/0x220
+>  [<ffffffff8117d70f>] block_read_full_page+0x1ff/0x300
+>  [<ffffffff81181128>] blkdev_readpage+0x18/0x20
+>  [<ffffffff811067b7>] __do_page_cache_readahead+0x277/0x280
+>  [<ffffffff81106d1d>] force_page_cache_readahead+0x8d/0xc0
+>  [<ffffffff81106d9b>] page_cache_sync_readahead+0x4b/0x50
+>  [<ffffffff810fdf05>] generic_file_aio_read+0x4c5/0x700
+>  [<ffffffff8118147b>] blkdev_aio_read+0x4b/0x70
+>  [<ffffffff8114a28a>] do_sync_read+0x5a/0x90
+>  [<ffffffff8114a8cb>] vfs_read+0x9b/0x160
+>  [<ffffffff8114b389>] SyS_read+0x49/0xa0
+>  [<ffffffff81416049>] tracesys+0xd0/0xd5
+> ---[ end trace cdd1a8a7968266cf ]---
+> 
+> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+> Cc: Kent Overstreet <kmo@daterainc.com>
+> Cc: Shaohua Li <shli@kernel.org>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Mike Christie <michaelc@cs.wisc.edu>
+> ---
+>  lib/percpu_ida.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
+> index 93d145e..170d27c 100644
+> --- a/lib/percpu_ida.c
+> +++ b/lib/percpu_ida.c
+> @@ -73,7 +73,7 @@ static inline void steal_tags(struct percpu_ida *pool,
+>  		if (cpu >= nr_cpu_ids) {
+>  			cpu = cpumask_first(&pool->cpus_have_tags);
+>  			if (cpu >= nr_cpu_ids)
+> -				BUG();
+> +				break;
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
----
- drivers/pnp/pnpacpi/rsparser.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+I assume the BUG() above hits? If so, I am failing to understand how
+the code gets here. Mind elaborate?
 
-diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
-index 167f3d0..66977eb 100644
---- a/drivers/pnp/pnpacpi/rsparser.c
-+++ b/drivers/pnp/pnpacpi/rsparser.c
-@@ -183,9 +183,7 @@ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
- 	struct resource r = {0};
- 	int i, flags;
- 
--	if (acpi_dev_resource_memory(res, &r)
--	    || acpi_dev_resource_io(res, &r)
--	    || acpi_dev_resource_address_space(res, &r)
-+	if (acpi_dev_resource_address_space(res, &r)
- 	    || acpi_dev_resource_ext_address_space(res, &r)) {
- 		pnp_add_resource(dev, &r);
- 		return AE_OK;
-@@ -217,6 +215,17 @@ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
- 	}
- 
- 	switch (res->type) {
-+	case ACPI_RESOURCE_TYPE_MEMORY24:
-+	case ACPI_RESOURCE_TYPE_MEMORY32:
-+	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
-+		if (acpi_dev_resource_memory(res, &r))
-+			pnp_add_resource(dev, &r);
-+		break;
-+	case ACPI_RESOURCE_TYPE_IO:
-+	case ACPI_RESOURCE_TYPE_FIXED_IO:
-+		if (acpi_dev_resource_io(res, &r))
-+			pnp_add_resource(dev, &r);
-+		break;
- 	case ACPI_RESOURCE_TYPE_DMA:
- 		dma = &res->data.dma;
- 		if (dma->channel_count > 0 && dma->channels[0] != (u8) -1)
+>  		}
+>  
+>  		pool->cpu_last_stolen = cpu;
+> @@ -189,6 +189,9 @@ int percpu_ida_alloc(struct percpu_ida *pool, int state)
+>  		spin_unlock(&pool->lock);
+>  		local_irq_restore(flags);
+>  
+> +		if (tags->nr_free)
+> +			wake_up(&pool->wait);
+> +
+
+How 'tags->nr_free' could be checked out of locks?
+Why waking up another thread instead of returning the tag on this CPU?
+Why 'percpu_max_size' threshold is ignored?
+
+Anyway, IMHO the above BUG() indicates a problem elsewhere.
+
+>  		if (tag >= 0 || state == TASK_RUNNING)
+>  			break;
+>  
+> -- 
+> 1.8.4.5
+> 
+
 -- 
-1.7.9.5
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
