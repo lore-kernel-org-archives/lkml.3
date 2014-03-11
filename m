@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaCKHzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 03:55:08 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:45819 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688AbaCKHzE (ORCPT
+	id S1754057AbaCKH4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 03:56:14 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:55512 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093AbaCKHzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 03:55:04 -0400
-X-AuditID: cbfee690-b7f266d00000287c-21-531ec154307b
+	Tue, 11 Mar 2014 03:55:24 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-75-531ec157e65e
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: kgene.kim@samsung.com, t.figa@samsung.com
 Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -16,36 +16,37 @@ Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         mark.rutland@arm.com, swarren@wwwdotorg.org,
         ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 0/5] ARM: dts: exynos: Add missing dt data to bring kernel of
- Exynos4x12
-Date: Tue, 11 Mar 2014 16:54:49 +0900
-Message-id: <1394524494-30641-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 3/5] ARM: dts: exynos4x12: Add GPS_ALIVE power domain
+Date: Tue, 11 Mar 2014 16:54:52 +0900
+Message-id: <1394524494-30641-4-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSoBtyUC7YYPchGYvrX56zWsw/co7V
-	4tyrlYwWvQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8ni9mVei6XXLzJZTJi+lsXi8IoDTBav
-	DraxWKyf8ZrFgc9jzbw1jB4tzT1sHgs+X2H3WLn8C5vH5iX1Hn1bVjF6fN4k57FxbmgARxSX
-	TUpqTmZZapG+XQJXRteq98wFqzgrjv+Ib2A8y97FyMkhIWAicXPSW1YIW0ziwr31bF2MXBxC
-	AksZJZat/sUIU/Ts3ntmiMQiRokbi2axQziNTBLzO86xgFSxCWhJ7H9xgw3EFhHQlZgy8w4r
-	SBGzwH0miR/HV4ElhAWiJN6/ec4EYrMIqEq8PNsFdgevgKvEnauLoW6Sk/iw5xGUfYxd4tcr
-	P4h6AYlvkw8BLeMAistKbDrADFEiKXFwxQ2WCYyCCxgZVjGKphYkFxQnpReZ6BUn5haX5qXr
-	JefnbmIERsXpf88m7GC8d8D6EGMy0LiJzFKiyfnAqMoriTc0NjOyMDUxNTYytzQjTVhJnFft
-	UVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsY5QnnmTzOFt/kWyJ1/1Lt//j3laVunb7jD
-	lhOQy1cXdqb/icGeFqb+bY9/hZrfufuzSTftV2WZoJH2i/Umx2c0aDWaBFjuFkm+YcP507Vl
-	x4dlM+o92o8er216nmH5pnFV/cJJ8jJ89gtiVzEy/Gdp3xZod8Q5VZnf59qUz+Gf9G12ZW99
-	ma/EUpyRaKjFXFScCAD6R/nMoAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jAd2Qg3LBBtt+C1lc//Kc1WL+kXOs
-	FuderWS06F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWiy9fpHJYsL0tSwWh1ccYLJ4
-	dbCNxWL9jNcsDnwea+atYfRoae5h81jw+Qq7x8rlX9g8Ni+p9+jbsorR4/MmOY+Nc0MDOKIa
-	GG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgM5WUihL
-	zCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGZ0rXrPXLCKs+L4j/gGxrPsXYyc
-	HBICJhLP7r1nhrDFJC7cW8/WxcjFISSwiFHixqJZ7BBOI5PE/I5zLCBVbAJaEvtf3GADsUUE
-	dCWmzLzDClLELHCfSeLH8VVgCWGBKIn3b54zgdgsAqoSL892ga3jFXCVuHN1MdRqOYkPex6x
-	T2DkXsDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOOqeSe9gXNVgcYhRgINRiYd3hb9c
-	sBBrYllxZe4hRgkOZiURXqe1QCHelMTKqtSi/Pii0pzU4kOMyUDbJzJLiSbnAxNCXkm8obGJ
-	mZGlkbmhhZGxOWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUw2ropCe+JZV9XIG25pqlc
-	tXzXk32Vi739r+1m2HRQNTaOOdMn88jupgP+rDY/Hme+nu2k9GhG/BodDkPRN1GzLlc3/wu4
-	bKK4e6NlhbG55nL/5hPaGrWSV0Nb96/QEtnzxH3Vvgsv9GYc+Varv3q6+ESf9IiD/xpSP734
-	2RHRxP18qpr0vmdMSizFGYmGWsxFxYkAuAwhlP4CAAA=
+In-reply-to: <1394524494-30641-1-git-send-email-cw00.choi@samsung.com>
+References: <1394524494-30641-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsWyRsSkUDf8oFywweZjchbXvzxntZh/5Byr
+	xblXKxktehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PF7cu8FkuvX2SymDB9LYvF4RUHmCxe
+	HWxjsVg/4zWLA5/HmnlrGD1amnvYPBZ8vsLusXL5FzaPzUvqPfq2rGL0+LxJzmPj3NAAjigu
+	m5TUnMyy1CJ9uwSujH1T5rAW3OesmNY4m7mBcT5HFyMHh4SAiUTLPNYuRk4gU0ziwr31bF2M
+	XBxCAksZJfb37YVKmEj82zwZKrGIUeLXwlfMEE4jk8TJi1fYQKrYBLQk9r+4AWaLCOhKTJl5
+	hxWkiFngPpPEj+OrwBLCAq4SN+ZfZQaxWQRUJab9mcQIYvMCxXseLGCCWCcn8WHPI3YQm1PA
+	TeLp7eVgZwgB1Xx5cpMJZKiEwD12ia3z1jFCDBKQ+Db5EAvEP7ISmw4wQ8yRlDi44gbLBEbh
+	BYwMqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzEC4+j0v2cTdzDeP2B9iDEZaNxEZinR5Hxg
+	HOaVxBsamxlZmJqYGhuZW5qRJqwkzpv+KClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6Pa
+	F22T61N1PfyORHPwfn7+ySl+3sXnh78xqxySWyXtVPR/u94qTY4OCcH7jKcUuL43Tr/WHbbn
+	yy1X/yTfi2v6HX7G8uk85F0opSbt9UqP57eoU9gqedfPDH1FNuWzTRdta3ges1dk2qNfkas4
+	ny286Tl/4ppCiY4G1UTp5YW/fJS3P/ncoq/EUpyRaKjFXFScCAABne5kuQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+xgG74Qblgg7+XxCyuf3nOajH/yDlW
+	i3OvVjJa9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaL25d5LZZev8hkMWH6WhaLwysOMFm8
+	OtjGYrF+xmsWBz6PNfPWMHq0NPeweSz4fIXdY+XyL2wem5fUe/RtWcXo8XmTnMfGuaEBHFEN
+	jDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QGcrKZQl
+	5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwlrGDP2TZnDWnCfs2Ja42zmBsb5HF2M
+	nBwSAiYS/zZPZoOwxSQu3FsPZHNxCAksYpT4tfAVM4TTyCRx8uIVsCo2AS2J/S9ugNkiAroS
+	U2beYQUpYha4zyTx4/gqsISwgKvEjflXmUFsFgFViWl/JjGC2LxA8Z4HC5gg1slJfNjziB3E
+	5hRwk3h6ezkriC0EVPPlyU2mCYy8CxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEx+kz
+	qR2MKxssDjEKcDAq8fAG+MoFC7EmlhVX5h5ilOBgVhLhdVoLFOJNSaysSi3Kjy8qzUktPsSY
+	DHTVRGYp0eR8YArJK4k3NDYxM7I0Mje0MDI2J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5O
+	qQbG0NkucTzyxVH/3c/rP77878RvHWGxl0mTy5dGH1b1u/lmirnQ8fXNwin/Tp+azrDTWWCz
+	7II3AXO8rmovuCJaPLWkwHIdY+LG5OArEzZHZ6nm30hr43/Cc/PojA+poWJxEvOz/0Xvaryd
+	2ltxpGieFlf/L+9W29M5Lz8qnnKbIcdQIhb7xpZLiaU4I9FQi7moOBEAlpIbiBcDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,31 +54,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add missing dt data of Exynos4x12 to bring up kernel feature and
-code clean.
+This patch add GPS_ALIVE power domain for Exynos4x12 SoC. GPS_ALIVE power domain
+include GPS_BLK for GPS IP. Exynos SoC used generic power-domain driver to
+control power domain. After completed kernel booting, Exynos power-domain driver
+disable un-used power domain to reduce power-consumption/leak.
 
-exynos4x12/exynos4412/exynos4212.dtsi
-- Add ADC (Analog and Digital Converter) to get raw data
-- Add PMU (Performance Monitoring Unit) for perf event
-- Add gps_alive power domain to remove power leakage when gps-alive isn't used
-- Remove duplicate dt data of interrput combiner controller
+If GPS_ALIVE power domain isn't registered to Exynos power-domain driver,
+happen power-leakage because GPS_ALIVE_CONFIGURATION is default power on state.
 
-exynos4412-trats.dts
-- Add ADC dt data with ntc thermistor child to read temperature
+- 0x10023D00 : GPS_ALIVE_CONFIGURATION register address
 
-Chanwoo Choi (5):
-  ARM: dts: exynos4x12: Add ADC's dt data to read raw data
-  ARM: dts: exynos4x12: Add PMU dt data to support PMU(Perforamnce Monitoring Unit)
-  ARM: dts: exynos4x12: Add GPS_ALIVE power domain
-  ARM: dts: exynos: Move common dt data for interrupt combiner controller
-  ARM: dts: exynos4412-trats2: Add ADC's dt data to get temperature of SoC/battery
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/boot/dts/exynos4x12.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
 
- arch/arm/boot/dts/exynos4212.dtsi       | 13 ++++---------
- arch/arm/boot/dts/exynos4412-trats2.dts | 21 +++++++++++++++++++++
- arch/arm/boot/dts/exynos4412.dtsi       | 14 ++++----------
- arch/arm/boot/dts/exynos4x12.dtsi       | 31 +++++++++++++++++++++++++++++++
- 4 files changed, 60 insertions(+), 19 deletions(-)
-
+diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
+index 1ec77f6..066eb35 100644
+--- a/arch/arm/boot/dts/exynos4x12.dtsi
++++ b/arch/arm/boot/dts/exynos4x12.dtsi
+@@ -41,6 +41,11 @@
+ 		compatible = "samsung,exynos4210-pd";
+ 		reg = <0x10023CA0 0x20>;
+ 	};
++	
++	pd_gps_alive: gps-alive-power-domain@10023D00 {
++		compatible = "samsung,exynos4210-pd";
++		reg = <0x10023D00 0x20>;
++	};
+ 
+ 	clock: clock-controller@10030000 {
+ 		compatible = "samsung,exynos4412-clock";
 -- 
 1.8.0
 
