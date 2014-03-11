@@ -1,175 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbaCKLBg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 07:01:36 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:40411 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350AbaCKLBe (ORCPT
+	id S1754896AbaCKLCZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 07:02:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49240 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364AbaCKLCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 07:01:34 -0400
-Message-ID: <531EECF9.1040600@canonical.com>
-Date: Tue, 11 Mar 2014 19:01:13 +0800
-From: Shuduo Sang <shuduo.sang@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 11 Mar 2014 07:02:23 -0400
+Date: Tue, 11 Mar 2014 12:02:02 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Waiman Long <waiman.long@hp.com>, arnd@arndb.de,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        akpm@linux-foundation.org, walken@google.com, andi@firstfloor.org,
+        riel@redhat.com, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org, oleg@redhat.com
+Subject: Re: [RFC][PATCH 0/7] locking: qspinlock
+Message-ID: <20140311110202.GT27965@twins.programming.kicks-ass.net>
+References: <20140310154236.038181843@infradead.org>
+ <20140311104503.GA10916@gmail.com>
 MIME-Version: 1.0
-To: ibm-acpi@hmh.eng.br, matthew.garrett@nebula.com,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platofor-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: bruce.ma@canonical.com
-Subject: [PATCH V4 RESEND] Support Thinkpad X1 Carbon 2nd gen's adaptive keyboard
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140311104503.GA10916@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 11, 2014 at 11:45:03AM +0100, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > Hi Waiman,
+> > 
+> > I promised you this series a number of days ago; sorry for the delay 
+> > I've been somewhat unwell :/
+> > 
+> > That said, these few patches start with a (hopefully) simple and 
+> > correct form of the queue spinlock, and then gradually build upon 
+> > it, explaining each optimization as we go.
+> > 
+> > Having these optimizations as separate patches helps twofold; 
+> > firstly it makes one aware of which exact optimizations were done, 
+> > and secondly it allows one to proove or disprove any one step; 
+> > seeing how they should be mostly identity transforms.
+> > 
+> > The resulting code is near to what you posted I think; however it 
+> > has one atomic op less in the pending wait-acquire case for NR_CPUS 
+> > != huge. It also doesn't do lock stealing; its still perfectly fair 
+> > afaict.
+> > 
+> > Have I missed any tricks from your code?
+> 
+> Waiman, you indicated in the other thread that these look good to you, 
+> right? If so then I can queue them up so that they form a base for 
+> further work.
 
-Resend patch V4. Support Thinkpad X1 Carbon 2nd generation's adaptive
-keyboard.
+Ah, no that was on the qrwlock; I think we managed to cross wires
+somewhere.
 
-Hi Henrique, could you please have a chance to review it?
+I've got this entire pile waiting for something:
 
-Thanks,
-Shuduo
+  lkml.kernel.org/r/20140210195820.834693028@infradead.org
 
-
->From b153a7b14791c6e01892c0e274e23eefd625fb8d Mon Sep 17 00:00:00 2001
-From: Shuduo Sang <sangshuduo@gmail.com>
-Date: Mon, 3 Mar 2014 14:29:32 +0800
-Subject: [PATCH] support thinkpad X1 Carbon's adaptive keyboard
-
-Thinkpad X1 Carbon's adaptive keyboard has five modes including Home
-mode, Web browser mode, Web conference mode, Function mode and Lay-flat
-mode. We support Home mode and Function mode currently.
-
-Signed-off-by: Bruce Ma <bruce.ma@canonical.com>
-Signed-off-by: Shuduo Sang <shuduo.sang@canonical.com>
----
- drivers/platform/x86/thinkpad_acpi.c | 102
-+++++++++++++++++++++++++++++++++++
- 1 file changed, 102 insertions(+)
-
-diff --git a/drivers/platform/x86/thinkpad_acpi.c
-b/drivers/platform/x86/thinkpad_acpi.c
-index defb6af..f4978fa 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -3437,6 +3437,106 @@ err_exit:
- 	return (res < 0)? res : 1;
- }
-
-+/* Thinkpad X1 Carbon support 5 modes including Home mode, Web browser
-+ * mode, Web conference mode, Function mode and Lay-flat mode.
-+ * We support Home mode and Function mode currently.
-+ *
-+ * Will consider support rest of modes in future.
-+ *
-+ */
-+enum ADAPTIVE_KEY_MODE {
-+	HOME_MODE,
-+	WEB_BROWSER_MODE,
-+	WEB_CONFERENCE_MODE,
-+	FUNCTION_MODE,
-+	LAYFLAT_MODE
-+};
-+
-+const int adaptive_keyboard_modes[] = {
-+	HOME_MODE,
-+/*	WEB_BROWSER_MODE = 2,
-+	WEB_CONFERENCE_MODE = 3, */
-+	FUNCTION_MODE
-+};
-+
-+#define DFR_CHANGE_ROW			0x101
-+#define DFR_SHOW_QUICKVIEW_ROW		0x102
-+
-+/* press Fn key a while second, it will switch to Function Mode. Then
-+ * release Fn key, previous mode be restored.
-+ */
-+static bool adaptive_keyboard_mode_is_saved;
-+static int adaptive_keyboard_prev_mode;
-+
-+static int adaptive_keyboard_get_next_mode(int mode)
-+{
-+	size_t i;
-+	size_t max_mode = ARRAY_SIZE(adaptive_keyboard_modes) - 1;
-+
-+	for (i = 0; i <= max_mode; i++) {
-+		if (adaptive_keyboard_modes[i] == mode)
-+			break;
-+	}
-+
-+	if (i >= max_mode)
-+		i = 0;
-+	else
-+		i++;
-+
-+	return adaptive_keyboard_modes[i];
-+}
-+
-+static bool adaptive_keyboard_hotkey_notify_hotkey(unsigned int scancode)
-+{
-+	u32 current_mode = 0;
-+	int new_mode = 0;
-+
-+	switch (scancode) {
-+	case DFR_CHANGE_ROW:
-+		if (adaptive_keyboard_mode_is_saved) {
-+			new_mode = adaptive_keyboard_prev_mode;
-+			adaptive_keyboard_mode_is_saved = false;
-+		} else {
-+			if (!acpi_evalf(
-+					hkey_handle, &current_mode,
-+					"GTRW", "dd", 0)) {
-+				pr_err("Cannot read adaptive keyboard mode\n");
-+				return false;
-+			} else {
-+				new_mode = adaptive_keyboard_get_next_mode(
-+						current_mode);
-+			}
-+		}
-+
-+		if (!acpi_evalf(hkey_handle, NULL, "STRW", "vd", new_mode)) {
-+			pr_err("Cannot set adaptive keyboard mode\n");
-+			return false;
-+		}
-+
-+		return true;
-+
-+	case DFR_SHOW_QUICKVIEW_ROW:
-+		if (!acpi_evalf(hkey_handle,
-+				&adaptive_keyboard_prev_mode,
-+				"GTRW", "dd", 0)) {
-+			pr_err("Cannot read adaptive keyboard mode\n");
-+			return false;
-+		} else {
-+			adaptive_keyboard_mode_is_saved = true;
-+
-+			if (!acpi_evalf(hkey_handle,
-+					NULL, "STRW", "vd", FUNCTION_MODE)) {
-+				pr_err("Cannot set adaptive keyboard mode\n");
-+				return false;
-+			}
-+		}
-+		return true;
-+
-+	default:
-+		return false;
-+	}
-+}
-+
- static bool hotkey_notify_hotkey(const u32 hkey,
- 				 bool *send_acpi_ev,
- 				 bool *ignore_acpi_ev)
-@@ -3456,6 +3556,8 @@ static bool hotkey_notify_hotkey(const u32 hkey,
- 			*ignore_acpi_ev = true;
- 		}
- 		return true;
-+	} else {
-+		return adaptive_keyboard_hotkey_notify_hotkey(scancode);
- 	}
- 	return false;
- }
--- 
-1.9.0
-
+That's 5 mutex patches and the 2 qrwlock patches. Not sure what to do
+with them. To merge or not, that is the question.
