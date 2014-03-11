@@ -1,153 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753AbaCKXNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 19:13:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49766 "EHLO mx1.redhat.com"
+	id S1755803AbaCKXVq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 19:21:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51734 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754819AbaCKXNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 19:13:41 -0400
-From: Hans de Goede <hdegoede@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Carlo Caione <carlo.caione@gmail.com>
-Subject: [PATCH] irq: Add a new IRQF_ACK_BEFORE_UNMASK irq flag
-Date: Wed, 12 Mar 2014 00:13:03 +0100
-Message-Id: <1394579583-29316-1-git-send-email-hdegoede@redhat.com>
+	id S1755404AbaCKXVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 19:21:45 -0400
+Date: Tue, 11 Mar 2014 18:20:05 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Kees Cook <keescook@chromium.org>
+CC: <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: tcm_usb_gadget: stop format strings
+Message-ID: <20140311232005.GB23309@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140311202616.GA24575@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="v9Ux+11Zm5mwPlX6"
+Content-Disposition: inline
+In-Reply-To: <20140311202616.GA24575@www.outflux.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases we want to do an ack right before the unmask of an irq.
+--v9Ux+11Zm5mwPlX6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-A typical example of such a case is having an i2c device which uses a level
-interrupt. Such devices usually have an interrupt status register with
-write to clear status bits. This means that the interrupt handler needs to
-sleep to do i2c transfers to read / write the interrupt status register.
+On Tue, Mar 11, 2014 at 01:26:16PM -0700, Kees Cook wrote:
+> This makes sure that the name coming out of configfs cannot be used
+> accidentally as a format string.
+>=20
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  drivers/usb/gadget/tcm_usb_gadget.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/gadget/tcm_usb_gadget.c b/drivers/usb/gadget/tcm=
+_usb_gadget.c
+> index 0f8aad78b54f..460c266b8e24 100644
+> --- a/drivers/usb/gadget/tcm_usb_gadget.c
+> +++ b/drivers/usb/gadget/tcm_usb_gadget.c
+> @@ -1613,7 +1613,7 @@ static struct se_wwn *usbg_make_tport(
+>  		return ERR_PTR(-ENOMEM);
+>  	}
+>  	tport->tport_wwpn =3D wwpn;
+> -	snprintf(tport->tport_name, sizeof(tport->tport_name), wnn_name);
+> +	snprintf(tport->tport_name, sizeof(tport->tport_name), "%s", wnn_name);
 
-This means using a threaded interrupt handler and IRQF_ONESHOT so that the
-interrupt does not re-trigger while the interrupt handler is waiting for the
-i2c transfer.
+Can you resend with Cc: <stable@vger.kernel.org> ?
 
-Without ack-before-unmask the sequence of a single interrupt in this setup
-looks like this:
+Looks like we need to backport this v3.4.
 
-i2c-device raises interrupt line
-interrupt gets triggered
-interrupt gets masked
-interrupt gets acked
-interrupt handling thread starts running
-interrupt handling thread does its stuff, write-clears irq-status register
- in i2c-device
-i2c-device lowers interrupt line (note this happens after the ack!)
-interrupt handling thread is done
-interrupt gets unmasked
-interrupt immediately retriggers again, because the line has been high
- after the ack
-interrupt gets masked
-interrupt gets acked
-interrupt handling thread starts running
-interrupt handling thread reads irq-status register, has nothing todo
-interrupt handling thread is done
-interrupt gets unmasked
+--=20
+balbi
 
-So in essence we get and handle 2 interrupts for what is 1 interrupt from
-the i2c-device pov. By doing an ack before the unmask, the second interrupt
-is avoided since at the point of the unmask the irq-thread has done its
-job and cleared the interrupt source.
+--v9Ux+11Zm5mwPlX6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Note that things work fine without this patch, the purpose of this patch is
-soley to avoid the second unneeded interrupt.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-This patch uses an interrupt flag for this and not an irqchip flag because
-the need for ack before unmask is based on the device and not on the irqchip.
+iQIcBAEBAgAGBQJTH5olAAoJEIaOsuA1yqREruIQAK80cODT2A7/MBSjnKpuxYVN
+YPGTdkGo0DJ42bZZSUlq3F6yyJDZ4xCAWMCWWqeqLb3EV6Z0KaxGx8yKijfdgU/8
+XxqYK8Rot3zN3u0uNr3u4QLxe2FVI/YpmfIS10/G/GCRf8Btv0rWSzy3PZOqLjD1
+3zVNgthPJrbQ9vFu+BQwLUd2Khifds4kFMtg6jGRwxGOZTPPkwtpWO6tzXCXxr8Y
+nWmy2IZnoRBEN4prk2sTeOfQi2SSy85TuToHYUTHPIvTzDNhEHSsglMyFyd3M9pO
+2CVVn6EsZZgWZPPTOnKUAEXHNmJUhoIRChqrAdyW1oe0W0G1Feil3kfrtMzKfkD4
+U9RbRamOXWiPZEXt9YxR070aAzDffuDnxWD3cm/wVojrruocGixebPfCaF0bA4vB
+U5V/QimDVmKgypneM1gctI786DtmhL3vtm+KCmXOr+SOSCi4mDQXib2e5S/iOLcC
+PZQ4R+U9sejrpJYM/uPfWhkJTjkMUtWj7q5EWE/F6QCCux8kEFbj+3lq26xhjRd0
+dKPmY3MSoIutzBos+atritqSLrZXjRkA6sAqZPBVZtm+gNzqaEEEGTruDcFuDI9/
+rSakeEg6lAaGo1r4knHVc0Vs6ePZMCL82GrHKWHhL790eaz555NyoT3uQQan9+Br
+XrA+df7IKvCkek/Ezaf7
+=lSFd
+-----END PGP SIGNATURE-----
 
-Cc: Carlo Caione <carlo.caione@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
----
- include/linux/interrupt.h | 2 ++
- kernel/irq/chip.c         | 4 ++++
- kernel/irq/internals.h    | 2 ++
- kernel/irq/manage.c       | 5 ++++-
- 4 files changed, 12 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index a2678d3..c252344 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -57,6 +57,7 @@
-  * IRQF_NO_THREAD - Interrupt cannot be threaded
-  * IRQF_EARLY_RESUME - Resume IRQ early during syscore instead of at device
-  *                resume time.
-+ * IRQF_ACK_BEFORE_UNMASK - IRQ must be acked before an unmask
-  */
- #define IRQF_DISABLED		0x00000020
- #define IRQF_SHARED		0x00000080
-@@ -70,6 +71,7 @@
- #define IRQF_FORCE_RESUME	0x00008000
- #define IRQF_NO_THREAD		0x00010000
- #define IRQF_EARLY_RESUME	0x00020000
-+#define IRQF_ACK_BEFORE_UNMASK	0x00040000
- 
- #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND | IRQF_NO_THREAD)
- 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index dc04c16..b6ed2fb 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -275,6 +275,10 @@ void mask_irq(struct irq_desc *desc)
- 
- void unmask_irq(struct irq_desc *desc)
- {
-+	if ((desc->istate & IRQS_ACK_BEFORE_UNMASK) &&
-+	                desc->irq_data.chip->irq_ack)
-+		desc->irq_data.chip->irq_ack(&desc->irq_data);
-+
- 	if (desc->irq_data.chip->irq_unmask) {
- 		desc->irq_data.chip->irq_unmask(&desc->irq_data);
- 		irq_state_clr_masked(desc);
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index 001fa5b..cd68190 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -43,6 +43,7 @@ enum {
-  * IRQS_WAITING			- irq is waiting
-  * IRQS_PENDING			- irq is pending and replayed later
-  * IRQS_SUSPENDED		- irq is suspended
-+ * IRQS_ACK_BEFORE_UNMASK	- irq must be acked before an unmask
-  */
- enum {
- 	IRQS_AUTODETECT		= 0x00000001,
-@@ -53,6 +54,7 @@ enum {
- 	IRQS_WAITING		= 0x00000080,
- 	IRQS_PENDING		= 0x00000200,
- 	IRQS_SUSPENDED		= 0x00000800,
-+	IRQS_ACK_BEFORE_UNMASK	= 0x00001000,
- };
- 
- #include "debug.h"
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 481a13c..fd105ce 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1104,7 +1104,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 		}
- 
- 		desc->istate &= ~(IRQS_AUTODETECT | IRQS_SPURIOUS_DISABLED | \
--				  IRQS_ONESHOT | IRQS_WAITING);
-+			IRQS_ONESHOT | IRQS_WAITING | IRQS_ACK_BEFORE_UNMASK);
- 		irqd_clear(&desc->irq_data, IRQD_IRQ_INPROGRESS);
- 
- 		if (new->flags & IRQF_PERCPU) {
-@@ -1140,6 +1140,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 				   irq, nmsk, omsk);
- 	}
- 
-+	if (new->flags & IRQF_ACK_BEFORE_UNMASK)
-+		desc->istate |= IRQS_ACK_BEFORE_UNMASK;
-+
- 	new->irq = irq;
- 	*old_ptr = new;
- 
--- 
-1.8.4.2
-
+--v9Ux+11Zm5mwPlX6--
