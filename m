@@ -1,106 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915AbaCKSG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:06:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60842 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753314AbaCKSG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:06:57 -0400
-Date: Tue, 11 Mar 2014 18:06:52 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com,
-        knoel@redhat.com, aarcange@redhat.com
-Subject: Re: [PATCH -mm] mm,numa,mprotect: always continue after finding a
- stable thp page
-Message-ID: <20140311180652.GM10663@suse.de>
-References: <5318E4BC.50301@oracle.com>
- <20140306173137.6a23a0b2@cuia.bos.redhat.com>
- <5318FC3F.4080204@redhat.com>
- <20140307140650.GA1931@suse.de>
- <20140307150923.GB1931@suse.de>
- <20140307182745.GD1931@suse.de>
- <20140311162845.GA30604@suse.de>
- <531F3F15.8050206@oracle.com>
- <531F4128.8020109@redhat.com>
- <531F48CC.303@oracle.com>
+	id S1755089AbaCKSKZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:10:25 -0400
+Received: from smtp03.stone-is.org ([87.238.162.6]:50919 "EHLO
+	smtpgw.stone-is.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562AbaCKSKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 14:10:23 -0400
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <531F518A.1070808@acm.org>
+Date: Tue, 11 Mar 2014 19:10:18 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <531F48CC.303@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
+        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] percpu_ida: Handle out-of-tags gracefully
+References: <531DC851.5060400@acm.org> <20140311135137.GA22995@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20140311135137.GA22995@dhcp-26-207.brq.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 01:33:00PM -0400, Sasha Levin wrote:
-> Okay. So just this patch on top of the latest -next shows the following issues:
+On 03/11/14 14:51, Alexander Gordeev wrote:
+> On Mon, Mar 10, 2014 at 03:12:33PM +0100, Bart Van Assche wrote:
+>> Avoid that percpu_ida_alloc() hangs or crashes if there are still
+>> tags are available. Wait until a tag becomes available instead of
+>> giving up when running out of tags temporarily. This patch fixes
+>> the following kernel bug:
 > 
-> 1. BUG in task_numa_work:
+> Hi Bart,
 > 
-> [  439.417171] BUG: unable to handle kernel paging request at ffff880e17530c00
-> [  439.418216] IP: [<ffffffff81299385>] vmacache_find+0x75/0xa0
-> [  439.419073] PGD 8904067 PUD 1028fcb067 PMD 1028f10067 PTE 8000000e17530060
-> [  439.420340] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  439.420340] Dumping ftrace buffer:
-> [  439.420340]    (ftrace buffer empty)
-> [  439.420340] Modules linked in:
-> [  439.420340] CPU: 12 PID: 9937 Comm: trinity-c212 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00009-g3b24300-dirty #137
-> [  439.420340] task: ffff880e1a45b000 ti: ffff880e1a490000 task.ti: ffff880e1a490000
-> [  439.420340] RIP: 0010:[<ffffffff81299385>]  [<ffffffff81299385>] vmacache_find+0x75/0xa0
-> [  439.420340] RSP: 0018:ffff880e1a491e68  EFLAGS: 00010286
-> [  439.420340] RAX: ffff880e17530c00 RBX: 0000000000000000 RCX: 0000000000000001
-> [  439.420340] RDX: 0000000000000001 RSI: 0000000000000000 RDI: ffff880e1a45b000
-> [  439.420340] RBP: ffff880e1a491e68 R08: 0000000000000000 R09: 0000000000000000
-> [  439.420340] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880e1ab75000
-> [  439.420340] R13: ffff880e1ab75000 R14: 0000000000010000 R15: 0000000000000000
-> [  439.420340] FS:  00007f3458c05700(0000) GS:ffff880d2b800000(0000) knlGS:0000000000000000
-> [  439.420340] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  439.420340] CR2: ffff880e17530c00 CR3: 0000000e1a472000 CR4: 00000000000006a0
-> [  439.420340] Stack:
-> [  439.420340]  ffff880e1a491e98 ffffffff812a7610 ffffffff8118de40 0000000000000117
-> [  439.420340]  00000001000036da ffff880e1a45b000 ffff880e1a491ef8 ffffffff8118de4b
-> [  439.420340]  ffff880e1a491ec8 ffffffff81269575 ffff880e1ab750a8 ffff880e1a45b000
-> [  439.420340] Call Trace:
-> [  439.420340]  [<ffffffff812a7610>] find_vma+0x20/0x90
-> [  439.420340]  [<ffffffff8118de40>] ? task_numa_work+0x130/0x360
-> [  439.420340]  [<ffffffff8118de4b>] task_numa_work+0x13b/0x360
-> [  439.420340]  [<ffffffff81269575>] ? context_tracking_user_exit+0x195/0x1d0
-> [  439.420340]  [<ffffffff8116c5be>] task_work_run+0xae/0xf0
-> [  439.420340]  [<ffffffff8106ffbe>] do_notify_resume+0x8e/0xe0
-> [  439.420340]  [<ffffffff844b17a2>] int_signal+0x12/0x17
-> [  439.420340] Code: 42 10 00 00 00 00 48 c7 42 18 00 00 00 00 eb 38 66 0f 1f 44 00 00 31 d2 48 89 c7 48 63 ca 48 8b 84 cf b8 07 00 00 48 85 c0 74 0b <48> 39 30 77 06 48 3b 70 08 72 12 ff c2 83 fa 04 75 de 66 0f 1f
-> [  439.420340] RIP  [<ffffffff81299385>] vmacache_find+0x75/0xa0
-> [  439.420340]  RSP <ffff880e1a491e68>
-> [  439.420340] CR2: ffff880e17530c00
+> Few comments below, but the changelog does not correspond to the
+> actual change in 'Wait until a tag becomes available'.
 > 
+>> ------------[ cut here ]------------
+>> kernel BUG at lib/percpu_ida.c:81!
+>> invalid opcode: 0000 [#1] SMP
+>> RIP: 0010:[<ffffffff8120f00e>]  [<ffffffff8120f00e>] percpu_ida_alloc+0x33e/0x370
+>> Call Trace:
+>>  [<ffffffff811ef95f>] blk_mq_get_tag+0x2f/0x50
+>>  [<ffffffff811ed79c>] blk_mq_alloc_rq.isra.17+0x1c/0x90
+>>  [<ffffffff811eeb9b>] blk_mq_alloc_request_pinned+0x9b/0x110
+>>  [<ffffffff811ef4c6>] blk_mq_make_request+0x426/0x480
+>>  [<ffffffff811e28f0>] generic_make_request+0xc0/0x110
+>>  [<ffffffff811e29ab>] submit_bio+0x6b/0x140
+>>  [<ffffffff8117aabb>] _submit_bh+0x13b/0x220
+>>  [<ffffffff8117d70f>] block_read_full_page+0x1ff/0x300
+>>  [<ffffffff81181128>] blkdev_readpage+0x18/0x20
+>>  [<ffffffff811067b7>] __do_page_cache_readahead+0x277/0x280
+>>  [<ffffffff81106d1d>] force_page_cache_readahead+0x8d/0xc0
+>>  [<ffffffff81106d9b>] page_cache_sync_readahead+0x4b/0x50
+>>  [<ffffffff810fdf05>] generic_file_aio_read+0x4c5/0x700
+>>  [<ffffffff8118147b>] blkdev_aio_read+0x4b/0x70
+>>  [<ffffffff8114a28a>] do_sync_read+0x5a/0x90
+>>  [<ffffffff8114a8cb>] vfs_read+0x9b/0x160
+>>  [<ffffffff8114b389>] SyS_read+0x49/0xa0
+>>  [<ffffffff81416049>] tracesys+0xd0/0xd5
+>> ---[ end trace cdd1a8a7968266cf ]---
+>>
+>> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+>> Cc: Kent Overstreet <kmo@daterainc.com>
+>> Cc: Shaohua Li <shli@kernel.org>
+>> Cc: Christoph Hellwig <hch@lst.de>
+>> Cc: Jens Axboe <axboe@kernel.dk>
+>> Cc: Alexander Gordeev <agordeev@redhat.com>
+>> Cc: Mike Christie <michaelc@cs.wisc.edu>
+>> ---
+>>  lib/percpu_ida.c | 5 ++++-
+>>  1 file changed, 4 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
+>> index 93d145e..170d27c 100644
+>> --- a/lib/percpu_ida.c
+>> +++ b/lib/percpu_ida.c
+>> @@ -73,7 +73,7 @@ static inline void steal_tags(struct percpu_ida *pool,
+>>  		if (cpu >= nr_cpu_ids) {
+>>  			cpu = cpumask_first(&pool->cpus_have_tags);
+>>  			if (cpu >= nr_cpu_ids)
+>> -				BUG();
+>> +				break;
+> 
+> I assume the BUG() above hits? If so, I am failing to understand how
+> the code gets here. Mind elaborate?
 
-Ok, this does not look related. It looks like damage from the VMA caching
-patches, possibly a use-after free. I'm skeptical that it's related to
-automatic NUMA balancing as such based on the second trace you posted.
+Hello Alexander,
 
-What does addr2line -e vmlinux ffffffff81299385 say? I want to be sure
-it looks like a vma dereference without risking making a mistake
-decoding it.
+You are correct, the BUG() mentioned in the call stack in the
+description of this patch does indeed correspond with the BUG()
+statement in the above code. That BUG() was encountered while testing
+the scsi-mq patch series with a workload with a large queue depth. I
+think the fact that I hit that BUG() statement means that my workload
+was queueing requests faster than these were processed by the SCSI LLD
+and hence that percpu_ida_alloc() ran out of tags.
 
-1. Does this bug trigger even if automatic NUMA balancing is disabled?
-2. Does this bug trigger if DEBUG_PAGEALLOC is disabled? If it's a
-	use-after free then the bug would still be there.
-3. Can you test with the following patches reverted please?
+>>  		}
+>>  
+>>  		pool->cpu_last_stolen = cpu;
+>> @@ -189,6 +189,9 @@ int percpu_ida_alloc(struct percpu_ida *pool, int state)
+>>  		spin_unlock(&pool->lock);
+>>  		local_irq_restore(flags);
+>>  
+>> +		if (tags->nr_free)
+>> +			wake_up(&pool->wait);
+>> +
+> 
+> How 'tags->nr_free' could be checked out of locks?
+> Why waking up another thread instead of returning the tag on this CPU?
+> Why 'percpu_max_size' threshold is ignored?
 
-	e15d25d9c827b4346a36a3a78dd566d5ad353402 mm-per-thread-vma-caching-fix-fix
-	e440e20dc76803cdab616b4756c201d5c72857f2 mm-per-thread-vma-caching-fix
-	0d9ad4220e6d73f63a9eeeaac031b92838f75bb3 mm: per-thread vma caching
+Sorry but I'm not sure how much experience you have with kernel coding ?
+There are several examples in the Linux kernel of kernel drivers where
+variables that are shared over CPU's are on purpose read without first
+taking the lock that protects these variables. Students are thought at
+the university that all accesses of shared variables should be protected
+via locking. In the Linux kernel however it is common practice to read a
+shared variable without locking if the code that does this will work
+fine if such a read returns an previous value of that variable instead
+of the latest value.
 
-The last patch will not revert cleanly (least it didn't for me) but it
-was just a case of git rm the two affected files, remove any include of
-vmacache.h and commit the rest.
+> Anyway, IMHO the above BUG() indicates a problem elsewhere.
 
-Thanks!
+Sorry but I disagree. percpu_ida_alloc() should either return an error
+code or keep waiting when out of tags. Invoking BUG() when out of tags
+is wrong.
 
--- 
-Mel Gorman
-SUSE Labs
+Bart.
