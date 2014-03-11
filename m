@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456AbaCKK15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:27:57 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:35703 "EHLO smtp3-g21.free.fr"
+	id S1755466AbaCKK2M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:28:12 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:36571 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755075AbaCKK1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:27:53 -0400
+	id S1753499AbaCKK2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:28:07 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCHv6 4/6] file: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Tue, 11 Mar 2014 11:23:43 +0100
-Message-Id: <4cde087a056424b698c061d40da7c76eb4a6bf8d.1394532336.git.ydroneaud@opteya.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@vger.kernel.org
+Subject: [PATCHv6 5/6] fanotify: enable close-on-exec on events' fd when requested in fanotify_init()
+Date: Tue, 11 Mar 2014 11:23:44 +0100
+Message-Id: <baab31b572b216d13f2149bdf07e0f79a1bae660.1394532336.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <cover.1394532336.git.ydroneaud@opteya.com>
 References: <cover.1394532336.git.ydroneaud@opteya.com>
@@ -23,39 +23,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Macro get_unused_fd() is used to allocate a file descriptor with
-default flags. Those default flags (0) can be "unsafe":
-O_CLOEXEC must be made the default to not leak file descriptor
-across exec().
+According to commit 80af258867648, file descriptor created as part
+of file access notification events inherit flags from the event_f_flags
+argument passed to syscall fanotify_init(2).
 
-In a further patch, get_unused_fd() will be removed so that
-new code start using get_unused_fd_flags() (or anon_inode_getfd())
-with correct flags.
+So while it is legal for userspace to call fanotify_init() with O_CLOEXEC
+as part of its second argument, O_CLOEXEC is currently silently ignored.
 
-This patch replaces calls to get_unused_fd() with equivalent call to
-get_unused_fd_flags(0).
+Indeed event_f_flags are only given to dentry_open(), which only
+seems to care about O_ACCMODE and O_PATH in do_dentry_open(), O_DIRECT
+in open_check_o_direct() and O_LARGEFILE in generic_file_open().
+
+More, there's no effective check on event_f_flags value that would
+catch unknown / unsupported values, unlike the one on f_flags argument
+of the syscall (see FAN_ALL_INIT_FLAGS in include/uapi/linux/fanotify.h).
+
+Reading article "Botching up ioctls"[1] by Daniel Vetter might make one
+feel uncomfortable when trying to add extension to an API that doesn't
+check for unrecognized values.
+
+But it seems logical to set close-on-exec flag on the file descriptor
+if userspace is allowed to request it with O_CLOEXEC.
+
+In fact, according to some lookup on http://codesearch.debian.net/ and
+various search engine, there's already some userspace code requesting it:
+
+- in systemd's readahead[2]:
+
+    fanotify_fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK, O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
+
+- in clsync[3]:
+
+    #define FANOTIFY_EVFLAGS (O_LARGEFILE|O_RDONLY|O_CLOEXEC)
+
+    int fanotify_d = fanotify_init(FANOTIFY_FLAGS, FANOTIFY_EVFLAGS);
+
+- in examples [4] from "Filesystem monitoring in the Linux kernel"
+  article[5] by Aleksander Morgado:
+
+    if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
+                                      O_RDONLY | O_CLOEXEC | O_LARGEFILE)) < 0)
+
+Lookup also returned some wrong usage of the syscall:
+
+- in Gonk HAL from Mozilla Firefox OS sources[6]:
+
+    mFd = fanotify_init(FAN_CLASS_NOTIF, FAN_CLOEXEC);
+
+Adding support for O_CLOEXEC in fanotify won't magically enable it for
+Gonk since FAN_CLOEXEC is defined as 0x1, which is likely equal to
+O_WRONLY when used in open flag context. In the other hand, it won't
+hurt it either.
+
+So this patch replaces call to macro get_unused_fd() by a call to
+function get_unused_fd_flags() with event_f_flags value as argument.
+This way O_CLOEXEC flag in the second argument of fanotify_init(2)
+syscall is interpreted so that close-on-exec get enabled.
+
+[1] http://blog.ffwll.ch/2013/11/botching-up-ioctls.html
+[2] http://cgit.freedesktop.org/systemd/systemd/tree/src/readahead/readahead-collect.c?id=v208#n294
+[3] https://github.com/xaionaro/clsync/blob/v0.2.1/sync.c#L1631
+    https://github.com/xaionaro/clsync/blob/v0.2.1/configuration.h#L38
+[4] http://www.lanedo.com/~aleksander/fanotify/fanotify-example.c
+[5] http://www.lanedo.com/2013/filesystem-monitoring-linux-kernel/
+[6] http://hg.mozilla.org/mozilla-central/file/325c74addeba/hal/gonk/GonkDiskSpaceWatcher.cpp#l167
 
 Link: http://lkml.kernel.org/r/cover.1394532336.git.ydroneaud@opteya.com
+Cc: Eric Paris <eparis@redhat.com>
 Cc: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: stable@vger.kernel.org
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
- fs/file.c | 2 +-
+ fs/notify/fanotify/fanotify_user.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/file.c b/fs/file.c
-index 18f7d27855c4..d8ace9a8a821 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -857,7 +857,7 @@ SYSCALL_DEFINE1(dup, unsigned int, fildes)
- 	struct file *file = fget_raw(fildes);
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 4e565c814309..31bc27ed5bcf 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -65,7 +65,7 @@ static int create_fd(struct fsnotify_group *group,
  
- 	if (file) {
--		ret = get_unused_fd();
-+		ret = get_unused_fd_flags(0);
- 		if (ret >= 0)
- 			fd_install(ret, file);
- 		else
+ 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
+ 
+-	client_fd = get_unused_fd();
++	client_fd = get_unused_fd_flags(group->fanotify_data.f_flags);
+ 	if (client_fd < 0)
+ 		return client_fd;
+ 
 -- 
 1.8.5.3
 
