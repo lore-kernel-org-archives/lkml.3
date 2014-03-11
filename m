@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288AbaCKRt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:49:26 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:52936 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232AbaCKRtW (ORCPT
+	id S1755379AbaCKRuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:50:05 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51688 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755318AbaCKRuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:49:22 -0400
-X-Originating-IP: 98.158.13.34
-Date: Tue, 11 Mar 2014 10:49:15 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/5] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and
- family
-Message-ID: <20140311174914.GA3101@leaf>
-References: <469b5dc113cb468232291527642f8dc47663e945.1393385236.git.josh@joshtriplett.org>
- <6915585.VegnvotSUi@wuerfel>
- <17c859aa7dcccec43df0a0c8908911b982764c76.1394412745.git.josh@joshtriplett.org>
- <201403111740.25606.arnd@arndb.de>
+	Tue, 11 Mar 2014 13:50:02 -0400
+Message-ID: <531F4CC8.5010202@codeaurora.org>
+Date: Tue, 11 Mar 2014 10:50:00 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201403111740.25606.arnd@arndb.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Josh Cartwright <joshc@codeaurora.org>, linux-input@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v5 0/9] Use regmap+devm+DT in pm8xxx input drivers
+References: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 05:40:25PM +0100, Arnd Bergmann wrote:
-> On Monday 10 March 2014, Josh Triplett wrote:
-> > 
-> > When !CONFIG_BUG, WARN_ON and family become simple passthroughs of their
-> > condition argument; however, WARN_ON_ONCE and family still have
-> > conditions and a boolean to detect one-time invocation, even though the
-> > warning they'd emit doesn't exist.  Make the existing definitions
-> > conditional on CONFIG_BUG, and add definitions for !CONFIG_BUG that map
-> > to the passthrough versions of WARN and WARN_ON.
-> > 
-> > This saves 4.4k on a minimized configuration (smaller than
-> > allnoconfig), and 20.6k with defconfig plus CONFIG_BUG=n.
-> > 
-> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> > ---
-> > v3: Patch unchanged from v2.
-> > 
-> > Andrew, can you please replace the entire v2 series currently in -mm
-> > with this new series?
-> 
-> 
-> [all patches]
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+ping?
 
-Thanks!
+On 03/04/14 10:34, Stephen Boyd wrote:
+> These patches move the pm8xxx input drivers over to use devm_* APIs
+> and regmap. This breaks the dependency of these drivers on the pm8xxx
+> specific read/write calls and also simplifies the probe code a bit.
+> Finally we add devicetree support to these drivers so they can be probed
+> on the platforms that are supported upstream.
+>
+> Changes since v4:
+>  * Added reg property to bindings
+>  * Added linux,* properties to keypad binding
+>
+> Changes since v3:
+>  * Dropped devm conversion patch for pwrkey
+>  * Fixed compilation of keypad
+>
+> Changes since v2:
+>  * Rebased to v3.14-rc3
+>
+> Changes since v1:
+>  * Picked up Dmitry's version of devm for pwrkey
+>  * Added DT bindings and parsing patches
+>  * Dropped patches picked up by Dmitry
+>
+> Stephen Boyd (9):
+>   Input: pmic8xxx-keypad - Fix build by removing gpio configuration
+>   Input: pmic8xxx-keypad - Migrate to devm_* APIs
+>   Input: pmic8xxx-keypad - Migrate to regmap APIs
+>   Input: pmic8xxx-keypad - Migrate to DT
+>   Input: pmic8xxx-pwrkey - Migrate to DT
+>   Input: pm8xxx-vibrator - Add DT match table
+>   devicetree: bindings: Document PM8921/8058 keypads
+>   devicetree: bindings: Document PM8921/8058 power keys
+>   devicetree: bindings: Document PM8921/8058 vibrators
+>
+>  .../bindings/input/qcom,pm8xxx-keypad.txt          |  89 ++++++
+>  .../bindings/input/qcom,pm8xxx-pwrkey.txt          |  46 +++
+>  .../devicetree/bindings/input/qcom,pm8xxx-vib.txt  |  22 ++
+>  drivers/input/keyboard/pmic8xxx-keypad.c           | 348 ++++++++-------------
+>  drivers/input/misc/pm8xxx-vibrator.c               |   8 +
+>  drivers/input/misc/pmic8xxx-pwrkey.c               |  33 +-
+>  include/linux/input/pmic8xxx-keypad.h              |  52 ---
+>  include/linux/input/pmic8xxx-pwrkey.h              |  31 --
+>  8 files changed, 316 insertions(+), 313 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
+>  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
+>  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-vib.txt
+>  delete mode 100644 include/linux/input/pmic8xxx-keypad.h
+>  delete mode 100644 include/linux/input/pmic8xxx-pwrkey.h
+>
 
-- Josh Triplett
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
