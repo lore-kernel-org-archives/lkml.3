@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974AbaCKGOZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 02:14:25 -0400
-Received: from ozlabs.org ([203.10.76.45]:59171 "EHLO ozlabs.org"
+	id S1753579AbaCKGPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 02:15:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23155 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649AbaCKGOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 02:14:24 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: behanw@converseincode.com, khali@linux-fr.org, rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org, pageexec@freemail.hu,
-        Mark Charlebois <charlebm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>
-Subject: Re: [PATCH] module: LLVMLinux: Remove unused function warning from __param_check macro
-In-Reply-To: <1394219327-5591-1-git-send-email-behanw@converseincode.com>
-References: <1394219327-5591-1-git-send-email-behanw@converseincode.com>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Tue, 11 Mar 2014 16:41:35 +1030
-Message-ID: <87y50hw9go.fsf@rustcorp.com.au>
+	id S1751945AbaCKGPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 02:15:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,629,1389772800"; 
+   d="scan'208";a="470000336"
+Date: Tue, 11 Mar 2014 14:15:19 +0800
+From: Liu ShuoX <shuox.liu@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: anton@enomsg.org, ccross@android.com, keescook@chromium.org,
+        tony.luck@intel.com, yanmin_zhang@linux.intel.com
+Subject: [PATCH 1/2] pstore: fix NULL pointer fault if get NULL prz in
+ ramoops_get_next_prz
+Message-ID: <20140311061519.GA11552@lskakaxi-intel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-behanw@converseincode.com writes:
-> From: Mark Charlebois <charlebm@gmail.com>
->
-> This code makes a compile time type check that is optimized away. Clang
-> complains that it generates an unused function.
->
-> I believe GCC won't complain for a static inline fuction but would if it
-> was just a static function.
->
-> Adding the unused attribute to the function declaration removes the warning.
->
-> This code works for both gcc and clang.
->
-> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
+These two patches are applied on top of patches:
+https://lkml.org/lkml/2014/3/3/368
+It has been added in -mm tree. Below is the first patch, and i will
+send the second by replying this one.
 
-Please include the actual warning clang spits out.  That helps because
-(1) I know what you're referring to, and
-(2) it helps others if they are later googling for the error.
+From: Liu ShuoX <shuox.liu@intel.com>
 
-I don't have any huge objections to this patch (__always_unused) though.
+ramoops_get_next_prz get the prz according the paramters. If it get a
+uninitialized prz, access its members by following persistent_ram_old_size(prz)
+will cause a NULL pointer crash.
+Ex: if ftrace_size is 0, fprz will be NULL.
 
-Thanks,
-Rusty.
+Fix it by return NULL in advance.
+
+Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+---
+  fs/pstore/ram.c | 2 ++
+  1 file changed, 2 insertions(+)
+
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 1daed28..6f96d8c 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -119,6 +119,8 @@ ramoops_get_next_prz(struct persistent_ram_zone *przs[], uint *c, uint max,
+  		return NULL;
+  
+  	prz = przs[i];
++	if (!prz)
++		return NULL;
+  
+  	/* Update old/shadowed buffer. */
+  	if (update)
+-- 
+1.8.3.2
