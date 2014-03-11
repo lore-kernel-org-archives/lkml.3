@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825AbaCKJ01 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 05:26:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46224 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828AbaCKJ0Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 05:26:24 -0400
-Date: Tue, 11 Mar 2014 10:26:08 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, joe@perches.com, mingo@kernel.org,
+	id S1754863AbaCKJ07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 05:26:59 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65276 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753389AbaCKJWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 05:22:50 -0400
+X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
+   d="scan'208";a="9677977"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: joe@perches.com, peterz@infradead.org, mingo@kernel.org,
         tglx@linutronix.de, heiko.carstens@de.ibm.com,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Robin Holt <holt@sgi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 02/16] kernel/sys: Replace opened code implementation
- with nice_to_rlimit().
-Message-ID: <20140311092608.GT9987@twins.programming.kicks-ass.net>
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 04/16] locktorture: Replace hardcoding of 19 with MAX_NICE.
+Date: Tue, 11 Mar 2014 17:20:25 +0800
+Message-Id: <157102eb940cad6e463a1e1bfe1fae1af58ee4e3.1394529373.git.yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1394529373.git.yangds.fnst@cn.fujitsu.com>
 References: <cover.1394529373.git.yangds.fnst@cn.fujitsu.com>
- <23d8f4c6d70b34d29b5f69e30b19cfb920889ede.1394529373.git.yangds.fnst@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <23d8f4c6d70b34d29b5f69e30b19cfb920889ede.1394529373.git.yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 17:19:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/11 17:20:02,
+	Serialize complete at 2014/03/11 17:20:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 05:20:23PM +0800, Dongsheng Yang wrote:
-> From: Joe Perches <joe@perches.com>
-> 
-> Convert 20 - task_nice(p) to nice_to_rlimit(task_nice(p)).
-> 
-> Reduce the indent the switch case labels while there.
-> 
-> git diff -w shows 3 lines changed and a /* fall-through */ comment added
-> 
->   $ git diff -w -U0 kernel/sys.c
->   @@ -253 +253 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
->   -                               niceval = 20 - task_nice(p);
->   +                       niceval = nice_to_rlimit(task_nice(p));
->   @@ -264 +264 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
->   -                               niceval = 20 - task_nice(p);
->   +                       niceval = nice_to_rlimit(task_nice(p));
->   @@ -280 +280 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
->   -                                       niceval = 20 - task_nice(p);
->   +                               niceval = nice_to_rlimit(task_nice(p));
->   @@ -1558 +1558 @@ static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
->   -
->   +               /* fall-through */
-> 
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ kernel/locking/locktorture.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I would really like to see the whitespace changes separated. I can push
-a scheduler related change into other subsystems, but massive surgery
-like this should not come through the scheduler tree.
-
+diff --git a/kernel/locking/locktorture.c b/kernel/locking/locktorture.c
+index f26b1a1..23343be 100644
+--- a/kernel/locking/locktorture.c
++++ b/kernel/locking/locktorture.c
+@@ -216,7 +216,7 @@ static int lock_torture_writer(void *arg)
+ 	static DEFINE_TORTURE_RANDOM(rand);
+ 
+ 	VERBOSE_TOROUT_STRING("lock_torture_writer task started");
+-	set_user_nice(current, 19);
++	set_user_nice(current, MAX_NICE);
+ 
+ 	do {
+ 		schedule_timeout_uninterruptible(1);
+-- 
+1.8.2.1
 
