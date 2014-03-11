@@ -1,197 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718AbaCKIYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 04:24:41 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:41364 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426AbaCKIYi (ORCPT
+	id S1752862AbaCKIaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 04:30:15 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:52120 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279AbaCKIaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 04:24:38 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2B8OZi3027965, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: [PATCH net-next] r8152: support dumping the hw counters
-Date: Tue, 11 Mar 2014 16:24:19 +0800
-Message-ID: <1394526259-5513-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
+	Tue, 11 Mar 2014 04:30:10 -0400
+X-Original-SENDERIP: 10.177.220.200
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 11 Mar 2014 17:30:09 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: oops in slab/leaks_show
+Message-ID: <20140311083009.GA32004@lge.com>
+References: <20140307025703.GA30770@redhat.com>
+ <alpine.DEB.2.10.1403071117230.21846@nuc>
+ <20140311003459.GA25657@lge.com>
+ <20140311010135.GA25845@lge.com>
+ <20140311012455.GA5151@redhat.com>
+ <20140311025811.GA601@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140311025811.GA601@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add dumping the tally counter by ethtool.
+On Tue, Mar 11, 2014 at 11:58:11AM +0900, Joonsoo Kim wrote:
+> On Mon, Mar 10, 2014 at 09:24:55PM -0400, Dave Jones wrote:
+> > On Tue, Mar 11, 2014 at 10:01:35AM +0900, Joonsoo Kim wrote:
+> >  > On Tue, Mar 11, 2014 at 09:35:00AM +0900, Joonsoo Kim wrote:
+> >  > > On Fri, Mar 07, 2014 at 11:18:30AM -0600, Christoph Lameter wrote:
+> >  > > > Joonsoo recently changed the handling of the freelist in SLAB. CCing him.
+> >  > > > 
+> >  > > > > I pretty much always use SLUB for my fuzzing boxes, but thought I'd give SLAB a try
+> >  > > > > for a change.. It blew up when something tried to read /proc/slab_allocators
+> >  > > > > (Just cat it, and you should see the oops below)
+> >  > > 
+> >  > > Hello, Dave.
+> >  > > 
+> >  > > Today, I did a test on v3.13 which contains all my changes on the handling of
+> >  > > the freelist in SLAB and couldn't trigger oops by just 'cat /proc/slab_allocators'.
+> >  > > 
+> >  > > So I look at the code and find that there is race window if there is multiple users
+> >  > > doing 'cat /proc/slab_allocators'. Did your test do that?
+> >  > 
+> >  > Opps, sorry. I am misunderstanding something. Maybe there is no race.
+> >  > Anyway, How do you test it?
+> > 
+> > 1. build kernel with CONFIG_SLAB=y.
+> > 2. boot kernel
+> > 3. cat /proc/slab_allocators
+> 
+> Okay. I reproduce it with CONFIG_DEBUG_PAGEALLOC=y.
+> 
+> I look at the code and find that the problem doesn't come from my patches.
+> I think that it is long-lived bug. Let me explain it.
+> 
+> 'cat /proc/slab_allocators' checks all allocated objects for all slabs.
+> The problem is that it considers objects in cpu slab caches as allocated objects.
+> These objects in cpu slab caches are unmapped if CONFIG_DEBUG_PAGEALLOC=y, so when we
+> try to access it to get the caller information, oops would be triggered.
+> 
+> I will think more deeply how to fix this problem.
+> If I am missing something, please let me know.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 95 +++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 93 insertions(+), 2 deletions(-)
+Here is the fix for this problem.
+Thanks for reporting it.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index a90a7eb9..aa1d5b2 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -60,7 +60,7 @@
- #define PLA_TCR0		0xe610
- #define PLA_TCR1		0xe612
- #define PLA_TXFIFO_CTRL		0xe618
--#define PLA_RSTTELLY		0xe800
-+#define PLA_RSTTALLY		0xe800
- #define PLA_CR			0xe813
- #define PLA_CRWECR		0xe81c
- #define PLA_CONFIG12		0xe81e	/* CONFIG1, CONFIG2 */
-@@ -72,7 +72,7 @@
- #define PLA_MISC_0		0xe858
- #define PLA_MISC_1		0xe85a
- #define PLA_OCP_GPHY_BASE	0xe86c
--#define PLA_TELLYCNT		0xe890
-+#define PLA_TALLYCNT		0xe890
- #define PLA_SFF_STS_7		0xe8de
- #define PLA_PHYSTATUS		0xe908
- #define PLA_BP_BA		0xfc26
-@@ -180,6 +180,9 @@
- /* PLA_TCR1 */
- #define VERSION_MASK		0x7cf0
- 
-+/* PLA_RSTTALLY */
-+#define TALLY_RESET		0x0001
-+
- /* PLA_CR */
- #define CR_RST			0x10
- #define CR_RE			0x08
-@@ -465,6 +468,22 @@ enum rtl8152_flags {
- #define REALTEK_USB_DEVICE(vend, prod)	\
- 	USB_DEVICE_INTERFACE_CLASS(vend, prod, USB_CLASS_VENDOR_SPEC)
- 
-+struct tally_counter {
-+	__le64	tx_packets;
-+	__le64	rx_packets;
-+	__le64	tx_errors;
-+	__le32	rx_errors;
-+	__le16	rx_missed;
-+	__le16	align_errors;
-+	__le32	tx_one_collision;
-+	__le32	tx_multi_collision;
-+	__le64	rx_unicast;
-+	__le64	rx_broadcast;
-+	__le32	rx_multicast;
-+	__le16	tx_aborted;
-+	__le16	tx_underun;
-+};
-+
- struct rx_desc {
- 	__le32 opts1;
- #define RX_LEN_MASK			0x7fff
-@@ -2872,6 +2891,15 @@ static void r8152b_enable_fc(struct r8152 *tp)
- 	r8152_mdio_write(tp, MII_ADVERTISE, anar);
+---------8<---------------------
+>From ff6fe77fb764ca5bf8705bf53d07d38e4111e84c Mon Sep 17 00:00:00 2001
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Date: Tue, 11 Mar 2014 14:14:25 +0900
+Subject: [PATCH] slab: remove kernel_map_pages() optimization in slab
+ poisoning
+
+If CONFIG_DEBUG_PAGEALLOC enables, slab poisoning functionality uses
+kernel_map_pages(), instead of real poisoning, to detect memory corruption
+with low overhead. But, in that case, slab leak detector trigger oops.
+Reason is that slab leak detector accesses all active objects, especially
+including objects in cpu slab caches to get the caller information.
+These objects are already unmapped via kernel_map_pages() to detect memory
+corruption, so oops could be triggered.
+
+Following is oops message reported from Dave.
+
+It blew up when something tried to read /proc/slab_allocators
+(Just cat it, and you should see the oops below)
+
+  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+  Modules linked in: fuse hidp snd_seq_dummy tun rfcomm bnep llc2 af_key can_raw ipt_ULOG can_bcm nfnetlink scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc can pppoe pppox ppp_generic
+  +slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 xfs coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel
+  +libcrc32c usb_debug microcode snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic pcspkr btusb bluetooth 6lowpan_iphc rfkill snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm
+  +snd_timer e1000e snd ptp shpchp soundcore pps_core serio_raw
+  CPU: 1 PID: 9386 Comm: trinity-c33 Not tainted 3.14.0-rc5+ #131
+  task: ffff8801aa46e890 ti: ffff880076924000 task.ti: ffff880076924000
+  RIP: 0010:[<ffffffffaa1a8f4a>]  [<ffffffffaa1a8f4a>] handle_slab+0x8a/0x180
+  RSP: 0018:ffff880076925de0  EFLAGS: 00010002
+  RAX: 0000000000001000 RBX: 0000000000000000 RCX: 000000005ce85ce7
+  RDX: ffffea00079be100 RSI: 0000000000001000 RDI: ffff880107458000
+  RBP: ffff880076925e18 R08: 0000000000000001 R09: 0000000000000000
+  R10: 0000000000000000 R11: 000000000000000f R12: ffff8801e6f84000
+  R13: ffffea00079be100 R14: ffff880107458000 R15: ffff88022bb8d2c0
+  FS:  00007fb769e45740(0000) GS:ffff88024d040000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: ffff8801e6f84ff8 CR3: 00000000a22db000 CR4: 00000000001407e0
+  DR0: 0000000002695000 DR1: 0000000002695000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000070602
+  Stack:
+   ffff8802339dcfc0 ffff88022bb8d2c0 ffff880107458000 ffff88022bb8d2c0
+   ffff8802339dd008 ffff8802339dcfc0 ffffea00079be100 ffff880076925e68
+   ffffffffaa1ad9be ffff880203fe4f00 ffff88022bb8d318 0000000076925e98
+  Call Trace:
+   [<ffffffffaa1ad9be>] leaks_show+0xce/0x240
+   [<ffffffffaa1e6c0e>] seq_read+0x28e/0x490
+   [<ffffffffaa23008d>] proc_reg_read+0x3d/0x80
+   [<ffffffffaa1c026b>] vfs_read+0x9b/0x160
+   [<ffffffffaa1c0d88>] SyS_read+0x58/0xb0
+   [<ffffffffaa7420aa>] tracesys+0xd4/0xd9
+  Code: f5 00 00 00 0f 1f 44 00 00 48 63 c8 44 3b 0c 8a 0f 84 e3 00 00 00 83 c0 01 44 39 c0 72 eb 41 f6 47 1a 01 0f 84 e9 00 00 00 89 f0 <4d> 8b 4c 04 f8 4d 85 c9 0f 84 88 00 00 00 49 8b 7e 08 4d 8d 46
+  RIP  [<ffffffffaa1a8f4a>] handle_slab+0x8a/0x180
+   RSP <ffff880076925de0>
+  CR2: ffff8801e6f84ff8
+
+There are two solutions to fix the problem. One is to disable
+CONFIG_DEBUG_SLAB_LEAK if CONFIG_DEBUG_PAGEALLOC=y. The other is to remove
+kernel_map_pages() optimization in slab poisoning. I think that
+second one is better, since we can use all functionality with some more
+overhead. slab poisoning is already heavy operation, so adding more
+overhead doesn't weaken their value.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+diff --git a/mm/slab.c b/mm/slab.c
+index b264214..a35aeea 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1739,41 +1739,6 @@ static void kmem_rcu_free(struct rcu_head *head)
  }
  
-+static void rtl_tally_reset(struct r8152 *tp)
-+{
-+	u32 ocp_data;
-+
-+	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_RSTTALLY);
-+	ocp_data |= TALLY_RESET;
-+	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RSTTALLY, ocp_data);
-+}
-+
- static void r8152b_init(struct r8152 *tp)
+ #if DEBUG
+-
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-static void store_stackinfo(struct kmem_cache *cachep, unsigned long *addr,
+-			    unsigned long caller)
+-{
+-	int size = cachep->object_size;
+-
+-	addr = (unsigned long *)&((char *)addr)[obj_offset(cachep)];
+-
+-	if (size < 5 * sizeof(unsigned long))
+-		return;
+-
+-	*addr++ = 0x12345678;
+-	*addr++ = caller;
+-	*addr++ = smp_processor_id();
+-	size -= 3 * sizeof(unsigned long);
+-	{
+-		unsigned long *sptr = &caller;
+-		unsigned long svalue;
+-
+-		while (!kstack_end(sptr)) {
+-			svalue = *sptr++;
+-			if (kernel_text_address(svalue)) {
+-				*addr++ = svalue;
+-				size -= sizeof(unsigned long);
+-				if (size <= sizeof(unsigned long))
+-					break;
+-			}
+-		}
+-
+-	}
+-	*addr++ = 0x87654321;
+-}
+-#endif
+-
+ static void poison_obj(struct kmem_cache *cachep, void *addr, unsigned char val)
  {
- 	u32 ocp_data;
-@@ -2898,6 +2926,7 @@ static void r8152b_init(struct r8152 *tp)
- 	r8152b_enable_eee(tp);
- 	r8152b_enable_aldps(tp);
- 	r8152b_enable_fc(tp);
-+	rtl_tally_reset(tp);
+ 	int size = cachep->object_size;
+@@ -1914,18 +1879,9 @@ static void slab_destroy_debugcheck(struct kmem_cache *cachep,
+ 	for (i = 0; i < cachep->num; i++) {
+ 		void *objp = index_to_obj(cachep, page, i);
  
- 	/* enable rx aggregation */
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_USB_CTRL);
-@@ -2965,6 +2994,7 @@ static void r8153_init(struct r8152 *tp)
- 	r8153_enable_eee(tp);
- 	r8153_enable_aldps(tp);
- 	r8152b_enable_fc(tp);
-+	rtl_tally_reset(tp);
+-		if (cachep->flags & SLAB_POISON) {
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-			if (cachep->size % PAGE_SIZE == 0 &&
+-					OFF_SLAB(cachep))
+-				kernel_map_pages(virt_to_page(objp),
+-					cachep->size / PAGE_SIZE, 1);
+-			else
+-				check_poison_obj(cachep, objp);
+-#else
++		if (cachep->flags & SLAB_POISON)
+ 			check_poison_obj(cachep, objp);
+-#endif
+-		}
++
+ 		if (cachep->flags & SLAB_RED_ZONE) {
+ 			if (*dbg_redzone1(cachep, objp) != RED_INACTIVE)
+ 				slab_error(cachep, "start of a freed object "
+@@ -2227,14 +2183,6 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 		else
+ 			size += BYTES_PER_WORD;
+ 	}
+-#if FORCED_DEBUG && defined(CONFIG_DEBUG_PAGEALLOC)
+-	if (size >= kmalloc_size(INDEX_NODE + 1)
+-	    && cachep->object_size > cache_line_size()
+-	    && ALIGN(size, cachep->align) < PAGE_SIZE) {
+-		cachep->obj_offset += PAGE_SIZE - ALIGN(size, cachep->align);
+-		size = PAGE_SIZE;
+-	}
+-#endif
+ #endif
+ 
+ 	/*
+@@ -2273,15 +2221,6 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 	if (flags & CFLGS_OFF_SLAB) {
+ 		/* really off slab. No need for manual alignment */
+ 		freelist_size = cachep->num * sizeof(unsigned int);
+-
+-#ifdef CONFIG_PAGE_POISONING
+-		/* If we're going to use the generic kernel_map_pages()
+-		 * poisoning, then it's going to smash the contents of
+-		 * the redzone and userword anyhow, so switch them off.
+-		 */
+-		if (size % PAGE_SIZE == 0 && flags & SLAB_POISON)
+-			flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
+-#endif
+ 	}
+ 
+ 	cachep->colour_off = cache_line_size();
+@@ -2581,10 +2520,6 @@ static void cache_init_objs(struct kmem_cache *cachep,
+ 				slab_error(cachep, "constructor overwrote the"
+ 					   " start of an object");
+ 		}
+-		if ((cachep->size % PAGE_SIZE) == 0 &&
+-			    OFF_SLAB(cachep) && cachep->flags & SLAB_POISON)
+-			kernel_map_pages(virt_to_page(objp),
+-					 cachep->size / PAGE_SIZE, 0);
+ #else
+ 		if (cachep->ctor)
+ 			cachep->ctor(objp);
+@@ -2797,19 +2732,9 @@ static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
+ 	BUG_ON(objnr >= cachep->num);
+ 	BUG_ON(objp != index_to_obj(cachep, page, objnr));
+ 
+-	if (cachep->flags & SLAB_POISON) {
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-		if ((cachep->size % PAGE_SIZE)==0 && OFF_SLAB(cachep)) {
+-			store_stackinfo(cachep, objp, caller);
+-			kernel_map_pages(virt_to_page(objp),
+-					 cachep->size / PAGE_SIZE, 0);
+-		} else {
+-			poison_obj(cachep, objp, POISON_FREE);
+-		}
+-#else
++	if (cachep->flags & SLAB_POISON)
+ 		poison_obj(cachep, objp, POISON_FREE);
+-#endif
+-	}
++
+ 	return objp;
  }
  
- static int rtl8152_suspend(struct usb_interface *intf, pm_message_t message)
-@@ -3105,6 +3135,64 @@ out:
- 	return ret;
- }
- 
-+static const char rtl8152_gstrings[][ETH_GSTRING_LEN] = {
-+	"tx_packets",
-+	"rx_packets",
-+	"tx_errors",
-+	"rx_errors",
-+	"rx_missed",
-+	"align_errors",
-+	"tx_single_collisions",
-+	"tx_multi_collisions",
-+	"rx_unicast",
-+	"rx_broadcast",
-+	"rx_multicast",
-+	"tx_aborted",
-+	"tx_underrun",
-+};
-+
-+static int rtl8152_get_sset_count(struct net_device *dev, int sset)
-+{
-+	switch (sset) {
-+	case ETH_SS_STATS:
-+		return ARRAY_SIZE(rtl8152_gstrings);
-+	default:
-+		return -EOPNOTSUPP;
-+	}
-+}
-+
-+static void rtl8152_get_ethtool_stats(struct net_device *dev,
-+				      struct ethtool_stats *stats, u64 *data)
-+{
-+	struct r8152 *tp = netdev_priv(dev);
-+	struct tally_counter tally;
-+
-+	generic_ocp_read(tp, PLA_TALLYCNT, sizeof(tally), &tally, MCU_TYPE_PLA);
-+
-+	data[0] = le64_to_cpu(tally.tx_packets);
-+	data[1] = le64_to_cpu(tally.rx_packets);
-+	data[2] = le64_to_cpu(tally.tx_errors);
-+	data[3] = le32_to_cpu(tally.rx_errors);
-+	data[4] = le16_to_cpu(tally.rx_missed);
-+	data[5] = le16_to_cpu(tally.align_errors);
-+	data[6] = le32_to_cpu(tally.tx_one_collision);
-+	data[7] = le32_to_cpu(tally.tx_multi_collision);
-+	data[8] = le64_to_cpu(tally.rx_unicast);
-+	data[9] = le64_to_cpu(tally.rx_broadcast);
-+	data[10] = le32_to_cpu(tally.rx_multicast);
-+	data[11] = le16_to_cpu(tally.tx_aborted);
-+	data[12] = le16_to_cpu(tally.tx_underun);
-+}
-+
-+static void rtl8152_get_strings(struct net_device *dev, u32 stringset, u8 *data)
-+{
-+	switch (stringset) {
-+	case ETH_SS_STATS:
-+		memcpy(data, *rtl8152_gstrings, sizeof(rtl8152_gstrings));
-+		break;
-+	}
-+}
-+
- static struct ethtool_ops ops = {
- 	.get_drvinfo = rtl8152_get_drvinfo,
- 	.get_settings = rtl8152_get_settings,
-@@ -3114,6 +3202,9 @@ static struct ethtool_ops ops = {
- 	.set_msglevel = rtl8152_set_msglevel,
- 	.get_wol = rtl8152_get_wol,
- 	.set_wol = rtl8152_set_wol,
-+	.get_strings = rtl8152_get_strings,
-+	.get_sset_count = rtl8152_get_sset_count,
-+	.get_ethtool_stats = rtl8152_get_ethtool_stats,
- };
- 
- static int rtl8152_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
+@@ -2933,15 +2858,7 @@ static void *cache_alloc_debugcheck_after(struct kmem_cache *cachep,
+ 	if (!objp)
+ 		return objp;
+ 	if (cachep->flags & SLAB_POISON) {
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-		if ((cachep->size % PAGE_SIZE) == 0 && OFF_SLAB(cachep))
+-			kernel_map_pages(virt_to_page(objp),
+-					 cachep->size / PAGE_SIZE, 1);
+-		else
+-			check_poison_obj(cachep, objp);
+-#else
+ 		check_poison_obj(cachep, objp);
+-#endif
+ 		poison_obj(cachep, objp, POISON_INUSE);
+ 	}
+ 	if (cachep->flags & SLAB_STORE_USER)
 -- 
-1.8.4.2
+1.7.9.5
 
