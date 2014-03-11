@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaCKOVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 10:21:53 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:23848 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582AbaCKOVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 10:21:52 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-ba-531f1bfdb0a0
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+	id S1752248AbaCKO0i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 10:26:38 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:51913 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751590AbaCKO0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 10:26:37 -0400
+Message-ID: <531F1D18.4060109@mev.co.uk>
+Date: Tue, 11 Mar 2014 14:26:32 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Chase Southwood <chase.southwood@yahoo.com>, gregkh@linuxfoundation.org
+CC: hsweeten@visionengravers.com, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] mfd: max14577: Select REGMAP_IRQ
-Date: Tue, 11 Mar 2014 15:21:42 +0100
-Message-id: <1394547702-29775-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKJMWRmVeSWpSXmKPExsVy+t/xy7p/peWDDd7vMrB4/cLQ4v7Xo4wW
-	l3fNYbM43c3qwOJx59oeNo95JwM9+rasYvT4vEkugCWKyyYlNSezLLVI3y6BK+PsiguMBc9Y
-	Kpq/NzE2MH5m7mLk5JAQMJFY+2EXO4QtJnHh3nq2LkYuDiGBpYwS2898AEsICfQxSbR164LY
-	bALGEpuXL2EDsUUEsiR+TFvNAmIzCxhK/Hz3B6xeGMhe1HCACcRmEVCVeLLgOpjNK+AuceTi
-	N6BeDqBlChJzJtlMYORewMiwilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyPE6192MC4+ZnWI
-	UYCDUYmHd4W/XLAQa2JZcWXuIUYJDmYlEd5kcflgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYx8
-	ZUck9l1pe5lQV3Rt18kYExa/IyZ7zv2qjtNa9dBjujvHHA3bS8ul3KOWexVcy5fZIjMlbN48
-	9rKlv3ayF/2zOpqmWLogxzTtXezvfv378p364mbZq8qX2f7bfqfDU0/y//ZZ2le1Frh8mGLH
-	/P2+6KmfJbI7qlfqXM3SvOsgt+3grDsdeiFKLMUZiYZazEXFiQAvsvqp2AEAAA==
+Subject: Re: [PATCH v3 1/2] Staging: comedi: convert while loops to timeouts
+ in s626.c
+References: <20140309030056.GA10867@kroah.com> <1394337654-27379-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1394337654-27379-1-git-send-email-chase.southwood@yahoo.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAXIM 14577 MFD driver uses the regmap_irq_chip so it's Kconfig entry
-should select REGMAP_IRQ.
+On 2014-03-09 04:00, Chase Southwood wrote:
+> This patch changes a handful of while loops to timeouts to prevent
+> infinite looping on hardware failure. A couple such loops are in a
+> function (s626_debi_transfer()) which is called from critical sections,
+> so comedi_timeout() is unusable for them, and an iterative timeout is
+> used instead. For the while loops in a context where comedi_timeout() is
+> allowed, a new callback function, s626_send_dac_eoc(), has been defined
+> to evaluate the conditions that the while loops are testing.  The new
+> callback employs a switch statement based on a simple new enum so that
+> it is usable for all of the different conditions tested in while loops
+> in s626_send_dac().  The proper comedi_timeout() calls are then used.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
+> Ian, here is a version of this patchset employing the enum you recommended.
+> The second patch has been rebased on top of this one.
+>
+> 2: Used comedi_timeout() where appropriate, introduce callback function
+>
+> 3: Updated callback to switch on new enum.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/mfd/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 49bb445d846a..50dd5654d356 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -322,6 +322,7 @@ config MFD_MAX14577
- 	depends on I2C=y
- 	select MFD_CORE
- 	select REGMAP_I2C
-+	select REGMAP_IRQ
- 	select IRQ_DOMAIN
- 	help
- 	  Say yes here to support for Maxim Semiconductor MAX14577.
+For future reference, for patches affecting a single comedi driver, we 
+usually title the patches like this:
+
+staging: comedi: name_of_driver: summary of patch
+
 -- 
-1.7.9.5
-
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
