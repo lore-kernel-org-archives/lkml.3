@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856AbaCKKoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:44:08 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:52099 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820AbaCKKoE (ORCPT
+	id S1754755AbaCKKpJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:45:09 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60419 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaCKKpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:44:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Liviu Dudau <liviu@dudau.co.uk>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v6 6/6] pci: Add support for creating a generic host_bridge from device tree
-Date: Tue, 11 Mar 2014 11:43:39 +0100
-Message-ID: <2664356.LLPHGvlG5M@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140311094641.GA27064@e106497-lin.cambridge.arm.com>
-References: <1394020137-1830-1-git-send-email-Liviu.Dudau@arm.com> <4254618.BlpDUOctDb@wuerfel> <20140311094641.GA27064@e106497-lin.cambridge.arm.com>
+	Tue, 11 Mar 2014 06:45:06 -0400
+Date: Tue, 11 Mar 2014 10:45:01 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Message-ID: <20140311104501.GM28112@sirena.org.uk>
+References: <1394531952-3905-1-git-send-email-geert@linux-m68k.org>
+ <1394531952-3905-2-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ewz9TtT1rFUcxB9+UIyR5eM2qW3LqFSjnudNBwKNJMq
- 43nHtUrQp7I+SVPLUNxMxXu6cev4GVo/HQX0Vu6fiR+T0WcE+p
- SkkD5ijN40fI780Sa1jRQcZVX68UsxV3M6TPBY3LMKjhnELa5N
- C1ZM3BvGKhXSxAMHae6Fg4uD8r5gF6iZkDpO6d9msM6iFglFlR
- 3L176Ao+BgBncFjzk/DtRiA6IyIOmZsefVNc9FKhG9aFr2Rde5
- 83UzflRxedsr/ZILvM2jGPIZ9kRq/Ou/VXxJUf6kagSjXhJbfq
- rZiXu0PEYat31YSrmAE+s7B253Fa8ggfljT5UXnfgQqQnkbRh6
- zaFsyzVaMdjJi2rAVg2o=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1UYQ7+YJ04uCMQbO"
+Content-Disposition: inline
+In-Reply-To: <1394531952-3905-2-git-send-email-geert@linux-m68k.org>
+X-Cookie: Oh no, not again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] spi: sh-msiof: Convert to spi core auto_runtime_pm
+ framework
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 March 2014 09:46:41 Liviu Dudau wrote:
-> On Tue, Mar 11, 2014 at 06:50:24AM +0000, Arnd Bergmann wrote:
-> > On Monday 10 March 2014 21:56:00 Liviu Dudau wrote:
-> > > 
-> > > PCI_IOBASE is always defined. See the discussion with Russell on this subject.
-> > > 
-> > > include/asm-generic/io.h has at line 118:
-> > > 
-> > > #ifndef PCI_IOBASE
-> > > #define PCI_IOBASE ((void __iomem *) 0)
-> > > #endif
-> > 
-> > That is only defined for those that use asm-generic/pci.h, which most architectures
-> > don't.
-> 
-> I think it is defined for anyone that #includes <asm-generic/io.h>. There is no other
-> #ifdef around that.
-> 
 
-My mistake, I meant to write asm-generic/io.h.
+--1UYQ7+YJ04uCMQbO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On a related note, I would actually prefer to get rid of this PCI_IOBASE
-default and move it into the architectures that really want it like this.
-The default when PCI_IOBASE is not set IMHO should be to also not provide
-inb/outb and ioport_map() helpers, but we need a little more infrastructure
-to actually make the kernel build in all valid configuration when we remove them.
+On Tue, Mar 11, 2014 at 10:59:11AM +0100, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-	Arnd
+Applied, thanks.
+
+--1UYQ7+YJ04uCMQbO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTHukpAAoJELSic+t+oim9Y10QAJNGQaUHHHBOzF0XF8MX3ZlL
+4+k4Hra7LZ0Rp5ubClBK+5NfXPPoouPYrGIG9KjsyrJq3HhN4ajDH+goEOIVhllO
+idCaCXqyqiOzQlXz7jDmWHzTrr7zSkwcU2L6VBXUq8DPZwO3oMf01bCdLg9SBgZ1
+jEcrxluELvviWcd44TstEmnlAelJgmgvoTQfrrY3cDeRhUEjmI77JXPeCb6ynGDU
+I5E06riJgo0CdqD0Y+e7dd63RJNUlTc/cT0/AU9leHfByPVyLo9NXlBQnw/83t92
+QJLyY4h+kYQ7ofOSvi6psAxeWuJJqJgpflZcs/BbdS404GcQ3UcPfRWCU6MGmorA
+EcnQmw7cA56el5xiLvmdgItvvwm8OVy3hKGF8v06IE75RNNSAH+oLD14pEiROWqC
+OwRZ9KPrd1fkQcOpVfFS0j15kxNeoM+JQE5mHYR0CcDrUwuCetOxkXZubEgYaJZX
+Towf8w4iGG6eD8pG9Tnt8PTIY0sLsvWIkymZF86k+MgBiYN359tjBYImDfbP6/Ji
+A2wVWlqNA+e+hpuq2v57lZYNFThs03Yh5W1/ss/BHKPN27MfBiCOt45JS1J8aFeI
+78LGqtj/bodWTW3O4cNiTW0XqlNxkVsoHBBNmIbiq/I5DWA+C96csNZe961UgvuD
+CajT45wjqyHefdeN1zCH
+=nKLy
+-----END PGP SIGNATURE-----
+
+--1UYQ7+YJ04uCMQbO--
