@@ -1,93 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092AbaCKSgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:36:15 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:65362 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897AbaCKSgM (ORCPT
+	id S1755238AbaCKShS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:37:18 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:39288 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498AbaCKShQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:36:12 -0400
-Message-ID: <531F5799.2070302@linaro.org>
-Date: Tue, 11 Mar 2014 14:36:09 -0400
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 11 Mar 2014 14:37:16 -0400
 MIME-Version: 1.0
-To: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>
-CC: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] uprobes: Add uprobes support for ARM
-References: <1394223040-17129-1-git-send-email-dave.long@linaro.org>
-In-Reply-To: <1394223040-17129-1-git-send-email-dave.long@linaro.org>
+In-Reply-To: <CA+mB=1JMsUojCE4+AtR2D5znNBv=YXGiFxLkJeJ77cZdTgCuZw@mail.gmail.com>
+References: <1394104717-3100-1-git-send-email-sthokal@xilinx.com>
+	<1394104717-3100-3-git-send-email-sthokal@xilinx.com>
+	<CABb+yY1y1sOozVU=iAsotWG-q3N=SogjHjZ=iF04CiXF89eeOg@mail.gmail.com>
+	<CA+mB=1J6Lzy5fZ6+fU0xY5zLyeDtrjtUpJCYdM7eL-tsQ+jUVA@mail.gmail.com>
+	<CAJe_Zhej0-i4uEPvXr3XH_8Qzd7SD-3yvJOp+MW4j+KJ8rt1PQ@mail.gmail.com>
+	<CA+mB=1JMsUojCE4+AtR2D5znNBv=YXGiFxLkJeJ77cZdTgCuZw@mail.gmail.com>
+Date: Wed, 12 Mar 2014 00:07:14 +0530
+X-Google-Sender-Auth: hfxtMx_bZK8yBEggMJ8lrA0pWBA
+Message-ID: <CA+mB=1L0kgVgFhtfUryYtF_YYtzwWttvwN-eX6skVdsaxZ18Zw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 12, 2014 at 12:02 AM, Srikanth Thokala <sthokal@xilinx.com> wrote:
+> On Tue, Mar 11, 2014 at 7:14 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+>> On 11 March 2014 00:00, Srikanth Thokala <sthokal@xilinx.com> wrote:
+>>> On Mon, Mar 10, 2014 at 9:30 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>>>> On Thu, Mar 6, 2014 at 7:18 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
+>>>>
+>>>>> +static struct dma_async_tx_descriptor *
+>>>>> +xilinx_vdma_dma_prep_interleaved(struct dma_chan *dchan,
+>>>>> +                                struct dma_interleaved_template *xt,
+>>>>> +                                unsigned long flags)
+>>>>> +{
+>>>>> +       struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+>>>>> +       struct xilinx_vdma_tx_descriptor *desc;
+>>>>> +       struct xilinx_vdma_tx_segment *segment;
+>>>>> +       struct xilinx_vdma_tx_segment *prev = NULL;
+>>>>> +       int i;
+>>>>> +
+>>>>> +       if ((xt->dir != DMA_MEM_TO_DEV) && (xt->dir != DMA_DEV_TO_MEM))
+>>>>> +               return NULL;
+>>>>> +
+>>>>> +       if (!xt->numf || !xt->sgl[0].size)
+>>>>> +               return NULL;
+>>>>> +
+>>>>> +       /* Allocate a transaction descriptor. */
+>>>>> +       desc = xilinx_vdma_alloc_tx_descriptor(chan);
+>>>>> +       if (!desc)
+>>>>> +               return NULL;
+>>>>> +
+>>>>> +       dma_async_tx_descriptor_init(&desc->async_tx, &chan->common);
+>>>>> +       desc->async_tx.tx_submit = xilinx_vdma_tx_submit;
+>>>>> +       desc->async_tx.cookie = 0;
+>>>>> +       async_tx_ack(&desc->async_tx);
+>>>>> +
+>>>>> +       /* Build the list of transaction segments. */
+>>>>> +       for (i = 0; i < xt->frame_size; i++) {
+>>>>> +               struct xilinx_vdma_desc_hw *hw;
+>>>>> +
+>>>>> +               /* Allocate the link descriptor from DMA pool */
+>>>>> +               segment = xilinx_vdma_alloc_tx_segment(chan);
+>>>>> +               if (!segment)
+>>>>> +                       goto error;
+>>>>> +
+>>>>> +               /* Fill in the hardware descriptor */
+>>>>> +               hw = &segment->hw;
+>>>>> +               hw->vsize = xt->numf;
+>>>>> +               hw->hsize = xt->sgl[0].size;
+>>>>> +               hw->stride = xt->sgl[0].icg <<
+>>>>> +                               XILINX_VDMA_FRMDLY_STRIDE_STRIDE_SHIFT;
+>>>>>
+>>>> It seems the xt->frame_size is (should be?) always going to be 1?
+>>>> If yes, the for-loop isn't needed.
+>>>> If no, you should probably use 'i' as the index to sgl[], and not always 0.
+>>>
+>>> It can be either
+>>> '1':  User can queue each segment and submit all the segments at once as a
+>>>       single async tx descriptor.  I am using this for scatter-gather mode of
+>>>       operation where the src_start/dst_start is different for each segment.
+>>> 'Number of frames':  In this case the driver gets contiguous frame buffer memory
+>>>       and it prepares segments with addresses as multiples of
+>>> src_start/dst_start.
+>>>
+>> Quoting you from earlier thread ....
+>> " In video frame context,
+>> chunk.size -> hsize
+>> chunk.icg -> stride
+>> numf -> vsize
+>> and frame_size is always 1 as it will have only one chunk in a line. "
+>>  ... which makes sense.
+>>
+>> I hope you realize that, 'frame_size' denotes the number of chunks in
+>> a frame and 'numf' denotes the number of frames in the transfer
+>> request. It seems wrong when you assume  vsize:=numf  but
+>> frame_size>1 ... i.e, each horizontal video line has two or more
+>> dis-contiguous chunks?   This might work for client drivers written
+>> specifically for Xilinx AXI Video DMAC but will fail over any other
+>> controller driver.
+>>
+>>  IMO, xilinx_vdma.c should expect only 1 video frame per
+>> device_prep_interleaved_dma() call (i.e, vsize=numf and frame_size==1)
+>>   Let the client driver submit 1/2/.../16 requests before kick
+>> starting the DMA. Upon  dma_async_tx_descriptor.callback(), the client
+>> 'refills' the frame and re-queues it back. This should work because
+>> the video-frames' attributes and locations are not going to change
+>> within a session.
+>>
+>>> Please let me know if you see any issues in this implementation.
+>>>
+>> I am ok if you want the driver upstream now and want to 'fix' it when
+>> you actually start seeing problems :)
+>
+> I agree with you and I have no issues in fixing this now.  I will fix
+> it in my v6
 
-The following changes since commit 2d100bc71fcada9e8252fbee3e414add292d118c:
+Apologies, it is v5.
 
-  Merge tag 'v3.14-rc5' of https://github.com/torvalds/linux (2014-03-02 23:04:25 -0500)
-
-are available in the git repository at:
-
-
-  git://git.linaro.org/people/dave.long/linux.git uprobes-v7
-
-for you to fetch changes up to e55c35236b8adf79453a998506ec6081833b9484:
-
-  ARM: add uprobes support (2014-03-11 11:40:29 -0400)
-
-----------------------------------------------------------------
-David A. Long (15):
-      uprobes: Kconfig dependency fix
-      ARM: Fix missing includes in kprobes sources
-      uprobes: allow ignoring of probe hits
-      ARM: move shared uprobe/kprobe definitions into new include file
-      ARM: Move generic arm instruction parsing code to new files for sharing between features
-      ARM: move generic thumb instruction parsing code to new files for use by other feature
-      ARM: use a function table for determining instruction interpreter action
-      ARM: Remove use of struct kprobe from generic probes code
-      ARM: Make the kprobes condition_check symbol names more generic
-      ARM: Change more ARM kprobes symbol names to something more generic
-      ARM: Rename the shared kprobes/uprobe return value enum
-      ARM: Change the remaining shared kprobes/uprobes symbols to something generic
-      ARM: Add an emulate flag to the kprobes/uprobes instruction decode functions
-      ARM: Make arch_specific_insn a define for new arch_probes_insn structure
-      ARM: add uprobes support
-
- arch/Kconfig                       |    6 +-
- arch/arm/Kconfig                   |    3 +
- arch/arm/include/asm/kprobes.h     |   17 +-
- arch/arm/include/asm/probes.h      |   43 ++
- arch/arm/include/asm/ptrace.h      |    6 +
- arch/arm/include/asm/thread_info.h |    5 +-
- arch/arm/include/asm/uprobes.h     |   45 ++
- arch/arm/kernel/Makefile           |    7 +-
- arch/arm/kernel/kprobes-arm.c      |  806 +++----------------------
- arch/arm/kernel/kprobes-common.c   |  469 +--------------
- arch/arm/kernel/kprobes-test-arm.c |    1 +
- arch/arm/kernel/kprobes-test.c     |   12 +-
- arch/arm/kernel/kprobes-thumb.c    | 1145 ++++++------------------------------
- arch/arm/kernel/kprobes.c          |   25 +-
- arch/arm/kernel/kprobes.h          |  400 +------------
- arch/arm/kernel/probes-arm.c       |  734 +++++++++++++++++++++++
- arch/arm/kernel/probes-arm.h       |   73 +++
- arch/arm/kernel/probes-thumb.c     |  882 +++++++++++++++++++++++++++
- arch/arm/kernel/probes-thumb.h     |   97 +++
- arch/arm/kernel/probes.c           |  455 ++++++++++++++
- arch/arm/kernel/probes.h           |  407 +++++++++++++
- arch/arm/kernel/signal.c           |    4 +
- arch/arm/kernel/uprobes-arm.c      |  234 ++++++++
- arch/arm/kernel/uprobes.c          |  210 +++++++
-
+> with the driver accepting only one frame/interleave_dma call.
+>
+> But, I feel this information has to be documented to the description of
+> interleaved_dma API as it is leading to interpret the members of this
+> structure differently wrt video frame terminology.
+>
+> Thanks
+> Srikanth
+>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
