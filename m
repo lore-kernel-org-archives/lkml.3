@@ -1,236 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563AbaCKTQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 15:16:49 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50165 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755083AbaCKTQr (ORCPT
+	id S1755258AbaCKTSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 15:18:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:24986 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478AbaCKTSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 15:16:47 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ruchi Kandoi <kandoiruchi@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        ghackmann@google.com
-Subject: Re: [PATCH] power: add an API to log wakeup reasons
-Date: Tue, 11 Mar 2014 20:32:08 +0100
-Message-ID: <3827847.Gih6ie3Ah6@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1394503322-25210-1-git-send-email-kandoiruchi@google.com>
-References: <1394503322-25210-1-git-send-email-kandoiruchi@google.com>
+	Tue, 11 Mar 2014 15:18:13 -0400
+Message-ID: <531F616A.7060300@oracle.com>
+Date: Tue, 11 Mar 2014 15:18:02 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Mel Gorman <mgorman@suse.de>
+CC: Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com,
+        knoel@redhat.com, aarcange@redhat.com
+Subject: Re: [PATCH -mm] mm,numa,mprotect: always continue after finding a
+ stable thp page
+References: <5318E4BC.50301@oracle.com> <20140306173137.6a23a0b2@cuia.bos.redhat.com> <5318FC3F.4080204@redhat.com> <20140307140650.GA1931@suse.de> <20140307150923.GB1931@suse.de> <20140307182745.GD1931@suse.de> <20140311162845.GA30604@suse.de> <531F3F15.8050206@oracle.com> <531F4128.8020109@redhat.com> <531F48CC.303@oracle.com> <20140311180652.GM10663@suse.de>
+In-Reply-To: <20140311180652.GM10663@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 10, 2014 07:02:02 PM Ruchi Kandoi wrote:
-> Add API log_wakeup_reason() and expose it to userspace via sysfs path
-> /sys/kernel/wakeup_reasons/last_resume_reason
-> This is useful for power management diagnostic purposes.
+On 03/11/2014 02:06 PM, Mel Gorman wrote:
+> On Tue, Mar 11, 2014 at 01:33:00PM -0400, Sasha Levin wrote:
+>> Okay. So just this patch on top of the latest -next shows the following issues:
+>>
+>> 1. BUG in task_numa_work:
+>>
+>> [  439.417171] BUG: unable to handle kernel paging request at ffff880e17530c00
+>> [  439.418216] IP: [<ffffffff81299385>] vmacache_find+0x75/0xa0
+>> [  439.419073] PGD 8904067 PUD 1028fcb067 PMD 1028f10067 PTE 8000000e17530060
+>> [  439.420340] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>> [  439.420340] Dumping ftrace buffer:
+>> [  439.420340]    (ftrace buffer empty)
+>> [  439.420340] Modules linked in:
+>> [  439.420340] CPU: 12 PID: 9937 Comm: trinity-c212 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00009-g3b24300-dirty #137
+>> [  439.420340] task: ffff880e1a45b000 ti: ffff880e1a490000 task.ti: ffff880e1a490000
+>> [  439.420340] RIP: 0010:[<ffffffff81299385>]  [<ffffffff81299385>] vmacache_find+0x75/0xa0
+>> [  439.420340] RSP: 0018:ffff880e1a491e68  EFLAGS: 00010286
+>> [  439.420340] RAX: ffff880e17530c00 RBX: 0000000000000000 RCX: 0000000000000001
+>> [  439.420340] RDX: 0000000000000001 RSI: 0000000000000000 RDI: ffff880e1a45b000
+>> [  439.420340] RBP: ffff880e1a491e68 R08: 0000000000000000 R09: 0000000000000000
+>> [  439.420340] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880e1ab75000
+>> [  439.420340] R13: ffff880e1ab75000 R14: 0000000000010000 R15: 0000000000000000
+>> [  439.420340] FS:  00007f3458c05700(0000) GS:ffff880d2b800000(0000) knlGS:0000000000000000
+>> [  439.420340] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [  439.420340] CR2: ffff880e17530c00 CR3: 0000000e1a472000 CR4: 00000000000006a0
+>> [  439.420340] Stack:
+>> [  439.420340]  ffff880e1a491e98 ffffffff812a7610 ffffffff8118de40 0000000000000117
+>> [  439.420340]  00000001000036da ffff880e1a45b000 ffff880e1a491ef8 ffffffff8118de4b
+>> [  439.420340]  ffff880e1a491ec8 ffffffff81269575 ffff880e1ab750a8 ffff880e1a45b000
+>> [  439.420340] Call Trace:
+>> [  439.420340]  [<ffffffff812a7610>] find_vma+0x20/0x90
+>> [  439.420340]  [<ffffffff8118de40>] ? task_numa_work+0x130/0x360
+>> [  439.420340]  [<ffffffff8118de4b>] task_numa_work+0x13b/0x360
+>> [  439.420340]  [<ffffffff81269575>] ? context_tracking_user_exit+0x195/0x1d0
+>> [  439.420340]  [<ffffffff8116c5be>] task_work_run+0xae/0xf0
+>> [  439.420340]  [<ffffffff8106ffbe>] do_notify_resume+0x8e/0xe0
+>> [  439.420340]  [<ffffffff844b17a2>] int_signal+0x12/0x17
+>> [  439.420340] Code: 42 10 00 00 00 00 48 c7 42 18 00 00 00 00 eb 38 66 0f 1f 44 00 00 31 d2 48 89 c7 48 63 ca 48 8b 84 cf b8 07 00 00 48 85 c0 74 0b <48> 39 30 77 06 48 3b 70 08 72 12 ff c2 83 fa 04 75 de 66 0f 1f
+>> [  439.420340] RIP  [<ffffffff81299385>] vmacache_find+0x75/0xa0
+>> [  439.420340]  RSP <ffff880e1a491e68>
+>> [  439.420340] CR2: ffff880e17530c00
+>>
+>
+> Ok, this does not look related. It looks like damage from the VMA caching
+> patches, possibly a use-after free. I'm skeptical that it's related to
+> automatic NUMA balancing as such based on the second trace you posted.
 
-What's the use case and how is it supposed to work?
+It's a bit weird because right after applying the patch I've hit this trace twice while
+never seeing it previously.
 
-> Signed-off-by: Ruchi Kandoi <kandoiruchi@google.com>
-> Signed-off-by: Greg Hackmann <ghackmann@google.com>
-> ---
->  include/linux/wakeup_reason.h |  23 +++++++
->  kernel/power/Makefile         |   2 +-
->  kernel/power/wakeup_reason.c  | 140 ++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 164 insertions(+), 1 deletion(-)
->  create mode 100644 include/linux/wakeup_reason.h
->  create mode 100644 kernel/power/wakeup_reason.c
-> 
-> diff --git a/include/linux/wakeup_reason.h b/include/linux/wakeup_reason.h
-> new file mode 100644
-> index 0000000..7ce50f0
-> --- /dev/null
-> +++ b/include/linux/wakeup_reason.h
-> @@ -0,0 +1,23 @@
-> +/*
-> + * include/linux/wakeup_reason.h
-> + *
-> + * Logs the reason which caused the kernel to resume
-> + * from the suspend mode.
-> + *
-> + * Copyright (C) 2014 Google, Inc.
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#ifndef _LINUX_WAKEUP_REASON_H
-> +#define _LINUX_WAKEUP_REASON_H
-> +
-> +void log_wakeup_reason(int irq);
-> +
-> +#endif /* _LINUX_WAKEUP_REASON_H */
-> diff --git a/kernel/power/Makefile b/kernel/power/Makefile
-> index 29472bf..f98f021 100644
-> --- a/kernel/power/Makefile
-> +++ b/kernel/power/Makefile
-> @@ -5,7 +5,7 @@ obj-y				+= qos.o
->  obj-$(CONFIG_PM)		+= main.o
->  obj-$(CONFIG_VT_CONSOLE_SLEEP)	+= console.o
->  obj-$(CONFIG_FREEZER)		+= process.o
-> -obj-$(CONFIG_SUSPEND)		+= suspend.o
-> +obj-$(CONFIG_SUSPEND)		+= suspend.o wakeup_reason.o
->  obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
->  obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
->  				   block_io.o
-> diff --git a/kernel/power/wakeup_reason.c b/kernel/power/wakeup_reason.c
-> new file mode 100644
-> index 0000000..188a6bf
-> --- /dev/null
-> +++ b/kernel/power/wakeup_reason.c
-> @@ -0,0 +1,140 @@
-> +/*
-> + * kernel/power/wakeup_reason.c
-> + *
-> + * Logs the reasons which caused the kernel to resume from
-> + * the suspend mode.
-> + *
-> + * Copyright (C) 2014 Google, Inc.
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/wakeup_reason.h>
-> +#include <linux/kernel.h>
-> +#include <linux/irq.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/io.h>
-> +#include <linux/kobject.h>
-> +#include <linux/sysfs.h>
-> +#include <linux/init.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/notifier.h>
-> +#include <linux/suspend.h>
-> +
-> +
-> +#define MAX_WAKEUP_REASON_IRQS 32
-> +static int irq_list[MAX_WAKEUP_REASON_IRQS];
-> +static int irqcount;
-> +static struct kobject *wakeup_reason;
-> +static spinlock_t resume_reason_lock;
-> +
-> +static ssize_t reason_show(struct kobject *kobj, struct kobj_attribute *attr,
-> +		char *buf)
-> +{
-> +	int irq_no, buf_offset = 0;
-> +	struct irq_desc *desc;
-> +	spin_lock(&resume_reason_lock);
-> +	for (irq_no = 0; irq_no < irqcount; irq_no++) {
-> +		desc = irq_to_desc(irq_list[irq_no]);
-> +		if (desc && desc->action && desc->action->name)
-> +			buf_offset += sprintf(buf + buf_offset, "%d %s\n",
-> +					irq_list[irq_no], desc->action->name);
-> +		else
-> +			buf_offset += sprintf(buf + buf_offset, "%d\n",
-> +					irq_list[irq_no]);
-> +	}
-> +	spin_unlock(&resume_reason_lock);
-> +	return buf_offset;
-> +}
-> +
-> +static struct kobj_attribute resume_reason = __ATTR(last_resume_reason, 0666,
-> +		reason_show, NULL);
-> +
-> +static struct attribute *attrs[] = {
-> +	&resume_reason.attr,
-> +	NULL,
-> +};
-> +static struct attribute_group attr_group = {
-> +	.attrs = attrs,
-> +};
-> +
-> +/*
-> + * logs all the wake up reasons to the kernel
-> + * stores the irqs to expose them to the userspace via sysfs
-> + */
-> +void log_wakeup_reason(int irq)
-> +{
-> +	struct irq_desc *desc;
-> +	desc = irq_to_desc(irq);
-> +	if (desc && desc->action && desc->action->name)
-> +		printk(KERN_INFO "Resume caused by IRQ %d, %s\n", irq,
-> +				desc->action->name);
-> +	else
-> +		printk(KERN_INFO "Resume caused by IRQ %d\n", irq);
-> +
-> +	spin_lock(&resume_reason_lock);
-> +	if (irqcount == MAX_WAKEUP_REASON_IRQS) {
-> +		spin_unlock(&resume_reason_lock);
-> +		printk(KERN_WARNING "Resume caused by more than %d IRQs\n",
-> +				MAX_WAKEUP_REASON_IRQS);
-> +		return;
-> +	}
-> +
-> +	irq_list[irqcount++] = irq;
-> +	spin_unlock(&resume_reason_lock);
-> +}
-> +
-> +/* Detects a suspend and clears all the previous wake up reasons*/
-> +static int wakeup_reason_pm_event(struct notifier_block *notifier,
-> +		unsigned long pm_event, void *unused)
-> +{
-> +	switch (pm_event) {
-> +	case PM_SUSPEND_PREPARE:
-> +		spin_lock(&resume_reason_lock);
-> +		irqcount = 0;
-> +		spin_unlock(&resume_reason_lock);
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +	return NOTIFY_DONE;
-> +}
-> +
-> +static struct notifier_block wakeup_reason_pm_notifier_block = {
-> +	.notifier_call = wakeup_reason_pm_event,
-> +};
-> +
-> +/* Initializes the sysfs parameter
-> + * registers the pm_event notifier
-> + */
-> +int __init wakeup_reason_init(void)
-> +{
-> +	int retval;
-> +	spin_lock_init(&resume_reason_lock);
-> +	retval = register_pm_notifier(&wakeup_reason_pm_notifier_block);
-> +	if (retval)
-> +		printk(KERN_WARNING "[%s] failed to register PM notifier %d\n",
-> +				__func__, retval);
-> +
-> +	wakeup_reason = kobject_create_and_add("wakeup_reasons", kernel_kobj);
-> +	if (!wakeup_reason) {
-> +		printk(KERN_WARNING "[%s] failed to create a sysfs kobject\n",
-> +				__func__);
-> +		return 1;
-> +	}
-> +	retval = sysfs_create_group(wakeup_reason, &attr_group);
-> +	if (retval) {
-> +		kobject_put(wakeup_reason);
-> +		printk(KERN_WARNING "[%s] failed to create a sysfs group %d\n",
-> +				__func__, retval);
-> +	}
-> +	return 0;
-> +}
-> +
-> +late_initcall(wakeup_reason_init);
-> 
+But it's very possible since there are quite a lot of different mm issues around right now.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> What does addr2line -e vmlinux ffffffff81299385 say? I want to be sure
+> it looks like a vma dereference without risking making a mistake
+> decoding it.
+
+mm/vmacache.c:75
+
+Or:
+
+	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+
+> 1. Does this bug trigger even if automatic NUMA balancing is disabled?
+
+(assuming we're talking about kernel BUG at mm/mmap.c:439!)
+
+Yes, same result with numa_balancing=disable.
+
+> 2. Does this bug trigger if DEBUG_PAGEALLOC is disabled? If it's a
+> 	use-after free then the bug would still be there.
+
+Still there.
+
+> 3. Can you test with the following patches reverted please?
+>
+> 	e15d25d9c827b4346a36a3a78dd566d5ad353402 mm-per-thread-vma-caching-fix-fix
+> 	e440e20dc76803cdab616b4756c201d5c72857f2 mm-per-thread-vma-caching-fix
+> 	0d9ad4220e6d73f63a9eeeaac031b92838f75bb3 mm: per-thread vma caching
+>
+> The last patch will not revert cleanly (least it didn't for me) but it
+> was just a case of git rm the two affected files, remove any include of
+> vmacache.h and commit the rest.
+
+Don't see the issues I've reported before now.
+
+
+
+Thanks,
+Sasha
