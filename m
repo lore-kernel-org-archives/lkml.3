@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457AbaCKLDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 07:03:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60540 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752325AbaCKLDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 07:03:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,630,1389772800"; 
-   d="scan'208";a="497602352"
-Date: Tue, 11 Mar 2014 13:11:02 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Lim Lee Booi <lee.booi.lim@intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 RESEND] i2c: designware-pci: set ideal HCNT, LCNT and
- SDA hold time value
-Message-ID: <20140311111102.GZ5018@intel.com>
-References: <1394537625-27205-1-git-send-email-chiau.ee.chew@intel.com>
+	id S1754025AbaCKLEz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 07:04:55 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:59817 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957AbaCKLEw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 07:04:52 -0400
+Date: Tue, 11 Mar 2014 12:04:47 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Waiman Long <waiman.long@hp.com>, arnd@arndb.de,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        akpm@linux-foundation.org, walken@google.com, andi@firstfloor.org,
+        riel@redhat.com, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org, oleg@redhat.com
+Subject: Re: [RFC][PATCH 0/7] locking: qspinlock
+Message-ID: <20140311110447.GA27009@gmail.com>
+References: <20140310154236.038181843@infradead.org>
+ <20140311104503.GA10916@gmail.com>
+ <20140311110202.GT27965@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394537625-27205-1-git-send-email-chiau.ee.chew@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <20140311110202.GT27965@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 07:33:45PM +0800, Chew Chiau Ee wrote:
-> From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> 
-> On Intel BayTrail, there was case whereby the resulting fast mode
-> bus speed becomes slower (~20% slower compared to expected speed)
-> if using the HCNT/LCNT calculated in the core layer. Thus, this
-> patch is added to allow pci glue layer to pass in optimal
-> HCNT/LCNT/SDA hold time values to core layer since the core
-> layer supports cofigurable HCNT/LCNT/SDA hold time values now.
-> 
-> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Tue, Mar 11, 2014 at 11:45:03AM +0100, Ingo Molnar wrote:
+> > 
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > Hi Waiman,
+> > > 
+> > > I promised you this series a number of days ago; sorry for the delay 
+> > > I've been somewhat unwell :/
+> > > 
+> > > That said, these few patches start with a (hopefully) simple and 
+> > > correct form of the queue spinlock, and then gradually build upon 
+> > > it, explaining each optimization as we go.
+> > > 
+> > > Having these optimizations as separate patches helps twofold; 
+> > > firstly it makes one aware of which exact optimizations were done, 
+> > > and secondly it allows one to proove or disprove any one step; 
+> > > seeing how they should be mostly identity transforms.
+> > > 
+> > > The resulting code is near to what you posted I think; however it 
+> > > has one atomic op less in the pending wait-acquire case for NR_CPUS 
+> > > != huge. It also doesn't do lock stealing; its still perfectly fair 
+> > > afaict.
+> > > 
+> > > Have I missed any tricks from your code?
+> > 
+> > Waiman, you indicated in the other thread that these look good to 
+> > you, right? If so then I can queue them up so that they form a 
+> > base for further work.
+> 
+> Ah, no that was on the qrwlock; I think we managed to cross wires 
+> somewhere.
+
+Oops, too many q-locks ;-)
+
+> I've got this entire pile waiting for something:
+> 
+>   lkml.kernel.org/r/20140210195820.834693028@infradead.org
+> 
+> That's 5 mutex patches and the 2 qrwlock patches. Not sure what to 
+> do with them. To merge or not, that is the question.
+
+Can merge them in tip:core/locking if there's no objections.
+
+Thanks,
+
+	Ingo
