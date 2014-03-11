@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115AbaCKQay (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 12:30:54 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:34409 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395AbaCKQav (ORCPT
+	id S1753860AbaCKQdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 12:33:32 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:48544 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304AbaCKQda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 12:30:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <531F365B.4060000@linux.intel.com>
-References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
-	<CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
-	<CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
-	<CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
-	<CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
-	<CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
-	<CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
-	<CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>
-	<531F365B.4060000@linux.intel.com>
-Date: Tue, 11 Mar 2014 09:30:51 -0700
-X-Google-Sender-Auth: J6nkL5lcnpDqVqJsKxFZp85jOQ8
-Message-ID: <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
-Subject: Re: [PATCH v2] x86: Remove compat vdso support
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Mar 2014 12:33:30 -0400
+Message-ID: <1394553778.31499.180.camel@bobble.lax.corp.google.com>
+Subject: Re: [PATCH] block:  Force sector and nr_sects to device alignment
+ and granularity.
+From: Frank Mayhar <fmayhar@google.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Mar 2014 09:02:58 -0700
+In-Reply-To: <x49wqg0bwb4.fsf@segfault.boston.devel.redhat.com>
+References: <1394474492.31499.177.camel@bobble.lax.corp.google.com>
+	 <x49wqg0bwb4.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 9:14 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->
-> As much as I wouldn't mind getting rid of the compat vdso, I really
-> don't understand why the trivial solution is being ruled out -- the
-> trivial solution being to just reserve a little more space in the fixmap
-> area.
+On Tue, 2014-03-11 at 11:15 -0400, Jeff Moyer wrote:
+> Frank Mayhar <fmayhar@google.com> writes:
+> 
+> > block:  Force sector and nr_sects to device alignment and granularity.
+> >
+> > In blkdev_issue_discard(), rather than sending an improperly-
+> > aligned discard to the device (where it may get an error),
+> > adjust the start and length to the block device alignment and
+> > granularity.  Don't fail if this leaves nothing to discard.
+> >
+> > Without this change, certain flash drivers can report invalid
+> > trim parameters (and will fail the command).  Per tytso, "given
+> > that discards are advisory, any part of the storage stack is
+> > free to drop discard requests silently."
+> 
+> And how do you get here with misaligned discards?
 
-No, the trivial solution is to stop adding crap to it.
+I don't understand the question.
 
-And no, "just reserve a little more space for it" is neither trivial
-nor a good idea. The fixed VDSO address is very much at the top of the
-address space, so you can't allocate more space for it unless you do
-one of
+The case that we were seeing was with an SSD that required TRIM on 8k
+boundaries and with an 8k granularity.  Since the file system was trying
+to do discards based on 4k alignment the driver complained mightily.
+-- 
+Frank Mayhar
+310-460-4042
 
- (a) make it non-contiguous
- (b) get rid of the hole that is the very last page
- (c) mess with the vsyscall pages and make it contiguous "backwards"
-
-all of which sound like *horrible* ideas. Certainly not "trivial solution".
-
-No, the trivial solution is to not mess with that legacy page at all.
-
-Why is *that* trivial solution not on the table? Why the heck are
-people hell-bent on changing this stupid legacy page around?
-
-I find this whole thread very annoying. We shouldn't care about
-x86-32, and certainly not from a performance angle - we should
-consider it a "it's done, don't touch it" issue.
-
-                 Linus
