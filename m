@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286AbaCKCCW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 22:02:22 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:51968 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993AbaCKCCT (ORCPT
+	id S1754348AbaCKCFa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 22:05:30 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:33390 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595AbaCKCF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 22:02:19 -0400
+	Mon, 10 Mar 2014 22:05:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140310.215104.2095195123238829635.davem@davemloft.net>
+In-Reply-To: <CA+55aFx7rdm9DGOTTgAKTHNkdfrvQYhT9PRs5MhUPr1gQzWEgA@mail.gmail.com>
 References: <1394431444-6987-1-git-send-email-ast@plumgrid.com>
 	<1394431444-6987-2-git-send-email-ast@plumgrid.com>
 	<20140310.215104.2095195123238829635.davem@davemloft.net>
-Date: Mon, 10 Mar 2014 19:02:18 -0700
-X-Google-Sender-Auth: v6FB-NHjUyApKq-uDmlIpjRkV9I
-Message-ID: <CA+55aFx7rdm9DGOTTgAKTHNkdfrvQYhT9PRs5MhUPr1gQzWEgA@mail.gmail.com>
+	<CA+55aFx7rdm9DGOTTgAKTHNkdfrvQYhT9PRs5MhUPr1gQzWEgA@mail.gmail.com>
+Date: Mon, 10 Mar 2014 19:05:28 -0700
+X-Google-Sender-Auth: 5MvFwogqj_vKJXWQflZpKsx7PW0
+Message-ID: <CA+55aFwB5Z74+zi5-9O9jPLxZDZDJjioaJa6MSWQjhVEn_hn4Q@mail.gmail.com>
 Subject: Re: [PATCH v8 net-next 1/3] filter: add Extended BPF interpreter and converter
 From: Linus Torvalds <torvalds@linux-foundation.org>
 To: David Miller <davem@davemloft.net>
@@ -37,40 +38,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 6:51 PM, David Miller <davem@davemloft.net> wrote:
-> From: Alexei Starovoitov <ast@plumgrid.com>
-> Date: Sun,  9 Mar 2014 23:04:02 -0700
+On Mon, Mar 10, 2014 at 7:02 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
->> +     unsigned int            jited:1;
->
-> The C language has a proper type for boolean states, please therefore
-> use 'bool', true, and false.
+> So please don't sell "bool" as some kind of panacea. It has at least
+> as many problems as it has advantages.
 
-No, the C standard actually has no such thing.
+Side note: not that bitfields are all that great either, partly
+because gcc tends to occasionally generate absolutely disgusting code
+for even simple things, and they have the worse-than-average problems
+with byte/bit ordering etc. So quite frankly, often "unsigned int
+flags" together with manual accesses is the way to go if you care
+about code generation quality. Of course, there's the whole
+convenience issue..
 
-In a structure, a bitfield is actually better than bool, because it
-takes only one bit. A "bool" takes at least a byte.
-
-Now, in this case it may not be an issue (looks like there are no
-other uses that can use the better packing, so bit/byte/word is all
-the same), but I really really want to make it clear that it is not at
-all true that "bool" is somehow better than a single-bit bitfield. The
-bitfield can pack *much* better, and I would actually say that it's
-generally a *better* idea to use a bitfield, because you can much more
-easily expand on it later by adding other bitfields.
-
-There are very few actual real advantages to "bool". The magic casting
-behavior is arguably an advantage (the implicit cast in assigning to a
-bitfield truncates to the low bits, the implicit cast on assignment to
-"bool" does a test against zero), but is also quite arguably a
-possible source of confusion and can cause problems down the line when
-converting from bool to a bitfield (for the afore-mentioned packing
-reasons).
-
-So please don't sell "bool" as some kind of panacea. It has at least
-as many problems as it has advantages.
-
-I would generally suggest that people only use "bool" for function
-return types, and absolutely nothing else. Seriously.
-
-              Linus
+          Linus
