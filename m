@@ -1,122 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbaCKCsw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 22:48:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10717 "EHLO mga02.intel.com"
+	id S1753794AbaCKCte (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 22:49:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36792 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752372AbaCKCsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 22:48:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,628,1389772800"; 
-   d="scan'208";a="497397830"
-From: Chew Chiau Ee <chiau.ee.chew@intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Lim Lee Booi <lee.booi.lim@intel.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] i2c: designware-pci: set ideal HCNT, LCNT and SDA hold time value
-Date: Tue, 11 Mar 2014 18:50:28 +0800
-Message-Id: <1394535028-23108-1-git-send-email-chiau.ee.chew@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1753584AbaCKCtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 22:49:18 -0400
+Date: Mon, 10 Mar 2014 22:49:06 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: bad rss-counter message in 3.14rc5
+Message-ID: <20140311024906.GA9191@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <20140305174503.GA16335@redhat.com>
+ <20140305175725.GB16335@redhat.com>
+ <20140307002210.GA26603@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140307002210.GA26603@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+On Thu, Mar 06, 2014 at 07:22:10PM -0500, Dave Jones wrote:
+ > On Wed, Mar 05, 2014 at 12:57:25PM -0500, Dave Jones wrote:
+ >  > On Wed, Mar 05, 2014 at 12:45:03PM -0500, Dave Jones wrote:
+ >  >  > I just saw this on my box that's been running trinity..
+ >  >  > 
+ >  >  > [48825.517189] BUG: Bad rss-counter state mm:ffff880177921d40 idx:0 val:1 (Not tainted)
+ >  >  > 
+ >  >  > There's nothing else, no trace, nothing.  Any ideas where to begin with this?
+ >  > 
+ >  > ah, on the serial console there was also this truncated warning..
+ >  > 
+ >  > [48825.517189] BUG: Bad rss-counter state mm:ffff880177921d40 idx:0 val:1 (Not tainted)
+ >  > [48924.133273] ------------[ cut here ]------------
+ >  > [48924.133391] kernel BUG at include/linux/swapops.h:131!
+ >  > 
+ >  > 	Dave
+ >  > 
+ >  > 124 static inline struct page *migration_entry_to_page(swp_entry_t entry)
+ >  > 125 {
+ >  > 126         struct page *p = pfn_to_page(swp_offset(entry));
+ >  > 127         /*
+ >  > 128          * Any use of migration entries may only occur while the
+ >  > 129          * corresponding page is locked
+ >  > 130          */
+ >  > 131         BUG_ON(!PageLocked(p));
+ >  > 132         return p;
+ >  > 133 }
+ > 
+ > I hit this again, this time a full trace made it over the serial console.
+ > This time there was no bad rss-counter message though.
+ > 
+ > kernel BUG at include/linux/swapops.h:131!
+ > invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+ > Modules linked in: snd_seq_dummy fuse hidp tun bnep rfcomm llc2 af_key ipt_ULOG can_raw nfnetlink scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc can_bcm can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 xfs libcrc32c coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic microcode pcspkr serio_raw btusb bluetooth 6lowpan_iphc rfkill usb_debug shpchp snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm e1000e ptp snd_timer snd pps_core soundcore
+ > CPU: 2 PID: 10002 Comm: trinity-c36 Not tainted 3.14.0-rc5+ #131 
+ > task: ffff880108966750 ti: ffff88018911a000 task.ti: ffff88018911a000
+ > RIP: 0010:[<ffffffff9d72d129>]  [<ffffffff9d72d129>] migration_entry_to_page.part.47+0x4/0x6
+ > RSP: 0000:ffff88018911bae8  EFLAGS: 00010246
+ > RAX: ffffea00048a8980 RBX: ffff8801a08ae020 RCX: 0000000000000000
+ > RDX: 0000000000000000 RSI: 0000000000000000 RDI: 3c00000000122a26
+ > RBP: ffff88018911bae8 R08: 0000000000000000 R09: 0000000000000000
+ > R10: 0000000000000000 R11: fffffffffffffffe R12: 0000000024544c3c
+ > R13: ffff88018911bc18 R14: 0000000040c00000 R15: 0000000040a04000
+ > FS:  0000000000000000(0000) GS:ffff88024d080000(0000) knlGS:0000000000000000
+ > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ > CR2: 0000000000000001 CR3: 00000001e3c27000 CR4: 00000000001407e0
+ > DR0: 0000000000ab5000 DR1: 0000000001008000 DR2: 0000000002230000
+ > DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+ > Stack:
+ >  ffff88018911bbc8 ffffffff9d17ec1e 0000000040d65fff 0000000040d65fff
+ >  ffff8801e3c27000 0000000040d66000 ffff88011c72e008 0000000040d66000
+ >  0000000040d65fff 0000000000000001 0000000040d66000 ffff88018911bb98
+ > Call Trace:
+ >  [<ffffffff9d17ec1e>] unmap_single_vma+0x89e/0x8a0
+ >  [<ffffffff9d17fd49>] unmap_vmas+0x49/0x90
+ >  [<ffffffff9d1890f5>] exit_mmap+0xe5/0x1a0
+ >  [<ffffffff9d068d13>] mmput+0x73/0x110
+ >  [<ffffffff9d06d022>] do_exit+0x2a2/0xb50
+ >  [<ffffffff9d07bb63>] ? __sigqueue_free.part.11+0x33/0x40
+ >  [<ffffffff9d07c39c>] ? __dequeue_signal+0x13c/0x220
+ >  [<ffffffff9d06e8cc>] do_group_exit+0x4c/0xc0
+ >  [<ffffffff9d07fd41>] get_signal_to_deliver+0x2d1/0x6d0
+ >  [<ffffffff9d0024c7>] do_signal+0x57/0x9d0
+ >  [<ffffffff9d11003e>] ? __acct_update_integrals+0x8e/0x120
+ >  [<ffffffff9d73d66b>] ? preempt_count_sub+0x6b/0xf0
+ >  [<ffffffff9d738ec1>] ? _raw_spin_unlock+0x31/0x50
+ >  [<ffffffff9d0aa0b1>] ? vtime_account_user+0x91/0xa0
+ >  [<ffffffff9d15215b>] ? context_tracking_user_exit+0x9b/0x100
+ >  [<ffffffff9d002eb1>] do_notify_resume+0x71/0xc0
+ >  [<ffffffff9d739c06>] retint_signal+0x46/0x90
+ > Code: df 48 c1 ff 06 49 01 fc 4c 89 e7 e8 79 ff ff ff 85 c0 74 0c 4c 89 e0 48 c1 e0 06 48 29 d8 eb 02 31 c0 5b 41 5c 5d c3 55 48 89 e5 <0f> 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55 31 f6 48 89 e5 e8
 
-On Intel BayTrail, there was case whereby the resulting fast mode
-bus speed becomes slower (~20% slower compared to expected speed)
-if using the HCNT/LCNT calculated in the core layer. Thus, this
-patch is added to allow pci glue layer to pass in optimal
-HCNT/LCNT/SDA hold time values to core layer since the core
-layer supports cofigurable HCNT/LCNT/SDA hold time values now.
+Anyone ? I'm hitting this trace on an almost daily basis, which is a pain
+while trying to reproduce a different bug..
 
----
-v2 changelog:
- * Add 'dw_' prefix to struct scl_sda_cfg
- * Add Baytrail HCNT/LCNT/SDA hold time values directly in the
-   struct instead of using macro definition
- * Replace tab before "=" with space in struct
-
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
----
- drivers/i2c/busses/i2c-designware-pcidrv.c |   28 ++++++++++++++++++++++++++++
- 1 files changed, 28 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
-index 094509bc..91d468f 100644
---- a/drivers/i2c/busses/i2c-designware-pcidrv.c
-+++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
-@@ -58,6 +58,14 @@ enum dw_pci_ctl_id_t {
- 	baytrail,
- };
- 
-+struct dw_scl_sda_cfg {
-+	u32 ss_hcnt;
-+	u32 fs_hcnt;
-+	u32 ss_lcnt;
-+	u32 fs_lcnt;
-+	u32 sda_hold;
-+};
-+
- struct dw_pci_controller {
- 	u32 bus_num;
- 	u32 bus_cfg;
-@@ -65,6 +73,7 @@ struct dw_pci_controller {
- 	u32 rx_fifo_depth;
- 	u32 clk_khz;
- 	u32 functionality;
-+	struct dw_scl_sda_cfg *scl_sda_cfg;
- };
- 
- #define INTEL_MID_STD_CFG  (DW_IC_CON_MASTER |			\
-@@ -77,6 +86,15 @@ struct dw_pci_controller {
- 					I2C_FUNC_SMBUS_WORD_DATA |	\
- 					I2C_FUNC_SMBUS_I2C_BLOCK)
- 
-+/* BayTrail HCNT/LCNT/SDA hold time */
-+static struct dw_scl_sda_cfg byt_config = {
-+	.ss_hcnt = 0x200,
-+	.fs_hcnt = 0x55,
-+	.ss_lcnt = 0x200,
-+	.fs_lcnt = 0x99,
-+	.sda_hold = 0x6,
-+};
-+
- static struct  dw_pci_controller  dw_pci_controllers[] = {
- 	[moorestown_0] = {
- 		.bus_num     = 0,
-@@ -148,6 +166,7 @@ static struct  dw_pci_controller  dw_pci_controllers[] = {
- 		.rx_fifo_depth = 32,
- 		.clk_khz = 100000,
- 		.functionality = I2C_FUNC_10BIT_ADDR,
-+		.scl_sda_cfg = &byt_config,
- 	},
- };
- static struct i2c_algorithm i2c_dw_algo = {
-@@ -187,6 +206,7 @@ static int i2c_dw_pci_probe(struct pci_dev *pdev,
- 	struct i2c_adapter *adap;
- 	int r;
- 	struct  dw_pci_controller *controller;
-+	struct dw_scl_sda_cfg *cfg;
- 
- 	if (id->driver_data >= ARRAY_SIZE(dw_pci_controllers)) {
- 		dev_err(&pdev->dev, "%s: invalid driver data %ld\n", __func__,
-@@ -224,6 +244,14 @@ static int i2c_dw_pci_probe(struct pci_dev *pdev,
- 				DW_DEFAULT_FUNCTIONALITY;
- 
- 	dev->master_cfg =  controller->bus_cfg;
-+	if (controller->scl_sda_cfg) {
-+		cfg = controller->scl_sda_cfg;
-+		dev->ss_hcnt = cfg->ss_hcnt;
-+		dev->fs_hcnt = cfg->fs_hcnt;
-+		dev->ss_lcnt = cfg->ss_lcnt;
-+		dev->fs_lcnt = cfg->fs_lcnt;
-+		dev->sda_hold_time = cfg->sda_hold;
-+	}
- 
- 	pci_set_drvdata(pdev, dev);
- 
--- 
-1.7.4.4
+	Dave
 
