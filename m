@@ -1,231 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaCKNFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:05:00 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:24212 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421AbaCKNE5 (ORCPT
+	id S1755025AbaCKNFj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:05:39 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:34156 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618AbaCKNFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:04:57 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-ff-531f09f6f740
-Message-id: <531F09E2.3070407@samsung.com>
-Date: Tue, 11 Mar 2014 14:04:34 +0100
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
- drivers/media/v4l2-core to drivers/of
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
- <5427810.BUKJ3iUXnO@avalon> <20140310145815.17595C405FA@trevor.secretlab.ca>
- <4339286.FzhQ2m6hoA@avalon>
-In-reply-to: <4339286.FzhQ2m6hoA@avalon>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/xy7rfOOWDDbYtN7WYf+Qcq8WBPzsY
-	Lc42vWG36Jy4hN3i8q45bBY9G7ayWty+zGtxcZ28xd17J1gsts47x2jRuvcIu8X3b9/YLP5u
-	38RicfhNO6vF+vm32Bz4PVqae9g8ds66y+4xu2Mmq8emVZ1sHneu7WHz6P9r4NG3ZRWjx/Eb
-	25k8Pm+SC+CM4rJJSc3JLEst0rdL4MqYNYW3YLlzxeeTsxgbGF+ZdjFyckgImEh8aDjICGGL
-	SVy4t56ti5GLQ0hgKaPE6QdvmCGcT4wSXS+XsoNU8QpoSXz58I0ZxGYRUJW4+f8NmM0moCnx
-	d/NNNhBbVCBCYu7EzWwQ9YISPybfYwGxRQSSJD6uvMoIMpRZ4C2LxNM3nWBFwgKpEmsP32aF
-	2LaZUeLX8Qlg2zgFNCTutq4Cs5kFdCT2t05jg7DlJTavecs8gVFgFpIls5CUzUJStoCReRWj
-	aGppckFxUnquoV5xYm5xaV66XnJ+7iZGSGx92cG4+JjVIUYBDkYlHt4V/nLBQqyJZcWVuYcY
-	JTiYlUR4L94DCvGmJFZWpRblxxeV5qQWH2Jk4uCUamBc4L7bIrb1YfCx6VtnPLzxVv/30YQ7
-	S1P+zDx3y/mLxEapbLMt/EYzp27lTVFlaJgpWHHx+eV42+5Yre/7XWMs+j77Fz6vtFM6sEvY
-	LX73n3yTs1I+rIwHXpswXLsZt2Yav9C+PIaGoBXv5LIup5/y3j3tqP1Cr7mmvlpHzqlZpgU4
-	f2YP6hRUYinOSDTUYi4qTgQAVtwJNIsCAAA=
+	Tue, 11 Mar 2014 09:05:34 -0400
+From: Rostislav Lisovy <lisovy@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
+        jan-niklas.meier@volkswagen.de,
+        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+Subject: [PATCH 4/5] cfg80211: Use 5MHz bandwidth by default when checking usable channels
+Date: Tue, 11 Mar 2014 14:05:13 +0100
+Message-Id: <1394543114-6700-5-git-send-email-rostislav.lisovy@fel.cvut.cz>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1394543114-6700-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+References: <1394543114-6700-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2014 04:15 PM, Laurent Pinchart wrote:
-> Hi Grant,
-> 
-> On Monday 10 March 2014 14:58:15 Grant Likely wrote:
->> On Mon, 10 Mar 2014 14:52:53 +0100, Laurent Pinchart wrote:
->>> On Monday 10 March 2014 12:18:20 Tomi Valkeinen wrote:
->>>> On 08/03/14 13:41, Grant Likely wrote:
->>>>>> Ok. If we go for single directional link, the question is then: which
->>>>>> way? And is the direction different for display and camera, which are
->>>>>> kind of reflections of each other?
->>>>>
->>>>> In general I would recommend choosing whichever device you would
->>>>> sensibly think of as a master. In the camera case I would choose the
->>>>> camera controller node instead of the camera itself, and in the
->>>>> display case I would choose the display controller instead of the
->>>>> panel. The binding author needs to choose what she things makes the
->>>>> most sense, but drivers can still use if it it turns out to be
->>>>> 'backwards'
->>>>
->>>> I would perhaps choose the same approach, but at the same time I think
->>>> it's all but clear. The display controller doesn't control the panel any
->>>> more than a DMA controller controls, say, the display controller.
->>>>
->>>> In fact, in earlier versions of OMAP DSS DT support I had a simpler port
->>>> description, and in that I had the panel as the master (i.e. link from
->>>> panel to dispc) because the panel driver uses the display controller's
->>>> features to provide the panel device a data stream.
->>>>
->>>> And even with the current OMAP DSS DT version, which uses the v4l2 style
->>>> ports/endpoints, the driver model is still the same, and only links
->>>> towards upstream are used.
->>>>
->>>> So one reason I'm happy with the dual-linking is that I can easily
->>>> follow the links from the downstream entities to upstream entities, and
->>>> other people, who have different driver model, can easily do the
->>>> opposite.
->>>>
->>>> But I agree that single-linking is enough and this can be handled at
->>>> runtime, even if it makes the code more complex. And perhaps requires
->>>> extra data in the dts, to give the start points for the graph.
->>>
->>> In theory unidirectional links in DT are indeed enough. However, let's not
->>> forget the following.
->>>
->>> - There's no such thing as single start points for graphs. Sure, in some
->>> simple cases the graph will have a single start point, but that's not a
->>> generic rule. For instance the camera graphs
->>> http://ideasonboard.org/media/omap3isp.ps and
->>> http://ideasonboard.org/media/eyecam.ps have two camera sensors, and thus
->>> two starting points from a data flow point of view. And if you want a
->>> better understanding of how complex media graphs can become, have a look
->>> at http://ideasonboard.org/media/vsp1.0.pdf (that's a real world example,
->>> albeit all connections are internal to the SoC in that particular case,
->>> and don't need to be described in DT).
->>>
->>> - There's also no such thing as a master device that can just point to
->>> slave devices. Once again simple cases exist where that model could work,
->>> but real world examples exist of complex pipelines with dozens of
->>> elements all implemented by a separate IP core and handled by separate
->>> drivers, forming a graph with long chains and branches. We thus need real
->>> graph bindings.
->>>
->>> - Finally, having no backlinks in DT would make the software
->>> implementation very complex. We need to be able to walk the graph in a
->>> generic way without having any of the IP core drivers loaded, and without
->>> any specific starting point. We would thus need to parse the complete DT
->>> tree, looking at all nodes and trying to find out whether they're part of
->>> the graph we're trying to walk. The complexity of the operation would be
->>> at best quadratic to the number of nodes in the whole DT and to the number
->>> of nodes in the graph.
->>
->> Not really. To being with, you cannot determine any meaning of a node
->> across the tree (aside from it being an endpoint)
-> 
-> That's the important part. I can assume the target node of the remote-endpoint 
-> phandle to be an endpoint, and can thus assume that it implements the of-graph 
-> bindings. That's all I need to be able to walk the graph in a generic way.
-> 
->> without also understanding the binding that the node is a part of. That
->> means you need to have something matching against the compatible string on
->> both ends of the linkage. For instance:
->>
->> panel {
->> 	compatible = "acme,lvds-panel";
->> 	lvds-port: port {
->> 	};
->> };
->>
->> display-controller {
->> 	compatible = "encom,video";
->> 	port {
->> 		remote-endpoint = <&lvds-port>;
->> 	};
->> };
->>
->> In the above example, the encom,video driver has absolutely zero
->> information about what the acme,lvds-panel binding actually implements.
->> There needs to be both a driver for the "acme,lvds-panel" binding and
->> one for the "encom,video" binding (even if the acme,lvds-panel binding
->> is very thin and defers the functionality to the video controller).
-> 
-> I absolutely agree with that. We need a driver for each device (in this case 
-> the acme panel and the encom display controller), and we need those drivers to 
-> register entities (in the generic sense of the term) for them to be able to 
-> communicate with each other. The display controller driver must not try to 
-> parse panel-specific properties from the panel node. However, as described 
-> above, I believe it can parse ports and endpoints to walk the graph.
-> 
->> What you want here is the drivers to register each side of the
->> connection. That could be modeled with something like the following
->> (pseudocode):
->>
->> struct of_endpoint {
->> 	struct list_head list;
->> 	struct device_node *ep_node;
->> 	void *context;
->> 	void (*cb)(struct of_endpoint *ep, void *data);
->> }
->>
->> int of_register_port(struct device *node, void (*cb)(struct of_endpoint *ep,
->> void *data), void *data) {
->> 	struct of_endpoint *ep = kzalloc(sizeof(*ep), GFP_KERNEL);
->>
->> 	ep->ep_node = node;
->> 	ep->data = data;
->> 	ep->callback = cb;
->>
->> 	/* store the endpoint to a list */
->> 	/* check if the endpoint has a remote-endpoint link */
->> 		/* If so, then link the two together and call the
->> 		 * callbacks */
->> }
->>
->> That's neither expensive or complicated.
->>
->> Originally I suggested walking the whole tree multiple times, but as
->> mentioned that doesn't scale, and as I thought about the above it isn't
->> even a valid thing to do. Everything has to be driven by drivers, so
->> even if the backlinks are there, nothing can be done with the link until
->> the other side goes through enumeration independently.
-> 
-> For such composite devices, what we need from a drivers point of view is a 
-> mechanism to wait for all components to be in place before proceeding. This 
-> isn't DT-related as such, but the graph is obviously described in DT for DT-
-> based platforms.
-> 
-> There are at least two mainline implementation of such a mechanism. One of 
-> them can be found in drivers/media/v4l2-core/v4l2-async.c, another more recent 
-> one in drivers/base/component.c. Neither of them is DT-specific, and they 
-> don't try to parse DT content.
-> 
-> The main problem, from a DT point of view, is that we need to pick a master 
-> driver that will initiate the process of waiting for all components to be in 
-> place. This is usually the driver of the main component inside the SoC. For a 
-> camera capture pipeline the master is the SoC camera device driver that will 
-> create the V4L2 device node(s). For a display pipeline the master is the SoC 
-> display driver that will create the DRM/KMS devices.
-> 
-> The master device driver needs to create a list of all components it needs, 
-> and wait until all those components have been probed by their respective 
-> driver. Creating such a list requires walking the graph, starting at the 
-> master device (using a CPU-centric view as described by Russell). This is why 
-> we need the backlinks, as the master device can have inbound links.
-> 
+Current code checks if the 20MHz BW is allowed for particular
+channel -- if it is not, the channel is disabled. Since we
+need to use 5/10 MHz channels, this code is modified in the way
+that the default BW to check is 5MHz. If 5MHz is greater than
+the maximum bandwidth allowed by the channel, the channel is
+disabled. Otherwise the channel is used and the flags are set
+according to the BW allowed by the channel.
 
-I am not sure if the approach with one device driver parsing links
-between two other devices is the correct one. For example some links can
-be optional, some irrelevant to the pipeline the master device tries to
-create,.... I guess it could be sometimes solved using additional
-properties, but this will complicate things and will not work if the
-routing decision can be taken only during specific driver probe or later.
+Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+---
+ net/wireless/reg.c | 22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
 
-Regards
-Andrzej
-
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index f054137..5f0dd26 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -805,7 +805,7 @@ freq_reg_info_regd(struct wiphy *wiphy, u32 center_freq,
+ 		if (!band_rule_found)
+ 			band_rule_found = freq_in_rule_band(fr, center_freq);
+ 
+-		bw_fits = reg_does_bw_fit(fr, center_freq, MHZ_TO_KHZ(20));
++		bw_fits = reg_does_bw_fit(fr, center_freq, MHZ_TO_KHZ(5));
+ 
+ 		if (band_rule_found && bw_fits)
+ 			return rr;
+@@ -888,10 +888,10 @@ static void chan_reg_rule_print_dbg(struct ieee80211_channel *chan,
+ }
+ #endif
+ 
+-/*
+- * Note that right now we assume the desired channel bandwidth
+- * is always 20 MHz for each individual channel (HT40 uses 20 MHz
+- * per channel, the primary and the extension channel).
++/* Find an ieee80211_reg_rule such that a 5MHz channel with frequency
++ * @chan->center_freq fits there.
++ * If there is no such reg_rule, disable the channel, otherwise set the
++ * flags corresponding to the bandwidths allowed in the particular reg_rule
+  */
+ static void handle_channel(struct wiphy *wiphy,
+ 			   enum nl80211_reg_initiator initiator,
+@@ -944,8 +944,12 @@ static void handle_channel(struct wiphy *wiphy,
+ 	power_rule = &reg_rule->power_rule;
+ 	freq_range = &reg_rule->freq_range;
+ 
++	if (freq_range->max_bandwidth_khz < MHZ_TO_KHZ(10))
++		bw_flags = IEEE80211_CHAN_NO_10MHZ;
++	if (freq_range->max_bandwidth_khz < MHZ_TO_KHZ(20))
++		bw_flags |= IEEE80211_CHAN_NO_20MHZ;
+ 	if (freq_range->max_bandwidth_khz < MHZ_TO_KHZ(40))
+-		bw_flags = IEEE80211_CHAN_NO_HT40;
++		bw_flags |= IEEE80211_CHAN_NO_HT40;
+ 	if (freq_range->max_bandwidth_khz < MHZ_TO_KHZ(80))
+ 		bw_flags |= IEEE80211_CHAN_NO_80MHZ;
+ 	if (freq_range->max_bandwidth_khz < MHZ_TO_KHZ(160))
+@@ -1351,8 +1355,12 @@ static void handle_channel_custom(struct wiphy *wiphy,
+ 	power_rule = &reg_rule->power_rule;
+ 	freq_range = &reg_rule->freq_range;
+ 
++	if (freq_range->max_bandwidth_khz < MHZ_TO_KHZ(10))
++		bw_flags = IEEE80211_CHAN_NO_10MHZ;
++	if (freq_range->max_bandwidth_khz < MHZ_TO_KHZ(20))
++		bw_flags |= IEEE80211_CHAN_NO_20MHZ;
+ 	if (freq_range->max_bandwidth_khz < MHZ_TO_KHZ(40))
+-		bw_flags = IEEE80211_CHAN_NO_HT40;
++		bw_flags |= IEEE80211_CHAN_NO_HT40;
+ 	if (freq_range->max_bandwidth_khz < MHZ_TO_KHZ(80))
+ 		bw_flags |= IEEE80211_CHAN_NO_80MHZ;
+ 	if (freq_range->max_bandwidth_khz < MHZ_TO_KHZ(160))
+-- 
+1.8.5.1
 
