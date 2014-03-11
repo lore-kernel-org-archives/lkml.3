@@ -1,124 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007AbaCKWUV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 18:20:21 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:52141 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755841AbaCKWUO (ORCPT
+	id S1755932AbaCKWV2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 18:21:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46598 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563AbaCKWVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 18:20:14 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@rjwysocki.net,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 1/3] ACPI: Support _OSI("Darwin") correctly
-Date: Tue, 11 Mar 2014 18:20:00 -0400
-Message-Id: <1394576402-2910-2-git-send-email-matthew.garrett@nebula.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1394576402-2910-1-git-send-email-matthew.garrett@nebula.com>
-References: <1394576402-2910-1-git-send-email-matthew.garrett@nebula.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.207.143
-X-SA-Exim-Mail-From: matthew.garrett@nebula.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 11 Mar 2014 18:21:25 -0400
+Message-ID: <531F8C3A.1040502@oracle.com>
+Date: Tue, 11 Mar 2014 18:20:42 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
+References: <531F6689.60307@oracle.com>			<1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>		 <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>		 <531F75D1.3060909@oracle.com>	 <1394570844.2786.42.camel@buesod1.americas.hpqcorp.net>	 <531F79F7.5090201@oracle.com> <1394574323.2786.45.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1394574323.2786.45.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apple hardware queries _OSI("Darwin") in order to determine whether the
-system is running OS X, and changes firmware behaviour based on the answer.
-The most obvious difference in behaviour is that Thunderbolt hardware is
-forcibly powered down unless the system is running OS X. The obvious solution
-would be to simply add Darwin to the list of supported _OSI strings, but this
-causes problems.
+On 03/11/2014 05:45 PM, Davidlohr Bueso wrote:
+> On Tue, 2014-03-11 at 17:02 -0400, Sasha Levin wrote:
+>> >On 03/11/2014 04:47 PM, Davidlohr Bueso wrote:
+>>>> > >>Bingo! With the above patch:
+>>>>> > >> >
+>>>>> > >> >[  243.565794] kernel BUG at mm/vmacache.c:76!
+>>>>> > >> >[  243.566720] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>>>>> > >> >[  243.568048] Dumping ftrace buffer:
+>>>>> > >> >[  243.568740]    (ftrace buffer empty)
+>>>>> > >> >[  243.569481] Modules linked in:
+>>>>> > >> >[  243.570203] CPU: 10 PID: 10073 Comm: trinity-c332 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00010-g1f812cb-dirty #143
+>>> > >and this is also part of the DEBUG_PAGEALLOC + trinity combo! I suspect
+>>> > >the root cause it the same as Fengguang's report.
+>> >
+>> >The BUG still happens without DEBUG_PAGEALLOC.
+> Any idea what trinity itself is doing?
+>
+> Could you add the following, I just want to make sure the bug isn't
+> being caused by an overflow:
 
-Recent Apple hardware includes two separate methods for checking _OSI
-strings. The first will check whether Darwin is supported, and if so will
-exit. The second will check whether Darwin is supported, but will then
-continue to check for further operating systems. If a further operating
-system is found then later firmware code will assume that the OS is not OS X.
-This results in the unfortunate situation where the Thunderbolt controller is
-available at boot time but remains powered down after suspend.
+Not hitting that WARN.
 
-The easiest way to handle this is to special-case it in the Linux-specific
-OSI handling code. If we see Darwin, we should answer true and then disable
-all other _OSI vendor strings.
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
----
- drivers/acpi/acpica/utosi.c |  1 +
- drivers/acpi/osl.c          | 10 ++++++++++
- include/acpi/actypes.h      | 25 +++++++++++++------------
- 3 files changed, 24 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/acpi/acpica/utosi.c b/drivers/acpi/acpica/utosi.c
-index 8856bd3..202b4da 100644
---- a/drivers/acpi/acpica/utosi.c
-+++ b/drivers/acpi/acpica/utosi.c
-@@ -62,6 +62,7 @@ ACPI_MODULE_NAME("utosi")
- static struct acpi_interface_info acpi_default_supported_interfaces[] = {
- 	/* Operating System Vendor Strings */
- 
-+	{"Darwin", NULL, 0, ACPI_OSI_DARWIN},	/* OS X */
- 	{"Windows 2000", NULL, 0, ACPI_OSI_WIN_2000},	/* Windows 2000 */
- 	{"Windows 2001", NULL, 0, ACPI_OSI_WIN_XP},	/* Windows XP */
- 	{"Windows 2001 SP1", NULL, 0, ACPI_OSI_WIN_XP_SP1},	/* Windows XP SP1 */
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index fc1aa79..5bf45c06 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -152,6 +152,16 @@ static u32 acpi_osi_handler(acpi_string interface, u32 supported)
- 			osi_linux.dmi ? " via DMI" : "");
- 	}
- 
-+	if (!strcmp("Darwin", interface)) {
-+		/*
-+		 * Apple firmware will behave poorly if it receives positive
-+		 * answers to "Darwin" and any other OS. Respond positively
-+		 * to Darwin and then disable all other vendor strings.
-+		 */
-+		acpi_update_interfaces(ACPI_DISABLE_ALL_VENDOR_STRINGS);
-+		supported = ACPI_UINT32_MAX;
-+	}
-+
- 	return supported;
- }
- 
-diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
-index 68a3ada..4580c67 100644
---- a/include/acpi/actypes.h
-+++ b/include/acpi/actypes.h
-@@ -1210,17 +1210,18 @@ struct acpi_memory_list {
- #define ACPI_ENABLE_ALL_FEATURE_STRINGS     (ACPI_ENABLE_INTERFACES | ACPI_FEATURE_STRINGS)
- #define ACPI_ENABLE_ALL_STRINGS             (ACPI_ENABLE_INTERFACES | ACPI_VENDOR_STRINGS | ACPI_FEATURE_STRINGS)
- 
--#define ACPI_OSI_WIN_2000               0x01
--#define ACPI_OSI_WIN_XP                 0x02
--#define ACPI_OSI_WIN_XP_SP1             0x03
--#define ACPI_OSI_WINSRV_2003            0x04
--#define ACPI_OSI_WIN_XP_SP2             0x05
--#define ACPI_OSI_WINSRV_2003_SP1        0x06
--#define ACPI_OSI_WIN_VISTA              0x07
--#define ACPI_OSI_WINSRV_2008            0x08
--#define ACPI_OSI_WIN_VISTA_SP1          0x09
--#define ACPI_OSI_WIN_VISTA_SP2          0x0A
--#define ACPI_OSI_WIN_7                  0x0B
--#define ACPI_OSI_WIN_8                  0x0C
-+#define ACPI_OSI_DARWIN                 0x01
-+#define ACPI_OSI_WIN_2000               0x02
-+#define ACPI_OSI_WIN_XP                 0x03
-+#define ACPI_OSI_WIN_XP_SP1             0x04
-+#define ACPI_OSI_WINSRV_2003            0x05
-+#define ACPI_OSI_WIN_XP_SP2             0x06
-+#define ACPI_OSI_WINSRV_2003_SP1        0x07
-+#define ACPI_OSI_WIN_VISTA              0x08
-+#define ACPI_OSI_WINSRV_2008            0x09
-+#define ACPI_OSI_WIN_VISTA_SP1          0x0A
-+#define ACPI_OSI_WIN_VISTA_SP2          0x0B
-+#define ACPI_OSI_WIN_7                  0x0C
-+#define ACPI_OSI_WIN_8                  0x0D
- 
- #endif				/* __ACTYPES_H__ */
--- 
-1.8.5.3
-
+Thanks,
+Sasha
