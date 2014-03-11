@@ -1,146 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711AbaCKSco (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:32:44 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:45833 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478AbaCKScm (ORCPT
+	id S1754528AbaCKSgA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:36:00 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:49863 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752478AbaCKSf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:32:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJe_Zhej0-i4uEPvXr3XH_8Qzd7SD-3yvJOp+MW4j+KJ8rt1PQ@mail.gmail.com>
-References: <1394104717-3100-1-git-send-email-sthokal@xilinx.com>
-	<1394104717-3100-3-git-send-email-sthokal@xilinx.com>
-	<CABb+yY1y1sOozVU=iAsotWG-q3N=SogjHjZ=iF04CiXF89eeOg@mail.gmail.com>
-	<CA+mB=1J6Lzy5fZ6+fU0xY5zLyeDtrjtUpJCYdM7eL-tsQ+jUVA@mail.gmail.com>
-	<CAJe_Zhej0-i4uEPvXr3XH_8Qzd7SD-3yvJOp+MW4j+KJ8rt1PQ@mail.gmail.com>
-Date: Wed, 12 Mar 2014 00:02:40 +0530
-X-Google-Sender-Auth: AHce1kfeKbEPm4cEh_TwRj_-d8Q
-Message-ID: <CA+mB=1JMsUojCE4+AtR2D5znNBv=YXGiFxLkJeJ77cZdTgCuZw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] dma: Add Xilinx AXI Video Direct Memory Access
- Engine driver support
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Srikanth Thokala <sthokal@xilinx.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Mar 2014 14:35:59 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AggOACJXH1NXQz0l/2dsb2JhbABagwaDRr8RAgKBIBd0glMTHCMYgQIkE4d9AdE4jlyEPwSYRAGSLYMuPIEuJA
+Date: Tue, 11 Mar 2014 19:37:32 +0100
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, davej <davej@redhat.com>
+Subject: [PATCH v3] AFFS: mount option to avoid filename truncates
+Message-Id: <20140311193732.9bb47b4be693ed64c0cd2c9d@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 7:14 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
-> On 11 March 2014 00:00, Srikanth Thokala <sthokal@xilinx.com> wrote:
->> On Mon, Mar 10, 2014 at 9:30 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->>> On Thu, Mar 6, 2014 at 7:18 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
->>>
->>>> +static struct dma_async_tx_descriptor *
->>>> +xilinx_vdma_dma_prep_interleaved(struct dma_chan *dchan,
->>>> +                                struct dma_interleaved_template *xt,
->>>> +                                unsigned long flags)
->>>> +{
->>>> +       struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
->>>> +       struct xilinx_vdma_tx_descriptor *desc;
->>>> +       struct xilinx_vdma_tx_segment *segment;
->>>> +       struct xilinx_vdma_tx_segment *prev = NULL;
->>>> +       int i;
->>>> +
->>>> +       if ((xt->dir != DMA_MEM_TO_DEV) && (xt->dir != DMA_DEV_TO_MEM))
->>>> +               return NULL;
->>>> +
->>>> +       if (!xt->numf || !xt->sgl[0].size)
->>>> +               return NULL;
->>>> +
->>>> +       /* Allocate a transaction descriptor. */
->>>> +       desc = xilinx_vdma_alloc_tx_descriptor(chan);
->>>> +       if (!desc)
->>>> +               return NULL;
->>>> +
->>>> +       dma_async_tx_descriptor_init(&desc->async_tx, &chan->common);
->>>> +       desc->async_tx.tx_submit = xilinx_vdma_tx_submit;
->>>> +       desc->async_tx.cookie = 0;
->>>> +       async_tx_ack(&desc->async_tx);
->>>> +
->>>> +       /* Build the list of transaction segments. */
->>>> +       for (i = 0; i < xt->frame_size; i++) {
->>>> +               struct xilinx_vdma_desc_hw *hw;
->>>> +
->>>> +               /* Allocate the link descriptor from DMA pool */
->>>> +               segment = xilinx_vdma_alloc_tx_segment(chan);
->>>> +               if (!segment)
->>>> +                       goto error;
->>>> +
->>>> +               /* Fill in the hardware descriptor */
->>>> +               hw = &segment->hw;
->>>> +               hw->vsize = xt->numf;
->>>> +               hw->hsize = xt->sgl[0].size;
->>>> +               hw->stride = xt->sgl[0].icg <<
->>>> +                               XILINX_VDMA_FRMDLY_STRIDE_STRIDE_SHIFT;
->>>>
->>> It seems the xt->frame_size is (should be?) always going to be 1?
->>> If yes, the for-loop isn't needed.
->>> If no, you should probably use 'i' as the index to sgl[], and not always 0.
->>
->> It can be either
->> '1':  User can queue each segment and submit all the segments at once as a
->>       single async tx descriptor.  I am using this for scatter-gather mode of
->>       operation where the src_start/dst_start is different for each segment.
->> 'Number of frames':  In this case the driver gets contiguous frame buffer memory
->>       and it prepares segments with addresses as multiples of
->> src_start/dst_start.
->>
-> Quoting you from earlier thread ....
-> " In video frame context,
-> chunk.size -> hsize
-> chunk.icg -> stride
-> numf -> vsize
-> and frame_size is always 1 as it will have only one chunk in a line. "
->  ... which makes sense.
->
-> I hope you realize that, 'frame_size' denotes the number of chunks in
-> a frame and 'numf' denotes the number of frames in the transfer
-> request. It seems wrong when you assume  vsize:=numf  but
-> frame_size>1 ... i.e, each horizontal video line has two or more
-> dis-contiguous chunks?   This might work for client drivers written
-> specifically for Xilinx AXI Video DMAC but will fail over any other
-> controller driver.
->
->  IMO, xilinx_vdma.c should expect only 1 video frame per
-> device_prep_interleaved_dma() call (i.e, vsize=numf and frame_size==1)
->   Let the client driver submit 1/2/.../16 requests before kick
-> starting the DMA. Upon  dma_async_tx_descriptor.callback(), the client
-> 'refills' the frame and re-queues it back. This should work because
-> the video-frames' attributes and locations are not going to change
-> within a session.
->
->> Please let me know if you see any issues in this implementation.
->>
-> I am ok if you want the driver upstream now and want to 'fix' it when
-> you actually start seeing problems :)
+Normal behavior for filenames exceeding specific filesystem limits
+is to refuse operation.
 
-I agree with you and I have no issues in fixing this now.  I will fix
-it in my v6
-with the driver accepting only one frame/interleave_dma call.
+AFFS standard name length being only 30 characters against 255 for
+usual Linux filesystems, original implementation does filename
+truncate by default with a define value AFFS_NO_TRUNCATE which can
+be enabled but needs module compilation.
 
-But, I feel this information has to be documented to the description of
-interleaved_dma API as it is leading to interpret the members of this
-structure differently wrt video frame terminology.
+This patch adds 'nofilenametruncate' mount option so that user can
+easily activate that feature and avoid a lot of problems
+(eg overwrite files ...)
 
-Thanks
-Srikanth
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ Documentation/filesystems/affs.txt |  9 ++++++---
+ fs/affs/affs.h                     | 20 ++++++++------------
+ fs/affs/amigaffs.c                 | 23 +++++++++++++++--------
+ fs/affs/namei.c                    | 32 +++++++++++++++++++++++---------
+ fs/affs/super.c                    |  6 +++++-
+ 5 files changed, 57 insertions(+), 33 deletions(-)
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/Documentation/filesystems/affs.txt b/Documentation/filesystems/affs.txt
+index 81ac488..71b63c2 100644
+--- a/Documentation/filesystems/affs.txt
++++ b/Documentation/filesystems/affs.txt
+@@ -49,6 +49,10 @@ mode=mode	Sets the mode flags to the given (octal) value, regardless
+ 		This is useful since most of the plain AmigaOS files
+ 		will map to 600.
+ 
++nofilenametruncate
++		The file system will return an error when filename exceeds
++		standard maximum filename length (30 characters).
++
+ reserved=num	Sets the number of reserved blocks at the start of the
+ 		partition to num. You should never need this option.
+ 		Default is 2.
+@@ -181,9 +185,8 @@ tested, though several hundred MB have been read and written using
+ this fs. For a most up-to-date list of bugs please consult
+ fs/affs/Changes.
+ 
+-Filenames are truncated to 30 characters without warning (this
+-can be changed by setting the compile-time option AFFS_NO_TRUNCATE
+-in include/linux/amigaffs.h).
++By default, filenames are truncated to 30 characters without warning.
++'nofilenametruncate' mount option can change that behavior.
+ 
+ Case is ignored by the affs in filename matching, but Linux shells
+ do care about the case. Example (with /wb being an affs mounted fs):
+diff --git a/fs/affs/affs.h b/fs/affs/affs.h
+index 3952121..25b23b1 100644
+--- a/fs/affs/affs.h
++++ b/fs/affs/affs.h
+@@ -5,14 +5,6 @@
+ #include <linux/mutex.h>
+ #include <linux/workqueue.h>
+ 
+-/* AmigaOS allows file names with up to 30 characters length.
+- * Names longer than that will be silently truncated. If you
+- * want to disallow this, comment out the following #define.
+- * Creating filesystem objects with longer names will then
+- * result in an error (ENAMETOOLONG).
+- */
+-/*#define AFFS_NO_TRUNCATE */
+-
+ /* Ugly macros make the code more pretty. */
+ 
+ #define GET_END_PTR(st,p,sz)		 ((st *)((char *)(p)+((sz)-sizeof(st))))
+@@ -28,7 +20,6 @@
+ 
+ #define AFFS_CACHE_SIZE		PAGE_SIZE
+ 
+-#define AFFS_MAX_PREALLOC	32
+ #define AFFS_LC_SIZE		(AFFS_CACHE_SIZE/sizeof(u32)/2)
+ #define AFFS_AC_SIZE		(AFFS_CACHE_SIZE/sizeof(struct affs_ext_key)/2)
+ #define AFFS_AC_MASK		(AFFS_AC_SIZE-1)
+@@ -118,6 +109,7 @@ struct affs_sb_info {
+ #define SF_OFS		0x0200		/* Old filesystem */
+ #define SF_PREFIX	0x0400		/* Buffer for prefix is allocated */
+ #define SF_VERBOSE	0x0800		/* Talk about fs when mounting */
++#define SF_NO_TRUNCATE	0x1000		/* Don't truncate filenames */
+ 
+ /* short cut to get to the affs specific sb data */
+ static inline struct affs_sb_info *AFFS_SB(struct super_block *sb)
+@@ -137,9 +129,13 @@ extern void	affs_fix_checksum(struct super_block *sb, struct buffer_head *bh);
+ extern void	secs_to_datestamp(time_t secs, struct affs_date *ds);
+ extern umode_t	prot_to_mode(u32 prot);
+ extern void	mode_to_prot(struct inode *inode);
+-extern void	affs_error(struct super_block *sb, const char *function, const char *fmt, ...);
+-extern void	affs_warning(struct super_block *sb, const char *function, const char *fmt, ...);
+-extern int	affs_check_name(const unsigned char *name, int len);
++extern void	affs_error(struct super_block *sb, const char *function,
++			   const char *fmt, ...);
++extern void	affs_warning(struct super_block *sb, const char *function,
++			     const char *fmt, ...);
++extern bool	affs_nofilenametruncate(const struct dentry *dentry);
++extern int	affs_check_name(const unsigned char *name, int len,
++				bool notruncate);
+ extern int	affs_copy_name(unsigned char *bstr, struct dentry *dentry);
+ 
+ /* bitmap. c */
+diff --git a/fs/affs/amigaffs.c b/fs/affs/amigaffs.c
+index d9a4367..533a322 100644
+--- a/fs/affs/amigaffs.c
++++ b/fs/affs/amigaffs.c
+@@ -471,20 +471,27 @@ affs_warning(struct super_block *sb, const char *function, const char *fmt, ...)
+ 		function,ErrorBuffer);
+ }
+ 
++bool
++affs_nofilenametruncate(const struct dentry *dentry)
++{
++	struct inode *inode = dentry->d_inode;
++	return AFFS_SB(inode->i_sb)->s_flags & SF_NO_TRUNCATE;
++
++}
++
+ /* Check if the name is valid for a affs object. */
+ 
+ int
+-affs_check_name(const unsigned char *name, int len)
++affs_check_name(const unsigned char *name, int len, bool notruncate)
+ {
+ 	int	 i;
+ 
+-	if (len > 30)
+-#ifdef AFFS_NO_TRUNCATE
+-		return -ENAMETOOLONG;
+-#else
+-		len = 30;
+-#endif
+-
++	if (len > 30) {
++		if (notruncate)
++			return -ENAMETOOLONG;
++		else
++			len = 30;
++	}
+ 	for (i = 0; i < len; i++) {
+ 		if (name[i] < ' ' || name[i] == ':'
+ 		    || (name[i] > 0x7e && name[i] < 0xa0))
+diff --git a/fs/affs/namei.c b/fs/affs/namei.c
+index c36cbb4..6dae1cc 100644
+--- a/fs/affs/namei.c
++++ b/fs/affs/namei.c
+@@ -60,13 +60,13 @@ affs_get_toupper(struct super_block *sb)
+  * Note: the dentry argument is the parent dentry.
+  */
+ static inline int
+-__affs_hash_dentry(struct qstr *qstr, toupper_t toupper)
++__affs_hash_dentry(struct qstr *qstr, toupper_t toupper, bool notruncate)
+ {
+ 	const u8 *name = qstr->name;
+ 	unsigned long hash;
+ 	int i;
+ 
+-	i = affs_check_name(qstr->name, qstr->len);
++	i = affs_check_name(qstr->name, qstr->len, notruncate);
+ 	if (i)
+ 		return i;
+ 
+@@ -82,16 +82,22 @@ __affs_hash_dentry(struct qstr *qstr, toupper_t toupper)
+ static int
+ affs_hash_dentry(const struct dentry *dentry, struct qstr *qstr)
+ {
+-	return __affs_hash_dentry(qstr, affs_toupper);
++	return __affs_hash_dentry(qstr, affs_toupper,
++				  affs_nofilenametruncate(dentry));
++
+ }
++
+ static int
+ affs_intl_hash_dentry(const struct dentry *dentry, struct qstr *qstr)
+ {
+-	return __affs_hash_dentry(qstr, affs_intl_toupper);
++	return __affs_hash_dentry(qstr, affs_intl_toupper,
++				  affs_nofilenametruncate(dentry));
++
+ }
+ 
+ static inline int __affs_compare_dentry(unsigned int len,
+-		const char *str, const struct qstr *name, toupper_t toupper)
++		const char *str, const struct qstr *name, toupper_t toupper,
++		bool notruncate)
+ {
+ 	const u8 *aname = str;
+ 	const u8 *bname = name->name;
+@@ -101,7 +107,7 @@ static inline int __affs_compare_dentry(unsigned int len,
+ 	 * must be valid. 'name' must be validated first.
+ 	 */
+ 
+-	if (affs_check_name(name->name, name->len))
++	if (affs_check_name(name->name, name->len, notruncate))
+ 		return 1;
+ 
+ 	/*
+@@ -126,13 +132,18 @@ static int
+ affs_compare_dentry(const struct dentry *parent, const struct dentry *dentry,
+ 		unsigned int len, const char *str, const struct qstr *name)
+ {
+-	return __affs_compare_dentry(len, str, name, affs_toupper);
++
++	return __affs_compare_dentry(len, str, name, affs_toupper,
++				     affs_nofilenametruncate(parent));
+ }
++
+ static int
+ affs_intl_compare_dentry(const struct dentry *parent, const struct dentry *dentry,
+ 		unsigned int len, const char *str, const struct qstr *name)
+ {
+-	return __affs_compare_dentry(len, str, name, affs_intl_toupper);
++	return __affs_compare_dentry(len, str, name, affs_intl_toupper,
++				     affs_nofilenametruncate(parent));
++
+ }
+ 
+ /*
+@@ -411,7 +422,10 @@ affs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		 (u32)old_dir->i_ino, (int)old_dentry->d_name.len, old_dentry->d_name.name,
+ 		 (u32)new_dir->i_ino, (int)new_dentry->d_name.len, new_dentry->d_name.name);
+ 
+-	retval = affs_check_name(new_dentry->d_name.name,new_dentry->d_name.len);
++	retval = affs_check_name(new_dentry->d_name.name,
++				 new_dentry->d_name.len,
++				 affs_nofilenametruncate(old_dentry));
++
+ 	if (retval)
+ 		return retval;
+ 
+diff --git a/fs/affs/super.c b/fs/affs/super.c
+index d098731..4c27c7e 100644
+--- a/fs/affs/super.c
++++ b/fs/affs/super.c
+@@ -163,7 +163,7 @@ static const struct super_operations affs_sops = {
+ };
+ 
+ enum {
+-	Opt_bs, Opt_mode, Opt_mufs, Opt_prefix, Opt_protect,
++	Opt_bs, Opt_mode, Opt_mufs, Opt_notruncate, Opt_prefix, Opt_protect,
+ 	Opt_reserved, Opt_root, Opt_setgid, Opt_setuid,
+ 	Opt_verbose, Opt_volume, Opt_ignore, Opt_err,
+ };
+@@ -172,6 +172,7 @@ static const match_table_t tokens = {
+ 	{Opt_bs, "bs=%u"},
+ 	{Opt_mode, "mode=%o"},
+ 	{Opt_mufs, "mufs"},
++	{Opt_notruncate, "nofilenametruncate"},
+ 	{Opt_prefix, "prefix=%s"},
+ 	{Opt_protect, "protect"},
+ 	{Opt_reserved, "reserved=%u"},
+@@ -233,6 +234,9 @@ parse_options(char *options, kuid_t *uid, kgid_t *gid, int *mode, int *reserved,
+ 		case Opt_mufs:
+ 			*mount_opts |= SF_MUFS;
+ 			break;
++		case Opt_notruncate:
++			*mount_opts |= SF_NO_TRUNCATE;
++			break;
+ 		case Opt_prefix:
+ 			*prefix = match_strdup(&args[0]);
+ 			if (!*prefix)
+-- 
+1.8.1.4
+
