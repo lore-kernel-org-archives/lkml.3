@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378AbaCKC6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 22:58:12 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:56640 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254AbaCKC6K (ORCPT
+	id S1754579AbaCKC61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 22:58:27 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:22290 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422AbaCKC6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 22:58:10 -0400
-X-AuditID: 9c93017d-b7c89ae000006ae1-1f-531e7bc01780
-Date: Tue, 11 Mar 2014 11:58:11 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: oops in slab/leaks_show
-Message-ID: <20140311025811.GA601@lge.com>
-References: <20140307025703.GA30770@redhat.com>
- <alpine.DEB.2.10.1403071117230.21846@nuc>
- <20140311003459.GA25657@lge.com>
- <20140311010135.GA25845@lge.com>
- <20140311012455.GA5151@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140311012455.GA5151@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 10 Mar 2014 22:58:25 -0400
+Message-ID: <1394506703.3867.22.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCHSET 0/9] perf tools: Update on filtered entries'
+ percentage output (v7)
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Date: Mon, 10 Mar 2014 19:58:23 -0700
+In-Reply-To: <20140310220819.GL22728@two.firstfloor.org>
+References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
+	 <20140310220819.GL22728@two.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 09:24:55PM -0400, Dave Jones wrote:
-> On Tue, Mar 11, 2014 at 10:01:35AM +0900, Joonsoo Kim wrote:
->  > On Tue, Mar 11, 2014 at 09:35:00AM +0900, Joonsoo Kim wrote:
->  > > On Fri, Mar 07, 2014 at 11:18:30AM -0600, Christoph Lameter wrote:
->  > > > Joonsoo recently changed the handling of the freelist in SLAB. CCing him.
->  > > > 
->  > > > > I pretty much always use SLUB for my fuzzing boxes, but thought I'd give SLAB a try
->  > > > > for a change.. It blew up when something tried to read /proc/slab_allocators
->  > > > > (Just cat it, and you should see the oops below)
->  > > 
->  > > Hello, Dave.
->  > > 
->  > > Today, I did a test on v3.13 which contains all my changes on the handling of
->  > > the freelist in SLAB and couldn't trigger oops by just 'cat /proc/slab_allocators'.
->  > > 
->  > > So I look at the code and find that there is race window if there is multiple users
->  > > doing 'cat /proc/slab_allocators'. Did your test do that?
->  > 
->  > Opps, sorry. I am misunderstanding something. Maybe there is no race.
->  > Anyway, How do you test it?
+On Mon, 2014-03-10 at 23:08 +0100, Andi Kleen wrote:
+> On Mon, Mar 10, 2014 at 04:43:51PM +0900, Namhyung Kim wrote:
+> > Hello,
+> > 
+> > I added --percentage option to perf report to control display of
+> > percentage of filtered entries.
+> > 
+> >  usage: perf report [<options>]
+> > 
+> >         --percentage <relative|absolute>
+> >                           how to display percentage of filtered entries
 > 
-> 1. build kernel with CONFIG_SLAB=y.
-> 2. boot kernel
-> 3. cat /proc/slab_allocators
+> Just as a high level comment. We have a lot of different display 
+> options now. It's hard to figure out what they all do for non experts.
+> 
+> It may be useful to define a number of high level layout combinations
+> that are useful for different situations and have a single
+> option to select everything together.
 
-Okay. I reproduce it with CONFIG_DEBUG_PAGEALLOC=y.
+Yes please, absolutely. The wiki page could use some love as well. I
+imagine the manpage is updated but it's also nice to have some examples
+of the newer features in perf.wiki.kernel.org.
 
-I look at the code and find that the problem doesn't come from my patches.
-I think that it is long-lived bug. Let me explain it.
+Thanks,
+Davidlohr
 
-'cat /proc/slab_allocators' checks all allocated objects for all slabs.
-The problem is that it considers objects in cpu slab caches as allocated objects.
-These objects in cpu slab caches are unmapped if CONFIG_DEBUG_PAGEALLOC=y, so when we
-try to access it to get the caller information, oops would be triggered.
-
-I will think more deeply how to fix this problem.
-If I am missing something, please let me know.
-
-Thanks.
