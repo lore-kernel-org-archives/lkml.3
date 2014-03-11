@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824AbaCKWHg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 18:07:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34780 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753718AbaCKWHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 18:07:34 -0400
-Date: Tue, 11 Mar 2014 16:57:01 -0400
-From: Dave Jones <davej@redhat.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
-Message-ID: <20140311205701.GA16658@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Davidlohr Bueso <davidlohr@hp.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	"linux-mm@kvack.org" <linux-mm@kvack.org>,
-	Michel Lespinasse <walken@google.com>,
-	Rik van Riel <riel@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <531F6689.60307@oracle.com>
- <1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>
- <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
- <531F75D1.3060909@oracle.com>
- <1394570844.2786.42.camel@buesod1.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394570844.2786.42.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755888AbaCKWHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 18:07:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45784 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755719AbaCKWHf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 18:07:35 -0400
+Date: Tue, 11 Mar 2014 15:07:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
+        rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
+        paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
+        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH v3 00/52] CPU hotplug: Fix issues with callback
+ registration
+Message-Id: <20140311150733.efcc594dd7fe59c9c5fe9325@linux-foundation.org>
+In-Reply-To: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
+References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 01:47:24PM -0700, Davidlohr Bueso wrote:
- > On Tue, 2014-03-11 at 16:45 -0400, Sasha Levin wrote:
- > > On 03/11/2014 04:30 PM, Andrew Morton wrote:
- > > > All I can think is that find_vma() went and returned a vma from a
- > > > different mm, which would be odd.  How about I toss this in there?
- > > >
- > > > --- a/mm/vmacache.c~a
- > > > +++ a/mm/vmacache.c
- > > > @@ -72,8 +72,10 @@ struct vm_area_struct *vmacache_find(str
- > > >   	for (i = 0; i < VMACACHE_SIZE; i++) {
- > > >   		struct vm_area_struct *vma = current->vmacache[i];
- > > >
- > > > -		if (vma && vma->vm_start <= addr && vma->vm_end > addr)
- > > > +		if (vma && vma->vm_start <= addr && vma->vm_end > addr) {
- > > > +			BUG_ON(vma->vm_mm != mm);
- > > >   			return vma;
- > > > +		}
- > > >   	}
- > > 
- > > [  243.565794] kernel BUG at mm/vmacache.c:76!
- > 
- > and this is also part of the DEBUG_PAGEALLOC + trinity combo! I suspect
- > the root cause it the same as Fengguang's report.
+On Tue, 11 Mar 2014 02:03:52 +0530 "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
 
-btw, I added a (ugly) script to trinity.git this afternoon:
-https://github.com/kernelslacker/trinity/commit/b6cfe63ea5b205a34bc6c5698e5b766dfcddad1d
-which should make reproducing VM related bugs happen a lot faster.
+> Hi,
+> 
+> Many subsystems and drivers have the need to register CPU hotplug callbacks
+> from their init routines and also perform initialization for the CPUs that are
+> already online. But unfortunately there is no race-free way to achieve this
+> today.
+> 
+> For example, consider this piece of code:
+> 
+> 	get_online_cpus();
+> 
+> 	for_each_online_cpu(cpu)
+> 		init_cpu(cpu);
+> 
+> 	register_cpu_notifier(&foobar_cpu_notifier);
+> 
+> 	put_online_cpus();
+> 
+> This is not safe because there is a possibility of an ABBA deadlock involving
+> the cpu_add_remove_lock and the cpu_hotplug.lock.
+> 
+>           CPU 0                                         CPU 1
+>           -----                                         -----
+> 
+>    Acquire cpu_hotplug.lock
+>    [via get_online_cpus()]
+> 
+>                                               CPU online/offline operation
+>                                               takes cpu_add_remove_lock
+>                                               [via cpu_maps_update_begin()]
+> 
+>    Try to acquire
+>    cpu_add_remove_lock
+>    [via register_cpu_notifier()]
+> 
+>                                               CPU online/offline operation
+>                                               tries to acquire cpu_hotplug.lock
+>                                               [via cpu_hotplug_begin()]
 
-While chasing one particular issue, that script has hit 2-3 others in my
-testing so far today (All already known).
-
-It would be really good if people other than me & Sasha started running stuff like this occasionally
-to try and get some of the more annoying things fixed up faster. Though it's only really
-useful with debug kernels, and I know from past experience that asking people to try running things
-with debug options enabled is like pulling teeth..
-
-	Dave
+Can't we fix this by using a different (ie: new) lock to protect
+cpu_chain?
 
