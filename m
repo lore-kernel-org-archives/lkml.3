@@ -1,80 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115AbaCKN1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:27:00 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49920 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718AbaCKN06 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:26:58 -0400
-Date: Tue, 11 Mar 2014 13:26:52 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-spi <linux-spi@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Message-ID: <20140311132652.GS28112@sirena.org.uk>
-References: <1394531952-3905-1-git-send-email-geert@linux-m68k.org>
- <1394531952-3905-3-git-send-email-geert@linux-m68k.org>
- <20140311104713.GN28112@sirena.org.uk>
- <CAMuHMdWoPWebnyUu2uGebbnzu68Lh4qsgzpu-otnwMmvaeY1hQ@mail.gmail.com>
+	id S1754800AbaCKN1V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:27:21 -0400
+Received: from mout.web.de ([212.227.15.3]:55293 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754468AbaCKN1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 09:27:17 -0400
+Date: Tue, 11 Mar 2014 14:27:06 +0100
+From: Julian Wollrath <jwollrath@web.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+Message-ID: <20140311142706.27b2ad75@ilfaris>
+In-Reply-To: <1394465314.12752.18.camel@x220>
+References: <20140310110410.5b2218f6@ilfaris>
+	<1394447253.2979.12.camel@x220>
+	<alpine.DEB.2.02.1403101504590.18573@ionos.tec.linutronix.de>
+	<1394465314.12752.18.camel@x220>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TBfMz8Gxdi+pF8p5"
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdWoPWebnyUu2uGebbnzu68Lh4qsgzpu-otnwMmvaeY1hQ@mail.gmail.com>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/3] spi: rspi: Add runtime PM support, using spi core
- auto_runtime_pm
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:POMZiI5Ju997TXjPfA/g/OG3/F0acsEbclv60GLS+pvRij6Rk9y
+ wIOgT70J99gqdxd8Z0qxJG8t8+05OmpiVQDK4PcKFYpOEElH0Nwv4+CcTQG1NErIslMb0yq
+ EWTxEk5KkMrFw4ssg08hI/tqWDIJNaiyLn7KCw6tfmYKqOvjG/zmysZMOFE3U4uN9ww7M/h
+ UJb0Vt96A+pTAUQJZfeFA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Mon, 10 Mar 2014 16:28:34 +0100
+schrieb Paul Bolle <pebolle@tiscali.nl>:
+> So I'm basically advising Julian to
+> double check whether this is really a change in behavior between
+> v3.13 and v3.14-rc1. But perhaps Julian already did.
+Yes, I did and it happens reliably on every boot with v3.14-rc1.
 
---TBfMz8Gxdi+pF8p5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Tue, Mar 11, 2014 at 02:10:31PM +0100, Geert Uytterhoeven wrote:
-
-> Can you please elaborate what should be fixed?
-
-> If I disable CONFIG_PM_RUNTIME, the kernel prints:
-
->     Runtime PM disabled, clock forced on.
-
-> and the clock is enabled all the time (verified by looking at the clock
-> registers)?
-
-That's very SH specific and doesn't apply in the general case (I would
-not be surprised if future SH updates broke it...).
-
---TBfMz8Gxdi+pF8p5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTHw8ZAAoJELSic+t+oim9Zj4P/jDlu+1L0RvnKRGlUQ5Bx4AV
-isuOSONQb9GzM8EhXJcx+lAgtl4ZWAceKAH5LIBXWMchU7zWrFH10nOBz/pHZ3oI
-ytVE3g2fBB81oRKcukHDPlfFzKc75Mj1fBWWSCfve2tw1+WRgGdce3BFVxVkEeOu
-4miolAww9QPW+t8GMl8EOQanFF9Mf5m+lvlv8fQvb/A02JRJRas+/EtUIbMKdytk
-pUxywlQFSXmGZKk1ATd7126FvJS4SIA+FfQEKDk6zfwy+7bGLC7aJEGBScOcWcad
-YsLPPW4N4SMTNBv4NPNFiVkU8Iubr5806FcdImFWRLQFiU1c6z8DJogIGl9Oa8w0
-xcwEvxu0fWnMfubJ9xs6JSx4eLjtctV6wsTktLiRguTOrvw0ZCgXIjG75gb+He+q
-z4DnlmJ8EF4lXkHl2W+SyDPeol3IM5a8a2zOKXS7iELzAJxqy4u6A6lPxU30ZzlJ
-q/rlqGq7tkyjBFU5MMacnDW5SOpzRKJ0sCRm+PffiRzgH2R/loRIJZJ7aZJj0pp7
-hXdpeJePL11CVPwK7L6KUeS8u6SQJUhmr/NToRHLYAJvBrEuHoMRAnTLxg9ay3If
-CbbM7Lp0O/uEf4bZRsWT3ug5E6m1P0u6ti7RSFpYAdjeleWZBx0Tt1GE6gvlkGSW
-0mZdLC+LhlH/H72PLAr0
-=Pt84
------END PGP SIGNATURE-----
-
---TBfMz8Gxdi+pF8p5--
+Cheers,
+Julian Wollrath
