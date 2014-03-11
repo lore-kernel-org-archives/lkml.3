@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250AbaCKK0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:26:41 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:43676 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755187AbaCKKX7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:23:59 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: [PATCH trivial 14/16] dma: imx-sdma: Spelling s/determnine/determine/
-Date: Tue, 11 Mar 2014 11:23:48 +0100
-Message-Id: <1394533430-4746-14-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
-References: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
+	id S1755244AbaCKK1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:27:16 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:33129 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752831AbaCKK1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 06:27:11 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCHv6 1/6] ia64: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Tue, 11 Mar 2014 11:23:40 +0100
+Message-Id: <195ea19bd9d5fc1ed629dfcca9af9a8382d31cf1.1394532336.git.ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <cover.1394532336.git.ydroneaud@opteya.com>
+References: <cover.1394532336.git.ydroneaud@opteya.com>
+In-Reply-To: <cover.1394532336.git.ydroneaud@opteya.com>
+References: <cover.1394532336.git.ydroneaud@opteya.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Macro get_unused_fd() is used to allocate a file descriptor with
+default flags. Those default flags (0) can be "unsafe":
+O_CLOEXEC must be used by default to not leak file descriptor
+across exec().
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: devicetree@vger.kernel.org
+Instead of macro get_unused_fd(), function get_unused_fd_flags()
+(or anon_inode_getfd()) should be used with flags given by userspace.
+If not possible, flags should be set to O_CLOEXEC to provide userspace
+with a default safe behavor.
+
+In a further patch, get_unused_fd() will be removed so that new code
+start using get_unused_fd_flags() (or anon_inode_getfd()) with correct
+flags.
+
+This patch replaces calls to get_unused_fd() with equivalent call to
+get_unused_fd_flags(0) to preserve current behavor for existing code.
+
+The hard coded flag value (0) should be reviewed on a per-subsystem
+basis, and, if possible, set to O_CLOEXEC.
+
+Link: http://lkml.kernel.org/r/cover.1394532336.git.ydroneaud@opteya.com
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
- .../devicetree/bindings/dma/fsl-imx-sdma.txt       |    2 +-
+ arch/ia64/kernel/perfmon.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
-index ee9be9961524..e577196a12c0 100644
---- a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
-+++ b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
-@@ -8,7 +8,7 @@ Required properties:
-       "fsl,imx51-sdma"
-       "fsl,imx53-sdma"
-       "fsl,imx6q-sdma"
--  The -to variants should be preferred since they allow to determnine the
-+  The -to variants should be preferred since they allow to determine the
-   correct ROM script addresses needed for the driver to work without additional
-   firmware.
- - reg : Should contain SDMA registers location and length
+diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+index cb592773c78b..44b148fbb560 100644
+--- a/arch/ia64/kernel/perfmon.c
++++ b/arch/ia64/kernel/perfmon.c
+@@ -2662,7 +2662,7 @@ pfm_context_create(pfm_context_t *ctx, void *arg, int count, struct pt_regs *reg
+ 
+ 	ret = -ENOMEM;
+ 
+-	fd = get_unused_fd();
++	fd = get_unused_fd_flags(0);
+ 	if (fd < 0)
+ 		return fd;
+ 
 -- 
-1.7.9.5
+1.8.5.3
 
