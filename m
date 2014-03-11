@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695AbaCKEu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 00:50:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3704 "EHLO mx1.redhat.com"
+	id S1753447AbaCKEvY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 00:51:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5704 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752337AbaCKEu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 00:50:27 -0400
-Date: Tue, 11 Mar 2014 00:50:05 -0400
+	id S1751257AbaCKEvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 00:51:23 -0400
+Date: Tue, 11 Mar 2014 00:51:09 -0400
 From: Dave Jones <davej@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
@@ -17,7 +17,7 @@ Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
         Konstantin Khlebnikov <koct9i@gmail.com>
 Subject: Re: bad rss-counter message in 3.14rc5
-Message-ID: <20140311045005.GA12551@redhat.com>
+Message-ID: <20140311045109.GB12551@redhat.com>
 Mail-Followup-To: Dave Jones <davej@redhat.com>,
 	Andrew Morton <akpm@linux-foundation.org>,
 	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
@@ -60,7 +60,7 @@ On Mon, Mar 10, 2014 at 09:46:12PM -0700, Andrew Morton wrote:
  > I don't see any holes in regular migration.  Do you know if this is
  > reproducible with CONFIG_NUMA_BALANCING=n or CONFIG_NUMA=n?
 
-I'll give it an overnight run and let you know tomorrow.
+CONFIG_NUMA_BALANCING was n already btw, so I'll do a NUMA=n run.
 
 	Dave
 
