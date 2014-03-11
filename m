@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982AbaCKMQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 08:16:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52440 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753971AbaCKMQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 08:16:52 -0400
-Message-ID: <531EFE97.1090202@ti.com>
-Date: Tue, 11 Mar 2014 14:16:23 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: <tony@atomide.com>, <bcousson@baylibre.com>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v9 0/9] USB Host support for OMAP5 uEVM
-References: <1393510711-4697-1-git-send-email-rogerq@ti.com> <531ECDCB.4060700@ti.com> <20140311120259.GI21216@lee--X1>
-In-Reply-To: <20140311120259.GI21216@lee--X1>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1755064AbaCKMSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 08:18:22 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:60052 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071AbaCKMSU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 08:18:20 -0400
+X-Nat-Received: from [202.181.97.72]:54230 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1394540207.18162
+To: jmorris@namei.org
+Cc: rgb@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        laijs@cn.fujitsu.com, akpm@linux-foundation.org, joe@perches.com,
+        keescook@chromium.org, geert@linux-m68k.org, jkosina@suse.cz,
+        viro@zeniv.linux.org.uk, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, rostedt@goodmis.org,
+        tglx@linutronix.de, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] Change task_struct->comm to use RCU.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201403072120.BJB73489.OFMSOFHQFtOJLV@I-love.SAKURA.ne.jp>
+	<20140307155415.GB16640@madcap2.tricolour.ca>
+	<201403082143.BIH86903.QtVMHJFFOOSFOL@I-love.SAKURA.ne.jp>
+	<20140310202155.GR16640@madcap2.tricolour.ca>
+	<201403112102.HCC48418.LSOQFJOFOtFVHM@I-love.SAKURA.ne.jp>
+In-Reply-To: <201403112102.HCC48418.LSOQFJOFOtFVHM@I-love.SAKURA.ne.jp>
+Message-Id: <201403112116.HIJ21362.OFVQJFtHOSOFLM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 11 Mar 2014 21:16:44 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 11032014 #7489815, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2014 02:02 PM, Lee Jones wrote:
->>> Hi,
->>>
->>> This patchset brings up USB Host ports and Ethernet port on
->>> the OMAP5 uEVM board.
->>>
->>> It also does some cleanup with respect to DT clock binding
->>> for the mfd/omap-usb-host driver.
->>>
->>> Please queue these for -next.
->>>
->>> Lee,
->>>
->>> I've folded some platform data dependent patches with mfd patches
->>> so that they don't break functionality when applied individually.
->>> You can safely pull in all MFD patches (1 to 6).
->>>
->>> Tony & Benoit,
->>>
->>> Can you please accept patches 7, 8 and 9?
->>
->> Tony has already picked up 7,8 and 9 through omap-soc tree.
->>
->> Since you acked most patches except 5 and 6, are you fine if Tony takes
->> all the patches 1 to 4 in this series via omap-soc tree?
->>
->> What about patches 5 and 6?
-> 
-> Any patches which are orthogonal can just be sucked into whichever tree
-> they belong in. If there are inter-subsystem dependencies I'd prefer
-> to take them and issue a immutable branch pull-request to the other
-> maintainers.
-> 
-Awesome. That would be great, thanks.
+And the same phrase goes to James Morris...
 
-cheers,
--roger
+If you are sure that it is safe to use get_task_comm() from
+dump_common_audit_data() and you prefer locked version, please pick up below
+patch via your git tree.
+
+If you are unsure or prefer lockless version, I'll make a lockless version
+using do_get_task_comm() proposed in this thread.
+
+----------
+>From 1fe3dcd8792bc1296e337daba661200a8feaf706 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Tue, 11 Mar 2014 21:09:48 +0900
+Subject: [PATCH] LSM: Pass comm name via get_task_comm()
+
+When we pass task->comm to audit_log_untrustedstring(), we need to pass
+a snapshot of it using get_task_comm(). Otherwise, we will lose fields
+after comm= if we raced with updating task->comm.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ security/lsm_audit.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/security/lsm_audit.c b/security/lsm_audit.c
+index 9a62045..6291c67 100644
+--- a/security/lsm_audit.c
++++ b/security/lsm_audit.c
+@@ -212,6 +212,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 				   struct common_audit_data *a)
+ {
+ 	struct task_struct *tsk = current;
++	char name[TASK_COMM_LEN];
+ 
+ 	/*
+ 	 * To keep stack sizes in check force programers to notice if they
+@@ -221,7 +222,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 	BUILD_BUG_ON(sizeof(a->u) > sizeof(void *)*2);
+ 
+ 	audit_log_format(ab, " pid=%d comm=", tsk->pid);
+-	audit_log_untrustedstring(ab, tsk->comm);
++	audit_log_untrustedstring(ab, get_task_comm(name, tsk));
+ 
+ 	switch (a->type) {
+ 	case LSM_AUDIT_DATA_NONE:
+@@ -280,7 +281,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 		tsk = a->u.tsk;
+ 		if (tsk && tsk->pid) {
+ 			audit_log_format(ab, " pid=%d comm=", tsk->pid);
+-			audit_log_untrustedstring(ab, tsk->comm);
++			audit_log_untrustedstring(ab, get_task_comm(name, tsk));
+ 		}
+ 		break;
+ 	case LSM_AUDIT_DATA_NET:
+-- 
+1.7.9.5
