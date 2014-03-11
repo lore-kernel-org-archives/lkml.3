@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307AbaCKBF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 21:05:27 -0400
-Received: from mail.efficios.com ([78.47.125.74]:42551 "EHLO mail.efficios.com"
+	id S1754447AbaCKBFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 21:05:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10684 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752714AbaCKBFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 21:05:25 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/2] Tracepoint API doc update: tracepoint_probe_register() return value
-Date: Mon, 10 Mar 2014 21:04:58 -0400
-Message-Id: <1394499898-1537-2-git-send-email-mathieu.desnoyers@efficios.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1394499898-1537-1-git-send-email-mathieu.desnoyers@efficios.com>
-References: <1394499898-1537-1-git-send-email-mathieu.desnoyers@efficios.com>
+	id S1754341AbaCKBFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Mar 2014 21:05:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,627,1389772800"; 
+   d="scan'208";a="469893772"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@infradead.org
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com
+Subject: Implement lbr-as-callgraph v5
+Date: Mon, 10 Mar 2014 18:05:13 -0700
+Message-Id: <1394499921-27668-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Describe the return values of tracepoint_probe_register(), including
--ENODEV added by commit:
+[Even more review feedback and some bugs addressed.]
 
-Author: Steven Rostedt <rostedt@goodmis.org>
+This patchkit implements lbr-as-callgraphs in per freport,
+as an alternative way to present LBR information.
 
-    tracing: Warn if a tracepoint is not set via debugfs
+Current perf report does a histogram over the branch edges,
+which is useful to look at basic blocks, but doesn't tell
+you anything about the larger control flow behaviour.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
----
- kernel/tracepoint.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+This patchkit adds a new option --branch-history that
+adds the branch paths to the callgraph history instead.
 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 49cb94e..0839258 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -378,7 +378,17 @@ tracepoint_add_probe(const char *name, void *probe, void *data)
-  * @probe: probe handler
-  * @data: probe private data
-  *
-- * Returns 0 if ok, error value on error.
-+ * Returns:
-+ * - 0 if the probe was successfully registered, and tracepoint
-+ *   callsites are currently loaded for that probe,
-+ * - -ENODEV if the probe was successfully registered, but no tracepoint
-+ *   callsite is currently loaded for that probe,
-+ * - other negative error value on error.
-+ *
-+ * When tracepoint_probe_register() returns either 0 or -ENODEV,
-+ * parameters @name, @probe, and @data may be used by the tracepoint
-+ * infrastructure until the probe is unregistered.
-+ *
-  * The probe address must at least be aligned on the architecture pointer size.
-  */
- int tracepoint_probe_register(const char *name, void *probe, void *data)
--- 
-1.7.10.4
+This allows to reason about individual branch paths leading
+to specific samples.
+
+Also available at
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/lbr-callgraph4
+
+v2:
+- rebased on perf/core
+- fix various issues
+- rename the option to --branch-history
+- various fixes to display the information more concise
+v3:
+- White space changes
+- Consolidate some patches
+- Update some descriptions
+v4:
+- Fix various display problems
+- Unknown srcline is now printed as symbol+offset
+- Refactor some code to address review feedback
+- Merge with latest tip
+- Fix missing srcline display in stdio hist output.
+v5:
+- Rename functions
+- Fix gtk build problem
+- Fix crash without -g
+- Improve error messages
+- Improve srcline display in various ways
+
+Example output:
+
+    % perf record -b -g ./tsrc/tcall
+    [ perf record: Woken up 1 times to write data ]
+    [ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
+    % perf report --branch-history
+    ...
+        54.91%  tcall.c:6  [.] f2                      tcall
+                |
+                |--65.53%-- f2 tcall.c:5
+                |          |
+                |          |--70.83%-- f1 tcall.c:11
+                |          |          f1 tcall.c:10
+                |          |          main tcall.c:18
+                |          |          main tcall.c:18
+                |          |          main tcall.c:17
+                |          |          main tcall.c:17
+                |          |          f1 tcall.c:13
+                |          |          f1 tcall.c:13
+                |          |          f2 tcall.c:7
+                |          |          f2 tcall.c:5
+                |          |          f1 tcall.c:12
+                |          |          f1 tcall.c:12
+                |          |          f2 tcall.c:7
+                |          |          f2 tcall.c:5
+                |          |          f1 tcall.c:11
+
 
