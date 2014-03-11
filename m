@@ -1,168 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbaCKOso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 10:48:44 -0400
-Received: from mail.arcturusnetworks.com ([66.11.68.20]:37643 "EHLO
-	mail.arcturusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806AbaCKOsn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 10:48:43 -0400
-Message-ID: <531F2247.30502@arcturusnetworks.com>
-Date: Tue, 11 Mar 2014 10:48:39 -0400
-From: Oleksandr G Zhadan <oleks@arcturusnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753543AbaCKOtL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 10:49:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32718 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753321AbaCKOtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 10:49:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,631,1389772800"; 
+   d="scan'208";a="496215125"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: "can't evaluate _CRS: 1" messages since b355cee [ACPI /
+ resources: ignore invalid ACPI device resources]
+Thread-Topic: "can't evaluate _CRS: 1" messages since b355cee [ACPI /
+ resources: ignore invalid ACPI device resources]
+Thread-Index: AQHPPQYgy2nXtxFXAECTqpl1notGyprbU12AgACDXnD//4MtAIAAm+og
+Date: Tue, 11 Mar 2014 14:49:03 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B90926301203847@SHSMSX103.ccr.corp.intel.com>
+References: <20140311084409.GA282@x4> <1586607.L4KMXXX471@vostro.rjw.lan>
+ <744357E9AAD1214791ACBA4B0B9092630120179D@SHSMSX103.ccr.corp.intel.com>
+ <1978112.3xSLQoOaC0@vostro.rjw.lan>
+In-Reply-To: <1978112.3xSLQoOaC0@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Mike Frysinger <vapier@gentoo.org>, Marc Kleine-Budde <mkl@pengutronix.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        LKML <linux-kernel@vger.kernel.org>, dmaengine@vger.kernel.org
-Subject: Re: blackfin + dmaengine: conflicting define/enum "DMA_COMPLETE"
-References: <52D188DA.6020904@pengutronix.de> <52D18DE4.2020008@infradead.org> <52D19393.8090608@pengutronix.de> <201401180202.06161.vapier@gentoo.org> <530F60F3.10604@arcturusnetworks.com> <20140311102557.GS1976@intel.com>
-In-Reply-To: <20140311102557.GS1976@intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2BEnRwb026321
 
-On 03/11/2014 06:25 AM, Vinod Koul wrote:
-> On Thu, Feb 27, 2014 at 10:59:47AM -0500, Oleksandr G Zhadan wrote:
->> Hello,
->>
->> It's good to "... matched the manual ...", and in this case we can
->> match the manual more pedantically, maybe with prefix "HOST".
->>
->> In the case of Host DMA port STATUS register:
->>
->>  From manual :
->> .... HOST_STATUS register bits include:
->> â€¢ DMA Ready (DMA_RDY)
->> â€¢ FIFO Full (FIFOFULL)
->> â€¢ FIFO Empty (FIFOEMPTY)
->> â€¢ DMA Complete (DMA_CMPLT)
->> â€¢ HOSTDP Handshake (HSHK)
->> â€¢ HOSTDP Timeout (HOSTDP_TOUT)
->> â€¢ HOSTDP Interrupt Request (HIRQ).
->> â€¢ Allow Configurations (ALLOW_CNFG)
->> â€¢ DMA Direction (DMA_DIR)
->> â€¢ Bus Timeout Enabled (BTE)
->>
->> We could change definitions to something like:
->>
->> #define DMA_CMPLT    0x08        /* DMA Complete */
->> or
->> #define HOST_DMA_CMPLT  0x08    /* DMA Complete */
->>
->> And make the similar for other bits/registers.
->>
->> Oleks
->>
->> On 01/18/2014 02:02 AM, Mike Frysinger wrote:
->>> On Saturday 11 January 2014 13:55:15 Marc Kleine-Budde wrote:
->>>> On 01/11/2014 07:31 PM, Randy Dunlap wrote:
->>>>> On 01/11/2014 10:09 AM, Marc Kleine-Budde wrote:
->>>>>> Hello,
->>>>>>
->>>>>> in current linux-next (and net-next) the compilation of the CAN
->>>>>>
->>>>>> drivers[1] with ARCH=blackfin fails with:
->>>>>>>    CC [M]  drivers/net/can/c_can/c_can.o
->>>>>>>
->>>>>>> In file included from linux/include/linux/netdevice.h:38:0,
->>>>>>>
->>>>>>>                   from linux/drivers/net/can/c_can/c_can.c:32:
->>>>>>> linux/include/linux/dmaengine.h:55:2: error: expected identifier before
->>>>>>> numeric constant linux/include/linux/dmaengine.h: In function
->>>>>>> 'dma_async_is_complete': linux/include/linux/dmaengine.h:1023:9:
->>>>>>> error: 'DMA_IN_PROGRESS' undeclared (first use in this function)
->>>>>>> linux/include/linux/dmaengine.h:1023:9: note: each undeclared
->>>>>>> identifier is reported only once for each function it appears in
->>>>>> There are two locations where DMA_COMPLETE is defined:
->>>>>>> arch/blackfin/mach-bf548/include/mach/defBF547.h:602:#define
->>>>>>>    DMA_COMPLETE  0x8        /* DMA Complete */
->>>>>>> arch/blackfin/mach-bf548/include/mach/defBF544.h:622:#define
->>>>>>>     DMA_COMPLETE  0x8        /* DMA Complete */
->>>>>> and
->>>>>>
->>>>>>> include/linux/dmaengine.h-enum dma_status {
->>>>>>> include/linux/dmaengine.h:      DMA_COMPLETE,
->>>>>>> include/linux/dmaengine.h-      DMA_IN_PROGRESS,
->>>>>>> include/linux/dmaengine.h-      DMA_PAUSED,
->>>>>>> include/linux/dmaengine.h-      DMA_ERROR,
->>>>>>> include/linux/dmaengine.h-};
->>>>>> What's the appropriate fix for the problem?
->>>>> arch/blackfin/mach-bf548/ needs a less generic name for its macro.
->>>> Mike, is there a in tree user of blacksfin's DMA_COMPLETE? I cannot find
->>>> anyone.
->>> looks like those are defines for the host port peripheral on the BF54x.
->>> typically for peripherals we didn't have proper drivers for (like CAN and UART
->>> and SPI and such), we left the defines in the headers.  those in turn matched
->>> the manual so people coming from other Blackfin environments (and reading the
->>> manuals) didn't have to figure out what name the Linux headers used.
->>>
->>> unfortunately, it leads to cases like this where the names are pretty bad.
->>> considering the host peripheral most likely never saw any serious use, it
->>> should be fine to delete all the bit defines in those headers related to those
->>> registers (i see HOST_{STATUS,CONTROL,TIMEOUT}.
-> IMHO BFN/BLACKFIN_HOST_{} would be more apt! HOST_{} is too generic and can
-> again clash with something else!
->
-Yes, or we can just use what already done in mach/defBF512.h and 
-mach/defBF522.h
-....
-/* Bit masks for HOST_CONTROL */
 
-#define                   HOST_CNTR_HOST_EN  0x1        /* Host Enable */
-#define                  HOST_CNTR_nHOST_EN  0x0
-#define                  HOST_CNTR_HOST_END  0x2        /* Host Endianess */
-#define                 HOST_CNTR_nHOST_END  0x0
-#define                 HOST_CNTR_DATA_SIZE  0x4        /* Data Size */
-#define                HOST_CNTR_nDATA_SIZE  0x0
-#define                  HOST_CNTR_HOST_RST  0x8        /* Host Reset */
-#define                 HOST_CNTR_nHOST_RST  0x0
-#define                  HOST_CNTR_HRDY_OVR  0x20       /* Host Ready 
-Override */
-#define                 HOST_CNTR_nHRDY_OVR  0x0
-#define                  HOST_CNTR_INT_MODE  0x40       /* Interrupt Mode */
-#define                 HOST_CNTR_nINT_MODE  0x0
-#define                     HOST_CNTR_BT_EN  0x80       /* Bus Timeout 
-Enable */
-#define                   HOST_CNTR_ nBT_EN  0x0
-#define                       HOST_CNTR_EHW  0x100      /* Enable Host 
-Write */
-#define                      HOST_CNTR_nEHW  0x0
-#define                       HOST_CNTR_EHR  0x200      /* Enable Host 
-Read */
-#define                      HOST_CNTR_nEHR  0x0
-#define                       HOST_CNTR_BDR  0x400      /* Burst DMA 
-Requests */
-#define                      HOST_CNTR_nBDR  0x0
 
-/* Bit masks for HOST_STATUS */
+> -----Original Message-----
+> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> Sent: Tuesday, March 11, 2014 9:23 PM
+> To: Zhang, Rui
+> Cc: Markus Trippelsdorf; linux-acpi@vger.kernel.org; Wysocki, Rafael J;
+> linux-kernel@vger.kernel.org
+> Subject: Re: "can't evaluate _CRS: 1" messages since b355cee [ACPI /
+> resources: ignore invalid ACPI device resources]
+> Importance: High
+> 
+> On Tuesday, March 11, 2014 12:59:47 PM Zhang, Rui wrote:
+> > I think the reason problem is that:
+> > 1. there are zero length IO/Memory resources for these machines, and
+> for those resources
+> >    a) w/o commit b355cee88e3b1a193f0e9a81db810f6f83ad728b,
+> acpi_dev_resource_memory/io returns true
+> >    b) w commit b355cee88e3b1a193f0e9a81db810f6f83ad728b,
+> > acpi_dev_resource_memory/io returns false 2. in
+> pnpacpi_allocated_resource(), when acpi_dev_resource_memory/io()
+> returns false, it translates into "the resource is not IO/Memory
+> resource".
+> >
+> > IMO, the root cause is that the BOOL return value of
+> > acpi_dev_resource_memory/io() can not represent the following three
+> > situations
+> > 1) a valid IO/Memory resource
+> > 2) an invalid IO/Memory resource
+> > 3) not an IO/Memory resource
+> 
+> Well, can we make acpi_dev_resource_memory/io return an int, then, so
+> that it can cover all of the cases it needs to cover correctly and so
+> that we can get rid of those confusing messages?
+> 
+After a second thought, I think it would be overkill to make acpi_dev_resource_memory/io return an int.
+Because we need really a lot of code to associate with this change, say, we need to check all the three different situations and followed by different actions.
+The simplest way to fix the problem is to invoke acpi_dev_resource_memory/io for ACPI memory/io resources only.
+What do you think?
 
-#define                     HOST_STAT_READY  0x1        /* DMA Ready */
-#define                    HOST_STAT_nREADY  0x0
-#define                  HOST_STAT_FIFOFULL  0x2        /* FIFO Full */
-#define                 HOST_STAT_nFIFOFULL  0x0
-#define                 HOST_STAT_FIFOEMPTY  0x4        /* FIFO Empty */
-#define                HOST_STAT_nFIFOEMPTY  0x0
-#define                  HOST_STAT_COMPLETE  0x8        /* DMA Complete */
-#define                 HOST_STAT_nCOMPLETE  0x0
-#define                      HOST_STAT_HSHK  0x10       /* Host Handshake */
-#define                     HOST_STAT_nHSHK  0x0
-#define                   HOST_STAT_TIMEOUT  0x20       /* Host Timeout */
-#define                  HOST_STAT_nTIMEOUT  0x0
-#define                      HOST_STAT_HIRQ  0x40       /* Host 
-Interrupt Request */
-#define                     HOST_STAT_nHIRQ  0x0
-#define                HOST_STAT_ALLOW_CNFG  0x80       /* Allow New 
-Configuration */
-#define               HOST_STAT_nALLOW_CNFG  0x0
-#define                   HOST_STAT_DMA_DIR  0x100      /* DMA Direction */
-#define                  HOST_STAT_nDMA_DIR  0x0
-#define                       HOST_STAT_BTE  0x200      /* Bus Timeout 
-Enabled */
-#define                      HOST_STAT_nBTE  0x0* Bit masks for 
-HOST_CONTROL */
+Thanks,
+rui
 
+> Rafael
+> 
+> 
+> > > -----Original Message-----
+> > > From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-
+> > > owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
+> > > Sent: Tuesday, March 11, 2014 9:00 PM
+> > > To: Markus Trippelsdorf
+> > > Cc: linux-acpi@vger.kernel.org; Zhang, Rui; Wysocki, Rafael J;
+> > > linux- kernel@vger.kernel.org
+> > > Subject: Re: "can't evaluate _CRS: 1" messages since b355cee [ACPI
+> /
+> > > resources: ignore invalid ACPI device resources]
+> > > Importance: High
+> > >
+> > > On Tuesday, March 11, 2014 09:44:09 AM Markus Trippelsdorf wrote:
+> > > > Since:
+> > > >  commit b355cee88e3b1a193f0e9a81db810f6f83ad728b
+> > > >  Author: Zhang Rui <rui.zhang@intel.com>
+> > > >  Date:   Thu Feb 27 11:37:15 2014 +0800
+> > > >
+> > > >      ACPI / resources: ignore invalid ACPI device resources
+> > > >
+> > > > The following error message is printed three times during boot on
+> > > > my
+> > > > machine: "can't evaluate _CRS: 1"
+> > >
+> > > It may be catching a BIOS bug actually.
+> > >
+> > > Please attach the output of acpidump from that system.
+> > >
+> > > > Here's the dmesg diff:
+> > > >
+> > > > @@ -308,6 +308,8 @@
+> > > >  Switched to clocksource hpet
+> > > >  pnp: PnP ACPI init
+> > > >  ACPI: bus type PNP registered
+> > > > +pnp 00:00: unknown resource type 10 in _CRS pnp 00:00: can't
+> > > evaluate
+> > > > +_CRS: 1
+> > > >  system 00:00: Plug and Play ACPI device, IDs PNP0c02 (active)
+> > > > pnp
+> > > > 00:01: [dma 4]  pnp 00:01: Plug and Play ACPI device, IDs PNP0200
+> > > > (active) @@ -318,6 +320,8 @@  system 00:06: [mem
+> > > > 0xfec00000-0xfec00fff] could not be reserved  system 00:06: [mem
+> > > > 0xfee00000-0xfee00fff] has been reserved  system 00:06: Plug and
+> > > > Play ACPI device, IDs PNP0c02 (active)
+> > > > +pnp 00:07: unknown resource type 4 in _CRS pnp 00:07: can't
+> > > > +evaluate
+> > > > +_CRS: 1
+> > > >  system 00:07: [io  0x04d0-0x04d1] has been reserved  system
+> 00:07:
+> > > > [io  0x040b] has been reserved  system 00:07: [io  0x04d6] has
+> > > > been reserved @@ -334,19 +338,9 @@  system 00:07: [io
+> > > > 0x0cd8-0x0cdf] has been reserved  system 00:07: [io
+> > > > 0x0b00-0x0b3f] has been reserved system 00:07: [io  0x0800-0x089f]
+> could not be reserved -system 00:07:
+> > > > [io  0x0b00-0x0b0f] has been reserved -system 00:07: [io
+> > > > 0x0b20-0x0b3f] has been reserved -system 00:07: [io
+> > > > 0x0900-0x090f] has been reserved -system 00:07: [io
+> > > > 0x0910-0x091f] has been
+> > > reserved
+> > > > -system 00:07: [io  0xfe00-0xfefe] has been reserved -system
+> 00:07:
+> > > > [mem 0xdff00000-0xdfffffff] has been reserved -system 00:07: [mem
+> > > > 0xffb80000-0xffbfffff] has been reserved -system 00:07: [mem
+> > > > 0xfec10000-0xfec1001f] has been reserved  system 00:07: Plug and
+> > > > Play ACPI device, IDs PNP0c02 (active) -system 00:08: [io
+> > > > 0x0230-0x023f] has been reserved -system 00:08: [io
+> > > > 0x0290-0x029f] has been
+> > > reserved
+> > > > -system 00:08: [io  0x0f40-0x0f4f] has been reserved -system
+> 00:08:
+> > > > [io  0x0a30-0x0a3f] has been reserved
+> > > > +pnp 00:08: unknown resource type 4 in _CRS pnp 00:08: can't
+> > > > +evaluate
+> > > > +_CRS: 1
+> > > >  system 00:08: Plug and Play ACPI device, IDs PNP0c02 (active)
+> > > system
+> > > > 00:09: [mem 0xe0000000-0xefffffff] has been reserved  system
+> 00:09:
+> > > > Plug and Play ACPI device, IDs PNP0c02 (active)
+> > > >
+> > > >
+> > >
+> > > --
+> > > I speak only for myself.
+> > > Rafael J. Wysocki, Intel Open Source Technology Center.
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-
+> acpi"
+> > > in the body of a message to majordomo@vger.kernel.org More
+> majordomo
+> > > info at  http://vger.kernel.org/majordomo-info.html
+> >
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
