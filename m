@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442AbaCKFTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 01:19:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51414 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183AbaCKFTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 01:19:44 -0400
-X-IronPort-AV: E=Sophos;i="4.97,629,1389715200"; 
-   d="scan'208";a="9676541"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, tglx@linutronix.de, hpa@zytor.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH for-tip V2] perf/x86/uncore: Add __init for uncore_cpumask_init().
-Date: Tue, 11 Mar 2014 13:14:55 +0800
-Message-Id: <1394514895-11122-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <CABPqkBR567Gb53z==FTjcfC2mKK6cruTPURjNXM+3ZUwAv24rw@mail.gmail.com>
-References: <CABPqkBR567Gb53z==FTjcfC2mKK6cruTPURjNXM+3ZUwAv24rw@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 13:14:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/11 13:16:51,
-	Serialize complete at 2014/03/11 13:16:51
+	id S1753934AbaCKFUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 01:20:48 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:63053 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510AbaCKFUr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 01:20:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140309070642.GA2525@needle>
+References: <20140219061824.GA29703@dhcp-17-89.nay.redhat.com>
+	<20140305053617.GE26240@dhcp-17-89.nay.redhat.com>
+	<20140306064756.GB16859@needle.mulix.org>
+	<53181AC1.2020807@zytor.com>
+	<20140306070047.GF16859@needle.mulix.org>
+	<CAPoiz9yhAeoWDANus6=O_5AomKFEAzzR1pR4F0rN2HnDWwYAMg@mail.gmail.com>
+	<20140309070642.GA2525@needle>
+Date: Mon, 10 Mar 2014 22:20:45 -0700
+Message-ID: <CAPoiz9xDUb1aoYMfj8jnQRTKo8GCH5PyfNjDd-04=AQXrQjBCA@mail.gmail.com>
+Subject: Re: How could we get rid of saved_max_pfn for calgary iommu?
+From: Jon Mason <jdmason@kudzu.us>
+To: Muli Ben-Yehuda <muli@cs.technion.ac.il>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Baoquan He <bhe@redhat.com>,
+        kexec@lists.infradead.org, discuss@x86-64.org, x86@kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 411cf180f introduce function uncore_cpumask_init() and it calls uncore_cpu_setup()
-which is marked as __init. But it is not marked with __init, then the following warning
-is there when building.
+On Sun, Mar 9, 2014 at 12:06 AM, Muli Ben-Yehuda <muli@cs.technion.ac.il> wrote:
+> On Thu, Mar 06, 2014 at 07:46:44AM -0700, Jon Mason wrote:
+>
+>> > I don't know of anyone still using it, but it's not
+>> > impossible. Calgary and CalIOC2 machines would now be ~5-8 years
+>> > old.
+>>
+>> It is getting a bit crufty in arch/x86.  Would it be better to move
+>> it to drivers/iommu?
+>
+> Not sure I see the potential benefit... I think for Calgary it's
+> either leave it in arch/x86 or rip it out.
 
-WARNING: vmlinux.o(.text+0x2464a): Section mismatch in reference from the function uncore_cpumask_init() to the function .init.text:uncore_cpu_setup()
-The function uncore_cpumask_init() references
-the function __init uncore_cpu_setup().
-This is often because uncore_cpumask_init lacks a __init
-annotation or the annotation of uncore_cpu_setup is wrong.
+The intent is for it go where the other IOMMU drivers are, and gain
+changes to the overall infrastructure as it evolves.  There has been a
+decent amount of work going on in there  :)
 
-As function uncore_cpumask_init() is only called by __init intel_uncore_init(), then we can
-free it after system initialization.
+Of course, someone would have to put the effort in and test it.
 
-This patch add __init for uncore_cpumask_init() function.
-
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Acked-by: Stephane Eranian <eranian@google.com>
----
-Changlogs:
-	-v1:
-	   Add more commit message for this patch.
-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index b262c61..5c2537a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -4229,7 +4229,7 @@ static int __init uncore_pmus_register(void)
- 	return 0;
- }
- 
--static void uncore_cpumask_init(void)
-+static void __init uncore_cpumask_init(void)
- {
- 	int cpu;
- 
--- 
-1.8.2.1
-
+>
+> Cheers,
+> Muli
