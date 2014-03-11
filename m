@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292AbaCKHIE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 03:08:04 -0400
-Received: from atl4mhob04.myregisteredsite.com ([209.17.115.42]:57970 "EHLO
-	atl4mhob04.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751886AbaCKHID (ORCPT
+	id S1753410AbaCKHOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 03:14:12 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:52411 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203AbaCKHOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 03:08:03 -0400
-X-TCPREMOTEIP: 88.159.208.100
-X-Authenticated-UID: mike@milosoftware.com
-From: Mike Looijmans <mike.looijmans@topic.nl>
-To: git@xilinx.com, wsa@the-dreams.de, linux-i2c@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH] i2c-cadence: Do not let signals interrupt I2C transfers
-Date: Tue, 11 Mar 2014 08:07:35 +0100
-Message-Id: <1394521655-3444-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394449954-10797-1-git-send-email-mike.looijmans@topic.nl>
-References: <1394449954-10797-1-git-send-email-mike.looijmans@topic.nl>
+	Tue, 11 Mar 2014 03:14:10 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2B7E2v8009803, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH net] r8169: fix the incorrect tx descriptor version
+Date: Tue, 11 Mar 2014 15:11:59 +0800
+Message-ID: <1394521919-4257-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.4.2
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pressing CTRL-C while communicating with an I2C device leads to erratic
-behaviour. The cause is that the controller will interrupt the I2C transfer
-in progress, and leave the client device in an undefined state. Many
-drivers do not handle error return codes on I2C transfers. The calling driver
-has no way of telling how much of the transfer has actually completed, so
-it cannot reliably determine the device's state.
+The tx descriptor version of RTL8111B belong to RTL_TD_0.
 
-The best solution here is to not handle signals in the I2C bus driver at all,
-but always complete a transaction before returning control.
-
-See for a related patch and discussion on this topic:
-http://lkml.org/lkml/2014/1/9/246
-
-Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/i2c/busses/i2c-cadence.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
-index 86713d6..c61c3c9 100644
---- a/drivers/i2c/busses/i2c-cadence.c
-+++ b/drivers/i2c/busses/i2c-cadence.c
-@@ -452,16 +452,12 @@ static int cdns_i2c_process_msg(struct cdns_i2c *id, struct i2c_msg *msg,
- 			cdns_i2c_msend(id);
- 
- 		/* Wait for the signal of completion */
--		ret = wait_for_completion_interruptible_timeout(
--							&id->xfer_done, HZ);
--		if (ret < 1) {
-+		ret = wait_for_completion_timeout(&id->xfer_done, HZ);
-+		if (!ret) {
- 			cdns_i2c_master_reset(adap);
--			if (!ret) {
--				dev_err(id->adap.dev.parent,
-+			dev_err(id->adap.dev.parent,
- 					"timeout waiting on completion\n");
--				return -ETIMEDOUT;
--			}
--			return ret;
-+			return -ETIMEDOUT;
- 		}
- 		cdns_i2c_writereg(CDNS_I2C_IXR_ALL_INTR_MASK,
- 				  CDNS_I2C_IDR_OFFSET);
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index e977965..3ff7bc3 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -209,7 +209,7 @@ static const struct {
+ 	[RTL_GIGA_MAC_VER_16] =
+ 		_R("RTL8101e",		RTL_TD_0, NULL, JUMBO_1K, true),
+ 	[RTL_GIGA_MAC_VER_17] =
+-		_R("RTL8168b/8111b",	RTL_TD_1, NULL, JUMBO_4K, false),
++		_R("RTL8168b/8111b",	RTL_TD_0, NULL, JUMBO_4K, false),
+ 	[RTL_GIGA_MAC_VER_18] =
+ 		_R("RTL8168cp/8111cp",	RTL_TD_1, NULL, JUMBO_6K, false),
+ 	[RTL_GIGA_MAC_VER_19] =
 -- 
-1.7.9.5
+1.8.4.2
 
