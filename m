@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103AbaCKXeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 19:34:13 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:34680 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756081AbaCKXeL (ORCPT
+	id S1756154AbaCKXeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 19:34:23 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:58144 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756108AbaCKXeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 19:34:11 -0400
+	Tue, 11 Mar 2014 19:34:21 -0400
 From: Matt Porter <mporter@linaro.org>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -17,10 +17,11 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Christian Daudt <bcm@fixthebug.org>
 Cc: Devicetree List <devicetree@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 1/5] mfd: add bcm590xx pmu DT binding
-Date: Tue, 11 Mar 2014 19:33:53 -0400
-Message-Id: <1394580837-8331-2-git-send-email-mporter@linaro.org>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tim Kryger <tim.kryger@linaro.org>
+Subject: [PATCH v4 4/5] ARM: configs: bcm_defconfig: enable bcm590xx regulator support
+Date: Tue, 11 Mar 2014 19:33:56 -0400
+Message-Id: <1394580837-8331-5-git-send-email-mporter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1394580837-8331-1-git-send-email-mporter@linaro.org>
 References: <1394580837-8331-1-git-send-email-mporter@linaro.org>
@@ -28,64 +29,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a DT binding for the BCM590xx PMUs. The binding inherits from
-the generic regulator bindings.
+Enable BCM590xx MFD and regulator drivers to manage voltage
+regulators on BCM281xx platforms.
 
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
 Signed-off-by: Matt Porter <mporter@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 ---
- Documentation/devicetree/bindings/mfd/bcm590xx.txt | 41 ++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/bcm590xx.txt
+ arch/arm/configs/bcm_defconfig | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/mfd/bcm590xx.txt b/Documentation/devicetree/bindings/mfd/bcm590xx.txt
-new file mode 100644
-index 0000000..2300246
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/bcm590xx.txt
-@@ -0,0 +1,41 @@
-+-------------------------------
-+BCM590xx Power Management Units
-+-------------------------------
+diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
+index 2519d6d..0100464 100644
+--- a/arch/arm/configs/bcm_defconfig
++++ b/arch/arm/configs/bcm_defconfig
+@@ -79,6 +79,13 @@ CONFIG_HW_RANDOM=y
+ CONFIG_I2C=y
+ CONFIG_I2C_CHARDEV=y
+ # CONFIG_HWMON is not set
++CONFIG_MFD_BCM590XX=y
++CONFIG_REGULATOR=y
++CONFIG_REGULATOR_FIXED_VOLTAGE=y
++CONFIG_REGULATOR_VIRTUAL_CONSUMER=y
++CONFIG_REGULATOR_USERSPACE_CONSUMER=y
++CONFIG_REGULATOR_BCM590XX=y
 +
-+Required properties:
-+- compatible: "brcm,bcm59056"
-+- reg: I2C slave address
-+- interrupts: interrupt for the PMU. Generic interrupt client node bindings
-+  are described in interrupt-controller/interrupts.txt
-+
-+------------------
-+Voltage Regulators
-+------------------
-+
-+Optional properties:
-+- regulators: This is the list of child nodes that specify the regulator
-+  initialization data for defined regulators.  Generic regulator bindings
-+  are described in regulator/regulator.txt.
-+
-+  The valid regulator nodes for BCM59056 are:
-+  	rfldo, camldo1, camldo2, simldo1, simldo2, sdldo, sdxldo,
-+	mmcldo1, mmcldo2, audldo, micldo, usbldo, vibldo,
-+	csr, iosr1, iosr2, msr, sdsr1, sdsr2, vsr
-+
-+Example:
-+	pmu: bcm59056@8 {
-+		compatible = "brcm,bcm59056";
-+		reg = <0x08>;
-+		interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_HIGH>;
-+		regulators {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			rfldo_reg: rfldo {
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+
-+			...
-+		};
-+	};
+ CONFIG_VIDEO_OUTPUT_CONTROL=y
+ CONFIG_FB=y
+ CONFIG_BACKLIGHT_LCD_SUPPORT=y
 -- 
 1.8.4
 
