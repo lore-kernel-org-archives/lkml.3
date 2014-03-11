@@ -1,257 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335AbaCKSkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:40:31 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:47964 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266AbaCKSk2 (ORCPT
+	id S1755307AbaCKSoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:44:14 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:52825 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052AbaCKSoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:40:28 -0400
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
-Cc: Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Laura Abbott <lauraa@codeaurora.org>, Jiang Liu <liuj97@gmail.com>,
-        Sricharan R <r.sricharan@ti.com>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Subject: [PATCH v8 2/2] ARM hibernation / suspend-to-disk
-Date: Tue, 11 Mar 2014 11:40:14 -0700
-Message-Id: <1394563214-26007-3-git-send-email-sebastian.capella@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394563214-26007-1-git-send-email-sebastian.capella@linaro.org>
-References: <1394563214-26007-1-git-send-email-sebastian.capella@linaro.org>
+	Tue, 11 Mar 2014 14:44:10 -0400
+Date: Tue, 11 Mar 2014 14:44:05 -0400 (EDT)
+From: Jon Ringle <jon@ringle.org>
+X-X-Sender: jringle@jringle-ubuntu
+To: Jon Ringle <jon@ringle.org>
+cc: Alexander Shiyan <shc_work@mail.ru>, gregkh@linuxfoundation.org,
+        jslaby@suse.cz, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Jon Ringle <jringle@gridpoint.com>
+Subject: Re: [PATCH] RFC: WIP: sc16is7xx [v0.4]
+In-Reply-To: <alpine.DEB.2.02.1403111401440.17021@jringle-ubuntu>
+Message-ID: <alpine.DEB.2.02.1403111438010.21168@jringle-ubuntu>
+References: <1394432777-13005-1-git-send-email-jon@ringle.org> <1394434945.519725450@f256.i.mail.ru> <alpine.DEB.2.02.1403100744230.23103@jringle-ubuntu> <1394468076.709210210@f170.i.mail.ru> <alpine.DEB.2.02.1403111401440.17021@jringle-ubuntu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-455935605-1394563448=:21168"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russ Dill <Russ.Dill@ti.com>
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Enable hibernation for ARM architectures and provide ARM
-architecture specific calls used during hibernation.
+--8323329-455935605-1394563448=:21168
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 
-The swsusp hibernation framework depends on the
-platform first having functional suspend/resume.
 
-Then, in order to enable hibernation on a given platform, a
-platform_hibernation_ops structure may need to be registered with
-the system in order to save/restore any SoC-specific / cpu specific
-state needing (re)init over a suspend-to-disk/resume-from-disk cycle.
+I left out some relevant functions (sc16is7xx_port_read(), 
+sc16is7xx_port_write(), sc16is7xx_port_update()) in my previous email...
 
-For example:
+On Mon, 10 Mar 2014, Alexander Shiyan wrote:
 
-     - "secure" SoCs that have different sets of control registers
-       and/or different CR reg access patterns.
+> Понедельник, 10 марта 2014, 7:50 -04:00 от Jon Ringle <jon@ringle.org>:
+> > 
+> > On Mon, 10 Mar 2014, Alexander Shiyan wrote:
+> I do not understand why you chose the sccnxp driver as a template.
+> Use as a template max310x driver from linux-next branch.
+> I'm sure it will be better.
 
-     - SoCs with L2 caches as the activation sequence there is
-       SoC-dependent; a full off-on cycle for L2 is not done
-       by the hibernation support code.
+I followed your advice on using max310x as a template. One thing that I'm 
+struggling to get right is the regmap. The datasheet[1] specifies the 
+register bits as follows:
 
-     - SoCs requiring steps on wakeup _before_ the "generic" parts
-       done by cpu_suspend / cpu_resume can work correctly.
+	Table 33. Register address byte (I2C)
+	Bit	Name	Function
+	7 	-	not used
+	6:3 	A[3:0]	UART's internal register select
+	2:1	CH1,0	channel select: CH1 = 0, CH0 = 0
+			Other values are reserved and should not be used.
+	0	-	not used
 
-     - SoCs having persistent state which is maintained during suspend
-       and resume, but will be lost during the power off cycle after
-       suspend-to-disk.
+So, I need to shift the register address by 3. Here is how I have defined 
+the regmap stuff:
 
-This is a rebase/rework of Frank Hofmann's v5 hibernation patchset.
+------>8 [relevant code] >8-------
+/* SC16IS7XX register definitions */
+#define SC16IS7XX_RHR_REG		(0x00) /* RX FIFO */
+#define SC16IS7XX_THR_REG		(0x00) /* TX FIFO */
+#define SC16IS7XX_IER_REG		(0x01) /* Interrupt enable */
+#define SC16IS7XX_IIR_REG		(0x02) /* Interrupt Ident */
+#define SC16IS7XX_FCR_REG		(0x02) /* FIFO control */
+#define SC16IS7XX_LCR_REG		(0x03) /* Line Control */
+#define SC16IS7XX_MCR_REG		(0x04) /* Modem Control */
+#define SC16IS7XX_LSR_REG		(0x05) /* Line Status */
+#define SC16IS7XX_MSR_REG		(0x06) /* Modem Status */
+#define SC16IS7XX_SPR_REG		(0x07) /* Scratch Pad */
+#define SC16IS7XX_TXLVL_REG		(0x08) /* TX FIFO level */
+#define SC16IS7XX_RXLVL_REG		(0x09) /* RX FIFO level */
+#define SC16IS7XX_IODIR_REG		(0x0a) /* I/O Dir (750/760) */
+#define SC16IS7XX_IOSTATE_REG		(0x0b) /* I/O State (750/760) */
+#define SC16IS7XX_IOINTENA_REG		(0x0c) /* I/O Int Enable (750/760) */
+#define SC16IS7XX_IOCONTROL_REG		(0x0e) /* I/O Control (750/760) */
+#define SC16IS7XX_EFCR_REG		(0x0f) /* Extra Feature Control */
 
-Acked-by: Russ Dill <Russ.Dill@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-Acked-by: Pavel Machek <pavel@ucw.cz>
-Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Nicolas Pitre <nico@linaro.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Jonathan Austin <jonathan.austin@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Laura Abbott <lauraa@codeaurora.org>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Sricharan R <r.sricharan@ti.com>
-Cc: Victor Kamensky <victor.kamensky@linaro.org>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>
----
- arch/arm/kernel/Makefile    |    1 +
- arch/arm/kernel/hibernate.c |  107 +++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mm/Kconfig         |    5 ++
- include/linux/suspend.h     |    2 +
- 4 files changed, 115 insertions(+)
- create mode 100644 arch/arm/kernel/hibernate.c
+/* TX/Trigger Registers: Only if ((MCR[2] == 0) && (EFR[4] == 1)) */
+#define SC16IS7XX_TCR_REG		(0x06) /* Transmit control */
+#define SC16IS7XX_TLR_REG		(0x07) /* Trigger level */
 
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index a30fc9b..8afa848 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -39,6 +39,7 @@ obj-$(CONFIG_ARTHUR)		+= arthur.o
- obj-$(CONFIG_ISA_DMA)		+= dma-isa.o
- obj-$(CONFIG_PCI)		+= bios32.o isa.o
- obj-$(CONFIG_ARM_CPU_SUSPEND)	+= sleep.o suspend.o
-+obj-$(CONFIG_HIBERNATION)	+= hibernate.o
- obj-$(CONFIG_SMP)		+= smp.o
- ifdef CONFIG_MMU
- obj-$(CONFIG_SMP)		+= smp_tlb.o
-diff --git a/arch/arm/kernel/hibernate.c b/arch/arm/kernel/hibernate.c
-new file mode 100644
-index 0000000..036293d
---- /dev/null
-+++ b/arch/arm/kernel/hibernate.c
-@@ -0,0 +1,107 @@
-+/*
-+ * Hibernation support specific for ARM
-+ *
-+ * Derived from work on ARM hibernation support by:
-+ *
-+ * Ubuntu project, hibernation support for mach-dove
-+ * Copyright (C) 2010 Nokia Corporation (Hiroshi Doyu)
-+ * Copyright (C) 2010 Texas Instruments, Inc. (Teerth Reddy et al.)
-+ *  https://lkml.org/lkml/2010/6/18/4
-+ *  https://lists.linux-foundation.org/pipermail/linux-pm/2010-June/027422.html
-+ *  https://patchwork.kernel.org/patch/96442/
-+ *
-+ * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+#include <linux/mm.h>
-+#include <linux/suspend.h>
-+#include <asm/system_misc.h>
-+#include <asm/idmap.h>
-+#include <asm/suspend.h>
-+#include <asm/memory.h>
-+
-+extern const void __nosave_begin, __nosave_end;
-+
-+int pfn_is_nosave(unsigned long pfn)
-+{
-+	unsigned long nosave_begin_pfn = __phys_to_pfn(__pa(&__nosave_begin));
-+	unsigned long nosave_end_pfn = __phys_to_pfn(__pa(&__nosave_end - 1));
-+
-+	return (pfn >= nosave_begin_pfn) && (pfn <= nosave_end_pfn);
-+}
-+
-+void notrace save_processor_state(void)
-+{
-+	WARN_ON(num_online_cpus() != 1);
-+	local_fiq_disable();
-+}
-+
-+void notrace restore_processor_state(void)
-+{
-+	local_fiq_enable();
-+}
-+
-+/*
-+ * Snapshot kernel memory and reset the system.
-+ *
-+ * swsusp_save() is executed in the suspend finisher so that the CPU
-+ * context pointer and memory are part of the saved image, which is
-+ * required by the resume kernel image to restart execution from
-+ * swsusp_arch_suspend().
-+ *
-+ * soft_restart is not technically needed, but is used to get success
-+ * returned from cpu_suspend.
-+ *
-+ * When soft reboot completes, the hibernation snapshot is written out.
-+ */
-+static int notrace arch_save_image(unsigned long unused)
-+{
-+	int ret;
-+
-+	ret = swsusp_save();
-+	if (ret == 0)
-+		soft_restart(virt_to_phys(cpu_resume));
-+	return ret;
-+}
-+
-+/*
-+ * Save the current CPU state before suspend / poweroff.
-+ */
-+int notrace swsusp_arch_suspend(void)
-+{
-+	return cpu_suspend(0, arch_save_image);
-+}
-+
-+/*
-+ * Restore page contents for physical pages that were in use during loading
-+ * hibernation image.  Switch to idmap_pgd so the physical page tables
-+ * are overwritten with the same contents.
-+ */
-+static void notrace arch_restore_image(void *unused)
-+{
-+	struct pbe *pbe;
-+
-+	cpu_switch_mm(idmap_pgd, &init_mm);
-+	for (pbe = restore_pblist; pbe; pbe = pbe->next)
-+		copy_page(pbe->orig_address, pbe->address);
-+
-+	soft_restart(virt_to_phys(cpu_resume));
-+}
-+
-+static u64 resume_stack[PAGE_SIZE/2/sizeof(u64)] __nosavedata;
-+
-+/*
-+ * Resume from the hibernation image.
-+ * Due to the kernel heap / data restore, stack contents change underneath
-+ * and that would make function calls impossible; switch to a temporary
-+ * stack within the nosave region to avoid that problem.
-+ */
-+int swsusp_arch_resume(void)
-+{
-+	extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
-+	call_with_stack(arch_restore_image, 0,
-+		resume_stack + ARRAY_SIZE(resume_stack));
-+	return 0;
-+}
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index 1f8fed9..83707702 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -611,6 +611,11 @@ config CPU_USE_DOMAINS
- config IO_36
- 	bool
- 
-+config ARCH_HIBERNATION_POSSIBLE
-+	bool
-+	depends on MMU
-+	default y if CPU_ARM920T || CPU_ARM926T || CPU_SA1100 || CPU_XSCALE || CPU_XSC3 || CPU_V6 || CPU_V6K || CPU_V7
-+
- comment "Processor Features"
- 
- config ARM_LPAE
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index f73cabf..38bbf95 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -320,6 +320,8 @@ extern unsigned long get_safe_page(gfp_t gfp_mask);
- extern void hibernation_set_ops(const struct platform_hibernation_ops *ops);
- extern int hibernate(void);
- extern bool system_entering_hibernation(void);
-+asmlinkage int swsusp_save(void);
-+extern struct pbe *restore_pblist;
- #else /* CONFIG_HIBERNATION */
- static inline void register_nosave_region(unsigned long b, unsigned long e) {}
- static inline void register_nosave_region_late(unsigned long b, unsigned long e) {}
--- 
-1.7.9.5
+/* Special Register set: Only if ((LCR[7] == 1) && (LCR != 0xBF)) */
+#define SC16IS7XX_DLL_REG		(0x00) /* Divisor Latch Low */
+#define SC16IS7XX_DLH_REG		(0x01) /* Divisor Latch High */
 
+/* Enhanced Register set: Only if (LCR == 0xBF) */
+#define SC16IS7XX_EFR_REG		(0x02) /* Enhanced Features */
+#define SC16IS7XX_XON1_REG		(0x04) /* Xon1 word */
+#define SC16IS7XX_XON2_REG		(0x05) /* Xon2 word */
+#define SC16IS7XX_XOFF1_REG		(0x06) /* Xoff1 word */
+#define SC16IS7XX_XOFF2_REG		(0x07) /* Xoff2 word */
+
+#define SC16IS7XX_REG_SHIFT		3
+
+static u8 sc16is7xx_port_read(struct uart_port *port, u8 reg)
+{
+	struct sc16is7xx_port *s = dev_get_drvdata(port->dev);
+	unsigned int val = 0;
+
+	regmap_read(s->regmap, reg << SC16IS7XX_REG_SHIFT, &val);
+
+	return val;
+}
+
+static void sc16is7xx_port_write(struct uart_port *port, u8 reg, u8 val)
+{
+	struct sc16is7xx_port *s = dev_get_drvdata(port->dev);
+
+	regmap_write(s->regmap, reg << SC16IS7XX_REG_SHIFT, val);
+}
+
+static void sc16is7xx_port_update(struct uart_port *port, u8 reg, u8 mask, u8 val)
+{
+	struct sc16is7xx_port *s = dev_get_drvdata(port->dev);
+
+	regmap_update_bits(s->regmap, reg << SC16IS7XX_REG_SHIFT, mask, val);
+}
+
+static bool sc16is7xx_reg_writeable(struct device *dev, unsigned int reg)
+{
+	switch ((reg >> SC16IS7XX_REG_SHIFT) & 0xf) {
+	case SC16IS7XX_LSR_REG:
+	case SC16IS7XX_MSR_REG:
+	case SC16IS7XX_TXLVL_REG:
+	case SC16IS7XX_RXLVL_REG:
+		return false;
+	default:
+		break;
+	}
+
+	return true;
+}
+
+static bool sc16is7xx_reg_volatile(struct device *dev, unsigned int reg)
+{
+	switch ((reg >> SC16IS7XX_REG_SHIFT) & 0xf) {
+	case SC16IS7XX_RHR_REG:
+	case SC16IS7XX_IIR_REG:
+	case SC16IS7XX_LSR_REG:
+	case SC16IS7XX_MSR_REG:
+	case SC16IS7XX_TXLVL_REG:
+	case SC16IS7XX_RXLVL_REG:
+	case SC16IS7XX_IOSTATE_REG:
+		return true;
+	default:
+		break;
+	}
+
+	return false;
+}
+
+static bool sc16is7xx_reg_precious(struct device *dev, unsigned int reg)
+{
+	switch ((reg >> SC16IS7XX_REG_SHIFT) & 0xf) {
+	case SC16IS7XX_RHR_REG:
+	case SC16IS7XX_IIR_REG:
+	case SC16IS7XX_MSR_REG:
+		return true;
+	default:
+		break;
+	}
+
+	return false;
+}
+
+static struct regmap_config regcfg = {
+	.reg_bits = 8,
+	.reg_stride = (1 << SC16IS7XX_REG_SHIFT),
+	.val_bits = 8,
+	.max_register = (0xf << SC16IS7XX_REG_SHIFT),
+	.cache_type = REGCACHE_RBTREE,
+	.writeable_reg = sc16is7xx_reg_writeable,
+	.volatile_reg = sc16is7xx_reg_volatile,
+	.precious_reg = sc16is7xx_reg_precious,
+};
+------------->8-----------------
+
+I'm not sure that I have this defined correctly. I also saw in 
+regmap_config pad_bits, which I've tried setting to SC16IS7XX_REG_SHIFT, 
+but when I do that, I get -EINVAL failure.
+
+Thanks,
+Jon
+
+[1] http://www.nxp.com/documents/data_sheet/SC16IS740_750_760.pdf
+--8323329-455935605-1394563448=:21168--
