@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358AbaCKQaz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 12:30:55 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:54084 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753073AbaCKQav (ORCPT
+	id S1754115AbaCKQay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 12:30:54 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:34409 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395AbaCKQav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Mar 2014 12:30:51 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mark Brown <broonie@kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [PATCH 2/3] spi: sh-msiof: Convert to spi core auto_runtime_pm framework
-Date: Tue, 11 Mar 2014 17:32:26 +0100
-Message-ID: <2274545.CyQ67zvVqo@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAMuHMdVOUuFsObEag_MwUT_jaqfOHMEcUScrkbaTEitmyJr+NQ@mail.gmail.com>
-References: <1394531952-3905-1-git-send-email-geert@linux-m68k.org> <1802214.NxZUiJcWLG@avalon> <CAMuHMdVOUuFsObEag_MwUT_jaqfOHMEcUScrkbaTEitmyJr+NQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <531F365B.4060000@linux.intel.com>
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
+	<CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
+	<CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
+	<CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
+	<CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
+	<CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
+	<CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
+	<CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>
+	<531F365B.4060000@linux.intel.com>
+Date: Tue, 11 Mar 2014 09:30:51 -0700
+X-Google-Sender-Auth: J6nkL5lcnpDqVqJsKxFZp85jOQ8
+Message-ID: <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 March 2014 17:23:37 Geert Uytterhoeven wrote:
-> Hi Laurent,
-> 
-> On Tue, Mar 11, 2014 at 4:55 PM, Laurent Pinchart wrote:
-> > Does this require drivers/sh/pm_runtime.c to be compiled in ?
-> 
-> Let's check...
-> 
-> My koelsch-legacy kernel has drivers/sh/pm_runtime.c compiled in.
-> My koelsch-reference kernel hasn't.
-> 
-> However, under the -reference kernel many MSTP clocks (incl. MSIOF)
-> seem to be enabled all the time, while under -legacy they are enabled and
-> disabled on demand.
+On Tue, Mar 11, 2014 at 9:14 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>
+> As much as I wouldn't mind getting rid of the compat vdso, I really
+> don't understand why the trivial solution is being ruled out -- the
+> trivial solution being to just reserve a little more space in the fixmap
+> area.
 
-Is PM_RUNTIME enabled in both cases ?
+No, the trivial solution is to stop adding crap to it.
 
+And no, "just reserve a little more space for it" is neither trivial
+nor a good idea. The fixed VDSO address is very much at the top of the
+address space, so you can't allocate more space for it unless you do
+one of
 
-There's something fishy in there that we should try to fix without too further 
-much delay. Ben Dooks has pointed out the problem a couple of months ago, but 
-the discussion on the mailing list just died.
+ (a) make it non-contiguous
+ (b) get rid of the hole that is the very last page
+ (c) mess with the vsyscall pages and make it contiguous "backwards"
 
--- 
-Regards,
+all of which sound like *horrible* ideas. Certainly not "trivial solution".
 
-Laurent Pinchart
+No, the trivial solution is to not mess with that legacy page at all.
 
+Why is *that* trivial solution not on the table? Why the heck are
+people hell-bent on changing this stupid legacy page around?
+
+I find this whole thread very annoying. We shouldn't care about
+x86-32, and certainly not from a performance angle - we should
+consider it a "it's done, don't touch it" issue.
+
+                 Linus
