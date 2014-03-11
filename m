@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892AbaCKNXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 09:23:40 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34880 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753555AbaCKNXj (ORCPT
+	id S1753951AbaCKN0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 09:26:03 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49798 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154AbaCKN0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 09:23:39 -0400
-Message-ID: <531F0E39.9020100@oracle.com>
-Date: Tue, 11 Mar 2014 09:23:05 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 11 Mar 2014 09:26:01 -0400
+Date: Tue, 11 Mar 2014 13:25:53 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        kuninori.morimoto.gx@renesas.com, moinejf@free.fr,
+        Li.Xiubo@freescale.com, lgirdwood@gmail.com,
+        Jyri Sarha <jsarha@ti.com>
+Message-ID: <20140311132553.GR28112@sirena.org.uk>
+References: <1394542472-16580-1-git-send-email-Guangyu.Chen@freescale.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>, Dave Jones <davej@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: bad rss-counter message in 3.14rc5
-References: <20140305174503.GA16335@redhat.com> <20140305175725.GB16335@redhat.com> <20140307002210.GA26603@redhat.com> <20140311024906.GA9191@redhat.com> <20140310201340.81994295.akpm@linux-foundation.org> <20140310214612.3b4de36a.akpm@linux-foundation.org> <20140311045109.GB12551@redhat.com> <20140310220158.7e8b7f2a.akpm@linux-foundation.org> <20140311053017.GB14329@redhat.com> <20140311132024.GC32390@moon>
-In-Reply-To: <20140311132024.GC32390@moon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mNjSOha/DCXOSUzN"
+Content-Disposition: inline
+In-Reply-To: <1394542472-16580-1-git-send-email-Guangyu.Chen@freescale.com>
+X-Cookie: Oh no, not again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: simple-card: overwrite DAIFMT_MASTER of
+ cpu_dai->fmt
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2014 09:20 AM, Cyrill Gorcunov wrote:
-> On Tue, Mar 11, 2014 at 01:30:17AM -0400, Dave Jones wrote:
->>   > >  >
->>   > >  > I don't see any holes in regular migration.  Do you know if this is
->>   > >  > reproducible with CONFIG_NUMA_BALANCING=n or CONFIG_NUMA=n?
->>   > >
->>   > > CONFIG_NUMA_BALANCING was n already btw, so I'll do a NUMA=n run.
->>   >
->>   > There probably isn't much point unless trinity is using
->>   > sys_move_pages().  Is it?  If so it would be interesting to disable
->>   > trinity's move_pages calls and see if it still fails.
->>
->> Ok, with move_pages excluded it still oopses.
->
-> Dave, is it possible to somehow figure out was someone reading pagemap file
-> at moment of the bug triggering?
 
-We can sprinkle printk()s wherever might be useful, might not be 100% accurate but
-should be close enough to confirm/deny the theory.
+--mNjSOha/DCXOSUzN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Tue, Mar 11, 2014 at 08:54:32PM +0800, Nicolin Chen wrote:
 
-Thanks,
-Sasha
+Adding Jyri who's been looking at this as well but not added anyone else
+working on simple-card so you might've missed his mails.
 
+> It's pretty fair to do it for DAIFMT_INV since two dais might have differnt
+> definitions in their drivers even though it'd be better to keep it same if
+> we could.
+
+No, that's not at all OK - anything that requires this is broken.  The
+same DAI format should be usable by both ends of the link unless the
+board itself is inverting one of the signals or something.
+
+> Thus this patch fixes it by overwriting the DAIFMT_MASTER bit of cpu_dai->fmt
+> with the one of codec_dai->fmt since we defined DAIFMT_MASTER basing on CODEC
+> at the first place.
+
+This seems closer to what I'd expect for something like this but it does
+mean that any format settings on the CPU DAI will be ignored (rather
+than say warning or something).  I'm not sure this is a bad thing
+though, probably wants the binding documenting at least.
+
+--mNjSOha/DCXOSUzN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTHw7eAAoJELSic+t+oim9JekP/0Xpe0vQTHaXnfV/ryBhaacS
+lRRAby85yvszOgAzjR3ycuCP9HtRCY8WJaAun4ziMdooo6ODz67tmAuSDUWtYAJi
+j/HKC3qrn8fngmC+8TWLrjbsQOmfXd7VtPz8lD6JTWUAuoIW17amwfyoZHwEsclq
+oThjnHe+zNAuJfFrHnBF1M7toH/4pyBFEg+hOYWvNsasIJ6u6+NkV6vNrr7YF7sl
+B+wftFZw5LrTSbteePP6Y5n6qorI0ATD1daiKvXx+13MyoFfexRnGh4zbfofiKxN
+okEiIqzqu0H2jKn5ZF8fhu1Z8N1Lf2Sv7XgsJocfv2ceYzi1B8NC61M3YbvofZQf
+zZId/ToMDCD41cG2N8Srd5K1/TVSKo1aw+EcMZeozgoAoMxtRIF3Vgxj5x5yuE6x
+ux5SpVJf/Ja0YkCG3dXwE8IaPomYiyD9KYDVfjC79+t0kgPveB00QNsEzdK6sB1g
+R9kZfH8IGzmMFbmgfgABFVG8igUg+7ja66kxa7TUbMwKh7AtJxEMV16YtMIKf7GC
+UfKPJHA/Gb+6vXPNzetP67CEVMZusUynXUuHlClGkWogzyQ5BgyzUh2vlRPf9pct
+TAZ7gCvA6CMrdz8RyBrvPbztsX+RzTp3fRNTqwMR7wmO1zMeCjBeBZhPPYftHfx/
+XRHIa9M+bcyqHCY/vVk1
+=iGzZ
+-----END PGP SIGNATURE-----
+
+--mNjSOha/DCXOSUzN--
