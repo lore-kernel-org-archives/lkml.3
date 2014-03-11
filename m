@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaCKQ05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 12:26:57 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:59277 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945AbaCKQ04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 12:26:56 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org
-Cc: Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH] sched: fix: remove double calculation in fix_small_imbalance
-Date: Tue, 11 Mar 2014 17:26:06 +0100
-Message-Id: <1394555166-22894-1-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.9.0
+	id S1753543AbaCKQ2u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 12:28:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58857 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752669AbaCKQ2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 12:28:49 -0400
+Date: Tue, 11 Mar 2014 16:28:45 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>, Sasha Levin <sasha.levin@oracle.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com,
+        knoel@redhat.com, aarcange@redhat.com
+Subject: Re: [PATCH -mm] mm,numa,mprotect: always continue after finding a
+ stable thp page
+Message-ID: <20140311162845.GA30604@suse.de>
+References: <5318E4BC.50301@oracle.com>
+ <20140306173137.6a23a0b2@cuia.bos.redhat.com>
+ <5318FC3F.4080204@redhat.com>
+ <20140307140650.GA1931@suse.de>
+ <20140307150923.GB1931@suse.de>
+ <20140307182745.GD1931@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140307182745.GD1931@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tmp value has been already calculated in:
-scaled_busy_load_per_task =
-		(busiest->load_per_task * SCHED_POWER_SCALE) /
-		busiest->group_power;
+On Fri, Mar 07, 2014 at 06:27:45PM +0000, Mel Gorman wrote:
+> > This is a completely untested prototype. It rechecks pmd_trans_huge
+> > under the lock and falls through if it hit a parallel split. It's not
+> > perfect because it could decide to fall through just because there was
+> > no prot_numa work to do but it's for illustration purposes. Secondly,
+> > I noted that you are calling invalidate for every pmd range. Is that not
+> > a lot of invalidations? We could do the same by just tracking the address
+> > of the first invalidation.
+> > 
+> 
+> And there were other minor issues. This is still untested but Sasha,
+> can you try it out please? I discussed this with Rik on IRC for a bit and
+> reckon this should be sufficient if the correct race has been identified.
+> 
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- kernel/sched/fair.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Any luck with this patch Sasha? It passed basic tests here but I had not
+seen the issue trigger either.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index f1eedae..b301918 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6061,12 +6061,10 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
- 	pwr_now /= SCHED_POWER_SCALE;
- 
- 	/* Amount of load we'd subtract */
--	tmp = (busiest->load_per_task * SCHED_POWER_SCALE) /
--		busiest->group_power;
--	if (busiest->avg_load > tmp) {
-+	if (busiest->avg_load > scaled_busy_load_per_task) {
- 		pwr_move += busiest->group_power *
- 			    min(busiest->load_per_task,
--				busiest->avg_load - tmp);
-+				busiest->avg_load - scaled_busy_load_per_task);
- 	}
- 
- 	/* Amount of load we'd add */
 -- 
-1.9.0
-
+Mel Gorman
+SUSE Labs
