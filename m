@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353AbaCKVjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 17:39:08 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:59921 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081AbaCKVjG (ORCPT
+	id S1755453AbaCKVk2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 17:40:28 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:52394 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203AbaCKVk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 17:39:06 -0400
+	Tue, 11 Mar 2014 17:40:26 -0400
+X-Originating-IP: 98.158.13.34
+Date: Tue, 11 Mar 2014 14:40:14 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, virtio-dev@lists.oasis-open.org,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: mmotm 2014-03-10-15-35 uploaded (virtio_balloon)
+Message-ID: <20140311214014.GA18708@leaf>
+References: <20140310223701.0969C31C2AA@corp2gmr1-1.hot.corp.google.com>
+ <531F43F2.1030504@infradead.org>
+ <20140311110338.333e1ee691cadb0f20dbb083@linux-foundation.org>
+ <20140311192046.GA2686@leaf>
+ <20140311123133.f40adf3154452e82aecb61ca@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20140311174243.23084.77689.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140311173556.23084.57635.stgit@bhelgaas-glaptop.roam.corp.google.com>
-	<20140311174243.23084.77689.stgit@bhelgaas-glaptop.roam.corp.google.com>
-Date: Tue, 11 Mar 2014 14:39:03 -0700
-X-Google-Sender-Auth: Isy5cdXFzXKmTH7HDLJPD6AuQLI
-Message-ID: <CAE9FiQVdk6Tg4tNPQihm2YJ5BQO8jrQXfQfgVOSXTaK3o76yqg@mail.gmail.com>
-Subject: Re: [PATCH 1/5] PCI: Don't check resource_size() in pci_bus_alloc_resource()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140311123133.f40adf3154452e82aecb61ca@linux-foundation.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 10:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Paul reported that after f75b99d5a77d ("PCI: Enforce bus address limits in
-> resource allocation") on a 32-bit kernel (CONFIG_PHYS_ADDR_T_64BIT not
-> set), intel-gtt complained "can't ioremap flush page - no chipset
-> flushing".  In addition, other PCI resource allocations, e.g., for bridge
-> windows, failed.
->
-> This happens because we incorrectly skip bus resources of
-> [mem 0x00000000-0xffffffff] because we think they are of size zero.
-> When resource_size_t is 32 bits wide, resource_size() on
-> [mem 0x00000000-0xffffffff] returns 0 because (r->end - r->start + 1)
-> overflows.
->
-> Therefore, we can't use "resource_size() == 0" to decide that allocation
-> from this resource will fail.  allocate_resource() should fail anyway if it
-> can't satisfy the address constraints, so we should just depend on that.
->
-> A [mem 0x00000000-0xffffffff] bus resource is obviously not really valid,
-> but we do fall back to it as a default when we don't have information about
-> host bridge apertures.
->
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=71611
-> Fixes: f75b99d5a77d PCI: Enforce bus address limits in resource allocation
-> Reported-and-tested-by: Paul Bolle <pebolle@tiscali.nl>
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> ---
->  drivers/pci/bus.c |    2 --
->  1 file changed, 2 deletions(-)
->
-> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-> index 00660cc502c5..38901665c770 100644
-> --- a/drivers/pci/bus.c
-> +++ b/drivers/pci/bus.c
-> @@ -162,8 +162,6 @@ static int pci_bus_alloc_from_region(struct pci_bus *bus, struct resource *res,
->
->                 avail = *r;
->                 pci_clip_resource_to_region(bus, &avail, region);
-> -               if (!resource_size(&avail))
-> -                       continue;
->
->                 /*
->                  * "min" is typically PCIBIOS_MIN_IO or PCIBIOS_MIN_MEM to
->
+On Tue, Mar 11, 2014 at 12:31:33PM -0700, Andrew Morton wrote:
+> On Tue, 11 Mar 2014 12:20:46 -0700 Josh Triplett <josh@joshtriplett.org> wrote:
+> 
+> > > > ERROR: "balloon_devinfo_alloc" [drivers/virtio/virtio_balloon.ko] undefined!
+> > > > ERROR: "balloon_page_enqueue" [drivers/virtio/virtio_balloon.ko] undefined!
+> > > > ERROR: "balloon_page_dequeue" [drivers/virtio/virtio_balloon.ko] undefined!
+> > > > 
+> > > > when loadable module
+> > > > 
+> > > > or
+> > > > 
+> > > > virtio_balloon.c:(.text+0x1fa26): undefined reference to `balloon_page_enqueue'
+> > > > virtio_balloon.c:(.text+0x1fb87): undefined reference to `balloon_page_dequeue'
+> > > > virtio_balloon.c:(.text+0x1fdf1): undefined reference to `balloon_devinfo_alloc'
+> > > > 
+> > > > when builtin.
+> > > 
+> > > OK, thanks, I'll drop
+> > > http://ozlabs.org/~akpm/mmots/broken-out/mm-disable-mm-balloon_compactionc-completely-when-config_balloon_compaction.patch
+> > 
+> > Sorry about that; I missed that case in my testing.  It always seems
+> > strange that the dependency goes that way around.
+> > 
+> > With virtio-balloon being the one and only user of this API, would it be
+> > reasonable to just only compile in balloon_compaction.o when
+> > CONFIG_VIRTIO_BALLOON?
+> 
+> Better to make VIRTIO_BALLOON depend on (or select) BALLOON_COMPACTION.
 
-how about replacing that with:
+I'd love to do that, but as far as I can tell, VIRTIO_BALLOON has gone
+out of its way to support !CONFIG_BALLOON_COMPACTION.
 
-        if (avail.start > avail.end)
-                  continue;
+Could someone who works on VIRTIO_BALLOON provide some details here
+about the distinction?
 
-so we do not need to go deep into allocate_resource()
-
-Thanks
-
-Yinghai
+- Josh Triplett
