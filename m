@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096AbaCKWlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 18:41:14 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:63041 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756003AbaCKWlI (ORCPT
+	id S1756131AbaCKWlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 18:41:21 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:39830 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756080AbaCKWlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 18:41:08 -0400
+	Tue, 11 Mar 2014 18:41:14 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
         linus.walleij@linaro.org, magnus.damm@gmail.com,
         matthias.bgg@gmail.com, soren.brinkmann@xilinx.com,
         sboyd@codeaurora.org
-Subject: [PATCH 10/17] ARM: shmobile: Remove CMT, TMU and STI Kconfig entries
-Date: Tue, 11 Mar 2014 23:40:46 +0100
-Message-Id: <1394577653-8615-10-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 14/17] clocksource/cadence_ttc: Overhaul clocksource frequency adjustment
+Date: Tue, 11 Mar 2014 23:40:50 +0100
+Message-Id: <1394577653-8615-14-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394577653-8615-1-git-send-email-daniel.lezcano@linaro.org>
 References: <531F8FAC.2040902@linaro.org>
@@ -25,157 +25,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-Now when drivers/clocksource/Kconfig has been
-updated with entires for CMT, TMU, MTU2, and STI
-it is safe to remove these from mach-shmobile.
+The currently used method adjusting the clocksource to a changing input
+frequency does not work on kernels from 3.11 on.
+The new approach is to keep the timer frequency as constant as possible.
+I.e.
+ - due to the TTC's prescaler limitations, allow frequency changes
+   only if the frequency scales by a power of 2
+ - adjust the counter's divider on the fly when a frequency change
+   occurs
 
-Also select timers per SoC via SYS_SUPPORTS_xxx.
+This limits cpufreq to scale by certain factors only.
+But we may keep the time base somewhat constant, so that sleep() & co
+keep working as expected, while supporting cpufreq.
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
-Acked-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Wolfram Sang <wsa@sang-engineering.com>
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Acked-by: Michal Simek <michal.simek@xilinx.com>
 ---
- arch/arm/mach-shmobile/Kconfig |   36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ drivers/clocksource/cadence_ttc_timer.c |  104 +++++++++++++++++++++++++------
+ 1 file changed, 84 insertions(+), 20 deletions(-)
 
-diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
-index 3386406..c1a9538 100644
---- a/arch/arm/mach-shmobile/Kconfig
-+++ b/arch/arm/mach-shmobile/Kconfig
-@@ -24,17 +24,21 @@ comment "Renesas ARM SoCs System Type"
+diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+index f05b9fd..49fbe28 100644
+--- a/drivers/clocksource/cadence_ttc_timer.c
++++ b/drivers/clocksource/cadence_ttc_timer.c
+@@ -16,6 +16,7 @@
+  */
  
- config ARCH_EMEV2
- 	bool "Emma Mobile EV2"
-+	select SYS_SUPPORTS_EM_STI
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/interrupt.h>
+ #include <linux/clockchips.h>
+ #include <linux/of_address.h>
+@@ -52,6 +53,8 @@
+ #define TTC_CNT_CNTRL_DISABLE_MASK	0x1
  
- config ARCH_R7S72100
- 	bool "RZ/A1H (R7S72100)"
-+	select SYS_SUPPORTS_SH_MTU2
+ #define TTC_CLK_CNTRL_CSRC_MASK		(1 << 5)	/* clock source */
++#define TTC_CLK_CNTRL_PSV_MASK		0x1e
++#define TTC_CLK_CNTRL_PSV_SHIFT		1
  
- config ARCH_R8A7790
- 	bool "R-Car H2 (R8A77900)"
- 	select RENESAS_IRQC
-+	select SYS_SUPPORTS_SH_CMT
+ /*
+  * Setup the timers to use pre-scaling, using a fixed value for now that will
+@@ -63,6 +66,8 @@
+ #define CLK_CNTRL_PRESCALE_EN	1
+ #define CNT_CNTRL_RESET		(1 << 4)
  
- config ARCH_R8A7791
- 	bool "R-Car M2 (R8A77910)"
- 	select RENESAS_IRQC
-+	select SYS_SUPPORTS_SH_CMT
++#define MAX_F_ERR 50
++
+ /**
+  * struct ttc_timer - This definition defines local timer structure
+  *
+@@ -82,6 +87,8 @@ struct ttc_timer {
+ 		container_of(x, struct ttc_timer, clk_rate_change_nb)
  
- comment "Renesas ARM SoCs Board Type"
+ struct ttc_timer_clocksource {
++	u32			scale_clk_ctrl_reg_old;
++	u32			scale_clk_ctrl_reg_new;
+ 	struct ttc_timer	ttc;
+ 	struct clocksource	cs;
+ };
+@@ -229,32 +236,89 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
+ 			struct ttc_timer_clocksource, ttc);
  
-@@ -68,6 +72,8 @@ config ARCH_SH7372
- 	select ARM_CPU_SUSPEND if PM || CPU_IDLE
- 	select CPU_V7
- 	select SH_CLK_CPG
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
+ 	switch (event) {
+-	case POST_RATE_CHANGE:
++	case PRE_RATE_CHANGE:
++	{
++		u32 psv;
++		unsigned long factor, rate_low, rate_high;
++
++		if (ndata->new_rate > ndata->old_rate) {
++			factor = DIV_ROUND_CLOSEST(ndata->new_rate,
++					ndata->old_rate);
++			rate_low = ndata->old_rate;
++			rate_high = ndata->new_rate;
++		} else {
++			factor = DIV_ROUND_CLOSEST(ndata->old_rate,
++					ndata->new_rate);
++			rate_low = ndata->new_rate;
++			rate_high = ndata->old_rate;
++		}
++
++		if (!is_power_of_2(factor))
++				return NOTIFY_BAD;
++
++		if (abs(rate_high - (factor * rate_low)) > MAX_F_ERR)
++			return NOTIFY_BAD;
++
++		factor = __ilog2_u32(factor);
++
+ 		/*
+-		 * Do whatever is necessary to maintain a proper time base
+-		 *
+-		 * I cannot find a way to adjust the currently used clocksource
+-		 * to the new frequency. __clocksource_updatefreq_hz() sounds
+-		 * good, but does not work. Not sure what's that missing.
+-		 *
+-		 * This approach works, but triggers two clocksource switches.
+-		 * The first after unregister to clocksource jiffies. And
+-		 * another one after the register to the newly registered timer.
+-		 *
+-		 * Alternatively we could 'waste' another HW timer to ping pong
+-		 * between clock sources. That would also use one register and
+-		 * one unregister call, but only trigger one clocksource switch
+-		 * for the cost of another HW timer used by the OS.
++		 * store timer clock ctrl register so we can restore it in case
++		 * of an abort.
+ 		 */
+-		clocksource_unregister(&ttccs->cs);
+-		clocksource_register_hz(&ttccs->cs,
+-				ndata->new_rate / PRESCALE);
+-		/* fall through */
+-	case PRE_RATE_CHANGE:
++		ttccs->scale_clk_ctrl_reg_old =
++			__raw_readl(ttccs->ttc.base_addr +
++					TTC_CLK_CNTRL_OFFSET);
++
++		psv = (ttccs->scale_clk_ctrl_reg_old &
++				TTC_CLK_CNTRL_PSV_MASK) >>
++				TTC_CLK_CNTRL_PSV_SHIFT;
++		if (ndata->new_rate < ndata->old_rate)
++			psv -= factor;
++		else
++			psv += factor;
++
++		/* prescaler within legal range? */
++		if (psv & ~(TTC_CLK_CNTRL_PSV_MASK >> TTC_CLK_CNTRL_PSV_SHIFT))
++			return NOTIFY_BAD;
++
++		ttccs->scale_clk_ctrl_reg_new = ttccs->scale_clk_ctrl_reg_old &
++			~TTC_CLK_CNTRL_PSV_MASK;
++		ttccs->scale_clk_ctrl_reg_new |= psv << TTC_CLK_CNTRL_PSV_SHIFT;
++
++
++		/* scale down: adjust divider in post-change notification */
++		if (ndata->new_rate < ndata->old_rate)
++			return NOTIFY_DONE;
++
++		/* scale up: adjust divider now - before frequency change */
++		__raw_writel(ttccs->scale_clk_ctrl_reg_new,
++				ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
++		break;
++	}
++	case POST_RATE_CHANGE:
++		/* scale up: pre-change notification did the adjustment */
++		if (ndata->new_rate > ndata->old_rate)
++			return NOTIFY_OK;
++
++		/* scale down: adjust divider now - after frequency change */
++		__raw_writel(ttccs->scale_clk_ctrl_reg_new,
++				ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
++		break;
++
+ 	case ABORT_RATE_CHANGE:
++		/* we have to undo the adjustment in case we scale up */
++		if (ndata->new_rate < ndata->old_rate)
++			return NOTIFY_OK;
++
++		/* restore original register value */
++		__raw_writel(ttccs->scale_clk_ctrl_reg_old,
++				ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
++		/* fall through */
+ 	default:
+ 		return NOTIFY_DONE;
+ 	}
++
++	return NOTIFY_DONE;
+ }
  
- config ARCH_SH73A0
- 	bool "SH-Mobile AG5 (R8A73A00)"
-@@ -77,6 +83,8 @@ config ARCH_SH73A0
- 	select I2C
- 	select SH_CLK_CPG
- 	select RENESAS_INTC_IRQPIN
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A73A4
- 	bool "R-Mobile APE6 (R8A73A40)"
-@@ -87,6 +95,8 @@ config ARCH_R8A73A4
- 	select RENESAS_IRQC
- 	select ARCH_HAS_CPUFREQ
- 	select ARCH_HAS_OPP
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7740
- 	bool "R-Mobile A1 (R8A77400)"
-@@ -95,6 +105,8 @@ config ARCH_R8A7740
- 	select CPU_V7
- 	select SH_CLK_CPG
- 	select RENESAS_INTC_IRQPIN
-+	select SYS_SUPPORTS_SH_CMT
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7778
- 	bool "R-Car M1A (R8A77781)"
-@@ -104,6 +116,7 @@ config ARCH_R8A7778
- 	select ARM_GIC
- 	select USB_ARCH_HAS_EHCI
- 	select USB_ARCH_HAS_OHCI
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7779
- 	bool "R-Car H1 (R8A77790)"
-@@ -114,6 +127,7 @@ config ARCH_R8A7779
- 	select USB_ARCH_HAS_EHCI
- 	select USB_ARCH_HAS_OHCI
- 	select RENESAS_INTC_IRQPIN
-+	select SYS_SUPPORTS_SH_TMU
- 
- config ARCH_R8A7790
- 	bool "R-Car H2 (R8A77900)"
-@@ -123,6 +137,7 @@ config ARCH_R8A7790
- 	select MIGHT_HAVE_PCI
- 	select SH_CLK_CPG
- 	select RENESAS_IRQC
-+	select SYS_SUPPORTS_SH_CMT
- 
- config ARCH_R8A7791
- 	bool "R-Car M2 (R8A77910)"
-@@ -132,6 +147,7 @@ config ARCH_R8A7791
- 	select MIGHT_HAVE_PCI
- 	select SH_CLK_CPG
- 	select RENESAS_IRQC
-+	select SYS_SUPPORTS_SH_CMT
- 
- config ARCH_EMEV2
- 	bool "Emma Mobile EV2"
-@@ -141,6 +157,7 @@ config ARCH_EMEV2
- 	select MIGHT_HAVE_PCI
- 	select USE_OF
- 	select AUTO_ZRELADDR
-+	select SYS_SUPPORTS_EM_STI
- 
- config ARCH_R7S72100
- 	bool "RZ/A1H (R7S72100)"
-@@ -148,6 +165,7 @@ config ARCH_R7S72100
- 	select ARM_GIC
- 	select CPU_V7
- 	select SH_CLK_CPG
-+	select SYS_SUPPORTS_SH_MTU2
- 
- comment "Renesas ARM SoCs Board Type"
- 
-@@ -321,24 +339,6 @@ config SHMOBILE_TIMER_HZ
- 	  want to select a HZ value such as 128 that can evenly divide RCLK.
- 	  A HZ value that does not divide evenly may cause timer drift.
- 
--config SH_TIMER_CMT
--	bool "CMT timer driver"
--	default y
--	help
--	  This enables build of the CMT timer driver.
--
--config SH_TIMER_TMU
--	bool "TMU timer driver"
--	default y
--	help
--	  This enables build of the TMU timer driver.
--
--config EM_TIMER_STI
--	bool "STI timer driver"
--	default y
--	help
--	  This enables build of the STI timer driver.
--
- endmenu
- 
- endif
+ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
 -- 
 1.7.9.5
 
