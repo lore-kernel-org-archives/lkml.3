@@ -1,92 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885AbaCKLvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 07:51:46 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:54252 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018AbaCKLvp (ORCPT
+	id S1754910AbaCKLw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 07:52:58 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:43908 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027AbaCKLw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 07:51:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <002701cf3c49$be67da30$3b378e90$@lge.com>
-References: <002701cf3c49$be67da30$3b378e90$@lge.com>
-From: SeongJae Park <sj38.park@gmail.com>
-Date: Tue, 11 Mar 2014 20:51:13 +0900
-Message-ID: <CAEjAshodkKhOJvM+8+pmAuHJMD0Za7EtNZ+pDxz9i7v_Pav1RA@mail.gmail.com>
-Subject: Re: Subject: [PATCH] mm: use vm_map_ram for only temporal object
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
+	Tue, 11 Mar 2014 07:52:56 -0400
+X-Auth-Info: mBLkwaOFgi8rXmymDtlVQnfitPo9I6KLbxXZdHCyXV0=
+From: Marek Vasut <marex@denx.de>
+To: Yao Yuan <yao.yuan@freescale.com>
+Subject: Re: [PATCH v2 1/2] i2c: add DMA support for freescale i2c driver
+Date: Tue, 11 Mar 2014 11:40:43 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: Shawn Guo <shawn.guo@linaro.org>, "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>, chanho.min@lge.com,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+References: <1394002352-8380-1-git-send-email-yao.yuan@freescale.com> <20140310020051.GA15218@S2101-09.ap.freescale.net> <1d35d91fd0f1414587edf47ab03e20ae@BL2PR03MB338.namprd03.prod.outlook.com>
+In-Reply-To: <1d35d91fd0f1414587edf47ab03e20ae@BL2PR03MB338.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403111140.44044.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Gioh,
+On Tuesday, March 11, 2014 at 06:27:39 AM, Yao Yuan wrote:
+> On Thu, Mar 10, 2014 at 10:01:42 AM, Marek Vasut wrote:
+> > On Thu, Mar 06, 2014 at 12:57:42PM +0100, Marek Vasut wrote:
+> > > On Thursday, March 06, 2014 at 06:02:03 AM, Yao Yuan wrote:
+> > > > On Thu, March 06, 2014 at 12:44:14 PM, Marek Vasut wrote:
+> > > > > On Thursday, March 06, 2014 at 05:36:14 AM, Yao Yuan wrote:
+> > > > > > On Thu, March 06, 2014 at 11:23:50 AM, Marek Vasut wrote:
+> > > > > > > On Wednesday, March 05, 2014 at 07:52:31 AM, Yuan Yao wrote:
+> > > > > > > > Add dma support for i2c. This function depend on DMA driver.
+> > > > > > > > You can turn on it by write both the dmas and dma-name
+> > > > > > > > properties in dts node.
+> > > > > > > > 
+> > > > > > > > Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
+> > > > > > > > ---
+> > > > > > > 
+> > > > > > > [...]
+> > > > > > > 
+> > > > > > > > @@ -601,6 +826,7 @@ static int i2c_imx_probe(struct
+> > > > > > > > platform_device
+> > > > > > > 
+> > > > > > > *pdev)
+> > > > > > > 
+> > > > > > > >  	void __iomem *base;
+> > > > > > > >  	int irq, ret;
+> > > > > > > >  	u32 bitrate;
+> > > > > > > > 
+> > > > > > > > +	u32 phy_addr;
+> > > > > > > > 
+> > > > > > > >  	dev_dbg(&pdev->dev, "<%s>\n", __func__);
+> > > > > > > > 
+> > > > > > > > @@ -611,6 +837,7 @@ static int i2c_imx_probe(struct
+> > > > > > > > platform_device
+> > > > > > > 
+> > > > > > > *pdev)
+> > > > > > > 
+> > > > > > > >  	}
+> > > > > > > >  	
+> > > > > > > >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > > > > > > > 
+> > > > > > > > +	phy_addr = res->start;
+> > > > > > > 
+> > > > > > > Uh ... Shawn, I really think I am lost here. Don't you need to
+> > > > > > > map this memory before you can use it for DMA ? The DMA
+> > > > > > > mapping function should give you the physical address and is
+> > > > > > > the right way to go about this instead of pulling the address
+> > 
+> > from here, no ?
+> > 
+> > > > > > > I might be wrong here, I am rather uncertain, so please help me
+> > 
+> > out.
+> > 
+> > > > > > > Thanks!
+> > > > > > 
+> > > > > > Hi, Marek, Thanks for your suggestion.
+> > > > > > Here you can review the code in include/linux/ioport.h The
+> > > > > > resource->start describes the entity on the CPU bus as a
+> > > > > > resource->starting
+> > > > > > physical address. So I thinks it can used for dma directly.
+> > > > > 
+> > > > > This doesn't feel right for some reason. If this is a register
+> > > > > area, you should
+> > > > > ioremap() it. If it's a memory area you do DMA to/from, you need
+> > > > > to make sure you correctly flush/invalidate caches and properly
+> > > > > handle the effects the write buffer might have. But I have a
+> > > > > feeling you actually do DMA to/from register space here ?
+> > > > 
+> > > > Yes, It's a register area. But I don't know why I should ioremap()
+> > > > it? It's a bus address and DMA can use it directly. Is there some
+> > > > problem for my understanding ?
+> > > 
+> > > I am not too sure here, thus I am poking someone who can clearly answer
+> > 
+> > this.
+> > 
+> > There is already a devm_ioremap_resource() call in the existing code for
+> > CPU to access registers in virtual address.  And my understanding on
+> > Yuan's patch is that he needs the physical address of I2C DATA register
+> > for DMA from/to the controller.
+> > 
+> > Shawn
+> 
+> Thanks you Shawn. Yes, it is. DMA need the physical address which
+> resource->start is.
+> 
+> And Hi Marek, How about you? Is there someone who can clearly answer this
+> some and should I send the next version?
 
-On Mon, Mar 10, 2014 at 7:16 PM, Gioh Kim <gioh.kim@lge.com> wrote:
->
-> The vm_map_ram has fragment problem because it couldn't
-> purge a chunk(ie, 4M address space) if there is a pinning object in
-> that addresss space. So it could consume all VMALLOC address space
-> easily.
-> We can fix the fragmentation problem with using vmap instead of vm_map_ram
-> but vmap is known to slow operation compared to vm_map_ram. Minchan said
-> vm_map_ram is 5 times faster than vmap in his experiment. So I thought
-> we should fix fragment problem of vm_map_ram because our proprietary
-> GPU driver has used it heavily.
->
-> On second thought, it's not an easy because we should reuse freed
-> space for solving the problem and it could make more IPI and bitmap operation
-> for searching hole. It could mitigate API's goal which is very fast mapping.
-> And even fragmentation problem wouldn't show in 64 bit machine.
->
-> Another option is that the user should separate long-life and short-life
-> object and use vmap for long-life but vm_map_ram for short-life.
-> If we inform the user about the characteristic of vm_map_ram
-> the user can choose one according to the page lifetime.
->
-> Let's add some notice messages to user.
->
-> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  mm/vmalloc.c |    6 ++++++
->  1 file changed, 6 insertions(+)
->
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index 0fdf968..85b6687 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -1083,6 +1083,12 @@ EXPORT_SYMBOL(vm_unmap_ram);
->   * @node: prefer to allocate data structures on this node
->   * @prot: memory protection to use. PAGE_KERNEL for regular RAM
->   *
-> + * If you use this function for below VMAP_MAX_ALLOC pages, it could be faster
-> + * than vmap so it's good. But if you mix long-life and short-life object
-> + * with vm_map_ram, it could consume lots of address space by fragmentation
-> + * (expecially, 32bit machine). You could see failure in the end.
-
-looks like trivial typo. Shouldn't s/expecially/especially/ ?
-
-Thanks.
-
-> + * Please use this function for short-life object.
-> + *
->   * Returns: a pointer to the address that has been mapped, or %NULL on failure
->   */
->  void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t prot)
-> --
-> 1.7.9.5
->
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a hrefmailto:"dont@kvack.org"> email@kvack.org </a>
+While I don't quite understand what Shawn wanted to say by the above, please go 
+ahead and send V2 .
