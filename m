@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaCKA75 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 20:59:57 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:37615 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035AbaCKA74 (ORCPT
+	id S1754199AbaCKBBg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 21:01:36 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51467 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582AbaCKBBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 20:59:56 -0400
-Date: Mon, 10 Mar 2014 17:59:53 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 3/8] mfd: lpc_ich: Remove lpc_ich_cfg struct use
-Message-ID: <20140311005953.GC32676@roeck-us.net>
-References: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com>
- <1394487298-14459-3-git-send-email-ptyser@xes-inc.com>
+	Mon, 10 Mar 2014 21:01:35 -0400
+X-AuditID: 9c93017d-b7c89ae000006ae1-cb-531e606db039
+Date: Tue, 11 Mar 2014 10:01:35 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>, Dave Jones <davej@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: oops in slab/leaks_show
+Message-ID: <20140311010135.GA25845@lge.com>
+References: <20140307025703.GA30770@redhat.com>
+ <alpine.DEB.2.10.1403071117230.21846@nuc>
+ <20140311003459.GA25657@lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394487298-14459-3-git-send-email-ptyser@xes-inc.com>
+In-Reply-To: <20140311003459.GA25657@lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 04:34:53PM -0500, Peter Tyser wrote:
-> Future chipsets will use different register layouts that don't map
-> cleanly to the lpc_ich_cfg fields.  Remove the lpc_ich_cfg struct and
-> add explicit fields to the higher level lpc_ich_priv structure.
+On Tue, Mar 11, 2014 at 09:35:00AM +0900, Joonsoo Kim wrote:
+> On Fri, Mar 07, 2014 at 11:18:30AM -0600, Christoph Lameter wrote:
+> > Joonsoo recently changed the handling of the freelist in SLAB. CCing him.
+> > 
+> > On Thu, 6 Mar 2014, Dave Jones wrote:
+> > 
+> > > I pretty much always use SLUB for my fuzzing boxes, but thought I'd give SLAB a try
+> > > for a change.. It blew up when something tried to read /proc/slab_allocators
+> > > (Just cat it, and you should see the oops below)
 > 
-> This change should have no functional impact.
+> Hello, Dave.
 > 
-> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
-> Tested-by: Rajat Jain <rajatjain@juniper.net>
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> Cc: James Ralston <james.d.ralston@intel.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
+> Today, I did a test on v3.13 which contains all my changes on the handling of
+> the freelist in SLAB and couldn't trigger oops by just 'cat /proc/slab_allocators'.
+> 
+> So I look at the code and find that there is race window if there is multiple users
+> doing 'cat /proc/slab_allocators'. Did your test do that?
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Opps, sorry. I am misunderstanding something. Maybe there is no race.
+Anyway, How do you test it?
+
+Thanks.
