@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521AbaCKKv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 06:51:27 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:48321 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626AbaCKKvZ (ORCPT
+	id S1754701AbaCKKvg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 06:51:36 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50725 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220AbaCKKvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 06:51:25 -0400
+	Tue, 11 Mar 2014 06:51:33 -0400
+Date: Tue, 11 Mar 2014 11:51:31 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH trivial 06/16] PM / Runtime: Add missing "it" in comment
+Message-ID: <20140311105131.GA12672@amd.pavel.ucw.cz>
+References: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
+ <1394533430-4746-6-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-In-Reply-To: <1380138892.17366.24.camel@joe-AO722>
-References: <1380138892.17366.24.camel@joe-AO722>
-Date: Tue, 11 Mar 2014 11:51:24 +0100
-X-Google-Sender-Auth: Xs57ObzGOvsB7WQMFf5EdPI4obc
-Message-ID: <CAMuHMdW0cojVgDmTK0nHpY=xGFkM=10fJFe=SFP6En8k7Uwxvw@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: wimax@linuxwimax.org is subscribers-only
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394533430-4746-6-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 25, 2013 at 9:54 PM, Joe Perches <joe@perches.com> wrote:
-> Mark it so.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Tue 2014-03-11 11:23:40, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Acked-by: Pavel Machek <pavel@ucw.cz>
+> Cc: linux-pm@vger.kernel.org
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Note that you might want to cc Rafael. 
 
-> ---
->  MAINTAINERS | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index e61c2e8..a386a22 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -4414,7 +4414,7 @@ F:        arch/x86/kernel/tboot.c
->  INTEL WIRELESS WIMAX CONNECTION 2400
->  M:     Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
->  M:     linux-wimax@intel.com
-> -L:     wimax@linuxwimax.org
-> +L:     wimax@linuxwimax.org (subscribers-only)
->  S:     Supported
->  W:     http://linuxwimax.org
->  F:     Documentation/wimax/README.i2400m
-> @@ -9225,7 +9225,7 @@ F:        drivers/media/rc/winbond-cir.c
->  WIMAX STACK
->  M:     Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
->  M:     linux-wimax@intel.com
-> -L:     wimax@linuxwimax.org
-> +L:     wimax@linuxwimax.org (subscribers-only)
->  S:     Supported
->  W:     http://linuxwimax.org
->  F:     Documentation/wimax/README.wimax
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
+Thanks,									Pavel
 -- 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
