@@ -1,122 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910AbaCKLw6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 07:52:58 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:43908 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027AbaCKLw4 (ORCPT
+	id S1754457AbaCKL4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 07:56:50 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.119]:46166 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752853AbaCKL4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 07:52:56 -0400
-X-Auth-Info: mBLkwaOFgi8rXmymDtlVQnfitPo9I6KLbxXZdHCyXV0=
-From: Marek Vasut <marex@denx.de>
-To: Yao Yuan <yao.yuan@freescale.com>
-Subject: Re: [PATCH v2 1/2] i2c: add DMA support for freescale i2c driver
-Date: Tue, 11 Mar 2014 11:40:43 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
-Cc: Shawn Guo <shawn.guo@linaro.org>, "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-References: <1394002352-8380-1-git-send-email-yao.yuan@freescale.com> <20140310020051.GA15218@S2101-09.ap.freescale.net> <1d35d91fd0f1414587edf47ab03e20ae@BL2PR03MB338.namprd03.prod.outlook.com>
-In-Reply-To: <1d35d91fd0f1414587edf47ab03e20ae@BL2PR03MB338.namprd03.prod.outlook.com>
+	Tue, 11 Mar 2014 07:56:49 -0400
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-15.tower-193.messagelabs.com!1394539007!17649544!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <cover.1394536652.git.Adam.Thomson.Opensource@diasemi.com>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Date: Tue, 11 Mar 2014 11:56:45 +0000
+Subject: [PATCH Resend 0/2] input/rtc: da9055: Remove conflicting use of regmap_irq_get_virq()
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>,
+        Alessandro Zummo <a.zummo@towertech.it>
+CC: <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403111140.44044.marex@denx.de>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 11, 2014 at 06:27:39 AM, Yao Yuan wrote:
-> On Thu, Mar 10, 2014 at 10:01:42 AM, Marek Vasut wrote:
-> > On Thu, Mar 06, 2014 at 12:57:42PM +0100, Marek Vasut wrote:
-> > > On Thursday, March 06, 2014 at 06:02:03 AM, Yao Yuan wrote:
-> > > > On Thu, March 06, 2014 at 12:44:14 PM, Marek Vasut wrote:
-> > > > > On Thursday, March 06, 2014 at 05:36:14 AM, Yao Yuan wrote:
-> > > > > > On Thu, March 06, 2014 at 11:23:50 AM, Marek Vasut wrote:
-> > > > > > > On Wednesday, March 05, 2014 at 07:52:31 AM, Yuan Yao wrote:
-> > > > > > > > Add dma support for i2c. This function depend on DMA driver.
-> > > > > > > > You can turn on it by write both the dmas and dma-name
-> > > > > > > > properties in dts node.
-> > > > > > > > 
-> > > > > > > > Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
-> > > > > > > > ---
-> > > > > > > 
-> > > > > > > [...]
-> > > > > > > 
-> > > > > > > > @@ -601,6 +826,7 @@ static int i2c_imx_probe(struct
-> > > > > > > > platform_device
-> > > > > > > 
-> > > > > > > *pdev)
-> > > > > > > 
-> > > > > > > >  	void __iomem *base;
-> > > > > > > >  	int irq, ret;
-> > > > > > > >  	u32 bitrate;
-> > > > > > > > 
-> > > > > > > > +	u32 phy_addr;
-> > > > > > > > 
-> > > > > > > >  	dev_dbg(&pdev->dev, "<%s>\n", __func__);
-> > > > > > > > 
-> > > > > > > > @@ -611,6 +837,7 @@ static int i2c_imx_probe(struct
-> > > > > > > > platform_device
-> > > > > > > 
-> > > > > > > *pdev)
-> > > > > > > 
-> > > > > > > >  	}
-> > > > > > > >  	
-> > > > > > > >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > > > > > > > 
-> > > > > > > > +	phy_addr = res->start;
-> > > > > > > 
-> > > > > > > Uh ... Shawn, I really think I am lost here. Don't you need to
-> > > > > > > map this memory before you can use it for DMA ? The DMA
-> > > > > > > mapping function should give you the physical address and is
-> > > > > > > the right way to go about this instead of pulling the address
-> > 
-> > from here, no ?
-> > 
-> > > > > > > I might be wrong here, I am rather uncertain, so please help me
-> > 
-> > out.
-> > 
-> > > > > > > Thanks!
-> > > > > > 
-> > > > > > Hi, Marek, Thanks for your suggestion.
-> > > > > > Here you can review the code in include/linux/ioport.h The
-> > > > > > resource->start describes the entity on the CPU bus as a
-> > > > > > resource->starting
-> > > > > > physical address. So I thinks it can used for dma directly.
-> > > > > 
-> > > > > This doesn't feel right for some reason. If this is a register
-> > > > > area, you should
-> > > > > ioremap() it. If it's a memory area you do DMA to/from, you need
-> > > > > to make sure you correctly flush/invalidate caches and properly
-> > > > > handle the effects the write buffer might have. But I have a
-> > > > > feeling you actually do DMA to/from register space here ?
-> > > > 
-> > > > Yes, It's a register area. But I don't know why I should ioremap()
-> > > > it? It's a bus address and DMA can use it directly. Is there some
-> > > > problem for my understanding ?
-> > > 
-> > > I am not too sure here, thus I am poking someone who can clearly answer
-> > 
-> > this.
-> > 
-> > There is already a devm_ioremap_resource() call in the existing code for
-> > CPU to access registers in virtual address.  And my understanding on
-> > Yuan's patch is that he needs the physical address of I2C DATA register
-> > for DMA from/to the controller.
-> > 
-> > Shawn
-> 
-> Thanks you Shawn. Yes, it is. DMA need the physical address which
-> resource->start is.
-> 
-> And Hi Marek, How about you? Is there someone who can clearly answer this
-> some and should I send the next version?
+This patch set removes the use of regmap_irq_get_virq() in driver probes for
+da9055 (in particular RTC and ONKEY) which was conflicting with use of
+platform_get_irq_byname(). platform_get_irq_byname() already returns the VIRQ
+number due to MFD core translation so using regmap_irq_get_virq() on that
+returned value results in an incorrect IRQ being requested. The driver probes
+then fail because of this.
 
-While I don't quite understand what Shawn wanted to say by the above, please go 
-ahead and send V2 .
+Resend again due to lack of response.
+
+Adam Thomson (2):
+  input: da9055_onkey: Remove use of regmap_irq_get_virq()
+  rtc: da9055: Remove use of regmap_irq_get_virq()
+
+ drivers/input/misc/da9055_onkey.c |    1 -
+ drivers/rtc/rtc-da9055.c          |    4 +++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
