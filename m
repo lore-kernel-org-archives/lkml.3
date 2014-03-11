@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286AbaCKVoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 17:44:16 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:54688 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976AbaCKVoP (ORCPT
+	id S1755331AbaCKVp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 17:45:27 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:37868 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412AbaCKVpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 17:44:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140311174249.23084.66300.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140311173556.23084.57635.stgit@bhelgaas-glaptop.roam.corp.google.com>
-	<20140311174249.23084.66300.stgit@bhelgaas-glaptop.roam.corp.google.com>
-Date: Tue, 11 Mar 2014 14:44:14 -0700
-X-Google-Sender-Auth: cMeGFIHFQzYoMaRVZjf-sAKH2Yc
-Message-ID: <CAE9FiQXEuZ4HzXWB_Pf1+UZtQS3N70OeLuxDL+pwViwsT8URhA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] resources: Set type in __request_region()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Mar 2014 17:45:25 -0400
+Message-ID: <1394574323.2786.45.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Mar 2014 14:45:23 -0700
+In-Reply-To: <531F79F7.5090201@oracle.com>
+References: <531F6689.60307@oracle.com>
+			<1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>
+		 <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
+		 <531F75D1.3060909@oracle.com>
+	 <1394570844.2786.42.camel@buesod1.americas.hpqcorp.net>
+	 <531F79F7.5090201@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 10:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> We don't set the type (I/O, memory, etc.) of resources added by
-> __request_region(), which leads to confusing messages like this:
->
->     address space collision: [io  0x1000-0x107f] conflicts with ACPI CPU throttle [??? 0x00001010-0x00001015 flags 0x80000000]
->
-> Set the type of a new resource added by __request_region() (used by
-> request_region() and request_mem_region()) to the type of its parent.  This
-> makes the resource tree internally consistent and fixes messages like the
-> above, where the ACPI CPU throttle resource really is an I/O port region,
-> but request_region() didn't fill in the type, so %pR didn't know how to
-> print it.
->
-> Sample dmesg showing the issue at the link below.
->
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=71611
-> Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> ---
->  kernel/resource.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/resource.c b/kernel/resource.c
-> index a8344dda7049..ae1f742c860c 100644
-> --- a/kernel/resource.c
-> +++ b/kernel/resource.c
-> @@ -945,8 +945,8 @@ struct resource * __request_region(struct resource *parent,
->         res->name = name;
->         res->start = start;
->         res->end = start + n - 1;
-> -       res->flags = IORESOURCE_BUSY;
-> -       res->flags |= flags;
-> +       res->flags = parent->flags;
+On Tue, 2014-03-11 at 17:02 -0400, Sasha Levin wrote:
+> On 03/11/2014 04:47 PM, Davidlohr Bueso wrote:
+> >> Bingo! With the above patch:
+> >> >
+> >> >[  243.565794] kernel BUG at mm/vmacache.c:76!
+> >> >[  243.566720] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> >> >[  243.568048] Dumping ftrace buffer:
+> >> >[  243.568740]    (ftrace buffer empty)
+> >> >[  243.569481] Modules linked in:
+> >> >[  243.570203] CPU: 10 PID: 10073 Comm: trinity-c332 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00010-g1f812cb-dirty #143
+> > and this is also part of the DEBUG_PAGEALLOC + trinity combo! I suspect
+> > the root cause it the same as Fengguang's report.
+> 
+> The BUG still happens without DEBUG_PAGEALLOC.
 
-can we use (parent->flags & IORESOURCE_TYPE_BITS) instead?
+Any idea what trinity itself is doing?
 
-> +       res->flags |= IORESOURCE_BUSY | flags;
->
->         write_lock(&resource_lock);
->
->
+Could you add the following, I just want to make sure the bug isn't
+being caused by an overflow:
+
+diff --git a/mm/vmacache.c b/mm/vmacache.c
+index add3162..abb85cc 100644
+--- a/mm/vmacache.c
++++ b/mm/vmacache.c
+@@ -17,6 +17,8 @@ void vmacache_flush_all(struct mm_struct *mm)
+ {
+        struct task_struct *g, *p;
+ 
++       WARN_ON_ONCE(1);
++
+        rcu_read_lock();
+        for_each_process_thread(g, p) {
+                /*
+
+
+Thanks.
+
