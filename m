@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989AbaCKWUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 18:20:19 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:52148 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972AbaCKWUO (ORCPT
+	id S1756058AbaCKWWh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 18:22:37 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:47154 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755834AbaCKWWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 18:20:14 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@rjwysocki.net,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 3/3] ACPI: Don't re-select SBS battery if it's already selected
-Date: Tue, 11 Mar 2014 18:20:02 -0400
-Message-Id: <1394576402-2910-4-git-send-email-matthew.garrett@nebula.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1394576402-2910-1-git-send-email-matthew.garrett@nebula.com>
-References: <1394576402-2910-1-git-send-email-matthew.garrett@nebula.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.207.143
-X-SA-Exim-Mail-From: matthew.garrett@nebula.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 11 Mar 2014 18:22:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394306073.32104.4.camel@x220>
+References: <cover.1394304585.git.luto@amacapital.net> <16072d10240583debb7d303136c507c32c4d4b5d.1394304585.git.luto@amacapital.net>
+ <1394306073.32104.4.camel@x220>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Mar 2014 15:22:14 -0700
+Message-ID: <CALCETrVmz-UkZ2p6nou7Twapb_Rcdf7M6JwGeisvpZ4rZmUvxg@mail.gmail.com>
+Subject: Re: [PATCH 4/4] raid6: Add severity levels to raid6 initialization messages
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        trivial@kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Ken Steele <ken@tilera.com>, Nicolas Pitre <nico@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing SBS code explicitly sets the selected battery in the SBS
-manager regardless of whether the battery in question is already selected.
-This causes bus timeouts on Apple hardware. Check for this case and avoid
-it.
+On Sat, Mar 8, 2014 at 11:14 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Sat, 2014-03-08 at 10:58 -0800, Andy Lutomirski wrote:
+>> Some of them are errors; some are not.  Annotate them accordingly.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>  lib/raid6/algos.c | 13 +++++++------
+>>  1 file changed, 7 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/lib/raid6/algos.c b/lib/raid6/algos.c
+>> [...]
+>> @@ -194,7 +195,7 @@ int __init raid6_select_algo(void)
+>>       syndromes = (void *) __get_free_pages(GFP_KERNEL, 1);
+>>
+>>       if (!syndromes) {
+>> -             printk("raid6: Yikes!  No memory available.\n");
+>> +             printk(KERN_ERR "raid6: Yikes!  No memory available.\n");
+>>               return -ENOMEM;
+>>       }
+>>
+>
+> Does __get_free_pages() print and error (or similar) when it fails? If
+> so, this printk() could be dropped, couldn't it?
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
----
- drivers/acpi/sbs.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+I think it does in warn_alloc_failed in mm/page_alloc.c.  It might not
+be clear what the impact of that error is, but, empirically, if
+there's too little memory during boot, everything is thoroughly broken
+anyway.
 
-diff --git a/drivers/acpi/sbs.c b/drivers/acpi/sbs.c
-index dbd4849..c386505 100644
---- a/drivers/acpi/sbs.c
-+++ b/drivers/acpi/sbs.c
-@@ -470,17 +470,25 @@ static struct device_attribute alarm_attr = {
- static int acpi_battery_read(struct acpi_battery *battery)
- {
- 	int result = 0, saved_present = battery->present;
--	u16 state;
-+	u16 state, selected, desired;
- 
- 	if (battery->sbs->manager_present) {
- 		result = acpi_smbus_read(battery->sbs->hc, SMBUS_READ_WORD,
- 				ACPI_SBS_MANAGER, 0x01, (u8 *)&state);
- 		if (!result)
- 			battery->present = state & (1 << battery->id);
--		state &= 0x0fff;
--		state |= 1 << (battery->id + 12);
--		acpi_smbus_write(battery->sbs->hc, SMBUS_WRITE_WORD,
--				  ACPI_SBS_MANAGER, 0x01, (u8 *)&state, 2);
-+		/*
-+		 * Don't switch battery if the correct one is already selected
-+		 */
-+		selected = state & 0xf000;
-+		desired = 1 << (battery->id + 12);
-+		if (selected != desired) {
-+			state &= 0x0fff;
-+			state |= desired;
-+			acpi_smbus_write(battery->sbs->hc, SMBUS_WRITE_WORD,
-+					 ACPI_SBS_MANAGER, 0x01,
-+					 (u8 *)&state, 2);
-+		}
- 	} else if (battery->id == 0)
- 		battery->present = 1;
- 	if (result || !battery->present)
+>
+>
+> Paul Bolle
+>
+
+
+
 -- 
-1.8.5.3
-
+Andy Lutomirski
+AMA Capital Management, LLC
