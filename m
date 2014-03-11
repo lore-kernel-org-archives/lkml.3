@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650AbaCKMlJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 08:41:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35759 "EHLO
+	id S1755674AbaCKMlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 08:41:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35764 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755581AbaCKMlG (ORCPT
+	with ESMTP id S1753646AbaCKMlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 08:41:06 -0400
-Date: Tue, 11 Mar 2014 05:40:37 -0700
+	Tue, 11 Mar 2014 08:41:13 -0400
+Date: Tue, 11 Mar 2014 05:40:25 -0700
 From: tip-bot for Bjorn Helgaas <tipbot@zytor.com>
-Message-ID: <tip-070826820daf423eee83ee4e90bf3daf2cdd85c2@git.kernel.org>
+Message-ID: <tip-36fc5500bb1907bea7e9b4785dd00abf714d556f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        bhelgaas@google.com, peterz@infradead.org, tglx@linutronix.de,
-        davem@davemloft.net
+        peterz@infradead.org, davem@davemloft.net, bhelgaas@google.com,
+        benh@kernel.crashing.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, peterz@infradead.org, tglx@linutronix.de,
-        davem@davemloft.net
-In-Reply-To: <20140304210744.16893.75929.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140304210744.16893.75929.stgit@bhelgaas-glaptop.roam.corp.google.com>
+        peterz@infradead.org, davem@davemloft.net, bhelgaas@google.com,
+        benh@kernel.crashing.org, tglx@linutronix.de
+In-Reply-To: <20140304210737.16893.54289.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140304210737.16893.54289.stgit@bhelgaas-glaptop.roam.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sparc64, sched: Remove unused sparc64_multi_core
-Git-Commit-ID: 070826820daf423eee83ee4e90bf3daf2cdd85c2
+Subject: [tip:sched/core] sched: Remove unused mc_capable()
+  and smt_capable()
+Git-Commit-ID: 36fc5500bb1907bea7e9b4785dd00abf714d556f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,84 +34,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  070826820daf423eee83ee4e90bf3daf2cdd85c2
-Gitweb:     http://git.kernel.org/tip/070826820daf423eee83ee4e90bf3daf2cdd85c2
+Commit-ID:  36fc5500bb1907bea7e9b4785dd00abf714d556f
+Gitweb:     http://git.kernel.org/tip/36fc5500bb1907bea7e9b4785dd00abf714d556f
 Author:     Bjorn Helgaas <bhelgaas@google.com>
-AuthorDate: Tue, 4 Mar 2014 14:07:44 -0700
+AuthorDate: Tue, 4 Mar 2014 14:07:37 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 11 Mar 2014 12:05:47 +0100
+CommitDate: Tue, 11 Mar 2014 12:05:45 +0100
 
-sparc64, sched: Remove unused sparc64_multi_core
+sched: Remove unused mc_capable() and smt_capable()
 
-Remove sparc64_multi_core because it's not used any more.
+Remove mc_capable() and smt_capable().  Neither is used.
 
-It was added by a2f9f6bbb30e ("Fix {mc,smt}_capable()"), and the last uses
-were removed by e637d96bf462 ("sched: Remove unused mc_capable() and
-smt_capable()").
+Both were added by 5c45bf279d37 ("sched: mc/smt power savings sched
+policy").  Uses of both were removed by 8e7fbcbc22c1 ("sched: Remove stale
+power aware scheduling remnants and dysfunctional knobs").
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
 Acked-by: David S. Miller <davem@davemloft.net>
-Link: http://lkml.kernel.org/r/20140304210744.16893.75929.stgit@bhelgaas-glaptop.roam.corp.google.com
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Link: http://lkml.kernel.org/r/20140304210737.16893.54289.stgit@bhelgaas-glaptop.roam.corp.google.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/sparc/include/asm/smp_64.h | 1 -
- arch/sparc/kernel/mdesc.c       | 4 ----
- arch/sparc/kernel/prom_64.c     | 3 ---
- arch/sparc/kernel/smp_64.c      | 2 --
- 4 files changed, 10 deletions(-)
+ arch/arm/include/asm/topology.h      | 3 ---
+ arch/ia64/include/asm/topology.h     | 1 -
+ arch/mips/include/asm/topology.h     | 4 ----
+ arch/powerpc/include/asm/topology.h  | 1 -
+ arch/sparc/include/asm/topology_64.h | 2 --
+ arch/x86/include/asm/topology.h      | 6 ------
+ 6 files changed, 17 deletions(-)
 
-diff --git a/arch/sparc/include/asm/smp_64.h b/arch/sparc/include/asm/smp_64.h
-index dd3bef4..0571039 100644
---- a/arch/sparc/include/asm/smp_64.h
-+++ b/arch/sparc/include/asm/smp_64.h
-@@ -32,7 +32,6 @@
+diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
+index 58b8b84..2fe85ff 100644
+--- a/arch/arm/include/asm/topology.h
++++ b/arch/arm/include/asm/topology.h
+@@ -20,9 +20,6 @@ extern struct cputopo_arm cpu_topology[NR_CPUS];
+ #define topology_core_cpumask(cpu)	(&cpu_topology[cpu].core_sibling)
+ #define topology_thread_cpumask(cpu)	(&cpu_topology[cpu].thread_sibling)
  
- DECLARE_PER_CPU(cpumask_t, cpu_sibling_map);
+-#define mc_capable()	(cpu_topology[0].socket_id != -1)
+-#define smt_capable()	(cpu_topology[0].thread_id != -1)
+-
+ void init_cpu_topology(void);
+ void store_cpu_topology(unsigned int cpuid);
+ const struct cpumask *cpu_coregroup_mask(int cpu);
+diff --git a/arch/ia64/include/asm/topology.h b/arch/ia64/include/asm/topology.h
+index a2496e4..5cb55a1 100644
+--- a/arch/ia64/include/asm/topology.h
++++ b/arch/ia64/include/asm/topology.h
+@@ -77,7 +77,6 @@ void build_cpu_to_node_map(void);
+ #define topology_core_id(cpu)			(cpu_data(cpu)->core_id)
+ #define topology_core_cpumask(cpu)		(&cpu_core_map[cpu])
+ #define topology_thread_cpumask(cpu)		(&per_cpu(cpu_sibling_map, cpu))
+-#define smt_capable() 				(smp_num_siblings > 1)
+ #endif
+ 
+ extern void arch_fix_phys_package_id(int num, u32 slot);
+diff --git a/arch/mips/include/asm/topology.h b/arch/mips/include/asm/topology.h
+index 12609a1..20ea485 100644
+--- a/arch/mips/include/asm/topology.h
++++ b/arch/mips/include/asm/topology.h
+@@ -10,8 +10,4 @@
+ 
+ #include <topology.h>
+ 
+-#ifdef CONFIG_SMP
+-#define smt_capable()	(smp_num_siblings > 1)
+-#endif
+-
+ #endif /* __ASM_TOPOLOGY_H */
+diff --git a/arch/powerpc/include/asm/topology.h b/arch/powerpc/include/asm/topology.h
+index d0b5fca..c920215 100644
+--- a/arch/powerpc/include/asm/topology.h
++++ b/arch/powerpc/include/asm/topology.h
+@@ -99,7 +99,6 @@ static inline int prrn_is_enabled(void)
+ 
+ #ifdef CONFIG_SMP
+ #include <asm/cputable.h>
+-#define smt_capable()		(cpu_has_feature(CPU_FTR_SMT))
+ 
+ #ifdef CONFIG_PPC64
+ #include <asm/smp.h>
+diff --git a/arch/sparc/include/asm/topology_64.h b/arch/sparc/include/asm/topology_64.h
+index 1754390..a2d10fc 100644
+--- a/arch/sparc/include/asm/topology_64.h
++++ b/arch/sparc/include/asm/topology_64.h
+@@ -42,8 +42,6 @@ static inline int pcibus_to_node(struct pci_bus *pbus)
+ #define topology_core_id(cpu)			(cpu_data(cpu).core_id)
+ #define topology_core_cpumask(cpu)		(&cpu_core_map[cpu])
+ #define topology_thread_cpumask(cpu)		(&per_cpu(cpu_sibling_map, cpu))
+-#define mc_capable()				(sparc64_multi_core)
+-#define smt_capable()				(sparc64_multi_core)
+ #endif /* CONFIG_SMP */
+ 
  extern cpumask_t cpu_core_map[NR_CPUS];
--extern int sparc64_multi_core;
- 
- extern void arch_send_call_function_single_ipi(int cpu);
- extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
-diff --git a/arch/sparc/kernel/mdesc.c b/arch/sparc/kernel/mdesc.c
-index b90bf23..a1a4400 100644
---- a/arch/sparc/kernel/mdesc.c
-+++ b/arch/sparc/kernel/mdesc.c
-@@ -896,10 +896,6 @@ void mdesc_fill_in_cpu_data(cpumask_t *mask)
- 
- 	mdesc_iterate_over_cpus(fill_in_one_cpu, NULL, mask);
+diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+index d35f24e..9bcc724 100644
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@ -133,12 +133,6 @@ static inline void arch_fix_phys_package_id(int num, u32 slot)
+ struct pci_bus;
+ void x86_pci_root_bus_resources(int bus, struct list_head *resources);
  
 -#ifdef CONFIG_SMP
--	sparc64_multi_core = 1;
+-#define mc_capable()	((boot_cpu_data.x86_max_cores > 1) && \
+-			(cpumask_weight(cpu_core_mask(0)) != nr_cpu_ids))
+-#define smt_capable()			(smp_num_siblings > 1)
 -#endif
 -
- 	hp = mdesc_grab();
- 
- 	set_core_ids(hp);
-diff --git a/arch/sparc/kernel/prom_64.c b/arch/sparc/kernel/prom_64.c
-index 6b39125..9a690d3 100644
---- a/arch/sparc/kernel/prom_64.c
-+++ b/arch/sparc/kernel/prom_64.c
-@@ -555,9 +555,6 @@ static void *fill_in_one_cpu(struct device_node *dp, int cpuid, int arg)
- 
- 		cpu_data(cpuid).core_id = portid + 1;
- 		cpu_data(cpuid).proc_id = portid;
--#ifdef CONFIG_SMP
--		sparc64_multi_core = 1;
--#endif
- 	} else {
- 		cpu_data(cpuid).dcache_size =
- 			of_getintprop_default(dp, "dcache-size", 16 * 1024);
-diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
-index b085311..9781048 100644
---- a/arch/sparc/kernel/smp_64.c
-+++ b/arch/sparc/kernel/smp_64.c
-@@ -53,8 +53,6 @@
- 
- #include "cpumap.h"
- 
--int sparc64_multi_core __read_mostly;
--
- DEFINE_PER_CPU(cpumask_t, cpu_sibling_map) = CPU_MASK_NONE;
- cpumask_t cpu_core_map[NR_CPUS] __read_mostly =
- 	{ [0 ... NR_CPUS-1] = CPU_MASK_NONE };
+ #ifdef CONFIG_NUMA
+ extern int get_mp_bus_to_node(int busnum);
+ extern void set_mp_bus_to_node(int busnum, int node);
