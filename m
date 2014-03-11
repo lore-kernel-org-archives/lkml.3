@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399AbaCKJC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 05:02:26 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:51772 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203AbaCKJAt (ORCPT
+	id S1754545AbaCKJCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 05:02:41 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:49279 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754431AbaCKJCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 05:00:49 -0400
-From: Boris BREZILLON <brezillonboris@gmail.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH v3 1/4] clk: at91: replace prog clk round_rate with determine_rate
-Date: Tue, 11 Mar 2014 10:00:32 +0100
-Message-Id: <1394528435-23734-2-git-send-email-b.brezillon.dev@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394528435-23734-1-git-send-email-b.brezillon.dev@gmail.com>
-References: <1394528435-23734-1-git-send-email-b.brezillon.dev@gmail.com>
+	Tue, 11 Mar 2014 05:02:38 -0400
+Message-ID: <1394528555.8352.4.camel@x41>
+Subject: Re: "can't evaluate _CRS: 1" messages since b355cee [ACPI /
+ resources: ignore invalid ACPI device resources]
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-acpi@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 11 Mar 2014 10:02:35 +0100
+In-Reply-To: <20140311084409.GA282@x4>
+References: <20140311084409.GA282@x4>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Mar 2014 09:02:35.0927 (UTC) FILETIME=[A54BBA70:01CF3D08]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <b.brezillon@overkiz.com>
+[+cc Bjorn]
 
-Implement the determine_rate callback to choose the best parent clk that
-fulfills the requested rate.
+Markus Trippelsdorf schreef op di 11-03-2014 om 09:44 [+0100]:
+> Since:
+>  commit b355cee88e3b1a193f0e9a81db810f6f83ad728b
+>  Author: Zhang Rui <rui.zhang@intel.com>
+>  Date:   Thu Feb 27 11:37:15 2014 +0800
+> 
+>      ACPI / resources: ignore invalid ACPI device resources
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clk/at91/clk-programmable.c |   56 +++++++++++++++++------------------
- 1 file changed, 28 insertions(+), 28 deletions(-)
+Which is included in v3.14-rc6.
 
-diff --git a/drivers/clk/at91/clk-programmable.c b/drivers/clk/at91/clk-programmable.c
-index fd792b2..eff7016 100644
---- a/drivers/clk/at91/clk-programmable.c
-+++ b/drivers/clk/at91/clk-programmable.c
-@@ -102,40 +102,40 @@ static unsigned long clk_programmable_recalc_rate(struct clk_hw *hw,
- 	return parent_rate >> prog->pres;
- }
- 
--static long clk_programmable_round_rate(struct clk_hw *hw, unsigned long rate,
--					unsigned long *parent_rate)
-+static long clk_programmable_determine_rate(struct clk_hw *hw,
-+					    unsigned long rate,
-+					    unsigned long *best_parent_rate,
-+					    struct clk **best_parent_clk)
- {
--	unsigned long best_rate = *parent_rate;
--	unsigned long best_diff;
--	unsigned long new_diff;
--	unsigned long cur_rate;
--	int shift = shift;
--
--	if (rate > *parent_rate)
--		return *parent_rate;
--	else
--		best_diff = *parent_rate - rate;
--
--	if (!best_diff)
--		return best_rate;
-+	struct clk *parent = NULL;
-+	long best_rate = -EINVAL;
-+	unsigned long parent_rate;
-+	unsigned long tmp_rate;
-+	int shift;
-+	int i;
- 
--	for (shift = 1; shift < PROG_PRES_MASK; shift++) {
--		cur_rate = *parent_rate >> shift;
-+	for (i = 0; i < __clk_get_num_parents(hw->clk); i++) {
-+		parent = clk_get_parent_by_index(hw->clk, i);
-+		if (!parent)
-+			continue;
- 
--		if (cur_rate > rate)
--			new_diff = cur_rate - rate;
--		else
--			new_diff = rate - cur_rate;
-+		parent_rate = __clk_get_rate(parent);
-+		for (shift = 0; shift < PROG_PRES_MASK; shift++) {
-+			tmp_rate = parent_rate >> shift;
-+			if (tmp_rate <= rate)
-+				break;
-+		}
- 
--		if (!new_diff)
--			return cur_rate;
-+		if (tmp_rate > rate)
-+			continue;
- 
--		if (new_diff < best_diff) {
--			best_diff = new_diff;
--			best_rate = cur_rate;
-+		if (best_rate < 0 || (rate - tmp_rate) < (rate - best_rate)) {
-+			best_rate = tmp_rate;
-+			*best_parent_rate = parent_rate;
-+			*best_parent_clk = parent;
- 		}
- 
--		if (rate > cur_rate)
-+		if (!best_rate)
- 			break;
- 	}
- 
-@@ -228,7 +228,7 @@ static const struct clk_ops programmable_ops = {
- 	.prepare = clk_programmable_prepare,
- 	.is_prepared = clk_programmable_is_ready,
- 	.recalc_rate = clk_programmable_recalc_rate,
--	.round_rate = clk_programmable_round_rate,
-+	.determine_rate = clk_programmable_determine_rate,
- 	.get_parent = clk_programmable_get_parent,
- 	.set_parent = clk_programmable_set_parent,
- 	.set_rate = clk_programmable_set_rate,
--- 
-1.7.9.5
+> The following error message is printed three times during boot on my
+> machine: "can't evaluate _CRS: 1"
+> 
+> Here's the dmesg diff:
+> 
+> @@ -308,6 +308,8 @@
+>  Switched to clocksource hpet
+>  pnp: PnP ACPI init
+>  ACPI: bus type PNP registered
+> +pnp 00:00: unknown resource type 10 in _CRS
+> +pnp 00:00: can't evaluate _CRS: 1
+
+I see these two messages too, when booting v3.14-rc6 on an (outdated)
+ThinkPad X41.
+
+>  system 00:00: Plug and Play ACPI device, IDs PNP0c02 (active)
+>  pnp 00:01: [dma 4]
+>  pnp 00:01: Plug and Play ACPI device, IDs PNP0200 (active)
+> @@ -318,6 +320,8 @@
+>  system 00:06: [mem 0xfec00000-0xfec00fff] could not be reserved
+>  system 00:06: [mem 0xfee00000-0xfee00fff] has been reserved
+>  system 00:06: Plug and Play ACPI device, IDs PNP0c02 (active)
+> +pnp 00:07: unknown resource type 4 in _CRS
+> +pnp 00:07: can't evaluate _CRS: 1
+>  system 00:07: [io  0x04d0-0x04d1] has been reserved
+>  system 00:07: [io  0x040b] has been reserved
+>  system 00:07: [io  0x04d6] has been reserved
+> @@ -334,19 +338,9 @@
+>  system 00:07: [io  0x0cd8-0x0cdf] has been reserved
+>  system 00:07: [io  0x0b00-0x0b3f] has been reserved
+>  system 00:07: [io  0x0800-0x089f] could not be reserved
+> -system 00:07: [io  0x0b00-0x0b0f] has been reserved
+> -system 00:07: [io  0x0b20-0x0b3f] has been reserved
+> -system 00:07: [io  0x0900-0x090f] has been reserved
+> -system 00:07: [io  0x0910-0x091f] has been reserved
+> -system 00:07: [io  0xfe00-0xfefe] has been reserved
+> -system 00:07: [mem 0xdff00000-0xdfffffff] has been reserved
+> -system 00:07: [mem 0xffb80000-0xffbfffff] has been reserved
+> -system 00:07: [mem 0xfec10000-0xfec1001f] has been reserved
+>  system 00:07: Plug and Play ACPI device, IDs PNP0c02 (active)
+> -system 00:08: [io  0x0230-0x023f] has been reserved
+> -system 00:08: [io  0x0290-0x029f] has been reserved
+> -system 00:08: [io  0x0f40-0x0f4f] has been reserved
+> -system 00:08: [io  0x0a30-0x0a3f] has been reserved
+> +pnp 00:08: unknown resource type 4 in _CRS
+> +pnp 00:08: can't evaluate _CRS: 1
+>  system 00:08: Plug and Play ACPI device, IDs PNP0c02 (active)
+>  system 00:09: [mem 0xe0000000-0xefffffff] has been reserved
+>  system 00:09: Plug and Play ACPI device, IDs PNP0c02 (active)
+
+But the messages about "resource type 4" do not appear.
+
+
+Paul Bolle
 
