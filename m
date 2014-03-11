@@ -1,89 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701AbaCKUUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:20:53 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:48261 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662AbaCKUUt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:20:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140311194959.GB28112@sirena.org.uk>
-References: <1394541891-26469-1-git-send-email-jcmvbkbc@gmail.com>
-	<1394541891-26469-2-git-send-email-jcmvbkbc@gmail.com>
-	<20140311194959.GB28112@sirena.org.uk>
-Date: Wed, 12 Mar 2014 00:20:49 +0400
-Message-ID: <CAMo8BfLTn+pneF6_7XkP66+LzpZgcefnAo_FkwxpvtYdt9yduA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] spi: add xtfpga SPI controller driver
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        linux-spi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755588AbaCKUUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:20:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34397 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753498AbaCKUUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 16:20:43 -0400
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Derek Basehore <dbasehore@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        stable@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: [PATCH 1/2 RESEND] bdi: Fix hung task on sync
+Date: Tue, 11 Mar 2014 21:20:38 +0100
+Message-Id: <1394569239-17276-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 11:49 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Tue, Mar 11, 2014 at 04:44:49PM +0400, Max Filippov wrote:
->
->> +static inline int xtfpga_spi_wait_busy(struct xtfpga_spi *xspi)
->> +{
->> +     unsigned long timeout = jiffies + msecs_to_jiffies(100);
->> +     while (xtfpga_spi_read32(xspi, XTFPGA_SPI_BUSY)) {
->> +             if (!time_before(jiffies, timeout))
->> +                     return -EBUSY;
->> +             else
->> +                     cpu_relax();
->> +     }
->> +     return 0;
->> +}
->
-> So we'll busy wait for up to 100ms - that seems like an awfully long
-> time.  Perhaps fall back to msleep() if the delay is non-trivial (or
-> just reduce the timeout)?
+From: Derek Basehore <dbasehore@chromium.org>
 
-The timeout is here for the unlikely case everything went wrong. Normally
-transfers get completed in about 10 useconds on 50 MHz hardware, it
-doesn't seem worth msleeping here. I put the timeout here just because
-otherwise infinite loop polling the device register looks scary.
+bdi_wakeup_thread_delayed() used the mod_delayed_work() function to
+schedule work to writeback dirty inodes. The problem with this is that
+it can delay work that is scheduled for immediate execution, such as the
+work from sync_inodes_sb().  This can happen since mod_delayed_work()
+can now steal work from a work_queue.  This fixes the problem by using
+queue_delayed_work() instead. This is a regression caused by
+839a8e8660b6 "writeback: replace custom worker pool implementation with
+unbound workqueue".
 
->  If there are large enough FIFOs dead
-> reckoning a sleep for the expected transfer time might be helpful but it
-> seems like there's no meaningful FIFO.
+The reason that this causes a problem is that laptop-mode will change
+the delay, dirty_writeback_centisecs, to 60000 (10 minutes) by default.
+In the case that bdi_wakeup_thread_delayed() races with
+sync_inodes_sb(), sync will be stopped for 10 minutes and trigger a hung
+task. Even if dirty_writeback_centisecs is not long enough to cause a
+hung task, we still don't want to delay sync for that long.
 
-Right, there's no FIFO in that device.
+We fix the problem by using queue_delayed_work() when we want to
+schedule writeback sometime in future. This function doesn't change the
+timer if it is already armed.
 
->> +/* Unused: this device controls its only CS automatically,
->> + * deactivating it after every 16 bit transfer completion.
->> + */
->
-> This is too limited to use with most SPI clients, they'll want to be
-> able to transmit more than one word (and the fact that only 16 bit words
-> are supported is also an issue, though that's easy enough to handle for
-> a bitbanging driver - I'd really strongly suggest supporting 8 bits per
-> word as well).  Clients are pretty much going to need to use GPIO based
-> chip select, you should make sure that's supported and covered in the
-> binding.
+For the same reason, we also change bdi_writeback_workfn() to
+immediately queue the work again in the case that the work_list is not
+empty. The same problem can happen if the sync work is run on the rescue
+worker.
 
-There's no hardware for that. This device is really dumb, it is specifically
-suited to control TLV320AIC23 which expects exactly 16 bit words, SPI
-mode 0.
+Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
+CC: stable@vger.kernel.org
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/fs-writeback.c | 8 ++++----
+ mm/backing-dev.c  | 5 ++++-
+ 2 files changed, 8 insertions(+), 5 deletions(-)
 
->> +static void xtfpga_spi_chipselect(struct spi_device *spi, int is_on)
->> +{
->> +}
->
-> Omit this since it's empty.
-
-The bitbang side doesn't like when this callback is NULL and returns
--EINVAL from spi_bitbang_start.
-
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index e0259a163f98..8277b76be983 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -1047,10 +1047,10 @@ void bdi_writeback_workfn(struct work_struct *work)
+ 		trace_writeback_pages_written(pages_written);
+ 	}
+ 
+-	if (!list_empty(&bdi->work_list) ||
+-	    (wb_has_dirty_io(wb) && dirty_writeback_interval))
+-		queue_delayed_work(bdi_wq, &wb->dwork,
+-			msecs_to_jiffies(dirty_writeback_interval * 10));
++	if (!list_empty(&bdi->work_list))
++		mod_delayed_work(bdi_wq, &wb->dwork, 0);
++	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
++		bdi_wakeup_thread_delayed(bdi);
+ 
+ 	current->flags &= ~PF_SWAPWRITE;
+ }
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index ce682f7a4f29..fab8401fc54e 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -288,13 +288,16 @@ int bdi_has_dirty_io(struct backing_dev_info *bdi)
+  * Note, we wouldn't bother setting up the timer, but this function is on the
+  * fast-path (used by '__mark_inode_dirty()'), so we save few context switches
+  * by delaying the wake-up.
++ *
++ * We have to be careful not to postpone flush work if it is scheduled for
++ * earlier. Thus we use queue_delayed_work().
+  */
+ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+ {
+ 	unsigned long timeout;
+ 
+ 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+-	mod_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
+ }
+ 
+ /*
 -- 
-Thanks.
--- Max
+1.8.1.4
+
