@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919AbaCKOij (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 10:38:39 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40236 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752491AbaCKOii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 10:38:38 -0400
-Date: Tue, 11 Mar 2014 14:35:36 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 0/7] arm64: Add ftrace support
-Message-ID: <20140311143535.GE7944@mudshark.cambridge.arm.com>
-References: <1393320196-2942-1-git-send-email-takahiro.akashi@linaro.org>
- <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753019AbaCKOle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 10:41:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:64019 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751590AbaCKOlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 10:41:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,631,1389772800"; 
+   d="scan'208";a="496210042"
+From: Zhang Rui <rui.zhang@intel.com>
+To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: rafael.j.wysocki@intel.com, jwollrath@web.de, markus@trippelsdorf.de,
+        pebolle@tiscali.nl, Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH] PNPACPI: proper handling ACPI IO/Memory resources
+Date: Tue, 11 Mar 2014 22:40:27 +0800
+Message-Id: <1394548827-15172-1-git-send-email-rui.zhang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Akashi,
+Before commit b355cee88e3b1a193f0e9a81db810f6f83ad728b,
+if acpi_dev_resource_memory()/acpi_dev_resource_io() returns false,
+it means the the resource is not a memeory/IO resource.
 
-On Fri, Feb 28, 2014 at 05:18:37AM +0000, AKASHI Takahiro wrote:
-> This patchset implements a function tracer on arm64.
-> There was another implementation from Cavium network, but both of us agreed
-> to use my patchset as future base. He is supposed to review this code, too.
-> 
-> The only issue that I had some concern on was "fault protection" code
-> in prepare_ftrace_return(). With discussions with Steven and Tim (as author
-> of arm ftrace), I removed that code since I'm not quite sure about possibility
-> of "fault" occurrences in this function.
-> 
-> The code is tested on ARMv8 Fast Model with the following tracers & events:
->      function tracer with dynamic ftrace
->      function graph tracer with dynamic ftrace
->      syscall tracepoint
->      irqsoff & preemptirqsoff (which use CALLER_ADDRx)
-> and also verified with in-kernel tests, FTRACE_SELFTEST, FTRACE_STARTUP_TEST
-> and EVENT_TRACE_TEST_SYSCALLS.
-> 
-> Prerequisites are:
->  * "arm64: Add regs_return_value() in syscall.h"
->  * "arm64: make a single hook to syscall_trace() for all syscall features" patch
+But after commit b355cee88e3b1a193f0e9a81db810f6f83ad728b,
+if the memory/IO resource is invalid (the length of the resource is zero),
+acpi_dev_resource_memory()/acpi_dev_resource_io() returns false as well.
 
-It looks like there might be some more dependencies that that. Do you have a
-branch anywhere containing this series, along with all the dependencies so I
-can have a play?
+This breaks pnpacpi_allocated_resource(), because the current code would
+recognize the invalid memory/io resource as unknown resource type.
+Thus users will get warning messages on machines with zero length
+ACPI memeory/IO resources.
 
-Cheers,
+This patch fixes the problem by invoking acpi_dev_resource_memory()/
+acpi_dev_resource_io() for ACPI memory/IO resources only.
 
-Will
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/pnp/pnpacpi/rsparser.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
+index 167f3d0..66977eb 100644
+--- a/drivers/pnp/pnpacpi/rsparser.c
++++ b/drivers/pnp/pnpacpi/rsparser.c
+@@ -183,9 +183,7 @@ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
+ 	struct resource r = {0};
+ 	int i, flags;
+ 
+-	if (acpi_dev_resource_memory(res, &r)
+-	    || acpi_dev_resource_io(res, &r)
+-	    || acpi_dev_resource_address_space(res, &r)
++	if (acpi_dev_resource_address_space(res, &r)
+ 	    || acpi_dev_resource_ext_address_space(res, &r)) {
+ 		pnp_add_resource(dev, &r);
+ 		return AE_OK;
+@@ -217,6 +215,17 @@ static acpi_status pnpacpi_allocated_resource(struct acpi_resource *res,
+ 	}
+ 
+ 	switch (res->type) {
++	case ACPI_RESOURCE_TYPE_MEMORY24:
++	case ACPI_RESOURCE_TYPE_MEMORY32:
++	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
++		if (acpi_dev_resource_memory(res, &r))
++			pnp_add_resource(dev, &r);
++		break;
++	case ACPI_RESOURCE_TYPE_IO:
++	case ACPI_RESOURCE_TYPE_FIXED_IO:
++		if (acpi_dev_resource_io(res, &r))
++			pnp_add_resource(dev, &r);
++		break;
+ 	case ACPI_RESOURCE_TYPE_DMA:
+ 		dma = &res->data.dma;
+ 		if (dma->channel_count > 0 && dma->channels[0] != (u8) -1)
+-- 
+1.7.9.5
+
