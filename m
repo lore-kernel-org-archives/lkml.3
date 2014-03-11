@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961AbaCKRWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:22:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752395AbaCKRWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:22:03 -0400
-Message-ID: <531F4128.8020109@redhat.com>
-Date: Tue, 11 Mar 2014 13:00:24 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753314AbaCKR3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:29:22 -0400
+Received: from mail-qa0-f68.google.com ([209.85.216.68]:47952 "EHLO
+	mail-qa0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591AbaCKR3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 13:29:20 -0400
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, Mel Gorman <mgorman@suse.de>
-CC: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com,
-        knoel@redhat.com, aarcange@redhat.com
-Subject: Re: [PATCH -mm] mm,numa,mprotect: always continue after finding a
- stable thp page
-References: <5318E4BC.50301@oracle.com> <20140306173137.6a23a0b2@cuia.bos.redhat.com> <5318FC3F.4080204@redhat.com> <20140307140650.GA1931@suse.de> <20140307150923.GB1931@suse.de> <20140307182745.GD1931@suse.de> <20140311162845.GA30604@suse.de> <531F3F15.8050206@oracle.com>
-In-Reply-To: <531F3F15.8050206@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: mr.laurancewelam@yahoo.fr
+Date: Tue, 11 Mar 2014 17:29:19 +0000
+X-Google-Sender-Auth: LHM81JquAODeFZehbmJhCbEdbXs
+Message-ID: <CAEjKWVmdZbK7WcgsYSOmbrqAJ3AscPNsuCHMYOibR7BRhOkMrA@mail.gmail.com>
+Subject: PLEASE TAKE NOTE OF THIS INFORMATION AND REPLY URGENTLY.
+From: "Mr.Laurance Welam" <mrlaurancewelam@yahoo.fr>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2014 12:51 PM, Sasha Levin wrote:
-> On 03/11/2014 12:28 PM, Mel Gorman wrote:
->> On Fri, Mar 07, 2014 at 06:27:45PM +0000, Mel Gorman wrote:
->>>> This is a completely untested prototype. It rechecks pmd_trans_huge
->>>> under the lock and falls through if it hit a parallel split. It's not
->>>> perfect because it could decide to fall through just because there was
->>>> no prot_numa work to do but it's for illustration purposes. Secondly,
->>>> I noted that you are calling invalidate for every pmd range. Is that
->>>> not
->>>> a lot of invalidations? We could do the same by just tracking the
->>>> address
->>>> of the first invalidation.
->>>>
->>>
->>> And there were other minor issues. This is still untested but Sasha,
->>> can you try it out please? I discussed this with Rik on IRC for a bit
->>> and
->>> reckon this should be sufficient if the correct race has been
->>> identified.
->>>
->>
->> Any luck with this patch Sasha? It passed basic tests here but I had not
->> seen the issue trigger either.
->>
->
-> Sorry, I've been stuck in my weekend project of getting lockdep to work
-> with page locks :)
->
-> It takes a moment to test, so just to be sure - I should have only this
-> last patch applied?
-> Without the one in the original mail?
+Greetings!!
 
-Indeed, only this patch should do it.
+Please, I would respectfully request that you keep the contents of
+this e-mail   confidential and respect the integrity of the
+information you come by as result of this e-mail. I contact you
+independently and no one is informed of this communication.
 
+Firstly, I am Mr. LAURANCE WELAM, a Banker by Profession, and I am
+currently holding the post of  Account and Auditing Department in Bank
+of Africa (BOA) Burkina Faso West Africa; Please I need your urgent
+assistance in other to transfer the abandon sum of ($10.7million USA
+dollars) to your bank account before it goes into Bank treasury as
+unclaimed fund, you Are entitle to 40% of the total funds for your
+collaborative efforts why 60% will be for me as the moderator of this
+transaction. Please make you contact me urgently through this email
+Address:  (  mrlaurancewelam@yahoo.fr ) for more details.
+
+I am waiting for your urgent response.
+Thanks,
+Yours Brother,
+Mr. LAURANCE WELAM.
