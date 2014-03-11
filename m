@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156AbaCKRmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:42:55 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:55961 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120AbaCKRmx (ORCPT
+	id S1755236AbaCKRnE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:43:04 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:57762 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149AbaCKRnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:42:53 -0400
-Subject: [PATCH 2/5] resources: Set type in __request_region()
+	Tue, 11 Mar 2014 13:43:00 -0400
+Subject: [PATCH 3/5] PCI: Check all IORESOURCE_TYPE_BITS in
+ pci_bus_alloc_from_region()
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Paul Bolle <pebolle@tiscali.nl>, Yinghai Lu <yinghai@kernel.org>,
         linux-kernel@vger.kernel.org
-Date: Tue, 11 Mar 2014 11:42:49 -0600
-Message-ID: <20140311174249.23084.66300.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Tue, 11 Mar 2014 11:42:57 -0600
+Message-ID: <20140311174257.23084.80235.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140311173556.23084.57635.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140311173556.23084.57635.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -24,40 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't set the type (I/O, memory, etc.) of resources added by
-__request_region(), which leads to confusing messages like this:
+When allocating space from a bus resource, i.e., from apertures leading to
+this bus, make sure the entire resource type matches.  The previous code
+assumed the IORESOURCE_TYPE_BITS field was a bitmask with only a single bit
+set, but this is not true.  IORESOURCE_TYPE_BITS is really an enumeration,
+and we have to check all the bits.
 
-    address space collision: [io  0x1000-0x107f] conflicts with ACPI CPU throttle [??? 0x00001010-0x00001015 flags 0x80000000]
+See 72dcb1197228 ("resources: Add register address resource type").
 
-Set the type of a new resource added by __request_region() (used by
-request_region() and request_mem_region()) to the type of its parent.  This
-makes the resource tree internally consistent and fixes messages like the
-above, where the ACPI CPU throttle resource really is an I/O port region,
-but request_region() didn't fill in the type, so %pR didn't know how to
-print it.
+No functional change.  If we used this path for allocating IRQs, DMA
+channels, or bus numbers, this would fix a bug because those types are
+indistinguishable when masked by IORESOURCE_IO | IORESOURCE_MEM.  But we
+don't, so this shouldn't make any difference.
 
-Sample dmesg showing the issue at the link below.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=71611
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- kernel/resource.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pci/bus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/resource.c b/kernel/resource.c
-index a8344dda7049..ae1f742c860c 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -945,8 +945,8 @@ struct resource * __request_region(struct resource *parent,
- 	res->name = name;
- 	res->start = start;
- 	res->end = start + n - 1;
--	res->flags = IORESOURCE_BUSY;
--	res->flags |= flags;
-+	res->flags = parent->flags;
-+	res->flags |= IORESOURCE_BUSY | flags;
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 38901665c770..e3bdc88668ec 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -144,7 +144,7 @@ static int pci_bus_alloc_from_region(struct pci_bus *bus, struct resource *res,
+ 	struct resource *r, avail;
+ 	resource_size_t max;
  
- 	write_lock(&resource_lock);
+-	type_mask |= IORESOURCE_IO | IORESOURCE_MEM;
++	type_mask |= IORESOURCE_TYPE_BITS;
  
+ 	pci_bus_for_each_resource(bus, r, i) {
+ 		if (!r)
 
