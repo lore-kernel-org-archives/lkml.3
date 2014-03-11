@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123AbaCKRPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 13:15:16 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:47946
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752325AbaCKRPM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 13:15:12 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371Ic89bh936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h906i1155h)
-Date: Tue, 11 Mar 2014 10:15:02 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Joe Perches <joe@perches.com>,
-        <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v2] cpufreq: Reformat printk() statements
-References: <1394557380-15054-1-git-send-email-soren.brinkmann@xilinx.com>
- <531F441C.5070107@gmail.com>
+	id S1755043AbaCKRRP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 13:17:15 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:55377 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470AbaCKRRO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 13:17:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <531F441C.5070107@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <c05f44ed-dff6-45b6-96eb-3f4e37ffee9b@CH1EHSMHS035.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
+ <CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
+ <CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
+ <CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
+ <CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
+ <CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
+ <CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
+ <CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>
+ <531F365B.4060000@linux.intel.com> <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
+ <531F3D02.30706@linux.intel.com> <CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>
+ <CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com> <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 11 Mar 2014 10:16:53 -0700
+Message-ID: <CALCETrUHOe3yP2nyijU8HwUpE6CmSHJWgEGwgEJvdu3BhO+B1A@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-11 at 10:13AM -0700, Dirk Brandewie wrote:
-> On 03/11/2014 10:03 AM, Soren Brinkmann wrote:
-> >From: Joe Perches <joe@perches.com>
-> >
-> >  - Add missing newlines
-> >  - Coalesce format fragments
-> >  - Convert printks to pr_<level>
-> >  - Align arguments
-> >
-> 
-> This introduces a bunch of lines over 80 charaters long.
+On Tue, Mar 11, 2014 at 10:09 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Mar 11, 2014 at 9:50 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> Looking forward, would it be reasonable to have an extensible set of
+>> flags that live in the ELF interpreter's headers somewhere
+>
+> No. Not reasonable. The whole "32-bit x86" and "looking forward"
+> combination makes absolutely zero sense.
+>
+> I can pretty much guarantee that even *phones* will be 64-bit if/when
+> x86 ever gets there. They'll need it just for ARM emulation, I bet.
+>
+> So 32-bit x86 is dead, dead, dead. There's absolutely no future to it.
+> We're not adding new stuff to "future-proof" it.
 
-Right, intentionally. It is more important to be able to grep for
-printed messages than staying within 80 chars. That was the reason to
-create this patch in the first place (I probably should have left that
-note in the commit message).
+One of those flags is for 64-bit code, though -- it would be nice if
+the tasks that don't use the legacy vsyscall page could tell the
+kernel, which would allow them to opt into full ASLR.  (There are lots
+of legacy programs around that need vsyscall emulation, so there's no
+practical way to turn it off with a config option for a very long
+time, but vsyscall emulation would be trivial to turn on and off
+per-process.)
 
-	Sören
-
-
+--Andy
