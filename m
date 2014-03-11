@@ -1,82 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaCKJfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 05:35:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51358 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbaCKJfW (ORCPT
+	id S1753265AbaCKJfj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 05:35:39 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:64403 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972AbaCKJfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 05:35:22 -0400
-Message-ID: <531ED8CC.4010903@ti.com>
-Date: Tue, 11 Mar 2014 11:35:08 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Henrik Rydberg <rydberg@euromail.se>, <dmitry.torokhov@gmail.com>,
-        <jcbian@pixcir.com.cn>, <dmurphy@ti.com>, <mugunthanvnm@ti.com>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 4/8] Input: pixcir_i2c_ts: Use Type-B Multi-Touch protocol
-References: <1393428486-15001-1-git-send-email-rogerq@ti.com> <1393428486-15001-5-git-send-email-rogerq@ti.com> <531B3331.9050008@euromail.se> <531D7E66.1070300@ti.com> <20140310163701.GA30397@saruman.home>
-In-Reply-To: <20140310163701.GA30397@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 11 Mar 2014 05:35:34 -0400
+Date: Tue, 11 Mar 2014 10:35:45 +0100
+From: Juri Lelli <juri.lelli@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v2] sched: Fix broken setscheduler()
+Message-Id: <20140311103545.fc7f0f6b1bf0eb1d3391c85c@gmail.com>
+In-Reply-To: <20140310173731.06d41157@gandalf.local.home>
+References: <20140305232931.449eef8c@gandalf.local.home>
+	<20140306115825.GS27965@twins.programming.kicks-ass.net>
+	<20140306132040.781dbf18c9385a6112fbab2b@gmail.com>
+	<20140306120438.638bfe94@gandalf.local.home>
+	<alpine.DEB.2.02.1403062143360.18573@ionos.tec.linutronix.de>
+	<20140310132940.78e556c7@gandalf.local.home>
+	<alpine.DEB.2.02.1403102206520.18573@ionos.tec.linutronix.de>
+	<20140310173731.06d41157@gandalf.local.home>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2014 06:37 PM, Felipe Balbi wrote:
-> On Mon, Mar 10, 2014 at 10:57:10AM +0200, Roger Quadros wrote:
->> Hi Henrik,
->>
->> On 03/08/2014 05:11 PM, Henrik Rydberg wrote:
->>> Hi Roger,
->>>
->>> the MT implementation seems mostly fine, just one curiosity:
->>>
->>>>  static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
->>>>  {
->>>>  	struct pixcir_i2c_ts_data *tsdata = dev_id;
->>>>  	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
->>>> +	struct pixcir_report_data report;
->>>>  
->>>>  	while (!tsdata->exiting) {
->>>> -		pixcir_ts_poscheck(tsdata);
->>>> -
->>>> -		if (gpio_get_value(pdata->gpio_attb))
->>>> +		/* parse packet */
->>>> +		pixcir_ts_parse(tsdata, &report);
->>>> +
->>>> +		/* report it */
->>>> +		pixcir_ts_report(tsdata, &report);
->>>> +
->>>> +		if (gpio_get_value(pdata->gpio_attb)) {
->>>> +			if (report.num_touches) {
->>>> +				/*
->>>> +				 * Last report with no finger up?
->>>> +				 * Do it now then.
->>>> +				 */
->>>> +				input_mt_sync_frame(tsdata->input);
->>>> +				input_sync(tsdata->input);
->>>
->>> Why is this special handling needed?
->>
->> This is needed because the controller doesn't always report when all fingers
->> have left the screen. e.g. report might contain 3 fingers touched and then
->> gpio_attb line is de-asserted. There's no report with 0 fingers touched even
->> if the user's fingers have left the screen. So we never detect a BUTTON_UP.
->>
->> Without this s/w workaround we observe side effects like buttons being pressed
->> but not released. To me it looks like a bug in the controller.
+On Mon, 10 Mar 2014 17:37:31 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> On Mon, 10 Mar 2014 22:18:56 +0100 (CET)
+> Thomas Gleixner <tglx@linutronix.de> wrote:
 > 
-> the other way would be to *also* use IRQF_TRIGGER_RISING, then you get
-> an IRQ when fingers leave the screen. No ?
+> 
+> > Lemme look at it tomorrow again with an awake brain. This seems to be
+> > some forward porting hickup which needs a closer look. Just look at
+> 
+> Yep, I talked with Sebastian on IRC and that seems to be the case.
+> 
+> > the 3.10-rt version of this:
+> > 
+> > @@ -3825,20 +3826,25 @@ static struct task_struct *find_process_by_pid(pid_t pid)
+> >  	return pid ? find_task_by_vpid(pid) : current;
+> >  }
+> >  
+> > -/* Actually do priority change: must hold rq lock. */
+> > -static void
+> > -__setscheduler(struct rq *rq, struct task_struct *p, int policy, int prio)
+> > +static void __setscheduler_params(struct task_struct *p, int policy, int prio)
+> >  {
+> >  	p->policy = policy;
+> >  	p->rt_priority = prio;
+> >  	p->normal_prio = normal_prio(p);
+> > +	set_load_weight(p);
+> > +}
+> > 
+> > That code has changed significantly probably due to the EDF merge. We
+> > need to figure out whether there is more damage due to that.
+> 
+> Yeah, when I looked at the -rt version, it appeared to have my fix
+> already. But in reality, the forward port broke it. Here's the problem
+> part of the commit:
+> 
+> +       set_load_weight(p);
+> +}
+>  
+> -       p->normal_prio = normal_prio(p);
+> -       p->prio = rt_mutex_getprio(p);
+> 
+> Your patch never deleted the above two. And it kept them in the
+> locations that I placed them in, in my patch.
 > 
 
-Yes that is also possible but it involves an additional interrupt context switch.
-Sometimes the controller does report 0 finger touches before de-asserting the ATTB line and so
-this additional interrupt is not needed by the approach I used.
+Oh, and you have to have also something like this
 
-cheers,
--roger
+@@ -3271,7 +3271,8 @@ static int __sched_setscheduler(struct task_struct *p,
+ 				const struct sched_attr *attr,
+ 				bool user)
+ {
+-	int newprio = MAX_RT_PRIO - 1 - attr->sched_priority;
++	int newprio = dl_policy(attr->sched_policy) ? MAX_DL_PRIO - 1 :
++		      MAX_RT_PRIO - 1 - attr->sched_priority;
+ 	int retval, oldprio, oldpolicy = -1, on_rq, running;
+ 	int policy = attr->sched_policy;
+ 	unsigned long flags;
+
+or you can fail to become DL if you are currently boosted by RT, as
+attr->sched_priority == 0 for DL tasks. Then rt_mutex_check_prio ()
+returns 1 (just update params) if setting DL params for a task already
+boosted by another DL. But this seems to be ok, as we are already
+outside enforcement in this situation. (This is going to be trickier
+with proxy exec, though :/).
+
+Thanks,
+
+- Juri
+
+> -- Steve
+> 
+> 
+> +/* Actually do priority change: must hold pi & rq lock. */
+> +static void __setscheduler(struct rq *rq, struct task_struct *p,
+> +                          const struct sched_attr *attr)
+> +{
+> 
+> 
