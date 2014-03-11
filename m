@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529AbaCKVYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 17:24:23 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40306 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545AbaCKVYV (ORCPT
+	id S1755629AbaCKVZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 17:25:00 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:43566 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289AbaCKVY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 17:24:21 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] ARM: dts: msm8974: Move arch-timer out of soc node
-Date: Tue, 11 Mar 2014 14:24:18 -0700
-Message-Id: <1394573058-18561-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	Tue, 11 Mar 2014 17:24:58 -0400
+From: behanw@converseincode.com
+To: khali@linux-fr.org, rostedt@goodmis.org
+Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        pageexec@freemail.hu, Mark Charlebois <charlebm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>
+Subject: [PATCH v3] module: LLVMLinux: Remove unused function warning from __param_check macro
+Date: Tue, 11 Mar 2014 14:24:51 -0700
+Message-Id: <1394573091-4705-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <87y50hw9go.fsf@rustcorp.com.au>
+References: <87y50hw9go.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The architected timer is not a register addressable piece of
-hardware. Instead it's accessed through cp15 accessors. Move it
-to the root of the devicetree to reflect this.
+From: Mark Charlebois <charlebm@gmail.com>
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+This code makes a compile time type check that is optimized away. Clang
+complains that it generates an unused function:
+
+linux/kernel/panic.c:471:1: warning: unused function '__check_panic'
+      [-Wunused-function]
+core_param(panic, panic_timeout, int, 0644);
+^
+linux/moduleparam.h:283:2: note: expanded from macro
+      'core_param'
+        param_check_##type(name, &(var));                               \
+        ^
+<scratch space>:87:1: note: expanded from here
+param_check_int
+^
+linux/moduleparam.h:369:34: note: expanded from macro
+      'param_check_int'
+#define param_check_int(name, p) __param_check(name, p, int)
+                                 ^
+linux/moduleparam.h:349:22: note: expanded from macro
+      '__param_check'
+        static inline type *__check_##name(void) { return(p); }
+                            ^
+<scratch space>:88:1: note: expanded from here
+__check_panic
+
+GCC won't complain for a static inline function but would if it was just
+a static function.
+
+Adding the unused attribute to the function declaration removes the warning.
+Per request from Rusty Russell it is marked as __always_unused as the code
+is meant to be optimized away.
+
+This code works for both GCC and clang.
+
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
 ---
- arch/arm/boot/dts/qcom-msm8974.dtsi | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ include/linux/moduleparam.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
-index 9d79b98f18bb..d3fe0c21c6f4 100644
---- a/arch/arm/boot/dts/qcom-msm8974.dtsi
-+++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
-@@ -52,6 +52,15 @@
- 		};
- 	};
+diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+index c3eb102..175f699 100644
+--- a/include/linux/moduleparam.h
++++ b/include/linux/moduleparam.h
+@@ -346,7 +346,7 @@ static inline void destroy_params(const struct kernel_param *params,
+ /* The macros to do compile-time type checking stolen from Jakub
+    Jelinek, who IIRC came up with this idea for the 2.4 module init code. */
+ #define __param_check(name, p, type) \
+-	static inline type *__check_##name(void) { return(p); }
++	static inline type __always_unused *__check_##name(void) { return(p); }
  
-+	timer {
-+		compatible = "arm,armv7-timer";
-+		interrupts = <1 2 0xf08>,
-+			     <1 3 0xf08>,
-+			     <1 4 0xf08>,
-+			     <1 1 0xf08>;
-+		clock-frequency = <19200000>;
-+	};
-+
- 	soc: soc {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-@@ -66,15 +75,6 @@
- 			      <0xf9002000 0x1000>;
- 		};
- 
--		timer {
--			compatible = "arm,armv7-timer";
--			interrupts = <1 2 0xf08>,
--				     <1 3 0xf08>,
--				     <1 4 0xf08>,
--				     <1 1 0xf08>;
--			clock-frequency = <19200000>;
--		};
--
- 		timer@f9020000 {
- 			#address-cells = <1>;
- 			#size-cells = <1>;
+ extern struct kernel_param_ops param_ops_byte;
+ extern int param_set_byte(const char *val, const struct kernel_param *kp);
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.3.2
 
