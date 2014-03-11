@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866AbaCKUjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:39:40 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:54525 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755699AbaCKUji (ORCPT
+	id S1755718AbaCKUmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:42:47 -0400
+Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:33082 "EHLO
+	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755213AbaCKUmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:39:38 -0400
-Date: Tue, 11 Mar 2014 21:39:34 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] drm/fb-helper: Do the 'max_conn_count' zero check
-Message-ID: <20140311203934.GJ30571@phenom.ffwll.local>
-Mail-Followup-To: Xiubo Li <Li.Xiubo@freescale.com>, airlied@linux.ie,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <1394415238-20085-1-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394415238-20085-1-git-send-email-Li.Xiubo@freescale.com>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Mar 2014 16:42:46 -0400
+Message-ID: <1394570564.2786.40.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Mar 2014 13:42:44 -0700
+In-Reply-To: <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
+References: <531F6689.60307@oracle.com>
+	 <1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>
+	 <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 09:33:58AM +0800, Xiubo Li wrote:
-> Since we cannot make sure the 'max_conn_count' will always be none
-> zero from the users, and then if max_conn_count equals to zero, the
-> kcalloc() will return ZERO_SIZE_PTR, which equals to ((void *)16).
+On Tue, 2014-03-11 at 13:30 -0700, Andrew Morton wrote:
+> On Tue, 11 Mar 2014 13:07:33 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
 > 
-> So this patch fix this with just doing the 'max_conn_count' zero check
-> in the front of drm_fb_helper_init().
+> > On Tue, 2014-03-11 at 15:39 -0400, Sasha Levin wrote:
+> > > Hi all,
+> > > 
+> > > I've ended up deleting the log file by mistake, but this bug does seem to be important
+> > > so I'd rather not wait before the same issue is triggered again.
+> > > 
+> > > The call chain is:
+> > > 
+> > > 	mlock (mm/mlock.c:745)
+> > > 		__mm_populate (mm/mlock.c:700)
+> > > 			__mlock_vma_pages_range (mm/mlock.c:229)
+> > > 				VM_BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
+> > 
+> > So __mm_populate() is only called by mlock(2) and this VM_BUG_ON seems
+> > wrong as we call it without the lock held:
+> > 
+> > 	up_write(&current->mm->mmap_sem);
+> > 	if (!error)
+> > 		error = __mm_populate(start, len, 0);
+> > 	return error;
+> > }
 > 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> CC: Jani Nikula <jani.nikula@linux.intel.com>
+> __mm_populate() pretty clearly calls __mlock_vma_pages_range() under
+> down_read(mm->mmap_sem).
+> 
+> I worry about what happens if __get_user_pages decides to do
+> 
+> 				if (ret & VM_FAULT_RETRY) {
+> 					if (nonblocking)
+> 						*nonblocking = 0;
+> 					return i;
+> 				}
+> 
+> uh-oh, that just cleared __mm_populate()'s `locked' variable and we'll
+> forget to undo mmap_sem.  That won't explain this result, but it's a
+> potential problem.
+> 
+> 
+> All I can think is that find_vma() went and returned a vma from a
+> different mm, which would be odd.  How about I toss this in there?
 
-Makes sense.
+... and we know that there is a bug (https://lkml.org/lkml/2014/3/9/201)
+with stale caches going on. We seem to be missing an invalidation and/or
+flush somewhere.
 
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> ---
->  drivers/gpu/drm/drm_fb_helper.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-> index 3d13ca6e2..a0d286c 100644
-> --- a/drivers/gpu/drm/drm_fb_helper.c
-> +++ b/drivers/gpu/drm/drm_fb_helper.c
-> @@ -514,6 +514,9 @@ int drm_fb_helper_init(struct drm_device *dev,
->  	struct drm_crtc *crtc;
->  	int i;
->  
-> +	if (!max_conn_count)
-> +		return -EINVAL;
-> +
->  	fb_helper->dev = dev;
->  
->  	INIT_LIST_HEAD(&fb_helper->kernel_fb_list);
-> -- 
-> 1.8.4
-> 
-> 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
