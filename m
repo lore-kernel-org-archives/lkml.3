@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069AbaCKWoa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 18:44:30 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:41349 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756017AbaCKWlC (ORCPT
+	id S1756193AbaCKWo4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 18:44:56 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:36562 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978AbaCKWk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 18:41:02 -0400
+	Tue, 11 Mar 2014 18:40:59 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
         linus.walleij@linaro.org, magnus.damm@gmail.com,
         matthias.bgg@gmail.com, soren.brinkmann@xilinx.com,
         sboyd@codeaurora.org
-Subject: [PATCH 07/17] clocksource: timer-keystone: Delete unnecessary variable
-Date: Tue, 11 Mar 2014 23:40:43 +0100
-Message-Id: <1394577653-8615-7-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 05/17] clocksource: keystone: add bindings for keystone timer
+Date: Tue, 11 Mar 2014 23:40:41 +0100
+Message-Id: <1394577653-8615-5-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394577653-8615-1-git-send-email-daniel.lezcano@linaro.org>
 References: <531F8FAC.2040902@linaro.org>
@@ -25,44 +25,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthias Brugger <matthias.bgg@gmail.com>
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 
-Commit 438e0bff5257 added the timer-keystone device driver but make use
-of an unnecessary variable in the init function. This patch deletes this
-variable.
+This patch provides bindings for the 64-bit timer in the KeyStone
+architecture devices. The timer can be configured as a general-purpose 64-bit
+timer, dual general-purpose 32-bit timers. When configured as dual 32-bit
+timers, each half can operate in conjunction (chain mode) or independently
+(unchained mode) of each other.
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+It is global timer is a free running up-counter and can generate interrupt
+when the counter reaches preset counter values.
+
+Documentation:
+http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
+
+Acked-by: Rob Herring <robh@kernel.org>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/timer-keystone.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ .../bindings/timer/ti,keystone-timer.txt           |   29 ++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
 
-diff --git a/drivers/clocksource/timer-keystone.c b/drivers/clocksource/timer-keystone.c
-index 86b08cd..0250354 100644
---- a/drivers/clocksource/timer-keystone.c
-+++ b/drivers/clocksource/timer-keystone.c
-@@ -164,7 +164,6 @@ static void __init keystone_timer_init(struct device_node *np)
- 	unsigned long rate;
- 	struct clk *clk;
- 	int irq, error;
--	u32 tgcr;
- 
- 	irq  = irq_of_parse_and_map(np, 0);
- 	if (irq == NO_IRQ) {
-@@ -199,12 +198,10 @@ static void __init keystone_timer_init(struct device_node *np)
- 	keystone_timer_barrier();
- 
- 	/* reset timer as 64-bit, no pre-scaler, plus features are disabled */
--	tgcr = 0;
- 	keystone_timer_writel(0, TGCR);
- 
- 	/* unreset timer */
--	tgcr |= TGCR_TIM_UNRESET_MASK;
--	keystone_timer_writel(tgcr, TGCR);
-+	keystone_timer_writel(TGCR_TIM_UNRESET_MASK, TGCR);
- 
- 	/* init counter to zero */
- 	keystone_timer_writel(0, TIM12);
+diff --git a/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt b/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
+new file mode 100644
+index 0000000..5fbe361
+--- /dev/null
++++ b/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
+@@ -0,0 +1,29 @@
++* Device tree bindings for Texas instruments Keystone timer
++
++This document provides bindings for the 64-bit timer in the KeyStone
++architecture devices. The timer can be configured as a general-purpose 64-bit
++timer, dual general-purpose 32-bit timers. When configured as dual 32-bit
++timers, each half can operate in conjunction (chain mode) or independently
++(unchained mode) of each other.
++
++It is global timer is a free running up-counter and can generate interrupt
++when the counter reaches preset counter values.
++
++Documentation:
++http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
++
++Required properties:
++
++- compatible : should be "ti,keystone-timer".
++- reg : specifies base physical address and count of the registers.
++- interrupts : interrupt generated by the timer.
++- clocks : the clock feeding the timer clock.
++
++Example:
++
++timer@22f0000 {
++	compatible = "ti,keystone-timer";
++	reg = <0x022f0000 0x80>;
++	interrupts = <GIC_SPI 110 IRQ_TYPE_EDGE_RISING>;
++	clocks = <&clktimer15>;
++};
 -- 
 1.7.9.5
 
