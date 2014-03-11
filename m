@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355AbaCKSq6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 14:46:58 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:33324 "EHLO kanga.kvack.org"
+	id S1755269AbaCKSs3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 14:48:29 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:46701 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754047AbaCKSq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 14:46:57 -0400
-Date: Tue, 11 Mar 2014 14:46:56 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: viro@zeniv.linux.org.uk, jmoyer@redhat.com, kosaki.motohiro@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        miaox@cn.fujitsu.com
-Subject: Re: [RESEND v2 PATCH 1/2] aio, memory-hotplug: Fix confliction when migrating and accessing ring pages.
-Message-ID: <20140311184656.GD16433@kvack.org>
-References: <1394439334-28523-1-git-send-email-tangchen@cn.fujitsu.com> <1394439334-28523-2-git-send-email-tangchen@cn.fujitsu.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394439334-28523-2-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1752058AbaCKSs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 14:48:28 -0400
+X-IronPort-AV: E=Sophos;i="4.97,632,1389744000"; 
+   d="scan'208";a="110337525"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
+        <xen-devel@lists.xenproject.org>,
+        Dietmar Hahn <dietmar.hahn@ts.fujitsu.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCHv2] mm/vmalloc: avoid soft lockup warnings when vunmap()'ing large ranges
+Date: Tue, 11 Mar 2014 18:40:23 +0000
+Message-ID: <1394563223-5045-1-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 04:15:33PM +0800, Tang Chen wrote:
-> IO ring page migration has been implemented by the following patch:
-> 
->         https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/fs/aio.c?id=36bc08cc01709b4a9bb563b35aa530241ddc63e3
-> 
-> In this patch, ctx->completion_lock is used to prevent other processes
-> from accessing the ring page being migrated.
-> 
-> But in aio_setup_ring(), ioctx_add_table() and aio_read_events_ring(),
-> when writing to the ring page, they didn't take ctx->completion_lock.
+If vunmap() is used to unmap a large (e.g., 50 GB) region, it may take
+sufficiently long that it triggers soft lockup warnings.
 
-> As a result, for example, we have the following problem:
-...
-> As above, the new ring page will not be updated.
-> 
-> The solution is taking ctx->completion_lock in thread 2, which means,
-> in aio_setup_ring(), ioctx_add_table() and aio_read_events_ring() when
-> writing to ring pages.
+Add a cond_resched() into vunmap_pmd_range() so the calling task may
+be resheduled after unmapping each PMD entry.  This is how
+zap_pmd_range() fixes the same problem for userspace mappings.
 
-Upon review, there are still two accesses of ->ring_pages that are not 
-protected by any spinlocks which could potentially race with migration.  One 
-is in aio_setup_ring(), which can be easily resolved by moving the assignment 
-of ->ring_pages above the unlock_page().  Another spot is in 
-aio_read_events_ring() where head and tail are fetched from the ring without 
-any locking.  I also fear we'll be introducing new performance issues with 
-all the additonal spinlock bouncing, despite the fact that is only ever 
-needed for migration.  I'm going to continue looking into this today and 
-will try to send out a followup to this email later.
+All callers may sleep except for the APEI GHES driver (apei/ghes.c)
+which calls unmap_kernel_range_no_flush() from NMI and IRQ contexts.
+This driver only unmaps a single pages so don't call cond_resched() if
+the unmap doesn't cross a PMD boundary.
 
-		-ben
+Reported-by: Dietmar Hahn <dietmar.hahn@ts.fujitsu.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+---
+v2: don't call cond_resched() at the end of a PMD range.
+---
+ mm/vmalloc.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 0fdf968..1a8b162 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -75,6 +75,8 @@ static void vunmap_pmd_range(pud_t *pud, unsigned long addr, unsigned long end)
+ 		if (pmd_none_or_clear_bad(pmd))
+ 			continue;
+ 		vunmap_pte_range(pmd, addr, next);
++		if (next != end)
++			cond_resched();
+ 	} while (pmd++, addr = next, addr != end);
+ }
+ 
 -- 
-"Thought is the essence of where you are now."
+1.7.2.5
+
