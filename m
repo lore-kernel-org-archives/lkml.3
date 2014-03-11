@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347AbaCKEyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 00:54:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:26689 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183AbaCKEyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 00:54:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,629,1389772800"; 
-   d="scan'208";a="489540309"
-Date: Tue, 11 Mar 2014 12:54:24 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, kbuild-all@01.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [powerpc:next 45/53] warning: (PPC_C2K && ..) selects
- NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || ..)
-Message-ID: <20140311045424.GB12373@localhost>
-References: <531acfa5.YesaRIJhSRvrw4/w%fengguang.wu@intel.com>
- <531DD0F4.6020000@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531DD0F4.6020000@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753521AbaCKE5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 00:57:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38544 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504AbaCKE5d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 00:57:33 -0400
+Date: Mon, 10 Mar 2014 22:01:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: bad rss-counter message in 3.14rc5
+Message-Id: <20140310220158.7e8b7f2a.akpm@linux-foundation.org>
+In-Reply-To: <20140311045109.GB12551@redhat.com>
+References: <20140305174503.GA16335@redhat.com>
+	<20140305175725.GB16335@redhat.com>
+	<20140307002210.GA26603@redhat.com>
+	<20140311024906.GA9191@redhat.com>
+	<20140310201340.81994295.akpm@linux-foundation.org>
+	<20140310214612.3b4de36a.akpm@linux-foundation.org>
+	<20140311045109.GB12551@redhat.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 10:49:24AM -0400, Paul Gortmaker wrote:
-> On 14-03-08 03:07 AM, kbuild test robot wrote:
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
-> > head:   c7e64b9ce04aa2e3fad7396d92b5cb92056d16ac
-> > commit: 3c8464a9b12bf83807b6e2c896d7e7b633e1cae7 [45/53] powerpc: Delete old PrPMC 280/2800 support
-> > config: make ARCH=powerpc c2k_defconfig
-> > 
-> > All warnings:
-> > 
-> > warning: (PPC_C2K && AMIGAONE) selects NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON)
+On Tue, 11 Mar 2014 00:51:09 -0400 Dave Jones <davej@redhat.com> wrote:
+
+> On Mon, Mar 10, 2014 at 09:46:12PM -0700, Andrew Morton wrote:
+>  > On Mon, 10 Mar 2014 20:13:40 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
+>  > 
+>  > > > Anyone ? I'm hitting this trace on an almost daily basis, which is a pain
+>  > > > while trying to reproduce a different bug..
+>  > > 
+>  > > Damn, I thought we'd fixed that but it seems not.  Cc's added.
+>  > > 
+>  > > Guys, what stops the migration target page from coming unlocked in
+>  > > parallel with zap_pte_range()'s call to migration_entry_to_page()?
+>  > 
+>  > page_table_lock, sort-of.  At least, transitions of is_migration_entry()
+>  > and page_locked() happen under ptl.
+>  > 
+>  > I don't see any holes in regular migration.  Do you know if this is
+>  > reproducible with CONFIG_NUMA_BALANCING=n or CONFIG_NUMA=n?
 > 
-> This _looks_ like a new warning, but it really is not.  If you look
-> at the tree prior to the above named commit, it generates this:
-> 
-> $ make c2k_defconfig
-> warning: (PPC_PRPMC2800 && PPC_C2K && AMIGAONE) selects NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON)
-> warning: (PPC_PRPMC2800 && PPC_C2K && AMIGAONE) selects NOT_COHERENT_CACHE which has unmet direct dependencies (4xx || 8xx || E200 || PPC_MPC512x || GAMECUBE_COMMON)
-> #
-> # configuration written to .config
-> 
-> So the warning is slightly different in text, but essentially
-> the exact same thing that was being warned about before.  We've
-> just removed one of the possible symbols from existence.
+> CONFIG_NUMA_BALANCING was n already btw, so I'll do a NUMA=n run.
 
-Yes, sorry, the kbuild robot is not smart enough to detect such
-slightly changed error/warnings and will treat them as new ones.
+There probably isn't much point unless trinity is using
+sys_move_pages().  Is it?  If so it would be interesting to disable
+trinity's move_pages calls and see if it still fails.
 
-> I'm not sure there would ever be a way to teach kbuild robot
-> about something as subtle as the above; just one of the false
-> positives that we'll have to live with, probably.
-
-It is false positive: "this bug is not introduced by me!"
-
-However if you take a broader view, it's still notifying the possibly
-"relevant" people who may know the background about that bug, or whom
-to further CC the report. :)
-
-Thanks,
-Fengguang
+Grasping at straws here, trying to reduce the amount of code to look at :(
