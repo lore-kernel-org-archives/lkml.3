@@ -1,78 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718AbaCKUmr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:42:47 -0400
-Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:33082 "EHLO
-	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213AbaCKUmq (ORCPT
+	id S1755768AbaCKUnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:43:50 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38050 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351AbaCKUns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:42:46 -0400
-Message-ID: <1394570564.2786.40.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 11 Mar 2014 13:42:44 -0700
-In-Reply-To: <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
-References: <531F6689.60307@oracle.com>
-	 <1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>
-	 <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Tue, 11 Mar 2014 16:43:48 -0400
+Message-ID: <531F7582.2090309@codeaurora.org>
+Date: Tue, 11 Mar 2014 13:43:46 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: khilman@linaro.org, Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        kernel-build-reports@lists.linaro.org,
+        Josh Cartwright <joshc@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "olof @ lixom . net" <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] irqchip: Remove asmlinkage from static functions
+References: <20140301161258.GN12219@tassilo.jf.intel.com> <1393980030-17770-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1393980030-17770-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-11 at 13:30 -0700, Andrew Morton wrote:
-> On Tue, 11 Mar 2014 13:07:33 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
-> 
-> > On Tue, 2014-03-11 at 15:39 -0400, Sasha Levin wrote:
-> > > Hi all,
-> > > 
-> > > I've ended up deleting the log file by mistake, but this bug does seem to be important
-> > > so I'd rather not wait before the same issue is triggered again.
-> > > 
-> > > The call chain is:
-> > > 
-> > > 	mlock (mm/mlock.c:745)
-> > > 		__mm_populate (mm/mlock.c:700)
-> > > 			__mlock_vma_pages_range (mm/mlock.c:229)
-> > > 				VM_BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
-> > 
-> > So __mm_populate() is only called by mlock(2) and this VM_BUG_ON seems
-> > wrong as we call it without the lock held:
-> > 
-> > 	up_write(&current->mm->mmap_sem);
-> > 	if (!error)
-> > 		error = __mm_populate(start, len, 0);
-> > 	return error;
-> > }
-> 
-> __mm_populate() pretty clearly calls __mlock_vma_pages_range() under
-> down_read(mm->mmap_sem).
-> 
-> I worry about what happens if __get_user_pages decides to do
-> 
-> 				if (ret & VM_FAULT_RETRY) {
-> 					if (nonblocking)
-> 						*nonblocking = 0;
-> 					return i;
-> 				}
-> 
-> uh-oh, that just cleared __mm_populate()'s `locked' variable and we'll
-> forget to undo mmap_sem.  That won't explain this result, but it's a
-> potential problem.
-> 
-> 
-> All I can think is that find_vma() went and returned a vma from a
-> different mm, which would be odd.  How about I toss this in there?
+ping?
 
-... and we know that there is a bug (https://lkml.org/lkml/2014/3/9/201)
-with stale caches going on. We seem to be missing an invalidation and/or
-flush somewhere.
+On 03/04/14 16:40, Stephen Boyd wrote:
+> LTO patches add __visible to the asmlinkage define, causing
+> compilation warnings like:
+>
+>   drivers/irqchip/irq-gic.c:283:1: warning: 'externally_visible'
+>   attribute have effect only on public objects [-Wattributes]
+>
+> Drop asmlinkage here to avoid such warnings.
+>
+> Reported-by: Olof's autobuilder <build@lixom.net>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>
+> Based on next-20140226.
+>
+>  drivers/irqchip/irq-armada-370-xp.c | 2 +-
+>  drivers/irqchip/irq-bcm2835.c       | 4 ++--
+>  drivers/irqchip/irq-gic.c           | 2 +-
+>  drivers/irqchip/irq-mmp.c           | 6 ++----
+>  drivers/irqchip/irq-moxart.c        | 2 +-
+>  drivers/irqchip/irq-orion.c         | 2 +-
+>  drivers/irqchip/irq-sirfsoc.c       | 2 +-
+>  drivers/irqchip/irq-sun4i.c         | 4 ++--
+>  drivers/irqchip/irq-vic.c           | 2 +-
+>  drivers/irqchip/irq-vt8500.c        | 3 +--
+>  drivers/irqchip/irq-zevio.c         | 2 +-
+>  11 files changed, 14 insertions(+), 17 deletions(-)
+>
+> diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
+> index cd79503abea9..41be897df8d5 100644
+> --- a/drivers/irqchip/irq-armada-370-xp.c
+> +++ b/drivers/irqchip/irq-armada-370-xp.c
+> @@ -410,7 +410,7 @@ static void armada_370_xp_mpic_handle_cascade_irq(unsigned int irq,
+>  	chained_irq_exit(chip, desc);
+>  }
+>  
+> -static asmlinkage void __exception_irq_entry
+> +static void __exception_irq_entry
+>  armada_370_xp_handle_irq(struct pt_regs *regs)
+>  {
+>  	u32 irqstat, irqnr;
+> diff --git a/drivers/irqchip/irq-bcm2835.c b/drivers/irqchip/irq-bcm2835.c
+> index 1693b8e7f26a..5916d6cdafa1 100644
+> --- a/drivers/irqchip/irq-bcm2835.c
+> +++ b/drivers/irqchip/irq-bcm2835.c
+> @@ -95,7 +95,7 @@ struct armctrl_ic {
+>  };
+>  
+>  static struct armctrl_ic intc __read_mostly;
+> -static asmlinkage void __exception_irq_entry bcm2835_handle_irq(
+> +static void __exception_irq_entry bcm2835_handle_irq(
+>  	struct pt_regs *regs);
+>  
+>  static void armctrl_mask_irq(struct irq_data *d)
+> @@ -196,7 +196,7 @@ static void armctrl_handle_shortcut(int bank, struct pt_regs *regs,
+>  	handle_IRQ(irq_linear_revmap(intc.domain, irq), regs);
+>  }
+>  
+> -static asmlinkage void __exception_irq_entry bcm2835_handle_irq(
+> +static void __exception_irq_entry bcm2835_handle_irq(
+>  	struct pt_regs *regs)
+>  {
+>  	u32 stat, irq;
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index a917b144895e..63922b9ba6b7 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -279,7 +279,7 @@ static int gic_set_wake(struct irq_data *d, unsigned int on)
+>  #define gic_set_wake	NULL
+>  #endif
+>  
+> -static asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
+> +static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
+>  {
+>  	u32 irqstat, irqnr;
+>  	struct gic_chip_data *gic = &gic_data[0];
+> diff --git a/drivers/irqchip/irq-mmp.c b/drivers/irqchip/irq-mmp.c
+> index 2cb7cd0bc2f5..3c8827fe83f3 100644
+> --- a/drivers/irqchip/irq-mmp.c
+> +++ b/drivers/irqchip/irq-mmp.c
+> @@ -194,8 +194,7 @@ static struct mmp_intc_conf mmp2_conf = {
+>  	.conf_mask	= 0x7f,
+>  };
+>  
+> -static asmlinkage void __exception_irq_entry
+> -mmp_handle_irq(struct pt_regs *regs)
+> +static void __exception_irq_entry mmp_handle_irq(struct pt_regs *regs)
+>  {
+>  	int irq, hwirq;
+>  
+> @@ -207,8 +206,7 @@ mmp_handle_irq(struct pt_regs *regs)
+>  	handle_IRQ(irq, regs);
+>  }
+>  
+> -static asmlinkage void __exception_irq_entry
+> -mmp2_handle_irq(struct pt_regs *regs)
+> +static void __exception_irq_entry mmp2_handle_irq(struct pt_regs *regs)
+>  {
+>  	int irq, hwirq;
+>  
+> diff --git a/drivers/irqchip/irq-moxart.c b/drivers/irqchip/irq-moxart.c
+> index 5552fc2bf28a..00b3cc908f76 100644
+> --- a/drivers/irqchip/irq-moxart.c
+> +++ b/drivers/irqchip/irq-moxart.c
+> @@ -44,7 +44,7 @@ struct moxart_irq_data {
+>  
+>  static struct moxart_irq_data intc;
+>  
+> -static asmlinkage void __exception_irq_entry handle_irq(struct pt_regs *regs)
+> +static void __exception_irq_entry handle_irq(struct pt_regs *regs)
+>  {
+>  	u32 irqstat;
+>  	int hwirq;
+> diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
+> index 8e41be62812e..e25f246cd2fb 100644
+> --- a/drivers/irqchip/irq-orion.c
+> +++ b/drivers/irqchip/irq-orion.c
+> @@ -30,7 +30,7 @@
+>  
+>  static struct irq_domain *orion_irq_domain;
+>  
+> -static asmlinkage void
+> +static void
+>  __exception_irq_entry orion_handle_irq(struct pt_regs *regs)
+>  {
+>  	struct irq_domain_chip_generic *dgc = orion_irq_domain->gc;
+> diff --git a/drivers/irqchip/irq-sirfsoc.c b/drivers/irqchip/irq-sirfsoc.c
+> index 3a070c587ed9..581eefe331ae 100644
+> --- a/drivers/irqchip/irq-sirfsoc.c
+> +++ b/drivers/irqchip/irq-sirfsoc.c
+> @@ -47,7 +47,7 @@ sirfsoc_alloc_gc(void __iomem *base, unsigned int irq_start, unsigned int num)
+>  	ct->regs.mask = SIRFSOC_INT_RISC_MASK0;
+>  }
+>  
+> -static asmlinkage void __exception_irq_entry sirfsoc_handle_irq(struct pt_regs *regs)
+> +static void __exception_irq_entry sirfsoc_handle_irq(struct pt_regs *regs)
+>  {
+>  	void __iomem *base = sirfsoc_irqdomain->host_data;
+>  	u32 irqstat, irqnr;
+> diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+> index a5438d889245..9fbff030c700 100644
+> --- a/drivers/irqchip/irq-sun4i.c
+> +++ b/drivers/irqchip/irq-sun4i.c
+> @@ -36,7 +36,7 @@
+>  static void __iomem *sun4i_irq_base;
+>  static struct irq_domain *sun4i_irq_domain;
+>  
+> -static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
+> +static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
+>  
+>  static void sun4i_irq_ack(struct irq_data *irqd)
+>  {
+> @@ -136,7 +136,7 @@ static int __init sun4i_of_init(struct device_node *node,
+>  }
+>  IRQCHIP_DECLARE(allwinner_sun4i_ic, "allwinner,sun4i-ic", sun4i_of_init);
+>  
+> -static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
+> +static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
+>  {
+>  	u32 irq, hwirq;
+>  
+> diff --git a/drivers/irqchip/irq-vic.c b/drivers/irqchip/irq-vic.c
+> index fd2c980e4cea..37dab0b472cd 100644
+> --- a/drivers/irqchip/irq-vic.c
+> +++ b/drivers/irqchip/irq-vic.c
+> @@ -240,7 +240,7 @@ static void vic_handle_irq_cascaded(unsigned int irq, struct irq_desc *desc)
+>   * Keep iterating over all registered VIC's until there are no pending
+>   * interrupts.
+>   */
+> -static asmlinkage void __exception_irq_entry vic_handle_irq(struct pt_regs *regs)
+> +static void __exception_irq_entry vic_handle_irq(struct pt_regs *regs)
+>  {
+>  	int i, handled;
+>  
+> diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
+> index 1846e7d66681..eb6e91efdec8 100644
+> --- a/drivers/irqchip/irq-vt8500.c
+> +++ b/drivers/irqchip/irq-vt8500.c
+> @@ -178,8 +178,7 @@ static struct irq_domain_ops vt8500_irq_domain_ops = {
+>  	.xlate = irq_domain_xlate_onecell,
+>  };
+>  
+> -static asmlinkage
+> -void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
+> +static void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
+>  {
+>  	u32 stat, i;
+>  	int irqnr, virq;
+> diff --git a/drivers/irqchip/irq-zevio.c b/drivers/irqchip/irq-zevio.c
+> index 8ed04c4a43ee..ceb3a4318f73 100644
+> --- a/drivers/irqchip/irq-zevio.c
+> +++ b/drivers/irqchip/irq-zevio.c
+> @@ -50,7 +50,7 @@ static void zevio_irq_ack(struct irq_data *irqd)
+>  	readl(gc->reg_base + regs->ack);
+>  }
+>  
+> -static asmlinkage void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
+> +static void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
+>  {
+>  	int irqnr;
+>  
+
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
