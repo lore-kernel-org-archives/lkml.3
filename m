@@ -1,52 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593AbaCKATt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Mar 2014 20:19:49 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:34536 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912AbaCKATs (ORCPT
+	id S1753446AbaCKA10 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Mar 2014 20:27:26 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64929 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753084AbaCKA1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Mar 2014 20:19:48 -0400
+	Mon, 10 Mar 2014 20:27:23 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>,
+        "Li, Aubrey" <aubrey.li@linux.intel.com>
+Subject: [PATCH] ACPI / sleep: Add extra checks for HW Reduced ACPI mode sleep states
+Date: Tue, 11 Mar 2014 01:42:42 +0100
+Message-ID: <3761293.HvgvPUpS1F@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <531E5531.20409@linux.intel.com>
-References: <775280bd6cab6345a1d340e7038d2011763bf81b.1394492341.git.luto@amacapital.net>
- <531E5531.20409@linux.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 10 Mar 2014 17:19:27 -0700
-Message-ID: <CALCETrX1RBVYAKyN_GdvF8w3S=A5wZ_XaMqR_MjdLim7RMR8NQ@mail.gmail.com>
-Subject: Re: [PATCH] x86: Remove compat vdso support
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, X86 ML <x86@kernel.org>,
-        Stefani Seibold <stefani@seibold.net>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 5:13 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 03/10/2014 05:12 PM, Andy Lutomirski wrote:
->> The compat vDSO is a complicated hack that's needed to maintain
->> compatibility with a small range of never-released glibc versions.
->>
->> This removes it and replaces it with a much simpler hack: a config
->> option to disable the 32-bit vDSO by default.
->>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->
-> Can we verify this works correctly on the affected distributions?
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-It works correctly on Fedora 20 32-bit and 64-bit.
+If the HW Reduced ACPI mode bit is set in the FADT, ACPICA uses
+the optional sleep control and sleep status registers for making
+the system enter sleep states (including S5), so it is not possible
+to use system sleep states or power it off using ACPI if the HW
+Reduced ACPI mode bit is set and those registers are not available.
 
-I don't actually know what the affected distribution is, which makes
-it hard.  But it would be rather surprising if it didn't, since I
-suspect people would have noticed and complained very quickly and
-loudly if there was ever a glibc version that didn't work without a
-vDSO.
+For this reason, add a new function, acpi_sleep_state_supported(),
+checking if the HW Reduced ACPI mode bit is set and whether or not
+system sleep states are usable in that case in addition to checking
+the return value of acpi_get_sleep_type_data() and make the ACPI
+sleep setup routines use that function to check the availability of
+system sleep states.
 
-TBH, I'd be more surprised if this breaks anything than I'd be if
-current kernels are already broken.
+Among other things, this prevents the kernel from attempting to use
+ACPI for powering off HW Reduced ACPI systems in which the sleep
+control and sleep status registers are not present.
 
---Andy
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/sleep.c |   32 +++++++++++++++-----------------
+ 1 file changed, 15 insertions(+), 17 deletions(-)
+
+Index: linux-pm/drivers/acpi/sleep.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/sleep.c
++++ linux-pm/drivers/acpi/sleep.c
+@@ -600,19 +600,24 @@ static const struct platform_suspend_ops
+ 	.recover = acpi_pm_finish,
+ };
+ 
++static bool acpi_sleep_state_supported(u8 sleep_state)
++{
++	acpi_status status;
++	u8 type_a, type_b;
++
++	status = acpi_get_sleep_type_data(sleep_state, &type_a, &type_b);
++	return ACPI_SUCCESS(status) && (!acpi_gbl_reduced_hardware
++		|| (acpi_gbl_FADT.sleep_control.address
++			&& acpi_gbl_FADT.sleep_status.address));
++}
++
+ static void acpi_sleep_suspend_setup(void)
+ {
+ 	int i;
+ 
+-	for (i = ACPI_STATE_S1; i < ACPI_STATE_S4; i++) {
+-		acpi_status status;
+-		u8 type_a, type_b;
+-
+-		status = acpi_get_sleep_type_data(i, &type_a, &type_b);
+-		if (ACPI_SUCCESS(status)) {
++	for (i = ACPI_STATE_S1; i < ACPI_STATE_S4; i++)
++		if (acpi_sleep_state_supported(i))
+ 			sleep_states[i] = 1;
+-		}
+-	}
+ 
+ 	suspend_set_ops(old_suspend_ordering ?
+ 		&acpi_suspend_ops_old : &acpi_suspend_ops);
+@@ -740,11 +745,7 @@ static const struct platform_hibernation
+ 
+ static void acpi_sleep_hibernate_setup(void)
+ {
+-	acpi_status status;
+-	u8 type_a, type_b;
+-
+-	status = acpi_get_sleep_type_data(ACPI_STATE_S4, &type_a, &type_b);
+-	if (ACPI_FAILURE(status))
++	if (!acpi_sleep_state_supported(ACPI_STATE_S4))
+ 		return;
+ 
+ 	hibernation_set_ops(old_suspend_ordering ?
+@@ -793,8 +794,6 @@ static void acpi_power_off(void)
+ 
+ int __init acpi_sleep_init(void)
+ {
+-	acpi_status status;
+-	u8 type_a, type_b;
+ 	char supported[ACPI_S_STATE_COUNT * 3 + 1];
+ 	char *pos = supported;
+ 	int i;
+@@ -806,8 +805,7 @@ int __init acpi_sleep_init(void)
+ 	acpi_sleep_suspend_setup();
+ 	acpi_sleep_hibernate_setup();
+ 
+-	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
+-	if (ACPI_SUCCESS(status)) {
++	if (acpi_sleep_state_supported(ACPI_STATE_S5)) {
+ 		sleep_states[ACPI_STATE_S5] = 1;
+ 		pm_power_off_prepare = acpi_power_off_prepare;
+ 		pm_power_off = acpi_power_off;
+
