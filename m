@@ -1,69 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184AbaCKHbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 03:31:07 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:54923 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaCKHbF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 03:31:05 -0400
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: jkc@redhat.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: unisys: remove incorrect error handling after queue_delayed_work
-Date: Tue, 11 Mar 2014 00:31:03 -0700 (PDT)
-Message-ID: <21793673.iBPaGf0kxn@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	id S1754595AbaCKHeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 03:34:00 -0400
+Received: from mailp.voltaire.com ([193.47.165.129]:48551 "EHLO mellanox.co.il"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754497AbaCKHd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 03:33:58 -0400
+From: Amir Vadai <amirv@mellanox.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yevgeny Petrilin <yevgenyp@mellanox.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Yuval Atias <yuvala@mellanox.com>, Amir Vadai <amirv@mellanox.com>
+Subject: [PATCH net-next V5 2/2] net/mlx4_en: Use affinity hint
+Date: Tue, 11 Mar 2014 09:33:27 +0200
+Message-Id: <1394523207-7338-3-git-send-email-amirv@mellanox.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1394523207-7338-1-git-send-email-amirv@mellanox.com>
+References: <1394523207-7338-1-git-send-email-amirv@mellanox.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Yuval Atias <yuvala@mellanox.com>
 
-The queue_delayed_work() return false if the work is
-already on the queue, true otherwise.
-So return value cannot be less than zero.
+The “affinity hint” mechanism is used by the user space
+daemon, irqbalancer, to indicate a preferred CPU mask for irqs.
+Irqbalancer can use this hint to balance the irqs between the
+cpus indicated by the mask.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+We wish the HCA to preferentially map the IRQs it uses to numa cores
+close to it.  To accomplish this, we use
+netif_set_rx_queue_affinity_hint(), that sets the affinity hint
+according the following policy:
+First it maps IRQs to “close” numa cores.  If these are exhausted, the
+remaining IRQs are mapped to “far” numa cores.
+
+Signed-off-by: Yuval Atias <yuvala@mellanox.com>
+Signed-off-by: Amir Vadai <amirv@mellanox.com>
 ---
- .../unisys/visorchipset/visorchipset_main.c        |   14 ++++----------
- 1 files changed, 4 insertions(+), 10 deletions(-)
+ drivers/infiniband/hw/mlx4/main.c              |  2 +-
+ drivers/net/ethernet/mellanox/mlx4/en_cq.c     |  6 +++++-
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c | 30 ++++++++++++++++++++++++++
+ drivers/net/ethernet/mellanox/mlx4/eq.c        | 14 +++++++++++-
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |  1 +
+ include/linux/mlx4/device.h                    |  2 +-
+ 6 files changed, 51 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/unisys/visorchipset/visorchipset_main.c b/drivers/staging/unisys/visorchipset/visorchipset_main.c
-index 400cb03..0dff759 100644
---- a/drivers/staging/unisys/visorchipset/visorchipset_main.c
-+++ b/drivers/staging/unisys/visorchipset/visorchipset_main.c
-@@ -2055,11 +2055,8 @@ Away:
+diff --git a/drivers/infiniband/hw/mlx4/main.c b/drivers/infiniband/hw/mlx4/main.c
+index f9c12e9..7b4725d 100644
+--- a/drivers/infiniband/hw/mlx4/main.c
++++ b/drivers/infiniband/hw/mlx4/main.c
+@@ -1837,7 +1837,7 @@ static void mlx4_ib_alloc_eqs(struct mlx4_dev *dev, struct mlx4_ib_dev *ibdev)
+ 				i, j, dev->pdev->bus->name);
+ 			/* Set IRQ for specific name (per ring) */
+ 			if (mlx4_assign_eq(dev, name, NULL,
+-					   &ibdev->eq_table[eq])) {
++					   &ibdev->eq_table[eq], NULL)) {
+ 				/* Use legacy (same as mlx4_en driver) */
+ 				pr_warn("Can't allocate EQ %d; reverting to legacy\n", eq);
+ 				ibdev->eq_table[eq] =
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_cq.c b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
+index 70e9532..b09418b 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_cq.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
+@@ -119,11 +119,15 @@ int mlx4_en_activate_cq(struct mlx4_en_priv *priv, struct mlx4_en_cq *cq,
+ 	if (cq->is_tx == RX) {
+ 		if (mdev->dev->caps.comp_pool) {
+ 			if (!cq->vector) {
++				struct mlx4_en_rx_ring *ring =
++					priv->rx_ring[cq->ring];
++
+ 				sprintf(name, "%s-%d", priv->dev->name,
+ 					cq->ring);
+ 				/* Set IRQ for specific name (per ring) */
+ 				if (mlx4_assign_eq(mdev->dev, name, rmap,
+-						   &cq->vector)) {
++						   &cq->vector,
++						   ring->affinity_mask)) {
+ 					cq->vector = (cq->ring + 1 + priv->port)
+ 					    % mdev->dev->caps.num_comp_vectors;
+ 					mlx4_warn(mdev, "Failed Assigning an EQ to "
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+index 3db5946..a6fc7a6 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+@@ -1521,6 +1521,32 @@ static void mlx4_en_linkstate(struct work_struct *work)
+ 	mutex_unlock(&mdev->state_lock);
+ }
+ 
++static void mlx4_en_init_affinity_hint(struct mlx4_en_priv *priv, int ring_idx)
++{
++	struct mlx4_en_rx_ring *ring = priv->rx_ring[ring_idx];
++	int numa_node = priv->mdev->dev->numa_node;
++
++	if (numa_node == -1)
++		return;
++
++	if (!zalloc_cpumask_var(&ring->affinity_mask, GFP_KERNEL)) {
++		en_err(priv, "Failed to allocate core mask\n");
++		return;
++	}
++
++	if (irq_set_mq_dev_affinit_hint(ring_idx, numa_node,
++					ring->affinity_mask)) {
++		en_err(priv, "Failed setting affinity hint\n");
++		free_cpumask_var(ring->affinity_mask);
++		ring->affinity_mask = NULL;
++	}
++}
++
++static void mlx4_en_free_affinity_hint(struct mlx4_en_priv *priv, int ring_idx)
++{
++	free_cpumask_var(priv->rx_ring[ring_idx]->affinity_mask);
++	priv->rx_ring[ring_idx]->affinity_mask = NULL;
++}
+ 
+ int mlx4_en_start_port(struct net_device *dev)
+ {
+@@ -1562,6 +1588,8 @@ int mlx4_en_start_port(struct net_device *dev)
+ 
+ 		mlx4_en_cq_init_lock(cq);
+ 
++		mlx4_en_init_affinity_hint(priv, i);
++
+ 		err = mlx4_en_activate_cq(priv, cq, i);
+ 		if (err) {
+ 			en_err(priv, "Failed activating Rx CQ\n");
+@@ -1836,6 +1864,8 @@ void mlx4_en_stop_port(struct net_device *dev, int detach)
+ 			msleep(1);
+ 		mlx4_en_deactivate_rx_ring(priv, priv->rx_ring[i]);
+ 		mlx4_en_deactivate_cq(priv, cq);
++
++		mlx4_en_free_affinity_hint(priv, i);
+ 	}
+ }
+ 
+diff --git a/drivers/net/ethernet/mellanox/mlx4/eq.c b/drivers/net/ethernet/mellanox/mlx4/eq.c
+index 8992b38..a3d8502 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/eq.c
++++ b/drivers/net/ethernet/mellanox/mlx4/eq.c
+@@ -1311,7 +1311,7 @@ int mlx4_test_interrupts(struct mlx4_dev *dev)
+ EXPORT_SYMBOL(mlx4_test_interrupts);
+ 
+ int mlx4_assign_eq(struct mlx4_dev *dev, char *name, struct cpu_rmap *rmap,
+-		   int *vector)
++		   int *vector, cpumask_var_t cpu_hint_mask)
+ {
+ 
+ 	struct mlx4_priv *priv = mlx4_priv(dev);
+@@ -1344,6 +1344,16 @@ int mlx4_assign_eq(struct mlx4_dev *dev, char *name, struct cpu_rmap *rmap,
+ 				continue;
+ 				/*we dont want to break here*/
+ 			}
++			if (cpu_hint_mask) {
++				err = irq_set_affinity_hint(
++						priv->eq_table.eq[vec].irq,
++						cpu_hint_mask);
++				if (err) {
++					mlx4_warn(dev, "Failed setting affinity hint\n");
++					/*we dont want to break here*/
++				}
++			}
++
+ 			eq_set_ci(&priv->eq_table.eq[vec], 1);
  		}
  	}
+@@ -1370,6 +1380,8 @@ void mlx4_release_eq(struct mlx4_dev *dev, int vec)
+ 		  Belonging to a legacy EQ*/
+ 		mutex_lock(&priv->msix_ctl.pool_lock);
+ 		if (priv->msix_ctl.pool_bm & 1ULL << i) {
++			irq_set_affinity_hint(priv->eq_table.eq[vec].irq,
++					      NULL);
+ 			free_irq(priv->eq_table.eq[vec].irq,
+ 				 &priv->eq_table.eq[vec]);
+ 			priv->msix_ctl.pool_bm &= ~(1ULL << i);
+diff --git a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+index 69e1f36..0de8b0d 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+@@ -313,6 +313,7 @@ struct mlx4_en_rx_ring {
+ 	unsigned long csum_ok;
+ 	unsigned long csum_none;
+ 	int hwtstamp_rx_filter;
++	cpumask_var_t affinity_mask;
+ };
  
--	if (queue_delayed_work(Periodic_controlvm_workqueue,
--			       &Periodic_controlvm_work, Poll_jiffies) < 0) {
--		LOGERR("queue_delayed_work failed!");
--		POSTCODE_LINUX_2(QUEUE_DELAYED_WORK_PC, POSTCODE_SEVERITY_ERR);
--	}
-+	queue_delayed_work(Periodic_controlvm_workqueue,
-+			   &Periodic_controlvm_work, Poll_jiffies);
- }
+ struct mlx4_en_cq {
+diff --git a/include/linux/mlx4/device.h b/include/linux/mlx4/device.h
+index 5edd2c6..f8c253f 100644
+--- a/include/linux/mlx4/device.h
++++ b/include/linux/mlx4/device.h
+@@ -1148,7 +1148,7 @@ int mlx4_fmr_free(struct mlx4_dev *dev, struct mlx4_fmr *fmr);
+ int mlx4_SYNC_TPT(struct mlx4_dev *dev);
+ int mlx4_test_interrupts(struct mlx4_dev *dev);
+ int mlx4_assign_eq(struct mlx4_dev *dev, char *name, struct cpu_rmap *rmap,
+-		   int *vector);
++		   int *vector, cpumask_t *cpu_hint_mask);
+ void mlx4_release_eq(struct mlx4_dev *dev, int vec);
  
- static void
-@@ -2193,11 +2190,8 @@ Away:
- 
- 	Poll_jiffies = POLLJIFFIES_CONTROLVMCHANNEL_SLOW;
- 
--	if (queue_delayed_work(Periodic_controlvm_workqueue,
--			       &Periodic_controlvm_work, Poll_jiffies) < 0) {
--		LOGERR("queue_delayed_work failed!");
--		POSTCODE_LINUX_2(QUEUE_DELAYED_WORK_PC, POSTCODE_SEVERITY_ERR);
--	}
-+	queue_delayed_work(Periodic_controlvm_workqueue,
-+			   &Periodic_controlvm_work, Poll_jiffies);
- }
- 
- static void
+ int mlx4_get_phys_port_id(struct mlx4_dev *dev);
 -- 
-1.7.4.4
-
+1.8.3.4
 
