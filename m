@@ -1,239 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768AbaCKUnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 16:43:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38050 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351AbaCKUns (ORCPT
+	id S1755767AbaCKUp0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 16:45:26 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28322 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963AbaCKUpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 16:43:48 -0400
-Message-ID: <531F7582.2090309@codeaurora.org>
-Date: Tue, 11 Mar 2014 13:43:46 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 11 Mar 2014 16:45:25 -0400
+Message-ID: <531F75D1.3060909@oracle.com>
+Date: Tue, 11 Mar 2014 16:45:05 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: khilman@linaro.org, Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        kernel-build-reports@lists.linaro.org,
-        Josh Cartwright <joshc@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "olof @ lixom . net" <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] irqchip: Remove asmlinkage from static functions
-References: <20140301161258.GN12219@tassilo.jf.intel.com> <1393980030-17770-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1393980030-17770-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
+References: <531F6689.60307@oracle.com>	<1394568453.2786.28.camel@buesod1.americas.hpqcorp.net> <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
+In-Reply-To: <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
+On 03/11/2014 04:30 PM, Andrew Morton wrote:
+> All I can think is that find_vma() went and returned a vma from a
+> different mm, which would be odd.  How about I toss this in there?
+>
+> --- a/mm/vmacache.c~a
+> +++ a/mm/vmacache.c
+> @@ -72,8 +72,10 @@ struct vm_area_struct *vmacache_find(str
+>   	for (i = 0; i < VMACACHE_SIZE; i++) {
+>   		struct vm_area_struct *vma = current->vmacache[i];
+>
+> -		if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+> +		if (vma && vma->vm_start <= addr && vma->vm_end > addr) {
+> +			BUG_ON(vma->vm_mm != mm);
+>   			return vma;
+> +		}
+>   	}
+>
+>   	return NULL;
 
-On 03/04/14 16:40, Stephen Boyd wrote:
-> LTO patches add __visible to the asmlinkage define, causing
-> compilation warnings like:
->
->   drivers/irqchip/irq-gic.c:283:1: warning: 'externally_visible'
->   attribute have effect only on public objects [-Wattributes]
->
-> Drop asmlinkage here to avoid such warnings.
->
-> Reported-by: Olof's autobuilder <build@lixom.net>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->
-> Based on next-20140226.
->
->  drivers/irqchip/irq-armada-370-xp.c | 2 +-
->  drivers/irqchip/irq-bcm2835.c       | 4 ++--
->  drivers/irqchip/irq-gic.c           | 2 +-
->  drivers/irqchip/irq-mmp.c           | 6 ++----
->  drivers/irqchip/irq-moxart.c        | 2 +-
->  drivers/irqchip/irq-orion.c         | 2 +-
->  drivers/irqchip/irq-sirfsoc.c       | 2 +-
->  drivers/irqchip/irq-sun4i.c         | 4 ++--
->  drivers/irqchip/irq-vic.c           | 2 +-
->  drivers/irqchip/irq-vt8500.c        | 3 +--
->  drivers/irqchip/irq-zevio.c         | 2 +-
->  11 files changed, 14 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
-> index cd79503abea9..41be897df8d5 100644
-> --- a/drivers/irqchip/irq-armada-370-xp.c
-> +++ b/drivers/irqchip/irq-armada-370-xp.c
-> @@ -410,7 +410,7 @@ static void armada_370_xp_mpic_handle_cascade_irq(unsigned int irq,
->  	chained_irq_exit(chip, desc);
->  }
->  
-> -static asmlinkage void __exception_irq_entry
-> +static void __exception_irq_entry
->  armada_370_xp_handle_irq(struct pt_regs *regs)
->  {
->  	u32 irqstat, irqnr;
-> diff --git a/drivers/irqchip/irq-bcm2835.c b/drivers/irqchip/irq-bcm2835.c
-> index 1693b8e7f26a..5916d6cdafa1 100644
-> --- a/drivers/irqchip/irq-bcm2835.c
-> +++ b/drivers/irqchip/irq-bcm2835.c
-> @@ -95,7 +95,7 @@ struct armctrl_ic {
->  };
->  
->  static struct armctrl_ic intc __read_mostly;
-> -static asmlinkage void __exception_irq_entry bcm2835_handle_irq(
-> +static void __exception_irq_entry bcm2835_handle_irq(
->  	struct pt_regs *regs);
->  
->  static void armctrl_mask_irq(struct irq_data *d)
-> @@ -196,7 +196,7 @@ static void armctrl_handle_shortcut(int bank, struct pt_regs *regs,
->  	handle_IRQ(irq_linear_revmap(intc.domain, irq), regs);
->  }
->  
-> -static asmlinkage void __exception_irq_entry bcm2835_handle_irq(
-> +static void __exception_irq_entry bcm2835_handle_irq(
->  	struct pt_regs *regs)
->  {
->  	u32 stat, irq;
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index a917b144895e..63922b9ba6b7 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -279,7 +279,7 @@ static int gic_set_wake(struct irq_data *d, unsigned int on)
->  #define gic_set_wake	NULL
->  #endif
->  
-> -static asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
-> +static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
->  {
->  	u32 irqstat, irqnr;
->  	struct gic_chip_data *gic = &gic_data[0];
-> diff --git a/drivers/irqchip/irq-mmp.c b/drivers/irqchip/irq-mmp.c
-> index 2cb7cd0bc2f5..3c8827fe83f3 100644
-> --- a/drivers/irqchip/irq-mmp.c
-> +++ b/drivers/irqchip/irq-mmp.c
-> @@ -194,8 +194,7 @@ static struct mmp_intc_conf mmp2_conf = {
->  	.conf_mask	= 0x7f,
->  };
->  
-> -static asmlinkage void __exception_irq_entry
-> -mmp_handle_irq(struct pt_regs *regs)
-> +static void __exception_irq_entry mmp_handle_irq(struct pt_regs *regs)
->  {
->  	int irq, hwirq;
->  
-> @@ -207,8 +206,7 @@ mmp_handle_irq(struct pt_regs *regs)
->  	handle_IRQ(irq, regs);
->  }
->  
-> -static asmlinkage void __exception_irq_entry
-> -mmp2_handle_irq(struct pt_regs *regs)
-> +static void __exception_irq_entry mmp2_handle_irq(struct pt_regs *regs)
->  {
->  	int irq, hwirq;
->  
-> diff --git a/drivers/irqchip/irq-moxart.c b/drivers/irqchip/irq-moxart.c
-> index 5552fc2bf28a..00b3cc908f76 100644
-> --- a/drivers/irqchip/irq-moxart.c
-> +++ b/drivers/irqchip/irq-moxart.c
-> @@ -44,7 +44,7 @@ struct moxart_irq_data {
->  
->  static struct moxart_irq_data intc;
->  
-> -static asmlinkage void __exception_irq_entry handle_irq(struct pt_regs *regs)
-> +static void __exception_irq_entry handle_irq(struct pt_regs *regs)
->  {
->  	u32 irqstat;
->  	int hwirq;
-> diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
-> index 8e41be62812e..e25f246cd2fb 100644
-> --- a/drivers/irqchip/irq-orion.c
-> +++ b/drivers/irqchip/irq-orion.c
-> @@ -30,7 +30,7 @@
->  
->  static struct irq_domain *orion_irq_domain;
->  
-> -static asmlinkage void
-> +static void
->  __exception_irq_entry orion_handle_irq(struct pt_regs *regs)
->  {
->  	struct irq_domain_chip_generic *dgc = orion_irq_domain->gc;
-> diff --git a/drivers/irqchip/irq-sirfsoc.c b/drivers/irqchip/irq-sirfsoc.c
-> index 3a070c587ed9..581eefe331ae 100644
-> --- a/drivers/irqchip/irq-sirfsoc.c
-> +++ b/drivers/irqchip/irq-sirfsoc.c
-> @@ -47,7 +47,7 @@ sirfsoc_alloc_gc(void __iomem *base, unsigned int irq_start, unsigned int num)
->  	ct->regs.mask = SIRFSOC_INT_RISC_MASK0;
->  }
->  
-> -static asmlinkage void __exception_irq_entry sirfsoc_handle_irq(struct pt_regs *regs)
-> +static void __exception_irq_entry sirfsoc_handle_irq(struct pt_regs *regs)
->  {
->  	void __iomem *base = sirfsoc_irqdomain->host_data;
->  	u32 irqstat, irqnr;
-> diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
-> index a5438d889245..9fbff030c700 100644
-> --- a/drivers/irqchip/irq-sun4i.c
-> +++ b/drivers/irqchip/irq-sun4i.c
-> @@ -36,7 +36,7 @@
->  static void __iomem *sun4i_irq_base;
->  static struct irq_domain *sun4i_irq_domain;
->  
-> -static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
-> +static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
->  
->  static void sun4i_irq_ack(struct irq_data *irqd)
->  {
-> @@ -136,7 +136,7 @@ static int __init sun4i_of_init(struct device_node *node,
->  }
->  IRQCHIP_DECLARE(allwinner_sun4i_ic, "allwinner,sun4i-ic", sun4i_of_init);
->  
-> -static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
-> +static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
->  {
->  	u32 irq, hwirq;
->  
-> diff --git a/drivers/irqchip/irq-vic.c b/drivers/irqchip/irq-vic.c
-> index fd2c980e4cea..37dab0b472cd 100644
-> --- a/drivers/irqchip/irq-vic.c
-> +++ b/drivers/irqchip/irq-vic.c
-> @@ -240,7 +240,7 @@ static void vic_handle_irq_cascaded(unsigned int irq, struct irq_desc *desc)
->   * Keep iterating over all registered VIC's until there are no pending
->   * interrupts.
->   */
-> -static asmlinkage void __exception_irq_entry vic_handle_irq(struct pt_regs *regs)
-> +static void __exception_irq_entry vic_handle_irq(struct pt_regs *regs)
->  {
->  	int i, handled;
->  
-> diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
-> index 1846e7d66681..eb6e91efdec8 100644
-> --- a/drivers/irqchip/irq-vt8500.c
-> +++ b/drivers/irqchip/irq-vt8500.c
-> @@ -178,8 +178,7 @@ static struct irq_domain_ops vt8500_irq_domain_ops = {
->  	.xlate = irq_domain_xlate_onecell,
->  };
->  
-> -static asmlinkage
-> -void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
-> +static void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
->  {
->  	u32 stat, i;
->  	int irqnr, virq;
-> diff --git a/drivers/irqchip/irq-zevio.c b/drivers/irqchip/irq-zevio.c
-> index 8ed04c4a43ee..ceb3a4318f73 100644
-> --- a/drivers/irqchip/irq-zevio.c
-> +++ b/drivers/irqchip/irq-zevio.c
-> @@ -50,7 +50,7 @@ static void zevio_irq_ack(struct irq_data *irqd)
->  	readl(gc->reg_base + regs->ack);
->  }
->  
-> -static asmlinkage void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
-> +static void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
->  {
->  	int irqnr;
->  
+Bingo! With the above patch:
+
+[  243.565794] kernel BUG at mm/vmacache.c:76!
+[  243.566720] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  243.568048] Dumping ftrace buffer:
+[  243.568740]    (ftrace buffer empty)
+[  243.569481] Modules linked in:
+[  243.570203] CPU: 10 PID: 10073 Comm: trinity-c332 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00010-g1f812cb-dirty #143
+[  243.571505] task: ffff8800b8698000 ti: ffff8800b8694000 task.ti: ffff8800b8694000
+[  243.571505] RIP: 0010:[<ffffffff81299396>]  [<ffffffff81299396>] vmacache_find+0x86/0xb0
+[  243.571505] RSP: 0000:ffff8800b8695da8  EFLAGS: 00010287
+[  243.571505] RAX: ffff88042890e400 RBX: 0000000002d6cb18 RCX: 0000000000000002
+[  243.571505] RDX: 0000000000000002 RSI: 0000000002d6cb18 RDI: ffff8800b86a8000
+[  243.571505] RBP: ffff8800b8695da8 R08: ffff8800b8698000 R09: 0000000000000000
+[  243.571505] R10: 0000000000000001 R11: 0000000000000000 R12: ffff8800b86a8000
+[  243.571505] R13: 00000000000014f1 R14: ffff8800b86a80a8 R15: ffff8800b86a8000
+[  243.582665] FS:  00007f74df081700(0000) GS:ffff880b2b800000(0000) knlGS:0000000000000000
+[  243.582665] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  243.582665] CR2: 0000000002d6cb18 CR3: 00000000b8682000 CR4: 00000000000006a0
+[  243.582665] Stack:
+[  243.582665]  ffff8800b8695dd8 ffffffff812a7620 ffffffff844abd82 0000000002d6cb18
+[  243.582665]  0000000002d6cb18 00000000000000a9 ffff8800b8695ef8 ffffffff844abdd6
+[  243.582665]  ffff8800b8698000 ffff8800b8698000 0000000000000002 ffff8800b8698000
+[  243.582665] Call Trace:
+[  243.582665]  [<ffffffff812a7620>] find_vma+0x20/0x90
+[  243.582665]  [<ffffffff844abd82>] ? __do_page_fault+0x302/0x5d0
+[  243.582665]  [<ffffffff844abdd6>] __do_page_fault+0x356/0x5d0
+[  243.582665]  [<ffffffff8118ab46>] ? vtime_account_user+0x96/0xb0
+[  243.582665]  [<ffffffff844ac4d2>] ? preempt_count_sub+0xe2/0x120
+[  243.582665]  [<ffffffff81269567>] ? context_tracking_user_exit+0x187/0x1d0
+[  243.582665]  [<ffffffff844ac115>] do_page_fault+0x45/0x70
+[  243.582665]  [<ffffffff844ab3c6>] do_async_page_fault+0x36/0x100
+[  243.582665]  [<ffffffff844a7f58>] async_page_fault+0x28/0x30
+[  243.582665] Code: 00 eb 44 66 90 31 d2 49 89 c0 48 63 ca 49 8b 84 c8 b8 07 00 00 48 85 c0 74 23 48 39 30 77 1e 48 3b 70 08 73 18 48 3b 78 40 74 1c <0f> 0b 0f 1f 84 00 00 00 00 00 eb fe 66 0f 1f 44 00 00 ff c2 83
+[  243.582665] RIP  [<ffffffff81299396>] vmacache_find+0x86/0xb0
+[  243.582665]  RSP <ffff8800b8695da8>
 
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Thanks,
+Sasha
