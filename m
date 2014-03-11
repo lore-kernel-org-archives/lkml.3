@@ -1,202 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562AbaCKIXZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 04:23:25 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:46353 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689AbaCKIXV (ORCPT
+	id S1753718AbaCKIYl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 04:24:41 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:41364 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426AbaCKIYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 04:23:21 -0400
-Date: Tue, 11 Mar 2014 08:23:16 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        DCG_UPD_stlinux_kernel@list.st.com, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, Angus.Clark@st.com
-Subject: [PATCH v6 01/35] mtd: st_spi_fsm: Allocate resources and register
- with MTD framework
-Message-ID: <20140311082316.GJ2839@lee--X1>
-References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
- <1392735362-1245-2-git-send-email-lee.jones@linaro.org>
- <20140309053306.GL31517@norris-Latitude-E6410>
+	Tue, 11 Mar 2014 04:24:38 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2B8OZi3027965, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: [PATCH net-next] r8152: support dumping the hw counters
+Date: Tue, 11 Mar 2014 16:24:19 +0800
+Message-ID: <1394526259-5513-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.4.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140309053306.GL31517@norris-Latitude-E6410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a new driver. It's used to communicate with a special type of
-optimised Serial Flash Controller called the FSM. The FSM uses a subset
-of the SPI protocol to communicate with supported NOR-Flash devices.
+Add dumping the tally counter by ethtool.
 
-Acked-by Angus Clark <angus.clark@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
+ drivers/net/usb/r8152.c | 95 +++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 93 insertions(+), 2 deletions(-)
 
-Hi Brian,
-
-Sorry about the previous fixup misses. There were a couple of patches
-which I had failed to squash into the pack. Hopefully the rest of the
-review will go more smoothly.
-
-Kind regards,
-Lee
- drivers/mtd/devices/Kconfig      |   8 +++
- drivers/mtd/devices/Makefile     |   1 +
- drivers/mtd/devices/st_spi_fsm.c | 107 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 116 insertions(+)
-
-diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-index 0128138..1210bc2 100644
---- a/drivers/mtd/devices/Kconfig
-+++ b/drivers/mtd/devices/Kconfig
-@@ -210,6 +210,14 @@ config MTD_DOCG3
- 	  M-Systems and now Sandisk. The support is very experimental,
- 	  and doesn't give access to any write operations.
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index a90a7eb9..aa1d5b2 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -60,7 +60,7 @@
+ #define PLA_TCR0		0xe610
+ #define PLA_TCR1		0xe612
+ #define PLA_TXFIFO_CTRL		0xe618
+-#define PLA_RSTTELLY		0xe800
++#define PLA_RSTTALLY		0xe800
+ #define PLA_CR			0xe813
+ #define PLA_CRWECR		0xe81c
+ #define PLA_CONFIG12		0xe81e	/* CONFIG1, CONFIG2 */
+@@ -72,7 +72,7 @@
+ #define PLA_MISC_0		0xe858
+ #define PLA_MISC_1		0xe85a
+ #define PLA_OCP_GPHY_BASE	0xe86c
+-#define PLA_TELLYCNT		0xe890
++#define PLA_TALLYCNT		0xe890
+ #define PLA_SFF_STS_7		0xe8de
+ #define PLA_PHYSTATUS		0xe908
+ #define PLA_BP_BA		0xfc26
+@@ -180,6 +180,9 @@
+ /* PLA_TCR1 */
+ #define VERSION_MASK		0x7cf0
  
-+config MTD_ST_SPI_FSM
-+	tristate "ST Microelectronics SPI FSM Serial Flash Controller"
-+	depends on ARM || SH
-+	help
-+	  This provides an MTD device driver for the ST Microelectronics
-+	  SPI Fast Sequence Mode (FSM) Serial Flash Controller and support
-+	  for a subset of connected Serial Flash devices.
++/* PLA_RSTTALLY */
++#define TALLY_RESET		0x0001
 +
- if MTD_DOCG3
- config BCH_CONST_M
- 	default 14
-diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
-index d83bd73..c68868f 100644
---- a/drivers/mtd/devices/Makefile
-+++ b/drivers/mtd/devices/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_MTD_NAND_OMAP_BCH)	+= elm.o
- obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
- obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
- obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
-+obj-$(CONFIG_MTD_ST_SPI_FSM)    += st_spi_fsm.o
+ /* PLA_CR */
+ #define CR_RST			0x10
+ #define CR_RE			0x08
+@@ -465,6 +468,22 @@ enum rtl8152_flags {
+ #define REALTEK_USB_DEVICE(vend, prod)	\
+ 	USB_DEVICE_INTERFACE_CLASS(vend, prod, USB_CLASS_VENDOR_SPEC)
  
- 
- CFLAGS_docg3.o			+= -I$(src)
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-new file mode 100644
-index 0000000..0de9648
---- /dev/null
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -0,0 +1,107 @@
-+/*
-+ * st_spi_fsm.c	- ST Fast Sequence Mode (FSM) Serial Flash Controller
-+ *
-+ * Author: Angus Clark <angus.clark@st.com>
-+ *
-+ * Copyright (C) 2010-2014 STicroelectronics Limited
-+ *
-+ * JEDEC probe based on drivers/mtd/devices/m25p80.c
-+ *
-+ * This code is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mtd/mtd.h>
-+#include <linux/sched.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+
-+struct stfsm {
-+	struct device		*dev;
-+	void __iomem		*base;
-+	struct resource		*region;
-+	struct mtd_info		mtd;
-+	struct mutex		lock;
++struct tally_counter {
++	__le64	tx_packets;
++	__le64	rx_packets;
++	__le64	tx_errors;
++	__le32	rx_errors;
++	__le16	rx_missed;
++	__le16	align_errors;
++	__le32	tx_one_collision;
++	__le32	tx_multi_collision;
++	__le64	rx_unicast;
++	__le64	rx_broadcast;
++	__le32	rx_multicast;
++	__le16	tx_aborted;
++	__le16	tx_underun;
 +};
 +
-+static int stfsm_probe(struct platform_device *pdev)
+ struct rx_desc {
+ 	__le32 opts1;
+ #define RX_LEN_MASK			0x7fff
+@@ -2872,6 +2891,15 @@ static void r8152b_enable_fc(struct r8152 *tp)
+ 	r8152_mdio_write(tp, MII_ADVERTISE, anar);
+ }
+ 
++static void rtl_tally_reset(struct r8152 *tp)
 +{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct resource *res;
-+	struct stfsm *fsm;
++	u32 ocp_data;
 +
-+	if (!np) {
-+		dev_err(&pdev->dev, "No DT found\n");
-+		return -EINVAL;
-+	}
-+
-+	fsm = devm_kzalloc(&pdev->dev, sizeof(*fsm), GFP_KERNEL);
-+	if (!fsm)
-+		return -ENOMEM;
-+
-+	fsm->dev = &pdev->dev;
-+
-+	platform_set_drvdata(pdev, fsm);
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Resource not found\n");
-+		return -ENODEV;
-+	}
-+
-+	fsm->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(fsm->base)) {
-+		dev_err(&pdev->dev,
-+			"Failed to reserve memory region [0x%08x-0x%08x]\n",
-+			res->start, res->end);
-+		return PTR_ERR(fsm->base);
-+	}
-+
-+	mutex_init(&fsm->lock);
-+
-+	fsm->mtd.dev.parent	= &pdev->dev;
-+	fsm->mtd.type		= MTD_NORFLASH;
-+	fsm->mtd.writesize	= 4;
-+	fsm->mtd.writebufsize	= fsm->mtd.writesize;
-+	fsm->mtd.flags		= MTD_CAP_NORFLASH;
-+
-+	return mtd_device_parse_register(&fsm->mtd, NULL, NULL, NULL, 0);
++	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_RSTTALLY);
++	ocp_data |= TALLY_RESET;
++	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RSTTALLY, ocp_data);
 +}
 +
-+static int stfsm_remove(struct platform_device *pdev)
+ static void r8152b_init(struct r8152 *tp)
+ {
+ 	u32 ocp_data;
+@@ -2898,6 +2926,7 @@ static void r8152b_init(struct r8152 *tp)
+ 	r8152b_enable_eee(tp);
+ 	r8152b_enable_aldps(tp);
+ 	r8152b_enable_fc(tp);
++	rtl_tally_reset(tp);
+ 
+ 	/* enable rx aggregation */
+ 	ocp_data = ocp_read_word(tp, MCU_TYPE_USB, USB_USB_CTRL);
+@@ -2965,6 +2994,7 @@ static void r8153_init(struct r8152 *tp)
+ 	r8153_enable_eee(tp);
+ 	r8153_enable_aldps(tp);
+ 	r8152b_enable_fc(tp);
++	rtl_tally_reset(tp);
+ }
+ 
+ static int rtl8152_suspend(struct usb_interface *intf, pm_message_t message)
+@@ -3105,6 +3135,64 @@ out:
+ 	return ret;
+ }
+ 
++static const char rtl8152_gstrings[][ETH_GSTRING_LEN] = {
++	"tx_packets",
++	"rx_packets",
++	"tx_errors",
++	"rx_errors",
++	"rx_missed",
++	"align_errors",
++	"tx_single_collisions",
++	"tx_multi_collisions",
++	"rx_unicast",
++	"rx_broadcast",
++	"rx_multicast",
++	"tx_aborted",
++	"tx_underrun",
++};
++
++static int rtl8152_get_sset_count(struct net_device *dev, int sset)
 +{
-+	struct stfsm *fsm = platform_get_drvdata(pdev);
-+	int err;
-+
-+	err = mtd_device_unregister(&fsm->mtd);
-+	if (err)
-+		return err;
-+
-+	return 0;
++	switch (sset) {
++	case ETH_SS_STATS:
++		return ARRAY_SIZE(rtl8152_gstrings);
++	default:
++		return -EOPNOTSUPP;
++	}
 +}
 +
-+static struct of_device_id stfsm_match[] = {
-+	{ .compatible = "st,spi-fsm", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, stfsm_match);
++static void rtl8152_get_ethtool_stats(struct net_device *dev,
++				      struct ethtool_stats *stats, u64 *data)
++{
++	struct r8152 *tp = netdev_priv(dev);
++	struct tally_counter tally;
 +
-+static struct platform_driver stfsm_driver = {
-+	.probe		= stfsm_probe,
-+	.remove		= stfsm_remove,
-+	.driver		= {
-+		.name	= "st-spi-fsm",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = stfsm_match,
-+	},
-+};
-+module_platform_driver(stfsm_driver);
++	generic_ocp_read(tp, PLA_TALLYCNT, sizeof(tally), &tally, MCU_TYPE_PLA);
 +
-+MODULE_AUTHOR("Angus Clark <angus.clark@st.com>");
-+MODULE_DESCRIPTION("ST SPI FSM driver");
-+MODULE_LICENSE("GPL");
-
++	data[0] = le64_to_cpu(tally.tx_packets);
++	data[1] = le64_to_cpu(tally.rx_packets);
++	data[2] = le64_to_cpu(tally.tx_errors);
++	data[3] = le32_to_cpu(tally.rx_errors);
++	data[4] = le16_to_cpu(tally.rx_missed);
++	data[5] = le16_to_cpu(tally.align_errors);
++	data[6] = le32_to_cpu(tally.tx_one_collision);
++	data[7] = le32_to_cpu(tally.tx_multi_collision);
++	data[8] = le64_to_cpu(tally.rx_unicast);
++	data[9] = le64_to_cpu(tally.rx_broadcast);
++	data[10] = le32_to_cpu(tally.rx_multicast);
++	data[11] = le16_to_cpu(tally.tx_aborted);
++	data[12] = le16_to_cpu(tally.tx_underun);
++}
++
++static void rtl8152_get_strings(struct net_device *dev, u32 stringset, u8 *data)
++{
++	switch (stringset) {
++	case ETH_SS_STATS:
++		memcpy(data, *rtl8152_gstrings, sizeof(rtl8152_gstrings));
++		break;
++	}
++}
++
+ static struct ethtool_ops ops = {
+ 	.get_drvinfo = rtl8152_get_drvinfo,
+ 	.get_settings = rtl8152_get_settings,
+@@ -3114,6 +3202,9 @@ static struct ethtool_ops ops = {
+ 	.set_msglevel = rtl8152_set_msglevel,
+ 	.get_wol = rtl8152_get_wol,
+ 	.set_wol = rtl8152_set_wol,
++	.get_strings = rtl8152_get_strings,
++	.get_sset_count = rtl8152_get_sset_count,
++	.get_ethtool_stats = rtl8152_get_ethtool_stats,
+ };
+ 
+ static int rtl8152_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.4.2
+
