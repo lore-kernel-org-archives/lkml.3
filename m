@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546AbaCLOCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:02:20 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:34431 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415AbaCLOCC (ORCPT
+	id S1754505AbaCLOCQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:02:16 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:47102 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394AbaCLOB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:02:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140307134616.GR1872@titan.lakedaemon.net>
-References: <1393977790-29110-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1393977790-29110-4-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20140306201803.GL1872@titan.lakedaemon.net>
-	<CACRpkda0JCLZUv_KPmwucDh3ko2YbtG2ukMMscSodAbBpiY+zw@mail.gmail.com>
-	<20140307035056.GQ1872@titan.lakedaemon.net>
-	<CACRpkdbEQSj7jLWT2BFR22m7phwmyKCByhQuFFgHvHoKvQFD5g@mail.gmail.com>
-	<20140307134616.GR1872@titan.lakedaemon.net>
-Date: Wed, 12 Mar 2014 15:02:02 +0100
-Message-ID: <CACRpkdbcbMNim9LRkr75Mk5yHfwbA1OAexByHG50qDUPwts4uQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] pinctrl: mvebu: silence WARN to dev_warn
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Mar 2014 10:01:58 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-serial@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH -next] serial: max310x: Add missing #include <linux/uaccess.h>
+Date: Wed, 12 Mar 2014 15:01:54 +0100
+Message-Id: <1394632915-20585-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <y>
+References: <y>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 2:46 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> On Fri, Mar 07, 2014 at 11:56:11AM +0800, Linus Walleij wrote:
+cris allmodconfig:
 
->> For a single patch?
->
-> Well, just the doc change and WARN change.  I've already taken the dts
-> change into mvebu/dt (for arm-soc).
+drivers/tty/serial/max310x.c: In function 'max310x_ioctl':
+drivers/tty/serial/max310x.c:885:3: error: implicit declaration of function 'copy_from_user' [-Werror=implicit-function-declaration]
+drivers/tty/serial/max310x.c:916:3: error: implicit declaration of function 'copy_to_user' [-Werror=implicit-function-declaration]
 
-I've applied this patch [3/3] to the pinctrl tree.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+http://kisskb.ellerman.id.au/kisskb/buildresult/10701747/
+---
+ drivers/tty/serial/max310x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-> There should be no need for these two to be in mvebu's for-next, so if
-> it's easier for you to pick them, please do so.
->
-> I'll drop them from mvebu/pinctrl and update mvebu's for-next right now.
+diff --git a/drivers/tty/serial/max310x.c b/drivers/tty/serial/max310x.c
+index 471dbc1e2b58..2a99d0c61b9e 100644
+--- a/drivers/tty/serial/max310x.c
++++ b/drivers/tty/serial/max310x.c
+@@ -27,6 +27,7 @@
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
+ #include <linux/spi/spi.h>
++#include <linux/uaccess.h>
+ 
+ #define MAX310X_NAME			"max310x"
+ #define MAX310X_MAJOR			204
+-- 
+1.7.9.5
 
-No, I mean, please apply patch 1/3 and 2/3 to the mvebu tree.
-There is no need to sync DTS and pinctrl driver changes. This
-patch to the pinctrl driver I want to carry however.
-
-Yours,
-Linus Walleij
