@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283AbaCLBLZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 21:11:25 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49230 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756145AbaCLBLY (ORCPT
+	id S1756309AbaCLBOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 21:14:07 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:50158 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756103AbaCLBOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 21:11:24 -0400
-Date: Wed, 12 Mar 2014 01:11:16 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        linux-spi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
+	Tue, 11 Mar 2014 21:14:05 -0400
+Date: Tue, 11 Mar 2014 21:14:02 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <20140312011116.GJ28112@sirena.org.uk>
-References: <1394541891-26469-1-git-send-email-jcmvbkbc@gmail.com>
- <1394541891-26469-2-git-send-email-jcmvbkbc@gmail.com>
- <20140311194959.GB28112@sirena.org.uk>
- <CAMo8BfLTn+pneF6_7XkP66+LzpZgcefnAo_FkwxpvtYdt9yduA@mail.gmail.com>
- <20140312003401.GE28112@sirena.org.uk>
- <CAMo8Bf+dePYf0jW6zaH-4Qiy5oF-bBzHjkfzL1u6pyTS1OE46w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Tracepoint API doc update: data argument
+Message-ID: <20140311211402.6245c6d0@gandalf.local.home>
+In-Reply-To: <1594586075.484.1394585553228.JavaMail.zimbra@efficios.com>
+References: <1394499898-1537-1-git-send-email-mathieu.desnoyers@efficios.com>
+	<20140311193450.60bbf8b0@gandalf.local.home>
+	<1594586075.484.1394585553228.JavaMail.zimbra@efficios.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IaU6t3Sui9pnIBPM"
-Content-Disposition: inline
-In-Reply-To: <CAMo8Bf+dePYf0jW6zaH-4Qiy5oF-bBzHjkfzL1u6pyTS1OE46w@mail.gmail.com>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/3] spi: add xtfpga SPI controller driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 12 Mar 2014 00:52:33 +0000 (UTC)
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
---IaU6t3Sui9pnIBPM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> ----- Original Message -----
+> > From: "Steven Rostedt" <rostedt@goodmis.org>
+> > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> > Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic Weisbecker" <fweisbec@gmail.com>,
+> > "Andrew Morton" <akpm@linux-foundation.org>
+> > Sent: Tuesday, March 11, 2014 7:34:50 PM
+> > Subject: Re: [PATCH 1/2] Tracepoint API doc update: data argument
+> > 
+> > On Mon, 10 Mar 2014 21:04:57 -0400
+> > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > 
+> > > Describe the @data argument (probe private data).
+> > > 
+> > > Fixes: 38516ab59fbc "tracing: Let tracepoints have data passed to
+> > > tracepoint callbacks"
+> > > CC: Steven Rostedt <rostedt@goodmis.org>
+> > > CC: Ingo Molnar <mingo@kernel.org>
+> > > CC: Frederic Weisbecker <fweisbec@gmail.com>
+> > > CC: Andrew Morton <akpm@linux-foundation.org>
+> > 
+> > No signed-off-by.
+> 
+> Hi Steven,
+> 
+> I'm curious to understand the reason of this "no signed-off-by" on a trivial
+> patch that fixes the missing DocBook comments for one of your previous
+> commits that has been upstream for a few years. What am I missing ?
+> Perhaps you meant this reply for my other documentation update patch (2/2) ?
+> 
 
-On Wed, Mar 12, 2014 at 04:59:47AM +0400, Max Filippov wrote:
+I mean, my scripts wont accept a patch that the author never added
+their signed-off-by to.
 
-> And tlv320aic23 has the following regmap:
+In other words, resubmit, and add your own signed-off-by that happens to
+be missing from this patch.
 
-> const struct regmap_config tlv320aic23_regmap = {
->         .reg_bits = 7,
->         .val_bits = 9,
-
-> and its SPI interface accordingly does the following in .probe:
-
->         spi->bits_per_word = 16
->         spi->mode = SPI_MODE_0;
->         ret = spi_setup(spi);
-
-So I just looked again - the SPI code isn't in mainline, there must
-be some out of tree patches here that can't have been tested since the
-driver was converted to regmap (or the byte swapping you're doing in the
-controller is buggy for 16 bits per word).
-
---IaU6t3Sui9pnIBPM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTH7QxAAoJELSic+t+oim9sAQP/j30vaX/EyFbjLRGQOkM4erp
-43sZ823B1uKTDuYgrDq8TxjwpjDCJmUPy1YiUghaJB/1DhrFeRePXDYq9M9d8kku
-ld9Y+dCQD+ybZuQKK0ZbGaTyGSsKCVQ/+TZ/hkMDQLwXAhQmcYpIb5/1Cf9765hS
-AjdmeHe2CN75XPGq7k0HvWPYjY9zxeJqaWgkorkxlVVjQPQ6U5V8SJrvDSmbaUCv
-GR6UBGZNhm3bCIgdLW/IJpwGWWZTThMe3tPHFaruGQyXRNMC0zP6T3rimp/VKP3n
-+SkavK8nipAqJOo1eVCiEyCbhBJMZIBAbOLwQE5yQI6qYOIxVaSdtRQHptbqRjPp
-ectG//6fUFVL0zHWm1OqoZ0V+mFOW/N4hxXgRjKpxvrbNNAGC1i4hLQ/741PvNIi
-aJ0B80y1ttcEjYdYtuklruQ5fxbtoKY70942wM0rle3/vNts7BF2MLhS+m81VfM0
-sWWfzBwrYRrOZKebShuiQW+jHKw+s3fRBi3N80U2s0Eq8BDRVmQEB6Ovb+Y+GzXD
-eNKOyZv90naZpKS7hxnfVbvQm3y98fen5a2wycTeEoJZdzLcWGSJr1gLX4z+jWs9
-FOlylHTujawdnQKsHxjpTVvONY2Bf98PptwCsX8ch0AjpvsE2WwtpbfOJF87IHFz
-azfnoE1KaWrCch2nBUl2
-=6HCY
------END PGP SIGNATURE-----
-
---IaU6t3Sui9pnIBPM--
+-- Steve
