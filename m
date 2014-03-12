@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194AbaCLUCi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 16:02:38 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:40543 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaCLUCh (ORCPT
+	id S1752248AbaCLUGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 16:06:05 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39820 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaCLUGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 16:02:37 -0400
-Date: Wed, 12 Mar 2014 16:02:32 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Mark Brown <broonie@kernel.org>, Greg KH <greg@kroah.com>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20140312200232.GA22332@htj.dyndns.org>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
- <20140312015021.GC10106@kroah.com>
- <1394596541.4840.70.camel@pasglop>
- <20140312113742.GM28112@sirena.org.uk>
- <1394654396.4840.94.camel@pasglop>
+	Wed, 12 Mar 2014 16:06:03 -0400
+Date: Wed, 12 Mar 2014 16:05:40 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: Re: [PATCH] x86: adjust irq remapping quirk for older revisions of
+ 5500/5520 chipsets
+Message-ID: <20140312200539.GA13151@hmsreliant.think-freely.org>
+References: <1394649873-14913-1-git-send-email-nhorman@tuxdriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394654396.4840.94.camel@pasglop>
+In-Reply-To: <1394649873-14913-1-git-send-email-nhorman@tuxdriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 06:59:56AM +1100, Benjamin Herrenschmidt wrote:
-> Either that or I can put a copy of the patch that introduces the new
-> function in my tree as long as it's a single patch. The resulting
-> conflict should resolve trivially and Linus should be fine if
-> appropriate explanations are provided (though I would have preferred
-> pulling in a topic branch).
+On Wed, Mar 12, 2014 at 02:44:33PM -0400, Neil Horman wrote:
+> A while back I posted this commit:
+> 
+> commit 03bbcb2e7e292838bb0244f5a7816d194c911d62
+> Author: Neil Horman <nhorman@tuxdriver.com>
+> Date:   Tue Apr 16 16:38:32 2013 -0400
+> 
+>     iommu/vt-d: add quirk for broken interrupt remapping on 55XX chipsets
+> 
+> Which properly disables irq remapping on the 5500/5520 chipsets that don't
+> correctly perform that feature.  However, when I wrote it, I followed the errata
+> sheet linked in that commit too closely, and explicitly tied the activation of
+> the quirk to revision 0x13 of the chip, under the assumption that earlier
+> revisions were not in the field.  Recently a system was reported to be suffering
+> from this remap bug and the quirk hadn't triggered, because the revision id
+> register read at a lower value that 0x13, so the quirk test failed improperly.
+> Given this, it seems only prudent to adjust this quirk so that any revision less
+> than 0x13 has the quirk asserted.
+> 
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Ingo Molnar <mingo@redhat.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: x86@kernel.org
+> ---
+>  arch/x86/kernel/early-quirks.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+> index bc4a088..2237b36 100644
+> --- a/arch/x86/kernel/early-quirks.c
+> +++ b/arch/x86/kernel/early-quirks.c
+> @@ -208,7 +208,7 @@ static void __init intel_remapping_check(int num, int slot, int func)
+>  	 * and should be flagged as broken.  Additionally revisions 0x12
+>  	 * and 0x22 of device id 0x3405 has this problem.
+>  	 */
+> -	if (revision == 0x13)
+> +	if (revision < 0x13)
+>  		set_irq_remapping_broken();
+>  	else if ((device == 0x3405) &&
+>  	    ((revision == 0x12) ||
+> -- 
+> 1.8.3.1
+> 
+> 
+Shoot, self-NAK, that should be <=, new post shortly.
+Neil
 
-An alternative that I personally prefer to resolve conflicts like this
-is to pull driver-core-next into the broken tree and resolve it there.
-It's highly likely that the pending changes are gonna be included in
-the next merge window.  If contaminating the merge history is a
-concern, it can live in a separate branch which is pulled into
-for-next.
-
-Thanks.
-
--- 
-tejun
