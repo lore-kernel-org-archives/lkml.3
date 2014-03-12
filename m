@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaCLLiB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 07:38:01 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39024 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951AbaCLLh7 (ORCPT
+	id S1754053AbaCLLn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 07:43:27 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40387 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751389AbaCLLnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 07:37:59 -0400
-Date: Wed, 12 Mar 2014 11:37:42 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Greg KH <greg@kroah.com>, Stewart Smith <stewart@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140312113742.GM28112@sirena.org.uk>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
- <20140312015021.GC10106@kroah.com>
- <1394596541.4840.70.camel@pasglop>
+	Wed, 12 Mar 2014 07:43:25 -0400
+Date: Wed, 12 Mar 2014 11:42:57 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "DCG_UPD_stlinux_kernel@list.st.com" 
+	<DCG_UPD_stlinux_kernel@list.st.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [PATCH v2 1/3] ata: ahci_st: Provide DT bindings for ST's SATA
+ implementation
+Message-ID: <20140312114257.GA17461@e106331-lin.cambridge.arm.com>
+References: <1393328481-7251-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dRVXJ+Hn0i/OWgv8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394596541.4840.70.camel@pasglop>
-X-Cookie: Oh no, not again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1393328481-7251-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 25, 2014 at 11:41:19AM +0000, Lee Jones wrote:
+> Cc: devicetree@vger.kernel.org
+> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/ata/ahci-st.txt | 31 +++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/ata/ahci-st.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/ata/ahci-st.txt b/Documentation/devicetree/bindings/ata/ahci-st.txt
+> new file mode 100644
+> index 0000000..1b69fa9
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/ata/ahci-st.txt
+> @@ -0,0 +1,31 @@
+> +STMicroelectronics STi SATA controller
 
---dRVXJ+Hn0i/OWgv8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Is that a family name or a particular device?
 
-On Wed, Mar 12, 2014 at 02:55:41PM +1100, Benjamin Herrenschmidt wrote:
+> +
+> +This binding describes a SATA device.
+> +
+> +Required properties:
+> + - compatible	   : Must be "st,ahci"
 
-> How do you suggest we proceed ? I can't add a fix to powerpc-next to use
-> the new function since it doesn't exist upstream yet. I would have to
-> pull drivers-core-next in which I really don't want to do....
+Is there not a more specific name? This is awfully generic.
 
-> Can the removal of the function be delayed to -rc1 so we can properly
-> do the fixup ? Or do you have the introduction of the new function in
-> a topic branch I can pull in without the rest of drivers-core-next ?
+> + - reg		   : Physical base addresses and length of register sets
+> + - interrupts	   : Interrupt associated with the SATA device
+> + - interrupt-names :   Associated name must be; "hostc"
+> + - resets	   : The power-down and soft-reset lines of SATA IP
+> + - reset-names	   :   Associated names must be; "pwr-dwn" and "sw-rst"
 
-The delay would have been my first suggestion - otherwise I'd not be
-surprised to see this coming up again.  Perhaps change to tagging the
-APIs as deprecated for now (so any futher new users get flagged up)
-would help.
+Get rid of the semicolon, it makes this harder to read. Same for the
+other -names proeprties.
 
---dRVXJ+Hn0i/OWgv8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> + - clocks	   : The phandle for the clock
+> + - clock-names	   :   Associated name must be; "ahci_clk"
+> + - phys		   : The phandle for the PHY device
+> + - phy-names	   :   Associated name must be; "ahci_phy"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+This looks sane, but I'd like to see a more specific description and
+compatible string.
 
-iQIcBAEBAgAGBQJTIEcDAAoJELSic+t+oim9r8sP/3fKFwFMgG/OFEElwquDIgaG
-WY3cuOahFM1beenb0utYgrYZj+aWfVGB+/VwVfGJCuq8K450Nuh9vcwH1vrCXW3u
-LFrU5vOlaSA634hNhxZYJFvpBkkE0Rb5KDn1ryMuNFLOPTrlxnP12Q9QtFINhD9L
-M4PYXOS+Nw1h8ZP530L+MtBaDmtt2FFYt6jWSbBeuJoF2vZxS736LUQVooTTLQKM
-2jigyZ4zcZbttnOZ2JrQ1x8LvDzvrb6a2UsceD0gL6aaqJjIVsgHiNbPAKuUrq4e
-08T1lzyxS8ykK5S937d6wftTOH/PVh5ygiwT/4uMEZYkUwfQ56ItgQ5Ffa2svcZ4
-htRTvG06j39T/C+5zhlmhZP7VGYvyhAKvXP2NzKwdzRVX2kXS41p5rS4H4P+xCKm
-SjlueaPnz9MoNPRJjI/GBrqqd9SnBYiIelS9nJgdHP5Q0wkDfySKeS6LqmEMO+bz
-nNgQyZfZkixoNjs52vSjPwvu5mCnpyjp3AJMjyeOpwJYd3Oeonjga0xjlMPrioRn
-MaRyjlIMIo7y7AoQkCyIrPOoxs/4j400NT6HtZ3lK1hY8WQPCWzd9YYSVfwkabUy
-brEIanO9bhkNwk+E1YSQs86eXFRP0Ec76T0yqDci/4loIhySCheb9GOwN6b7Xj9g
-vndZFScodadXpLN/7iZw
-=hSge
------END PGP SIGNATURE-----
+Cheers,
+Mark.
 
---dRVXJ+Hn0i/OWgv8--
+> +
+> +Example:
+> +
+> +	sata0: sata@fe380000 {
+> +		compatible      = "st,ahci";
+> +		reg             = <0xfe380000 0x1000>;
+> +		interrupts      = <GIC_SPI 157 IRQ_TYPE_NONE>;
+> +		interrupt-names = "hostc";
+> +		phys	        = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
+> +		phy-names       = "ahci_phy";
+> +		resets	        = <&powerdown STIH416_SATA0_POWERDOWN>,
+> +				  <&softreset STIH416_SATA0_SOFTRESET>;
+> +		reset-names     = "pwr-dwn", "sw-rst";
+> +		clocks	        = <&CLK_S_ICN_REG_0>;
+> +		clock-names     = "ahci_clk";
+> +	};
+> -- 
+> 1.8.3.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
