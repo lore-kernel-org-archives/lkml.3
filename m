@@ -1,35 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaCLMjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 08:39:12 -0400
-Received: from mail.centurylink.net ([205.219.233.9]:5071 "EHLO
-	smtp.centurylink.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbaCLMjJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 08:39:09 -0400
-X-Greylist: delayed 1221 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Mar 2014 08:39:09 EDT
-X_CMAE_Category: , ,
-X-CNFS-Analysis: v=2.0 cv=cvcZYiEi c=1 sm=1 a=FKkrIqjQGGEA:10 a=1poGYrevpj8A:10 a=yyGz64G-kOMA:10 a=IkcTkHD0fZMA:10 a=1oqGTYSLAAAA:8 a=eQHuELHH7mp2OdfEWXgA:9 a=QEXdDO2ut3YA:10 a=q4vwMi9kxAMA:10 a=3WWgdLa7ofgA:10 a=zLzno4ilJRxFgvUXMpLPGQ==:117
-X-CM-Score: 0
-X-Authed-Username: amhoaXdqMTExQGVtYmFycW1haWwuY29t
-Authentication-Results: smtp02.agate.dfw.synacor.com smtp.mail=jhhiwj111@embarqmail.com; spf=neutral; sender-id=neutral
-Authentication-Results: smtp02.agate.dfw.synacor.com header.from=jhhiwj111@embarqmail.com; sender-id=neutral
-Date: Wed, 12 Mar 2014 08:18:26 -0400 (EDT)
-From: "jhhiwj111@embarqmail.com" <jhhiwj111@embarqmail.com>
-To: tom chan <tomchan219@gmail.com>
-Message-ID: <387060882.31147248.1394626706525.JavaMail.root@embarqmail.com>
-In-Reply-To: <CANw5VNk98bxZcH+Ge2JhFE-a7_pPtz=WJSW9A0MuH7ymhsAYCw@mail.gmail.com>
-Subject: Re: Tuesday by 1:30PM
+	id S1752841AbaCLMjX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 08:39:23 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:41851 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752616AbaCLMjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 08:39:18 -0400
+Date: Wed, 12 Mar 2014 13:37:59 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: dts: berlin2q: add the Marvell BG2-Q DMP device
+ tree
+Message-ID: <20140312123759.GB15090@lunn.ch>
+References: <1394622364-6848-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1394622364-6848-3-git-send-email-antoine.tenart@free-electrons.com>
+ <20140312200428.23178d69@xhacker>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.40.0.33]
-X-Mailer: Zimbra 7.2.2_GA_2852 (zclient/7.2.2_GA_2852)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140312200428.23178d69@xhacker>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > +/dts-v1/;
+> > +#include "berlin2q.dtsi"
+> > +
+> > +/ {
+> > +	model = "Marvell BG2-Q DMP";
+> > +	compatible = "marvell,berlin2q-dmp", "marvell,berlin2q",
+> > "marvell,berlin"; +
+> > +	memory {
+> > +		device_type = "memory";
+> > +		reg = <0x00000000 0x40000000>;
+> 
+> The memory size of BG2Q DMP is 2GB.
 
+Jisheng
 
--- 
-I tried to reach you
+Does this imply that the RAM is inside the SoC package, and that
+there is no external memory interface which can be used to add more
+RAM?
+
+	Thanks
+		Andrew
