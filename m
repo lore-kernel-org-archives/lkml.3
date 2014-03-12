@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaCLWmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 18:42:19 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:40545 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342AbaCLWmR (ORCPT
+	id S1752900AbaCLWnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 18:43:06 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:48167 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaCLWnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 18:42:17 -0400
-From: Patrick Palka <patrick@parcs.ath.cx>
-To: linux-kernel@vger.kernel.org
-Cc: acme@ghostprotocols.net, mingo@redhat.com, paulus@samba.org,
-        a.p.zijlstra@chello.nl, Patrick Palka <patrick@parcs.ath.cx>
-Subject: [PATCH] perf bench: Fix NULL pointer dereference in "perf bench all"
-Date: Wed, 12 Mar 2014 18:40:51 -0400
-Message-Id: <1394664051-6037-1-git-send-email-patrick@parcs.ath.cx>
-X-Mailer: git-send-email 1.9.0
+	Wed, 12 Mar 2014 18:43:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHA+R7P=XAWAPkJTZSfHs02-+V+VOMQ04ZNNjY6LmPdRENzCJA@mail.gmail.com>
+References: <1394512892-5448-1-git-send-email-ast@plumgrid.com>
+	<1394512892-5448-2-git-send-email-ast@plumgrid.com>
+	<CAHA+R7P=XAWAPkJTZSfHs02-+V+VOMQ04ZNNjY6LmPdRENzCJA@mail.gmail.com>
+Date: Wed, 12 Mar 2014 15:43:02 -0700
+Message-ID: <CAMEtUuz-e6zQdK975mfLX-UBRt001L0KvXPDtELyTk-rzb2jQg@mail.gmail.com>
+Subject: Re: [PATCH v9 net-next 1/3] filter: add Extended BPF interpreter and converter
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Cong Wang <cwang@twopensource.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-for_each_bench() must check that the "benchmarks" field of a collection
-is not NULL before dereferencing it because the "all" collection in
-particular has a NULL "benchmarks" field (signifying that it has no
-benchmarks to iterate over).
+On Wed, Mar 12, 2014 at 3:16 PM, Cong Wang <cwang@twopensource.com> wrote:
+> (Sorry for jumping into this thread late.)
+>
+> On Mon, Mar 10, 2014 at 9:41 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>
+>> 3. tracing filters systemtap-like with extended BPF
+>>
+>> 4. OVS with extended BPF
+>>
+>> 5. nftables with extended BPF
+>
+> If you plan to use extended BPF out of networking, does
+> it make sense to make it independent of networking?
+> That is, rename those sk_*() APIs?
 
-This fixes a NULL pointer dereference when running "perf bench all".
+well, v1 and v2 series already demonstrate how ebpf can be used for tracing.
+That's why in v1 series they were under kernel/ dir, but since it's
+a natural bpf extension that reuses a lot of bpf pieces, it makes sense
+for the whole thing be in net/core/filter.c and in linux/filter.h
+I believe that was a consensus in v2-v3 series.
+I don't want to rename the whole thing once again.
+Also seccomp is not networking, but it already uses bpf and
+after these patches ebpf. So net/core/filter.c location is fine.
 
-Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
----
- tools/perf/builtin-bench.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> +int bpf_ext_enable __read_mostly;
+>> +
+>
+> This could be converted to a jump label, no?
 
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index e47f90c..8a987d2 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -76,7 +76,7 @@ static struct collection collections[] = {
- 
- /* Iterate over all benchmarks within a collection: */
- #define for_each_bench(coll, bench) \
--	for (bench = coll->benchmarks; bench->name; bench++)
-+	for (bench = coll->benchmarks; bench && bench->name; bench++)
- 
- static void dump_benchmarks(struct collection *coll)
- {
--- 
-1.9.0
+yes, but it's not in critical path, so no need.
 
+Thank you for taking a look!
+Even late feedback is always appreciated.
