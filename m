@@ -1,72 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534AbaCLNr0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:47:26 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:44238 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754510AbaCLNrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:47:23 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH 1/3] dt-bindings: document gpio-charger bindings
-Date: Wed, 12 Mar 2014 14:46:32 +0100
-Message-ID: <2194340.F9etmr5mIo@phil>
-User-Agent: KMail/4.11.5 (Linux/3.12-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <12569216.pGctOhkhxz@phil>
-References: <12569216.pGctOhkhxz@phil>
+	id S1754556AbaCLNrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:47:51 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:45574 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510AbaCLNrt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 09:47:49 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <532060E7.7010203@arm.com>
+References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org>
+ <5317B092.7070805@arm.com> <CAKfTPtDGbT717Y5F1GoBgr4pnvApG5Gphu2Me_bAFrM0+qsfAg@mail.gmail.com>
+ <53186A8A.9060406@arm.com> <CAKfTPtCspVk+X3O23ikTt3MZUHVrrp21PyhmrcLF-GwW3OjOqA@mail.gmail.com>
+ <531B0FDA.2040302@arm.com> <20140311131719.GY9987@twins.programming.kicks-ass.net>
+ <532060E7.7010203@arm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 12 Mar 2014 14:47:28 +0100
+Message-ID: <CAKfTPtC3Y7s=n205MND24tLrsT+-3+JhWHebxcBkwAuaMngDhA@mail.gmail.com>
+Subject: Re: [RFC 0/6] rework sched_domain topology description
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stuebner <heiko.stuebner@bq.com>
+On 12 March 2014 14:28, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+> On 11/03/14 13:17, Peter Zijlstra wrote:
+>> On Sat, Mar 08, 2014 at 12:40:58PM +0000, Dietmar Eggemann wrote:
+>>>>
+>>>> I don't have a strong opinion about using or not a cpu argument for
+>>>> setting the flags of a level (it was part of the initial proposal
+>>>> before we start to completely rework the build of sched_domain)
+>>>> Nevertheless, I see one potential concern that you can have completely
+>>>> different flags configuration of the same sd level of 2 cpus.
+>>>
+>>> Could you elaborate a little bit further regarding the last sentence? Do you
+>>> think that those completely different flags configuration would make it
+>>> impossible, that the load-balance code could work at all at this sd?
+>>
+>> So a problem with such an interfaces is that is makes it far too easy to
+>> generate completely broken domains.
+>
+> I see the point. What I'm still struggling with is to understand why
+> this interface is worse then the one where we set-up additional,
+> adjacent sd levels with new cpu_foo_mask functions plus different static
+> sd-flags configurations and rely on the sd degenerate functionality in
+> the core scheduler to fold these levels together to achieve different
+> per cpu sd flags configurations.
 
-This documents the binding for the gpio-charger power-supply.
+The main difference is that all CPUs has got the same levels at the
+initial state and then the degenerate sequence can decide that it's
+worth removing a level and if it will not create unsuable domains.
 
-Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
----
- .../bindings/power_supply/gpio-charger.txt         | 23 ++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power_supply/gpio-charger.txt
-
-diff --git a/Documentation/devicetree/bindings/power_supply/gpio-charger.txt b/Documentation/devicetree/bindings/power_supply/gpio-charger.txt
-new file mode 100644
-index 0000000..fad87a4
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power_supply/gpio-charger.txt
-@@ -0,0 +1,23 @@
-+gpio-charger
-+
-+Required properties :
-+ - compatible : "gpio-charger"
-+ - gpios : GPIO indicating the charger presence.
-+   See GPIO binding in bindings/gpio/gpio.txt .
-+ - charger-type : power supply type, one of
-+     unknown
-+     battery
-+     ups
-+     mains
-+     usb-sdp (USB standard downstream port)
-+     usb-dcp (USB dedicated charging port)
-+     usb-cdp (USB charging downstream port)
-+     usb-aca (USB accessory charger adapter)
-+
-+Example:
-+
-+	charger {
-+		compatible = "gpio-charger";
-+		charger-type = "usb-sdp";
-+		gpios = <&gpf0 2 0 0 0>;
-+	}
--- 
-1.8.5.3
-
-
+>
+> IMHO, exposing struct sched_domain_topology_level bar_topology[] to the
+> arch is the reason why the core scheduler has to check if the arch
+> provides a sane sd setup in both cases.
+>
+>>
+>> You can, for two cpus in the same domain provide, different flags; such
+>> a configuration doesn't make any sense at all.
+>>
+>> Now I see why people would like to have this; but unless we can make it
+>> robust I'd be very hesitant to go this route.
+>>
+>
+> By making it robust, I guess you mean that the core scheduler has to
+> check that the provided set-ups are sane, something like the following
+> code snippet in sd_init()
+>
+> if (WARN_ONCE(tl->sd_flags & ~TOPOLOGY_SD_FLAGS,
+>                 "wrong sd_flags in topology description\n"))
+>         tl->sd_flags &= ~TOPOLOGY_SD_FLAGS;
+>
+> but for per cpu set-up's.
+> Obviously, this check has to be in sync with the usage of these flags in
+> the core scheduler algorithms. This comprises probably that a subset of
+> these topology sd flags has to be set for all cpus in a sd level whereas
+> other can be set only for some cpus.
+>
+>>
+>>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
+>
