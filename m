@@ -1,89 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390AbaCLSTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 14:19:32 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45320 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956AbaCLSTa (ORCPT
+	id S1755631AbaCLSTz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 14:19:55 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:46963 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755491AbaCLSTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 14:19:30 -0400
-Date: Wed, 12 Mar 2014 18:19:25 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Herrmann <dh.herrmann@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        stable <stable@vger.kernel.org>, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH] fs: fix i_writecount on shmem and friends
-Message-ID: <20140312181925.GK18016@ZenIV.linux.org.uk>
-References: <1393859798-1407-1-git-send-email-dh.herrmann@gmail.com>
- <CA+55aFwzBoTc+09jZTGjfTQTfkgZwrN5m09snb+F9inLaDn0OA@mail.gmail.com>
+	Wed, 12 Mar 2014 14:19:54 -0400
+Message-ID: <5320A542.5020101@atmel.com>
+Date: Wed, 12 Mar 2014 19:19:46 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwzBoTc+09jZTGjfTQTfkgZwrN5m09snb+F9inLaDn0OA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-doc@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCHv3 0/8] at91_adc: documentation and device tree cleanups
+References: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1394479045-31852-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 12:05:09PM -0700, Linus Torvalds wrote:
+On 10/03/2014 20:17, Alexandre Belloni :
+> The first patch synchronise the documentation with the actual code and correct
+> the example.
 > 
-> which returns ETXTBSY (most easily seen by just stracing it).
+> The second patch move the documentation to the correct location (under iio/adc)
 > 
-> The patch would also seem to make sense, with the i_readcount_inc()
-> being immediately below for the FMODE_READ case.
+> The remaining patches correct the device trees that are using the adc, mainly
+> removing unused properties and making the binding compliant with the ePAPR.
 
-I think it's trying to fix the problem in the wrong place.  The bug is real,
-all right, but it's not that alloc_file() for non-regulars doesn't grab
-writecount; it's that drop_file_write_access() drops it for those.
+On the whole series:
 
-What the hell would we want to play with that counter for, anyway?  It's not
-as if they could be mmapped, so all it does is making pipe(2) and socket(2)
-more costly, for no visible reason.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-I would prefer to flip
-        put_write_access(inode);
+and stacked on at91-3.15-dt.
 
-        if (special_file(inode->i_mode))
-                return;
-in drop_file_write_access() instead.
+I think that the little modifications to the documentation can also go
+the arm-soc way: there is no fundamental change to the binding, only
+more coherence added.
 
-<goes to looks at i_writecount users>
-Oh, shit...
+Bye,
 
-drivers/md/md.c:
-/* similar to deny_write_access, but accounts for our holding a reference
- * to the file ourselves */
-static int deny_bitmap_write_access(struct file * file)
-{
-        struct inode *inode = file->f_mapping->host;
+> Changes in v3:
+>  - also remove the useless atmel,adc-clock-rate
+> 
+> Changes in v2:
+>  - add #address-cells, #size-cells and a reg for each trigger to comply to the
+>    ePAPR instead of removing the unit-address.
+>  - also correct the atmel,adc-use-external-triggers property name in the
+>    documentation and in the device tree that got it wrong.
+> 
+> Alexandre Belloni (8):
+>   Documentation: dt: iio: improve atmel-adc documentation
+>   Documentation: dt: iio: move arm/atmel-adc.txt to iio/adc/at91_adc.txt
+>   ARM: at91/dt: at91-ariag25: remove useless adc properties
+>   ARM: at91/dt: at91sam9260: remove useless adc properties
+>   ARM: at91/dt: at91sam9g45: remove useless adc properties
+>   ARM: at91/dt: at91sam9x5: remove useless adc properties
+>   ARM: at91/dt: sama5d3: remove useless adc properties
+>   ARM: at91/dt: at91-cosino: remove useless adc properties
+> 
+>  .../devicetree/bindings/arm/atmel-adc.txt          | 81 ---------------------
+>  .../devicetree/bindings/iio/adc/at91_adc.txt       | 82 ++++++++++++++++++++++
+>  arch/arm/boot/dts/at91-ariag25.dts                 |  1 -
+>  arch/arm/boot/dts/at91-cosino.dtsi                 |  1 -
+>  arch/arm/boot/dts/at91-cosino_mega2560.dts         |  1 -
+>  arch/arm/boot/dts/at91sam9260.dtsi                 | 11 +--
+>  arch/arm/boot/dts/at91sam9g45.dtsi                 | 11 +--
+>  arch/arm/boot/dts/at91sam9x5.dtsi                  | 13 ++--
+>  arch/arm/boot/dts/sama5d3.dtsi                     | 13 ++--
+>  arch/arm/boot/dts/sama5d3xdm.dtsi                  |  1 -
+>  10 files changed, 108 insertions(+), 107 deletions(-)
+>  delete mode 100644 Documentation/devicetree/bindings/arm/atmel-adc.txt
+>  create mode 100644 Documentation/devicetree/bindings/iio/adc/at91_adc.txt
+> 
 
-        spin_lock(&inode->i_lock);
-        if (atomic_read(&inode->i_writecount) > 1) {
-                spin_unlock(&inode->i_lock);
-                return -ETXTBSY;
-        }
-        atomic_set(&inode->i_writecount, -1);
-        spin_unlock(&inode->i_lock);
 
-        return 0;
-}
-
-Broken.  get_write_access() will happily increment i_writecount e.g. from
-1 to 2, without even looking at i_lock.  Moreover, it's paired with
-void restore_bitmap_write_access(struct file *file)
-{
-        struct inode *inode = file->f_mapping->host;
-
-        spin_lock(&inode->i_lock);
-        atomic_set(&inode->i_writecount, 1);
-        spin_unlock(&inode->i_lock);
-}
-Just what will happen if we do denywrite mmap() of that file in between?
-Even worse, the caller take file straight from fget(), with no sanity
-checks whatsoever.  Just what will happen if I give it e.g. a directory?
-Or a procfs/sysfs/whatnot file, for that matter?  Neil?  I realize that
-it's root-only, but still...
+-- 
+Nicolas Ferre
