@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaCLNy2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:54:28 -0400
-Received: from outrelay01.libero.it ([212.52.84.101]:39311 "EHLO
-	outrelay01.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520AbaCLNy1 (ORCPT
+	id S1753414AbaCLNze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:55:34 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:55378 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753939AbaCLNzd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:54:27 -0400
-X-CTCH-Spam: Bulk
-X-CTCH-RefID: str=0001.0A0C0207.53204E5B.0008,ss=3,sh,re=0.000,fgs=0
-X-libjamoibt: 1587
-Message-ID: <984038708.1754891394632424691.JavaMail.defaultUser@defaultHost>
-Date: Wed, 12 Mar 2014 14:53:44 +0100 (CET)
-From: Agrosales <agrosales2xb@libero.it>
-Reply-To: agromegaagro@gmail.com
-Subject: Dear Sir/Madam
+	Wed, 12 Mar 2014 09:55:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-SenderIP: 41.82.26.35
-X-libjamv: JmQN+brWE0E=
-X-libjamsun: TEmeeYUIr+9SumZ/8c0j/SmkHCcZuoPU
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <1394047988-14081-1-git-send-email-joshc@codeaurora.org>
+References: <1394047988-14081-1-git-send-email-joshc@codeaurora.org>
+Date: Wed, 12 Mar 2014 14:55:32 +0100
+Message-ID: <CACRpkdYaD4-aBWd9Agr3d6AbdX5Ldo2OfwzqU1btEuBpdXQu5w@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: msm: drop wake_irqs bitmap
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 5, 2014 at 8:33 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
 
-Dear Sir/Madam,
- 
-Hope this meets you well. Please we are interested in purchasing your 
-company's products, we do hope to establish a long term relationship. However, 
-please we would like to see your company's latest catalogs with the;
- 
-Minimum Order Quantity
- 
-Delivery time/FOB
- 
-payment terms warranty
- 
-We hope to hear from you soon.
-Thank You !
-Best Regards
-Mr.Abdul Karimu
-(Purchasing Manager)
-Agro Megatrades Co., Ltd.
-14, Jln.Kesidang 3/6,80, Jalan Raja Chulan,
-50200 Kuala Lumpur, Wilayah Persekutuan, Malaysia
-Tel: +60 016 4452769
-Email:agromegaagro@gmail.com
+> Currently, the wake_irqs bitmap is used to track whether there are any
+> gpio's which are configured as wake irqs, and uses this to determine
+> whether or not to call enable_irq_wake()/disable_irq_wake() on the
+> summary interrupt.
+>
+> However, the genirq core already handles this case, by maintaining a
+> 'wake_count' per irq_desc, and only calling into the controlling
+> irq_chip when wake_count transitions 0 <-> 1.
+>
+> Drop this bitmap, and unconditionally call irq_set_irq_wake() on the
+> summary interrupt.
+>
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+
+Delighted to see you folks working on this driver.
+Patch applied with Björn's ACK.
+
+Yours,
+Linus Walleij
