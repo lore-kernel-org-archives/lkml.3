@@ -1,126 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295AbaCLXqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 19:46:31 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:33417 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706AbaCLXqa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 19:46:30 -0400
-Date: Wed, 12 Mar 2014 16:21:27 -0700
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
-        rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
-        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Gleb Natapov <gleb@kernel.org>, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Paolo Bonzini <pbonzini@redhat.com>, marc.zyngier@arm.com
-Subject: Re: [PATCH v3 10/52] arm, kvm: Fix CPU hotplug callback registration
-Message-ID: <20140312232127.GC24808@cbox>
-References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
- <20140310203538.10746.25364.stgit@srivatsabhat.in.ibm.com>
+	id S1752592AbaCLXrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 19:47:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37792 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752411AbaCLXrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 19:47:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,642,1389772800"; 
+   d="scan'208";a="490864005"
+Message-ID: <5320F1F0.5000505@linux.intel.com>
+Date: Wed, 12 Mar 2014 16:46:56 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140310203538.10746.25364.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net> <531F365B.4060000@linux.intel.com> <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com> <531F3D02.30706@linux.intel.com> <CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com> <CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com> <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com> <1394613046.995.51.camel@wall-e.seibold.net> <CA+55aFyTCoipjhbAVCuhCgqb8JeSjGcmOU3xE6EFrjNpfspfqg@mail.gmail.com> <CA+55aFxc8Qp-4_+n=upd-ghzkxpjCyRpesm3P7xtWjDyBe9MCw@mail.gmail.com> <CA+55aFyhS5jCWcxuK4bXKEPh+8HWbPE+gy1m4N9B-2HyT48+QA@mail.gmail.com> <5320D3AB.5060002@linux.intel.com> <CA+55aFzC1Xy1VNF46Mj8V8CEc0tyVA76+631xZiF6nk3Gyvc-Q@mail.gmail.com> <CALCETrUGc5+CS8=sYvtkK967ZR833zu98rzRkEw_DX++1hL-BA@mail.gmail.com> <5320E885.1080402@linux.intel.com> <CALCETrXbgHMPU7in4ThRWyRTw4EN4W9vYOh1RKAiBLFTauxrRQ@mail.gmail.com>
+In-Reply-To: <CALCETrXbgHMPU7in4ThRWyRTw4EN4W9vYOh1RKAiBLFTauxrRQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 02:05:38AM +0530, Srivatsa S. Bhat wrote:
-> Subsystems that want to register CPU hotplug callbacks, as well as perform
-> initialization for the CPUs that are already online, often do it as shown
-> below:
+On 03/12/2014 04:43 PM, Andy Lutomirski wrote:
+>>
+>> I do hear vsyscall=native still being used as a workaround for problems,
+>> but yes, just making it call the kernel is fine, of course.
 > 
-> 	get_online_cpus();
-> 
-> 	for_each_online_cpu(cpu)
-> 		init_cpu(cpu);
-> 
-> 	register_cpu_notifier(&foobar_cpu_notifier);
-> 
-> 	put_online_cpus();
-> 
-> This is wrong, since it is prone to ABBA deadlocks involving the
-> cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
-> with CPU hotplug operations).
-> 
-> Instead, the correct and race-free way of performing the callback
-> registration is:
-> 
-> 	cpu_notifier_register_begin();
-> 
-> 	for_each_online_cpu(cpu)
-> 		init_cpu(cpu);
-> 
-> 	/* Note the use of the double underscored version of the API */
-> 	__register_cpu_notifier(&foobar_cpu_notifier);
-> 
-> 	cpu_notifier_register_done();
-> 
-> 
-> Fix the kvm code in arm by using this latter form of callback registration.
-> 
-> Cc: Christoffer Dall <christoffer.dall@linaro.org>
-> Cc: Gleb Natapov <gleb@kernel.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: kvmarm@lists.cs.columbia.edu
-> Cc: kvm@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Acked-by: Paolo Bonzini <pbonzini@redhat.com>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  arch/arm/kvm/arm.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
-> index bd18bb8..f0e50a0 100644
-> --- a/arch/arm/kvm/arm.c
-> +++ b/arch/arm/kvm/arm.c
-> @@ -1051,21 +1051,26 @@ int kvm_arch_init(void *opaque)
->  		}
->  	}
->  
-> +	cpu_notifier_register_begin();
-> +
->  	err = init_hyp_mode();
->  	if (err)
->  		goto out_err;
->  
-> -	err = register_cpu_notifier(&hyp_init_cpu_nb);
-> +	err = __register_cpu_notifier(&hyp_init_cpu_nb);
->  	if (err) {
->  		kvm_err("Cannot register HYP init CPU notifier (%d)\n", err);
->  		goto out_err;
->  	}
->  
-> +	cpu_notifier_register_done();
-> +
->  	hyp_cpu_pm_init();
->  
->  	kvm_coproc_table_init();
->  	return 0;
->  out_err:
-> +	cpu_notifier_register_done();
->  	return err;
->  }
->  
+> Next time you hear that, can you let me know?  I haven't heard of any
+> issues since 3.4 IIRC.
 > 
 
-Just so we're clear, the existing code was simply racy as not prone to
-deadlocks, right?
+Will do.
 
-This makes it clear that the test above for compatible CPUs can be quite
-easily evaded by using CPU hotplug, but we don't really have a good
-solution for handling that yet...  Hmmm, grumble grumble, I guess if you
-hotplug unsupported CPUs on a KVM/ARM system for now, stuff will break.
+	-hpa
 
-In any case:
-Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
+
