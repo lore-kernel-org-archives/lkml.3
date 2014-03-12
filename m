@@ -1,116 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaCLXtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 19:49:12 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:36144 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750751AbaCLXtJ (ORCPT
+	id S1752730AbaCLXtP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 19:49:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46574 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315AbaCLXtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 19:49:09 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: At9oAAnxIFN5LJYePGdsb2JhbABZgwY7iBehHgSYeYEdFwMBAQEBHxkNKIIhBAEBAQQ6HCMQCAMYCSUPBSUDBxoThUmCDyDTMhaORgeEOASYRJVvKQ
-Date: Thu, 13 Mar 2014 10:48:57 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Waiman Long <waiman.long@hp.com>, arnd@arndb.de,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        akpm@linux-foundation.org, walken@google.com, andi@firstfloor.org,
-        riel@redhat.com, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, oleg@redhat.com
-Subject: Re: [RFC][PATCH 0/7] locking: qspinlock
-Message-ID: <20140312234857.GG13647@dastard>
-References: <20140310154236.038181843@infradead.org>
- <20140312023153.GW13647@dastard>
- <20140312061503.GH30956@twins.programming.kicks-ass.net>
+	Wed, 12 Mar 2014 19:49:12 -0400
+Date: Thu, 13 Mar 2014 00:49:07 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: joeyli <jlee@suse.com>, Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+In-Reply-To: <1554867.utJVyPuT6A@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.02.1403130045050.18573@ionos.tec.linutronix.de>
+References: <20140310110410.5b2218f6@ilfaris> <alpine.DEB.2.02.1403121722030.18573@ionos.tec.linutronix.de> <alpine.DEB.2.02.1403121729060.18573@ionos.tec.linutronix.de> <1554867.utJVyPuT6A@vostro.rjw.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140312061503.GH30956@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 07:15:03AM +0100, Peter Zijlstra wrote:
-> On Wed, Mar 12, 2014 at 01:31:53PM +1100, Dave Chinner wrote:
-> > With the queuing spinlock, I expected to see somewhat better
-> > results, but I didn't at first. Turns out if you have any sort of
-> > lock debugging turned on, then the code doesn't ever go into the
-> > lock slow path and hence does not ever enter the "lock failed" slow
-> > path where all the contention fixes are supposed to be.
+On Thu, 13 Mar 2014, Rafael J. Wysocki wrote:
+> I agree, and we need to fix that for 3.14.  Patch is appended.
+
+You beat me by a few minutes. Was about to send out the same, just
+with a more spicy changelog :)
+
+> ---
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: ACPI / init: Invoke early ACPI initialization later
 > 
-> Yeah; its a 'feature' of the spinlock debugging to turn all spinlocks
-> into test-and-set thingies.
+> Commit 73f7d1ca3263 (ACPI / init: Run acpi_early_init() before
+> timekeeping_init()) optimistically moved the early ACPI initialization
+> before timekeeping_init(), but that didn't work, because it broke fast
+> TSC calibration for Julian Wollrath on Thinkpad x121e (and most likely
+> for others too).  The reason is that acpi_early_init() enables the SCI
+> and that interferes with the fast TSC calibration mechanism.
 > 
-> > Anyway, with all lock debugging turned off, the system hangs
-> > the instant I start the multithreaded bulkstat workload. Even the
-> > console is unrepsonsive. 
-> 
-> Oops, I only briefly tested this series in userspace and that seemed to
-> work. I'll go prod at it. Thanks for having a look though.
-> 
-> Is that bstat test any easier/faster to setup/run than the aim7 crap?
+> Thus follow the original idea to execute acpi_early_init() before
+> efi_enter_virtual_mode() to help the EFI people for now and we can
+> revisit the other problem that commit 73f7d1ca3263 attempted to
+> address in the future (if really necessary).
 
-Depends. I've got a VM setup with a sparse 100TB block device hosted
-on SSDs where I can create 50M inodes using fsmark in about 3
-and half minutes. I also have a hacked xfstests::src/bstat.c that is
-multithreaded that I then run and it triggers it staight away.
-
-Quite frankly, you don't need bulkstat to produce this lock
-contention - you'll see it running this on a wide directory
-structure on XFS and an SSD:
-
-$ cat ~/tests/walk-scratch.sh 
-#!/bin/bash
-
-echo Walking via find -ctime
-echo 3 > /proc/sys/vm/drop_caches
-time (
-        for d in /mnt/scratch/[0-9]* ; do
-
-                for i in $d/*; do
-                        (
-                                echo $i
-                                find $i -ctime 1 > /dev/null
-                        ) > /dev/null 2>&1
-                done &
-        done
-        wait
-)
-
-echo Walking via ls -R
-echo 3 > /proc/sys/vm/drop_caches
-time (
-        for d in /mnt/scratch/[0-9]* ; do
-
-                for i in $d/*; do
-                        (
-                                echo $i
-                                ls -R $i
-                        ) > /dev/null 2>&1
-                done &
-        done
-        wait
-)
-$
-
-The directory structure I create has 16 top level directories (0-15)
-each with 30-40 subdirectories containing 100,000 files each.
-There's a thread per top level directory, and running it on a 16p VM
-and an SSD that can do 30,000 IOPS will generate sufficient inode
-cache pressure to trigger severe lock contention.
-
-My usual test script for this workload runs mkfs, fsmark,
-xfs_repair, bstat, walk-scratch, and finally a multi-threaded rm to
-clean up. Usual inode numbers are in the 50-100million for zero
-length file workloads, 10-20 million for single block (small) files,
-and 100,000-1million for larger files. it's great for stressing VFs,
-FS and IO level scalability...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+ 
