@@ -1,83 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615AbaCLIGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 04:06:23 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:57890 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755262AbaCLIGR (ORCPT
+	id S1756699AbaCLII1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 04:08:27 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:17267
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755317AbaCLIIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 04:06:17 -0400
-X-Original-SENDERIP: 10.177.220.200
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <js1304@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [RESEND PATCH] slab: fix wrongly used macro
-Date: Wed, 12 Mar 2014 17:06:19 +0900
-Message-Id: <1394611579-7709-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 12 Mar 2014 04:08:17 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(z579ehz98dI936eI1432Ic8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1de2h1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
+Date: Wed, 12 Mar 2014 16:08:14 +0800
+From: Chenhui Zhao <chenhui.zhao@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <leoli@freescale.com>, <Jason.Jin@freescale.com>
+Subject: Re: [PATCH 6/9] powerpc/85xx: support sleep feature on QorIQ SoCs
+ with RCPM
+Message-ID: <20140312080814.GE4706@localhost.localdomain>
+References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
+ <1394168285-32275-6-git-send-email-chenhui.zhao@freescale.com>
+ <1394582427.13761.74.camel@snotra.buserror.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1394582427.13761.74.camel@snotra.buserror.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 'slab: restrict the number of objects in a slab' uses
-__builtin_constant_p() on #if macro. It is wrong usage of builtin
-function, but it is compiled on x86 without any problem, so I can't
-find it before 0 day build system find it.
+On Tue, Mar 11, 2014 at 07:00:27PM -0500, Scott Wood wrote:
+> On Fri, 2014-03-07 at 12:58 +0800, Chenhui Zhao wrote:
+> > In sleep mode, the clocks of e500 cores and unused IP blocks is
+> > turned off. The IP blocks which are allowed to wake up the processor
+> > are still running.
+> > 
+> > The sleep mode is equal to the Standby state in Linux. Use the
+> > command to enter sleep mode:
+> >   echo standby > /sys/power/state
+> > 
+> > Signed-off-by: Chenhui Zhao <chenhui.zhao@freescale.com>
+> > ---
+> >  arch/powerpc/Kconfig                   |    4 +-
+> >  arch/powerpc/platforms/85xx/Makefile   |    3 +
+> >  arch/powerpc/platforms/85xx/qoriq_pm.c |   78 ++++++++++++++++++++++++++++++++
+> >  3 files changed, 83 insertions(+), 2 deletions(-)
+> >  create mode 100644 arch/powerpc/platforms/85xx/qoriq_pm.c
+> > 
+> > diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> > index 05f6323..e1d6510 100644
+> > --- a/arch/powerpc/Kconfig
+> > +++ b/arch/powerpc/Kconfig
+> > @@ -222,7 +222,7 @@ config ARCH_HIBERNATION_POSSIBLE
+> >  config ARCH_SUSPEND_POSSIBLE
+> >  	def_bool y
+> >  	depends on ADB_PMU || PPC_EFIKA || PPC_LITE5200 || PPC_83xx || \
+> > -		   (PPC_85xx && !PPC_E500MC) || PPC_86xx || PPC_PSERIES \
+> > +		   FSL_SOC_BOOKE || PPC_86xx || PPC_PSERIES \
+> >  		   || 44x || 40x
+> >  
+> >  config PPC_DCR_NATIVE
+> > @@ -709,7 +709,7 @@ config FSL_PCI
+> >  config FSL_PMC
+> >  	bool
+> >  	default y
+> > -	depends on SUSPEND && (PPC_85xx || PPC_86xx)
+> > +	depends on SUSPEND && (PPC_85xx && !PPC_E500MC || PPC_86xx)
+> 
+> Don't mix && and || without parentheses.
+> 
+> Maybe convert this into being selected (similar to FSL_RCPM), rather
+> than default y?
 
-This commit fixes the situation by using KMALLOC_MIN_SIZE, instead of
-KMALLOC_SHIFT_LOW. KMALLOC_SHIFT_LOW is parsed to ilog2() on some
-architecture and this ilog2() uses __builtin_constant_p() and results in
-the problem. This problem would disappear by using KMALLOC_MIN_SIZE,
-since it is just constant.
+Yes, will do.
 
-Tested-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
-This patch is based on Pekka's slab/next branch.
+> 
+> > diff --git a/arch/powerpc/platforms/85xx/Makefile b/arch/powerpc/platforms/85xx/Makefile
+> > index 25cebe7..7fae817 100644
+> > --- a/arch/powerpc/platforms/85xx/Makefile
+> > +++ b/arch/powerpc/platforms/85xx/Makefile
+> > @@ -2,6 +2,9 @@
+> >  # Makefile for the PowerPC 85xx linux kernel.
+> >  #
+> >  obj-$(CONFIG_SMP) += smp.o
+> > +ifeq ($(CONFIG_FSL_CORENET_RCPM), y)
+> > +obj-$(CONFIG_SUSPEND)	+= qoriq_pm.o
+> > +endif
+> 
+> There should probably be a kconfig symbol for this.
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index d015dec..5df89f7 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -201,17 +201,6 @@ struct kmem_cache {
- #ifndef KMALLOC_SHIFT_LOW
- #define KMALLOC_SHIFT_LOW	5
- #endif
--
--/*
-- * This restriction comes from byte sized index implementation.
-- * Page size is normally 2^12 bytes and, in this case, if we want to use
-- * byte sized index which can represent 2^8 entries, the size of the object
-- * should be equal or greater to 2^12 / 2^8 = 2^4 = 16.
-- * If minimum size of kmalloc is less than 16, we use it as minimum object
-- * size and give up to use byte sized index.
-- */
--#define SLAB_OBJ_MIN_SIZE	(KMALLOC_SHIFT_LOW < 4 ? \
--				(1 << KMALLOC_SHIFT_LOW) : 16)
- #endif
- 
- #ifdef CONFIG_SLUB
-@@ -253,6 +242,17 @@ struct kmem_cache {
- #define KMALLOC_MIN_SIZE (1 << KMALLOC_SHIFT_LOW)
- #endif
- 
-+/*
-+ * This restriction comes from byte sized index implementation.
-+ * Page size is normally 2^12 bytes and, in this case, if we want to use
-+ * byte sized index which can represent 2^8 entries, the size of the object
-+ * should be equal or greater to 2^12 / 2^8 = 2^4 = 16.
-+ * If minimum size of kmalloc is less than 16, we use it as minimum object
-+ * size and give up to use byte sized index.
-+ */
-+#define SLAB_OBJ_MIN_SIZE      (KMALLOC_MIN_SIZE < 16 ? \
-+                               (KMALLOC_MIN_SIZE) : 16)
-+
- #ifndef CONFIG_SLOB
- extern struct kmem_cache *kmalloc_caches[KMALLOC_SHIFT_HIGH + 1];
- #ifdef CONFIG_ZONE_DMA
--- 
-1.7.9.5
+OK.
+
+> 
+> > diff --git a/arch/powerpc/platforms/85xx/qoriq_pm.c b/arch/powerpc/platforms/85xx/qoriq_pm.c
+> > new file mode 100644
+> > index 0000000..915b13b
+> > --- /dev/null
+> > +++ b/arch/powerpc/platforms/85xx/qoriq_pm.c
+> > @@ -0,0 +1,78 @@
+> > +/*
+> > + * Support Power Management feature
+> > + *
+> > + * Copyright 2014 Freescale Semiconductor Inc.
+> > + *
+> > + * Author: Chenhui Zhao <chenhui.zhao@freescale.com>
+> > + *
+> > + * This program is free software; you can redistribute	it and/or modify it
+> > + * under  the terms of	the GNU General	 Public License as published by the
+> > + * Free Software Foundation;  either version 2 of the  License, or (at your
+> > + * option) any later version.
+> > + */
+> > +
+> > +#include <linux/kernel.h>
+> > +#include <linux/suspend.h>
+> > +#include <linux/of_platform.h>
+> > +
+> > +#include <sysdev/fsl_soc.h>
+> > +
+> > +#define FSL_SLEEP		0x1
+> > +#define FSL_DEEP_SLEEP		0x2
+> 
+> FSL_DEEP_SLEEP is unused.
+
+Will be used in the last patch.
+[PATCH 9/9] powerpc/pm: support deep sleep feature on T1040
+
+> 
+> > +
+> > +/* specify the sleep state of the present platform */
+> > +int sleep_pm_state;
+> > +/* supported sleep modes by the present platform */
+> > +static unsigned int sleep_modes;
+> 
+> Why is one signed and the other unsigned?
+
+Undesigned. Will change them all to unsigned.
+
+> 
+> > +
+> > +static int qoriq_suspend_enter(suspend_state_t state)
+> > +{
+> > +	int ret = 0;
+> > +
+> > +	switch (state) {
+> > +	case PM_SUSPEND_STANDBY:
+> > +
+> > +		if (cur_cpu_spec->cpu_flush_caches)
+> > +			cur_cpu_spec->cpu_flush_caches();
+> > +
+> > +		ret = qoriq_pm_ops->plat_enter_state(sleep_pm_state);
+> > +
+> > +		break;
+> > +
+> > +	default:
+> > +		ret = -EINVAL;
+> > +
+> > +	}
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static int qoriq_suspend_valid(suspend_state_t state)
+> > +{
+> > +	if (state == PM_SUSPEND_STANDBY && (sleep_modes & FSL_SLEEP))
+> > +		return 1;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static const struct platform_suspend_ops qoriq_suspend_ops = {
+> > +	.valid = qoriq_suspend_valid,
+> > +	.enter = qoriq_suspend_enter,
+> > +};
+> > +
+> > +static int __init qoriq_suspend_init(void)
+> > +{
+> > +	struct device_node *np;
+> > +
+> > +	sleep_modes = FSL_SLEEP;
+> > +	sleep_pm_state = PLAT_PM_SLEEP;
+> > +
+> > +	np = of_find_compatible_node(NULL, NULL, "fsl,qoriq-rcpm-2.0");
+> > +	if (np)
+> > +		sleep_pm_state = PLAT_PM_LPM20;
+> > +
+> > +	suspend_set_ops(&qoriq_suspend_ops);
+> > +
+> > +	return 0;
+> > +}
+> > +arch_initcall(qoriq_suspend_init);
+> 
+> Why is this not a platform driver?  If fsl_pmc can do it...
+> 
+> -Scott
+
+It can be, but what advantage of being a platform driver.
+
+-Chenhui
 
