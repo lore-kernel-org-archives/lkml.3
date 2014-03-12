@@ -1,136 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaCLQyw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 12:54:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50498 "EHLO mx2.suse.de"
+	id S1752740AbaCLQ4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 12:56:23 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41217 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751016AbaCLQyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 12:54:50 -0400
-Date: Wed, 12 Mar 2014 16:54:47 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: performance regression due to commit e82e0561("mm: vmscan: obey
- proportional scanning requirements for kswapd")
-Message-ID: <20140312165447.GO10663@suse.de>
-References: <20140218080122.GO26593@yliu-dev.sh.intel.com>
+	id S1751097AbaCLQ4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 12:56:21 -0400
+Date: Wed, 12 Mar 2014 11:53:58 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Felipe Balbi <balbi@ti.com>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm: boot: dts: build keystone devicetree blob
+Message-ID: <20140312165358.GE919@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1394639330-1288-1-git-send-email-balbi@ti.com>
+ <53208CDD.7030106@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tMbDGjvJuJijemkf"
 Content-Disposition: inline
-In-Reply-To: <20140218080122.GO26593@yliu-dev.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53208CDD.7030106@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 04:01:22PM +0800, Yuanhan Liu wrote:
-> Hi,
-> 
-> Commit e82e0561("mm: vmscan: obey proportional scanning requirements for
-> kswapd") caused a big performance regression(73%) for vm-scalability/
-> lru-file-readonce testcase on a system with 256G memory without swap.
-> 
-> That testcase simply looks like this:
->      truncate -s 1T /tmp/vm-scalability.img
->      mkfs.xfs -q /tmp/vm-scalability.img
->      mount -o loop /tmp/vm-scalability.img /tmp/vm-scalability
-> 
->      SPARESE_FILE="/tmp/vm-scalability/sparse-lru-file-readonce"
->      for i in `seq 1 120`; do
->          truncate $SPARESE_FILE-$i -s 36G
->          timeout --foreground -s INT 300 dd bs=4k if=$SPARESE_FILE-$i of=/dev/null
->      done
-> 
->      wait
-> 
+--tMbDGjvJuJijemkf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The filename implies that it's a sparse file with no IO but does not say
-what the truncate function/program/whatever actually does. If it's really a
-sparse file then the dd process should be reading zeros and writing them to
-NULL without IO. Where are pages being dirtied? Does the truncate command
-really create a sparse file or is it something else?
+On Thu, Mar 13, 2014 at 12:35:41AM +0800, Santosh Shilimkar wrote:
+> On Wednesday 12 March 2014 11:48 PM, Felipe Balbi wrote:
+> > Currently, even when building keystone only
+> > kernel builds, DTB won't get build because
+> > we lack a Makefile rule to get it compiled.
+> >=20
+> > This patch adds that rule so mainline kernel
+> > users have a chance to use up-to-date DTB on
+> > keystone 2 platforms.
+> >=20
+> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > ---
+> >
+> We have been building dtbs with explicit command
+> instead of dtbs since it was just one dtb so far
+> supported. Was planning to add the rule once more
+> boards get added. Now with Lamarr and Edision in
+> for next merge window, will do that post 3.15-rc1.
+>=20
+> > note that I just tried this on top of linux-next
+> > (commit 69d5cdda16b3c9767b82d80b07edb9bb056448e3)
+> > and, even though dtb builds fine, I still couldn't
+> > get keystone_defconfig uImage to boot fine.
+> >=20
+> > It's probably my LOADADDR which is wrong.
+> >=20
+> > Santosh, what's the LOADADDR I should be using
+> > for keystone boots ?
+> >
+> LOADADDR is same 0x80008000. You might have missed
 
-> Actually, it's not the newlly added code(obey proportional scanning)
-> in that commit caused the regression. But instead, it's the following
-> change:
-> +
-> +               if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
-> +                       continue;
-> +
-> 
-> 
-> -               if (nr_reclaimed >= nr_to_reclaim &&
-> -                   sc->priority < DEF_PRIORITY)
-> +               if (global_reclaim(sc) && !current_is_kswapd())
->                         break;
-> 
-> The difference is that we might reclaim more than requested before
-> in the first round reclaimming(sc->priority == DEF_PRIORITY).
-> 
-> So, for a testcase like lru-file-readonce, the dirty rate is fast, and
-> reclaimming SWAP_CLUSTER_MAX(32 pages) each time is not enough for catching
-> up the dirty rate. And thus page allocation stalls, and performance drops:
-> 
->    O for e82e0561
->    * for parent commit
-> 
->                                 proc-vmstat.allocstall
-> 
->      2e+06 ++---------------------------------------------------------------+
->    1.8e+06 O+              O                O               O               |
->            |                                                                |
->    1.6e+06 ++                                                               |
->    1.4e+06 ++                                                               |
->            |                                                                |
->    1.2e+06 ++                                                               |
->      1e+06 ++                                                               |
->     800000 ++                                                               |
->            |                                                                |
->     600000 ++                                                               |
->     400000 ++                                                               |
->            |                                                                |
->     200000 *+..............*................*...............*...............*
->          0 ++---------------------------------------------------------------+
-> 
->                                vm-scalability.throughput
-> 
->    2.2e+07 ++---------------------------------------------------------------+
->            |                                                                |
->      2e+07 *+..............*................*...............*...............*
->    1.8e+07 ++                                                               |
->            |                                                                |
->    1.6e+07 ++                                                               |
->            |                                                                |
->    1.4e+07 ++                                                               |
->            |                                                                |
->    1.2e+07 ++                                                               |
->      1e+07 ++                                                               |
->            |                                                                |
->      8e+06 ++              O                O               O               |
->            O                                                                |
->      6e+06 ++---------------------------------------------------------------+
-> 
-> I made a patch which simply keeps reclaimming more if sc->priority == DEF_PRIORITY.
-> I'm not sure it's the right way to go or not. Anyway, I pasted it here for comments.
-> 
+tried that, didn't help.
 
-The impact of the patch is that a direct reclaimer will now scan and
-reclaim more pages than requested so the unlucky reclaiming process will
-stall for longer than it should while others make forward progress.
+> to configure the environment u-boot variable to
+> disable higher address space switch.
+> 'setenv mem_lpae 0'. Also ensure to update
 
-That would explain the difference in allocstall figure as each stall is
-now doing more work than it did previously. The throughput figure is
-harder to explain. What is it measuring?
+hmm, that might do it. Will try after upgrading u-boot to latest
+release.
 
-Any idea why kswapd is failing to keep up?
+--=20
+balbi
 
-I'm not saying the patch is wrong but there appears to be more going on
-that is explained in the changelog. Is the full source of the benchmark
-suite available? If so, can you point me to it and the exact commands
-you use to run the testcase please?
+--tMbDGjvJuJijemkf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
--- 
-Mel Gorman
-SUSE Labs
+iQIcBAEBAgAGBQJTIJEmAAoJEIaOsuA1yqREFm8QAIgZEiDRPtHAgLAQqzKSZTIN
+08Gk7vUM5yUoR6M69tpHFZsh8QI9YRDOKbsCfBLkv/3HpW5hGRNHafP1ja5F2Yd1
+pvH/crhMMyaEB0+IAk+8Mkj3M+4PjdKRb/gGFBZf+kqKh1rmKgPVYxVle2ZReTAD
+QRm8+NydWwscjGMFgGNv69nF0bS1tLBTJvxFtPMrqb63RzNyWs5VyyERAkoFURLg
+9mMPWwleKylRnV3X5i8iXyFvcnte6jk0zADJtSsOyreFvpYqxYuEvy1XokIoF3dR
+J3AeNaR8fC6l9FGTS5wWO1MmH6pYTVJc6p2BKvZobuDGa/elvI8qH77j3/5t1Qpi
+vvqZq1c1QORG4gzX1IoC1QGtcTvq/qkAYNGu1DM0sndnZbWU3B9QPJGoUGyoaFfL
+HnF9dXSrvbkpZHXg9eu39o/rKaYUWDspP1ACG0eL7cHoFVqbk07nOoX1yZx1pZz+
+zvHaasivCv2BNijOt008hKxy+NUisVnyMpY+9xQs69tcgeiNUMyHrVL+ywrB+vd/
+93WA3Mub9gXYdJVEb5zmYGqAFI80poMDinum9UPGWbZwW89+nQW6iHggVI5iBvXU
+SA6WDm/sToi5kDVMg9vH2DTAbNzLo1tVJr5aYXuEuiplGa3blD/V87de7HJUXLh0
+iP0jfhbOJdiu0NNTlJC3
+=/93K
+-----END PGP SIGNATURE-----
+
+--tMbDGjvJuJijemkf--
