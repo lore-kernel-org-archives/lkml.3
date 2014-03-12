@@ -1,74 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613AbaCLOZZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:25:25 -0400
-Received: from smtprelay0159.hostedemail.com ([216.40.44.159]:33308 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754588AbaCLOZU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:25:20 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:560:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711
-X-HE-Tag: crown39_2de4a59e22820
-X-Filterd-Recvd-Size: 2534
-Message-ID: <1394634313.28839.57.camel@joe-AO722>
-Subject: Re: [PATCH v4 4/6] pinctrl: st: Use ARRAY_SIZE instead of raw value
- for number of delays
-From: Joe Perches <joe@perches.com>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+	id S1754633AbaCLOZi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:25:38 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:44676 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754275AbaCLOZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 10:25:35 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        lee.jones@linaro.org
-Date: Wed, 12 Mar 2014 07:25:13 -0700
-In-Reply-To: <1394614210-15698-5-git-send-email-maxime.coquelin@st.com>
-References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
-	 <1394614210-15698-5-git-send-email-maxime.coquelin@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH 2/3] power: gpio-charger: add device tree support
+Date: Wed, 12 Mar 2014 14:48:16 +0100
+Message-ID: <2397129.GGrYQoE9LA@phil>
+User-Agent: KMail/4.11.5 (Linux/3.12-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <12569216.pGctOhkhxz@phil>
+References: <12569216.pGctOhkhxz@phil>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-12 at 09:50 +0100, Maxime COQUELIN wrote:
-> This patch replaces the raw values with ARRAY_SIZE for assigning the
-> ninput_delays and noutput_delays fields of STiH416's st_pctl_data struct.
+From: Heiko Stuebner <heiko.stuebner@bq.com>
 
-trivial note:
+Add the ability to parse gpio-charger data from a devicetree node.
 
-> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-[]
-> @@ -384,9 +384,9 @@ static unsigned int stih416_delays[] = {0, 300, 500, 750, 1000, 1250, 1500,
->  static const struct st_pctl_data  stih416_data = {
->  	.rt_style	= st_retime_style_dedicated,
->  	.input_delays	= stih416_delays,
-> -	.ninput_delays	= 14,
-> +	.ninput_delays	= ARRAY_SIZE(stih416_delays),
->  	.output_delays	= stih416_delays,
-> -	.noutput_delays = 14,
-> +	.noutput_delays = ARRAY_SIZE(stih416_delays),
->  	.alt = 0, .oe = 40, .pu = 50, .od = 60, .rt = 100,
->  };
->  
+Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
+---
+ drivers/power/gpio-charger.c | 66 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 63 insertions(+), 3 deletions(-)
 
-drivers/pinctrl/pinctrl-st.c-   unsigned int    *input_delays;
-drivers/pinctrl/pinctrl-st.c-   unsigned int    *output_delays;
-
-It may be better to change these to const unsigned int *
-and change
-
-static unsigned int stih416_delays[] = {
-
-to static const
+diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+index a0024b2..64d31a8 100644
+--- a/drivers/power/gpio-charger.c
++++ b/drivers/power/gpio-charger.c
+@@ -22,6 +22,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/power_supply.h>
+ #include <linux/slab.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
+ 
+ #include <linux/power/gpio-charger.h>
+ 
+@@ -69,17 +71,68 @@ static enum power_supply_property gpio_charger_properties[] = {
+ 	POWER_SUPPLY_PROP_ONLINE,
+ };
+ 
++static
++struct gpio_charger_platform_data *gpio_charger_parse_dt(struct device *dev)
++{
++	struct device_node *np = dev->of_node;
++	struct gpio_charger_platform_data *pdata;
++	const char *chargetype;
++	enum of_gpio_flags flags;
++	int ret;
++
++	if (!np)
++		return ERR_PTR(-ENOENT);
++
++	pdata = devm_kzalloc(dev, sizeof(struct gpio_charger_platform_data),
++			     GFP_KERNEL);
++	if (!pdata)
++		return ERR_PTR(-ENOMEM);
++
++	pdata->name = np->name;
++
++	pdata->gpio = of_get_gpio_flags(np, 0, &flags);
++	pdata->gpio_active_low = flags & OF_GPIO_ACTIVE_LOW;
++
++	pdata->type = POWER_SUPPLY_TYPE_UNKNOWN;
++	ret = of_property_read_string(np, "charger-type", &chargetype);
++	if (ret >= 0) {
++		if (!strncmp("unknown", chargetype, 7))
++			pdata->type = POWER_SUPPLY_TYPE_UNKNOWN;
++		else if (!strncmp("battery", chargetype, 7))
++			pdata->type = POWER_SUPPLY_TYPE_BATTERY;
++		else if (!strncmp("ups", chargetype, 3))
++			pdata->type = POWER_SUPPLY_TYPE_UPS;
++		else if (!strncmp("mains", chargetype, 5))
++			pdata->type = POWER_SUPPLY_TYPE_MAINS;
++		else if (!strncmp("usb-sdp", chargetype, 7))
++			pdata->type = POWER_SUPPLY_TYPE_USB;
++		else if (!strncmp("usb-dcp", chargetype, 7))
++			pdata->type = POWER_SUPPLY_TYPE_USB_DCP;
++		else if (!strncmp("usb-cdp", chargetype, 7))
++			pdata->type = POWER_SUPPLY_TYPE_USB_CDP;
++		else if (!strncmp("usb-aca", chargetype, 7))
++			pdata->type = POWER_SUPPLY_TYPE_USB_ACA;
++		else
++			dev_warn(dev, "unknown charger type %s\n", chargetype);
++	}
++
++	return pdata;
++}
++
+ static int gpio_charger_probe(struct platform_device *pdev)
+ {
+-	const struct gpio_charger_platform_data *pdata = pdev->dev.platform_data;
++	struct gpio_charger_platform_data *pdata = pdev->dev.platform_data;
+ 	struct gpio_charger *gpio_charger;
+ 	struct power_supply *charger;
+ 	int ret;
+ 	int irq;
+ 
+ 	if (!pdata) {
+-		dev_err(&pdev->dev, "No platform data\n");
+-		return -EINVAL;
++		pdata = gpio_charger_parse_dt(&pdev->dev);
++		if (IS_ERR(pdata)) {
++			dev_err(&pdev->dev, "No platform data\n");
++			return -EINVAL;
++		}
+ 	}
+ 
+ 	if (!gpio_is_valid(pdata->gpio)) {
+@@ -189,6 +242,12 @@ static int gpio_charger_resume(struct device *dev)
+ static SIMPLE_DEV_PM_OPS(gpio_charger_pm_ops,
+ 		gpio_charger_suspend, gpio_charger_resume);
+ 
++static const struct of_device_id gpio_charger_match[] = {
++	{ .compatible = "gpio-charger" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, gpio_charger_match);
++
+ static struct platform_driver gpio_charger_driver = {
+ 	.probe = gpio_charger_probe,
+ 	.remove = gpio_charger_remove,
+@@ -196,6 +255,7 @@ static struct platform_driver gpio_charger_driver = {
+ 		.name = "gpio-charger",
+ 		.owner = THIS_MODULE,
+ 		.pm = &gpio_charger_pm_ops,
++		.of_match_table = of_match_ptr(gpio_charger_match),
+ 	},
+ };
+ 
+-- 
+1.8.5.3
 
 
