@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910AbaCLKbJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 06:31:09 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:51993 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462AbaCLKbE (ORCPT
+	id S1753844AbaCLKag (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 06:30:36 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:49704 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780AbaCLKaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 06:31:04 -0400
+	Wed, 12 Mar 2014 06:30:21 -0400
 From: Boris BREZILLON <brezillonboris@gmail.com>
 To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
@@ -15,11 +15,9 @@ Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
         linux-kernel@vger.kernel.org,
         Boris BREZILLON <b.brezillon.dev@gmail.com>
 Subject: [PATCH] net: macb: set interface name based on DT aliases
-Date: Wed, 12 Mar 2014 11:30:55 +0100
-Message-Id: <1394620255-6357-1-git-send-email-b.brezillon.dev@gmail.com>
+Date: Wed, 12 Mar 2014 11:29:56 +0100
+Message-Id: <1394620196-6295-1-git-send-email-b.brezillon.dev@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <532013C4.1000107@atmel.com>
-References: <532013C4.1000107@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
