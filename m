@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733AbaCLEQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 00:16:55 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:29800 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897AbaCLEQu (ORCPT
+	id S1752924AbaCLEQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 00:16:53 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:39884 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416AbaCLEQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Mar 2014 00:16:50 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-57-531fdfa9ba09
+X-AuditID: cbfee68f-b7f156d00000276c-b7-531fdfb11650
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org
-Cc: Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v2 1/4] clk: samsung: add new Kconfig for Samsung common clock
- options
-Date: Wed, 12 Mar 2014 13:32:58 +0900
-Message-id: <1394598781-3848-2-git-send-email-pankaj.dubey@samsung.com>
+Cc: Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v2 3/4] ARM: select COMMON_CLK_SAMSUNG for ARCH_EXYNOS and
+ ARCH_S3C64XX
+Date: Wed, 12 Mar 2014 13:33:00 +0900
+Message-id: <1394598781-3848-4-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1394598781-3848-1-git-send-email-pankaj.dubey@samsung.com>
 References: <1394598781-3848-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t8zY92V9+WDDX6/VbHY9Pgaq8XlXXPY
-	LGac38dksWjrF3YHFo/NS+o9+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+PfnQeMBV1sFZ1X
-	GpkbGDtZuxg5OSQETCS+LFvEAmGLSVy4t56ti5GLQ0hgGaPEv5lNTDBFW9a1QSWmM0ps23+J
-	BcJpY5K4274OrJ1NQFfiyfu5zCC2iEC2xKVZt8DizALaEpP3trCD2MICERItZ9sYQWwWAVWJ
-	Hw17wOp5Bdwl7nYdB6rhANqmIDFnkg1ImFPAQ2Lnz1Ng5UJAJbsO7WQH2Ssh8JlNounAMag5
-	AhLfJh9igeiVldh0gBniaEmJgytusExgFF7AyLCKUTS1ILmgOCm9yFivODG3uDQvXS85P3cT
-	IyRk+3cw3j1gfYgxGWjcRGYp0eR8YMjnlcQbGpsZWZiamBobmVuakSasJM57/2FSkJBAemJJ
-	anZqakFqUXxRaU5q8SFGJg5OqQbGFcksBycc2hJsF/DAIFhQd9eWF8t6rvdk8GU1pJnyXjLW
-	LjH4/C3y0Jmt3FeLH2Ql+WeYx7Z9j9f9oLDX6/XqGQsW+pVN5g9pTpv1XydDas7/3GuS26sY
-	pnXuim9lW3Q1oJ0t7rFzd+n1PZfcb5kv/addu7xEvGqf/bKJCjJcLxkLuW/UreJXYinOSDTU
-	Yi4qTgQAyoUMSG8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQd2V9+WDDR61K1psenyN1eLyrjls
-	FjPO72OyWLT1C7sDi8fmJfUefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
-	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5jx784DxoIutorOK43MDYydrF2MnBwSAiYSW9a1sUHYYhIX7q0Hsrk4hASm
-	M0ps23+JBcJpY5K4276OBaSKTUBX4sn7ucwgtohAtsSlWbfA4swC2hKT97awg9jCAhESLWfb
-	GEFsFgFViR8Ne8DqeQXcJe52HQeq4QDapiAxZ5INSJhTwENi589TYOVCQCW7Du1kn8DIu4CR
-	YRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcEQ8k9rBuLLB4hCjAAejEg/vAk35YCHWxLLi
-	ytxDjBIczEoivB9BQrwpiZVVqUX58UWlOanFhxiTgY6ayCwlmpwPjNa8knhDYxMzI0sjMwsj
-	E3Nz0oSVxHkPtFoHCgmkJ5akZqemFqQWwWxh4uCUamDcJeDroDbd1qpPvcSvQKlo0S1T7zN7
-	agyqXzicFt1ofFFj0aIZ9aX72pljz5UdK93luK4ywHWRzoZzzaFB75ylTjLKS6X9Nbte0rPA
-	R7Losa/OFtHgmbeqU299v3/zk93r6jf/lJUmPT/iYbLwSBZr6vtJT2/2Xt11Pz8+efm+xPqT
-	30XO8/kpsRRnJBpqMRcVJwIAeuszJswCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t8zQ92N9+WDDWZ1cFtsenyN1eLyrjls
+	FjPO72OyuH2Z12LR1i/sDqweLc09bB6bl9R79G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8as
+	+/OZC46xV5x+0MXWwDiPrYuRk0NCwERi2a4fjBC2mMSFe+uB4lwcQgLLGCXuLv3KBFO0oOEq
+	C0RiOqPE+S3nGCGcNiaJbX+2sYBUsQnoSjx5P5cZxBYRyJa4NOsWWJxZIETi9otVYHFhgUiJ
+	3ntPwWwWAVWJVQcfg9XwCrhLLO7fz97FyAG0TUFiziQbkDCngIfEzp+nwK4TAirZdWgnO8he
+	CYH/bBJTevYzQswRkPg2+RALRK+sxKYDzBBHS0ocXHGDZQKj8AJGhlWMoqkFyQXFSelFxnrF
+	ibnFpXnpesn5uZsYIUHcv4Px7gHrQ4zJQOMmMkuJJucDoyCvJN7Q2MzIwtTE1NjI3NKMNGEl
+	cd77D5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTAqMvHOcro6a/UsazHuLM+Lx3znrLnj
+	1h6SHnjz5HHpt75Vun419Z1GlQ/Myu5Ovau0rUbsUJdyWIrBifOSd3M3f6+VNvn544PWy1eT
+	z756YZ2c7rZy8YWerJRTWxaILNux9KgQS+70kyl+4e690V6+53ivSLVc4nf+L7viZ3JX3NWi
+	OLaGKbuVWIozEg21mIuKEwFa54h9eAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsVy+t9jQd2N9+WDDbbuZrfY9Pgaq8XlXXPY
+	LGac38dkcfsyr8WirV/YHVg9Wpp72Dw2L6n36NuyitHj8ya5AJaoBkabjNTElNQihdS85PyU
+	zLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKC1SgpliTmlQKGAxOJiJX07TBNC
+	Q9x0LWAaI3R9Q4LgeowM0EDCOsaMWffnMxccY684/aCLrYFxHlsXIyeHhICJxIKGqywQtpjE
+	hXvrgeJcHEIC0xklzm85xwjhtDFJbPuzDayKTUBX4sn7ucwgtohAtsSlWbfA4swCIRK3X6wC
+	iwsLREr03nsKZrMIqEqsOvgYrIZXwF1icf9+9i5GDqBtChJzJtmAhDkFPCR2/jzFCGILAZXs
+	OrSTfQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwTHyTHoH46oGi0OMAhyMSjy8
+	CzXlg4VYE8uKK3MPMUpwMCuJ8H4ECfGmJFZWpRblxxeV5qQWH2JMBjpqIrOUaHI+MH7zSuIN
+	jU3MjCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoGxjq/dNHni0ez9Z2cy
+	pOl8vZ0cOfvctd6A6fHSukGhOwK7W/P2HrZVbzQ/E8f96Hj91B1fu1J59SW6s/iP+WbKFgad
+	Kuy/F7trXvZO9TVHDy2uUdqgz/FA2umw0uEjG/dLbb73hVNerCbCKYmVf84FidlP1tvOPdQS
+	c33Wj76SlU7ZNzOvvNioxFKckWioxVxUnAgAaDbEf9UCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,33 +50,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new Kconfig file for adding new config option
-as COMMON_CLK_SAMSUNG for Samsung common clock. This patch also
-moves S3C24XX specific clock options here in this file.
+This patch selects COMMON_CLK_SAMSUNG for EXYNOS and S3C64XX SoC
+and removes COMMON_CLK selection as COMMON_CLK_SAMSUNG selects it's dependency.
 
+CC: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 ---
- drivers/clk/samsung/Kconfig |   11 +++++++++++
- 1 file changed, 11 insertions(+)
- create mode 100644 drivers/clk/samsung/Kconfig
+ arch/arm/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clk/samsung/Kconfig b/drivers/clk/samsung/Kconfig
-new file mode 100644
-index 0000000..26eb446
---- /dev/null
-+++ b/drivers/clk/samsung/Kconfig
-@@ -0,0 +1,11 @@
-+config COMMON_CLK_SAMSUNG
-+	bool
-+	select COMMON_CLK
-+
-+config S3C2412_COMMON_CLK
-+	bool
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index e254198..0c15aa7 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -755,7 +755,7 @@ config ARCH_S3C64XX
+ 	select ARM_VIC
+ 	select CLKDEV_LOOKUP
+ 	select CLKSRC_SAMSUNG_PWM
+-	select COMMON_CLK
 +	select COMMON_CLK_SAMSUNG
-+
-+config S3C2443_COMMON_CLK
-+	bool
+ 	select CPU_V6K
+ 	select GENERIC_CLOCKEVENTS
+ 	select GPIO_SAMSUNG
+@@ -834,7 +834,7 @@ config ARCH_EXYNOS
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARCH_SPARSEMEM_ENABLE
+ 	select ARM_GIC
+-	select COMMON_CLK
 +	select COMMON_CLK_SAMSUNG
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_S3C2410_I2C if I2C
 -- 
 1.7.9.5
 
