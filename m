@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaCLOwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:52:21 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:43166 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655AbaCLOwS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:52:18 -0400
+	id S1754770AbaCLOxI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:53:08 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33992 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754508AbaCLOxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 10:53:05 -0400
+Date: Wed, 12 Mar 2014 10:53:00 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/8] mm: memcg: inline mem_cgroup_charge_common()
+Message-ID: <20140312145300.GC14688@cmpxchg.org>
+References: <1394587714-6966-1-git-send-email-hannes@cmpxchg.org>
+ <1394587714-6966-4-git-send-email-hannes@cmpxchg.org>
+ <20140312125213.GB11831@dhcp22.suse.cz>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-Date: Wed, 12 Mar 2014 07:52:17 -0700
-Message-ID: <CAOesGMjUgi4VLCZqOPQgTQM3v2u1GcOeTgPNANYO-OwSmC6Zdw@mail.gmail.com>
-Subject: SAVE THE DATE: ARM mini-summit co-hosted with ELC, April 28
-From: Olof Johansson <olof@lixom.net>
-To: arm-platform-maintainers@lists.infradead.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140312125213.GB11831@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-People expressed interest in hosting a mini (micro?) summit together
-with ELC this year, and we are planning to do so. The date will be the
-day directly before ELC in the same venue: April 28.
+On Wed, Mar 12, 2014 at 01:52:13PM +0100, Michal Hocko wrote:
+> On Tue 11-03-14 21:28:29, Johannes Weiner wrote:
+> [...]
+> > @@ -3919,20 +3919,21 @@ out:
+> >  	return ret;
+> >  }
+> >  
+> > -/*
+> > - * Charge the memory controller for page usage.
+> > - * Return
+> > - * 0 if the charge was successful
+> > - * < 0 if the cgroup is over its limit
+> > - */
+> > -static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+> > -				gfp_t gfp_mask, enum charge_type ctype)
+> > +int mem_cgroup_newpage_charge(struct page *page,
+> > +			      struct mm_struct *mm, gfp_t gfp_mask)
+> 
+> s/mem_cgroup_newpage_charge/mem_cgroup_anon_charge/ ?
+> 
+> Would be a better name? The patch would be bigger but the name more
+> apparent...
 
-Seating will, as usual, be limited and invite-only based on proposed
-topics. More on that in a separate email. Since it's the day before
-ELC, some of you might want to adjust your travel plans if you plan on
-attending.
+I wouldn't be opposed to fixing those names at all, but I think that
+is out of the scope of this patch.  Want to send one?
 
-Another thing that is new for this year is that there will be a small
-registration fee to cover venue costs (in the USD100 range).
+mem_cgroup_charge_anon() would be a good name, but then we should also
+rename mem_cgroup_cache_charge() to mem_cgroup_charge_file() to match.
 
-More details on topic proposal process will be sent out shortly. If
-you have questions, don't hesitate to contact us.
+Or charge_private() vs. charge_shared()...
 
-Arnd Bergmann
-Magnus Damm
-Kevin Hilman
-Simon Horman
-Olof Johansson
-Grant Likely
+> Other than that I am good with this. Without (preferably) or without
+> rename:
+> Acked-by: Michal Hocko <mhocko@suse.cz>
 
-
--Olof
+Thanks!
