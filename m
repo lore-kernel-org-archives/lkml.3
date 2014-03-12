@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508AbaCLNrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:47:08 -0400
-Received: from canardo.mork.no ([148.122.252.1]:48036 "EHLO canardo.mork.no"
+	id S1754534AbaCLNr0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:47:26 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:44238 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754181AbaCLNqk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:46:40 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: <netdev@vger.kernel.org>, <nic_swsd@realtek.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH net-next 1/2] r8152: add CONFIG_RTL8152_EARLY_AGG_SUPER
-Organization: m
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
-	<1394526259-5513-2-git-send-email-hayeswang@realtek.com>
-	<1394628023-12713-1-git-send-email-hayeswang@realtek.com>
-Date: Wed, 12 Mar 2014 14:40:17 +0100
-In-Reply-To: <1394628023-12713-1-git-send-email-hayeswang@realtek.com> (Hayes
-	Wang's message of "Wed, 12 Mar 2014 20:39:58 +0800")
-Message-ID: <87txb3lem6.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130009 (Ma Gnus v0.9) Emacs/23.4 (gnu/linux)
+	id S1754510AbaCLNrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 09:47:23 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH 1/3] dt-bindings: document gpio-charger bindings
+Date: Wed, 12 Mar 2014 14:46:32 +0100
+Message-ID: <2194340.F9etmr5mIo@phil>
+User-Agent: KMail/4.11.5 (Linux/3.12-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <12569216.pGctOhkhxz@phil>
+References: <12569216.pGctOhkhxz@phil>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> writes:
+From: Heiko Stuebner <heiko.stuebner@bq.com>
 
-> +	config RTL8152_EARLY_AGG_SUPER
-> +		hex "rx early agg parameter for super speed"
-> +		default 0x0e832981
-> +		help
-> +		  This is the rx early agg parameter for USB super speed.
-> +
-> +	endmenu
+This documents the binding for the gpio-charger power-supply.
 
-How do I as an end user know how to adjust this magic(?) value?  Having
-a config setting like this without further documentation seems
-completely pointless. Anyone with enough knowledge about the driver and
-devices will be perfectly capable of editing the driver source anyway.
+Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
+---
+ .../bindings/power_supply/gpio-charger.txt         | 23 ++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/gpio-charger.txt
+
+diff --git a/Documentation/devicetree/bindings/power_supply/gpio-charger.txt b/Documentation/devicetree/bindings/power_supply/gpio-charger.txt
+new file mode 100644
+index 0000000..fad87a4
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power_supply/gpio-charger.txt
+@@ -0,0 +1,23 @@
++gpio-charger
++
++Required properties :
++ - compatible : "gpio-charger"
++ - gpios : GPIO indicating the charger presence.
++   See GPIO binding in bindings/gpio/gpio.txt .
++ - charger-type : power supply type, one of
++     unknown
++     battery
++     ups
++     mains
++     usb-sdp (USB standard downstream port)
++     usb-dcp (USB dedicated charging port)
++     usb-cdp (USB charging downstream port)
++     usb-aca (USB accessory charger adapter)
++
++Example:
++
++	charger {
++		compatible = "gpio-charger";
++		charger-type = "usb-sdp";
++		gpios = <&gpf0 2 0 0 0>;
++	}
+-- 
+1.8.5.3
 
 
-
-Bjørn
