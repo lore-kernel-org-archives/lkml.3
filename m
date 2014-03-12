@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185AbaCLBFg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 21:05:36 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45109 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989AbaCLBFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 21:05:35 -0400
-Date: Wed, 12 Mar 2014 01:05:25 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Greg KH <greg@kroah.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-Id: <20140312010525.b04a12173c7778df42da7a31@kernel.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__12_Mar_2014_01_05_25_+0000_0TIXGZuAqW=sSg5U"
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@kernel.org
-Subject: linux-next: manual merge of the usb tree with the  tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1756211AbaCLBGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 21:06:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755989AbaCLBGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 21:06:05 -0400
+Date: Tue, 11 Mar 2014 22:05:14 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, pbonzini@redhat.com,
+        gleb@kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: SVM: fix cr8 intercept window
+Message-ID: <20140312010513.GA8131@amt.cnet>
+References: <1394561478-8815-1-git-send-email-rkrcmar@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394561478-8815-1-git-send-email-rkrcmar@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Mar_2014_01_05_25_+0000_0TIXGZuAqW=sSg5U
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 11, 2014 at 07:11:18PM +0100, Radim Krčmář wrote:
+> We always disable cr8 intercept in its handler, but only re-enable it
+> if handling KVM_REQ_EVENT, so there can be a window where we do not
+> intercept cr8 writes, which allows an interrupt to disrupt a higher
+> priority task.
+> 
+> Fix this by disabling intercepts in the same function that re-enables
+> them when needed. This fixes BSOD in Windows 2008.
+> 
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+> ---
+>  arch/x86/kvm/svm.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index 64d9bb9..f676c18 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -3003,10 +3003,8 @@ static int cr8_write_interception(struct vcpu_svm *svm)
+>  	u8 cr8_prev = kvm_get_cr8(&svm->vcpu);
+>  	/* instruction emulation calls kvm_set_cr8() */
+>  	r = cr_interception(svm);
+> -	if (irqchip_in_kernel(svm->vcpu.kvm)) {
+> -		clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
+> +	if (irqchip_in_kernel(svm->vcpu.kvm))
+>  		return r;
+> -	}
+>  	if (cr8_prev <= kvm_get_cr8(&svm->vcpu))
+>  		return r;
+>  	kvm_run->exit_reason = KVM_EXIT_SET_TPR;
+> @@ -3568,6 +3566,8 @@ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
+>  	if (is_guest_mode(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
+>  		return;
+>  
+> +	clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
+> +
+>  	if (irr == -1)
+>  		return;
 
-Hi Greg,
+Shouldnt IRR be injected if TPR < IRR ? (via KVM_REQ_EVENT).
 
-Today's linux-next merge of the usb tree got a conflict in arch/arm/mach-te=
-gra/Kconfig between commit 06c886a95cbb533 ("phy: mvebu-sata: prepare new D=
-ove DT Kconfig variable") from the USB tree and commit ff1f0018cf66 ("drive=
-rs: Enable building of Kirkwood drivers for mach-mvebu") from the mvebu tre=
-e.
+1) IRR has interrupt 10.
+2) TPR now 9 due to CR8 write.
+3) 10 should be injected.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Also not clearing the intercept can cause continuous CR8 writes to 
+exit until KVM_REQ_EVENT ? 
 
-diff --cc drivers/phy/Kconfig
-index 05711ea4fd15,8d3c49cc500f..000000000000
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@@ -24,7 -27,7 +27,7 @@@ config PHY_EXYNOS_MIPI_VIDE
- =20
-  config PHY_MVEBU_SATA
-        def_bool y
--       depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_KIRKWOOD
- -      depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_DOVE
-++      depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_KIRKWOOD || MACH_DOVE
-        depends on OF
-        select GENERIC_PHY
- =20
-
---Signature=_Wed__12_Mar_2014_01_05_25_+0000_0TIXGZuAqW=sSg5U
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIbBAEBAgAGBQJTH7LVAAoJELSic+t+oim95e8P+LCZBr//C1ACPxRjqzl5HP7P
-U2HRVHiF+W9fiMMxVzVwjxQe/YcqpbInJB5xMx2blVWqlaOjn16b5jgR4C4C2Dcm
-nDijCt8fxW24cLbWnKJJyDga9s6xS41RbAA+K76fGVNQ0rH3YQbsKzJw6amS00kj
-4CWIdvZsEmOWkmRJh2vNd6C3SXj1+xTT11buw7knkcIgz94Na2kThrJeLJeBFCSh
-xpP5dmW03kX67nCAu9FdJItXAOHT7a0Sx8Ijbsc0gG/HNKbFEZIDqYC+4T9F85rF
-ueSstHWS4K9VPSlFvszjp0zxKwS33ld0WNCe2izXETWvSDoJ8Rtny+FAPrPadsi0
-o+lL4hUBcKr0lmrGxUWLANcCbvhBwewxmXpjc9vpP1WJoQ65Fq4tQZsetGeJAfz0
-ur8ys9pWLFLdMDuaPdSXafBE97TN1Deqgwlu2oKxAZDk7K15ur+ur4jXPHcQbSry
-KcDfXV8vw9srjl4i2D16CFrrBDKfqckO7koCSuBPUyXelMoeNrS0vMp0Dz9IBJ4y
-W5G1ziIn8soUJed+hoO3JV9d5PCl8yY6iKlOSqZ/dNyBLKGtJH1XkA4EBmz7LsT6
-ZNuN8g+UzF8BZtpTEfpckUNY2IAi44BAd/w5mV8xCmDTFVr22lkfEwXK05yvcV69
-El+0NfM/8T+PPu03VVU=
-=RE5I
------END PGP SIGNATURE-----
-
---Signature=_Wed__12_Mar_2014_01_05_25_+0000_0TIXGZuAqW=sSg5U--
