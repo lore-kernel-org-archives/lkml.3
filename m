@@ -1,90 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaCLXk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 19:40:56 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46943 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840AbaCLXkz (ORCPT
+	id S1752037AbaCLXn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 19:43:57 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:44844 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222AbaCLXnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 19:40:55 -0400
-Date: Thu, 13 Mar 2014 00:30:39 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: WARN_ON() and X session lost from i915 on 3.14-rc6
-Message-ID: <20140312233039.GA5582@amd.pavel.ucw.cz>
+	Wed, 12 Mar 2014 19:43:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5320E885.1080402@linux.intel.com>
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
+ <CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
+ <CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>
+ <531F365B.4060000@linux.intel.com> <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
+ <531F3D02.30706@linux.intel.com> <CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>
+ <CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com>
+ <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
+ <1394613046.995.51.camel@wall-e.seibold.net> <CA+55aFyTCoipjhbAVCuhCgqb8JeSjGcmOU3xE6EFrjNpfspfqg@mail.gmail.com>
+ <CA+55aFxc8Qp-4_+n=upd-ghzkxpjCyRpesm3P7xtWjDyBe9MCw@mail.gmail.com>
+ <CA+55aFyhS5jCWcxuK4bXKEPh+8HWbPE+gy1m4N9B-2HyT48+QA@mail.gmail.com>
+ <5320D3AB.5060002@linux.intel.com> <CA+55aFzC1Xy1VNF46Mj8V8CEc0tyVA76+631xZiF6nk3Gyvc-Q@mail.gmail.com>
+ <CALCETrUGc5+CS8=sYvtkK967ZR833zu98rzRkEw_DX++1hL-BA@mail.gmail.com> <5320E885.1080402@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Mar 2014 16:43:34 -0700
+Message-ID: <CALCETrXbgHMPU7in4ThRWyRTw4EN4W9vYOh1RKAiBLFTauxrRQ@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, Mar 12, 2014 at 4:06 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> On 03/12/2014 02:49 PM, Andy Lutomirski wrote:
+>> On Wed, Mar 12, 2014 at 2:46 PM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>>> On Wed, Mar 12, 2014 at 2:37 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>>>>
+>>>> How would that deal with the legacy vsyscall case for x86-64?  Just rely
+>>>> on the "legacy vsyscall emulation" (which seems to have its own class of
+>>>> problems...)?
+>>>
+>>> It does?
+>>>
+>>> We *default* to emulation, and have for over two years now (since
+>>> v3.4).  If there are problems with it, we need to fix those.
+>>
+>> Even in the non-default "vsyscall=native" case, the vsyscall pages
+>> just contains syscalls.  It does not need to access the vvar page, the
+>> hpet, or anything else that the vdso uses.
+>>
+>
+> Ah, right.  I let that detail slip the mind.
+>
+> I do hear vsyscall=native still being used as a workaround for problems,
+> but yes, just making it call the kernel is fine, of course.
 
-This cost me two half-written mails...
+Next time you hear that, can you let me know?  I haven't heard of any
+issues since 3.4 IIRC.
 
-So far it happened once, so it may be very infrequent; but I do not
-think I seen similar failure from i915 before, so it may be an
-regression. Well...
+--Andy
 
--22 should be EINVAL afaict.
+>
+> So yes, this does make it all better.
+>
+>         -hpa
+>
+>
 
-Any ideas?
-								Pavel
-
-[drm:i915_gem_object_get_pages] *ERROR* Attempting to obtain a
-purgeable object
-[drm:i915_gem_object_get_pages] *ERROR* Attempting to obtain a
-purgeable object
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 2945 at drivers/gpu/drm/i915/i915_gem.c:1459
-i915_gem_fault+0x10c/0x240()
-unhandled error in i915_gem_fault: -22
-Modules linked in:
-CPU: 0 PID: 2945 Comm: Xorg Tainted: G        W    3.14.0-rc6+ #325
-Hardware name: LENOVO 17097HU/17097HU, BIOS 7BETD8WW (2.19 )
-03/31/2011
- 000005b3 f00ade08 c47db94b c4a318f4 f00ade38 c4037f9a c4a31ed0
- f00ade64
- 00000b81 c4a318f4 000005b3 c436cb9c c436cb9c 00000002 ea35af00
- f00adebc
- f00ade50 c403803e 00000009 f00ade48 c4a31ed0 f00ade64 f00ade90
- c436cb9c
-Call Trace:
- [<c47db94b>] dump_stack+0x41/0x52
- [<c4037f9a>] warn_slowpath_common+0x7a/0xa0
- [<c436cb9c>] ? i915_gem_fault+0x10c/0x240
- [<c436cb9c>] ? i915_gem_fault+0x10c/0x240
- [<c403803e>] warn_slowpath_fmt+0x2e/0x30
- [<c436cb9c>] i915_gem_fault+0x10c/0x240
- [<c40d2fa7>] __do_fault+0x57/0x490
- [<c4074e6e>] ? __lock_acquire+0x3ae/0xc80
- [<c436ca90>] ? i915_gem_pwrite_ioctl+0x8a0/0x8a0
- [<c40d428b>] handle_mm_fault+0x14b/0x750
- [<c402f54f>] ? __do_page_fault+0xaf/0x410
- [<c402f8b0>] ? __do_page_fault+0x410/0x410
- [<c402f8b0>] ? __do_page_fault+0x410/0x410
- [<c402f59c>] __do_page_fault+0xfc/0x410
- [<c403abb5>] ? SyS_setitimer+0x45/0xd0
- [<c40fc3e5>] ? SyS_ioctl+0x45/0x70
- [<c402f8b0>] ? __do_page_fault+0x410/0x410
- [<c402f8bb>] do_page_fault+0xb/0x10
- [<c47e0a17>] error_code+0x67/0x6c
----[ end trace c124d19552341c51 ]---
-wlan0: deauthenticating from 00:33:13:01:31:45 by local choice
-(reason=3)
-cfg80211: Calling CRDA to update world regulatory domain
-Chrome_IOThread[20585]: segfault at 0 ip b459e086 sp ad7f9da0 error 4
-in chromium-browser[b3ecd000+390f000]
-wlan0: authenticate with 00:33:13:01:31:45
-wlan0: send auth to 00:33:13:01:31:45 (try 1/3)
-wlan0: authenticated
-wlan0: associate with 00:33:13:01:31:45 (try 1/3)
 
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Andy Lutomirski
+AMA Capital Management, LLC
