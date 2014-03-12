@@ -1,141 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445AbaCLKgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 06:36:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42392 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543AbaCLKgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 06:36:07 -0400
-Date: Wed, 12 Mar 2014 10:36:02 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>, hhuang@redhat.com,
-        knoel@redhat.com, aarcange@redhat.com,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: numa: Recheck for transhuge pages under lock during
- protection changes
-Message-ID: <20140312103602.GN10663@suse.de>
-References: <20140307140650.GA1931@suse.de>
- <20140307150923.GB1931@suse.de>
- <20140307182745.GD1931@suse.de>
- <20140311162845.GA30604@suse.de>
- <531F3F15.8050206@oracle.com>
- <531F4128.8020109@redhat.com>
- <531F48CC.303@oracle.com>
- <20140311180652.GM10663@suse.de>
- <531F616A.7060300@oracle.com>
- <20140311122859.fb6c1e772d82d9f4edd02f52@linux-foundation.org>
+	id S1753534AbaCLKgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 06:36:32 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:36962 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462AbaCLKga (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 06:36:30 -0400
+Message-ID: <5320389B.5030806@linaro.org>
+Date: Wed, 12 Mar 2014 18:36:11 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140311122859.fb6c1e772d82d9f4edd02f52@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@redhat.com, morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        daniel.lezcano@linaro.org, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        tony.luck@intel.com, fenghua.yu@intel.com, james.hogan@imgtec.com,
+        jason.low2@hp.com, viresh.kumar@linaro.org, hanjun.guo@linaro.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
+        wangyun@linux.vnet.ibm.com, mgorman@suse.de
+Subject: Re: [PATCH 04/11] sched: unify imbalance bias for target group
+References: <1393293054-11378-1-git-send-email-alex.shi@linaro.org> <1393293054-11378-5-git-send-email-alex.shi@linaro.org> <20140225141407.GT9987@twins.programming.kicks-ass.net> <530E0531.7000303@linaro.org>
+In-Reply-To: <530E0531.7000303@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew, this should go with the patches 
-mmnuma-reorganize-change_pmd_range.patch
-mmnuma-reorganize-change_pmd_range-fix.patch
-move-mmu-notifier-call-from-change_protection-to-change_pmd_range.patch
-in mmotm please.
+On 02/26/2014 11:16 PM, Alex Shi wrote:
+>> > So this patch is weird..
+>> > 
+>> > So the original bias in the source/target load is purely based on actual
+>> > load figures. It only pulls-down/pulls-up resp. the long term avg with a
+>> > shorter term average; iow. it allows the source to decrease faster and
+>> > the target to increase faster, giving a natural inertia (ie. a
+>> > resistance to movement).
+>> > 
+>> > Therefore this gives rise to a conservative imbalance.
+>> > 
+>> > Then at the end we use the imbalance_pct thing as a normal hysteresis
+>> > control to avoid the rapid state switching associated with a single
+>> > control point system.
+> Peter, Thanks response and detailed explanations! :)
+> 
+> Yes, fixed bias can not replace the current bias.
+> If we said sth inertia, we usually mean the previous value or long term
+> value here. but source/target_load doesn't prefer a long term or shorter
+> term load, Just get the min or max of them. so I can't see other meaning
+> except source/target bias. And the long term load is a decayed load with
+> history load value, not a real actual load.
+> 
+> And in current logical, assume the load of cpu is constant in a period,
+> then the source/target_load will lose its 'resistance' function for
+> balance. Considering the moving cost, rq locking and potential cpu cache
+> missing, Is some bias needed here?
+> 
+> Another problem is, we bias load twice for busy_idx scenario. once in
+> source/target_load another is imbalance_pct in find_busiest_group. I
+> can't figure out the reason. :(
+> 
+> So would rather select a random long/shorter term load, than maybe it's
+> better to use a fixed bias, like in current NUMA balancing, and in
+> newidle/wake balance.
+> 
 
-Thanks.
 
----8<---
-From: Mel Gorman <mgorman@suse.de>
-Subject: [PATCH] mm: numa: Recheck for transhuge pages under lock during protection changes
+May I didn't say clear about the issue of cpu_load. So forgive my
+verbose explanation again.
 
-Sasha Levin reported the following bug using trinity
+In 5 cpu load idx, only busy_idx and idle_idx are not zero, only they
+are using long term load value.
 
-[  886.745765] kernel BUG at mm/mprotect.c:149!
-[  886.746831] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  886.748511] Dumping ftrace buffer:
-[  886.749998]    (ftrace buffer empty)
-[  886.750110] Modules linked in:
-[  886.751396] CPU: 20 PID: 26219 Comm: trinity-c216 Tainted: G        W    3.14.0-rc5-next-20140305-sasha-00011-ge06f5f3-dirty #105
-[  886.751396] task: ffff8800b6c80000 ti: ffff880228436000 task.ti: ffff880228436000
-[  886.751396] RIP: 0010:[<ffffffff812aab33>]  [<ffffffff812aab33>] change_protection_range+0x3b3/0x500
-[  886.751396] RSP: 0000:ffff880228437da8  EFLAGS: 00010282
-[  886.751396] RAX: 8000000527c008e5 RBX: 00007f647916e000 RCX: 0000000000000000
-[  886.751396] RDX: ffff8802ef488e40 RSI: 00007f6479000000 RDI: 8000000527c008e5
-[  886.751396] RBP: ffff880228437e78 R08: 0000000000000000 R09: 0000000000000000
-[  886.751396] R10: 0000000000000001 R11: 0000000000000000 R12: ffff8802ef488e40
-[  886.751396] R13: 00007f6479000000 R14: 00007f647916e000 R15: 00007f646e34e000
-[  886.751396] FS:  00007f64b28d4700(0000) GS:ffff88052ba00000(0000) knlGS:0000000000000000
-[  886.751396] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  886.751396] CR2: 00007f64aed83af8 CR3: 0000000206e52000 CR4: 00000000000006a0
-[  886.751396] Stack:
-[  886.751396]  ffff880200000001 ffffffff8447f152 ffff880228437dd8 ffff880228af3000
-[  886.769142]  00007f646e34e000 00007f647916dfff 0000000000000000 00007f647916e000
-[  886.769142]  ffff880206e527f0 00007f647916dfff 0000000000000000 0000000000000000
-[  886.769142] Call Trace:
-[  886.769142]  [<ffffffff8447f152>] ? preempt_count_sub+0xe2/0x120
-[  886.769142]  [<ffffffff812aaca5>] change_protection+0x25/0x30
-[  886.769142]  [<ffffffff812c3eeb>] change_prot_numa+0x1b/0x30
-[  886.769142]  [<ffffffff8118df49>] task_numa_work+0x279/0x360
-[  886.769142]  [<ffffffff8116c57e>] task_work_run+0xae/0xf0
-[  886.769142]  [<ffffffff8106ffbe>] do_notify_resume+0x8e/0xe0
-[  886.769142]  [<ffffffff8447a93b>] retint_signal+0x4d/0x92
-[  886.769142] Code: 49 8b 3c 24 48 83 3d fc 2e ba 04 00 75 12 0f 0b 0f 1f 84 00 00 00 00 00 eb fe 66 0f 1f 44 00 00 48 89 f8 66 66 66 90 84 c0 79 0d <0f> 0b 0f 1f 00 eb fe 66 0f 1f 44 00 00 8b 4d 9c 44 8b 4d 98
-+89
-[  886.769142] RIP  [<ffffffff812aab33>] change_protection_range+0x3b3/0x500
-[  886.769142]  RSP <ffff880228437da8>
+The other idxes, wake_idx, forexec_idx and new_idle_idx are all zero.
+They are using imbalance_pct as fixed bias consideration *only*, as well
+as in numa balancing.
 
-The VM_BUG_ON was added by the patch "mm,numa: reorganize
-change_pmd_range". The race existed without the patch but was just harder
-to hit.
+As to busy_idx,
+We considered the cpu load history and src/dst bias both. But we are
+wrong to mix them together. Considering long/short term load isn't
+related with bias. The long term load consideration is done in runnable
+load avg. And the bias value should be isolated and based on task
+migration cost between cpu/groups.
+Now we mix them together, the ridiculous thing is, when all cpu load are
+continuous stable, long/short term load is same. then we lose the bias
+meaning, so any minimum imbalance may cause unnecessary task moving. To
+prevent this funny thing happen, we have to reuse the imbalance_pct
+again in find_busiest_group().  But That clearly causes over bias in
+normal time. If there are some burst load in system, it is more worse.
 
-The problem is that a transhuge check is made without holding the PTL. It's
-possible at the time of the check that a parallel fault clears the pmd
-and inserts a new one which then triggers the VM_BUG_ON check.  This patch
-removes the VM_BUG_ON but fixes the race by rechecking transhuge under the
-PTL when marking page tables for NUMA hinting and bailing if a race occurred.
-It is not a problem for calls to mprotect() as they hold mmap_sem for write.
+As to idle_idx, it is not use imbalance_pct at all.
+Since short term load is zero, so it looks clearly, we pretend we are
+long term load when cpu in dst group. or zero load, when cpu in src
+group. But from maximum performance point view. It's better to balance
+task to idle cpu. So we'd better to move tasks to dst group unless the
+moving cost is beyond task migration cost, that is the imbalance_pct
+for. Now pretending we have some load in dst group rejects the incoming
+load we pretend have. And It also prefer to move task to long time idle
+cpu, that actually costs performance/latency both since low latency of
+deep c-state waking.
+Anyway, for idle cpu load balance, since we are working on cpu idle
+migration into scheduler. The problem must be reconsidered. We don't
+need to care much now.
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/mprotect.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 2afc40e..72061a2 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -46,6 +46,17 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 	unsigned long pages = 0;
- 
- 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-+
-+	/*
-+	 * For a prot_numa update we only hold mmap_sem for read so there is a
-+	 * potential race with faulting where a pmd was temporarily none so
-+	 * recheck it under the lock and bail if we race
-+	 */
-+	if (prot_numa && unlikely(pmd_trans_huge(*pmd))) {
-+		pte_unmap_unlock(pte, ptl);
-+		return 0;
-+	}
-+
- 	arch_enter_lazy_mmu_mode();
- 	do {
- 		oldpte = *pte;
-@@ -141,12 +152,13 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 						pages += HPAGE_PMD_NR;
- 						nr_huge_updates++;
- 					}
-+
-+					/* huge pmd was handled */
- 					continue;
- 				}
- 			}
- 			/* fall through, the trans huge pmd just split */
- 		}
--		VM_BUG_ON(pmd_trans_huge(*pmd));
- 		this_pages = change_pte_range(vma, pmd, addr, next, newprot,
- 				 dirty_accountable, prot_numa);
- 		pages += this_pages;
+Base on above reasons, I believe mixing long term load with task moving
+bias consideration is stupid. And I admit the imbalance_pct need more
+tuning or even remake, but it is not a bad start, at least it is used in
+balance anywhere now.
+
+
+-- 
+Thanks
+    Alex
