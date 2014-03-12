@@ -1,117 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298AbaCLNeg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:34:36 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44089 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754137AbaCLNee (ORCPT
+	id S1754355AbaCLNfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:35:08 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:45221 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153AbaCLNfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:34:34 -0400
-Date: Wed, 12 Mar 2014 13:33:39 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Matt Porter <mporter@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 1/5] mfd: add bcm590xx pmu DT binding
-Message-ID: <20140312133339.GC17461@e106331-lin.cambridge.arm.com>
-References: <1394580837-8331-1-git-send-email-mporter@linaro.org>
- <1394580837-8331-2-git-send-email-mporter@linaro.org>
+	Wed, 12 Mar 2014 09:35:06 -0400
+Message-ID: <53206284.2000002@atmel.com>
+Date: Wed, 12 Mar 2014 14:35:00 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394580837-8331-2-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        <plagnioj@jcrosoft.com>, <b.brezillon@overkiz.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <gregory.clement@free-electrons.com>, <devicetree@vger.kernel.org>,
+        <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v5 6/9] at91: dt: sam9261: Device Tree support for the
+ at91sam9261ek
+References: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com> <1393841162-25339-7-git-send-email-jjhiblot@traphandler.com> <20140303183800.GF3155@piout.net>
+In-Reply-To: <20140303183800.GF3155@piout.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 11:33:53PM +0000, Matt Porter wrote:
-> Add a DT binding for the BCM590xx PMUs. The binding inherits from
-> the generic regulator bindings.
+On 03/03/2014 19:38, Alexandre Belloni :
+> On 03/03/2014 at 11:05:59 +0100, Jean-Jacques Hiblot wrote :
+>> This patch implements a DTS to boot a at91sam9261ek with a dt-enabled
+>> kernel (at91_dt_defconfig).
+>> supported features are:
+>> * dbgu
+>> * lcdc
+>> * usb host
+>> * usb gadget,
+>> * spi dataflash
+>> * nand flash
+>> * touchscreen
+>> * leds
+>> * user buttons
+>>
+>> In the TODO list:
+>> * dm9000 (ethernet)
+>> * audio
+>> * mmc
+>>
+>> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+>> ---
+>>  arch/arm/boot/dts/Makefile          |   2 +
+>>  arch/arm/boot/dts/at91sam9261ek.dts | 204 ++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 206 insertions(+)
+>>  create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
+>>
+>> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+>> index 0320303..f496473 100644
+>> --- a/arch/arm/boot/dts/Makefile
+>> +++ b/arch/arm/boot/dts/Makefile
+>> @@ -12,6 +12,8 @@ dtb-$(CONFIG_ARCH_AT91) += ethernut5.dtb
+>>  dtb-$(CONFIG_ARCH_AT91) += evk-pro3.dtb
+>>  dtb-$(CONFIG_ARCH_AT91) += tny_a9260.dtb
+>>  dtb-$(CONFIG_ARCH_AT91) += usb_a9260.dtb
+>> +# sam9261
+>> +dtb-$(CONFIG_ARCH_AT91) += at91sam9261ek.dtb
+>>  # sam9263
+>>  dtb-$(CONFIG_ARCH_AT91) += at91sam9263ek.dtb
+>>  dtb-$(CONFIG_ARCH_AT91) += tny_a9263.dtb
+>> diff --git a/arch/arm/boot/dts/at91sam9261ek.dts b/arch/arm/boot/dts/at91sam9261ek.dts
+>> new file mode 100644
+>> index 0000000..03adb7f
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/at91sam9261ek.dts
+>> @@ -0,0 +1,204 @@
+>> +/*
+>> + * at91sam9261ek.dts - Device Tree file for Atmel at91sam9261 reference board
+>> + *
+>> + *  Copyright (C) 2013 Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+>> + *
+>> + * Licensed under GPLv2 only.
+>> + */
+>> +/dts-v1/;
+>> +#include "at91sam9261.dtsi"
+>> +
+>> +/ {
+>> +	model = "Atmel at91sam9261ek";
+>> +	compatible = "atmel,at91sam9261ek", "atmel,at91sam9261", "atmel,at91sam9";
+>> +
+>> +	chosen {
+>> +		bootargs = "console=ttyS0,115200 rootfstype=ubifs ubi.mtd=5 root=ubi0:rootfs rw";
+>> +	};
+>> +
+>> +	memory {
+>> +		reg = <0x20000000 0x4000000>;
+>> +	};
+>> +
+>> +	clocks {
+>> +		#address-cells = <1>;
+>> +		#size-cells = <1>;
+>> +		ranges;
+>> +
+>> +		main_clock: clock@0 {
+>> +			compatible = "atmel,osc", "fixed-clock";
+>> +			clock-frequency = <18432000>;
+>> +		};
+>> +	};
+>> +
+>> +	ahb {
+>> +		usb0: ohci@00500000 {
+>> +			status = "okay";
+>> +		};
+>> +
+>> +		fb0: fb@0x00600000 {
+>> +			display = <&display0>;
+>> +			atmel,power-control-gpio = <&pioA 12 GPIO_ACTIVE_LOW>;
+>> +			status = "okay";
+>> +
+>> +			display0: display {
+>> +				bits-per-pixel = <16>;
+>> +				atmel,lcdcon-backlight;
+>> +				atmel,dmacon = <0x1>;
+>> +				atmel,lcdcon2 = <0x80008002>;
+>> +				atmel,guard-time = <1>;
+>> +				atmel,lcd-wiring-mode = "BRG";
+>> +
+>> +				display-timings {
+>> +					native-mode = <&timing0>;
+>> +					timing0: timing0 {
+>> +						clock-frequency = <4965000>;
+>> +						hactive = <240>;
+>> +						vactive = <320>;
+>> +						hback-porch = <1>;
+>> +						hfront-porch = <33>;
+>> +						vback-porch = <1>;
+>> +						vfront-porch = <0>;
+>> +						hsync-len = <5>;
+>> +						vsync-len = <1>;
+>> +						hsync-active = <1>;
+>> +						vsync-active = <1>;
+>> +					};
+>> +				};
+>> +			};
+>> +		};
+>> +
+>> +		nand0: nand@40000000 {
+>> +			nand-bus-width = <8>;
+>> +			nand-ecc-mode = "soft";
+>> +			nand-on-flash-bbt;
+>> +			status = "okay";
+>> +
+>> +			at91bootstrap@0 {
+>> +				label = "at91bootstrap";
+>> +				reg = <0x0 0x40000>;
+>> +			};
+>> +
+>> +			bootloader@40000 {
+>> +				label = "bootloader";
+>> +				reg = <0x40000 0x80000>;
+>> +			};
+>> +
+>> +			bootloaderenv@c0000 {
+>> +				label = "bootloader env";
+>> +				reg = <0xc0000 0xc0000>;
+>> +			};
+>> +
+>> +			dtb@180000 {
+>> +				label = "device tree";
+>> +				reg = <0x180000 0x80000>;
+>> +			};
+>> +
+>> +			kernel@200000 {
+>> +				label = "kernel";
+>> +				reg = <0x200000 0x600000>;
+>> +			};
+>> +
+>> +			rootfs@800000 {
+>> +				label = "rootfs";
+>> +				reg = <0x800000 0x0f800000>;
+>> +			};
+>> +		};
+>> +
+>> +		apb {
+>> +			usb1: gadget@fffa4000 {
+>> +				atmel,vbus-gpio = <&pioB 29 GPIO_ACTIVE_HIGH>;
+>> +				status = "okay";
+>> +			};
 > 
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> ---
->  Documentation/devicetree/bindings/mfd/bcm590xx.txt | 41 ++++++++++++++++++++++
->  1 file changed, 41 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/bcm590xx.txt
+> Nit: add a white line between nodes please, same for a few nodes below.
+
+Done while including in the at91-3.15-cleanup branch.
+
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/bcm590xx.txt b/Documentation/devicetree/bindings/mfd/bcm590xx.txt
-> new file mode 100644
-> index 0000000..2300246
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/bcm590xx.txt
-> @@ -0,0 +1,41 @@
-> +-------------------------------
-> +BCM590xx Power Management Units
-> +-------------------------------
-> +
-> +Required properties:
-> +- compatible: "brcm,bcm59056"
-> +- reg: I2C slave address
-> +- interrupts: interrupt for the PMU. Generic interrupt client node bindings
-> +  are described in interrupt-controller/interrupts.txt
-
-This all looks sane.
-
-> +
-> +------------------
-> +Voltage Regulators
-> +------------------
-> +
-> +Optional properties:
-> +- regulators: This is the list of child nodes that specify the regulator
-> +  initialization data for defined regulators.  Generic regulator bindings
-> +  are described in regulator/regulator.txt.
-
-This is a subnode, not a property. How about:
-
-Optional child nodes:
-
-- regulators: container node for regulators follwoing the generic
-  regulator binding in regulator/regulator.txt.
-
-> +
-> +  The valid regulator nodes for BCM59056 are:
-
-s/nodes/node names/
-
-> +  	rfldo, camldo1, camldo2, simldo1, simldo2, sdldo, sdxldo,
-> +	mmcldo1, mmcldo2, audldo, micldo, usbldo, vibldo,
-> +	csr, iosr1, iosr2, msr, sdsr1, sdsr2, vsr
-> +
-> +Example:
-> +	pmu: bcm59056@8 {
-> +		compatible = "brcm,bcm59056";
-> +		reg = <0x08>;
-> +		interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_HIGH>;
-> +		regulators {
-> +			#address-cells = <1>;
-> +			#size-cells = <0>;
-> +
-> +			rfldo_reg: rfldo {
-> +				regulator-min-microvolt = <1200000>;
-> +				regulator-max-microvolt = <3300000>;
-
-Are any specific properties required on these children?
-
-Thanks,
-Mark.
-
-> +			};
-> +
-> +			...
-> +		};
-> +	};
-> -- 
-> 1.8.4
+>> +			spi0: spi@fffc8000 {
+>> +				cs-gpios = <&pioA 3 0>, <0>, <&pioA 28 0>, <0>;
+>> +				status = "okay";
+>> +
+>> +				mtd_dataflash@0 {
+>> +					compatible = "atmel,at45", "atmel,dataflash";
+>> +					reg = <0>;
+>> +					spi-max-frequency = <15000000>;
+>> +				};
+>> +				tsc2046@0 {
+>> +					reg = <2>;
+>> +					compatible = "ti,ads7843";
+>> +					interrupts-extended = <&pioC 2 IRQ_TYPE_EDGE_BOTH>;
+>> +					spi-max-frequency = <3000000>;
+>> +					pendown-gpio = <&pioC 2 GPIO_ACTIVE_HIGH>;
+>> +
+>> +					ti,x-min = /bits/ 16 <150>;
+>> +					ti,x-max = /bits/ 16 <3830>;
+>> +					ti,y-min = /bits/ 16 <190>;
+>> +					ti,y-max = /bits/ 16 <3830>;
+>> +					ti,vref-delay-usecs = /bits/ 16 <450>;
+>> +					ti,x-plate-ohms = /bits/ 16 <450>;
+>> +					ti,y-plate-ohms = /bits/ 16 <250>;
+>> +					ti,pressure-max = /bits/ 16 <15000>;
+>> +					ti,debounce-rep = /bits/ 16 <0>;
+>> +					ti,debounce-tol = /bits/ 16 <65535>;
+>> +					ti,debounce-max = /bits/ 16 <1>;
+>> +
+>> +					linux,wakeup;
+>> +				};
+>> +			};
+>> +
+>> +			dbgu: serial@fffff200 {
+>> +				status = "okay";
+>> +			};
+>> +
+>> +			watchdog@fffffd40 {
+>> +				status = "okay";
+>> +			};
+>> +
+>> +		};
+>> +	};
+>> +
+>> +	leds {
+>> +		compatible = "gpio-leds";
+>> +
+>> +		ds8 {
+>> +			label = "ds8";
+>> +			gpios = <&pioA 13 GPIO_ACTIVE_LOW>;
+>> +			linux,default-trigger = "none";
+>> +		};
+>> +		ds7 {
+>> +			label = "ds7";
+>> +			gpios = <&pioA 14 GPIO_ACTIVE_LOW>;
+>> +			linux,default-trigger = "nand-disk";
+>> +		};
+>> +		ds1 {
+>> +			label = "ds1";
+>> +			gpios = <&pioA 23 GPIO_ACTIVE_LOW>;
+>> +			linux,default-trigger = "heartbeat";
+>> +		};
+>> +	};
+>> +
+>> +	gpio_keys {
+>> +		compatible = "gpio-keys";
+>> +
+>> +		button_0 {
+>> +			label = "button_0";
+>> +			gpios = <&pioA 27 GPIO_ACTIVE_LOW>;
+>> +			linux,code = <256>;
+>> +			gpio-key,wakeup;
+>> +		};
+>> +		button_1 {
+>> +			label = "button_1";
+>> +			gpios = <&pioA 26 GPIO_ACTIVE_LOW>;
+>> +			linux,code = <257>;
+>> +			gpio-key,wakeup;
+>> +		};
+>> +		button_2 {
+>> +			label = "button_2";
+>> +			gpios = <&pioA 25 GPIO_ACTIVE_LOW>;
+>> +			linux,code = <258>;
+>> +			gpio-key,wakeup;
+>> +		};
+>> +		button_3 {
+>> +			label = "button_3";
+>> +			gpios = <&pioA 24 GPIO_ACTIVE_LOW>;
+>> +			linux,code = <259>;
+>> +			gpio-key,wakeup;
+>> +		};
+>> +	};
+>> +};
+>> -- 
+>> 1.9.0
+>>
 > 
-> 
+
+
+-- 
+Nicolas Ferre
