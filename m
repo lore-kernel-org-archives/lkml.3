@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341AbaCLVJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 17:09:58 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:57824 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaCLVJ4 (ORCPT
+	id S1752673AbaCLVLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 17:11:22 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54855 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692AbaCLVLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 17:09:56 -0400
+	Wed, 12 Mar 2014 17:11:21 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18nHN/4bBiV0981ZPLbnJ/q
+Date: Wed, 12 Mar 2014 14:11:13 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 5/5] drivers: bus: omap_l3: Change pr_crit() to
+ dev_err() when IRQ request fails
+Message-ID: <20140312211113.GH1996@atomide.com>
+References: <1393937293-6036-1-git-send-email-peter.ujfalusi@ti.com>
+ <1393937293-6036-6-git-send-email-peter.ujfalusi@ti.com>
+ <5315E522.9090606@ti.com>
+ <5316CE17.6010201@ti.com>
+ <20140312172854.GD30897@atomide.com>
+ <5320CBFF.3000909@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1394657970.32465.200.camel@willson.li.ssimo.org>
-References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
- <5320C9FC.6070301@amacapital.net> <1394657970.32465.200.camel@willson.li.ssimo.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 12 Mar 2014 14:09:35 -0700
-Message-ID: <CALCETrVPu_37FfY+DN8AowUdq7W4pLgczw-Pd7Z_O8h740giNw@mail.gmail.com>
-Subject: Re: [PATCH 0/2][V2] net: Implement SO_PEERCGROUP to get cgroup of peer
-To: Simo Sorce <ssorce@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5320CBFF.3000909@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 1:59 PM, Simo Sorce <ssorce@redhat.com> wrote:
-> On Wed, 2014-03-12 at 13:56 -0700, Andy Lutomirski wrote:
->> On 03/12/2014 01:46 PM, Vivek Goyal wrote:
->> > Hi,
->> >
->> > This is V2 of patches. Fixed the function format issue and also I was using
->> > CONFIG_CGROUP instead of CONFIG_CGROUPS. That led to crash at boot. Fixed that.
->> >
->> > Some applications like sssd want to know the cgroup of connected peer over
->> > unix stream socket. They want to use this information to map the cgroup to
->> > the container client belongs to and then decide what kind of policies apply
->> > on the container.
->> >
->>
->> Can you explain what the use case is?
->
-> External programs contacted from inside a container want to know 'who'
-> is contacting them. Whee 'who' is determined by the cgroup their put in.
-> This way these external programs can apply appropriate policy associated
-> with the specific 'marking' cgroup.
->
->> My a priori opinion is that this is a terrible idea.  cgroups are a
->> nasty interface, and letting knowledge of cgroups leak into the programs
->> that live in the groups (as opposed to the cgroup manager) seems like a
->> huge mistake to me.
->
-> I am not sure where you are going, the program that want's to know about
-> the cgroup is outside the group.
->
->> If you want to know where in the process hierarchy a message sender is,
->> add *that* and figure out how to fix the races (it shouldn't be that hard).
->
-> What is *that* here ?
+* Santosh Shilimkar <santosh.shilimkar@ti.com> [140312 14:08]:
+> On Thursday 13 March 2014 01:28 AM, Tony Lindgren wrote:
+> > * Peter Ujfalusi <peter.ujfalusi@ti.com> [140304 23:14]:
+> >> On 03/04/2014 04:37 PM, Santosh Shilimkar wrote:
+> >>> On Tuesday 04 March 2014 08:48 PM, Peter Ujfalusi wrote:
+> >>>> Use dev_err() which will going to print the driver's name as well and the
+> >>>> KERN_ERR level is sufficient in this case (we also print via dev_err when
+> >>>> there is an error with the mem resources)
+> >>>>
+> >>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> >>>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >>>> ---
+> >>>>  drivers/bus/omap_l3_noc.c | 7 +++----
+> >>>>  1 file changed, 3 insertions(+), 4 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+> >>>> index 0eff48585ae3..972691a668a3 100644
+> >>>> --- a/drivers/bus/omap_l3_noc.c
+> >>>> +++ b/drivers/bus/omap_l3_noc.c
+> >>>> @@ -158,8 +158,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
+> >>>>  	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
+> >>>>  			       IRQF_DISABLED, "l3-dbg-irq", l3);
+> >>>>  	if (ret) {
+> >>>> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
+> >>>> -						l3->debug_irq);
+> >>>> +		dev_err(&pdev->dev, "request_irq failed for %d\n",
+> >>>> +			l3->debug_irq);
+> >>>>  		return ret;
+> >>>>  	}
+> >>>>  
+> >>>> @@ -167,8 +167,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
+> >>>>  	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
+> >>>>  			       IRQF_DISABLED, "l3-app-irq", l3);
+> >>>>  	if (ret)
+> >>>> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
+> >>>> -						l3->app_irq);
+> >>>> +		dev_err(&pdev->dev, "request_irq failed for %d\n", l3->app_irq);
+> >>>>  
+> >>>>  	return ret;
+> >>>>  }
+> >>>>
+> >>> So this one change in the log level. If I look at now, may be dev_err
+> >>> is fine but the change is not same.
+> >>
+> >> Not sure what you mean by 'the change is not same'?
+> >> I just picked the old series and rebased it on linux-next, the patch is the
+> >> same as it was back in May 2013:
+> >> https://lkml.org/lkml/2013/5/2/205
+> >>
+> >> And yes, I have shortened the texts in the print, but the meaning of the
+> >> prints have not changed.
+> > 
+> > Santosh, got any more comments on this series?
+> > 
+> Nope. looks good
 
-It sounds like your use case is:
+OK probably best that Arnd or Olof picks these directly:
 
-systemd shoves a service in a cgroup.  Its children stay in that
-cgroup.  One of those children sends a message back to systemd or
-something that knows about systemd's use of cgroups and wants to
-identify which service it is.
-
-Now imagine that you're using a non-systemd cgroup controller, or you
-have more than one cgroup hierarchy, or you have two services that
-want to share a cgroup.  Or imagine that you're totally happy with
-systemd but that you want to use this same facility from something
-unprivileged.
-
-So let's rethink this.  There's already SCM_CREDENTIALS for sending
-pid, but using pid there is inherently racy.  If that race were fixed
-and there were a clean way to look up with process subtree or service
-a pid lives in, then I think this would solve your problem.  No
-cgroups needed.
-
---Andy
-
->
-> Simo.
->
->
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Acked-by: Tony Lindgren <tony@atomide.com> 
