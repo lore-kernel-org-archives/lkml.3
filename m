@@ -1,75 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838AbaCLO6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:58:03 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:28919 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724AbaCLO5z (ORCPT
+	id S1754862AbaCLO6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:58:16 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:44977 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754842AbaCLO6M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:57:55 -0400
-Message-ID: <532075EC.7060809@atmel.com>
-Date: Wed, 12 Mar 2014 15:57:48 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 12 Mar 2014 10:58:12 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/3] dt-bindings: document gpio-charger bindings
+Date: Wed, 12 Mar 2014 15:57:18 +0100
+Message-ID: <4446481.1MqT47xhP8@phil>
+User-Agent: KMail/4.11.5 (Linux/3.12-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CAL_JsqKoOhHpJ_OL23WbitQbiJJKLpWrtezT824FP0qtZ2xrEg@mail.gmail.com>
+References: <12569216.pGctOhkhxz@phil> <2194340.F9etmr5mIo@phil> <CAL_JsqKoOhHpJ_OL23WbitQbiJJKLpWrtezT824FP0qtZ2xrEg@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>
-CC: stable <stable@vger.kernel.org>, <jjhiblot@traphandler.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <b.brezillon@overkiz.com>
-Subject: Re: [PATCH RESEND] usb: at91-udc: fix irq and iomem resource retrieval
-References: <1390488102-8548-1-git-send-email-jjhiblot@traphandler.com> <1392210209-22142-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1392210209-22142-1-git-send-email-nicolas.ferre@atmel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2014 14:03, Nicolas Ferre :
-> From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> 
-> When using dt resources retrieval (interrupts and reg properties) there is
-> no predefined order for these resources in the platform dev resource
-> table. Also don't expect the number of resource to be always 2.
-> 
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: stable <stable@vger.kernel.org> # 3.4
+Hi Rob,
 
-Gentle ping, after having resent the patch itself.
+Am Mittwoch, 12. März 2014, 09:28:46 schrieb Rob Herring:
+> On Wed, Mar 12, 2014 at 8:46 AM, Heiko Stübner <heiko@sntech.de> wrote:
+> > From: Heiko Stuebner <heiko.stuebner@bq.com>
+> > 
+> > This documents the binding for the gpio-charger power-supply.
+> 
+> How does this relate to what's documented in power_supply.txt and
+> charger-manager.txt? Both have references to USB charging. Doesn't
+> this need some connection to a battery node?
 
-> ---
->  drivers/usb/gadget/at91_udc.c | 10 ----------
->  1 file changed, 10 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
-> index cea8c20a1425..1926925a52a9 100644
-> --- a/drivers/usb/gadget/at91_udc.c
-> +++ b/drivers/usb/gadget/at91_udc.c
-> @@ -1709,16 +1709,6 @@ static int at91udc_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  	}
->  
-> -	if (pdev->num_resources != 2) {
-> -		DBG("invalid num_resources\n");
-> -		return -ENODEV;
-> -	}
-> -	if ((pdev->resource[0].flags != IORESOURCE_MEM)
-> -			|| (pdev->resource[1].flags != IORESOURCE_IRQ)) {
-> -		DBG("invalid resource type\n");
-> -		return -ENODEV;
-> -	}
-> -
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!res)
->  		return -ENXIO;
-> 
+Yep, the gpio-charger takes the position of the "some,usb-charger" from 
+power_supply.txt .
+
+       usb_charger: charger {
+               compatible = "gpio-charger";
+               charger-type = "usb-sdp";
+               gpios = <&gpf0 2 0 0 0>;
+       }
+
+       battery {
+               power-supplies = <&usb_charger>;
+       };
 
 
--- 
-Nicolas Ferre
+I guess the binding doc could reflect this.
+
+
+I haven't deeply looked into what charger-manager does, bit it seems to be a 
+layer on top of chargers and batteries, controlling them. So it seems to be 
+used with more intelligent components.
+
+My setup using gpio-charger for example is vastly simpler, it's just a gpio 
+reporting charger present (for gpio-charger), an adc reporting the battery 
+voltage and another gpio reporting the charging state (which is already 
+handled in generic-adc-battery, but needs a dt binding too).
+
+
+Heiko
+
+> > Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
+> > ---
+> > 
+> >  .../bindings/power_supply/gpio-charger.txt         | 23
+> >  ++++++++++++++++++++++ 1 file changed, 23 insertions(+)
+> >  create mode 100644
+> >  Documentation/devicetree/bindings/power_supply/gpio-charger.txt> 
+> > diff --git
+> > a/Documentation/devicetree/bindings/power_supply/gpio-charger.txt
+> > b/Documentation/devicetree/bindings/power_supply/gpio-charger.txt new
+> > file mode 100644
+> > index 0000000..fad87a4
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/power_supply/gpio-charger.txt
+> > @@ -0,0 +1,23 @@
+> > +gpio-charger
+> > +
+> > +Required properties :
+> > + - compatible : "gpio-charger"
+> > + - gpios : GPIO indicating the charger presence.
+> > +   See GPIO binding in bindings/gpio/gpio.txt .
+> > + - charger-type : power supply type, one of
+> > +     unknown
+> > +     battery
+> > +     ups
+> > +     mains
+> > +     usb-sdp (USB standard downstream port)
+> > +     usb-dcp (USB dedicated charging port)
+> > +     usb-cdp (USB charging downstream port)
+> > +     usb-aca (USB accessory charger adapter)
+> > +
+> > +Example:
+> > +
+> > +       charger {
+> > +               compatible = "gpio-charger";
+> > +               charger-type = "usb-sdp";
+> > +               gpios = <&gpf0 2 0 0 0>;
+> > +       }
+> > --
+> > 1.8.5.3
+
