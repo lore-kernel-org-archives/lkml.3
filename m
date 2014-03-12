@@ -1,141 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaCLWpS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 18:45:18 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54135 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaCLWpQ (ORCPT
+	id S1752410AbaCLWtx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 18:49:53 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:63633 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865AbaCLWtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 18:45:16 -0400
-Date: Wed, 12 Mar 2014 22:45:07 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Magnus Damm <damm@opensource.se>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-Id: <20140312224507.c7b9e7f45b1135ff6a7942c8@kernel.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__12_Mar_2014_22_45_07_+0000_+aYdc+uVZaEI9zP+"
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@kernel.org
-Subject: linux-next: manual merge of the clockevents tree with the sh tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 12 Mar 2014 18:49:51 -0400
+From: Grant Likely <grant.likely@linaro.org>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh@kernel.org>
+Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH] OF: kobj node lifecycle fixes
+Date: Wed, 12 Mar 2014 22:49:40 +0000
+Message-Id: <1394664580-23130-1-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Mar_2014_22_45_07_+0000_+aYdc+uVZaEI9zP+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
 
-Hi Daniel,
+After the move to having device nodes be proper kobjects the lifecycle
+of the node needs to be controlled better.
 
-Today's linux-next merge of the clockevents tree got conflicts between the =
-renesas tree and the clockevents tree.
+At first convert of_add_node() in the unflattened functions to
+of_init_node() which initializes the kobject so that of_node_get/put
+work correctly even before of_init is called.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Afterwards introduce of_node_is_initialized & of_node_is_attached that
+query the underlying kobject about the state (attached means kobj
+is visible in sysfs)
 
-diff --cc arch/arm/mach-shmobile/Kconfig
-index 5249ff0511a8,c1a9538fb6bb..000000000000
---- a/arch/arm/mach-shmobile/Kconfig
-+++ b/arch/arm/mach-shmobile/Kconfig
-@@@ -116,7 -137,7 +130,8 @@@ config ARCH_R8A779
-  	select MIGHT_HAVE_PCI
-  	select SH_CLK_CPG
-  	select RENESAS_IRQC
- +	select ARCH_DMA_ADDR_T_64BIT if ARM_LPAE
-+ 	select SYS_SUPPORTS_SH_CMT
- =20
-  config ARCH_R8A7791
-  	bool "R-Car M2 (R8A77910)"
-@@@ -126,7 -147,7 +141,8 @@@
-  	select MIGHT_HAVE_PCI
-  	select SH_CLK_CPG
-  	select RENESAS_IRQC
- +	select ARCH_DMA_ADDR_T_64BIT if ARM_LPAE
-+ 	select SYS_SUPPORTS_SH_CMT
- =20
-  config ARCH_EMEV2
-  	bool "Emma Mobile EV2"
-diff --cc drivers/clocksource/Kconfig
-index 6510ec4f45ff,4f754a972139..000000000000
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@@ -141,5 -141,46 +141,49 @@@ config VF_PIT_TIME
-  	help
-  	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
- =20
- +config CLKSRC_QCOM
- +	bool
-++
-+ config SYS_SUPPORTS_SH_CMT
-+         bool
-+=20
-+ config SYS_SUPPORTS_SH_MTU2
-+         bool
-+=20
-+ config SYS_SUPPORTS_SH_TMU
-+         bool
-+=20
-+ config SYS_SUPPORTS_EM_STI
-+         bool
-+=20
-+ config SH_TIMER_CMT
-+ 	bool "Renesas CMT timer driver" if COMPILE_TEST
-+ 	default SYS_SUPPORTS_SH_CMT
-+ 	help
-+ 	  This enables build of a clocksource and clockevent driver for
-+ 	  the Compare Match Timer (CMT) hardware available in 16/32/48-bit
-+ 	  variants on a wide range of Mobile and Automotive SoCs from Renesas.
-+=20
-+ config SH_TIMER_MTU2
-+ 	bool "Renesas MTU2 timer driver" if COMPILE_TEST
-+ 	default SYS_SUPPORTS_SH_MTU2
-+ 	help
-+ 	  This enables build of a clockevent driver for the Multi-Function
-+ 	  Timer Pulse Unit 2 (TMU2) hardware available on SoCs from Renesas.
-+ 	  This hardware comes with 16 bit-timer registers.
-+=20
-+ config SH_TIMER_TMU
-+ 	bool "Renesas TMU timer driver" if COMPILE_TEST
-+ 	default SYS_SUPPORTS_SH_TMU
-+ 	help
-+ 	  This enables build of a clocksource and clockevent driver for
-+ 	  the 32-bit Timer Unit (TMU) hardware available on a wide range
-+ 	  SoCs from Renesas.
-+=20
-+ config EM_TIMER_STI
-+ 	bool "Renesas STI timer driver" if COMPILE_TEST
-+ 	default SYS_SUPPORTS_EM_STI
-+ 	help
-+ 	  This enables build of a clocksource and clockevent driver for
-+ 	  the 48-bit System Timer (STI) hardware available on a SoCs
-+ 	  such as EMEV2 from former NEC Electronics.
+Using that make sure the lifecycle of the tree is correct at all
+times.
 
---Signature=_Wed__12_Mar_2014_22_45_07_+0000_+aYdc+uVZaEI9zP+
-Content-Type: application/pgp-signature
+Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+[grant.likely: moved of_node_init() calls, fixed up locking, and
+               dropped __of_populate() hunks]
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+I've reworked Pantelis' patch to work on my tree. Here's the result.
+I've already got this in my tree and will be pushing it out shortly.
 
-iQIcBAEBAgAGBQJTIONzAAoJELSic+t+oim9Rd4P/iIsUHwGiJFjEnJ2GgeaB50w
-axaaXOCCqtTYg5nJKjoPSrnyxiqscyxCklFM348Nj4YNlopHm6blI9rNqvY02Kzc
-fLaOwNDMrQ7OXwQ+BkvdeprW3Gg9T89OHd88ngC4sW2NOk7IQnUEK0/e/5NG0Ly8
-yTYlIe3PAuWpgAEJYT3chbSjZQPagiAEENDIH88a6nPw81YwcNT1NEirW/DPwePm
-5ou779m4bCr871Tb5wnj7x6JmEKM1EA6LFJr/C5SeN/zUE9TPpiuri/wXr2zbpkz
-gf7hAuE8jWq/UwcaxS3HUirh3r7S1Lw/jWc0fLjCRAMlXOE53IP50JVSI6yBuj1M
-ubJDaThZ/biYMsR/on4COy3loit8VfwZr+j6K2WGWsI+K9zwfe/Ii1N0BhUztXFF
-FdDC67DUlEJqcTCGVuLHZY8niTB256RzxjV0eI7SCCh/Ndk7RufIrjOxI/EJCb0Q
-VaU3JPpCeGIr8GVkGTNsZmxgx7YbnDJMvW/GpQ51sipBLqzVENPKpMAWjrs+dyMi
-m1Sw1sxEfiWoDmUlWKSb8swnBf+SebW00jKqYy96xizBwIDYIgLBUri0boqVHif+
-QyeS2VamKFiZHsdVGK11dAA1Twve8FNMbjkU/ZYgiNFG0vGyXyXP2QWjOCeS8TEI
-w1Jfjco97Sw07rBMmYhF
-=gSWH
------END PGP SIGNATURE-----
+g.
 
---Signature=_Wed__12_Mar_2014_22_45_07_+0000_+aYdc+uVZaEI9zP+--
+ drivers/of/base.c  | 35 ++++++++++++++++++++++++++---------
+ drivers/of/fdt.c   |  3 +--
+ drivers/of/pdt.c   |  3 +--
+ include/linux/of.h | 19 +++++++++++++++++++
+ 4 files changed, 47 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index ed3e70b84957..7083fad079a6 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -246,10 +246,19 @@ static int __of_node_add(struct device_node *np)
+ int of_node_add(struct device_node *np)
+ {
+ 	int rc = 0;
+-	kobject_init(&np->kobj, &of_node_ktype);
++
++	BUG_ON(!of_node_is_initialized(np));
++
++	/*
++	 * Grab the mutex here so that in a race condition between of_init() and
++	 * of_node_add(), node addition will still be consistent.
++	 */
+ 	mutex_lock(&of_aliases_mutex);
+ 	if (of_kset)
+ 		rc = __of_node_add(np);
++	else
++		/* This scenario may be perfectly valid, but report it anyway */
++		pr_info("of_node_add(%s) before of_init()\n", np->full_name);
+ 	mutex_unlock(&of_aliases_mutex);
+ 	return rc;
+ }
+@@ -259,10 +268,17 @@ static void of_node_remove(struct device_node *np)
+ {
+ 	struct property *pp;
+ 
+-	for_each_property_of_node(np, pp)
+-		sysfs_remove_bin_file(&np->kobj, &pp->attr);
++	BUG_ON(!of_node_is_initialized(np));
++
++	/* only remove properties if on sysfs */
++	if (of_node_is_attached(np)) {
++		for_each_property_of_node(np, pp)
++			sysfs_remove_bin_file(&np->kobj, &pp->attr);
++		kobject_del(&np->kobj);
++	}
+ 
+-	kobject_del(&np->kobj);
++	/* finally remove the kobj_init ref */
++	of_node_put(np);
+ }
+ #endif
+ 
+@@ -1631,6 +1647,10 @@ static int of_property_notify(int action, struct device_node *np,
+ {
+ 	struct of_prop_reconfig pr;
+ 
++	/* only call notifiers if the node is attached */
++	if (!of_node_is_attached(np))
++		return 0;
++
+ 	pr.dn = np;
+ 	pr.prop = prop;
+ 	return of_reconfig_notify(action, &pr);
+@@ -1682,11 +1702,8 @@ int of_add_property(struct device_node *np, struct property *prop)
+ 	if (rc)
+ 		return rc;
+ 
+-	/* at early boot, bail hear and defer setup to of_init() */
+-	if (!of_kset)
+-		return 0;
+-
+-	__of_add_property_sysfs(np, prop);
++	if (of_node_is_attached(np));
++		__of_add_property_sysfs(np, prop);
+ 
+ 	return rc;
+ }
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 96ad1ab7f9d6..70ccc36513e7 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -202,6 +202,7 @@ static void * unflatten_dt_node(struct boot_param_header *blob,
+ 				__alignof__(struct device_node));
+ 	if (allnextpp) {
+ 		char *fn;
++		of_node_init(np);
+ 		np->full_name = fn = ((char *)np) + sizeof(*np);
+ 		if (new_format) {
+ 			/* rebuild full path for new format */
+@@ -326,8 +327,6 @@ static void * unflatten_dt_node(struct boot_param_header *blob,
+ 			np->name = "<NULL>";
+ 		if (!np->type)
+ 			np->type = "<NULL>";
+-
+-		of_node_add(np);
+ 	}
+ 	while (tag == OF_DT_BEGIN_NODE || tag == OF_DT_NOP) {
+ 		if (tag == OF_DT_NOP)
+diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
+index e64fa3d3da5f..36b4035881b0 100644
+--- a/drivers/of/pdt.c
++++ b/drivers/of/pdt.c
+@@ -176,6 +176,7 @@ static struct device_node * __init of_pdt_create_node(phandle node,
+ 		return NULL;
+ 
+ 	dp = prom_early_alloc(sizeof(*dp));
++	of_node_init(dp);
+ 	of_pdt_incr_unique_id(dp);
+ 	dp->parent = parent;
+ 
+@@ -213,7 +214,6 @@ static struct device_node * __init of_pdt_build_tree(struct device_node *parent,
+ 		*nextp = &dp->allnext;
+ 
+ 		dp->full_name = of_pdt_build_full_name(dp);
+-		of_node_add(dp);
+ 
+ 		dp->child = of_pdt_build_tree(dp,
+ 				of_pdt_prom_ops->getchild(node), nextp);
+@@ -244,7 +244,6 @@ void __init of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops)
+ 	of_allnodes->path_component_name = "";
+ #endif
+ 	of_allnodes->full_name = "/";
+-	of_node_add(of_allnodes);
+ 
+ 	nextp = &of_allnodes->allnext;
+ 	of_allnodes->child = of_pdt_build_tree(of_allnodes,
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 257994a420f3..a8b9dad90c64 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -76,6 +76,25 @@ struct of_phandle_args {
+ 
+ extern int of_node_add(struct device_node *node);
+ 
++/* initialize a node */
++extern struct kobj_type of_node_ktype;
++static inline void of_node_init(struct device_node *node)
++{
++	kobject_init(&node->kobj, &of_node_ktype);
++}
++
++/* true when node is initialized */
++static inline int of_node_is_initialized(struct device_node *node)
++{
++	return node && node->kobj.state_initialized;
++}
++
++/* true when node is attached (i.e. present on sysfs) */
++static inline int of_node_is_attached(struct device_node *node)
++{
++	return node && node->kobj.state_in_sysfs;
++}
++
+ #ifdef CONFIG_OF_DYNAMIC
+ extern struct device_node *of_node_get(struct device_node *node);
+ extern void of_node_put(struct device_node *node);
+-- 
+1.8.3.2
+
