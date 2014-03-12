@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694AbaCLIVI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 04:21:08 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:33926 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756528AbaCLIVE (ORCPT
+	id S1756711AbaCLI0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 04:26:19 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51708 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756073AbaCLI0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 04:21:04 -0400
-Date: Wed, 12 Mar 2014 09:21:00 +0100
-From: Christian Riesch <christian.riesch@omicron.at>
-To: Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        =?UTF-8?Q?Stefan_S=C3=B8rensen?= <stefan.sorensen@spectralink.com>
-Subject: Re: [PATCH RFC net-next v1 0/9] ptp: dynamic pin control
-Message-ID: <D4F856CB7308D0C94855B452@[172.22.2.41]>
-In-Reply-To: <cover.1394307303.git.richardcochran@gmail.com>
-References: <cover.1394307303.git.richardcochran@gmail.com>
-X-Mailer: Mulberry/4.0.8 (Win32)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
+	Wed, 12 Mar 2014 04:26:17 -0400
+X-AuditID: 9c93017d-b7c89ae000006ae1-31-53201a269c64
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <js1304@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christian Casteyde <casteyde.christian@free.fr>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [RESEND PATCH] slub: fix high order page allocation problem with  __GFP_NOFAIL
+Date: Wed, 12 Mar 2014 17:26:20 +0900
+Message-Id: <1394612780-8033-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+SLUB already try to allocate high order page with clearing __GFP_NOFAIL.
+But, when allocating shadow page for kmemcheck, it missed clearing
+the flag. This trigger WARN_ON_ONCE() reported by Christian Casteyde.
 
---On March 08, 2014 20:42 +0100 Richard Cochran <richardcochran@gmail.com> 
-wrote:
+https://bugzilla.kernel.org/show_bug.cgi?id=65991
+https://lkml.org/lkml/2013/12/3/764
 
-> This patch series introduces a way of changing the auxiliary PTP
-> Hardware Clock functions (periodic output signals and time stamping
-> external signals) at run time. In the past on the netdev list, we have
-> discussed other ways to handle this, such as module parameters and
-> ethtool. This series implements a new PHC ioctl because that is the
-> most natural way. Users already activate the auxiliary functions via
-> the ioctls. The sysfs interface has also been expanded so that the pin
-> configuration can be programmed using shell scripts.
+This patch fix this situation by using same allocation flag as original
+allocation.
 
-I did a few tests on one of my boards, everything works so far! Thanks for 
-the patchset, I like it!
+Reported-by: Christian Casteyde <casteyde.christian@free.fr>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-> The first patch adds the new ioctls. The PHC subsystem does most of
-> the work of maintaining the function-to-pin mapping. Drivers will only
-> need to allocate and initialize a pin configuration table and also
-> provide a new method that validates a particular assignment.
->
-> Patches 5 and 6 just clean up a couple of issues in the phyter driver,
-> and the remaining patches actually hook the phyter's pins into the new
-> system.
->
-> Comments and questions are most welcome.
-
-Do you think it is possible to extend this in the future, e.g. for 
-selecting the polarity of periodic output signals or for time stamping of 
-external signals (rising edge/falling edge), or duty cycles of the periodic 
-signal other than 50%? How could this be done? Using the reserved fields in 
-struct ptp_pin_desc?
-
-Do you think the concept allows an extension for single pulse output, e.g. 
-programming a pin to output a single pulse at a given time, as supported by 
-the DP83640?
-
-If several DP83640 are connected together with the calibration function, 
-only the GPIOs of the master device can be used, right? I guess this could 
-also be extended in the future to use the GPIOs of all DP83640, right? Or 
-do you see a problem with your concept here?
-
-Best regards,
-Christian
+diff --git a/mm/slub.c b/mm/slub.c
+index 3508ede..d43b063 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1348,11 +1348,12 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 	page = alloc_slab_page(alloc_gfp, node, oo);
+ 	if (unlikely(!page)) {
+ 		oo = s->min;
++		alloc_gfp = flags;
+ 		/*
+ 		 * Allocation may have failed due to fragmentation.
+ 		 * Try a lower order alloc if possible
+ 		 */
+-		page = alloc_slab_page(flags, node, oo);
++		page = alloc_slab_page(alloc_gfp, node, oo);
+ 
+ 		if (page)
+ 			stat(s, ORDER_FALLBACK);
+@@ -1362,7 +1363,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
+ 		int pages = 1 << oo_order(oo);
+ 
+-		kmemcheck_alloc_shadow(page, oo_order(oo), flags, node);
++		kmemcheck_alloc_shadow(page, oo_order(oo), alloc_gfp, node);
+ 
+ 		/*
+ 		 * Objects from caches that have a constructor don't get
+-- 
+1.7.9.5
 
