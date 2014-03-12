@@ -1,327 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652AbaCLQVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 12:21:12 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:43784 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755616AbaCLQVF (ORCPT
+	id S1755680AbaCLQVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 12:21:21 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:32842 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755626AbaCLQVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 12:21:05 -0400
-From: T Makphaibulchoke <tmac@hp.com>
-To: tytso@mit.edu, adilger.kernel@dilger.ca, viro@zeniv.linux.org.uk,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Cc: aswin@hp.com, T Makphaibulchoke <tmac@hp.com>
-Subject: [PATCH v5 RESEND 1/3] fs/mbcache.c change block and index hash chain to hlist_bl_node
-Date: Wed, 12 Mar 2014 10:19:52 -0600
-Message-Id: <1394641194-65713-2-git-send-email-tmac@hp.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1394641194-65713-1-git-send-email-tmac@hp.com>
-References: <1374108934-50550-1-git-send-email-tmac@hp.com>
- <1394641194-65713-1-git-send-email-tmac@hp.com>
+	Wed, 12 Mar 2014 12:21:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <7a13aeea-2190-4922-81cf-2072fe6c2fbe@email.android.com>
+References: <cover.1394575968.git.luto@amacapital.net> <531FEA69.7050107@zytor.com>
+ <CALCETrVyR4GmLZ-yzPCL8xGZOZkRtPkQUcqQ=nzcRqG_Yp60wg@mail.gmail.com> <7a13aeea-2190-4922-81cf-2072fe6c2fbe@email.android.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Mar 2014 09:20:50 -0700
+Message-ID: <CALCETrWAz=gVWpsCTcy=Y=Bh7PL9iPwGgUbUsBkMbsiyh3hyYQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] x86: Relocate the compat vdso per process
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes each mb_cache's both block and index hash chains from
-regular linked list to hlist_bl_node, which contains a built-in lock.  This is
-the first step in decoupling of locks serializing accesses to mb_cache global
-data and each mb_cache_entry local data.
+On Tue, Mar 11, 2014 at 11:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> There is one sensible address: end of address space perhaps minus some small offset.  Unlikely to be used by anything specific.
 
-Signed-off-by: T. Makphaibulchoke <tmac@hp.com>
----
- fs/mbcache.c            | 117 ++++++++++++++++++++++++++++++++----------------
- include/linux/mbcache.h |  12 ++---
- 2 files changed, 85 insertions(+), 44 deletions(-)
+Meh.  The compat vdso logic will end up being either:
 
-diff --git a/fs/mbcache.c b/fs/mbcache.c
-index e519e45..55db0da 100644
---- a/fs/mbcache.c
-+++ b/fs/mbcache.c
-@@ -34,9 +34,9 @@
- #include <linux/mm.h>
- #include <linux/slab.h>
- #include <linux/sched.h>
--#include <linux/init.h>
-+#include <linux/list_bl.h>
- #include <linux/mbcache.h>
--
-+#include <linux/init.h>
- 
- #ifdef MB_CACHE_DEBUG
- # define mb_debug(f...) do { \
-@@ -87,21 +87,38 @@ static LIST_HEAD(mb_cache_lru_list);
- static DEFINE_SPINLOCK(mb_cache_spinlock);
- 
- static inline int
--__mb_cache_entry_is_hashed(struct mb_cache_entry *ce)
-+__mb_cache_entry_is_block_hashed(struct mb_cache_entry *ce)
- {
--	return !list_empty(&ce->e_block_list);
-+	return !hlist_bl_unhashed(&ce->e_block_list);
- }
- 
- 
--static void
--__mb_cache_entry_unhash(struct mb_cache_entry *ce)
-+static inline void
-+__mb_cache_entry_unhash_block(struct mb_cache_entry *ce)
- {
--	if (__mb_cache_entry_is_hashed(ce)) {
--		list_del_init(&ce->e_block_list);
--		list_del(&ce->e_index.o_list);
--	}
-+	if (__mb_cache_entry_is_block_hashed(ce))
-+		hlist_bl_del_init(&ce->e_block_list);
-+}
-+
-+static inline int
-+__mb_cache_entry_is_index_hashed(struct mb_cache_entry *ce)
-+{
-+	return !hlist_bl_unhashed(&ce->e_index.o_list);
- }
- 
-+static inline void
-+__mb_cache_entry_unhash_index(struct mb_cache_entry *ce)
-+{
-+	if (__mb_cache_entry_is_index_hashed(ce))
-+		hlist_bl_del_init(&ce->e_index.o_list);
-+}
-+
-+static inline void
-+__mb_cache_entry_unhash(struct mb_cache_entry *ce)
-+{
-+	__mb_cache_entry_unhash_index(ce);
-+	__mb_cache_entry_unhash_block(ce);
-+}
- 
- static void
- __mb_cache_entry_forget(struct mb_cache_entry *ce, gfp_t gfp_mask)
-@@ -125,7 +142,7 @@ __mb_cache_entry_release_unlock(struct mb_cache_entry *ce)
- 		ce->e_used -= MB_CACHE_WRITER;
- 	ce->e_used--;
- 	if (!(ce->e_used || ce->e_queued)) {
--		if (!__mb_cache_entry_is_hashed(ce))
-+		if (!__mb_cache_entry_is_block_hashed(ce))
- 			goto forget;
- 		mb_assert(list_empty(&ce->e_lru_list));
- 		list_add_tail(&ce->e_lru_list, &mb_cache_lru_list);
-@@ -221,18 +238,18 @@ mb_cache_create(const char *name, int bucket_bits)
- 	cache->c_name = name;
- 	atomic_set(&cache->c_entry_count, 0);
- 	cache->c_bucket_bits = bucket_bits;
--	cache->c_block_hash = kmalloc(bucket_count * sizeof(struct list_head),
--	                              GFP_KERNEL);
-+	cache->c_block_hash = kmalloc(bucket_count *
-+		sizeof(struct hlist_bl_head), GFP_KERNEL);
- 	if (!cache->c_block_hash)
- 		goto fail;
- 	for (n=0; n<bucket_count; n++)
--		INIT_LIST_HEAD(&cache->c_block_hash[n]);
--	cache->c_index_hash = kmalloc(bucket_count * sizeof(struct list_head),
--				      GFP_KERNEL);
-+		INIT_HLIST_BL_HEAD(&cache->c_block_hash[n]);
-+	cache->c_index_hash = kmalloc(bucket_count *
-+		sizeof(struct hlist_bl_head), GFP_KERNEL);
- 	if (!cache->c_index_hash)
- 		goto fail;
- 	for (n=0; n<bucket_count; n++)
--		INIT_LIST_HEAD(&cache->c_index_hash[n]);
-+		INIT_HLIST_BL_HEAD(&cache->c_index_hash[n]);
- 	cache->c_entry_cache = kmem_cache_create(name,
- 		sizeof(struct mb_cache_entry), 0,
- 		SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD, NULL);
-@@ -364,10 +381,13 @@ mb_cache_entry_alloc(struct mb_cache *cache, gfp_t gfp_flags)
- 			return NULL;
- 		atomic_inc(&cache->c_entry_count);
- 		INIT_LIST_HEAD(&ce->e_lru_list);
--		INIT_LIST_HEAD(&ce->e_block_list);
-+		INIT_HLIST_BL_NODE(&ce->e_block_list);
-+		INIT_HLIST_BL_NODE(&ce->e_index.o_list);
- 		ce->e_cache = cache;
- 		ce->e_queued = 0;
- 	}
-+	ce->e_block_hash_p = &cache->c_block_hash[0];
-+	ce->e_index_hash_p = &cache->c_index_hash[0];
- 	ce->e_used = 1 + MB_CACHE_WRITER;
- 	return ce;
- }
-@@ -393,25 +413,32 @@ mb_cache_entry_insert(struct mb_cache_entry *ce, struct block_device *bdev,
- {
- 	struct mb_cache *cache = ce->e_cache;
- 	unsigned int bucket;
--	struct list_head *l;
-+	struct hlist_bl_node *l;
- 	int error = -EBUSY;
-+	struct hlist_bl_head *block_hash_p;
-+	struct hlist_bl_head *index_hash_p;
-+	struct mb_cache_entry *lce;
- 
-+	mb_assert(ce);
- 	bucket = hash_long((unsigned long)bdev + (block & 0xffffffff), 
- 			   cache->c_bucket_bits);
-+	block_hash_p = &cache->c_block_hash[bucket];
- 	spin_lock(&mb_cache_spinlock);
--	list_for_each_prev(l, &cache->c_block_hash[bucket]) {
--		struct mb_cache_entry *ce =
--			list_entry(l, struct mb_cache_entry, e_block_list);
--		if (ce->e_bdev == bdev && ce->e_block == block)
-+	hlist_bl_for_each_entry(lce, l, block_hash_p, e_block_list) {
-+		if (lce->e_bdev == bdev && lce->e_block == block)
- 			goto out;
- 	}
-+	mb_assert(!__mb_cache_entry_is_block_hashed(ce));
- 	__mb_cache_entry_unhash(ce);
- 	ce->e_bdev = bdev;
- 	ce->e_block = block;
--	list_add(&ce->e_block_list, &cache->c_block_hash[bucket]);
-+	ce->e_block_hash_p = block_hash_p;
- 	ce->e_index.o_key = key;
- 	bucket = hash_long(key, cache->c_bucket_bits);
--	list_add(&ce->e_index.o_list, &cache->c_index_hash[bucket]);
-+	index_hash_p = &cache->c_index_hash[bucket];
-+	ce->e_index_hash_p = index_hash_p;
-+	hlist_bl_add_head(&ce->e_index.o_list, index_hash_p);
-+	hlist_bl_add_head(&ce->e_block_list, block_hash_p);
- 	error = 0;
- out:
- 	spin_unlock(&mb_cache_spinlock);
-@@ -463,14 +490,16 @@ mb_cache_entry_get(struct mb_cache *cache, struct block_device *bdev,
- 		   sector_t block)
- {
- 	unsigned int bucket;
--	struct list_head *l;
-+	struct hlist_bl_node *l;
- 	struct mb_cache_entry *ce;
-+	struct hlist_bl_head *block_hash_p;
- 
- 	bucket = hash_long((unsigned long)bdev + (block & 0xffffffff),
- 			   cache->c_bucket_bits);
-+	block_hash_p = &cache->c_block_hash[bucket];
- 	spin_lock(&mb_cache_spinlock);
--	list_for_each(l, &cache->c_block_hash[bucket]) {
--		ce = list_entry(l, struct mb_cache_entry, e_block_list);
-+	hlist_bl_for_each_entry(ce, l, block_hash_p, e_block_list) {
-+		mb_assert(ce->e_block_hash_p == block_hash_p);
- 		if (ce->e_bdev == bdev && ce->e_block == block) {
- 			DEFINE_WAIT(wait);
- 
-@@ -489,7 +518,7 @@ mb_cache_entry_get(struct mb_cache *cache, struct block_device *bdev,
- 			finish_wait(&mb_cache_queue, &wait);
- 			ce->e_used += 1 + MB_CACHE_WRITER;
- 
--			if (!__mb_cache_entry_is_hashed(ce)) {
-+			if (!__mb_cache_entry_is_block_hashed(ce)) {
- 				__mb_cache_entry_release_unlock(ce);
- 				return NULL;
- 			}
-@@ -506,12 +535,14 @@ cleanup:
- #if !defined(MB_CACHE_INDEXES_COUNT) || (MB_CACHE_INDEXES_COUNT > 0)
- 
- static struct mb_cache_entry *
--__mb_cache_entry_find(struct list_head *l, struct list_head *head,
-+__mb_cache_entry_find(struct hlist_bl_node *l, struct hlist_bl_head *head,
- 		      struct block_device *bdev, unsigned int key)
- {
--	while (l != head) {
-+	while (l != NULL) {
- 		struct mb_cache_entry *ce =
--			list_entry(l, struct mb_cache_entry, e_index.o_list);
-+			hlist_bl_entry(l, struct mb_cache_entry,
-+				e_index.o_list);
-+		mb_assert(ce->e_index_hash_p == head);
- 		if (ce->e_bdev == bdev && ce->e_index.o_key == key) {
- 			DEFINE_WAIT(wait);
- 
-@@ -532,7 +563,7 @@ __mb_cache_entry_find(struct list_head *l, struct list_head *head,
- 			}
- 			finish_wait(&mb_cache_queue, &wait);
- 
--			if (!__mb_cache_entry_is_hashed(ce)) {
-+			if (!__mb_cache_entry_is_block_hashed(ce)) {
- 				__mb_cache_entry_release_unlock(ce);
- 				spin_lock(&mb_cache_spinlock);
- 				return ERR_PTR(-EAGAIN);
-@@ -562,12 +593,16 @@ mb_cache_entry_find_first(struct mb_cache *cache, struct block_device *bdev,
- 			  unsigned int key)
- {
- 	unsigned int bucket = hash_long(key, cache->c_bucket_bits);
--	struct list_head *l;
--	struct mb_cache_entry *ce;
-+	struct hlist_bl_node *l;
-+	struct mb_cache_entry *ce = NULL;
-+	struct hlist_bl_head *index_hash_p;
- 
-+	index_hash_p = &cache->c_index_hash[bucket];
- 	spin_lock(&mb_cache_spinlock);
--	l = cache->c_index_hash[bucket].next;
--	ce = __mb_cache_entry_find(l, &cache->c_index_hash[bucket], bdev, key);
-+	if (!hlist_bl_empty(index_hash_p)) {
-+		l = hlist_bl_first(index_hash_p);
-+		ce = __mb_cache_entry_find(l, index_hash_p, bdev, key);
-+	}
- 	spin_unlock(&mb_cache_spinlock);
- 	return ce;
- }
-@@ -597,12 +632,16 @@ mb_cache_entry_find_next(struct mb_cache_entry *prev,
- {
- 	struct mb_cache *cache = prev->e_cache;
- 	unsigned int bucket = hash_long(key, cache->c_bucket_bits);
--	struct list_head *l;
-+	struct hlist_bl_node *l;
- 	struct mb_cache_entry *ce;
-+	struct hlist_bl_head *index_hash_p;
- 
-+	index_hash_p = &cache->c_index_hash[bucket];
-+	mb_assert(prev->e_index_hash_p == index_hash_p);
- 	spin_lock(&mb_cache_spinlock);
-+	mb_assert(!hlist_bl_empty(index_hash_p));
- 	l = prev->e_index.o_list.next;
--	ce = __mb_cache_entry_find(l, &cache->c_index_hash[bucket], bdev, key);
-+	ce = __mb_cache_entry_find(l, index_hash_p, bdev, key);
- 	__mb_cache_entry_release_unlock(prev);
- 	return ce;
- }
-diff --git a/include/linux/mbcache.h b/include/linux/mbcache.h
-index 5525d37..6a392e7 100644
---- a/include/linux/mbcache.h
-+++ b/include/linux/mbcache.h
-@@ -3,19 +3,21 @@
- 
-   (C) 2001 by Andreas Gruenbacher, <a.gruenbacher@computer.org>
- */
--
- struct mb_cache_entry {
- 	struct list_head		e_lru_list;
- 	struct mb_cache			*e_cache;
- 	unsigned short			e_used;
- 	unsigned short			e_queued;
-+	atomic_t			e_refcnt;
- 	struct block_device		*e_bdev;
- 	sector_t			e_block;
--	struct list_head		e_block_list;
-+	struct hlist_bl_node		e_block_list;
- 	struct {
--		struct list_head	o_list;
-+		struct hlist_bl_node	o_list;
- 		unsigned int		o_key;
- 	} e_index;
-+	struct hlist_bl_head		*e_block_hash_p;
-+	struct hlist_bl_head		*e_index_hash_p;
- };
- 
- struct mb_cache {
-@@ -25,8 +27,8 @@ struct mb_cache {
- 	int				c_max_entries;
- 	int				c_bucket_bits;
- 	struct kmem_cache		*c_entry_cache;
--	struct list_head		*c_block_hash;
--	struct list_head		*c_index_hash;
-+	struct hlist_bl_head		*c_block_hash;
-+	struct hlist_bl_head		*c_index_hash;
- };
- 
- /* Functions on caches */
+1) Try to map at the preferred address.  If it fails, don't map it.
+Force ASLR off for the vdso
+
+2) Try to map at the preferred address.  If it fails, map somewhere
+else and relocate.
+
+3) Try to map at the preferred address unless ASLR is on.  If it fails
+or ASLR is on, map somewhere else and relocate.
+
+since the whole point is to simplify this stuff, I don't really like
+any of these choices.  That's a lot of code to save 4k per process,
+and when it breaks (which I suspect it will the next time anyone
+touches the address space layout) so one will notice that 4k gets
+wasted again.
+
+>
+> On March 11, 2014 11:09:11 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
+>>On Mar 11, 2014 10:02 PM, "H. Peter Anvin" <hpa@zytor.com> wrote:
+>>>
+>>> On 03/11/2014 03:15 PM, Andy Lutomirski wrote:
+>>>>
+>>>> The meat of this patch series is in patch 1.  Patch 2 is split out
+>>for
+>>>> improved bisectability.
+>>>>
+>>>> Changes from v1: Split into two patches and fixed a comment.
+>>>>
+>>>> Andy Lutomirski (2):
+>>>>    x86: Dynamically relocate the compat vdso
+>>>>    x86_32: Remove user bit from identity map PDE
+>>>>
+>>>>   Documentation/kernel-parameters.txt  |  18 +++-
+>>>>   arch/x86/Kconfig                     |  24 +++--
+>>>>   arch/x86/include/asm/elf.h           |   4 -
+>>>>   arch/x86/include/asm/fixmap.h        |   8 --
+>>>>   arch/x86/include/asm/pgtable_types.h |   7 +-
+>>>>   arch/x86/include/asm/vdso.h          |   5 +-
+>>>>   arch/x86/vdso/vdso-layout.lds.S      |   2 +-
+>>>>   arch/x86/vdso/vdso32-setup.c         | 173
+>>++++++++++++++++-------------------
+>>>>   arch/x86/vdso/vdso32/vdso32.lds.S    |   2 -
+>>>>   9 files changed, 111 insertions(+), 132 deletions(-)
+>>>>
+>>>
+>>> Why per process?  *If* we have compat vdso turned on, can't we just
+>>put it in one place system-wide?
+>>
+>>My machine has ASLR turned on, and the vma really does end up
+>>somewhere different each time.  I suspect that most (?) ASLR users
+>>would happily accept the 4k hit to keep ASLR working fully.
+>>
+>>Another downside of trying to have a common address for all processes:
+>>someone needs to figure out what that address is.  What happens if an
+>>ELF binary (or interpreter) wants to load something at the chosen
+>>address?
+>>
+>>--Andy
+>
+> --
+> Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+
+
+
 -- 
-1.7.11.3
-
+Andy Lutomirski
+AMA Capital Management, LLC
