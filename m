@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305AbaCLRPC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 13:15:02 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:48274 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145AbaCLRO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 13:14:58 -0400
-Date: Wed, 12 Mar 2014 17:14:52 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "DCG_UPD_stlinux_kernel@list.st.com" 
-	<DCG_UPD_stlinux_kernel@list.st.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH v2 1/3] ata: ahci_st: Provide DT bindings for ST's SATA
- implementation
-Message-ID: <20140312171452.GE22450@lee--X1>
-References: <1393328481-7251-1-git-send-email-lee.jones@linaro.org>
- <20140312114257.GA17461@e106331-lin.cambridge.arm.com>
- <20140312124835.GA22450@lee--X1>
- <7613177.7hd4IoKUr4@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7613177.7hd4IoKUr4@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755523AbaCLRRm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 13:17:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751674AbaCLRRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 13:17:38 -0400
+From: Hans de Goede <hdegoede@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com, Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH v2 3/4] irqchip: sun4i: Fix a comment about mask register initialization
+Date: Wed, 12 Mar 2014 18:17:06 +0100
+Message-Id: <1394644627-12315-4-git-send-email-hdegoede@redhat.com>
+In-Reply-To: <1394644627-12315-1-git-send-email-hdegoede@redhat.com>
+References: <1394644627-12315-1-git-send-email-hdegoede@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > +This binding describes a SATA device.
-> > > > +
-> > > > +Required properties:
-> > > > + - compatible         : Must be "st,ahci"
-> > > 
-> > > Is there not a more specific name? This is awfully generic.
-> > 
-> > There isn't one. ST only have one AHCI driver. The driver is named as
-> > generically.
-> 
-> If it is this generic, can't you use the completely generic
-> ahci-platform driver and add a "generic-ahci" compatible string
-> to that?
+The comment was claiming that we were masking all irqs, while the code actually
+*un*masks all of them.
 
-It pretty much does. The only 'special' functionality we handle in
-the driver are resets and configuring the OOB. However, both are
-required.
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/irqchip/irq-sun4i.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+index 5c25048..8a2fbee 100644
+--- a/drivers/irqchip/irq-sun4i.c
++++ b/drivers/irqchip/irq-sun4i.c
+@@ -109,7 +109,7 @@ static int __init sun4i_of_init(struct device_node *node,
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(1));
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(2));
+ 
+-	/* Mask all the interrupts */
++	/* Unmask all the interrupts, ENABLE_REG(x) is used for masking */
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(0));
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(1));
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(2));
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.0
+
