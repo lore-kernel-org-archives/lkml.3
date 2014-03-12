@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaCLM75 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 08:59:57 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:55428 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbaCLM7z (ORCPT
+	id S1753539AbaCLNAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:00:18 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36661 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900AbaCLNAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 08:59:55 -0400
-Message-ID: <53205A46.6000304@gmail.com>
-Date: Wed, 12 Mar 2014 13:59:50 +0100
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, nicolas.ferre@atmel.com
-CC: plagnioj@jcrosoft.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        gregory.clement@free-electrons.com, devicetree@vger.kernel.org,
-        thomas.petazzoni@free-electrons.com,
-        alexandre.belloni@free-electrons.com
-Subject: Re: [PATCH v5 3/9] at91: pinctrl: don't request GPIOs used for interrupts
- but lock them as IRQ
-References: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com> <1393841162-25339-4-git-send-email-jjhiblot@traphandler.com>
-In-Reply-To: <1393841162-25339-4-git-send-email-jjhiblot@traphandler.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 12 Mar 2014 09:00:16 -0400
+Date: Wed, 12 Mar 2014 13:00:09 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-Id: <20140312130009.2c05e3aea858358daacfbba0@kernel.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__12_Mar_2014_13_00_09_+0000_jgn8=AK7rWkd8O7t"
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@kernel.org
+Subject: linux-next: manual merge of the pci tree with the pci-current tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi JJ,
+--Signature=_Wed__12_Mar_2014_13_00_09_+0000_jgn8=AK7rWkd8O7t
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-IIRC this patch was necessary for the DM9000 device, which is not defined
-in this series anymore.
-And, correct me if I'm wrong, but there's still a discussion about how
-this should be fixed properly (https://lkml.org/lkml/2014/2/25/388).
+Hi Bjorn,
 
-As a result, shouldn't we remove this patch from this series ?
+Today's linux-next merge of the pci tree got a conflict in drivers/pci/pci.=
+c between commit 5f4fe7ad54087 ("PCI: Enable INTx in pci_reenable_device() =
+only when MSI/MSI-X not enabled") from the pci-current tree and commit 1e25=
+71a7813836 ("PCI: Enable INTx if BIOS left them disabled") from the pci tre=
+e.
 
-Best Regards,
+I fixed it up resulting in the contents of pci-current and can carry the fi=
+x as necessary (no action is required).
 
-Boris
+--Signature=_Wed__12_Mar_2014_13_00_09_+0000_jgn8=AK7rWkd8O7t
+Content-Type: application/pgp-signature
 
-Le 03/03/2014 11:05, Jean-Jacques Hiblot a écrit :
-> During the xlate stage of the DT interrupt parsing, the at91 pinctrl driver
-> requests the GPIOs that are described as interrupt sources. This prevents a
-> driver to request the gpio later to get its electrical value.
-> This patch replaces the gpio_request with a gpio_lock_as_irq to prevent the
-> gpio to be set as an ouput while allowing a subsequent gpio_request to succeed
->
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> ---
->   drivers/pinctrl/pinctrl-at91.c | 5 ++---
->   1 file changed, 2 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-> index d990e33..db55b96 100644
-> --- a/drivers/pinctrl/pinctrl-at91.c
-> +++ b/drivers/pinctrl/pinctrl-at91.c
-> @@ -1478,18 +1478,17 @@ static int at91_gpio_irq_domain_xlate(struct irq_domain *d,
->   {
->   	struct at91_gpio_chip *at91_gpio = d->host_data;
->   	int ret;
-> -	int pin = at91_gpio->chip.base + intspec[0];
->   
->   	if (WARN_ON(intsize < 2))
->   		return -EINVAL;
->   	*out_hwirq = intspec[0];
->   	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
->   
-> -	ret = gpio_request(pin, ctrlr->full_name);
-> +	ret = gpio_lock_as_irq(&at91_gpio->chip, intspec[0]);
->   	if (ret)
->   		return ret;
->   
-> -	ret = gpio_direction_input(pin);
-> +	ret = at91_gpio_direction_input(&at91_gpio->chip, intspec[0]);
->   	if (ret)
->   		return ret;
->   
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTIFpZAAoJELSic+t+oim97UsP/R/Bd9iM48j9ODnpwtl1YPVX
+95l3pspq9ZMKYm+1dMJGwOvqKoe3P2P2QKjThWD6DomPB3vVl/uz1jrO21bpK9VY
+1V4HK/3h0RS8i8XKgWMHU9g0wqqQmhBBEqHZ88nRp4Yc8SABIQXZ5H9GQBcPDkYa
+rvxxoBKyWuT3uDursPGATFI+LjaP6DtlkWRfMAyfJhXvYwpkGDLN42YA+r9oQkaY
+M0eBCjbYsCtUuQnKPJJxa/FkYjyXeU4p4AXfRhAjNGH3y//vSfXQSTVeqO+UW89n
+EhXaytNvF8l8vY6Nx5mhLmlUIfRzPA4207CMYnmngk/SFQDD2ScaG3p2dmETzAoI
+FfKmrGavT9Sgm5BijqWy1dB48dtIJ6U3RzT+/vYsx3SdR8hnl/XYHZ+JAIDdA4qL
+0QM40gqUuYufshjkiEne8Nmg9M4JcUxwzE4zL2dXp+8GajMhDXUxayoVyvZdEyCB
+yxeDZ3JqrOftS9LtH6ZOhtvgPF7tmI0G9aLJZ1q6DUgbggLmZFWmeNc370To0YBc
+DXgNo6nW+o+OAef+XvT+AycsUpuJ4B+9AK9G+xpSsXdyd9TS5dUWjgvOcddHB5WR
+k74c5zpdN7A//+620Ysc1DDpSitljI4mMTADcyjkQpNOsAiiX0jFoWDCHK7JyxN2
+4EG4gBtD9C2AQh8lVyFF
+=AlS5
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Mar_2014_13_00_09_+0000_jgn8=AK7rWkd8O7t--
