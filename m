@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956AbaCLREe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 13:04:34 -0400
-Received: from smtprelay0194.hostedemail.com ([216.40.44.194]:42582 "EHLO
+	id S1754538AbaCLREk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 13:04:40 -0400
+Received: from smtprelay0032.hostedemail.com ([216.40.44.32]:56255 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751168AbaCLREc (ORCPT
+	by vger.kernel.org with ESMTP id S1751168AbaCLREf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 13:04:32 -0400
+	Wed, 12 Mar 2014 13:04:35 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:69:355:379:541:960:973:988:989:1260:1345:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3866:3867:4605:5007:6261:6642:10004:10026:10848:11657:11658:11914:12043:12291:12517:12519:12555:12679:12683:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bee71_7e2a837c4194c
-X-Filterd-Recvd-Size: 2096
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:4321:4605:5007:6261:10004:10026:10848:11026:11473:11658:11914:12043:12296:12517:12519:12555:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rice91_7eff117898f57
+X-Filterd-Recvd-Size: 2122
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-zigbee-devel@lists.sourceforge.net,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, tipc-discussion@lists.sourceforge.net
-Subject: [PATCH net-next 0/6] net: Convert uses of __constant_<foo> to <foo>
-Date: Wed, 12 Mar 2014 10:04:14 -0700
-Message-Id: <cover.1394643455.git.joe@perches.com>
+Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net-next 1/6] 8021q: Convert uses of __constant_<foo> to <foo>
+Date: Wed, 12 Mar 2014 10:04:15 -0700
+Message-Id: <c44725e4804d6e64f44263bfcb4d4c3d2d057db4.1394643455.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1394643455.git.joe@perches.com>
+References: <cover.1394643455.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches (6):
-  8021q: Convert uses of __constant_<foo> to <foo>
-  bluetooth: Convert uses of __constant_<foo> to <foo>
-  net: Convert uses of __constant_<foo> to <foo>
-  ieee802154: Convert uses of __constant_<foo> to <foo>
-  netfilter: Convert uses of __constant_<foo> to <foo>
-  tipc: Convert uses of __constant_<foo> to <foo>
+The use of __constant_<foo> has been unnecessary for quite awhile now.
 
- net/8021q/vlan.h               |  4 +-
- net/8021q/vlan_netlink.c       |  4 +-
- net/bluetooth/a2mp.c           |  4 +-
- net/bluetooth/hci_conn.c       | 26 ++++++------
- net/bluetooth/hci_core.c       |  2 +-
- net/bluetooth/hci_event.c      |  6 +--
- net/bluetooth/hci_sock.c       | 16 ++++----
- net/bluetooth/l2cap_core.c     | 90 +++++++++++++++++++++---------------------
- net/bluetooth/l2cap_sock.c     |  6 +--
- net/bluetooth/mgmt.c           | 26 ++++++------
- net/bluetooth/rfcomm/core.c    |  4 +-
- net/bluetooth/sco.c            | 10 ++---
- net/bluetooth/smp.c            |  2 +-
- net/core/dev.c                 | 10 ++---
- net/core/flow_dissector.c      | 14 +++----
- net/ieee802154/6lowpan_rtnl.c  |  2 +-
- net/ieee802154/af_ieee802154.c |  2 +-
- net/netfilter/ipset/pfxlen.c   |  4 +-
- net/netfilter/xt_AUDIT.c       |  4 +-
- net/tipc/bearer.c              |  2 +-
- 20 files changed, 119 insertions(+), 119 deletions(-)
+Make these uses consistent with the rest of the kernel.
 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ net/8021q/vlan.h         | 4 ++--
+ net/8021q/vlan_netlink.c | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/net/8021q/vlan.h b/net/8021q/vlan.h
+index 5704ed9..9d010a09 100644
+--- a/net/8021q/vlan.h
++++ b/net/8021q/vlan.h
+@@ -38,9 +38,9 @@ struct vlan_info {
+ static inline unsigned int vlan_proto_idx(__be16 proto)
+ {
+ 	switch (proto) {
+-	case __constant_htons(ETH_P_8021Q):
++	case htons(ETH_P_8021Q):
+ 		return VLAN_PROTO_8021Q;
+-	case __constant_htons(ETH_P_8021AD):
++	case htons(ETH_P_8021AD):
+ 		return VLAN_PROTO_8021AD;
+ 	default:
+ 		BUG();
+diff --git a/net/8021q/vlan_netlink.c b/net/8021q/vlan_netlink.c
+index c7e634a..8ac8a5c 100644
+--- a/net/8021q/vlan_netlink.c
++++ b/net/8021q/vlan_netlink.c
+@@ -56,8 +56,8 @@ static int vlan_validate(struct nlattr *tb[], struct nlattr *data[])
+ 
+ 	if (data[IFLA_VLAN_PROTOCOL]) {
+ 		switch (nla_get_be16(data[IFLA_VLAN_PROTOCOL])) {
+-		case __constant_htons(ETH_P_8021Q):
+-		case __constant_htons(ETH_P_8021AD):
++		case htons(ETH_P_8021Q):
++		case htons(ETH_P_8021AD):
+ 			break;
+ 		default:
+ 			return -EPROTONOSUPPORT;
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
