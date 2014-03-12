@@ -1,61 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaCLJqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:46:31 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56325 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480AbaCLJq1 (ORCPT
+	id S1753908AbaCLJqu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 05:46:50 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60599 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753546AbaCLJn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:46:27 -0400
-Date: Wed, 12 Mar 2014 09:46:21 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/5] mfd: add bcm590xx pmu driver
-Message-ID: <20140312094621.GH5672@lee--X1>
-References: <1394580837-8331-1-git-send-email-mporter@linaro.org>
- <1394580837-8331-3-git-send-email-mporter@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394580837-8331-3-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Mar 2014 05:43:57 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        b.brezillon@overkiz.com,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv5 4/9] ARM: at91: dt: sam9rl: Device Tree for the at91sam9rlek
+Date: Wed, 12 Mar 2014 10:43:40 +0100
+Message-Id: <1394617425-641-5-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1394617425-641-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1394617425-641-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Add a driver for the BCM590xx PMU multi-function devices. The driver
-> initially supports regmap initialization and instantiation of the
-> voltage regulator device function of the PMU.
-> 
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> ---
->  drivers/mfd/Kconfig          |  8 ++++
->  drivers/mfd/Makefile         |  1 +
->  drivers/mfd/bcm590xx.c       | 93 ++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/bcm590xx.h | 31 +++++++++++++++
->  4 files changed, 133 insertions(+)
->  create mode 100644 drivers/mfd/bcm590xx.c
->  create mode 100644 include/linux/mfd/bcm590xx.h
+Add a device tree for the at91sam9rl-ek. For now it supports:
+ - MMC
+ - dbgu
+ - usart1
+ - watchdog
+ - nand
+ - leds
+ - buttons
 
-Ah, you fixed the nit.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/Makefile         |   2 +
+ arch/arm/boot/dts/at91sam9rlek.dts | 151 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 153 insertions(+)
+ create mode 100644 arch/arm/boot/dts/at91sam9rlek.dts
 
-Applied this one instead then.
-
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 6d1e43d46187..ce58477cfa33 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -29,6 +29,8 @@ dtb-$(CONFIG_ARCH_AT91) += at91sam9m10g45ek.dtb
+ dtb-$(CONFIG_ARCH_AT91) += pm9g45.dtb
+ # sam9n12
+ dtb-$(CONFIG_ARCH_AT91) += at91sam9n12ek.dtb
++# sam9rl
++dtb-$(CONFIG_ARCH_AT91) += at91sam9rlek.dtb
+ # sam9x5
+ dtb-$(CONFIG_ARCH_AT91) += at91-ariag25.dtb
+ dtb-$(CONFIG_ARCH_AT91) += at91-cosino_mega2560.dtb
+diff --git a/arch/arm/boot/dts/at91sam9rlek.dts b/arch/arm/boot/dts/at91sam9rlek.dts
+new file mode 100644
+index 000000000000..c3cec5d07648
+--- /dev/null
++++ b/arch/arm/boot/dts/at91sam9rlek.dts
+@@ -0,0 +1,151 @@
++/*
++ * at91sam9rlek.dts - Device Tree file for Atmel at91sam9rl reference board
++ *
++ *  Copyright (C) 2014  Alexandre Belloni <alexandre.belloni@free-electrons.com>
++ *
++ * Licensed under GPLv2 only
++ */
++/dts-v1/;
++#include "at91sam9rl.dtsi"
++
++/ {
++	model = "Atmel at91sam9rlek";
++	compatible = "atmel,at91sam9rlek", "atmel,at91sam9rl", "atmel,at91sam9";
++
++	chosen {
++		bootargs = "console=ttyS0,115200 rootfstype=ubifs root=ubi0:rootfs ubi.mtd=5 rw";
++	};
++
++	memory {
++		reg = <0x20000000 0x4000000>;
++	};
++
++	clocks {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		main_clock: clock {
++			compatible = "atmel,osc", "fixed-clock";
++			clock-frequency = <12000000>;
++		};
++	};
++
++	ahb {
++		nand0: nand@40000000 {
++			nand-bus-width = <8>;
++			nand-ecc-mode = "soft";
++			nand-on-flash-bbt = <1>;
++			status = "okay";
++
++			at91bootstrap@0 {
++				label = "at91bootstrap";
++				reg = <0x0 0x40000>;
++			};
++
++			bootloader@40000 {
++				label = "bootloader";
++				reg = <0x40000 0x80000>;
++			};
++
++			bootloaderenv@c0000 {
++				label = "bootloader env";
++				reg = <0xc0000 0xc0000>;
++			};
++
++			dtb@180000 {
++				label = "device tree";
++				reg = <0x180000 0x80000>;
++			};
++
++			kernel@200000 {
++				label = "kernel";
++				reg = <0x200000 0x600000>;
++			};
++
++			rootfs@800000 {
++				label = "rootfs";
++				reg = <0x800000 0x0f800000>;
++			};
++		};
++
++		apb {
++			mmc0: mmc@fffa4000 {
++				pinctrl-0 = <
++					&pinctrl_board_mmc0
++					&pinctrl_mmc0_clk
++					&pinctrl_mmc0_slot0_cmd_dat0
++					&pinctrl_mmc0_slot0_dat1_3>;
++				status = "okay";
++				slot@0 {
++					reg = <0>;
++					bus-width = <4>;
++					cd-gpios = <&pioA 15 GPIO_ACTIVE_HIGH>;
++				};
++			};
++
++			usart0: serial@fffb0000 {
++				pinctrl-0 = <
++					&pinctrl_usart0
++					&pinctrl_usart0_rts
++					&pinctrl_usart0_cts>;
++				status = "okay";
++			};
++
++			dbgu: serial@fffff200 {
++				status = "okay";
++			};
++
++			pinctrl@fffff400 {
++				mmc0 {
++					pinctrl_board_mmc0: mmc0-board {
++						atmel,pins =
++							<AT91_PIOA 15 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>;
++					};
++				};
++			};
++
++			watchdog@fffffd40 {
++				status = "okay";
++			};
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		ds1 {
++			label = "ds1";
++			gpios = <&pioD 15 GPIO_ACTIVE_LOW>;
++		};
++
++		ds2 {
++			label = "ds2";
++			gpios = <&pioD 16 GPIO_ACTIVE_LOW>;
++		};
++
++		ds3 {
++			label = "ds3";
++			gpios = <&pioD 14 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++		};
++	};
++
++	gpio_keys {
++		compatible = "gpio-keys";
++
++		right_click {
++			label = "right_click";
++			gpios = <&pioB 0 GPIO_ACTIVE_LOW>;
++			linux,code = <273>;
++			gpio-key,wakeup;
++		};
++
++		left_click {
++			label = "left_click";
++			gpios = <&pioB 1 GPIO_ACTIVE_LOW>;
++			linux,code = <272>;
++			gpio-key,wakeup;
++		};
++	};
++};
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.2
+
