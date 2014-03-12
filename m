@@ -1,82 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292AbaCLNpd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:45:33 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54353 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684AbaCLNpb (ORCPT
+	id S1754464AbaCLNqm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:46:42 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:53326 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722AbaCLNqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:45:31 -0400
-Date: Wed, 12 Mar 2014 13:45:04 +0000
-From: Mark Brown <broonie@kernel.org>
+	Wed, 12 Mar 2014 09:46:40 -0400
+Date: Wed, 12 Mar 2014 09:46:34 -0400
+From: Matt Porter <mporter@linaro.org>
 To: Mark Rutland <mark.rutland@arm.com>
-Cc: Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         Christian Daudt <bcm@fixthebug.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <20140312134504.GT28112@sirena.org.uk>
+Subject: Re: [PATCH v4 1/5] mfd: add bcm590xx pmu DT binding
+Message-ID: <20140312134634.GR25092@beef>
 References: <1394580837-8331-1-git-send-email-mporter@linaro.org>
  <1394580837-8331-2-git-send-email-mporter@linaro.org>
  <20140312133339.GC17461@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zEZ/xSI4p+aogqML"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20140312133339.GC17461@e106331-lin.cambridge.arm.com>
-X-Cookie: Oh no, not again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 1/5] mfd: add bcm590xx pmu DT binding
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---zEZ/xSI4p+aogqML
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
 On Wed, Mar 12, 2014 at 01:33:39PM +0000, Mark Rutland wrote:
 > On Tue, Mar 11, 2014 at 11:33:53PM +0000, Matt Porter wrote:
+> > Add a DT binding for the BCM590xx PMUs. The binding inherits from
+> > the generic regulator bindings.
+> > 
+> > Signed-off-by: Matt Porter <mporter@linaro.org>
+> > Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+> > Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> > ---
+> >  Documentation/devicetree/bindings/mfd/bcm590xx.txt | 41 ++++++++++++++++++++++
+> >  1 file changed, 41 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/mfd/bcm590xx.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/mfd/bcm590xx.txt b/Documentation/devicetree/bindings/mfd/bcm590xx.txt
+> > new file mode 100644
+> > index 0000000..2300246
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/mfd/bcm590xx.txt
+> > @@ -0,0 +1,41 @@
+> > +-------------------------------
+> > +BCM590xx Power Management Units
+> > +-------------------------------
+> > +
+> > +Required properties:
+> > +- compatible: "brcm,bcm59056"
+> > +- reg: I2C slave address
+> > +- interrupts: interrupt for the PMU. Generic interrupt client node bindings
+> > +  are described in interrupt-controller/interrupts.txt
+> 
+> This all looks sane.
+> 
+> > +
+> > +------------------
+> > +Voltage Regulators
+> > +------------------
+> > +
+> > +Optional properties:
+> > +- regulators: This is the list of child nodes that specify the regulator
+> > +  initialization data for defined regulators.  Generic regulator bindings
+> > +  are described in regulator/regulator.txt.
+> 
+> This is a subnode, not a property. How about:
+> 
+> Optional child nodes:
+> 
+> - regulators: container node for regulators follwoing the generic
+>   regulator binding in regulator/regulator.txt.
 
+Agreed, I'll reword like that...makes more sense like that.
+
+> > +
+> > +  The valid regulator nodes for BCM59056 are:
+> 
+> s/nodes/node names/
+
+Ok
+
+> > +  	rfldo, camldo1, camldo2, simldo1, simldo2, sdldo, sdxldo,
+> > +	mmcldo1, mmcldo2, audldo, micldo, usbldo, vibldo,
+> > +	csr, iosr1, iosr2, msr, sdsr1, sdsr2, vsr
+> > +
+> > +Example:
+> > +	pmu: bcm59056@8 {
+> > +		compatible = "brcm,bcm59056";
+> > +		reg = <0x08>;
+> > +		interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_HIGH>;
+> > +		regulators {
+> > +			#address-cells = <1>;
+> > +			#size-cells = <0>;
+> > +
 > > +			rfldo_reg: rfldo {
 > > +				regulator-min-microvolt = <1200000>;
 > > +				regulator-max-microvolt = <3300000>;
-
+> 
 > Are any specific properties required on these children?
 
-Regulator nodes can be completely empty (or missing) - for most drivers
-there's nothing driver specific, the standard binding covers everything.
+None. The only requirement is that when regulator node exists, the
+node names must match those listed.
 
---zEZ/xSI4p+aogqML
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I'll send out another version with rewording suggested above.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTIGTcAAoJELSic+t+oim9G/MP+gPBVSG2FiZW4w7xLnc8pz1z
-binJKDBIciF2B59ylfrSsJzC6bEaQEMiJWlfk1ZEmiQEVMYwaUbZKT89hJXBJ5j4
-1CyBSWXcaObwUd2HQcxmLu/FKGlHnCQo0H/FQzvk3kTu/OhqnGFCzC1vp5AX3e3e
-UEsPu06DUTeLKfxMI6lDjzP6gYzo4VskJD/KeNPn3kJNrbq9U5mIJzUlgoTZyn/t
-rgzKBU+z9+Rfjq6cGapMCh5q3Vt2BBNyNKFxzBuJ3dyTQevJvVYndml7xjwuBDju
-bH81c8KXMn3xBR9rp/rln0mnCd/t3fMP0ujy2brRWL1VwYsO7vYcDXRGuHz2ilRk
-OxdJ2YjXa4ssT8VQtJWNfdEhVC7hG7Rgt/n3jPTjRESOQqhZzN2iv423wYZ2pUqn
-NPmR7mfYHw49NYcxVc1HYe2QugzboU4c0v7NS7/hK0icV3yr5bQKjWrCN4aF31oD
-rxGgtm3FrakBCJF4gTXbA3J8INnBtKxXEVNsHNHldr5noSmFqh6vyDSoziMNfkWh
-742DY2XsNbNzApa5QBGkZSq6QXZcH+/UxOOVwWKLlOW48tKNCLaF+ycLkvxXL177
-/Q62sCWr4PxJDJyoLn1VNh92rKWsd6IwLEsZCsWEdH6d6nv4yHIy8pNwekOedse5
-86p4kx9sX1VvzaH6gHvb
-=3OKP
------END PGP SIGNATURE-----
-
---zEZ/xSI4p+aogqML--
+Thanks,
+Matt
