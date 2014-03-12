@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaCLTe1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 15:34:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17346 "EHLO mx1.redhat.com"
+	id S1751800AbaCLTlm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 15:41:42 -0400
+Received: from smtp-in.kfki.hu ([148.6.0.28]:60686 "EHLO smtp2.kfki.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967AbaCLTeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 15:34:23 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Frank Mayhar <fmayhar@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Theodore Tso <tytso@google.com>
-Subject: Re: [PATCH] block:  Force sector and nr_sects to device alignment and granularity.
-References: <1394474492.31499.177.camel@bobble.lax.corp.google.com>
-	<x49wqg0bwb4.fsf@segfault.boston.devel.redhat.com>
-	<1394553778.31499.180.camel@bobble.lax.corp.google.com>
-	<x491ty71dox.fsf@segfault.boston.devel.redhat.com>
-	<1394649562.31499.202.camel@bobble.lax.corp.google.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 12 Mar 2014 15:33:58 -0400
-In-Reply-To: <1394649562.31499.202.camel@bobble.lax.corp.google.com> (Frank
-	Mayhar's message of "Wed, 12 Mar 2014 11:39:22 -0700")
-Message-ID: <x49wqfzyzx5.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1750882AbaCLTli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 15:41:38 -0400
+Date: Wed, 12 Mar 2014 20:41:34 +0100 (CET)
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+To: Joe Perches <joe@perches.com>
+cc: netdev@vger.kernel.org, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 5/6] netfilter: Convert uses of __constant_<foo>
+ to <foo>
+In-Reply-To: <d0259d9122d308e3297cac6f7bc47c9955c3597b.1394643455.git.joe@perches.com>
+Message-ID: <alpine.DEB.2.10.1403122040360.18314@blackhole.kfki.hu>
+References: <cover.1394643455.git.joe@perches.com> <d0259d9122d308e3297cac6f7bc47c9955c3597b.1394643455.git.joe@perches.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frank Mayhar <fmayhar@google.com> writes:
+On Wed, 12 Mar 2014, Joe Perches wrote:
 
-> On Wed, 2014-03-12 at 14:20 -0400, Jeff Moyer wrote:
->> but you managed to read my mind well enough.  The question is how high
->> up the stack do you put the logic for this?  Is it worth it to duplicate
->> the checks in the OS that are already done on the device?  I don't
->> know.  Martin, do you have an opinion on this?
->
-> Well, my opinion (and I suspect that Ted agrees with me to at least some
-> extent) is that this is where it should be, i.e. in the block layer, in
-> the place that already knows about and deals with alignment and
-> granularity.  Sure, you could leave it to the device itself but it seems
-> reasonable to take care of this here for two reasons:  First, doing this
-> means that if a TRIM is issued it will be successful and the intent of
+> The use of __constant_<foo> has been unnecessary for quite awhile now.
+> 
+> Make these uses consistent with the rest of the kernel.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-No, TRIM is advisory, even for well-formed TRIMs.  I guess you could
-alter the definition of successful and have a correct statement there.
+Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 
-> the discard will be at least partly satisfied.  Second, we're already
-> doing most of the computations and making decisions based on the
-> alignment and granularity anyway, so the overhead is pretty negligible
-> (and if the discard size goes to zero we short-circuit the process and
-> never go to the device at all).
+> ---
+>  net/netfilter/ipset/pfxlen.c | 4 ++--
+>  net/netfilter/xt_AUDIT.c     | 4 ++--
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/net/netfilter/ipset/pfxlen.c b/net/netfilter/ipset/pfxlen.c
+> index 4f29fa9..04d15fd 100644
+> --- a/net/netfilter/ipset/pfxlen.c
+> +++ b/net/netfilter/ipset/pfxlen.c
+> @@ -7,8 +7,8 @@
+>  
+>  #define E(a, b, c, d) \
+>  	{.ip6 = { \
+> -		__constant_htonl(a), __constant_htonl(b), \
+> -		__constant_htonl(c), __constant_htonl(d), \
+> +		htonl(a), htonl(b), \
+> +		htonl(c), htonl(d), \
+>  	} }
+>  
+>  /*
+> diff --git a/net/netfilter/xt_AUDIT.c b/net/netfilter/xt_AUDIT.c
+> index 3228d7f..4973cbd 100644
+> --- a/net/netfilter/xt_AUDIT.c
+> +++ b/net/netfilter/xt_AUDIT.c
+> @@ -146,11 +146,11 @@ audit_tg(struct sk_buff *skb, const struct xt_action_param *par)
+>  
+>  		if (par->family == NFPROTO_BRIDGE) {
+>  			switch (eth_hdr(skb)->h_proto) {
+> -			case __constant_htons(ETH_P_IP):
+> +			case htons(ETH_P_IP):
+>  				audit_ip4(ab, skb);
+>  				break;
+>  
+> -			case __constant_htons(ETH_P_IPV6):
+> +			case htons(ETH_P_IPV6):
+>  				audit_ip6(ab, skb);
+>  				break;
+>  			}
+> -- 
+> 1.8.1.2.459.gbcd45b4.dirty
+> 
 
-Sure, there's no sense getting information from the device and not using
-it.  I guess you've talked me into it.
-
-Cheers,
-Jeff
+-
+E-mail  : kadlec@blackhole.kfki.hu, kadlecsik.jozsef@wigner.mta.hu
+PGP key : http://www.kfki.hu/~kadlec/pgp_public_key.txt
+Address : Wigner Research Centre for Physics, Hungarian Academy of Sciences
+          H-1525 Budapest 114, POB. 49, Hungary
