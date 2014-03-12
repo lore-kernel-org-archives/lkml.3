@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645AbaCLRRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 13:17:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26402 "EHLO mx1.redhat.com"
+	id S1755595AbaCLRRp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 13:17:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30006 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751674AbaCLRRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751899AbaCLRRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Mar 2014 13:17:43 -0400
 From: Hans de Goede <hdegoede@redhat.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
@@ -12,53 +12,61 @@ To: Thomas Gleixner <tglx@linutronix.de>,
 Cc: linux-arm-kernel@lists.infradead.org,
         devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
         linux-sunxi@googlegroups.com, Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH v2 4/4] irqchip: sun4i: Use handle_fasteoi_late_irq for the ENMI (irq 0)
-Date: Wed, 12 Mar 2014 18:17:07 +0100
-Message-Id: <1394644627-12315-5-git-send-email-hdegoede@redhat.com>
+Subject: [PATCH v2 2/4] irqchip: sun4i: Fix irq 0 not working
+Date: Wed, 12 Mar 2014 18:17:05 +0100
+Message-Id: <1394644627-12315-3-git-send-email-hdegoede@redhat.com>
 In-Reply-To: <1394644627-12315-1-git-send-email-hdegoede@redhat.com>
 References: <1394644627-12315-1-git-send-email-hdegoede@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ENMI needs to have the ack done *after* clearing the interrupt source,
-otherwise we will get a spurious interrupt for each real interrupt. Switch
-to the new handle_fasteoi_late_irq handler which gives us the desired behavior.
+SUN4I_IRQ_VECTOR_REG containing 0 can mean one of 3 things:
+1) no more irqs pending
+2) irq 0 pending
+3) spurious irq
+
+So if we immediately get a reading of 0, check the irq-pending reg
+to differentiate between 2 and 3. We only do this once to avoid
+the extra check in the common case of 1) hapening after having
+read the vector-reg once.
 
 Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 ---
- drivers/irqchip/irq-sun4i.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/irqchip/irq-sun4i.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
-index 8a2fbee..4b1c874 100644
+index a5438d8..5c25048 100644
 --- a/drivers/irqchip/irq-sun4i.c
 +++ b/drivers/irqchip/irq-sun4i.c
-@@ -77,15 +77,22 @@ static void sun4i_irq_unmask(struct irq_data *irqd)
- static struct irq_chip sun4i_irq_chip = {
- 	.name		= "sun4i_irq",
- 	.irq_ack	= sun4i_irq_ack,
-+	.irq_eoi	= sun4i_irq_ack, /* For the ENMI */
- 	.irq_mask	= sun4i_irq_mask,
- 	.irq_unmask	= sun4i_irq_unmask,
-+	.flags		= IRQCHIP_EOI_THREADED, /* Only affects the ENMI */
- };
- 
- static int sun4i_irq_map(struct irq_domain *d, unsigned int virq,
- 			 irq_hw_number_t hw)
+@@ -140,10 +140,24 @@ static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *re
  {
--	irq_set_chip_and_handler(virq, &sun4i_irq_chip,
--				 handle_level_irq);
-+	if (hw == 0) /* IRQ 0, the ENMI needs special handling */
-+		irq_set_chip_and_handler(virq, &sun4i_irq_chip,
-+					 handle_fasteoi_late_irq);
-+	else
-+		irq_set_chip_and_handler(virq, &sun4i_irq_chip,
-+					 handle_level_irq);
-+
- 	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+ 	u32 irq, hwirq;
  
- 	return 0;
++	/*
++	 * hwirq == 0 can mean one of 3 things:
++	 * 1) no more irqs pending
++	 * 2) irq 0 pending
++	 * 3) spurious irq
++	 * So if we immediately get a reading of 0, check the irq-pending reg
++	 * to differentiate between 2 and 3. We only do this once to avoid
++	 * the extra check in the common case of 1 hapening after having
++	 * read the vector-reg once.
++	 */
+ 	hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
+-	while (hwirq != 0) {
++	if (hwirq == 0 &&
++		  !(readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0)) & BIT(0)))
++		return;
++
++	do {
+ 		irq = irq_find_mapping(sun4i_irq_domain, hwirq);
+ 		handle_IRQ(irq, regs);
+ 		hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
+-	}
++	} while (hwirq != 0);
+ }
 -- 
 1.9.0
 
