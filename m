@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524AbaCLNxe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:53:34 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:54523 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754476AbaCLNxc (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Wed, 12 Mar 2014 09:53:32 -0400
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-From: joeyli <jlee@suse.com>
-To: Julian Wollrath <jwollrath@web.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Lee@linutronix.de,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-In-Reply-To: <20140312112010.48e46749@ilfaris>
-References: <20140310110410.5b2218f6@ilfaris>
-	 <alpine.DEB.2.02.1403101123470.18573@ionos.tec.linutronix.de>
-	 <20140311142910.27594027@ilfaris>
-	 <alpine.DEB.2.02.1403111454140.18573@ionos.tec.linutronix.de>
-	 <20140311181513.0f73383c@ilfaris>
-	 <1394596807.26565.135.camel@linux-s257.site>
-	 <20140312112010.48e46749@ilfaris>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Mar 2014 21:52:34 +0800
-Message-ID: <1394632354.26565.152.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1754470AbaCLNy2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:54:28 -0400
+Received: from outrelay01.libero.it ([212.52.84.101]:39311 "EHLO
+	outrelay01.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753520AbaCLNy1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 09:54:27 -0400
+X-CTCH-Spam: Bulk
+X-CTCH-RefID: str=0001.0A0C0207.53204E5B.0008,ss=3,sh,re=0.000,fgs=0
+X-libjamoibt: 1587
+Message-ID: <984038708.1754891394632424691.JavaMail.defaultUser@defaultHost>
+Date: Wed, 12 Mar 2014 14:53:44 +0100 (CET)
+From: Agrosales <agrosales2xb@libero.it>
+Reply-To: agromegaagro@gmail.com
+Subject: Dear Sir/Madam
+MIME-Version: 1.0
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-SenderIP: 41.82.26.35
+X-libjamv: JmQN+brWE0E=
+X-libjamsun: TEmeeYUIr+9SumZ/8c0j/SmkHCcZuoPU
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 三，2014-03-12 於 11:20 +0100，Julian Wollrath 提到：
-> > This patch restricts the position to run acpi_early_init() before
-> > timekeeping_init() when only "CMOS RTC Not Present" bit set in FADT.
-> > 
-> > Could you please help to test it on your machine?
-> That patch fixes the problem, thank you.
-> 
-> Cheers,
-> Julian Wollrath
-> > 
 
-Thanks for your test.
-
-
-Regards
-Joey Lee
-
+Dear Sir/Madam,
+ 
+Hope this meets you well. Please we are interested in purchasing your 
+company's products, we do hope to establish a long term relationship. However, 
+please we would like to see your company's latest catalogs with the;
+ 
+Minimum Order Quantity
+ 
+Delivery time/FOB
+ 
+payment terms warranty
+ 
+We hope to hear from you soon.
+Thank You !
+Best Regards
+Mr.Abdul Karimu
+(Purchasing Manager)
+Agro Megatrades Co., Ltd.
+14, Jln.Kesidang 3/6,80, Jalan Raja Chulan,
+50200 Kuala Lumpur, Wilayah Persekutuan, Malaysia
+Tel: +60 016 4452769
+Email:agromegaagro@gmail.com
