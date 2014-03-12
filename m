@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429AbaCLTUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 15:20:41 -0400
-Received: from sauhun.de ([89.238.76.85]:43329 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703AbaCLTUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 15:20:39 -0400
-Date: Wed, 12 Mar 2014 20:20:37 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, naveenkrishna.ch@gmail.com,
-        kgene.kim@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2 v4] i2c: exynos5: configure fifo_depth based on HSI2C
- module variant
-Message-ID: <20140312192037.GC28891@katana>
-References: <1385100851-32254-1-git-send-email-ch.naveen@samsung.com>
- <1391748195-12490-1-git-send-email-ch.naveen@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aT9PWwzfKXlsBJM1"
-Content-Disposition: inline
-In-Reply-To: <1391748195-12490-1-git-send-email-ch.naveen@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751686AbaCLTWU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 15:22:20 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40371 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaCLTWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 15:22:18 -0400
+Date: Wed, 12 Mar 2014 15:22:15 -0400 (EDT)
+Message-Id: <20140312.152215.347361365901821816.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: dborkman@redhat.com, mingo@kernel.org, wad@chromium.org,
+        rostedt@goodmis.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
+        hagen@jauu.net, jesse@nicira.com, tglx@linutronix.de,
+        edumazet@google.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, fweisbec@gmail.com, acme@infradead.org,
+        penberg@iki.fi, arjan@infradead.org, hch@infradead.org,
+        xemul@parallels.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v9 net-next 1/3] filter: add Extended BPF interpreter
+ and converter
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394512892-5448-2-git-send-email-ast@plumgrid.com>
+References: <1394512892-5448-1-git-send-email-ast@plumgrid.com>
+	<1394512892-5448-2-git-send-email-ast@plumgrid.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 12 Mar 2014 12:22:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Mon, 10 Mar 2014 21:41:30 -0700
 
---aT9PWwzfKXlsBJM1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> index 1a869488b8ae..2c13d000389c 100644
+> --- a/include/linux/netdevice.h
+> +++ b/include/linux/netdevice.h
+> @@ -3054,6 +3054,7 @@ extern int		netdev_max_backlog;
+>  extern int		netdev_tstamp_prequeue;
+>  extern int		weight_p;
+>  extern int		bpf_jit_enable;
+> +extern int		bpf_ext_enable;
 
-On Fri, Feb 07, 2014 at 10:13:15AM +0530, Naveen Krishna Chatradhi wrote:
-> fifo_depth of the HSI2C is not constant
-> Exynos5420 and Exynos5250 supports fifo_depth of 64bytes
-> Exynos5260 supports fifo_depth of 16bytes.
->=20
-> This patch configures the fifo_depth based on HSI2C modules version.
->=20
-> Signed-off-by: Naveen Krishna Chatradhi <ich.naveen@samsung.com>
-> [For finding out the difference and initial contribution]
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+I don't like seeing config ifdefs in C code, so please adjust the
+bpf_jit_enable declaration with something like:
 
-I know Tomasz said differently, but I prefer the patches squashed (and
-the commit message extended).
+#ifdef CONFIG_BPF_JIT
+extern int		bpf_jit_enable;
+#else
+#define bpf_jit_enable	0
+#endif
 
+Then you can kill the ifdefs here:
 
---aT9PWwzfKXlsBJM1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +#ifdef CONFIG_BPF_JIT
+> +	if (bpf_ext_enable && !bpf_jit_enable)
+> +#else
+> +	if (bpf_ext_enable)
+> +#endif
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+And here:
 
-iQIcBAEBAgAGBQJTILOEAAoJEBQN5MwUoCm2SJ0QAJSPkdYOcxMYaMIWG+1/uDQs
-+XlFCEn8V8WGIHGgSCZVAWvVXSzNz51+2gAhO5+yzUs5zdqqBCHCc7P28Gabcv8z
-227qskI0K9TA+s3Ekv1m5fWE9/TIvfK9X/z6n8ZE3VE400Ww0cyw4gvitqcZRyRL
-ShEKxjXk++XpPV3jdePI2JTa+GDmLkvHKTMzDG6PBPqCiusxKBcp3kw9jYofwEKj
-RVVuL2pE9a5Gpt1SECzP8rMFw8K3k5rCngG0551QRtp2gZ+5MRXN/0Pxx/bNkaJM
-j5PncySeky65AsnehaZQLMcR1IWAuK2wY2HW+aY58+W3Q93q7gFcpIO37aWfITAg
-bU8k52Pu63Mp+61oNBnaO/bwdBzwNSArIbJQRBOwz9tnztuDYlWVMraXXz7QcCmw
-xCOa7fA4QYSozy8TEBZ/29pfIbOdbFkSI3zGvjog1TRk6iQ6q+o89GHFD5uoYkv1
-H75r3sr0kDMtLj6Ry6LQE6eAbH3Mkkmz9u+TbsAaRF7ScXjLiZehKAI76iua0T8q
-9WJRyuQhK7V+eEWqLW3oSR8TTmrEjH+2zPa6TEIoYKyFWlvheH+U7RJkuhnCkOO3
-A57P/XQ1n9E1WQaY5FasgxpslpuHZa46KnO20jK4MFUB9Ug3Pdg9eUvsWXqS7alQ
-guubUUmFqvFell4G+Au0
-=m3+Z
------END PGP SIGNATURE-----
+> +#ifdef CONFIG_BPF_JIT
+> +	if (bpf_ext_enable && !bpf_jit_enable) {
+> +#else
+> +	if (bpf_ext_enable) {
+> +#endif
 
---aT9PWwzfKXlsBJM1--
+Next:
+
+> +#ifdef CONFIG_64BIT
+> +		DL(BPF_STX, BPF_XADD, BPF_DW)
+> +#endif
+ ...
+> +#ifdef CONFIG_64BIT
+> +BPF_STX_BPF_XADD_BPF_DW: /* lock xadd *(u64 *)(A + insn->off) += X */
+> +	atomic64_add((u64)X, (atomic64_t *)(ulong)(A + insn->off));
+> +	CONT;
+> +#endif
+
+I'm not too happy about instructions which are only available on
+certain architectures.
+
+I'd rather see best effort emulation than wholesale lack of support.
+
+We have an implementation of 64-bit atomics for 32-bit systems or
+those without true atomic compare-and-saw etc. ops in lib/atomic64.c
+so the routines are always available.
+
+64-bit stores and loads are trivial.
