@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaCLNql (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:46:41 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:44222 "EHLO gloria.sntech.de"
+	id S1754508AbaCLNrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:47:08 -0400
+Received: from canardo.mork.no ([148.122.252.1]:48036 "EHLO canardo.mork.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753445AbaCLNqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:46:39 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH 0/3] gpio-charger: add devicetree support
-Date: Wed, 12 Mar 2014 14:45:42 +0100
-Message-ID: <12569216.pGctOhkhxz@phil>
-User-Agent: KMail/4.11.5 (Linux/3.12-1-amd64; KDE/4.11.3; x86_64; ; )
+	id S1754181AbaCLNqk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 09:46:40 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: <netdev@vger.kernel.org>, <nic_swsd@realtek.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH net-next 1/2] r8152: add CONFIG_RTL8152_EARLY_AGG_SUPER
+Organization: m
+References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
+	<1394526259-5513-2-git-send-email-hayeswang@realtek.com>
+	<1394628023-12713-1-git-send-email-hayeswang@realtek.com>
+Date: Wed, 12 Mar 2014 14:40:17 +0100
+In-Reply-To: <1394628023-12713-1-git-send-email-hayeswang@realtek.com> (Hayes
+	Wang's message of "Wed, 12 Mar 2014 20:39:58 +0800")
+Message-ID: <87txb3lem6.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130009 (Ma Gnus v0.9) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds devicetree support to the gpio-charger and fixes a small
-issue with the return value of gpio_get_value.
+Hayes Wang <hayeswang@realtek.com> writes:
 
-Heiko Stuebner (3):
-  dt-bindings: document gpio-charger bindings
-  power: gpio-charger: add device tree support
-  power: gpio-charger: do not use gpio value directly
+> +	config RTL8152_EARLY_AGG_SUPER
+> +		hex "rx early agg parameter for super speed"
+> +		default 0x0e832981
+> +		help
+> +		  This is the rx early agg parameter for USB super speed.
+> +
+> +	endmenu
 
- .../bindings/power_supply/gpio-charger.txt         | 23 ++++++++
- drivers/power/gpio-charger.c                       | 68 ++++++++++++++++++++--
- 2 files changed, 87 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power_supply/gpio-charger.txt
-
--- 
-1.8.5.3
+How do I as an end user know how to adjust this magic(?) value?  Having
+a config setting like this without further documentation seems
+completely pointless. Anyone with enough knowledge about the driver and
+devices will be perfectly capable of editing the driver source anyway.
 
 
+
+Bjørn
