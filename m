@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaCLUNf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 16:13:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46870 "EHLO mx1.redhat.com"
+	id S1752486AbaCLUPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 16:15:09 -0400
+Received: from gate.crashing.org ([63.228.1.57]:52890 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791AbaCLUNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 16:13:33 -0400
-Date: Wed, 12 Mar 2014 16:13:29 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        netdev@vger.kernel.org, tj@kernel.org, ssorce@redhat.com,
-        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
-Subject: Re: [PATCH 1/2] cgroup: Provide empty definition of
- task_cgroup_path()
-Message-ID: <20140312201329.GL14981@redhat.com>
-References: <1394649942-5854-1-git-send-email-vgoyal@redhat.com>
- <1394649942-5854-2-git-send-email-vgoyal@redhat.com>
- <20140312.150020.340861233360073600.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140312.150020.340861233360073600.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752069AbaCLUPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 16:15:06 -0400
+Message-ID: <1394655292.4840.97.camel@pasglop>
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mark Brown <broonie@kernel.org>, Greg KH <greg@kroah.com>,
+        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 13 Mar 2014 07:14:52 +1100
+In-Reply-To: <20140312200232.GA22332@htj.dyndns.org>
+References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
+	 <20140312015021.GC10106@kroah.com> <1394596541.4840.70.camel@pasglop>
+	 <20140312113742.GM28112@sirena.org.uk> <1394654396.4840.94.camel@pasglop>
+	 <20140312200232.GA22332@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 03:00:20PM -0400, David Miller wrote:
-> From: Vivek Goyal <vgoyal@redhat.com>
-> Date: Wed, 12 Mar 2014 14:45:41 -0400
+On Wed, 2014-03-12 at 16:02 -0400, Tejun Heo wrote:
+> On Thu, Mar 13, 2014 at 06:59:56AM +1100, Benjamin Herrenschmidt wrote:
+> > Either that or I can put a copy of the patch that introduces the new
+> > function in my tree as long as it's a single patch. The resulting
+> > conflict should resolve trivially and Linus should be fine if
+> > appropriate explanations are provided (though I would have preferred
+> > pulling in a topic branch).
 > 
-> > Compilation with !CONFIG_CGROUP fails for task_cgroup_path() user. So
-> > provide an emtpy definition.
-> > 
-> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > ---
-> >  include/linux/cgroup.h | 2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> > index 9450f02..bf40adb 100644
-> > --- a/include/linux/cgroup.h
-> > +++ b/include/linux/cgroup.h
-> > @@ -869,6 +869,8 @@ static inline int cgroup_attach_task_all(struct task_struct *from,
-> >  	return 0;
-> >  }
-> >  
-> > +static inline int task_cgroup_path(struct task_struct *task, char *buf, size_t buflen) {return 0;}
-> > +
-> 
-> Please properly format this just like any other function.
-> 
-> static inline int task_cgroup_path(struct task_struct *task, char *buf, size_t buflen)
-> {
-> 	eturn 0;
-> }
-> 
-> It looked like a plain static declaration on first glance.
+> An alternative that I personally prefer to resolve conflicts like this
+> is to pull driver-core-next into the broken tree and resolve it there.
+> It's highly likely that the pending changes are gonna be included in
+> the next merge window.  If contaminating the merge history is a
+> concern, it can live in a separate branch which is pulled into
+> for-next.
 
-Sure I will.
+It's generally consider bad taste to pull entire trees into each
+other :-) I know Stephen isn't fan of it...
 
-Also, looks like I have introduced a bug in second round of changes I made. I
-will fix that too and do a new posting.
+I'd rather have just that series (or even better, just the patches
+introducing the new function) in a topic branch, itself pulled into
+both driver-core-next and my tree.
 
-Thanks
-Vivek
+Can you produce that ? (I need a non-rebase guarantee though).
+
+Cheers,
+Ben.
+
+
