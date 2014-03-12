@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924AbaCLD1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 23:27:40 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:11776 "EHLO
+	id S1754429AbaCLDb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 23:31:59 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:12561 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433AbaCLD1i (ORCPT
+	with ESMTP id S1752789AbaCLDb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 23:27:38 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-9e-531fd429780f
-Message-id: <531FD428.4000008@samsung.com>
-Date: Wed, 12 Mar 2014 12:27:36 +0900
+	Tue, 11 Mar 2014 23:31:57 -0400
+X-AuditID: cbfee68e-b7f566d000002344-c1-531fd52b9cf0
+Message-id: <531FD52B.8040007@samsung.com>
+Date: Wed, 12 Mar 2014 12:31:55 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
  Thunderbird/17.0.2
@@ -21,40 +21,41 @@ Cc: kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
         rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
         swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
         linux@arm.linux.org.uk
-Subject: Re: [PATCH 3/5] ARM: dts: exynos4x12: Add GPS_ALIVE power domain
+Subject: Re: [PATCH 1/5] ARM: dts: exynos4x12: Add ADC's dt data to read raw
+ data
 References: <1394524494-30641-1-git-send-email-cw00.choi@samsung.com>
- <1394524494-30641-4-git-send-email-cw00.choi@samsung.com>
- <531F0154.9040409@samsung.com>
-In-reply-to: <531F0154.9040409@samsung.com>
+ <1394524494-30641-2-git-send-email-cw00.choi@samsung.com>
+ <531EFF7F.9010405@samsung.com>
+In-reply-to: <531EFF7F.9010405@samsung.com>
 Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsWyRsSkUFfzinywwdUuDov5R86xWpx7tZLR
-	onfBVTaLs01v2C02Pb7GanF51xw2ixnn9zFZ3L7Ma7H0+kUmiwnT17JYHF5xgMni1cE2Fov1
-	M16zOPB6rJm3htGjpbmHzWPB5yvsHiuXf2Hz2Lyk3qNvyypGj8+b5Dw2zg0N4IjisklJzcks
-	Sy3St0vgytg6V7ZgA0/FynPf2BsYf3J2MXJySAiYSExpaWCDsMUkLtxbD2RzcQgJLGWU+L12
-	ATtM0eq1X5kgEosYJWbcmwtV9YpR4nTLTyaQKl4BLYmj5xuYQWwWAVWJbT/ng41lA4rvf3ED
-	zBYVCJNYOf0KC0S9oMSPyffAbBEBFYnLp6YzgtjMAheYJPbsLQKxhQU8Jb7uWMMIt/n569us
-	IAlOAW2Jzr8H2SEadCT2t05jg7DlJTavecsM0iAh0MohcerHRTaIiwQkvk0+BLSNAyghK7Hp
-	ADPEa5ISB1fcYJnAKDYLyU2zkIydhWTsAkbmVYyiqQXJBcVJ6UWmesWJucWleel6yfm5mxiB
-	0Xz637OJOxjvH7A+xJgMtHIis5Rocj4wGeSVxBsamxlZmJqYGhuZW5qRJqwkzpv+KClISCA9
-	sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6N7Y3jgxlCB9+ctl/Sl/7fpdDDVFFo4t3jme+GN5fef
-	qeRuDT3/uGgbR3DzubdiIvLPT6/8vFPn3loZqa8rS05v1H9du+lZLou68zo++Xtuz9uS+d3W
-	3530Ve3Rwd9amzW3iJcc7djc+nCC6OvQ9furLk6ROvWs7Ynj0q+Z0RdWXLh/cHva0ppNSizF
-	GYmGWsxFxYkAjn9+wvwCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGKsWRmVeSWpSXmKPExsVy+t9jAV2NK/LBBnOm2FjMP3KO1eLcq5WM
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsWyRsSkWFf7qnywwbwNChbzj5xjtTj3aiWj
+	Re+Cq2wWZ5vesFtsenyN1eLyrjlsFjPO72OyuH2Z12Lp9YtMFhOmr2WxOLziAJPFq4NtLBbr
+	Z7xmceD1WDNvDaNHS3MPm8eCz1fYPVYu/8LmsXlJvUffllWMHp83yXlsnBsawBHFZZOSmpNZ
+	llqkb5fAlTHtt1hBI1/Fzt+XWRsYP3B1MXJySAiYSJxbcIIdwhaTuHBvPVsXIxeHkMBSRon5
+	PyazwBQ9nnyTFSIxnVFidd93ZgjnFVBVE4jDycEroCXx7sVxVhCbRUBVYs+E/2BxNqD4/hc3
+	2EBsUYEwiZXTr7BA1AtK/Jh8D8wWEVCRuHxqOiOIzSxwgUliz94iEFtYIFji1cadLBDLFjFK
+	bLt+HmwBp4C2xNuTO6EadCT2t05jg7DlJTaveQt2nYRAK4fErvOTmSEuEpD4NvkQ0CQOoISs
+	xKYDzBCvSUocXHGDZQKj2CwkN81CMnYWkrELGJlXMYqmFiQXFCelFxnpFSfmFpfmpesl5+du
+	YgRG8+l/z/p2MN48YH2IMRlo5URmKdHkfGAyyCuJNzQ2M7IwNTE1NjK3NCNNWEmcd9HDpCAh
+	gfTEktTs1NSC1KL4otKc1OJDjEwcnFINjJKe+R9Ug4+Uz9o6zTbB+cO8zRp+149wJ9c9trW3
+	3iXRPydUtcs3wuHz/pVSpjkXb7rEXpmrfNLi8vH4V7O/h1jyFMtOL7DWtI457Ofxb+nJSyI2
+	em9quc4c1Ele+OBw/8eAE7UPD54XjN6eI223jOtknnC+1KGrZQzXp/zo7/x5mMH+la2zpxJL
+	cUaioRZzUXEiAATIx+n8AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGKsWRmVeSWpSXmKPExsVy+t9jQV3tq/LBBuvnilvMP3KO1eLcq5WM
 	Fr0LrrJZnG16w26x6fE1VovLu+awWcw4v4/J4vZlXoul1y8yWUyYvpbF4vCKA0wWrw62sVis
 	n/GaxYHXY828NYweLc09bB4LPl9h91i5/Aubx+Yl9R59W1YxenzeJOexcW5oAEdUA6NNRmpi
 	SmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtDFSgpliTmlQKGA
-	xOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMrXNlCzbwVKw89429gfEnZxcjJ4eEgInE
-	6rVfmSBsMYkL99azdTFycQgJLGKUmHFvLpTzilHidMtPsCpeAS2Jo+cbmEFsFgFViW0/57OB
-	2GxA8f0vboDZogJhEiunX2GBqBeU+DH5HpgtIqAicfnUdEYQm1ngApPEnr1FILawgKfE1x1r
-	GOE2P399mxUkwSmgLdH59yA7RIOOxP7WaWwQtrzE5jVvmScwCsxCsmMWkrJZSMoWMDKvYhRN
-	LUguKE5KzzXUK07MLS7NS9dLzs/dxAhOFc+kdjCubLA4xCjAwajEw7tAUz5YiDWxrLgy9xCj
-	BAezkgjvR5AQb0piZVVqUX58UWlOavEhxmRgEExklhJNzgemsbySeENjEzMjSyNzQwsjY3PS
-	hJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYKxaUGlwPWL78g1anAU7jY5cemim/57z7ckD
-	hT58h8zdvvK1czAsPcDwrbXFjKnJfs3im18uyz9yiOrvNfWZmfl0dqDQh6OapbfbDiypbPl3
-	ca3rzrd1D0Lnnpx1rGKL9+mLBXsl98yNK5z1b1+n6Zojd9ojS51nRDgFTP+8uuzOXMdbH+5N
-	PLJWiaU4I9FQi7moOBEAbdmKzlkDAAA=
+	xOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMab/FChr5Knb+vszawPiBq4uRk0NCwETi
+	8eSbrBC2mMSFe+vZuhi5OIQEpjNKrO77zgzhvGKUmN8E4nBy8ApoSbx7cRysg0VAVWLPhP9g
+	cTag+P4XN9hAbFGBMImV06+wQNQLSvyYfA/MFhFQkbh8ajojiM0scIFJYs/eIhBbWCBY4tXG
+	nSwQyxYxSmy7fh5sAaeAtsTbkzuhGnQk9rdOY4Ow5SU2r3nLPIFRYBaSHbOQlM1CUraAkXkV
+	o2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnCqeCa9g3FVg8UhRgEORiUe3oWa8sFCrIllxZW5
+	hxglOJiVRHg/goR4UxIrq1KL8uOLSnNSiw8xJgODYCKzlGhyPjCN5ZXEGxqbmBlZGpkbWhgZ
+	m5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QD42yF5tIzixNOfTw6I3dtbMCbzQnzXz7q
+	W/DC8ap+2x7ZZXfL+i95nnbcY/+V4/SemnuTdh/h/+s0u9bCra18Q/HX+Rc8XGoktVwmrola
+	wnErX3GBgtDtaoWN0sUqE0x5HJy/pyvyqh9Mkap/VMBrq1Gve3hWyMawa8yLZ91RdDvwo8qc
+	lUUsVomlOCPRUIu5qDgRADUDA7ZZAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -64,46 +65,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Tomasz,
 
-On 03/11/2014 09:28 PM, Tomasz Figa wrote:
+On 03/11/2014 09:20 PM, Tomasz Figa wrote:
 > Hi Chanwoo,
 > 
 > On 11.03.2014 08:54, Chanwoo Choi wrote:
->> This patch add GPS_ALIVE power domain for Exynos4x12 SoC. GPS_ALIVE power domain
->> include GPS_BLK for GPS IP. Exynos SoC used generic power-domain driver to
->> control power domain. After completed kernel booting, Exynos power-domain driver
->> disable un-used power domain to reduce power-consumption/leak.
+>> This patch add ADC(Analog to Digital Converter)'s dt data to get raw data
+>> with IIO subsystem. Usually, ADC is used to check temperature, jack type, and
+>> so on.
 >>
->> If GPS_ALIVE power domain isn't registered to Exynos power-domain driver,
->> happen power-leakage because GPS_ALIVE_CONFIGURATION is default power on state.
+> 
+> 8< ---
+> 
+>> Register map
+>> - <0x126C0000 0x100> : ADC register's base address
+>> - <0x10020718 0x4> : ADC_PHY_CONTROL, TS-ADC control register address
 >>
->> - 0x10023D00 : GPS_ALIVE_CONFIGURATION register address
+>> Clock
+>> - <&clock 326> : ADC clock (clock name :'tsadc')
+>>
+>> Interrupt
+>> - INTG10[3] : ADC for General ADC
+> 
+> --- >8
+> 
+> I don't think there is a need to include such data in commit message. A commit message should say what is done and why it's done (and sometimes how it's done, in case of some complex code being added) and I guess that's all.
+
+OK, I'll remove it on patch description.
+
+> 
 >>
 >> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 >> ---
->>   arch/arm/boot/dts/exynos4x12.dtsi | 5 +++++
->>   1 file changed, 5 insertions(+)
+>>   arch/arm/boot/dts/exynos4x12.dtsi | 12 ++++++++++++
+>>   1 file changed, 12 insertions(+)
 >>
 >> diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
->> index 1ec77f6..066eb35 100644
+>> index 5c412aa..5a3e551 100644
 >> --- a/arch/arm/boot/dts/exynos4x12.dtsi
 >> +++ b/arch/arm/boot/dts/exynos4x12.dtsi
->> @@ -41,6 +41,11 @@
->>           compatible = "samsung,exynos4210-pd";
->>           reg = <0x10023CA0 0x20>;
+>> @@ -80,6 +80,18 @@
+>>           };
 >>       };
->> +   
->> +    pd_gps_alive: gps-alive-power-domain@10023D00 {
->> +        compatible = "samsung,exynos4210-pd";
->> +        reg = <0x10023D00 0x20>;
->> +    };
 >>
+>> +    adc: adc@126C0000 {
+>> +        compatible = "samsung,exynos-adc-v1";
+>> +        reg = <0x126C0000 0x100>, <0x10020718 0x4>;
+>> +        interrupt-parent = <&combiner>;
+>> +        interrupts = <10 3>;
+>> +        clocks = <&clock 326>;
 > 
-> Exynos4210 seems to have this power domain as well, so I guess this change should be done to exynos4.dtsi instead.
+> Please use clock macros instead of numbers, as introduced by Andrzej Hajda's patches merged to Kgene's tree.
 > 
-
-You are right. I will modify it.
+OK, I'll modify it.
 
 Thanks,
 Chanwoo Choi
-
