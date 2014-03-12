@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528AbaCLHFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 03:05:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48506 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756419AbaCLHFj (ORCPT
+	id S1756595AbaCLHGH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 03:06:07 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:47692 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756560AbaCLHGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 03:05:39 -0400
-Date: Wed, 12 Mar 2014 08:05:23 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, sfr@canb.auug.org.au,
-        hpa@zytor.com
-Subject: Re: [PATCH v2] perf/x86/uncore: fix compilation warning in
- snb_uncore_imc_init_box()
-Message-ID: <20140312070523.GL30956@twins.programming.kicks-ass.net>
-References: <20140311235329.GA28624@quad>
+	Wed, 12 Mar 2014 03:06:04 -0400
+X-AuditID: 9c93017e-b7cf9ae000004b4b-45-5320075aa062
+Date: Wed, 12 Mar 2014 16:06:21 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Jungsoo Son <jungsoo.son@lge.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH] page owners: correct page->order when to free page
+Message-ID: <20140312070621.GI17828@bbox>
+References: <1394607486-31493-1-git-send-email-jungsoo.son@lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140311235329.GA28624@quad>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1394607486-31493-1-git-send-email-jungsoo.son@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 12:53:30AM +0100, Stephane Eranian wrote:
->  #ifdef CONFIG_PHYS_ADDR_T_64BIT
-> -	pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET+4, &addr_hi);
-> -	addr = ((resource_size_t)addr_hi << 32) | addr_lo;
-> +	  pci_read_config_dword(pdev, where + 4, &pci_dword);
-> +	  addr |= ((resource_size_t)pci_dword << 32);
->  #endif
+On Wed, Mar 12, 2014 at 03:58:06PM +0900, Jungsoo Son wrote:
+> When I use PAGE_OWNER in mmotm tree, I found a problem that mismatches
+> the number of allocated pages. When I investigate, the problem is that
+> set_page_order is called for only a head page if freed page is merged to
+> a higher order page in the buddy allocator so tail pages of the higher
+> order page couldn't be reset to page->order = -1.
+> 
+> It means when we do 'cat /proc/page-owner', it could show wrong
+> information.
 
-Indent fail there; fixed it.
+We could make read_page_owner more smart so that it could check
+PageBuddy at head page of high order page and skip tail pages but
+it needs zone->lock which is already heavy contention lock.
+Additionally, it could make wrong information on pcp pages, too.
+So, I like this simple approach.
 
-FWIW; I thought of an even more horrible solution:
+> 
+> So page->order should be set to -1 for all the tail pages as well as the
+> first page before buddy allocator merges them.
+> 
+> This patch is for clearing page->order of all the tail pages in
+> free_pages_prepare() when to free page.
+> 
+> Signed-off-by: Jungsoo Son <jungsoo.son@lge.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-	resource_size_t addr;
-	u32 *addr_ptr = &addr;
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-	pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET, &addr_ptr[0]);
-#ifdef ..
-	pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET+4, &addr_ptr[1]);
-#endif
+Thanks.
 
-:-)
+-- 
+Kind regards,
+Minchan Kim
