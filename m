@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850AbaCLGT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 02:19:27 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:49496 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153AbaCLGTW (ORCPT
+	id S1756307AbaCLGT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 02:19:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:10898 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755742AbaCLGTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 02:19:22 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-46-531ffc6821ea
+	Wed, 12 Mar 2014 02:19:25 -0400
+X-AuditID: cbfee68e-b7f566d000002344-dd-531ffc6bb279
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: kgene.kim@samsung.com, t.figa@samsung.com
 Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -15,37 +15,38 @@ Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kyungmin.park@samsung.com, pawel.moll@arm.com, mark.rutland@arm.com,
         swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
         linux@arm.linux.org.uk, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv2 1/5] ARM: dts: exynos4x12: Add ADC's dt data to read raw data
-Date: Wed, 12 Mar 2014 15:19:12 +0900
-Message-id: <1394605156-7768-2-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv2 5/5] ARM: dts: exynos4412-trats2: Add ADC/themistor dt data
+ to get temperature of SoC/battery
+Date: Wed, 12 Mar 2014 15:19:16 +0900
+Message-id: <1394605156-7768-6-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1394605156-7768-1-git-send-email-cw00.choi@samsung.com>
 References: <1394605156-7768-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsWyRsSkRDfjj3ywwcUfOhbXvzxntZh/5Byr
-	xblXKxktehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PF7cu8FkuvX2SymDB9LYvFq4NtLBbr
-	Z7xmceD1WDNvDaNHS3MPm8fK5V/YPDYvqffo27KK0ePzJjmPjXNDA9ijuGxSUnMyy1KL9O0S
-	uDJWX1nFVjCNo2LzxilsDYy32boYOTkkBEwkXjb3s0DYYhIX7q0HinNxCAksZZSYdP0/I0zR
-	//VnWCAS0xkl2g+/YIZwGpkk5t17ww5SxSagJbH/xQ2wsSICuhJTZt5hBbGZBY4xSZyY6tDF
-	yMEhLOAvseiYD0iYRUBV4umrI2CbeQVcJO5/mcUMsUxO4sOeR+wg5ZwCrhIb5iWDhIWASo5/
-	PAp2g4TAJXaJ5stX2CDmCEh8m3yIBaReQkBWYtMBqDGSEgdX3GCZwCi8gJFhFaNoakFyQXFS
-	epGpXnFibnFpXrpecn7uJkZgvJz+92ziDsb7B6wPMSYDjZvILCWanA+Mt7ySeENjMyMLUxNT
-	YyNzSzPShJXEedMfJQUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYBRmvnX1yzPv1tcb8tKP
-	7Zi1O2J25GlD82O+ThoT6qTE/uzWEcl8fHDmw2XTArgsPgVdfOB56E3C34Zr2S9vOQv6//28
-	QvaMG/e+/x+CPdhS9DpPVlxnq69aVdD7Pcuv1SmwoeOAX2qpyZapM5Mv//jQ6rS2ov97kZwE
-	b7vqIfljczk4TwQKH1RiKc5INNRiLipOBACq7W02rQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t9jQd2MP/LBBo1X1S2uf3nOajH/yDlW
-	i3OvVjJa9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaL25d5LZZev8hkMWH6WhaLVwfbWCzW
-	z3jN4sDrsWbeGkaPluYeNo+Vy7+weWxeUu/Rt2UVo8fnTXIeG+eGBrBHNTDaZKQmpqQWKaTm
-	JeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gAdq6RQlphTChQKSCwuVtK3
-	wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMWH1lFVvBNI6KzRunsDUw3mbrYuTkkBAwkfi//gwL
-	hC0mceHeeqA4F4eQwHRGifbDL5ghnEYmiXn33rCDVLEJaEnsf3EDrFtEQFdiysw7rCA2s8Ax
-	JokTUx26GDk4hAX8JRYd8wEJswioSjx9dQRsAa+Ai8T9L7OYIZbJSXzY84gdpJxTwFViw7xk
-	kLAQUMnxj0dZJjDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHI3PpHYwrmywOMQo
-	wMGoxMO7QFM+WIg1say4MvcQowQHs5II70eQEG9KYmVValF+fFFpTmrxIcZkoKMmMkuJJucD
-	E0VeSbyhsYmZkaWRuaGFkbE5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTAWt2S8uuI8
-	4/ckjV2HEjPyFqs/6nvqHZ0VEvpr2apNv+2mz028+To+zvxl/MRgdYVFvaZXfb9cebW99c6z
-	z/+P2zbwiVcXPN66QfigymY/5RM212NkWIp0LS1Ct19vyHmkwlB2Tsyl8EVZ2Oob7K7JBWV8
-	G9oCXvR/tVLXnrYu4oo/u8efaBclluKMREMt5qLiRAAB08EECgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsWyRsSkQDfnj3ywwfxWRovrX56zWsw/co7V
+	4tyrlYwWvQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8ni9mVei6XXLzJZTJi+lsXi1cE2Fov1
+	M16zOPB6rJm3htGjpbmHzWPl8i9sHpuX1Hv0bVnF6PF5k5zHxrmhAexRXDYpqTmZZalF+nYJ
+	XBldR2wK9nFVvOp6wNbAuI6ji5GDQ0LARGL5lLguRk4gU0ziwr31bF2MXBxCAksZJfb8eMgK
+	kTCRuPDzEytEYjqjxI2Dy1kgnEYmiXkXP4FVsQloSex/cYMNxBYR0JWYMvMOWJxZ4BiTxImp
+	DiDbhAUKJeYuDwIJswioSnTNuckEYvMKuEg0HvrABLFMTuLDnkfsIOWcAq4SG+Ylg4SFgEqO
+	fzzKAnHzOXaJ7ToQUwQkvk0+BBWWldh0gBliiKTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKRX
+	nJhbXJqXrpecn7uJERgnp/8969vBePOA9SHGZKBxE5mlRJPzgXGWVxJvaGxmZGFqYmpsZG5p
+	RpqwkjjvoodJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYS5Ws9nNZsu08ODfFkeG38tRb
+	mzfsY/pzlbf2RXkj44ZApaOciqs7dy7qUAg3vjrhjnbURZ4K8/O+Oza4PVtfPU/l+PbQ1+tZ
+	JsVaeL0V4V29V6JtTmr61slfPooyuzdkhUYtu/JA0UVg9jylYPsJT9oXXL7haiP9Rins2S7z
+	O19viXTXZjHIKrEUZyQaajEXFScCAEuxyaSpAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t9jQd3sP/LBBm+Xmllc//Kc1WL+kXOs
+	FuderWS06F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWiy9fpHJYsL0tSwWrw62sVis
+	n/GaxYHXY828NYweLc09bB4rl39h89i8pN6jb8sqRo/Pm+Q8Ns4NDWCPamC0yUhNTEktUkjN
+	S85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6VkmhLDGnFCgUkFhcrKRv
+	h2lCaIibrgVMY4Sub0gQXI+RARpIWMOY0XXEpmAfV8WrrgdsDYzrOLoYOTkkBEwkLvz8xAph
+	i0lcuLeerYuRi0NIYDqjxI2Dy1kgnEYmiXkXIarYBLQk9r+4wQZiiwjoSkyZeQcszixwjEni
+	xFSHLkYODmGBQom5y4NAwiwCqhJdc24ygdi8Ai4SjYc+MEEsk5P4sOcRO0g5p4CrxIZ5ySBh
+	IaCS4x+Pskxg5F3AyLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzgWn0nvYFzVYHGIUYCD
+	UYmHd6GmfLAQa2JZcWXuIUYJDmYlEd6PICHelMTKqtSi/Pii0pzU4kOMyUBHTWSWEk3OB6aJ
+	vJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpgLHCq8mD6n3Tl
+	QtqbglkqPCylYtuzW2fsDLi05lmzfAmX9kzPtccuiizjNpn1+U1qZ63dUr9H9gc3FXbPzGMQ
+	mR97WT5kapBL1P7rZ5+KT1L5usabRVDF9WSMUCvb7E4xodgTzuGVM7nurji/YUuJ2XU9N7vf
+	q4Smpavc36/3dJfp9Q/Hf4RlKLEUZyQaajEXFScCAM9xS38JAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,39 +54,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add ADC(Analog to Digital Converter)'s dt data to get raw data
-with IIO subsystem. Usually, ADC is used to check temperature, jack type
-and so on.
+This patch use ADC to get the temperature of SoC/battery by using NTC thermistor
+driver in hwmon. NTC thermistor driver covnvert ADC's raw data to temperature
+by using following variables:
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/boot/dts/exynos4x12.dtsi | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/arm/boot/dts/exynos4412-trats2.dts | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-index e0eb6bb..eec1e30 100644
---- a/arch/arm/boot/dts/exynos4x12.dtsi
-+++ b/arch/arm/boot/dts/exynos4x12.dtsi
-@@ -80,6 +80,18 @@
+diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
+index 4f851cc..3228506 100644
+--- a/arch/arm/boot/dts/exynos4412-trats2.dts
++++ b/arch/arm/boot/dts/exynos4412-trats2.dts
+@@ -106,6 +106,11 @@
  		};
  	};
  
 +	adc: adc@126C0000 {
-+		compatible = "samsung,exynos-adc-v1";
-+		reg = <0x126C0000 0x100>, <0x10020718 0x4>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <10 3>;
-+		clocks = <&clock CLK_TSADC>;
-+		clock-names = "adc";
-+		#io-channel-cells = <1>;
-+		io-channel-ranges;
-+		status = "disabled";
++		vdd-supply = <&ldo3_reg>;
++		status = "okay";
 +	};
 +
- 	pinctrl_2: pinctrl@03860000 {
- 		compatible = "samsung,exynos4x12-pinctrl";
- 		reg = <0x03860000 0x1000>;
+ 	i2c@13890000 {
+ 		samsung,i2c-sda-delay = <100>;
+ 		samsung,i2c-slave-addr = <0x10>;
+@@ -589,4 +594,20 @@
+ 			};
+ 		};
+ 	};
++
++	thermistor-ap@0 {
++		compatible = "ntc,ncp15wb473";
++		pullup-uv = <1800000>;	 /* VCC_1.8V_AP */
++		pullup-ohm = <100000>;	 /* 100K */
++		pulldown-ohm = <100000>; /* 100K */
++		io-channels = <&adc 1>;  /* AP temperature */
++	};
++
++	thermistor-battery@1 {
++		compatible = "ntc,ncp15wb473";
++		pullup-uv = <1800000>;	 /* VCC_1.8V_AP */
++		pullup-ohm = <100000>;	 /* 100K */
++		pulldown-ohm = <100000>; /* 100K */
++		io-channels = <&adc 2>;  /* Battery temperature */
++	};
+ };
 -- 
 1.8.0
 
