@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaCLKFS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 06:05:18 -0400
-Received: from smtp03.stone-is.org ([87.238.162.6]:35257 "EHLO
-	smtpgw.stone-is.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbaCLKFQ (ORCPT
+	id S1751817AbaCLKHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 06:07:35 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:51975 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751162AbaCLKHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 06:05:16 -0400
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-Message-ID: <53203156.4090902@acm.org>
-Date: Wed, 12 Mar 2014 11:05:10 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 12 Mar 2014 06:07:33 -0400
+Date: Wed, 12 Mar 2014 06:07:30 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Waiman Long <waiman.long@hp.com>,
+        arnd@arndb.de, linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        walken@google.com, andi@firstfloor.org, riel@redhat.com,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        oleg@redhat.com
+Subject: Re: [RFC][PATCH 0/7] locking: qspinlock
+Message-ID: <20140312060730.435122f0@gandalf.local.home>
+In-Reply-To: <20140312042616.GX13647@dastard>
+References: <20140310154236.038181843@infradead.org>
+	<20140312023153.GW13647@dastard>
+	<20140311231159.25a0d8dc@gandalf.local.home>
+	<20140312042616.GX13647@dastard>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
-        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] percpu_ida: Handle out-of-tags gracefully
-References: <531DC851.5060400@acm.org> <20140311135137.GA22995@dhcp-26-207.brq.redhat.com> <531F518A.1070808@acm.org> <20140311204826.GA30105@dhcp-26-207.brq.redhat.com> <53200B2E.4060805@acm.org> <20140312084152.GA8838@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20140312084152.GA8838@dhcp-26-207.brq.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/14 09:41, Alexander Gordeev wrote:
-> Still the hunk below (a) breaks the 'pool->percpu_max_size' threshold
-> and (b) somehow suboptimal, because you wake another thread while a
-> free tag was/is on this CPU. If it is still here we would better to
-> grab it. If not, it was stolen by another thread and we do not need
-> to wake one (not sure how could it be addressed, though).
-> 
-> In fact, did you try to remove this hunk at all? A following call to
-> percpu_ida_free() both honors the threshold and wakes a thread, so
-> your extra wake could be unnecessary.
-> 
-> @@ -189,6 +189,9 @@ int percpu_ida_alloc(struct percpu_ida *pool, int state)
->  		spin_unlock(&pool->lock);
->  		local_irq_restore(flags);
->  
-> +		if (tags->nr_free)
-> +			wake_up(&pool->wait);
-> +
->  		if (tag >= 0 || state == TASK_RUNNING)
->  			break;
->  
-> 
+On Wed, 12 Mar 2014 15:26:16 +1100
+Dave Chinner <david@fromorbit.com> wrote:
 
-Hello Alexander,
 
-You are right, that hunk is not necessary and can be left out. That code
-was added while chasing another (unrelated) bug. I will resend this
-patch without that hunk.
+> I did apply them manually - but the patchset is based on the
+> tip/master, plus some patches from a previous patch set that aren't
+> in tip/locking to be able to apply this patchset cleanly in the
+> first place. So there's no "start froma known working kernel" case
+> that applies here :/
 
-Bart.
+Peter,
+
+Which kernel should we start testing your code against?
+
+Thanks,
+
+-- Steve
