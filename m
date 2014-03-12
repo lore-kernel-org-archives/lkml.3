@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134AbaCLRW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 13:22:57 -0400
-Received: from smtprelay0033.hostedemail.com ([216.40.44.33]:56598 "EHLO
+	id S1755143AbaCLRXR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 13:23:17 -0400
+Received: from smtprelay0070.hostedemail.com ([216.40.44.70]:57164 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756093AbaCLRWy (ORCPT
+	by vger.kernel.org with ESMTP id S1756206AbaCLRXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 13:22:54 -0400
+	Wed, 12 Mar 2014 13:23:13 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1540:1711:1730:1747:1777:1792:2393:2559:2562:2904:3138:3139:3140:3141:3142:3352:3865:3866:5007:6261:7903:10004:10026:10848:11026:11657:11658:11914:12043:12438:12517:12519:12555:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCach
-X-HE-Tag: smile73_8d3d015753647
-X-Filterd-Recvd-Size: 2120
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1714:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3351:3865:3866:5007:6261:10004:10026:10848:11026:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,Dom
+X-HE-Tag: rat46_8fd2fa1c6b50c
+X-Filterd-Recvd-Size: 2282
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
@@ -23,9 +23,9 @@ Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         John Ronciak <john.ronciak@intel.com>,
         Mitch Williams <mitch.a.williams@intel.com>,
         e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 2/9] e100: Convert uses of __constant_<foo> to <foo>
-Date: Wed, 12 Mar 2014 10:22:31 -0700
-Message-Id: <b7d59e4e50e0e90546ca66d2865d52552be1e553.1394644825.git.joe@perches.com>
+Subject: [PATCH net-next 6/9] ixgbevf: Convert uses of __constant_<foo> to <foo>
+Date: Wed, 12 Mar 2014 10:22:35 -0700
+Message-Id: <6477c916f14711f9f0cd02610a8b8a3c1804a83e.1394644825.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1394644825.git.joe@perches.com>
 References: <cover.1394644825.git.joe@perches.com>
@@ -39,25 +39,28 @@ Make these uses consistent with the rest of the kernel.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/ethernet/intel/e100.c | 4 ++--
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e100.c b/drivers/net/ethernet/intel/e100.c
-index bf7a01e..b56461c 100644
---- a/drivers/net/ethernet/intel/e100.c
-+++ b/drivers/net/ethernet/intel/e100.c
-@@ -1778,9 +1778,9 @@ static int e100_xmit_prepare(struct nic *nic, struct cb *cb,
- 	 * testing, ie sending frames with bad CRC.
- 	 */
- 	if (unlikely(skb->no_fcs))
--		cb->command |= __constant_cpu_to_le16(cb_tx_nc);
-+		cb->command |= cpu_to_le16(cb_tx_nc);
- 	else
--		cb->command &= ~__constant_cpu_to_le16(cb_tx_nc);
-+		cb->command &= ~cpu_to_le16(cb_tx_nc);
- 
- 	/* interrupt every 16 packets regardless of delay */
- 	if ((nic->cbs_avail & ~15) == nic->cbs_avail)
+diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+index 6ac5da2..be56a9e 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
++++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+@@ -2851,12 +2851,12 @@ static void ixgbevf_tx_csum(struct ixgbevf_ring *tx_ring,
+ 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
+ 		u8 l4_hdr = 0;
+ 		switch (skb->protocol) {
+-		case __constant_htons(ETH_P_IP):
++		case htons(ETH_P_IP):
+ 			vlan_macip_lens |= skb_network_header_len(skb);
+ 			type_tucmd |= IXGBE_ADVTXD_TUCMD_IPV4;
+ 			l4_hdr = ip_hdr(skb)->protocol;
+ 			break;
+-		case __constant_htons(ETH_P_IPV6):
++		case htons(ETH_P_IPV6):
+ 			vlan_macip_lens |= skb_network_header_len(skb);
+ 			l4_hdr = ipv6_hdr(skb)->nexthdr;
+ 			break;
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
