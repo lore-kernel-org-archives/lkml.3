@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626AbaCLCLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 22:11:32 -0400
-Received: from [207.46.163.27] ([207.46.163.27]:6748 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1756601AbaCLCL3 (ORCPT
+	id S1756655AbaCLCLt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 22:11:49 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:51352 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756027AbaCLCKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 22:11:29 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-Date: Wed, 12 Mar 2014 10:01:24 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        <kuninori.morimoto.gx@renesas.com>, <moinejf@free.fr>,
-        <Li.Xiubo@freescale.com>, <lgirdwood@gmail.com>,
-        Jyri Sarha <jsarha@ti.com>
-Subject: Re: [PATCH] ASoC: simple-card: overwrite DAIFMT_MASTER of
- cpu_dai->fmt
-Message-ID: <20140312020123.GC1177@MrMyself>
-References: <1394542472-16580-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140311132553.GR28112@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140311132553.GR28112@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Tue, 11 Mar 2014 22:10:13 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 3/6] cputime: Bring cputime -> nsecs conversion
+Date: Wed, 12 Mar 2014 03:09:59 +0100
+Message-Id: <1394590202-772-4-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1394590202-772-1-git-send-email-fweisbec@gmail.com>
+References: <1394590202-772-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 01:25:53PM +0000, Mark Brown wrote:
-> On Tue, Mar 11, 2014 at 08:54:32PM +0800, Nicolin Chen wrote:
-> 
-> Adding Jyri who's been looking at this as well but not added anyone else
-> working on simple-card so you might've missed his mails.
-> 
-> > It's pretty fair to do it for DAIFMT_INV since two dais might have differnt
-> > definitions in their drivers even though it'd be better to keep it same if
-> > we could.
-> 
-> No, that's not at all OK - anything that requires this is broken.  The
-> same DAI format should be usable by both ends of the link unless the
-> board itself is inverting one of the signals or something.
+We already have nsecs_to_cputime(). Now we need to be able to convert
+the other way around in order to fix a bug on steal time accounting.
 
-That makes sense to me. Okay, I'll overwrite them all...
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ include/asm-generic/cputime_jiffies.h | 4 +++-
+ include/asm-generic/cputime_nsecs.h   | 2 ++
+ include/linux/cputime.h               | 5 +++++
+ 3 files changed, 10 insertions(+), 1 deletion(-)
 
-> 
-> > Thus this patch fixes it by overwriting the DAIFMT_MASTER bit of cpu_dai->fmt
-> > with the one of codec_dai->fmt since we defined DAIFMT_MASTER basing on CODEC
-> > at the first place.
-> 
-> This seems closer to what I'd expect for something like this but it does
-> mean that any format settings on the CPU DAI will be ignored (rather
-> than say warning or something).  I'm not sure this is a bad thing
-> though, probably wants the binding documenting at least.
-
-...along with the binding doc.
-
+diff --git a/include/asm-generic/cputime_jiffies.h b/include/asm-generic/cputime_jiffies.h
+index 272ecba..d5cb78f5 100644
+--- a/include/asm-generic/cputime_jiffies.h
++++ b/include/asm-generic/cputime_jiffies.h
+@@ -15,8 +15,10 @@ typedef u64 __nocast cputime64_t;
+ 
+ 
+ /*
+- * Convert nanoseconds to cputime
++ * Convert nanoseconds <-> cputime
+  */
++#define cputime_to_nsecs(__ct)		\
++	jiffies_to_nsecs(cputime_to_jiffies(__ct))
+ #define nsecs_to_cputime64(__nsec)	\
+ 	jiffies64_to_cputime64(nsecs_to_jiffies64(__nsec))
+ #define nsecs_to_cputime(__nsec)	\
+diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
+index 768294f..4e81760 100644
+--- a/include/asm-generic/cputime_nsecs.h
++++ b/include/asm-generic/cputime_nsecs.h
+@@ -44,6 +44,8 @@ typedef u64 __nocast cputime64_t;
+ /*
+  * Convert cputime <-> nanoseconds
+  */
++#define cputime_to_nsecs(__ct)		\
++	(__force u64)(__ct)
+ #define nsecs_to_cputime(__nsecs)	\
+ 	(__force cputime_t)(__nsecs)
+ 
+diff --git a/include/linux/cputime.h b/include/linux/cputime.h
+index 2842ebe..f2eb2ee 100644
+--- a/include/linux/cputime.h
++++ b/include/linux/cputime.h
+@@ -3,6 +3,11 @@
+ 
+ #include <asm/cputime.h>
+ 
++#ifndef cputime_to_nsecs
++# define cputime_to_nsecs(__ct)	\
++	(cputime_to_usecs(__ct) * NSEC_PER_USEC)
++#endif
++
+ #ifndef nsecs_to_cputime
+ # define nsecs_to_cputime(__nsecs)	\
+ 	usecs_to_cputime((__nsecs) / NSEC_PER_USEC)
+-- 
+1.8.3.1
 
