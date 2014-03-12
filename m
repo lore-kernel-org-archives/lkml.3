@@ -1,103 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738AbaCLSKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 14:10:55 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:49237 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755544AbaCLSHx (ORCPT
+	id S1756781AbaCLSLe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 14:11:34 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:60169 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756088AbaCLSLb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 14:07:53 -0400
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robherring2@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: Boris BREZILLON <b.brezillon.dev@gmail.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        dev@linux-sunxi.org
-Subject: =?UTF-8?q?=5BPATCH=20v3=201/9=5D=20mtd=3A=20nand=3A=20define=20struct=20nand=5Ftimings?=
-Date: Wed, 12 Mar 2014 19:07:36 +0100
-Message-Id: <1394647664-8258-2-git-send-email-b.brezillon.dev@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com>
-References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 12 Mar 2014 14:11:31 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH V2 bluetooth-next 2/6] bluetooth: Convert uses of __constant_<foo> to <foo>
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1394646755.3915.8.camel@joe-AO722>
+Date: Wed, 12 Mar 2014 11:11:13 -0700
+Cc: Network Development <netdev@vger.kernel.org>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
+	<linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <34E193D0-F15B-4C23-83F7-697096916D4D@holtmann.org>
+References: <cover.1394643455.git.joe@perches.com> <51892631f2289665bf47b294c783ee9560a8317e.1394643455.git.joe@perches.com> <F2E9571C-2D55-4529-A361-D8CD4B3FC491@holtmann.org> <1394646755.3915.8.camel@joe-AO722>
+To: Joe Perches <joe@perches.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define a struct containing the standard NAND timings as described in NAND
-datasheets.
+Hi Joe,
 
-Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
----
- include/linux/mtd/nand.h |   49 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
+> The use of __constant_<foo> has been unnecessary for quite awhile now.
+> 
+> Make these uses consistent with the rest of the kernel.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> 
+>> can you please send this one against bluetooth-next tree.
+> 
+> Sure.  Here.  btw:
+> 
+> The bandwidth uses of 0x1f40 are kind of unreadable to me.
+> I think they'd be better as 8000
+> 
+> Also some of the hex constants uses seem odd where comments
+> don't seem to match the number like: 
+> 
+> 	/* Connection accept timeout ~20 secs */
+> -	param = __constant_cpu_to_le16(0x7d00);
+> +	param = cpu_to_le16(0x7d00);
+> 
+> 0x7d00 is 32000, presumably that's 32 seconds.
 
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 389b3c5..f3ff3a3 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -846,4 +846,53 @@ static inline bool nand_is_slc(struct nand_chip *chip)
- {
- 	return chip->bits_per_cell == 1;
- }
-+
-+/**
-+ * struct nand_sdr_timings - SDR NAND chip timings
-+ *
-+ * This struct defines the timing requirements of a SDR NAND chip.
-+ * These informations can be found in every NAND datasheets and the timings
-+ * meaning are described in the ONFI specifications:
-+ * www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf‎ (chapter 4.15 Timing
-+ * Parameters)
-+ *
-+ */
-+
-+struct nand_sdr_timings {
-+	u32 tALH_min;
-+	u32 tADL_min;
-+	u32 tALS_min;
-+	u32 tAR_min;
-+	u32 tCEA_max;
-+	u32 tCEH_min;
-+	u32 tCH_min;
-+	u32 tCHZ_max;
-+	u32 tCLH_min;
-+	u32 tCLR_min;
-+	u32 tCLS_min;
-+	u32 tCOH_min;
-+	u32 tCS_min;
-+	u32 tDH_min;
-+	u32 tDS_min;
-+	u32 tFEAT_max;
-+	u32 tIR_min;
-+	u32 tITC_max;
-+	u32 tRC_min;
-+	u32 tREA_max;
-+	u32 tREH_min;
-+	u32 tRHOH_min;
-+	u32 tRHW_min;
-+	u32 tRHZ_max;
-+	u32 tRLOH_min;
-+	u32 tRP_min;
-+	u32 tRR_min;
-+	u64 tRST_max;
-+	u32 tWB_max;
-+	u32 tWC_min;
-+	u32 tWH_min;
-+	u32 tWHR_min;
-+	u32 tWP_min;
-+	u32 tWW_min;
-+};
-+
- #endif /* __LINUX_MTD_NAND_H */
--- 
-1.7.9.5
+so it is 0x7d00 * 0.625 which results in 20 seconds.
+
+> 
+> and
+> 
+> 		/* 160 msec page scan interval */
+> -		acp.interval = __constant_cpu_to_le16(0x0100);
+> +		acp.interval = cpu_to_le16(0x0100);
+> 
+> 256 msecs?
+
+also here 0x0100 * 0.625 resulting in 160 msecs.
+
+> net/bluetooth/a2mp.c        |  4 +-
+> net/bluetooth/hci_conn.c    | 26 ++++++-------
+> net/bluetooth/hci_core.c    |  2 +-
+> net/bluetooth/hci_event.c   |  6 +--
+> net/bluetooth/hci_sock.c    | 16 ++++----
+> net/bluetooth/l2cap_core.c  | 90 ++++++++++++++++++++++-----------------------
+> net/bluetooth/l2cap_sock.c  |  6 +--
+> net/bluetooth/mgmt.c        | 26 ++++++-------
+> net/bluetooth/rfcomm/core.c |  4 +-
+> net/bluetooth/sco.c         | 10 ++---
+> net/bluetooth/smp.c         |  2 +-
+> 11 files changed, 96 insertions(+), 96 deletions(-)
+
+patch has been applied to bluetooth-next tree.
+
+Regards
+
+Marcel
 
