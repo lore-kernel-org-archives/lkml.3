@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956AbaCLP0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:26:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35899 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151AbaCLP0x (ORCPT
+	id S1755040AbaCLP1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:27:45 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:39093 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754988AbaCLP1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 11:26:53 -0400
-Date: Wed, 12 Mar 2014 16:26:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Archs <linux-arch@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH 6/6] arch: Remove stub cputime.h headers
-Message-ID: <20140312152644.GF27965@twins.programming.kicks-ass.net>
-References: <1394590202-772-1-git-send-email-fweisbec@gmail.com>
- <1394590202-772-7-git-send-email-fweisbec@gmail.com>
- <20140312094447.GP30956@twins.programming.kicks-ass.net>
- <20140312152323.GA12280@localhost.localdomain>
+	Wed, 12 Mar 2014 11:27:43 -0400
+Message-ID: <53207CA2.4090309@st.com>
+Date: Wed, 12 Mar 2014 16:26:26 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140312152323.GA12280@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        <kernel@stlinux.com>, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH v4 0/6] Add STiH407 SoC and reference board support
+References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com> <CACRpkdboBkzcJC35-BNvVYmS_t9Cd204AVz4rZasKtNJp0yE4g@mail.gmail.com>
+In-Reply-To: <CACRpkdboBkzcJC35-BNvVYmS_t9Cd204AVz4rZasKtNJp0yE4g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-12_06:2014-03-12,2014-03-12,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 04:23:28PM +0100, Frederic Weisbecker wrote:
-> On Wed, Mar 12, 2014 at 10:44:47AM +0100, Peter Zijlstra wrote:
-> > On Wed, Mar 12, 2014 at 03:10:02AM +0100, Frederic Weisbecker wrote:
-> > > diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
-> > > index a73a8e2..1a81a8b 100644
-> > > --- a/arch/alpha/include/asm/Kbuild
-> > > +++ b/arch/alpha/include/asm/Kbuild
-> > > @@ -5,3 +5,4 @@ generic-y += exec.h
-> > >  generic-y += trace_clock.h
-> > >  generic-y += preempt.h
-> > >  generic-y += hash.h
-> > > +generic-y += cputime.h
-> > > \ No newline at end of file
-> > 
-> > That's a double fail there, not sorted and no EOL.
-> > 
-> > Please run the script from commit: b119fa61d440f after you touch the
-> > asm/Kbuild files.
-> 
-> I don't see why we need to sort them. But I'm running the script anyway.
-> Will resend, thanks.
+Hi Linus,
 
-sfr gets real grumpy if we don't, at one point I gave in and wrote that
-script, because I sure as hell wasn't going to manually sort all those
-files every time I did a automated addition.
+On 03/12/2014 03:20 PM, Linus Walleij wrote:
+> On Wed, Mar 12, 2014 at 9:50 AM, Maxime COQUELIN <maxime.coquelin@st.com> wrote:
+>
+>> This series adds basic support to the STMicroelectronics STiH407 SoC and its
+>> B2120 reference board. The STiH407 is a dual-core ARM Cortex-A9 CPU aimed at
+>> STB market.
+>>
+>> Changes since v3:
+>
+> I've applied the pinctrl changes to the pinctrl tree, please push all the
+> DTS[i] changes through ARM SoC.
+As mentioned in the cover-letter, the DTS changes are based on arm_soc's 
+for-next branch.
+
+Do you mean I should send a pull request for these three patches?
+
+
+>
+> There is no need to keep DTS and subsystem changes in sync as
+> the DTS'es are supposed to be maintained in separation in the
+> future anyway.
+>
+
+Understood.
+
+Thanks,
+Maxime
+> Yours,
+> Linus Walleij
+>
