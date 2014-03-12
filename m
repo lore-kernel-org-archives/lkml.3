@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060AbaCLTA0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 15:00:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40052 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaCLTAY (ORCPT
+	id S1752137AbaCLTAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 15:00:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52705 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075AbaCLTA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 15:00:24 -0400
-Date: Wed, 12 Mar 2014 15:00:20 -0400 (EDT)
-Message-Id: <20140312.150020.340861233360073600.davem@davemloft.net>
-To: vgoyal@redhat.com
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        netdev@vger.kernel.org, tj@kernel.org, ssorce@redhat.com,
-        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
-Subject: Re: [PATCH 1/2] cgroup: Provide empty definition of
- task_cgroup_path()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394649942-5854-2-git-send-email-vgoyal@redhat.com>
-References: <1394649942-5854-1-git-send-email-vgoyal@redhat.com>
-	<1394649942-5854-2-git-send-email-vgoyal@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 12 Mar 2014 12:00:24 -0700 (PDT)
+	Wed, 12 Mar 2014 15:00:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "DCG_UPD_stlinux_kernel@list.st.com" 
+	<DCG_UPD_stlinux_kernel@list.st.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [PATCH v2 1/3] ata: ahci_st: Provide DT bindings for ST's SATA implementation
+Date: Wed, 12 Mar 2014 19:59:52 +0100
+Message-ID: <5284929.ZWl2X8pt1x@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140312171452.GE22450@lee--X1>
+References: <1393328481-7251-1-git-send-email-lee.jones@linaro.org> <7613177.7hd4IoKUr4@wuerfel> <20140312171452.GE22450@lee--X1>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:mTinHbRuLNn6B74dKs6VGakmL5EGnpX0/k2htqE68NH
+ nHtkefjl3u4fv7e4gGMWBrqMH5nSGc27dzx8sfC4YCftJDZjJH
+ lPY2bLFPl5yxQno2/PHInCOB/S9RcyH8oeE5DL/qNbA0njXrEN
+ R/pEGzgvFwFyToiWSG3pUXXBcwKpnpqhjJdaORnjFcsA5+5tC4
+ grOsxxBiphCgc4VwLjS9yFf853qqKqVW8WV6gNXPGwJEB/1KJp
+ kzpVzsGJW/XAsJi32dJuLBOancLzDwMU+CsSvF7Dd8yHbTxVbE
+ 5Tw5GvgegsN+KyUTNmk8cnSbG0RM7D6p+BF3bjBNbP1On2MP3Q
+ SncRmpt9O89KHXzosLY4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vivek Goyal <vgoyal@redhat.com>
-Date: Wed, 12 Mar 2014 14:45:41 -0400
-
-> Compilation with !CONFIG_CGROUP fails for task_cgroup_path() user. So
-> provide an emtpy definition.
+On Wednesday 12 March 2014 17:14:52 Lee Jones wrote:
+> > > > > +This binding describes a SATA device.
+> > > > > +
+> > > > > +Required properties:
+> > > > > + - compatible         : Must be "st,ahci"
+> > > > 
+> > > > Is there not a more specific name? This is awfully generic.
+> > > 
+> > > There isn't one. ST only have one AHCI driver. The driver is named as
+> > > generically.
+> > 
+> > If it is this generic, can't you use the completely generic
+> > ahci-platform driver and add a "generic-ahci" compatible string
+> > to that?
 > 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  include/linux/cgroup.h | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index 9450f02..bf40adb 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -869,6 +869,8 @@ static inline int cgroup_attach_task_all(struct task_struct *from,
->  	return 0;
->  }
->  
-> +static inline int task_cgroup_path(struct task_struct *task, char *buf, size_t buflen) {return 0;}
-> +
+> It pretty much does. The only 'special' functionality we handle in
+> the driver are resets and configuring the OOB. However, both are
+> required.
 
-Please properly format this just like any other function.
+The reset handling should be easy to add to the generic driver
+usign as an optional property if I'm not mistaken.
 
-static inline int task_cgroup_path(struct task_struct *task, char *buf, size_t buflen)
-{
-	eturn 0;
-}
+What is OOB?
 
-It looked like a plain static declaration on first glance.
+	Arnd
