@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045AbaCLVFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 17:05:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55716 "EHLO bear.ext.ti.com"
+	id S1752932AbaCLVFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 17:05:23 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:56410 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752105AbaCLVFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 17:05:47 -0400
-Message-ID: <5320CBFF.3000909@ti.com>
-Date: Thu, 13 Mar 2014 05:05:03 +0800
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 5/5] drivers: bus: omap_l3: Change pr_crit() to dev_err()
- when IRQ request fails
-References: <1393937293-6036-1-git-send-email-peter.ujfalusi@ti.com> <1393937293-6036-6-git-send-email-peter.ujfalusi@ti.com> <5315E522.9090606@ti.com> <5316CE17.6010201@ti.com> <20140312172854.GD30897@atomide.com>
-In-Reply-To: <20140312172854.GD30897@atomide.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1752425AbaCLVFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 17:05:18 -0400
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Rob Herring <robh+dt@kernel.org>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v2a RESEND 2/2] of_mdio: Allow the DT to specify the phy ID and avoid autoprobing
+Date: Wed, 12 Mar 2014 15:05:11 -0600
+Message-Id: <1394658311-17769-2-git-send-email-jgunthorpe@obsidianresearch.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1394658311-17769-1-git-send-email-jgunthorpe@obsidianresearch.com>
+References: <1394658311-17769-1-git-send-email-jgunthorpe@obsidianresearch.com>
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 March 2014 01:28 AM, Tony Lindgren wrote:
-> * Peter Ujfalusi <peter.ujfalusi@ti.com> [140304 23:14]:
->> On 03/04/2014 04:37 PM, Santosh Shilimkar wrote:
->>> On Tuesday 04 March 2014 08:48 PM, Peter Ujfalusi wrote:
->>>> Use dev_err() which will going to print the driver's name as well and the
->>>> KERN_ERR level is sufficient in this case (we also print via dev_err when
->>>> there is an error with the mem resources)
->>>>
->>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->>>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>> ---
->>>>  drivers/bus/omap_l3_noc.c | 7 +++----
->>>>  1 file changed, 3 insertions(+), 4 deletions(-)
->>>>
->>>> diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
->>>> index 0eff48585ae3..972691a668a3 100644
->>>> --- a/drivers/bus/omap_l3_noc.c
->>>> +++ b/drivers/bus/omap_l3_noc.c
->>>> @@ -158,8 +158,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
->>>>  	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
->>>>  			       IRQF_DISABLED, "l3-dbg-irq", l3);
->>>>  	if (ret) {
->>>> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
->>>> -						l3->debug_irq);
->>>> +		dev_err(&pdev->dev, "request_irq failed for %d\n",
->>>> +			l3->debug_irq);
->>>>  		return ret;
->>>>  	}
->>>>  
->>>> @@ -167,8 +167,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
->>>>  	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
->>>>  			       IRQF_DISABLED, "l3-app-irq", l3);
->>>>  	if (ret)
->>>> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
->>>> -						l3->app_irq);
->>>> +		dev_err(&pdev->dev, "request_irq failed for %d\n", l3->app_irq);
->>>>  
->>>>  	return ret;
->>>>  }
->>>>
->>> So this one change in the log level. If I look at now, may be dev_err
->>> is fine but the change is not same.
->>
->> Not sure what you mean by 'the change is not same'?
->> I just picked the old series and rebased it on linux-next, the patch is the
->> same as it was back in May 2013:
->> https://lkml.org/lkml/2013/5/2/205
->>
->> And yes, I have shortened the texts in the print, but the meaning of the
->> prints have not changed.
-> 
-> Santosh, got any more comments on this series?
-> 
-Nope. looks good
+This makes the generic of_mdiobus_register parse the DT compatible string for
+the pattern ethernet-phy-idAAAA.BBBB. If present it should be a value that
+matches the phy-id register normally readable through MDIO.
+
+When the ID is given the phy autoprobing is defeated and the phy is
+created directly.
+
+This is necessary to support phy's that cannot be autoprobed when
+of_mdiobus_register is called. Specifically, my case has the phy in reset at
+of_mdiobus_register, the reset is only released once the ethernet driver
+starts, before it attaches to the phy.
+
+Tested on ARM Kirkwood with phy id 0x01410e90 (Marvell 88E1318)
+
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+---
+ drivers/of/of_mdio.c | 30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
+
+There was some reworking of the original code in v3.14-rc6, this resolves the
+merge conflicts and I retested the resolved patch on Kirkwood.
+
+Florian, do you know what path to mainline a this patch should take?
+
+Thanks,
+Jason
+
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index 5b3c24f..6cdcbda 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -43,6 +43,30 @@ static void of_set_phy_supported(struct phy_device *phydev, u32 max_speed)
+ 	}
+ }
+ 
++/* Extract the clause 22 phy ID from the compatible string of the form
++ * ethernet-phy-idAAAA.BBBB */
++static int of_get_phy_id(struct device_node *device, u32 *phy_id)
++{
++	const char *cp;
++	int cplen, l;
++	unsigned int upper, lower;
++
++	cp = of_get_property(device, "compatible", &cplen);
++	if (cp == NULL)
++		return -EINVAL;
++	while (cplen > 0) {
++		if (sscanf(cp, "ethernet-phy-id%4x.%4x", &upper, &lower) == 2) {
++			*phy_id = ((upper & 0xFFFF) << 16) | (lower & 0xFFFF);
++			return 0;
++		}
++
++		l = strlen(cp) + 1;
++		cp += l;
++		cplen -= l;
++	}
++	return -EINVAL;
++}
++
+ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *child,
+ 				   u32 addr)
+ {
+@@ -50,11 +74,15 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
+ 	bool is_c45;
+ 	int rc;
+ 	u32 max_speed = 0;
++	u32 phy_id;
+ 
+ 	is_c45 = of_device_is_compatible(child,
+ 					 "ethernet-phy-ieee802.3-c45");
+ 
+-	phy = get_phy_device(mdio, addr, is_c45);
++	if (!is_c45 && !of_get_phy_id(child, &phy_id))
++		phy = phy_device_create(mdio, addr, phy_id, 0, NULL);
++	else
++		phy = get_phy_device(mdio, addr, is_c45);
+ 	if (!phy || IS_ERR(phy))
+ 		return 1;
+ 
+-- 
+1.8.1.2
 
