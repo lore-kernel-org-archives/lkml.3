@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634AbaCLDSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 23:18:13 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:33337 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102AbaCLDSM (ORCPT
+	id S1754150AbaCLDX3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 23:23:29 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33170 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616AbaCLDX1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 23:18:12 -0400
-Message-ID: <531FD1DA.5010006@hp.com>
-Date: Tue, 11 Mar 2014 23:17:46 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, arnd@arndb.de,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        akpm@linux-foundation.org, walken@google.com, andi@firstfloor.org,
-        riel@redhat.com, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, oleg@redhat.com
-Subject: Re: [RFC][PATCH 0/7] locking: qspinlock
-References: <20140310154236.038181843@infradead.org> <20140311104503.GA10916@gmail.com>
-In-Reply-To: <20140311104503.GA10916@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Mar 2014 23:23:27 -0400
+Date: Tue, 11 Mar 2014 23:23:25 -0400 (EDT)
+Message-Id: <20140311.232325.2172162494177450404.davem@davemloft.net>
+To: linus.luessing@web.de
+Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+        stephen@networkplumber.org, linux-kernel@vger.kernel.org,
+        jstancek@redhat.com, fwestpha@redhat.com
+Subject: Re: [PATCHv2 1/2] bridge: multicast: add sanity check for general
+ query destination
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394486725-4992-1-git-send-email-linus.luessing@web.de>
+References: <1394486725-4992-1-git-send-email-linus.luessing@web.de>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 11 Mar 2014 20:23:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2014 06:45 AM, Ingo Molnar wrote:
-> * Peter Zijlstra<peterz@infradead.org>  wrote:
->
->> Hi Waiman,
->>
->> I promised you this series a number of days ago; sorry for the delay
->> I've been somewhat unwell :/
->>
->> That said, these few patches start with a (hopefully) simple and
->> correct form of the queue spinlock, and then gradually build upon
->> it, explaining each optimization as we go.
->>
->> Having these optimizations as separate patches helps twofold;
->> firstly it makes one aware of which exact optimizations were done,
->> and secondly it allows one to proove or disprove any one step;
->> seeing how they should be mostly identity transforms.
->>
->> The resulting code is near to what you posted I think; however it
->> has one atomic op less in the pending wait-acquire case for NR_CPUS
->> != huge. It also doesn't do lock stealing; its still perfectly fair
->> afaict.
->>
->> Have I missed any tricks from your code?
-> Waiman, you indicated in the other thread that these look good to you,
-> right? If so then I can queue them up so that they form a base for
-> further work.
->
-> It would be nice to have per patch performance measurements though ...
-> this split-up structure really enables that rather nicely.
->
-> Thanks,
->
-> 	Ingo
-As said by Peter, I haven't reviewed his change yet. The patch I am 
-working on has an optimization that is similar to PeterZ's small NR_CPUS 
-change. Except that I do a single atomic short integer write to switch 
-the bits instead of 2 byte write. However, this code seems to have some 
-problem working with the lockref code and I had panic happening in 
-fs/dcache.c. So I am investigating that issue.
+From: Linus Lüssing <linus.luessing@web.de>
+Date: Mon, 10 Mar 2014 22:25:24 +0100
 
-I am also trying to revise the PV support to be similar to what is 
-currently done in the PV ticketlock code. That is why I am kind of 
-silent this past week.
+> General IGMP and MLD queries are supposed to have the multicast
+> link-local all-nodes address as their destination according to RFC2236
+> section 9, RFC3376 section 4.1.12/9.1, RFC2710 section 8 and RFC3810
+> section 5.1.15.
+> 
+> Without this check, such malformed IGMP/MLD queries can result in a
+> denial of service: The queries are ignored by most IGMP/MLD listeners
+> therefore they will not respond with an IGMP/MLD report. However,
+> without this patch these malformed MLD queries would enable the
+> snooping part in the bridge code, potentially shutting down the
+> according ports towards these hosts for multicast traffic as the
+> bridge did not learn about these listeners.
+> 
+> Reported-by: Jan Stancek <jstancek@redhat.com>
+> Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 
--Longman
+Applied.
