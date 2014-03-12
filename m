@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476AbaCLCcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 22:32:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45015 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756435AbaCLCcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 22:32:54 -0400
-Date: Wed, 12 Mar 2014 10:32:07 +0800
-From: WANG Chao <chaowang@redhat.com>
-To: Jon Mason <jdmason@kudzu.us>
-Cc: Muli Ben-Yehuda <muli@cs.technion.ac.il>, Vivek Goyal <vgoyal@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Baoquan He <bhe@redhat.com>,
-        kexec@lists.infradead.org, x86@kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] x86, calgary: use 8M TCE table size by default
-Message-ID: <20140312023207.GA6244@dhcp-17-89.nay.redhat.com>
-References: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
- <20140310154531.GC4352@redhat.com>
- <20140310155406.GA5386@needle.strato>
- <CAPoiz9xYoZJVPY13_2QdRK-ZxEzxN1LH51u5SRoRA9z4xpkZ3A@mail.gmail.com>
+	id S1756528AbaCLCeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 22:34:23 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50820 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752966AbaCLCeV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 22:34:21 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <531FC7AC.5070102@roeck-us.net>
+Date: Tue, 11 Mar 2014 19:34:20 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPoiz9xYoZJVPY13_2QdRK-ZxEzxN1LH51u5SRoRA9z4xpkZ3A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Satoru Takeuchi <satoru.takeuchi@gmail.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 00/99] 3.4.83-stable review
+References: <20140308010611.468206150@linuxfoundation.org> <87a9d1nhrk.wl%satoru.takeuchi@gmail.com> <531B2AC8.1050205@roeck-us.net> <20140308161839.GA26012@kroah.com> <531B4EE8.3090003@roeck-us.net> <20140312000423.GA16302@kroah.com>
+In-Reply-To: <20140312000423.GA16302@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/14 at 10:26pm, Jon Mason wrote:
-> On Mon, Mar 10, 2014 at 8:54 AM, Muli Ben-Yehuda <muli@cs.technion.ac.il> wrote:
-> > Patch looks good to me.
-> >
-> > Acked-by: Muli Ben-Yehuda <mulix@mulix.org>
-> 
-> Me too (just in case you want us both).
-> 
-> Acked-by: Jon Mason <jdmason@kudzu.us>
+On 03/11/2014 05:04 PM, Greg Kroah-Hartman wrote:
 
-Thanks for review and helping push this change, to all of you.
+>>
+>> Can you possibly add me to the cc: of your introductory e-mail
+>> announcing new stable releases ? Sometimes it seems to get lost
+>> and isn't available on any of the 'common' archives (this one
+>> did not make it to lkml, for example, and many of the individual
+>> mails didn't make it into the stable mailing list at gmane).
+>
+> Sure, now added.
+>
+>
 
-WANG Chao
+Thanks a lot, appreciate it!
+
+Guenter
+
