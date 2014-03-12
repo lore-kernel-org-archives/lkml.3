@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235AbaCLJV2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:21:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40945 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753018AbaCLJV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:21:27 -0400
-Date: Wed, 12 Mar 2014 10:21:25 +0100
-From: Jiri Bohac <jbohac@suse.cz>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jiri Bohac <jbohac@suse.cz>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: is printk() safe within a timekeeper_seq write section?
-Message-ID: <20140312092125.GA30305@midget.suse.cz>
-References: <20140306174531.GA30634@midget.suse.cz>
- <531F6429.8050008@linaro.org>
- <alpine.DEB.2.02.1403112040100.18573@ionos.tec.linutronix.de>
- <531F8605.10003@linaro.org>
+	id S1753024AbaCLJXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 05:23:12 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:64319 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbaCLJXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 05:23:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531F8605.10003@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140312070523.GL30956@twins.programming.kicks-ass.net>
+References: <20140311235329.GA28624@quad>
+	<20140312070523.GL30956@twins.programming.kicks-ass.net>
+Date: Wed, 12 Mar 2014 10:23:08 +0100
+Message-ID: <CABPqkBRDu9_pwJszj6VDiwcrgyK9_UVHg4dc3sbhox9FYbDbtA@mail.gmail.com>
+Subject: Re: [PATCH v2] perf/x86/uncore: fix compilation warning in snb_uncore_imc_init_box()
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 02:54:13PM -0700, John Stultz wrote:
-> Ok, so a generic solution is probably not going to be worth it then. My
-> thought was that since we do a very limited amount of informational
-> printks in the timekeeping code, we can be fairly safe delaying the
-> print-out until we drop the locks.
-> 
-> For timekeeping, its really 4 call sites:
-> * invalid inject_sleep_time deltas
-> * > 11% clocksource freq adjustments
-> * insert leap second
-> * delete leap second
-
-I believe these last two were made safe by 
-commit ca4523cd (timekeeping: Shorten seq_count region). 
-
-write_seqcount_begin(&timekeeper_seq) is now done after the
-accumulate_nsecs_to_secs(tk) from where the printks are called.
-
-Regards,
-
--- 
-Jiri Bohac <jbohac@suse.cz>
-SUSE Labs, SUSE CZ
-
+On Wed, Mar 12, 2014 at 8:05 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Mar 12, 2014 at 12:53:30AM +0100, Stephane Eranian wrote:
+>>  #ifdef CONFIG_PHYS_ADDR_T_64BIT
+>> -     pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET+4, &addr_hi);
+>> -     addr = ((resource_size_t)addr_hi << 32) | addr_lo;
+>> +       pci_read_config_dword(pdev, where + 4, &pci_dword);
+>> +       addr |= ((resource_size_t)pci_dword << 32);
+>>  #endif
+>
+> Indent fail there; fixed it.
+>
+> FWIW; I thought of an even more horrible solution:
+>
+>         resource_size_t addr;
+>         u32 *addr_ptr = &addr;
+>
+>         pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET, &addr_ptr[0]);
+> #ifdef ..
+>         pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET+4, &addr_ptr[1]);
+> #endif
+>
+> :-)
+Yeah, I really don't like that one. Always confused with little vs.
+big endian or alignement!
