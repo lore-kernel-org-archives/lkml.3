@@ -1,223 +1,402 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172AbaCLPcm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:32:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36239 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398AbaCLPck (ORCPT
+	id S1754939AbaCLPfo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:35:44 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:32856 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198AbaCLPfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 11:32:40 -0400
-Date: Wed, 12 Mar 2014 16:32:15 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, arnd@arndb.de, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        akpm@linux-foundation.org, walken@google.com, andi@firstfloor.org,
-        riel@redhat.com, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, oleg@redhat.com
-Subject: Re: [RFC][PATCH 0/7] locking: qspinlock
-Message-ID: <20140312153215.GW3104@twins.programming.kicks-ass.net>
-References: <20140310154236.038181843@infradead.org>
- <20140311104503.GA10916@gmail.com>
- <531FD1DA.5010006@hp.com>
- <20140312062436.GI30956@twins.programming.kicks-ass.net>
+	Wed, 12 Mar 2014 11:35:42 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-pm@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
+        Tero Kristo <t-kristo@ti.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [RFC/PATCH] base: platform: add generic clock handling for platform-bus
+Date: Wed, 12 Mar 2014 16:37:19 +0100
+Message-ID: <2775124.TXohNNxBKa@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1391191965-31102-1-git-send-email-balbi@ti.com>
+References: <1391191965-31102-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140312062436.GI30956@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 07:24:36AM +0100, Peter Zijlstra wrote:
-> On Tue, Mar 11, 2014 at 11:17:46PM -0400, Waiman Long wrote:
-> > Except that I do a single atomic short integer write to switch the bits
-> > instead of 2 byte write.
+Hi Felipe,
+
+(CC'ing Geert Uytterhoeven as we happen to discuss runtime PM and clock 
+handling for the Renesas SoCs at the moment)
+
+Thank you for the patch. This is a bit of a late reply, but that's better than 
+no reply I suppose. Please see below for a small comment.
+
+On Friday 31 January 2014 12:12:45 Felipe Balbi wrote:
+> Still TODO a commit log. Not for merging!!!!!
 > 
-> D'0h why didn't I think of that. A single short write is much better
-> than the 2 byte writes.
+> NYET-Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+> 
+> This patch is an idea I've had recently in order to combine several
+> different PM implementations into the platform-bus.
+> 
+> This patch is bare minimum for platforms which need to handle functional and
+> interface clocks but the whole thing is made optional.
+> 
+> Note that this patch makes sure that by the time a platform_driver's probe
+> is called, we already have clocks enabled and pm_runtime_set_active() has
+> been called, thus making sure that a device driver's pm_runtime_get_sync()
+> will solely increase the pm usage counter.
+> 
+> I have *NOT* tested this anywhere *YET*, but I suppose it shouldn't cause
+> any issues since the clock API has ref counting too.
+> 
+> Would really like to get some review from several folks involved with ARM
+> SoC PM so that's the reason for the wide audience. If I have missed
+> anybody, please add them to Cc.
+> 
+> As mentioned above, this is *NOT* meant for merging, but serves as a
+> starting point for discussing some convergence of several PM domain
+> implementations on different arch/arm/mach-* directories.
+> 
+> For OMAP, this has the added benefit of removing clock handling from
+> omap_device/omap_hwmod and, thus, dropping the need for so many DT_CLK()
+> tables under drivers/clk/ti/
+> 
+>  drivers/base/platform.c         | 169 +++++++++++++++++++++++++++++++++++--
+>  include/linux/platform_device.h |   9 +++
+>  2 files changed, 173 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index 3a94b79..86aeb5b 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -484,6 +484,21 @@ static int platform_drv_probe(struct device *_dev)
+>  	if (ACPI_HANDLE(_dev))
+>  		acpi_dev_pm_attach(_dev, true);
+> 
+> +	dev->fck = devm_clk_get(_dev, "fck");
+> +	dev->ick = devm_clk_get(_dev, "ick");
 
-Here's a replacement patch that does the one short store.
+My concern with this that some devices might want to handle their functional 
+and interface clocks manually if they have exotic requirements. They would 
+thus need a way to signal that the platform bus core should not try to perform 
+clock management on its own.
 
----
-Subject: qspinlock: Optimize for smaller NR_CPUS
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Mon Mar 10 14:05:36 CET 2014
+One possible way would be to name the clocks differently for those devices, 
+but we might then have a backward compatibility issue with DT.
 
-When we allow for a max NR_CPUS < 2^14 we can optimize the pending
-wait-acquire and the xchg_tail() operations.
+Another concern is how to handle the DT backward compatibility for devices 
+that would benefit from core management of their functional and interface 
+clocks, but that currently don't name those clocks "fck" and "ick". Renaming 
+those clocks in DT wouldn't be a problem for the future, but backward 
+compatibility needs to be handled. Maybe platforms could provide aliases in 
+that case.
 
-By growing the pending bit to a byte, we reduce the tail to 16bit.
-This means we can use xchg16 for the tail part and do away with all
-the trickyness of having to fix up the (pending,locked) state.
+> +	if (!IS_ERR(dev->fck))
+> +		clk_prepare_enable(dev->fck);
+> +	else
+> +		dev->fck = NULL;
+> +
+> +	if (!IS_ERR(dev->ick))
+> +		clk_prepare_enable(dev->ick);
+> +	else
+> +		dev->ick = NULL;
+> +
+> +	pm_runtime_set_active(_dev);
+> +
+>  	ret = drv->probe(dev);
+>  	if (ret && ACPI_HANDLE(_dev))
+>  		acpi_dev_pm_detach(_dev, true);
+> @@ -507,6 +522,14 @@ static int platform_drv_remove(struct device *_dev)
+>  	struct platform_device *dev = to_platform_device(_dev);
+>  	int ret;
+> 
+> +	if (!IS_ERR(dev->ick))
+> +		clk_disable_unprepare(dev->ick);
+> +
+> +	if (!IS_ERR(dev->fck))
+> +		clk_disable_unprepare(dev->fck);
+> +
+> +	pm_runtime_set_suspended(_dev);
+> +
+>  	ret = drv->remove(dev);
+>  	if (ACPI_HANDLE(_dev))
+>  		acpi_dev_pm_detach(_dev, true);
+> @@ -780,6 +803,59 @@ static int platform_legacy_resume(struct device *dev)
+> 
+>  #endif /* CONFIG_PM_SLEEP */
+> 
+> +#ifdef CONFIG_PM_RUNTIME
+> +int platform_pm_runtime_suspend(struct device *dev)
+> +{
+> +	struct device_driver *drv = dev->driver;
+> +	struct platform_driver *pdrv = to_platform_driver(drv);
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	int ret;
+> +
+> +	ret = pm_generic_runtime_suspend(dev);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (!test_bit(PLATFORM_PM_RUNTIME_KEEP_ICK, &pdrv->flags))
+> +		clk_disable(pdev->ick);
+> +
+> +	if (!test_bit(PLATFORM_PM_RUNTIME_KEEP_FCK, &pdrv->flags))
+> +		clk_disable(pdev->fck);
+> +
+> +	return ret;
+> +}
+> +
+> +int platform_pm_runtime_resume(struct device *dev)
+> +{
+> +	struct device_driver *drv = dev->driver;
+> +	struct platform_driver *pdrv = to_platform_driver(drv);
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	int ret;
+> +
+> +	if (!test_bit(PLATFORM_PM_RUNTIME_KEEP_ICK, &pdrv->flags)) {
+> +		ret = clk_enable(pdev->ick);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	if (!test_bit(PLATFORM_PM_RUNTIME_KEEP_FCK, &pdrv->flags)) {
+> +		ret = clk_enable(pdev->fck);
+> +		if (ret) {
+> +			clk_disable(pdev->ick);
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	ret = pm_generic_runtime_suspend(dev);
+> +	if (ret) {
+> +		clk_disable(pdev->ick);
+> +		clk_disable(pdev->fck);
+> +		return ret;
+> +	}
+> +
+> +	return ret;
+> +}
+> +#endif
+> +
+>  #ifdef CONFIG_SUSPEND
+> 
+>  int platform_pm_suspend(struct device *dev)
+> @@ -790,6 +866,9 @@ int platform_pm_suspend(struct device *dev)
+>  	if (!drv)
+>  		return 0;
+> 
+> +	if (pm_runtime_suspended(dev))
+> +		return 0;
+> +
+>  	if (drv->pm) {
+>  		if (drv->pm->suspend)
+>  			ret = drv->pm->suspend(dev);
+> @@ -802,12 +881,27 @@ int platform_pm_suspend(struct device *dev)
+> 
+>  int platform_pm_resume(struct device *dev)
+>  {
+> +	struct platform_device *pdev = to_platform_device(dev);
+>  	struct device_driver *drv = dev->driver;
+>  	int ret = 0;
+> 
+>  	if (!drv)
+>  		return 0;
+> 
+> +	ret = clk_enable(pdev->ick);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = clk_enable(pdev->fck);
+> +	if (ret) {
+> +		clk_disable(pdev->ick);
+> +		return ret;
+> +	}
+> +
+> +	pm_runtime_disable(dev);
+> +	pm_runtime_set_active(dev);
+> +	pm_runtime_enable(dev);
+> +
+>  	if (drv->pm) {
+>  		if (drv->pm->resume)
+>  			ret = drv->pm->resume(dev);
+> @@ -815,7 +909,17 @@ int platform_pm_resume(struct device *dev)
+>  		ret = platform_legacy_resume(dev);
+>  	}
+> 
+> -	return ret;
+> +	if (ret) {
+> +		clk_disable(pdev->ick);
+> +		clk_disable(pdev->fck);
+> +		pm_runtime_disable(dev);
+> +		pm_runtime_set_suspended(dev);
+> +		pm_runtime_enable(dev);
+> +
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+>  }
+> 
+>  #endif /* CONFIG_SUSPEND */
+> @@ -830,6 +934,9 @@ int platform_pm_freeze(struct device *dev)
+>  	if (!drv)
+>  		return 0;
+> 
+> +	if (pm_runtime_suspended(dev))
+> +		return 0;
+> +
+>  	if (drv->pm) {
+>  		if (drv->pm->freeze)
+>  			ret = drv->pm->freeze(dev);
+> @@ -848,6 +955,20 @@ int platform_pm_thaw(struct device *dev)
+>  	if (!drv)
+>  		return 0;
+> 
+> +	ret = clk_enable(pdev->ick);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = clk_enable(pdev->fck);
+> +	if (ret) {
+> +		clk_disable(pdev->ick);
+> +		return ret;
+> +	}
+> +
+> +	pm_runtime_disable(dev);
+> +	pm_runtime_set_active(dev);
+> +	pm_runtime_enable(dev);
+> +
+>  	if (drv->pm) {
+>  		if (drv->pm->thaw)
+>  			ret = drv->pm->thaw(dev);
+> @@ -855,7 +976,17 @@ int platform_pm_thaw(struct device *dev)
+>  		ret = platform_legacy_resume(dev);
+>  	}
+> 
+> -	return ret;
+> +	if (ret) {
+> +		clk_disable(pdev->ick);
+> +		clk_disable(pdev->fck);
+> +		pm_runtime_disable(dev);
+> +		pm_runtime_set_suspended(dev);
+> +		pm_runtime_enable(dev);
+> +
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+>  }
+> 
+>  int platform_pm_poweroff(struct device *dev)
+> @@ -866,6 +997,9 @@ int platform_pm_poweroff(struct device *dev)
+>  	if (!drv)
+>  		return 0;
+> 
+> +	if (pm_runtime_suspended(dev))
+> +		return 0;
+> +
+>  	if (drv->pm) {
+>  		if (drv->pm->poweroff)
+>  			ret = drv->pm->poweroff(dev);
+> @@ -884,6 +1018,20 @@ int platform_pm_restore(struct device *dev)
+>  	if (!drv)
+>  		return 0;
+> 
+> +	ret = clk_enable(pdev->ick);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = clk_enable(pdev->fck);
+> +	if (ret) {
+> +		clk_disable(pdev->ick);
+> +		return ret;
+> +	}
+> +
+> +	pm_runtime_disable(dev);
+> +	pm_runtime_set_active(dev);
+> +	pm_runtime_enable(dev);
+> +
+>  	if (drv->pm) {
+>  		if (drv->pm->restore)
+>  			ret = drv->pm->restore(dev);
+> @@ -891,14 +1039,25 @@ int platform_pm_restore(struct device *dev)
+>  		ret = platform_legacy_resume(dev);
+>  	}
+> 
+> -	return ret;
+> +	if (ret) {
+> +		clk_disable(pdev->ick);
+> +		clk_disable(pdev->fck);
+> +		pm_runtime_disable(dev);
+> +		pm_runtime_set_suspended(dev);
+> +		pm_runtime_enable(dev);
+> +
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+>  }
+> 
+>  #endif /* CONFIG_HIBERNATE_CALLBACKS */
+> 
+>  static const struct dev_pm_ops platform_dev_pm_ops = {
+> -	.runtime_suspend = pm_generic_runtime_suspend,
+> -	.runtime_resume = pm_generic_runtime_resume,
+> +	SET_RUNTIME_PM_OPS(platform_pm_runtime_suspend,
+> +			platform_pm_runtime_resume,
+> +			NULL)
+>  	USE_PLATFORM_PM_SLEEP_OPS
+>  };
+> 
+> diff --git a/include/linux/platform_device.h
+> b/include/linux/platform_device.h index 16f6654..91133f5 100644
+> --- a/include/linux/platform_device.h
+> +++ b/include/linux/platform_device.h
+> @@ -12,6 +12,7 @@
+>  #define _PLATFORM_DEVICE_H_
+> 
+>  #include <linux/device.h>
+> +#include <linux/clk.h>
+>  #include <linux/mod_devicetable.h>
+> 
+>  #define PLATFORM_DEVID_NONE	(-1)
+> @@ -21,6 +22,10 @@ struct mfd_cell;
+> 
+>  struct platform_device {
+>  	const char	*name;
+> +
+> +	struct clk	*fck;
+> +	struct clk	*ick;
+> +
+>  	int		id;
+>  	bool		id_auto;
+>  	struct device	dev;
+> @@ -179,8 +184,12 @@ struct platform_driver {
+>  	struct device_driver driver;
+>  	const struct platform_device_id *id_table;
+>  	bool prevent_deferred_probe;
+> +	unsigned long flags;
+>  };
+> 
+> +#define PLATFORM_PM_RUNTIME_KEEP_ICK	BIT(0)
+> +#define PLATFORM_PM_RUNTIME_KEEP_FCK	BIT(1)
+> +
+>  #define to_platform_driver(drv)	(container_of((drv), struct
+> platform_driver, \ driver))
 
-This in turn allows us to unconditionally acquire; the locked state as
-observed by the wait loops cannot change. And because both locked and
-pending are now a full byte we can use simple store for the state
-transition, obviating one atomic operation entirely.
+-- 
+Regards,
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- include/asm-generic/qspinlock_types.h |    5 +
- kernel/locking/qspinlock.c            |   96 +++++++++++++++++++++++++++++-----
- 2 files changed, 89 insertions(+), 12 deletions(-)
+Laurent Pinchart
 
---- a/include/asm-generic/qspinlock_types.h
-+++ b/include/asm-generic/qspinlock_types.h
-@@ -48,7 +48,11 @@ typedef struct qspinlock {
- #define _Q_LOCKED_MASK		(((1U << _Q_LOCKED_BITS) - 1) << _Q_LOCKED_OFFSET)
- 
- #define _Q_PENDING_OFFSET	(_Q_LOCKED_OFFSET + _Q_LOCKED_BITS)
-+#if CONFIG_NR_CPUS < (1U << 14)
-+#define _Q_PENDING_BITS		8
-+#else
- #define _Q_PENDING_BITS		1
-+#endif
- #define _Q_PENDING_MASK		(((1U << _Q_PENDING_BITS) - 1) << _Q_PENDING_OFFSET)
- 
- #define _Q_TAIL_IDX_OFFSET	(_Q_PENDING_OFFSET + _Q_PENDING_BITS)
-@@ -59,6 +63,7 @@ typedef struct qspinlock {
- #define _Q_TAIL_CPU_BITS	(32 - _Q_TAIL_CPU_OFFSET)
- #define _Q_TAIL_CPU_MASK	(((1U << _Q_TAIL_CPU_BITS) - 1) << _Q_TAIL_CPU_OFFSET)
- 
-+#define _Q_TAIL_OFFSET		_Q_TAIL_IDX_OFFSET
- #define _Q_TAIL_MASK		(_Q_TAIL_IDX_MASK | _Q_TAIL_CPU_MASK)
- 
- #define _Q_LOCKED_VAL		(1U << _Q_LOCKED_OFFSET)
---- a/kernel/locking/qspinlock.c
-+++ b/kernel/locking/qspinlock.c
-@@ -22,6 +22,7 @@
- #include <linux/percpu.h>
- #include <linux/hardirq.h>
- #include <linux/mutex.h>
-+#include <asm/byteorder.h>
- #include <asm/qspinlock.h>
- 
- /*
-@@ -114,6 +115,79 @@ try_set_pending(struct qspinlock *lock,
- 	return 1;
- }
- 
-+#if _Q_PENDING_BITS == 8
-+
-+struct __qspinlock {
-+	union {
-+		atomic_t val;
-+		struct {
-+#ifdef __LITTLE_ENDIAN
-+			u16	locked_pending;
-+			u16	tail;
-+#else
-+			u16	tail;
-+			u16	locked_pending;
-+#endif
-+		};
-+	};
-+};
-+
-+/*
-+ * take ownership and clear the pending bit.
-+ *
-+ * *,1,0 -> *,0,1
-+ */
-+static int __always_inline
-+try_clear_pending_set_locked(struct qspinlock *lock, u32 val)
-+{
-+	struct __qspinlock *l = (void *)lock;
-+
-+	ACCESS_ONCE(l->locked_pending) = __constant_le16_to_cpu(_Q_LOCKED_VAL);
-+
-+	return 1;
-+}
-+
-+/*
-+ * xchg(lock, tail)
-+ *
-+ * p,*,* -> n,*,* ; prev = xchg(lock, node)
-+ */
-+static u32 __always_inline
-+xchg_tail(struct qspinlock *lock, u32 tail)
-+{
-+	struct __qspinlock *l = (void *)lock;
-+
-+	return (u32)xchg(&l->tail, tail >> _Q_TAIL_OFFSET) << _Q_TAIL_OFFSET;
-+}
-+
-+#else
-+
-+/*
-+ * take ownership and clear the pending bit.
-+ *
-+ * *,1,0 -> *,0,1
-+ */
-+static int __always_inline
-+try_clear_pending_set_locked(struct qspinlock *lock, u32 val)
-+{
-+	u32 new, old;
-+
-+	for (;;) {
-+		new = (val & ~_Q_PENDING_MASK) | _Q_LOCKED_VAL;
-+
-+		old = atomic_cmpxchg(&lock->val, val, new);
-+		if (old == val)
-+			break;
-+
-+		if (unlikely(old & _Q_LOCKED_MASK))
-+			return 0;
-+
-+		val = old;
-+	}
-+
-+	return 1;
-+}
-+
- /*
-  * xchg(lock, tail)
-  *
-@@ -158,6 +232,8 @@ xchg_tail(struct qspinlock *lock, u32 ta
- 	return old; /* tail bits are still fine */
- }
- 
-+#endif /* _Q_PENDING_BITS == 8 */
-+
- #define _Q_LOCKED_PENDING_MASK	(_Q_LOCKED_MASK | _Q_PENDING_MASK)
- 
- /**
-@@ -199,9 +275,14 @@ void queue_spin_lock_slowpath(struct qsp
- 	 * we're pending, wait for the owner to go away.
- 	 *
- 	 * *,1,1 -> *,1,0
-+	 *
-+	 * this wait loop must be a load-acquire such that we match the
-+	 * store-release that clears the locked bit and create lock
-+	 * sequentiality; this because not all try_clear_pending_set_locked()
-+	 * implementations imply full barriers.
- 	 */
- retry_pending_wait:
--	while ((val = atomic_read(&lock->val)) & _Q_LOCKED_MASK)
-+	while ((val = smp_load_acquire(&lock->val.counter)) & _Q_LOCKED_MASK)
- 		cpu_relax();
- 
- 	/*
-@@ -209,18 +290,9 @@ void queue_spin_lock_slowpath(struct qsp
- 	 *
- 	 * *,1,0 -> *,0,1
- 	 */
--	for (;;) {
--		new = (val & ~_Q_PENDING_MASK) | _Q_LOCKED_VAL;
--
--		old = atomic_cmpxchg(&lock->val, val, new);
--		if (old == val)
--			break;
-+	if (!try_clear_pending_set_locked(lock, val))
-+		goto retry_pending_wait;
- 
--		if (unlikely(old & _Q_LOCKED_MASK))
--			goto retry_pending_wait;
--
--		val = old;
--	}
- 	return;
- 
- queue:
