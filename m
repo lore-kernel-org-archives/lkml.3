@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250AbaCLNiV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:38:21 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:43944 "EHLO
+	id S1754441AbaCLNic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:38:32 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:43974 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171AbaCLNiP (ORCPT
+	with ESMTP id S1754410AbaCLNi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:38:15 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-8d-53206345ddc2
+	Wed, 12 Mar 2014 09:38:28 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-fa-53206353fd78
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: sameo@linux.intel.com, lee.jones@linaro.org
 Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
@@ -18,1282 +18,1040 @@ Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
         linux-leds@vger.kernel.org, rtc-linux@googlegroups.com,
         m.szyprowski@samsung.com, k.kozlowski@samsung.com,
         Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v2 1/3] mfd: max8997: use regmap to access registers
-Date: Wed, 12 Mar 2014 14:37:44 +0100
-Message-id: <1394631466-6429-2-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH v2 3/3] mfd: max8997: move regmap handling to function drivers
+Date: Wed, 12 Mar 2014 14:37:46 +0100
+Message-id: <1394631466-6429-4-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1394631466-6429-1-git-send-email-r.baldyga@samsung.com>
 References: <1394631466-6429-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9jQV3XZIVggz/PlSyWXLzKbjH14RM2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9jQd3gZIVgg4UrRC2WXLzKbjH14RM2
 	i6M7JzJZXP/ynNVi0pP3zBaHF71gtJi4cjKzxesXhhb3vx5ltPh2pYPJ4uanb6wWl3fNYbPY
 	+mYdo8XaI3fZLW43rmCzuLb3OLPFg8M72S1273rKarG/s4PR4nQ3q4OIx85Zd9k99kw8yeax
 	eYWWx6ZVnWwed67tYfOYdzLQY8/8H6wefVtWMXpMn/eTyePzJjmP9Vu2MgVwR3HZpKTmZJal
-	FunbJXBlPLvzmLGg/SpTxb8lh1gaGM9PZ+pi5OSQEDCR+DTlFiuELSZx4d56NhBbSGA6o0Tr
-	MZUuRi4gu51J4vH/JhaQBJuAjsSW7xMYQWwRAX2JDzuuMoMUMQvcZJaYc6YfLCEs4CLx++oP
-	MJtFQFVies9SsA28QPFTL48AbeYA2qYgMWeSDUiYU8BVYtPS20wQi10kth+axziBkXcBI8Mq
-	RtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOB4eCa1g3Flg8UhRgEORiUe3gWa8sFCrIllxZW5
-	hxglOJiVRHiXRSkEC/GmJFZWpRblxxeV5qQWH2KU5mBREuc90GodKCSQnliSmp2aWpBaBJNl
-	4uCUamB005cW5eaueXSLY1KQkXr/Uhbze+ukn7tb1TBwzBSRFn/RUf3jq/Wzh5FbFipVbLf9
-	/b1Nbs+84xM/r97LFypmcD32aZh7WM2F40m7posX7LZdr1GhMXX2Q81y7jlJ8+MlCt0cnzbr
-	7fF4d2HR8gTReD7xzvNx03Tn37VbHHF5+rowE95+5m1KLMUZiYZazEXFiQDjEa7TgwIAAA==
+	FunbJXBlnJr8nq1gcQtTxb+TF9kaGA9eY+xi5OSQEDCRONdwjxnCFpO4cG89WxcjF4eQwHRG
+	iafzprJCOO1MEnfOXmAHqWIT0JHY8n0CWLeIgL7Ehx1XmUGKmAVuMkvMOdMPlhAW8JPYf2gh
+	WAOLgKrE5alHmUBsXgEXiSNbZgDVcACtU5CYM8kGJMwp4CqxaeltsBIhoJLth+YxTmDkXcDI
+	sIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOCKeSe1gXNlgcYhRgINRiYd3gaZ8sBBrYllx
+	Ze4hRgkOZiUR3mVRCsFCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+0WgcKCaQnlqRmp6YWpBbB
+	ZJk4OKUaGDc8PyFbVxtcKCrrn1wp++Xbq5SJ81yi/k34zr7wY6z057/bDd8+2K+3dEkvh41f
+	wvSZBWvly6v5VBysYuPZNT9+jc1d38dhP+Wn9fG1quUizW3/NeZ7CAkZv2m9zP/qePSFg8xV
+	+5INCrvXO9ucuJ+c8oDf3/bK+xl13FoLjOQ8n3fsjkkTUWIpzkg01GIuKk4EACku2bGEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies max8997 driver and each associated function driver,
-to use regmap instead of operating directly on i2c bus. It will allow to
-simplify IRQ handling using regmap-irq.
+This patch moves code creating new i2c clients and regmaps to function
+drivers which use them. It allows to avoid creating this instances when
+individual function drivers are not enabled.
 
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+
+Conflicts:
+
+	drivers/mfd/max8997.c
 ---
- drivers/extcon/extcon-max8997.c     |   31 ++++----
- drivers/input/misc/max8997_haptic.c |   34 +++++----
- drivers/leds/leds-max8997.c         |   13 ++--
- drivers/mfd/Kconfig                 |    1 +
- drivers/mfd/max8997-irq.c           |   64 +++++++---------
- drivers/mfd/max8997.c               |  141 ++++++++++++++++-------------------
- drivers/power/max8997_charger.c     |   33 ++++----
- drivers/regulator/max8997.c         |   87 +++++++++++----------
- drivers/rtc/rtc-max8997.c           |   56 +++++++-------
- include/linux/mfd/max8997-private.h |   17 ++---
- 10 files changed, 228 insertions(+), 249 deletions(-)
+ drivers/extcon/extcon-max8997.c     |  131 +++++++++++++++++++++++++--
+ drivers/input/misc/max8997_haptic.c |  117 +++++++++++++++++++-----
+ drivers/mfd/max8997.c               |  167 -----------------------------------
+ drivers/rtc/rtc-max8997.c           |   78 +++++++++++-----
+ include/linux/mfd/max8997-private.h |   14 +--
+ 5 files changed, 283 insertions(+), 224 deletions(-)
 
 diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-index 6a00464..f258c08 100644
+index 15fc5c0..42c9915 100644
 --- a/drivers/extcon/extcon-max8997.c
 +++ b/drivers/extcon/extcon-max8997.c
-@@ -27,6 +27,7 @@
- #include <linux/mfd/max8997-private.h>
- #include <linux/extcon.h>
- #include <linux/irqdomain.h>
-+#include <linux/regmap.h>
- 
- #define	DEV_NAME			"max8997-muic"
- #define	DELAY_MS_DEFAULT		20000		/* unit: millisecond */
-@@ -116,7 +117,7 @@ enum max8997_muic_charger_type {
- 
+@@ -118,6 +118,9 @@ enum max8997_muic_charger_type {
  struct max8997_muic_info {
  	struct device *dev;
--	struct i2c_client *muic;
-+	struct max8997_dev *max8997;
+ 	struct max8997_dev *max8997;
++	struct i2c_client *i2c;
++	struct regmap *regmap;
++	struct regmap_irq_chip_data *irq_data;
  	struct extcon_dev *edev;
  	int prev_cable_type;
  	int prev_chg_type;
-@@ -190,10 +191,10 @@ static int max8997_muic_set_debounce_time(struct max8997_muic_info *info,
+@@ -144,6 +147,39 @@ struct max8997_muic_info {
+ 	 */
+ 	int path_usb;
+ 	int path_uart;
++
++	unsigned int reg_dump[MAX8997_MUIC_REG_END];
++};
++
++static const struct regmap_config max8997_muic_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = MAX8997_MUIC_REG_END,
++};
++
++static const struct regmap_irq max8997_irqs_muic[] = {
++	/* MUIC_INT1 interrupts */
++	{ .reg_offset = 0, .mask = MUIC_INT1_ADC_MASK, },
++	{ .reg_offset = 0, .mask = MUIC_INT1_ADCLOW_MASK, },
++	{ .reg_offset = 0, .mask = MUIC_INT1_ADCERROR_MASK, },
++	/* MUIC_INT2 interrupts */
++	{ .reg_offset = 1, .mask = MUIC_INT2_CHGTYP_MASK, },
++	{ .reg_offset = 1, .mask = MUIC_INT2_CHGDETRUN_MASK, },
++	{ .reg_offset = 1, .mask = MUIC_INT2_DCDTMR_MASK, },
++	{ .reg_offset = 1, .mask = MUIC_INT2_DBCHG_MASK, },
++	{ .reg_offset = 1, .mask = MUIC_INT2_VBVOLT_MASK, },
++	/* MUIC_INT3 interrupts */
++	{ .reg_offset = 2, .mask = MUIC_INT3_OVP_MASK, },
++};
++
++static const struct regmap_irq_chip max8997_muic_irq_chip = {
++	.name                   = "max8997-muic",
++	.status_base            = MAX8997_MUIC_REG_INT1,
++	.mask_base              = MAX8997_MUIC_REG_INTMASK1,
++	.mask_invert            = true,
++	.num_regs               = 3,
++	.irqs                   = max8997_irqs_muic,
++	.num_irqs               = ARRAY_SIZE(max8997_irqs_muic),
+ };
+ 
+ enum {
+@@ -191,7 +227,7 @@ static int max8997_muic_set_debounce_time(struct max8997_muic_info *info,
  	case ADC_DEBOUNCE_TIME_10MS:
  	case ADC_DEBOUNCE_TIME_25MS:
  	case ADC_DEBOUNCE_TIME_38_62MS:
--		ret = max8997_update_reg(info->muic,
-+		ret = regmap_update_bits(info->max8997->regmap_muic,
+-		ret = regmap_update_bits(info->max8997->regmap_muic,
++		ret = regmap_update_bits(info->regmap,
  					  MAX8997_MUIC_REG_CONTROL3,
--					  time << CONTROL3_ADCDBSET_SHIFT,
--					  CONTROL3_ADCDBSET_MASK);
-+					  CONTROL3_ADCDBSET_MASK,
-+					  time << CONTROL3_ADCDBSET_SHIFT);
- 		if (ret) {
- 			dev_err(info->dev, "failed to set ADC debounce time\n");
- 			return ret;
-@@ -228,8 +229,8 @@ static int max8997_muic_set_path(struct max8997_muic_info *info,
+ 					  CONTROL3_ADCDBSET_MASK,
+ 					  time << CONTROL3_ADCDBSET_SHIFT);
+@@ -229,7 +265,7 @@ static int max8997_muic_set_path(struct max8997_muic_info *info,
  	else
  		ctrl1 = CONTROL1_SW_OPEN;
  
--	ret = max8997_update_reg(info->muic,
--			MAX8997_MUIC_REG_CONTROL1, ctrl1, COMP_SW_MASK);
-+	ret = regmap_update_bits(info->max8997->regmap_muic,
-+			MAX8997_MUIC_REG_CONTROL1, COMP_SW_MASK, ctrl1);
+-	ret = regmap_update_bits(info->max8997->regmap_muic,
++	ret = regmap_update_bits(info->regmap,
+ 			MAX8997_MUIC_REG_CONTROL1, COMP_SW_MASK, ctrl1);
  	if (ret < 0) {
  		dev_err(info->dev, "failed to update MUIC register\n");
- 		return ret;
-@@ -240,9 +241,9 @@ static int max8997_muic_set_path(struct max8997_muic_info *info,
+@@ -241,7 +277,7 @@ static int max8997_muic_set_path(struct max8997_muic_info *info,
  	else
  		ctrl2 |= CONTROL2_LOWPWR_MASK;	/* LowPwr=1, CPEn=0 */
  
--	ret = max8997_update_reg(info->muic,
--			MAX8997_MUIC_REG_CONTROL2, ctrl2,
--			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK);
-+	ret = regmap_update_bits(info->max8997->regmap_muic,
-+			MAX8997_MUIC_REG_CONTROL2,
-+			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK, ctrl2);
+-	ret = regmap_update_bits(info->max8997->regmap_muic,
++	ret = regmap_update_bits(info->regmap,
+ 			MAX8997_MUIC_REG_CONTROL2,
+ 			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK, ctrl2);
  	if (ret < 0) {
- 		dev_err(info->dev, "failed to update MUIC register\n");
- 		return ret;
-@@ -543,8 +544,8 @@ static void max8997_muic_irq_work(struct work_struct *work)
+@@ -544,7 +580,7 @@ static void max8997_muic_irq_work(struct work_struct *work)
  		if (info->irq == muic_irqs[i].virq)
  			irq_type = muic_irqs[i].irq;
  
--	ret = max8997_bulk_read(info->muic, MAX8997_MUIC_REG_STATUS1,
--				2, info->status);
-+	ret = regmap_bulk_read(info->max8997->regmap_muic,
-+				MAX8997_MUIC_REG_STATUS1, info->status, 2);
+-	ret = regmap_bulk_read(info->max8997->regmap_muic,
++	ret = regmap_bulk_read(info->regmap,
+ 				MAX8997_MUIC_REG_STATUS1, info->status, 2);
  	if (ret) {
  		dev_err(info->dev, "failed to read muic register\n");
- 		mutex_unlock(&info->mutex);
-@@ -605,8 +606,8 @@ static int max8997_muic_detect_dev(struct max8997_muic_info *info)
+@@ -606,7 +642,7 @@ static int max8997_muic_detect_dev(struct max8997_muic_info *info)
  	mutex_lock(&info->mutex);
  
  	/* Read STATUSx register to detect accessory */
--	ret = max8997_bulk_read(info->muic,
--			MAX8997_MUIC_REG_STATUS1, 2, info->status);
-+	ret = regmap_bulk_read(info->max8997->regmap_muic,
-+			MAX8997_MUIC_REG_STATUS1, info->status, 2);
+-	ret = regmap_bulk_read(info->max8997->regmap_muic,
++	ret = regmap_bulk_read(info->regmap,
+ 			MAX8997_MUIC_REG_STATUS1, info->status, 2);
  	if (ret) {
  		dev_err(info->dev, "failed to read MUIC register\n");
- 		mutex_unlock(&info->mutex);
-@@ -667,7 +668,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
- 	}
- 
+@@ -670,6 +706,31 @@ static int max8997_muic_probe(struct platform_device *pdev)
  	info->dev = &pdev->dev;
--	info->muic = max8997->muic;
-+	info->max8997 = max8997;
+ 	info->max8997 = max8997;
  
++	info->i2c = i2c_new_dummy(max8997->i2c->adapter, MAX8997_I2C_ADDR_MUIC);
++	if (!info->i2c) {
++		dev_err(info->dev, "failed to allocate I2C device\n");
++		return -ENODEV;
++	}
++
++	info->regmap = devm_regmap_init_i2c(info->i2c,
++			&max8997_muic_regmap_config);
++	if (IS_ERR(info->regmap)) {
++		ret = PTR_ERR(info->regmap);
++		dev_err(info->dev,
++			"failed to allocate register map: %d\n", ret);
++		goto err_regmap;
++	}
++
++	ret = regmap_add_irq_chip(info->regmap, max8997->irq,
++				IRQF_ONESHOT | IRQF_SHARED |
++				IRQF_TRIGGER_FALLING, 0,
++				&max8997_muic_irq_chip,
++				&info->irq_data);
++	if (ret) {
++		dev_err(info->dev, "failed to add irq chip: %d\n", ret);
++		goto err_regmap_irq;
++	}
++
  	platform_set_drvdata(pdev, info);
  	mutex_init(&info->mutex);
-@@ -721,7 +722,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
+ 
+@@ -679,8 +740,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
+ 		struct max8997_muic_irq *muic_irq = &muic_irqs[i];
+ 		unsigned int virq = 0;
+ 
+-		virq = regmap_irq_get_virq(max8997->irq_data_muic,
+-					muic_irq->irq);
++		virq = regmap_irq_get_virq(info->irq_data, muic_irq->irq);
+ 		if (!virq) {
+ 			ret = -EINVAL;
+ 			goto err_irq;
+@@ -723,7 +783,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
  
  		/* Initialize registers according to platform data */
  		for (i = 0; i < muic_pdata->num_init_data; i++) {
--			max8997_write_reg(info->muic,
-+			regmap_write(info->max8997->regmap_muic,
+-			regmap_write(info->max8997->regmap_muic,
++			regmap_write(info->regmap,
  					muic_pdata->init_data[i].addr,
  					muic_pdata->init_data[i].data);
  		}
+@@ -779,6 +839,10 @@ static int max8997_muic_probe(struct platform_device *pdev)
+ err_irq:
+ 	while (--i >= 0)
+ 		free_irq(muic_irqs[i].virq, info);
++err_regmap_irq:
++	regmap_del_irq_chip(info->max8997->irq, info->irq_data);
++err_regmap:
++	i2c_unregister_device(info->i2c);
+ 	return ret;
+ }
+ 
+@@ -787,6 +851,8 @@ static int max8997_muic_remove(struct platform_device *pdev)
+ 	struct max8997_muic_info *info = platform_get_drvdata(pdev);
+ 	int i;
+ 
++	regmap_del_irq_chip(info->max8997->irq, info->irq_data);
++
+ 	for (i = 0; i < ARRAY_SIZE(muic_irqs); i++)
+ 		free_irq(muic_irqs[i].virq, info);
+ 	cancel_work_sync(&info->irq_work);
+@@ -796,10 +862,59 @@ static int max8997_muic_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static u8 max8997_muic_dumpaddr[] = {
++	MAX8997_MUIC_REG_INTMASK1,
++	MAX8997_MUIC_REG_INTMASK2,
++	MAX8997_MUIC_REG_INTMASK3,
++	MAX8997_MUIC_REG_CDETCTRL,
++	MAX8997_MUIC_REG_CONTROL1,
++	MAX8997_MUIC_REG_CONTROL2,
++	MAX8997_MUIC_REG_CONTROL3,
++};
++
++#ifdef CONFIG_PM_SLEEP
++static int max8997_muic_freeze(struct device *dev)
++{
++	struct platform_device *pdev =
++		container_of(dev, struct platform_device, dev);
++	struct max8997_muic_info *info = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(max8997_muic_dumpaddr); i++)
++		regmap_read(info->regmap, max8997_muic_dumpaddr[i],
++				&info->reg_dump[i]);
++
++	return 0;
++}
++
++static int max8997_muic_restore(struct device *dev)
++{
++	struct platform_device *pdev =
++		container_of(dev, struct platform_device, dev);
++	struct max8997_muic_info *info = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(max8997_muic_dumpaddr); i++)
++		regmap_write(info->regmap, max8997_muic_dumpaddr[i],
++				info->reg_dump[i]);
++
++	return 0;
++}
++#endif
++
++static const struct dev_pm_ops max8997_muic_pm = {
++#ifdef CONFIG_PM_SLEEP
++	.freeze = max8997_muic_freeze,
++	.restore = max8997_muic_restore,
++#endif
++
++};
++
+ static struct platform_driver max8997_muic_driver = {
+ 	.driver		= {
+ 		.name	= DEV_NAME,
+ 		.owner	= THIS_MODULE,
++		.pm	= &max8997_muic_pm,
+ 	},
+ 	.probe		= max8997_muic_probe,
+ 	.remove		= max8997_muic_remove,
 diff --git a/drivers/input/misc/max8997_haptic.c b/drivers/input/misc/max8997_haptic.c
-index 1fea548..d3f7079 100644
+index d3f7079..9952eb2 100644
 --- a/drivers/input/misc/max8997_haptic.c
 +++ b/drivers/input/misc/max8997_haptic.c
-@@ -31,6 +31,7 @@
- #include <linux/mfd/max8997-private.h>
- #include <linux/mfd/max8997.h>
- #include <linux/regulator/consumer.h>
-+#include <linux/regmap.h>
- 
- /* Haptic configuration 2 register */
- #define MAX8997_MOTOR_TYPE_SHIFT	7
-@@ -45,7 +46,7 @@
- 
+@@ -47,6 +47,8 @@
  struct max8997_haptic {
  	struct device *dev;
--	struct i2c_client *client;
-+	struct max8997_dev *max8997;
+ 	struct max8997_dev *max8997;
++	struct i2c_client *i2c;
++	struct regmap *regmap;
  	struct input_dev *input_dev;
  	struct regulator *regulator;
  
-@@ -86,19 +87,19 @@ static int max8997_haptic_set_duty_cycle(struct max8997_haptic *chip)
+@@ -66,6 +68,14 @@ struct max8997_haptic {
+ 	unsigned int internal_mode_pattern;
+ 	unsigned int pattern_cycle;
+ 	unsigned int pattern_signal_period;
++
++	unsigned int reg_dump[MAX8997_HAPTIC_REG_END];
++};
++
++static const struct regmap_config max8997_haptic_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = MAX8997_HAPTIC_REG_END,
+ };
+ 
+ static int max8997_haptic_set_duty_cycle(struct max8997_haptic *chip)
+@@ -87,19 +97,19 @@ static int max8997_haptic_set_duty_cycle(struct max8997_haptic *chip)
  		}
  		switch (chip->internal_mode_pattern) {
  		case 0:
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_SIGPWMDC1, duty_index);
  			break;
  		case 1:
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_SIGPWMDC2, duty_index);
  			break;
  		case 2:
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_SIGPWMDC3, duty_index);
  			break;
  		case 3:
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_SIGPWMDC4, duty_index);
  			break;
  		default:
-@@ -115,50 +116,51 @@ static void max8997_haptic_configure(struct max8997_haptic *chip)
+@@ -116,51 +126,49 @@ static void max8997_haptic_configure(struct max8997_haptic *chip)
  	value = chip->type << MAX8997_MOTOR_TYPE_SHIFT |
  		chip->enabled << MAX8997_ENABLE_SHIFT |
  		chip->mode << MAX8997_MODE_SHIFT | chip->pwm_divisor;
--	max8997_write_reg(chip->client, MAX8997_HAPTIC_REG_CONF2, value);
-+	regmap_write(chip->max8997->regmap_haptic,
-+		MAX8997_HAPTIC_REG_CONF2, value);
+-	regmap_write(chip->max8997->regmap_haptic,
+-		MAX8997_HAPTIC_REG_CONF2, value);
++	regmap_write(chip->regmap, MAX8997_HAPTIC_REG_CONF2, value);
  
  	if (chip->mode == MAX8997_INTERNAL_MODE && chip->enabled) {
  		value = chip->internal_mode_pattern << MAX8997_CYCLE_SHIFT |
  			chip->internal_mode_pattern << MAX8997_SIG_PERIOD_SHIFT |
  			chip->internal_mode_pattern << MAX8997_SIG_DUTY_SHIFT |
  			chip->internal_mode_pattern << MAX8997_PWM_DUTY_SHIFT;
--		max8997_write_reg(chip->client,
-+		regmap_write(chip->max8997->regmap_haptic,
- 			MAX8997_HAPTIC_REG_DRVCONF, value);
+-		regmap_write(chip->max8997->regmap_haptic,
+-			MAX8997_HAPTIC_REG_DRVCONF, value);
++		regmap_write(chip->regmap, MAX8997_HAPTIC_REG_DRVCONF, value);
  
  		switch (chip->internal_mode_pattern) {
  		case 0:
  			value = chip->pattern_cycle << 4;
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_CYCLECONF1, value);
  			value = chip->pattern_signal_period;
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_SIGCONF1, value);
  			break;
  
  		case 1:
  			value = chip->pattern_cycle;
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_CYCLECONF1, value);
  			value = chip->pattern_signal_period;
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_SIGCONF2, value);
  			break;
  
  		case 2:
  			value = chip->pattern_cycle << 4;
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_CYCLECONF2, value);
  			value = chip->pattern_signal_period;
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_SIGCONF3, value);
  			break;
  
  		case 3:
  			value = chip->pattern_cycle;
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_CYCLECONF2, value);
  			value = chip->pattern_signal_period;
--			max8997_write_reg(chip->client,
-+			regmap_write(chip->max8997->regmap_haptic,
+-			regmap_write(chip->max8997->regmap_haptic,
++			regmap_write(chip->regmap,
  				MAX8997_HAPTIC_REG_SIGCONF4, value);
  			break;
  
-@@ -267,7 +269,7 @@ static int max8997_haptic_probe(struct platform_device *pdev)
- 	INIT_WORK(&chip->work, max8997_haptic_play_effect_work);
- 	mutex_init(&chip->mutex);
+@@ -277,6 +285,21 @@ static int max8997_haptic_probe(struct platform_device *pdev)
+ 	chip->mode = haptic_pdata->mode;
+ 	chip->pwm_divisor = haptic_pdata->pwm_divisor;
  
--	chip->client = iodev->haptic;
-+	chip->max8997 = iodev;
- 	chip->dev = &pdev->dev;
- 	chip->input_dev = input_dev;
- 	chip->pwm_period = haptic_pdata->pwm_period;
-diff --git a/drivers/leds/leds-max8997.c b/drivers/leds/leds-max8997.c
-index f449a8b..e2da8f2 100644
---- a/drivers/leds/leds-max8997.c
-+++ b/drivers/leds/leds-max8997.c
-@@ -18,6 +18,7 @@
- #include <linux/mfd/max8997.h>
- #include <linux/mfd/max8997-private.h>
- #include <linux/platform_device.h>
-+#include <linux/regmap.h>
- 
- #define MAX8997_LED_FLASH_SHIFT			3
- #define MAX8997_LED_FLASH_CUR_MASK		0xf8
-@@ -53,7 +54,6 @@ static void max8997_led_set_mode(struct max8997_led *led,
- 			enum max8997_led_mode mode)
- {
- 	int ret;
--	struct i2c_client *client = led->iodev->i2c;
- 	u8 mask = 0, val;
- 
- 	switch (mode) {
-@@ -89,8 +89,8 @@ static void max8997_led_set_mode(struct max8997_led *led,
- 	}
- 
- 	if (mask) {
--		ret = max8997_update_reg(client, MAX8997_REG_LEN_CNTL, val,
--					 mask);
-+		ret = regmap_update_bits(led->iodev->regmap,
-+					MAX8997_REG_LEN_CNTL, mask, val);
- 		if (ret)
- 			dev_err(led->iodev->dev,
- 				"failed to update register(%d)\n", ret);
-@@ -102,7 +102,6 @@ static void max8997_led_set_mode(struct max8997_led *led,
- static void max8997_led_enable(struct max8997_led *led, bool enable)
- {
- 	int ret;
--	struct i2c_client *client = led->iodev->i2c;
- 	u8 val = 0, mask = MAX8997_LED_BOOST_ENABLE_MASK;
- 
- 	if (led->enabled == enable)
-@@ -110,7 +109,8 @@ static void max8997_led_enable(struct max8997_led *led, bool enable)
- 
- 	val = enable ? MAX8997_LED_BOOST_ENABLE_MASK : 0;
- 
--	ret = max8997_update_reg(client, MAX8997_REG_BOOST_CNTL, val, mask);
-+	ret = regmap_update_bits(led->iodev->regmap,
-+				MAX8997_REG_BOOST_CNTL, mask, val);
- 	if (ret)
- 		dev_err(led->iodev->dev,
- 			"failed to update register(%d)\n", ret);
-@@ -122,7 +122,6 @@ static void max8997_led_set_current(struct max8997_led *led,
- 				enum led_brightness value)
- {
- 	int ret;
--	struct i2c_client *client = led->iodev->i2c;
- 	u8 val = 0, mask = 0, reg = 0;
- 
- 	switch (led->led_mode) {
-@@ -143,7 +142,7 @@ static void max8997_led_set_current(struct max8997_led *led,
- 	}
- 
- 	if (mask) {
--		ret = max8997_update_reg(client, reg, val, mask);
-+		ret = regmap_update_bits(led->iodev->regmap, reg, mask, val);
- 		if (ret)
- 			dev_err(led->iodev->dev,
- 				"failed to update register(%d)\n", ret);
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 456a7e7..2871a65 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -387,6 +387,7 @@ config MFD_MAX8997
- 	bool "Maxim Semiconductor MAX8997/8966 PMIC Support"
- 	depends on I2C=y
- 	select MFD_CORE
-+	select REGMAP_I2C
- 	select IRQ_DOMAIN
- 	help
- 	  Say yes here to add support for Maxim Semiconductor MAX8997/8966.
-diff --git a/drivers/mfd/max8997-irq.c b/drivers/mfd/max8997-irq.c
-index 43fa614..0e7ff39 100644
---- a/drivers/mfd/max8997-irq.c
-+++ b/drivers/mfd/max8997-irq.c
-@@ -26,6 +26,7 @@
- #include <linux/interrupt.h>
- #include <linux/mfd/max8997.h>
- #include <linux/mfd/max8997-private.h>
-+#include <linux/regmap.h>
- 
- static const u8 max8997_mask_reg[] = {
- 	[PMIC_INT1] = MAX8997_REG_INT1MSK,
-@@ -41,25 +42,6 @@ static const u8 max8997_mask_reg[] = {
- 	[FLASH_STATUS] = MAX8997_REG_INVALID,
- };
- 
--static struct i2c_client *get_i2c(struct max8997_dev *max8997,
--				enum max8997_irq_source src)
--{
--	switch (src) {
--	case PMIC_INT1 ... PMIC_INT4:
--		return max8997->i2c;
--	case FUEL_GAUGE:
--		return NULL;
--	case MUIC_INT1 ... MUIC_INT3:
--		return max8997->muic;
--	case GPIO_LOW ... GPIO_HI:
--		return max8997->i2c;
--	case FLASH_STATUS:
--		return max8997->i2c;
--	default:
--		return ERR_PTR(-EINVAL);
--	}
--}
--
- struct max8997_irq_data {
- 	int mask;
- 	enum max8997_irq_source group;
-@@ -124,15 +106,20 @@ static void max8997_irq_sync_unlock(struct irq_data *data)
- 	int i;
- 
- 	for (i = 0; i < MAX8997_IRQ_GROUP_NR; i++) {
-+		struct regmap *map;
- 		u8 mask_reg = max8997_mask_reg[i];
--		struct i2c_client *i2c = get_i2c(max8997, i);
++	chip->i2c = i2c_new_dummy(iodev->i2c->adapter, MAX8997_I2C_ADDR_HAPTIC);
++	if (!chip->i2c) {
++		dev_err(info->dev, "failed to allocate I2C device\n");
++		return -ENODEV;
++	}
 +
-+		if (i >= MUIC_INT1 && i <= MUIC_INT3)
-+			map = max8997->regmap_muic;
-+		else
-+			map = max8997->regmap;
++	chip->regmap = devm_regmap_init_i2c(chip->i2c,
++			&max8997_haptic_regmap_config);
++	if (IS_ERR(chip->regmap)) {
++		error = PTR_ERR(chip->regmap);
++		dev_err(chip->dev,
++			"failed to allocate register map: %d\n", error);
++		goto err_free_i2c;
++	}
++
+ 	switch (chip->mode) {
+ 	case MAX8997_INTERNAL_MODE:
+ 		chip->internal_mode_pattern =
+@@ -294,7 +317,7 @@ static int max8997_haptic_probe(struct platform_device *pdev)
+ 			dev_err(&pdev->dev,
+ 				"unable to request PWM for haptic, error: %d\n",
+ 				error);
+-			goto err_free_mem;
++			goto err_free_i2c;
+ 		}
+ 		break;
  
- 		if (mask_reg == MAX8997_REG_INVALID ||
--				IS_ERR_OR_NULL(i2c))
-+				IS_ERR_OR_NULL(map))
- 			continue;
- 		max8997->irq_masks_cache[i] = max8997->irq_masks_cur[i];
- 
--		max8997_write_reg(i2c, max8997_mask_reg[i],
-+		regmap_write(map, max8997_mask_reg[i],
- 				max8997->irq_masks_cur[i]);
+@@ -302,7 +325,7 @@ static int max8997_haptic_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev,
+ 			"Invalid chip mode specified (%d)\n", chip->mode);
+ 		error = -EINVAL;
+-		goto err_free_mem;
++		goto err_free_i2c;
  	}
  
-@@ -181,11 +168,11 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
+ 	chip->regulator = regulator_get(&pdev->dev, "inmotor");
+@@ -348,6 +371,8 @@ err_put_regulator:
+ err_free_pwm:
+ 	if (chip->mode == MAX8997_EXTERNAL_MODE)
+ 		pwm_free(chip->pwm);
++err_free_i2c:
++	i2c_unregister_device(chip->i2c);
+ err_free_mem:
+ 	input_free_device(input_dev);
+ 	kfree(chip);
+@@ -370,6 +395,24 @@ static int max8997_haptic_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static u8 max8997_haptic_dumpaddr[] = {
++	MAX8997_HAPTIC_REG_CONF1,
++	MAX8997_HAPTIC_REG_CONF2,
++	MAX8997_HAPTIC_REG_DRVCONF,
++	MAX8997_HAPTIC_REG_CYCLECONF1,
++	MAX8997_HAPTIC_REG_CYCLECONF2,
++	MAX8997_HAPTIC_REG_SIGCONF1,
++	MAX8997_HAPTIC_REG_SIGCONF2,
++	MAX8997_HAPTIC_REG_SIGCONF3,
++	MAX8997_HAPTIC_REG_SIGCONF4,
++	MAX8997_HAPTIC_REG_SIGDC1,
++	MAX8997_HAPTIC_REG_SIGDC2,
++	MAX8997_HAPTIC_REG_SIGPWMDC1,
++	MAX8997_HAPTIC_REG_SIGPWMDC2,
++	MAX8997_HAPTIC_REG_SIGPWMDC3,
++	MAX8997_HAPTIC_REG_SIGPWMDC4,
++};
++
+ #ifdef CONFIG_PM_SLEEP
+ static int max8997_haptic_suspend(struct device *dev)
  {
- 	struct max8997_dev *max8997 = data;
- 	u8 irq_reg[MAX8997_IRQ_GROUP_NR] = {};
--	u8 irq_src;
-+	unsigned int irq_src;
- 	int ret;
- 	int i, cur_irq;
+@@ -380,9 +423,43 @@ static int max8997_haptic_suspend(struct device *dev)
  
--	ret = max8997_read_reg(max8997->i2c, MAX8997_REG_INTSRC, &irq_src);
-+	ret = regmap_read(max8997->regmap, MAX8997_REG_INTSRC, &irq_src);
- 	if (ret < 0) {
- 		dev_err(max8997->dev, "Failed to read interrupt source: %d\n",
- 				ret);
-@@ -194,8 +181,8 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
- 
- 	if (irq_src & MAX8997_IRQSRC_PMIC) {
- 		/* PMIC INT1 ~ INT4 */
--		max8997_bulk_read(max8997->i2c, MAX8997_REG_INT1, 4,
--				&irq_reg[PMIC_INT1]);
-+		regmap_bulk_read(max8997->regmap, MAX8997_REG_INT1,
-+				&irq_reg[PMIC_INT1], 4);
- 	}
- 	if (irq_src & MAX8997_IRQSRC_FUELGAUGE) {
- 		/*
-@@ -215,8 +202,8 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
- 	}
- 	if (irq_src & MAX8997_IRQSRC_MUIC) {
- 		/* MUIC INT1 ~ INT3 */
--		max8997_bulk_read(max8997->muic, MAX8997_MUIC_REG_INT1, 3,
--				&irq_reg[MUIC_INT1]);
-+		regmap_bulk_read(max8997->regmap_muic, MAX8997_MUIC_REG_INT1,
-+				&irq_reg[MUIC_INT1], 3);
- 	}
- 	if (irq_src & MAX8997_IRQSRC_GPIO) {
- 		/* GPIO Interrupt */
-@@ -225,8 +212,8 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
- 		irq_reg[GPIO_LOW] = 0;
- 		irq_reg[GPIO_HI] = 0;
- 
--		max8997_bulk_read(max8997->i2c, MAX8997_REG_GPIOCNTL1,
--				MAX8997_NUM_GPIO, gpio_info);
-+		regmap_bulk_read(max8997->regmap, MAX8997_REG_GPIOCNTL1,
-+				gpio_info, MAX8997_NUM_GPIO);
- 		for (i = 0; i < MAX8997_NUM_GPIO; i++) {
- 			bool interrupt = false;
- 
-@@ -260,8 +247,10 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
- 	}
- 	if (irq_src & MAX8997_IRQSRC_FLASH) {
- 		/* Flash Status Interrupt */
--		ret = max8997_read_reg(max8997->i2c, MAX8997_REG_FLASHSTATUS,
--				&irq_reg[FLASH_STATUS]);
-+		unsigned int data;
-+		ret = regmap_read(max8997->regmap,
-+				MAX8997_REG_FLASHSTATUS, &data);
-+		irq_reg[FLASH_STATUS] = data;
- 	}
- 
- 	/* Apply masking */
-@@ -312,7 +301,7 @@ int max8997_irq_init(struct max8997_dev *max8997)
- 	struct irq_domain *domain;
- 	int i;
- 	int ret;
--	u8 val;
-+	unsigned int val;
- 
- 	if (!max8997->irq) {
- 		dev_warn(max8997->dev, "No interrupt specified.\n");
-@@ -323,22 +312,19 @@ int max8997_irq_init(struct max8997_dev *max8997)
- 
- 	/* Mask individual interrupt sources */
- 	for (i = 0; i < MAX8997_IRQ_GROUP_NR; i++) {
--		struct i2c_client *i2c;
--
- 		max8997->irq_masks_cur[i] = 0xff;
- 		max8997->irq_masks_cache[i] = 0xff;
--		i2c = get_i2c(max8997, i);
- 
--		if (IS_ERR_OR_NULL(i2c))
-+		if (IS_ERR_OR_NULL(max8997->regmap))
- 			continue;
- 		if (max8997_mask_reg[i] == MAX8997_REG_INVALID)
- 			continue;
- 
--		max8997_write_reg(i2c, max8997_mask_reg[i], 0xff);
-+		regmap_write(max8997->regmap, max8997_mask_reg[i], 0xff);
- 	}
- 
- 	for (i = 0; i < MAX8997_NUM_GPIO; i++) {
--		max8997->gpio_status[i] = (max8997_read_reg(max8997->i2c,
-+		max8997->gpio_status[i] = (regmap_read(max8997->regmap,
- 						MAX8997_REG_GPIOCNTL1 + i,
- 						&val)
- 					& MAX8997_GPIO_DATA_MASK) ?
-diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
-index 8cf7a01..782d7c9 100644
---- a/drivers/mfd/max8997.c
-+++ b/drivers/mfd/max8997.c
-@@ -33,6 +33,7 @@
- #include <linux/mfd/core.h>
- #include <linux/mfd/max8997.h>
- #include <linux/mfd/max8997-private.h>
-+#include <linux/regmap.h>
- 
- #define I2C_ADDR_PMIC	(0xCC >> 1)
- #define I2C_ADDR_MUIC	(0x4A >> 1)
-@@ -57,81 +58,29 @@ static struct of_device_id max8997_pmic_dt_match[] = {
- };
+ 	return 0;
+ }
++
++static int max8997_haptic_freeze(struct device *dev)
++{
++	struct platform_device *pdev =
++		container_of(dev, struct platform_device, dev);
++	struct max8997_haptic *chip = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(max8997_haptic_dumpaddr); i++)
++		regmap_read(chip->regmap, max8997_haptic_dumpaddr[i],
++				&chip->reg_dump[i]);
++
++	return 0;
++}
++
++static int max8997_haptic_restore(struct device *dev)
++{
++	struct platform_device *pdev =
++		container_of(dev, struct platform_device, dev);
++	struct max8997_haptic *chip = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(max8997_haptic_dumpaddr); i++)
++		regmap_write(chip->regmap, max8997_haptic_dumpaddr[i],
++				chip->reg_dump[i]);
++
++	return 0;
++}
  #endif
  
--int max8997_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
--{
--	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
--	int ret;
--
--	mutex_lock(&max8997->iolock);
--	ret = i2c_smbus_read_byte_data(i2c, reg);
--	mutex_unlock(&max8997->iolock);
--	if (ret < 0)
--		return ret;
--
--	ret &= 0xff;
--	*dest = ret;
--	return 0;
--}
--EXPORT_SYMBOL_GPL(max8997_read_reg);
--
--int max8997_bulk_read(struct i2c_client *i2c, u8 reg, int count, u8 *buf)
--{
--	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
--	int ret;
--
--	mutex_lock(&max8997->iolock);
--	ret = i2c_smbus_read_i2c_block_data(i2c, reg, count, buf);
--	mutex_unlock(&max8997->iolock);
--	if (ret < 0)
--		return ret;
--
--	return 0;
--}
--EXPORT_SYMBOL_GPL(max8997_bulk_read);
--
--int max8997_write_reg(struct i2c_client *i2c, u8 reg, u8 value)
--{
--	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
--	int ret;
--
--	mutex_lock(&max8997->iolock);
--	ret = i2c_smbus_write_byte_data(i2c, reg, value);
--	mutex_unlock(&max8997->iolock);
--	return ret;
--}
--EXPORT_SYMBOL_GPL(max8997_write_reg);
--
--int max8997_bulk_write(struct i2c_client *i2c, u8 reg, int count, u8 *buf)
--{
--	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
--	int ret;
-+static const struct regmap_config max8997_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.max_register = MAX8997_REG_PMIC_END,
+-static SIMPLE_DEV_PM_OPS(max8997_haptic_pm_ops, max8997_haptic_suspend, NULL);
++static const struct dev_pm_ops max8997_haptic_pm = {
++#ifdef CONFIG_PM_SLEEP
++	.suspend = max8997_haptic_suspend,
++	.freeze = max8997_haptic_freeze,
++	.restore = max8997_haptic_restore,
++#endif
 +};
  
--	mutex_lock(&max8997->iolock);
--	ret = i2c_smbus_write_i2c_block_data(i2c, reg, count, buf);
--	mutex_unlock(&max8997->iolock);
--	if (ret < 0)
--		return ret;
-+static const struct regmap_config max8997_regmap_rtc_config = {
+ static const struct platform_device_id max8997_haptic_id[] = {
+ 	{ "max8997-haptic", 0 },
+@@ -394,7 +471,7 @@ static struct platform_driver max8997_haptic_driver = {
+ 	.driver	= {
+ 		.name	= "max8997-haptic",
+ 		.owner	= THIS_MODULE,
+-		.pm	= &max8997_haptic_pm_ops,
++		.pm	= &max8997_haptic_pm,
+ 	},
+ 	.probe		= max8997_haptic_probe,
+ 	.remove		= max8997_haptic_remove,
+diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
+index 26a360d..11fd8a0 100644
+--- a/drivers/mfd/max8997.c
++++ b/drivers/mfd/max8997.c
+@@ -35,12 +35,6 @@
+ #include <linux/mfd/max8997-private.h>
+ #include <linux/regmap.h>
+ 
+-#define I2C_ADDR_PMIC	(0xCC >> 1)
+-#define I2C_ADDR_MUIC	(0x4A >> 1)
+-#define I2C_ADDR_BATTERY	(0x6C >> 1)
+-#define I2C_ADDR_RTC	(0x0C >> 1)
+-#define I2C_ADDR_HAPTIC	(0x90 >> 1)
+-
+ static const struct mfd_cell max8997_devs[] = {
+ 	{ .name = "max8997-pmic", },
+ 	{ .name = "max8997-rtc", },
+@@ -107,48 +101,6 @@ static const struct regmap_irq_chip max8997_irq_chip = {
+ 	.num_irqs		= ARRAY_SIZE(max8997_irqs),
+ };
+ 
+-static const struct regmap_config max8997_regmap_rtc_config = {
+-	.reg_bits = 8,
+-	.val_bits = 8,
+-	.max_register = MAX8997_RTC_REG_END,
+-};
+-
+-static const struct regmap_config max8997_regmap_haptic_config = {
+-	.reg_bits = 8,
+-	.val_bits = 8,
+-	.max_register = MAX8997_HAPTIC_REG_END,
+-};
+-
+-static const struct regmap_config max8997_regmap_muic_config = {
+-	.reg_bits = 8,
+-	.val_bits = 8,
+-	.max_register = MAX8997_MUIC_REG_END,
+-};
+-
+-static const struct regmap_irq max8997_irqs_muic[] = {
+-	/* MUIC_INT1 interrupts */
+-	{ .reg_offset = 0, .mask = MUIC_INT1_ADC_MASK, },
+-	{ .reg_offset = 0, .mask = MUIC_INT1_ADCLOW_MASK, },
+-	{ .reg_offset = 0, .mask = MUIC_INT1_ADCERROR_MASK, },
+-	/* MUIC_INT2 interrupts */
+-	{ .reg_offset = 1, .mask = MUIC_INT2_CHGTYP_MASK, },
+-	{ .reg_offset = 1, .mask = MUIC_INT2_CHGDETRUN_MASK, },
+-	{ .reg_offset = 1, .mask = MUIC_INT2_DCDTMR_MASK, },
+-	{ .reg_offset = 1, .mask = MUIC_INT2_DBCHG_MASK, },
+-	{ .reg_offset = 1, .mask = MUIC_INT2_VBVOLT_MASK, },
+-	/* MUIC_INT3 interrupts */
+-	{ .reg_offset = 2, .mask = MUIC_INT3_OVP_MASK, },
+-};
+-
+-static const struct regmap_irq_chip max8997_irq_chip_muic = {
+-	.name			= "max8997-muic",
+-	.status_base		= MAX8997_MUIC_REG_INT1,
+-	.mask_base		= MAX8997_MUIC_REG_INTMASK1,
+-	.mask_invert		= true,
+-	.num_regs		= 3,
+-	.irqs			= max8997_irqs_muic,
+-	.num_irqs		= ARRAY_SIZE(max8997_irqs_muic),
+-};
+ 
+ /*
+  * Only the common platform data elements for max8997 are parsed here from the
+@@ -224,29 +176,6 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 
+ 	mutex_init(&max8997->iolock);
+ 
+-	max8997->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
+-	if (!max8997->rtc) {
+-		dev_err(max8997->dev, "Failed to allocate I2C device for RTC\n");
+-		return -ENODEV;
+-	}
+-	i2c_set_clientdata(max8997->rtc, max8997);
+-
+-	max8997->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
+-	if (!max8997->haptic) {
+-		dev_err(max8997->dev, "Failed to allocate I2C device for Haptic\n");
+-		ret = -ENODEV;
+-		goto err_i2c_haptic;
+-	}
+-	i2c_set_clientdata(max8997->haptic, max8997);
+-
+-	max8997->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
+-	if (!max8997->muic) {
+-		dev_err(max8997->dev, "Failed to allocate I2C device for MUIC\n");
+-		ret = -ENODEV;
+-		goto err_i2c_muic;
+-	}
+-	i2c_set_clientdata(max8997->muic, max8997);
+-
+ 	max8997->regmap = devm_regmap_init_i2c(i2c, &max8997_regmap_config);
+ 	if (IS_ERR(max8997->regmap)) {
+ 		ret = PTR_ERR(max8997->regmap);
+@@ -255,33 +184,6 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 		return ret;
+ 	}
+ 
+-	max8997->regmap_rtc = devm_regmap_init_i2c(max8997->rtc,
+-					&max8997_regmap_rtc_config);
+-	if (IS_ERR(max8997->regmap_rtc)) {
+-		ret = PTR_ERR(max8997->regmap_rtc);
+-		dev_err(max8997->dev,
+-				"failed to allocate register map: %d\n", ret);
+-		goto err_regmap;
+-	}
+-
+-	max8997->regmap_haptic = devm_regmap_init_i2c(max8997->haptic,
+-					&max8997_regmap_haptic_config);
+-	if (IS_ERR(max8997->regmap_haptic)) {
+-		ret = PTR_ERR(max8997->regmap_haptic);
+-		dev_err(max8997->dev,
+-				"failed to allocate register map: %d\n", ret);
+-		goto err_regmap;
+-	}
+-
+-	max8997->regmap_muic = devm_regmap_init_i2c(max8997->muic,
+-					&max8997_regmap_muic_config);
+-	if (IS_ERR(max8997->regmap_muic)) {
+-		ret = PTR_ERR(max8997->regmap_muic);
+-		dev_err(max8997->dev,
+-				"failed to allocate register map: %d\n", ret);
+-		goto err_regmap;
+-	}
+-
+ 	ret = regmap_add_irq_chip(max8997->regmap, max8997->irq,
+ 				IRQF_ONESHOT | IRQF_SHARED |
+ 				IRQF_TRIGGER_FALLING, 0,
+@@ -291,16 +193,6 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 		goto err_irq;
+ 	}
+ 
+-	ret = regmap_add_irq_chip(max8997->regmap_muic, max8997->irq,
+-				IRQF_ONESHOT | IRQF_SHARED |
+-				IRQF_TRIGGER_FALLING, 0,
+-				&max8997_irq_chip_muic,
+-				&max8997->irq_data_muic);
+-	if (ret) {
+-		dev_err(max8997->dev, "failed to add irq chip: %d\n", ret);
+-		goto err_irq_muic;
+-	}
+-
+ 	pm_runtime_set_active(max8997->dev);
+ 
+ 	ret = mfd_add_devices(max8997->dev, -1, max8997_devs,
+@@ -323,16 +215,8 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 
+ err_mfd:
+ 	mfd_remove_devices(max8997->dev);
+-err_irq_muic:
+-	regmap_del_irq_chip(max8997->irq, max8997->irq_data_muic);
+ err_irq:
+ 	regmap_del_irq_chip(max8997->irq, max8997->irq_data);
+-err_regmap:
+-	i2c_unregister_device(max8997->muic);
+-err_i2c_muic:
+-	i2c_unregister_device(max8997->haptic);
+-err_i2c_haptic:
+-	i2c_unregister_device(max8997->rtc);
+ 	return ret;
+ }
+ 
+@@ -342,13 +226,8 @@ static int max8997_i2c_remove(struct i2c_client *i2c)
+ 
+ 	mfd_remove_devices(max8997->dev);
+ 
+-	regmap_del_irq_chip(max8997->irq, max8997->irq_data_muic);
+ 	regmap_del_irq_chip(max8997->irq, max8997->irq_data);
+ 
+-	i2c_unregister_device(max8997->muic);
+-	i2c_unregister_device(max8997->haptic);
+-	i2c_unregister_device(max8997->rtc);
+-
+ 	return 0;
+ }
+ 
+@@ -484,34 +363,6 @@ static u8 max8997_dumpaddr_pmic[] = {
+ 	MAX8997_REG_DVSOKTIMER5,
+ };
+ 
+-static u8 max8997_dumpaddr_muic[] = {
+-	MAX8997_MUIC_REG_INTMASK1,
+-	MAX8997_MUIC_REG_INTMASK2,
+-	MAX8997_MUIC_REG_INTMASK3,
+-	MAX8997_MUIC_REG_CDETCTRL,
+-	MAX8997_MUIC_REG_CONTROL1,
+-	MAX8997_MUIC_REG_CONTROL2,
+-	MAX8997_MUIC_REG_CONTROL3,
+-};
+-
+-static u8 max8997_dumpaddr_haptic[] = {
+-	MAX8997_HAPTIC_REG_CONF1,
+-	MAX8997_HAPTIC_REG_CONF2,
+-	MAX8997_HAPTIC_REG_DRVCONF,
+-	MAX8997_HAPTIC_REG_CYCLECONF1,
+-	MAX8997_HAPTIC_REG_CYCLECONF2,
+-	MAX8997_HAPTIC_REG_SIGCONF1,
+-	MAX8997_HAPTIC_REG_SIGCONF2,
+-	MAX8997_HAPTIC_REG_SIGCONF3,
+-	MAX8997_HAPTIC_REG_SIGCONF4,
+-	MAX8997_HAPTIC_REG_SIGDC1,
+-	MAX8997_HAPTIC_REG_SIGDC2,
+-	MAX8997_HAPTIC_REG_SIGPWMDC1,
+-	MAX8997_HAPTIC_REG_SIGPWMDC2,
+-	MAX8997_HAPTIC_REG_SIGPWMDC3,
+-	MAX8997_HAPTIC_REG_SIGPWMDC4,
+-};
+-
+ static int max8997_freeze(struct device *dev)
+ {
+ 	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+@@ -522,15 +373,6 @@ static int max8997_freeze(struct device *dev)
+ 		regmap_read(max8997->regmap, max8997_dumpaddr_pmic[i],
+ 				&max8997->reg_dump[i]);
+ 
+-	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_muic); i++)
+-		regmap_read(max8997->regmap_muic, max8997_dumpaddr_muic[i],
+-				&max8997->reg_dump[i + MAX8997_REG_PMIC_END]);
+-
+-	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_haptic); i++)
+-		regmap_read(max8997->regmap_haptic, max8997_dumpaddr_haptic[i],
+-				&max8997->reg_dump[i + MAX8997_REG_PMIC_END +
+-				MAX8997_MUIC_REG_END]);
+-
+ 	return 0;
+ }
+ 
+@@ -544,15 +386,6 @@ static int max8997_restore(struct device *dev)
+ 		regmap_write(max8997->regmap, max8997_dumpaddr_pmic[i],
+ 				max8997->reg_dump[i]);
+ 
+-	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_muic); i++)
+-		regmap_write(max8997->regmap_muic, max8997_dumpaddr_muic[i],
+-				max8997->reg_dump[i + MAX8997_REG_PMIC_END]);
+-
+-	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_haptic); i++)
+-		regmap_write(max8997->regmap_haptic, max8997_dumpaddr_haptic[i],
+-				max8997->reg_dump[i + MAX8997_REG_PMIC_END +
+-				MAX8997_MUIC_REG_END]);
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/rtc/rtc-max8997.c b/drivers/rtc/rtc-max8997.c
+index 22769ea..57fab040 100644
+--- a/drivers/rtc/rtc-max8997.c
++++ b/drivers/rtc/rtc-max8997.c
+@@ -69,12 +69,20 @@ enum {
+ struct max8997_rtc_info {
+ 	struct device		*dev;
+ 	struct max8997_dev	*max8997;
++	struct i2c_client	*i2c;
++	struct regmap		*regmap;
+ 	struct rtc_device	*rtc_dev;
+ 	struct mutex		lock;
+ 	int virq;
+ 	int rtc_24hr_mode;
+ };
+ 
++static const struct regmap_config max8997_rtc_regmap_config = {
 +	.reg_bits = 8,
 +	.val_bits = 8,
 +	.max_register = MAX8997_RTC_REG_END,
 +};
- 
--	return 0;
--}
--EXPORT_SYMBOL_GPL(max8997_bulk_write);
-+static const struct regmap_config max8997_regmap_haptic_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.max_register = MAX8997_HAPTIC_REG_END,
-+};
- 
--int max8997_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask)
--{
--	struct max8997_dev *max8997 = i2c_get_clientdata(i2c);
--	int ret;
--
--	mutex_lock(&max8997->iolock);
--	ret = i2c_smbus_read_byte_data(i2c, reg);
--	if (ret >= 0) {
--		u8 old_val = ret & 0xff;
--		u8 new_val = (val & mask) | (old_val & (~mask));
--		ret = i2c_smbus_write_byte_data(i2c, reg, new_val);
--	}
--	mutex_unlock(&max8997->iolock);
--	return ret;
--}
--EXPORT_SYMBOL_GPL(max8997_update_reg);
-+static const struct regmap_config max8997_regmap_muic_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.max_register = MAX8997_MUIC_REG_END,
-+};
- 
- /*
-  * Only the common platform data elements for max8997 are parsed here from the
-@@ -230,6 +179,41 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
- 	}
- 	i2c_set_clientdata(max8997->muic, max8997);
- 
-+	max8997->regmap = devm_regmap_init_i2c(i2c, &max8997_regmap_config);
-+	if (IS_ERR(max8997->regmap)) {
-+		ret = PTR_ERR(max8997->regmap);
-+		dev_err(max8997->dev,
-+				"failed to allocate register map: %d\n", ret);
-+		return ret;
-+	}
 +
-+	max8997->regmap_rtc = devm_regmap_init_i2c(max8997->rtc,
-+					&max8997_regmap_rtc_config);
-+	if (IS_ERR(max8997->regmap_rtc)) {
-+		ret = PTR_ERR(max8997->regmap_rtc);
-+		dev_err(max8997->dev,
-+				"failed to allocate register map: %d\n", ret);
-+		goto err_regmap;
-+	}
-+
-+	max8997->regmap_haptic = devm_regmap_init_i2c(max8997->haptic,
-+					&max8997_regmap_haptic_config);
-+	if (IS_ERR(max8997->regmap_haptic)) {
-+		ret = PTR_ERR(max8997->regmap_haptic);
-+		dev_err(max8997->dev,
-+				"failed to allocate register map: %d\n", ret);
-+		goto err_regmap;
-+	}
-+
-+	max8997->regmap_muic = devm_regmap_init_i2c(max8997->muic,
-+					&max8997_regmap_muic_config);
-+	if (IS_ERR(max8997->regmap_muic)) {
-+		ret = PTR_ERR(max8997->regmap_muic);
-+		dev_err(max8997->dev,
-+				"failed to allocate register map: %d\n", ret);
-+		goto err_regmap;
-+	}
-+
- 	pm_runtime_set_active(max8997->dev);
- 
- 	max8997_irq_init(max8997);
-@@ -254,6 +238,7 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
- 
- err_mfd:
- 	mfd_remove_devices(max8997->dev);
-+err_regmap:
- 	i2c_unregister_device(max8997->muic);
- err_i2c_muic:
- 	i2c_unregister_device(max8997->haptic);
-@@ -441,15 +426,15 @@ static int max8997_freeze(struct device *dev)
- 	int i;
- 
- 	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_pmic); i++)
--		max8997_read_reg(i2c, max8997_dumpaddr_pmic[i],
-+		regmap_read(max8997->regmap, max8997_dumpaddr_pmic[i],
- 				&max8997->reg_dump[i]);
- 
- 	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_muic); i++)
--		max8997_read_reg(i2c, max8997_dumpaddr_muic[i],
-+		regmap_read(max8997->regmap_muic, max8997_dumpaddr_muic[i],
- 				&max8997->reg_dump[i + MAX8997_REG_PMIC_END]);
- 
- 	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_haptic); i++)
--		max8997_read_reg(i2c, max8997_dumpaddr_haptic[i],
-+		regmap_read(max8997->regmap_haptic, max8997_dumpaddr_haptic[i],
- 				&max8997->reg_dump[i + MAX8997_REG_PMIC_END +
- 				MAX8997_MUIC_REG_END]);
- 
-@@ -463,15 +448,15 @@ static int max8997_restore(struct device *dev)
- 	int i;
- 
- 	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_pmic); i++)
--		max8997_write_reg(i2c, max8997_dumpaddr_pmic[i],
-+		regmap_write(max8997->regmap, max8997_dumpaddr_pmic[i],
- 				max8997->reg_dump[i]);
- 
- 	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_muic); i++)
--		max8997_write_reg(i2c, max8997_dumpaddr_muic[i],
-+		regmap_write(max8997->regmap_muic, max8997_dumpaddr_muic[i],
- 				max8997->reg_dump[i + MAX8997_REG_PMIC_END]);
- 
- 	for (i = 0; i < ARRAY_SIZE(max8997_dumpaddr_haptic); i++)
--		max8997_write_reg(i2c, max8997_dumpaddr_haptic[i],
-+		regmap_write(max8997->regmap_haptic, max8997_dumpaddr_haptic[i],
- 				max8997->reg_dump[i + MAX8997_REG_PMIC_END +
- 				MAX8997_MUIC_REG_END]);
- 
-diff --git a/drivers/power/max8997_charger.c b/drivers/power/max8997_charger.c
-index 4bdedfe..43d8481 100644
---- a/drivers/power/max8997_charger.c
-+++ b/drivers/power/max8997_charger.c
-@@ -26,6 +26,7 @@
- #include <linux/power_supply.h>
- #include <linux/mfd/max8997.h>
- #include <linux/mfd/max8997-private.h>
-+#include <linux/regmap.h>
- 
- struct charger_data {
- 	struct device *dev;
-@@ -46,14 +47,14 @@ static int max8997_battery_get_property(struct power_supply *psy,
+ static void max8997_rtc_data_to_tm(u8 *data, struct rtc_time *tm,
+ 				   int rtc_24hr_mode)
  {
- 	struct charger_data *charger = container_of(psy,
- 			struct charger_data, battery);
--	struct i2c_client *i2c = charger->iodev->i2c;
- 	int ret;
--	u8 reg;
-+	unsigned int reg;
- 
- 	switch (psp) {
- 	case POWER_SUPPLY_PROP_STATUS:
- 		val->intval = 0;
--		ret = max8997_read_reg(i2c, MAX8997_REG_STATUS4, &reg);
-+		ret = regmap_read(charger->iodev->regmap,
-+				MAX8997_REG_STATUS4, &reg);
- 		if (ret)
- 			return ret;
- 		if ((reg & (1 << 0)) == 0x1)
-@@ -62,7 +63,8 @@ static int max8997_battery_get_property(struct power_supply *psy,
- 		break;
- 	case POWER_SUPPLY_PROP_PRESENT:
- 		val->intval = 0;
--		ret = max8997_read_reg(i2c, MAX8997_REG_STATUS4, &reg);
-+		ret = regmap_read(charger->iodev->regmap,
-+				MAX8997_REG_STATUS4, &reg);
- 		if (ret)
- 			return ret;
- 		if ((reg & (1 << 2)) == 0x0)
-@@ -71,7 +73,8 @@ static int max8997_battery_get_property(struct power_supply *psy,
- 		break;
- 	case POWER_SUPPLY_PROP_ONLINE:
- 		val->intval = 0;
--		ret = max8997_read_reg(i2c, MAX8997_REG_STATUS4, &reg);
-+		ret = regmap_read(charger->iodev->regmap,
-+				MAX8997_REG_STATUS4, &reg);
- 		if (ret)
- 			return ret;
- 		/* DCINOK */
-@@ -103,8 +106,8 @@ static int max8997_battery_probe(struct platform_device *pdev)
- 		if (val > 0xf)
- 			val = 0xf;
- 
--		ret = max8997_update_reg(iodev->i2c,
--				MAX8997_REG_MBCCTRL5, val, 0xf);
-+		ret = regmap_update_bits(iodev->regmap,
-+				MAX8997_REG_MBCCTRL5, 0xf, val);
- 		if (ret < 0) {
- 			dev_err(&pdev->dev, "Cannot use i2c bus.\n");
- 			return ret;
-@@ -113,20 +116,20 @@ static int max8997_battery_probe(struct platform_device *pdev)
- 
- 	switch (pdata->timeout) {
- 	case 5:
--		ret = max8997_update_reg(iodev->i2c, MAX8997_REG_MBCCTRL1,
--				0x2 << 4, 0x7 << 4);
-+		ret = regmap_update_bits(iodev->regmap,
-+				MAX8997_REG_MBCCTRL1, 0x7 << 4, 0x2 << 4);
- 		break;
- 	case 6:
--		ret = max8997_update_reg(iodev->i2c, MAX8997_REG_MBCCTRL1,
--				0x3 << 4, 0x7 << 4);
-+		ret = regmap_update_bits(iodev->regmap,
-+				MAX8997_REG_MBCCTRL1, 0x7 << 4, 0x3 << 4);
- 		break;
- 	case 7:
--		ret = max8997_update_reg(iodev->i2c, MAX8997_REG_MBCCTRL1,
--				0x4 << 4, 0x7 << 4);
-+		ret = regmap_update_bits(iodev->regmap,
-+				MAX8997_REG_MBCCTRL1, 0x7 << 4, 0x4 << 4);
- 		break;
- 	case 0:
--		ret = max8997_update_reg(iodev->i2c, MAX8997_REG_MBCCTRL1,
--				0x7 << 4, 0x7 << 4);
-+		ret = regmap_update_bits(iodev->regmap,
-+				MAX8997_REG_MBCCTRL1, 0x7 << 4, 0x7 << 4);
- 		break;
- 	default:
- 		dev_err(&pdev->dev, "incorrect timeout value (%d)\n",
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index 2d618fc..4001ed7 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -33,6 +33,7 @@
- #include <linux/mfd/max8997.h>
- #include <linux/mfd/max8997-private.h>
- #include <linux/regulator/of_regulator.h>
-+#include <linux/regmap.h>
- 
- struct max8997_data {
- 	struct device *dev;
-@@ -51,7 +52,7 @@ struct max8997_data {
- 	int buck125_gpioindex;
- 	bool ignore_gpiodvs_side_effect;
- 
--	u8 saved_states[MAX8997_REG_MAX];
-+	unsigned int saved_states[MAX8997_REG_MAX];
- };
- 
- static const unsigned int safeoutvolt[] = {
-@@ -258,15 +259,14 @@ static int max8997_get_enable_register(struct regulator_dev *rdev,
- static int max8997_reg_is_enabled(struct regulator_dev *rdev)
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
--	struct i2c_client *i2c = max8997->iodev->i2c;
- 	int ret, reg, mask, pattern;
--	u8 val;
-+	unsigned int val;
- 
- 	ret = max8997_get_enable_register(rdev, &reg, &mask, &pattern);
- 	if (ret)
- 		return ret;
- 
--	ret = max8997_read_reg(i2c, reg, &val);
-+	ret = regmap_read(max8997->iodev->regmap, reg, &val);
- 	if (ret)
- 		return ret;
- 
-@@ -276,27 +276,25 @@ static int max8997_reg_is_enabled(struct regulator_dev *rdev)
- static int max8997_reg_enable(struct regulator_dev *rdev)
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
--	struct i2c_client *i2c = max8997->iodev->i2c;
- 	int ret, reg, mask, pattern;
- 
- 	ret = max8997_get_enable_register(rdev, &reg, &mask, &pattern);
- 	if (ret)
- 		return ret;
- 
--	return max8997_update_reg(i2c, reg, pattern, mask);
-+	return regmap_update_bits(max8997->iodev->regmap, reg, mask, pattern);
- }
- 
- static int max8997_reg_disable(struct regulator_dev *rdev)
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
--	struct i2c_client *i2c = max8997->iodev->i2c;
- 	int ret, reg, mask, pattern;
- 
- 	ret = max8997_get_enable_register(rdev, &reg, &mask, &pattern);
- 	if (ret)
- 		return ret;
- 
--	return max8997_update_reg(i2c, reg, ~pattern, mask);
-+	return regmap_update_bits(max8997->iodev->regmap, reg, mask, ~pattern);
- }
- 
- static int max8997_get_voltage_register(struct regulator_dev *rdev,
-@@ -368,15 +366,14 @@ static int max8997_get_voltage_register(struct regulator_dev *rdev,
- static int max8997_get_voltage_sel(struct regulator_dev *rdev)
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
--	struct i2c_client *i2c = max8997->iodev->i2c;
- 	int reg, shift, mask, ret;
--	u8 val;
-+	unsigned int val;
- 
- 	ret = max8997_get_voltage_register(rdev, &reg, &shift, &mask);
- 	if (ret)
- 		return ret;
- 
--	ret = max8997_read_reg(i2c, reg, &val);
-+	ret = regmap_read(max8997->iodev->regmap, reg, &val);
- 	if (ret)
- 		return ret;
- 
-@@ -413,7 +410,6 @@ static int max8997_set_voltage_charger_cv(struct regulator_dev *rdev,
- 		int min_uV, int max_uV, unsigned *selector)
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
--	struct i2c_client *i2c = max8997->iodev->i2c;
- 	int rid = rdev_get_id(rdev);
- 	int lb, ub;
- 	int reg, shift = 0, mask, ret = 0;
-@@ -455,7 +451,8 @@ static int max8997_set_voltage_charger_cv(struct regulator_dev *rdev,
- 
- 	*selector = val;
- 
--	ret = max8997_update_reg(i2c, reg, val << shift, mask);
-+	ret = regmap_update_bits(max8997->iodev->regmap,
-+				reg, mask, val << shift);
- 
- 	return ret;
- }
-@@ -468,7 +465,6 @@ static int max8997_set_voltage_ldobuck(struct regulator_dev *rdev,
- 		int min_uV, int max_uV, unsigned *selector)
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
--	struct i2c_client *i2c = max8997->iodev->i2c;
- 	const struct voltage_map_desc *desc;
- 	int rid = rdev_get_id(rdev);
- 	int i, reg, shift, mask, ret;
-@@ -500,7 +496,8 @@ static int max8997_set_voltage_ldobuck(struct regulator_dev *rdev,
- 	if (ret)
- 		return ret;
- 
--	ret = max8997_update_reg(i2c, reg, i << shift, mask << shift);
-+	ret = regmap_update_bits(max8997->iodev->regmap,
-+				reg, mask << shift, i << shift);
- 	*selector = i;
- 
- 	return ret;
-@@ -710,7 +707,6 @@ static int max8997_set_voltage_safeout_sel(struct regulator_dev *rdev,
- 					   unsigned selector)
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
--	struct i2c_client *i2c = max8997->iodev->i2c;
- 	int rid = rdev_get_id(rdev);
- 	int reg, shift = 0, mask, ret;
- 
-@@ -721,13 +717,13 @@ static int max8997_set_voltage_safeout_sel(struct regulator_dev *rdev,
- 	if (ret)
- 		return ret;
- 
--	return max8997_update_reg(i2c, reg, selector << shift, mask << shift);
-+	return regmap_update_bits(max8997->iodev->regmap,
-+				reg, mask << shift, selector << shift);
- }
- 
- static int max8997_reg_disable_suspend(struct regulator_dev *rdev)
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
--	struct i2c_client *i2c = max8997->iodev->i2c;
- 	int ret, reg, mask, pattern;
- 	int rid = rdev_get_id(rdev);
- 
-@@ -735,20 +731,22 @@ static int max8997_reg_disable_suspend(struct regulator_dev *rdev)
- 	if (ret)
- 		return ret;
- 
--	max8997_read_reg(i2c, reg, &max8997->saved_states[rid]);
-+	regmap_read(max8997->iodev->regmap,
-+			reg, &max8997->saved_states[rid]);
- 
- 	if (rid == MAX8997_LDO1 ||
- 			rid == MAX8997_LDO10 ||
- 			rid == MAX8997_LDO21) {
- 		dev_dbg(&rdev->dev, "Conditional Power-Off for %s\n",
- 				rdev->desc->name);
--		return max8997_update_reg(i2c, reg, 0x40, mask);
-+		return regmap_update_bits(max8997->iodev->regmap,
-+				reg, mask, 0x40);
- 	}
- 
- 	dev_dbg(&rdev->dev, "Full Power-Off for %s (%xh -> %xh)\n",
- 			rdev->desc->name, max8997->saved_states[rid] & mask,
- 			(~pattern) & mask);
--	return max8997_update_reg(i2c, reg, ~pattern, mask);
-+	return regmap_update_bits(max8997->iodev->regmap, reg, mask, ~pattern);
- }
- 
- static struct regulator_ops max8997_ldo_ops = {
-@@ -1032,7 +1030,6 @@ static int max8997_pmic_probe(struct platform_device *pdev)
- 	struct regulator_config config = { };
- 	struct regulator_dev **rdev;
- 	struct max8997_data *max8997;
--	struct i2c_client *i2c;
- 	int i, ret, size, nr_dvs;
- 	u8 max_buck1 = 0, max_buck2 = 0, max_buck5 = 0;
- 
-@@ -1062,7 +1059,6 @@ static int max8997_pmic_probe(struct platform_device *pdev)
- 	max8997->iodev = iodev;
- 	max8997->num_regulators = pdata->num_regulators;
- 	platform_set_drvdata(pdev, max8997);
--	i2c = max8997->iodev->i2c;
- 
- 	max8997->buck125_gpioindex = pdata->buck125_default_idx;
- 	max8997->buck1_gpiodvs = pdata->buck1_gpiodvs;
-@@ -1112,25 +1108,25 @@ static int max8997_pmic_probe(struct platform_device *pdev)
- 
- 	/* For the safety, set max voltage before setting up */
- 	for (i = 0; i < 8; i++) {
--		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
--				max_buck1, 0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
--				max_buck2, 0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
--				max_buck5, 0x3f);
-+		regmap_update_bits(max8997->iodev->regmap,
-+				MAX8997_REG_BUCK1DVS1 + i, 0x3f, max_buck1);
-+		regmap_update_bits(max8997->iodev->regmap,
-+				MAX8997_REG_BUCK2DVS1 + i, 0x3f, max_buck2);
-+		regmap_update_bits(max8997->iodev->regmap,
-+				MAX8997_REG_BUCK5DVS1 + i, 0x3f, max_buck5);
- 	}
- 
- 	/* Initialize all the DVS related BUCK registers */
- 	for (i = 0; i < nr_dvs; i++) {
--		max8997_update_reg(i2c, MAX8997_REG_BUCK1DVS1 + i,
--				max8997->buck1_vol[i],
--				0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK2DVS1 + i,
--				max8997->buck2_vol[i],
--				0x3f);
--		max8997_update_reg(i2c, MAX8997_REG_BUCK5DVS1 + i,
--				max8997->buck5_vol[i],
--				0x3f);
-+		regmap_update_bits(max8997->iodev->regmap,
-+				MAX8997_REG_BUCK1DVS1 + i,
-+				0x3f, max8997->buck1_vol[i]);
-+		regmap_update_bits(max8997->iodev->regmap,
-+				MAX8997_REG_BUCK2DVS1 + i,
-+				0x3f, max8997->buck2_vol[i]);
-+		regmap_update_bits(max8997->iodev->regmap,
-+				MAX8997_REG_BUCK5DVS1 + i,
-+				0x3f, max8997->buck5_vol[i]);
- 	}
- 
- 	/*
-@@ -1174,16 +1170,17 @@ static int max8997_pmic_probe(struct platform_device *pdev)
- 	}
- 
- 	/* DVS-GPIO disabled */
--	max8997_update_reg(i2c, MAX8997_REG_BUCK1CTRL, (pdata->buck1_gpiodvs) ?
--			(1 << 1) : (0 << 1), 1 << 1);
--	max8997_update_reg(i2c, MAX8997_REG_BUCK2CTRL, (pdata->buck2_gpiodvs) ?
--			(1 << 1) : (0 << 1), 1 << 1);
--	max8997_update_reg(i2c, MAX8997_REG_BUCK5CTRL, (pdata->buck5_gpiodvs) ?
--			(1 << 1) : (0 << 1), 1 << 1);
-+	regmap_update_bits(max8997->iodev->regmap, MAX8997_REG_BUCK1CTRL,
-+			1 << 1, (pdata->buck1_gpiodvs) ? (1 << 1) : (0 << 1));
-+	regmap_update_bits(max8997->iodev->regmap, MAX8997_REG_BUCK2CTRL,
-+			1 << 1, (pdata->buck2_gpiodvs) ? (1 << 1) : (0 << 1));
-+	regmap_update_bits(max8997->iodev->regmap, MAX8997_REG_BUCK5CTRL,
-+			1 << 1, (pdata->buck5_gpiodvs) ? (1 << 1) : (0 << 1));
- 
- 	/* Misc Settings */
- 	max8997->ramp_delay = 10; /* set 10mV/us, which is the default */
--	max8997_write_reg(i2c, MAX8997_REG_BUCKRAMP, (0xf << 4) | 0x9);
-+	regmap_write(max8997->iodev->regmap,
-+			MAX8997_REG_BUCKRAMP, (0xf << 4) | 0x9);
- 
- 	for (i = 0; i < pdata->num_regulators; i++) {
- 		const struct voltage_map_desc *desc;
-diff --git a/drivers/rtc/rtc-max8997.c b/drivers/rtc/rtc-max8997.c
-index 0777c01..b866f7d5 100644
---- a/drivers/rtc/rtc-max8997.c
-+++ b/drivers/rtc/rtc-max8997.c
-@@ -20,6 +20,7 @@
- #include <linux/platform_device.h>
- #include <linux/mfd/max8997-private.h>
- #include <linux/irqdomain.h>
-+#include <linux/regmap.h>
- 
- /* Module parameter for WTSR function control */
- static int wtsr_en = 1;
-@@ -68,7 +69,6 @@ enum {
- struct max8997_rtc_info {
- 	struct device		*dev;
- 	struct max8997_dev	*max8997;
--	struct i2c_client	*rtc;
- 	struct rtc_device	*rtc_dev;
- 	struct mutex		lock;
- 	int virq;
-@@ -118,8 +118,8 @@ static inline int max8997_rtc_set_update_reg(struct max8997_rtc_info *info)
+@@ -118,8 +126,7 @@ static inline int max8997_rtc_set_update_reg(struct max8997_rtc_info *info)
  {
  	int ret;
  
--	ret = max8997_write_reg(info->rtc, MAX8997_RTC_UPDATE1,
--						RTC_UDR_MASK);
-+	ret = regmap_write(info->max8997->regmap_rtc,
-+				MAX8997_RTC_UPDATE1, RTC_UDR_MASK);
+-	ret = regmap_write(info->max8997->regmap_rtc,
+-				MAX8997_RTC_UPDATE1, RTC_UDR_MASK);
++	ret = regmap_write(info->regmap, MAX8997_RTC_UPDATE1, RTC_UDR_MASK);
  	if (ret < 0)
  		dev_err(info->dev, "%s: fail to write update reg(%d)\n",
  				__func__, ret);
-@@ -140,7 +140,8 @@ static int max8997_rtc_read_time(struct device *dev, struct rtc_time *tm)
+@@ -140,7 +147,7 @@ static int max8997_rtc_read_time(struct device *dev, struct rtc_time *tm)
  	int ret;
  
  	mutex_lock(&info->lock);
--	ret = max8997_bulk_read(info->rtc, MAX8997_RTC_SEC, RTC_NR_TIME, data);
-+	ret = regmap_bulk_read(info->max8997->regmap_rtc,
-+				MAX8997_RTC_SEC, data, RTC_NR_TIME);
+-	ret = regmap_bulk_read(info->max8997->regmap_rtc,
++	ret = regmap_bulk_read(info->regmap,
+ 				MAX8997_RTC_SEC, data, RTC_NR_TIME);
  	mutex_unlock(&info->lock);
  
- 	if (ret < 0) {
-@@ -166,7 +167,8 @@ static int max8997_rtc_set_time(struct device *dev, struct rtc_time *tm)
+@@ -167,7 +174,7 @@ static int max8997_rtc_set_time(struct device *dev, struct rtc_time *tm)
  
  	mutex_lock(&info->lock);
  
--	ret = max8997_bulk_write(info->rtc, MAX8997_RTC_SEC, RTC_NR_TIME, data);
-+	ret = regmap_bulk_write(info->max8997->regmap_rtc,
-+				MAX8997_RTC_SEC, data, RTC_NR_TIME);
+-	ret = regmap_bulk_write(info->max8997->regmap_rtc,
++	ret = regmap_bulk_write(info->regmap,
+ 				MAX8997_RTC_SEC, data, RTC_NR_TIME);
  	if (ret < 0) {
  		dev_err(info->dev, "%s: fail to write time reg(%d)\n", __func__,
- 				ret);
-@@ -183,13 +185,13 @@ static int max8997_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
- {
- 	struct max8997_rtc_info *info = dev_get_drvdata(dev);
- 	u8 data[RTC_NR_TIME];
--	u8 val;
-+	unsigned int val;
- 	int i, ret;
+@@ -190,7 +197,7 @@ static int max8997_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
  
  	mutex_lock(&info->lock);
  
--	ret = max8997_bulk_read(info->rtc, MAX8997_RTC_ALARM1_SEC, RTC_NR_TIME,
--			data);
-+	ret = regmap_bulk_read(info->max8997->regmap_rtc,
-+				MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
+-	ret = regmap_bulk_read(info->max8997->regmap_rtc,
++	ret = regmap_bulk_read(info->regmap,
+ 				MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
  	if (ret < 0) {
  		dev_err(info->dev, "%s:%d fail to read alarm reg(%d)\n",
- 				__func__, __LINE__, ret);
-@@ -207,7 +209,8 @@ static int max8997_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+@@ -209,8 +216,7 @@ static int max8997_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
  	}
  
  	alrm->pending = 0;
--	ret = max8997_read_reg(info->max8997->i2c, MAX8997_REG_STATUS1, &val);
-+	ret = regmap_read(info->max8997->regmap_rtc,
-+			       MAX8997_REG_STATUS1, &val);
+-	ret = regmap_read(info->max8997->regmap_rtc,
+-			       MAX8997_REG_STATUS1, &val);
++	ret = regmap_read(info->regmap, MAX8997_REG_STATUS1, &val);
  	if (ret < 0) {
  		dev_err(info->dev, "%s:%d fail to read status1 reg(%d)\n",
  				__func__, __LINE__, ret);
-@@ -230,8 +233,8 @@ static int max8997_rtc_stop_alarm(struct max8997_rtc_info *info)
+@@ -233,7 +239,7 @@ static int max8997_rtc_stop_alarm(struct max8997_rtc_info *info)
  	if (!mutex_is_locked(&info->lock))
  		dev_warn(info->dev, "%s: should have mutex locked\n", __func__);
  
--	ret = max8997_bulk_read(info->rtc, MAX8997_RTC_ALARM1_SEC, RTC_NR_TIME,
--				data);
-+	ret = regmap_bulk_read(info->max8997->regmap_rtc,
-+				MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
+-	ret = regmap_bulk_read(info->max8997->regmap_rtc,
++	ret = regmap_bulk_read(info->regmap,
+ 				MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
  	if (ret < 0) {
  		dev_err(info->dev, "%s: fail to read alarm reg(%d)\n",
- 				__func__, ret);
-@@ -241,8 +244,8 @@ static int max8997_rtc_stop_alarm(struct max8997_rtc_info *info)
+@@ -244,7 +250,7 @@ static int max8997_rtc_stop_alarm(struct max8997_rtc_info *info)
  	for (i = 0; i < RTC_NR_TIME; i++)
  		data[i] &= ~ALARM_ENABLE_MASK;
  
--	ret = max8997_bulk_write(info->rtc, MAX8997_RTC_ALARM1_SEC, RTC_NR_TIME,
--				 data);
-+	ret = regmap_bulk_write(info->max8997->regmap_rtc,
-+				 MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
+-	ret = regmap_bulk_write(info->max8997->regmap_rtc,
++	ret = regmap_bulk_write(info->regmap,
+ 				 MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
  	if (ret < 0) {
  		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
- 				__func__, ret);
-@@ -262,8 +265,8 @@ static int max8997_rtc_start_alarm(struct max8997_rtc_info *info)
+@@ -265,7 +271,7 @@ static int max8997_rtc_start_alarm(struct max8997_rtc_info *info)
  	if (!mutex_is_locked(&info->lock))
  		dev_warn(info->dev, "%s: should have mutex locked\n", __func__);
  
--	ret = max8997_bulk_read(info->rtc, MAX8997_RTC_ALARM1_SEC, RTC_NR_TIME,
--				data);
-+	ret = regmap_bulk_read(info->max8997->regmap_rtc,
-+				MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
+-	ret = regmap_bulk_read(info->max8997->regmap_rtc,
++	ret = regmap_bulk_read(info->regmap,
+ 				MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
  	if (ret < 0) {
  		dev_err(info->dev, "%s: fail to read alarm reg(%d)\n",
- 				__func__, ret);
-@@ -281,8 +284,8 @@ static int max8997_rtc_start_alarm(struct max8997_rtc_info *info)
+@@ -284,7 +290,7 @@ static int max8997_rtc_start_alarm(struct max8997_rtc_info *info)
  	if (data[RTC_DATE] & 0x1f)
  		data[RTC_DATE] |= (1 << ALARM_ENABLE_SHIFT);
  
--	ret = max8997_bulk_write(info->rtc, MAX8997_RTC_ALARM1_SEC, RTC_NR_TIME,
--				 data);
-+	ret = regmap_bulk_write(info->max8997->regmap_rtc,
-+				 MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
+-	ret = regmap_bulk_write(info->max8997->regmap_rtc,
++	ret = regmap_bulk_write(info->regmap,
+ 				 MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
  	if (ret < 0) {
  		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
- 				__func__, ret);
-@@ -313,8 +316,8 @@ static int max8997_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+@@ -316,7 +322,7 @@ static int max8997_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
  	if (ret < 0)
  		goto out;
  
--	ret = max8997_bulk_write(info->rtc, MAX8997_RTC_ALARM1_SEC, RTC_NR_TIME,
--				data);
-+	ret = regmap_bulk_write(info->max8997->regmap_rtc,
-+				 MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
+-	ret = regmap_bulk_write(info->max8997->regmap_rtc,
++	ret = regmap_bulk_write(info->regmap,
+ 				 MAX8997_RTC_ALARM1_SEC, data, RTC_NR_TIME);
  	if (ret < 0) {
  		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
- 				__func__, ret);
-@@ -385,7 +388,8 @@ static void max8997_rtc_enable_wtsr(struct max8997_rtc_info *info, bool enable)
+@@ -388,7 +394,7 @@ static void max8997_rtc_enable_wtsr(struct max8997_rtc_info *info, bool enable)
  	dev_info(info->dev, "%s: %s WTSR\n", __func__,
  			enable ? "enable" : "disable");
  
--	ret = max8997_update_reg(info->rtc, MAX8997_RTC_WTSR_SMPL, val, mask);
-+	ret = regmap_update_bits(info->max8997->regmap_rtc,
-+				 MAX8997_RTC_WTSR_SMPL, mask, val);
+-	ret = regmap_update_bits(info->max8997->regmap_rtc,
++	ret = regmap_update_bits(info->regmap,
+ 				 MAX8997_RTC_WTSR_SMPL, mask, val);
  	if (ret < 0) {
  		dev_err(info->dev, "%s: fail to update WTSR reg(%d)\n",
- 				__func__, ret);
-@@ -398,7 +402,7 @@ static void max8997_rtc_enable_wtsr(struct max8997_rtc_info *info, bool enable)
- static void max8997_rtc_enable_smpl(struct max8997_rtc_info *info, bool enable)
- {
- 	int ret;
--	u8 val, mask;
-+	unsigned int val, mask;
- 
- 	if (!smpl_en)
- 		return;
-@@ -413,7 +417,8 @@ static void max8997_rtc_enable_smpl(struct max8997_rtc_info *info, bool enable)
+@@ -417,7 +423,7 @@ static void max8997_rtc_enable_smpl(struct max8997_rtc_info *info, bool enable)
  	dev_info(info->dev, "%s: %s SMPL\n", __func__,
  			enable ? "enable" : "disable");
  
--	ret = max8997_update_reg(info->rtc, MAX8997_RTC_WTSR_SMPL, val, mask);
-+	ret = regmap_update_bits(info->max8997->regmap_rtc,
-+				 MAX8997_RTC_WTSR_SMPL, mask, val);
+-	ret = regmap_update_bits(info->max8997->regmap_rtc,
++	ret = regmap_update_bits(info->regmap,
+ 				 MAX8997_RTC_WTSR_SMPL, mask, val);
  	if (ret < 0) {
  		dev_err(info->dev, "%s: fail to update SMPL reg(%d)\n",
- 				__func__, ret);
-@@ -423,7 +428,8 @@ static void max8997_rtc_enable_smpl(struct max8997_rtc_info *info, bool enable)
+@@ -428,8 +434,7 @@ static void max8997_rtc_enable_smpl(struct max8997_rtc_info *info, bool enable)
  	max8997_rtc_set_update_reg(info);
  
  	val = 0;
--	max8997_read_reg(info->rtc, MAX8997_RTC_WTSR_SMPL, &val);
-+	regmap_read(info->max8997->regmap_rtc,
-+			 MAX8997_RTC_WTSR_SMPL, &val);
+-	regmap_read(info->max8997->regmap_rtc,
+-			 MAX8997_RTC_WTSR_SMPL, &val);
++	regmap_read(info->regmap, MAX8997_RTC_WTSR_SMPL, &val);
  	pr_info("%s: WTSR_SMPL(0x%02x)\n", __func__, val);
  }
  
-@@ -438,7 +444,8 @@ static int max8997_rtc_init_reg(struct max8997_rtc_info *info)
+@@ -444,7 +449,7 @@ static int max8997_rtc_init_reg(struct max8997_rtc_info *info)
  
  	info->rtc_24hr_mode = 1;
  
--	ret = max8997_bulk_write(info->rtc, MAX8997_RTC_CTRLMASK, 2, data);
-+	ret = regmap_bulk_write(info->max8997->regmap_rtc,
-+				 MAX8997_RTC_CTRLMASK, data, 2);
+-	ret = regmap_bulk_write(info->max8997->regmap_rtc,
++	ret = regmap_bulk_write(info->regmap,
+ 				 MAX8997_RTC_CTRLMASK, data, 2);
  	if (ret < 0) {
  		dev_err(info->dev, "%s: fail to write controlm reg(%d)\n",
- 				__func__, ret);
-@@ -463,7 +470,6 @@ static int max8997_rtc_probe(struct platform_device *pdev)
- 	mutex_init(&info->lock);
+@@ -471,13 +476,28 @@ static int max8997_rtc_probe(struct platform_device *pdev)
  	info->dev = &pdev->dev;
  	info->max8997 = max8997;
--	info->rtc = max8997->rtc;
  
++	info->i2c = i2c_new_dummy(max8997->i2c->adapter, MAX8997_I2C_ADDR_RTC);
++	if (!info->i2c) {
++		dev_err(info->dev, "failed to allocate I2C device\n");
++		return -ENODEV;
++	}
++
++	info->regmap = devm_regmap_init_i2c(info->i2c,
++					&max8997_rtc_regmap_config);
++	if (IS_ERR(info->regmap)) {
++		ret = PTR_ERR(info->regmap);
++		dev_err(info->dev,
++				"failed to allocate register map: %d\n", ret);
++		goto err_regmap;
++	}
++
  	platform_set_drvdata(pdev, info);
  
+ 	ret = max8997_rtc_init_reg(info);
+ 
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Failed to initialize RTC reg:%d\n", ret);
+-		return ret;
++		goto err_regmap;
+ 	}
+ 
+ 	max8997_rtc_enable_wtsr(info, true);
+@@ -491,28 +511,41 @@ static int max8997_rtc_probe(struct platform_device *pdev)
+ 	if (IS_ERR(info->rtc_dev)) {
+ 		ret = PTR_ERR(info->rtc_dev);
+ 		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
+-		return ret;
++		goto err_regmap;
+ 	}
+ 
+ 	virq = regmap_irq_get_virq(max8997->irq_data, MAX8997_PMICIRQ_RTCA1);
+ 	if (!virq) {
+ 		dev_err(&pdev->dev, "Failed to create mapping alarm IRQ\n");
+ 		ret = -ENXIO;
+-		goto err_out;
++		goto err_regmap;
+ 	}
+ 	info->virq = virq;
+ 
+ 	ret = devm_request_threaded_irq(&pdev->dev, virq, NULL,
+ 				max8997_rtc_alarm_irq, 0,
+ 				"rtc-alarm0", info);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
+ 			info->virq, ret);
++		goto err_regmap;
++	}
++
++	return ret;
+ 
+-err_out:
++err_regmap:
++	i2c_unregister_device(info->i2c);
+ 	return ret;
+ }
+ 
++static int max8997_rtc_remove(struct platform_device *pdev)
++{
++	struct max8997_rtc_info *info = platform_get_drvdata(pdev);
++	i2c_unregister_device(info->i2c);
++
++	return 0;
++}
++
+ static void max8997_rtc_shutdown(struct platform_device *pdev)
+ {
+ 	struct max8997_rtc_info *info = platform_get_drvdata(pdev);
+@@ -532,6 +565,7 @@ static struct platform_driver max8997_rtc_driver = {
+ 		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= max8997_rtc_probe,
++	.remove		= max8997_rtc_remove,
+ 	.shutdown	= max8997_rtc_shutdown,
+ 	.id_table	= rtc_id,
+ };
 diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
-index 78c76cd..ea80ef8 100644
+index 2817fa6..c2458c3 100644
 --- a/include/linux/mfd/max8997-private.h
 +++ b/include/linux/mfd/max8997-private.h
-@@ -309,6 +309,8 @@ enum max8997_rtc_reg {
- 	MAX8997_RTC_ALARM2_MONTH	= 0x22,
- 	MAX8997_RTC_ALARM2_YEAR		= 0x23,
- 	MAX8997_RTC_ALARM2_DAY_OF_MONTH	= 0x24,
-+
-+	MAX8997_RTC_REG_END		= 0x25,
- };
+@@ -26,6 +26,13 @@
+ #include <linux/export.h>
+ #include <linux/irqdomain.h>
  
- enum max8997_irq_source {
-@@ -390,6 +392,11 @@ struct max8997_dev {
++#define MAX8997_I2C_ADDR_PMIC		(0xCC >> 1)
++#define MAX8997_I2C_ADDR_MUIC		(0x4A >> 1)
++#define MAX8997_I2C_ADDR_BATTERY	(0x6C >> 1)
++#define MAX8997_I2C_ADDR_RTC		(0x0C >> 1)
++#define MAX8997_I2C_ADDR_HAPTIC		(0x90 >> 1)
++
++
+ #define MAX8997_REG_INVALID	(0xff)
+ 
+ enum max8997_pmic_reg {
+@@ -430,21 +437,14 @@ struct max8997_dev {
+ 	struct device *dev;
+ 	struct max8997_platform_data *pdata;
+ 	struct i2c_client *i2c; /* 0xcc / PMIC, Battery Control, and FLASH */
+-	struct i2c_client *rtc; /* slave addr 0x0c */
+-	struct i2c_client *haptic; /* slave addr 0x90 */
+-	struct i2c_client *muic; /* slave addr 0x4a */
+ 	struct mutex iolock;
+ 
  	unsigned long type;
  	struct platform_device *battery; /* battery control (not fuel gauge) */
  
-+	struct regmap *regmap;
-+	struct regmap *regmap_rtc;
-+	struct regmap *regmap_haptic;
-+	struct regmap *regmap_muic;
-+
+ 	struct regmap *regmap;
+-	struct regmap *regmap_rtc;
+-	struct regmap *regmap_haptic;
+-	struct regmap *regmap_muic;
+ 
+ 	struct regmap_irq_chip_data *irq_data;
+-	struct regmap_irq_chip_data *irq_data_muic;
  	int irq;
  	int ono;
- 	struct irq_domain *irq_domain;
-@@ -398,7 +405,7 @@ struct max8997_dev {
- 	int irq_masks_cache[MAX8997_IRQ_GROUP_NR];
- 
- 	/* For hibernation */
--	u8 reg_dump[MAX8997_REG_PMIC_END + MAX8997_MUIC_REG_END +
-+	unsigned int reg_dump[MAX8997_REG_PMIC_END + MAX8997_MUIC_REG_END +
- 		MAX8997_HAPTIC_REG_END];
- 
- 	bool gpio_status[MAX8997_NUM_GPIO];
-@@ -413,14 +420,6 @@ extern int max8997_irq_init(struct max8997_dev *max8997);
- extern void max8997_irq_exit(struct max8997_dev *max8997);
- extern int max8997_irq_resume(struct max8997_dev *max8997);
- 
--extern int max8997_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest);
--extern int max8997_bulk_read(struct i2c_client *i2c, u8 reg, int count,
--				u8 *buf);
--extern int max8997_write_reg(struct i2c_client *i2c, u8 reg, u8 value);
--extern int max8997_bulk_write(struct i2c_client *i2c, u8 reg, int count,
--				u8 *buf);
--extern int max8997_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask);
--
- #define MAX8997_GPIO_INT_BOTH	(0x3 << 4)
- #define MAX8997_GPIO_INT_RISE	(0x2 << 4)
- #define MAX8997_GPIO_INT_FALL	(0x1 << 4)
+ 	struct mutex irqlock;
 -- 
 1.7.9.5
 
