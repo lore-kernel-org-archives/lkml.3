@@ -1,97 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348AbaCLJxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:53:13 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:52862
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752951AbaCLJxK (ORCPT
+	id S1753087AbaCLKBx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 06:01:53 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:54542 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350AbaCLKBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:53:10 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-Date: Wed, 12 Mar 2014 17:33:54 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Jyri Sarha <jsarha@ti.com>
-CC: <broonie@kernel.org>, <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <kuninori.morimoto.gx@renesas.com>,
-        <pawel.moll@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <Li.Xiubo@freescale.com>, <linux-doc@vger.kernel.org>,
-        <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <robh+dt@kernel.org>, <rob@landley.net>, <galak@codeaurora.org>,
-        <moinejf@free.fr>
-Subject: Re: [alsa-devel] [PATCH v2] ASoC: simple-card: overwrite
- cpu_dai->fmt with codec_dai->fmt
-Message-ID: <20140312093353.GH1177@MrMyself>
-References: <1394593331-22867-1-git-send-email-Guangyu.Chen@freescale.com>
- <5320280C.6080004@ti.com>
+	Wed, 12 Mar 2014 06:01:50 -0400
+Message-ID: <53203088.2070605@monstr.eu>
+Date: Wed, 12 Mar 2014 11:01:44 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5320280C.6080004@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Michal Simek <michals@xilinx.com>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [PATCH v5] can: xilinx CAN controller support.
+References: <5254bfec-c6fd-4681-a34d-706d51e60fbb@VA3EHSMHS004.ehs.local> <531DD2C4.5060109@pengutronix.de> <f1e2f08f-05fc-40d3-8437-4c6817d631cb@AM1EHSMHS010.ehs.local> <531F0636.4050608@pengutronix.de>
+In-Reply-To: <531F0636.4050608@pengutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="ldFvFjGoGEJrjV5t1gFhQXOG5BcuKQW8j"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 11:25:32AM +0200, Jyri Sarha wrote:
-> On 03/12/2014 05:02 AM, Nicolin Chen wrote:
-> >The current simple-card driver separates the daimft for cpu_dai and codec_dai.
-> >So we might get different values for them (0x4003 and 0x1003 for example):
-> >
-> >asoc-simple-card sound-cs42888.12: cpu : 2024000.esai / 4003 / 132000000
-> >asoc-simple-card sound-cs42888.12: codec : cs42888 / 1003 / 24576000
-> >asoc-simple-card sound-cs42888.12: cs42888 <-> 2024000.esai mapping ok
-> >
-> >This is not allowed at all as we need to keep the DAIFMT settings identical
-> >for both the ends of the link.
-> >
-> >Thus this patch fixes it by overwriting the cpu_dai->fmt with codec_dai->fmt
-> >since we defined the DAIFMT_MASTER basing on CODEC at the first place while
-> >the other bits are same.
-> >
-> >Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
-> >---
-> Hi Nicolin,
-> This patch is an improvement, but in my opinion the binding is still
-> a bit confusing.
-> 
-> How about changing 'frame-master' and 'bitclock-master' to
-> 'codec-frame-master' and 'codec-bitclock-master'. We could possibly
-> keep the old names as aliases until all the .dts files out there
-> have been fixed.
-> 
-> At the same go we could add SND_SOC_DAIFMT_MASTER_MASK here:
-> 
-> > /* get CPU/CODEC common format via simple-audio-card,format */
-> > priv->daifmt = snd_soc_of_parse_daifmt(node, "simple-audio-card,") &
-> >		(SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_INV_MASK);
-> 
-> or leave the masking out all together. Can't see why
-> SND_SOC_DAIFMT_CONT/GATED could not be defined at dai-link level
-> too.
-> 
-> This way the norm would be defining the daifmt at link level. We
-> could still keep the possibility to overwrite the setting at dai
-> level if there is need for that.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--ldFvFjGoGEJrjV5t1gFhQXOG5BcuKQW8j
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Hi Jyri,
+On 03/11/2014 01:48 PM, Marc Kleine-Budde wrote:
+> On 03/11/2014 01:34 PM, Appana Durga Kedareswara Rao wrote:
+>=20
+>>>> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig index=
 
-After looking at Morimoto-san's mail, I think there might be a better
-solution for this issue as he suggested: We may move the fmt from
-struct asoc_simple_dai to a common place for both CPU and CODEC.
+>>>> 9e7d95d..b180239 100644
+>>>> --- a/drivers/net/can/Kconfig
+>>>> +++ b/drivers/net/can/Kconfig
+>>>> @@ -125,6 +125,13 @@ config CAN_GRCAN
+>>>>       endian syntheses of the cores would need some modifications on=
 
-I'm not sure if there's any defect from this idea, but as long as we
-keep DAIFMT settings identical for both dai-link ends, it'll be a
-neater way.
+>>>>       the hardware level to work.
+>>>>
+>>>> +config CAN_XILINXCAN
+>>>> +   tristate "Xilinx CAN"
+>>>> +   depends on ARCH_ZYNQ || MICROBLAZE
+>>>
+>>> Is Zynq multiarch already?
+>> Discussions are going on this
+>> So the final thing that Fengguang ( fengguang.wu@intel.com)
+>> Proposed is
+>>         config CAN_XILINX
+>>         tristate "Xilinx CAN"
+>>         depends on ARCH_ZYNQ || MICROBLAZE || COMPILE_TEST
+>>         depends on COMMON_CLK && HAS_MMIO  # whatever you need for oth=
+er architectures
+>=20
+>> Are you Ok for this?
+>=20
+> You have to fill the 2nd depends on with some sane values, though.
 
-So I'd like to pend this patch and wait for further solution from that
-topic.
-
-Thank you,
-Nicolin Chen
+This should be that one
+config CAN_XILINX
+         tristate "Xilinx CAN"
+         depends on ARCH_ZYNQ || MICROBLAZE || COMPILE_TEST
+         depends on COMMON_CLK && HAS_IOMEM
 
 
+Is there any driver which is in CAN which not use MMIO accesses?
+If not, maybe we should just add dependency to
+
+Thanks,
+Michal
+
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--ldFvFjGoGEJrjV5t1gFhQXOG5BcuKQW8j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlMgMIgACgkQykllyylKDCEE2QCgjus6aeMcpmM2WD1fQEEEd1/g
+IWMAn2/4zK08QsMZT8fws8gj4gUZQCdM
+=Mwlw
+-----END PGP SIGNATURE-----
+
+--ldFvFjGoGEJrjV5t1gFhQXOG5BcuKQW8j--
