@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507AbaCLE75 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 00:59:57 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46176 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaCLE7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 00:59:55 -0400
-Message-ID: <531FE9AD.7050703@ti.com>
-Date: Wed, 12 Mar 2014 10:29:25 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754615AbaCLFDg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 01:03:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46557 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751166AbaCLFDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 01:03:35 -0400
+Message-ID: <531FEA69.7050107@zytor.com>
+Date: Tue, 11 Mar 2014 22:02:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-CC: <balbi@ti.com>, <rogerq@ti.com>, <kishon@ti.com>, <rob@landley.net>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        <tony@atomide.com>, <anatol.pomozov@gmail.com>,
-        <bcousson@baylibre.com>
-Subject: Re: [PATCH v3 0/5] Add USB nodes for am43xx epos and gp evm
-References: <1394193422-18242-1-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1394193422-18242-1-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org
+CC: Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v2 0/2] x86: Relocate the compat vdso per process
+References: <cover.1394575968.git.luto@amacapital.net>
+In-Reply-To: <cover.1394575968.git.luto@amacapital.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+On 03/11/2014 03:15 PM, Andy Lutomirski wrote:
+> The meat of this patch series is in patch 1.  Patch 2 is split out for
+> improved bisectability.
+>
+> Changes from v1: Split into two patches and fixed a comment.
+>
+> Andy Lutomirski (2):
+>    x86: Dynamically relocate the compat vdso
+>    x86_32: Remove user bit from identity map PDE
+>
+>   Documentation/kernel-parameters.txt  |  18 +++-
+>   arch/x86/Kconfig                     |  24 +++--
+>   arch/x86/include/asm/elf.h           |   4 -
+>   arch/x86/include/asm/fixmap.h        |   8 --
+>   arch/x86/include/asm/pgtable_types.h |   7 +-
+>   arch/x86/include/asm/vdso.h          |   5 +-
+>   arch/x86/vdso/vdso-layout.lds.S      |   2 +-
+>   arch/x86/vdso/vdso32-setup.c         | 173 ++++++++++++++++-------------------
+>   arch/x86/vdso/vdso32/vdso32.lds.S    |   2 -
+>   9 files changed, 111 insertions(+), 132 deletions(-)
+>
 
-On 3/7/2014 5:26 PM, George Cherian wrote:
-> The patch series adds USB dt nodes for am43xx epos and gp evm
->
-> Boot tested with  Benoit's for_3.15 + following patches
->
-> https://patchwork.kernel.org/patch/3600821/
-> https://patchwork.kernel.org/patch/3600831/
-> https://patchwork.kernel.org/patch/3600851/
-> https://patchwork.kernel.org/patch/3600841/
->
->
-> Changes from v1 -> v2
-> 	* Reorder "doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue"
-> 	* Address v1 coments on "ARM: dts: AM4372: Add USB nodes"
->
-> Changes from v2 -> v3
-> 	* Removed unwanted dwc3_1 and dwc3_2 nodes from am437x-gp-evm.dts
-> 	  and am43x-epos-evm.dts
->
-> George Cherian (5):
->    doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue
->    ARM: dts: am43xx clock data
->    ARM: dts: AM4372: Add USB nodes
->    ARM: dts: am437x-gp-evm: Enable USB
->    ARM: dts: am43x-epos-evm: Enable USB
->
->   Documentation/devicetree/bindings/usb/omap-usb.txt |  4 +-
->   arch/arm/boot/dts/am4372.dtsi                      | 95 ++++++++++++++++++++++
->   arch/arm/boot/dts/am437x-gp-evm.dts                | 18 ++++
->   arch/arm/boot/dts/am43x-epos-evm.dts               | 18 ++++
->   arch/arm/boot/dts/am43xx-clocks.dtsi               | 17 ++++
->   5 files changed, 151 insertions(+), 1 deletion(-)
-Can you please take this series.
-The whole series Reviewed-by: Roger Quadros <rogerq@ti.com>
+Why per process?  *If* we have compat vdso turned on, can't we just put 
+it in one place system-wide?
 
-
--- 
--George
+	-hpa
 
