@@ -1,126 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187AbaCLA7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 20:59:49 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:59032 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041AbaCLA7r (ORCPT
+	id S1756185AbaCLBFg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 21:05:36 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45109 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755989AbaCLBFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 20:59:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140312003401.GE28112@sirena.org.uk>
-References: <1394541891-26469-1-git-send-email-jcmvbkbc@gmail.com>
-	<1394541891-26469-2-git-send-email-jcmvbkbc@gmail.com>
-	<20140311194959.GB28112@sirena.org.uk>
-	<CAMo8BfLTn+pneF6_7XkP66+LzpZgcefnAo_FkwxpvtYdt9yduA@mail.gmail.com>
-	<20140312003401.GE28112@sirena.org.uk>
-Date: Wed, 12 Mar 2014 04:59:47 +0400
-Message-ID: <CAMo8Bf+dePYf0jW6zaH-4Qiy5oF-bBzHjkfzL1u6pyTS1OE46w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] spi: add xtfpga SPI controller driver
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        linux-spi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Mar 2014 21:05:35 -0400
+Date: Wed, 12 Mar 2014 01:05:25 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Greg KH <greg@kroah.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-Id: <20140312010525.b04a12173c7778df42da7a31@kernel.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__12_Mar_2014_01_05_25_+0000_0TIXGZuAqW=sSg5U"
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@kernel.org
+Subject: linux-next: manual merge of the usb tree with the  tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 4:34 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Wed, Mar 12, 2014 at 12:20:49AM +0400, Max Filippov wrote:
->> On Tue, Mar 11, 2014 at 11:49 PM, Mark Brown <broonie@kernel.org> wrote:
->> > On Tue, Mar 11, 2014 at 04:44:49PM +0400, Max Filippov wrote:
->
->> >> +     unsigned long timeout = jiffies + msecs_to_jiffies(100);
->> >> +     while (xtfpga_spi_read32(xspi, XTFPGA_SPI_BUSY)) {
->> >> +             if (!time_before(jiffies, timeout))
->> >> +                     return -EBUSY;
->> >> +             else
->> >> +                     cpu_relax();
->> >> +     }
->
->> > So we'll busy wait for up to 100ms - that seems like an awfully long
->> > time.  Perhaps fall back to msleep() if the delay is non-trivial (or
->> > just reduce the timeout)?
->
->> The timeout is here for the unlikely case everything went wrong. Normally
->> transfers get completed in about 10 useconds on 50 MHz hardware, it
->> doesn't seem worth msleeping here. I put the timeout here just because
->> otherwise infinite loop polling the device register looks scary.
->
-> I appreciate that but even with 5MHz that's three orders of magnitude
-> longer busy waiting in the error case than the operation is expected to
-> take.  If you must wait for that long busy wait for a bit then start
-> sleeping.
+--Signature=_Wed__12_Mar_2014_01_05_25_+0000_0TIXGZuAqW=sSg5U
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok, I'll fix that.
+Hi Greg,
 
->> >> +/* Unused: this device controls its only CS automatically,
->> >> + * deactivating it after every 16 bit transfer completion.
->> >> + */
->
->> > This is too limited to use with most SPI clients, they'll want to be
->> > able to transmit more than one word (and the fact that only 16 bit words
->> > are supported is also an issue, though that's easy enough to handle for
->> > a bitbanging driver - I'd really strongly suggest supporting 8 bits per
->> > word as well).  Clients are pretty much going to need to use GPIO based
->> > chip select, you should make sure that's supported and covered in the
->> > binding.
->
->> There's no hardware for that. This device is really dumb, it is specifically
->> suited to control TLV320AIC23 which expects exactly 16 bit words, SPI
->> mode 0.
->
-> This driver is not actually compatible with the tlv320aic23 driver since
-> it needs 8 bit words, you need to at least support that.  You don't need
+Today's linux-next merge of the usb tree got a conflict in arch/arm/mach-te=
+gra/Kconfig between commit 06c886a95cbb533 ("phy: mvebu-sata: prepare new D=
+ove DT Kconfig variable") from the USB tree and commit ff1f0018cf66 ("drive=
+rs: Enable building of Kirkwood drivers for mach-mvebu") from the mvebu tre=
+e.
 
-That's strange, because the codec datasheet says the following (section
-3.1.1):
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-A control word consists of 16 bits, starting with the MSB. The data bits are
-latched on the rising edge of SCLK. A rising edge on CS after the 16th rising
-clock edge latches the data word into the AIC (see Figure 3-1).
+diff --cc drivers/phy/Kconfig
+index 05711ea4fd15,8d3c49cc500f..000000000000
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@@ -24,7 -27,7 +27,7 @@@ config PHY_EXYNOS_MIPI_VIDE
+ =20
+  config PHY_MVEBU_SATA
+        def_bool y
+-       depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_KIRKWOOD
+ -      depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_DOVE
+++      depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_KIRKWOOD || MACH_DOVE
+        depends on OF
+        select GENERIC_PHY
+ =20
 
-And tlv320aic23 has the following regmap:
+--Signature=_Wed__12_Mar_2014_01_05_25_+0000_0TIXGZuAqW=sSg5U
+Content-Type: application/pgp-signature
 
-const struct regmap_config tlv320aic23_regmap = {
-        .reg_bits = 7,
-        .val_bits = 9,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-and its SPI interface accordingly does the following in .probe:
+iQIbBAEBAgAGBQJTH7LVAAoJELSic+t+oim95e8P+LCZBr//C1ACPxRjqzl5HP7P
+U2HRVHiF+W9fiMMxVzVwjxQe/YcqpbInJB5xMx2blVWqlaOjn16b5jgR4C4C2Dcm
+nDijCt8fxW24cLbWnKJJyDga9s6xS41RbAA+K76fGVNQ0rH3YQbsKzJw6amS00kj
+4CWIdvZsEmOWkmRJh2vNd6C3SXj1+xTT11buw7knkcIgz94Na2kThrJeLJeBFCSh
+xpP5dmW03kX67nCAu9FdJItXAOHT7a0Sx8Ijbsc0gG/HNKbFEZIDqYC+4T9F85rF
+ueSstHWS4K9VPSlFvszjp0zxKwS33ld0WNCe2izXETWvSDoJ8Rtny+FAPrPadsi0
+o+lL4hUBcKr0lmrGxUWLANcCbvhBwewxmXpjc9vpP1WJoQ65Fq4tQZsetGeJAfz0
+ur8ys9pWLFLdMDuaPdSXafBE97TN1Deqgwlu2oKxAZDk7K15ur+ur4jXPHcQbSry
+KcDfXV8vw9srjl4i2D16CFrrBDKfqckO7koCSuBPUyXelMoeNrS0vMp0Dz9IBJ4y
+W5G1ziIn8soUJed+hoO3JV9d5PCl8yY6iKlOSqZ/dNyBLKGtJH1XkA4EBmz7LsT6
+ZNuN8g+UzF8BZtpTEfpckUNY2IAi44BAd/w5mV8xCmDTFVr22lkfEwXK05yvcV69
+El+0NfM/8T+PPu03VVU=
+=RE5I
+-----END PGP SIGNATURE-----
 
-        spi->bits_per_word = 16
-        spi->mode = SPI_MODE_0;
-        ret = spi_setup(spi);
-
-> hardware in the controller to support a GPIO chip select, the whole
-> point is that the controller chip select isn't wired up and a GPIO is
-> used instead.
-
-Actually it's not GPIO. The controller asserts CS line once we set the
-start bit while the busy bit is cleared and deasserts it after 16 SCK
-pulses.
-
->> >> +static void xtfpga_spi_chipselect(struct spi_device *spi, int is_on)
->> >> +{
->> >> +}
->
->> > Omit this since it's empty.
->
->> The bitbang side doesn't like when this callback is NULL and returns
->> -EINVAL from spi_bitbang_start.
->
-> So fix that, but really it's trying to tell you that the hardware is far
-> too limited to work with many things.
-
-Ok. It's not designed to work with many things. Should I just move this
-driver to the rest of the platform code under arch/xtensa/platform/xtfpga?
-
--- 
-Thanks.
--- Max
+--Signature=_Wed__12_Mar_2014_01_05_25_+0000_0TIXGZuAqW=sSg5U--
