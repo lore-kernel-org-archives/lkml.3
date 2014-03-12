@@ -1,140 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932AbaCLEOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 00:14:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48610 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaCLEOu (ORCPT
+	id S1752271AbaCLEQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 00:16:41 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:44572 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737AbaCLEQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 00:14:50 -0400
-Date: Tue, 11 Mar 2014 21:19:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        "majianpeng" <majianpeng@gmail.com>
-Subject: Re: [PATCH] poll/wait/md: allow module to safely support 'poll' on
- /proc files
-Message-Id: <20140311211924.a7f57352.akpm@linux-foundation.org>
-In-Reply-To: <20140312141025.1a6c535f@notabene.brown>
-References: <20140312133638.1fd84632@notabene.brown>
-	<20140311200331.2a841ea9.akpm@linux-foundation.org>
-	<20140312141025.1a6c535f@notabene.brown>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Mar 2014 00:16:39 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-27-531fdfa5ab9d
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [PATCH v2 0/4] Introduce new Kconfig for Samsung common clock
+Date: Wed, 12 Mar 2014 13:32:57 +0900
+Message-id: <1394598781-3848-1-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t8zY92l9+WDDQ4eNrDY9Pgaq8XlXXPY
+	LGac38dksWjrF3YHFo/NS+o9+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK2Nb2w+2gi7uihkL
+	NrI3ML7g6GLk5JAQMJFYMeEAO4QtJnHh3nq2LkYuDiGBZYwSe7feBkpwgBX97y6DiE9nlDj6
+	7hpUURuTxLPTE8C62QR0JZ68n8sMYosIZEtcmnWLBcRmFtCWmLy3BaxGWMBN4mfnfLAaFgFV
+	iVP3V7GALOAVcJfYs8IaYpeCxJxJNiDjJQSus0n82t/CCFEuIPFt8iEWiBpZiU0HmCFulpQ4
+	uOIGywRGwQWMDKsYRVMLkguKk9KLjPWKE3OLS/PS9ZLzczcxQsKvfwfj3QPWhxiTgcZNZJYS
+	Tc4Hhm9eSbyhsZmRhamJqbGRuaUZacJK4rz3HyYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCU
+	amBkePqRM8HXL1vPav+PMl9f6X7nTeqhsVd+vN4kfnxBiO4ZT+ayrHi3Z5u0nkRMPfPznJhA
+	5tV1MpusOcObv609dCVq++NgFu9AZXWr5NkvVbz/TPlearaEiXdS/r0sM/eVxutrkjT35nRZ
+	i2zkmxz3WZ1bccvFC9dTPjgXrGmav/ybQcCPe31KLMUZiYZazEXFiQDhdACPVQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPIsWRmVeSWpSXmKPExsVy+t9jQd2l9+WDDbpu6lhsenyN1eLyrjls
+	FjPO72OyWLT1C7sDi8fmJfUefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5ixre0HW0EXd8WMBRvZGxhfcHQxcnBICJhI/O8u62LkBDLFJC7cW8/WxcjF
+	ISQwnVHi6LtrUE4bk8Sz0xPYQarYBHQlnryfywxiiwhkS1yadYsFxGYW0JaYvLcFrEZYwE3i
+	Z+d8sBoWAVWJU/dXsYAs4xVwl9izwhpir4LEnEk2Exi5FzAyrGIUTS1ILihOSs810itOzC0u
+	zUvXS87P3cQIDu5n0jsYVzVYHGIU4GBU4uFdqCkfLMSaWFZcmXuIUYKDWUmE9yNIiDclsbIq
+	tSg/vqg0J7X4EGMy0O6JzFKiyfnAyMsriTc0NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6Yklq
+	dmpqQWoRzBYmDk6pBsYZaUGCevt91YUX+zkI1ffcilrYKnq76puJu5LXm2mclWZb2HX/zgzZ
+	aeqzs63kb8WdB5FM2XHernwzNjhvkmK7kTxZb/oyL/Z/0mZuJm8/2HjcuvlcSN9mfdsjrTNZ
+	K+3Fb9w65uxz46LeU+3zJvKtVrnrXrvZpe5+d8OW58Aeua6p6lZOr5VYijMSDbWYi4oTAVbR
+	ZceyAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Mar 2014 14:10:25 +1100 NeilBrown <neilb@suse.de> wrote:
+Introduce a new Kconfig file for Samsung common clock infrastructure
+related config options. As current Samsung common clock gets compiled
+based on PLAT_SAMSUNG, but moving ahead with ARM64 we can not have any
+more such config options, so this patch introduce new COMMON_CLK_SAMSUNG
+invisible option. This option also select COMMON_CLK so ARCH Kconfig just
+need to select COMMON_CLK_SAMSUNG in case they want to use Samsung common
+clock.
 
-> On Tue, 11 Mar 2014 20:03:31 -0700 Andrew Morton <akpm@linux-foundation.org>
-> wrote:
-> 
-> > On Wed, 12 Mar 2014 13:36:38 +1100 NeilBrown <neilb@suse.de> wrote:
-> > 
-> > > 
-> > > The md driver currently supports 'poll' on /proc/mdstat.
-> > > This is unsafe as if the md-mod module is removed while a 'poll'
-> > > or 'select' is outstanding on /proc/mdstat, an oops occurs
-> > > when the syscall completes.
-> > > poll_freewait() will call remove_wait_queue() on a wait_queue_head_t
-> > > which was local to the module which no-longer exists.
-> > > 
-> > > This problem is particular to /proc.  Most filesystems do not
-> > > allow the module to be unloaded while any files are open on it.
-> > > /proc only blocks module unloading while a file_operations
-> > > call is currently active into the module, not while the file is open.
-> > > kernfs has this property too but kernfs allocates a wait_queue_head_t
-> > > in its internal data structures so the module doesn't need to provide
-> > > one.
-> > > (A previous patch to add a similar allocation to procfs was not
-> > > accepted).
-> > 
-> > By who, me?  I was hoping we could somehow keep the implementation
-> > contained within md.  I don't think I actually looked at it to any
-> > significant extent!
-> > 
-> > Was hoping that viro would pipe up.
-> 
-> Was not accepted by anybody.  Everybody is guilty :-)
-> You were at least nice enough to comment (thanks).
-> 
-> I think I like this version better so it might not be a problem that the
-> previous version was not accepted.  Depends on what the scheduler guys think
-> though....
+This series is based on Kukjin's for-next branch.
 
-OK..
+V2:
+ 1) Adding new Kconfig file for Samsung common clock.
+ 2) Make COMMON_CLK_SAMSUNG option invisible. (as suggested by Tomasz Figa)
+ 3) Let COMMON_CLK_SAMSUNG select COMMON_CLK. (as suggested by Tomasz Figa)
+ 4) Move S3C24XX clock config option in new Kconfig file.
 
-> > > ...
-> > >
-> > > +/**
-> > > + * wait_queue_purge - remove all waiter from a wait_queue
-> > > + * @q: The queue to be purged
-> > > + *
-> > > + * Unlink all pending waiters from the queue.
-> > > + * This can be used prior to freeing a queue providing all waiters are
-> > > + * prepared for queue purging.
-> > > + * Waiters must call remove_wait_queue_puregeable() rather than
-> > > + * remove_wait_queue().
-> > > + *
-> > > + */
-> > > +void wait_queue_purge(wait_queue_head_t *q)
-> > > +{
-> > > +	spin_lock(&q->lock);
-> > > +	while (!list_empty(&q->task_list))
-> > > +		list_del_init(q->task_list.next);
-> > > +	spin_unlock(&q->lock);
-> > > +	synchronize_rcu();
-> > > +}
-> > > +EXPORT_SYMBOL(wait_queue_purge);
-> > 
-> > I don't get this.  If a task is waiting on that wait_queue_head_t, how
-> > does it get woken?
-> 
-> This is only expected to be used by tasks which have some other means of
-> being woken up.  Possibly a timeout passed to 'select' or 'poll', possibly a
-> signal.
+Pankaj Dubey (4):
+  clk: samsung: add new Kconfig for Samsung common clock options
+  drivers: clk: use CONFIG_COMMON_CLK_SAMSUNG for Samsung clock support
+  ARM: select COMMON_CLK_SAMSUNG for ARCH_EXYNOS and ARCH_S3C64XX
+  ARM: S3C24XX: remove S3C24XX specific clock Kconfig options
 
-Oh.  So the caller is supposed to take the tasks off the queue via
-wait_queue_purge(), then to wake them up (which implies the caller has
-a second way of looking the tasks up).
+ arch/arm/Kconfig              |    4 ++--
+ arch/arm/mach-s3c24xx/Kconfig |   14 --------------
+ drivers/clk/Kconfig           |    2 ++
+ drivers/clk/Makefile          |    2 +-
+ drivers/clk/samsung/Kconfig   |   11 +++++++++++
+ 5 files changed, 16 insertions(+), 17 deletions(-)
+ create mode 100644 drivers/clk/samsung/Kconfig
 
-And the tasks themselves ...  do they need to know what happened?  If
-they run remove_wait_queue() then will still take
-wait_queue_head_t.lock, so the calling task need to somehow keep the
-wait_queue_head_t alive until everyone has woken and cleared off.
+-- 
+1.7.9.5
 
-Complex!  Could we please get that all fleshed out in the changelog and
-kerneldoc?
-
-> > 
-> > > +/**
-> > > + * remove_wait_queue_puregeable - remove_wait_queue if wait_queue_purge might be used.
-> > > + * @q: the queue, which may already be purged, to remove from
-> > > + * @wait: the waiter to remove
-> > > + *
-> > > + * Remove a waiter from a queue if it hasn't already been purged.
-> > > + * If the queue has already been purged then task_list will be empty.
-> > > + * If it isn't then it is still safe to lock the queue and remove
-> > > + * the task.
-> > > + */
-> > > +void remove_wait_queue_purgeable(wait_queue_head_t *q, wait_queue_t *wait)
-> > > +{
-> > > +	unsigned long flags;
-> > > +
-> > > +	rcu_read_lock();
-> > > +	if (!list_empty(&wait->task_list)) {
-> > > +		spin_lock_irqsave(&q->lock, flags);
-> > 
-> > Mixture of spin_lock_irqsave() here and spin_lock() in
-> > wait_queue_purge() looks odd.
-> 
-> True - I was copying remove_wait_queue().  Maybe I should have just called
-> remove_wait_queue() directly (we don't actually need that _init on the
-> list_del).
-
-lockdep should have complained about the spin_lock().
