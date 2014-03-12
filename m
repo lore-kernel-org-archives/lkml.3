@@ -1,56 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaCLN4F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:56:05 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33356 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603AbaCLN4C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:56:02 -0400
-Date: Wed, 12 Mar 2014 13:55:28 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
-Subject: Re: [PATCH v2] x86: Remove compat vdso support
-Message-ID: <20140312135528.2b0dfa87@alan.etchedpixels.co.uk>
-In-Reply-To: <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
-References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
-	<CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
-	<CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
-	<CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
-	<CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
-	<CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
-	<CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
-	<CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>
-	<531F365B.4060000@linux.intel.com>
-	<CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
-	<531F3D02.30706@linux.intel.com>
-	<CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>
-	<CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com>
-	<CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	id S1754590AbaCLN4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:56:12 -0400
+Received: from mout.web.de ([212.227.17.12]:57434 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753603AbaCLN4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 09:56:09 -0400
+Date: Wed, 12 Mar 2014 14:55:54 +0100
+From: Julian Wollrath <jwollrath@web.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: joeyli <jlee@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+Message-ID: <20140312145554.65eafc6c@ilfaris>
+In-Reply-To: <53642014.xoKWERQIvL@vostro.rjw.lan>
+References: <20140310110410.5b2218f6@ilfaris>
+	<1394596807.26565.135.camel@linux-s257.site>
+	<1902317.cSAIh6fs84@vostro.rjw.lan>
+	<53642014.xoKWERQIvL@vostro.rjw.lan>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:0ebghvxOZ4YgA/ZAHj6OgqF20EIwN3bB2qHHxjyxs48hSRkjtxM
+ 9HusMGN53JzhGBPo0rw1qUg73biFSodzodSntYn5GA2r59bEYiESooYRL1MatfLDHffXeuO
+ zTmtdWZ5GbdCahIQfWylWzshKf2t87ZO3OsTKBVR38dXk2Hr8yIYbDkMsCtb4dq9w2PeNFv
+ 8vSTFYmCydpkrM5F3Uayw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So 32-bit x86 is dead, dead, dead. There's absolutely no future to it.
-> We're not adding new stuff to "future-proof" it.
+> > But I wonder: Can we simply enable SCI later?  In other words, can
+> > we split acpi_early_init() so that the part before
+> > acpi_enable_subsystem() is done before timekeeping_init() and the
+> > part including and after is done right after anon_vma_init()?
+> > Would the TAD initialization work then?
+> 
+> Below is a patch implementing that idea.  Julian, can you please test
+> this one too?
+That patch also fixes the problem, thank you.
 
-I think you underestimate how long it'll be present given the advantages
-of 32bit in certain situations like very very small devices. Intel is
-still releasing new 32bit processors (SoC X1020D etc - 'Quark')
+Cheers,
+Julian
 
-Alan
-
+> 
+> Rafael
+> 
+> ---
+>  drivers/acpi/bus.c   |   20 +++++++++++++++-----
+>  include/linux/acpi.h |    1 +
+>  init/main.c          |    1 +
+>  3 files changed, 17 insertions(+), 5 deletions(-)
+> 
+> Index: linux-pm/drivers/acpi/bus.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/bus.c
+> +++ linux-pm/drivers/acpi/bus.c
+> @@ -494,11 +494,21 @@ void __init acpi_early_init(void)
+>  	}
+>  
+>  	status = acpi_load_tables();
+> -	if (ACPI_FAILURE(status)) {
+> -		printk(KERN_ERR PREFIX
+> -		       "Unable to load the System Description
+> Tables\n");
+> -		goto error0;
+> -	}
+> +	if (ACPI_SUCCESS(status))
+> +		return;
+> +
+> +	printk(KERN_ERR PREFIX "Unable to load the System
+> Description Tables\n"); +
+> + error0:
+> +	disable_acpi();
+> +}
+> +
+> +void __init acpi_subsystem_init(void)
+> +{
+> +	acpi_status status;
+> +
+> +	if (acpi_disabled)
+> +		return;
+>  
+>  #ifdef CONFIG_X86
+>  	if (!acpi_ioapic) {
+> Index: linux-pm/include/linux/acpi.h
+> ===================================================================
+> --- linux-pm.orig/include/linux/acpi.h
+> +++ linux-pm/include/linux/acpi.h
+> @@ -401,6 +401,7 @@ extern acpi_status acpi_pci_osc_control_
+>  #define ACPI_OST_SC_INSERT_NOT_SUPPORTED	0x82
+>  
+>  extern void acpi_early_init(void);
+> +extern void acpi_subsystem_init(void);
+>  
+>  extern int acpi_nvs_register(__u64 start, __u64 size);
+>  
+> Index: linux-pm/init/main.c
+> ===================================================================
+> --- linux-pm.orig/init/main.c
+> +++ linux-pm/init/main.c
+> @@ -613,6 +613,7 @@ asmlinkage void __init start_kernel(void
+>  	calibrate_delay();
+>  	pidmap_init();
+>  	anon_vma_init();
+> +	acpi_subsystem_init();
+>  #ifdef CONFIG_X86
+>  	if (efi_enabled(EFI_RUNTIME_SERVICES))
+>  		efi_enter_virtual_mode();
+> 
 
