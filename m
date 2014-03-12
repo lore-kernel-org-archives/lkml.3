@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545AbaCLOTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:19:10 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:36846 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189AbaCLOTH (ORCPT
+	id S1754334AbaCLOUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:20:33 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:35964 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481AbaCLOUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:19:07 -0400
+	Wed, 12 Mar 2014 10:20:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <1394614210-15698-5-git-send-email-maxime.coquelin@st.com>
+In-Reply-To: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
 References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
-	<1394614210-15698-5-git-send-email-maxime.coquelin@st.com>
-Date: Wed, 12 Mar 2014 15:19:06 +0100
-Message-ID: <CACRpkdYBZKcuyNyD08K00COLXPYd7HRrapNaWLAW9SK7o0OVaQ@mail.gmail.com>
-Subject: Re: [PATCH v4 4/6] pinctrl: st: Use ARRAY_SIZE instead of raw value
- for number of delays
+Date: Wed, 12 Mar 2014 15:20:30 +0100
+Message-ID: <CACRpkdboBkzcJC35-BNvVYmS_t9Cd204AVz4rZasKtNJp0yE4g@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] Add STiH407 SoC and reference board support
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Maxime COQUELIN <maxime.coquelin@st.com>
 Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
@@ -38,14 +36,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Mar 12, 2014 at 9:50 AM, Maxime COQUELIN <maxime.coquelin@st.com> wrote:
 
-> This patch replaces the raw values with ARRAY_SIZE for assigning the
-> ninput_delays and noutput_delays fields of STiH416's st_pctl_data struct.
+> This series adds basic support to the STMicroelectronics STiH407 SoC and its
+> B2120 reference board. The STiH407 is a dual-core ARM Cortex-A9 CPU aimed at
+> STB market.
 >
-> CC: Lee Jones <lee.jones@linaro.org>
-> Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> Changes since v3:
 
-Patch applied!
+I've applied the pinctrl changes to the pinctrl tree, please push all the
+DTS[i] changes through ARM SoC.
+
+There is no need to keep DTS and subsystem changes in sync as
+the DTS'es are supposed to be maintained in separation in the
+future anyway.
 
 Yours,
 Linus Walleij
