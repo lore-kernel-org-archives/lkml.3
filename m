@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111AbaCLUe5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 16:34:57 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:40598 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178AbaCLUez (ORCPT
+	id S1752248AbaCLUfX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 16:35:23 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:55675 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbaCLUfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 16:34:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140312.152215.347361365901821816.davem@davemloft.net>
-References: <1394512892-5448-1-git-send-email-ast@plumgrid.com>
-	<1394512892-5448-2-git-send-email-ast@plumgrid.com>
-	<20140312.152215.347361365901821816.davem@davemloft.net>
-Date: Wed, 12 Mar 2014 13:34:54 -0700
-Message-ID: <CAMEtUuwUFhJdvtdrO8xcqytPRm=iqfkVu1Q6RzyzeuEeSpay0w@mail.gmail.com>
-Subject: Re: [PATCH v9 net-next 1/3] filter: add Extended BPF interpreter and converter
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: David Miller <davem@davemloft.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Wed, 12 Mar 2014 16:35:18 -0400
+Date: Wed, 12 Mar 2014 21:35:15 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, "Frank Ch. Eigler" <fche@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Johannes Berg <johannes.berg@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lttng-dev <lttng-dev@lists.lttng.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
+ set via debugfs
+Message-ID: <20140312203515.GV22728@two.firstfloor.org>
+References: <20140307150920.881849073@goodmis.org>
+ <20140312114611.43547df7@gandalf.local.home>
+ <437054772.1403.1394640336308.JavaMail.zimbra@efficios.com>
+ <20140312121813.1e0102aa@gandalf.local.home>
+ <285520930.1511.1394642395537.JavaMail.zimbra@efficios.com>
+ <20140312135059.2d497b58@gandalf.local.home>
+ <1906756968.1732.1394650035535.JavaMail.zimbra@efficios.com>
+ <20140312145802.4819511e@gandalf.local.home>
+ <1177120325.1928.1394653861180.JavaMail.zimbra@efficios.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1177120325.1928.1394653861180.JavaMail.zimbra@efficios.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 12:22 PM, David Miller <davem@davemloft.net> wrote:
-> From: Alexei Starovoitov <ast@plumgrid.com>
-> Date: Mon, 10 Mar 2014 21:41:30 -0700
->
->> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
->> index 1a869488b8ae..2c13d000389c 100644
->> --- a/include/linux/netdevice.h
->> +++ b/include/linux/netdevice.h
->> @@ -3054,6 +3054,7 @@ extern int              netdev_max_backlog;
->>  extern int           netdev_tstamp_prequeue;
->>  extern int           weight_p;
->>  extern int           bpf_jit_enable;
->> +extern int           bpf_ext_enable;
->
-> I don't like seeing config ifdefs in C code, so please adjust the
-> bpf_jit_enable declaration with something like:
->
-> #ifdef CONFIG_BPF_JIT
-> extern int              bpf_jit_enable;
-> #else
-> #define bpf_jit_enable  0
-> #endif
+> So I understand that you wish to banish tracepoints from static inline
+> functions within headers to ensure they only appear within a single module.
+> This seems to be a step backward, but let's assume we stick to that rule.
+> Then how do you envision dealing with Link-Time Optimisations (LTO) ?
 
-agree. that's definitely cleaner.
+I assume it uses the file name defines set by Kbuild? These don't change with
+LTO. It's whatever was specified at compile time. Also LTO doesn't
+inline over module boundaries (if the module is not built in)
 
->> +#ifdef CONFIG_64BIT
->> +             DL(BPF_STX, BPF_XADD, BPF_DW)
->> +#endif
->  ...
->> +#ifdef CONFIG_64BIT
->> +BPF_STX_BPF_XADD_BPF_DW: /* lock xadd *(u64 *)(A + insn->off) += X */
->> +     atomic64_add((u64)X, (atomic64_t *)(ulong)(A + insn->off));
->> +     CONT;
->> +#endif
->
-> I'm not too happy about instructions which are only available on
-> certain architectures.
->
-> I'd rather see best effort emulation than wholesale lack of support.
->
-> We have an implementation of 64-bit atomics for 32-bit systems or
-> those without true atomic compare-and-saw etc. ops in lib/atomic64.c
-> so the routines are always available.
-
-Good point. Will do.
-
-Thanks
+-Andi
