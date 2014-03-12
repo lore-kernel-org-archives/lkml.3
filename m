@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995AbaCLWQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 18:16:18 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:33984 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293AbaCLWQQ (ORCPT
+	id S1753083AbaCLWQc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 18:16:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46228 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752780AbaCLWQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 18:16:16 -0400
+	Wed, 12 Mar 2014 18:16:31 -0400
+Date: Wed, 12 Mar 2014 23:16:38 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Hans de Goede <hdegoede@redhat.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Carlo Caione <carlo.caione@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH] irq: Add a new IRQF_ACK_BEFORE_UNMASK irq flag
+In-Reply-To: <53209475.2040805@redhat.com>
+Message-ID: <alpine.DEB.2.02.1403122313250.18573@ionos.tec.linutronix.de>
+References: <1394579583-29316-1-git-send-email-hdegoede@redhat.com> <alpine.DEB.2.02.1403120944270.18573@ionos.tec.linutronix.de> <53209475.2040805@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1394512892-5448-2-git-send-email-ast@plumgrid.com>
-References: <1394512892-5448-1-git-send-email-ast@plumgrid.com>
-	<1394512892-5448-2-git-send-email-ast@plumgrid.com>
-Date: Wed, 12 Mar 2014 15:16:15 -0700
-Message-ID: <CAHA+R7P=XAWAPkJTZSfHs02-+V+VOMQ04ZNNjY6LmPdRENzCJA@mail.gmail.com>
-Subject: Re: [PATCH v9 net-next 1/3] filter: add Extended BPF interpreter and converter
-From: Cong Wang <cwang@twopensource.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry for jumping into this thread late.)
+On Wed, 12 Mar 2014, Hans de Goede wrote:
+> This indeed seems the best solution. I'm going to send a v2
+> of my sun4i irq patch-set with this patch included with 2 fixes added:
+> 
+> 1) Export the prototype for the new handle_fasteoi_late_irq function
+> 2) Fix the minor issue Russell noticed
+> 
+> I've only one minor nitpick wrt this patch, for ONESHOT
+> to work properly the irq_chip for an irq_desc using
+> handle_fasteoi_late_irq must set the IRQCHIP_EOI_THREADED, but
+> this is not enforced anywhere.
+> 
+> Maybe add a BUG_ON to the irq mapping code checking this ?
 
-On Mon, Mar 10, 2014 at 9:41 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->
-> 3. tracing filters systemtap-like with extended BPF
->
-> 4. OVS with extended BPF
->
-> 5. nftables with extended BPF
+We want some info, but a BUG_ON is probably overkill. I'll think about
+a good place to do this.
 
-If you plan to use extended BPF out of networking, does
-it make sense to make it independent of networking?
-That is, rename those sk_*() APIs?
+Thanks,
 
->
-> +int bpf_ext_enable __read_mostly;
-> +
-
-This could be converted to a jump label, no?
+	tglx
