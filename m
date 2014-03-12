@@ -1,65 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878AbaCLPNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:13:32 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47178 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754648AbaCLPNa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 11:13:30 -0400
-Date: Wed, 12 Mar 2014 15:13:20 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 2/3] spi/xtensa-xtfpga: add DT binding documentation
-Message-ID: <20140312151320.GB5035@e106331-lin.cambridge.arm.com>
-References: <1394626865-15105-1-git-send-email-jcmvbkbc@gmail.com>
- <1394626865-15105-3-git-send-email-jcmvbkbc@gmail.com>
+	id S1754901AbaCLPRA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:17:00 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35307 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754801AbaCLPQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 11:16:57 -0400
+Message-ID: <53208693.0@ti.com>
+Date: Wed, 12 Mar 2014 18:08:51 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394626865-15105-3-git-send-email-jcmvbkbc@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Laura Abbott <lauraa@codeaurora.org>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCHv4 2/2] arm: Get rid of meminfo
+References: <1392761733-32628-1-git-send-email-lauraa@codeaurora.org> <1392761733-32628-3-git-send-email-lauraa@codeaurora.org> <20140312085401.GB21483@n2100.arm.linux.org.uk> <53205CA1.1090502@ti.com> <20140312133806.GH21483@n2100.arm.linux.org.uk>
+In-Reply-To: <20140312133806.GH21483@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 12:21:04PM +0000, Max Filippov wrote:
-> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
-> ---
->  Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt | 9 +++++++++
->  1 file changed, 9 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt
+On 03/12/2014 03:38 PM, Russell King - ARM Linux wrote:
+> On Wed, Mar 12, 2014 at 03:09:53PM +0200, Grygorii Strashko wrote:
+>> Hi Russell,
+>>
+>> On 03/12/2014 10:54 AM, Russell King - ARM Linux wrote:
+>>> On Tue, Feb 18, 2014 at 02:15:33PM -0800, Laura Abbott wrote:
+>>>> memblock is now fully integrated into the kernel and is the prefered
+>>>> method for tracking memory. Rather than reinvent the wheel with
+>>>> meminfo, migrate to using memblock directly instead of meminfo as
+>>>> an intermediate.
+>>>>
+>>>> Acked-by: Jason Cooper <jason@lakedaemon.net>
+>>>> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+>>>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>>>> Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>>>> Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
+>>>> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+>>>
+>>> Laura,
+>>>
+>>> This patch causes a bunch of platforms to no longer boot - imx6solo with
+>>> 1GB of RAM boots, imx6q with 2GB of RAM doesn't.  Versatile Express doesn't.
+>>>
+>>> The early printk messages don't reveal anything too interesting:
+>>>
+>>> Booting Linux on physical CPU 0x0
+>>> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #630 SMP Wed Mar 12 01:13:36 GMT 2014
+>>> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
+>>> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+>>> Machine model: SolidRun Cubox-i Dual/Quad
+>>> cma: CMA: reserved 64 MiB at 8c000000
+>>> Memory policy: Data cache writealloc
+>>> <hang>
+>>>
+>>> vs.
+>>>
+>>> Booting Linux on physical CPU 0x0
+>>> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #631 SMP Wed Mar 12 01:15:37 GMT 2014
+>>> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
+>>> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+>>> Machine model: SolidRun Cubox-i Dual/Quad
+>>> cma: CMA: reserved 64 MiB at 3b800000
+>>> Memory policy: Data cache writealloc
+>>> On node 0 totalpages: 524288
+>>> free_area_init_node: node 0, pgdat c09d0240, node_mem_map ea7d8000
+>>>     Normal zone: 1520 pages used for memmap
+>>>     Normal zone: 0 pages reserved
+>>>     Normal zone: 194560 pages, LIFO batch:31
+>>>     HighMem zone: 2576 pages used for memmap
+>>>     HighMem zone: 329728 pages, LIFO batch:31
+>>> ...
+>>>
+>>> The only obvious difference is the address of that CMA reservation,
+>>> CMA shouldn't make a difference here - but I suspect that other
+>>> allocations which need to be in lowmem probably aren't.
+>>>
+>>
+>> Could it be possible to enable memblock debug by adding "memblock=debug"
+>> in cmdline?
 > 
-> diff --git a/Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt b/Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt
-> new file mode 100644
-> index 0000000..b6ebe2b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt
-> @@ -0,0 +1,9 @@
-> +Cadence Xtensa XTFPGA platform SPI controller.
-> +
-> +This simple SPI master controller is built into xtfpga bitstreams and is used
-> +to control daughterboard audio codec.
-> +
-> +Required properties:
-> +- compatible: should be "cdns,xtfpga-spi".
+> Here's with Laura's patch:
+> 
+> Uncompressing Linux... done, booting the kernel.
+> Booting Linux on physical CPU 0x0
+> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #633 SMP Wed Mar 12 12:56:15 GMT 2014
+> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
+> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+> Machine model: SolidRun Cubox-i Dual/Quad
+> memblock_reserve: [0x00000010008240-0x0000001112c1f7] flags 0x0 arm_memblock_init+0x28/0x1a8
+> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_memblock_init+0x108/0x1a8
+> memblock_reserve: [0x00000010004000-0x00000010007fff] flags 0x0 arm_mm_memblock_reserve+0x1c/0x24
+> memblock_reserve: [0x00000018000000-0x0000001800b07f] flags 0x0 arm_dt_memblock_reserve+0x2c/0x70
+> memblock_reserve: [0x00000018000000-0x0000001800afff] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
+> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
+> memblock_reserve: [0x0000008c000000-0x0000008fffffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+> cma: CMA: reserved 64 MiB at 8c000000
+> MEMBLOCK configuration:
+>   memory size = 0x80000000 reserved size = 0x52fda50
+>   memory.cnt  = 0x1
+>   memory[0x0]   [0x00000010000000-0x0000008fffffff], 0x80000000 bytes flags: 0x06
+>   reserved.cnt  = 0x5
+>   reserved[0x0] [0x00000010004000-0x00000010007fff], 0x4000 bytes flags: 0x0
+>   reserved[0x1] [0x00000010008240-0x0000001112c1f7], 0x1123fb8 bytes flags: 0x0
+>   reserved[0x2] [0x00000018000000-0x0000001800b07f], 0xb080 bytes flags: 0x0
+>   reserved[0x3] [0x00000020000040-0x000000201caa57], 0x1caa18 bytes flags: 0x0
+>   reserved[0x4] [0x0000008c000000-0x0000008fffffff], 0x4000000 bytes flags: 0x0
+> Memory policy: Data cache writealloc
+> memblock_reserve: [0x0000008bffffd8-0x0000008bffffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+> 
+> Here's without:
+> 
+> Booting Linux on physical CPU 0x0
+> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #635 SMP Wed Mar 12 13:22:15 GMT 2014
+> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
+> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+> Machine model: SolidRun Cubox-i Dual/Quad
+> memblock_reserve: [0x00000010008240-0x0000001112c277] flags 0x0 arm_memblock_init+0x54/0x1d4
+> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_memblock_init+0x134/0x1d4
+> memblock_reserve: [0x00000010004000-0x00000010007fff] flags 0x0 arm_mm_memblock_reserve+0x1c/0x24
+> memblock_reserve: [0x00000018000000-0x0000001800b07f] flags 0x0 arm_dt_memblock_reserve+0x2c/0x70
+> memblock_reserve: [0x00000018000000-0x0000001800afff] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
+> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
+> memblock_reserve: [0x0000003b800000-0x0000003f7fffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+> cma: CMA: reserved 64 MiB at 3b800000
+> MEMBLOCK configuration:
+>   memory size = 0x80000000 reserved size = 0x52fdad0
+>   memory.cnt  = 0x1
+>   memory[0x0]     [0x00000010000000-0x0000008fffffff], 0x80000000 bytes flags: 0x0
+>   reserved.cnt  = 0x5
+>   reserved[0x0]   [0x00000010004000-0x00000010007fff], 0x4000 bytes flags: 0x0
+>   reserved[0x1]   [0x00000010008240-0x0000001112c277], 0x1124038 bytes flags: 0x0
+>   reserved[0x2]   [0x00000018000000-0x0000001800b07f], 0xb080 bytes flags: 0x0
+>   reserved[0x3]   [0x00000020000040-0x000000201caa57], 0x1caa18 bytes flags: 0x0
+>   reserved[0x4]   [0x0000003b800000-0x0000003f7fffff], 0x4000000 bytes flags: 0x0
+> Memory policy: Data cache writealloc
+> memblock_reserve: [0x0000003b7fffd8-0x0000003b7fffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+> memblock_reserve: [0x0000003b7fe000-0x0000003b7fefff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+> memblock_reserve: [0x0000003b7fd000-0x0000003b7fdfff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+> memblock_reserve: [0x0000003b7fc000-0x0000003b7fcfff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+> ...
+> 
+> So it looks like allocations which must come from lowmem aren't being
+> limited to lowmem.
+> 
+> Try booting a machine with 2G of RAM with page offset set to 3GB and
+> highmem enabled - it will fail as per the above.
+> 
+> In fact, if we look at sanity_check_meminfo() post that patch, it's
+> clearly wrong:
+> 
+>          for_each_memblock(memory, reg) {
+>                  phys_addr_t block_start = reg->base;
+>                  phys_addr_t block_end = reg->base + reg->size;
+>                  phys_addr_t size_limit = reg->size;
+> 
+>                  if (reg->base >= vmalloc_limit)
+>                          highmem = 1;
+>                  else
+>                          size_limit = vmalloc_limit - reg->base;
+> ...
+>                  if (!highmem) {
+>                          if (block_end > arm_lowmem_limit)
+>                                  arm_lowmem_limit = block_end;
 
-Is that the official name of the block? Nothing more specific?
+In v3, above was 
+		arm_lowmem_limit = reg->base + size_limit;
 
-> +- reg: physical base address of the controller and length of memory mapped
-> +  region.
+so, it has worked somehow, even arm_lowmem_limit can point on non 
+existed address. It was changed because of my comment - sorry.
 
-No interrupts?
+I think, it should be smth like:
+if (!highmem) {
+	if (block_end > arm_lowmem_limit)
+		if (reg->size > size_limit)
+			arm_lowmem_limit = vmalloc_limit;
+		else 
+			arm_lowmem_limit = block_end;
 
-Otherwise, this looks fine to me.
+I've created and attached the patch which allows me to boot on keystone.
 
-Cheers,
-Mark.
+> ...
+>                  }
+
+regards,
+-grygorii
+
+>From 3a210330f15c4cfc6728d83b28750c696d9eaefb Mon Sep 17 00:00:00 2001
+From: Grygorii Strashko <x0174654@uglx0174654.(none)>
+Date: Wed, 12 Mar 2014 18:04:02 +0200
+Subject: [PATCH] arm: get rid of meminfo: fix lowmem_limit calculation
+
+Signed-off-by: Grygorii Strashko <x0174654@uglx0174654.(none)>
+---
+ arch/arm/mm/mmu.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index c3ae96c..f8b5175 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -1096,8 +1096,12 @@ void __init sanity_check_meminfo(void)
+ 		}
+ 
+ 		if (!highmem) {
+-			if (block_end > arm_lowmem_limit)
+-				arm_lowmem_limit = block_end;
++			if (block_end > arm_lowmem_limit) {
++				if (reg->size > size_limit)
++					arm_lowmem_limit = vmalloc_limit;
++				else
++					arm_lowmem_limit = block_end;
++			}
+ 
+ 
+ 			/*
+@@ -1117,7 +1121,7 @@ void __init sanity_check_meminfo(void)
+ 				if (!IS_ALIGNED(block_start, SECTION_SIZE))
+ 					memblock_limit = block_start;
+ 				else if (!IS_ALIGNED(block_end, SECTION_SIZE))
+-					memblock_limit = block_end;
++					memblock_limit = arm_lowmem_limit;
+ 			}
+ 
+ 		}
+-- 
+1.7.9.5
