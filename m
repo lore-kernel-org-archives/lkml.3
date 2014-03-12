@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaCLKWn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 06:22:43 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:55607 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562AbaCLKWl (ORCPT
+	id S1753294AbaCLK0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 06:26:19 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:48428 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752059AbaCLK0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 06:22:41 -0400
-Message-ID: <5320356D.3010703@gmail.com>
-Date: Wed, 12 Mar 2014 11:22:37 +0100
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 12 Mar 2014 06:26:16 -0400
+Date: Wed, 12 Mar 2014 10:25:56 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
+	drivers/media/v4l2-core to drivers/of
+Message-ID: <20140312102556.GC21483@n2100.arm.linux.org.uk>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <20140226110114.CF2C7C40A89@trevor.secretlab.ca> <531D916C.2010903@ti.com> <5427810.BUKJ3iUXnO@avalon>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        b.brezillon@overkiz.com
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCHv5 0/9] Device tree support for the at91sam9rlek
-References: <1394617425-641-1-git-send-email-alexandre.belloni@free-electrons.com> <5320334C.7060206@atmel.com> <5320352B.7040707@gmail.com>
-In-Reply-To: <5320352B.7040707@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5427810.BUKJ3iUXnO@avalon>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 12/03/2014 11:21, Boris BREZILLON a écrit :
-> Le 12/03/2014 11:13, Nicolas Ferre a écrit :
->> On 12/03/2014 10:43, Alexandre Belloni :
->>> This series adds DT support for the at91sam9rl SoC, then the 
->>> at91sam9rl-ek
->>> evaluation board.
->>>
->>> While the at91sam9rl dtsi should be almost complete (still missing 
->>> LCD and
->>> touchscreen bits). The at91sam9rlek DT now support the following tested
->>> features:
->>>   - MMC
->>>   - dbgu
->>>   - usart1
->>>   - watchdog
->>>   - nand
->>>   - leds
->>>   - buttons
->>>   - common clock framework
->>>
->>> Next:
->>>   - spi
->>>   - dataflash
->>>   - i2c
->>>   - lcd
->>>   - touchscreen
->>>   - usb gadget
->>>   - audio
->>>
->>> Changes since v4:
->>>   - correct a typo in the pwm clock name
->>>   - add an entry for the pwm clock in the board file lookup table
->>>   - reorder pinctrl nodes alphabetically
->>>
->>> Changes since v3:
->>>   - reordered nand
->>>   - removed ADC and USB gadget definition as they were not working. 
->>> They will
->>>     come with another set of patches adding proper support.
->>>
->>> Alexandre Belloni (8):
->>>    ARM: at91: prepare at91sam9rl DT transition
->>>    ARM: at91: Add at91sam9rl DT SoC support
->>>    ARM: at91/defconfig: Add the sam9rl to the list of DT-enabled SOCs
->>>    ARM: at91: dt: sam9rl: Device Tree for the at91sam9rlek
->>>    ARM: at91: prepare common clk transition for sam9rl SoCs
->>>    ARM: at91/dt: define at91sam9rl clocks
->>>    ARM: at91/dt: define main clk frequency of at91sam9rlek
->>>    ARM: at91: switch sam9rl to common clock framework
->>>
->>> Boris BREZILLON (1):
->>>    ARM: at91: prepare sam9 dt boards transition to common clk
->> The series seems ready for inclusion. I stack the whole series on our
->> at91-3.15-cleanup branch with my:
->>
->> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> You can add my
->
-> Acked-by: Boris BREZILLON <b.brezillon.dev@gmail>
-Oops:
+On Mon, Mar 10, 2014 at 02:52:53PM +0100, Laurent Pinchart wrote:
+> In theory unidirectional links in DT are indeed enough. However, let's not 
+> forget the following.
+> 
+> - There's no such thing as single start points for graphs. Sure, in some 
+> simple cases the graph will have a single start point, but that's not a 
+> generic rule. For instance the camera graphs 
+> http://ideasonboard.org/media/omap3isp.ps and 
+> http://ideasonboard.org/media/eyecam.ps have two camera sensors, and thus two 
+> starting points from a data flow point of view.
 
-Acked-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
->
-> Thanks.
->
-> Best Regards,
->
-> Boris
->>
->> Thanks a lot.
->>
->>
->>>   arch/arm/boot/dts/Makefile         | 2 +
->>>   arch/arm/boot/dts/at91sam9rl.dtsi  | 802 
->>> +++++++++++++++++++++++++++++++++++++
->>>   arch/arm/boot/dts/at91sam9rlek.dts | 157 ++++++++
->>>   arch/arm/configs/at91_dt_defconfig |   1 +
->>>   arch/arm/mach-at91/Kconfig         |   1 -
->>>   arch/arm/mach-at91/at91sam9rl.c    |  23 +-
->>>   arch/arm/mach-at91/board-dt-sam9.c |  11 +-
->>>   7 files changed, 994 insertions(+), 3 deletions(-)
->>>   create mode 100644 arch/arm/boot/dts/at91sam9rl.dtsi
->>>   create mode 100644 arch/arm/boot/dts/at91sam9rlek.dts
->>>
->>
->
+I think we need to stop thinking of a graph linked in terms of data
+flow - that's really not useful.
 
+Consider a display subsystem.  The CRTC is the primary interface for
+the CPU - this is the "most interesting" interface, it's the interface
+which provides access to the picture to be displayed for the CPU.  Other
+interfaces are secondary to that purpose - reading the I2C DDC bus for
+the display information is all secondary to the primary purpose of
+displaying a picture.
+
+For a capture subsystem, the primary interface for the CPU is the frame
+grabber (whether it be an already encoded frame or not.)  The sensor
+devices are all secondary to that.
+
+So, the primary software interface in each case is where the data for
+the primary purpose is transferred.  This is the point at which these
+graphs should commence since this is where we would normally start
+enumeration of the secondary interfaces.
+
+V4L2 even provides interfaces for this: you open the capture device,
+which then allows you to enumerate the capture device's inputs, and
+this in turn allows you to enumerate their properties.  You don't open
+a particular sensor and work back up the tree.
+
+I believe trying to do this according to the flow of data is just wrong.
+You should always describe things from the primary device for the CPU
+towards the peripheral devices and never the opposite direction.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
