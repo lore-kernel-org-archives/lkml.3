@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaCLJ1P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:27:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752679AbaCLJ1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:27:12 -0400
-Date: Wed, 12 Mar 2014 10:26:47 +0100
-From: Jesper Dangaard Brouer <brouer@redhat.com>
-To: Zhouyi Zhou <zhouzhouyi@gmail.com>
-Cc: <davem@davemloft.net>, <pablo@netfilter.org>, <jbenc@redhat.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Zhouyi Zhou <yizhouzhou@ict.ac.cn>, brouer@redhat.com
-Subject: Re: [PATCH RFC] netfilter: cacheline aligning in struct netns_ct
-Message-ID: <20140312102647.5758f95d@redhat.com>
-In-Reply-To: <1394610994-22794-1-git-send-email-yizhouzhou@ict.ac.cn>
-References: <1394610994-22794-1-git-send-email-yizhouzhou@ict.ac.cn>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752996AbaCLJaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 05:30:30 -0400
+Received: from mx08-00178001.pphosted.com ([62.209.51.94]:51879 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751804AbaCLJa2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 05:30:28 -0400
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
+Cc: lee.jones@linaro.org
+Subject: [PATCH v4 0/6] Add STiH407 SoC and reference board support
+Date: Wed, 12 Mar 2014 09:50:04 +0100
+Message-Id: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
+X-Mailer: git-send-email 1.9.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-12_03:2014-03-11,2014-03-12,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Mar 2014 15:56:34 +0800
-Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
+This series adds basic support to the STMicroelectronics STiH407 SoC and its
+B2120 reference board. The STiH407 is a dual-core ARM Cortex-A9 CPU aimed at
+STB market.
 
-> not frequently changing components should share same cachelines
-> 
-> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-> ---
->  include/net/netns/conntrack.h |   12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
+Changes since v3:
+-----------------
+	- Removed SOC_STIH407 as unused for now
+	- Cosmetic changes in DT
+	- Added new lines in pinctrl-st around if:s
+	- Use ARRAY_SIZE instead of raw values
 
-NACK because I have already moved these "special" lists in commit:
+Changes since v2:
+-----------------
+    - Reordered the pinctrl patches
+    - Moved stih407_flashdata to stih407 pinctrl patch
 
-https://git.kernel.org/cgit/linux/kernel/git/pablo/nf-next.git/commit/?id=b7779d06f9950e14a008a2de970b44233fe49c86
+Changes since v1:
+-----------------
+	- Changed patch 2 commit title
+	- Rebased pinctrl patches to linux-pinctrl/devel
+	- Rebased ARM patches to arm_soc/for-next
 
-Next remember that this struct netns_ct, is inlined in struct net
-(include/net/net_namespace.h).  Thus, the alignment is not quite as you
-might expect...
+Giuseppe Cavallaro (2):
+  pinctrl: st: Enhance the controller to manage unavailable registers
+  pinctrl: st: add pinctrl support for the STiH407 SoC
 
-> diff --git a/include/net/netns/conntrack.h b/include/net/netns/conntrack.h
-> index fbcc7fa..69d2d58 100644
-> --- a/include/net/netns/conntrack.h
-> +++ b/include/net/netns/conntrack.h
-> @@ -65,6 +65,12 @@ struct nf_ip_net {
->  struct netns_ct {
->  	atomic_t		count;
->  	unsigned int		expect_count;
-> +	struct hlist_nulls_head	unconfirmed;
-> +	struct hlist_nulls_head	dying;
-> +	struct hlist_nulls_head tmpl;
-> +
-> +	/*  not frequently changing components should share same cachelines */
-> +	struct nf_ip_net	nf_ct_proto ____cacheline_aligned_in_smp;
->  #ifdef CONFIG_SYSCTL
->  	struct ctl_table_header	*sysctl_header;
->  	struct ctl_table_header	*acct_sysctl_header;
-> @@ -86,13 +92,11 @@ struct netns_ct {
->  	struct kmem_cache	*nf_conntrack_cachep;
->  	struct hlist_nulls_head	*hash;
->  	struct hlist_head	*expect_hash;
-> -	struct hlist_nulls_head	unconfirmed;
-> -	struct hlist_nulls_head	dying;
-> -	struct hlist_nulls_head tmpl;
-> +
->  	struct ip_conntrack_stat __percpu *stat;
->  	struct nf_ct_event_notifier __rcu *nf_conntrack_event_cb;
->  	struct nf_exp_event_notifier __rcu *nf_expect_event_cb;
-> -	struct nf_ip_net	nf_ct_proto;
-> +
->  #if defined(CONFIG_NF_CONNTRACK_LABELS)
->  	unsigned int		labels_used;
->  	u8			label_words;
+Maxime Coquelin (4):
+  ARM: STi: Add STiH407 SoC support
+  pinctrl: st: Use ARRAY_SIZE instead of raw value for number of delays
+  ARM: dts: Add STiH407 SoC support
+  ARM: dts: STiH407: Add B2120 board support
 
-
+ Documentation/arm/sti/stih407-overview.txt    |  18 +
+ Documentation/devicetree/bindings/arm/sti.txt |  15 +
+ arch/arm/boot/dts/Makefile                    |   3 +-
+ arch/arm/boot/dts/stih407-b2120.dts           |  78 ++++
+ arch/arm/boot/dts/stih407-clock.dtsi          |  40 ++
+ arch/arm/boot/dts/stih407-pinctrl.dtsi        | 615 ++++++++++++++++++++++++++
+ arch/arm/boot/dts/stih407.dtsi                | 263 +++++++++++
+ arch/arm/mach-sti/board-dt.c                  |   1 +
+ drivers/pinctrl/pinctrl-st.c                  | 125 ++++--
+ 9 files changed, 1112 insertions(+), 46 deletions(-)
+ create mode 100644 Documentation/arm/sti/stih407-overview.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/sti.txt
+ create mode 100644 arch/arm/boot/dts/stih407-b2120.dts
+ create mode 100644 arch/arm/boot/dts/stih407-clock.dtsi
+ create mode 100644 arch/arm/boot/dts/stih407-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/stih407.dtsi
 
 -- 
-Best regards,
-  Jesper Dangaard Brouer
-  MSc.CS, Sr. Network Kernel Developer at Red Hat
-  Author of http://www.iptv-analyzer.org
-  LinkedIn: http://www.linkedin.com/in/brouer
+1.9.0
+
