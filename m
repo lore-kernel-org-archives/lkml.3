@@ -1,66 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaCLNAS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:00:18 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36661 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900AbaCLNAQ (ORCPT
+	id S1753101AbaCLNFM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:05:12 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:41455 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673AbaCLNFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:00:16 -0400
-Date: Wed, 12 Mar 2014 13:00:09 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-Id: <20140312130009.2c05e3aea858358daacfbba0@kernel.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__12_Mar_2014_13_00_09_+0000_jgn8=AK7rWkd8O7t"
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@kernel.org
-Subject: linux-next: manual merge of the pci tree with the pci-current tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 12 Mar 2014 09:05:09 -0400
+Message-ID: <53205B7F.601@atmel.com>
+Date: Wed, 12 Mar 2014 14:05:03 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+CC: <plagnioj@jcrosoft.com>, <b.brezillon@overkiz.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <gregory.clement@free-electrons.com>, <devicetree@vger.kernel.org>,
+        <thomas.petazzoni@free-electrons.com>,
+        <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+Subject: Re: [PATCH v5 0/9] Device Tree support for the at91sam9261ek
+References: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com>
+In-Reply-To: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Mar_2014_13_00_09_+0000_jgn8=AK7rWkd8O7t
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/03/2014 11:05, Jean-Jacques Hiblot :
+> This patch set aims at bringing a device tree support for the sam9261.
+> It's mostly based on the sam9263 and sam9x5 stuff.
+> 
+> Changes since V4:
+> * change the compatibilty string for the bus matrix to
+>   'atmel,at91sam9260-bus-matrix'
+> * add a documentation for the bus matrix DT binding
+> * panic if the DT description of the bus matrix is not found
+> * Fixed the GPIO banks' address range
+> 
+> Changes since V3:
+> * Added support for the touchscreen
+> * Added support for the spi dataflash
+> * Activated the TCB by default
+> * Reworked the patch organization to reduce the number of patchs
+> * changed the default bootargs (no mem description, UBI on mtdpart 5)
+> * Changed the xlate implementation of the at91 pinctrl driver to lock the GPIOs
+>   for IRQs instead of requesting them (needed for the touchscreen driver)
+> * some stylistic changes
+> 
+> Changes since V2:
+> * removed the smc driver from the serie. It'll be posted in an independent
+>   serie later.
+> * removed the DM9000 support (it'll come with the smc driver)
+> * the sam9261 now supports the Common Clock Framework (CCF). Note: to enable
+>   the CCF you must remove from the kernel config the platforms that don't
+>   support it.
+> * Added basic DT binding for the bus matrix
+> * Added support for USB host
+> * Added support for USB gadget
+> * in dts(i), replaced interrupt-parent with interrupts-extended
+> * changed the nand partition plan (same as for the sama5d3)
+> * removed 'mem' parameter in command line
+> * re-ordered dt-nodes in ascending address order.
+> * split the lcd support patch in 2 parts (SOC and board)
+> 
+> 
+> Change since V1:
+> * changed the DT representation to use address translation and separate the
+>   timings' configuration from the device properties by adding a "simple-bus"
+>   inetrmediate node.
+> * moved the smc driver from drivers/bus to drivers/memmory
+> * smc driver now accepts timings in nanoseconds as well as raw register values
+> * smc driver can clip the timings if they're out of bound and dump them to the
+>   console
+> * DM9000 timings are now described in nanosecs (for the virtue of example)
+> 
+> supported features are:
+> * working with the Common Clock Framework and the old at91 clock implementation
+> * dbgu
+> * lcdc
+> * usb host
+> * usb gadget,
+> * spi dataflash
+> * nand flash
+> * touchscreen
+> * leds
+> * user buttons
+> 
+> In the TODO list:
+> * dm9000 (ethernet)
+> * audio
+> * mmc
+> 
+> This serie relies on the following patchs:
+> usb: at91-udc: fix irq and iomem resource retrieval
+> ARM: at91: prepare sam9 dt boards transition to common
+> 
+> Jean-Jacques
+> 
+> Jean-Jacques Hiblot (9):
+>   at91: dt: Adds support for the bus matrix declaration in the DT
+>   dt: bindings: at91: Add a new binding for the bus matrix
+>   at91: pinctrl: don't request GPIOs used for interrupts but lock them
+>     as IRQ
+>   at91: dt: Add at91sam9261 dt SoC support
+>   at91: dt: defconfig: Added the sam9261 to the list of DT-enabled SOCs
+>   at91: dt: sam9261: Device Tree support for the at91sam9261ek
+>   at91: updated the at91_dt_defconfig with support for the ADS7846
+>   ARM: at91: prepare common clk transition for sam9261 SoC
+>   ARM: at91: move sam9261 SoC to common clk
 
-Hi Bjorn,
+Jean-Jacques,
 
-Today's linux-next merge of the pci tree got a conflict in drivers/pci/pci.=
-c between commit 5f4fe7ad54087 ("PCI: Enable INTx in pci_reenable_device() =
-only when MSI/MSI-X not enabled") from the pci-current tree and commit 1e25=
-71a7813836 ("PCI: Enable INTx if BIOS left them disabled") from the pci tre=
-e.
+I take the 4-9 patches in my at91-3.15-cleanup branch with my "Acked-by".
 
-I fixed it up resulting in the contents of pci-current and can carry the fi=
-x as necessary (no action is required).
+The first ones shall be re-posted independently:
+- for the matrix, we need to convert all SoC DT before adding a "panic"
+statement if the SoC doesn't have a matrix entry. I am pretty confident
+to have these bits in for 3.15 anyway.
+- for the pinctrl, we need to cook the idea a little bit more and have
+Linus' acknowledgement.
 
---Signature=_Wed__12_Mar_2014_13_00_09_+0000_jgn8=AK7rWkd8O7t
-Content-Type: application/pgp-signature
+Thanks a lot for you work. Bye.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+>  .../devicetree/bindings/arm/atmel-at91.txt         |  14 +
+>  arch/arm/boot/dts/Makefile                         |   2 +
+>  arch/arm/boot/dts/at91sam9261.dtsi                 | 740 +++++++++++++++++++++
+>  arch/arm/boot/dts/at91sam9261ek.dts                | 204 ++++++
+>  arch/arm/configs/at91_dt_defconfig                 |   2 +
+>  arch/arm/mach-at91/Kconfig                         |   1 -
+>  arch/arm/mach-at91/at91sam9261.c                   |  25 +-
+>  arch/arm/mach-at91/setup.c                         |  21 +
+>  drivers/pinctrl/pinctrl-at91.c                     |   5 +-
+>  9 files changed, 1008 insertions(+), 6 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/at91sam9261.dtsi
+>  create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
+> 
 
-iQIcBAEBAgAGBQJTIFpZAAoJELSic+t+oim97UsP/R/Bd9iM48j9ODnpwtl1YPVX
-95l3pspq9ZMKYm+1dMJGwOvqKoe3P2P2QKjThWD6DomPB3vVl/uz1jrO21bpK9VY
-1V4HK/3h0RS8i8XKgWMHU9g0wqqQmhBBEqHZ88nRp4Yc8SABIQXZ5H9GQBcPDkYa
-rvxxoBKyWuT3uDursPGATFI+LjaP6DtlkWRfMAyfJhXvYwpkGDLN42YA+r9oQkaY
-M0eBCjbYsCtUuQnKPJJxa/FkYjyXeU4p4AXfRhAjNGH3y//vSfXQSTVeqO+UW89n
-EhXaytNvF8l8vY6Nx5mhLmlUIfRzPA4207CMYnmngk/SFQDD2ScaG3p2dmETzAoI
-FfKmrGavT9Sgm5BijqWy1dB48dtIJ6U3RzT+/vYsx3SdR8hnl/XYHZ+JAIDdA4qL
-0QM40gqUuYufshjkiEne8Nmg9M4JcUxwzE4zL2dXp+8GajMhDXUxayoVyvZdEyCB
-yxeDZ3JqrOftS9LtH6ZOhtvgPF7tmI0G9aLJZ1q6DUgbggLmZFWmeNc370To0YBc
-DXgNo6nW+o+OAef+XvT+AycsUpuJ4B+9AK9G+xpSsXdyd9TS5dUWjgvOcddHB5WR
-k74c5zpdN7A//+620Ysc1DDpSitljI4mMTADcyjkQpNOsAiiX0jFoWDCHK7JyxN2
-4EG4gBtD9C2AQh8lVyFF
-=AlS5
------END PGP SIGNATURE-----
 
---Signature=_Wed__12_Mar_2014_13_00_09_+0000_jgn8=AK7rWkd8O7t--
+-- 
+Nicolas Ferre
