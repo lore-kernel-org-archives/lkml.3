@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaCLJYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:24:05 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:55387 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889AbaCLJYC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:24:02 -0400
-Date: Wed, 12 Mar 2014 09:23:55 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/5] mfd: add bcm590xx pmu driver
-Message-ID: <20140312092355.GB5672@lee--X1>
-References: <1394552775-31264-1-git-send-email-mporter@linaro.org>
- <1394552775-31264-3-git-send-email-mporter@linaro.org>
- <20140311160837.GP21216@lee--X1>
- <20140311221938.GO25092@beef>
- <20140311224517.GA5672@lee--X1>
- <20140311232545.GP25092@beef>
- <20140312004030.GH28112@sirena.org.uk>
- <20140312005748.GQ25092@beef>
+	id S1753259AbaCLJZR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 05:25:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41023 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752137AbaCLJZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 05:25:14 -0400
+Date: Wed, 12 Mar 2014 10:25:11 +0100
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
+        clemens@ladisch.de, rob@landley.net, lm-sensors@lm-sensors.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        andre@andrep.de
+Subject: Re: [PATCH] hwmon, k10temp: Add support for AMD F16 M30h processor
+Message-ID: <20140312102511.77faa6ff@endymion.delvare>
+In-Reply-To: <531FCF3D.8020409@roeck-us.net>
+References: <1394573159-2317-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+	<531FCF3D.8020409@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140312005748.GQ25092@beef>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > Are there any inter-patch dependencies in the set? If so, we should
-> > > > know about them so we can coordinate a sensible solution.
-> > 
-> > > Yes, the regulator driver (3/5) that Mark applied is dependent on this
-> > > patch...the regulator driver includes include/linux/mfd/bcm590xx.h.
-> > 
-> > There's no actual dependency though - the regulator driver can only be
-> > built if the MFD is enabled in Kconfig since it depends on it so until
-> > the MFD is present in the tree it won't get built.
+On Tue, 11 Mar 2014 20:06:37 -0700, Guenter Roeck wrote:
+> On 03/11/2014 02:25 PM, Aravind Gopalakrishnan wrote:
+> > Adding new PCI ID to support AMD F16 M30h processor (Mullins).
+> > While at it, modify Kconfig and Doc files to reflect the
+> > support for newer processors
+> >
+> > Note: PCI ID for this processor will make it into pci_ids.h
+> > as part of this patch:
+> > http://marc.info/?l=linux-kernel&m=139291362126057&w=2
+> > which should be pulled into 3.15 when merge window opens
+> > (It currently sits in 'for-next' branch of bp.git-
+> > https://git.kernel.org/cgit/linux/kernel/git/bp/bp.git/log/?h=for-next)
+> >
+> > Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
 > 
-> Oh, right. Lee, no dependencies then.
+> Looks good. We'll have to see how we can apply this; probably after 3.15-rc1
+> comes out. I'll put it into my -staging branch for now and pull in the other
+> patch as well to make sure it compiles.
 
-Perfect, I'll just apply the MFD patch.
-
-We still need the DT guys to look over your document, so nothing will
-be certain until a) we receive their Ack or b) enough time passes, so
-we will review it between ourselves.
+I've updated the wiki accordingly, as well as sensors-detect.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jean Delvare
+SUSE L3 Support
