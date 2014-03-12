@@ -1,130 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567AbaCLOFb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:05:31 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:49218 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754448AbaCLOF3 (ORCPT
+	id S1754597AbaCLOF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:05:57 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49038 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754577AbaCLOF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:05:29 -0400
+	Wed, 12 Mar 2014 10:05:56 -0400
+Date: Wed, 12 Mar 2014 14:05:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-mm@kvack.org,
+        Daniel Walker <dwalker@fifo99.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        David Brown <davidb@codeaurora.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Jason Cooper <jason@lakedaemon.net>, linux-arm-msm@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCHv4 2/2] arm: Get rid of meminfo
+Message-ID: <20140312140522.GI21483@n2100.arm.linux.org.uk>
+References: <1392761733-32628-1-git-send-email-lauraa@codeaurora.org> <1392761733-32628-3-git-send-email-lauraa@codeaurora.org> <20140312085401.GB21483@n2100.arm.linux.org.uk> <53205CA1.1090502@ti.com> <20140312133806.GH21483@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140311033345.GA2631@infradead.org>
-References: <CABPqkBS1A5d-=OBUL6wJA-MAAKK2UTS+_kbYyBN=d-hohSc89Q@mail.gmail.com>
-	<20140311033345.GA2631@infradead.org>
-Date: Wed, 12 Mar 2014 15:05:28 +0100
-Message-ID: <CABPqkBRLRYv7SvUHoArfgvLrCyJ8CTvCYQgmECNj69yvwiTvYQ@mail.gmail.com>
-Subject: Re: [BUG] perf annotate: not reporting all events profiles
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140312133806.GH21483@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 4:33 AM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
-> Em Mon, Mar 10, 2014 at 10:57:48PM +0100, Stephane Eranian escreveu:
->> Arnaldo,
->>
->> I am using tip.git perf and I do the following:
->>
->> $ perf record -e cycles,instructions foo
->> $ perf annotate --stdio
->>
->> (no explicit grouping).
->>
->> I only see the asm profile for the first event (cycles).
->> I don't see a way to display the profile for the second
->> event in the cmdline options.
->>
->> Yet the code in __cmd_annotate() seems to  try and
->> display all profiles.
->>
->> If I use the TUI, it prompts me for the event at the first
->> screen and I get different asm profiles.
->>
->> So what is wrong?
->
-> That code went from supporting just one type of sample to suporting
-> groups, GTK+, TUI, etc, needs some work to untangle things up and make
-> it clearer...
->
-> But TUI works as expected, right?
->
-> That being said, try this patch, that is not optimal yet but allows you
-> to see the events.
->
-> I'll continue work on fixing up --stdio tomorrow.
->
-> - Arnaldo
->
-> diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-> index 0da603b79b61..9bf9055da29c 100644
-> --- a/tools/perf/builtin-annotate.c
-> +++ b/tools/perf/builtin-annotate.c
-> @@ -180,7 +180,7 @@ find_next:
->                          * symbol, free he->ms.sym->src to signal we already
->                          * processed this symbol.
->                          */
-> -                       zfree(&notes->src);
-> +                       //zfree(&notes->src);
->                 }
->         }
->  }
-> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-> index 3aa555ff9d89..7fb2cd70f91a 100644
-> --- a/tools/perf/util/annotate.c
-> +++ b/tools/perf/util/annotate.c
-> @@ -1260,8 +1260,8 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map,
->         if (perf_evsel__is_group_event(evsel))
->                 width *= evsel->nr_members;
->
-> -       printf(" %-*.*s|        Source code & Disassembly of %s\n",
-> -              width, width, "Percent", d_filename);
-> +       printf(" %-*.*s|        Source code & Disassembly of %s for %s samples\n",
-> +              width, width, "Percent", d_filename, perf_evsel__name(evsel));
->         printf("-%-*.*s-------------------------------------\n",
->                width+namelen, width+namelen, graph_dotted_line);
->
-That works, except for the formatting of the graph_dotted_line.
-Something like below worked for me:
+On Wed, Mar 12, 2014 at 01:38:06PM +0000, Russell King - ARM Linux wrote:
+> Try booting a machine with 2G of RAM with page offset set to 3GB and
+> highmem enabled - it will fail as per the above.
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 2ac6a54..0f13552 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -1226,7 +1226,7 @@ int symbol__annotate_printf(struct symbol *sym,
-struct map *map,
-        int more = 0;
-        u64 len;
-        int width = 8;
--       int namelen;
-+       int namelen, evtlen;
+BTW, simple way to test this on any ARM platform:
 
-        filename = strdup(dso->long_name);
-        if (!filename)
-@@ -1239,14 +1239,17 @@ int symbol__annotate_printf(struct symbol
-*sym, struct map *map,
+Build with PAGE_OFFSET=3GB and highmem enabled.  Pass vmalloc=1G on the
+kernel command line to force maximal vmalloc region (which should push
+lowmem down to the minimum of 32MB.)  The remainder will be highmem.
 
-        len = symbol__size(sym);
-        namelen = strlen(d_filename);
-+       evtlen = (int)strlen( perf_evsel__name(evsel)) + 5 + 9;
+Now, with Laura's patch applied, some platforms do boot but the result
+is rather odd:
 
-        if (perf_evsel__is_group_event(evsel))
-                width *= evsel->nr_members;
+vmalloc area is too big, limiting to 976MB
 
--       printf(" %-*.*s|        Source code & Disassembly of %s\n",
--              width, width, "Percent", d_filename);
-+       //printf(" %-*.*s|      Source code & Disassembly of %s\n",
-width, width, "Percent", d_filename);
-+       printf(" %-*.*s|        Source code & Disassembly of %s for %s
-samples\n",
-+              width, width, "Percent", d_filename, perf_evsel__name(evsel));
-+
-        printf("-%-*.*s-------------------------------------\n",
--              width+namelen, width+namelen, graph_dotted_line);
-+              width+namelen+evtlen, width+namelen+evtlen, graph_dotted_line);
+So, the vmalloc=1G has done the right thing here, but:
+
+Memory: 507404K/523264K available (3839K kernel code, 230K rwdata, 1388K rodata, 211K init, 5266K bss, 15860K reserved, 0K highmem)
+Virtual kernel memory layout:
+    vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+    fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+    vmalloc : 0xe0800000 - 0xff000000   ( 488 MB)
+    lowmem  : 0xc0000000 - 0xe0000000   ( 512 MB)
+    pkmap   : 0xbfe00000 - 0xc0000000   (   2 MB)
+    modules : 0xbf000000 - 0xbfe00000   (  14 MB)
+      .text : 0xc0008000 - 0xc0522f34   (5228 kB)
+      .init : 0xc0523000 - 0xc0557fc0   ( 212 kB)
+      .data : 0xc0558000 - 0xc0591980   ( 231 kB)
+       .bss : 0xc0591988 - 0xc0ab6220   (5267 kB)
+
+something has overriden it, and we end up with no highmem.  Without
+Laura's patch, it all behaves correctly:
+
+vmalloc area is too big, limiting to 976MB
+...
+Memory: 507932K/523264K available (3839K kernel code, 230K rwdata, 1388K rodata, 211K init, 5266K bss, 15332K reserved, 490496K highmem)
+Virtual kernel memory layout:
+    vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+    fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+    vmalloc : 0xc2800000 - 0xff000000   ( 968 MB)
+    lowmem  : 0xc0000000 - 0xc2000000   (  32 MB)
+    pkmap   : 0xbfe00000 - 0xc0000000   (   2 MB)
+    modules : 0xbf000000 - 0xbfe00000   (  14 MB)
+      .text : 0xc0008000 - 0xc0522f34   (5228 kB)
+      .init : 0xc0523000 - 0xc0557fc0   ( 212 kB)
+      .data : 0xc0558000 - 0xc0591980   ( 231 kB)
+       .bss : 0xc0591988 - 0xc0ab6260   (5267 kB)
+
+So... the more I look at the boot results from last night's autobuild,
+the more stuff appears to be broken with this meminfo removal.
+
+Therefore, I have to wonder what kind of testing was done with these
+patches - I suspect the test consisted of "does it boot" without looking
+at any of the details about what memory was where.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
