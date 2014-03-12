@@ -1,78 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612AbaCLPG1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:06:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35047 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987AbaCLPG0 (ORCPT
+	id S1754754AbaCLPHD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:07:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52023 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600AbaCLPHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 11:06:26 -0400
-Date: Wed, 12 Mar 2014 16:06:17 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Jiri Bohac <jbohac@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: is printk() safe within a timekeeper_seq write section?
-Message-ID: <20140312150617.GE27965@twins.programming.kicks-ass.net>
-References: <20140306174531.GA30634@midget.suse.cz>
- <531F6429.8050008@linaro.org>
- <alpine.DEB.2.02.1403112040100.18573@ionos.tec.linutronix.de>
- <20140312064645.GJ30956@twins.programming.kicks-ass.net>
- <20140312143456.GB28695@quack.suse.cz>
+	Wed, 12 Mar 2014 11:07:00 -0400
+Date: Wed, 12 Mar 2014 08:06:31 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-c1bacbae8192dd2a9ebadd22d793b68054f6c6e5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, jjhiblot@traphandler.com, tglx@linutronix.de,
+        linus.walleij@linaro.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, jjhiblot@traphandler.com,
+        tglx@linutronix.de, linus.walleij@linaro.org
+In-Reply-To: <alpine.DEB.2.02.1403080857160.18573@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.02.1403080857160.18573@ionos.tec.linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Provide irq_request/
+ release_resources chip callbacks
+Git-Commit-ID: c1bacbae8192dd2a9ebadd22d793b68054f6c6e5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140312143456.GB28695@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 03:34:56PM +0100, Jan Kara wrote:
-> On Wed 12-03-14 07:46:45, Peter Zijlstra wrote:
-> > On Tue, Mar 11, 2014 at 10:32:26PM +0100, Thomas Gleixner wrote:
-> > > > Peter/Thomas: Any thoughts on the deferred printk buffer? Does printk
-> > > > already have something like this? Any other ideas here?
-> > > 
-> > > I was thinking about something like that for RT as on RT printk is a
-> > > complete nightmare. It's simple to implement that, but as we know from
-> > > the RT experience it can lead to painful loss of debug output.
-> > > 
-> > > Assume you printk inside such a region, which just fills the dmesg
-> > > buffer and schedules the delayed output. Now in that same region you
-> > > run into a deadlock which causes the whole machine to freeze. Then you
-> > > won't see the debug output, which might actually give you the hint why
-> > > the system deadlocked ....
-> > 
-> > Ok so I started writing a rant that I don't give a crap about klogd and
-> > that deferring that wakeup would be perfectly fine; then I looked at the
-> > code and found that we in fact do this already.
-> > 
-> > wake_up_klogd() schedules a lazy irqwork to go wake up, so that's out.
-> > 
-> > That leaves the console sem wakeup; but I suppose we could redo this
-> > patch:
-> > 
-> >   lkml.kernel.org/r/20110621153806.286257129@chello.nl
-> > 
-> > to get rid of that one.
->   I don't know if you've noticed but there's also the following patch:
-> https://lkml.org/lkml/2013/12/23/310
->   which would make it pretty easy to just add messages to printk buffer in
-> timer code and schedule printing later using irq work.
+Commit-ID:  c1bacbae8192dd2a9ebadd22d793b68054f6c6e5
+Gitweb:     http://git.kernel.org/tip/c1bacbae8192dd2a9ebadd22d793b68054f6c6e5
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Sat, 8 Mar 2014 08:59:58 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 12 Mar 2014 16:00:24 +0100
 
-Yeah; I suppose that one is prettier.
+genirq: Provide irq_request/release_resources chip callbacks
 
->   Regarding your referenced patch - the way it is written, it would make
-> all printk users spin on console_sem->lock all the time while we are
-> flushing buffer to console. I don't think we want that - we trylock the
-> console_sem exactly so that other printk users can proceed while one poor
-> guy is pushing stuff to console.
+For certain irq types, e.g. gpios, it's necessary to request resources
+before starting up the irq.
 
-That should be fixable though; just keep enough state for the other
-printk()s to see they don't need to also flush.
+This might fail so we cannot use the irq_startup() callback because we
+might call the irq_set_type() callback before that which does not make
+sense when the resource is not available. Calling irq_startup() before
+irq_set_type() can lead to spurious interrupts which is not desired
+either.
 
-But the idea is to not do the sleep+wakeup dance.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org 
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1403080857160.18573@ionos.tec.linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/irq.h |  6 ++++++
+ kernel/irq/manage.c | 28 +++++++++++++++++++++++++++-
+ 2 files changed, 33 insertions(+), 1 deletion(-)
 
-But as stated; that's not going to actually matter much, since the
-popular console drivers are crap and do wakeups too.
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 7dc1003..e675971 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -303,6 +303,10 @@ static inline irq_hw_number_t irqd_to_hwirq(struct irq_data *d)
+  * @irq_pm_shutdown:	function called from core code on shutdown once per chip
+  * @irq_calc_mask:	Optional function to set irq_data.mask for special cases
+  * @irq_print_chip:	optional to print special chip info in show_interrupts
++ * @irq_request_resources:	optional to request resources before calling
++ *				any other callback related to this irq
++ * @irq_release_resources:	optional to release resources acquired with
++ *				irq_request_resources
+  * @flags:		chip specific flags
+  */
+ struct irq_chip {
+@@ -336,6 +340,8 @@ struct irq_chip {
+ 	void		(*irq_calc_mask)(struct irq_data *data);
+ 
+ 	void		(*irq_print_chip)(struct irq_data *data, struct seq_file *p);
++	int		(*irq_request_resources)(struct irq_data *data);
++	void		(*irq_release_resources)(struct irq_data *data);
+ 
+ 	unsigned long	flags;
+ };
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index d3bf660..5d35cbe 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -896,6 +896,23 @@ static void irq_setup_forced_threading(struct irqaction *new)
+ 	}
+ }
+ 
++static int irq_request_resources(struct irq_desc *desc)
++{
++	struct irq_data *d = &desc->irq_data;
++	struct irq_chip *c = d->chip;
++
++	return c->irq_request_resources ? c->irq_request_resources(d) : 0;
++}
++
++static void irq_release_resources(struct irq_desc *desc)
++{
++	struct irq_data *d = &desc->irq_data;
++	struct irq_chip *c = d->chip;
++
++	if (c->irq_release_resources)
++		c->irq_release_resources(d);
++}
++
+ /*
+  * Internal function to register an irqaction - typically used to
+  * allocate special interrupts that are part of the architecture.
+@@ -1091,6 +1108,13 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 	}
+ 
+ 	if (!shared) {
++		ret = irq_request_resources(desc);
++		if (ret) {
++			pr_err("Failed to request resources for %s (irq %d) on irqchip %s\n",
++			       new->name, irq, desc->irq_data.chip->name);
++			goto out_mask;
++		}
++
+ 		init_waitqueue_head(&desc->wait_for_threads);
+ 
+ 		/* Setup the type (level, edge polarity) if configured: */
+@@ -1261,8 +1285,10 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
+ 	*action_ptr = action->next;
+ 
+ 	/* If this was the last handler, shut down the IRQ line: */
+-	if (!desc->action)
++	if (!desc->action) {
+ 		irq_shutdown(desc);
++		irq_release_resources(desc);
++	}
+ 
+ #ifdef CONFIG_SMP
+ 	/* make sure affinity_hint is cleaned up */
