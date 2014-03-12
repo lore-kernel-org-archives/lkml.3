@@ -1,260 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939AbaCLACd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 20:02:33 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33004 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535AbaCLACa (ORCPT
+	id S1756081AbaCLADi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 20:03:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46385 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755646AbaCLADh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 20:02:30 -0400
+	Tue, 11 Mar 2014 20:03:37 -0400
+Date: Tue, 11 Mar 2014 17:04:23 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 00/99] 3.4.83-stable review
+Message-ID: <20140312000423.GA16302@kroah.com>
+References: <20140308010611.468206150@linuxfoundation.org>
+ <87a9d1nhrk.wl%satoru.takeuchi@gmail.com>
+ <531B2AC8.1050205@roeck-us.net>
+ <20140308161839.GA26012@kroah.com>
+ <531B4EE8.3090003@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <3827847.Gih6ie3Ah6@vostro.rjw.lan>
-References: <1394503322-25210-1-git-send-email-kandoiruchi@google.com>
-	<3827847.Gih6ie3Ah6@vostro.rjw.lan>
-Date: Tue, 11 Mar 2014 17:02:29 -0700
-Message-ID: <CAL8qYTNejOB8NJLsvV8nFisGyd9v8gR=nC9pKGDGc=nujo7SNw@mail.gmail.com>
-Subject: Re: [PATCH] power: add an API to log wakeup reasons
-From: Ruchi Kandoi <kandoiruchi@google.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        ghackmann@google.com, john.stultz@linaro.org,
-        Todd Poynor <toddpoynor@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <531B4EE8.3090003@roeck-us.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This API would be called from the platform specific code, or the
-driver for the interrupt controller, when the system resumes from the
-suspend because of an IRQ.
+On Sat, Mar 08, 2014 at 09:10:00AM -0800, Guenter Roeck wrote:
+> On 03/08/2014 08:18 AM, Greg Kroah-Hartman wrote:
+> > On Sat, Mar 08, 2014 at 06:35:52AM -0800, Guenter Roeck wrote:
+> >> On 03/08/2014 01:47 AM, Satoru Takeuchi wrote:
+> >>> At Fri,  7 Mar 2014 17:06:56 -0800,
+> >>> Greg Kroah-Hartman wrote:
+> >>>>
+> >>>> This is the start of the stable review cycle for the 3.4.83 release.
+> >>>> There are 99 patches in this series, all will be posted as a response
+> >>>> to this one.  If anyone has any issues with these being applied, please
+> >>>> let me know.
+> >>>>
+> >>>> Responses should be made by Mon Mar 10 01:05:53 UTC 2014.
+> >>>> Anything received after that time might be too late.
+> >>>
+> >>> This kernel passed my test.
+> >>>
+> >>
+> >> Same here.
+> >>
+> >> Built results:
+> >> 	total: 119 pass: 97 skipped: 18 fail: 4
+> >>
+> >> qemu tests all passed.
+> >>
+> >> Details are available at http://server.roeck-us.net:8010/builders.
+> >
+> > Thanks to both of you for testing this, much appreciated.
+> >
+> 
+> You are welcome.
+> 
+> Can you possibly add me to the cc: of your introductory e-mail
+> announcing new stable releases ? Sometimes it seems to get lost
+> and isn't available on any of the 'common' archives (this one
+> did not make it to lkml, for example, and many of the individual
+> mails didn't make it into the stable mailing list at gmane).
 
-We track the reasons for which systems wake up from the low power
-suspend mode. This is especially important on battery-powered consumer
-electronic devices.
-
-Analyzing the data helps us figure what caused the maximum wake ups
-and if something can be done about the same to improve the battery
-life.
-For instances, if the wi-fi network traffic or the radio traffic
-causes the system to frequently wakeup from the low-power mode.
-
-This is already in use on some Android devices. We are trying to make
-this a generic API which could be called by other platforms as well,
-standardizing the format in which the info is
-logged in dmesg and the format of the info exported to userspace for
-collecting power management statistics.
-
-Thanking you,
-Ruchi Kandoi
-
-On Tue, Mar 11, 2014 at 12:32 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Monday, March 10, 2014 07:02:02 PM Ruchi Kandoi wrote:
->> Add API log_wakeup_reason() and expose it to userspace via sysfs path
->> /sys/kernel/wakeup_reasons/last_resume_reason
->> This is useful for power management diagnostic purposes.
->
-> What's the use case and how is it supposed to work?
->
->> Signed-off-by: Ruchi Kandoi <kandoiruchi@google.com>
->> Signed-off-by: Greg Hackmann <ghackmann@google.com>
->> ---
->>  include/linux/wakeup_reason.h |  23 +++++++
->>  kernel/power/Makefile         |   2 +-
->>  kernel/power/wakeup_reason.c  | 140 ++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 164 insertions(+), 1 deletion(-)
->>  create mode 100644 include/linux/wakeup_reason.h
->>  create mode 100644 kernel/power/wakeup_reason.c
->>
->> diff --git a/include/linux/wakeup_reason.h b/include/linux/wakeup_reason.h
->> new file mode 100644
->> index 0000000..7ce50f0
->> --- /dev/null
->> +++ b/include/linux/wakeup_reason.h
->> @@ -0,0 +1,23 @@
->> +/*
->> + * include/linux/wakeup_reason.h
->> + *
->> + * Logs the reason which caused the kernel to resume
->> + * from the suspend mode.
->> + *
->> + * Copyright (C) 2014 Google, Inc.
->> + * This software is licensed under the terms of the GNU General Public
->> + * License version 2, as published by the Free Software Foundation, and
->> + * may be copied, distributed, and modified under those terms.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#ifndef _LINUX_WAKEUP_REASON_H
->> +#define _LINUX_WAKEUP_REASON_H
->> +
->> +void log_wakeup_reason(int irq);
->> +
->> +#endif /* _LINUX_WAKEUP_REASON_H */
->> diff --git a/kernel/power/Makefile b/kernel/power/Makefile
->> index 29472bf..f98f021 100644
->> --- a/kernel/power/Makefile
->> +++ b/kernel/power/Makefile
->> @@ -5,7 +5,7 @@ obj-y                         += qos.o
->>  obj-$(CONFIG_PM)             += main.o
->>  obj-$(CONFIG_VT_CONSOLE_SLEEP)       += console.o
->>  obj-$(CONFIG_FREEZER)                += process.o
->> -obj-$(CONFIG_SUSPEND)                += suspend.o
->> +obj-$(CONFIG_SUSPEND)                += suspend.o wakeup_reason.o
->>  obj-$(CONFIG_PM_TEST_SUSPEND)        += suspend_test.o
->>  obj-$(CONFIG_HIBERNATION)    += hibernate.o snapshot.o swap.o user.o \
->>                                  block_io.o
->> diff --git a/kernel/power/wakeup_reason.c b/kernel/power/wakeup_reason.c
->> new file mode 100644
->> index 0000000..188a6bf
->> --- /dev/null
->> +++ b/kernel/power/wakeup_reason.c
->> @@ -0,0 +1,140 @@
->> +/*
->> + * kernel/power/wakeup_reason.c
->> + *
->> + * Logs the reasons which caused the kernel to resume from
->> + * the suspend mode.
->> + *
->> + * Copyright (C) 2014 Google, Inc.
->> + * This software is licensed under the terms of the GNU General Public
->> + * License version 2, as published by the Free Software Foundation, and
->> + * may be copied, distributed, and modified under those terms.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +#include <linux/wakeup_reason.h>
->> +#include <linux/kernel.h>
->> +#include <linux/irq.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/io.h>
->> +#include <linux/kobject.h>
->> +#include <linux/sysfs.h>
->> +#include <linux/init.h>
->> +#include <linux/spinlock.h>
->> +#include <linux/notifier.h>
->> +#include <linux/suspend.h>
->> +
->> +
->> +#define MAX_WAKEUP_REASON_IRQS 32
->> +static int irq_list[MAX_WAKEUP_REASON_IRQS];
->> +static int irqcount;
->> +static struct kobject *wakeup_reason;
->> +static spinlock_t resume_reason_lock;
->> +
->> +static ssize_t reason_show(struct kobject *kobj, struct kobj_attribute *attr,
->> +             char *buf)
->> +{
->> +     int irq_no, buf_offset = 0;
->> +     struct irq_desc *desc;
->> +     spin_lock(&resume_reason_lock);
->> +     for (irq_no = 0; irq_no < irqcount; irq_no++) {
->> +             desc = irq_to_desc(irq_list[irq_no]);
->> +             if (desc && desc->action && desc->action->name)
->> +                     buf_offset += sprintf(buf + buf_offset, "%d %s\n",
->> +                                     irq_list[irq_no], desc->action->name);
->> +             else
->> +                     buf_offset += sprintf(buf + buf_offset, "%d\n",
->> +                                     irq_list[irq_no]);
->> +     }
->> +     spin_unlock(&resume_reason_lock);
->> +     return buf_offset;
->> +}
->> +
->> +static struct kobj_attribute resume_reason = __ATTR(last_resume_reason, 0666,
->> +             reason_show, NULL);
->> +
->> +static struct attribute *attrs[] = {
->> +     &resume_reason.attr,
->> +     NULL,
->> +};
->> +static struct attribute_group attr_group = {
->> +     .attrs = attrs,
->> +};
->> +
->> +/*
->> + * logs all the wake up reasons to the kernel
->> + * stores the irqs to expose them to the userspace via sysfs
->> + */
->> +void log_wakeup_reason(int irq)
->> +{
->> +     struct irq_desc *desc;
->> +     desc = irq_to_desc(irq);
->> +     if (desc && desc->action && desc->action->name)
->> +             printk(KERN_INFO "Resume caused by IRQ %d, %s\n", irq,
->> +                             desc->action->name);
->> +     else
->> +             printk(KERN_INFO "Resume caused by IRQ %d\n", irq);
->> +
->> +     spin_lock(&resume_reason_lock);
->> +     if (irqcount == MAX_WAKEUP_REASON_IRQS) {
->> +             spin_unlock(&resume_reason_lock);
->> +             printk(KERN_WARNING "Resume caused by more than %d IRQs\n",
->> +                             MAX_WAKEUP_REASON_IRQS);
->> +             return;
->> +     }
->> +
->> +     irq_list[irqcount++] = irq;
->> +     spin_unlock(&resume_reason_lock);
->> +}
->> +
->> +/* Detects a suspend and clears all the previous wake up reasons*/
->> +static int wakeup_reason_pm_event(struct notifier_block *notifier,
->> +             unsigned long pm_event, void *unused)
->> +{
->> +     switch (pm_event) {
->> +     case PM_SUSPEND_PREPARE:
->> +             spin_lock(&resume_reason_lock);
->> +             irqcount = 0;
->> +             spin_unlock(&resume_reason_lock);
->> +             break;
->> +     default:
->> +             break;
->> +     }
->> +     return NOTIFY_DONE;
->> +}
->> +
->> +static struct notifier_block wakeup_reason_pm_notifier_block = {
->> +     .notifier_call = wakeup_reason_pm_event,
->> +};
->> +
->> +/* Initializes the sysfs parameter
->> + * registers the pm_event notifier
->> + */
->> +int __init wakeup_reason_init(void)
->> +{
->> +     int retval;
->> +     spin_lock_init(&resume_reason_lock);
->> +     retval = register_pm_notifier(&wakeup_reason_pm_notifier_block);
->> +     if (retval)
->> +             printk(KERN_WARNING "[%s] failed to register PM notifier %d\n",
->> +                             __func__, retval);
->> +
->> +     wakeup_reason = kobject_create_and_add("wakeup_reasons", kernel_kobj);
->> +     if (!wakeup_reason) {
->> +             printk(KERN_WARNING "[%s] failed to create a sysfs kobject\n",
->> +                             __func__);
->> +             return 1;
->> +     }
->> +     retval = sysfs_create_group(wakeup_reason, &attr_group);
->> +     if (retval) {
->> +             kobject_put(wakeup_reason);
->> +             printk(KERN_WARNING "[%s] failed to create a sysfs group %d\n",
->> +                             __func__, retval);
->> +     }
->> +     return 0;
->> +}
->> +
->> +late_initcall(wakeup_reason_init);
->>
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+Sure, now added.
