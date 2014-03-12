@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbaCLJMS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:12:18 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:54849 "EHLO
+	id S1752703AbaCLJMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 05:12:25 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:54854 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750703AbaCLJMP (ORCPT
+	by vger.kernel.org with ESMTP id S1752410AbaCLJMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:12:15 -0400
-X-Greylist: delayed 1068 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Mar 2014 05:12:15 EDT
+	Wed, 12 Mar 2014 05:12:20 -0400
 From: Maxime COQUELIN <maxime.coquelin@st.com>
 To: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -22,9 +21,9 @@ To: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
 Cc: lee.jones@linaro.org
-Subject: [PATCH v4 1/6] ARM: STi: Add STiH407 SoC support
-Date: Wed, 12 Mar 2014 09:50:05 +0100
-Message-Id: <1394614210-15698-2-git-send-email-maxime.coquelin@st.com>
+Subject: [PATCH v4 6/6] ARM: dts: STiH407: Add B2120 board support
+Date: Wed, 12 Mar 2014 09:50:10 +0100
+Message-Id: <1394614210-15698-7-git-send-email-maxime.coquelin@st.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
 References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
@@ -34,76 +33,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support to STiH407 SoC.
+B2120 HDK is the reference board for STiH407 SoC.
+It has the following characteristics:
+ - 1GB DDR3
+ - 8GB eMMC / SD-Card slot
+ - 32MB NOR Flash
+ - 1 x Gbit Ethernet
+ - 1 x USB 3.0 port
+ - 1 x Mini-PCIe
+ - 1 x SATA
+ - 1 x HDMI output
+ - 1 x HDMI input
+ - 1 x SPDIF
+
+This patch only introduces basic functionnalities, such as I2C and UART.
 
 Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
 Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
 ---
- Documentation/arm/sti/stih407-overview.txt    | 18 ++++++++++++++++++
- Documentation/devicetree/bindings/arm/sti.txt | 15 +++++++++++++++
- arch/arm/mach-sti/board-dt.c                  |  1 +
- 3 files changed, 34 insertions(+)
- create mode 100644 Documentation/arm/sti/stih407-overview.txt
- create mode 100644 Documentation/devicetree/bindings/arm/sti.txt
+ arch/arm/boot/dts/Makefile          |  3 +-
+ arch/arm/boot/dts/stih407-b2120.dts | 78 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 80 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/stih407-b2120.dts
 
-diff --git a/Documentation/arm/sti/stih407-overview.txt b/Documentation/arm/sti/stih407-overview.txt
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 12455cf..f760a88 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -317,7 +317,8 @@ dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
+ dtb-$(CONFIG_ARCH_STI)+= stih415-b2000.dtb \
+ 	stih416-b2000.dtb \
+ 	stih415-b2020.dtb \
+-	stih416-b2020.dtb
++	stih416-b2020.dtb \
++	stih407-b2120.dtb
+ dtb-$(CONFIG_ARCH_SUNXI) += \
+ 	sun4i-a10-a1000.dtb \
+ 	sun4i-a10-cubieboard.dtb \
+diff --git a/arch/arm/boot/dts/stih407-b2120.dts b/arch/arm/boot/dts/stih407-b2120.dts
 new file mode 100644
-index 0000000..3343f32
+index 0000000..9c97da4
 --- /dev/null
-+++ b/Documentation/arm/sti/stih407-overview.txt
-@@ -0,0 +1,18 @@
-+			STiH407 Overview
-+			================
++++ b/arch/arm/boot/dts/stih407-b2120.dts
+@@ -0,0 +1,78 @@
++/*
++ * Copyright (C) 2014 STMicroelectronics (R&D) Limited.
++ * Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++/dts-v1/;
++#include "stih407.dtsi"
++/ {
++	model = "STiH407 B2120";
++	compatible = "st,stih407", "st,stih407-b2120";
 +
-+Introduction
-+------------
++	chosen {
++		bootargs = "console=ttyAS0,115200";
++		linux,stdout-path = &sbc_serial0;
++	};
 +
-+    The STiH407 is the new generation of SoC for Multi-HD, AVC set-top boxes
-+    and server/connected client application for satellite, cable, terrestrial
-+    and IP-STB markets.
++	memory {
++		device_type = "memory";
++		reg = <0x40000000 0x80000000>;
++	};
 +
-+    Features
-+    - ARM Cortex-A9 1.5 GHz dual core CPU (28nm)
-+    - SATA2, USB 3.0, PCIe, Gbit Ethernet
++	aliases {
++		ttyAS0 = &sbc_serial0;
++	};
 +
-+  Document Author
-+  ---------------
++	soc {
++		sbc_serial0: serial@9530000 {
++			status = "okay";
++		};
 +
-+  Maxime Coquelin <maxime.coquelin@st.com>, (c) 2014 ST Microelectronics
-diff --git a/Documentation/devicetree/bindings/arm/sti.txt b/Documentation/devicetree/bindings/arm/sti.txt
-new file mode 100644
-index 0000000..92f16c7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/sti.txt
-@@ -0,0 +1,15 @@
-+ST STi Platforms Device Tree Bindings
-+---------------------------------------
++		leds {
++			compatible = "gpio-leds";
++			red {
++				#gpio-cells = <2>;
++				label = "Front Panel LED";
++				gpios = <&PIO4 1 0>;
++				linux,default-trigger = "heartbeat";
++			};
++			green {
++				#gpio-cells = <2>;
++				gpios = <&PIO1 3 0>;
++				default-state = "off";
++			};
++		};
 +
-+Boards with the ST STiH415 SoC shall have the following properties:
-+Required root node property:
-+compatible = "st,stih415";
++		i2c@9842000 {
++			status = "okay";
++		};
 +
-+Boards with the ST STiH416 SoC shall have the following properties:
-+Required root node property:
-+compatible = "st,stih416";
++		i2c@9843000 {
++			status = "okay";
++		};
 +
-+Boards with the ST STiH407 SoC shall have the following properties:
-+Required root node property:
-+compatible = "st,stih407";
++		i2c@9844000 {
++			status = "okay";
++		};
 +
-diff --git a/arch/arm/mach-sti/board-dt.c b/arch/arm/mach-sti/board-dt.c
-index 1217fb5..df731f2 100644
---- a/arch/arm/mach-sti/board-dt.c
-+++ b/arch/arm/mach-sti/board-dt.c
-@@ -36,6 +36,7 @@ static void __init stih41x_machine_init(void)
- static const char *stih41x_dt_match[] __initdata = {
- 	"st,stih415",
- 	"st,stih416",
-+	"st,stih407",
- 	NULL
- };
- 
++		i2c@9845000 {
++			status = "okay";
++		};
++
++		i2c@9540000 {
++			status = "okay";
++		};
++
++		/* SSC11 to HDMI */
++		i2c@9541000 {
++			status = "okay";
++			/* HDMI V1.3a supports Standard mode only */
++			clock-frequency = <100000>;
++			st,i2c-min-scl-pulse-width-us = <0>;
++			st,i2c-min-sda-pulse-width-us = <5>;
++		};
++	};
++};
 -- 
 1.9.0
 
