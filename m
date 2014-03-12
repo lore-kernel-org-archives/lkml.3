@@ -1,204 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699AbaCLII1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 04:08:27 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:17267
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755317AbaCLIIR (ORCPT
+	id S1756694AbaCLIVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 04:21:08 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:33926 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756528AbaCLIVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 04:08:17 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(z579ehz98dI936eI1432Ic8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1de2h1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-Date: Wed, 12 Mar 2014 16:08:14 +0800
-From: Chenhui Zhao <chenhui.zhao@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>, <Jason.Jin@freescale.com>
-Subject: Re: [PATCH 6/9] powerpc/85xx: support sleep feature on QorIQ SoCs
- with RCPM
-Message-ID: <20140312080814.GE4706@localhost.localdomain>
-References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
- <1394168285-32275-6-git-send-email-chenhui.zhao@freescale.com>
- <1394582427.13761.74.camel@snotra.buserror.net>
+	Wed, 12 Mar 2014 04:21:04 -0400
+Date: Wed, 12 Mar 2014 09:21:00 +0100
+From: Christian Riesch <christian.riesch@omicron.at>
+To: Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        =?UTF-8?Q?Stefan_S=C3=B8rensen?= <stefan.sorensen@spectralink.com>
+Subject: Re: [PATCH RFC net-next v1 0/9] ptp: dynamic pin control
+Message-ID: <D4F856CB7308D0C94855B452@[172.22.2.41]>
+In-Reply-To: <cover.1394307303.git.richardcochran@gmail.com>
+References: <cover.1394307303.git.richardcochran@gmail.com>
+X-Mailer: Mulberry/4.0.8 (Win32)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1394582427.13761.74.camel@snotra.buserror.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 07:00:27PM -0500, Scott Wood wrote:
-> On Fri, 2014-03-07 at 12:58 +0800, Chenhui Zhao wrote:
-> > In sleep mode, the clocks of e500 cores and unused IP blocks is
-> > turned off. The IP blocks which are allowed to wake up the processor
-> > are still running.
-> > 
-> > The sleep mode is equal to the Standby state in Linux. Use the
-> > command to enter sleep mode:
-> >   echo standby > /sys/power/state
-> > 
-> > Signed-off-by: Chenhui Zhao <chenhui.zhao@freescale.com>
-> > ---
-> >  arch/powerpc/Kconfig                   |    4 +-
-> >  arch/powerpc/platforms/85xx/Makefile   |    3 +
-> >  arch/powerpc/platforms/85xx/qoriq_pm.c |   78 ++++++++++++++++++++++++++++++++
-> >  3 files changed, 83 insertions(+), 2 deletions(-)
-> >  create mode 100644 arch/powerpc/platforms/85xx/qoriq_pm.c
-> > 
-> > diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-> > index 05f6323..e1d6510 100644
-> > --- a/arch/powerpc/Kconfig
-> > +++ b/arch/powerpc/Kconfig
-> > @@ -222,7 +222,7 @@ config ARCH_HIBERNATION_POSSIBLE
-> >  config ARCH_SUSPEND_POSSIBLE
-> >  	def_bool y
-> >  	depends on ADB_PMU || PPC_EFIKA || PPC_LITE5200 || PPC_83xx || \
-> > -		   (PPC_85xx && !PPC_E500MC) || PPC_86xx || PPC_PSERIES \
-> > +		   FSL_SOC_BOOKE || PPC_86xx || PPC_PSERIES \
-> >  		   || 44x || 40x
-> >  
-> >  config PPC_DCR_NATIVE
-> > @@ -709,7 +709,7 @@ config FSL_PCI
-> >  config FSL_PMC
-> >  	bool
-> >  	default y
-> > -	depends on SUSPEND && (PPC_85xx || PPC_86xx)
-> > +	depends on SUSPEND && (PPC_85xx && !PPC_E500MC || PPC_86xx)
-> 
-> Don't mix && and || without parentheses.
-> 
-> Maybe convert this into being selected (similar to FSL_RCPM), rather
-> than default y?
+Hi Richard,
 
-Yes, will do.
+--On March 08, 2014 20:42 +0100 Richard Cochran <richardcochran@gmail.com> 
+wrote:
 
-> 
-> > diff --git a/arch/powerpc/platforms/85xx/Makefile b/arch/powerpc/platforms/85xx/Makefile
-> > index 25cebe7..7fae817 100644
-> > --- a/arch/powerpc/platforms/85xx/Makefile
-> > +++ b/arch/powerpc/platforms/85xx/Makefile
-> > @@ -2,6 +2,9 @@
-> >  # Makefile for the PowerPC 85xx linux kernel.
-> >  #
-> >  obj-$(CONFIG_SMP) += smp.o
-> > +ifeq ($(CONFIG_FSL_CORENET_RCPM), y)
-> > +obj-$(CONFIG_SUSPEND)	+= qoriq_pm.o
-> > +endif
-> 
-> There should probably be a kconfig symbol for this.
+> This patch series introduces a way of changing the auxiliary PTP
+> Hardware Clock functions (periodic output signals and time stamping
+> external signals) at run time. In the past on the netdev list, we have
+> discussed other ways to handle this, such as module parameters and
+> ethtool. This series implements a new PHC ioctl because that is the
+> most natural way. Users already activate the auxiliary functions via
+> the ioctls. The sysfs interface has also been expanded so that the pin
+> configuration can be programmed using shell scripts.
 
-OK.
+I did a few tests on one of my boards, everything works so far! Thanks for 
+the patchset, I like it!
 
-> 
-> > diff --git a/arch/powerpc/platforms/85xx/qoriq_pm.c b/arch/powerpc/platforms/85xx/qoriq_pm.c
-> > new file mode 100644
-> > index 0000000..915b13b
-> > --- /dev/null
-> > +++ b/arch/powerpc/platforms/85xx/qoriq_pm.c
-> > @@ -0,0 +1,78 @@
-> > +/*
-> > + * Support Power Management feature
-> > + *
-> > + * Copyright 2014 Freescale Semiconductor Inc.
-> > + *
-> > + * Author: Chenhui Zhao <chenhui.zhao@freescale.com>
-> > + *
-> > + * This program is free software; you can redistribute	it and/or modify it
-> > + * under  the terms of	the GNU General	 Public License as published by the
-> > + * Free Software Foundation;  either version 2 of the  License, or (at your
-> > + * option) any later version.
-> > + */
-> > +
-> > +#include <linux/kernel.h>
-> > +#include <linux/suspend.h>
-> > +#include <linux/of_platform.h>
-> > +
-> > +#include <sysdev/fsl_soc.h>
-> > +
-> > +#define FSL_SLEEP		0x1
-> > +#define FSL_DEEP_SLEEP		0x2
-> 
-> FSL_DEEP_SLEEP is unused.
+> The first patch adds the new ioctls. The PHC subsystem does most of
+> the work of maintaining the function-to-pin mapping. Drivers will only
+> need to allocate and initialize a pin configuration table and also
+> provide a new method that validates a particular assignment.
+>
+> Patches 5 and 6 just clean up a couple of issues in the phyter driver,
+> and the remaining patches actually hook the phyter's pins into the new
+> system.
+>
+> Comments and questions are most welcome.
 
-Will be used in the last patch.
-[PATCH 9/9] powerpc/pm: support deep sleep feature on T1040
+Do you think it is possible to extend this in the future, e.g. for 
+selecting the polarity of periodic output signals or for time stamping of 
+external signals (rising edge/falling edge), or duty cycles of the periodic 
+signal other than 50%? How could this be done? Using the reserved fields in 
+struct ptp_pin_desc?
 
-> 
-> > +
-> > +/* specify the sleep state of the present platform */
-> > +int sleep_pm_state;
-> > +/* supported sleep modes by the present platform */
-> > +static unsigned int sleep_modes;
-> 
-> Why is one signed and the other unsigned?
+Do you think the concept allows an extension for single pulse output, e.g. 
+programming a pin to output a single pulse at a given time, as supported by 
+the DP83640?
 
-Undesigned. Will change them all to unsigned.
+If several DP83640 are connected together with the calibration function, 
+only the GPIOs of the master device can be used, right? I guess this could 
+also be extended in the future to use the GPIOs of all DP83640, right? Or 
+do you see a problem with your concept here?
 
-> 
-> > +
-> > +static int qoriq_suspend_enter(suspend_state_t state)
-> > +{
-> > +	int ret = 0;
-> > +
-> > +	switch (state) {
-> > +	case PM_SUSPEND_STANDBY:
-> > +
-> > +		if (cur_cpu_spec->cpu_flush_caches)
-> > +			cur_cpu_spec->cpu_flush_caches();
-> > +
-> > +		ret = qoriq_pm_ops->plat_enter_state(sleep_pm_state);
-> > +
-> > +		break;
-> > +
-> > +	default:
-> > +		ret = -EINVAL;
-> > +
-> > +	}
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static int qoriq_suspend_valid(suspend_state_t state)
-> > +{
-> > +	if (state == PM_SUSPEND_STANDBY && (sleep_modes & FSL_SLEEP))
-> > +		return 1;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static const struct platform_suspend_ops qoriq_suspend_ops = {
-> > +	.valid = qoriq_suspend_valid,
-> > +	.enter = qoriq_suspend_enter,
-> > +};
-> > +
-> > +static int __init qoriq_suspend_init(void)
-> > +{
-> > +	struct device_node *np;
-> > +
-> > +	sleep_modes = FSL_SLEEP;
-> > +	sleep_pm_state = PLAT_PM_SLEEP;
-> > +
-> > +	np = of_find_compatible_node(NULL, NULL, "fsl,qoriq-rcpm-2.0");
-> > +	if (np)
-> > +		sleep_pm_state = PLAT_PM_LPM20;
-> > +
-> > +	suspend_set_ops(&qoriq_suspend_ops);
-> > +
-> > +	return 0;
-> > +}
-> > +arch_initcall(qoriq_suspend_init);
-> 
-> Why is this not a platform driver?  If fsl_pmc can do it...
-> 
-> -Scott
-
-It can be, but what advantage of being a platform driver.
-
--Chenhui
+Best regards,
+Christian
 
