@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551AbaCLQrB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 12:47:01 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:54088 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178AbaCLQq7 (ORCPT
+	id S1751429AbaCLQuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 12:50:35 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:32894 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097AbaCLQue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 12:46:59 -0400
-Message-ID: <53208F7D.8090104@gmail.com>
-Date: Wed, 12 Mar 2014 17:46:53 +0100
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 12 Mar 2014 12:50:34 -0400
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        dev@linux-sunxi.org
-Subject: Re: [RFC PATCH v2 04/14] mtd: nand: define struct nand_timings
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com> <1391006064-28890-5-git-send-email-b.brezillon.dev@gmail.com> <531DC1A4.7010208@gmail.com> <20140311185554.GD31835@obsidianresearch.com>
-In-Reply-To: <20140311185554.GD31835@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140312132441.GA29079@shuo-gentoo>
+References: <20140312132441.GA29079@shuo-gentoo>
+Date: Wed, 12 Mar 2014 09:50:33 -0700
+X-Google-Sender-Auth: wyuyYb-tJoMzSU73SMftgKU2OP8
+Message-ID: <CAGXu5j+Ka0SiP_wRHENjordFjm5G4RYiQQunAMt8PrM63S9u9A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pstore: fix buffer overflow while write offset equal
+ to buffer size
+From: Kees Cook <keescook@chromium.org>
+To: Liu Shuo <shuox.liu@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Zhang Yanmin <yanmin_zhang@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 11/03/2014 19:55, Jason Gunthorpe a écrit :
-> On Mon, Mar 10, 2014 at 02:44:04PM +0100, Boris BREZILLON wrote:
+On Wed, Mar 12, 2014 at 6:24 AM, Liu Shuo <shuox.liu@gmail.com> wrote:
+> From: Liu ShuoX <shuox.liu@intel.com>
 >
->> Some timings are missing here (see Table 55 in the ONFI spec):
-> Right..
+> In case new offset is equal to prz->buffer_size, it won't wrap at this
+> time and will return old(overflow) value next time.
 >
-> The 'mode' covers only the raw electrical parameters needed to
-> exchange commands, other timings cover the commands
-> themselves. Notably the timing mode does not alter those parameters.
+> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+
+This seems correct; good catch. Have you seen this problem happen, or
+is this just from reading the code?
+
+Acked-by: Kees Cook <keescook@chromium.org>
+
+-Kees
+
+> ---
+> fs/pstore/ram_core.c | 4 ++--
+> 1 file changed, 2 insertions(+), 2 deletions(-)
 >
-> To me it seems tidy to keep the 'mode' timings contained in their own
-> struct and find other homes for the other parameters.
+> diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+> index de272d4..ff7e3d4 100644
+> --- a/fs/pstore/ram_core.c
+> +++ b/fs/pstore/ram_core.c
+> @@ -54,7 +54,7 @@ static size_t buffer_start_add_atomic(struct
+> persistent_ram_zone *prz, size_t a)
+>         do {
+>                 old = atomic_read(&prz->buffer->start);
+>                 new = old + a;
+> -               while (unlikely(new > prz->buffer_size))
+> +               while (unlikely(new >= prz->buffer_size))
+>                         new -= prz->buffer_size;
+>         } while (atomic_cmpxchg(&prz->buffer->start, old, new) != old);
 >
->> -tR
->> -tBERS
->> -tCCS
->> -tPLEBSY
->> -...
->>
->> I see at least 3 of those timings that could be useful (for the moment) :
->> - tR: this one should be used to fill the chip_delay field
->> - tPROG and tBERS: could be used within nand_wait to choose the timeo
->>    value appropriately.
-> IIRC these timing values are really only necessary if the controller
-> does not support the READY/BUSY input, in that case drivers typically
-> seem to use 'chip_delay' which is the maximum possible command
-> execution time (a sleep long enough to guarentee that READY/BUSY is
-> de-asserted).
-You're right about tR (or chip_delay): it's only used when there are no 
-R/B pin.
-I experienced it when I tried the RB_NONE case in the sunxi driver: the 
-default
-chip_delay set by the NAND core code was too small to fit the NAND chip 
-requirements.
-
-Anyway, I really think the chip_delay field should be set according to 
-NAND chip
-characteristics not harcoded in NAND controller driver code (as 
-currently done).
-
-tPROG and tBERS, would be used in nand_wait function and do not depend 
-on the R/B pin.
-These are just used as timeouts.
-
+> @@ -91,7 +91,7 @@ static size_t buffer_start_add_locked(struct
+> persistent_ram_zone *prz, size_t a)
 >
->> Or should I create a new struct for these timings ?
->> In the latter case how should I name it ?
-> struct onfi_command_timings ?
-
-I'm not a big fan of this name. I think timing structs should not 
-contain onfi in their
-names, because these timings are also available on non ONFI chips.
-
-Moreover, these timings are also part of the SDR NAND timings, they are 
-just retrieved
-using another method when interfacing with an ONFI chip.
-
-Maybe we should change the nand_sdr_timings struct name too.
-
-What do you think ?
-
-Best Regards,
-
-Boris
-
+>         old = atomic_read(&prz->buffer->start);
+>         new = old + a;
+> -       while (unlikely(new > prz->buffer_size))
+> +       while (unlikely(new >= prz->buffer_size))
+>                 new -= prz->buffer_size;
+>         atomic_set(&prz->buffer->start, new);
 >
-> Regards,
-> Jason
+> --
+> 1.8.3.2
+>
+>
+>
 
+
+
+-- 
+Kees Cook
+Chrome OS Security
