@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820AbaCLR0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 13:26:25 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:46061 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755722AbaCLR0W convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 13:26:22 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH net-next 2/6] bluetooth: Convert uses of __constant_<foo> to <foo>
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <51892631f2289665bf47b294c783ee9560a8317e.1394643455.git.joe@perches.com>
-Date: Wed, 12 Mar 2014 10:26:06 -0700
-Cc: Network Development <netdev@vger.kernel.org>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
-	<linux-bluetooth@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F2E9571C-2D55-4529-A361-D8CD4B3FC491@holtmann.org>
-References: <cover.1394643455.git.joe@perches.com> <51892631f2289665bf47b294c783ee9560a8317e.1394643455.git.joe@perches.com>
-To: Joe Perches <joe@perches.com>
-X-Mailer: Apple Mail (2.1874)
+	id S1756169AbaCLR0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 13:26:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8538 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755738AbaCLR01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 13:26:27 -0400
+Date: Wed, 12 Mar 2014 13:24:58 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Borislav Petkov <bp@alien8.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org, hpa@zytor.com,
+        mjg59@srcf.ucam.org, greg@kroah.com, jkosina@suse.cz
+Subject: Re: [PATCH 10/11] kexec: Support for loading ELF x86_64 images
+Message-ID: <20140312172458.GK14981@redhat.com>
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
+ <1390849071-21989-11-git-send-email-vgoyal@redhat.com>
+ <20140228145832.GF4326@pd.tnic>
+ <20140228171142.GI28744@redhat.com>
+ <20140307171233.GD5255@pd.tnic>
+ <20140307183959.GE5255@pd.tnic>
+ <20140310144237.GA4352@redhat.com>
+ <20140312161919.GE23890@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140312161919.GE23890@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
-
-> The use of __constant_<foo> has been unnecessary for quite awhile now.
+On Wed, Mar 12, 2014 at 05:19:19PM +0100, Borislav Petkov wrote:
+> On Mon, Mar 10, 2014 at 10:42:37AM -0400, Vivek Goyal wrote:
+> > When I posted V1 of patches, Eric Biederman had said that without ELF
+> > loader support this patchset should not go in. He said that ELF is
+> > very generic and if we are implementing a new system call we should
+> > support ELF loader.
 > 
-> Make these uses consistent with the rest of the kernel.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> net/bluetooth/a2mp.c        |  4 +-
-> net/bluetooth/hci_conn.c    | 26 ++++++-------
-> net/bluetooth/hci_core.c    |  2 +-
-> net/bluetooth/hci_event.c   |  6 +--
-> net/bluetooth/hci_sock.c    | 16 ++++----
-> net/bluetooth/l2cap_core.c  | 90 ++++++++++++++++++++++-----------------------
-> net/bluetooth/l2cap_sock.c  |  6 +--
-> net/bluetooth/mgmt.c        | 26 ++++++-------
-> net/bluetooth/rfcomm/core.c |  4 +-
-> net/bluetooth/sco.c         | 10 ++---
-> net/bluetooth/smp.c         |  2 +-
-> 11 files changed, 96 insertions(+), 96 deletions(-)
+> But why, if nobody uses it?
 
-can you please send this one against bluetooth-next tree. I did a quick check if it would by chance apply cleanly, but it doesn’t.
+Eric, can you please help answer this one.
 
-I am happy to take this change, but it has to go through bluetooth-next. Otherwise you are conflicting with work from everybody else.
-
-Regards
-
-Marcel
-
+Thanks
+Vivek
