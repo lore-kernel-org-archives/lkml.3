@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373AbaCLMnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 08:43:20 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63561 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971AbaCLMkH (ORCPT
+	id S1752807AbaCLMrH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 08:47:07 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:4246 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751575AbaCLMrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 08:40:07 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tj@kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, b.zolnierkie@samsung.com,
-        linux-ide@vger.kernel.org
-Subject: [PATCH 1/5] ahci: st: Standardise naming conventions
-Date: Wed, 12 Mar 2014 12:39:38 +0000
-Message-Id: <1394627982-23726-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394627982-23726-1-git-send-email-lee.jones@linaro.org>
-References: <1394627982-23726-1-git-send-email-lee.jones@linaro.org>
+	Wed, 12 Mar 2014 08:47:05 -0400
+Date: Wed, 12 Mar 2014 20:44:54 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Andrew Lunn <andrew@lunn.ch>
+CC: Antoine =?UTF-8?B?VMOpbmFydA==?= 
+	<antoine.tenart@free-electrons.com>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "Jimmy Xu" <zmxu@marvell.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: dts: berlin2q: add the Marvell BG2-Q DMP
+ device tree
+Message-ID: <20140312204454.36a6be85@xhacker>
+In-Reply-To: <20140312123759.GB15090@lunn.ch>
+References: <1394622364-6848-1-git-send-email-antoine.tenart@free-electrons.com>
+	<1394622364-6848-3-git-send-email-antoine.tenart@free-electrons.com>
+	<20140312200428.23178d69@xhacker>
+	<20140312123759.GB15090@lunn.ch>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-12_04:2014-03-12,2014-03-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1403120046
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Other devices have adopted similar naming conventions which have been
-accepted as the standard. This patch brings any mention of the the ST
-AHCI driver into line with them.
+Hi Andrew,
 
-Suggested-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/ata/Kconfig   | 6 +++---
- drivers/ata/ahci_st.c | 2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+On Wed, 12 Mar 2014 05:37:59 -0700
+Andrew Lunn <andrew@lunn.ch> wrote:
 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index ee7a3dc..ffc5d9d 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -97,12 +97,12 @@ config SATA_AHCI_PLATFORM
- 
- 	  If unsure, say N.
- 
--config SATA_AHCI_ST
--	tristate "ST SATA support"
-+config AHCI_ST
-+	tristate "ST AHCI SATA support"
- 	depends on SATA_AHCI_PLATFORM
- 	select GENERIC_PHY
- 	help
--	  This option enables support for ST SATA controller.
-+	  This option enables support for ST AHCI SATA controller.
- 
- 	  If unsure, say N.
- 
-diff --git a/drivers/ata/ahci_st.c b/drivers/ata/ahci_st.c
-index 2f95133..f5af660 100644
---- a/drivers/ata/ahci_st.c
-+++ b/drivers/ata/ahci_st.c
-@@ -235,5 +235,5 @@ module_platform_driver(st_ahci_driver);
- 
- MODULE_AUTHOR("Alexandre Torgue <alexandre.torgue@st.com>");
- MODULE_AUTHOR("Francesco Virlinzi <francesco.virlinzi@st.com>");
--MODULE_DESCRIPTION("STMicroelectronics Sata Ahci driver");
-+MODULE_DESCRIPTION("STMicroelectronics SATA AHCI Driver");
- MODULE_LICENSE("GPL v2");
--- 
-1.8.3.2
+> > > +/dts-v1/;
+> > > +#include "berlin2q.dtsi"
+> > > +
+> > > +/ {
+> > > +	model = "Marvell BG2-Q DMP";
+> > > +	compatible = "marvell,berlin2q-dmp", "marvell,berlin2q",
+> > > "marvell,berlin"; +
+> > > +	memory {
+> > > +		device_type = "memory";
+> > > +		reg = <0x00000000 0x40000000>;
+> > 
+> > The memory size of BG2Q DMP is 2GB.
+> 
+> Jisheng
+> 
+> Does this imply that the RAM is inside the SoC package, and that
+> there is no external memory interface which can be used to add more
+> RAM?
+
+Nope. The ram is on the board. After talking with Alex, I think it's 
+reasonable to put the memory node in dts as the original patch does.
+
+However, we need to set the correct memory size of BG2Q DMP board.
+
+Thanks,
+Jisheng
 
