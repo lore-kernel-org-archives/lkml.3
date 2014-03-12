@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaCLWSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 18:18:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46245 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268AbaCLWSX (ORCPT
+	id S1753259AbaCLWSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 18:18:49 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56056 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268AbaCLWSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 18:18:23 -0400
-Date: Wed, 12 Mar 2014 23:18:29 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Neil Horman <nhorman@tuxdriver.com>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH v2] x86: adjust irq remapping quirk for older revisions
- of 5500/5520 chipsets
-In-Reply-To: <1394654862-16030-1-git-send-email-nhorman@tuxdriver.com>
-Message-ID: <alpine.DEB.2.02.1403122318130.18573@ionos.tec.linutronix.de>
-References: <1394649873-14913-1-git-send-email-nhorman@tuxdriver.com> <1394654862-16030-1-git-send-email-nhorman@tuxdriver.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 12 Mar 2014 18:18:48 -0400
+Date: Wed, 12 Mar 2014 22:18:28 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-Id: <20140312221828.da7bffd214e9749a5652ff22@kernel.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__12_Mar_2014_22_18_28_+0000_qsdKRJrhV+y.GV_c"
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@kernel.org
+Subject: linux-next: manual merge of the tip tree with the pci tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Mar 2014, Neil Horman wrote:
+--Signature=_Wed__12_Mar_2014_22_18_28_+0000_qsdKRJrhV+y.GV_c
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> A while back I posted this commit:
-> 
-> commit 03bbcb2e7e292838bb0244f5a7816d194c911d62
-> Author: Neil Horman <nhorman@tuxdriver.com>
-> Date:   Tue Apr 16 16:38:32 2013 -0400
-> 
->     iommu/vt-d: add quirk for broken interrupt remapping on 55XX chipsets
-> 
-> Which properly disables irq remapping on the 5500/5520 chipsets that don't
-> correctly perform that feature.  However, when I wrote it, I followed the errata
-> sheet linked in that commit too closely, and explicitly tied the activation of
-> the quirk to revision 0x13 of the chip, under the assumption that earlier
-> revisions were not in the field.  Recently a system was reported to be suffering
-> from this remap bug and the quirk hadn't triggered, because the revision id
-> register read at a lower value that 0x13, so the quirk test failed improperly.
-> Given this, it seems only prudent to adjust this quirk so that any revision less
-> than 0x13 has the quirk asserted.
-> 
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Ingo Molnar <mingo@redhat.com>
-> CC: "H. Peter Anvin" <hpa@zytor.com>
-> CC: x86@kernel.org
+Hi all,
 
-That probably wants to go to stable as well.
- 
-> ---
-> Change notes:
-> 
-> v2) fix stupid < / <= error
-> ---
->  arch/x86/kernel/early-quirks.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-> index bc4a088..e69907a 100644
-> --- a/arch/x86/kernel/early-quirks.c
-> +++ b/arch/x86/kernel/early-quirks.c
-> @@ -208,7 +208,7 @@ static void __init intel_remapping_check(int num, int slot, int func)
->  	 * and should be flagged as broken.  Additionally revisions 0x12
->  	 * and 0x22 of device id 0x3405 has this problem.
->  	 */
-> -	if (revision == 0x13)
-> +	if (revision <= 0x13)
->  		set_irq_remapping_broken();
->  	else if ((device == 0x3405) &&
->  	    ((revision == 0x12) ||
-> -- 
-> 1.8.3.1
-> 
-> 
+Today's linux-next merge of the tip tree got a conflict in arch/x86/include=
+/asm/topology.h between commit 25453e9e521382 ("x86/PCI: Remove mp_bus_to_n=
+ode[], set_mp_bus_to_node(), get_mp_bus_to_node()") from the pci tree and c=
+ommit 36fc5500bb1907bea7e ("sched: Remove unused mc_capable() and smt_capab=
+le()") from the tip tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+
+diff --cc arch/x86/include/asm/topology.h
+index c840571afa4e,9bcc724cafdd..000000000000
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@@ -131,13 -131,19 +131,7 @@@ static inline void arch_fix_phys_packag
+  }
+ =20
+  struct pci_bus;
+ +int x86_pci_root_bus_node(int bus);
+  void x86_pci_root_bus_resources(int bus, struct list_head *resources);
+ =20
+- #ifdef CONFIG_SMP
+- #define mc_capable()  ((boot_cpu_data.x86_max_cores > 1) && \
+-                       (cpumask_weight(cpu_core_mask(0)) !=3D nr_cpu_ids))
+- #define smt_capable()                 (smp_num_siblings > 1)
+ -#ifdef CONFIG_NUMA
+ -extern int get_mp_bus_to_node(int busnum);
+ -extern void set_mp_bus_to_node(int busnum, int node);
+ -#else
+ -static inline int get_mp_bus_to_node(int busnum)
+ -{
+ -      return 0;
+ -}
+ -static inline void set_mp_bus_to_node(int busnum, int node)
+ -{
+ -}
+--#endif
+--
+  #endif /* _ASM_X86_TOPOLOGY_H */
+
+--Signature=_Wed__12_Mar_2014_22_18_28_+0000_qsdKRJrhV+y.GV_c
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTIN00AAoJELSic+t+oim9ALAQAJ0vEsQXiqaS4DE71EHZIrpG
+HlflXLb+rsvo/93ctkgfPEbKbgzAjgU+c3ywTeS9DC5Qa4+IvAhdf7mwosiyPHzn
+jrS6BgUjKgObISrvHCc5BAvTmz2+C6I7LL/oNx2oRpSEIt5fQqpJsw47Apr+X7Px
+9DJQhI32yeWtPh65GpQLQPz8KQnq9c6Za9wjW7UnxMXMPi5vLfiD+vfAcl79PLZE
+Cs1HGRcrWKxkLOPE5EgMt84gpPLcHT40FoNCtnAOgUW+Q6iVWewPSIjW/YmzY4T6
+1LHsvB1qbPe09XG7BnvGGByIsJdKzFxixACBe6ggmNGuPkvdpTIV7K3sL11S/mxl
+qUD4eErJ+PWn0vh3SQ/pX2fYxJQ3Be/mUObLBXNxKaztMdmJR83uFSm042sMJN6r
+rkEeHWVbDWaXy+s8jy4jJHQLLEUbIgZXtEMrhvTAjTldtFUTx00w4M9a5EyiwU4Z
+YWmCSLlFJGgt6lIpngnvxnZmeBtfGF4h9ZOuMYSb14IABhB6Jnp7nfnyhN6G+gwa
+lHBQ2mzYkzsYi7tqlKLn1bJ/N5/wiv05F+HOQ1pK8fnSCwTmzgBIE7h5ycAmWYXc
+3+wPhYkTkAzPMJ2v9SFcXDjWguCJAXUZNXucNvOhm+TpN5kHCg7hXmwrPfJFf9uX
+mqz/sUaDebZFegWu+zdy
+=zsPZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Mar_2014_22_18_28_+0000_qsdKRJrhV+y.GV_c--
