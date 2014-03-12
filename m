@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211AbaCLBGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 21:06:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3379 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755989AbaCLBGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 21:06:05 -0400
-Date: Tue, 11 Mar 2014 22:05:14 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, pbonzini@redhat.com,
-        gleb@kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: SVM: fix cr8 intercept window
-Message-ID: <20140312010513.GA8131@amt.cnet>
-References: <1394561478-8815-1-git-send-email-rkrcmar@redhat.com>
+	id S1756232AbaCLBGb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 21:06:31 -0400
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:44760
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755989AbaCLBG2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 21:06:28 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Fred Akers <knivey@botops.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3 1/2] Staging: comedi: addi-data: Fix long CamelCase
+ function names
+Thread-Topic: [PATCH v3 1/2] Staging: comedi: addi-data: Fix long CamelCase
+ function names
+Thread-Index: AQHPPXf2Uoh1umhkz0qORtT4y4m1EprcoPUw
+Date: Wed, 12 Mar 2014 01:06:27 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825DADED5@P3PWEX4MB008.ex4.secureserver.net>
+References: <1394350009-23464-1-git-send-email-knivey@botops.net>
+ <1394576353-25247-1-git-send-email-knivey@botops.net>
+In-Reply-To: <1394576353-25247-1-git-send-email-knivey@botops.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394561478-8815-1-git-send-email-rkrcmar@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 07:11:18PM +0100, Radim Krčmář wrote:
-> We always disable cr8 intercept in its handler, but only re-enable it
-> if handling KVM_REQ_EVENT, so there can be a window where we do not
-> intercept cr8 writes, which allows an interrupt to disrupt a higher
-> priority task.
-> 
-> Fix this by disabling intercepts in the same function that re-enables
-> them when needed. This fixes BSOD in Windows 2008.
-> 
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> ---
->  arch/x86/kvm/svm.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> index 64d9bb9..f676c18 100644
-> --- a/arch/x86/kvm/svm.c
-> +++ b/arch/x86/kvm/svm.c
-> @@ -3003,10 +3003,8 @@ static int cr8_write_interception(struct vcpu_svm *svm)
->  	u8 cr8_prev = kvm_get_cr8(&svm->vcpu);
->  	/* instruction emulation calls kvm_set_cr8() */
->  	r = cr_interception(svm);
-> -	if (irqchip_in_kernel(svm->vcpu.kvm)) {
-> -		clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-> +	if (irqchip_in_kernel(svm->vcpu.kvm))
->  		return r;
-> -	}
->  	if (cr8_prev <= kvm_get_cr8(&svm->vcpu))
->  		return r;
->  	kvm_run->exit_reason = KVM_EXIT_SET_TPR;
-> @@ -3568,6 +3566,8 @@ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
->  	if (is_guest_mode(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
->  		return;
->  
-> +	clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-> +
->  	if (irr == -1)
->  		return;
+On Tuesday, March 11, 2014 3:19 PM, Fred Akers wrote:
+> This patch fixes a few function names that are very long and are
+> not in the correct naming style
+>
+> Signed-off-by: Fred Akers <knivey@botops.net>
 
-Shouldnt IRR be injected if TPR < IRR ? (via KVM_REQ_EVENT).
+Fred,
 
-1) IRR has interrupt 10.
-2) TPR now 9 due to CR8 write.
-3) 10 should be injected.
+I pulled Greg's staging tree to see if your patches apply.
 
-Also not clearing the intercept can cause continuous CR8 writes to 
-exit until KVM_REQ_EVENT ? 
+Patch 1/2 is ok but patch 2/2 does not apply:
+
+Applying: Staging: Comedi: addi-data: Clean up function comments
+error: patch failed: drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c:1
+error: drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c: patch does not apply
+error: patch failed: drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c:1
+error: drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c: patch does not apply
+error: patch failed: drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c:1
+error: drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c: patch does not apply
+Patch failed at 0001 Staging: Comedi: addi-data: Clean up function comments
+
+Maybe Greg will have better luck.
+
+Regards,
+Hartley
 
