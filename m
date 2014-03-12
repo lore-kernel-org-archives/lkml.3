@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073AbaCLPqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:46:34 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:50993 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754886AbaCLPqb (ORCPT
+	id S1755180AbaCLPqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:46:47 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38849 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755145AbaCLPqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 11:46:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyTCoipjhbAVCuhCgqb8JeSjGcmOU3xE6EFrjNpfspfqg@mail.gmail.com>
-References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
-	<CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
-	<CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
-	<CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
-	<CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
-	<CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
-	<CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
-	<CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>
-	<531F365B.4060000@linux.intel.com>
-	<CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
-	<531F3D02.30706@linux.intel.com>
-	<CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>
-	<CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com>
-	<CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
-	<1394613046.995.51.camel@wall-e.seibold.net>
-	<CA+55aFyTCoipjhbAVCuhCgqb8JeSjGcmOU3xE6EFrjNpfspfqg@mail.gmail.com>
-Date: Wed, 12 Mar 2014 08:46:30 -0700
-X-Google-Sender-Auth: RUB-vW7QnHO9gxbWg19hg5PkRb0
-Message-ID: <CA+55aFxc8Qp-4_+n=upd-ghzkxpjCyRpesm3P7xtWjDyBe9MCw@mail.gmail.com>
-Subject: Re: [PATCH v2] x86: Remove compat vdso support
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+	Wed, 12 Mar 2014 11:46:42 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18YY5YH4Jh98TSfKHMBlJbugAUr+LLaCuo=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 3663654128F
+Date: Wed, 12 Mar 2014 11:46:24 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] pinctrl: mvebu: silence WARN to dev_warn
+Message-ID: <20140312154624.GB7811@titan.lakedaemon.net>
+References: <1393977790-29110-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1393977790-29110-4-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20140306201803.GL1872@titan.lakedaemon.net>
+ <CACRpkda0JCLZUv_KPmwucDh3ko2YbtG2ukMMscSodAbBpiY+zw@mail.gmail.com>
+ <20140307035056.GQ1872@titan.lakedaemon.net>
+ <CACRpkdbEQSj7jLWT2BFR22m7phwmyKCByhQuFFgHvHoKvQFD5g@mail.gmail.com>
+ <20140307134616.GR1872@titan.lakedaemon.net>
+ <CACRpkdbcbMNim9LRkr75Mk5yHfwbA1OAexByHG50qDUPwts4uQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbcbMNim9LRkr75Mk5yHfwbA1OAexByHG50qDUPwts4uQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 7:41 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Nobody has even explained why we want this at all, and why we want
-> this headache. Nobody has explained why the solution is not to "just
-> don't do that then". Instead, people are piling up *more* complexity
-> because the patch had a problem.
->
-> That's a technical issue, Stefani. And the threat to not apply patches
-> is a technical solution, and I'm getting more and more convinced is
-> the *right* technical solution.
+On Wed, Mar 12, 2014 at 03:02:02PM +0100, Linus Walleij wrote:
+> On Fri, Mar 7, 2014 at 2:46 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+> > On Fri, Mar 07, 2014 at 11:56:11AM +0800, Linus Walleij wrote:
+> 
+> >> For a single patch?
+> >
+> > Well, just the doc change and WARN change.  I've already taken the dts
+> > change into mvebu/dt (for arm-soc).
+> 
+> I've applied this patch [3/3] to the pinctrl tree.
 
-.. which is not to say that there aren't possible ways forward.
+Ok, thanks.
 
-But quite frankly, I do *not* believe that the way forward is "let's
-pile on more complexity to hide the problems this patch caused".
+> > There should be no need for these two to be in mvebu's for-next, so if
+> > it's easier for you to pick them, please do so.
+> >
+> > I'll drop them from mvebu/pinctrl and update mvebu's for-next right now.
+> 
+> No, I mean, please apply patch 1/3 and 2/3 to the mvebu tree.
+> There is no need to sync DTS and pinctrl driver changes. This
+> patch to the pinctrl driver I want to carry however.
 
-And I absolutely do *not* believe that it is a good idea to make big
-fundamental changes to x86-32 that may have lots of legacy users (and
-potential embedded future users), but that new installations and
-developers have largely left behind.
+Sorry I wasn't clear.  patch 2/3 depends on
 
-So I'd very strongly suggest that people go back to square one, and
-look at the original patch that caused the problem. There's two
-issues:
+  356ca6ce0aa4 devicetree: bindings: update MVEBU pinctrl binding documentation
 
- - the fact that it grows the code sufficiently that our single-page
-approach doesn't work under certain (unusual) configurations
+Which is in the mvebu/pinctrl branch you have merged into your tree.
 
-   This is the obvious problem and the thing that people seem to have
-worked most on. I don't think it's right to be so eager to work around
-the problem, when presumably it should be straightforward to make the
-damn code smaller in the first place.
+I usually keep the binding documentation changes in the same branch with
+the code changes so that during a future bisect, the documentation has a
+better chance of being consistent with the code at the point of failure.
+It's a detail thing, I know, but I couldn't find a downside to doing it.
+Well, until now.  :-)
 
- - the patch really is ugly, and already adds random stuff to map the
-vvar/hpet pages into user memory, using absolutely disgusting code.
+thx,
 
-So quite frankly, if I had looked at that patch *before* hearing of
-the size issues, I would personally still have NAK'ed it. The games it
-plays are just nasty.
-
-Having looked at it a bit more, I think the correct solution is:
-
- - leave the legacy compat-vdso FIXMAP entry at a single page
-
- - do *not* add the HPET/VVAR page games to the legacy case. Get rid
-of the remap_pfn_pages() games entirely.
-
- - do the new thing only for the non-compat case, where we can just
-use the "vdso_pages[]" array and not play any games.
-
-IOW, just cut the cord. Separate out the legacy one-page FIXMAP case.
-Get rid of the magic pfn_remap stuff entirely. It was ugly and it was
-a mistake.
-
-Hmm? That way, people can use the vdso and it really looks the same
-between x86-32 and -64, and we can leave the legacy fixmap case alone.
-Don't touch it.
-
-But I think that "x86, vdso: Add 32 bit VDSO time support for 32 bit
-kernel" patch needs to die. And the helper patches building up to it
-(just because that patch used [io_]remap_pfn_range()) should die too.
-Why weren't those pages in the vdso*_pages[] array anyway?
-
-              Linus
+Jason.
