@@ -1,91 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091AbaCLPVy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:21:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3721 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754802AbaCLPVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 11:21:52 -0400
-Date: Wed, 12 Mar 2014 11:54:41 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, pbonzini@redhat.com,
-        gleb@kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: SVM: fix cr8 intercept window
-Message-ID: <20140312145441.GA30707@amt.cnet>
-References: <1394561478-8815-1-git-send-email-rkrcmar@redhat.com>
- <20140312010513.GA8131@amt.cnet>
- <20140312104047.GA7488@potion.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140312104047.GA7488@potion.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755128AbaCLPXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:23:09 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:32902 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285AbaCLPXH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 11:23:07 -0400
+Date: Wed, 12 Mar 2014 16:22:49 +0100
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH 4/4] devfreq: exynos4: Use SET_SYSTEM_SLEEP_PM_OPS macro
+ instead of legacy method
+In-reply-to: <1394624882-2989-5-git-send-email-cw00.choi@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        rafael.j.wysocki@intel.com, nm@ti.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@vger.kernel.org
+Message-id: <1869652.x5hcu1bJcu@amdc1032>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7Bit
+X-AuditID: cbfee61b-b7f456d000006dfd-01-53207bd9e6d4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t9jAd2b1QrBBvtf8Vpc//Kc1eJs0xt2
+	i+4f2RaXd81hs/jce4TR4nbjCjaLNz/OMlk8XvGW3YHDY/Gel0wefVtWMXocv7GdyePzJrkA
+	ligum5TUnMyy1CJ9uwSujIsdh9gKHgtWrL22haWBcQdfFyMHh4SAicSxafxdjJxAppjEhXvr
+	2boYuTiEBBYxSix+fooZwmlhkji8YAYzSBWbgJXExPZVjCC2iICGxMy/VxhBipgF9jBKTO37
+	xQqSEBZIl5j+bRNYEYuAqkTX468sIDavgKbEvWtXwWpEBTwldmxfyQZicwq4SnS2vQGLCwnU
+	S6yYepYJol5Q4sfke2C9zALyEvv2T2WFsHUk9rdOY5vAKDALSdksJGWzkJQtYGRexSiaWpBc
+	UJyUnmukV5yYW1yal66XnJ+7iREc5M+kdzCuarA4xCjAwajEw7tQUz5YiDWxrLgy9xCjBAez
+	kgjv00KFYCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1utA4UE0hNLUrNTUwtSi2CyTBycUg2M
+	vbLW9b6zf3XLn5TLeS/2hXHf/SOTNh6r+xR0Yp7yDB638j/LTbMYmBYphe5y/uu5T8w+KP+V
+	xsOS7buu/dtvk7BUiCOwOL0k7S0j76EQ/3dPPL4cYvQ7oLROsWz9zK/RHUl+CY1dCWc/J3BW
+	X1xp+uhS7cfph1vV2FZ6nteYybjYSObhD6WvSizFGYmGWsxFxYkAFQO17W4CAAA=
+References: <1394624882-2989-1-git-send-email-cw00.choi@samsung.com>
+ <1394624882-2989-5-git-send-email-cw00.choi@samsung.com>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 11:40:48AM +0100, Radim Krčmář wrote:
-> 2014-03-11 22:05-0300, Marcelo Tosatti:
-> > On Tue, Mar 11, 2014 at 07:11:18PM +0100, Radim Krčmář wrote:
-> > > We always disable cr8 intercept in its handler, but only re-enable it
-> > > if handling KVM_REQ_EVENT, so there can be a window where we do not
-> > > intercept cr8 writes, which allows an interrupt to disrupt a higher
-> > > priority task.
-> > > 
-> > > Fix this by disabling intercepts in the same function that re-enables
-> > > them when needed. This fixes BSOD in Windows 2008.
-> > > 
-> > > Cc: <stable@vger.kernel.org>
-> > > Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> > > ---
-> > >  arch/x86/kvm/svm.c | 6 +++---
-> > >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> > > index 64d9bb9..f676c18 100644
-> > > --- a/arch/x86/kvm/svm.c
-> > > +++ b/arch/x86/kvm/svm.c
-> > > @@ -3003,10 +3003,8 @@ static int cr8_write_interception(struct vcpu_svm *svm)
-> > >  	u8 cr8_prev = kvm_get_cr8(&svm->vcpu);
-> > >  	/* instruction emulation calls kvm_set_cr8() */
-> > >  	r = cr_interception(svm);
-> > > -	if (irqchip_in_kernel(svm->vcpu.kvm)) {
-> > > -		clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-> > > +	if (irqchip_in_kernel(svm->vcpu.kvm))
-> > >  		return r;
-> > > -	}
-> > >  	if (cr8_prev <= kvm_get_cr8(&svm->vcpu))
-> > >  		return r;
-> > >  	kvm_run->exit_reason = KVM_EXIT_SET_TPR;
-> > > @@ -3568,6 +3566,8 @@ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
-> > >  	if (is_guest_mode(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
-> > >  		return;
-> > >  
-> > > +	clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-> > > +
-> > >  	if (irr == -1)
-> > >  		return;
-> > 
-> > Shouldnt IRR be injected if TPR < IRR ? (via KVM_REQ_EVENT).
-> > 
-> > 1) IRR has interrupt 10.
-> > 2) TPR now 9 due to CR8 write.
-> > 3) 10 should be injected.
+
+Hi,
+
+On Wednesday, March 12, 2014 08:48:02 PM Chanwoo Choi wrote:
+> This patch use SET_SYSTEM_SLEEP_PM_OPS macro instead of legacy method. Also,
+> Before entering suspend state, disable ppmu's clock to remove power-leakage
+> in suspend state.
+
+The main thing that this patch does is adding ->suspend method and PPMU
+clocks handling and this should be reflected in the patch summary (i.e.
+"devfreq: exynos4: fix PM suspend/resume handling for PPMU clocks") and in
+the patch description. The fact that the patch also converts code to use
+SET_SYSTEM_SLEEP_PM_OPS() macro is secondary.
+
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+>  drivers/devfreq/exynos/exynos4_bus.c | 26 +++++++++++++++++++++++++-
+>  1 file changed, 25 insertions(+), 1 deletion(-)
 > 
-> Definitely should, and we will set KVM_REQ_EVENT through kvm_set_cr8()
-> if we lower the TPR.
-> (I checked that the bug isn't in apic_update_ppr().)
+> diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
+> index 0c5b99e..7e1540a 100644
+> --- a/drivers/devfreq/exynos/exynos4_bus.c
+> +++ b/drivers/devfreq/exynos/exynos4_bus.c
+> @@ -1229,16 +1229,40 @@ static int exynos4_busfreq_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_PM_SLEEP
+>  static int exynos4_busfreq_resume(struct device *dev)
+>  {
+>  	struct busfreq_data *data = dev_get_drvdata(dev);
+> +	int i;
+> +
+> +	/* Enable clock after wake-up from suspend state */
+> +	for (i = 0; i < PPMU_END; i++)
+> +		clk_prepare_enable(data->clk_ppmu[i]);
+>  
+> +	/* Reset PPMU to check utilization again */
+>  	busfreq_mon_reset(data);
+> +
+> +	return 0;
+> +}
+> +
+> +static int exynos4_busfreq_suspend(struct device *dev)
+> +{
+> +	struct busfreq_data *data = dev_get_drvdata(dev);
+> +	int i;
+> +
+> +	/*
+> +	 * Disable clock before entering suspend state
+> +	 * to reduce leakage power on suspend state.
+> +	 */
+> +	for (i = 0; i < PPMU_END; i++)
+> +		clk_disable_unprepare(data->clk_ppmu[i]);
+> +
+>  	return 0;
+>  }
+> +#endif
+>  
+>  static const struct dev_pm_ops exynos4_busfreq_pm = {
+> -	.resume	= exynos4_busfreq_resume,
+> +	SET_SYSTEM_SLEEP_PM_OPS(exynos4_busfreq_suspend, exynos4_busfreq_resume)
+>  };
+>  
+>  static const struct platform_device_id exynos4_busfreq_id[] = {
 
-Yep.
-
-> > Also not clearing the intercept can cause continuous CR8 writes to 
-> > exit until KVM_REQ_EVENT ? 
-> 
-> It is intended, I suppose this is because we run with V_INTR_MASKING, so
-> writes to CR8 only affect V_TPR register; guest then raises it once more
-> and APIC incorrectly gives us low priority interrupt.
-
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
