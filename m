@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298AbaCLG6M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 02:58:12 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:63419 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425AbaCLG6L (ORCPT
+	id S1756553AbaCLG6r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 02:58:47 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:34178 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756489AbaCLG6k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 02:58:11 -0400
-X-Original-SENDERIP: 10.186.119.203
-X-Original-MAILFROM: jungsoo.son@lge.com
-From: Jungsoo Son <jungsoo.son@lge.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Jungsoo Son <jungsoo.son@lge.com>, Minchan Kim <minchan@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH] page owners: correct page->order when to free page
-Date: Wed, 12 Mar 2014 15:58:06 +0900
-Message-Id: <1394607486-31493-1-git-send-email-jungsoo.son@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 12 Mar 2014 02:58:40 -0400
+Date: Wed, 12 Mar 2014 07:58:37 +0100
+From: Christian Riesch <christian.riesch@omicron.at>
+To: Richard Cochran <richardcochran@gmail.com>,
+        =?UTF-8?Q?S=C3=B8rensen=2C?= <Stefan.Sorensen@spectralink.com>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhutchings@solarflare.com, davem@davemloft.net
+Subject: Re: [PATCH RFC net-next v1 0/9] ptp: dynamic pin control
+Message-ID: <E9E8485F5E84770575AD1FAB@[172.22.2.41]>
+In-Reply-To: <20140310134227.GB19781@netboy>
+References: <cover.1394307303.git.richardcochran@gmail.com>
+ <1394455974.2296.22.camel@e37108.spectralink.com>
+ <20140310134227.GB19781@netboy>
+X-Mailer: Mulberry/4.0.8 (Win32)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I use PAGE_OWNER in mmotm tree, I found a problem that mismatches
-the number of allocated pages. When I investigate, the problem is that
-set_page_order is called for only a head page if freed page is merged to
-a higher order page in the buddy allocator so tail pages of the higher
-order page couldn't be reset to page->order = -1.
+Hi Richard,
 
-It means when we do 'cat /proc/page-owner', it could show wrong
-information.
+--On March 10, 2014 14:42 +0100 Richard Cochran <richardcochran@gmail.com> 
+wrote:
 
-So page->order should be set to -1 for all the tail pages as well as the
-first page before buddy allocator merges them.
+> On Mon, Mar 10, 2014 at 12:52:57PM +0000, Sørensen, Stefan wrote:
+>>
+>> What are the n_ext_ts and n_per_out supposed to be set to now? The
+>> number of pins configured for the relevant function or the number of
+>> channels that are available for the function?
+>
+> They are the number of available functions. This is not necessarily the
+> same as the number of pins. Many chips have more functions than pins.
+>
+>> The implementation is limited to a single function for each pin - the
+>> dp83640 supports an ext_ts and several periodic outputs on the same pin,
+>> but I do not see that many real-world uses.
+>
+> Yes, it does support different functions on a single pin, but not at
+> the same time.  You have to choose what function you want on each pin,
+> and that is what the new ioctl lets you do.
+>
+> I did not change the n_per_out in this series,
 
-This patch is for clearing page->order of all the tail pages in
-free_pages_prepare() when to free page.
+Why not? I think it would be a good idea to set both n_ext_ts and n_per_out 
+to the correct value right from the start (8, right?).
+Christian
 
-Signed-off-by: Jungsoo Son <jungsoo.son@lge.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- mm/page_alloc.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index dfbc967..9b946f0 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -741,6 +741,13 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
- 	if (bad)
- 		return false;
- 
-+#ifdef CONFIG_PAGE_OWNER
-+	for (i = 0; i < (1 << order); i++) {
-+		struct page *p = (page + i);
-+		p->order = -1;
-+	}
-+#endif
-+
- 	if (!PageHighMem(page)) {
- 		debug_check_no_locks_freed(page_address(page),
- 					   PAGE_SIZE << order);
--- 
-1.7.9.5
-
+> but once this basic
+> support gets merged, then you will be able to increase n_per_out for
+> the dp83640 with little extra effort.
