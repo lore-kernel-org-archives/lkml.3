@@ -1,144 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754AbaCLPHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:07:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52023 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600AbaCLPHA (ORCPT
+	id S1754738AbaCLPKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:10:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42697 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464AbaCLPKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 11:07:00 -0400
-Date: Wed, 12 Mar 2014 08:06:31 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-c1bacbae8192dd2a9ebadd22d793b68054f6c6e5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, jjhiblot@traphandler.com, tglx@linutronix.de,
-        linus.walleij@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, jjhiblot@traphandler.com,
-        tglx@linutronix.de, linus.walleij@linaro.org
-In-Reply-To: <alpine.DEB.2.02.1403080857160.18573@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.02.1403080857160.18573@ionos.tec.linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: Provide irq_request/
- release_resources chip callbacks
-Git-Commit-ID: c1bacbae8192dd2a9ebadd22d793b68054f6c6e5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 12 Mar 2014 11:10:32 -0400
+Date: Wed, 12 Mar 2014 16:10:40 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] irq: Consider a negative return value of irq_startup()
+ as an error
+In-Reply-To: <CACRpkdb=51_D6kxWcmSSRdr3kROXiwJbRzQDS-1VxEJpBjVyUA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1403121555140.18573@ionos.tec.linutronix.de>
+References: <1393345719-3707-1-git-send-email-jjhiblot@traphandler.com> <alpine.DEB.2.02.1402262119560.4174@ionos.tec.linutronix.de> <CACRpkdZ6D1XfDBdJEcR8G2HWkNcZSfz08Yvx8f0s+CqTUmybkg@mail.gmail.com> <alpine.DEB.2.02.1403080857160.18573@ionos.tec.linutronix.de>
+ <CACRpkdb=51_D6kxWcmSSRdr3kROXiwJbRzQDS-1VxEJpBjVyUA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c1bacbae8192dd2a9ebadd22d793b68054f6c6e5
-Gitweb:     http://git.kernel.org/tip/c1bacbae8192dd2a9ebadd22d793b68054f6c6e5
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sat, 8 Mar 2014 08:59:58 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 12 Mar 2014 16:00:24 +0100
+On Wed, 12 Mar 2014, Linus Walleij wrote:
+> On Sat, Mar 8, 2014 at 10:15 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > On Fri, 7 Mar 2014, Linus Walleij wrote:
+> >> I'll see what Jean-Jacques comes up with and take it from there unless
+> >> he's interested in taking it all the way.
+> >
+> > Thought more about it while trying to come up with a persuasive
+> > argument for the other Linus to take the irq_startup change that late
+> > in the cycle:
+> >
+> > Using startup is the wrong point in __setup_irq() because we call
+> > chip->irq_set_type() before we call chip->irq_startup(). And we want
+> > this to be in that order to avoid spurious interrupts.
+> >
+> > Proper solution below. That leaves the startup/unmask logic untouched
+> > and provides separate callbacks for this kind of requirements. That
+> > makes it also simpler to have common functions for all gpios as you
+> > don't have to do the mask/unmask dance in startup/shutdown. So you can
+> > simply create gpio_irq_request/release_resources() and let the drivers
+> > add those to their callbacks.
+> >
+> > If you agree, I put that into a separate branch based on an upstream
+> > -rc so you can pull it into your gpiolib stuff and work from there.
+> 
+> Yeah I really like the looks of this!
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> We need to think about whether the gpiolib changes are serious
+> enough to be pushed this late in the -rc cycle though.
+> 
+> The thing is that the flagging of GPIO lines as IRQs was to fix
+> up the ages-old mess of sequential semantic dependencies between
+> different unrelated gpiolib and irqchip calls, and these bugs have
+> been around since the first irqchip was implemented in
+> drivers/gpio I think :-(
+> 
+> But if you prefer, I'll surely do it.
 
-genirq: Provide irq_request/release_resources chip callbacks
+Nah. We can just do that for 3.15. If people have the urge to backport
+it, it's simple enough to do so.
 
-For certain irq types, e.g. gpios, it's necessary to request resources
-before starting up the irq.
+I pushed out the patch to a separate branch
 
-This might fail so we cannot use the irq_startup() callback because we
-might call the irq_set_type() callback before that which does not make
-sense when the resource is not available. Calling irq_startup() before
-irq_set_type() can lead to spurious interrupts which is not desired
-either.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip irq/for-gpio
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org 
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1403080857160.18573@ionos.tec.linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/irq.h |  6 ++++++
- kernel/irq/manage.c | 28 +++++++++++++++++++++++++++-
- 2 files changed, 33 insertions(+), 1 deletion(-)
+and merged that branch back into irq/core.
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 7dc1003..e675971 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -303,6 +303,10 @@ static inline irq_hw_number_t irqd_to_hwirq(struct irq_data *d)
-  * @irq_pm_shutdown:	function called from core code on shutdown once per chip
-  * @irq_calc_mask:	Optional function to set irq_data.mask for special cases
-  * @irq_print_chip:	optional to print special chip info in show_interrupts
-+ * @irq_request_resources:	optional to request resources before calling
-+ *				any other callback related to this irq
-+ * @irq_release_resources:	optional to release resources acquired with
-+ *				irq_request_resources
-  * @flags:		chip specific flags
-  */
- struct irq_chip {
-@@ -336,6 +340,8 @@ struct irq_chip {
- 	void		(*irq_calc_mask)(struct irq_data *data);
- 
- 	void		(*irq_print_chip)(struct irq_data *data, struct seq_file *p);
-+	int		(*irq_request_resources)(struct irq_data *data);
-+	void		(*irq_release_resources)(struct irq_data *data);
- 
- 	unsigned long	flags;
- };
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index d3bf660..5d35cbe 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -896,6 +896,23 @@ static void irq_setup_forced_threading(struct irqaction *new)
- 	}
- }
- 
-+static int irq_request_resources(struct irq_desc *desc)
-+{
-+	struct irq_data *d = &desc->irq_data;
-+	struct irq_chip *c = d->chip;
-+
-+	return c->irq_request_resources ? c->irq_request_resources(d) : 0;
-+}
-+
-+static void irq_release_resources(struct irq_desc *desc)
-+{
-+	struct irq_data *d = &desc->irq_data;
-+	struct irq_chip *c = d->chip;
-+
-+	if (c->irq_release_resources)
-+		c->irq_release_resources(d);
-+}
-+
- /*
-  * Internal function to register an irqaction - typically used to
-  * allocate special interrupts that are part of the architecture.
-@@ -1091,6 +1108,13 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 	}
- 
- 	if (!shared) {
-+		ret = irq_request_resources(desc);
-+		if (ret) {
-+			pr_err("Failed to request resources for %s (irq %d) on irqchip %s\n",
-+			       new->name, irq, desc->irq_data.chip->name);
-+			goto out_mask;
-+		}
-+
- 		init_waitqueue_head(&desc->wait_for_threads);
- 
- 		/* Setup the type (level, edge polarity) if configured: */
-@@ -1261,8 +1285,10 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
- 	*action_ptr = action->next;
- 
- 	/* If this was the last handler, shut down the IRQ line: */
--	if (!desc->action)
-+	if (!desc->action) {
- 		irq_shutdown(desc);
-+		irq_release_resources(desc);
-+	}
- 
- #ifdef CONFIG_SMP
- 	/* make sure affinity_hint is cleaned up */
+So you can just pull irq/for-gpio into the gpio work and base the gpio
+related changes on top of that. Just mention it in the pull request to
+the other Linus that it contains an irq/core change which avoids merge
+dependencies.
+
+Thanks,
+
+	tglx
+
