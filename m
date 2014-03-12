@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaCLONO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:13:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46057 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753364AbaCLONK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:13:10 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: X86 ML <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] x86, crash: Unify ifdef
-Date: Wed, 12 Mar 2014 15:13:03 +0100
-Message-Id: <1394633584-5509-3-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394633584-5509-1-git-send-email-bp@alien8.de>
-References: <1394633584-5509-1-git-send-email-bp@alien8.de>
+	id S1754362AbaCLONf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:13:35 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:45374 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754305AbaCLONb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 10:13:31 -0400
+X-Greylist: delayed 1897 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Mar 2014 10:13:31 EDT
+From: <srinivas.kandagatla@st.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: <kernel@stlinux.com>, <linux-kernel@vger.kernel.org>,
+        <srinivas.kandagatla@gmail.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [PATCH] pinctrl: st: Fix error check for of_irq_to_resource usage
+Date: Wed, 12 Mar 2014 13:35:05 +0000
+Message-ID: <1394631305-4083-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.147]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-12_05:2014-03-12,2014-03-12,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Merge two back-to-back CONFIG_X86_32 ifdefs into one.
+This patch fixes an error check while using of_irq_to_resource.
+of_irq_to_resource returns non-zero interrupt number on success and zero
+on error. The driver was using error check is wrong way.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Without this patch the driver will configure interrupt zero if there is
+no interrupt specified in the node.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 ---
- arch/x86/kernel/crash.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/pinctrl/pinctrl-st.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index a57902efe2d5..507de8066594 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -57,9 +57,7 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
- {
- #ifdef CONFIG_X86_32
- 	struct pt_regs fixed_regs;
--#endif
+diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+index 51e4f3a..19b8f91 100644
+--- a/drivers/pinctrl/pinctrl-st.c
++++ b/drivers/pinctrl/pinctrl-st.c
+@@ -1426,7 +1426,7 @@ static int st_gpiolib_register_bank(struct st_pinctrl *info,
+ 	 *	[irqN]----> [gpio-bank (n)]
+ 	 */
  
--#ifdef CONFIG_X86_32
- 	if (!user_mode_vm(regs)) {
- 		crash_fixup_ss_esp(&fixed_regs, regs);
- 		regs = &fixed_regs;
+-	if (!of_irq_to_resource(np, 0, &irq_res)) {
++	if (of_irq_to_resource(np, 0, &irq_res)) {
+ 		gpio_irq = irq_res.start;
+ 		irq_set_chained_handler(gpio_irq, st_gpio_irq_handler);
+ 		irq_set_handler_data(gpio_irq, bank);
 -- 
-1.9.0
+1.7.9.5
 
