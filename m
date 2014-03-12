@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354AbaCLGtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 02:49:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48165 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755701AbaCLGtL (ORCPT
+	id S1756434AbaCLGwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 02:52:08 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:60063 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755412AbaCLGwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 02:49:11 -0400
-Date: Wed, 12 Mar 2014 07:49:02 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jiri Bohac <jbohac@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: is printk() safe within a timekeeper_seq write section?
-Message-ID: <20140312064902.GK30956@twins.programming.kicks-ass.net>
-References: <20140306174531.GA30634@midget.suse.cz>
- <531F6429.8050008@linaro.org>
- <alpine.DEB.2.02.1403112040100.18573@ionos.tec.linutronix.de>
- <531F8605.10003@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531F8605.10003@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 12 Mar 2014 02:52:06 -0400
+From: Alex Shi <alex.shi@linaro.org>
+To: mingo@redhat.com, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, Alex Shi <alex.shi@linaro.org>
+Subject: [PATCH] sched: clean up task_hot function
+Date: Wed, 12 Mar 2014 14:51:51 +0800
+Message-Id: <1394607111-1904-1-git-send-email-alex.shi@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 02:54:13PM -0700, John Stultz wrote:
-> Ok, so a generic solution is probably not going to be worth it then. My
-> thought was that since we do a very limited amount of informational
-> printks in the timekeeping code, we can be fairly safe delaying the
-> print-out until we drop the locks.
-> 
-> For timekeeping, its really 4 call sites:
-> * invalid inject_sleep_time deltas
-> * > 11% clocksource freq adjustments
-> * insert leap second
-> * delete leap second
-> 
+task_hot doesn't need the 'sched_domain' parameter, so remove it.
 
-There is the printk_sched() you can reuse; you might want to change the
-name and the generic [sched_delayed] prefix it gets though.
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
+---
+ kernel/sched/fair.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7947c86..00153ad 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4980,7 +4980,7 @@ static void move_task(struct task_struct *p, struct lb_env *env)
+  * Is this task likely cache-hot:
+  */
+ static int
+-task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
++task_hot(struct task_struct *p, u64 now)
+ {
+ 	s64 delta;
+ 
+@@ -5141,7 +5141,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	 * 2) task is cache cold, or
+ 	 * 3) too many balance attempts have failed.
+ 	 */
+-	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq), env->sd);
++	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq));
+ 	if (!tsk_cache_hot)
+ 		tsk_cache_hot = migrate_degrades_locality(p, env);
+ 
+-- 
+1.8.1.2
+
