@@ -1,127 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791AbaCLUtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 16:49:17 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:43043 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaCLUtN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 16:49:13 -0400
-Message-ID: <5320C839.5010206@linux.vnet.ibm.com>
-Date: Thu, 13 Mar 2014 02:18:57 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
-        rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
-        paulmck@linux.vnet.ibm.com, tj@kernel.org, walken@google.com,
-        ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH v3 00/52] CPU hotplug: Fix issues with callback registration
-References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com> <20140311150733.efcc594dd7fe59c9c5fe9325@linux-foundation.org>
-In-Reply-To: <20140311150733.efcc594dd7fe59c9c5fe9325@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031220-9574-0000-0000-00000C6665D3
+	id S1752574AbaCLUuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 16:50:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:21726 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751304AbaCLUuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 16:50:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,640,1389772800"; 
+   d="asc'?scan'208";a="497245984"
+Message-ID: <1394657444.2167.6.camel@jtkirshe-mobl>
+Subject: Re: [PATCH net-next 4/9] igbvf: Convert uses of __constant_<foo> to
+ <foo>
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Wed, 12 Mar 2014 13:50:44 -0700
+In-Reply-To: <52ad53c6822c19de67480e8b3e36201a30cab308.1394644825.git.joe@perches.com>
+References: <cover.1394644825.git.joe@perches.com>
+	 <52ad53c6822c19de67480e8b3e36201a30cab308.1394644825.git.joe@perches.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-IngQUu5MJa5qD6Vs4F/Z"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2014 03:37 AM, Andrew Morton wrote:
-> On Tue, 11 Mar 2014 02:03:52 +0530 "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> 
->> Hi,
->>
->> Many subsystems and drivers have the need to register CPU hotplug callbacks
->> from their init routines and also perform initialization for the CPUs that are
->> already online. But unfortunately there is no race-free way to achieve this
->> today.
->>
->> For example, consider this piece of code:
->>
->> 	get_online_cpus();
->>
->> 	for_each_online_cpu(cpu)
->> 		init_cpu(cpu);
->>
->> 	register_cpu_notifier(&foobar_cpu_notifier);
->>
->> 	put_online_cpus();
->>
->> This is not safe because there is a possibility of an ABBA deadlock involving
->> the cpu_add_remove_lock and the cpu_hotplug.lock.
->>
->>           CPU 0                                         CPU 1
->>           -----                                         -----
->>
->>    Acquire cpu_hotplug.lock
->>    [via get_online_cpus()]
->>
->>                                               CPU online/offline operation
->>                                               takes cpu_add_remove_lock
->>                                               [via cpu_maps_update_begin()]
->>
->>    Try to acquire
->>    cpu_add_remove_lock
->>    [via register_cpu_notifier()]
->>
->>                                               CPU online/offline operation
->>                                               tries to acquire cpu_hotplug.lock
->>                                               [via cpu_hotplug_begin()]
-> 
-> Can't we fix this by using a different (ie: new) lock to protect
-> cpu_chain?
-> 
 
-No, that won't be a better solution than this one :-( The reason is that
-CPU_POST_DEAD notifiers are invoked with the cpu_hotplug.lock dropped (by
-design). So if we introduce the new lock, the locking would look as shown
-below at the CPU hotplug side:
+--=-IngQUu5MJa5qD6Vs4F/Z
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-[ Note that it is unsafe to acquire and release the cpu-chain lock separately
-for each invocation of the notifiers, because that would allow manipulations
-of the cpu-chain in between two sets of notifications (such as CPU_DOWN_PREPARE
-and CPU_DEAD, corresponding to the same CPU hotplug operation), which is
-clearly wrong. So we need to acquire the new lock at the very beginning of
-the hotplug operation and release it at the very end, after all notifiers
-have been invoked.]
+On Wed, 2014-03-12 at 10:22 -0700, Joe Perches wrote:
+> The use of __constant_<foo> has been unnecessary for quite awhile now.
+>=20
+> Make these uses consistent with the rest of the kernel.
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/net/ethernet/intel/igbvf/netdev.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
+Thanks Joe, I will add this to my queue.
 
-cpu_maps_update_begin(); //acquire cpu_add_remove_lock
-    cpu_hotplug_begin(); //acquire cpu_hotplug.lock
+--=-IngQUu5MJa5qD6Vs4F/Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-        cpu_chain_lock(); //acquire a new lock that protects the cpu_chain
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-		Invoke CPU_DOWN_PREPARE notifiers
-		//take cpu offline using stop-machine
-		Invoke CPU_DEAD notifiers
+iQIcBAABCgAGBQJTIMikAAoJEOVv75VaS+3O98wP/052ZM1D8yKOKs+b2iYn9e86
+mAXVZup5mOOWqJZ1gwC0qoMgdomwVnmCQsaz+9lUyKQszvd6qTI7nExdPcHRr8BD
+aiVkbewCGhYZQp0x1gyiimmdMdNgu0NNCBqTMVHdj3vXg3BJN8Fri6PDP7/jFbNW
+b6xGdqpv7bA4w9coV9wn3JQOG128Wd+hI9xrm2+WtcqV3f9PfrGPllw5R3telm7m
+KqbOUZIMrdo9vApFedvjwHLNExIsSpnDadtAfMb+dW4NiJun4+21wRs7jSUfbNsV
+b4thMD27oWigPbjI2jo+VCJdCMpG5b/79d7qoipoJhVHTe2YdEb4ic70Wz/x0Ph3
+xHt8n7tJTk7hKBccXdZwv8KLp6CsCswgO/C4tkQenK/XAz2VriACGwiVukPnhRfw
+U1D/K8b23NcsGEmfU4IJG0pXj3FCvgRZTQlHySsYArOG8w6JCllQx9jIYtbuD47M
+lQIH6iR3Qb2mCw6adT/ceWejoPvB4cD3GDiLvmwFyHOdfjCxctjcCCzRw/2/you2
+jMimtO/URP+CL7VK9MJYuENpEe7lyyF8Q9LcV+D0HJ6m1vr+ft0UvvJbz1KXSlM+
+GG+1Quhu5Bt/BVE/5k7Zqqp0YZeIRENOtjgQUrhkBD/5Rpp1IbNUSkL0UAuueWgT
+3m13UOSNlnK2i3DvrEfX
+=dSjT
+-----END PGP SIGNATURE-----
 
-    cpu_hotplug_done(); //release cpu_hotplug.lock
-
-		Invoke CPU_POST_DEAD notifiers
-
-        cpu_chain_unlock(); //release a new lock that protects the cpu_chain
-
-cpu_maps_update_done(); //release cpu_add_remove_lock
-
-
-So, if you observe the nesting of locks, it looks weird, because
-cpu_hotplug.lock is acquired first, followed by cpu_chain_lock,
-but they are released in the same order! IOW, they don't nest "properly".
-
-To avoid this, if we reorder the locks in such a way that cpu_chain_lock
-is the outer lock compared to cpu_hotplug.lock, then it becomes exactly
-same as cpu_add_remove_lock. In other words, we can reuse the
-cpu_add_remove_lock for this very purpose of protecting the cpu-chains
-without adding any new lock to the CPU hotplug core code. And this is
-what the existing code already does. I just utilize this fact and make
-sure that we don't deadlock in the scenarios mentioned in the cover-letter
-of this patchset.
-
-Regards,
-Srivatsa S. Bhat
+--=-IngQUu5MJa5qD6Vs4F/Z--
 
