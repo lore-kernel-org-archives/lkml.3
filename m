@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861AbaCLTHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 15:07:53 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:38940 "EHLO quartz.orcorp.ca"
+	id S1751208AbaCLTS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 15:18:58 -0400
+Received: from sauhun.de ([89.238.76.85]:48322 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752239AbaCLTHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 15:07:50 -0400
-Date: Wed, 12 Mar 2014 13:07:37 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        dev@linux-sunxi.org
-Subject: Re: [RFC PATCH v2 04/14] mtd: nand: define struct nand_timings
-Message-ID: <20140312190737.GA27388@obsidianresearch.com>
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
- <1391006064-28890-5-git-send-email-b.brezillon.dev@gmail.com>
- <531DC1A4.7010208@gmail.com>
- <20140311185554.GD31835@obsidianresearch.com>
- <53208F7D.8090104@gmail.com>
+	id S1750880AbaCLTS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 15:18:56 -0400
+Date: Wed, 12 Mar 2014 20:18:51 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, naveenkrishna.ch@gmail.com,
+        kgene.kim@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 v4] i2c: exynos5: add support for HSI2C on Exynos5260
+ SoC
+Message-ID: <20140312191851.GB28891@katana>
+References: <1385100726-32165-1-git-send-email-ch.naveen@samsung.com>
+ <1391748171-12451-1-git-send-email-ch.naveen@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
 Content-Disposition: inline
-In-Reply-To: <53208F7D.8090104@gmail.com>
+In-Reply-To: <1391748171-12451-1-git-send-email-ch.naveen@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 05:46:53PM +0100, Boris BREZILLON wrote:
 
-> >>I see at least 3 of those timings that could be useful (for the moment) :
-> >>- tR: this one should be used to fill the chip_delay field
-> >>- tPROG and tBERS: could be used within nand_wait to choose the timeo
-> >>   value appropriately.
-> >IIRC these timing values are really only necessary if the controller
-> >does not support the READY/BUSY input, in that case drivers typically
-> >seem to use 'chip_delay' which is the maximum possible command
-> >execution time (a sleep long enough to guarentee that READY/BUSY is
-> >de-asserted).
+--i0/AhcQY5QxfSsSZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> You're right about tR (or chip_delay): it's only used when there are
-> no R/B pin.  I experienced it when I tried the RB_NONE case in the
-> sunxi driver: the default chip_delay set by the NAND core code was
-> too small to fit the NAND chip requirements.
-> 
-> Anyway, I really think the chip_delay field should be set according
-> to NAND chip characteristics not harcoded in NAND controller driver
-> code (as currently done).
+On Fri, Feb 07, 2014 at 10:12:51AM +0530, Naveen Krishna Chatradhi wrote:
+> This patch adds a new compatible and uses variant struct to support
+> HSI2C module on Exynos5260. Updates the Documentation dt bindings.
+> Also resets the module as an init sequence (Needed by Exynos5260).
+>=20
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 
-Drivers these days are often taking this value from the DT node
-property 'chip-delay'. I think this would be nice to have in common
-code too...
+This patch has clearly not been tested :( Build failure!
 
-> tPROG and tBERS, would be used in nand_wait function and do not
-> depend on the R/B pin.  These are just used as timeouts.
+> +struct exynos_hsi2c_variant {
+> +	unsigned int		    fifo_depth;
+> +};
 
-tPROG/tBERS have that special mode where R/B remains asserted but you
-can still issue a status read to the chip to check on the command, so
-the timeout required here is just a big number to detect failed NAND
-controllers, it isn't really too important to have an exact value..
+Why so many tabs? In general, I'd prefer one space.
 
-> >>Or should I create a new struct for these timings ?
-> >>In the latter case how should I name it ?
-> >struct onfi_command_timings ?
-> 
-> I'm not a big fan of this name. I think timing structs should not
-> contain onfi in their names, because these timings are also
-> available on non ONFI chips.
+> -	exynos5_i2c_init(i2c);
+> +	exynos5_i2c_reset(i2c);
 
-Explicitly defering to the ONFI spec makes it clear what the
-definition of the timing parameter actually is.
+Is this a related change?
 
-If JEDEC has a different model then drivers will need to configure
-their interfaces a little differently.
 
-So we might end up with a jedec_sdr_timings too :|
+--i0/AhcQY5QxfSsSZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> What do you think ?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-I'd focus on getting the bus timings working before tackling too much
-more ...
+iQIcBAEBAgAGBQJTILMbAAoJEBQN5MwUoCm263sQAK2njJTIEyuO/Cbqkml7LLA7
+2LxbTzdbCWxeH5ipT7qfk7tGM3YxlE1mkuNsdNbKYVAQJz7CHlBvuFYEClcr8v9S
+utBdguKbi9Z+wyZ0Ei8DfF207Addo7x9sm/gfuvJfllT/7VNoGnEzMpsOjBJMliZ
+xN1yD2w9nEeyihLHKLA3NjmKBvCAbB96DFd2LxHHFJOTwqXTJ6ndEu2OsCjri97T
+2Yhsc1ewFkl5qw0eh7gBBidUAfhp9VHX1WjU9RU6wuxa3PO8eiZ//R2BY82eb/X3
++RRaxKKQQzl2r+clVS/tdeETaTDoUQv4CdbFlKtxvhJ8xq8Krnwl3bHGTkp47e6V
+aYzOhW3aX7h8iZJjxyYSSAeCGEGEKc2lqIDe8VzqK3IOPSJVfxHpmYthAVOpGVfi
+7r/h0vcDejLrtQPei5ONTiBnONEhEfBM8H1q2LwpebVFOrqoxC5aNeKmExZ6L657
+MAUykyOxbDdfRS3/E1nkr2NO2EM4LNGxirVaEvMpgRaghEuO8QV7UriRSV9OCp9R
+dl781fXFJp+zpJUHN0Rp2g/evseVl/II0o1hlVaBzEq6JEzUcgUv72oM1bLF90XT
+yunUzvs7zgUymkxWNSx6RUJnmv4YY2Pg8sU5RXxVAIik33qSWP1LEQbz0dAjXJJI
+LomIIu/f2qrrWyEzBWJk
+=C4nf
+-----END PGP SIGNATURE-----
 
-Jason
+--i0/AhcQY5QxfSsSZ--
