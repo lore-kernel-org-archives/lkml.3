@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440AbaCLQT2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 12:19:28 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37253 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754548AbaCLQTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 12:19:24 -0400
-Date: Wed, 12 Mar 2014 17:19:19 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, jkosina@suse.cz
-Subject: Re: [PATCH 10/11] kexec: Support for loading ELF x86_64 images
-Message-ID: <20140312161919.GE23890@pd.tnic>
-References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
- <1390849071-21989-11-git-send-email-vgoyal@redhat.com>
- <20140228145832.GF4326@pd.tnic>
- <20140228171142.GI28744@redhat.com>
- <20140307171233.GD5255@pd.tnic>
- <20140307183959.GE5255@pd.tnic>
- <20140310144237.GA4352@redhat.com>
+	id S1755491AbaCLQTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 12:19:39 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:38316 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755446AbaCLQTh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 12:19:37 -0400
+Date: Wed, 12 Mar 2014 12:19:33 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>, Waiman Long <waiman.long@hp.com>,
+        arnd@arndb.de, linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        walken@google.com, andi@firstfloor.org, riel@redhat.com,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        oleg@redhat.com
+Subject: Re: [RFC][PATCH 0/7] locking: qspinlock
+Message-ID: <20140312121933.40f63087@gandalf.local.home>
+In-Reply-To: <20140312155754.GG27965@twins.programming.kicks-ass.net>
+References: <20140310154236.038181843@infradead.org>
+	<20140312023153.GW13647@dastard>
+	<20140311231159.25a0d8dc@gandalf.local.home>
+	<20140312042616.GX13647@dastard>
+	<20140312060730.435122f0@gandalf.local.home>
+	<20140312155754.GG27965@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140310144237.GA4352@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 10:42:37AM -0400, Vivek Goyal wrote:
-> When I posted V1 of patches, Eric Biederman had said that without ELF
-> loader support this patchset should not go in. He said that ELF is
-> very generic and if we are implementing a new system call we should
-> support ELF loader.
+On Wed, 12 Mar 2014 16:57:54 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-But why, if nobody uses it?
 
--- 
-Regards/Gruss,
-    Boris.
+> I build and booted these patches against tip/master as of this morning.
+> It build ~50 defconfig kernels on my WSM-EP.
+> 
+> I've not managed to reproduce the hang as reported by Dave, but then I
+> doubt building kernels has anywhere near the lock contention he
+> generated.
+> 
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Have you tried hackbench? That usually gives rq spinlocks a bit of
+contention.
+
+-- Steve
