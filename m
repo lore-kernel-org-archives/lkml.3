@@ -1,53 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaCLJZR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:25:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41023 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752137AbaCLJZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:25:14 -0400
-Date: Wed, 12 Mar 2014 10:25:11 +0100
-From: Jean Delvare <jdelvare@suse.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        clemens@ladisch.de, rob@landley.net, lm-sensors@lm-sensors.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        andre@andrep.de
-Subject: Re: [PATCH] hwmon, k10temp: Add support for AMD F16 M30h processor
-Message-ID: <20140312102511.77faa6ff@endymion.delvare>
-In-Reply-To: <531FCF3D.8020409@roeck-us.net>
-References: <1394573159-2317-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-	<531FCF3D.8020409@roeck-us.net>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1753304AbaCLJZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 05:25:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51163 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268AbaCLJZm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 05:25:42 -0400
+Date: Wed, 12 Mar 2014 10:25:36 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Jiri Bohac <jbohac@suse.cz>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: is printk() safe within a timekeeper_seq write section?
+Message-ID: <20140312092536.GO30956@twins.programming.kicks-ass.net>
+References: <20140306174531.GA30634@midget.suse.cz>
+ <531F6429.8050008@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <531F6429.8050008@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Mar 2014 20:06:37 -0700, Guenter Roeck wrote:
-> On 03/11/2014 02:25 PM, Aravind Gopalakrishnan wrote:
-> > Adding new PCI ID to support AMD F16 M30h processor (Mullins).
-> > While at it, modify Kconfig and Doc files to reflect the
-> > support for newer processors
-> >
-> > Note: PCI ID for this processor will make it into pci_ids.h
-> > as part of this patch:
-> > http://marc.info/?l=linux-kernel&m=139291362126057&w=2
-> > which should be pulled into 3.15 when merge window opens
-> > (It currently sits in 'for-next' branch of bp.git-
-> > https://git.kernel.org/cgit/linux/kernel/git/bp/bp.git/log/?h=for-next)
-> >
-> > Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> 
-> Looks good. We'll have to see how we can apply this; probably after 3.15-rc1
-> comes out. I'll put it into my -staging branch for now and pull in the other
-> patch as well to make sure it compiles.
+On Tue, Mar 11, 2014 at 12:29:45PM -0700, John Stultz wrote:
+> So I don't think I've seen anything like the above in my testing, but it
+> may just be very hard to get that path to trigger.
 
-I've updated the wiki accordingly, as well as sensors-detect.
-
--- 
-Jean Delvare
-SUSE L3 Support
+You have to explicitly enable HRTICK for this to be possible; its
+disabled by default.
