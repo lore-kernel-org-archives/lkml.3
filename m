@@ -1,146 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101AbaCLNFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:05:12 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:41455 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673AbaCLNFJ (ORCPT
+	id S1753514AbaCLNF1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:05:27 -0400
+Received: from ihemail3.lucent.com ([135.245.0.37]:46949 "EHLO
+	ihemail3.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472AbaCLNFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:05:09 -0400
-Message-ID: <53205B7F.601@atmel.com>
-Date: Wed, 12 Mar 2014 14:05:03 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 12 Mar 2014 09:05:20 -0400
+Message-ID: <53205B87.1080508@alcatel-lucent.com>
+Date: Wed, 12 Mar 2014 09:05:11 -0400
+From: "Li, Bin (Bin)" <bin.bl.li@alcatel-lucent.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130809 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-CC: <plagnioj@jcrosoft.com>, <b.brezillon@overkiz.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <gregory.clement@free-electrons.com>, <devicetree@vger.kernel.org>,
-        <thomas.petazzoni@free-electrons.com>,
-        <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Subject: Re: [PATCH v5 0/9] Device Tree support for the at91sam9261ek
-References: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com>
-In-Reply-To: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Jatania, Neel (Neel)" <Neel.Jatania@alcatel-lucent.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Enhancement for PLE handler in KVM
+References: <530B9637.6030708@alcatel-lucent.com> <5314C8C3.3090607@alcatel-lucent.com> <5314D61B.9050407@redhat.com> <72F5E0D8DB6D83469579E473AD72DB23779EFF64@US70UWXCHMBA01.zam.alcatel-lucent.com> <53173961.6080301@redhat.com> <72F5E0D8DB6D83469579E473AD72DB23779F1B6B@US70UWXCHMBA01.zam.alcatel-lucent.com> <20140307030636.GA13701@amt.cnet> <72F5E0D8DB6D83469579E473AD72DB23779F63B3@US70UWXCHMBA01.zam.alcatel-lucent.com> <20140307174139.GB30738@amt.cnet> <72F5E0D8DB6D83469579E473AD72DB23779F88CA@US70UWXCHMBA01.zam.alcatel-lucent.com> <20140308015416.GA26349@amt.cnet> <531F19D7.6030909@alcatel-lucent.com> <531F364C.5020406@redhat.com>
+In-Reply-To: <531F364C.5020406@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+X-Originating-IP: [135.5.27.17]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2014 11:05, Jean-Jacques Hiblot :
-> This patch set aims at bringing a device tree support for the sam9261.
-> It's mostly based on the sam9263 and sam9x5 stuff.
-> 
-> Changes since V4:
-> * change the compatibilty string for the bus matrix to
->   'atmel,at91sam9260-bus-matrix'
-> * add a documentation for the bus matrix DT binding
-> * panic if the DT description of the bus matrix is not found
-> * Fixed the GPIO banks' address range
-> 
-> Changes since V3:
-> * Added support for the touchscreen
-> * Added support for the spi dataflash
-> * Activated the TCB by default
-> * Reworked the patch organization to reduce the number of patchs
-> * changed the default bootargs (no mem description, UBI on mtdpart 5)
-> * Changed the xlate implementation of the at91 pinctrl driver to lock the GPIOs
->   for IRQs instead of requesting them (needed for the touchscreen driver)
-> * some stylistic changes
-> 
-> Changes since V2:
-> * removed the smc driver from the serie. It'll be posted in an independent
->   serie later.
-> * removed the DM9000 support (it'll come with the smc driver)
-> * the sam9261 now supports the Common Clock Framework (CCF). Note: to enable
->   the CCF you must remove from the kernel config the platforms that don't
->   support it.
-> * Added basic DT binding for the bus matrix
-> * Added support for USB host
-> * Added support for USB gadget
-> * in dts(i), replaced interrupt-parent with interrupts-extended
-> * changed the nand partition plan (same as for the sama5d3)
-> * removed 'mem' parameter in command line
-> * re-ordered dt-nodes in ascending address order.
-> * split the lcd support patch in 2 parts (SOC and board)
-> 
-> 
-> Change since V1:
-> * changed the DT representation to use address translation and separate the
->   timings' configuration from the device properties by adding a "simple-bus"
->   inetrmediate node.
-> * moved the smc driver from drivers/bus to drivers/memmory
-> * smc driver now accepts timings in nanoseconds as well as raw register values
-> * smc driver can clip the timings if they're out of bound and dump them to the
->   console
-> * DM9000 timings are now described in nanosecs (for the virtue of example)
-> 
-> supported features are:
-> * working with the Common Clock Framework and the old at91 clock implementation
-> * dbgu
-> * lcdc
-> * usb host
-> * usb gadget,
-> * spi dataflash
-> * nand flash
-> * touchscreen
-> * leds
-> * user buttons
-> 
-> In the TODO list:
-> * dm9000 (ethernet)
-> * audio
-> * mmc
-> 
-> This serie relies on the following patchs:
-> usb: at91-udc: fix irq and iomem resource retrieval
-> ARM: at91: prepare sam9 dt boards transition to common
-> 
-> Jean-Jacques
-> 
-> Jean-Jacques Hiblot (9):
->   at91: dt: Adds support for the bus matrix declaration in the DT
->   dt: bindings: at91: Add a new binding for the bus matrix
->   at91: pinctrl: don't request GPIOs used for interrupts but lock them
->     as IRQ
->   at91: dt: Add at91sam9261 dt SoC support
->   at91: dt: defconfig: Added the sam9261 to the list of DT-enabled SOCs
->   at91: dt: sam9261: Device Tree support for the at91sam9261ek
->   at91: updated the at91_dt_defconfig with support for the ADS7846
->   ARM: at91: prepare common clk transition for sam9261 SoC
->   ARM: at91: move sam9261 SoC to common clk
+Thanks, Paolo for the comments
 
-Jean-Jacques,
+Understand the requirement to "fix it for all guest OSes".
 
-I take the 4-9 patches in my at91-3.15-cleanup branch with my "Acked-by".
+I will investigate the "new hypercall KVM_HC_HALT_AND_YIELD_TO_CPU that 
+takes an APIC id, donates the quantum to that CPU, and puts the 
+originating CPU in halted state. "
 
-The first ones shall be re-posted independently:
-- for the matrix, we need to convert all SoC DT before adding a "panic"
-statement if the SoC doesn't have a matrix entry. I am pretty confident
-to have these bits in for 3.15 anyway.
-- for the pinctrl, we need to cook the idea a little bit more and have
-Linus' acknowledgement.
+Regards
+Bin
 
-Thanks a lot for you work. Bye.
-
->  .../devicetree/bindings/arm/atmel-at91.txt         |  14 +
->  arch/arm/boot/dts/Makefile                         |   2 +
->  arch/arm/boot/dts/at91sam9261.dtsi                 | 740 +++++++++++++++++++++
->  arch/arm/boot/dts/at91sam9261ek.dts                | 204 ++++++
->  arch/arm/configs/at91_dt_defconfig                 |   2 +
->  arch/arm/mach-at91/Kconfig                         |   1 -
->  arch/arm/mach-at91/at91sam9261.c                   |  25 +-
->  arch/arm/mach-at91/setup.c                         |  21 +
->  drivers/pinctrl/pinctrl-at91.c                     |   5 +-
->  9 files changed, 1008 insertions(+), 6 deletions(-)
->  create mode 100644 arch/arm/boot/dts/at91sam9261.dtsi
->  create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
-> 
-
-
--- 
-Nicolas Ferre
