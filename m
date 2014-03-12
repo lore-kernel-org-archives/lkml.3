@@ -1,208 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695AbaCLOpT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:45:19 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49152 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754444AbaCLOpQ (ORCPT
+	id S1754726AbaCLOqK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:46:10 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:38478 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139AbaCLOqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:45:16 -0400
-Date: Wed, 12 Mar 2014 14:44:52 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv4 2/2] arm: Get rid of meminfo
-Message-ID: <20140312144452.GJ21483@n2100.arm.linux.org.uk>
-References: <1392761733-32628-1-git-send-email-lauraa@codeaurora.org> <1392761733-32628-3-git-send-email-lauraa@codeaurora.org>
+	Wed, 12 Mar 2014 10:46:08 -0400
+Date: Wed, 12 Mar 2014 15:46:02 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Christian Riesch <christian.riesch@omicron.at>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Stefan =?iso-8859-1?Q?S=F8rensen?= 
+	<stefan.sorensen@spectralink.com>
+Subject: Re: [PATCH RFC net-next v1 0/9] ptp: dynamic pin control
+Message-ID: <20140312144602.GB10256@netboy>
+References: <cover.1394307303.git.richardcochran@gmail.com>
+ <D4F856CB7308D0C94855B452@[172.22.2.41]>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392761733-32628-3-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <D4F856CB7308D0C94855B452@[172.22.2.41]>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 02:15:33PM -0800, Laura Abbott wrote:
-> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-> index b68c6b2..c3ae96c 100644
-> --- a/arch/arm/mm/mmu.c
-> +++ b/arch/arm/mm/mmu.c
-> @@ -1061,74 +1061,44 @@ phys_addr_t arm_lowmem_limit __initdata = 0;
->  void __init sanity_check_meminfo(void)
->  {
->  	phys_addr_t memblock_limit = 0;
-> -	int i, j, highmem = 0;
-> +	int highmem = 0;
->  	phys_addr_t vmalloc_limit = __pa(vmalloc_min - 1) + 1;
-> +	struct memblock_region *reg;
->  
-> -	for (i = 0, j = 0; i < meminfo.nr_banks; i++) {
-> -		struct membank *bank = &meminfo.bank[j];
-> -		phys_addr_t size_limit;
-> -
-> -		*bank = meminfo.bank[i];
-> -		size_limit = bank->size;
-> +	for_each_memblock(memory, reg) {
-> +		phys_addr_t block_start = reg->base;
-> +		phys_addr_t block_end = reg->base + reg->size;
-> +		phys_addr_t size_limit = reg->size;
->  
-> -		if (bank->start >= vmalloc_limit)
-> +		if (reg->base >= vmalloc_limit)
->  			highmem = 1;
->  		else
-> -			size_limit = vmalloc_limit - bank->start;
-> +			size_limit = vmalloc_limit - reg->base;
->  
-> -		bank->highmem = highmem;
->  
-> -#ifdef CONFIG_HIGHMEM
-> -		/*
-> -		 * Split those memory banks which are partially overlapping
-> -		 * the vmalloc area greatly simplifying things later.
-> -		 */
-> -		if (!highmem && bank->size > size_limit) {
-> -			if (meminfo.nr_banks >= NR_BANKS) {
-> -				printk(KERN_CRIT "NR_BANKS too low, "
-> -						 "ignoring high memory\n");
-> -			} else {
-> -				memmove(bank + 1, bank,
-> -					(meminfo.nr_banks - i) * sizeof(*bank));
-> -				meminfo.nr_banks++;
-> -				i++;
-> -				bank[1].size -= size_limit;
-> -				bank[1].start = vmalloc_limit;
-> -				bank[1].highmem = highmem = 1;
-> -				j++;
-> +		if (!IS_ENABLED(CONFIG_HIGHMEM) || cache_is_vipt_aliasing()) {
-> +
-> +			if (highmem) {
-> +				pr_notice("Ignoring RAM at %pa-%pa (!CONFIG_HIGHMEM)\n",
-> +					&block_start, &block_end);
-> +				memblock_remove(reg->base, reg->size);
-> +				continue;
->  			}
-> -			bank->size = size_limit;
-> -		}
-> -#else
-> -		/*
-> -		 * Highmem banks not allowed with !CONFIG_HIGHMEM.
-> -		 */
-> -		if (highmem) {
-> -			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
-> -			       "(!CONFIG_HIGHMEM).\n",
-> -			       (unsigned long long)bank->start,
-> -			       (unsigned long long)bank->start + bank->size - 1);
-> -			continue;
-> -		}
->  
-> -		/*
-> -		 * Check whether this memory bank would partially overlap
-> -		 * the vmalloc area.
-> -		 */
-> -		if (bank->size > size_limit) {
-> -			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
-> -			       "to -%.8llx (vmalloc region overlap).\n",
-> -			       (unsigned long long)bank->start,
-> -			       (unsigned long long)bank->start + bank->size - 1,
-> -			       (unsigned long long)bank->start + size_limit - 1);
-> -			bank->size = size_limit;
-> +			if (reg->size > size_limit) {
-> +				phys_addr_t overlap_size = reg->size - size_limit;
-> +
-> +				pr_notice("Truncating RAM at %pa-%pa to -%pa",
-> +				      &block_start, &block_end, &vmalloc_limit);
-> +				memblock_remove(vmalloc_limit, overlap_size);
-> +				block_end = vmalloc_limit;
-> +			}
->  		}
-> -#endif
-> -		if (!bank->highmem) {
-> -			phys_addr_t bank_end = bank->start + bank->size;
->  
-> -			if (bank_end > arm_lowmem_limit)
-> -				arm_lowmem_limit = bank_end;
-> +		if (!highmem) {
-> +			if (block_end > arm_lowmem_limit)
-> +				arm_lowmem_limit = block_end;
-> +
->  
->  			/*
->  			 * Find the first non-section-aligned page, and point
-> @@ -1144,35 +1114,16 @@ void __init sanity_check_meminfo(void)
->  			 * occurs before any free memory is mapped.
->  			 */
->  			if (!memblock_limit) {
-> -				if (!IS_ALIGNED(bank->start, SECTION_SIZE))
-> -					memblock_limit = bank->start;
-> -				else if (!IS_ALIGNED(bank_end, SECTION_SIZE))
-> -					memblock_limit = bank_end;
-> +				if (!IS_ALIGNED(block_start, SECTION_SIZE))
-> +					memblock_limit = block_start;
-> +				else if (!IS_ALIGNED(block_end, SECTION_SIZE))
-> +					memblock_limit = block_end;
->  			}
-> -		}
-> -		j++;
-> -	}
-> -#ifdef CONFIG_HIGHMEM
-> -	if (highmem) {
-> -		const char *reason = NULL;
->  
-> -		if (cache_is_vipt_aliasing()) {
-> -			/*
-> -			 * Interactions between kmap and other mappings
-> -			 * make highmem support with aliasing VIPT caches
-> -			 * rather difficult.
-> -			 */
-> -			reason = "with VIPT aliasing cache";
-> -		}
-> -		if (reason) {
-> -			printk(KERN_CRIT "HIGHMEM is not supported %s, ignoring high memory\n",
-> -				reason);
-> -			while (j > 0 && meminfo.bank[j - 1].highmem)
-> -				j--;
->  		}
-> +
->  	}
-> -#endif
-> -	meminfo.nr_banks = j;
-> +
+On Wed, Mar 12, 2014 at 09:21:00AM +0100, Christian Riesch wrote:
+> 
+> Do you think it is possible to extend this in the future, e.g. for
+> selecting the polarity of periodic output signals  or for time
+> stamping of external signals (rising edge/falling edge), or duty
+> cycles of the periodic signal other than 50%? How could this be
+> done? Using the reserved fields in struct ptp_pin_desc?
 
-Adding here:
-	if (arm_lowmem_limit > vmalloc_limit)
-		arm_lowmem_limit = vmalloc_limit;
+Yes, this can be done, but this relates to the ptp_xyz_request ioctls
+and not to the ptp_pin_desc. You asked for three things. Here is how
+one might implement them.
 
-fixes the booting problems, because we now properly calculate the end of
-lowmem rather than letting it overflow - previously, the code would set
-the end of lowmem to be the end of the first memblock which is quite
-obviously wrong when you could have any size of memory in that block.
+1. selecting the polarity of periodic output signals
 
-BTW, for a v4 patch, please clean up the excess blank lines in this
-patch.
+   ptp_perout_request.flags (new flag)
 
-Thanks.
+2. time stamping of external signals (rising edge/falling edge)
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+   This is already supported in the ptp_extts_request.flags field.
+   The drivers just need to implement it.
+
+3. duty cycles of the periodic signal other than 50%?
+
+   Maybe using one of the ptp_perout_request.rsv fields.
+ 
+> Do you think the concept allows an extension for single pulse
+> output, e.g. programming a pin to output a single pulse at a given
+> time, as supported by the DP83640?
+
+Yes, either a new ioctl or maybe ptp_perout_request.flags with a
+ONE-SHOT flag.
+
+> If several DP83640 are connected together with the calibration
+> function, only the GPIOs of the master device can be used, right? I
+> guess this could also be extended in the future to use the GPIOs of
+> all DP83640, right? Or do you see a problem with your concept here?
+
+If the driver would combine all of the pins and functions over all the
+devices, that would be best. I think it would be tricky to implement,
+since the driver probe() function doesn't know how many more phyters
+to expect.
+
+Thanks,
+Richard
