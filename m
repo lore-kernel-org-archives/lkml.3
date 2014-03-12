@@ -1,123 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615AbaCLMYx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 08:24:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57232 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487AbaCLMYv (ORCPT
+	id S1754151AbaCLM1W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 08:27:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35190 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865AbaCLM1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 08:24:51 -0400
-Date: Wed, 12 Mar 2014 13:24:42 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, jason.low2@hp.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] locking/mutexes: Unlock the mutex without the
- wait_lock
-Message-ID: <20140312122442.GB27965@twins.programming.kicks-ass.net>
-References: <1390936396-3962-4-git-send-email-jason.low2@hp.com>
- <tip-1d8fe7dc8078b23e060ec62ccb4cdc1ac3c41bf8@git.kernel.org>
+	Wed, 12 Mar 2014 08:27:20 -0400
+Message-ID: <53205EF4.3070308@ti.com>
+Date: Wed, 12 Mar 2014 15:19:48 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-1d8fe7dc8078b23e060ec62ccb4cdc1ac3c41bf8@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 4/7] of: configure the platform device dma_mask and dma_pfn_offset
+References: <1394097598-17622-1-git-send-email-santosh.shilimkar@ti.com>	<201403071702.41716.arnd@arndb.de>	<CAL_JsqLu_16p-8FLjBYt7xQA2eAyiprPML2q5R3fnivZPrvPug@mail.gmail.com>	<201403090739.18351.arnd@arndb.de> <CAL_Jsq+KPpqmF3eU49AeWO2Q0d4uBon_67+zUz6dXKtfsjA3Nw@mail.gmail.com>
+In-Reply-To: <CAL_Jsq+KPpqmF3eU49AeWO2Q0d4uBon_67+zUz6dXKtfsjA3Nw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 05:41:23AM -0700, tip-bot for Jason Low wrote:
->  kernel/locking/mutex.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+Hi Rob, Arnd,
+
+On 03/12/2014 02:15 AM, Rob Herring wrote:
+> On Sun, Mar 9, 2014 at 12:39 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Saturday 08 March 2014, Rob Herring wrote:
+>>> On Fri, Mar 7, 2014 at 10:02 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>
+>>>> a) Follow what we do for PCI devices: assume that we can do DMA_MASK(32)
+>>>> on any device, and have drivers call dma_set_mask(DMA_MASK(64)) on devices
+>>>> that would like to do more than that, or call e.g. dma_set_mask(DMA_MASK(28))
+>>>> for devices that can do less than 32 bit, as given in the argument. This
+>>>> approach would be most consistent with the way PCI works, but it doesn't
+>>>> really work well for the case where the mask is less than 32-bit and the
+>>>> device driver doesn't know that.
+>>>>
+>>>> b) Never have to call dma_set_mask() for platform devices and assume that the
+>>>> platform code sets it up correctly. This would probably be the simpler
+>>>> solution, and I can't think of any downsides at the moment.
+>>>
+>>> I don't think we want this. In the case of setting up 64-bit masters,
+>>> it is typically the device that knows if it can do 64-bit DMA either
+>>> thru a capabilities register or compatible value. That device specific
+>>> knowledge should really stay within the device's driver.
+>>
+>> So you think we should still set a 64-bit mask in the "ranges" property
+>> for devices that can only do 32-bit and let the driver figure it out?
 > 
-> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> index 82dad2c..dc3d6f2 100644
-> --- a/kernel/locking/mutex.c
-> +++ b/kernel/locking/mutex.c
-> @@ -671,10 +671,6 @@ __mutex_unlock_common_slowpath(atomic_t *lock_count, int nested)
->  	struct mutex *lock = container_of(lock_count, struct mutex, count);
->  	unsigned long flags;
->  
-> -	spin_lock_mutex(&lock->wait_lock, flags);
-> -	mutex_release(&lock->dep_map, nested, _RET_IP_);
-> -	debug_mutex_unlock(lock);
-> -
->  	/*
->  	 * some architectures leave the lock unlocked in the fastpath failure
->  	 * case, others need to leave it locked. In the later case we have to
-> @@ -683,6 +679,10 @@ __mutex_unlock_common_slowpath(atomic_t *lock_count, int nested)
->  	if (__mutex_slowpath_needs_to_unlock())
->  		atomic_set(&lock->count, 1);
->  
-> +	spin_lock_mutex(&lock->wait_lock, flags);
-> +	mutex_release(&lock->dep_map, nested, _RET_IP_);
-> +	debug_mutex_unlock(lock);
-> +
->  	if (!list_empty(&lock->wait_list)) {
->  		/* get the first entry from the wait-list: */
->  		struct mutex_waiter *waiter =
+> No, I think option a makes more sense. BTW, don't you mean dma-ranges?
+> A device has it's own mask which is typically going to be 32 or
+> 64-bit. The core code may not know what the device supports, so the
+> device has to set it's own mask. I don't see a way around that. DT is
+> not a good option because it is discoverable in some cases.
+> 
+> Isn't the question here how do we handle restrictions added by the
+> bus? It seems while this series adds support for handling dma-ranges
+> to set the default case, it also needs to handle when the driver sets
+> the mask. Is this not simply a matter of having dma_set_mask also
+> parse dma-ranges (or reuse a saved bus mask)?
+> 
+>> I think this approach is much less useful for platform devices than it is
+>> for PCI devices, where we don't explicitly describe the "ranges" for each
+>> device. Are you thinking of off-chip or on-chip DMA masters here? If
+>> on-chip, I don't think it's likely that we would end up with different
+>> versions of the chip that have the same device on there but not the
+>> same DMA capabilities.
+> 
+> Sounds like a challenge to h/w designers. :)
+> 
+> I'm mainly thinking about the midway case where all masters are 32-bit
+> except AHCI which is 64-bit. The core libahci sets the mask based on
+> the capabilities register regardless of PCI or platform bus. Requiring
+> this to be setup by the platform or in the DT seems like a step
+> backwards. A slightly more complicated case would be something like
+> midway, but with RAM starting at say 2GB and DMA masters have the same
+> view as the cpu (i.e. no offset). Then the platform does need to set
+> the mask to (2^31 -1).
+> 
 
-OK, so this patch generates:
+mask has to be (2^32 -1).
 
-WARNING: CPU: 0 PID: 139 at /usr/src/linux-2.6/kernel/locking/mutex-debug.c:82 debug_mutex_unlock+0x155/0x180()
-DEBUG_LOCKS_WARN_ON(lock->owner != current)
+I'd like to add my 5 cents here :)
+First of all this solution is pretended to be generic, so by default it
+can't handle all possible cases (corner cases) - only widely used. 
+Arch or driver can always fix up it through bus notifier or driver's probe.
 
-for kernels with CONFIG_DEBUG_MUTEXES=y
+Second, it works only for DT-boot case when devices instantiated from DT in generic way.
+So, if any bus creates devices in its own way - proper DMA configuration of such
+devices will be private problem of this bus.
 
-And that makes sense, because as soon as we release the lock a new owner
-can come in.
+I've tried to formulate possible use cases which can be and can't be covered
+by this approach:
+[1] 32 bit SoC:
+- no DMA range limitation: DMA range has to be absent or be equal to RAM
+  (default DMA configuration will be applied)
 
-One would think that !__mutex_slowpath_needs_to_unlock() implementations
-suffer the same, but for DEBUG we fall back to mutex-null.h which has an
-unconditional 1 for that.
+- DMA range present and It's defined inside RAM (no address translation needed):
+  DMA range can be present and depending on its size
+  dma_mask will be equal or less than DMA_MASK(32).
+  (default DMA configuration will be applied - if DMA range isn't present)
 
-How about something like the below; will test after lunch.
+- DMA range present and It's defined outside of RAM (address translation needed):
+  DMA range has to be present and depending on its size
+  dma_mask will be equal or less than DMA_MASK(32); and dma_pfn_offset will be calculated.
 
----
-Subject: locking/mutex: Fix debug checks
+Compatibility issues:
+  - Old DT without DMA properties defined and DMA range is defined outside of RAM:
+  arch or drivers code has to provide proper address translation routines.
 
-The mutex debug code requires the mutex to be unlocked after doing the
-debug checks, otherwise it can find inconsistent state.
+[2] 64 bit SOC (only 64 bit masters):
+- no DMA range limitation: DMA range has to be present and equal to RAM
 
-Fixes: 1d8fe7dc8078 ("locking/mutexes: Unlock the mutex without the wait_lock")
-Almost-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/locking/mutex-debug.c | 6 ++++++
- kernel/locking/mutex.c       | 7 +++++++
- 2 files changed, 13 insertions(+)
+- DMA range present and It's defined inside RAM (no address translation needed):
+  DMA range has to be present and depending on its size
+  dma_mask will be equal or less than DMA_MASK(64).
 
-diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
-index faf6f5b53e77..e1191c996c59 100644
---- a/kernel/locking/mutex-debug.c
-+++ b/kernel/locking/mutex-debug.c
-@@ -83,6 +83,12 @@ void debug_mutex_unlock(struct mutex *lock)
- 
- 	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
- 	mutex_clear_owner(lock);
-+
-+	/*
-+	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
-+	 * mutexes so that we can do it here after we've verified state.
-+	 */
-+	atomic_set(&lock->count, 1);
- }
- 
- void debug_mutex_init(struct mutex *lock, const char *name,
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index 26c96142caac..e6fa88b64b17 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -34,6 +34,13 @@
- #ifdef CONFIG_DEBUG_MUTEXES
- # include "mutex-debug.h"
- # include <asm-generic/mutex-null.h>
-+/*
-+ * Must be 0 for the debug case so we do not do the unlock outside of the
-+ * wait_lock region. debug_mutex_unlock() will do the actual unlock in this
-+ * case.
-+ */
-+# undef __mutex_slowpath_needs_to_unlock
-+# define  __mutex_slowpath_needs_to_unlock()	0
- #else
- # include "mutex.h"
- # include <asm/mutex.h>
+- DMA range present and It's defined outside of RAM (address translation needed):
+  DMA range has to be present and depending on its size
+  dma_mask will be equal or less than DMA_MASK(64); and dma_pfn_offset will be calculated.
+
+Compatibility issues:
+  - Old DT without DMA properties defined: Drivers may still need to call dma_set_mask(DMA_MASK(64)
+  - Old DT without DMA properties defined and DMA range is defined outside of RAM:
+  arch or drivers code still has to provide proper address translation routines.
+
+[3] 64 bit SOC (only 32 bit masters):
+
+- DMA range is present and It's defined inside RAM (no address translation needed):
+  DMA range can be absent - default DMA configuration will be applied.
+
+- DMA range present and It's defined outside of RAM (address translation needed):
+  DMA range has to be present and depending on its size
+  dma_mask will be equal or less than DMA_MASK(32); and dma_pfn_offset will be calculated.
+
+Compatibility issues:
+  - Old DT without DMA properties defined and DMA range is defined outside of RAM:
+  arch or drivers code has to provide proper address translation routines.
+
+
+[4] 64 bit SOC (32 bit and 64 masters):
+- This is combination of above 2,3 cases.
+  The current approach will allow to handle it by defining two buses in DT
+  "simple-bus32" and "simple-bus64", and each one should have its own DMA properties
+  defined in DT.
+
+- The worst case will be if some device is able to change its DMA configuration
+  dynamically by reading its DMA configuration from HW. The main difficulties will
+  be to handle DMA addresses translation properly in this case. But, in my opinion,
+  such behavior will be needed in very rare case as DT has to describe specific SoC
+  and such device has to belong to only one bus as per SoC specification.
+
+Compatibility issues:
+  - Old DT without DMA properties defined and 32 bits DMA range is defined outside of RAM:
+  arch or drivers code has to provide proper address translation routines.
+
+As per above, this approach will allow to handle most of cases and configure DMA properly
+with one exception - device is able to change its DMA configuration dynamically.
+
+Also, for compatibility reasons, arches and drivers may need to continue maintain their own
+DMA addresses translation routines to support the case
+"Old DT without DMA properties defined and DMA range is defined outside of RAM".
+
+Regards,
+- grygorii
+
