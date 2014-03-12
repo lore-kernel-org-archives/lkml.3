@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934AbaCLKk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 06:40:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477AbaCLKk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 06:40:56 -0400
-Date: Wed, 12 Mar 2014 11:40:48 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, pbonzini@redhat.com,
-        gleb@kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: SVM: fix cr8 intercept window
-Message-ID: <20140312104047.GA7488@potion.brq.redhat.com>
-References: <1394561478-8815-1-git-send-email-rkrcmar@redhat.com>
- <20140312010513.GA8131@amt.cnet>
+	id S1753956AbaCLKlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 06:41:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40149 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430AbaCLKlV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 06:41:21 -0400
+Date: Wed, 12 Mar 2014 11:41:24 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Juri Lelli <juri.lelli@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v3] sched: Fix broken setscheduler()
+In-Reply-To: <20140311192420.39395358@gandalf.local.home>
+Message-ID: <alpine.DEB.2.02.1403121138480.18573@ionos.tec.linutronix.de>
+References: <20140305232931.449eef8c@gandalf.local.home> <20140306115825.GS27965@twins.programming.kicks-ass.net> <20140306132040.781dbf18c9385a6112fbab2b@gmail.com> <20140306120438.638bfe94@gandalf.local.home> <alpine.DEB.2.02.1403062143360.18573@ionos.tec.linutronix.de>
+ <20140310132940.78e556c7@gandalf.local.home> <alpine.DEB.2.02.1403102206520.18573@ionos.tec.linutronix.de> <20140310173731.06d41157@gandalf.local.home> <20140311103545.fc7f0f6b1bf0eb1d3391c85c@gmail.com> <alpine.DEB.2.02.1403111147540.18573@ionos.tec.linutronix.de>
+ <20140311192420.39395358@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140312010513.GA8131@amt.cnet>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-11 22:05-0300, Marcelo Tosatti:
-> On Tue, Mar 11, 2014 at 07:11:18PM +0100, Radim Krčmář wrote:
-> > We always disable cr8 intercept in its handler, but only re-enable it
-> > if handling KVM_REQ_EVENT, so there can be a window where we do not
-> > intercept cr8 writes, which allows an interrupt to disrupt a higher
-> > priority task.
-> > 
-> > Fix this by disabling intercepts in the same function that re-enables
-> > them when needed. This fixes BSOD in Windows 2008.
-> > 
-> > Cc: <stable@vger.kernel.org>
-> > Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> > ---
-> >  arch/x86/kvm/svm.c | 6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> > index 64d9bb9..f676c18 100644
-> > --- a/arch/x86/kvm/svm.c
-> > +++ b/arch/x86/kvm/svm.c
-> > @@ -3003,10 +3003,8 @@ static int cr8_write_interception(struct vcpu_svm *svm)
-> >  	u8 cr8_prev = kvm_get_cr8(&svm->vcpu);
-> >  	/* instruction emulation calls kvm_set_cr8() */
-> >  	r = cr_interception(svm);
-> > -	if (irqchip_in_kernel(svm->vcpu.kvm)) {
-> > -		clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-> > +	if (irqchip_in_kernel(svm->vcpu.kvm))
-> >  		return r;
-> > -	}
-> >  	if (cr8_prev <= kvm_get_cr8(&svm->vcpu))
-> >  		return r;
-> >  	kvm_run->exit_reason = KVM_EXIT_SET_TPR;
-> > @@ -3568,6 +3566,8 @@ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
-> >  	if (is_guest_mode(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
-> >  		return;
-> >  
-> > +	clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-> > +
-> >  	if (irr == -1)
-> >  		return;
+On Tue, 11 Mar 2014, Steven Rostedt wrote:
+
 > 
-> Shouldnt IRR be injected if TPR < IRR ? (via KVM_REQ_EVENT).
+> I decided to run my tests on linux-next, and my wakeup_rt tracer was
+> broken. After running a bisect, I found that the problem commit was:
 > 
-> 1) IRR has interrupt 10.
-> 2) TPR now 9 due to CR8 write.
-> 3) 10 should be injected.
+>    linux-next commit c365c292d059
+>    "sched: Consider pi boosting in setscheduler()"
+> 
+> And the reason the wake_rt tracer test was failing, was because it had
+> no RT task to trace. I first noticed this when running with
+> sched_switch event and saw that my RT task still had normal SCHED_OTHER
+> priority. Looking at the problem commit, I found:
+> 
+>  -       p->normal_prio = normal_prio(p);
+>  -       p->prio = rt_mutex_getprio(p);
+> 
+> With no
+> 
+>  +       p->normal_prio = normal_prio(p);
+>  +       p->prio = rt_mutex_getprio(p);
+> 
+> Reading what the commit is suppose to do, I realize that the p->prio
+> can't be set if the task is boosted with a higher prio, but the
+> p->normal_prio still needs to be set regardless, otherwise, when the
+> task is deboosted, it wont get the new priority.
+> 
+> The p->prio has to be set before "check_class_changed()" is called,
+> otherwise the class wont be changed.
+> 
+> Also added fix to newprio to include a check for deadline policy that
+> was missing. This change was suggested by Juri Lelli.
+> 
+> Link: http://lkml.kernel.org/r/20140306120438.638bfe94@gandalf.local.home
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Definitely should, and we will set KVM_REQ_EVENT through kvm_set_cr8()
-if we lower the TPR.
-(I checked that the bug isn't in apic_update_ppr().)
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 
-> Also not clearing the intercept can cause continuous CR8 writes to 
-> exit until KVM_REQ_EVENT ? 
-
-It is intended, I suppose this is because we run with V_INTR_MASKING, so
-writes to CR8 only affect V_TPR register; guest then raises it once more
-and APIC incorrectly gives us low priority interrupt.
