@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475AbaCLOOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:14:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46064 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753432AbaCLONK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:13:10 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: X86 ML <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] x86, pageattr: Correct WBINVD spelling in comment
-Date: Wed, 12 Mar 2014 15:13:04 +0100
-Message-Id: <1394633584-5509-4-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394633584-5509-1-git-send-email-bp@alien8.de>
-References: <1394633584-5509-1-git-send-email-bp@alien8.de>
+	id S1754346AbaCLOQf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:16:35 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:50202 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412AbaCLOQc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 10:16:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394614210-15698-3-git-send-email-maxime.coquelin@st.com>
+References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
+	<1394614210-15698-3-git-send-email-maxime.coquelin@st.com>
+Date: Wed, 12 Mar 2014 15:16:32 +0100
+Message-ID: <CACRpkdY4FJ04=jnU_7GVM_W80Lx=t2nggx9=2=cfdHAJdN2kNw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/6] pinctrl: st: Enhance the controller to manage
+ unavailable registers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+On Wed, Mar 12, 2014 at 9:50 AM, Maxime COQUELIN <maxime.coquelin@st.com> wrote:
 
-It is WBINVD, for INValiDate and not "wbindv". Use caps for instruction
-names, while at it.
+> From: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+>
+> This patch adds a new logic inside the st pinctrl to manage
+> an unsupported scenario: some sysconfig are not available!
+>
+> This is the case of STiH407 where, although documented, the
+> following registers from SYSCFG_FLASH have been removed from the SoC.
+>
+> SYSTEM_CONFIG3040
+>    Output Enable pad control for all PIO Alternate Functions
+> and
+> SYSTEM_ CONFIG3050
+>    Pull Up pad control for all PIO Alternate Functions
+>
+> Without managing this condition an imprecise external abort
+> will be detect.
+>
+> To do this the patch also reviews the st_parse_syscfgs
+> and other routines to manipulate the registers only if
+> actually available.
+> In any case, for example the st_parse_syscfgs detected
+> an error condition but no action was made in the
+> st_pctl_probe_dt.
+>
+> Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/mm/pageattr.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+This v4 version applied to the pinctrl devel branch with
+Lee's ACK.
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index b3b19f46c016..ba957c9b677c 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -1377,10 +1377,10 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
- 	cache = cache_attr(mask_set);
- 
- 	/*
--	 * On success we use clflush, when the CPU supports it to
--	 * avoid the wbindv. If the CPU does not support it and in the
-+	 * On success we use CLFLUSH, when the CPU supports it to
-+	 * avoid the WBINVD. If the CPU does not support it and in the
- 	 * error case we fall back to cpa_flush_all (which uses
--	 * wbindv):
-+	 * WBINVD):
- 	 */
- 	if (!ret && cpu_has_clflush) {
- 		if (cpa.flags & (CPA_PAGES_ARRAY | CPA_ARRAY)) {
--- 
-1.9.0
-
+Yours,
+Linus Walleij
