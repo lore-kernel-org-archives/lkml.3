@@ -1,260 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177AbaCLRzv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 13:55:51 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:46839 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755659AbaCLRzp (ORCPT
+	id S1756215AbaCLR4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 13:56:10 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:60554 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755811AbaCLR4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 13:55:45 -0400
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: linux-xtensa@linux-xtensa.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH v3 1/3] spi: add xtfpga SPI controller driver
-Date: Wed, 12 Mar 2014 21:55:24 +0400
-Message-Id: <1394646926-30496-2-git-send-email-jcmvbkbc@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1394646926-30496-1-git-send-email-jcmvbkbc@gmail.com>
-References: <1394646926-30496-1-git-send-email-jcmvbkbc@gmail.com>
+	Wed, 12 Mar 2014 13:56:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <02bf3aa9-b698-45d9-a6c7-fdebbe87210b@email.android.com>
+References: <cover.1394575968.git.luto@amacapital.net> <531FEA69.7050107@zytor.com>
+ <CALCETrVyR4GmLZ-yzPCL8xGZOZkRtPkQUcqQ=nzcRqG_Yp60wg@mail.gmail.com>
+ <7a13aeea-2190-4922-81cf-2072fe6c2fbe@email.android.com> <CALCETrWAz=gVWpsCTcy=Y=Bh7PL9iPwGgUbUsBkMbsiyh3hyYQ@mail.gmail.com>
+ <02bf3aa9-b698-45d9-a6c7-fdebbe87210b@email.android.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Mar 2014 10:55:46 -0700
+Message-ID: <CALCETrW3SKLbiH4R+SLAhftdO5kGfgRJJpJiAr5b1nPwpxfiZA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] x86: Relocate the compat vdso per process
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simple SPI master controller is built into xtfpga bitstreams. It
-always transfers 16 bit words in SPI mode 0, automatically asserting CS
-on transfer start and deasserting on end.
+On Wed, Mar 12, 2014 at 10:32 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> In taking about 1 here.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
----
-Changes v2 -> v3:
-- support all transfer widths in the range 1...16 bit;
-- don't swap bytes of 16 bit transfers.
+I'm still unconvinced that this is worth the effort.  I'm okay with
+killing the compat vdso entirely, and I'm okay with adding a minimal,
+fully functional fix (like this patch set), but I don't really want to
+add funny interactions with ASLR to support such a narrow use case.
 
-Changes v1 -> v2:
-- support 8 bit transfers;
-- busy-wait for maximum 100 usec (instead of 100 msec) polling BUSY register;
-- use chipselect callback to check transfer size.
+>
+> On March 12, 2014 9:20:50 AM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
+>>On Tue, Mar 11, 2014 at 11:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> There is one sensible address: end of address space perhaps minus
+>>some small offset.  Unlikely to be used by anything specific.
+>>
+>>Meh.  The compat vdso logic will end up being either:
+>>
+>>1) Try to map at the preferred address.  If it fails, don't map it.
+>>Force ASLR off for the vdso
+>>
+>>2) Try to map at the preferred address.  If it fails, map somewhere
+>>else and relocate.
+>>
+>>3) Try to map at the preferred address unless ASLR is on.  If it fails
+>>or ASLR is on, map somewhere else and relocate.
+>>
+>>since the whole point is to simplify this stuff, I don't really like
+>>any of these choices.  That's a lot of code to save 4k per process,
+>>and when it breaks (which I suspect it will the next time anyone
+>>touches the address space layout) so one will notice that 4k gets
+>>wasted again.
+>>
+>>>
+>>> On March 11, 2014 11:09:11 PM PDT, Andy Lutomirski
+>><luto@amacapital.net> wrote:
+>>>>On Mar 11, 2014 10:02 PM, "H. Peter Anvin" <hpa@zytor.com> wrote:
+>>>>>
+>>>>> On 03/11/2014 03:15 PM, Andy Lutomirski wrote:
+>>>>>>
+>>>>>> The meat of this patch series is in patch 1.  Patch 2 is split out
+>>>>for
+>>>>>> improved bisectability.
+>>>>>>
+>>>>>> Changes from v1: Split into two patches and fixed a comment.
+>>>>>>
+>>>>>> Andy Lutomirski (2):
+>>>>>>    x86: Dynamically relocate the compat vdso
+>>>>>>    x86_32: Remove user bit from identity map PDE
+>>>>>>
+>>>>>>   Documentation/kernel-parameters.txt  |  18 +++-
+>>>>>>   arch/x86/Kconfig                     |  24 +++--
+>>>>>>   arch/x86/include/asm/elf.h           |   4 -
+>>>>>>   arch/x86/include/asm/fixmap.h        |   8 --
+>>>>>>   arch/x86/include/asm/pgtable_types.h |   7 +-
+>>>>>>   arch/x86/include/asm/vdso.h          |   5 +-
+>>>>>>   arch/x86/vdso/vdso-layout.lds.S      |   2 +-
+>>>>>>   arch/x86/vdso/vdso32-setup.c         | 173
+>>>>++++++++++++++++-------------------
+>>>>>>   arch/x86/vdso/vdso32/vdso32.lds.S    |   2 -
+>>>>>>   9 files changed, 111 insertions(+), 132 deletions(-)
+>>>>>>
+>>>>>
+>>>>> Why per process?  *If* we have compat vdso turned on, can't we just
+>>>>put it in one place system-wide?
+>>>>
+>>>>My machine has ASLR turned on, and the vma really does end up
+>>>>somewhere different each time.  I suspect that most (?) ASLR users
+>>>>would happily accept the 4k hit to keep ASLR working fully.
+>>>>
+>>>>Another downside of trying to have a common address for all
+>>processes:
+>>>>someone needs to figure out what that address is.  What happens if an
+>>>>ELF binary (or interpreter) wants to load something at the chosen
+>>>>address?
+>>>>
+>>>>--Andy
+>>>
+>>> --
+>>> Sent from my mobile phone.  Please pardon brevity and lack of
+>>formatting.
+>
+> --
+> Sent from my mobile phone.  Please pardon brevity and lack of formatting.
 
- drivers/spi/Kconfig             |  13 +++
- drivers/spi/Makefile            |   1 +
- drivers/spi/spi-xtensa-xtfpga.c | 170 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 184 insertions(+)
- create mode 100644 drivers/spi/spi-xtensa-xtfpga.c
 
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 581ee2a..e3f5335 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -520,6 +520,19 @@ config SPI_XILINX
- 
- 	  Or for the DS570, see "XPS Serial Peripheral Interface (SPI) (v2.00b)"
- 
-+config SPI_XTENSA_XTFPGA
-+	tristate "Xtensa SPI controller for xtfpga"
-+	depends on XTENSA && XTENSA_PLATFORM_XTFPGA
-+	select SPI_BITBANG
-+	help
-+	  SPI driver for xtfpga SPI master controller.
-+
-+	  This simple SPI master controller is built into xtfpga bitstreams
-+	  and is used to control daughterboard audio codec. It always transfers
-+	  16 bit words in SPI mode 0, automatically asserting CS on transfer
-+	  start and deasserting on end.
-+
-+
- config SPI_NUC900
- 	tristate "Nuvoton NUC900 series SPI"
- 	depends on ARCH_W90X900
-diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 95af48d..5379ade 100644
---- a/drivers/spi/Makefile
-+++ b/drivers/spi/Makefile
-@@ -79,3 +79,4 @@ obj-$(CONFIG_SPI_TOPCLIFF_PCH)		+= spi-topcliff-pch.o
- obj-$(CONFIG_SPI_TXX9)			+= spi-txx9.o
- obj-$(CONFIG_SPI_XCOMM)		+= spi-xcomm.o
- obj-$(CONFIG_SPI_XILINX)		+= spi-xilinx.o
-+obj-$(CONFIG_SPI_XTENSA_XTFPGA)		+= spi-xtensa-xtfpga.o
-diff --git a/drivers/spi/spi-xtensa-xtfpga.c b/drivers/spi/spi-xtensa-xtfpga.c
-new file mode 100644
-index 0000000..41e1581
---- /dev/null
-+++ b/drivers/spi/spi-xtensa-xtfpga.c
-@@ -0,0 +1,170 @@
-+/*
-+ * Xtensa xtfpga SPI controller driver
-+ *
-+ * Copyright (c) 2014 Cadence Design Systems Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/spi/spi.h>
-+#include <linux/spi/spi_bitbang.h>
-+
-+#define XTFPGA_SPI_NAME "xtfpga_spi"
-+
-+#define XTFPGA_SPI_START	0x0
-+#define XTFPGA_SPI_BUSY		0x4
-+#define XTFPGA_SPI_DATA		0x8
-+
-+#define BUSY_WAIT_US		100
-+
-+struct xtfpga_spi {
-+	struct spi_bitbang bitbang;
-+	void __iomem *regs;
-+	u32 data;
-+	unsigned data_sz;
-+};
-+
-+static inline void xtfpga_spi_write32(const struct xtfpga_spi *spi,
-+				      unsigned addr, u32 val)
-+{
-+	iowrite32(val, spi->regs + addr);
-+}
-+
-+static inline unsigned int xtfpga_spi_read32(const struct xtfpga_spi *spi,
-+					     unsigned addr)
-+{
-+	return ioread32(spi->regs + addr);
-+}
-+
-+static inline void xtfpga_spi_wait_busy(struct xtfpga_spi *xspi)
-+{
-+	unsigned i;
-+	for (i = 0; xtfpga_spi_read32(xspi, XTFPGA_SPI_BUSY) &&
-+	     i < BUSY_WAIT_US; ++i)
-+		udelay(1);
-+	WARN_ON_ONCE(i == BUSY_WAIT_US);
-+}
-+
-+static u32 xtfpga_spi_txrx_word(struct spi_device *spi, unsigned nsecs,
-+				u32 v, u8 bits)
-+{
-+	struct xtfpga_spi *xspi = spi_master_get_devdata(spi->master);
-+
-+	xspi->data = (xspi->data << bits) | (v & GENMASK(bits - 1, 0));
-+	xspi->data_sz += bits;
-+	if (xspi->data_sz >= 16) {
-+		xtfpga_spi_write32(xspi, XTFPGA_SPI_DATA,
-+				   xspi->data >> (xspi->data_sz - 16));
-+		xspi->data_sz -= 16;
-+		xtfpga_spi_write32(xspi, XTFPGA_SPI_START, 1);
-+		xtfpga_spi_wait_busy(xspi);
-+		xtfpga_spi_write32(xspi, XTFPGA_SPI_START, 0);
-+	}
-+
-+	return 0;
-+}
-+
-+static void xtfpga_spi_chipselect(struct spi_device *spi, int is_on)
-+{
-+	struct xtfpga_spi *xspi = spi_master_get_devdata(spi->master);
-+
-+	WARN_ON(xspi->data_sz != 0);
-+	xspi->data_sz = 0;
-+}
-+
-+static int xtfpga_spi_probe(struct platform_device *pdev)
-+{
-+	struct xtfpga_spi *xspi;
-+	struct resource *mem;
-+	int ret;
-+	struct spi_master *master;
-+
-+	master = spi_alloc_master(&pdev->dev, sizeof(struct xtfpga_spi));
-+	if (!master)
-+		return -ENOMEM;
-+
-+	master->flags = SPI_MASTER_NO_RX;
-+	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(1, 16);
-+	master->bus_num = pdev->dev.id;
-+	master->dev.of_node = pdev->dev.of_node;
-+
-+	xspi = spi_master_get_devdata(master);
-+	xspi->bitbang.master = master;
-+	xspi->bitbang.chipselect = xtfpga_spi_chipselect;
-+	xspi->bitbang.txrx_word[SPI_MODE_0] = xtfpga_spi_txrx_word;
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem) {
-+		dev_err(&pdev->dev, "No memory resource\n");
-+		ret = -ENODEV;
-+		goto err;
-+	}
-+	xspi->regs = devm_ioremap_resource(&pdev->dev, mem);
-+	if (IS_ERR(xspi->regs)) {
-+		ret = PTR_ERR(xspi->regs);
-+		goto err;
-+	}
-+
-+	xtfpga_spi_write32(xspi, XTFPGA_SPI_START, 0);
-+	usleep_range(1000, 2000);
-+	if (xtfpga_spi_read32(xspi, XTFPGA_SPI_BUSY)) {
-+		dev_err(&pdev->dev, "Device stuck in busy state\n");
-+		ret = -EBUSY;
-+		goto err;
-+	}
-+
-+	ret = spi_bitbang_start(&xspi->bitbang);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "spi_bitbang_start failed\n");
-+		goto err;
-+	}
-+
-+	platform_set_drvdata(pdev, master);
-+	return 0;
-+err:
-+	spi_master_put(master);
-+	return ret;
-+}
-+
-+static int xtfpga_spi_remove(struct platform_device *pdev)
-+{
-+	struct spi_master *master = platform_get_drvdata(pdev);
-+	struct xtfpga_spi *xspi = spi_master_get_devdata(master);
-+
-+	spi_bitbang_stop(&xspi->bitbang);
-+	spi_master_put(master);
-+
-+	return 0;
-+}
-+
-+MODULE_ALIAS("platform:" XTFPGA_SPI_NAME);
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id xtfpga_spi_of_match[] = {
-+	{ .compatible = "cdns,xtfpga-spi", },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, xtfpga_spi_of_match);
-+#endif
-+
-+static struct platform_driver xtfpga_spi_driver = {
-+	.probe = xtfpga_spi_probe,
-+	.remove = xtfpga_spi_remove,
-+	.driver = {
-+		.name = XTFPGA_SPI_NAME,
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(xtfpga_spi_of_match),
-+	},
-+};
-+module_platform_driver(xtfpga_spi_driver);
-+
-+MODULE_AUTHOR("Max Filippov <jcmvbkbc@gmail.com>");
-+MODULE_DESCRIPTION("xtensa xtfpga SPI driver");
-+MODULE_LICENSE("GPL");
+
 -- 
-1.8.1.4
-
+Andy Lutomirski
+AMA Capital Management, LLC
