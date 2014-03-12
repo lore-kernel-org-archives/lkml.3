@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442AbaCLMso (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 08:48:44 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:43433 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227AbaCLMsm (ORCPT
+	id S1753563AbaCLMtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 08:49:17 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47608 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213AbaCLMtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 08:48:42 -0400
-Date: Wed, 12 Mar 2014 12:48:35 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "DCG_UPD_stlinux_kernel@list.st.com" 
-	<DCG_UPD_stlinux_kernel@list.st.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH v2 1/3] ata: ahci_st: Provide DT bindings for ST's SATA
- implementation
-Message-ID: <20140312124835.GA22450@lee--X1>
-References: <1393328481-7251-1-git-send-email-lee.jones@linaro.org>
- <20140312114257.GA17461@e106331-lin.cambridge.arm.com>
+	Wed, 12 Mar 2014 08:49:15 -0400
+Date: Wed, 12 Mar 2014 12:49:01 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: linux-xtensa@linux-xtensa.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Message-ID: <20140312124901.GQ28112@sirena.org.uk>
+References: <1394626865-15105-1-git-send-email-jcmvbkbc@gmail.com>
+ <1394626865-15105-2-git-send-email-jcmvbkbc@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NckIF66D29mqubFO"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140312114257.GA17461@e106331-lin.cambridge.arm.com>
+In-Reply-To: <1394626865-15105-2-git-send-email-jcmvbkbc@gmail.com>
+X-Cookie: Oh no, not again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/3] spi: add xtfpga SPI controller driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +This binding describes a SATA device.
-> > +
-> > +Required properties:
-> > + - compatible	   : Must be "st,ahci"
-> 
-> Is there not a more specific name? This is awfully generic.
 
-There isn't one. ST only have one AHCI driver. The driver is named as
-generically.
+--NckIF66D29mqubFO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > + - reg		   : Physical base addresses and length of register sets
-> > + - interrupts	   : Interrupt associated with the SATA device
-> > + - interrupt-names :   Associated name must be; "hostc"
-> > + - resets	   : The power-down and soft-reset lines of SATA IP
-> > + - reset-names	   :   Associated names must be; "pwr-dwn" and "sw-rst"
-> 
-> Get rid of the semicolon, it makes this harder to read. Same for the
-> other -names proeprties.
+On Wed, Mar 12, 2014 at 04:21:03PM +0400, Max Filippov wrote:
 
-Sure.
+> +	case 16:
+> +		/* Bytes that should go out earlier have lower addresses,
+> +		 * but the hardware operates with 16 bit words and transmits
+> +		 * higher bits first. Thus data in memory is in BE order.
+> +		 */
+> +		xspi->data = (xspi->data << 16) | be16_to_cpu(v);
+> +		xspi->data_sz += 2;
+> +		break;
 
-> > + - clocks	   : The phandle for the clock
-> > + - clock-names	   :   Associated name must be; "ahci_clk"
-> > + - phys		   : The phandle for the PHY device
-> > + - phy-names	   :   Associated name must be; "ahci_phy"
-> 
-> This looks sane, but I'd like to see a more specific description and
-> compatible string.
+Are you sure you need to do this byte swap?  SPI words are big endian so
+if you are running on a little endian processor if you are transmitting
+16 bit words you should see the data getting swapped on the bus (this is
+why I say you should never have more than 8 bits per word for regmap).
 
-Specific description in what sense?
+--NckIF66D29mqubFO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-"This binding describes a SATA device."
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-to
+iQIcBAEBAgAGBQJTIFe5AAoJELSic+t+oim9oVQP/RrJLM2g8TR6xGpJAxppmMIT
+XAy0MDJLEA60MVKEnCZdmvniijoB/hcxBXGoO7prUZNKYXbyHyC9LK4YrdwWW0S3
+xhn2mYMw4GBVxNYK6VQW/AT6gNmqLdcuhBcWzjcrBJKYR2e227ZwhSFzPORYI6rT
+IKUVpBWd4P/tFOZBYtGSJc4/8DMx+aZNbxQqWD62zsu1jNy7375ysvqFfLS5FXxC
+8Hb1S+UjK7pY/zxKxXh6FgIyrtQ6n0CALGC27x1cfMz6LSmbhiyrP7rKSDNZjZ/c
+TNBNJitc2GZmVx8jDGTaCJ4DxPMUhFgSBbgcZ9MZkivz0l+gbTyhOSfQuDYVASLZ
+lRwwi/gscngCR75M0zP4GnXfJdZcwCfUNqx8QXi5sZuEuCCVp5RvU+/qHyT0AmxR
+BiStg9zIaAm2D6IU2zhjigJ0MxTJwm7GwbvihPx76UxiAi1TQ0gY+EnARi7oKRD4
+i+RnWwFi+F3U8uC8WWqb2KfNMn+SV1ZkT/Uzo/bB6ZpAywtU4CE1TYK7RFIYmIIB
+KeZfppHCiIhSjV1naMwENySyhLdvDpm9cwFzGhQrm9B+zsF7k/6D3rwM/1PdqcB5
+LMCfrdYWSxT1RaN0Q6TAR22ZFlyM5hetAbB1hoXzRnLZwHrnNn0YGmc7Rlr57+VJ
+tvEGpdDGbbbwXyP2LIDM
+=QloZ
+-----END PGP SIGNATURE-----
 
-"This binding describes ST's SATA device." ?
-
-> > +Example:
-> > +
-> > +	sata0: sata@fe380000 {
-> > +		compatible      = "st,ahci";
-> > +		reg             = <0xfe380000 0x1000>;
-> > +		interrupts      = <GIC_SPI 157 IRQ_TYPE_NONE>;
-> > +		interrupt-names = "hostc";
-> > +		phys	        = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
-> > +		phy-names       = "ahci_phy";
-> > +		resets	        = <&powerdown STIH416_SATA0_POWERDOWN>,
-> > +				  <&softreset STIH416_SATA0_SOFTRESET>;
-> > +		reset-names     = "pwr-dwn", "sw-rst";
-> > +		clocks	        = <&CLK_S_ICN_REG_0>;
-> > +		clock-names     = "ahci_clk";
-> > +	};
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--NckIF66D29mqubFO--
