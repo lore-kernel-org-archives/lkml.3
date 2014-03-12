@@ -1,104 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053AbaCLLn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 07:43:27 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40387 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751389AbaCLLnZ (ORCPT
+	id S1754159AbaCLLn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 07:43:59 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:64691 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898AbaCLLn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 07:43:25 -0400
-Date: Wed, 12 Mar 2014 11:42:57 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "DCG_UPD_stlinux_kernel@list.st.com" 
-	<DCG_UPD_stlinux_kernel@list.st.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH v2 1/3] ata: ahci_st: Provide DT bindings for ST's SATA
- implementation
-Message-ID: <20140312114257.GA17461@e106331-lin.cambridge.arm.com>
-References: <1393328481-7251-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393328481-7251-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 12 Mar 2014 07:43:57 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-15-5320487be55a
+Message-id: <5320487B.1090908@samsung.com>
+Date: Wed, 12 Mar 2014 20:43:55 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk
+Subject: Re: [PATCHv2 0/5] ARM: dts: exynos: Add missing dt data to bring
+ kernel of Exynos4x12
+References: <1394605156-7768-1-git-send-email-cw00.choi@samsung.com>
+ <53204328.7070607@samsung.com>
+In-reply-to: <53204328.7070607@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsWyRsSkULfaQyHYoGG9ksX8I+dYLc69Wslo
+	0bvgKpvF2aY37BabHl9jtbi8aw6bxYzz+5gsbl/mtVh6/SKTxYTpa1ksXh1sY7FYP+M1iwOP
+	x5p5axg9Wpp72DxWLv/C5rF5Sb1H35ZVjB6fN8l5bJwbGsAexWWTkpqTWZZapG+XwJWx6IlM
+	wW3+ir//mhkbGK/wdDFyckgImEhsXHOCEcIWk7hwbz1bFyMXh5DAUkaJpUv7WbsYOcCKPu3N
+	hYgvYpR4/vAKK4TzilHizI9p7CDdvAJaEg/n3WADsVkEVCXm7JnCCmKzAcX3v4CIiwqESayc
+	foUFol5Q4sfke2C2iICKxOVT0xlBhjILbGeSOHVkNliDsECCxIIZC5hBbCGBVIkP/9rAbE4B
+	bYmlX3qZQGxmAR2J/a3T2CBseYnNa94ygwySEGjlkFh4cTc7xEUCEt8mH2KBeEdWYtMBZoiX
+	JSUOrrjBMoFRbBaSm2YhGTsLydgFjMyrGEVTC5ILipPSi0z1ihNzi0vz0vWS83M3MQLj9vS/
+	ZxN3MN4/YH2IMRlo5URmKdHkfGDc55XEGxqbGVmYmpgaG5lbmpEmrCTOm/4oKUhIID2xJDU7
+	NbUgtSi+qDQntfgQIxMHp1QDo0qidFVCo1SuxbkIffVNWlf6flrUiC0x0ttwI/+nwdLEnCQP
+	Q8XPm9nnTeq3qHy8s/gMe8apNt+mq+Zp0fvf7/jjLXR+pdsuixuT5G58ZbUQ06zPX3vl16dN
+	q0KKPOUmr7D0MDZauqr+rOhnHt1f+XzV7EcerTQWmNn5/O/J3os7JzAo9hb/UGIpzkg01GIu
+	Kk4EAJ4b23/xAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNKsWRmVeSWpSXmKPExsVy+t9jAd1qD4Vgg2WfJC3mHznHanHu1UpG
+	i94FV9kszja9YbfY9Pgaq8XlXXPYLGac38dkcfsyr8XS6xeZLCZMX8ti8epgG4vF+hmvWRx4
+	PNbMW8Po0dLcw+axcvkXNo/NS+o9+rasYvT4vEnOY+Pc0AD2qAZGm4zUxJTUIoXUvOT8lMy8
+	dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygO5UUyhJzSoFCAYnFxUr6dpgmhIa4
+	6VrANEbo+oYEwfUYGaCBhDWMGYueyBTc5q/4+6+ZsYHxCk8XIweHhICJxKe9uV2MnECmmMSF
+	e+vZuhi5OIQEFjFKPH94hRXCecUocebHNHaQKl4BLYmH826wgdgsAqoSc/ZMYQWx2YDi+19A
+	xEUFwiRWTr/CAlEvKPFj8j0wW0RAReLyqemMIEOZBbYzSZw6MhusQVggQWLBjAXMILaQQKrE
+	h39tYDangLbE0i+9TCA2s4COxP7WaWwQtrzE5jVvmScwCsxCsmMWkrJZSMoWMDKvYhRNLUgu
+	KE5KzzXSK07MLS7NS9dLzs/dxAhOCs+kdzCuarA4xCjAwajEw7tQUz5YiDWxrLgy9xCjBAez
+	kgjvLluFYCHelMTKqtSi/Pii0pzU4kOMycAgmMgsJZqcD0xYeSXxhsYmZkaWRuaGFkbG5qQJ
+	K4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXA2P/gBb9+iGPMpF9C81sCRSZ/ObDa4uH6ZzuW
+	9b7Xb+5ZOvtfSMnd2/knrR+c7v162fvNFaF1V6ZN4cg0+CoZ3+q2VsbqHYeA3ILE049S597Z
+	vlPiA2Nynqdk+U/GeTMfFQZYO/oUN//jvqAoVtytwfPn2+T3pwM9Lr/f9llh9/nLzDLXWPlX
+	XVdiKc5INNRiLipOBADbdOdDTgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 11:41:19AM +0000, Lee Jones wrote:
-> Cc: devicetree@vger.kernel.org
-> Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  Documentation/devicetree/bindings/ata/ahci-st.txt | 31 +++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/ata/ahci-st.txt
+Hi Tomasz,
+
+On 03/12/2014 08:21 PM, Tomasz Figa wrote:
+> Hi Chanwoo,
 > 
-> diff --git a/Documentation/devicetree/bindings/ata/ahci-st.txt b/Documentation/devicetree/bindings/ata/ahci-st.txt
-> new file mode 100644
-> index 0000000..1b69fa9
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/ata/ahci-st.txt
-> @@ -0,0 +1,31 @@
-> +STMicroelectronics STi SATA controller
-
-Is that a family name or a particular device?
-
-> +
-> +This binding describes a SATA device.
-> +
-> +Required properties:
-> + - compatible	   : Must be "st,ahci"
-
-Is there not a more specific name? This is awfully generic.
-
-> + - reg		   : Physical base addresses and length of register sets
-> + - interrupts	   : Interrupt associated with the SATA device
-> + - interrupt-names :   Associated name must be; "hostc"
-> + - resets	   : The power-down and soft-reset lines of SATA IP
-> + - reset-names	   :   Associated names must be; "pwr-dwn" and "sw-rst"
-
-Get rid of the semicolon, it makes this harder to read. Same for the
-other -names proeprties.
-
-> + - clocks	   : The phandle for the clock
-> + - clock-names	   :   Associated name must be; "ahci_clk"
-> + - phys		   : The phandle for the PHY device
-> + - phy-names	   :   Associated name must be; "ahci_phy"
-
-This looks sane, but I'd like to see a more specific description and
-compatible string.
-
-Cheers,
-Mark.
-
-> +
-> +Example:
-> +
-> +	sata0: sata@fe380000 {
-> +		compatible      = "st,ahci";
-> +		reg             = <0xfe380000 0x1000>;
-> +		interrupts      = <GIC_SPI 157 IRQ_TYPE_NONE>;
-> +		interrupt-names = "hostc";
-> +		phys	        = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
-> +		phy-names       = "ahci_phy";
-> +		resets	        = <&powerdown STIH416_SATA0_POWERDOWN>,
-> +				  <&softreset STIH416_SATA0_SOFTRESET>;
-> +		reset-names     = "pwr-dwn", "sw-rst";
-> +		clocks	        = <&CLK_S_ICN_REG_0>;
-> +		clock-names     = "ahci_clk";
-> +	};
-> -- 
-> 1.8.3.2
+> On 12.03.2014 07:19, Chanwoo Choi wrote:
+>> This patch add missing dt data of Exynos4x12 to bring up kernel feature and
+>> code clean. This patchset is based on 'v3.15-next/dt-clk-exynos' branch.
+>> - git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+>>
+>> exynos4x12/exynos4412/exynos4212.dtsi
+>> - Add ADC (Analog and Digital Converter) to get raw data
+>> - Add PMU (Performance Monitoring Unit) for perf event
+>> - Add gps_alive power domain to remove power leakage when gps-alive isn't used
+>> - Remove duplicate dt data of interrput combiner controller
+>>
+>> exynos4412-trats.dts
+>> - Add ADC dt data with ntc thermistor child to read temperature
+>>
+>> Changes from v1:
+>> - Use clock macro name for Exynos4 instead of constant for ADC
+>> - Remove unnecessary description about patch content
+>> - Move gps-alive power domain's dt data from exynos4x12.dts to exynos4.dts
+>> - Move thermistor dt node outside of ADC dt node and modify node name of thermistor
+>>
+>> Chanwoo Choi (5):
+>>    ARM: dts: exynos4x12: Add ADC's dt data to read raw data
+>>    ARM: dts: exynos4x12: Add PMU dt data to support PMU(Perforamnce Monitoring Unit)
+>>    ARM: dts: exynos4x12: Add GPS_ALIVE power domain
+>>    ARM: dts: exynos: Move common dt data for interrupt combiner controller
+>>    ARM: dts: exynos4412-trats2: Add ADC/themistor dt data to get temperature of SoC/battery
+>>
+>>   arch/arm/boot/dts/exynos4.dtsi          |  5 +++++
+>>   arch/arm/boot/dts/exynos4212.dtsi       | 13 ++++---------
+>>   arch/arm/boot/dts/exynos4412-trats2.dts | 21 +++++++++++++++++++++
+>>   arch/arm/boot/dts/exynos4412.dtsi       | 14 ++++----------
+>>   arch/arm/boot/dts/exynos4x12.dtsi       | 26 ++++++++++++++++++++++++++
+>>   5 files changed, 60 insertions(+), 19 deletions(-)
+>>
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 > 
+
+Thanks for your review.
+
+Best Regards,
+Chanwoo Choi
+
