@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553AbaCLG6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 02:58:47 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:34178 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756489AbaCLG6k convert rfc822-to-8bit (ORCPT
+	id S1756528AbaCLHFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 03:05:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48506 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756419AbaCLHFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 02:58:40 -0400
-Date: Wed, 12 Mar 2014 07:58:37 +0100
-From: Christian Riesch <christian.riesch@omicron.at>
-To: Richard Cochran <richardcochran@gmail.com>,
-        =?UTF-8?Q?S=C3=B8rensen=2C?= <Stefan.Sorensen@spectralink.com>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhutchings@solarflare.com, davem@davemloft.net
-Subject: Re: [PATCH RFC net-next v1 0/9] ptp: dynamic pin control
-Message-ID: <E9E8485F5E84770575AD1FAB@[172.22.2.41]>
-In-Reply-To: <20140310134227.GB19781@netboy>
-References: <cover.1394307303.git.richardcochran@gmail.com>
- <1394455974.2296.22.camel@e37108.spectralink.com>
- <20140310134227.GB19781@netboy>
-X-Mailer: Mulberry/4.0.8 (Win32)
+	Wed, 12 Mar 2014 03:05:39 -0400
+Date: Wed, 12 Mar 2014 08:05:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, sfr@canb.auug.org.au,
+        hpa@zytor.com
+Subject: Re: [PATCH v2] perf/x86/uncore: fix compilation warning in
+ snb_uncore_imc_init_box()
+Message-ID: <20140312070523.GL30956@twins.programming.kicks-ass.net>
+References: <20140311235329.GA28624@quad>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140311235329.GA28624@quad>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+On Wed, Mar 12, 2014 at 12:53:30AM +0100, Stephane Eranian wrote:
+>  #ifdef CONFIG_PHYS_ADDR_T_64BIT
+> -	pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET+4, &addr_hi);
+> -	addr = ((resource_size_t)addr_hi << 32) | addr_lo;
+> +	  pci_read_config_dword(pdev, where + 4, &pci_dword);
+> +	  addr |= ((resource_size_t)pci_dword << 32);
+>  #endif
 
---On March 10, 2014 14:42 +0100 Richard Cochran <richardcochran@gmail.com> 
-wrote:
+Indent fail there; fixed it.
 
-> On Mon, Mar 10, 2014 at 12:52:57PM +0000, Sørensen, Stefan wrote:
->>
->> What are the n_ext_ts and n_per_out supposed to be set to now? The
->> number of pins configured for the relevant function or the number of
->> channels that are available for the function?
->
-> They are the number of available functions. This is not necessarily the
-> same as the number of pins. Many chips have more functions than pins.
->
->> The implementation is limited to a single function for each pin - the
->> dp83640 supports an ext_ts and several periodic outputs on the same pin,
->> but I do not see that many real-world uses.
->
-> Yes, it does support different functions on a single pin, but not at
-> the same time.  You have to choose what function you want on each pin,
-> and that is what the new ioctl lets you do.
->
-> I did not change the n_per_out in this series,
+FWIW; I thought of an even more horrible solution:
 
-Why not? I think it would be a good idea to set both n_ext_ts and n_per_out 
-to the correct value right from the start (8, right?).
-Christian
+	resource_size_t addr;
+	u32 *addr_ptr = &addr;
 
-> but once this basic
-> support gets merged, then you will be able to increase n_per_out for
-> the dp83640 with little extra effort.
+	pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET, &addr_ptr[0]);
+#ifdef ..
+	pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET+4, &addr_ptr[1]);
+#endif
+
+:-)
