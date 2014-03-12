@@ -1,180 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996AbaCLAKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 20:10:34 -0400
-Received: from [207.46.163.142] ([207.46.163.142]:57485 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755047AbaCLAKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 20:10:32 -0400
-Message-ID: <1394582923.13761.81.camel@snotra.buserror.net>
-Subject: Re: [PATCH 7/9] fsl: add EPU FSM configuration for deep sleep
-From: Scott Wood <scottwood@freescale.com>
-To: Chenhui Zhao <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>, <Jason.Jin@freescale.com>
-Date: Tue, 11 Mar 2014 19:08:43 -0500
-In-Reply-To: <1394168285-32275-7-git-send-email-chenhui.zhao@freescale.com>
-References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
-	 <1394168285-32275-7-git-send-email-chenhui.zhao@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	id S1755997AbaCLAOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 20:14:30 -0400
+Received: from mdfmta010.mxout.tbr.inty.net ([91.221.168.51]:49212 "EHLO
+	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755722AbaCLAO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 20:14:29 -0400
+X-Greylist: delayed 420 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Mar 2014 20:14:28 EDT
+Message-ID: <531FA54F.5020109@lougher.demon.co.uk>
+Date: Wed, 12 Mar 2014 00:07:43 +0000
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
+To: Lasse Collin <lasse.collin@tukaani.org>
+CC: Phillip Lougher <phillip@lougher.demon.co.uk>,
+        Kyle McMartin <kyle@infradead.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] xz: make XZ_DEC_BCJ filters non-optional
+References: <20140228230017.GE14970@merlin.infradead.org> <20140303145137.70819698@tukaani.org> <CAGVrzcZ7KU-m9s9KgoigK+WdSqeqwEmm=_pY6qF=ep2vFp6WUg@mail.gmail.com> <20140304202038.03b36109@tukaani.org> <53169123.4020909@lougher.demon.co.uk> <20140305182422.767a6cbe@tukaani.org>
+In-Reply-To: <20140305182422.767a6cbe@tukaani.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: DM2PR06CA013.namprd06.prod.outlook.com (10.141.154.161)
- To DM2PR03MB400.namprd03.prod.outlook.com (10.141.84.153)
-X-Forefront-PRVS: 01480965DA
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377424004)(51704005)(24454002)(199002)(189002)(74366001)(47776003)(85852003)(79102001)(19580395003)(31966008)(88136002)(92566001)(69226001)(20776003)(51856001)(95416001)(59766001)(56816005)(81686001)(90146001)(63696002)(77096001)(74876001)(83072002)(87976001)(77982001)(46102001)(83322001)(93516002)(19580405001)(85306002)(95666003)(97336001)(33646001)(81342001)(81542001)(93136001)(87266001)(97186001)(87286001)(77156001)(42186004)(74662001)(53806001)(89996001)(50466002)(80976001)(23676002)(47736001)(74502001)(47446002)(94316002)(50226001)(49866001)(62966002)(65816001)(50986001)(80022001)(76482001)(93916002)(92726001)(94946001)(76796001)(86362001)(575784001)(76786001)(56776001)(54316002)(47976001)(81816001)(4396001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB400;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:BC9FD676.2832966D.F1DA657E.40E73C6D.203F5;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: freescale.com
+X-MDF-HostID: 9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-07 at 12:58 +0800, Chenhui Zhao wrote:
-> From: Hongbo Zhang <hongbo.zhang@freescale.com>
-> 
-> In the last stage of deep sleep, software will trigger a Finite
-> State Machine (FSM) to control the hardware precedure, such as
-> board isolation, killing PLLs, removing power, and so on.
-> 
-> When the system is waked up by an interrupt, the FSM controls the
-> hardware to complete the early resume precedure.
-> 
-> This patch configure the EPU FSM preparing for deep sleep.
-> 
-> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-> Signed-off-by: Chenhui Zhao <chenhui.zhao@freescale.com>
+On 05/03/14 16:24, Lasse Collin wrote:
+> On 2014-03-05 Phillip Lougher wrote:
+>> (BTW Kyle you should have CC'd me on the patch as a courtesy).
+>
+> I could have done that too but somehow I didn't, sorry.
 
-Couldn't this be part of qoriq_pm.c?
+np
 
-> diff --git a/arch/powerpc/sysdev/fsl_soc.h b/arch/powerpc/sysdev/fsl_soc.h
-> index 9b9a34a..eb83a30 100644
-> --- a/arch/powerpc/sysdev/fsl_soc.h
-> +++ b/arch/powerpc/sysdev/fsl_soc.h
-> @@ -69,5 +69,8 @@ extern const struct fsl_pm_ops *qoriq_pm_ops;
->  
->  extern int fsl_rcpm_init(void);
->  
-> +extern void fsl_dp_fsm_setup(void *dcsr_base);
-> +extern void fsl_dp_fsm_clean(void *dcsr_base);
+>
+>> But speaking as the Squashfs author, the lack of BCJ support for
+>> an architecture creates a subtle failure mode in Squashfs, this is
+>> because not all blocks in a Squashfs filesystem get compressed
+>> with a BCJ filter.  At compression time each block is compressed
+>> without any BCJ filter, and then with the BCJ filter(s) selected on
+>> the command line, and the best compression for *that* block is
+>> chosen.  What this means is kernels without a particular
+>> BCJ filter can still read the Squashfs metadata (mount, ls etc.) and
+>> read many of the files, it is only some files that mysteriously
+>> fail with decompression error.  As such this will be (and has been)
+>> invariably treated as a bug in Squashfs.
+>
+> There is an easy way to make Squashfs give an error message in the
+> kernel log. xz_dec_run() gives XZ_OPTIONS_ERROR when valid-looking but
+> unsupported input is detected. Currently Squashfs treats all error
+> codes from xz_dec_run() the same way so the reason for the
+> decompression error is silently lost.
 
-__iomem
+Yes, that is deliberate.  It's to give a generic easy to understand
+error message for potentially novice users that may be running
+Linux from LiveCDs.
 
+When I wrote the original zlib support for Squashfs, I put in a lot
+of debug information in the zlib error messages, e.g.
+
+                        ERROR("zlib_inflate returned unexpected result"
+                                " 0x%x, srclength %d, avail_in %d,"
+                                " avail_out %d\n", zlib_err, srclength,
+                                msblk->stream.avail_in,
+                                msblk->stream.avail_out);
+
+But after mainlining Squashfs in 2009, I started to get increasing
+complaints that the error messages were too technical (full of
+hex numbers) and confusing to new users - the kind of people who
+maybe burn a corrupt liveCD and then get screenfulls of these
+errors full of different numbers coming up on the screen.  They
+would do a websearch and discover that the errors meant
+"corrupted disk", and then ask why didn't it just say that, and
+not give all those numbers.  Or worse they'd just silently give up
+and go back to Windows.
+
+So in March 2009 I changed it to the error message
+
+ERROR("zlib_inflate error, data probably corrupt\n")
+
+With *no* numbers ... and I copied the same approach for xz.
+
+In kernel 3.13 (released earlier this year) I went further and
+pulled out the error message printing from the compression
+wrappers, and made it a single generic message, because I
+realised there was no longer any decompressor specific error
+handling (just the same message in each wrapper).
+
+ERROR("%s decompression failed, data probably corrupt\n",
+                         msblk->decompressor->name);
+
+Putting back separate error messages into each decompressor wrapper,
+and then putting back different error messages based on the
+error code return seems like a retrograde step because distros don't
+like them.
+
+>
+> Below is an *untested* fix. I'm not sure about the exact wording of the
+> error message, so feel free to improve it.
+>
+> diff -Narup linux-3.14-rc5.orig/fs/squashfs/xz_wrapper.c linux-3.14-rc5/fs/squashfs/xz_wrapper.c
+> --- linux-3.14-rc5.orig/fs/squashfs/xz_wrapper.c	2014-03-03 04:56:16.000000000 +0200
+> +++ linux-3.14-rc5/fs/squashfs/xz_wrapper.c	2014-03-05 18:08:58.729643127 +0200
+> @@ -170,8 +170,13 @@ static int squashfs_xz_uncompress(struct
+>
+>   	squashfs_finish_page(output);
+>
+> -	if (xz_err != XZ_STREAM_END || k < b)
+> +	if (xz_err != XZ_STREAM_END || k < b) {
+> +		if (xz_err == XZ_OPTIONS_ERROR)
+> +			ERROR("Unsupported XZ-compressed data; check the XZ "
+> +					"options in the kernel config\n");
 > +
->  #endif
->  #endif
-> diff --git a/drivers/platform/Kconfig b/drivers/platform/Kconfig
-> index 09fde58..6539e6d 100644
-> --- a/drivers/platform/Kconfig
-> +++ b/drivers/platform/Kconfig
-> @@ -6,3 +6,7 @@ source "drivers/platform/goldfish/Kconfig"
->  endif
->  
->  source "drivers/platform/chrome/Kconfig"
-> +
-> +if FSL_SOC
-> +source "drivers/platform/fsl/Kconfig"
-> +endif
+>   		goto out;
+> +	}
+>
+>   	return total + stream->buf.out_pos;
+>
+>
+>> Moreover, without expert knowledge of Squashfs, and the config
+>> options, most people will not have a clue how to fix the issue.
+>>
+>> This is why I prefer the first option, which is to reinstate
+>> the enabling of all filters by default, and then to allow people
+>> to remove the filters they don't want.
+>
+> I will submit the first option. In the other email Florian Fainelli
+> seemed to be OK with that too.
+>
+>> BTW there is a potential additional fix for Squashfs that will
+>> make its handling of (lack of) BCJ filters more intelligent
+>> at mount time, but this of course only addresses Squashfs,
+>> and it relies on an additional call into XZ being added.  The
+>> BCJ filters specified at filesystem creation are stored in the
+>> compression options part of the superblock, and are known at
+>> mount time.  Squashfs should check that these filters are
+>> supported by the kernel and refuse to mount it otherwise.  This
+>> has not been done because AFAIK there is no way to query XZ to
+>> determine which BCJ filters are supported (beyond passing it a
+>> test stream which is too messy).
+>
+> You can use #ifdef CONFIG_XZ_DEC_X86 and such, although maybe that's
+> not convenient enough.
 
-Chrome doesn't need an ifdef -- why does this?
+Yes, I will try using the XZ config definitions directly in
+Squashfs.
 
-> diff --git a/drivers/platform/Makefile b/drivers/platform/Makefile
-> index 3656b7b..37c6f72 100644
-> --- a/drivers/platform/Makefile
-> +++ b/drivers/platform/Makefile
-> @@ -6,3 +6,4 @@ obj-$(CONFIG_X86)		+= x86/
->  obj-$(CONFIG_OLPC)		+= olpc/
->  obj-$(CONFIG_GOLDFISH)		+= goldfish/
->  obj-$(CONFIG_CHROME_PLATFORMS)	+= chrome/
-> +obj-$(CONFIG_FSL_SOC)		+= fsl/
-> diff --git a/drivers/platform/fsl/Kconfig b/drivers/platform/fsl/Kconfig
-> new file mode 100644
-> index 0000000..72ed053
-> --- /dev/null
-> +++ b/drivers/platform/fsl/Kconfig
-> @@ -0,0 +1,10 @@
-> +#
-> +# Freescale Specific Power Management Drivers
-> +#
-> +
-> +config FSL_SLEEP_FSM
-> +	bool
-> +	help
-> +	  This driver configures a hardware FSM (Finite State Machine) for deep sleep.
-> +	  The FSM is used to finish clean-ups at the last stage of system entering deep
-> +	  sleep, and also wakes up system when a wake up event happens.
-> diff --git a/drivers/platform/fsl/Makefile b/drivers/platform/fsl/Makefile
-> new file mode 100644
-> index 0000000..d99ca0e
-> --- /dev/null
-> +++ b/drivers/platform/fsl/Makefile
-> @@ -0,0 +1,5 @@
-> +#
-> +# Makefile for linux/drivers/platform/fsl
-> +# Freescale Specific Power Management Drivers
-> +#
-> +obj-$(CONFIG_FSL_SLEEP_FSM)	+= sleep_fsm.o
+Thanks
 
-Why is this here while the other stuff is in arch/powerpc/sysdev?
-
-> +/* Block offsets */
-> +#define	RCPM_BLOCK_OFFSET	0x00022000
-> +#define	EPU_BLOCK_OFFSET	0x00000000
-> +#define	NPC_BLOCK_OFFSET	0x00001000
-
-Why don't these block offsets come from the device tree?
-
-> +static void *g_dcsr_base;
-
-__iomem
-
-> +	/* Configure the EPU Counters */
-> +	epu_write(EPCCR15, 0x92840000);
-> +	epu_write(EPCCR14, 0x92840000);
-> +	epu_write(EPCCR12, 0x92840000);
-> +	epu_write(EPCCR11, 0x92840000);
-> +	epu_write(EPCCR10, 0x92840000);
-> +	epu_write(EPCCR9, 0x92840000);
-> +	epu_write(EPCCR8, 0x92840000);
-> +	epu_write(EPCCR5, 0x92840000);
-> +	epu_write(EPCCR4, 0x92840000);
-> +	epu_write(EPCCR2, 0x92840000);
-> +
-> +	/* Configure the SCUs Inputs */
-> +	epu_write(EPSMCR15, 0x76000000);
-> +	epu_write(EPSMCR14, 0x00000031);
-> +	epu_write(EPSMCR13, 0x00003100);
-> +	epu_write(EPSMCR12, 0x7F000000);
-> +	epu_write(EPSMCR11, 0x31740000);
-> +	epu_write(EPSMCR10, 0x65000030);
-> +	epu_write(EPSMCR9, 0x00003000);
-> +	epu_write(EPSMCR8, 0x64300000);
-> +	epu_write(EPSMCR7, 0x30000000);
-> +	epu_write(EPSMCR6, 0x7C000000);
-> +	epu_write(EPSMCR5, 0x00002E00);
-> +	epu_write(EPSMCR4, 0x002F0000);
-> +	epu_write(EPSMCR3, 0x2F000000);
-> +	epu_write(EPSMCR2, 0x6C700000);
-
-Where do these magic numbers come from?  Which chips are they valid for?
-
-> +void fsl_dp_fsm_clean(void *dcsr_base)
-> +{
-> +
-> +	epu_write(EPEVTCR2, 0);
-> +	epu_write(EPEVTCR9, 0);
-> +
-> +	epu_write(EPGCR, 0);
-> +	epu_write(EPECR15, 0);
-> +
-> +	rcpm_write(CSTTACR0, 0);
-> +	rcpm_write(CG1CR0, 0);
-> +
-> +}
-
-Don't put blank lines at the beginning/end of a block.
-
--Scott
+Phillip
 
 
