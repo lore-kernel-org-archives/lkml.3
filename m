@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaCLStD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 14:49:03 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:44072 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaCLStA (ORCPT
+	id S1751917AbaCLSuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 14:50:04 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:39082 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaCLSuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 14:49:00 -0400
-Message-ID: <5320AC16.8030901@gmail.com>
-Date: Wed, 12 Mar 2014 19:48:54 +0100
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+	Wed, 12 Mar 2014 14:50:01 -0400
+X-IronPort-AV: E=Sophos;i="4.97,639,1389744000"; 
+   d="scan'208";a="109293435"
+Message-ID: <5320AC3B.5090704@citrix.com>
+Date: Wed, 12 Mar 2014 18:49:31 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Warner Losh <imp@bsdimp.com>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robherring2@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        dev@linux-sunxi.org
-Subject: Re: [PATCH v3 4/9] of: mtd: add documentation for the ONFI NAND timing
- mode property
-References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com> <1394647664-8258-5-git-send-email-b.brezillon.dev@gmail.com> <F8865D0A-59A7-41A7-AA7F-9B91DF5C8258@gmail.com>
-In-Reply-To: <F8865D0A-59A7-41A7-AA7F-9B91DF5C8258@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Ian Campbell <Ian.Campbell@citrix.com>, David Miller <davem@davemloft.net>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>, <andrew.bennieston@citrix.com>
+Subject: Re: [PATCH net-next v7 0/9] xen-netback: TX grant mapping with SKBTX_DEV_ZEROCOPY
+ instead of copy
+References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>	 <20140307.160552.282750558679341658.davem@davemloft.net>	 <531B2B3E.5050800@citrix.com>	 <20140308.185759.494043114567727021.davem@davemloft.net> <1394638843.3457.11.camel@kazak.uk.xensource.com>
+In-Reply-To: <1394638843.3457.11.camel@kazak.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 12/03/2014 19:27, Warner Losh a écrit :
-> On Mar 12, 2014, at 12:07 PM, Boris BREZILLON <b.brezillon.dev@gmail.com> wrote:
->
->> Add documentation for the ONFI NAND timing mode property.
-> I don’t see a Toggle/JEDEC mode timing property. Will that be defined for Toshiba, Samsung
-> and San Disk flash? Or will this be limited to Micron, Intel and Hynix (the only ones
-> supporting ONFI)?
-
-There is currently no Toggle/JEDEC timing mode support, and I don't know 
-what these
-timing modes describe.
-But I guess they can be converted to standard timings described in 
-nand_sdr_timings
-struct (or in your case in the future nand_ddr_timings struct).
-
-Could you check that the timings described by these modes use the same 
-naming convention
-as those defined in the ONFI specification 
-(www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf
-  chapter 4.15.4) ?
-
-If this is the case, we can define a new DT property and new converters.
-
-Best Regards,
-
-Boris
-
-> Warner
->
->
->> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
->> ---
->> Documentation/devicetree/bindings/mtd/nand.txt |    8 ++++++++
->> 1 file changed, 8 insertions(+)
+On 12/03/14 15:40, Ian Campbell wrote:
+> On Sat, 2014-03-08 at 18:57 -0500, David Miller wrote:
+>> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> Date: Sat, 8 Mar 2014 14:37:50 +0000
 >>
->> diff --git a/Documentation/devicetree/bindings/mtd/nand.txt b/Documentation/devicetree/bindings/mtd/nand.txt
->> index b53f92e..2046027 100644
->> --- a/Documentation/devicetree/bindings/mtd/nand.txt
->> +++ b/Documentation/devicetree/bindings/mtd/nand.txt
->> @@ -19,3 +19,11 @@ errors per {size} bytes".
->> The interpretation of these parameters is implementation-defined, so not all
->> implementations must support all possible combinations. However, implementations
->> are encouraged to further specify the value(s) they support.
->> +
->> +- onfi,nand-timing-mode: an integer encoding the supported ONFI timing modes of
->> +  the NAND chip. Each supported mode is represented as a bit position (i.e. :
->> +  mode 0 and 1 => (1 << 0) | (1 << 1) = 0x3).
->> +  This is only used when the chip does not support the ONFI standard.
->> +  The last bit set represent the closest mode fulfilling the NAND chip timings.
->> +  For a full description of the different timing modes see this document:
->> +  www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf
->> -- 
->> 1.7.9.5
+>>> Maybe you mixed up mine with that? But that's also not eligible to be
+>>> applied yet.
 >>
->> --
->> To unsubscribe from this list: send the line "unsubscribe devicetree" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> I can always revert the series if there are major objections.
+>
+> Zoltan -- does this patch series suffer from/expose the confusion
+> regarding RING_HAS_UNCONSUMED_REQUESTS which we are discussing
+> separately on xen-devel? If the answer is yes then I think this series
+> should be reverted for the time being because there seems to be some
+> fairly fundamental questions about the semantics of that macro.
+I haven't seen it causing any issue during my testing, although it went 
+through several XenRT nighlies. That topic 
+("RING_HAS_UNCONSUMED_REQUESTS oddness" on xen-devel) came from 
+theoretical grounds. One outcome of it is that we should move that 
+napi_schedule from the callback to the end of the dealloc thread to be 
+on the safe side. I can post a short patch for that.
+
+>
+> If the answer is no then I will endeavour to review this version of the
+> series ASAP (hopefully tomorrow) and determine if I have any other major
+> objections which would warrant a revert.
+>
+> Ian.
+>
 
