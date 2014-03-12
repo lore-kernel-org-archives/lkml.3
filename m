@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaCLQiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 12:38:55 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:54577 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754838AbaCLQix (ORCPT
+	id S1755590AbaCLQjP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 12:39:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43529 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563AbaCLQjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 12:38:53 -0400
-Date: Wed, 12 Mar 2014 16:38:47 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/5] mfd: add bcm590xx pmu driver
-Message-ID: <20140312163847.GD22450@lee--X1>
-References: <1394633237-16837-1-git-send-email-mporter@linaro.org>
- <1394633237-16837-3-git-send-email-mporter@linaro.org>
+	Wed, 12 Mar 2014 12:39:14 -0400
+Date: Wed, 12 Mar 2014 17:39:15 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: joeyli <jlee@suse.com>
+cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+In-Reply-To: <alpine.DEB.2.02.1403121722030.18573@ionos.tec.linutronix.de>
+Message-ID: <alpine.DEB.2.02.1403121729060.18573@ionos.tec.linutronix.de>
+References: <20140310110410.5b2218f6@ilfaris>  <1394596807.26565.135.camel@linux-s257.site>  <1902317.cSAIh6fs84@vostro.rjw.lan>  <53642014.xoKWERQIvL@vostro.rjw.lan> <1394638899.26565.197.camel@linux-s257.site> <alpine.DEB.2.02.1403121716540.18573@ionos.tec.linutronix.de>
+ <alpine.DEB.2.02.1403121722030.18573@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394633237-16837-3-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Add a driver for the BCM590xx PMU multi-function devices. The driver
-> initially supports regmap initialization and instantiation of the
-> voltage regulator device function of the PMU.
+On Wed, 12 Mar 2014, Thomas Gleixner wrote:
+> On Wed, 12 Mar 2014, Thomas Gleixner wrote:
 > 
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> ---
->  drivers/mfd/Kconfig          |  8 ++++
->  drivers/mfd/Makefile         |  1 +
->  drivers/mfd/bcm590xx.c       | 93 ++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/bcm590xx.h | 31 +++++++++++++++
->  4 files changed, 133 insertions(+)
->  create mode 100644 drivers/mfd/bcm590xx.c
->  create mode 100644 include/linux/mfd/bcm590xx.h
+> > On Wed, 12 Mar 2014, joeyli wrote:
+> > > I think maybe still using ACPI_FADT_NO_CMOS_RTC to check does
+> > > acpi_early_init() need run before timekeeping_init().
+> > > If there have any future machine that applied ACPI TAD but "Fast TSC
+> > > calibration" fail, at least the alternate TSC calibration can work
+> > > around issue.
+> > 
+> > Well, it can work around, but it sucks as it's way slower than the
+> > fast one. And we really don't want to pay that price for some half
+> > baken ACPI nonsense.
+> > 
+> > Why exactly do you need that ACPI stuff before timekeeping_init()?
+> 
+> According to the changelog:
+> 
+>     And, we want accessing ACPI TAD device to set system clock, so move
+>     acpi_early_init() before timekeeping_init(). This final position is
+>     also before efi_enter_virtual_mode().
+> 
+> Why do we need to access that TAD thing (whatever newfangled that is)
+> at this point?
 
-Please don't sent patches that have already been accepted, as can get
-pretty confusing.
+And we have no support for that nonsense in tree, so why do we need to
+disturb functionality which does not need that at all?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+We can revisit the issue when we actually have reached a conclusion
+how to deal with that and when we are merging something which supports
+TAD.
+
+Up to then we really can live without that and put the call just
+before efi_enter_virtual_mode().
+
+Even if the TAD stuff should be used to set system time, you can do so
+way after timekeeping_init() when the proper driver is
+installed. That's how a lot of embedded systems do it today simply
+because they can't access the rtc that early.
+
+There is no point to inflict this ACPI nonsense in early boot. It's
+bad enough that we have to deal with it at all.
+
+Thanks,
+
+	tglx
+
+
