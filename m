@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaCLJMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:12:25 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:54854 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752410AbaCLJMU (ORCPT
+	id S1752791AbaCLJOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 05:14:08 -0400
+Received: from mx08-00178001.pphosted.com ([62.209.51.94]:35349 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751833AbaCLJOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:12:20 -0400
+	Wed, 12 Mar 2014 05:14:05 -0400
+X-Greylist: delayed 1209 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Mar 2014 05:14:04 EDT
 From: Maxime COQUELIN <maxime.coquelin@st.com>
 To: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -21,9 +22,9 @@ To: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
 Cc: lee.jones@linaro.org
-Subject: [PATCH v4 6/6] ARM: dts: STiH407: Add B2120 board support
-Date: Wed, 12 Mar 2014 09:50:10 +0100
-Message-Id: <1394614210-15698-7-git-send-email-maxime.coquelin@st.com>
+Subject: [PATCH v4 3/6] pinctrl: st: add pinctrl support for the STiH407 SoC
+Date: Wed, 12 Mar 2014 09:50:07 +0100
+Message-Id: <1394614210-15698-4-git-send-email-maxime.coquelin@st.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
 References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
@@ -33,129 +34,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B2120 HDK is the reference board for STiH407 SoC.
-It has the following characteristics:
- - 1GB DDR3
- - 8GB eMMC / SD-Card slot
- - 32MB NOR Flash
- - 1 x Gbit Ethernet
- - 1 x USB 3.0 port
- - 1 x Mini-PCIe
- - 1 x SATA
- - 1 x HDMI output
- - 1 x HDMI input
- - 1 x SPDIF
+From: Giuseppe Cavallaro <peppe.cavallaro@st.com>
 
-This patch only introduces basic functionnalities, such as I2C and UART.
+This patch adds the initial support for pinctrl based on H407 SoC.
 
 Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
 Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
 Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
 ---
- arch/arm/boot/dts/Makefile          |  3 +-
- arch/arm/boot/dts/stih407-b2120.dts | 78 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 80 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/stih407-b2120.dts
+ drivers/pinctrl/pinctrl-st.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 12455cf..f760a88 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -317,7 +317,8 @@ dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
- dtb-$(CONFIG_ARCH_STI)+= stih415-b2000.dtb \
- 	stih416-b2000.dtb \
- 	stih415-b2020.dtb \
--	stih416-b2020.dtb
-+	stih416-b2020.dtb \
-+	stih407-b2120.dtb
- dtb-$(CONFIG_ARCH_SUNXI) += \
- 	sun4i-a10-a1000.dtb \
- 	sun4i-a10-cubieboard.dtb \
-diff --git a/arch/arm/boot/dts/stih407-b2120.dts b/arch/arm/boot/dts/stih407-b2120.dts
-new file mode 100644
-index 0000000..9c97da4
---- /dev/null
-+++ b/arch/arm/boot/dts/stih407-b2120.dts
-@@ -0,0 +1,78 @@
-+/*
-+ * Copyright (C) 2014 STMicroelectronics (R&D) Limited.
-+ * Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+#include "stih407.dtsi"
-+/ {
-+	model = "STiH407 B2120";
-+	compatible = "st,stih407", "st,stih407-b2120";
-+
-+	chosen {
-+		bootargs = "console=ttyAS0,115200";
-+		linux,stdout-path = &sbc_serial0;
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x40000000 0x80000000>;
-+	};
-+
-+	aliases {
-+		ttyAS0 = &sbc_serial0;
-+	};
-+
-+	soc {
-+		sbc_serial0: serial@9530000 {
-+			status = "okay";
-+		};
-+
-+		leds {
-+			compatible = "gpio-leds";
-+			red {
-+				#gpio-cells = <2>;
-+				label = "Front Panel LED";
-+				gpios = <&PIO4 1 0>;
-+				linux,default-trigger = "heartbeat";
-+			};
-+			green {
-+				#gpio-cells = <2>;
-+				gpios = <&PIO1 3 0>;
-+				default-state = "off";
-+			};
-+		};
-+
-+		i2c@9842000 {
-+			status = "okay";
-+		};
-+
-+		i2c@9843000 {
-+			status = "okay";
-+		};
-+
-+		i2c@9844000 {
-+			status = "okay";
-+		};
-+
-+		i2c@9845000 {
-+			status = "okay";
-+		};
-+
-+		i2c@9540000 {
-+			status = "okay";
-+		};
-+
-+		/* SSC11 to HDMI */
-+		i2c@9541000 {
-+			status = "okay";
-+			/* HDMI V1.3a supports Standard mode only */
-+			clock-frequency = <100000>;
-+			st,i2c-min-scl-pulse-width-us = <0>;
-+			st,i2c-min-sda-pulse-width-us = <5>;
-+		};
-+	};
+diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+index 7073eaf..39cddaa 100644
+--- a/drivers/pinctrl/pinctrl-st.c
++++ b/drivers/pinctrl/pinctrl-st.c
+@@ -390,6 +390,19 @@ static const struct st_pctl_data  stih416_data = {
+ 	.alt = 0, .oe = 40, .pu = 50, .od = 60, .rt = 100,
+ };
+ 
++static const struct st_pctl_data stih407_flashdata = {
++	.rt_style	= st_retime_style_none,
++	.input_delays	= stih416_delays,
++	.ninput_delays	= ARRAY_SIZE(stih416_delays),
++	.output_delays	= stih416_delays,
++	.noutput_delays = ARRAY_SIZE(stih416_delays),
++	.alt = 0,
++	.oe = -1, /* Not Available */
++	.pu = -1, /* Not Available */
++	.od = 60,
++	.rt = 100,
 +};
++
+ /* Low level functions.. */
+ static inline int st_gpio_bank(int gpio)
+ {
+@@ -1598,6 +1611,10 @@ static struct of_device_id st_pctl_of_match[] = {
+ 	{ .compatible = "st,stih416-rear-pinctrl", .data = &stih416_data},
+ 	{ .compatible = "st,stih416-fvdp-fe-pinctrl", .data = &stih416_data},
+ 	{ .compatible = "st,stih416-fvdp-lite-pinctrl", .data = &stih416_data},
++	{ .compatible = "st,stih407-sbc-pinctrl", .data = &stih416_data},
++	{ .compatible = "st,stih407-front-pinctrl", .data = &stih416_data},
++	{ .compatible = "st,stih407-rear-pinctrl", .data = &stih416_data},
++	{ .compatible = "st,stih407-flash-pinctrl", .data = &stih407_flashdata},
+ 	{ /* sentinel */ }
+ };
+ 
 -- 
 1.9.0
 
