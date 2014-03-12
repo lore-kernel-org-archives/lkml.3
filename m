@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878AbaCLUxD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 16:53:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57765 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752277AbaCLUxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 16:53:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,640,1389772800"; 
-   d="asc'?scan'208";a="471182067"
-Message-ID: <1394657433.2167.5.camel@jtkirshe-mobl>
-Subject: Re: [PATCH net-next 3/9] igb: Convert uses of __constant_<foo> to
- <foo>
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Wed, 12 Mar 2014 13:50:33 -0700
-In-Reply-To: <0eb4523c7e13dc35a6467332e22a24719f7d7041.1394644825.git.joe@perches.com>
-References: <cover.1394644825.git.joe@perches.com>
-	 <0eb4523c7e13dc35a6467332e22a24719f7d7041.1394644825.git.joe@perches.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-KsqZb51VKd9n7Hmn550I"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1752935AbaCLUxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 16:53:13 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:41670 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632AbaCLUxJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 16:53:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFyhS5jCWcxuK4bXKEPh+8HWbPE+gy1m4N9B-2HyT48+QA@mail.gmail.com>
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>
+ <CA+55aFwaWgb-hCfOf8Y_LA+ZAHpTFYU937XN=7T6SxDAdpPzcg@mail.gmail.com>
+ <CALCETrUe0TjzjEo-N2GZkD9DiVbtjretGjTVqiv7U+ZJerWLXQ@mail.gmail.com>
+ <CA+55aFydgX7yejyPq0ckuXabEFhjXO960F=L0-+yYNT=U=Madg@mail.gmail.com>
+ <CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>
+ <CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
+ <CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>
+ <CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>
+ <531F365B.4060000@linux.intel.com> <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
+ <531F3D02.30706@linux.intel.com> <CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>
+ <CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com>
+ <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
+ <1394613046.995.51.camel@wall-e.seibold.net> <CA+55aFyTCoipjhbAVCuhCgqb8JeSjGcmOU3xE6EFrjNpfspfqg@mail.gmail.com>
+ <CA+55aFxc8Qp-4_+n=upd-ghzkxpjCyRpesm3P7xtWjDyBe9MCw@mail.gmail.com> <CA+55aFyhS5jCWcxuK4bXKEPh+8HWbPE+gy1m4N9B-2HyT48+QA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Mar 2014 13:52:48 -0700
+Message-ID: <CALCETrX58yfPHrZnKwgFY=6bihxcjiGn6wNKB+iVOb2QD0f5=w@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stefani Seibold <stefani@seibold.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 12, 2014 at 12:41 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Mar 12, 2014 at 8:46 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>>  - do *not* add the HPET/VVAR page games to the legacy case. Get rid
+>> of the remap_pfn_pages() games entirely.
+>
+> .. actually, another approach would be to do the HPET/VVAR page games,
+> but make them non-legacy.
+>
+> The reason I hate seeing those remap_pfn_range() things is because
+> it's nasty code for a legacy case that I think shouldn't have new code
+> written for it, especially when it won't get testing by developers.
+>
+> So my reaction was "don't do that".
+>
+> But people pointing out that we can't do what x86-64 does made me
+> think: we could avoid the whole "nasty code for a legacy case" by
+> making it the *non*-legacy case. We could get rid of the fixmap
+> HPET/VVAR entirely - on x86-64 (which can use those addresses) a
+> PC-relative addressing is probably actually better anyway, so mapping
+> them together with the vdso code shouldn't hurt.
 
---=-KsqZb51VKd9n7Hmn550I
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I think this is approximately what I was suggesting as a long-term solution :)
 
-On Wed, 2014-03-12 at 10:22 -0700, Joe Perches wrote:
-> The use of __constant_<foo> has been unnecessary for quite awhile now.
->=20
-> Make these uses consistent with the rest of the kernel.
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/net/ethernet/intel/igb/igb_main.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> Together with Andy's "remove legacy 32-bit fixmap vdso", I'd feel that
+> this is actually an _improvement_ to the current situation.
+>
+> Would something like that be more acceptable to everybody?
 
-Thanks Joe, I will add this to my queue.
+I like it.
 
---=-KsqZb51VKd9n7Hmn550I
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+This has the added benefit that the vvar symbols can be ordinary
+symbols as far as the compiler is concerned.  Unfortunately, I don't
+know how to get the linker to play along without hardcoding the
+offsets of all the variables into the linker script.  I'll play around
+a bit.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+--Andy
 
-iQIcBAABCgAGBQJTIMiZAAoJEOVv75VaS+3ON54P/3XiDbOsOys6zkoLOefNIyBR
-Ix4G5ArXFhe4FNkXGuqrcF0b9XL/SOYSCxIVvv4ELuMTcra12e/W8u4ZDLv9/oJE
-+/mnDdKsEh9npric4ZIrPoJHjXQ/G389x7wt6Nmjzkhdn4KRrFBzx9LtwZ3Boc25
-gHTwB7rv/4CyjvHZOBu2Cg7zuWXomc4EbwrTLoTSseFh2IoJjtkFfO5U8p2soRBv
-mXkHD3uSZQEvj+dIzrDLXcHFOzxTUL9dNx0n4p2ERjRgKNKWkt1trCYTP5av5sab
-FC2cqhfpOyUILTGF1CXkaww9IOc5SBzS7+w4uO2L7+WoAIebeX6wdKyllhEv8b8s
-c7I/hA/Z9eS8O5qSLgRQH/xrdLo3droEGda0esMsPOrYQfzLEL3tjETedk5sjUyQ
-LsYjYA2ONmO4McwTjoMHwQYzdLdJWDqUJuwlzLx6da3adQCV+/xjs9spdUJpf2u5
-2jlT4wO3JKl1+L8NclYxnZWy99dVdWN0mH21ih5WMck7Pj2q/OC4Z6YpkgmGtZNP
-OwMzv/y3ZgbqS87KVuyIO/ZDzM6fvb1iL2R0Xxw1j1mxhJud3hjLBfab3l/IjKUf
-ComnXrAiJEVdd5E07tkQ8JiipMZ9ZyinpbKfE4MsUyRRBaOVxTq9PrAPm/N86lMO
-JuJ/DkScmpClLrH84wsF
-=REfh
------END PGP SIGNATURE-----
+It would be nice to get rid of the vvar declaration stuff, too
 
---=-KsqZb51VKd9n7Hmn550I--
+>
+>              Linus
 
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
