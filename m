@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434AbaCLGwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 02:52:08 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:60063 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755412AbaCLGwG (ORCPT
+	id S1756298AbaCLG6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 02:58:12 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:63419 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755425AbaCLG6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 02:52:06 -0400
-From: Alex Shi <alex.shi@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, Alex Shi <alex.shi@linaro.org>
-Subject: [PATCH] sched: clean up task_hot function
-Date: Wed, 12 Mar 2014 14:51:51 +0800
-Message-Id: <1394607111-1904-1-git-send-email-alex.shi@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Wed, 12 Mar 2014 02:58:11 -0400
+X-Original-SENDERIP: 10.186.119.203
+X-Original-MAILFROM: jungsoo.son@lge.com
+From: Jungsoo Son <jungsoo.son@lge.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Jungsoo Son <jungsoo.son@lge.com>, Minchan Kim <minchan@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH] page owners: correct page->order when to free page
+Date: Wed, 12 Mar 2014 15:58:06 +0900
+Message-Id: <1394607486-31493-1-git-send-email-jungsoo.son@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_hot doesn't need the 'sched_domain' parameter, so remove it.
+When I use PAGE_OWNER in mmotm tree, I found a problem that mismatches
+the number of allocated pages. When I investigate, the problem is that
+set_page_order is called for only a head page if freed page is merged to
+a higher order page in the buddy allocator so tail pages of the higher
+order page couldn't be reset to page->order = -1.
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
+It means when we do 'cat /proc/page-owner', it could show wrong
+information.
+
+So page->order should be set to -1 for all the tail pages as well as the
+first page before buddy allocator merges them.
+
+This patch is for clearing page->order of all the tail pages in
+free_pages_prepare() when to free page.
+
+Signed-off-by: Jungsoo Son <jungsoo.son@lge.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- kernel/sched/fair.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/page_alloc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7947c86..00153ad 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4980,7 +4980,7 @@ static void move_task(struct task_struct *p, struct lb_env *env)
-  * Is this task likely cache-hot:
-  */
- static int
--task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
-+task_hot(struct task_struct *p, u64 now)
- {
- 	s64 delta;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index dfbc967..9b946f0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -741,6 +741,13 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
+ 	if (bad)
+ 		return false;
  
-@@ -5141,7 +5141,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- 	 * 2) task is cache cold, or
- 	 * 3) too many balance attempts have failed.
- 	 */
--	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq), env->sd);
-+	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq));
- 	if (!tsk_cache_hot)
- 		tsk_cache_hot = migrate_degrades_locality(p, env);
- 
++#ifdef CONFIG_PAGE_OWNER
++	for (i = 0; i < (1 << order); i++) {
++		struct page *p = (page + i);
++		p->order = -1;
++	}
++#endif
++
+ 	if (!PageHighMem(page)) {
+ 		debug_check_no_locks_freed(page_address(page),
+ 					   PAGE_SIZE << order);
 -- 
-1.8.1.2
+1.7.9.5
 
