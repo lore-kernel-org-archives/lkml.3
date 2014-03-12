@@ -1,208 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410AbaCLWtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 18:49:53 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:63633 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865AbaCLWtv (ORCPT
+	id S1752853AbaCLWwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 18:52:04 -0400
+Received: from www84.your-server.de ([213.133.104.84]:55109 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861AbaCLWwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 18:49:51 -0400
-From: Grant Likely <grant.likely@linaro.org>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh@kernel.org>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH] OF: kobj node lifecycle fixes
-Date: Wed, 12 Mar 2014 22:49:40 +0000
-Message-Id: <1394664580-23130-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 12 Mar 2014 18:52:01 -0400
+From: Stefani Seibold <stefani@seibold.net>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH 3/3] x86, vdso32: handle 32 bit vDSO larger one page
+Date: Wed, 12 Mar 2014 23:51:20 +0100
+Message-Id: <1394664680-17799-4-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394664680-17799-1-git-send-email-stefani@seibold.net>
+References: <1394664680-17799-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
+This patch enables 32 bit vDSO which are larger than a page. Currently
+two pages are reserved, this should be enough for future improvements.
 
-After the move to having device nodes be proper kobjects the lifecycle
-of the node needs to be controlled better.
-
-At first convert of_add_node() in the unflattened functions to
-of_init_node() which initializes the kobject so that of_node_get/put
-work correctly even before of_init is called.
-
-Afterwards introduce of_node_is_initialized & of_node_is_attached that
-query the underlying kobject about the state (attached means kobj
-is visible in sysfs)
-
-Using that make sure the lifecycle of the tree is correct at all
-times.
-
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-[grant.likely: moved of_node_init() calls, fixed up locking, and
-               dropped __of_populate() hunks]
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
+ arch/x86/include/asm/fixmap.h |  4 +++-
+ arch/x86/vdso/vdso32-setup.c  | 29 +++++++++++++++++++----------
+ 2 files changed, 22 insertions(+), 11 deletions(-)
 
-I've reworked Pantelis' patch to work on my tree. Here's the result.
-I've already got this in my tree and will be pushing it out shortly.
-
-g.
-
- drivers/of/base.c  | 35 ++++++++++++++++++++++++++---------
- drivers/of/fdt.c   |  3 +--
- drivers/of/pdt.c   |  3 +--
- include/linux/of.h | 19 +++++++++++++++++++
- 4 files changed, 47 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index ed3e70b84957..7083fad079a6 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -246,10 +246,19 @@ static int __of_node_add(struct device_node *np)
- int of_node_add(struct device_node *np)
- {
- 	int rc = 0;
--	kobject_init(&np->kobj, &of_node_ktype);
+diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+index 094d0cc..f513f14 100644
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -43,6 +43,8 @@ extern unsigned long __FIXADDR_TOP;
+ 
+ #define FIXADDR_USER_START     __fix_to_virt(FIX_VDSO)
+ #define FIXADDR_USER_END       __fix_to_virt(FIX_VDSO - 1)
 +
-+	BUG_ON(!of_node_is_initialized(np));
-+
-+	/*
-+	 * Grab the mutex here so that in a race condition between of_init() and
-+	 * of_node_add(), node addition will still be consistent.
-+	 */
- 	mutex_lock(&of_aliases_mutex);
- 	if (of_kset)
- 		rc = __of_node_add(np);
-+	else
-+		/* This scenario may be perfectly valid, but report it anyway */
-+		pr_info("of_node_add(%s) before of_init()\n", np->full_name);
- 	mutex_unlock(&of_aliases_mutex);
- 	return rc;
- }
-@@ -259,10 +268,17 @@ static void of_node_remove(struct device_node *np)
- {
- 	struct property *pp;
++#define MAX_VDSO_PAGES	2
+ #else
+ #define FIXADDR_TOP	(VSYSCALL_END-PAGE_SIZE)
  
--	for_each_property_of_node(np, pp)
--		sysfs_remove_bin_file(&np->kobj, &pp->attr);
-+	BUG_ON(!of_node_is_initialized(np));
-+
-+	/* only remove properties if on sysfs */
-+	if (of_node_is_attached(np)) {
-+		for_each_property_of_node(np, pp)
-+			sysfs_remove_bin_file(&np->kobj, &pp->attr);
-+		kobject_del(&np->kobj);
-+	}
+@@ -74,7 +76,7 @@ extern unsigned long __FIXADDR_TOP;
+ enum fixed_addresses {
+ #ifdef CONFIG_X86_32
+ 	FIX_HOLE,
+-	FIX_VDSO,
++	FIX_VDSO = MAX_VDSO_PAGES,
+ 	VVAR_PAGE,
+ 	VSYSCALL_HPET,
+ #else
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index 1a9f8c3..aa785f0 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -16,6 +16,7 @@
+ #include <linux/mm.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
++#include <linux/slab.h>
  
--	kobject_del(&np->kobj);
-+	/* finally remove the kobj_init ref */
-+	of_node_put(np);
- }
- #endif
- 
-@@ -1631,6 +1647,10 @@ static int of_property_notify(int action, struct device_node *np,
- {
- 	struct of_prop_reconfig pr;
- 
-+	/* only call notifiers if the node is attached */
-+	if (!of_node_is_attached(np))
-+		return 0;
-+
- 	pr.dn = np;
- 	pr.prop = prop;
- 	return of_reconfig_notify(action, &pr);
-@@ -1682,11 +1702,8 @@ int of_add_property(struct device_node *np, struct property *prop)
- 	if (rc)
- 		return rc;
- 
--	/* at early boot, bail hear and defer setup to of_init() */
--	if (!of_kset)
--		return 0;
--
--	__of_add_property_sysfs(np, prop);
-+	if (of_node_is_attached(np));
-+		__of_add_property_sysfs(np, prop);
- 
- 	return rc;
- }
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index 96ad1ab7f9d6..70ccc36513e7 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -202,6 +202,7 @@ static void * unflatten_dt_node(struct boot_param_header *blob,
- 				__alignof__(struct device_node));
- 	if (allnextpp) {
- 		char *fn;
-+		of_node_init(np);
- 		np->full_name = fn = ((char *)np) + sizeof(*np);
- 		if (new_format) {
- 			/* rebuild full path for new format */
-@@ -326,8 +327,6 @@ static void * unflatten_dt_node(struct boot_param_header *blob,
- 			np->name = "<NULL>";
- 		if (!np->type)
- 			np->type = "<NULL>";
--
--		of_node_add(np);
+ #include <asm/cpufeature.h>
+ #include <asm/msr.h>
+@@ -190,7 +191,8 @@ static __init void relocate_vdso(Elf32_Ehdr *ehdr)
  	}
- 	while (tag == OF_DT_BEGIN_NODE || tag == OF_DT_NOP) {
- 		if (tag == OF_DT_NOP)
-diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
-index e64fa3d3da5f..36b4035881b0 100644
---- a/drivers/of/pdt.c
-+++ b/drivers/of/pdt.c
-@@ -176,6 +176,7 @@ static struct device_node * __init of_pdt_create_node(phandle node,
- 		return NULL;
+ }
  
- 	dp = prom_early_alloc(sizeof(*dp));
-+	of_node_init(dp);
- 	of_pdt_incr_unique_id(dp);
- 	dp->parent = parent;
+-static struct page *vdso32_pages[VDSO_PAGES];
++static struct page *vdso32_pages[MAX_VDSO_PAGES];
++static unsigned int vdso32_size;
  
-@@ -213,7 +214,6 @@ static struct device_node * __init of_pdt_build_tree(struct device_node *parent,
- 		*nextp = &dp->allnext;
+ #ifdef CONFIG_X86_64
  
- 		dp->full_name = of_pdt_build_full_name(dp);
--		of_node_add(dp);
+@@ -256,6 +258,7 @@ static int __init gate_vma_init(void)
+ static void map_compat_vdso(int map)
+ {
+ 	static int vdso_mapped;
++	unsigned int i;
  
- 		dp->child = of_pdt_build_tree(dp,
- 				of_pdt_prom_ops->getchild(node), nextp);
-@@ -244,7 +244,6 @@ void __init of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops)
- 	of_allnodes->path_component_name = "";
- #endif
- 	of_allnodes->full_name = "/";
--	of_node_add(of_allnodes);
+ 	if (map == vdso_mapped)
+ 		return;
+@@ -267,7 +270,8 @@ static void map_compat_vdso(int map)
  
- 	nextp = &of_allnodes->allnext;
- 	of_allnodes->child = of_pdt_build_tree(of_allnodes,
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 257994a420f3..a8b9dad90c64 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -76,6 +76,25 @@ struct of_phandle_args {
+ 	__set_fixmap(VVAR_PAGE, __pa_symbol(&__vvar_page), PAGE_KERNEL_VVAR);
  
- extern int of_node_add(struct device_node *node);
+-	__set_fixmap(FIX_VDSO, page_to_pfn(vdso32_pages[0]) << PAGE_SHIFT,
++	for(i = 0; i != vdso32_size; ++i)
++		__set_fixmap(FIX_VDSO, page_to_pfn(vdso32_pages[i]) << PAGE_SHIFT,
+ 		     map ? PAGE_READONLY_EXEC : PAGE_NONE);
  
-+/* initialize a node */
-+extern struct kobj_type of_node_ktype;
-+static inline void of_node_init(struct device_node *node)
-+{
-+	kobject_init(&node->kobj, &of_node_ktype);
-+}
+ 	/* flush stray tlbs */
+@@ -278,11 +282,10 @@ static void map_compat_vdso(int map)
+ 
+ int __init sysenter_setup(void)
+ {
+-	void *vdso_page = (void *)get_zeroed_page(GFP_ATOMIC);
++	void *vdso_pages;
+ 	const void *vdso;
+ 	size_t vdso_len;
+-
+-	vdso32_pages[0] = virt_to_page(vdso_page);
++	unsigned int i;
+ 
+ #ifdef CONFIG_X86_32
+ 	gate_vma_init();
+@@ -299,9 +302,15 @@ int __init sysenter_setup(void)
+ 		vdso_len = &vdso32_int80_end - &vdso32_int80_start;
+ 	}
+ 
+-	memcpy(vdso_page, vdso, vdso_len);
+-	patch_vdso32(vdso_page, vdso_len);
+-	relocate_vdso(vdso_page);
++	vdso32_size = (vdso_len + PAGE_SIZE - 1) / PAGE_SIZE;
++	vdso_pages = kmalloc(VDSO_OFFSET(vdso32_size), GFP_ATOMIC);
 +
-+/* true when node is initialized */
-+static inline int of_node_is_initialized(struct device_node *node)
-+{
-+	return node && node->kobj.state_initialized;
-+}
++	for(i = 0; i != vdso32_size; ++i)
++		vdso32_pages[i] = virt_to_page(vdso_pages + VDSO_OFFSET(i));
 +
-+/* true when node is attached (i.e. present on sysfs) */
-+static inline int of_node_is_attached(struct device_node *node)
-+{
-+	return node && node->kobj.state_in_sysfs;
-+}
-+
- #ifdef CONFIG_OF_DYNAMIC
- extern struct device_node *of_node_get(struct device_node *node);
- extern void of_node_put(struct device_node *node);
++	memcpy(vdso_pages, vdso, vdso_len);
++	patch_vdso32(vdso_pages, vdso_len);
++	relocate_vdso(vdso_pages);
+ 
+ 	return 0;
+ }
+@@ -334,7 +343,7 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+ 	if (compat)
+ 		addr = VDSO_HIGH_BASE;
+ 	else {
+-		addr = get_unmapped_area(NULL, 0, VDSO_OFFSET(VDSO_PAGES), 0, 0);
++		addr = get_unmapped_area(NULL, 0, VDSO_OFFSET(VDSO_PREV_PAGES + vdso32_size), 0, 0);
+ 		if (IS_ERR_VALUE(addr)) {
+ 			ret = addr;
+ 			goto up_fail;
+@@ -351,7 +360,7 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+ 		 */
+ 		ret = install_special_mapping(mm,
+ 				addr,
+-				VDSO_OFFSET(VDSO_PAGES - VDSO_PREV_PAGES),
++				VDSO_OFFSET(vdso32_size),
+ 				VM_READ|VM_EXEC|
+ 				VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
+ 				vdso32_pages);
 -- 
-1.8.3.2
+1.9.0
 
