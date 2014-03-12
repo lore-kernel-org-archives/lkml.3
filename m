@@ -1,398 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127AbaCLUSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 16:18:12 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:43238 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315AbaCLUP7 (ORCPT
+	id S1753276AbaCLUVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 16:21:11 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:46604 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014AbaCLUVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 16:15:59 -0400
-X-IronPort-AV: E=Sophos;i="4.97,640,1389772800"; 
-   d="scan'208";a="19377531"
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, "Rob Landley" <rob@landley.net>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Tim Kryger <tim.kryger@linaro.org>,
-        Linux PWM List <linux-pwm@vger.kernel.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux Doc List <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3 2/5] pwm: kona: Introduce Kona PWM controller support
-Date: Wed, 12 Mar 2014 13:15:43 -0700
-Message-ID: <1394655346-30048-3-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
-References: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
+	Wed, 12 Mar 2014 16:21:08 -0400
+Date: Wed, 12 Mar 2014 16:21:02 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Mark Brown <broonie@kernel.org>, Greg KH <greg@kroah.com>,
+        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20140312202102.GB22332@htj.dyndns.org>
+References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
+ <20140312015021.GC10106@kroah.com>
+ <1394596541.4840.70.camel@pasglop>
+ <20140312113742.GM28112@sirena.org.uk>
+ <1394654396.4840.94.camel@pasglop>
+ <20140312200232.GA22332@htj.dyndns.org>
+ <1394655292.4840.97.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394655292.4840.97.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the six-channel Kona PWM controller found on Broadcom
-mobile SoCs like bcm281xx.
+Hello,
 
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
----
- drivers/pwm/Kconfig        |  10 ++
- drivers/pwm/Makefile       |   1 +
- drivers/pwm/pwm-bcm-kona.c | 304 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 315 insertions(+)
- create mode 100644 drivers/pwm/pwm-bcm-kona.c
+On Thu, Mar 13, 2014 at 07:14:52AM +1100, Benjamin Herrenschmidt wrote:
+> It's generally consider bad taste to pull entire trees into each
+> other :-) I know Stephen isn't fan of it...
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 22f2f28..1fd42af 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -62,6 +62,16 @@ config PWM_ATMEL_TCB
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-atmel-tcb.
- 
-+config PWM_BCM_KONA
-+	tristate "Kona PWM support"
-+	depends on ARCH_BCM_MOBILE
-+	default y
-+	help
-+	  Generic PWM framework driver for Broadcom Kona PWM block.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-bcm-kona.
-+
- config PWM_BFIN
- 	tristate "Blackfin PWM support"
- 	depends on BFIN_GPTIMERS
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index d8906ec..7413090 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -3,6 +3,7 @@ obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
- obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
- obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
- obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
-+obj-$(CONFIG_PWM_BCM_KONA)	+= pwm-bcm-kona.o
- obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
- obj-$(CONFIG_PWM_EP93XX)	+= pwm-ep93xx.o
- obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
-diff --git a/drivers/pwm/pwm-bcm-kona.c b/drivers/pwm/pwm-bcm-kona.c
-new file mode 100644
-index 0000000..374e9ad
---- /dev/null
-+++ b/drivers/pwm/pwm-bcm-kona.c
-@@ -0,0 +1,304 @@
-+/*
-+ * Copyright (C) 2014 Broadcom Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/math64.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/slab.h>
-+#include <linux/types.h>
-+
-+#define PWM_CONTROL_OFFSET			(0x00000000)
-+#define PWM_CONTROL_SMOOTH_SHIFT(chan)		(24 + (chan))
-+#define PWM_CONTROL_TYPE_SHIFT(chan)		(16 + (chan))
-+#define PWM_CONTROL_POLARITY_SHIFT(chan)	(8 + (chan))
-+#define PWM_CONTROL_ENABLE_SHIFT(chan)		(chan)
-+
-+#define PRESCALE_OFFSET				(0x00000004)
-+#define PRESCALE_SHIFT(chan)			((chan) << 2)
-+#define PRESCALE_MASK(chan)			(0x7 << PRESCALE_SHIFT(chan))
-+#define PRESCALE_MIN				(0x00000000)
-+#define PRESCALE_MAX				(0x00000007)
-+
-+#define PERIOD_COUNT_OFFSET(chan)		(0x00000008 + ((chan) << 3))
-+#define PERIOD_COUNT_MIN			(0x00000002)
-+#define PERIOD_COUNT_MAX			(0x00ffffff)
-+
-+#define DUTY_CYCLE_HIGH_OFFSET(chan)		(0x0000000c + ((chan) << 3))
-+#define DUTY_CYCLE_HIGH_MIN			(0x00000000)
-+#define DUTY_CYCLE_HIGH_MAX			(0x00ffffff)
-+
-+struct kona_pwmc {
-+	struct pwm_chip chip;
-+	void __iomem *base;
-+	struct clk *clk;
-+};
-+
-+static void kona_pwmc_apply_settings(struct kona_pwmc *kp, unsigned int chan)
-+{
-+	unsigned long value = readl(kp->base + PWM_CONTROL_OFFSET);
-+
-+	/*
-+	 * New duty and period settings are only reflected in the PWM output
-+	 * after a rising edge of the enable bit.  When smooth bit is set, the
-+	 * new settings are delayed until the prior PWM period has completed.
-+	 * Furthermore, if the smooth bit is set, the PWM continues to output a
-+	 * waveform based on the old settings during the time that the enable
-+	 * bit is low.  Otherwise the output is a constant high signal while
-+	 * the enable bit is low.
-+	 */
-+
-+	/* clear enable bit but set smooth bit to maintain old output */
-+	value |= (1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
-+	value &= ~(1 << PWM_CONTROL_ENABLE_SHIFT(chan));
-+	writel(value, kp->base + PWM_CONTROL_OFFSET);
-+
-+	/* set enable bit and clear smooth bit to apply new settings */
-+	value &= ~(1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
-+	value |= (1 << PWM_CONTROL_ENABLE_SHIFT(chan));
-+	writel(value, kp->base + PWM_CONTROL_OFFSET);
-+}
-+
-+static int kona_pwmc_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+				int duty_ns, int period_ns)
-+{
-+	struct kona_pwmc *kp = dev_get_drvdata(chip->dev);
-+	u64 val, div, clk_rate;
-+	unsigned long prescale = PRESCALE_MIN, pc, dc;
-+	unsigned int value, chan = pwm->hwpwm;
-+
-+	/*
-+	 * Find period count, duty count and prescale to suit duty_ns and
-+	 * period_ns. This is done according to formulas described below:
-+	 *
-+	 * period_ns = 10^9 * (PRESCALE + 1) * PC / PWM_CLK_RATE
-+	 * duty_ns = 10^9 * (PRESCALE + 1) * DC / PWM_CLK_RATE
-+	 *
-+	 * PC = (PWM_CLK_RATE * period_ns) / (10^9 * (PRESCALE + 1))
-+	 * DC = (PWM_CLK_RATE * duty_ns) / (10^9 * (PRESCALE + 1))
-+	 */
-+
-+	clk_rate = clk_get_rate(kp->clk);
-+
-+	/* There is polarity support in HW but it is easier to manage in SW */
-+	if (pwm->polarity == PWM_POLARITY_INVERSED)
-+		duty_ns = period_ns - duty_ns;
-+
-+	while (1) {
-+		div = 1000000000;
-+		div *= 1 + prescale;
-+		val = clk_rate * period_ns;
-+		pc = div64_u64(val, div);
-+		val = clk_rate * duty_ns;
-+		dc = div64_u64(val, div);
-+
-+		/* If duty_ns or period_ns are not achievable then return */
-+		if (pc < PERIOD_COUNT_MIN || dc < DUTY_CYCLE_HIGH_MIN)
-+			return -EINVAL;
-+
-+		/* If pc and dc are in bounds, the calculation is done */
-+		if (pc <= PERIOD_COUNT_MAX && dc <= DUTY_CYCLE_HIGH_MAX)
-+			break;
-+
-+		/* Otherwise, increase prescale and recalculate pc and dc */
-+		if (++prescale > PRESCALE_MAX)
-+			return -EINVAL;
-+	}
-+
-+	/* If the PWM channel is enabled, write the settings to the HW */
-+	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-+		value = readl(kp->base + PRESCALE_OFFSET);
-+		value &= ~PRESCALE_MASK(chan);
-+		value |= prescale << PRESCALE_SHIFT(chan);
-+		writel(value, kp->base + PRESCALE_OFFSET);
-+
-+		writel(pc, kp->base + PERIOD_COUNT_OFFSET(chan));
-+
-+		writel(dc, kp->base + DUTY_CYCLE_HIGH_OFFSET(chan));
-+
-+		kona_pwmc_apply_settings(kp, chan);
-+	}
-+
-+	return 0;
-+}
-+
-+static int kona_pwmc_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+				  enum pwm_polarity polarity)
-+{
-+	/*
-+	 * The framework only allows the polarity to be changed when a PWM is
-+	 * disabled so no immediate action is required here.  When a channel is
-+	 * enabled, the polarity gets handled as part of the re-config step.
-+	 */
-+
-+	return 0;
-+}
-+
-+static int kona_pwmc_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct kona_pwmc *kp = dev_get_drvdata(chip->dev);
-+	int ret;
-+
-+	/*
-+	 * The PWM framework does not clear the enable bit in the flags if an
-+	 * error is returned from a PWM driver's enable function so it must be
-+	 * cleared here if any trouble is encountered.
-+	 */
-+
-+	ret = clk_prepare_enable(kp->clk);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "failed to enable clock: %d\n", ret);
-+		clear_bit(PWMF_ENABLED, &pwm->flags);
-+		return ret;
-+	}
-+
-+	ret = kona_pwmc_config(chip, pwm, pwm->duty_cycle, pwm->period);
-+	if (ret < 0) {
-+		clk_disable_unprepare(kp->clk);
-+		clear_bit(PWMF_ENABLED, &pwm->flags);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static void kona_pwmc_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct kona_pwmc *kp = dev_get_drvdata(chip->dev);
-+	unsigned int chan = pwm->hwpwm;
-+
-+	/*
-+	 * The "enable" bits in the control register only affect when settings
-+	 * start to take effect so the only real way to disable the PWM output
-+	 * is to program a zero duty cycle.
-+	 */
-+
-+	writel(0, kp->base + DUTY_CYCLE_HIGH_OFFSET(chan));
-+	kona_pwmc_apply_settings(kp, chan);
-+
-+	/*
-+	 * When the PWM clock is disabled, the output is pegged high or low
-+	 * depending on its state at that instant.  To guarantee that the new
-+	 * settings have taken effect and the output is low a delay of 400ns is
-+	 * required.
-+	 */
-+
-+	ndelay(400);
-+
-+	clk_disable_unprepare(kp->clk);
-+}
-+
-+static const struct pwm_ops kona_pwm_ops = {
-+	.config = kona_pwmc_config,
-+	.set_polarity = kona_pwmc_set_polarity,
-+	.enable = kona_pwmc_enable,
-+	.disable = kona_pwmc_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int kona_pwmc_probe(struct platform_device *pdev)
-+{
-+	struct kona_pwmc *kp;
-+	struct resource *res;
-+	unsigned int chan, value;
-+	int ret = 0;
-+
-+	kp = devm_kzalloc(&pdev->dev, sizeof(*kp), GFP_KERNEL);
-+	if (kp == NULL)
-+		return -ENOMEM;
-+
-+	platform_set_drvdata(pdev, kp);
-+
-+	kp->chip.dev = &pdev->dev;
-+	kp->chip.ops = &kona_pwm_ops;
-+	kp->chip.base = -1;
-+	kp->chip.npwm = 6;
-+	kp->chip.of_xlate = of_pwm_xlate_with_flags;
-+	kp->chip.of_pwm_n_cells = 3;
-+	kp->chip.can_sleep = true;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	kp->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(kp->base))
-+		return PTR_ERR(kp->base);
-+
-+	kp->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(kp->clk)) {
-+		dev_err(&pdev->dev, "failed to get clock: %ld\n",
-+			PTR_ERR(kp->clk));
-+		return PTR_ERR(kp->clk);
-+	}
-+
-+	ret = clk_prepare_enable(kp->clk);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to enable clock: %d\n", ret);
-+		return ret;
-+	}
-+
-+	/* Set smooth mode, push/pull, and normal polarity for all channels */
-+	for (value = 0, chan = 0; chan < kp->chip.npwm; chan++) {
-+		value |= (1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
-+		value |= (1 << PWM_CONTROL_TYPE_SHIFT(chan));
-+		value |= (1 << PWM_CONTROL_POLARITY_SHIFT(chan));
-+	}
-+	writel(value, kp->base + PWM_CONTROL_OFFSET);
-+
-+	clk_disable_unprepare(kp->clk);
-+
-+	ret = pwmchip_add(&kp->chip);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "failed to add PWM chip: %d\n", ret);
-+
-+	return ret;
-+}
-+
-+static int kona_pwmc_remove(struct platform_device *pdev)
-+{
-+	struct kona_pwmc *kp = platform_get_drvdata(pdev);
-+	unsigned int chan;
-+
-+	for (chan = 0; chan < kp->chip.npwm; chan++)
-+		if (test_bit(PWMF_ENABLED, &kp->chip.pwms[chan].flags))
-+			clk_disable_unprepare(kp->clk);
-+
-+	return pwmchip_remove(&kp->chip);
-+}
-+
-+static const struct of_device_id bcm_kona_pwmc_dt[] = {
-+	{ .compatible = "brcm,kona-pwm" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, bcm_kona_pwmc_dt);
-+
-+static struct platform_driver kona_pwmc_driver = {
-+
-+	.driver = {
-+		.name = "bcm-kona-pwm",
-+		.of_match_table = bcm_kona_pwmc_dt,
-+	},
-+	.probe = kona_pwmc_probe,
-+	.remove = kona_pwmc_remove,
-+};
-+
-+module_platform_driver(kona_pwmc_driver);
-+
-+MODULE_AUTHOR("Broadcom Corporation <bcm-kernel-feedback-list@broadcom.com>");
-+MODULE_AUTHOR("Tim Kryger <tkryger@broadcom.com>");
-+MODULE_DESCRIPTION("Driver for Kona PWM controller");
-+MODULE_LICENSE("GPL v2");
+I wouldn't say it's considered "generally" bad taste.  For one-off
+changes, maybe.  This was a rather large restructuring of the whole
+thing, so actually duplicating all the rather significant commits
+would be a lot worse.
+
+> I'd rather have just that series (or even better, just the patches
+> introducing the new function) in a topic branch, itself pulled into
+> both driver-core-next and my tree.
+> 
+> Can you produce that ? (I need a non-rebase guarantee though).
+
+It's a series of rather complex patches.  I really don't think
+duplicating them is a good idea.  We can either resurrect the old API
+to kill it again or set up a merge branch which I don't think is too
+unusual in situations like this.
+
+Thanks.
+
 -- 
-1.8.0.1
-
+tejun
