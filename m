@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754AbaCLSUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 14:20:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1218 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755376AbaCLSUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 14:20:40 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Frank Mayhar <fmayhar@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: [PATCH] block:  Force sector and nr_sects to device alignment and granularity.
-References: <1394474492.31499.177.camel@bobble.lax.corp.google.com>
-	<x49wqg0bwb4.fsf@segfault.boston.devel.redhat.com>
-	<1394553778.31499.180.camel@bobble.lax.corp.google.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 12 Mar 2014 14:20:30 -0400
-In-Reply-To: <1394553778.31499.180.camel@bobble.lax.corp.google.com> (Frank
-	Mayhar's message of "Tue, 11 Mar 2014 09:02:58 -0700")
-Message-ID: <x491ty71dox.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755991AbaCLSWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 14:22:42 -0400
+Received: from smtprelay0209.hostedemail.com ([216.40.44.209]:56347 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752740AbaCLSWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 14:22:40 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2110:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:3868:3870:3871:3872:3874:4321:5007:7652:10004:10400:10848:11026:11658:11914:12043:12438:12517:12519:12555:12740:13069:13071:13255:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: class96_50da839256b46
+X-Filterd-Recvd-Size: 2196
+Message-ID: <1394648554.3915.22.camel@joe-AO722>
+Subject: Re: [PATCH V2 bluetooth-next 2/6] bluetooth: Convert uses of
+ __constant_<foo> to <foo>
+From: Joe Perches <joe@perches.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Network Development <netdev@vger.kernel.org>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
+	<linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 12 Mar 2014 11:22:34 -0700
+In-Reply-To: <34E193D0-F15B-4C23-83F7-697096916D4D@holtmann.org>
+References: <cover.1394643455.git.joe@perches.com>
+	 <51892631f2289665bf47b294c783ee9560a8317e.1394643455.git.joe@perches.com>
+	 <F2E9571C-2D55-4529-A361-D8CD4B3FC491@holtmann.org>
+	 <1394646755.3915.8.camel@joe-AO722>
+	 <34E193D0-F15B-4C23-83F7-697096916D4D@holtmann.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frank Mayhar <fmayhar@google.com> writes:
+On Wed, 2014-03-12 at 11:11 -0700, Marcel Holtmann wrote:
 
-> On Tue, 2014-03-11 at 11:15 -0400, Jeff Moyer wrote:
->> Frank Mayhar <fmayhar@google.com> writes:
->> 
->> > block:  Force sector and nr_sects to device alignment and granularity.
->> >
->> > In blkdev_issue_discard(), rather than sending an improperly-
->> > aligned discard to the device (where it may get an error),
->> > adjust the start and length to the block device alignment and
->> > granularity.  Don't fail if this leaves nothing to discard.
->> >
->> > Without this change, certain flash drivers can report invalid
->> > trim parameters (and will fail the command).  Per tytso, "given
->> > that discards are advisory, any part of the storage stack is
->> > free to drop discard requests silently."
->> 
->> And how do you get here with misaligned discards?
->
-> I don't understand the question.
+> > 	/* Connection accept timeout ~20 secs */
+> > -	param = __constant_cpu_to_le16(0x7d00);
+> > +	param = cpu_to_le16(0x7d00);
+> > 
+> > 0x7d00 is 32000, presumably that's 32 seconds.
+> 
+> so it is 0x7d00 * 0.625 which results in 20 seconds.
 
-Sorry if it wasn't clear...
+Hi again Marcel.
 
-> The case that we were seeing was with an SSD that required TRIM on 8k
-> boundaries and with an 8k granularity.  Since the file system was trying
-> to do discards based on 4k alignment the driver complained mightily.
+Swell.  No worries then.
 
-but you managed to read my mind well enough.  The question is how high
-up the stack do you put the logic for this?  Is it worth it to duplicate
-the checks in the OS that are already done on the device?  I don't
-know.  Martin, do you have an opinion on this?
+Is this clocking divisor defined somewhere?
+Is .625 or 5/8 as a magic number defined somewhere?
+(I didn't see it in a brief scan)
+Maybe it'd be better to use 20000 * 5 / 8 or
+add some define like
 
--Jeff
+#define msecs_to_bt_clocks(ms) ((ms) * 5 / 8)
+
+> > and
+> > 		/* 160 msec page scan interval */
+> > -		acp.interval = __constant_cpu_to_le16(0x0100);
+> > +		acp.interval = cpu_to_le16(0x0100);
+> > 256 msecs?
+> 
+> also here 0x0100 * 0.625 resulting in 160 msecs.
+
+Same as above.
+
+> patch has been applied to bluetooth-next tree.
+
+cheers, Joe
+
