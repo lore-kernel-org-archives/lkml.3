@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644AbaCLHQX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 03:16:23 -0400
-Received: from sauhun.de ([89.238.76.85]:60385 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756490AbaCLHQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 03:16:20 -0400
-Date: Wed, 12 Mar 2014 08:16:17 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH trivial 09/16] i2c: Spelling s/than/that/
-Message-ID: <20140312071617.GB2756@katana>
-References: <1394533430-4746-1-git-send-email-geert@linux-m68k.org>
- <1394533430-4746-9-git-send-email-geert@linux-m68k.org>
+	id S1756624AbaCLHW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 03:22:28 -0400
+Received: from smtp03.stone-is.org ([87.238.162.6]:50267 "EHLO
+	smtpgw.stone-is.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756552AbaCLHW0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 03:22:26 -0400
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <53200B2E.4060805@acm.org>
+Date: Wed, 12 Mar 2014 08:22:22 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JYK4vJDZwFMowpUq"
-Content-Disposition: inline
-In-Reply-To: <1394533430-4746-9-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
+        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] percpu_ida: Handle out-of-tags gracefully
+References: <531DC851.5060400@acm.org> <20140311135137.GA22995@dhcp-26-207.brq.redhat.com> <531F518A.1070808@acm.org> <20140311204826.GA30105@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20140311204826.GA30105@dhcp-26-207.brq.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/11/14 21:48, Alexander Gordeev wrote:
+> On Tue, Mar 11, 2014 at 07:10:18PM +0100, Bart Van Assche wrote:
+>>> I assume the BUG() above hits? If so, I am failing to understand how
+>>> the code gets here. Mind elaborate?
+>>
+>> You are correct, the BUG() mentioned in the call stack in the
+>> description of this patch does indeed correspond with the BUG()
+>> statement in the above code. That BUG() was encountered while testing
+>> the scsi-mq patch series with a workload with a large queue depth. I
+>> think the fact that I hit that BUG() statement means that my workload
+>> was queueing requests faster than these were processed by the SCSI LLD
+>> and hence that percpu_ida_alloc() ran out of tags.
+> 
+> Function steal_tags() is entered with disabled interrupts and
+> pool->lock taken. Then the 'for' cycle enters/loops while 'cpus_have_tags'
+> is not zero. Which means we can not end up with no set bits at all -
+> and that is the reason why BUG() is (legitimately) placed there.
 
---JYK4vJDZwFMowpUq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry but the above reasoning is wrong. Even if interrupts are disabled
+on one CPU, even if that CPU holds pool->lock, and even if
+cpus_have_tags has at least one bit set at the time steal_tags() starts,
+it is still possible that another CPU obtains "remote->lock" before
+steal_tags() can obtain that lock and that that other CPU causes
+remote->nr_free to drop to zero. I am aware the percpu_ida code is not
+easy to read due to such complex interactions between CPU cores.
+However, my understanding is that the goal of the percpu_ida allocator
+was not that its code would be easy to read but that its performance
+would be optimal.
 
-On Tue, Mar 11, 2014 at 11:23:43AM +0100, Geert Uytterhoeven wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->=20
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> Cc: Wolfram Sang <wsa@the-dreams.de>
-> Cc: linux-i2c@vger.kernel.org
+Is this sufficient to make you have another look at my patch ?
 
-Applied to for-next, thanks!
+Thanks,
 
+Bart.
 
---JYK4vJDZwFMowpUq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTIAnAAAoJEBQN5MwUoCm2vCAP/iJotzptDFrN6esXOlr4EWFt
-Iie2V240ObC/nyuX4F0UaYZ9MnqoWhvPW5nl77Ulw592ZymeDIzR0sDqLKjQy27l
-+F9dy6KelHTNKZ2A0QZjszCOzZMGkmo6wM4QU8i5i2DJwEd9aMOBPVTsMsq0/1p5
-lqOLoXYfHQuK5TEGXZ5LsQyvPtP2No3dpXaCuyuLHdormg0VZbf6EvjvxG8s3wa5
-AnYRshn/y+CtDXokWDE1W8r+K/GCLZ23q+hkewN4tasuZ8cfrrrMPHxkjwc7ya4i
-cyTEWhC3lSLSHXdlPlXzROHWkiqX8AIn/v9p6/n/zziVzJPHOj+x/VFEHWctMKlF
-tqd4aaPDAxnvFNUgTWzYA7bhTVnbZ2BnB07LRWQK1zNGZxmpzeeXDYLPtuT1mz37
-7J8gVeUCK4caUM5xhBHD3cNjIdHKw6NLFskY/BpEn+BoDnUQ7RhG1G0PuIHVU4g1
-VQSQjXJGEIZpmsJzW2TB8HY7/uHGemjG2rHpukXRj/YkrXg8aiVupnWDGNIRrnyX
-tmH2IcYl3gCi3Q2MyKyNjBRnIlQW3ut064HG4eINrXDPVo6AVoKHtXiWzwyXqJXM
-et+DTTguL5PT36xQAw8EfbqKiLJxORC0bWtTLAalAka3KLGzcs7nWd/63nB4XCXF
-QYdEpOJRBlgH8MJ75FpK
-=WSlW
------END PGP SIGNATURE-----
-
---JYK4vJDZwFMowpUq--
