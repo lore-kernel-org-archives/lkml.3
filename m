@@ -1,107 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892AbaCLRdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 13:33:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53770 "EHLO mail.zytor.com"
+	id S1755740AbaCLReu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 13:34:50 -0400
+Received: from www.piware.de ([213.9.93.70]:53768 "EHLO www.piware.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755243AbaCLRdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 13:33:10 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CALCETrWAz=gVWpsCTcy=Y=Bh7PL9iPwGgUbUsBkMbsiyh3hyYQ@mail.gmail.com>
-References: <cover.1394575968.git.luto@amacapital.net> <531FEA69.7050107@zytor.com> <CALCETrVyR4GmLZ-yzPCL8xGZOZkRtPkQUcqQ=nzcRqG_Yp60wg@mail.gmail.com> <7a13aeea-2190-4922-81cf-2072fe6c2fbe@email.android.com> <CALCETrWAz=gVWpsCTcy=Y=Bh7PL9iPwGgUbUsBkMbsiyh3hyYQ@mail.gmail.com>
+	id S1751721AbaCLRes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 13:34:48 -0400
+Date: Wed, 12 Mar 2014 18:34:46 +0100
+From: Martin Pitt <martin.pitt@ubuntu.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Johannes Berg <johannes.berg@intel.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [mac80211_hwsim] BUG: unable to handle kernel paging request at
+ ce1db404
+Message-ID: <20140312173446.GD2983@piware.de>
+References: <20140305125703.GA7193@localhost>
+ <20140305132317.GB10880@localhost>
+ <20140308121138.GA8359@localhost>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH v2 0/2] x86: Relocate the compat vdso per process
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 12 Mar 2014 10:32:06 -0700
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stefani Seibold <stefani@seibold.net>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
-Message-ID: <02bf3aa9-b698-45d9-a6c7-fdebbe87210b@email.android.com>
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="3siQDZowHQqNOShm"
+Content-Disposition: inline
+In-Reply-To: <20140308121138.GA8359@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In taking about 1 here.  
 
-On March 12, 2014 9:20:50 AM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
->On Tue, Mar 11, 2014 at 11:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> There is one sensible address: end of address space perhaps minus
->some small offset.  Unlikely to be used by anything specific.
->
->Meh.  The compat vdso logic will end up being either:
->
->1) Try to map at the preferred address.  If it fails, don't map it.
->Force ASLR off for the vdso
->
->2) Try to map at the preferred address.  If it fails, map somewhere
->else and relocate.
->
->3) Try to map at the preferred address unless ASLR is on.  If it fails
->or ASLR is on, map somewhere else and relocate.
->
->since the whole point is to simplify this stuff, I don't really like
->any of these choices.  That's a lot of code to save 4k per process,
->and when it breaks (which I suspect it will the next time anyone
->touches the address space layout) so one will notice that 4k gets
->wasted again.
->
->>
->> On March 11, 2014 11:09:11 PM PDT, Andy Lutomirski
-><luto@amacapital.net> wrote:
->>>On Mar 11, 2014 10:02 PM, "H. Peter Anvin" <hpa@zytor.com> wrote:
->>>>
->>>> On 03/11/2014 03:15 PM, Andy Lutomirski wrote:
->>>>>
->>>>> The meat of this patch series is in patch 1.  Patch 2 is split out
->>>for
->>>>> improved bisectability.
->>>>>
->>>>> Changes from v1: Split into two patches and fixed a comment.
->>>>>
->>>>> Andy Lutomirski (2):
->>>>>    x86: Dynamically relocate the compat vdso
->>>>>    x86_32: Remove user bit from identity map PDE
->>>>>
->>>>>   Documentation/kernel-parameters.txt  |  18 +++-
->>>>>   arch/x86/Kconfig                     |  24 +++--
->>>>>   arch/x86/include/asm/elf.h           |   4 -
->>>>>   arch/x86/include/asm/fixmap.h        |   8 --
->>>>>   arch/x86/include/asm/pgtable_types.h |   7 +-
->>>>>   arch/x86/include/asm/vdso.h          |   5 +-
->>>>>   arch/x86/vdso/vdso-layout.lds.S      |   2 +-
->>>>>   arch/x86/vdso/vdso32-setup.c         | 173
->>>++++++++++++++++-------------------
->>>>>   arch/x86/vdso/vdso32/vdso32.lds.S    |   2 -
->>>>>   9 files changed, 111 insertions(+), 132 deletions(-)
->>>>>
->>>>
->>>> Why per process?  *If* we have compat vdso turned on, can't we just
->>>put it in one place system-wide?
->>>
->>>My machine has ASLR turned on, and the vma really does end up
->>>somewhere different each time.  I suspect that most (?) ASLR users
->>>would happily accept the 4k hit to keep ASLR working fully.
->>>
->>>Another downside of trying to have a common address for all
->processes:
->>>someone needs to figure out what that address is.  What happens if an
->>>ELF binary (or interpreter) wants to load something at the chosen
->>>address?
->>>
->>>--Andy
->>
->> --
->> Sent from my mobile phone.  Please pardon brevity and lack of
->formatting.
+--3siQDZowHQqNOShm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Fengguang Wu [2014-03-08 20:11 +0800]:
+> [    4.429993] mac80211_hwsim: ieee80211_register_hw failed (-2)
+> [...]
+> [    4.431924]  [<c12377de>] get_device+0xf/0x17
+> [    4.431924]  [<c123a165>] driver_detach+0x38/0x8f
+> [    4.431924]  [<c1239433>] bus_remove_driver+0x53/0x66
+> [    4.431924]  [<c123a535>] driver_unregister+0x38/0x3d
+> [    4.431924]  [<c123b3aa>] platform_driver_unregister+0xb/0xd
+> [    4.431924]  [<c1c4ac9f>] init_mac80211_hwsim+0x3a5/0x3b6
+
+
+So that first message is from
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers=
+/net/wireless/mac80211_hwsim.c?id=3D9ea927748#n2428
+
+At this point we registered the platform driver and the class, and it
+should have created two devices (at least for the default radios=3D2).
+What's odd is that I don't see this printk in your kernel log:
+
+  mac80211_hwsim: Initializing radio %d
+
+If for some reasons "radio" is 0, it would not show this and not
+initialize data->dev, but then you shouldn't get to
+ieee80211_register_hw() either as it's in the same loop. So that's a
+bit of a mystery to me.
+
+On failure, above ieee80211_register_hw() jumps to the cleanup:
+
+| failed_hw:
+| 	device_unregister(data->dev);
+| failed_drvdata:
+| 	ieee80211_free_hw(hw);
+| failed:
+| 	mac80211_hwsim_free();
+| failed_unregister_driver:
+| 	driver_unregister(&mac80211_hwsim_driver);
+| 	return err;
+| }
+
+
+The mac80211_hwsim_free() function again calls
+device_unregister(data->dev) for a list (not sure which, I'm not
+certain how to interpret
+
+  list_for_each_entry_safe(data, tmpdata, &tmplist, list)
+
+) Could that be the double free causing the memory corruption?
+
+If you are in a position to do quick builds and tests, does the crash
+go away with this?
+
+ 		printk(KERN_DEBUG "mac80211_hwsim: device_bind_driver failed (%d)\n",
+ 		       err);
+- 		goto failed_hw;
++ 		goto failed_drvdata;
+ 	}
+
+(I'm not claiming that this is correct, just taking a stab at
+understanding what happens) If not, does it go away with changing the
+goto to failed_unregister_driver()?
+
+Thanks,
+
+Martin
+--=20
+Martin Pitt                        | http://www.piware.de
+Ubuntu Developer (www.ubuntu.com)  | Debian Developer  (www.debian.org)
+
+--3siQDZowHQqNOShm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCAAGBQJTIJq2AAoJENFO8V2v4RNHA/8P/0BtuaxdqeAdJtkjKXXuSKCT
+WZNcimLWbKr0jf7miXzhRaMonkBo9iBnYwCGytu9ELKWUkvFfdu6SHM9GOGKmy9o
+B92qHFbHNy1wAeGo0Oblay9gVhmDU2+PgNySlKFW5u24DDd3Ym2sYpcsl3PI+BfP
+cOA1tQYEGOEYdoSEAt92Rf2sP8FQoH/YwHAE/y1exE7wEgToXmdbdLDcI3nHY571
+SVtw6le28BSlXnOYUPxiTWpVSe/9GDnjU3wxQfelVEAmzlzCtUDDXYBnaCxgU/Tc
+LV1z76K3nDbfyFwfecurxOwKFG8+Em7v6b9CeN+MZP3A9xstu2zDQ8LNbGoHR2vp
+ba1XYdsMsu+jHl63BwClgfwN4AWg7MvK5675u1ePXmHU2KIbB0Uj93m95ydYRQ0D
+f5bYLXQjMleoOwPk/X2ostgI8DxYrq8wQpUYGHTfY+dGjsHTyddZ5TemrMxNnM3s
+Sf12e1bsmFCBQeu6ZA2TdIt/Vg6O97tnuZ62x3yWWW7ti94rgvogMqbtJD9+vFKi
+Cy5FsU8yO6pmWpwVUkFq2o9C/IIW0IrOhVq8JQdBV34MzvXXhDf8KsEX8Zy74Hox
+92cbLAOgE06rSv2Iz7MaSsZHc1JPjfvG4Nx+plmjEmmj1Ebp7I+6gla4Q+9EtxwV
+FS9gf4rf8R6G0oieWJ2Z
+=uieF
+-----END PGP SIGNATURE-----
+
+--3siQDZowHQqNOShm--
