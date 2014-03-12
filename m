@@ -1,249 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644AbaCLKiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 06:38:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40112 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753589AbaCLKiQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 06:38:16 -0400
-Date: Wed, 12 Mar 2014 11:38:24 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Hans de Goede <hdegoede@redhat.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Carlo Caione <carlo.caione@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] irq: Add a new IRQF_ACK_BEFORE_UNMASK irq flag
-In-Reply-To: <1394579583-29316-1-git-send-email-hdegoede@redhat.com>
-Message-ID: <alpine.DEB.2.02.1403120944270.18573@ionos.tec.linutronix.de>
-References: <1394579583-29316-1-git-send-email-hdegoede@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753877AbaCLKjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 06:39:48 -0400
+Received: from hofr.at ([212.69.189.236]:53730 "EHLO mail.hofr.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753410AbaCLKjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 06:39:47 -0400
+Date: Wed, 12 Mar 2014 11:39:42 +0100
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <tkhai@yandex.ru>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [PATCH]sched/rt: Do not try to push tasks if pinned task
+	switches to RT
+Message-ID: <20140312103942.GB5321@opentech.at>
+References: <4451359470707@web16g.yandex.ru> <20140312061833.3a43aa64@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140312061833.3a43aa64@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Mar 2014, Hans de Goede wrote:
+On Wed, 12 Mar 2014, Steven Rostedt wrote:
 
-> In some cases we want to do an ack right before the unmask of an irq.
+> Peter,
 > 
-> A typical example of such a case is having an i2c device which uses a level
-> interrupt. Such devices usually have an interrupt status register with
-> write to clear status bits. This means that the interrupt handler needs to
-> sleep to do i2c transfers to read / write the interrupt status register.
+> I'm going through my inbox (over a year old), and found this patch from
+> Kirill. It looks fine to me. You can apply it with my
 > 
-> This means using a threaded interrupt handler and IRQF_ONESHOT so that the
-> interrupt does not re-trigger while the interrupt handler is waiting for the
-> i2c transfer.
+>   Acked-by: Steven Rostedt <rostedt@goodmis.org>
+>
+> -- Steve
 > 
-> Without ack-before-unmask the sequence of a single interrupt in this setup
-> looks like this:
+> [PATCH]sched/rt: Do not try to push tasks if pinned task switches to RT
 > 
-> i2c-device raises interrupt line
-> interrupt gets triggered
-> interrupt gets masked
-> interrupt gets acked
-> interrupt handling thread starts running
-> interrupt handling thread does its stuff, write-clears irq-status register
->  in i2c-device
-> i2c-device lowers interrupt line (note this happens after the ack!)
-> interrupt handling thread is done
-> interrupt gets unmasked
-> interrupt immediately retriggers again, because the line has been high
->  after the ack
-> interrupt gets masked
-> interrupt gets acked
-> interrupt handling thread starts running
-> interrupt handling thread reads irq-status register, has nothing todo
-> interrupt handling thread is done
-> interrupt gets unmasked
+> Just switched pinned task is not able to be pushed. If the rq had had
+> several RT tasks before they have already been considered as candidates
+> to be pushed (or pulled).
 > 
-> So in essence we get and handle 2 interrupts for what is 1 interrupt from
-> the i2c-device pov. By doing an ack before the unmask, the second interrupt
-> is avoided since at the point of the unmask the irq-thread has done its
-> job and cleared the interrupt source.
+> Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: linux-rt-users <linux-rt-users@vger.kernel.org>
+> ---
+>  kernel/sched/rt.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index 4e8f0f4..5aab032 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1925,9 +1925,9 @@ static void switched_to_rt(struct rq *rq, struct task_struct *p)
+>  	 */
+>  	if (p->on_rq && rq->curr != p) {
+>  #ifdef CONFIG_SMP
+> -		if (rq->rt.overloaded && push_rt_task(rq) &&
+> +		if (p->nr_cpus_allowed > 1 && rq->rt.overloaded &&
+>  		    /* Don't resched if we changed runqueues */
+> -		    rq != task_rq(p))
+> +		    push_rt_task(rq) && rq != task_rq(p))
+>  			check_resched = 0;
+>  #endif /* CONFIG_SMP */
+>  		if (check_resched && p->prio < rq->curr->prio)
 
-And how is that different from the non threaded case?
+would there not need to be a check for p->migrate_disable ?
+push_rt_task() is not checking and so a high prio RT task 
+preemting a low prio RT task in a migrate_disable() section
+would actually push it off this cpu ? atleast I did not 
+find why that would not happen.
 
-    mask()
-    ack()	<-- irq line is still active
-    handle()	<-- irq line goes inactive. So this happens
-    		     after the ack as above
-    unmask()
-
-> Note that things work fine without this patch, the purpose of this patch is
-> soley to avoid the second unneeded interrupt.
-> 
-> This patch uses an interrupt flag for this and not an irqchip flag because
-> the need for ack before unmask is based on the device and not on the irqchip.
- 
-No, it's not a device property. Its an irq chip property. There are
-interrupt chips which handle that case fine and making this a device
-property might even break such interrupt chips. e.g. ioapic handles
-that nicely but it would use ack_edge() on a level interrupt when the
-device driver requests that. And the edge and level mode of the ioapic
-are substantially different. Go figure.
-
-The general policy is that device drivers should be oblivious of the
-underlying interrupt controller implementation as much as possible.
-
-If the interrupt chip has this behaviour then handle_level_irq as the
-flow handler is the wrong thing to start with because it always acks
-before calling the handler.
-
-Due to the fact that we run the primary handler with interrupts
-disabled, we should avoid the mask/unmask dance for the non threaded
-case completely. handle_fasteoi_irq does that, except that it does not
-provide the eoi() before unmask in the threaded case and it has an
-extra eoi() even in the masked case which is pointless for interrupt
-chips like the one you are dealing with.
-
-Untested patch below.
-
-Thanks,
-
-	tglx
-
----------------->
-
-Index: linux-2.6/include/linux/irq.h
-===================================================================
---- linux-2.6.orig/include/linux/irq.h
-+++ linux-2.6/include/linux/irq.h
-@@ -349,6 +349,8 @@ struct irq_chip {
-  * IRQCHIP_ONOFFLINE_ENABLED:	Only call irq_on/off_line callbacks
-  *				when irq enabled
-  * IRQCHIP_SKIP_SET_WAKE:	Skip chip.irq_set_wake(), for this irq chip
-+ * IRQCHIP_ONESHOT_SAFE:	One shot does not require mask/unmask
-+ * IRQCHIP_EOI_THREADED:	Chip requires eoi() on unmask in threaded mode
-  */
- enum {
- 	IRQCHIP_SET_TYPE_MASKED		= (1 <<  0),
-@@ -357,6 +359,7 @@ enum {
- 	IRQCHIP_ONOFFLINE_ENABLED	= (1 <<  3),
- 	IRQCHIP_SKIP_SET_WAKE		= (1 <<  4),
- 	IRQCHIP_ONESHOT_SAFE		= (1 <<  5),
-+	IRQCHIP_EOI_THREADED		= (1 <<  6),
- };
- 
- /* This include will go away once we isolated irq_desc usage to core code */
-Index: linux-2.6/kernel/irq/chip.c
-===================================================================
---- linux-2.6.orig/kernel/irq/chip.c
-+++ linux-2.6/kernel/irq/chip.c
-@@ -281,6 +281,19 @@ void unmask_irq(struct irq_desc *desc)
- 	}
- }
- 
-+void unmask_threaded_irq(struct irq_desc *desc)
-+{
-+	struct irq_chip *chip = desc->irq_data.chip;
-+
-+	if (chip->flags & IRQCHIP_EOI_THREADED)
-+		chip->irq_eoi(&desc->irq_data);
-+
-+	if (chip->irq_unmask) {
-+		desc->irq_data.chip->irq_unmask(&desc->irq_data);
-+		irq_state_clr_masked(desc);
-+	}
-+}
-+
- /*
-  *	handle_nested_irq - Handle a nested irq from a irq thread
-  *	@irq:	the interrupt number
-@@ -487,6 +500,67 @@ out:
- 	goto out_unlock;
- }
- 
-+static void cond_unmask_and_eoi_irq(struct irq_desc *desc)
-+{
-+	if (!(desc->istate & IRQS_ONESHOT)) {
-+		desc->irq_data.chip->irq_eoi(&desc->irq_data);
-+		return;
-+	}
-+	/*
-+	 * We need to unmask in the following cases:
-+	 * - Oneshot irq which did not wake the thread (caused by a
-+	 *   spurious interrupt or a primary handler handling it
-+	 *   completely).
-+	 */
-+	if (!irqd_irq_disabled(&desc->irq_data) &&
-+	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot) {
-+		desc->irq_data.chip->irq_eoi(&desc->irq_data);
-+		unmask_irq(desc);
-+	}
-+}
-+
-+/**
-+ *	handle_fasteoi_late_irq - irq handler for transparent controllers
-+ *	@irq:	the interrupt number
-+ *	@desc:	the interrupt description structure for this irq
-+ *
-+ *	Only a single callback will be issued to the chip: an ->eoi()
-+ *	call when the interrupt has been serviced. Same as above, but
-+ *	we avoid the eoi when the interrupt is masked due to a
-+ *	threaded handler. The eoi will be issued right before the unmask.
-+ */
-+void handle_fasteoi_late_irq(unsigned int irq, struct irq_desc *desc)
-+{
-+	raw_spin_lock(&desc->lock);
-+
-+	if (unlikely(irqd_irq_inprogress(&desc->irq_data)))
-+		if (!irq_check_poll(desc))
-+			goto out;
-+
-+	desc->istate &= ~(IRQS_REPLAY | IRQS_WAITING);
-+	kstat_incr_irqs_this_cpu(irq, desc);
-+
-+	/*
-+	 * If its disabled or no action available
-+	 * then mask it and get out of here:
-+	 */
-+	if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data))) {
-+		desc->istate |= IRQS_PENDING;
-+		mask_irq(desc);
-+		goto out;
-+	}
-+
-+	if (desc->istate & IRQS_ONESHOT)
-+		mask_irq(desc);
-+
-+	handle_irq_event(desc);
-+
-+	cond_unmask_and_eoi_irq(desc);
-+out:
-+	raw_spin_unlock(&desc->lock);
-+	return;
-+}
-+
- /**
-  *	handle_edge_irq - edge type IRQ handler
-  *	@irq:	the interrupt number
-Index: linux-2.6/kernel/irq/internals.h
-===================================================================
---- linux-2.6.orig/kernel/irq/internals.h
-+++ linux-2.6/kernel/irq/internals.h
-@@ -73,6 +73,7 @@ extern void irq_percpu_enable(struct irq
- extern void irq_percpu_disable(struct irq_desc *desc, unsigned int cpu);
- extern void mask_irq(struct irq_desc *desc);
- extern void unmask_irq(struct irq_desc *desc);
-+extern void unmask_threaded_irq(struct irq_desc *desc);
- 
- extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
- 
-Index: linux-2.6/kernel/irq/manage.c
-===================================================================
---- linux-2.6.orig/kernel/irq/manage.c
-+++ linux-2.6/kernel/irq/manage.c
-@@ -718,7 +718,7 @@ again:
- 
- 	if (!desc->threads_oneshot && !irqd_irq_disabled(&desc->irq_data) &&
- 	    irqd_irq_masked(&desc->irq_data))
--		unmask_irq(desc);
-+		unmask_threaded_irq(desc);
- 
- out_unlock:
- 	raw_spin_unlock_irq(&desc->lock);
+thx!
+hofrat
