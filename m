@@ -1,334 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaCLPLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:11:07 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:14102 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754454AbaCLPLF (ORCPT
+	id S1754848AbaCLPLx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:11:53 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:18725 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199AbaCLPLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 11:11:05 -0400
-Date: Wed, 12 Mar 2014 11:11:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lttng-dev <lttng-dev@lists.lttng.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
- set via debugfs
-Message-ID: <20140312111100.42ea41c2@gandalf.local.home>
-In-Reply-To: <1501695915.977.1394634294978.JavaMail.zimbra@efficios.com>
-References: <20140307150920.881849073@goodmis.org>
-	<y0mr469e9t0.fsf@fche.csb>
-	<20140310225820.0f02025d@gandalf.local.home>
-	<20140311142650.GB13756@redhat.com>
-	<1448078225.73.1394550382164.JavaMail.zimbra@efficios.com>
-	<20140311114023.02fcf639@gandalf.local.home>
-	<1752080128.130.1394559263621.JavaMail.zimbra@efficios.com>
-	<20140311151357.077c5a68@gandalf.local.home>
-	<1501695915.977.1394634294978.JavaMail.zimbra@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Wed, 12 Mar 2014 11:11:50 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-0f-53207933faa5
+Message-id: <1394637106.11860.16.camel@AMDC1943>
+Subject: Re: [PATCH v2 3/3] mfd: max8997: move regmap handling to function
+ drivers
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Robert Baldyga <r.baldyga@samsung.com>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com, dmitry.torokhov@gmail.com, cooloney@gmail.com,
+        rpurdie@rpsys.net, dbaryshkov@gmail.com, dwmw2@infradead.org,
+        lgirdwood@gmail.com, broonie@kernel.org, a.zummo@towertech.it,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-leds@vger.kernel.org,
+        rtc-linux@googlegroups.com, m.szyprowski@samsung.com
+Date: Wed, 12 Mar 2014 16:11:46 +0100
+In-reply-to: <1394631466-6429-4-git-send-email-r.baldyga@samsung.com>
+References: <1394631466-6429-1-git-send-email-r.baldyga@samsung.com>
+ <1394631466-6429-4-git-send-email-r.baldyga@samsung.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t/xq7rGlQrBBheeW1ksuXiV3WLqwyds
+	Fkd3TmSyuP7lOavFpCfvmS0OL3rBaDFx5WRmi/tfjzJafLvSwWRx89M3VovLu+awWWx9s47R
+	Yu2Ru+wWtxtXsFlc23uc2eLB4Z3sFrt3PWW12N/ZwWhxupvVQdhj56y77B57Jp5k89i8Qstj
+	06pONo871/awecw7GeixZ/4PVo++LasYPabP+8nk8XmTnMf6LVuZArijuGxSUnMyy1KL9O0S
+	uDJOzehhL9hjVbFn+WuWBsYDel2MnBwSAiYS83f0sUHYYhIX7q0Hsrk4hASWMkpsOf2cHcL5
+	zCixr38hC0gVr4CBxLYLlxlBbGGBEImp09ezgthsAsYSm5cvAZskIqAlcefjfLBmZoHDzBL7
+	HnSAFbEIqEo8PXwdrJlTwFVi8+vlYA1CAvUSny9uZgexmQXUJSbNW8QMcZKSxO72Tqi4vMTm
+	NW+ZIY4QlPgx+R7LBEaBWUhaZiEpm4WkbAEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2M
+	kLj8uoNx6TGrQ4wCHIxKPLwzleSDhVgTy4orcw8xSnAwK4nwPi1UCBbiTUmsrEotyo8vKs1J
+	LT7EyMTBKdXAWCDAJvLn8WKTrlk851JDZU0Vn674xv90+el9d8sF1dfaXU+dMbdJ7cGBNu6b
+	7icZXNVE+AsNZWuSS/9XyteFJd/5LNd2YXaVvZOM5aGkjJIv/L5/dk+/5ORUPfNBgf1hcxZN
+	mfrvK27/2thycXVsZc//iFcTUifIft579sWXm5EZWbPXbDCep8RSnJFoqMVcVJwIANpC2eup	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Mar 2014 14:24:54 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-
-> ----- Original Message -----
-> > From: "Steven Rostedt" <rostedt@goodmis.org>
-> > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> > Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic
-> > Weisbecker" <fweisbec@gmail.com>, "Andrew Morton" <akpm@linux-foundation.org>, "Johannes Berg"
-> > <johannes.berg@intel.com>
-> > Sent: Tuesday, March 11, 2014 3:13:57 PM
-> > Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not set via debugfs
-> > 
+On Wed, 2014-03-12 at 14:37 +0100, Robert Baldyga wrote:
+> This patch moves code creating new i2c clients and regmaps to function
+> drivers which use them. It allows to avoid creating this instances when
+> individual function drivers are not enabled.
 > 
-> For those just added in CC, https://lkml.org/lkml/2014/3/11/431 provides the
-> missing context. The discussion is about adding module load parameters as ABI
-> for end users to enable tracepoints in modules (Steven has proposed the idea
-> a couple of times in the past, I am against for the reasons I am exposing
-> below). This discussion will likely have deep impact on other changes Steven
-> is proposing for tracepoint.c (such as making tracepoint_probe_register()
-> return -ENODEV when no tracepoint call site is currently loaded for a given
-> tracepoint), so I think the audience should be broadened.
-
-Please tell me one in-tree user that will be impacted?
-
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 > 
-> > On Tue, 11 Mar 2014 17:34:23 +0000 (UTC)
-> > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> >  
-> > > > Who can load modules not as root?? That is utterly broken. As once you
-> > > > can load a module, YOU ARE ROOT.
-> > > 
-> > > udevd runs as root, and listens to events such as USB hotplug, and loads
-> > > modules
-> > > in the back of users. The users don't need to be root for this to happen.
-> > 
-> > udevd may run as a proxy for users. But it is still a root user.
-> > Sysadmins are the ones that set up udevd.
+> Conflicts:
 > 
-> Uh ? There are tons of distributions that setup udevd for their users, and
-> no sysadmin has to interact with it.
+> 	drivers/mfd/max8997.c
 
-And the distribution just magically installs itself onto a computer? No,
-a user does, and in doing so, they set up udev. A person installing a
-distribution is a sysadmin. Even if it's grandma installing it herself.
-She owns the box, no one else is doing anything for her (unless it's
-your grandma).
+You can strip out the conflict from commit message.
 
+> ---
+>  drivers/extcon/extcon-max8997.c     |  131 +++++++++++++++++++++++++--
+>  drivers/input/misc/max8997_haptic.c |  117 +++++++++++++++++++-----
+>  drivers/mfd/max8997.c               |  167 -----------------------------------
+>  drivers/rtc/rtc-max8997.c           |   78 +++++++++++-----
+>  include/linux/mfd/max8997-private.h |   14 +--
+>  5 files changed, 283 insertions(+), 224 deletions(-)
 > 
-> > If you own your own box, you are technically the sysadmin for it.
-> 
-> If you use a box owned by your company, running Linux, but enforcing module
-> signature, you might be physically allowed to connect USB devices, and let
-> udevd load the appropriate modules for the connected devices, but that does
-> not mean you have root access at all. But having the ability to trace the
-> said computer from a user having "tracing" privileges is very valuable to
-> help debugging that machine.
+> diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
+> index 15fc5c0..42c9915 100644
+> --- a/drivers/extcon/extcon-max8997.c
+> +++ b/drivers/extcon/extcon-max8997.c
+> @@ -118,6 +118,9 @@ enum max8997_muic_charger_type {
+>  struct max8997_muic_info {
+>  	struct device *dev;
+>  	struct max8997_dev *max8997;
+> +	struct i2c_client *i2c;
+> +	struct regmap *regmap;
+> +	struct regmap_irq_chip_data *irq_data;
+>  	struct extcon_dev *edev;
+>  	int prev_cable_type;
+>  	int prev_chg_type;
+> @@ -144,6 +147,39 @@ struct max8997_muic_info {
+>  	 */
+>  	int path_usb;
+>  	int path_uart;
+> +
+> +	unsigned int reg_dump[MAX8997_MUIC_REG_END];
+> +};
+> +
+> +static const struct regmap_config max8997_muic_regmap_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +	.max_register = MAX8997_MUIC_REG_END,
+> +};
+> +
+> +static const struct regmap_irq max8997_irqs_muic[] = {
+> +	/* MUIC_INT1 interrupts */
+> +	{ .reg_offset = 0, .mask = MUIC_INT1_ADC_MASK, },
+> +	{ .reg_offset = 0, .mask = MUIC_INT1_ADCLOW_MASK, },
+> +	{ .reg_offset = 0, .mask = MUIC_INT1_ADCERROR_MASK, },
+> +	/* MUIC_INT2 interrupts */
+> +	{ .reg_offset = 1, .mask = MUIC_INT2_CHGTYP_MASK, },
+> +	{ .reg_offset = 1, .mask = MUIC_INT2_CHGDETRUN_MASK, },
+> +	{ .reg_offset = 1, .mask = MUIC_INT2_DCDTMR_MASK, },
+> +	{ .reg_offset = 1, .mask = MUIC_INT2_DBCHG_MASK, },
+> +	{ .reg_offset = 1, .mask = MUIC_INT2_VBVOLT_MASK, },
+> +	/* MUIC_INT3 interrupts */
+> +	{ .reg_offset = 2, .mask = MUIC_INT3_OVP_MASK, },
+> +};
+> +
+> +static const struct regmap_irq_chip max8997_muic_irq_chip = {
+> +	.name                   = "max8997-muic",
+> +	.status_base            = MAX8997_MUIC_REG_INT1,
+> +	.mask_base              = MAX8997_MUIC_REG_INTMASK1,
+> +	.mask_invert            = true,
+> +	.num_regs               = 3,
+> +	.irqs                   = max8997_irqs_muic,
+> +	.num_irqs               = ARRAY_SIZE(max8997_irqs_muic),
+>  };
+>  
+>  enum {
+> @@ -191,7 +227,7 @@ static int max8997_muic_set_debounce_time(struct max8997_muic_info *info,
+>  	case ADC_DEBOUNCE_TIME_10MS:
+>  	case ADC_DEBOUNCE_TIME_25MS:
+>  	case ADC_DEBOUNCE_TIME_38_62MS:
+> -		ret = regmap_update_bits(info->max8997->regmap_muic,
+> +		ret = regmap_update_bits(info->regmap,
+>  					  MAX8997_MUIC_REG_CONTROL3,
+>  					  CONTROL3_ADCDBSET_MASK,
+>  					  time << CONTROL3_ADCDBSET_SHIFT);
+> @@ -229,7 +265,7 @@ static int max8997_muic_set_path(struct max8997_muic_info *info,
+>  	else
+>  		ctrl1 = CONTROL1_SW_OPEN;
+>  
+> -	ret = regmap_update_bits(info->max8997->regmap_muic,
+> +	ret = regmap_update_bits(info->regmap,
+>  			MAX8997_MUIC_REG_CONTROL1, COMP_SW_MASK, ctrl1);
+>  	if (ret < 0) {
+>  		dev_err(info->dev, "failed to update MUIC register\n");
+> @@ -241,7 +277,7 @@ static int max8997_muic_set_path(struct max8997_muic_info *info,
+>  	else
+>  		ctrl2 |= CONTROL2_LOWPWR_MASK;	/* LowPwr=1, CPEn=0 */
+>  
+> -	ret = regmap_update_bits(info->max8997->regmap_muic,
+> +	ret = regmap_update_bits(info->regmap,
+>  			MAX8997_MUIC_REG_CONTROL2,
+>  			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK, ctrl2);
+>  	if (ret < 0) {
+> @@ -544,7 +580,7 @@ static void max8997_muic_irq_work(struct work_struct *work)
+>  		if (info->irq == muic_irqs[i].virq)
+>  			irq_type = muic_irqs[i].irq;
+>  
+> -	ret = regmap_bulk_read(info->max8997->regmap_muic,
+> +	ret = regmap_bulk_read(info->regmap,
+>  				MAX8997_MUIC_REG_STATUS1, info->status, 2);
+>  	if (ret) {
+>  		dev_err(info->dev, "failed to read muic register\n");
+> @@ -606,7 +642,7 @@ static int max8997_muic_detect_dev(struct max8997_muic_info *info)
+>  	mutex_lock(&info->mutex);
+>  
+>  	/* Read STATUSx register to detect accessory */
+> -	ret = regmap_bulk_read(info->max8997->regmap_muic,
+> +	ret = regmap_bulk_read(info->regmap,
+>  			MAX8997_MUIC_REG_STATUS1, info->status, 2);
+>  	if (ret) {
+>  		dev_err(info->dev, "failed to read MUIC register\n");
+> @@ -670,6 +706,31 @@ static int max8997_muic_probe(struct platform_device *pdev)
+>  	info->dev = &pdev->dev;
+>  	info->max8997 = max8997;
+>  
+> +	info->i2c = i2c_new_dummy(max8997->i2c->adapter, MAX8997_I2C_ADDR_MUIC);
+> +	if (!info->i2c) {
+> +		dev_err(info->dev, "failed to allocate I2C device\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	info->regmap = devm_regmap_init_i2c(info->i2c,
+> +			&max8997_muic_regmap_config);
+> +	if (IS_ERR(info->regmap)) {
+> +		ret = PTR_ERR(info->regmap);
+> +		dev_err(info->dev,
+> +			"failed to allocate register map: %d\n", ret);
+> +		goto err_regmap;
+> +	}
+> +
+> +	ret = regmap_add_irq_chip(info->regmap, max8997->irq,
+> +				IRQF_ONESHOT | IRQF_SHARED |
+> +				IRQF_TRIGGER_FALLING, 0,
+> +				&max8997_muic_irq_chip,
+> +				&info->irq_data);
+> +	if (ret) {
+> +		dev_err(info->dev, "failed to add irq chip: %d\n", ret);
+> +		goto err_regmap_irq;
+> +	}
 
-Tracing is a root privilege.
+Same issue as in patch 2/3 - regmap_del_irq_chip() shouldn't be called
+when add fails.
 
-> 
-> Even without going that far, if you want tracing to be widely usable to
-> pinpoint issues within Linux and/or its applications or libraries, you
-> basically have to remove most user interactions from the picture, and let
-> automated tools gather tracing data to perform analysis. As soon as you
-> require users to fiddle with udev configuration, or pass special parameters
-> to modprobe, or if you start coupling the tracing infrastructure with the
-> module configuration, you just made tracing unusable for a vast majority of
-> Linux distribution users out there.
+> +
+>  	platform_set_drvdata(pdev, info);
+>  	mutex_init(&info->mutex);
+>  
+> @@ -679,8 +740,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
+>  		struct max8997_muic_irq *muic_irq = &muic_irqs[i];
+>  		unsigned int virq = 0;
+>  
+> -		virq = regmap_irq_get_virq(max8997->irq_data_muic,
+> -					muic_irq->irq);
+> +		virq = regmap_irq_get_virq(info->irq_data, muic_irq->irq);
+>  		if (!virq) {
+>  			ret = -EINVAL;
+>  			goto err_irq;
+> @@ -723,7 +783,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
+>  
+>  		/* Initialize registers according to platform data */
+>  		for (i = 0; i < muic_pdata->num_init_data; i++) {
+> -			regmap_write(info->max8997->regmap_muic,
+> +			regmap_write(info->regmap,
+>  					muic_pdata->init_data[i].addr,
+>  					muic_pdata->init_data[i].data);
+>  		}
+> @@ -779,6 +839,10 @@ static int max8997_muic_probe(struct platform_device *pdev)
+>  err_irq:
+>  	while (--i >= 0)
+>  		free_irq(muic_irqs[i].virq, info);
+> +err_regmap_irq:
+> +	regmap_del_irq_chip(info->max8997->irq, info->irq_data);
+> +err_regmap:
+> +	i2c_unregister_device(info->i2c);
+>  	return ret;
+>  }
+>  
+> @@ -787,6 +851,8 @@ static int max8997_muic_remove(struct platform_device *pdev)
+>  	struct max8997_muic_info *info = platform_get_drvdata(pdev);
+>  	int i;
+>  
+> +	regmap_del_irq_chip(info->max8997->irq, info->irq_data);
+> +
+>  	for (i = 0; i < ARRAY_SIZE(muic_irqs); i++)
+>  		free_irq(muic_irqs[i].virq, info);
 
-This seems very specific to a single tracing tool that happens not to
-be in the kernel tree.
-
-> 
-> I've been trying to make my point that tracing should be first of all
-> _usable_ by non-expert Linux end users, but it seems that I'm completely
-> failing at getting the message through somehow. And believe me I've spent
-> years trying to voice this message. Perhaps I'm not cursing enough, perhaps
-> I'm not yelling enough. Rather than arguing, the path I'm currently taking
-> is to prove my point by putting the tools needed by my user community in
-> their hands.
-
-I don't know why you are complaining. Think of this as your job
-security.
-
-> 
-> If to you the majority of Linux users means "kernel developers", then
-> I can see how our point of views cannot be reconciled easily. From my
-> point of view, there are far more users who need those tracing tools that
-> are not kernel developers.
-
-No, but the majority of tracing users *are* kernel developers, or those
-that are experts in the system.
-
-Why would grandma want to trace the kernel?
-
-> 
-> > Modifications to udev require sudo
-> > privileges.
-> > 
-> > Tracepoints should not be something a non-sysadmin can modify or
-> > enable. If you want non root users to do so, create a proxy daemon like
-> > udevd to do it for them. But the kernel isn't going to allow that
-> > directly.
-> 
-> I never said the kernel should directly expose ABIs accessible by others
-> than root. Actually, this is the very reason we have a "lttng-sessiond"
-> daemon running as root to control kernel tracing. However, it can be
-> controlled by a "lttng" command line tool over unix sockets if the user
-> is part of the "tracing" group. Right there, this is the concept of your
-> proxy daemon. However, you seem to imply that this proxy daemon should
-> somehow fiddle with udevd and/or modprobe configuration to add temporary
-> system-wide parameters to how modules are loaded, depending on tracing
-> needs. Trying to couple something usually configured initially for a
-> large portion of a system's life (and even with tripwire validation that
-> /etc does not change over time) with something as transient as tracing
-> simply cannot work without causing havoc in the system configuration. So
-> no, having a tracing proxy daemon changing configuration of module
-> arguments cannot fly.
-
-I actually never said that. I said that you could have a proxy to
-enable or disable the tracepoint. I don't know where you're getting
-this crap from. Yes, I have suggested in the past that the ideal
-approach is to have modprobe handle it, just like it handles other
-module changes for one time deals. And yes, tracing a module is a one
-time deal. But you seem to be getting in a tizzy thinking that's what I
-recommended yesterday.
-
-> 
-> > 
-> > > 
-> > > >  
-> > > > > fashion and is not suitable for the user-base we are targeting. I seems
-> > > > > to
-> > > > > be a user experience disaster IMHO.
-> > > > 
-> > > > For your case only. But it is normal operation for normal uses of Linux.
-> > > 
-> > > AFAIK pretty much all distros use udev nowadays. Are you suggesting that
-> > > all
-> > > users using udev and distribution kernels are not "normal uses of Linux" ?
-> > 
-> > udev is root, and is modified by root users. A normal user can not just
-> > interact with udev. And sticking in a usb stick into a computer counts
-> > as a sysadmin operation, even if the person doesn't official have the
-> > title.
-> 
-> So if I understand your line of thought, you imply that anyone who can
-> plug a USB stick of any kind (memory stick, USB wifi card, etc) into a
-> computer should automatically have root access ? Is it just me, or it
-> makes no sense ?
-
-I wouldn't want people to have access to any box I own to be able to
-just stick any usb device into the computer. Look at all the USB drivers
-we have. You think they are all perfect. I'm sure it wouldn't be too
-hard to find a bad USB device driver and make your own dongle to stick
-in, that can root the box.
-
-> 
-> > 
-> > > 
-> > > > 
-> > > > > 
-> > > > > I'm OK as long as we have an elegant way forward. Ideally I would have
-> > > > > prefered (1) to eliminate code duplication between tracers and
-> > > > > tracepoint
-> > > > > infrastructure (we have to reimplement a hash table similar to
-> > > > > tracepoints
-> > > > > within the tracer with solution (2)), but (2) technically works too.
-> > > > 
-> > > > Here's what I propose then. We implement 2 for now. You can "duplicate"
-> > > > the code into your own work.
-> > > 
-> > > Works for me.
-> > > 
-> > > > Then we should be able to simplify the
-> > > > tracepoint code as it no longer will have the requirement to enable
-> > > > tracepoints that do not exist.
-> > > 
-> > > What happens for the case where we enable a tracepoint, and then the
-> > > only module containing a callsite of that tracepoint is unloaded, and
-> > > then reloaded ?
-> > 
-> > When a module is unloaded, it usually loses state. Is there any state
-> > that is maintained for a module being unloaded and reloaded again?
-> > Besides tracepoints? If not, then the module should lose its state for
-> > tracepoints as well.
-> 
-> What you're missing here is that the same tracepoint can appear within
-> more than one module.
-
-So?
-
-> 
-> I think there is a core, fundamental difference between the ways we see
-> tracing. You seem to see tracing as being solely part of the modules
-> that contain the caller tracing code. From my perspective, tracing fits
-> much better in the "aspect oriented programming" paradigm, since it spreads
-> the same "crosscutting concerns" across multiple modules. So yes, in AOP,
-> it makes perfect sense that tracing activation state goes beyond the
-> lifetime of a single loaded module: it spawns across core kernel, and zero,
-> one, or more loaded modules, independently of whether they are unloaded and
-> reloaded again.
-
-Have your LTTNg module dictate that policy.
-
-> 
-> 
-> So going back on the changes you proposed to the tracepoint infrastructure:
-> 
-> A) Making tracepoint_probe_register() unregister the probe and fail when
->    there is no tracepoint call site present for a probe at that time:
-> 
-> With this approach, if the probe is registered when the module containing
-> the call site is loaded, and then that module is unloaded, it will leave
-> the probe in a registered state, leaving the tracer lying to the user,
-> letting them think there are currently callsites for this tracepoint when
-> there are none.
-
-Hmm, currently the probe lies to the user when the tracepoint doesn't
-exist. We enable it and nothing happens. This BROKE IN TREE USERS!!!!
-
-I suggest that we remove the probe when the module is unloaded. No
-lying. Either a tracepoint exists when you enable it, or it doesn't.
+I think the order should be different: first free_irq() then
+regmap_del_irq_chip(). At least this is logically expected as the
+virtual irqs aren't useful without irq_chip.
 
 
-> 
-> B) Making tracepoint_probe_register() just return an error (-ENOEDV), but
->    leaving the probe registered.
-> 
-> I think we have already agreed that this compromise solution is a weird API
-> choice, since an error condition must be treated as a success by the caller.
-> Moreover, it has the same issue as (A) above: if the module is unloaded
-> after probe registration, the tracer is lying to the user, making them
-> think there is a call site loaded when there are none.
+Best regards,
+Krzysztof
 
-But isn't that what we do today?
-
-> 
-> C) Adding module load arguments to specify which tracepoint should be
->    enabled.
-> 
-> Please refer to my response above in this email to understand why I object.
-
-I didn't suggest this in this thread. I only pointed out that is the
-most sane situation. But I've been trying to work with you, and you
-don't seem to see that.
-
-> 
-> Back to your original requirement: you want to let the tracer communicate
-> to end users whether a specific tracepoint has call sites or not. I'm
-> currently preparing a patch implementing a "tracepoint_callsite_count()"
-> API that will allow this, and it won't lie to the tracer like solutions
-> (A) and (B) above. Whenever the tracer queries the state, it will get the
-> current information about the number of enabled call sites, not some stale
-> data based on a prior registration error.
-
-No, I don't want to know if this call site exists or not. This stupid
-"tracepoint_probe_register()" that activates a tracepoint by name. But
-if that tracepoint doesn't exist, it just returns normally as if
-everything is fine and dandy. WTF!
-
-Look Mathieu, I've been trying to be nice here. This crap has broken
-in tree kernel users, and this magical "enable a non-existent
-tracepoint, so when one is created, it will be enabled" is only used by
-LTTng! NOBODY ELSE USES IT. This means that I can strip this usage out
-of the kernel, as there are no uses of it in the kernel.
-
-What you don't seem to realize, is that your methods broke the stuff
-that is in the kernel, and you don't seem to give a shit about that.
-
-The solution I like the most that I believe will work for both of us,
-is to to move this magic "enable tracepoint in the future" to your
-LTTng module. Have your module register a module load and unload handler
-to be able to see the tracepoints that exist in the module, and you can
-enable them then. When a module is unloaded, your module can do the
-accounting to record that, and the state of its tracepoints. 
-
-Looks like we can have it both ways. A way that works well for the
-kernel, and a way that works well for you. But your module will need to
-do the heavy work for what you want.
-
-To me, a tracepoint should only be enabled when it exists. If it is
-enabled in module when the module is unloaded, then it should be
-removed after the module has left. If the module is loaded again, it is
-up to the user (or your module) to enable that tracepoint again.
-
--- Steve
 
