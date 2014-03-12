@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaCLKLX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 06:11:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48930 "EHLO
+	id S1753263AbaCLKLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 06:11:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48935 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178AbaCLKLR (ORCPT
+	with ESMTP id S1753139AbaCLKLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 06:11:17 -0400
-Date: Wed, 12 Mar 2014 03:10:45 -0700
-From: tip-bot for Alex Shi <tipbot@zytor.com>
-Message-ID: <tip-6037dd1a49f95092824fa8ba75c717ff7805e317@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, alex.shi@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, alex.shi@linaro.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1394607111-1904-1-git-send-email-alex.shi@linaro.org>
-References: <1394607111-1904-1-git-send-email-alex.shi@linaro.org>
+	Wed, 12 Mar 2014 06:11:32 -0400
+Date: Wed, 12 Mar 2014 03:10:55 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-4191c29f0593e82d19c3cd05de67e55467aca6b5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, sfr@canb.auug.org.au,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        sfr@canb.auug.org.au
+In-Reply-To: <20140311235329.GA28624@quad>
+References: <20140311235329.GA28624@quad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Clean up the task_hot() function
-Git-Commit-ID: 6037dd1a49f95092824fa8ba75c717ff7805e317
+Subject: [tip:perf/core] perf/x86/uncore:
+  Fix compilation warning in snb_uncore_imc_init_box()
+Git-Commit-ID: 4191c29f0593e82d19c3cd05de67e55467aca6b5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,44 +34,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6037dd1a49f95092824fa8ba75c717ff7805e317
-Gitweb:     http://git.kernel.org/tip/6037dd1a49f95092824fa8ba75c717ff7805e317
-Author:     Alex Shi <alex.shi@linaro.org>
-AuthorDate: Wed, 12 Mar 2014 14:51:51 +0800
+Commit-ID:  4191c29f0593e82d19c3cd05de67e55467aca6b5
+Gitweb:     http://git.kernel.org/tip/4191c29f0593e82d19c3cd05de67e55467aca6b5
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Wed, 12 Mar 2014 00:53:30 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 12 Mar 2014 10:49:01 +0100
+CommitDate: Wed, 12 Mar 2014 10:49:13 +0100
 
-sched: Clean up the task_hot() function
+perf/x86/uncore: Fix compilation warning in snb_uncore_imc_init_box()
 
-task_hot() doesn't need the 'sched_domain' parameter, so remove it.
+This patch fixes a compilation problem (unused variable) with the
+new SNB/IVB/HSW uncore IMC code.
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
+[ In -v2 we simplify the fix as suggested by Peter Zjilstra. ]
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1394607111-1904-1-git-send-email-alex.shi@linaro.org
+Link: http://lkml.kernel.org/r/20140311235329.GA28624@quad
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b301918..7e9bd0b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5037,7 +5037,7 @@ static void move_task(struct task_struct *p, struct lb_env *env)
-  * Is this task likely cache-hot:
-  */
- static int
--task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
-+task_hot(struct task_struct *p, u64 now)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 5c2537a..dfd50ea 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1722,15 +1722,16 @@ static struct attribute_group snb_uncore_imc_format_group = {
+ static void snb_uncore_imc_init_box(struct intel_uncore_box *box)
  {
- 	s64 delta;
+ 	struct pci_dev *pdev = box->pci_dev;
+-	u32 addr_lo, addr_hi;
++	int where = SNB_UNCORE_PCI_IMC_BAR_OFFSET;
+ 	resource_size_t addr;
++	u32 pci_dword;
  
-@@ -5198,7 +5198,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- 	 * 2) task is cache cold, or
- 	 * 3) too many balance attempts have failed.
- 	 */
--	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq), env->sd);
-+	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq));
- 	if (!tsk_cache_hot)
- 		tsk_cache_hot = migrate_degrades_locality(p, env);
+-	pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET, &addr_lo);
+-	addr = addr_lo;
++	pci_read_config_dword(pdev, where, &pci_dword);
++	addr = pci_dword;
  
+ #ifdef CONFIG_PHYS_ADDR_T_64BIT
+-	pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET+4, &addr_hi);
+-	addr = ((resource_size_t)addr_hi << 32) | addr_lo;
++	pci_read_config_dword(pdev, where + 4, &pci_dword);
++	addr |= ((resource_size_t)pci_dword << 32);
+ #endif
+ 
+ 	addr &= ~(PAGE_SIZE - 1);
