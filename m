@@ -1,124 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650AbaCLPBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:01:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48062 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103AbaCLPBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 11:01:37 -0400
-Date: Wed, 12 Mar 2014 16:01:34 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/8] mm: memcg: push !mm handling out to page cache
- charge function
-Message-ID: <20140312150134.GG11831@dhcp22.suse.cz>
-References: <1394587714-6966-1-git-send-email-hannes@cmpxchg.org>
- <1394587714-6966-5-git-send-email-hannes@cmpxchg.org>
- <20140312131152.GC11831@dhcp22.suse.cz>
- <20140312145611.GD14688@cmpxchg.org>
+	id S1754612AbaCLPG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:06:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35047 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987AbaCLPG0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 11:06:26 -0400
+Date: Wed, 12 Mar 2014 16:06:17 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Jiri Bohac <jbohac@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: is printk() safe within a timekeeper_seq write section?
+Message-ID: <20140312150617.GE27965@twins.programming.kicks-ass.net>
+References: <20140306174531.GA30634@midget.suse.cz>
+ <531F6429.8050008@linaro.org>
+ <alpine.DEB.2.02.1403112040100.18573@ionos.tec.linutronix.de>
+ <20140312064645.GJ30956@twins.programming.kicks-ass.net>
+ <20140312143456.GB28695@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140312145611.GD14688@cmpxchg.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140312143456.GB28695@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 12-03-14 10:56:11, Johannes Weiner wrote:
-> On Wed, Mar 12, 2014 at 02:11:52PM +0100, Michal Hocko wrote:
-> > On Tue 11-03-14 21:28:30, Johannes Weiner wrote:
-> > [...]
-> > > @@ -4070,6 +4061,12 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
-> > >  		return 0;
-> > >  
-> > >  	if (!PageSwapCache(page)) {
-> > > +		/*
-> > > +		 * Page cache insertions can happen without an actual
-> > > +		 * task context, e.g. during disk probing on boot.
+On Wed, Mar 12, 2014 at 03:34:56PM +0100, Jan Kara wrote:
+> On Wed 12-03-14 07:46:45, Peter Zijlstra wrote:
+> > On Tue, Mar 11, 2014 at 10:32:26PM +0100, Thomas Gleixner wrote:
+> > > > Peter/Thomas: Any thoughts on the deferred printk buffer? Does printk
+> > > > already have something like this? Any other ideas here?
+> > > 
+> > > I was thinking about something like that for RT as on RT printk is a
+> > > complete nightmare. It's simple to implement that, but as we know from
+> > > the RT experience it can lead to painful loss of debug output.
+> > > 
+> > > Assume you printk inside such a region, which just fills the dmesg
+> > > buffer and schedules the delayed output. Now in that same region you
+> > > run into a deadlock which causes the whole machine to freeze. Then you
+> > > won't see the debug output, which might actually give you the hint why
+> > > the system deadlocked ....
 > > 
-> > We read a page cache during disk probing? I have tried to find such a
-> > code path but failed. Could you point me to such a path, please?
-> > I thought that such probing is done from udev context but I am not
-> > familiar with this area TBH.
-> 
-> Yes, I tried to remove the !mm case entirely and hit the following
-> during boot:
+> > Ok so I started writing a rant that I don't give a crap about klogd and
+> > that deferring that wakeup would be perfectly fine; then I looked at the
+> > code and found that we in fact do this already.
+> > 
+> > wake_up_klogd() schedules a lazy irqwork to go wake up, so that's out.
+> > 
+> > That leaves the console sem wakeup; but I suppose we could redo this
+> > patch:
+> > 
+> >   lkml.kernel.org/r/20110621153806.286257129@chello.nl
+> > 
+> > to get rid of that one.
+>   I don't know if you've noticed but there's also the following patch:
+> https://lkml.org/lkml/2013/12/23/310
+>   which would make it pretty easy to just add messages to printk buffer in
+> timer code and schedule printing later using irq work.
 
-OK, I wonder why I haven't triggered that. Anyway, could you mention
-this path in the changelog? This is really hard to find when jumping in
-the code.
+Yeah; I suppose that one is prettier.
 
-Anyway thanks!
+>   Regarding your referenced patch - the way it is written, it would make
+> all printk users spin on console_sem->lock all the time while we are
+> flushing buffer to console. I don't think we want that - we trylock the
+> console_sem exactly so that other printk users can proceed while one poor
+> guy is pushing stuff to console.
 
-> [    1.869561] BUG: unable to handle kernel NULL pointer dereference at 0000000000000320
-> [    1.869565] IP: [<ffffffff811369a2>] get_mem_cgroup_from_mm+0x32/0x80
-> [    1.869566] PGD 0
-> [    1.869567] Oops: 0000 [#1] SMP
-> [    1.869569] CPU: 3 PID: 65 Comm: kworker/u8:6 Not tainted 3.14.0-rc6-00007-g3856318f53a0-dirty #133
-> [    1.869569] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./H61M-DGS, BIOS P1.30 05/10/2012
-> [    1.869573] Workqueue: events_unbound async_run_entry_fn
-> [    1.869573] task: ffff8800ce82d3c0 ti: ffff8800ce8c6000 task.ti: ffff8800ce8c6000
-> [    1.869575] RIP: 0010:[<ffffffff811369a2>]  [<ffffffff811369a2>] get_mem_cgroup_from_mm+0x32/0x80
-> [    1.869576] RSP: 0000:ffff8800ce8c78f8  EFLAGS: 00010246
-> [    1.869576] RAX: 003fffc000000001 RBX: 0000000000000000 RCX: 0000000000000001
-> [    1.869577] RDX: 00000000000000d0 RSI: 0000000000000000 RDI: 0000000000000000
-> [    1.869577] RBP: ffff8800ce8c7908 R08: ffffffff81713232 R09: ffffea00033a1680
-> [    1.869578] R10: 0000000000001723 R11: ffffc90004e4dfff R12: 0000000000000000
-> [    1.869578] R13: 0000000000000001 R14: 0000000000000000 R15: 00000000000000d0
-> [    1.869579] FS:  0000000000000000(0000) GS:ffff88021f380000(0000) knlGS:0000000000000000
-> [    1.869579] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [    1.869580] CR2: 0000000000000320 CR3: 00000000017a5000 CR4: 00000000000407e0
-> [    1.869580] Stack:
-> [    1.869581]  0000000000000000 ffffea00033a1640 ffff8800ce8c7948 ffffffff8113a112
-> [    1.869582]  00000001ce8c7978 0000000000000000 ffffea00033a1640 00000000000200d0
-> [    1.869583]  0000000000000000 ffffffff81174520 ffff8800ce8c7970 ffffffff8113be0a
-> [    1.869583] Call Trace:
-> [    1.869586]  [<ffffffff8113a112>] mem_cgroup_charge_common+0x42/0xf0
-> [    1.869589]  [<ffffffff81174520>] ? blkdev_write_begin+0x30/0x30
-> [    1.869590]  [<ffffffff8113be0a>] mem_cgroup_cache_charge+0x7a/0xb0
-> [    1.869592] sd 1:0:0:0: [sdb] 1953525168 512-byte logical blocks: (1.00 TB/931 GiB)
-> [    1.869594]  [<ffffffff810db06d>] add_to_page_cache_locked+0x3d/0x150
-> [    1.869595]  [<ffffffff810db19a>] add_to_page_cache_lru+0x1a/0x40
-> [    1.869597]  [<ffffffff810dbdef>] do_read_cache_page+0x6f/0x1a0
-> [    1.869598]  [<ffffffff810dce79>] read_cache_page+0x19/0x30
-> [    1.869601]  [<ffffffff8123952d>] read_dev_sector+0x2d/0x90
-> [    1.869603]  [<ffffffff8123a21f>] read_lba+0xef/0x1a0
-> [    1.869604]  [<ffffffff8123a663>] ? find_valid_gpt+0xc3/0x640
-> [    1.869605]  [<ffffffff8123a681>] find_valid_gpt+0xe1/0x640
-> [    1.869607]  [<ffffffff81249e6b>] ? string.isra.4+0x3b/0xf0
-> [    1.869609]  [<ffffffff8123abe0>] ? find_valid_gpt+0x640/0x640
-> [    1.869610]  [<ffffffff8123ac56>] efi_partition+0x76/0x3f0
-> [    1.869611]  [<ffffffff8124aec4>] ? vsnprintf+0x1f4/0x610
-> [    1.869612]  [<ffffffff8124b799>] ? snprintf+0x39/0x40
-> [    1.869613]  [<ffffffff8123abe0>] ? find_valid_gpt+0x640/0x640
-> [    1.869615]  [<ffffffff812396c8>] check_partition+0x108/0x240
-> [    1.869616]  [<ffffffff81239264>] rescan_partitions+0xb4/0x2c0
-> [    1.869617]  [<ffffffff8117584c>] __blkdev_get+0x2dc/0x400
-> [    1.869618]  [<ffffffff81175b1d>] blkdev_get+0x1ad/0x320
-> [    1.869619] sd 1:0:0:0: [sdb] Write Protect is off
-> [    1.869621]  [<ffffffff81157603>] ? unlock_new_inode+0x43/0x70
-> [    1.869622] sd 1:0:0:0: [sdb] Mode Sense: 00 3a 00 00
-> [    1.869622]  [<ffffffff81174f66>] ? bdget+0x136/0x150
-> [    1.869624]  [<ffffffff81236b34>] add_disk+0x394/0x4a0
-> [    1.869627]  [<ffffffff8135b327>] sd_probe_async+0x127/0x1d0
-> [    1.869628]  [<ffffffff81065c87>] async_run_entry_fn+0x37/0x130
-> [    1.869629]  [<ffffffff810595fe>] process_one_work+0x16e/0x3e0
-> [    1.869630]  [<ffffffff81059991>] worker_thread+0x121/0x3a0
-> [    1.869631]  [<ffffffff81059870>] ? process_one_work+0x3e0/0x3e0
-> [    1.869633]  [<ffffffff810602c2>] kthread+0xd2/0xf0
-> [    1.869634] sd 1:0:0:0: [sdb] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
-> [    1.869636]  [<ffffffff810601f0>] ? __kthread_parkme+0x70/0x70
-> [    1.869638]  [<ffffffff815dbaac>] ret_from_fork+0x7c/0xb0
-> [    1.869639]  [<ffffffff810601f0>] ? __kthread_parkme+0x70/0x70
-> [    1.869648] Code: 89 e5 41 54 49 89 fc 53 eb 21 0f 1f 80 00 00 00 00 f6 43 48 01 75 52 48 8b 43 18 a8 03 75 52 65 ff 00 b8 01 00 00 00 84 c0 75 3e <49> 8b 84 24 20 03 00 00 48 85 c0 74 10 48 8b 80 98 06 00 00 48
-> [    1.869650] RIP  [<ffffffff811369a2>] get_mem_cgroup_from_mm+0x32/0x80
-> [    1.869650]  RSP <ffff8800ce8c78f8>
-> [    1.869650] CR2: 0000000000000320
-> [    1.869653] ---[ end trace 4cda1f5484a90d6d ]---
+That should be fixable though; just keep enough state for the other
+printk()s to see they don't need to also flush.
 
--- 
-Michal Hocko
-SUSE Labs
+But the idea is to not do the sleep+wakeup dance.
+
+But as stated; that's not going to actually matter much, since the
+popular console drivers are crap and do wakeups too.
