@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512AbaCLTES (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 15:04:18 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:57357 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbaCLTEM (ORCPT
+	id S1752748AbaCLTGV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 15:06:21 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:39527 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445AbaCLTEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 15:04:12 -0400
+	Wed, 12 Mar 2014 15:04:15 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Russell King <linux@arm.linux.org.uk>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -22,136 +22,57 @@ Cc: Michal Simek <michal.simek@xilinx.com>,
         Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org,
         Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v3 5/9] tty: xuartps: Refactor read-modify-writes
-Date: Wed, 12 Mar 2014 12:02:59 -0700
-Message-Id: <1394650983-24780-6-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v3 6/9] tty: xuartps: Don't write IRQ disable register to enable interrupts
+Date: Wed, 12 Mar 2014 12:03:00 -0700
+Message-Id: <1394650983-24780-7-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.9.0.1.g4196000
 In-Reply-To: <1394650983-24780-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1394650983-24780-1-git-send-email-soren.brinkmann@xilinx.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A lot of read-modify-write sequences used a one-line statement which
-nests a readl() within a writel(). Convert this into code sequences that
-make the three steps more obvious.
+A comment states, that, according to the data sheet, to enable
+interrupts the disable register should be written, but the enable
+register could be left untouched. And it suspsects a HW bug requiring
+to write both.
+Reviewing the data sheet, these statements seem wrong. Just as one would
+expect. Writing to the enable/disable register enables/disables
+interrupts.
+Hence the misleading comment and needless write to the disable register
+are removed from the enable sequence.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- drivers/tty/serial/xilinx_uartps.c | 52 ++++++++++++++++++--------------------
- 1 file changed, 24 insertions(+), 28 deletions(-)
+I added a few lines to comment the change and altered the summary line.
+In case this causes issues it should show up a little easier as a
+candidate to revert.
+
+	Sören
+---
+ drivers/tty/serial/xilinx_uartps.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index 814391038abb..b182ab8cfd07 100644
+index b182ab8cfd07..f9a2c2fc03c4 100644
 --- a/drivers/tty/serial/xilinx_uartps.c
 +++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -437,9 +437,9 @@ static int xuartps_clk_notifier_cb(struct notifier_block *nb,
- 		spin_lock_irqsave(&xuartps->port->lock, flags);
+@@ -1085,11 +1085,7 @@ static void xuartps_console_write(struct console *co, const char *s,
  
- 		/* Disable the TX and RX to set baud rate */
--		xuartps_writel(xuartps_readl(XUARTPS_CR_OFFSET) |
--				(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS),
--				XUARTPS_CR_OFFSET);
-+		ctrl_reg = xuartps_readl(XUARTPS_CR_OFFSET);
-+		ctrl_reg |= XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS;
-+		xuartps_writel(ctrl_reg, XUARTPS_CR_OFFSET);
+ 	xuartps_writel(ctrl, XUARTPS_CR_OFFSET);
  
- 		spin_unlock_irqrestore(&xuartps->port->lock, flags);
+-	/* restore interrupt state, it seems like there may be a h/w bug
+-	 * in that the interrupt enable register should not need to be
+-	 * written based on the data sheet
+-	 */
+-	xuartps_writel(~imr, XUARTPS_IDR_OFFSET);
++	/* restore interrupt state */
+ 	xuartps_writel(imr, XUARTPS_IER_OFFSET);
  
-@@ -464,9 +464,9 @@ static int xuartps_clk_notifier_cb(struct notifier_block *nb,
- 			spin_lock_irqsave(&xuartps->port->lock, flags);
- 
- 		/* Set TX/RX Reset */
--		xuartps_writel(xuartps_readl(XUARTPS_CR_OFFSET) |
--				(XUARTPS_CR_TXRST | XUARTPS_CR_RXRST),
--				XUARTPS_CR_OFFSET);
-+		ctrl_reg = xuartps_readl(XUARTPS_CR_OFFSET);
-+		ctrl_reg |= XUARTPS_CR_TXRST | XUARTPS_CR_RXRST;
-+		xuartps_writel(ctrl_reg, XUARTPS_CR_OFFSET);
- 
- 		while (xuartps_readl(XUARTPS_CR_OFFSET) &
- 				(XUARTPS_CR_TXRST | XUARTPS_CR_RXRST))
-@@ -479,10 +479,9 @@ static int xuartps_clk_notifier_cb(struct notifier_block *nb,
- 		 */
- 		xuartps_writel(rx_timeout, XUARTPS_RXTOUT_OFFSET);
- 		ctrl_reg = xuartps_readl(XUARTPS_CR_OFFSET);
--		xuartps_writel(
--			(ctrl_reg & ~(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS)) |
--			(XUARTPS_CR_TX_EN | XUARTPS_CR_RX_EN),
--			XUARTPS_CR_OFFSET);
-+		ctrl_reg &= ~(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS);
-+		ctrl_reg |= XUARTPS_CR_TX_EN | XUARTPS_CR_RX_EN;
-+		xuartps_writel(ctrl_reg, XUARTPS_CR_OFFSET);
- 
- 		spin_unlock_irqrestore(&xuartps->port->lock, flags);
- 
-@@ -631,9 +630,9 @@ static void xuartps_set_termios(struct uart_port *port,
- 	}
- 
- 	/* Disable the TX and RX to set baud rate */
--	xuartps_writel(xuartps_readl(XUARTPS_CR_OFFSET) |
--			(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS),
--			XUARTPS_CR_OFFSET);
-+	ctrl_reg = xuartps_readl(XUARTPS_CR_OFFSET);
-+	ctrl_reg |= XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS;
-+	xuartps_writel(ctrl_reg, XUARTPS_CR_OFFSET);
- 
- 	/*
- 	 * Min baud rate = 6bps and Max Baud Rate is 10Mbps for 100Mhz clk
-@@ -651,20 +650,18 @@ static void xuartps_set_termios(struct uart_port *port,
- 	uart_update_timeout(port, termios->c_cflag, baud);
- 
- 	/* Set TX/RX Reset */
--	xuartps_writel(xuartps_readl(XUARTPS_CR_OFFSET) |
--			(XUARTPS_CR_TXRST | XUARTPS_CR_RXRST),
--			XUARTPS_CR_OFFSET);
--
- 	ctrl_reg = xuartps_readl(XUARTPS_CR_OFFSET);
-+	ctrl_reg |= XUARTPS_CR_TXRST | XUARTPS_CR_RXRST;
-+	xuartps_writel(ctrl_reg, XUARTPS_CR_OFFSET);
- 
- 	/*
- 	 * Clear the RX disable and TX disable bits and then set the TX enable
- 	 * bit and RX enable bit to enable the transmitter and receiver.
- 	 */
--	xuartps_writel(
--		(ctrl_reg & ~(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS))
--			| (XUARTPS_CR_TX_EN | XUARTPS_CR_RX_EN),
--			XUARTPS_CR_OFFSET);
-+	ctrl_reg = xuartps_readl(XUARTPS_CR_OFFSET);
-+	ctrl_reg &= ~(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS);
-+	ctrl_reg |= XUARTPS_CR_TX_EN | XUARTPS_CR_RX_EN;
-+	xuartps_writel(ctrl_reg, XUARTPS_CR_OFFSET);
- 
- 	xuartps_writel(rx_timeout, XUARTPS_RXTOUT_OFFSET);
- 
-@@ -1248,9 +1245,9 @@ static int xuartps_resume(struct device *device)
- 		spin_lock_irqsave(&port->lock, flags);
- 
- 		/* Set TX/RX Reset */
--		xuartps_writel(xuartps_readl(XUARTPS_CR_OFFSET) |
--				(XUARTPS_CR_TXRST | XUARTPS_CR_RXRST),
--				XUARTPS_CR_OFFSET);
-+		ctrl_reg = xuartps_readl(XUARTPS_CR_OFFSET);
-+		ctrl_reg |= XUARTPS_CR_TXRST | XUARTPS_CR_RXRST;
-+		xuartps_writel(ctrl_reg, XUARTPS_CR_OFFSET);
- 		while (xuartps_readl(XUARTPS_CR_OFFSET) &
- 				(XUARTPS_CR_TXRST | XUARTPS_CR_RXRST))
- 			cpu_relax();
-@@ -1259,10 +1256,9 @@ static int xuartps_resume(struct device *device)
- 		xuartps_writel(rx_timeout, XUARTPS_RXTOUT_OFFSET);
- 		/* Enable Tx/Rx */
- 		ctrl_reg = xuartps_readl(XUARTPS_CR_OFFSET);
--		xuartps_writel(
--			(ctrl_reg & ~(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS)) |
--			(XUARTPS_CR_TX_EN | XUARTPS_CR_RX_EN),
--			XUARTPS_CR_OFFSET);
-+		ctrl_reg &= ~(XUARTPS_CR_TX_DIS | XUARTPS_CR_RX_DIS);
-+		ctrl_reg |= XUARTPS_CR_TX_EN | XUARTPS_CR_RX_EN;
-+		xuartps_writel(ctrl_reg, XUARTPS_CR_OFFSET);
- 
- 		spin_unlock_irqrestore(&port->lock, flags);
- 	} else {
+ 	if (locked)
 -- 
 1.9.0.1.g4196000
 
