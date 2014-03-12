@@ -1,79 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490AbaCLCFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 22:05:13 -0400
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:44495
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756007AbaCLCFK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 22:05:10 -0400
-X-Forefront-Antispam-Report: CIP:141.131.3.20;KIP:(null);UIP:(null);IPV:NLI;H:mail1.cirrus.com;RD:mail1.cirrus.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275dh1de097hz2dh7bh109h2a8h839h944hd25he5bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2052h20b3h2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25f6h2605h1155h)
-From: "Austin, Brian" <Brian.Austin@cirrus.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Nicolin Chen <Guangyu.Chen@freescale.com>,
-        "Handrigan, Paul" <Paul.Handrigan@cirrus.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH v2] ASoC: cs42888: Add codec driver support
-Thread-Topic: [PATCH v2] ASoC: cs42888: Add codec driver support
-Thread-Index: AQHPPRu/Pw8nwgNZUEGWM89RfZp8hprcWloAgAAECQCAAC+JAIAAJs+/
-Date: Wed, 12 Mar 2014 02:05:00 +0000
-Message-ID: <03E7E694-045D-4C8B-A1A4-98CC306D6D63@cirrus.com>
-References: <1394536791-8381-1-git-send-email-Guangyu.Chen@freescale.com>
- <alpine.DEB.2.02.1403111026280.3558@heelrod>
- <531F320E.70605@metafoo.de>,<20140311184606.GW28112@sirena.org.uk>
-In-Reply-To: <20140311184606.GW28112@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: cirrus.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1756540AbaCLCKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 22:10:21 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:37633 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756501AbaCLCKR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 22:10:17 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Archs <linux-arch@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 6/6] arch: Remove stub cputime.h headers
+Date: Wed, 12 Mar 2014 03:10:02 +0100
+Message-Id: <1394590202-772-7-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1394590202-772-1-git-send-email-fweisbec@gmail.com>
+References: <1394590202-772-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Many architectures have a stub cputime.h that only include the default
+cputime.h
 
+Lets remove the useless headers, we only need to mention that we want
+the default headers on the Kbuild files.
 
->> On Mar 11, 2014, at 13:46, "Mark Brown" <broonie@kernel.org> wrote:
->> 
->> On Tue, Mar 11, 2014 at 04:55:58PM +0100, Lars-Peter Clausen wrote:
->> On 03/11/2014 04:41 PM, Brian Austin wrote:
-> 
->>> So WRT the CS42888, this is one device in a series of 2 devices that are
->>> register compatible with the only difference being that the CS42488 has 2
->>> extra ADC's. Same die and same DeviceID.
-> 
->>> Would it make more sense to submit the driver with the extra ADC's to make
->>> it feature complete for both devices? Wouldn't be odd to have 2 drivers that
->>> do the same for 98% of the code.
-> 
->> This should be in one driver. But support for the second device can
->> always be added in a follow up patch.
-> 
-> Yes, we can add support later.  It might be helpful to name the driver
-> with some generic name I guess.
-CS42xx8 would work.
+Cc: Archs <linux-arch@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/alpha/include/asm/Kbuild         | 1 +
+ arch/alpha/include/asm/cputime.h      | 6 ------
+ arch/cris/include/asm/Kbuild          | 1 +
+ arch/cris/include/asm/cputime.h       | 6 ------
+ arch/frv/include/asm/Kbuild           | 1 +
+ arch/frv/include/asm/cputime.h        | 6 ------
+ arch/m32r/include/asm/Kbuild          | 1 +
+ arch/m32r/include/asm/cputime.h       | 6 ------
+ arch/microblaze/include/asm/Kbuild    | 1 +
+ arch/microblaze/include/asm/cputime.h | 1 -
+ arch/mn10300/include/asm/Kbuild       | 1 +
+ arch/mn10300/include/asm/cputime.h    | 1 -
+ arch/score/include/asm/Kbuild         | 2 +-
+ arch/score/include/asm/cputime.h      | 6 ------
+ arch/x86/include/asm/Kbuild           | 1 +
+ arch/x86/include/asm/cputime.h        | 1 -
+ 16 files changed, 8 insertions(+), 34 deletions(-)
+ delete mode 100644 arch/alpha/include/asm/cputime.h
+ delete mode 100644 arch/cris/include/asm/cputime.h
+ delete mode 100644 arch/frv/include/asm/cputime.h
+ delete mode 100644 arch/m32r/include/asm/cputime.h
+ delete mode 100644 arch/microblaze/include/asm/cputime.h
+ delete mode 100644 arch/mn10300/include/asm/cputime.h
+ delete mode 100644 arch/score/include/asm/cputime.h
+ delete mode 100644 arch/x86/include/asm/cputime.h
 
-We have a CS42448 and the CS42888. The difference is the 2 extra ADC's on the CS42448. I can add those later.
+diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
+index a73a8e2..1a81a8b 100644
+--- a/arch/alpha/include/asm/Kbuild
++++ b/arch/alpha/include/asm/Kbuild
+@@ -5,3 +5,4 @@ generic-y += exec.h
+ generic-y += trace_clock.h
+ generic-y += preempt.h
+ generic-y += hash.h
++generic-y += cputime.h
+\ No newline at end of file
+diff --git a/arch/alpha/include/asm/cputime.h b/arch/alpha/include/asm/cputime.h
+deleted file mode 100644
+index 19577fd..0000000
+--- a/arch/alpha/include/asm/cputime.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef __ALPHA_CPUTIME_H
+-#define __ALPHA_CPUTIME_H
+-
+-#include <asm-generic/cputime.h>
+-
+-#endif /* __ALPHA_CPUTIME_H */
+diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
+index f3fd876..9d02b45 100644
+--- a/arch/cris/include/asm/Kbuild
++++ b/arch/cris/include/asm/Kbuild
+@@ -14,3 +14,4 @@ generic-y += trace_clock.h
+ generic-y += vga.h
+ generic-y += xor.h
+ generic-y += preempt.h
++generic-y += cputime.h
+\ No newline at end of file
+diff --git a/arch/cris/include/asm/cputime.h b/arch/cris/include/asm/cputime.h
+deleted file mode 100644
+index 4446a65..0000000
+--- a/arch/cris/include/asm/cputime.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef __CRIS_CPUTIME_H
+-#define __CRIS_CPUTIME_H
+-
+-#include <asm-generic/cputime.h>
+-
+-#endif /* __CRIS_CPUTIME_H */
+diff --git a/arch/frv/include/asm/Kbuild b/arch/frv/include/asm/Kbuild
+index bc42f14..c5eca98 100644
+--- a/arch/frv/include/asm/Kbuild
++++ b/arch/frv/include/asm/Kbuild
+@@ -4,3 +4,4 @@ generic-y += exec.h
+ generic-y += trace_clock.h
+ generic-y += preempt.h
+ generic-y += hash.h
++generic-y += cputime.h
+diff --git a/arch/frv/include/asm/cputime.h b/arch/frv/include/asm/cputime.h
+deleted file mode 100644
+index f6c373a..0000000
+--- a/arch/frv/include/asm/cputime.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef _ASM_CPUTIME_H
+-#define _ASM_CPUTIME_H
+-
+-#include <asm-generic/cputime.h>
+-
+-#endif /* _ASM_CPUTIME_H */
+diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
+index 932435a..fda061d 100644
+--- a/arch/m32r/include/asm/Kbuild
++++ b/arch/m32r/include/asm/Kbuild
+@@ -5,3 +5,4 @@ generic-y += module.h
+ generic-y += trace_clock.h
+ generic-y += preempt.h
+ generic-y += hash.h
++generic-y += cputime.h
+\ No newline at end of file
+diff --git a/arch/m32r/include/asm/cputime.h b/arch/m32r/include/asm/cputime.h
+deleted file mode 100644
+index 0a47550..0000000
+--- a/arch/m32r/include/asm/cputime.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef __M32R_CPUTIME_H
+-#define __M32R_CPUTIME_H
+-
+-#include <asm-generic/cputime.h>
+-
+-#endif /* __M32R_CPUTIME_H */
+diff --git a/arch/microblaze/include/asm/Kbuild b/arch/microblaze/include/asm/Kbuild
+index 2b98bc7..da88738a 100644
+--- a/arch/microblaze/include/asm/Kbuild
++++ b/arch/microblaze/include/asm/Kbuild
+@@ -6,3 +6,4 @@ generic-y += hash.h
+ generic-y += trace_clock.h
+ generic-y += syscalls.h
+ generic-y += preempt.h
++generic-y += cputime.h
+diff --git a/arch/microblaze/include/asm/cputime.h b/arch/microblaze/include/asm/cputime.h
+deleted file mode 100644
+index 6d68ad7..0000000
+--- a/arch/microblaze/include/asm/cputime.h
++++ /dev/null
+@@ -1 +0,0 @@
+-#include <asm-generic/cputime.h>
+diff --git a/arch/mn10300/include/asm/Kbuild b/arch/mn10300/include/asm/Kbuild
+index 992e989..e076269 100644
+--- a/arch/mn10300/include/asm/Kbuild
++++ b/arch/mn10300/include/asm/Kbuild
+@@ -5,3 +5,4 @@ generic-y += exec.h
+ generic-y += hash.h
+ generic-y += trace_clock.h
+ generic-y += preempt.h
++generic-y += cputime.h
+\ No newline at end of file
+diff --git a/arch/mn10300/include/asm/cputime.h b/arch/mn10300/include/asm/cputime.h
+deleted file mode 100644
+index 6d68ad7..0000000
+--- a/arch/mn10300/include/asm/cputime.h
++++ /dev/null
+@@ -1 +0,0 @@
+-#include <asm-generic/cputime.h>
+diff --git a/arch/score/include/asm/Kbuild b/arch/score/include/asm/Kbuild
+index 146b9d5..1274e7a 100644
+--- a/arch/score/include/asm/Kbuild
++++ b/arch/score/include/asm/Kbuild
+@@ -7,4 +7,4 @@ generic-y += hash.h
+ generic-y += trace_clock.h
+ generic-y += xor.h
+ generic-y += preempt.h
+-
++generic-y += cputime.h
+diff --git a/arch/score/include/asm/cputime.h b/arch/score/include/asm/cputime.h
+deleted file mode 100644
+index 1fced99..0000000
+--- a/arch/score/include/asm/cputime.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef _ASM_SCORE_CPUTIME_H
+-#define _ASM_SCORE_CPUTIME_H
+-
+-#include <asm-generic/cputime.h>
+-
+-#endif /* _ASM_SCORE_CPUTIME_H */
+diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
+index 7f66985..875f34e 100644
+--- a/arch/x86/include/asm/Kbuild
++++ b/arch/x86/include/asm/Kbuild
+@@ -5,3 +5,4 @@ genhdr-y += unistd_64.h
+ genhdr-y += unistd_x32.h
+ 
+ generic-y += clkdev.h
++generic-y += cputime.h
+diff --git a/arch/x86/include/asm/cputime.h b/arch/x86/include/asm/cputime.h
+deleted file mode 100644
+index 6d68ad7..0000000
+--- a/arch/x86/include/asm/cputime.h
++++ /dev/null
+@@ -1 +0,0 @@
+-#include <asm-generic/cputime.h>
+-- 
+1.8.3.1
 
-I still would like to go over some of the v2 code though before a v3 is sent.
-
-Thanks
-Brian
