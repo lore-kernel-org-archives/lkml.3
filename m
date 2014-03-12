@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016AbaCLSPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 14:15:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33057 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755039AbaCLSPg (ORCPT
+	id S1755390AbaCLSTc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 14:19:32 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45320 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956AbaCLSTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 14:15:36 -0400
-Message-ID: <1394648128.23624.32.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH RT 2/5] a few open coded completions
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Corey Minyard <cminyard@mvista.com>
-Date: Wed, 12 Mar 2014 18:15:28 +0000
-In-Reply-To: <20140311115420.4904b7ed@gandalf.local.home>
-References: <20131211003732.351606520@goodmis.org>
-	 <20131211003801.836995968@goodmis.org>
-	 <20131211144946.27d82a78@gandalf.local.home>
-	 <1394324841.2861.56.camel@deadeye.wl.decadent.org.uk>
-	 <20140310102928.7b2a2cfa@gandalf.local.home>
-	 <1394473962.23624.3.camel@deadeye.wl.decadent.org.uk>
-	 <20140310141449.6b99c7eb@gandalf.local.home>
-	 <1394503606.23624.27.camel@deadeye.wl.decadent.org.uk>
-	 <20140310225623.0cad071a@gandalf.local.home>
-	 <20140311115420.4904b7ed@gandalf.local.home>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-I9qrTkOvawiw6v9VoVqw"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.245
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 12 Mar 2014 14:19:30 -0400
+Date: Wed, 12 Mar 2014 18:19:25 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Herrmann <dh.herrmann@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        stable <stable@vger.kernel.org>, Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH] fs: fix i_writecount on shmem and friends
+Message-ID: <20140312181925.GK18016@ZenIV.linux.org.uk>
+References: <1393859798-1407-1-git-send-email-dh.herrmann@gmail.com>
+ <CA+55aFwzBoTc+09jZTGjfTQTfkgZwrN5m09snb+F9inLaDn0OA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwzBoTc+09jZTGjfTQTfkgZwrN5m09snb+F9inLaDn0OA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 11, 2014 at 12:05:09PM -0700, Linus Torvalds wrote:
+> 
+> which returns ETXTBSY (most easily seen by just stracing it).
+> 
+> The patch would also seem to make sense, with the i_readcount_inc()
+> being immediately below for the FMODE_READ case.
 
---=-I9qrTkOvawiw6v9VoVqw
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I think it's trying to fix the problem in the wrong place.  The bug is real,
+all right, but it's not that alloc_file() for non-regulars doesn't grab
+writecount; it's that drop_file_write_access() drops it for those.
 
-On Tue, 2014-03-11 at 11:54 -0400, Steven Rostedt wrote:
-> On Mon, 10 Mar 2014 22:56:23 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
->=20
->=20
-> > Thanks, I ran an allmodconfig, and you're right, the orinoco driver
-> > failed to compile on v3.2-rt. I ran allmodconfig on 3.10-rt and it
-> > passed fine. Seems that one of the headers there pulls in swait.
-> >=20
-> > Looking deeper, 3.10-rt has completion as a simple-wait, and
-> > completion.h pulls in wait-simple.h, which is why it works there. 3.2
-> > does not have completions there. I wonder if I should pull in the patch
-> > that converts completions into swaits, and that may fix other locations
-> > as well.
->=20
-> The swait code for 3.2 can't even handle the changes that were made.
-> That is, the patch used swait functions not created in 3.2-rt.
->=20
-> I'll just revert those from 3.2-rt and be done with it.
->=20
-> Thanks for the report.
+What the hell would we want to play with that counter for, anyway?  It's not
+as if they could be mmapped, so all it does is making pipe(2) and socket(2)
+more costly, for no visible reason.
 
-OK.  Sorry for the 'WTF'; now I understand that this was a build fix for
-the later branches.
+I would prefer to flip
+        put_write_access(inode);
 
-Ben.
+        if (special_file(inode->i_mode))
+                return;
+in drop_file_write_access() instead.
 
---=20
-Ben Hutchings
-Any sufficiently advanced bug is indistinguishable from a feature.
+<goes to looks at i_writecount users>
+Oh, shit...
 
---=-I9qrTkOvawiw6v9VoVqw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+drivers/md/md.c:
+/* similar to deny_write_access, but accounts for our holding a reference
+ * to the file ourselves */
+static int deny_bitmap_write_access(struct file * file)
+{
+        struct inode *inode = file->f_mapping->host;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+        spin_lock(&inode->i_lock);
+        if (atomic_read(&inode->i_writecount) > 1) {
+                spin_unlock(&inode->i_lock);
+                return -ETXTBSY;
+        }
+        atomic_set(&inode->i_writecount, -1);
+        spin_unlock(&inode->i_lock);
 
-iQIVAwUAUyCkQOe/yOyVhhEJAQpdVBAAjJ5mdtXXb3cB6HbCjuBnZe9G3V2BT96z
-rchOwwTcdEFPEZzFrrGZjKUD+J0csVBYpakc5NqqU8euiD0hKQsttcUDPALMHl7T
-8qLZ3Pno29za2ctiwmuLC51M17m8YbhF935MVqlnTI7c0mU/FDerjT1aMFIt3a/B
-q8bppI8uUxfRqII8dKnRdm69BCo1hi4T/3MQBLdX0CQJXNQ/oTjSRriU11cAzc/0
-Ga+K2F7oLdsL4SA47hyvLV/zLwMMNxYK5Qv0/0iH8WVmUk6jqKID+GpR1c6NURT6
-hPhyP/IZmT/Fx99Jdjuf3zf7x2yVr9htDjQY8ayssoUWkhXrULW9Vr7IxVbq6TRQ
-ngiD4DFNo+bldEds1SaNP+6MHZGbgrFyJfEiJjtLtGECfUTgi5LLzA3ecs7KYdKN
-BCAe1F8DYLTnVa/PP4MxP6t/6UxWWJ0ITjXpffzYb9BfYU6lVvfqwFladHChfN2v
-OeW5PUXGEn0pAheNXVFuh2ABjN/Uj/G5nPCHgyn13vPqTcpX9sSZ+nprr3XTcbsm
-i/j9nvg7jWzQoInpJi3K9mW0LgywpO6hfx40AdZlUIRTsA7m1Y8D4fTs8qIsLtzJ
-tyC+AKu9ZJfrseqNUFn5ddRrPom8QcuEL7WgtgY6DZUFIa70QNAeL7uADAgmuise
-UwrYgZQBKfs=
-=ENYl
------END PGP SIGNATURE-----
+        return 0;
+}
 
---=-I9qrTkOvawiw6v9VoVqw--
+Broken.  get_write_access() will happily increment i_writecount e.g. from
+1 to 2, without even looking at i_lock.  Moreover, it's paired with
+void restore_bitmap_write_access(struct file *file)
+{
+        struct inode *inode = file->f_mapping->host;
+
+        spin_lock(&inode->i_lock);
+        atomic_set(&inode->i_writecount, 1);
+        spin_unlock(&inode->i_lock);
+}
+Just what will happen if we do denywrite mmap() of that file in between?
+Even worse, the caller take file straight from fget(), with no sanity
+checks whatsoever.  Just what will happen if I give it e.g. a directory?
+Or a procfs/sysfs/whatnot file, for that matter?  Neil?  I realize that
+it's root-only, but still...
