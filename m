@@ -1,250 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901AbaCLPRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:17:00 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35307 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754801AbaCLPQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 11:16:57 -0400
-Message-ID: <53208693.0@ti.com>
-Date: Wed, 12 Mar 2014 18:08:51 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Laura Abbott <lauraa@codeaurora.org>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv4 2/2] arm: Get rid of meminfo
-References: <1392761733-32628-1-git-send-email-lauraa@codeaurora.org> <1392761733-32628-3-git-send-email-lauraa@codeaurora.org> <20140312085401.GB21483@n2100.arm.linux.org.uk> <53205CA1.1090502@ti.com> <20140312133806.GH21483@n2100.arm.linux.org.uk>
-In-Reply-To: <20140312133806.GH21483@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1754945AbaCLPRn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:17:43 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:44126 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822AbaCLPRl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 11:17:41 -0400
+Date: Wed, 12 Mar 2014 16:17:20 +0100
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH 3/4] devfreq: exynos4: Add ppmu's clock control and code
+ clean about regulator control
+In-reply-to: <1394624882-2989-4-git-send-email-cw00.choi@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        rafael.j.wysocki@intel.com, nm@ti.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@vger.kernel.org
+Message-id: <1783132.ayF9Dpflf1@amdc1032>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7Bit
+X-AuditID: cbfee61b-b7f456d000006dfd-47-53207a93bc6a
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t9jQd3JVQrBBv93aVhc//Kc1eJs0xt2
+	i+4f2RaXd81hs/jce4TR4nbjCjaLNz/OMlk8XvGW3YHDY/Gel0wefVtWMXocv7GdyePzJrkA
+	ligum5TUnMyy1CJ9uwSujJObZ7EULDau6P6xmbmB8axGFyMnh4SAicSFCb9YIGwxiQv31rN1
+	MXJxCAlMZ5SY3XkOymlhkjh/+R5YFZuAlcTE9lWMILaIgIbEzL9XGEGKmAX2MEpM7fvFCpIQ
+	FsiReP1/PpjNIqAq0djYyQxi8wpoSlw/+AusWVTAU2LH9pVsIDangKvE885Wpi5GDqBt9RL9
+	j4shygUlfkyG2MssIC+xb/9UVghbR2J/6zS2CYwCs5CUzUJSNgtJ2QJG5lWMoqkFyQXFSem5
+	RnrFibnFpXnpesn5uZsYwUH+THoH46oGi0OMAhyMSjy8CzXlg4VYE8uKK3MPMUpwMCuJ8D4t
+	VAgW4k1JrKxKLcqPLyrNSS0+xCjNwaIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwGitbrt8
+	5YP85a7BfByJ72Xnb2T5WPCz7P8W7Zyzz49zajPbGDlcr+5VMLY9uc8hTP2cfcjtNM/dBjJZ
+	LEvSd93qudOW3T5PM3nmsgWfmDkjSqfsKpr3+BXz+Ulz/yrr3uOfGcKZ0R63YofX5B75pyyq
+	tYEib8RnqV/Pc+c8zsts+IYrs3PLGiWW4oxEQy3mouJEAIJYu+huAgAA
+References: <1394624882-2989-1-git-send-email-cw00.choi@samsung.com>
+ <1394624882-2989-4-git-send-email-cw00.choi@samsung.com>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2014 03:38 PM, Russell King - ARM Linux wrote:
-> On Wed, Mar 12, 2014 at 03:09:53PM +0200, Grygorii Strashko wrote:
->> Hi Russell,
->>
->> On 03/12/2014 10:54 AM, Russell King - ARM Linux wrote:
->>> On Tue, Feb 18, 2014 at 02:15:33PM -0800, Laura Abbott wrote:
->>>> memblock is now fully integrated into the kernel and is the prefered
->>>> method for tracking memory. Rather than reinvent the wheel with
->>>> meminfo, migrate to using memblock directly instead of meminfo as
->>>> an intermediate.
->>>>
->>>> Acked-by: Jason Cooper <jason@lakedaemon.net>
->>>> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
->>>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->>>> Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
->>>> Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
->>>> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
->>>
->>> Laura,
->>>
->>> This patch causes a bunch of platforms to no longer boot - imx6solo with
->>> 1GB of RAM boots, imx6q with 2GB of RAM doesn't.  Versatile Express doesn't.
->>>
->>> The early printk messages don't reveal anything too interesting:
->>>
->>> Booting Linux on physical CPU 0x0
->>> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #630 SMP Wed Mar 12 01:13:36 GMT 2014
->>> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
->>> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
->>> Machine model: SolidRun Cubox-i Dual/Quad
->>> cma: CMA: reserved 64 MiB at 8c000000
->>> Memory policy: Data cache writealloc
->>> <hang>
->>>
->>> vs.
->>>
->>> Booting Linux on physical CPU 0x0
->>> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #631 SMP Wed Mar 12 01:15:37 GMT 2014
->>> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
->>> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
->>> Machine model: SolidRun Cubox-i Dual/Quad
->>> cma: CMA: reserved 64 MiB at 3b800000
->>> Memory policy: Data cache writealloc
->>> On node 0 totalpages: 524288
->>> free_area_init_node: node 0, pgdat c09d0240, node_mem_map ea7d8000
->>>     Normal zone: 1520 pages used for memmap
->>>     Normal zone: 0 pages reserved
->>>     Normal zone: 194560 pages, LIFO batch:31
->>>     HighMem zone: 2576 pages used for memmap
->>>     HighMem zone: 329728 pages, LIFO batch:31
->>> ...
->>>
->>> The only obvious difference is the address of that CMA reservation,
->>> CMA shouldn't make a difference here - but I suspect that other
->>> allocations which need to be in lowmem probably aren't.
->>>
->>
->> Could it be possible to enable memblock debug by adding "memblock=debug"
->> in cmdline?
-> 
-> Here's with Laura's patch:
-> 
-> Uncompressing Linux... done, booting the kernel.
-> Booting Linux on physical CPU 0x0
-> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #633 SMP Wed Mar 12 12:56:15 GMT 2014
-> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
-> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
-> Machine model: SolidRun Cubox-i Dual/Quad
-> memblock_reserve: [0x00000010008240-0x0000001112c1f7] flags 0x0 arm_memblock_init+0x28/0x1a8
-> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_memblock_init+0x108/0x1a8
-> memblock_reserve: [0x00000010004000-0x00000010007fff] flags 0x0 arm_mm_memblock_reserve+0x1c/0x24
-> memblock_reserve: [0x00000018000000-0x0000001800b07f] flags 0x0 arm_dt_memblock_reserve+0x2c/0x70
-> memblock_reserve: [0x00000018000000-0x0000001800afff] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
-> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
-> memblock_reserve: [0x0000008c000000-0x0000008fffffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
-> cma: CMA: reserved 64 MiB at 8c000000
-> MEMBLOCK configuration:
->   memory size = 0x80000000 reserved size = 0x52fda50
->   memory.cnt  = 0x1
->   memory[0x0]   [0x00000010000000-0x0000008fffffff], 0x80000000 bytes flags: 0x06
->   reserved.cnt  = 0x5
->   reserved[0x0] [0x00000010004000-0x00000010007fff], 0x4000 bytes flags: 0x0
->   reserved[0x1] [0x00000010008240-0x0000001112c1f7], 0x1123fb8 bytes flags: 0x0
->   reserved[0x2] [0x00000018000000-0x0000001800b07f], 0xb080 bytes flags: 0x0
->   reserved[0x3] [0x00000020000040-0x000000201caa57], 0x1caa18 bytes flags: 0x0
->   reserved[0x4] [0x0000008c000000-0x0000008fffffff], 0x4000000 bytes flags: 0x0
-> Memory policy: Data cache writealloc
-> memblock_reserve: [0x0000008bffffd8-0x0000008bffffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
-> 
-> Here's without:
-> 
-> Booting Linux on physical CPU 0x0
-> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #635 SMP Wed Mar 12 13:22:15 GMT 2014
-> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
-> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
-> Machine model: SolidRun Cubox-i Dual/Quad
-> memblock_reserve: [0x00000010008240-0x0000001112c277] flags 0x0 arm_memblock_init+0x54/0x1d4
-> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_memblock_init+0x134/0x1d4
-> memblock_reserve: [0x00000010004000-0x00000010007fff] flags 0x0 arm_mm_memblock_reserve+0x1c/0x24
-> memblock_reserve: [0x00000018000000-0x0000001800b07f] flags 0x0 arm_dt_memblock_reserve+0x2c/0x70
-> memblock_reserve: [0x00000018000000-0x0000001800afff] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
-> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
-> memblock_reserve: [0x0000003b800000-0x0000003f7fffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
-> cma: CMA: reserved 64 MiB at 3b800000
-> MEMBLOCK configuration:
->   memory size = 0x80000000 reserved size = 0x52fdad0
->   memory.cnt  = 0x1
->   memory[0x0]     [0x00000010000000-0x0000008fffffff], 0x80000000 bytes flags: 0x0
->   reserved.cnt  = 0x5
->   reserved[0x0]   [0x00000010004000-0x00000010007fff], 0x4000 bytes flags: 0x0
->   reserved[0x1]   [0x00000010008240-0x0000001112c277], 0x1124038 bytes flags: 0x0
->   reserved[0x2]   [0x00000018000000-0x0000001800b07f], 0xb080 bytes flags: 0x0
->   reserved[0x3]   [0x00000020000040-0x000000201caa57], 0x1caa18 bytes flags: 0x0
->   reserved[0x4]   [0x0000003b800000-0x0000003f7fffff], 0x4000000 bytes flags: 0x0
-> Memory policy: Data cache writealloc
-> memblock_reserve: [0x0000003b7fffd8-0x0000003b7fffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
-> memblock_reserve: [0x0000003b7fe000-0x0000003b7fefff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
-> memblock_reserve: [0x0000003b7fd000-0x0000003b7fdfff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
-> memblock_reserve: [0x0000003b7fc000-0x0000003b7fcfff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
-> ...
-> 
-> So it looks like allocations which must come from lowmem aren't being
-> limited to lowmem.
-> 
-> Try booting a machine with 2G of RAM with page offset set to 3GB and
-> highmem enabled - it will fail as per the above.
-> 
-> In fact, if we look at sanity_check_meminfo() post that patch, it's
-> clearly wrong:
-> 
->          for_each_memblock(memory, reg) {
->                  phys_addr_t block_start = reg->base;
->                  phys_addr_t block_end = reg->base + reg->size;
->                  phys_addr_t size_limit = reg->size;
-> 
->                  if (reg->base >= vmalloc_limit)
->                          highmem = 1;
->                  else
->                          size_limit = vmalloc_limit - reg->base;
-> ...
->                  if (!highmem) {
->                          if (block_end > arm_lowmem_limit)
->                                  arm_lowmem_limit = block_end;
 
-In v3, above was 
-		arm_lowmem_limit = reg->base + size_limit;
+Hi,
 
-so, it has worked somehow, even arm_lowmem_limit can point on non 
-existed address. It was changed because of my comment - sorry.
+On Wednesday, March 12, 2014 08:48:01 PM Chanwoo Choi wrote:
+> There are not the clock controller of ppmudmc0/1. This patch control the clock
+> of ppmudmc0/1 which is used for monitoring memory bus utilization.
+> 
+> Also, this patch code clean about regulator control and free resource
+> when calling exit/remove function.
+> 
+> For example,
+> busfreq@106A0000 {
+> 	compatible = "samsung,exynos4x12-busfreq";
+> 
+> 	/* Clock for PPMUDMC0/1 */
+> 	clocks = <&clock CLK_PPMUDMC0>, <&clock CLK_PPMUDMC1>;
+> 	clock-names = "ppmudmc0", "ppmudmc1";
+> 
+> 	/* Regulator for MIF/INT block */
+> 	vdd_mif-supply = <&buck1_reg>;
+> 	vdd_int-supply = <&buck3_reg>;
+> };
 
-I think, it should be smth like:
-if (!highmem) {
-	if (block_end > arm_lowmem_limit)
-		if (reg->size > size_limit)
-			arm_lowmem_limit = vmalloc_limit;
-		else 
-			arm_lowmem_limit = block_end;
+This should be in Documentation/devicetree/bindings/ documentation.
 
-I've created and attached the patch which allows me to boot on keystone.
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+>  drivers/devfreq/exynos/exynos4_bus.c | 107 ++++++++++++++++++++++++++++++-----
+>  1 file changed, 93 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
+> index 16fb3cb..0c5b99e 100644
+> --- a/drivers/devfreq/exynos/exynos4_bus.c
+> +++ b/drivers/devfreq/exynos/exynos4_bus.c
+> @@ -62,6 +62,11 @@ enum exynos_ppmu_idx {
+>  	PPMU_END,
+>  };
+>  
+> +static const char *exynos_ppmu_clk_name[] = {
+> +	[PPMU_DMC0]	= "ppmudmc0",
+> +	[PPMU_DMC1]	= "ppmudmc1",
+> +};
+> +
+>  #define EX4210_LV_MAX	LV_2
+>  #define EX4x12_LV_MAX	LV_4
+>  #define EX4210_LV_NUM	(LV_2 + 1)
+> @@ -86,6 +91,7 @@ struct busfreq_data {
+>  	struct regulator *vdd_mif; /* Exynos4412/4212 only */
+>  	struct busfreq_opp_info curr_oppinfo;
+>  	struct exynos_ppmu ppmu[PPMU_END];
+> +	struct clk *clk_ppmu[PPMU_END];
+>  
+>  	struct notifier_block pm_notifier;
+>  	struct mutex lock;
+> @@ -722,8 +728,26 @@ static int exynos4_bus_get_dev_status(struct device *dev,
+>  static void exynos4_bus_exit(struct device *dev)
+>  {
+>  	struct busfreq_data *data = dev_get_drvdata(dev);
+> +	int i;
+>  
+> -	devfreq_unregister_opp_notifier(dev, data->devfreq);
+> +	/*
+> +	 * Un-map memory man and disable regulator/clocks
+> +	 * to prevent power leakage.
+> +	 */
+> +	regulator_disable(data->vdd_int);
+> +	if (data->type == TYPE_BUSF_EXYNOS4x12)
+> +		regulator_disable(data->vdd_mif);
+> +
+> +	for (i = 0; i < PPMU_END; i++) {
+> +		if (data->clk_ppmu[i])
+> +			clk_disable_unprepare(data->clk_ppmu[i]);
+> +	}
+> +
+> +	for (i = 0; i < PPMU_END; i++) {
+> +		if (data->ppmu[i].hw_base)
+> +			iounmap(data->ppmu[i].hw_base);
+> +
+> +	}
+>  }
+>  
+>  static struct devfreq_dev_profile exynos4_devfreq_profile = {
+> @@ -987,6 +1011,7 @@ static int exynos4_busfreq_parse_dt(struct busfreq_data *data)
+>  {
+>  	struct device *dev = data->dev;
+>  	struct device_node *np = dev->of_node;
+> +	const char **clk_name = exynos_ppmu_clk_name;
+>  	int i, ret;
+>  
+>  	if (!np) {
+> @@ -1005,8 +1030,67 @@ static int exynos4_busfreq_parse_dt(struct busfreq_data *data)
+>  		}
+>  	}
+>  
+> +	/*
+> +	 * Get PPMU's clocks to control them. But, if PPMU's clocks
+> +	 * is default 'pass' state, this driver don't need control
+> +	 * PPMU's clock.
+> +	 */
+> +	for (i = 0; i < PPMU_END; i++) {
+> +		data->clk_ppmu[i] = devm_clk_get(dev, clk_name[i]);
+> +		if (IS_ERR_OR_NULL(data->clk_ppmu[i])) {
+> +			dev_warn(dev, "Cannot get %s clock\n", clk_name[i]);
+> +			data->clk_ppmu[i] = NULL;
+> +		}
+> +
+> +		ret = clk_prepare_enable(data->clk_ppmu[i]);
+> +		if (ret < 0) {
+> +			dev_warn(dev, "Cannot enable %s clock\n", clk_name[i]);
+> +			data->clk_ppmu[i] = NULL;
+> +			goto err_clocks;
+> +		}
+> +	}
+> +
+> +
+> +	/* Get regulators to control voltage of int/mif block */
+> +	data->vdd_int = devm_regulator_get(dev, "vdd_int");
+> +	if (IS_ERR(data->vdd_int)) {
+> +		dev_err(dev, "Failed to get the regulator of vdd_int\n");
+> +		ret = PTR_ERR(data->vdd_int);
+> +		goto err_clocks;
+> +	}
+> +	ret = regulator_enable(data->vdd_int);
+> +	if (ret < 0) {
+> +		dev_err(dev, "Failed to enable regulator of vdd_int\n");
+> +		goto err_clocks;
+> +	}
+> +
+> +	switch (data->type) {
+> +	case TYPE_BUSF_EXYNOS4x12:
+> +		data->vdd_mif = devm_regulator_get(dev, "vdd_mif");
+> +		if (IS_ERR(data->vdd_mif)) {
+> +			dev_err(dev, "Failed to get the regulator vdd_mif\n");
+> +			ret = PTR_ERR(data->vdd_mif);
+> +			goto err_clocks;
 
-> ...
->                  }
+This won't disable vdd_int regulator.
 
-regards,
--grygorii
+> +		}
+> +		ret = regulator_enable(data->vdd_mif);
+> +		if (ret < 0) {
+> +			dev_err(dev, "Failed to enable regulator of vdd_mif\n");
+> +			goto err_clocks;
 
->From 3a210330f15c4cfc6728d83b28750c696d9eaefb Mon Sep 17 00:00:00 2001
-From: Grygorii Strashko <x0174654@uglx0174654.(none)>
-Date: Wed, 12 Mar 2014 18:04:02 +0200
-Subject: [PATCH] arm: get rid of meminfo: fix lowmem_limit calculation
+ditto
 
-Signed-off-by: Grygorii Strashko <x0174654@uglx0174654.(none)>
----
- arch/arm/mm/mmu.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+> +		}
+> +		break;
+> +	case TYPE_BUSF_EXYNOS4210:
+> +	default:
+> +		dev_err(data->dev, "Unknown device type\n");
+> +		return -EINVAL;
 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index c3ae96c..f8b5175 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1096,8 +1096,12 @@ void __init sanity_check_meminfo(void)
- 		}
- 
- 		if (!highmem) {
--			if (block_end > arm_lowmem_limit)
--				arm_lowmem_limit = block_end;
-+			if (block_end > arm_lowmem_limit) {
-+				if (reg->size > size_limit)
-+					arm_lowmem_limit = vmalloc_limit;
-+				else
-+					arm_lowmem_limit = block_end;
-+			}
- 
- 
- 			/*
-@@ -1117,7 +1121,7 @@ void __init sanity_check_meminfo(void)
- 				if (!IS_ALIGNED(block_start, SECTION_SIZE))
- 					memblock_limit = block_start;
- 				else if (!IS_ALIGNED(block_end, SECTION_SIZE))
--					memblock_limit = block_end;
-+					memblock_limit = arm_lowmem_limit;
- 			}
- 
- 		}
--- 
-1.7.9.5
+This looks very wrong for Exynos4210.
+
+> +	};
+> +
+>  	return 0;
+>  
+> +err_clocks:
+> +	for (i = 0; i < PPMU_END; i++) {
+> +		if (data->clk_ppmu[i])
+> +			clk_disable_unprepare(data->clk_ppmu[i]);
+> +	}
+>  err_iomap:
+>  	for (i = 0; i < PPMU_END; i++) {
+>  		if (data->ppmu[i].hw_base)
+> @@ -1068,19 +1152,6 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+>  	if (err)
+>  		return err;
+>  
+> -	data->vdd_int = devm_regulator_get(dev, "vdd_int");
+> -	if (IS_ERR(data->vdd_int)) {
+> -		dev_err(dev, "Cannot get the regulator \"vdd_int\"\n");
+> -		return PTR_ERR(data->vdd_int);
+> -	}
+> -	if (data->type == TYPE_BUSF_EXYNOS4x12) {
+> -		data->vdd_mif = devm_regulator_get(dev, "vdd_mif");
+> -		if (IS_ERR(data->vdd_mif)) {
+> -			dev_err(dev, "Cannot get the regulator \"vdd_mif\"\n");
+> -			return PTR_ERR(data->vdd_mif);
+> -		}
+> -	}
+> -
+>  	rcu_read_lock();
+>  	opp = dev_pm_opp_find_freq_floor(dev,
+>  					 &exynos4_devfreq_profile.initial_freq);
+> @@ -1133,6 +1204,11 @@ err_notifier_opp:
+>  	devfreq_remove_device(data->devfreq);
+>  err_opp:
+
+Disabling of regulators on failure is missing here.
+
+>  	for (i = 0; i < PPMU_END; i++) {
+> +		if (data->clk_ppmu[i])
+> +			clk_disable_unprepare(data->clk_ppmu[i]);
+> +	}
+> +
+> +	for (i = 0; i < PPMU_END; i++) {
+>  		if (data->ppmu[i].hw_base)
+>  			iounmap(data->ppmu[i].hw_base);
+>  	}
+> @@ -1144,7 +1220,10 @@ static int exynos4_busfreq_remove(struct platform_device *pdev)
+>  {
+>  	struct busfreq_data *data = platform_get_drvdata(pdev);
+>  
+> +	/* Unregister all of notifier chain */
+>  	unregister_pm_notifier(&data->pm_notifier);
+> +	devfreq_unregister_opp_notifier(data->dev, data->devfreq);
+> +
+>  	devfreq_remove_device(data->devfreq);
+>  
+>  	return 0;
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
