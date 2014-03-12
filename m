@@ -1,54 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaCLNeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:34:14 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:35155 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475AbaCLNeN (ORCPT
+	id S1754298AbaCLNeg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:34:36 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44089 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754137AbaCLNee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:34:13 -0400
-Date: Wed, 12 Mar 2014 21:34:06 +0800
-From: Liu Shuo <shuox.liu@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Kees Cook <keescook@chromium.org>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        Zhang Yanmin <yanmin_zhang@linux.intel.com>
-Subject: [PATCH 2/2] pstore: fix memory leak when decompress using
- big_oops_buf
-Message-ID: <20140312133403.GB29079@shuo-gentoo>
-References: <20140312132441.GA29079@shuo-gentoo>
+	Wed, 12 Mar 2014 09:34:34 -0400
+Date: Wed, 12 Mar 2014 13:33:39 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Matt Porter <mporter@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 1/5] mfd: add bcm590xx pmu DT binding
+Message-ID: <20140312133339.GC17461@e106331-lin.cambridge.arm.com>
+References: <1394580837-8331-1-git-send-email-mporter@linaro.org>
+ <1394580837-8331-2-git-send-email-mporter@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140312132441.GA29079@shuo-gentoo>
-X-Mailer: Mutt 1.5.x/OS X 10.7.x
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1394580837-8331-2-git-send-email-mporter@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu ShuoX <shuox.liu@intel.com>
+On Tue, Mar 11, 2014 at 11:33:53PM +0000, Matt Porter wrote:
+> Add a DT binding for the BCM590xx PMUs. The binding inherits from
+> the generic regulator bindings.
+> 
+> Signed-off-by: Matt Porter <mporter@linaro.org>
+> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/mfd/bcm590xx.txt | 41 ++++++++++++++++++++++
+>  1 file changed, 41 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/bcm590xx.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/bcm590xx.txt b/Documentation/devicetree/bindings/mfd/bcm590xx.txt
+> new file mode 100644
+> index 0000000..2300246
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/bcm590xx.txt
+> @@ -0,0 +1,41 @@
+> +-------------------------------
+> +BCM590xx Power Management Units
+> +-------------------------------
+> +
+> +Required properties:
+> +- compatible: "brcm,bcm59056"
+> +- reg: I2C slave address
+> +- interrupts: interrupt for the PMU. Generic interrupt client node bindings
+> +  are described in interrupt-controller/interrupts.txt
 
-After sucessful decompressing, the buffer which pointed by 'buf' will be
-lost as 'buf' is overwrite by 'big_oops_buf' and will never be freed. 
+This all looks sane.
 
-Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
----
- fs/pstore/platform.c | 1 +
- 1 file changed, 1 insertion(+)
+> +
+> +------------------
+> +Voltage Regulators
+> +------------------
+> +
+> +Optional properties:
+> +- regulators: This is the list of child nodes that specify the regulator
+> +  initialization data for defined regulators.  Generic regulator bindings
+> +  are described in regulator/regulator.txt.
 
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 78c3c20..46d269e 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -497,6 +497,7 @@ void pstore_get_records(int quiet)
- 							big_oops_buf_sz);
- 
- 			if (unzipped_len > 0) {
-+				kfree(buf);
- 				buf = big_oops_buf;
- 				size = unzipped_len;
- 				compressed = false;
--- 
-1.8.3.2
+This is a subnode, not a property. How about:
 
+Optional child nodes:
+
+- regulators: container node for regulators follwoing the generic
+  regulator binding in regulator/regulator.txt.
+
+> +
+> +  The valid regulator nodes for BCM59056 are:
+
+s/nodes/node names/
+
+> +  	rfldo, camldo1, camldo2, simldo1, simldo2, sdldo, sdxldo,
+> +	mmcldo1, mmcldo2, audldo, micldo, usbldo, vibldo,
+> +	csr, iosr1, iosr2, msr, sdsr1, sdsr2, vsr
+> +
+> +Example:
+> +	pmu: bcm59056@8 {
+> +		compatible = "brcm,bcm59056";
+> +		reg = <0x08>;
+> +		interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_HIGH>;
+> +		regulators {
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +
+> +			rfldo_reg: rfldo {
+> +				regulator-min-microvolt = <1200000>;
+> +				regulator-max-microvolt = <3300000>;
+
+Are any specific properties required on these children?
+
+Thanks,
+Mark.
+
+> +			};
+> +
+> +			...
+> +		};
+> +	};
+> -- 
+> 1.8.4
+> 
+> 
