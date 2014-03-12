@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938AbaCLRVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 13:21:14 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39638 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908AbaCLRVM (ORCPT
+	id S1755979AbaCLRVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 13:21:21 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:51103 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755908AbaCLRVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 13:21:12 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140312105746.GK13905@piout.net>
-References: <1394038675-15809-1-git-send-email-alexandre.belloni@free-electrons.com> <1394038675-15809-2-git-send-email-alexandre.belloni@free-electrons.com> <5318C950.7060900@kernel.org> <20140312105746.GK13905@piout.net>
+	Wed, 12 Mar 2014 13:21:16 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH 1/3] iio: adc: at91_adc: Repair broken platform_data support
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Wed, 12 Mar 2014 17:21:03 +0000
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Josh Wu <josh.wu@atmel.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org
-Message-ID: <1a787464-2945-4106-901b-0152627d09cd@email.android.com>
+In-Reply-To: <20140312151320.GB5035@e106331-lin.cambridge.arm.com>
+References: <1394626865-15105-1-git-send-email-jcmvbkbc@gmail.com>
+	<1394626865-15105-3-git-send-email-jcmvbkbc@gmail.com>
+	<20140312151320.GB5035@e106331-lin.cambridge.arm.com>
+Date: Wed, 12 Mar 2014 21:21:15 +0400
+Message-ID: <CAMo8BfLDXYaovZ1U1hcXKCv+EX=wuda8uHgmTDP3Ozaq2Z=SKg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] spi/xtensa-xtfpga: add DT binding documentation
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 12, 2014 at 7:13 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Wed, Mar 12, 2014 at 12:21:04PM +0000, Max Filippov wrote:
+>> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+>> ---
+>>  Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt | 9 +++++++++
+>>  1 file changed, 9 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt b/Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt
+>> new file mode 100644
+>> index 0000000..b6ebe2b
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt
+>> @@ -0,0 +1,9 @@
+>> +Cadence Xtensa XTFPGA platform SPI controller.
+>> +
+>> +This simple SPI master controller is built into xtfpga bitstreams and is used
+>> +to control daughterboard audio codec.
+>> +
+>> +Required properties:
+>> +- compatible: should be "cdns,xtfpga-spi".
+>
+> Is that the official name of the block? Nothing more specific?
 
+There's no official name, so I composed this from the official name
+of the platform + the block function. AFAIK there's single version of
+this IP block. Marc G., please correct me if I'm wrong.
 
-On March 12, 2014 10:57:46 AM GMT+00:00, Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
->Hi Jonathan,
+>> +- reg: physical base address of the controller and length of memory mapped
+>> +  region.
 >
->On 06/03/2014 at 19:15:28 +0000, Jonathan Cameron wrote :
->> It's late in the cycle so I'll send this on to Greg KH with a note
->> to say either send it to Linus if he is happy doing so - or send
->> it early in 3.15, then it'll get picked up for stable.
->> 
->> I'll give it a day or so to see if I the at91 maintainers are happy
->> with the other two parts as it is probably cleaner if all 3 go
->together.
->> 
->> Applied to the fixes-togreg branch of iio.git
->> 
->
->I don't recall seeing you sending that to Greg. Could you do that,
->along
->with the two other patches that got acked by Nicolas ?
-Sorry spot of man flu, messy weekend and manic day job have made for an interesting
- week.  Given regression has already snuck out in a release and Greg doesn't have other
- fixes queued I think we are talking soon after merge window and rc1.  I'll check with Greg though...
->
->Anyway, if it is too late, we'll push for stable.
->
->Thanks !
+> No interrupts?
+
+Correct.
+
+> Otherwise, this looks fine to me.
 
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Thanks.
+-- Max
