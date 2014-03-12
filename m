@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667AbaCLOfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:35:42 -0400
-Received: from [65.55.88.13] ([65.55.88.13]:32200 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754560AbaCLOfi (ORCPT
+	id S1754588AbaCLOhV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:37:21 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:39477 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673AbaCLOhR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:35:38 -0400
-X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VPS-7(zzbb2dI98dI9371I103dK1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-X-WSS-ID: 0N2BV57-08-EMV-02
-X-M-MSG: 
-Message-ID: <5320706B.2050405@amd.com>
-Date: Wed, 12 Mar 2014 09:34:19 -0500
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 12 Mar 2014 10:37:17 -0400
 MIME-Version: 1.0
-To: Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
-CC: <clemens@ladisch.de>, <rob@landley.net>, <lm-sensors@lm-sensors.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <andre@andrep.de>
-Subject: Re: [PATCH] hwmon, k10temp: Add support for AMD F16 M30h processor
-References: <1394573159-2317-1-git-send-email-Aravind.Gopalakrishnan@amd.com>	<531FCF3D.8020409@roeck-us.net> <20140312102511.77faa6ff@endymion.delvare>
-In-Reply-To: <20140312102511.77faa6ff@endymion.delvare>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20140307201039.GB27645@amd.pavel.ucw.cz>
+References: <1392875640-29230-1-git-send-email-jenny.tc@intel.com>
+	<1392875640-29230-3-git-send-email-jenny.tc@intel.com>
+	<CACRpkdaU44iinj2iDNdYm62J+4jQbg+XJ=Zq4GmJryPeu7GfTQ@mail.gmail.com>
+	<20140228100114.GA13189@amd.pavel.ucw.cz>
+	<CACRpkdaZ2moqGWx2BpfEeKoW6doXg67TkJKY+mbg4hrFHDr16Q@mail.gmail.com>
+	<20140307201039.GB27645@amd.pavel.ucw.cz>
+Date: Wed, 12 Mar 2014 15:37:17 +0100
+Message-ID: <CACRpkda_9UG70G-b3eGTccr22WC4eoAbj0g2QgX0DRSYVgvrxA@mail.gmail.com>
+Subject: Re: [PATCH 2/4] power_supply: Introduce generic psy charging driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Jenny TC <jenny.tc@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        =?windows-1251?B?yOLg6evuIMTo7Ojy8O7i?= <freemangordon@abv.bg>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/12/2014 4:25 AM, Jean Delvare wrote:
-> On Tue, 11 Mar 2014 20:06:37 -0700, Guenter Roeck wrote:
+On Fri, Mar 7, 2014 at 9:10 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> On Fri 2014-03-07 11:04:59, Linus Walleij wrote:
+>> On Fri, Feb 28, 2014 at 6:01 PM, Pavel Machek <pavel@ucw.cz> wrote:
+>> > On Thu 2014-02-27 21:08:01, Linus Walleij wrote:
+>> >> On Thu, Feb 20, 2014 at 6:53 AM, Jenny TC <jenny.tc@intel.com> wrote:
+>> >>
+>> >> > +++ b/include/linux/power/power_supply_charger.h
+>> >>
+>> >> > +#define MAX_CUR_VOLT_SAMPLES 3
+>> >> > +#define DEF_CUR_VOLT_SAMPLE_JIFF (30*HZ)
+>> >>
+>> >> Why are things defined in Jiffies like this insead of seconds, milliseconds
+>> >> etc? This will vary with the current operating frequency of the system,
+>> >> why should physical measurements do that?
+>> >
+>> > It is actually ok. The define is relative to jiffies, and that's what
+>> > interface expects.
 >>
->> Looks good. We'll have to see how we can apply this; probably after 3.15-rc1
->> comes out. I'll put it into my -staging branch for now and pull in the other
->> patch as well to make sure it compiles.
-> I've updated the wiki accordingly, as well as sensors-detect.
+>> So consider the option that the interface is wrong.
+>>
+>> Stating something like a sample period in system-specific jiffies
+>> instead of period time T is just weird. What control systems
+>> guy would understand this?
 >
+> 30*HZ means 30 seconds in the kernel... what is hard to understand
+> about it?
 
-Thanks!
+Well I might be picky, but since it is a charging algorithm dealing with
+ampères, volts, constant-current/constant-voltage, watchdogs and
+timeouts, all stated in SI units, it would be nice if all such constants
+were specified in simple units instead of kernel-specific terms.
 
--Aravind.
+One reason is that this kind of code actually needs review from
+non-programmers, people like chemists and physicists.
 
+I know it may be far fetched so no strong preference for sure.
+
+Yours,
+Linus Walleij
