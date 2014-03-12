@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245AbaCLNPg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:15:36 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:48877 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211AbaCLNPc (ORCPT
+	id S1754376AbaCLNQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:16:24 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:47583 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364AbaCLNQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:15:32 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, alexandre.torgue@st.com,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [PATCH 2/4] phy: miphy365x: Add MiPHY365x header file for DT x Driver defines
-Date: Wed, 12 Mar 2014 13:14:54 +0000
-Message-Id: <1394630096-28564-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394630096-28564-1-git-send-email-lee.jones@linaro.org>
-References: <1394630096-28564-1-git-send-email-lee.jones@linaro.org>
+	Wed, 12 Mar 2014 09:16:21 -0400
+Message-ID: <53205E23.8030905@ieee.org>
+Date: Wed, 12 Mar 2014 08:16:19 -0500
+From: Alex Elder <elder@ieee.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Matt Porter <mporter@linaro.org>, Alex Elder <elder@linaro.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+CC: Mark Brown <broonie@kernel.org>, Christian Daudt <bcm@fixthebug.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        bcm-kernel-feedback-list@broadcom.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: bcm28155-ap: leave camldo1 on to fix reboot
+References: <1394630079-12063-1-git-send-email-mporter@linaro.org>
+In-Reply-To: <1394630079-12063-1-git-send-email-mporter@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides the shared header file which will be reference from both
-the MiPHY365x driver and its associated Device Tree node(s).
+On 03/12/2014 08:14 AM, Matt Porter wrote:
+> The BCM28155-AP board has a bootloader that expects the camldo1
+> regulator to be enabled on entry. Currently, the camldo1 regulator
+> is disabled when no longer in use as is the case during a reboot /
+> warm reset. This causes the early bootloader to hang upon entry. Add
+> regulator-always-on to the camldo1 constraint to fix reboot.
+> 
+> Reported-by: Alex Elder <elder@linaro.org>
+> Signed-off-by: Matt Porter <mporter@linaro.org>
 
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- include/dt-bindings/phy/phy-miphy365x.h | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
- create mode 100644 include/dt-bindings/phy/phy-miphy365x.h
+Tested-by: Alex Elder <elder@linaro.org>
 
-diff --git a/include/dt-bindings/phy/phy-miphy365x.h b/include/dt-bindings/phy/phy-miphy365x.h
-new file mode 100644
-index 0000000..8757c02
---- /dev/null
-+++ b/include/dt-bindings/phy/phy-miphy365x.h
-@@ -0,0 +1,25 @@
-+/*
-+ * This header provides constants for the phy framework
-+ * based on the STMicroelectronics miphy365x.
-+ */
-+#ifndef _DT_BINDINGS_PHY_MIPHY
-+#define _DT_BINDINGS_PHY_MIPHY
-+
-+/* Supports 16 ports without a datatype change (u8 & 0xF0). */
-+#define MIPHY_PORT_0			0
-+#define MIPHY_PORT_1			1
-+#define MIPHY_PORT_2			2
-+#define MIPHY_PORT_3			3
-+
-+/* Supports 16 types without a datatype change (u8 & 0x0F). */
-+#define MIPHY_TYPE_SHIFT		4
-+#define MIPHY_TYPE_SATA			(0 << MIPHY_TYPE_SHIFT)
-+#define MIPHY_TYPE_PCIE			(1 << MIPHY_TYPE_SHIFT)
-+#define MIPHY_TYPE_USB			(2 << MIPHY_TYPE_SHIFT)
-+
-+#define MIPHY_SATA_PORT0		(MIPHY_TYPE_SATA) | (MIPHY_PORT_0)
-+#define MIPHY_SATA_PORT1		(MIPHY_TYPE_SATA) | (MIPHY_PORT_1)
-+#define MIPHY_PCIE_PORT0		(MIPHY_TYPE_PCIE) | (MIPHY_PORT_0)
-+#define MIPHY_PCIE_PORT1		(MIPHY_TYPE_PCIE) | (MIPHY_PORT_1)
-+
-+#endif /* _DT_BINDINGS_PHY_MIPHY */
--- 
-1.8.3.2
+> ---
+> [Depends on BCM59056 regulator series dts support:
+>  http://www.gossamer-threads.com/lists/linux/kernel/1885489]
+> 
+>  arch/arm/boot/dts/bcm28155-ap.dts | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/boot/dts/bcm28155-ap.dts b/arch/arm/boot/dts/bcm28155-ap.dts
+> index 99ff0c1..cc1303c 100644
+> --- a/arch/arm/boot/dts/bcm28155-ap.dts
+> +++ b/arch/arm/boot/dts/bcm28155-ap.dts
+> @@ -94,6 +94,7 @@
+>  		camldo1_reg: camldo1 {
+>  			regulator-min-microvolt = <3300000>;
+>  			regulator-max-microvolt = <3300000>;
+> +			regulator-always-on;
+>  		};
+>  
+>  		sdldo_reg: sdldo {
+> 
 
