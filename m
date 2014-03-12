@@ -1,377 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbaCLTEH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 15:04:07 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:57195 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaCLTED (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 15:04:03 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: [PATCH v3 1/9] tty: xuartps: Fix kernel-doc errors in the driver
-Date: Wed, 12 Mar 2014 12:02:55 -0700
-Message-Id: <1394650983-24780-2-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.9.0.1.g4196000
-In-Reply-To: <1394650983-24780-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1394650983-24780-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S1752861AbaCLTHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 15:07:53 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:38940 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752239AbaCLTHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 15:07:50 -0400
+Date: Wed, 12 Mar 2014 13:07:37 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Boris BREZILLON <b.brezillon.dev@gmail.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        dev@linux-sunxi.org
+Subject: Re: [RFC PATCH v2 04/14] mtd: nand: define struct nand_timings
+Message-ID: <20140312190737.GA27388@obsidianresearch.com>
+References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
+ <1391006064-28890-5-git-send-email-b.brezillon.dev@gmail.com>
+ <531DC1A4.7010208@gmail.com>
+ <20140311185554.GD31835@obsidianresearch.com>
+ <53208F7D.8090104@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53208F7D.8090104@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Simek <michal.simek@xilinx.com>
+On Wed, Mar 12, 2014 at 05:46:53PM +0100, Boris BREZILLON wrote:
 
-No functional changes.
+> >>I see at least 3 of those timings that could be useful (for the moment) :
+> >>- tR: this one should be used to fill the chip_delay field
+> >>- tPROG and tBERS: could be used within nand_wait to choose the timeo
+> >>   value appropriately.
+> >IIRC these timing values are really only necessary if the controller
+> >does not support the READY/BUSY input, in that case drivers typically
+> >seem to use 'chip_delay' which is the maximum possible command
+> >execution time (a sleep long enough to guarentee that READY/BUSY is
+> >de-asserted).
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
- drivers/tty/serial/xilinx_uartps.c | 109 +++++++++++++++++--------------------
- 1 file changed, 49 insertions(+), 60 deletions(-)
+> You're right about tR (or chip_delay): it's only used when there are
+> no R/B pin.  I experienced it when I tried the RB_NONE case in the
+> sunxi driver: the default chip_delay set by the NAND core code was
+> too small to fit the NAND chip requirements.
+> 
+> Anyway, I really think the chip_delay field should be set according
+> to NAND chip characteristics not harcoded in NAND controller driver
+> code (as currently done).
 
-diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index f619ad5b5eae..b2f929e48ddd 100644
---- a/drivers/tty/serial/xilinx_uartps.c
-+++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -163,11 +163,11 @@ MODULE_PARM_DESC(rx_timeout, "Rx timeout, 1-255");
- 
- /**
-  * struct xuartps - device data
-- * @port		Pointer to the UART port
-- * @refclk		Reference clock
-- * @aperclk		APB clock
-- * @baud		Current baud rate
-- * @clk_rate_change_nb	Notifier block for clock changes
-+ * @port:		Pointer to the UART port
-+ * @refclk:		Reference clock
-+ * @aperclk:		APB clock
-+ * @baud:		Current baud rate
-+ * @clk_rate_change_nb:	Notifier block for clock changes
-  */
- struct xuartps {
- 	struct uart_port	*port;
-@@ -183,8 +183,8 @@ struct xuartps {
-  * @irq: Irq number
-  * @dev_id: Id of the port
-  *
-- * Returns IRQHANDLED
-- **/
-+ * Return: IRQHANDLED
-+ */
- static irqreturn_t xuartps_isr(int irq, void *dev_id)
- {
- 	struct uart_port *port = (struct uart_port *)dev_id;
-@@ -325,7 +325,7 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
-  * @rbdiv: BDIV value (return value)
-  * @rcd: CD value (return value)
-  * @div8: Value for clk_sel bit in mod (return value)
-- * Returns baud rate, requested baud when possible, or actual baud when there
-+ * Return: baud rate, requested baud when possible, or actual baud when there
-  *	was too much error, zero if no valid divisors are found.
-  *
-  * Formula to obtain baud rate is
-@@ -384,7 +384,7 @@ static unsigned int xuartps_calc_baud_divs(unsigned int clk, unsigned int baud,
-  * xuartps_set_baud_rate - Calculate and set the baud rate
-  * @port: Handle to the uart port structure
-  * @baud: Baud rate to set
-- * Returns baud rate, requested baud when possible, or actual baud when there
-+ * Return: baud rate, requested baud when possible, or actual baud when there
-  *	   was too much error, zero if no valid divisors are found.
-  */
- static unsigned int xuartps_set_baud_rate(struct uart_port *port,
-@@ -419,7 +419,7 @@ static unsigned int xuartps_set_baud_rate(struct uart_port *port,
-  * @nb:		Notifier block
-  * @event:	Notify event
-  * @data:	Notifier data
-- * Returns NOTIFY_OK on success, NOTIFY_BAD on error.
-+ * Return: NOTIFY_OK on success, NOTIFY_BAD on error.
-  */
- static int xuartps_clk_notifier_cb(struct notifier_block *nb,
- 		unsigned long event, void *data)
-@@ -514,8 +514,7 @@ static int xuartps_clk_notifier_cb(struct notifier_block *nb,
- /**
-  * xuartps_start_tx -  Start transmitting bytes
-  * @port: Handle to the uart port structure
-- *
-- **/
-+ */
- static void xuartps_start_tx(struct uart_port *port)
- {
- 	unsigned int status, numbytes = port->fifosize;
-@@ -562,8 +561,7 @@ static void xuartps_start_tx(struct uart_port *port)
- /**
-  * xuartps_stop_tx - Stop TX
-  * @port: Handle to the uart port structure
-- *
-- **/
-+ */
- static void xuartps_stop_tx(struct uart_port *port)
- {
- 	unsigned int regval;
-@@ -577,8 +575,7 @@ static void xuartps_stop_tx(struct uart_port *port)
- /**
-  * xuartps_stop_rx - Stop RX
-  * @port: Handle to the uart port structure
-- *
-- **/
-+ */
- static void xuartps_stop_rx(struct uart_port *port)
- {
- 	unsigned int regval;
-@@ -593,8 +590,8 @@ static void xuartps_stop_rx(struct uart_port *port)
-  * xuartps_tx_empty -  Check whether TX is empty
-  * @port: Handle to the uart port structure
-  *
-- * Returns TIOCSER_TEMT on success, 0 otherwise
-- **/
-+ * Return: TIOCSER_TEMT on success, 0 otherwise
-+ */
- static unsigned int xuartps_tx_empty(struct uart_port *port)
- {
- 	unsigned int status;
-@@ -608,8 +605,7 @@ static unsigned int xuartps_tx_empty(struct uart_port *port)
-  *			transmitting char breaks
-  * @port: Handle to the uart port structure
-  * @ctl: Value based on which start or stop decision is taken
-- *
-- **/
-+ */
- static void xuartps_break_ctl(struct uart_port *port, int ctl)
- {
- 	unsigned int status;
-@@ -636,8 +632,7 @@ static void xuartps_break_ctl(struct uart_port *port, int ctl)
-  * @port: Handle to the uart port structure
-  * @termios: Handle to the input termios structure
-  * @old: Values of the previously saved termios structure
-- *
-- **/
-+ */
- static void xuartps_set_termios(struct uart_port *port,
- 				struct ktermios *termios, struct ktermios *old)
- {
-@@ -761,8 +756,8 @@ static void xuartps_set_termios(struct uart_port *port,
-  * xuartps_startup - Called when an application opens a xuartps port
-  * @port: Handle to the uart port structure
-  *
-- * Returns 0 on success, negative error otherwise
-- **/
-+ * Return: 0 on success, negative error otherwise
-+ */
- static int xuartps_startup(struct uart_port *port)
- {
- 	unsigned int retval = 0, status = 0;
-@@ -824,8 +819,7 @@ static int xuartps_startup(struct uart_port *port)
- /**
-  * xuartps_shutdown - Called when an application closes a xuartps port
-  * @port: Handle to the uart port structure
-- *
-- **/
-+ */
- static void xuartps_shutdown(struct uart_port *port)
- {
- 	int status;
-@@ -844,8 +838,8 @@ static void xuartps_shutdown(struct uart_port *port)
-  * xuartps_type - Set UART type to xuartps port
-  * @port: Handle to the uart port structure
-  *
-- * Returns string on success, NULL otherwise
-- **/
-+ * Return: string on success, NULL otherwise
-+ */
- static const char *xuartps_type(struct uart_port *port)
- {
- 	return port->type == PORT_XUARTPS ? XUARTPS_NAME : NULL;
-@@ -856,8 +850,8 @@ static const char *xuartps_type(struct uart_port *port)
-  * @port: Handle to the uart port structure
-  * @ser: Handle to the structure whose members are compared
-  *
-- * Returns 0 if success otherwise -EINVAL
-- **/
-+ * Return: 0 if success otherwise -EINVAL
-+ */
- static int xuartps_verify_port(struct uart_port *port,
- 					struct serial_struct *ser)
- {
-@@ -880,8 +874,8 @@ static int xuartps_verify_port(struct uart_port *port,
-  *				uart_add_one_port()
-  * @port: Handle to the uart port structure
-  *
-- * Returns 0, -ENOMEM if request fails
-- **/
-+ * Return: 0, -ENOMEM if request fails
-+ */
- static int xuartps_request_port(struct uart_port *port)
- {
- 	if (!request_mem_region(port->mapbase, XUARTPS_REGISTER_SPACE,
-@@ -903,8 +897,7 @@ static int xuartps_request_port(struct uart_port *port)
-  *				port, called when the driver removes a xuartps
-  *				port via uart_remove_one_port().
-  * @port: Handle to the uart port structure
-- *
-- **/
-+ */
- static void xuartps_release_port(struct uart_port *port)
- {
- 	release_mem_region(port->mapbase, XUARTPS_REGISTER_SPACE);
-@@ -917,8 +910,7 @@ static void xuartps_release_port(struct uart_port *port)
-  *				xuartps port
-  * @port: Handle to the uart port structure
-  * @flags: If any
-- *
-- **/
-+ */
- static void xuartps_config_port(struct uart_port *port, int flags)
- {
- 	if (flags & UART_CONFIG_TYPE && xuartps_request_port(port) == 0)
-@@ -930,9 +922,8 @@ static void xuartps_config_port(struct uart_port *port, int flags)
-  *
-  * @port: Handle to the uart port structure
-  *
-- * Returns the modem control state
-- *
-- **/
-+ * Return: the modem control state
-+ */
- static unsigned int xuartps_get_mctrl(struct uart_port *port)
- {
- 	return TIOCM_CTS | TIOCM_DSR | TIOCM_CAR;
-@@ -1040,8 +1031,8 @@ static struct uart_port xuartps_port[2];
-  * xuartps_get_port - Configure the port from the platform device resource
-  *			info
-  *
-- * Returns a pointer to a uart_port or NULL for failure
-- **/
-+ * Return: a pointer to a uart_port or NULL for failure
-+ */
- static struct uart_port *xuartps_get_port(void)
- {
- 	struct uart_port *port;
-@@ -1078,8 +1069,7 @@ static struct uart_port *xuartps_get_port(void)
- /**
-  * xuartps_console_wait_tx - Wait for the TX to be full
-  * @port: Handle to the uart port structure
-- *
-- **/
-+ */
- static void xuartps_console_wait_tx(struct uart_port *port)
- {
- 	while ((xuartps_readl(XUARTPS_SR_OFFSET) & XUARTPS_SR_TXEMPTY)
-@@ -1091,8 +1081,7 @@ static void xuartps_console_wait_tx(struct uart_port *port)
-  * xuartps_console_putchar - write the character to the FIFO buffer
-  * @port: Handle to the uart port structure
-  * @ch: Character to be written
-- *
-- **/
-+ */
- static void xuartps_console_putchar(struct uart_port *port, int ch)
- {
- 	xuartps_console_wait_tx(port);
-@@ -1101,10 +1090,10 @@ static void xuartps_console_putchar(struct uart_port *port, int ch)
- 
- /**
-  * xuartps_console_write - perform write operation
-- * @port: Handle to the uart port structure
-+ * @co: Console handle
-  * @s: Pointer to character array
-  * @count: No of characters
-- **/
-+ */
- static void xuartps_console_write(struct console *co, const char *s,
- 				unsigned int count)
- {
-@@ -1151,8 +1140,8 @@ static void xuartps_console_write(struct console *co, const char *s,
-  * @co: Console handle
-  * @options: Initial settings of uart
-  *
-- * Returns 0, -ENODEV if no device
-- **/
-+ * Return: 0, -ENODEV if no device
-+ */
- static int __init xuartps_console_setup(struct console *co, char *options)
- {
- 	struct uart_port *port = &xuartps_port[co->index];
-@@ -1190,8 +1179,8 @@ static struct console xuartps_console = {
- /**
-  * xuartps_console_init - Initialization call
-  *
-- * Returns 0 on success, negative error otherwise
-- **/
-+ * Return: 0 on success, negative error otherwise
-+ */
- static int __init xuartps_console_init(void)
- {
- 	register_console(&xuartps_console);
-@@ -1221,7 +1210,7 @@ static struct uart_driver xuartps_uart_driver = {
-  * xuartps_suspend - suspend event
-  * @device: Pointer to the device structure
-  *
-- * Returns 0
-+ * Return: 0
-  */
- static int xuartps_suspend(struct device *device)
- {
-@@ -1269,7 +1258,7 @@ static int xuartps_suspend(struct device *device)
-  * xuartps_resume - Resume after a previous suspend
-  * @device: Pointer to the device structure
-  *
-- * Returns 0
-+ * Return: 0
-  */
- static int xuartps_resume(struct device *device)
- {
-@@ -1336,8 +1325,8 @@ static SIMPLE_DEV_PM_OPS(xuartps_dev_pm_ops, xuartps_suspend, xuartps_resume);
-  * xuartps_probe - Platform driver probe
-  * @pdev: Pointer to the platform device structure
-  *
-- * Returns 0 on success, negative error otherwise
-- **/
-+ * Return: 0 on success, negative error otherwise
-+ */
- static int xuartps_probe(struct platform_device *pdev)
- {
- 	int rc;
-@@ -1437,8 +1426,8 @@ err_out_clk_dis_aper:
-  * xuartps_remove - called when the platform driver is unregistered
-  * @pdev: Pointer to the platform device structure
-  *
-- * Returns 0 on success, negative error otherwise
-- **/
-+ * Return: 0 on success, negative error otherwise
-+ */
- static int xuartps_remove(struct platform_device *pdev)
- {
- 	struct uart_port *port = platform_get_drvdata(pdev);
-@@ -1481,8 +1470,8 @@ static struct platform_driver xuartps_platform_driver = {
- /**
-  * xuartps_init - Initial driver registration call
-  *
-- * Returns whether the registration was successful or not
-- **/
-+ * Return: whether the registration was successful or not
-+ */
- static int __init xuartps_init(void)
- {
- 	int retval = 0;
-@@ -1502,7 +1491,7 @@ static int __init xuartps_init(void)
- 
- /**
-  * xuartps_exit - Driver unregistration call
-- **/
-+ */
- static void __exit xuartps_exit(void)
- {
- 	/* The order of unregistration is important. Unregister the
--- 
-1.9.0.1.g4196000
+Drivers these days are often taking this value from the DT node
+property 'chip-delay'. I think this would be nice to have in common
+code too...
 
+> tPROG and tBERS, would be used in nand_wait function and do not
+> depend on the R/B pin.  These are just used as timeouts.
+
+tPROG/tBERS have that special mode where R/B remains asserted but you
+can still issue a status read to the chip to check on the command, so
+the timeout required here is just a big number to detect failed NAND
+controllers, it isn't really too important to have an exact value..
+
+> >>Or should I create a new struct for these timings ?
+> >>In the latter case how should I name it ?
+> >struct onfi_command_timings ?
+> 
+> I'm not a big fan of this name. I think timing structs should not
+> contain onfi in their names, because these timings are also
+> available on non ONFI chips.
+
+Explicitly defering to the ONFI spec makes it clear what the
+definition of the timing parameter actually is.
+
+If JEDEC has a different model then drivers will need to configure
+their interfaces a little differently.
+
+So we might end up with a jedec_sdr_timings too :|
+
+> What do you think ?
+
+I'd focus on getting the bus timings working before tackling too much
+more ...
+
+Jason
