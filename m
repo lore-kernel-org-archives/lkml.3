@@ -1,200 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750939AbaCLEAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 00:00:11 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:30519
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750703AbaCLEAJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 00:00:09 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de097hz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1de2h1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-Date: Wed, 12 Mar 2014 11:59:54 +0800
-From: Chenhui Zhao <chenhui.zhao@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>, <Jason.Jin@freescale.com>
-Subject: Re: [PATCH 3/9] powerpc/rcpm: add RCPM driver
-Message-ID: <20140312035954.GB4706@localhost.localdomain>
-References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
- <1394168285-32275-3-git-send-email-chenhui.zhao@freescale.com>
- <1394581371.13761.62.camel@snotra.buserror.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1394581371.13761.62.camel@snotra.buserror.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	id S1751259AbaCLEAz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 00:00:55 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:36332 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaCLEAy (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 12 Mar 2014 00:00:54 -0400
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+From: joeyli <jlee@suse.com>
+To: Julian Wollrath <jwollrath@web.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Lee@linutronix.de,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+In-Reply-To: <20140311181513.0f73383c@ilfaris>
+References: <20140310110410.5b2218f6@ilfaris>
+	 <alpine.DEB.2.02.1403101123470.18573@ionos.tec.linutronix.de>
+	 <20140311142910.27594027@ilfaris>
+	 <alpine.DEB.2.02.1403111454140.18573@ionos.tec.linutronix.de>
+	 <20140311181513.0f73383c@ilfaris>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Mar 2014 12:00:07 +0800
+Message-ID: <1394596807.26565.135.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 06:42:51PM -0500, Scott Wood wrote:
-> On Fri, 2014-03-07 at 12:57 +0800, Chenhui Zhao wrote:
-> > diff --git a/arch/powerpc/platforms/85xx/corenet_generic.c b/arch/powerpc/platforms/85xx/corenet_generic.c
-> > index b756f3d..3fdf9f3 100644
-> > --- a/arch/powerpc/platforms/85xx/corenet_generic.c
-> > +++ b/arch/powerpc/platforms/85xx/corenet_generic.c
-> > @@ -56,6 +56,8 @@ void __init corenet_gen_setup_arch(void)
-> >  
-> >  	swiotlb_detect_4g();
-> >  
-> > +	fsl_rcpm_init();
-> > +
-> >  	pr_info("%s board from Freescale Semiconductor\n", ppc_md.name);
+Hi Julian, 
+
+於 二，2014-03-11 於 18:15 +0100，Julian Wollrath 提到：
+> Am Tue, 11 Mar 2014 14:56:41 +0100 (CET)
+> schrieb Thomas Gleixner <tglx@linutronix.de>:
+> > > Ok, via bisecting I found commit
+> > > 73f7d1ca32638028e3271f54616773727e2f9f26 (see below) to be the one
+> > > that introduced this regression.
+> > 
+> > Interesting. I have no idea what's going on. But maybe can the ACPI
+> > folks shed some light on it.
 > 
-> RCPM is not board-specific.  Why is this in board code?
 
-Init the RCPM driver in the early stage before smp_init(). Because
-the time base sync calls a callback function .freeze_time_base()
-in the RCPM driver.
+My patch moved acpi_early_init() to before timekeeping_init() is for
+prepare the later using ACPI TAD to set system clock. I think that
+because acpi_early_init() setup SCI interrupt and enable acpi subsystem,
+it causes fast TSC calibration fail.
 
-Will use early_initcall() instead.
-
-> 
-> > +static void rcpm_v1_cpu_enter_state(int cpu, int state)
-> > +{
-> > +	unsigned int hw_cpu = get_hard_smp_processor_id(cpu);
-> > +	unsigned int mask = 1 << hw_cpu;
-> > +
-> > +	switch (state) {
-> > +	case E500_PM_PH10:
-> > +		setbits32(&rcpm_v1_regs->cdozcr, mask);
-> > +		break;
-> > +	case E500_PM_PH15:
-> > +		setbits32(&rcpm_v1_regs->cnapcr, mask);
-> > +		break;
-> > +	default:
-> > +		pr_err("Unknown cpu PM state\n");
-> > +		break;
-> > +	}
-> > +}
-> 
-> Put __func__ in error messages -- and for "unknown value" type messages,
-> print the value.
-
-OK.
-
+> I have absolutely no idea, if it is the right thing to do and why it
+> works, but the patch below fixes the problem. Thank you for your help.
 > 
 > 
-> > +static int rcpm_v1_plat_enter_state(int state)
-> > +{
-> > +	u32 *pmcsr_reg = &rcpm_v1_regs->powmgtcsr;
-> > +	int ret = 0;
-> > +	int result;
-> > +
-> > +	switch (state) {
-> > +	case PLAT_PM_SLEEP:
-> > +		setbits32(pmcsr_reg, RCPM_POWMGTCSR_SLP);
-> > +
-> > +		/* At this point, the device is in sleep mode. */
-> > +
-> > +		/* Upon resume, wait for RCPM_POWMGTCSR_SLP bit to be clear. */
-> > +		result = spin_event_timeout(
-> > +		  !(in_be32(pmcsr_reg) & RCPM_POWMGTCSR_SLP), 10000, 10);
-> > +		if (!result) {
-> > +			pr_err("%s: timeout waiting for SLP bit to be cleared\n",
-> > +			  __func__);
+> Cheers,
+> Julian Wollrath
 > 
-> Why are you indenting continuation lines with only two spaces (and yet
-> still not aligning with anything)?
-
-Will align with the previous parenthesis.
-
+> From 7664f495039d93adfce073e58840a46549904f04 Mon Sep 17 00:00:00 2001
+> From: Julian Wollrath <jwollrath@web.de>
+> Date: Tue, 11 Mar 2014 18:05:43 +0100
+> Subject: [PATCH] Fix fast TSC calibration
 > 
-> > +			ret = -ETIMEDOUT;
-> > +		}
-> > +		break;
-> > +	default:
-> > +		pr_err("Unsupported platform PM state\n");
-> > +		ret = -EINVAL;
-> > +	}
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static void rcpm_v1_freeze_time_base(int freeze)
-> > +{
-> > +	u32 *tben_reg = &rcpm_v1_regs->ctbenr;
-> > +	static u32 mask;
-> > +
-> > +	if (freeze) {
-> > +		mask = in_be32(tben_reg);
-> > +		clrbits32(tben_reg, mask);
-> > +	} else {
-> > +		setbits32(tben_reg, mask);
-> > +	}
-> > +
-> > +	/* read back to push the previous write */
-> > +	in_be32(tben_reg);
-> > +}
-> > +
-> > +static void rcpm_v2_freeze_time_base(int freeze)
-> > +{
-> > +	u32 *tben_reg = &rcpm_v2_regs->pctbenr;
-> > +	static u32 mask;
-> > +
-> > +	if (freeze) {
-> > +		mask = in_be32(tben_reg);
-> > +		clrbits32(tben_reg, mask);
-> > +	} else {
-> > +		setbits32(tben_reg, mask);
-> > +	}
-> > +
-> > +	/* read back to push the previous write */
-> > +	in_be32(tben_reg);
-> > +}
+> Since commit 73f7d1ca32638028e3271f54616773727e2f9f26 the fast TSC calibration
+> failed on a Thinkpad X121e with an AMD E450 APU. Moving acpi_early_init() after
+> late_time_init() fixes this.
 > 
-> It looks like the only difference between these two functions is how you
-> calculate tben_reg -- factor the rest out into a single function.
-
-Yes. Will factor them out into a single function.
-
+> Signed-off-by: Julian Wollrath <jwollrath@web.de>
+> ---
+>  init/main.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> > +int fsl_rcpm_init(void)
-> > +{
-> > +	struct device_node *np;
-> > +
-> > +	np = of_find_compatible_node(NULL, NULL, "fsl,qoriq-rcpm-2.0");
-> > +	if (np) {
-> > +		rcpm_v2_regs = of_iomap(np, 0);
-> > +		of_node_put(np);
-> > +		if (!rcpm_v2_regs)
-> > +			return -ENOMEM;
-> > +
-> > +		qoriq_pm_ops = &qoriq_rcpm_v2_ops;
-> > +
-> > +	} else {
-> > +		np = of_find_compatible_node(NULL, NULL, "fsl,qoriq-rcpm-1.0");
-> > +		if (np) {
-> > +			rcpm_v1_regs = of_iomap(np, 0);
-> > +			of_node_put(np);
-> > +			if (!rcpm_v1_regs)
-> > +				return -ENOMEM;
-> > +
-> > +			qoriq_pm_ops = &qoriq_rcpm_v1_ops;
-> > +
-> > +		} else {
-> > +			pr_err("%s: can't find the rcpm node.\n", __func__);
-> > +			return -EINVAL;
-> > +		}
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> 
-> Why isn't this a proper platform driver?
-> 
-> -Scott
+> diff --git a/init/main.c b/init/main.c
+> index eb03090cdced..bf9d99148bd6 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -561,7 +561,6 @@ asmlinkage void __init start_kernel(void)
+>  	init_timers();
+>  	hrtimers_init();
+>  	softirq_init();
+> -	acpi_early_init();
+>  	timekeeping_init();
+>  	time_init();
+>  	sched_clock_postinit();
+> @@ -609,6 +608,7 @@ asmlinkage void __init start_kernel(void)
+>  	numa_policy_init();
+>  	if (late_time_init)
+>  		late_time_init();
+> +	acpi_early_init();
+>  	sched_clock_init();
+>  	calibrate_delay();
+>  	pidmap_init();
 
-The RCPM is not a single function IP block, instead it is a collection
-of device run control and power management. It would be called by other
-drivers and functions. For example, the callback .freeze_time_base()
-need to be called at early stage of kernel init. Therefore, it would be
-better to init it at early stage.
+The late_time_init() dependent on timekeeping_init(), if we don't want
+move acpi_early_init() before timekeeping_init() then just direct put it
+before efi_enter_virtual_mode() because we tested this changed.
 
--Chenhui
+This patch restricts the position to run acpi_early_init() before
+timekeeping_init() when only "CMOS RTC Not Present" bit set in FADT.
+
+Could you please help to test it on your machine?
+
+
+Thanks a lot!
+Joey Lee
+
+
+>From 8ef4fff76dd2f50bef1e8eb9c96f3b0228a38401 Mon Sep 17 00:00:00 2001
+From: Lee, Chun-Yi <jlee@suse.com>
+Date: Wed, 12 Mar 2014 11:36:32 +0800
+Subject: [PATCH] ACPI / init: Run acpi_early_init() before timekeeping_init() when CMOS RTC Not Present bit set
+
+This is a variant patch from Rafael J. Wysocki's
+ACPI / init: Run acpi_early_init() before efi_enter_virtual_mode()
+
+According to Matt Fleming, if acpi_early_init() was executed before
+efi_enter_virtual_mode(), the EFI initialization could benefit from
+it, so Rafael's patch makes that happen.
+
+And, later we want accessing ACPI TAD device to set system clock, so
+move acpi_early_init() before timekeeping_init() when "CMOS RTC Not
+Present" bit set. This position is also before efi_enter_virtual_mode().
+
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+---
+ init/main.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/init/main.c b/init/main.c
+index eb03090..e1b69d2 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -561,7 +561,9 @@ asmlinkage void __init start_kernel(void)
+ 	init_timers();
+ 	hrtimers_init();
+ 	softirq_init();
+-	acpi_early_init();
++	if (acpi_gbl_FADT.header.revision >= 5 &&
++	    acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_CMOS_RTC)
++		acpi_early_init();
+ 	timekeeping_init();
+ 	time_init();
+ 	sched_clock_postinit();
+@@ -613,6 +615,9 @@ asmlinkage void __init start_kernel(void)
+ 	calibrate_delay();
+ 	pidmap_init();
+ 	anon_vma_init();
++	if (!(acpi_gbl_FADT.header.revision >= 5 &&
++	      acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_CMOS_RTC))
++		acpi_early_init();
+ #ifdef CONFIG_X86
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+-- 
+1.6.4.2
+
+
 
