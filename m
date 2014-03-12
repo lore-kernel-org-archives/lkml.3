@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283AbaCLJhM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:37:12 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:35755 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616AbaCLJhJ (ORCPT
+	id S1753356AbaCLJhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 05:37:34 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:34168 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753102AbaCLJhb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:37:09 -0400
-Date: Wed, 12 Mar 2014 09:37:03 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
-Subject: Re: [PATCH v4 1/6] ARM: STi: Add STiH407 SoC support
-Message-ID: <20140312093703.GD5672@lee--X1>
-References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
- <1394614210-15698-2-git-send-email-maxime.coquelin@st.com>
+	Wed, 12 Mar 2014 05:37:31 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Zhouyi Zhou'" <zhouzhouyi@gmail.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "pablo@netfilter.org" <pablo@netfilter.org>,
+        "jbenc@redhat.com" <jbenc@redhat.com>,
+        "brouer@redhat.com" <brouer@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Subject: RE: [PATCH RFC] netfilter: cacheline aligning in struct netns_ct
+Thread-Topic: [PATCH RFC] netfilter: cacheline aligning in struct netns_ct
+Thread-Index: AQHPPciJ/QRa6rkGZ0myV07XSSF1bZrdLiFw
+Date: Wed, 12 Mar 2014 09:36:36 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6DB542@AcuExch.aculab.com>
+References: <1394610994-22794-1-git-send-email-yizhouzhou@ict.ac.cn>
+In-Reply-To: <1394610994-22794-1-git-send-email-yizhouzhou@ict.ac.cn>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394614210-15698-2-git-send-email-maxime.coquelin@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch adds support to STiH407 SoC.
+From: Zhouyi Zhou
+> not frequently changing components should share same cachelines
 > 
-> Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
 > ---
->  Documentation/arm/sti/stih407-overview.txt    | 18 ++++++++++++++++++
->  Documentation/devicetree/bindings/arm/sti.txt | 15 +++++++++++++++
->  arch/arm/mach-sti/board-dt.c                  |  1 +
->  3 files changed, 34 insertions(+)
->  create mode 100644 Documentation/arm/sti/stih407-overview.txt
->  create mode 100644 Documentation/devicetree/bindings/arm/sti.txt
+>  include/net/netns/conntrack.h |   12 ++++++++----
+>  1 file changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/net/netns/conntrack.h b/include/net/netns/conntrack.h
+> index fbcc7fa..69d2d58 100644
+> --- a/include/net/netns/conntrack.h
+> +++ b/include/net/netns/conntrack.h
+> @@ -65,6 +65,12 @@ struct nf_ip_net {
+>  struct netns_ct {
+>  	atomic_t		count;
+>  	unsigned int		expect_count;
+> +	struct hlist_nulls_head	unconfirmed;
+> +	struct hlist_nulls_head	dying;
+> +	struct hlist_nulls_head tmpl;
+> +
+> +	/*  not frequently changing components should share same cachelines */
+> +	struct nf_ip_net	nf_ct_proto ____cacheline_aligned_in_smp;
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+I'm not sure this has the effect you are trying to achieve.
+Adding an __attribute__((aligned(n))) to a structure member not only
+adds padding before the member, but also pads the member to a multiple
+of the specified size.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+With large cache lines you probably want neither.
+IIRC one of the ppc systems has something like 256 byte cache lines
+(and if it doesn't now, it might have soon).
+So arbitrarily cache-line aligning structure members may not be a good idea.
+
+In any case reducing the number of cache lines accessed, and the number
+dirtied is probably more important than putting 'readonly' data in its
+own cache lines.
+
+	David
+
+
+
