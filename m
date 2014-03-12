@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaCLUv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 16:51:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33174 "EHLO mga02.intel.com"
+	id S1752878AbaCLUxD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 16:53:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57765 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283AbaCLUv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 16:51:57 -0400
+	id S1752277AbaCLUxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 16:53:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,640,1389772800"; 
-   d="asc'?scan'208";a="471182200"
-Message-ID: <1394657468.2167.8.camel@jtkirshe-mobl>
-Subject: Re: [PATCH net-next 6/9] ixgbevf: Convert uses of __constant_<foo>
- to <foo>
+   d="asc'?scan'208";a="471182067"
+Message-ID: <1394657433.2167.5.camel@jtkirshe-mobl>
+Subject: Re: [PATCH net-next 3/9] igb: Convert uses of __constant_<foo> to
+ <foo>
 From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 To: Joe Perches <joe@perches.com>
 Cc: netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
@@ -23,12 +23,12 @@ Cc: netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
         John Ronciak <john.ronciak@intel.com>,
         Mitch Williams <mitch.a.williams@intel.com>,
         e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Wed, 12 Mar 2014 13:51:08 -0700
-In-Reply-To: <6477c916f14711f9f0cd02610a8b8a3c1804a83e.1394644825.git.joe@perches.com>
+Date: Wed, 12 Mar 2014 13:50:33 -0700
+In-Reply-To: <0eb4523c7e13dc35a6467332e22a24719f7d7041.1394644825.git.joe@perches.com>
 References: <cover.1394644825.git.joe@perches.com>
-	 <6477c916f14711f9f0cd02610a8b8a3c1804a83e.1394644825.git.joe@perches.com>
+	 <0eb4523c7e13dc35a6467332e22a24719f7d7041.1394644825.git.joe@perches.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-A5hwSd72h4MGE5m+tD2V"
+	protocol="application/pgp-signature"; boundary="=-KsqZb51VKd9n7Hmn550I"
 X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,7 +36,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-A5hwSd72h4MGE5m+tD2V
+--=-KsqZb51VKd9n7Hmn550I
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -47,12 +47,12 @@ On Wed, 2014-03-12 at 10:22 -0700, Joe Perches wrote:
 >=20
 > Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  drivers/net/ethernet/intel/igb/igb_main.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
 
 Thanks Joe, I will add this to my queue.
 
---=-A5hwSd72h4MGE5m+tD2V
+--=-KsqZb51VKd9n7Hmn550I
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -60,20 +60,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAABCgAGBQJTIMi8AAoJEOVv75VaS+3OwLsP/Au5Ktp6VC5RcF8JkClN4ez7
-yHe5nopui9oVv9gpRtl/jgZ0jTHAtw33wKv92aYyx8lkgkygZWt9UKff2Q3fD03W
-0N66Pv6Tm/VDSer2fQHkoHRsDubmKi3nwn5bFI0u65wiqqgSlE4Iiqk+Nt8U/Ue1
-FXtbMxm3pWoW6ivP7yVoG1eYHvXUoNKbcFLb2MfqDfCY0R6AkWb3zdGrHLcjaDR0
-SAMp7c5rtx7wp8nLCI+Kb5jFplWXK7RQVXqqOLVb4uvSNdVVpteDJfgXZC3YV66m
-4O9B5STcIgcBXEq0y2sPhiNmebiP5w02X5o8+G5qz0Cfnsv1MVcx28MAcnPX5jNy
-fn8H6MBjNlEfOQ0lwU7Y1VYnvncDdZZ1l4gLVVyGTz8YHi4ZP3MIsYfFN02ZKbCM
-ywxXbIL7RxA6OzABsDjD9OWcH3RiMG6MUzMuDktH7ifTjR+3ZeXjLz5yemcGS01A
-PVNgdbYDDXEriQD/RUFzQUqKJ0qEHLuUE3p5fqf5vkBJdLmtUOkn1yjdIIHClUke
-JhVI3sbtExleKOfL58Vf2JH5JDRKrtw6oBPTHcxKb8I3UhA+PSAvM+w4F2Zyx0aP
-AYRoskP0MRHiwFezZwy1s64OAN3136UYYgPcBEBPcAny0IA/dWvItyAKyX+fbHXT
-gyYuYAEm7lYbagO9bcyk
-=OVNH
+iQIcBAABCgAGBQJTIMiZAAoJEOVv75VaS+3ON54P/3XiDbOsOys6zkoLOefNIyBR
+Ix4G5ArXFhe4FNkXGuqrcF0b9XL/SOYSCxIVvv4ELuMTcra12e/W8u4ZDLv9/oJE
++/mnDdKsEh9npric4ZIrPoJHjXQ/G389x7wt6Nmjzkhdn4KRrFBzx9LtwZ3Boc25
+gHTwB7rv/4CyjvHZOBu2Cg7zuWXomc4EbwrTLoTSseFh2IoJjtkFfO5U8p2soRBv
+mXkHD3uSZQEvj+dIzrDLXcHFOzxTUL9dNx0n4p2ERjRgKNKWkt1trCYTP5av5sab
+FC2cqhfpOyUILTGF1CXkaww9IOc5SBzS7+w4uO2L7+WoAIebeX6wdKyllhEv8b8s
+c7I/hA/Z9eS8O5qSLgRQH/xrdLo3droEGda0esMsPOrYQfzLEL3tjETedk5sjUyQ
+LsYjYA2ONmO4McwTjoMHwQYzdLdJWDqUJuwlzLx6da3adQCV+/xjs9spdUJpf2u5
+2jlT4wO3JKl1+L8NclYxnZWy99dVdWN0mH21ih5WMck7Pj2q/OC4Z6YpkgmGtZNP
+OwMzv/y3ZgbqS87KVuyIO/ZDzM6fvb1iL2R0Xxw1j1mxhJud3hjLBfab3l/IjKUf
+ComnXrAiJEVdd5E07tkQ8JiipMZ9ZyinpbKfE4MsUyRRBaOVxTq9PrAPm/N86lMO
+JuJ/DkScmpClLrH84wsF
+=REfh
 -----END PGP SIGNATURE-----
 
---=-A5hwSd72h4MGE5m+tD2V--
+--=-KsqZb51VKd9n7Hmn550I--
 
