@@ -1,93 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583AbaCLBaI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 21:30:08 -0400
-Received: from mail.efficios.com ([78.47.125.74]:47336 "EHLO mail.efficios.com"
+	id S1756492AbaCLB27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 21:28:59 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33941 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756566AbaCLBaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 21:30:06 -0400
-Date: Wed, 12 Mar 2014 01:30:09 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <1051752900.559.1394587809601.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140311211402.6245c6d0@gandalf.local.home>
-References: <1394499898-1537-1-git-send-email-mathieu.desnoyers@efficios.com> <20140311193450.60bbf8b0@gandalf.local.home> <1594586075.484.1394585553228.JavaMail.zimbra@efficios.com> <20140311211402.6245c6d0@gandalf.local.home>
-Subject: Re: [PATCH 1/2] Tracepoint API doc update: data argument
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Tracepoint API doc update: data argument
-Thread-Index: 1NEv6LLzHZDQHlLMFbt3dWN7kaJTeg==
+	id S1756472AbaCLB24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 21:28:56 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 3/8] mm: memcg: inline mem_cgroup_charge_common()
+Date: Tue, 11 Mar 2014 21:28:29 -0400
+Message-Id: <1394587714-6966-4-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394587714-6966-1-git-send-email-hannes@cmpxchg.org>
+References: <1394587714-6966-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic Weisbecker" <fweisbec@gmail.com>,
-> "Andrew Morton" <akpm@linux-foundation.org>
-> Sent: Tuesday, March 11, 2014 9:14:02 PM
-> Subject: Re: [PATCH 1/2] Tracepoint API doc update: data argument
-> 
-> On Wed, 12 Mar 2014 00:52:33 +0000 (UTC)
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> 
-> > ----- Original Message -----
-> > > From: "Steven Rostedt" <rostedt@goodmis.org>
-> > > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> > > Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>,
-> > > "Frederic Weisbecker" <fweisbec@gmail.com>,
-> > > "Andrew Morton" <akpm@linux-foundation.org>
-> > > Sent: Tuesday, March 11, 2014 7:34:50 PM
-> > > Subject: Re: [PATCH 1/2] Tracepoint API doc update: data argument
-> > > 
-> > > On Mon, 10 Mar 2014 21:04:57 -0400
-> > > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > > 
-> > > > Describe the @data argument (probe private data).
-> > > > 
-> > > > Fixes: 38516ab59fbc "tracing: Let tracepoints have data passed to
-> > > > tracepoint callbacks"
-> > > > CC: Steven Rostedt <rostedt@goodmis.org>
-> > > > CC: Ingo Molnar <mingo@kernel.org>
-> > > > CC: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > CC: Andrew Morton <akpm@linux-foundation.org>
-> > > 
-> > > No signed-off-by.
-> > 
-> > Hi Steven,
-> > 
-> > I'm curious to understand the reason of this "no signed-off-by" on a
-> > trivial
-> > patch that fixes the missing DocBook comments for one of your previous
-> > commits that has been upstream for a few years. What am I missing ?
-> > Perhaps you meant this reply for my other documentation update patch (2/2)
-> > ?
-> > 
-> 
-> I mean, my scripts wont accept a patch that the author never added
-> their signed-off-by to.
-> 
-> In other words, resubmit, and add your own signed-off-by that happens to
-> be missing from this patch.
+mem_cgroup_charge_common() is used by both cache and anon pages, but
+most of its body only applies to anon pages and the remainder is not
+worth having in a separate function.
 
-Oh, sorry, I missed that. Will do.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 40 ++++++++++++++++------------------------
+ 1 file changed, 16 insertions(+), 24 deletions(-)
 
-Thanks,
-
-Mathieu
-
-> 
-> -- Steve
-> 
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 5abdfab957ad..cfdb9c385d8d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3919,20 +3919,21 @@ out:
+ 	return ret;
+ }
+ 
+-/*
+- * Charge the memory controller for page usage.
+- * Return
+- * 0 if the charge was successful
+- * < 0 if the cgroup is over its limit
+- */
+-static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+-				gfp_t gfp_mask, enum charge_type ctype)
++int mem_cgroup_newpage_charge(struct page *page,
++			      struct mm_struct *mm, gfp_t gfp_mask)
+ {
+ 	struct mem_cgroup *memcg = NULL;
+ 	unsigned int nr_pages = 1;
+ 	bool oom = true;
+ 	int ret;
+ 
++	if (mem_cgroup_disabled())
++		return 0;
++
++	VM_BUG_ON_PAGE(page_mapped(page), page);
++	VM_BUG_ON_PAGE(page->mapping && !PageAnon(page), page);
++	VM_BUG_ON(!mm);
++
+ 	if (PageTransHuge(page)) {
+ 		nr_pages <<= compound_order(page);
+ 		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
+@@ -3946,22 +3947,11 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+ 	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
+ 	if (ret == -ENOMEM)
+ 		return ret;
+-	__mem_cgroup_commit_charge(memcg, page, nr_pages, ctype, false);
++	__mem_cgroup_commit_charge(memcg, page, nr_pages,
++				   MEM_CGROUP_CHARGE_TYPE_ANON, false);
+ 	return 0;
+ }
+ 
+-int mem_cgroup_newpage_charge(struct page *page,
+-			      struct mm_struct *mm, gfp_t gfp_mask)
+-{
+-	if (mem_cgroup_disabled())
+-		return 0;
+-	VM_BUG_ON_PAGE(page_mapped(page), page);
+-	VM_BUG_ON_PAGE(page->mapping && !PageAnon(page), page);
+-	VM_BUG_ON(!mm);
+-	return mem_cgroup_charge_common(page, mm, gfp_mask,
+-					MEM_CGROUP_CHARGE_TYPE_ANON);
+-}
+-
+ /*
+  * While swap-in, try_charge -> commit or cancel, the page is locked.
+  * And when try_charge() successfully returns, one refcnt to memcg without
+@@ -4079,9 +4069,11 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 	if (PageCompound(page))
+ 		return 0;
+ 
+-	if (!PageSwapCache(page))
+-		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+-	else { /* page is swapcache/shmem */
++	if (!PageSwapCache(page)) {
++		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, true);
++		if (ret != -ENOMEM)
++			__mem_cgroup_commit_charge(memcg, page, 1, type, false);
++	} else { /* page is swapcache/shmem */
+ 		ret = __mem_cgroup_try_charge_swapin(mm, page,
+ 						     gfp_mask, &memcg);
+ 		if (!ret)
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+1.9.0
+
