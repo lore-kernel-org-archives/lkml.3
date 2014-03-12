@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621AbaCLHIz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 03:08:55 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:62053 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756185AbaCLHIv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 03:08:51 -0400
-X-AuditID: cbfee690-b7f266d00000287c-6b-532007df1c30
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: t.figa@samsung.com, a.hajda@samsung.com, mturquette@linaro.org,
-        kgene.kim@samsung.com
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH] clk: exynos4: Add clock ID for ppmuleft/right
-Date: Wed, 12 Mar 2014 16:08:10 +0900
-Message-id: <1394608090-25362-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42JZI2JSrPuAXSHY4McpZotb686xWlz/8pzV
-	Yv4RIKv/zUJWi3OvVjJa9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaLpdcvMlk8nXCRzWLC
-	9LUsFutnvGZx4PNYM28No8flvl4mj5XLv7B53Lm2h81j85J6j74tqxg9Pm+SC2CP4rJJSc3J
-	LEst0rdL4Mr4vuIke8EhoYp/zx4yNTCe5u9i5OSQEDCR2LzpHSOELSZx4d56ti5GLg4hgaWM
-	Env+7WGEKdq+bAYjRGI6o8Ss9lusEE4jk8SMWdfAqtgEtCT2v7jBBmKLCERLnJp7DayIWWAt
-	k8SLuzPBioQF7CT2T+sEs1kEVCWmzH3AAmLzCrhK3Pj9nwlinZzEhz2P2EGaJQT2sUtM27eM
-	CaJBQOLb5ENADRxACVmJTQeYIeolJQ6uuMEygVFwASPDKkbR1ILkguKk9CITveLE3OLSvHS9
-	5PzcTYzAmDj979mEHYz3DlgfYkwGGjeRWUo0OR8YU3kl8YbGZkYWpiamxkbmlmakCSuJ86o9
-	SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwDgp4HkJ37VLAdLqBkzC5d3Nuz8K3w9ff7v7
-	SNwxPq6cc0uXHrp6gOHIbumWpxuEjqmXiD/blC/xKiBd/cBrJ7vnnNYnLffvd9uw7mORmsJv
-	yRnal5sPRuUrL21eFxprcjji6Um2tEa51Fs9S6/kXfR//Um66iuj/aSsjOuzJ93YxOTQXTJp
-	/h4lluKMREMt5qLiRACJJr7ynwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t9jQd377ArBBv/vm1vcWneO1eL6l+es
-	FvOPAFn9bxayWpx7tZLRonfBVTaLs01v2C02Pb7GanF51xw2ixnn9zFZLL1+kcni6YSLbBYT
-	pq9lsVg/4zWLA5/HmnlrGD0u9/Uyeaxc/oXN4861PWwem5fUe/RtWcXo8XmTXAB7VAOjTUZq
-	YkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QzUoKZYk5pUCh
-	gMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjO8rTrIXHBKq+PfsIVMD42n+LkZODgkB
-	E4nty2YwQthiEhfurWfrYuTiEBKYzigxq/0WK4TTyCQxY9Y1sCo2AS2J/S9usIHYIgLREqfm
-	XgMrYhZYyyTx4u5MsCJhATuJ/dM6wWwWAVWJKXMfsIDYvAKuEjd+/2eCWCcn8WHPI/YJjNwL
-	GBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH3DPpHYyrGiwOMQpwMCrx8C7UlA8WYk0s
-	K67MPcQowcGsJML7ESTEm5JYWZValB9fVJqTWnyIMRlo+0RmKdHkfGAyyCuJNzQ2MTOyNDI3
-	tDAyNidNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGxvkF02Y2Lbg4rTVXPozx4K03Nocv
-	FwidnZfGqXlG2buJt133f1ze9Sl+1l9e63zKeGP38v9XSf/P3pcCj07ONhbl7dUNKWFP/ZWd
-	dkj1z437HyZLz5196GdcUTOT734z8ZwK5gJepyj3j0krXB7H+ChvVPlwrfPfffbWqOld15d+
-	6lbNUrzlpMRSnJFoqMVcVJwIAH1NQ9f8AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756606AbaCLHQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 03:16:14 -0400
+Received: from sauhun.de ([89.238.76.85]:60382 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756490AbaCLHQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 03:16:12 -0400
+Date: Wed, 12 Mar 2014 08:16:05 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Chew Chiau Ee <chiau.ee.chew@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Lim Lee Booi <lee.booi.lim@intel.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 RESEND] i2c: designware-pci: set ideal HCNT, LCNT and
+ SDA hold time value
+Message-ID: <20140312071605.GA2756@katana>
+References: <1394537625-27205-1-git-send-email-chiau.ee.chew@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
+Content-Disposition: inline
+In-Reply-To: <1394537625-27205-1-git-send-email-chiau.ee.chew@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no gate for the PPMU Left/Right to the LEFT/RIGHTBUS block.
-So, this patch add ppmuleft/right clock which is used to calculate memory bus
-utilization by using PPMU(Performance Profiling Monitoring Unit).
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/clk/samsung/clk-exynos4.c   |  2 ++
- include/dt-bindings/clock/exynos4.h | 26 ++++++++++++++------------
- 2 files changed, 16 insertions(+), 12 deletions(-)
+--T4sUOijqQbZv57TR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
-index 010f071..3819485 100644
---- a/drivers/clk/samsung/clk-exynos4.c
-+++ b/drivers/clk/samsung/clk-exynos4.c
-@@ -717,6 +717,8 @@ static struct samsung_gate_clock exynos4_gate_clks[] __initdata = {
- 			0, 0),
- 	GATE(CLK_AC97, "ac97", "aclk100", GATE_IP_PERIL, 27,
- 			0, 0),
-+	GATE(CLK_PPMULEFT, "ppmuleft", "aclk200", GATE_IP_LEFTBUS, 1, 0, 0),
-+	GATE(CLK_PPMURIGHT, "ppmuright", "aclk200", GATE_IP_RIGHTBUS, 1, 0, 0),
- };
- 
- /* list of gate clocks supported in exynos4210 soc */
-diff --git a/include/dt-bindings/clock/exynos4.h b/include/dt-bindings/clock/exynos4.h
-index 75aff33..cd7fecf 100644
---- a/include/dt-bindings/clock/exynos4.h
-+++ b/include/dt-bindings/clock/exynos4.h
-@@ -215,20 +215,22 @@
- #define CLK_SPI1_ISP_SCLK	381 /* Exynos4x12 only */
- #define CLK_UART_ISP_SCLK	382 /* Exynos4x12 only */
- #define CLK_TMU_APBIF		383
-+#define CLK_PPMULEFT		384
-+#define CLK_PPMURIGHT		385
- 
- /* mux clocks */
--#define CLK_MOUT_FIMC0		384
--#define CLK_MOUT_FIMC1		385
--#define CLK_MOUT_FIMC2		386
--#define CLK_MOUT_FIMC3		387
--#define CLK_MOUT_CAM0		388
--#define CLK_MOUT_CAM1		389
--#define CLK_MOUT_CSIS0		390
--#define CLK_MOUT_CSIS1		391
--#define CLK_MOUT_G3D0		392
--#define CLK_MOUT_G3D1		393
--#define CLK_MOUT_G3D		394
--#define CLK_ACLK400_MCUISP	395 /* Exynos4x12 only */
-+#define CLK_MOUT_FIMC0		386
-+#define CLK_MOUT_FIMC1		387
-+#define CLK_MOUT_FIMC2		388
-+#define CLK_MOUT_FIMC3		389
-+#define CLK_MOUT_CAM0		390
-+#define CLK_MOUT_CAM1		391
-+#define CLK_MOUT_CSIS0		392
-+#define CLK_MOUT_CSIS1		393
-+#define CLK_MOUT_G3D0		394
-+#define CLK_MOUT_G3D1		395
-+#define CLK_MOUT_G3D		396
-+#define CLK_ACLK400_MCUISP	397 /* Exynos4x12 only */
- 
- /* div clocks */
- #define CLK_DIV_ISP0		450 /* Exynos4x12 only */
--- 
-1.8.0
+On Tue, Mar 11, 2014 at 07:33:45PM +0800, Chew Chiau Ee wrote:
+> From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+>=20
+> On Intel BayTrail, there was case whereby the resulting fast mode
+> bus speed becomes slower (~20% slower compared to expected speed)
+> if using the HCNT/LCNT calculated in the core layer. Thus, this
+> patch is added to allow pci glue layer to pass in optimal
+> HCNT/LCNT/SDA hold time values to core layer since the core
+> layer supports cofigurable HCNT/LCNT/SDA hold time values now.
+>=20
+> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
+Applied to for-next, thanks!
+
+
+--T4sUOijqQbZv57TR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTIAm1AAoJEBQN5MwUoCm2Z9YQAJ2OVkWwPt98Dc9jTQNn2oCq
+anVEFNneh7S0pc1KPT14ur5rENyUulHOFfUMAvovj3Rtrb/m7Gm4il5Ng3gNoELv
+8Y0aflcg/6f9BcHocvMnt5FV73Q4DP9fQUQ0Ob0f1huYQ9OPPk6iQLwJ0xvprbs5
+hpNxi1KFBTKU4gbCd+C4MzbUzM2Y/psR5xpT89xBR8ZZdwDbBDqnEA9p/8vLN/MC
+VjRmQqII8KvNdwE7IKFMsoRyfzAOKMp77V03K/I6JckOyDYCvYWAwybRMJj5wdvv
+Umud/4kn38iOU4S0sobpGtUypRxixSM1rm0ccbHTBTkBu6zJ9rduBNrdxfs5clSO
+XVAG89OHPlL3/rvyAMAVtFCYHfIe8qbdxKHdocaFRJZY0X+SSxpRns2nUFNQcIyc
+Qn1m6LRUEsPfURyFh+eRgmaF4vowpJ+ZFEw7fXQpXalU/8ZfSr80dIbym/WPpdPH
+SEwme9gBviIGs7bPaUFegSwmZUjpw6lG+lFaFnx5HWkRzdyv2HO5RZHsBqXErsZt
+y3ih7Myr4Z0/vmbH/GL5KVNZlif2bV4fuaHU16shUAOyRbkKwR6W43vwIgLCLV9s
+A6nHZjka1b55WN++m1EOHdeEMT8fNp2txLs7tK6Ut7PPkgS7O+EQK++0QBLpWv4j
+Obs4nmKPpaDBSLF2ryp+
+=wfh1
+-----END PGP SIGNATURE-----
+
+--T4sUOijqQbZv57TR--
