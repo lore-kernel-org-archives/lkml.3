@@ -1,102 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaCLLWh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 07:22:37 -0400
-Received: from mailapp01.imgtec.com ([195.89.28.115]:36455 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655AbaCLLWg (ORCPT
+	id S1754175AbaCLLYu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 07:24:50 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59729 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668AbaCLLYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 07:22:36 -0400
-Message-ID: <53204372.1000400@imgtec.com>
-Date: Wed, 12 Mar 2014 11:22:26 +0000
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 12 Mar 2014 07:24:47 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Mark Brown <broonie@kernel.org>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: Re: [PATCH 2/3] spi: sh-msiof: Convert to spi core auto_runtime_pm framework
+Date: Wed, 12 Mar 2014 12:26:24 +0100
+Message-ID: <1972290.yxP8Fj4BuZ@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CANqRtoRR9Q8Q=ACqhnLBpTavn0K5cD1=dBkjkfZ8kb+H68GuOw@mail.gmail.com>
+References: <1394531952-3905-1-git-send-email-geert@linux-m68k.org> <2274545.CyQ67zvVqo@avalon> <CANqRtoRR9Q8Q=ACqhnLBpTavn0K5cD1=dBkjkfZ8kb+H68GuOw@mail.gmail.com>
 MIME-Version: 1.0
-To: <linux-mips@linux-mips.org>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] samples/seccomp/Makefile: Do not build tests if cross-compiling
- for MIPS
-References: <52FD0131.9040304@imgtec.com> <1392804917-29789-1-git-send-email-markos.chandras@imgtec.com>
-In-Reply-To: <1392804917-29789-1-git-send-email-markos.chandras@imgtec.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.154.136]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2014 10:15 AM, Markos Chandras wrote:
-> The Makefile is designed to use the host toolchain so it may be
-> unsafe to build the tests if the kernel has been configured and built
-> for another architecture. This fixes a build problem when the kernel has
-> been configured and built for the MIPS architecture but the host is
-> not MIPS (cross-compiled). The MIPS syscalls are only defined
-> if one of the following is true:
->
-> 1) _MIPS_SIM == _MIPS_SIM_ABI64
-> 2) _MIPS_SIM == _MIPS_SIM_ABI32
-> 3) _MIPS_SIM == _MIPS_SIM_NABI32
->
-> Of course, none of these make sense on a non-MIPS toolchain and the
-> following build problem occurs when building on a non-MIPS host.
->
-> linux/usr/include/linux/kexec.h:50:
-> userspace cannot reference function or variable defined in the kernel
-> samples/seccomp/bpf-direct.c: In function ‘emulator’:
-> samples/seccomp/bpf-direct.c:76:17: error:
-> ‘__NR_write’ undeclared (first use in this function)
->
-> Cc: linux-next@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-> ---
-> This build problem is only reproducible on the linux-next tree at the moment
->
-> Changes since v1:
-> - Rework code so native builds are allowed on MIPS
-> ---
->   samples/seccomp/Makefile | 14 ++++++++++----
->   1 file changed, 10 insertions(+), 4 deletions(-)
->
-> diff --git a/samples/seccomp/Makefile b/samples/seccomp/Makefile
-> index 7203e66..855051b 100644
-> --- a/samples/seccomp/Makefile
-> +++ b/samples/seccomp/Makefile
-> @@ -18,8 +18,8 @@ HOSTCFLAGS_bpf-direct.o += -idirafter $(objtree)/include
->   bpf-direct-objs := bpf-direct.o
->
->   # Try to match the kernel target.
-> -ifndef CONFIG_64BIT
->   ifndef CROSS_COMPILE
-> +ifndef CONFIG_64BIT
->
->   # s390 has -m31 flag to build 31 bit binaries
->   ifndef CONFIG_S390
-> @@ -36,7 +36,13 @@ HOSTLOADLIBES_bpf-direct += $(MFLAG)
->   HOSTLOADLIBES_bpf-fancy += $(MFLAG)
->   HOSTLOADLIBES_dropper += $(MFLAG)
->   endif
-> -endif
-> -
-> -# Tell kbuild to always build the programs
->   always := $(hostprogs-y)
-> +else
-> +# MIPS system calls are defined based on the -mabi that is passed
-> +# to the toolchain which may or may not be a valid option
-> +# for the host toolchain. So disable tests if target architecture
-> +# is MIPS but the host isn't.
-> +ifndef CONFIG_MIPS
-> +always := $(hostprogs-y)
-> +endif
-> +endif
->
+Hi Magnus,
 
-CC'ing Andrew Morton as well
+On Wednesday 12 March 2014 10:23:48 Magnus Damm wrote:
+> On Wed, Mar 12, 2014 at 1:32 AM, Laurent Pinchart wrote:
+> > On Tuesday 11 March 2014 17:23:37 Geert Uytterhoeven wrote:
+> >> Hi Laurent,
+> >> 
+> >> On Tue, Mar 11, 2014 at 4:55 PM, Laurent Pinchart wrote:
+> >> > Does this require drivers/sh/pm_runtime.c to be compiled in ?
+> >> 
+> >> Let's check...
+> >> 
+> >> My koelsch-legacy kernel has drivers/sh/pm_runtime.c compiled in.
+> >> My koelsch-reference kernel hasn't.
+> >> 
+> >> However, under the -reference kernel many MSTP clocks (incl. MSIOF)
+> >> seem to be enabled all the time, while under -legacy they are enabled and
+> >> disabled on demand.
+> > 
+> > Is PM_RUNTIME enabled in both cases ?
+> > 
+> > There's something fishy in there that we should try to fix without too
+> > further much delay. Ben Dooks has pointed out the problem a couple of
+> > months ago, but the discussion on the mailing list just died.
+> 
+> Yes, Runtime PM is not working as expected in the multiplatform case,
+> that is true. I propose that we keep Runtime PM disabled in the
+> Kconfig for R-Car Gen2 for now to keep things simple.
 
-Ping? Is anyone willing to take this patch in his tree so we can restore 
-the build for allyes/allmod configs for MIPS on linux-next?
+Isn't it ? I thought it was only broken with regard to clocks, but I might be 
+missing something.
+
+> From my side I see it as two separate solutions. The short term fix is
+> to temporarily work around drivers that depend on Runtime PM for clock
+> control, I propose enabling selected clocks statically using the
+> function introduced by this series:
+> 
+> [PATCH 00/03] ARM: shmobile: Break out and extend clock workaround
+> http://www.spinics.net/lists/arm-kernel/msg310278.html
+> 
+> The long term fix I'm not sure sure about, but I trust Geert to figure
+> it out. =)
+> 
+> Regardless, rushing to fix this "correctly" seems as useful to me as
+> dead line driven DT development....
 
 -- 
-markos
+Regards,
+
+Laurent Pinchart
+
