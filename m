@@ -1,114 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862AbaCLO6Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:58:16 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:44977 "EHLO gloria.sntech.de"
+	id S1754650AbaCLPBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:01:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48062 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754842AbaCLO6M convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:58:12 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/3] dt-bindings: document gpio-charger bindings
-Date: Wed, 12 Mar 2014 15:57:18 +0100
-Message-ID: <4446481.1MqT47xhP8@phil>
-User-Agent: KMail/4.11.5 (Linux/3.12-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CAL_JsqKoOhHpJ_OL23WbitQbiJJKLpWrtezT824FP0qtZ2xrEg@mail.gmail.com>
-References: <12569216.pGctOhkhxz@phil> <2194340.F9etmr5mIo@phil> <CAL_JsqKoOhHpJ_OL23WbitQbiJJKLpWrtezT824FP0qtZ2xrEg@mail.gmail.com>
+	id S1754103AbaCLPBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 11:01:37 -0400
+Date: Wed, 12 Mar 2014 16:01:34 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/8] mm: memcg: push !mm handling out to page cache
+ charge function
+Message-ID: <20140312150134.GG11831@dhcp22.suse.cz>
+References: <1394587714-6966-1-git-send-email-hannes@cmpxchg.org>
+ <1394587714-6966-5-git-send-email-hannes@cmpxchg.org>
+ <20140312131152.GC11831@dhcp22.suse.cz>
+ <20140312145611.GD14688@cmpxchg.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140312145611.GD14688@cmpxchg.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
-Am Mittwoch, 12. März 2014, 09:28:46 schrieb Rob Herring:
-> On Wed, Mar 12, 2014 at 8:46 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> > From: Heiko Stuebner <heiko.stuebner@bq.com>
+On Wed 12-03-14 10:56:11, Johannes Weiner wrote:
+> On Wed, Mar 12, 2014 at 02:11:52PM +0100, Michal Hocko wrote:
+> > On Tue 11-03-14 21:28:30, Johannes Weiner wrote:
+> > [...]
+> > > @@ -4070,6 +4061,12 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+> > >  		return 0;
+> > >  
+> > >  	if (!PageSwapCache(page)) {
+> > > +		/*
+> > > +		 * Page cache insertions can happen without an actual
+> > > +		 * task context, e.g. during disk probing on boot.
 > > 
-> > This documents the binding for the gpio-charger power-supply.
+> > We read a page cache during disk probing? I have tried to find such a
+> > code path but failed. Could you point me to such a path, please?
+> > I thought that such probing is done from udev context but I am not
+> > familiar with this area TBH.
 > 
-> How does this relate to what's documented in power_supply.txt and
-> charger-manager.txt? Both have references to USB charging. Doesn't
-> this need some connection to a battery node?
+> Yes, I tried to remove the !mm case entirely and hit the following
+> during boot:
 
-Yep, the gpio-charger takes the position of the "some,usb-charger" from 
-power_supply.txt .
+OK, I wonder why I haven't triggered that. Anyway, could you mention
+this path in the changelog? This is really hard to find when jumping in
+the code.
 
-       usb_charger: charger {
-               compatible = "gpio-charger";
-               charger-type = "usb-sdp";
-               gpios = <&gpf0 2 0 0 0>;
-       }
+Anyway thanks!
 
-       battery {
-               power-supplies = <&usb_charger>;
-       };
+> [    1.869561] BUG: unable to handle kernel NULL pointer dereference at 0000000000000320
+> [    1.869565] IP: [<ffffffff811369a2>] get_mem_cgroup_from_mm+0x32/0x80
+> [    1.869566] PGD 0
+> [    1.869567] Oops: 0000 [#1] SMP
+> [    1.869569] CPU: 3 PID: 65 Comm: kworker/u8:6 Not tainted 3.14.0-rc6-00007-g3856318f53a0-dirty #133
+> [    1.869569] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./H61M-DGS, BIOS P1.30 05/10/2012
+> [    1.869573] Workqueue: events_unbound async_run_entry_fn
+> [    1.869573] task: ffff8800ce82d3c0 ti: ffff8800ce8c6000 task.ti: ffff8800ce8c6000
+> [    1.869575] RIP: 0010:[<ffffffff811369a2>]  [<ffffffff811369a2>] get_mem_cgroup_from_mm+0x32/0x80
+> [    1.869576] RSP: 0000:ffff8800ce8c78f8  EFLAGS: 00010246
+> [    1.869576] RAX: 003fffc000000001 RBX: 0000000000000000 RCX: 0000000000000001
+> [    1.869577] RDX: 00000000000000d0 RSI: 0000000000000000 RDI: 0000000000000000
+> [    1.869577] RBP: ffff8800ce8c7908 R08: ffffffff81713232 R09: ffffea00033a1680
+> [    1.869578] R10: 0000000000001723 R11: ffffc90004e4dfff R12: 0000000000000000
+> [    1.869578] R13: 0000000000000001 R14: 0000000000000000 R15: 00000000000000d0
+> [    1.869579] FS:  0000000000000000(0000) GS:ffff88021f380000(0000) knlGS:0000000000000000
+> [    1.869579] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [    1.869580] CR2: 0000000000000320 CR3: 00000000017a5000 CR4: 00000000000407e0
+> [    1.869580] Stack:
+> [    1.869581]  0000000000000000 ffffea00033a1640 ffff8800ce8c7948 ffffffff8113a112
+> [    1.869582]  00000001ce8c7978 0000000000000000 ffffea00033a1640 00000000000200d0
+> [    1.869583]  0000000000000000 ffffffff81174520 ffff8800ce8c7970 ffffffff8113be0a
+> [    1.869583] Call Trace:
+> [    1.869586]  [<ffffffff8113a112>] mem_cgroup_charge_common+0x42/0xf0
+> [    1.869589]  [<ffffffff81174520>] ? blkdev_write_begin+0x30/0x30
+> [    1.869590]  [<ffffffff8113be0a>] mem_cgroup_cache_charge+0x7a/0xb0
+> [    1.869592] sd 1:0:0:0: [sdb] 1953525168 512-byte logical blocks: (1.00 TB/931 GiB)
+> [    1.869594]  [<ffffffff810db06d>] add_to_page_cache_locked+0x3d/0x150
+> [    1.869595]  [<ffffffff810db19a>] add_to_page_cache_lru+0x1a/0x40
+> [    1.869597]  [<ffffffff810dbdef>] do_read_cache_page+0x6f/0x1a0
+> [    1.869598]  [<ffffffff810dce79>] read_cache_page+0x19/0x30
+> [    1.869601]  [<ffffffff8123952d>] read_dev_sector+0x2d/0x90
+> [    1.869603]  [<ffffffff8123a21f>] read_lba+0xef/0x1a0
+> [    1.869604]  [<ffffffff8123a663>] ? find_valid_gpt+0xc3/0x640
+> [    1.869605]  [<ffffffff8123a681>] find_valid_gpt+0xe1/0x640
+> [    1.869607]  [<ffffffff81249e6b>] ? string.isra.4+0x3b/0xf0
+> [    1.869609]  [<ffffffff8123abe0>] ? find_valid_gpt+0x640/0x640
+> [    1.869610]  [<ffffffff8123ac56>] efi_partition+0x76/0x3f0
+> [    1.869611]  [<ffffffff8124aec4>] ? vsnprintf+0x1f4/0x610
+> [    1.869612]  [<ffffffff8124b799>] ? snprintf+0x39/0x40
+> [    1.869613]  [<ffffffff8123abe0>] ? find_valid_gpt+0x640/0x640
+> [    1.869615]  [<ffffffff812396c8>] check_partition+0x108/0x240
+> [    1.869616]  [<ffffffff81239264>] rescan_partitions+0xb4/0x2c0
+> [    1.869617]  [<ffffffff8117584c>] __blkdev_get+0x2dc/0x400
+> [    1.869618]  [<ffffffff81175b1d>] blkdev_get+0x1ad/0x320
+> [    1.869619] sd 1:0:0:0: [sdb] Write Protect is off
+> [    1.869621]  [<ffffffff81157603>] ? unlock_new_inode+0x43/0x70
+> [    1.869622] sd 1:0:0:0: [sdb] Mode Sense: 00 3a 00 00
+> [    1.869622]  [<ffffffff81174f66>] ? bdget+0x136/0x150
+> [    1.869624]  [<ffffffff81236b34>] add_disk+0x394/0x4a0
+> [    1.869627]  [<ffffffff8135b327>] sd_probe_async+0x127/0x1d0
+> [    1.869628]  [<ffffffff81065c87>] async_run_entry_fn+0x37/0x130
+> [    1.869629]  [<ffffffff810595fe>] process_one_work+0x16e/0x3e0
+> [    1.869630]  [<ffffffff81059991>] worker_thread+0x121/0x3a0
+> [    1.869631]  [<ffffffff81059870>] ? process_one_work+0x3e0/0x3e0
+> [    1.869633]  [<ffffffff810602c2>] kthread+0xd2/0xf0
+> [    1.869634] sd 1:0:0:0: [sdb] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+> [    1.869636]  [<ffffffff810601f0>] ? __kthread_parkme+0x70/0x70
+> [    1.869638]  [<ffffffff815dbaac>] ret_from_fork+0x7c/0xb0
+> [    1.869639]  [<ffffffff810601f0>] ? __kthread_parkme+0x70/0x70
+> [    1.869648] Code: 89 e5 41 54 49 89 fc 53 eb 21 0f 1f 80 00 00 00 00 f6 43 48 01 75 52 48 8b 43 18 a8 03 75 52 65 ff 00 b8 01 00 00 00 84 c0 75 3e <49> 8b 84 24 20 03 00 00 48 85 c0 74 10 48 8b 80 98 06 00 00 48
+> [    1.869650] RIP  [<ffffffff811369a2>] get_mem_cgroup_from_mm+0x32/0x80
+> [    1.869650]  RSP <ffff8800ce8c78f8>
+> [    1.869650] CR2: 0000000000000320
+> [    1.869653] ---[ end trace 4cda1f5484a90d6d ]---
 
-
-I guess the binding doc could reflect this.
-
-
-I haven't deeply looked into what charger-manager does, bit it seems to be a 
-layer on top of chargers and batteries, controlling them. So it seems to be 
-used with more intelligent components.
-
-My setup using gpio-charger for example is vastly simpler, it's just a gpio 
-reporting charger present (for gpio-charger), an adc reporting the battery 
-voltage and another gpio reporting the charging state (which is already 
-handled in generic-adc-battery, but needs a dt binding too).
-
-
-Heiko
-
-> > Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
-> > ---
-> > 
-> >  .../bindings/power_supply/gpio-charger.txt         | 23
-> >  ++++++++++++++++++++++ 1 file changed, 23 insertions(+)
-> >  create mode 100644
-> >  Documentation/devicetree/bindings/power_supply/gpio-charger.txt> 
-> > diff --git
-> > a/Documentation/devicetree/bindings/power_supply/gpio-charger.txt
-> > b/Documentation/devicetree/bindings/power_supply/gpio-charger.txt new
-> > file mode 100644
-> > index 0000000..fad87a4
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/power_supply/gpio-charger.txt
-> > @@ -0,0 +1,23 @@
-> > +gpio-charger
-> > +
-> > +Required properties :
-> > + - compatible : "gpio-charger"
-> > + - gpios : GPIO indicating the charger presence.
-> > +   See GPIO binding in bindings/gpio/gpio.txt .
-> > + - charger-type : power supply type, one of
-> > +     unknown
-> > +     battery
-> > +     ups
-> > +     mains
-> > +     usb-sdp (USB standard downstream port)
-> > +     usb-dcp (USB dedicated charging port)
-> > +     usb-cdp (USB charging downstream port)
-> > +     usb-aca (USB accessory charger adapter)
-> > +
-> > +Example:
-> > +
-> > +       charger {
-> > +               compatible = "gpio-charger";
-> > +               charger-type = "usb-sdp";
-> > +               gpios = <&gpf0 2 0 0 0>;
-> > +       }
-> > --
-> > 1.8.5.3
-
+-- 
+Michal Hocko
+SUSE Labs
