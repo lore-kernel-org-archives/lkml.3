@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaCLVFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 17:05:24 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:60891 "EHLO quartz.orcorp.ca"
+	id S1753045AbaCLVFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 17:05:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55716 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752363AbaCLVFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 17:05:18 -0400
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Rob Herring <robh+dt@kernel.org>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH v2 RESEND 1/2] dt: Document a compatible entry for MDIO ethernet Phys
-Date: Wed, 12 Mar 2014 15:05:10 -0600
-Message-Id: <1394658311-17769-1-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1752105AbaCLVFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 17:05:47 -0400
+Message-ID: <5320CBFF.3000909@ti.com>
+Date: Thu, 13 Mar 2014 05:05:03 +0800
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 5/5] drivers: bus: omap_l3: Change pr_crit() to dev_err()
+ when IRQ request fails
+References: <1393937293-6036-1-git-send-email-peter.ujfalusi@ti.com> <1393937293-6036-6-git-send-email-peter.ujfalusi@ti.com> <5315E522.9090606@ti.com> <5316CE17.6010201@ti.com> <20140312172854.GD30897@atomide.com>
+In-Reply-To: <20140312172854.GD30897@atomide.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This describes a compatible entry of the form:
-  ethernet-phy-idAAAA,BBBB
-Which is modelled after the PCI structured compatible entry
-(pciVVVV,DDDD.SSSS.ssss.RR)
-
-If present the OF core will be able to use this information to
-directly create the correct phy without auto probing the bus.
-
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Acked-by: Rob Herring <robh@kernel.org>
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
----
- Documentation/devicetree/bindings/net/phy.txt | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-This version is just a resend rebased against 3.14-rc6, with the minor merge
-conflicts resolved.
-
-I'm not sure who is supposed to pick this patch up?
-
-diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
-index 58307d0..5b8c589 100644
---- a/Documentation/devicetree/bindings/net/phy.txt
-+++ b/Documentation/devicetree/bindings/net/phy.txt
-@@ -21,10 +21,18 @@ Optional Properties:
-   elements.
- - max-speed: Maximum PHY supported speed (10, 100, 1000...)
- 
-+  If the phy's identifier is known then the list may contain an entry
-+  of the form: "ethernet-phy-idAAAA.BBBB" where
-+     AAAA - The value of the 16 bit Phy Identifier 1 register as
-+            4 hex digits. This is the chip vendor OUI bits 3:18
-+     BBBB - The value of the 16 bit Phy Identifier 2 register as
-+            4 hex digits. This is the chip vendor OUI bits 19:24,
-+            followed by 10 bits of a vendor specific ID.
-+
- Example:
- 
- ethernet-phy@0 {
--	compatible = "ethernet-phy-ieee802.3-c22";
-+	compatible = "ethernet-phy-id0141.0e90", "ethernet-phy-ieee802.3-c22";
- 	interrupt-parent = <40000>;
- 	interrupts = <35 1>;
- 	reg = <0>;
--- 
-1.8.1.2
+On Thursday 13 March 2014 01:28 AM, Tony Lindgren wrote:
+> * Peter Ujfalusi <peter.ujfalusi@ti.com> [140304 23:14]:
+>> On 03/04/2014 04:37 PM, Santosh Shilimkar wrote:
+>>> On Tuesday 04 March 2014 08:48 PM, Peter Ujfalusi wrote:
+>>>> Use dev_err() which will going to print the driver's name as well and the
+>>>> KERN_ERR level is sufficient in this case (we also print via dev_err when
+>>>> there is an error with the mem resources)
+>>>>
+>>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>> ---
+>>>>  drivers/bus/omap_l3_noc.c | 7 +++----
+>>>>  1 file changed, 3 insertions(+), 4 deletions(-)
+>>>>
+>>>> diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+>>>> index 0eff48585ae3..972691a668a3 100644
+>>>> --- a/drivers/bus/omap_l3_noc.c
+>>>> +++ b/drivers/bus/omap_l3_noc.c
+>>>> @@ -158,8 +158,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
+>>>>  	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
+>>>>  			       IRQF_DISABLED, "l3-dbg-irq", l3);
+>>>>  	if (ret) {
+>>>> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
+>>>> -						l3->debug_irq);
+>>>> +		dev_err(&pdev->dev, "request_irq failed for %d\n",
+>>>> +			l3->debug_irq);
+>>>>  		return ret;
+>>>>  	}
+>>>>  
+>>>> @@ -167,8 +167,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
+>>>>  	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
+>>>>  			       IRQF_DISABLED, "l3-app-irq", l3);
+>>>>  	if (ret)
+>>>> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
+>>>> -						l3->app_irq);
+>>>> +		dev_err(&pdev->dev, "request_irq failed for %d\n", l3->app_irq);
+>>>>  
+>>>>  	return ret;
+>>>>  }
+>>>>
+>>> So this one change in the log level. If I look at now, may be dev_err
+>>> is fine but the change is not same.
+>>
+>> Not sure what you mean by 'the change is not same'?
+>> I just picked the old series and rebased it on linux-next, the patch is the
+>> same as it was back in May 2013:
+>> https://lkml.org/lkml/2013/5/2/205
+>>
+>> And yes, I have shortened the texts in the print, but the meaning of the
+>> prints have not changed.
+> 
+> Santosh, got any more comments on this series?
+> 
+Nope. looks good
 
