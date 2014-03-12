@@ -1,180 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaCLSrU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 14:47:20 -0400
-Received: from mail.efficios.com ([78.47.125.74]:51428 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737AbaCLSrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 14:47:17 -0400
-Date: Wed, 12 Mar 2014 18:47:15 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lttng-dev <lttng-dev@lists.lttng.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Message-ID: <1906756968.1732.1394650035535.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140312135059.2d497b58@gandalf.local.home>
-References: <20140307150920.881849073@goodmis.org> <1501695915.977.1394634294978.JavaMail.zimbra@efficios.com> <20140312111100.42ea41c2@gandalf.local.home> <20140312114611.43547df7@gandalf.local.home> <437054772.1403.1394640336308.JavaMail.zimbra@efficios.com> <20140312121813.1e0102aa@gandalf.local.home> <285520930.1511.1394642395537.JavaMail.zimbra@efficios.com> <20140312135059.2d497b58@gandalf.local.home>
-Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
- set via debugfs
+	id S1752246AbaCLSsI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 14:48:08 -0400
+Received: from mailout.micron.com ([137.201.242.129]:43687 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737AbaCLSsG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 14:48:06 -0400
+Message-ID: <5320AFD0.7090401@micron.com>
+Date: Wed, 12 Mar 2014 12:04:48 -0700
+From: Sam Bradshaw <sbradshaw@micron.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Felipe Franciosi <felipe@paradoxo.org>
+CC: <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa)" 
+	<asamymuthupa@micron.com>
+Subject: Re: [PATCH 2/2] mtip32xx: Unmap the DMA segments before completing
+ the IO request
+References: <1394640348-9109-1-git-send-email-felipe@paradoxo.org> <1394640348-9109-3-git-send-email-felipe@paradoxo.org>
+In-Reply-To: <1394640348-9109-3-git-send-email-felipe@paradoxo.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: tracing: Warn if a tracepoint is not set via debugfs
-Thread-Index: keWLWRxZjo4/qU8LDZAVI+HlV/Od6w==
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20562.001
+X-TM-AS-Result: No--9.675300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic
-> Weisbecker" <fweisbec@gmail.com>, "Andrew Morton" <akpm@linux-foundation.org>, "Johannes Berg"
-> <johannes.berg@intel.com>, "Linus Torvalds" <torvalds@linux-foundation.org>, "Peter Zijlstra"
-> <peterz@infradead.org>, "Thomas Gleixner" <tglx@linutronix.de>, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-> "lttng-dev" <lttng-dev@lists.lttng.org>, "Rusty Russell" <rusty@rustcorp.com.au>
-> Sent: Wednesday, March 12, 2014 1:50:59 PM
-> Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not set via debugfs
-> 
-> On Wed, 12 Mar 2014 16:39:55 +0000 (UTC)
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> 
-> 
-> > > Are you telling me it's not possible to delete the entire probe?
-> > 
-> > The ownership flow is the following:
-> > 
-> > 1) Tracer creates name, probe, data objects. The probe can be typically
-> >    code within a probe provider module, which needs to have a reference
-> >    count incremented. The name and data objects can be dynamically
-> >    allocated,
-> >    or in some special cases part of a probe provider module (again with
-> >    refcount incremented).
-> > 
-> > 2) The tracer registers the tracepoint probe. If registration returns 0,
-> >    the tracer should not free those elements until it calls tracepoint
-> >    probe unregister for that (name, probe, data) tuple.
-> > 
-> > 3) Tracer calls tracepoint probe unregister for the (name, probe, data)
-> > tuple.
-> 
-> We can make the registered tracepoint up the mod count to prevent it
-> from unloading. But that probably defeats the purpose.
+On 03/12/2014 09:05 AM, Felipe Franciosi wrote:
+> If the buffers are unmapped after completing a request, then stale data
+> might be in the request.
 
-It seems more flexible to me to let this be handled by the tracer rather than
-tracepoint.c.
+Good find, Felipe, thank you.  I would prefer something along the lines 
+of this patch to make sure to avoid double completions / dma_unmap_sg() 
+calls during surprise removal and/or timeout conditions.
 
-> 
-> > 
-> > 4) Tracer calls tracepoint_synchronize_unregister() to ensure quiescence
-> >    of tracepoint call sites wrt the probe that has just been unregistered.
-> 
-> Tracepoints should all be disabled when the module is unloaded.
+Jens: note that this patch also fixes a regression in the unaligned 
+workaround implementation that was introduced by the SRSI patch.
 
-This is only true for the tracepoint call sites located within this module.
+Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
+diff --git a/drivers/block/mtip32xx/mtip32xx.c 
+b/drivers/block/mtip32xx/mtip32xx.c
+index 5160269..390ac6f 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -252,38 +252,45 @@ static void mtip_async_complete(struct mtip_port 
+*port,
+  				void *data,
+  				int status)
+  {
+-	struct mtip_cmd *command;
++	struct mtip_cmd *cmd;
+  	struct driver_data *dd = data;
+-	int cb_status = status ? -EIO : 0;
++	int unaligned, cb_status = status ? -EIO : 0;
++	void (*func)(void *, int);
 
-> If you
-> have a tracepoint callback still being called when the module is
-> unloaded then something is seriously wrong. That means the callback
-> will go back to the trace_foo() call which is in the module code and
-> will no longer exist. Kernel panic is the result.
+  	if (unlikely(!dd) || unlikely(!port))
+  		return;
 
-I agree that the specific call sites within an unloaded module need to be
-already quiescent by the time the module is unmapped from memory, no argument
-there.
+-	command = &port->commands[tag];
++	cmd = &port->commands[tag];
 
-The scenario I'm painting here (ownership of name, probe and data through the
-5 steps) is the common "enable tracing, disable tracing" scenario, where the
-module is not necessarily unloaded.
+  	if (unlikely(status == PORT_IRQ_TF_ERR)) {
+  		dev_warn(&port->dd->pdev->dev,
+  			"Command tag %d failed due to TFE\n", tag);
+  	}
 
-> 
-> 
-> > 
-> > 5) Tracer can free/unref the probe provider module.
-> 
-> I'm a bit confused at what you are doing. As this is totally unrelated
-> to anything that happens in the kernel.
++	/* Clear the active flag */
++	atomic_set(&port->commands[tag].active, 0);
++
+  	/* Upper layer callback */
+-	if (likely(command->async_callback))
+-		command->async_callback(command->async_data, cb_status);
++	func = cmd->async_callback;
++	if (likely(func && cmpxchg(&cmd->async_callback, func, 0) == func)) {
 
-The objects "name" and "data" can be dynamically allocated, and need to be
-freed at some point. The probe provider module need to have its reference
-count released after its probe function is unregistered. However, there
-may still be tracepoint call sites in flights (again, this is a normal
-enable tracing/disable tracing scenario, no module unload).
+-	command->async_callback = NULL;
+-	command->comp_func = NULL;
++		/* Unmap the DMA scatter list entries */
++		dma_unmap_sg(&dd->pdev->dev,
++			cmd->sg,
++			cmd->scatter_ents,
++			cmd->direction);
 
-I detailed this scenario to answer your question "Are you telling me it's
-not possible to delete the entire probe?", thus showing what the ownership
-of objects passed to register/unregister is, to shed some light on why
-it's currently not possible to unregister a tracepoint probe from
-tracepoint.c, because it does not have ownership of those objects.
+-	/* Unmap the DMA scatter list entries */
+-	dma_unmap_sg(&dd->pdev->dev,
+-		command->sg,
+-		command->scatter_ents,
+-		command->direction);
++		func(cmd->async_data, cb_status);
++		unaligned = cmd->unaligned;
 
-> 
-> > 
-> > > 
-> > > What I'm proposing is to do what the trace events do. Delete everything
-> > > associated to the tracepoints associated to the module.
-> > 
-> > Is your intent to have a module "going" notifier in tracepoint.c managing
-> > ownership of objects it does not own ? If not, I guess I'm not
-> > understanding
-> > your proposal fully.
-> 
-> Well, actually that's exactly what the trace_event code does. It
-> disables any event of the module that happens to be enabled.
-> 
-> Look at event_remove() in kernel/trace/trace_events.c
-> 
-> On module unload, the events are destroyed.
+-	/* Clear the allocated and active bits for the command */
+-	atomic_set(&port->commands[tag].active, 0);
+-	release_slot(port, tag);
++		/* Clear the allocated bit for the command */
++		release_slot(port, tag);
 
-Isn't trace_event.c responsible for dealing with tracepoint probes rather
-than call sites ? This is quite different. A tracepoint probe "foo" is only
-located within a single module (the one you are unloading here). However,
-if you try to unload a module that contains the callsite "foo", you have no
-guarantee that no other modules also contain this callsite, and therefore
-you cannot destroy the associated name, probe, nor data objects.
+-	up(&port->cmd_slot);
++		if (unlikely(unaligned))
++			up(&port->cmd_slot_unal);
++		else
++			up(&port->cmd_slot);
++	}
+  }
 
-> 
-> Thus, what your module should do, is exactly what event_remove() does.
-> On module unload, you unregister any of the tracepoints that were
-> registered. Just like any other module resource. If you request a
-> resource on the behalf of a module, it is up to you to free it when the
-> module is unloaded.
+  /*
+@@ -660,11 +667,12 @@ static void mtip_timeout_function(unsigned long 
+int data)
+  {
+  	struct mtip_port *port = (struct mtip_port *) data;
+  	struct host_to_dev_fis *fis;
+-	struct mtip_cmd *command;
+-	int tag, cmdto_cnt = 0;
++	struct mtip_cmd *cmd;
++	int unaligned, tag, cmdto_cnt = 0;
+  	unsigned int bit, group;
+  	unsigned int num_command_slots;
+  	unsigned long to, tagaccum[SLOTBITS_IN_LONGS];
++	void (*func)(void *, int);
 
-You seem to try to apply a logic that works in the case of the probes
-defined by trace event to tracepoint call sites, but the fact is that
-they are very different. Or again perhaps I'm just on the wrong track.
+  	if (unlikely(!port))
+  		return;
+@@ -694,8 +702,8 @@ static void mtip_timeout_function(unsigned long int 
+data)
+  			group = tag >> 5;
+  			bit = tag & 0x1F;
 
-> 
-> The tracepoint code will just destroy what it set up when the module
-> was loaded. It's up to your module to clean up the allocations that you
-> made when the module was loaded on unload. Just like we do for all
-> other resources.
-> 
-> Mathieu, stop thinking that tracepoints are special. They are not.
+-			command = &port->commands[tag];
+-			fis = (struct host_to_dev_fis *) command->command;
++			cmd = &port->commands[tag];
++			fis = (struct host_to_dev_fis *) cmd->command;
 
-I'm trying to understand how module going of tracepoint probes and
-call sites can be considered the same. What am I missing ?
+  			set_bit(tag, tagaccum);
+  			cmdto_cnt++;
+@@ -709,27 +717,30 @@ static void mtip_timeout_function(unsigned long 
+int data)
+  			 */
+  			writel(1 << bit, port->completed[group]);
 
-Thanks,
+-			/* Call the async completion callback. */
+-			if (likely(command->async_callback))
+-				command->async_callback(command->async_data,
+-							 -EIO);
+-			command->async_callback = NULL;
+-			command->comp_func = NULL;
++			/* Clear the active flag for the command */
++			atomic_set(&port->commands[tag].active, 0);
 
-Mathieu
+-			/* Unmap the DMA scatter list entries */
+-			dma_unmap_sg(&port->dd->pdev->dev,
+-					command->sg,
+-					command->scatter_ents,
+-					command->direction);
++			func = cmd->async_callback;
++			if (func &&
++			    cmpxchg(&cmd->async_callback, func, 0) == func) {
 
-> 
-> 
-> -- Steve
-> 
+-			/*
+-			 * Clear the allocated bit and active tag for the
+-			 * command.
+-			 */
+-			atomic_set(&port->commands[tag].active, 0);
+-			release_slot(port, tag);
++				/* Unmap the DMA scatter list entries */
++				dma_unmap_sg(&port->dd->pdev->dev,
++						cmd->sg,
++						cmd->scatter_ents,
++						cmd->direction);
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+-			up(&port->cmd_slot);
++				func(cmd->async_data, -EIO);
++				unaligned = cmd->unaligned;
++
++				/* Clear the allocated bit for the command. */
++				release_slot(port, tag);
++
++				if (unaligned)
++					up(&port->cmd_slot_unal);
++				else
++					up(&port->cmd_slot);
++			}
+  		}
+  	}
+
+
