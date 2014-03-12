@@ -1,119 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084AbaCLPmZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 11:42:25 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:47208 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754263AbaCLPmX (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Wed, 12 Mar 2014 11:42:23 -0400
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-From: joeyli <jlee@suse.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Julian Wollrath <jwollrath@web.de>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <53642014.xoKWERQIvL@vostro.rjw.lan>
-References: <20140310110410.5b2218f6@ilfaris>
-	 <1394596807.26565.135.camel@linux-s257.site>
-	 <1902317.cSAIh6fs84@vostro.rjw.lan>  <53642014.xoKWERQIvL@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Mar 2014 23:41:39 +0800
-Message-ID: <1394638899.26565.197.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1754935AbaCLPqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 11:46:16 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:29579 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754464AbaCLPqP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 11:46:15 -0400
+Date: Wed, 12 Mar 2014 11:46:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lttng-dev <lttng-dev@lists.lttng.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
+ set via debugfs
+Message-ID: <20140312114611.43547df7@gandalf.local.home>
+In-Reply-To: <20140312111100.42ea41c2@gandalf.local.home>
+References: <20140307150920.881849073@goodmis.org>
+	<y0mr469e9t0.fsf@fche.csb>
+	<20140310225820.0f02025d@gandalf.local.home>
+	<20140311142650.GB13756@redhat.com>
+	<1448078225.73.1394550382164.JavaMail.zimbra@efficios.com>
+	<20140311114023.02fcf639@gandalf.local.home>
+	<1752080128.130.1394559263621.JavaMail.zimbra@efficios.com>
+	<20140311151357.077c5a68@gandalf.local.home>
+	<1501695915.977.1394634294978.JavaMail.zimbra@efficios.com>
+	<20140312111100.42ea41c2@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael, 
 
-於 三，2014-03-12 於 14:30 +0100，Rafael J. Wysocki 提到：
-> > But I wonder: Can we simply enable SCI later?  In other words, can
-> we
-> > split acpi_early_init() so that the part before
-> acpi_enable_subsystem()
-> > is done before timekeeping_init() and the part including and after
-> > is done right after anon_vma_init()?  Would the TAD initialization
-> work
-> > then?
+To sum up this thread, and get the signal vs noise ratio up.
+
+On Wed, 12 Mar 2014 11:11:00 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+
+> The solution I like the most that I believe will work for both of us,
+> is to to move this magic "enable tracepoint in the future" to your
+> LTTng module. Have your module register a module load and unload handler
+> to be able to see the tracepoints that exist in the module, and you can
+> enable them then. When a module is unloaded, your module can do the
+> accounting to record that, and the state of its tracepoints. 
+
+This is my final proposal.
+
+I'll add the patch that removes the tracepoint on failure along with
+returning -ENODEV. That way, there will be no registered tracepoints
+that do not exist.
+
+I'll also make sure that on module unload, the tracepoints are disabled
+for the module as well.
+
+Then, you can simply add a module notifier that does the work that you
+like, and save and restore the state of named tracepoints and enabled
+them on module load. Just set the priority of the notifier to 1
+so that it runs after the tracepoint notifier that adds the new
+tracepoints to the system.
+
 > 
-> Below is a patch implementing that idea.  Julian, can you please test
-> this one too?
+> Looks like we can have it both ways. A way that works well for the
+> kernel, and a way that works well for you. But your module will need to
+> do the heavy work for what you want.
 > 
-> Rafael
-> 
-> ---
->  drivers/acpi/bus.c   |   20 +++++++++++++++-----
->  include/linux/acpi.h |    1 +
->  init/main.c          |    1 +
->  3 files changed, 17 insertions(+), 5 deletions(-)
-> 
-> Index: linux-pm/drivers/acpi/bus.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/bus.c
-> +++ linux-pm/drivers/acpi/bus.c
-> @@ -494,11 +494,21 @@ void __init acpi_early_init(void)
->         }
->  
->         status = acpi_load_tables();
-> -       if (ACPI_FAILURE(status)) {
-> -               printk(KERN_ERR PREFIX
-> -                      "Unable to load the System Description Tables
-> \n");
-> -               goto error0;
-> -       }
-> +       if (ACPI_SUCCESS(status))
-> +               return;
-> +
-> +       printk(KERN_ERR PREFIX "Unable to load the System Description
-> Tables\n");
-> +
-> + error0:
-> +       disable_acpi();
-> +}
-> +
-> +void __init acpi_subsystem_init(void)
-> +{
-> +       acpi_status status;
-> +
-> +       if (acpi_disabled)
-> +               return;
->  
+> To me, a tracepoint should only be enabled when it exists. If it is
+> enabled in module when the module is unloaded, then it should be
+> removed after the module has left. If the module is loaded again, it is
+> up to the user (or your module) to enable that tracepoint again.
 
-After check the DSDT of target machine, I afraid the above patch is not
-enough to use _GRT and _SRT because they need opregion support of
-SystemMemory and SystemIO for trigger SMM to access RTC.
+I want to point out that LTTng should not be dictating the way the
+kernel works, but it should be the other way around.
 
-In my current semifinished patches, I add code to run the
-acpi_ev_install_region_handlers() in acpi_enable_subsystem() when
-acpi_early_init(), for install region handler to support opregion.
-
-Before install region_handlers, it call acpi_enable() to enable acpi
-mode and I think need setup SCI interrupt before run acpi_enable():
-
-acpi_early_init(void)
-	acpi_pic_sci_set_trigger(acpi_gbl_FADT.sci_interrupt,
-	acpi_enable_subsystem(u32 flags)
-		acpi_enable();		/* Enable ACPI mode */
-		acpi_tb_initialize_facs();
-		acpi_ev_install_region_handlers();  /* Need it! */
-
-
-For developing ACPI TAD support, I used SystemIO to access CMOS port in
-DSDT of Intel DQ57 for simulate ACPI TAD. It also need SystemIO opregion
-support as the real machine. I just run your patch on this machine but
-it failed.
-
-I think maybe still using ACPI_FADT_NO_CMOS_RTC to check does
-acpi_early_init() need run before timekeeping_init().
-If there have any future machine that applied ACPI TAD but "Fast TSC
-calibration" fail, at least the alternate TSC calibration can work
-around issue.
-
-
-Thanks a lot!
-Joey Lee
-
+-- Steve
