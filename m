@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741AbaCLQXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 12:23:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43401 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228AbaCLQXi (ORCPT
+	id S1755790AbaCLQX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 12:23:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38552 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755117AbaCLQXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 12:23:38 -0400
-Date: Wed, 12 Mar 2014 17:23:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: joeyli <jlee@suse.com>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-In-Reply-To: <alpine.DEB.2.02.1403121716540.18573@ionos.tec.linutronix.de>
-Message-ID: <alpine.DEB.2.02.1403121722030.18573@ionos.tec.linutronix.de>
-References: <20140310110410.5b2218f6@ilfaris>  <1394596807.26565.135.camel@linux-s257.site>  <1902317.cSAIh6fs84@vostro.rjw.lan>  <53642014.xoKWERQIvL@vostro.rjw.lan> <1394638899.26565.197.camel@linux-s257.site>
- <alpine.DEB.2.02.1403121716540.18573@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 12 Mar 2014 12:23:54 -0400
+Date: Wed, 12 Mar 2014 17:23:28 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dave Chinner <david@fromorbit.com>, Waiman Long <waiman.long@hp.com>,
+        arnd@arndb.de, linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        walken@google.com, andi@firstfloor.org, riel@redhat.com,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        oleg@redhat.com
+Subject: Re: [RFC][PATCH 0/7] locking: qspinlock
+Message-ID: <20140312162328.GH27965@twins.programming.kicks-ass.net>
+References: <20140310154236.038181843@infradead.org>
+ <20140312023153.GW13647@dastard>
+ <20140311231159.25a0d8dc@gandalf.local.home>
+ <20140312042616.GX13647@dastard>
+ <20140312060730.435122f0@gandalf.local.home>
+ <20140312155754.GG27965@twins.programming.kicks-ass.net>
+ <20140312121933.40f63087@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140312121933.40f63087@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 12 Mar 2014, Thomas Gleixner wrote:
-
-> On Wed, 12 Mar 2014, joeyli wrote:
-> > I think maybe still using ACPI_FADT_NO_CMOS_RTC to check does
-> > acpi_early_init() need run before timekeeping_init().
-> > If there have any future machine that applied ACPI TAD but "Fast TSC
-> > calibration" fail, at least the alternate TSC calibration can work
-> > around issue.
+On Wed, Mar 12, 2014 at 12:19:33PM -0400, Steven Rostedt wrote:
+> On Wed, 12 Mar 2014 16:57:54 +0100
+> Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> Well, it can work around, but it sucks as it's way slower than the
-> fast one. And we really don't want to pay that price for some half
-> baken ACPI nonsense.
 > 
-> Why exactly do you need that ACPI stuff before timekeeping_init()?
+> > I build and booted these patches against tip/master as of this morning.
+> > It build ~50 defconfig kernels on my WSM-EP.
+> > 
+> > I've not managed to reproduce the hang as reported by Dave, but then I
+> > doubt building kernels has anywhere near the lock contention he
+> > generated.
+> > 
+> 
+> Have you tried hackbench? That usually gives rq spinlocks a bit of
+> contention.
 
-According to the changelog:
+Ha!, bang it goes. I suppose my userspace contention is too nice or
+something for not triggering this.
 
-    And, we want accessing ACPI TAD device to set system clock, so move
-    acpi_early_init() before timekeeping_init(). This final position is
-    also before efi_enter_virtual_mode().
-
-Why do we need to access that TAD thing (whatever newfangled that is)
-at this point?
-
-Thanks,
-
-	tglx
-
-
+Lemme try and put it together again :-)
