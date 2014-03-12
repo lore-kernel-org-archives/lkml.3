@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705AbaCLJou (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:44:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60595 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753582AbaCLJoB (ORCPT
+	id S1753748AbaCLJpA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 05:45:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51731 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718AbaCLJo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:44:01 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        b.brezillon@overkiz.com,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv5 9/9] ARM: at91: switch sam9rl to common clock framework
-Date: Wed, 12 Mar 2014 10:43:45 +0100
-Message-Id: <1394617425-641-10-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394617425-641-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1394617425-641-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 12 Mar 2014 05:44:57 -0400
+Date: Wed, 12 Mar 2014 10:44:47 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Archs <linux-arch@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH 6/6] arch: Remove stub cputime.h headers
+Message-ID: <20140312094447.GP30956@twins.programming.kicks-ass.net>
+References: <1394590202-772-1-git-send-email-fweisbec@gmail.com>
+ <1394590202-772-7-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394590202-772-7-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+On Wed, Mar 12, 2014 at 03:10:02AM +0100, Frederic Weisbecker wrote:
+> diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
+> index a73a8e2..1a81a8b 100644
+> --- a/arch/alpha/include/asm/Kbuild
+> +++ b/arch/alpha/include/asm/Kbuild
+> @@ -5,3 +5,4 @@ generic-y += exec.h
+>  generic-y += trace_clock.h
+>  generic-y += preempt.h
+>  generic-y += hash.h
+> +generic-y += cputime.h
+> \ No newline at end of file
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 4f0e800e7e71..7013b7b66a1e 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -137,7 +137,6 @@ config SOC_AT91SAM9RL
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
--	select AT91_USE_OLD_CLK
- 	select HAVE_AT91_UTMI
- 
- config SOC_AT91SAM9G45
--- 
-1.8.3.2
+That's a double fail there, not sorted and no EOL.
 
+Please run the script from commit: b119fa61d440f after you touch the
+asm/Kbuild files.
