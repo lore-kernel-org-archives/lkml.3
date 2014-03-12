@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaCLMrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 08:47:07 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:4246 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751575AbaCLMrF (ORCPT
+	id S1753442AbaCLMso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 08:48:44 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:43433 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227AbaCLMsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 08:47:05 -0400
-Date: Wed, 12 Mar 2014 20:44:54 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Andrew Lunn <andrew@lunn.ch>
-CC: Antoine =?UTF-8?B?VMOpbmFydA==?= 
-	<antoine.tenart@free-electrons.com>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "Jimmy Xu" <zmxu@marvell.com>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
+	Wed, 12 Mar 2014 08:48:42 -0400
+Date: Wed, 12 Mar 2014 12:48:35 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ARM: dts: berlin2q: add the Marvell BG2-Q DMP
- device tree
-Message-ID: <20140312204454.36a6be85@xhacker>
-In-Reply-To: <20140312123759.GB15090@lunn.ch>
-References: <1394622364-6848-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1394622364-6848-3-git-send-email-antoine.tenart@free-electrons.com>
-	<20140312200428.23178d69@xhacker>
-	<20140312123759.GB15090@lunn.ch>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+        "DCG_UPD_stlinux_kernel@list.st.com" 
+	<DCG_UPD_stlinux_kernel@list.st.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [PATCH v2 1/3] ata: ahci_st: Provide DT bindings for ST's SATA
+ implementation
+Message-ID: <20140312124835.GA22450@lee--X1>
+References: <1393328481-7251-1-git-send-email-lee.jones@linaro.org>
+ <20140312114257.GA17461@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-12_04:2014-03-12,2014-03-12,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1403120046
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140312114257.GA17461@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-
-On Wed, 12 Mar 2014 05:37:59 -0700
-Andrew Lunn <andrew@lunn.ch> wrote:
-
-> > > +/dts-v1/;
-> > > +#include "berlin2q.dtsi"
-> > > +
-> > > +/ {
-> > > +	model = "Marvell BG2-Q DMP";
-> > > +	compatible = "marvell,berlin2q-dmp", "marvell,berlin2q",
-> > > "marvell,berlin"; +
-> > > +	memory {
-> > > +		device_type = "memory";
-> > > +		reg = <0x00000000 0x40000000>;
-> > 
-> > The memory size of BG2Q DMP is 2GB.
+> > +This binding describes a SATA device.
+> > +
+> > +Required properties:
+> > + - compatible	   : Must be "st,ahci"
 > 
-> Jisheng
+> Is there not a more specific name? This is awfully generic.
+
+There isn't one. ST only have one AHCI driver. The driver is named as
+generically.
+
+> > + - reg		   : Physical base addresses and length of register sets
+> > + - interrupts	   : Interrupt associated with the SATA device
+> > + - interrupt-names :   Associated name must be; "hostc"
+> > + - resets	   : The power-down and soft-reset lines of SATA IP
+> > + - reset-names	   :   Associated names must be; "pwr-dwn" and "sw-rst"
 > 
-> Does this imply that the RAM is inside the SoC package, and that
-> there is no external memory interface which can be used to add more
-> RAM?
+> Get rid of the semicolon, it makes this harder to read. Same for the
+> other -names proeprties.
 
-Nope. The ram is on the board. After talking with Alex, I think it's 
-reasonable to put the memory node in dts as the original patch does.
+Sure.
 
-However, we need to set the correct memory size of BG2Q DMP board.
+> > + - clocks	   : The phandle for the clock
+> > + - clock-names	   :   Associated name must be; "ahci_clk"
+> > + - phys		   : The phandle for the PHY device
+> > + - phy-names	   :   Associated name must be; "ahci_phy"
+> 
+> This looks sane, but I'd like to see a more specific description and
+> compatible string.
 
-Thanks,
-Jisheng
+Specific description in what sense?
 
+"This binding describes a SATA device."
+
+to
+
+"This binding describes ST's SATA device." ?
+
+> > +Example:
+> > +
+> > +	sata0: sata@fe380000 {
+> > +		compatible      = "st,ahci";
+> > +		reg             = <0xfe380000 0x1000>;
+> > +		interrupts      = <GIC_SPI 157 IRQ_TYPE_NONE>;
+> > +		interrupt-names = "hostc";
+> > +		phys	        = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
+> > +		phy-names       = "ahci_phy";
+> > +		resets	        = <&powerdown STIH416_SATA0_POWERDOWN>,
+> > +				  <&softreset STIH416_SATA0_SOFTRESET>;
+> > +		reset-names     = "pwr-dwn", "sw-rst";
+> > +		clocks	        = <&CLK_S_ICN_REG_0>;
+> > +		clock-names     = "ahci_clk";
+> > +	};
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
