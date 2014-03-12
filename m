@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225AbaCLB6s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 21:58:48 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:56153 "EHLO
+	id S1756393AbaCLCCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 22:02:32 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:61026 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755888AbaCLB6r (ORCPT
+	by vger.kernel.org with ESMTP id S1756316AbaCLCC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 21:58:47 -0400
-Date: Tue, 11 Mar 2014 21:58:44 -0400
+	Tue, 11 Mar 2014 22:02:29 -0400
+Date: Tue, 11 Mar 2014 22:02:26 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: AKASHI Takahiro <takahiro.akashi@linaro.org>
 Cc: Will Deacon <will.deacon@arm.com>,
@@ -23,7 +23,7 @@ Cc: Will Deacon <will.deacon@arm.com>,
         "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH v5 0/7] arm64: Add ftrace support
-Message-ID: <20140311215844.70ada249@gandalf.local.home>
+Message-ID: <20140311220226.452632a6@gandalf.local.home>
 In-Reply-To: <531FBCA8.2080805@linaro.org>
 References: <1393320196-2942-1-git-send-email-takahiro.akashi@linaro.org>
 	<1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
@@ -33,7 +33,7 @@ X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -41,6 +41,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 12 Mar 2014 10:47:20 +0900
 AKASHI Takahiro <takahiro.akashi@linaro.org> wrote:
+
 
 > This happens when a header file, elf.h, on "your host machine" does not have
 > definitions of EM_AARCH64 nor R_AARCH64_ABS64 because "recordmcount" is a binary
@@ -56,16 +57,12 @@ AKASHI Takahiro <takahiro.akashi@linaro.org> wrote:
 > from arm64/Kconfig.
 > 
 > Which one do you prefer? I will include a fix for 1) in the next revision, anyway.
-> 
 
-I'd recommend #1, where you add this:
+Or even option 3)
 
-/* AARCH64 is new, and most headers don't define it. */
-#ifndef EM_AARCH64
-#define EM_AARCH64  ##
-#define R_AARCH64_ABS64 ##
-#endif
-
-Obviously fill in the blank for ##
+3) I can update the main Makefile to check to see if EM_<ARCH> exists
+in the elf.h header, and if not, we use the perl version and undef
+HAVE_C_RECORDMCOUNT.
 
 -- Steve
+
