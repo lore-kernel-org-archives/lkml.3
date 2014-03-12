@@ -1,186 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065AbaCLAAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 20:00:35 -0400
-Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:19524
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755794AbaCLAAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 20:00:34 -0400
-Message-ID: <1394582427.13761.74.camel@snotra.buserror.net>
-Subject: Re: [PATCH 6/9] powerpc/85xx: support sleep feature on QorIQ SoCs
- with RCPM
-From: Scott Wood <scottwood@freescale.com>
-To: Chenhui Zhao <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>, <Jason.Jin@freescale.com>
-Date: Tue, 11 Mar 2014 19:00:27 -0500
-In-Reply-To: <1394168285-32275-6-git-send-email-chenhui.zhao@freescale.com>
-References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
-	 <1394168285-32275-6-git-send-email-chenhui.zhao@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	id S1755939AbaCLACd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 20:02:33 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33004 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535AbaCLACa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 20:02:30 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: BL2PR02CA010.namprd02.prod.outlook.com (10.141.66.20) To
- DM2PR03MB400.namprd03.prod.outlook.com (10.141.84.153)
-X-Forefront-PRVS: 01480965DA
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6029001)(6009001)(428001)(377424004)(51704005)(24454002)(199002)(189002)(74366001)(47776003)(85852003)(79102001)(19580395003)(31966008)(88136002)(92566001)(69226001)(20776003)(51856001)(95416001)(59766001)(56816005)(81686001)(90146001)(63696002)(77096001)(74876001)(83072002)(87976001)(77982001)(46102001)(83322001)(93516002)(19580405001)(85306002)(95666003)(97336001)(33646001)(81342001)(81542001)(93136001)(87266001)(97186001)(87286001)(77156001)(42186004)(74662001)(53806001)(89996001)(50466002)(80976001)(23676002)(47736001)(74502001)(47446002)(94316002)(50226001)(49866001)(62966002)(65816001)(50986001)(80022001)(76482001)(93916002)(92726001)(94946001)(76796001)(86362001)(76786001)(56776001)(54316002)(47976001)(81816001)(4396001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB400;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:F79FF4D2.2F9199ED.40CF6275.4316DE41.2044E;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <3827847.Gih6ie3Ah6@vostro.rjw.lan>
+References: <1394503322-25210-1-git-send-email-kandoiruchi@google.com>
+	<3827847.Gih6ie3Ah6@vostro.rjw.lan>
+Date: Tue, 11 Mar 2014 17:02:29 -0700
+Message-ID: <CAL8qYTNejOB8NJLsvV8nFisGyd9v8gR=nC9pKGDGc=nujo7SNw@mail.gmail.com>
+Subject: Re: [PATCH] power: add an API to log wakeup reasons
+From: Ruchi Kandoi <kandoiruchi@google.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        ghackmann@google.com, john.stultz@linaro.org,
+        Todd Poynor <toddpoynor@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-07 at 12:58 +0800, Chenhui Zhao wrote:
-> In sleep mode, the clocks of e500 cores and unused IP blocks is
-> turned off. The IP blocks which are allowed to wake up the processor
-> are still running.
-> 
-> The sleep mode is equal to the Standby state in Linux. Use the
-> command to enter sleep mode:
->   echo standby > /sys/power/state
-> 
-> Signed-off-by: Chenhui Zhao <chenhui.zhao@freescale.com>
-> ---
->  arch/powerpc/Kconfig                   |    4 +-
->  arch/powerpc/platforms/85xx/Makefile   |    3 +
->  arch/powerpc/platforms/85xx/qoriq_pm.c |   78 ++++++++++++++++++++++++++++++++
->  3 files changed, 83 insertions(+), 2 deletions(-)
->  create mode 100644 arch/powerpc/platforms/85xx/qoriq_pm.c
-> 
-> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-> index 05f6323..e1d6510 100644
-> --- a/arch/powerpc/Kconfig
-> +++ b/arch/powerpc/Kconfig
-> @@ -222,7 +222,7 @@ config ARCH_HIBERNATION_POSSIBLE
->  config ARCH_SUSPEND_POSSIBLE
->  	def_bool y
->  	depends on ADB_PMU || PPC_EFIKA || PPC_LITE5200 || PPC_83xx || \
-> -		   (PPC_85xx && !PPC_E500MC) || PPC_86xx || PPC_PSERIES \
-> +		   FSL_SOC_BOOKE || PPC_86xx || PPC_PSERIES \
->  		   || 44x || 40x
->  
->  config PPC_DCR_NATIVE
-> @@ -709,7 +709,7 @@ config FSL_PCI
->  config FSL_PMC
->  	bool
->  	default y
-> -	depends on SUSPEND && (PPC_85xx || PPC_86xx)
-> +	depends on SUSPEND && (PPC_85xx && !PPC_E500MC || PPC_86xx)
+This API would be called from the platform specific code, or the
+driver for the interrupt controller, when the system resumes from the
+suspend because of an IRQ.
 
-Don't mix && and || without parentheses.
+We track the reasons for which systems wake up from the low power
+suspend mode. This is especially important on battery-powered consumer
+electronic devices.
 
-Maybe convert this into being selected (similar to FSL_RCPM), rather
-than default y?
+Analyzing the data helps us figure what caused the maximum wake ups
+and if something can be done about the same to improve the battery
+life.
+For instances, if the wi-fi network traffic or the radio traffic
+causes the system to frequently wakeup from the low-power mode.
 
-> diff --git a/arch/powerpc/platforms/85xx/Makefile b/arch/powerpc/platforms/85xx/Makefile
-> index 25cebe7..7fae817 100644
-> --- a/arch/powerpc/platforms/85xx/Makefile
-> +++ b/arch/powerpc/platforms/85xx/Makefile
-> @@ -2,6 +2,9 @@
->  # Makefile for the PowerPC 85xx linux kernel.
->  #
->  obj-$(CONFIG_SMP) += smp.o
-> +ifeq ($(CONFIG_FSL_CORENET_RCPM), y)
-> +obj-$(CONFIG_SUSPEND)	+= qoriq_pm.o
-> +endif
+This is already in use on some Android devices. We are trying to make
+this a generic API which could be called by other platforms as well,
+standardizing the format in which the info is
+logged in dmesg and the format of the info exported to userspace for
+collecting power management statistics.
 
-There should probably be a kconfig symbol for this.
+Thanking you,
+Ruchi Kandoi
 
-> diff --git a/arch/powerpc/platforms/85xx/qoriq_pm.c b/arch/powerpc/platforms/85xx/qoriq_pm.c
-> new file mode 100644
-> index 0000000..915b13b
-> --- /dev/null
-> +++ b/arch/powerpc/platforms/85xx/qoriq_pm.c
-> @@ -0,0 +1,78 @@
-> +/*
-> + * Support Power Management feature
-> + *
-> + * Copyright 2014 Freescale Semiconductor Inc.
-> + *
-> + * Author: Chenhui Zhao <chenhui.zhao@freescale.com>
-> + *
-> + * This program is free software; you can redistribute	it and/or modify it
-> + * under  the terms of	the GNU General	 Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/suspend.h>
-> +#include <linux/of_platform.h>
-> +
-> +#include <sysdev/fsl_soc.h>
-> +
-> +#define FSL_SLEEP		0x1
-> +#define FSL_DEEP_SLEEP		0x2
-
-FSL_DEEP_SLEEP is unused.
-
-> +
-> +/* specify the sleep state of the present platform */
-> +int sleep_pm_state;
-> +/* supported sleep modes by the present platform */
-> +static unsigned int sleep_modes;
-
-Why is one signed and the other unsigned?
-
-> +
-> +static int qoriq_suspend_enter(suspend_state_t state)
-> +{
-> +	int ret = 0;
-> +
-> +	switch (state) {
-> +	case PM_SUSPEND_STANDBY:
-> +
-> +		if (cur_cpu_spec->cpu_flush_caches)
-> +			cur_cpu_spec->cpu_flush_caches();
-> +
-> +		ret = qoriq_pm_ops->plat_enter_state(sleep_pm_state);
-> +
-> +		break;
-> +
-> +	default:
-> +		ret = -EINVAL;
-> +
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int qoriq_suspend_valid(suspend_state_t state)
-> +{
-> +	if (state == PM_SUSPEND_STANDBY && (sleep_modes & FSL_SLEEP))
-> +		return 1;
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct platform_suspend_ops qoriq_suspend_ops = {
-> +	.valid = qoriq_suspend_valid,
-> +	.enter = qoriq_suspend_enter,
-> +};
-> +
-> +static int __init qoriq_suspend_init(void)
-> +{
-> +	struct device_node *np;
-> +
-> +	sleep_modes = FSL_SLEEP;
-> +	sleep_pm_state = PLAT_PM_SLEEP;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "fsl,qoriq-rcpm-2.0");
-> +	if (np)
-> +		sleep_pm_state = PLAT_PM_LPM20;
-> +
-> +	suspend_set_ops(&qoriq_suspend_ops);
-> +
-> +	return 0;
-> +}
-> +arch_initcall(qoriq_suspend_init);
-
-Why is this not a platform driver?  If fsl_pmc can do it...
-
--Scott
-
-
+On Tue, Mar 11, 2014 at 12:32 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Monday, March 10, 2014 07:02:02 PM Ruchi Kandoi wrote:
+>> Add API log_wakeup_reason() and expose it to userspace via sysfs path
+>> /sys/kernel/wakeup_reasons/last_resume_reason
+>> This is useful for power management diagnostic purposes.
+>
+> What's the use case and how is it supposed to work?
+>
+>> Signed-off-by: Ruchi Kandoi <kandoiruchi@google.com>
+>> Signed-off-by: Greg Hackmann <ghackmann@google.com>
+>> ---
+>>  include/linux/wakeup_reason.h |  23 +++++++
+>>  kernel/power/Makefile         |   2 +-
+>>  kernel/power/wakeup_reason.c  | 140 ++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 164 insertions(+), 1 deletion(-)
+>>  create mode 100644 include/linux/wakeup_reason.h
+>>  create mode 100644 kernel/power/wakeup_reason.c
+>>
+>> diff --git a/include/linux/wakeup_reason.h b/include/linux/wakeup_reason.h
+>> new file mode 100644
+>> index 0000000..7ce50f0
+>> --- /dev/null
+>> +++ b/include/linux/wakeup_reason.h
+>> @@ -0,0 +1,23 @@
+>> +/*
+>> + * include/linux/wakeup_reason.h
+>> + *
+>> + * Logs the reason which caused the kernel to resume
+>> + * from the suspend mode.
+>> + *
+>> + * Copyright (C) 2014 Google, Inc.
+>> + * This software is licensed under the terms of the GNU General Public
+>> + * License version 2, as published by the Free Software Foundation, and
+>> + * may be copied, distributed, and modified under those terms.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#ifndef _LINUX_WAKEUP_REASON_H
+>> +#define _LINUX_WAKEUP_REASON_H
+>> +
+>> +void log_wakeup_reason(int irq);
+>> +
+>> +#endif /* _LINUX_WAKEUP_REASON_H */
+>> diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+>> index 29472bf..f98f021 100644
+>> --- a/kernel/power/Makefile
+>> +++ b/kernel/power/Makefile
+>> @@ -5,7 +5,7 @@ obj-y                         += qos.o
+>>  obj-$(CONFIG_PM)             += main.o
+>>  obj-$(CONFIG_VT_CONSOLE_SLEEP)       += console.o
+>>  obj-$(CONFIG_FREEZER)                += process.o
+>> -obj-$(CONFIG_SUSPEND)                += suspend.o
+>> +obj-$(CONFIG_SUSPEND)                += suspend.o wakeup_reason.o
+>>  obj-$(CONFIG_PM_TEST_SUSPEND)        += suspend_test.o
+>>  obj-$(CONFIG_HIBERNATION)    += hibernate.o snapshot.o swap.o user.o \
+>>                                  block_io.o
+>> diff --git a/kernel/power/wakeup_reason.c b/kernel/power/wakeup_reason.c
+>> new file mode 100644
+>> index 0000000..188a6bf
+>> --- /dev/null
+>> +++ b/kernel/power/wakeup_reason.c
+>> @@ -0,0 +1,140 @@
+>> +/*
+>> + * kernel/power/wakeup_reason.c
+>> + *
+>> + * Logs the reasons which caused the kernel to resume from
+>> + * the suspend mode.
+>> + *
+>> + * Copyright (C) 2014 Google, Inc.
+>> + * This software is licensed under the terms of the GNU General Public
+>> + * License version 2, as published by the Free Software Foundation, and
+>> + * may be copied, distributed, and modified under those terms.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#include <linux/wakeup_reason.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/irq.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/io.h>
+>> +#include <linux/kobject.h>
+>> +#include <linux/sysfs.h>
+>> +#include <linux/init.h>
+>> +#include <linux/spinlock.h>
+>> +#include <linux/notifier.h>
+>> +#include <linux/suspend.h>
+>> +
+>> +
+>> +#define MAX_WAKEUP_REASON_IRQS 32
+>> +static int irq_list[MAX_WAKEUP_REASON_IRQS];
+>> +static int irqcount;
+>> +static struct kobject *wakeup_reason;
+>> +static spinlock_t resume_reason_lock;
+>> +
+>> +static ssize_t reason_show(struct kobject *kobj, struct kobj_attribute *attr,
+>> +             char *buf)
+>> +{
+>> +     int irq_no, buf_offset = 0;
+>> +     struct irq_desc *desc;
+>> +     spin_lock(&resume_reason_lock);
+>> +     for (irq_no = 0; irq_no < irqcount; irq_no++) {
+>> +             desc = irq_to_desc(irq_list[irq_no]);
+>> +             if (desc && desc->action && desc->action->name)
+>> +                     buf_offset += sprintf(buf + buf_offset, "%d %s\n",
+>> +                                     irq_list[irq_no], desc->action->name);
+>> +             else
+>> +                     buf_offset += sprintf(buf + buf_offset, "%d\n",
+>> +                                     irq_list[irq_no]);
+>> +     }
+>> +     spin_unlock(&resume_reason_lock);
+>> +     return buf_offset;
+>> +}
+>> +
+>> +static struct kobj_attribute resume_reason = __ATTR(last_resume_reason, 0666,
+>> +             reason_show, NULL);
+>> +
+>> +static struct attribute *attrs[] = {
+>> +     &resume_reason.attr,
+>> +     NULL,
+>> +};
+>> +static struct attribute_group attr_group = {
+>> +     .attrs = attrs,
+>> +};
+>> +
+>> +/*
+>> + * logs all the wake up reasons to the kernel
+>> + * stores the irqs to expose them to the userspace via sysfs
+>> + */
+>> +void log_wakeup_reason(int irq)
+>> +{
+>> +     struct irq_desc *desc;
+>> +     desc = irq_to_desc(irq);
+>> +     if (desc && desc->action && desc->action->name)
+>> +             printk(KERN_INFO "Resume caused by IRQ %d, %s\n", irq,
+>> +                             desc->action->name);
+>> +     else
+>> +             printk(KERN_INFO "Resume caused by IRQ %d\n", irq);
+>> +
+>> +     spin_lock(&resume_reason_lock);
+>> +     if (irqcount == MAX_WAKEUP_REASON_IRQS) {
+>> +             spin_unlock(&resume_reason_lock);
+>> +             printk(KERN_WARNING "Resume caused by more than %d IRQs\n",
+>> +                             MAX_WAKEUP_REASON_IRQS);
+>> +             return;
+>> +     }
+>> +
+>> +     irq_list[irqcount++] = irq;
+>> +     spin_unlock(&resume_reason_lock);
+>> +}
+>> +
+>> +/* Detects a suspend and clears all the previous wake up reasons*/
+>> +static int wakeup_reason_pm_event(struct notifier_block *notifier,
+>> +             unsigned long pm_event, void *unused)
+>> +{
+>> +     switch (pm_event) {
+>> +     case PM_SUSPEND_PREPARE:
+>> +             spin_lock(&resume_reason_lock);
+>> +             irqcount = 0;
+>> +             spin_unlock(&resume_reason_lock);
+>> +             break;
+>> +     default:
+>> +             break;
+>> +     }
+>> +     return NOTIFY_DONE;
+>> +}
+>> +
+>> +static struct notifier_block wakeup_reason_pm_notifier_block = {
+>> +     .notifier_call = wakeup_reason_pm_event,
+>> +};
+>> +
+>> +/* Initializes the sysfs parameter
+>> + * registers the pm_event notifier
+>> + */
+>> +int __init wakeup_reason_init(void)
+>> +{
+>> +     int retval;
+>> +     spin_lock_init(&resume_reason_lock);
+>> +     retval = register_pm_notifier(&wakeup_reason_pm_notifier_block);
+>> +     if (retval)
+>> +             printk(KERN_WARNING "[%s] failed to register PM notifier %d\n",
+>> +                             __func__, retval);
+>> +
+>> +     wakeup_reason = kobject_create_and_add("wakeup_reasons", kernel_kobj);
+>> +     if (!wakeup_reason) {
+>> +             printk(KERN_WARNING "[%s] failed to create a sysfs kobject\n",
+>> +                             __func__);
+>> +             return 1;
+>> +     }
+>> +     retval = sysfs_create_group(wakeup_reason, &attr_group);
+>> +     if (retval) {
+>> +             kobject_put(wakeup_reason);
+>> +             printk(KERN_WARNING "[%s] failed to create a sysfs group %d\n",
+>> +                             __func__, retval);
+>> +     }
+>> +     return 0;
+>> +}
+>> +
+>> +late_initcall(wakeup_reason_init);
+>>
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
