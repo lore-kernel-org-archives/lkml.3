@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460AbaCLQo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 12:44:29 -0400
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:36428 "HELO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755143AbaCLQo2 (ORCPT
+	id S1755551AbaCLQrB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 12:47:01 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:54088 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755178AbaCLQq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 12:44:28 -0400
+	Wed, 12 Mar 2014 12:46:59 -0400
+Message-ID: <53208F7D.8090104@gmail.com>
+Date: Wed, 12 Mar 2014 17:46:53 +0100
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <000001cf3dcd$751a4680$5f4ed380$%han@samsung.com>
-References: <1394085963-27553-1-git-send-email-tinamdar@apm.com>
-	<1394085963-27553-3-git-send-email-tinamdar@apm.com>
-	<000001cf3dcd$751a4680$5f4ed380$%han@samsung.com>
-Date: Wed, 12 Mar 2014 09:44:20 -0700
-Message-ID: <CACoXjckTMbt2GgLFgh39CRNGydZ4u4-L2J1PQfFi8fR7A=LUGQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/4] arm64: dts: APM X-Gene PCIe device tree nodes
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        David Woodhouse <dwmw2@infradead.org>,
         Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches <patches@apm.com>,
-        Jon Masters <jcm@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+        Brian Norris <computersforpeace@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        dev@linux-sunxi.org
+Subject: Re: [RFC PATCH v2 04/14] mtd: nand: define struct nand_timings
+References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com> <1391006064-28890-5-git-send-email-b.brezillon.dev@gmail.com> <531DC1A4.7010208@gmail.com> <20140311185554.GD31835@obsidianresearch.com>
+In-Reply-To: <20140311185554.GD31835@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jingoo Han,
-
-On Wed, Mar 12, 2014 at 1:31 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> On Thursday, March 06, 2014 3:06 PM, Tanmay Inamdar wrote:
+Le 11/03/2014 19:55, Jason Gunthorpe a écrit :
+> On Mon, Mar 10, 2014 at 02:44:04PM +0100, Boris BREZILLON wrote:
+>
+>> Some timings are missing here (see Table 55 in the ONFI spec):
+> Right..
+>
+> The 'mode' covers only the raw electrical parameters needed to
+> exchange commands, other timings cover the commands
+> themselves. Notably the timing mode does not alter those parameters.
+>
+> To me it seems tidy to keep the 'mode' timings contained in their own
+> struct and find other homes for the other parameters.
+>
+>> -tR
+>> -tBERS
+>> -tCCS
+>> -tPLEBSY
+>> -...
 >>
->> This patch adds the device tree nodes for APM X-Gene PCIe controller and
->> PCIe clock interface. Since X-Gene SOC supports maximum 5 ports, 5 dts
->> nodes are added.
->>
->> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
->> ---
->>  arch/arm64/boot/dts/apm-mustang.dts |    8 ++
->>  arch/arm64/boot/dts/apm-storm.dtsi  |  155 +++++++++++++++++++++++++++++++++++
->>  2 files changed, 163 insertions(+)
->
-> [.....]
->
->> --- a/arch/arm64/boot/dts/apm-storm.dtsi
->> +++ b/arch/arm64/boot/dts/apm-storm.dtsi
->
-> [.....]
->
->> +
->> +             pcie0: pcie@1f2b0000 {
->> +                     status = "disabled";
->> +                     device_type = "pci";
->> +                     compatible = "apm,xgene-storm-pcie", "apm,xgene-pcie";
->> +                     #interrupt-cells = <1>;
->> +                     #size-cells = <2>;
->> +                     #address-cells = <3>;
->> +                     reg = < 0x00 0x1f2b0000 0x0 0x00010000   /* Controller registers */
->> +                             0xe0 0xd0000000 0x0 0x00200000>; /* PCI config space */
->> +                     reg-names = "csr", "cfg";
->> +                     ranges = <0x01000000 0x00 0x00000000 0xe0 0x00000000 0x00 0x00010000   /* io */
->> +                               0x02000000 0x00 0x10000000 0xe0 0x10000000 0x00 0x80000000>; /* mem */
->                                                                           ^^^
->
-> I have a question about the fourth number '0xe0' of 'ranges' property.
-> Would you let me know what the '0xe0' means?
->
+>> I see at least 3 of those timings that could be useful (for the moment) :
+>> - tR: this one should be used to fill the chip_delay field
+>> - tPROG and tBERS: could be used within nand_wait to choose the timeo
+>>    value appropriately.
+> IIRC these timing values are really only necessary if the controller
+> does not support the READY/BUSY input, in that case drivers typically
+> seem to use 'chip_delay' which is the maximum possible command
+> execution time (a sleep long enough to guarentee that READY/BUSY is
+> de-asserted).
+You're right about tR (or chip_delay): it's only used when there are no 
+R/B pin.
+I experienced it when I tried the RB_NONE case in the sunxi driver: the 
+default
+chip_delay set by the NAND core code was too small to fit the NAND chip 
+requirements.
 
-In X-Gene address map, the physical address range starting from
-0xe0_00000000 is reserved for PCIe Port 0 outbound memory mappings.
+Anyway, I really think the chip_delay field should be set according to 
+NAND chip
+characteristics not harcoded in NAND controller driver code (as 
+currently done).
 
-> Best regards,
-> Jingoo Han
+tPROG and tBERS, would be used in nand_wait function and do not depend 
+on the R/B pin.
+These are just used as timeouts.
+
 >
->> +                     dma-ranges = <0x42000000 0x40 0x00000000 0x40 0x00000000 0x40 0x00000000>;
->> +                     interrupt-map-mask = <0x0 0x0 0x0 0x7>;
->> +                     interrupt-map = <0x0 0x0 0x0 0x1 &gic 0x0 0xc2 0x1
->> +                                      0x0 0x0 0x0 0x2 &gic 0x0 0xc3 0x1
->> +                                      0x0 0x0 0x0 0x3 &gic 0x0 0xc4 0x1
->> +                                      0x0 0x0 0x0 0x4 &gic 0x0 0xc5 0x1>;
->> +                     clocks = <&pcie0clk 0>;
->> +             };
+>> Or should I create a new struct for these timings ?
+>> In the latter case how should I name it ?
+> struct onfi_command_timings ?
+
+I'm not a big fan of this name. I think timing structs should not 
+contain onfi in their
+names, because these timings are also available on non ONFI chips.
+
+Moreover, these timings are also part of the SDR NAND timings, they are 
+just retrieved
+using another method when interfacing with an ONFI chip.
+
+Maybe we should change the nand_sdr_timings struct name too.
+
+What do you think ?
+
+Best Regards,
+
+Boris
+
 >
+> Regards,
+> Jason
+
