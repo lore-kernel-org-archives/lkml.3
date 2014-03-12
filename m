@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221AbaCLMVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 08:21:46 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:60902 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645AbaCLMVe (ORCPT
+	id S1753882AbaCLMVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 08:21:33 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:46440 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaCLMVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 08:21:34 -0400
+	Wed, 12 Mar 2014 08:21:30 -0400
 From: Max Filippov <jcmvbkbc@gmail.com>
 To: linux-xtensa@linux-xtensa.org, linux-spi@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
@@ -15,40 +15,38 @@ Cc: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
         Grant Likely <grant.likely@linaro.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH v2 3/3] MAINTAINERS: add xtfpga platform section
-Date: Wed, 12 Mar 2014 16:21:05 +0400
-Message-Id: <1394626865-15105-4-git-send-email-jcmvbkbc@gmail.com>
+Subject: [PATCH v2 0/3] xtensa xtfpga SPI controller driver
+Date: Wed, 12 Mar 2014 16:21:02 +0400
+Message-Id: <1394626865-15105-1-git-send-email-jcmvbkbc@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1394626865-15105-1-git-send-email-jcmvbkbc@gmail.com>
-References: <1394626865-15105-1-git-send-email-jcmvbkbc@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This section will list xtfpga platform-specific drivers.
+Hello,
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
----
- MAINTAINERS | 6 ++++++
- 1 file changed, 6 insertions(+)
+this series adds driver for SPI controller used on xtfpga xtensa platform,
+device tree binding documentation and an entry to MAINTAINERS.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index c6d0e93..9f75849 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9768,6 +9768,12 @@ L:	linux-serial@vger.kernel.org
- S:	Maintained
- F:	drivers/tty/serial/uartlite.c
- 
-+XTENSA XTFPGA PLATFORM SUPPORT
-+M:	Max Filippov <jcmvbkbc@gmail.com>
-+L:	linux-xtensa@linux-xtensa.org
-+S:	Maintained
-+F:	drivers/spi/spi-xtensa-xtfpga.c
-+
- YAM DRIVER FOR AX.25
- M:	Jean-Paul Roubelat <jpr@f6fbb.org>
- L:	linux-hams@vger.kernel.org
+Changes v1 -> v2:
+- support 8 bit transfers;
+- busy-wait for maximum 100 usec (instead of 100 msec) polling BUSY register;
+- use chipselect callback to check transfer size.
+
+Max Filippov (3):
+  spi: add xtfpga SPI controller driver
+  spi/xtensa-xtfpga: add DT binding documentation
+  MAINTAINERS: add xtfpga platform section
+
+ .../devicetree/bindings/spi/spi-xtensa-xtfpga.txt  |   9 +
+ MAINTAINERS                                        |   6 +
+ drivers/spi/Kconfig                                |  13 ++
+ drivers/spi/Makefile                               |   1 +
+ drivers/spi/spi-xtensa-xtfpga.c                    | 187 +++++++++++++++++++++
+ 5 files changed, 216 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-xtensa-xtfpga.txt
+ create mode 100644 drivers/spi/spi-xtensa-xtfpga.c
+
 -- 
 1.8.1.4
 
