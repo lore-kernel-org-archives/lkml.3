@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbaCLOa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 10:30:57 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:32997 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770AbaCLOaz (ORCPT
+	id S1754527AbaCLOdC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 10:33:02 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:60005 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067AbaCLOc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 10:30:55 -0400
+	Wed, 12 Mar 2014 10:32:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <1394628794-7598-2-git-send-email-mranostay@gmail.com>
-References: <1394628794-7598-1-git-send-email-mranostay@gmail.com>
-	<1394628794-7598-2-git-send-email-mranostay@gmail.com>
-Date: Wed, 12 Mar 2014 09:30:54 -0500
-Message-ID: <CAL_JsqKDmDScse0eHr7p6xm6ks30_niH_=z6d5XJhCf-THc2Dw@mail.gmail.com>
-Subject: Re: [PATCH v8 1/2] iio:as3935: Add DT binding docs for AS3935 driver
-From: Rob Herring <robherring2@gmail.com>
-To: Matt Ranostay <mranostay@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-iio@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Matt Porter <matt.porter@linaro.org>, pantelis.antoniou@gmail.com
+In-Reply-To: <20140310043328.GB27798@jenny-desktop>
+References: <1394170174-21959-1-git-send-email-jenny.tc@intel.com>
+	<1394170174-21959-3-git-send-email-jenny.tc@intel.com>
+	<20140307202520.GD27645@amd.pavel.ucw.cz>
+	<20140310043328.GB27798@jenny-desktop>
+Date: Wed, 12 Mar 2014 15:32:59 +0100
+Message-ID: <CACRpkdaBv2-Grq3VPD8AqDS-aqaY9wtkaRqfkJCrEia1hTm0SA@mail.gmail.com>
+Subject: Re: [PATCHv8 2/4] power_supply: Introduce generic psy charging driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jenny Tc <jenny.tc@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        =?windows-1251?B?yOLg6evuIMTo7Ojy8O7i?= <freemangordon@abv.bg>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 7:53 AM, Matt Ranostay <mranostay@gmail.com> wrote:
-> Document compatible string, required and optional DT properties for
-> AS3935 chipset driver.
->
-> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+On Mon, Mar 10, 2014 at 5:33 AM, Jenny Tc <jenny.tc@intel.com> wrote:
+> On Fri, Mar 07, 2014 at 09:25:20PM +0100, Pavel Machek wrote:
 
-Acked-by: Rob Herring <robh@kernel.org>
+>> > +   /* sort based on priority. 0 has the highest priority  */
+>> > +   for (i = 0; i < cnt; ++i)
+>> > +           for (j = 0; j < cnt; ++j)
+>> > +                   if (psy_prioirty(psy_lst[j]) > psy_prioirty(psy_lst[i]))
+>> > +                           swap(psy_lst[j], psy_lst[i]);
+>> > +
+>>
+>> WTF? Bubble sort in kernel?
+>
+> Yes, it's bubble sort. Since the number of power supply objects in real systems
+> (max 4) are limited, I feel the complexity would be as same as any other
+> sorting algorithms. Any suggestions?
 
-> ---
->  .../devicetree/bindings/iio/proximity/as3935.txt   | 28 ++++++++++++++++++++++
->  .../devicetree/bindings/vendor-prefixes.txt        |  1 +
->  2 files changed, 29 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/iio/proximity/as3935.txt
->
-> diff --git a/Documentation/devicetree/bindings/iio/proximity/as3935.txt b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
-> new file mode 100644
-> index 0000000..ae23dd8
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
-> @@ -0,0 +1,28 @@
-> +Austrian Microsystems AS3935 Franklin lightning sensor device driver
-> +
-> +Required properties:
-> +       - compatible: must be "ams,as3935"
-> +       - reg: SPI chip select number for the device
-> +       - spi-cpha: SPI Mode 1. Refer to spi/spi-bus.txt for generic SPI
-> +       slave node bindings.
-> +       - interrupt-parent : should be the phandle for the interrupt controller
-> +       - interrupts : the sole interrupt generated by the device
-> +
-> +       Refer to interrupt-controller/interrupts.txt for generic
-> +       interrupt client node bindings.
-> +
-> +Optional properties:
-> +       - ams,tuning-capacitor-pf: Calibration tuning capacitor stepping
-> +         value 0 - 120pF. This will require using the calibration data from
-> +         the manufacturer.
-> +
-> +Example:
-> +
-> +as3935@0 {
-> +       compatible = "ams,as3935";
-> +       reg = <0>;
-> +       spi-cpha;
-> +       interrupt-parent = <&gpio1>;
-> +       interrupts = <16 1>;
-> +       ams,tuning-capacitor-pf = <80>;
-> +};
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index 4685ec3..517831d 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -11,6 +11,7 @@ ak    Asahi Kasei Corp.
->  allwinner      Allwinner Technology Co., Ltd.
->  altr   Altera Corp.
->  amcc   Applied Micro Circuits Corporation (APM, formally AMCC)
-> +ams    AMS AG
->  amstaos        AMS-Taos Inc.
->  apm    Applied Micro Circuits Corporation (APM)
->  arm    ARM Ltd.
-> --
-> 1.8.3.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+You already have a kernel quicksort implementation in lib/sort.c.
+
+Please restructure the code to make use of this as it is already
+compiled into every kernel.
+
+Yours,
+Linus Walleij
