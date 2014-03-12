@@ -1,119 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735AbaCLIbt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 04:31:49 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:34967 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336AbaCLIba (ORCPT
+	id S1756747AbaCLIeT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 04:34:19 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:27933
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756336AbaCLIeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 04:31:30 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-fd-53201b5e0990
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Tanmay Inamdar'" <tinamdar@apm.com>
-Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "'Grant Likely'" <grant.likely@linaro.org>,
-        "'Rob Herring'" <robh+dt@kernel.org>,
-        "'Catalin Marinas'" <catalin.marinas@arm.com>,
-        "'Rob Landley'" <rob@landley.net>,
-        "'Liviu Dudau'" <liviu.dudau@arm.com>, linux-pci@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@apm.com, jcm@redhat.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1394085963-27553-1-git-send-email-tinamdar@apm.com>
- <1394085963-27553-3-git-send-email-tinamdar@apm.com>
-In-reply-to: <1394085963-27553-3-git-send-email-tinamdar@apm.com>
-Subject: Re: [PATCH v4 2/4] arm64: dts: APM X-Gene PCIe device tree nodes
-Date: Wed, 12 Mar 2014 17:31:25 +0900
-Message-id: <000001cf3dcd$751a4680$5f4ed380$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac85ApUGQrzfeo+rRVSeh9WRlRyACgEyVqew
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPKsWRmVeSWpSXmKPExsVy+t8zY904aYVgg/19YhZ/Jx1jt1jSlGHx
-	flkPo8X8I+dYLQ782cFoMWntcmaLywsvsVp8v2FqsenxNVaLhW1LWCwu75rDZnF23nE2iwNL
-	21ksms98Y7NY93I6i0Xr3iPsFs8/fWJxEPT4uP4To8eaeWsYPX7/msTosWBTqcemVZ1sHq9W
-	z2T1uHNtD5vH5iX1Ht939DJ6vN93lc2jb8sqRo/Pm+QCeKK4bFJSczLLUov07RK4MvbM381U
-	cIu3YsWBV+wNjH1cXYycHBICJhKT7q9nhrDFJC7cW8/WxcjFISSwjFFi759PzDBFp1/fZASx
-	hQSmM0qcX8oDYf9mlFjWbgBiswmoSXz5cpi9i5GDQ0RAXWL3FBmQMLPAShaJu6f1IcrLJRb2
-	bGcDKeEUcJTYtSgTJCws4CmxfOUKdhCbRUBVom3xDLCtvAK2En1dT9ghbEGJH5PvsUCM1JJY
-	v/M4E4QtL7F5zVtmkJESQFsf/dUFCYsIGEksPvSIGaJERGLfi3eMIF9JCDzgkNi47CoLxC4B
-	iW+TD7FA9MpKbDoA9aykxMEVN1gmMErMQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXFSelFxnrF
-	ibnFpXnpesn5uZsYIYmlfwfj3QPWhxiTgdZPZJYSTc4HJqa8knhDYzMjC1MTU2Mjc0sz0oSV
-	xHnvP0wKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDo+XlpYO2WT2qtJ4pmHiytZxGxPi8y
-	xzj2rNDHf4Wd7xj2rzZNf9Au2bjx6uwTBg0cCe6HVwh+ubXkwfOIqdN89i1gzHp4JF5WKLKG
-	37omm+nflGStBY8ktj3nec268r7JeZuMRPMUtXOWrnMXRH375cIhyrrwG+8e48V9K86Y2WTZ
-	HXr7ROCjEktxRqKhFnNRcSIAfnyDbUIDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphk+LIzCtJLcpLzFFi42I5/e+xoG6ctEKwwdqn/BZ/Jx1jt1jSlGHx
-	flkPo8X8I+dYLQ782cFoMWntcmaLywsvsVp8v2FqsenxNVaLhW1LWCwu75rDZnF23nE2iwNL
-	21ksms98Y7NY93I6i0Xr3iPsFs8/fWJxEPT4uP4To8eaeWsYPX7/msTosWBTqcemVZ1sHq9W
-	z2T1uHNtD5vH5iX1Ht939DJ6vN93lc2jb8sqRo/Pm+QCeKIaGG0yUhNTUosUUvOS81My89Jt
-	lbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgB5TUihLzCkFCgUkFhcr6dthmhAa4qZr
-	AdMYoesbEgTXY2SABhLWMWbsmb+bqeAWb8WKA6/YGxj7uLoYOTkkBEwkTr++yQhhi0lcuLee
-	DcQWEpjOKHF+KQ+E/ZtRYlm7AYjNJqAm8eXLYfYuRg4OEQF1id1TZEDCzAIrWSTuntaHKC+X
-	WNiznQ2khFPAUWLXokyQsLCAp8TylSvYQWwWAVWJtsUzmEFsXgFbib6uJ+wQtqDEj8n3WCBG
-	akms33mcCcKWl9i85i0zyEgJoK2P/uqChEUEjCQWH3rEDFEiIrHvxTvGCYxCs5BMmoVk0iwk
-	k2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzhtPZPewbiqweIQowAHoxIP70JN
-	+WAh1sSy4srcQ4wSHMxKIrxCIgrBQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTKl5JfGG
-	xiZmRpZGZhZGJubmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cDIJKcX1Hx8z7PAkGVn
-	5lonzDjedEvl5/GFV7zmLG/9m/4jRiXbe0XY+XjRVYdWZp/eXFS7/c/ELV3zqyJrwtlqDoXF
-	vTrhyH0hKSUo2LzBYdFMw+R5ETxLA2/GlMy8d+PWxNVB5XETchOlU1W5rwZ431BU2XKKM+ep
-	0B/uc6Lr/sUx9LSfXv5UiaU4I9FQi7moOBEA9T0bkJ8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 12 Mar 2014 04:34:15 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z551biz98dI936eIe0eah1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1de2h1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
+Date: Wed, 12 Mar 2014 16:34:10 +0800
+From: Chenhui Zhao <chenhui.zhao@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <leoli@freescale.com>, <Jason.Jin@freescale.com>
+Subject: Re: [PATCH 7/9] fsl: add EPU FSM configuration for deep sleep
+Message-ID: <20140312083410.GF4706@localhost.localdomain>
+References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
+ <1394168285-32275-7-git-send-email-chenhui.zhao@freescale.com>
+ <1394582923.13761.81.camel@snotra.buserror.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1394582923.13761.81.camel@snotra.buserror.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 06, 2014 3:06 PM, Tanmay Inamdar wrote:
+On Tue, Mar 11, 2014 at 07:08:43PM -0500, Scott Wood wrote:
+> On Fri, 2014-03-07 at 12:58 +0800, Chenhui Zhao wrote:
+> > From: Hongbo Zhang <hongbo.zhang@freescale.com>
+> > 
+> > In the last stage of deep sleep, software will trigger a Finite
+> > State Machine (FSM) to control the hardware precedure, such as
+> > board isolation, killing PLLs, removing power, and so on.
+> > 
+> > When the system is waked up by an interrupt, the FSM controls the
+> > hardware to complete the early resume precedure.
+> > 
+> > This patch configure the EPU FSM preparing for deep sleep.
+> > 
+> > Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+> > Signed-off-by: Chenhui Zhao <chenhui.zhao@freescale.com>
 > 
-> This patch adds the device tree nodes for APM X-Gene PCIe controller and
-> PCIe clock interface. Since X-Gene SOC supports maximum 5 ports, 5 dts
-> nodes are added.
+> Couldn't this be part of qoriq_pm.c?
+
+Put the code in drivers/platform/fsl/ so that LS1 can share these code.
+
 > 
-> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
-> ---
->  arch/arm64/boot/dts/apm-mustang.dts |    8 ++
->  arch/arm64/boot/dts/apm-storm.dtsi  |  155 +++++++++++++++++++++++++++++++++++
->  2 files changed, 163 insertions(+)
+> > diff --git a/arch/powerpc/sysdev/fsl_soc.h b/arch/powerpc/sysdev/fsl_soc.h
+> > index 9b9a34a..eb83a30 100644
+> > --- a/arch/powerpc/sysdev/fsl_soc.h
+> > +++ b/arch/powerpc/sysdev/fsl_soc.h
+> > @@ -69,5 +69,8 @@ extern const struct fsl_pm_ops *qoriq_pm_ops;
+> >  
+> >  extern int fsl_rcpm_init(void);
+> >  
+> > +extern void fsl_dp_fsm_setup(void *dcsr_base);
+> > +extern void fsl_dp_fsm_clean(void *dcsr_base);
+> 
+> __iomem
 
-[.....]
+Thanks. Will add.
 
-> --- a/arch/arm64/boot/dts/apm-storm.dtsi
-> +++ b/arch/arm64/boot/dts/apm-storm.dtsi
+> 
+> > +
+> >  #endif
+> >  #endif
+> > diff --git a/drivers/platform/Kconfig b/drivers/platform/Kconfig
+> > index 09fde58..6539e6d 100644
+> > --- a/drivers/platform/Kconfig
+> > +++ b/drivers/platform/Kconfig
+> > @@ -6,3 +6,7 @@ source "drivers/platform/goldfish/Kconfig"
+> >  endif
+> >  
+> >  source "drivers/platform/chrome/Kconfig"
+> > +
+> > +if FSL_SOC
+> > +source "drivers/platform/fsl/Kconfig"
+> > +endif
+> 
+> Chrome doesn't need an ifdef -- why does this?
 
-[.....]
+Don't wish other platform see these options, and the X86 and GOLDFISH have
+ifdefs.
 
-> +
-> +		pcie0: pcie@1f2b0000 {
-> +			status = "disabled";
-> +			device_type = "pci";
-> +			compatible = "apm,xgene-storm-pcie", "apm,xgene-pcie";
-> +			#interrupt-cells = <1>;
-> +			#size-cells = <2>;
-> +			#address-cells = <3>;
-> +			reg = < 0x00 0x1f2b0000 0x0 0x00010000   /* Controller registers */
-> +				0xe0 0xd0000000 0x0 0x00200000>; /* PCI config space */
-> +			reg-names = "csr", "cfg";
-> +			ranges = <0x01000000 0x00 0x00000000 0xe0 0x00000000 0x00 0x00010000   /* io */
-> +				  0x02000000 0x00 0x10000000 0xe0 0x10000000 0x00 0x80000000>; /* mem */
-                                                                          ^^^
+> 
+> > diff --git a/drivers/platform/Makefile b/drivers/platform/Makefile
+> > index 3656b7b..37c6f72 100644
+> > --- a/drivers/platform/Makefile
+> > +++ b/drivers/platform/Makefile
+> > @@ -6,3 +6,4 @@ obj-$(CONFIG_X86)		+= x86/
+> >  obj-$(CONFIG_OLPC)		+= olpc/
+> >  obj-$(CONFIG_GOLDFISH)		+= goldfish/
+> >  obj-$(CONFIG_CHROME_PLATFORMS)	+= chrome/
+> > +obj-$(CONFIG_FSL_SOC)		+= fsl/
+> > diff --git a/drivers/platform/fsl/Kconfig b/drivers/platform/fsl/Kconfig
+> > new file mode 100644
+> > index 0000000..72ed053
+> > --- /dev/null
+> > +++ b/drivers/platform/fsl/Kconfig
+> > @@ -0,0 +1,10 @@
+> > +#
+> > +# Freescale Specific Power Management Drivers
+> > +#
+> > +
+> > +config FSL_SLEEP_FSM
+> > +	bool
+> > +	help
+> > +	  This driver configures a hardware FSM (Finite State Machine) for deep sleep.
+> > +	  The FSM is used to finish clean-ups at the last stage of system entering deep
+> > +	  sleep, and also wakes up system when a wake up event happens.
+> > diff --git a/drivers/platform/fsl/Makefile b/drivers/platform/fsl/Makefile
+> > new file mode 100644
+> > index 0000000..d99ca0e
+> > --- /dev/null
+> > +++ b/drivers/platform/fsl/Makefile
+> > @@ -0,0 +1,5 @@
+> > +#
+> > +# Makefile for linux/drivers/platform/fsl
+> > +# Freescale Specific Power Management Drivers
+> > +#
+> > +obj-$(CONFIG_FSL_SLEEP_FSM)	+= sleep_fsm.o
+> 
+> Why is this here while the other stuff is in arch/powerpc/sysdev?
+> 
+> > +/* Block offsets */
+> > +#define	RCPM_BLOCK_OFFSET	0x00022000
+> > +#define	EPU_BLOCK_OFFSET	0x00000000
+> > +#define	NPC_BLOCK_OFFSET	0x00001000
+> 
+> Why don't these block offsets come from the device tree?
 
-I have a question about the fourth number '0xe0' of 'ranges' property.
-Would you let me know what the '0xe0' means?
+Have maped DCSR registers. Don't wish to remap them.
 
-Best regards,
-Jingoo Han
+> 
+> > +static void *g_dcsr_base;
+> 
+> __iomem
 
-> +			dma-ranges = <0x42000000 0x40 0x00000000 0x40 0x00000000 0x40 0x00000000>;
-> +			interrupt-map-mask = <0x0 0x0 0x0 0x7>;
-> +			interrupt-map = <0x0 0x0 0x0 0x1 &gic 0x0 0xc2 0x1
-> +					 0x0 0x0 0x0 0x2 &gic 0x0 0xc3 0x1
-> +					 0x0 0x0 0x0 0x3 &gic 0x0 0xc4 0x1
-> +					 0x0 0x0 0x0 0x4 &gic 0x0 0xc5 0x1>;
-> +			clocks = <&pcie0clk 0>;
-> +		};
+OK.
+
+> 
+> > +	/* Configure the EPU Counters */
+> > +	epu_write(EPCCR15, 0x92840000);
+> > +	epu_write(EPCCR14, 0x92840000);
+> > +	epu_write(EPCCR12, 0x92840000);
+> > +	epu_write(EPCCR11, 0x92840000);
+> > +	epu_write(EPCCR10, 0x92840000);
+> > +	epu_write(EPCCR9, 0x92840000);
+> > +	epu_write(EPCCR8, 0x92840000);
+> > +	epu_write(EPCCR5, 0x92840000);
+> > +	epu_write(EPCCR4, 0x92840000);
+> > +	epu_write(EPCCR2, 0x92840000);
+> > +
+> > +	/* Configure the SCUs Inputs */
+> > +	epu_write(EPSMCR15, 0x76000000);
+> > +	epu_write(EPSMCR14, 0x00000031);
+> > +	epu_write(EPSMCR13, 0x00003100);
+> > +	epu_write(EPSMCR12, 0x7F000000);
+> > +	epu_write(EPSMCR11, 0x31740000);
+> > +	epu_write(EPSMCR10, 0x65000030);
+> > +	epu_write(EPSMCR9, 0x00003000);
+> > +	epu_write(EPSMCR8, 0x64300000);
+> > +	epu_write(EPSMCR7, 0x30000000);
+> > +	epu_write(EPSMCR6, 0x7C000000);
+> > +	epu_write(EPSMCR5, 0x00002E00);
+> > +	epu_write(EPSMCR4, 0x002F0000);
+> > +	epu_write(EPSMCR3, 0x2F000000);
+> > +	epu_write(EPSMCR2, 0x6C700000);
+> 
+> Where do these magic numbers come from?  Which chips are they valid for?
+
+They are for T1040. Can be found in the RCPM chapter of T1040RM.
+
+> 
+> > +void fsl_dp_fsm_clean(void *dcsr_base)
+> > +{
+> > +
+> > +	epu_write(EPEVTCR2, 0);
+> > +	epu_write(EPEVTCR9, 0);
+> > +
+> > +	epu_write(EPGCR, 0);
+> > +	epu_write(EPECR15, 0);
+> > +
+> > +	rcpm_write(CSTTACR0, 0);
+> > +	rcpm_write(CG1CR0, 0);
+> > +
+> > +}
+> 
+> Don't put blank lines at the beginning/end of a block.
+> 
+> -Scott
+
+Thanks.
+
+-Chenhui
 
