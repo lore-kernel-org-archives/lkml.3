@@ -1,48 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaCLXrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 19:47:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37792 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411AbaCLXrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 19:47:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,642,1389772800"; 
-   d="scan'208";a="490864005"
-Message-ID: <5320F1F0.5000505@linux.intel.com>
-Date: Wed, 12 Mar 2014 16:46:56 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752421AbaCLXtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 19:49:12 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:36144 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750751AbaCLXtJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 19:49:09 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At9oAAnxIFN5LJYePGdsb2JhbABZgwY7iBehHgSYeYEdFwMBAQEBHxkNKIIhBAEBAQQ6HCMQCAMYCSUPBSUDBxoThUmCDyDTMhaORgeEOASYRJVvKQ
+Date: Thu, 13 Mar 2014 10:48:57 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Waiman Long <waiman.long@hp.com>, arnd@arndb.de,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        akpm@linux-foundation.org, walken@google.com, andi@firstfloor.org,
+        riel@redhat.com, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org, oleg@redhat.com
+Subject: Re: [RFC][PATCH 0/7] locking: qspinlock
+Message-ID: <20140312234857.GG13647@dastard>
+References: <20140310154236.038181843@infradead.org>
+ <20140312023153.GW13647@dastard>
+ <20140312061503.GH30956@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Stefani Seibold <stefani@seibold.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] x86: Remove compat vdso support
-References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net> <531F365B.4060000@linux.intel.com> <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com> <531F3D02.30706@linux.intel.com> <CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com> <CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com> <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com> <1394613046.995.51.camel@wall-e.seibold.net> <CA+55aFyTCoipjhbAVCuhCgqb8JeSjGcmOU3xE6EFrjNpfspfqg@mail.gmail.com> <CA+55aFxc8Qp-4_+n=upd-ghzkxpjCyRpesm3P7xtWjDyBe9MCw@mail.gmail.com> <CA+55aFyhS5jCWcxuK4bXKEPh+8HWbPE+gy1m4N9B-2HyT48+QA@mail.gmail.com> <5320D3AB.5060002@linux.intel.com> <CA+55aFzC1Xy1VNF46Mj8V8CEc0tyVA76+631xZiF6nk3Gyvc-Q@mail.gmail.com> <CALCETrUGc5+CS8=sYvtkK967ZR833zu98rzRkEw_DX++1hL-BA@mail.gmail.com> <5320E885.1080402@linux.intel.com> <CALCETrXbgHMPU7in4ThRWyRTw4EN4W9vYOh1RKAiBLFTauxrRQ@mail.gmail.com>
-In-Reply-To: <CALCETrXbgHMPU7in4ThRWyRTw4EN4W9vYOh1RKAiBLFTauxrRQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140312061503.GH30956@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2014 04:43 PM, Andy Lutomirski wrote:
->>
->> I do hear vsyscall=native still being used as a workaround for problems,
->> but yes, just making it call the kernel is fine, of course.
+On Wed, Mar 12, 2014 at 07:15:03AM +0100, Peter Zijlstra wrote:
+> On Wed, Mar 12, 2014 at 01:31:53PM +1100, Dave Chinner wrote:
+> > With the queuing spinlock, I expected to see somewhat better
+> > results, but I didn't at first. Turns out if you have any sort of
+> > lock debugging turned on, then the code doesn't ever go into the
+> > lock slow path and hence does not ever enter the "lock failed" slow
+> > path where all the contention fixes are supposed to be.
 > 
-> Next time you hear that, can you let me know?  I haven't heard of any
-> issues since 3.4 IIRC.
+> Yeah; its a 'feature' of the spinlock debugging to turn all spinlocks
+> into test-and-set thingies.
 > 
+> > Anyway, with all lock debugging turned off, the system hangs
+> > the instant I start the multithreaded bulkstat workload. Even the
+> > console is unrepsonsive. 
+> 
+> Oops, I only briefly tested this series in userspace and that seemed to
+> work. I'll go prod at it. Thanks for having a look though.
+> 
+> Is that bstat test any easier/faster to setup/run than the aim7 crap?
 
-Will do.
+Depends. I've got a VM setup with a sparse 100TB block device hosted
+on SSDs where I can create 50M inodes using fsmark in about 3
+and half minutes. I also have a hacked xfstests::src/bstat.c that is
+multithreaded that I then run and it triggers it staight away.
 
-	-hpa
+Quite frankly, you don't need bulkstat to produce this lock
+contention - you'll see it running this on a wide directory
+structure on XFS and an SSD:
 
+$ cat ~/tests/walk-scratch.sh 
+#!/bin/bash
 
+echo Walking via find -ctime
+echo 3 > /proc/sys/vm/drop_caches
+time (
+        for d in /mnt/scratch/[0-9]* ; do
+
+                for i in $d/*; do
+                        (
+                                echo $i
+                                find $i -ctime 1 > /dev/null
+                        ) > /dev/null 2>&1
+                done &
+        done
+        wait
+)
+
+echo Walking via ls -R
+echo 3 > /proc/sys/vm/drop_caches
+time (
+        for d in /mnt/scratch/[0-9]* ; do
+
+                for i in $d/*; do
+                        (
+                                echo $i
+                                ls -R $i
+                        ) > /dev/null 2>&1
+                done &
+        done
+        wait
+)
+$
+
+The directory structure I create has 16 top level directories (0-15)
+each with 30-40 subdirectories containing 100,000 files each.
+There's a thread per top level directory, and running it on a 16p VM
+and an SSD that can do 30,000 IOPS will generate sufficient inode
+cache pressure to trigger severe lock contention.
+
+My usual test script for this workload runs mkfs, fsmark,
+xfs_repair, bstat, walk-scratch, and finally a multi-threaded rm to
+clean up. Usual inode numbers are in the 50-100million for zero
+length file workloads, 10-20 million for single block (small) files,
+and 100,000-1million for larger files. it's great for stressing VFs,
+FS and IO level scalability...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
