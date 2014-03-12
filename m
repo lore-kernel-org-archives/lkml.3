@@ -1,134 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844AbaCLKag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 06:30:36 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:49704 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780AbaCLKaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 06:30:21 -0400
-From: Boris BREZILLON <brezillonboris@gmail.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Subject: [PATCH] net: macb: set interface name based on DT aliases
-Date: Wed, 12 Mar 2014 11:29:56 +0100
-Message-Id: <1394620196-6295-1-git-send-email-b.brezillon.dev@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753599AbaCLKcc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 06:32:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:40872 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752703AbaCLKca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 06:32:30 -0400
+X-IronPort-AV: E=Sophos;i="4.97,636,1389715200"; 
+   d="scan'208";a="9683573"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 0/3 for-tip] use task_nice() in tracing to git rid of an open coded impolementation of it.
+Date: Wed, 12 Mar 2014 18:26:41 +0800
+Message-Id: <cover.1394619587.git.yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/12 18:26:13,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/12 18:26:34,
+	Serialize complete at 2014/03/12 18:26:34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use aliases to set the interface name (ethX) instead of automatic
-assignement.
+Hi Steven,
+	The [1/3] in this thread is a copy of 
 
-Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
----
+1390430505-17234-1-git-send-email-yangds.fnst@cn.fujitsu.com.
 
-Hello Nicolas, Jean-Christophe,
+	At that time, you said you will take this patch if task_nice()
+is implemeted as a inline function. Now it is done, I wish you can give
+it an ack. If you have a time, please take a look at the other patches
+in this thread. Thank you.
 
-This is an example on how we could set the ethernet interface id based on DT
-aliases.
-As you can see this patch is not properly separated.
+Dongsheng Yang (3):
+  tracing: Use inline task_nice() to get rid of an open coded
+    implementation of it.
+  sched/prio: Replace hardcoding of 40 with NICE_WIDTH.
+  sched: Use clamp() and clamp_val() to make it more readable.
 
-I'm still not happy with this approach for several reasons:
-1) If another ethernet iface has already been registered with the same id the
-   net dev registration will fail.
-2) We bypass the ethernet macros/functions and directly use the net device
-   functions which IMHO is not future proof.
+ kernel/sched/core.c  | 11 ++---------
+ kernel/trace/trace.c |  2 +-
+ 2 files changed, 3 insertions(+), 10 deletions(-)
 
-Best Regards,
-
-Boris
-
-
-
- arch/arm/boot/dts/sama5d36.dtsi     |    2 +-
- arch/arm/boot/dts/sama5d3_emac.dtsi |    4 ++++
- arch/arm/boot/dts/sama5d3_gmac.dtsi |    4 ++++
- drivers/net/ethernet/cadence/macb.c |   15 +++++++++++++--
- 4 files changed, 22 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/boot/dts/sama5d36.dtsi b/arch/arm/boot/dts/sama5d36.dtsi
-index 6c31c26..db58cad 100644
---- a/arch/arm/boot/dts/sama5d36.dtsi
-+++ b/arch/arm/boot/dts/sama5d36.dtsi
-@@ -8,8 +8,8 @@
-  */
- #include "sama5d3.dtsi"
- #include "sama5d3_can.dtsi"
--#include "sama5d3_emac.dtsi"
- #include "sama5d3_gmac.dtsi"
-+#include "sama5d3_emac.dtsi"
- #include "sama5d3_lcd.dtsi"
- #include "sama5d3_mci2.dtsi"
- #include "sama5d3_tcb1.dtsi"
-diff --git a/arch/arm/boot/dts/sama5d3_emac.dtsi b/arch/arm/boot/dts/sama5d3_emac.dtsi
-index fe2af92..f2c5da0 100644
---- a/arch/arm/boot/dts/sama5d3_emac.dtsi
-+++ b/arch/arm/boot/dts/sama5d3_emac.dtsi
-@@ -11,6 +11,10 @@
- #include <dt-bindings/interrupt-controller/irq.h>
- 
- / {
-+	aliases {
-+		eth1 = &macb1;
-+	};
-+
- 	ahb {
- 		apb {
- 			pinctrl@fffff200 {
-diff --git a/arch/arm/boot/dts/sama5d3_gmac.dtsi b/arch/arm/boot/dts/sama5d3_gmac.dtsi
-index a6cb050..05164de 100644
---- a/arch/arm/boot/dts/sama5d3_gmac.dtsi
-+++ b/arch/arm/boot/dts/sama5d3_gmac.dtsi
-@@ -11,6 +11,10 @@
- #include <dt-bindings/interrupt-controller/irq.h>
- 
- / {
-+	aliases {
-+		eth0 = &macb0;
-+	};
-+
- 	ahb {
- 		apb {
- 			pinctrl@fffff200 {
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 3190d38..b6f1f7c 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -1795,7 +1795,7 @@ static int __init macb_probe(struct platform_device *pdev)
- {
- 	struct macb_platform_data *pdata;
- 	struct resource *regs;
--	struct net_device *dev;
-+	struct net_device *dev = NULL;
- 	struct macb *bp;
- 	struct phy_device *phydev;
- 	u32 config;
-@@ -1819,7 +1819,18 @@ static int __init macb_probe(struct platform_device *pdev)
- 	}
- 
- 	err = -ENOMEM;
--	dev = alloc_etherdev(sizeof(*bp));
-+	if (pdev->dev.of_node) {
-+		int id = of_alias_get_id(pdev->dev.of_node, "eth");
-+		if (id >= 0) {
-+			char name[IFNAMSIZ];
-+			snprintf(name, sizeof(name), "eth%d", id);
-+			dev = alloc_netdev(sizeof(*bp), name, ether_setup);
-+		}
-+	}
-+
-+	if (!dev)
-+		dev = alloc_etherdev(sizeof(*bp));
-+
- 	if (!dev)
- 		goto err_out;
- 
 -- 
-1.7.9.5
+1.8.2.1
 
