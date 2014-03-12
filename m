@@ -1,227 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897AbaCLMA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 08:00:59 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:60417 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaCLMA4 (ORCPT
+	id S1753095AbaCLMDv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 08:03:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50191 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153AbaCLMDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 08:00:56 -0400
-Message-ID: <53204C73.5070807@monstr.eu>
-Date: Wed, 12 Mar 2014 13:00:51 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 12 Mar 2014 08:03:49 -0400
+Date: Wed, 12 Mar 2014 05:03:27 -0700
+From: tip-bot for Stephen Boyd <tipbot@zytor.com>
+Message-ID: <tip-8783dd3a37a5853689e1a8fa728827a50905b912@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        sboyd@codeaurora.org, joshc@codeaurora.org, linux@arm.linux.org.uk,
+        ak@linux.intel.com, tglx@linutronix.de, build@lixom.net
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sboyd@codeaurora.org, joshc@codeaurora.org, linux@arm.linux.org.uk,
+        ak@linux.intel.com, build@lixom.net, tglx@linutronix.de
+In-Reply-To: <1393980030-17770-1-git-send-email-sboyd@codeaurora.org>
+References: <1393980030-17770-1-git-send-email-sboyd@codeaurora.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] irqchip: Remove asmlinkage from static functions
+Git-Commit-ID: 8783dd3a37a5853689e1a8fa728827a50905b912
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: zynq: Add OCM driver
-References: <299e37ab245da9132808c6d4265a17b9a417bf62.1389022555.git.michal.simek@xilinx.com> <CAOesGMiroyjPbcjfG24_sUqCicCD4M7NF2aD=Xi8NVgagZThuA@mail.gmail.com>
-In-Reply-To: <CAOesGMiroyjPbcjfG24_sUqCicCD4M7NF2aD=Xi8NVgagZThuA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="hoO19cCJQIutdIXL24bAu0tLMWQeqQjgo"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---hoO19cCJQIutdIXL24bAu0tLMWQeqQjgo
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  8783dd3a37a5853689e1a8fa728827a50905b912
+Gitweb:     http://git.kernel.org/tip/8783dd3a37a5853689e1a8fa728827a50905b912
+Author:     Stephen Boyd <sboyd@codeaurora.org>
+AuthorDate: Tue, 4 Mar 2014 16:40:30 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 12 Mar 2014 13:00:41 +0100
 
-Hi Olof,
+irqchip: Remove asmlinkage from static functions
 
->> diff --git a/Documentation/devicetree/bindings/arm/zynq/xlnx,zynq-ocm.=
-txt b/Documentation/devicetree/bindings/arm/zynq/xlnx,zynq-ocm.txt
->> new file mode 100644
->> index 0000000..64cb5e8
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/arm/zynq/xlnx,zynq-ocm.txt
->> @@ -0,0 +1,17 @@
->> +Device tree bindings for Zynq's OCM
->> +
->> +The OCM is divided to 4 64kB segments which can be separately configu=
-red
->> +to low or high location. Location is controlled via SLCR.
->> +
->> +Required properties:
->> + compatible: Compatibility string. Must be "xlnx,zynq-ocm-1.0".
->> + reg: Specify the base and size of the OCM registers in the memory ma=
-p.
->> +      E.g.: reg =3D <0xf800c000 0x1000>;
->> +
->> +Example:
->> +ocmc: ocmc@f800c000 {
->> +       compatible =3D  "xlnx,zynq-ocm-1.0";
->> +       interrupt-parent =3D <&intc>;
->> +       interrupts =3D <0 3 4>;
->> +       reg =3D <0xf800c000 0x1000>;
->> +} ;
->> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq=
--7000.dtsi
->> index 1d942e2..4929be5 100644
->> --- a/arch/arm/boot/dts/zynq-7000.dtsi
->> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
->> @@ -66,6 +66,13 @@
->>                         cache-level =3D <2>;
->>                 };
->>
->> +               ocmc: ocmc@f800c000 {
->> +                       compatible =3D "xlnx,zynq-ocm-1.0";
->> +                       interrupt-parent =3D <&intc>;
->> +                       interrupts =3D <0 3 4>;
->> +                       reg =3D <0xf800c000 0x1000>;
->> +               } ;
->> +
->>                 uart0: uart@e0000000 {
->>                         compatible =3D "xlnx,xuartps";
->>                         status =3D "disabled";
->> diff --git a/arch/arm/mach-zynq/Kconfig b/arch/arm/mach-zynq/Kconfig
->> index 323e505..f3e6ce4 100644
->> --- a/arch/arm/mach-zynq/Kconfig
->> +++ b/arch/arm/mach-zynq/Kconfig
->> @@ -15,5 +15,6 @@ config ARCH_ZYNQ
->>         select CADENCE_TTC_TIMER
->>         select ARM_GLOBAL_TIMER
->>         select MFD_SYSCON
->> +       select GENERIC_ALLOCATOR
->>         help
->>           Support for Xilinx Zynq ARM Cortex A9 Platform
->> diff --git a/arch/arm/mach-zynq/Makefile b/arch/arm/mach-zynq/Makefile=
+LTO patches add __visible to the asmlinkage define, causing
+compilation warnings like:
 
->> index 1b25d92..626f64b 100644
->> --- a/arch/arm/mach-zynq/Makefile
->> +++ b/arch/arm/mach-zynq/Makefile
->> @@ -3,7 +3,7 @@
->>  #
->>
->>  # Common support
->> -obj-y                          :=3D common.o slcr.o
->> +obj-y                          :=3D common.o slcr.o zynq_ocm.o
->>  CFLAGS_REMOVE_hotplug.o                =3D-march=3Darmv6k
->>  CFLAGS_hotplug.o               =3D-Wa,-march=3Darmv7-a -mcpu=3Dcortex=
--a9
->>  obj-$(CONFIG_HOTPLUG_CPU)      +=3D hotplug.o
->> diff --git a/arch/arm/mach-zynq/common.h b/arch/arm/mach-zynq/common.h=
+  drivers/irqchip/irq-gic.c:283:1: warning: 'externally_visible'
+  attribute have effect only on public objects [-Wattributes]
 
->> index b097844..953f6a1 100644
->> --- a/arch/arm/mach-zynq/common.h
->> +++ b/arch/arm/mach-zynq/common.h
->> @@ -24,6 +24,7 @@ extern int zynq_early_slcr_init(void);
->>  extern void zynq_slcr_system_reset(void);
->>  extern void zynq_slcr_cpu_stop(int cpu);
->>  extern void zynq_slcr_cpu_start(int cpu);
->> +extern u32 zynq_slcr_get_ocm_config(void);
->>
->>  #ifdef CONFIG_SMP
->>  extern void secondary_startup(void);
->> diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
->> index c1f1499..9a37ab3 100644
->> --- a/arch/arm/mach-zynq/slcr.c
->> +++ b/arch/arm/mach-zynq/slcr.c
->> @@ -26,6 +26,7 @@
->>  #define SLCR_PS_RST_CTRL_OFFSET                0x200 /* PS Software R=
-eset Control */
->>  #define SLCR_A9_CPU_RST_CTRL_OFFSET    0x244 /* CPU Software Reset Co=
-ntrol */
->>  #define SLCR_REBOOT_STATUS_OFFSET      0x258 /* PS Reboot Status */
->> +#define SLCR_OCM_CFG_OFFSET            0x910 /* OCM Address Mapping *=
-/
->>
->>  #define SLCR_UNLOCK_MAGIC              0xDF0D
->>  #define SLCR_A9_CPU_CLKSTOP            0x10
->> @@ -107,6 +108,20 @@ void zynq_slcr_system_reset(void)
->>  }
->>
->>  /**
->> + * zynq_slcr_get_ocm_config - Get SLCR OCM config
->> + *
->> + * return:     OCM config bits
->> + */
->> +u32 zynq_slcr_get_ocm_config(void)
->> +{
->> +       u32 val;
->> +
->> +       zynq_slcr_read(&val, SLCR_OCM_CFG_OFFSET);
->> +
->> +       return val;
->> +}
->> +
->> +/**
->>   * zynq_slcr_cpu_start - Start cpu
->>   * @cpu:       cpu number
->>   */
->> diff --git a/arch/arm/mach-zynq/zynq_ocm.c b/arch/arm/mach-zynq/zynq_o=
-cm.c
->> new file mode 100644
->> index 0000000..034a65b
->> --- /dev/null
->> +++ b/arch/arm/mach-zynq/zynq_ocm.c
->> @@ -0,0 +1,243 @@
->> +/*
->> + * Copyright (C) 2013 Xilinx
->> + *
->> + * Based on "Generic on-chip SRAM allocation driver"
->=20
-> We're not adding new drivers under arch/arm, so if you need this
-> driver then you should either merge it under drivers/ somewhere, or
-> look at extending the generic driver in a way that you can reuse it.
+Drop asmlinkage here to avoid such warnings.
 
-Driver is reusing ideas from this generic driver but
-incorporation our changes to will be problematic.
+Reported-by: Olof's autobuilder <build@lixom.net>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: khilman@linaro.org
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Josh Cartwright <joshc@codeaurora.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1393980030-17770-1-git-send-email-sboyd@codeaurora.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/irqchip/irq-armada-370-xp.c | 2 +-
+ drivers/irqchip/irq-bcm2835.c       | 4 ++--
+ drivers/irqchip/irq-gic.c           | 2 +-
+ drivers/irqchip/irq-mmp.c           | 6 ++----
+ drivers/irqchip/irq-moxart.c        | 2 +-
+ drivers/irqchip/irq-orion.c         | 2 +-
+ drivers/irqchip/irq-sirfsoc.c       | 2 +-
+ drivers/irqchip/irq-sun4i.c         | 4 ++--
+ drivers/irqchip/irq-vic.c           | 2 +-
+ drivers/irqchip/irq-vt8500.c        | 3 +--
+ drivers/irqchip/irq-zevio.c         | 2 +-
+ 11 files changed, 14 insertions(+), 17 deletions(-)
 
-It is a shame that you didn't review the rest of code below.
-The reason why I have added this driver to arch/arm/mach-zynq
-was that there is code connection to zynq SMP bootup trampoline
-which has to be added at 0x0 when OCM is placed at 0x0.
-And this memory can't be used for generic purpose.
-If you see any nice way how to it please let me know.
-
-Calling SLCR function is solvable via regmap mapping.
-
-Thanks,
-Michal
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---hoO19cCJQIutdIXL24bAu0tLMWQeqQjgo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMgTHMACgkQykllyylKDCHGJgCeKkJKunzxqoYnhuOUmLeViMHh
-TxMAniuvSntB/Iz3qK7AWPh0sW3PD42z
-=U90A
------END PGP SIGNATURE-----
-
---hoO19cCJQIutdIXL24bAu0tLMWQeqQjgo--
+diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
+index cd79503..41be897 100644
+--- a/drivers/irqchip/irq-armada-370-xp.c
++++ b/drivers/irqchip/irq-armada-370-xp.c
+@@ -410,7 +410,7 @@ static void armada_370_xp_mpic_handle_cascade_irq(unsigned int irq,
+ 	chained_irq_exit(chip, desc);
+ }
+ 
+-static asmlinkage void __exception_irq_entry
++static void __exception_irq_entry
+ armada_370_xp_handle_irq(struct pt_regs *regs)
+ {
+ 	u32 irqstat, irqnr;
+diff --git a/drivers/irqchip/irq-bcm2835.c b/drivers/irqchip/irq-bcm2835.c
+index 1693b8e..5916d6c 100644
+--- a/drivers/irqchip/irq-bcm2835.c
++++ b/drivers/irqchip/irq-bcm2835.c
+@@ -95,7 +95,7 @@ struct armctrl_ic {
+ };
+ 
+ static struct armctrl_ic intc __read_mostly;
+-static asmlinkage void __exception_irq_entry bcm2835_handle_irq(
++static void __exception_irq_entry bcm2835_handle_irq(
+ 	struct pt_regs *regs);
+ 
+ static void armctrl_mask_irq(struct irq_data *d)
+@@ -196,7 +196,7 @@ static void armctrl_handle_shortcut(int bank, struct pt_regs *regs,
+ 	handle_IRQ(irq_linear_revmap(intc.domain, irq), regs);
+ }
+ 
+-static asmlinkage void __exception_irq_entry bcm2835_handle_irq(
++static void __exception_irq_entry bcm2835_handle_irq(
+ 	struct pt_regs *regs)
+ {
+ 	u32 stat, irq;
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index abeb5a9..531769b 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -279,7 +279,7 @@ static int gic_set_wake(struct irq_data *d, unsigned int on)
+ #define gic_set_wake	NULL
+ #endif
+ 
+-static asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
++static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
+ {
+ 	u32 irqstat, irqnr;
+ 	struct gic_chip_data *gic = &gic_data[0];
+diff --git a/drivers/irqchip/irq-mmp.c b/drivers/irqchip/irq-mmp.c
+index 2cb7cd0..3c8827f 100644
+--- a/drivers/irqchip/irq-mmp.c
++++ b/drivers/irqchip/irq-mmp.c
+@@ -194,8 +194,7 @@ static struct mmp_intc_conf mmp2_conf = {
+ 	.conf_mask	= 0x7f,
+ };
+ 
+-static asmlinkage void __exception_irq_entry
+-mmp_handle_irq(struct pt_regs *regs)
++static void __exception_irq_entry mmp_handle_irq(struct pt_regs *regs)
+ {
+ 	int irq, hwirq;
+ 
+@@ -207,8 +206,7 @@ mmp_handle_irq(struct pt_regs *regs)
+ 	handle_IRQ(irq, regs);
+ }
+ 
+-static asmlinkage void __exception_irq_entry
+-mmp2_handle_irq(struct pt_regs *regs)
++static void __exception_irq_entry mmp2_handle_irq(struct pt_regs *regs)
+ {
+ 	int irq, hwirq;
+ 
+diff --git a/drivers/irqchip/irq-moxart.c b/drivers/irqchip/irq-moxart.c
+index 5552fc2..00b3cc9 100644
+--- a/drivers/irqchip/irq-moxart.c
++++ b/drivers/irqchip/irq-moxart.c
+@@ -44,7 +44,7 @@ struct moxart_irq_data {
+ 
+ static struct moxart_irq_data intc;
+ 
+-static asmlinkage void __exception_irq_entry handle_irq(struct pt_regs *regs)
++static void __exception_irq_entry handle_irq(struct pt_regs *regs)
+ {
+ 	u32 irqstat;
+ 	int hwirq;
+diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
+index e51d400..c3f0f41 100644
+--- a/drivers/irqchip/irq-orion.c
++++ b/drivers/irqchip/irq-orion.c
+@@ -30,7 +30,7 @@
+ 
+ static struct irq_domain *orion_irq_domain;
+ 
+-static asmlinkage void
++static void
+ __exception_irq_entry orion_handle_irq(struct pt_regs *regs)
+ {
+ 	struct irq_domain_chip_generic *dgc = orion_irq_domain->gc;
+diff --git a/drivers/irqchip/irq-sirfsoc.c b/drivers/irqchip/irq-sirfsoc.c
+index 3a070c5..581eefe 100644
+--- a/drivers/irqchip/irq-sirfsoc.c
++++ b/drivers/irqchip/irq-sirfsoc.c
+@@ -47,7 +47,7 @@ sirfsoc_alloc_gc(void __iomem *base, unsigned int irq_start, unsigned int num)
+ 	ct->regs.mask = SIRFSOC_INT_RISC_MASK0;
+ }
+ 
+-static asmlinkage void __exception_irq_entry sirfsoc_handle_irq(struct pt_regs *regs)
++static void __exception_irq_entry sirfsoc_handle_irq(struct pt_regs *regs)
+ {
+ 	void __iomem *base = sirfsoc_irqdomain->host_data;
+ 	u32 irqstat, irqnr;
+diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+index a5438d8..9fbff03 100644
+--- a/drivers/irqchip/irq-sun4i.c
++++ b/drivers/irqchip/irq-sun4i.c
+@@ -36,7 +36,7 @@
+ static void __iomem *sun4i_irq_base;
+ static struct irq_domain *sun4i_irq_domain;
+ 
+-static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
++static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
+ 
+ static void sun4i_irq_ack(struct irq_data *irqd)
+ {
+@@ -136,7 +136,7 @@ static int __init sun4i_of_init(struct device_node *node,
+ }
+ IRQCHIP_DECLARE(allwinner_sun4i_ic, "allwinner,sun4i-ic", sun4i_of_init);
+ 
+-static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
++static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
+ {
+ 	u32 irq, hwirq;
+ 
+diff --git a/drivers/irqchip/irq-vic.c b/drivers/irqchip/irq-vic.c
+index 8e21ae0..473f09a 100644
+--- a/drivers/irqchip/irq-vic.c
++++ b/drivers/irqchip/irq-vic.c
+@@ -228,7 +228,7 @@ static int handle_one_vic(struct vic_device *vic, struct pt_regs *regs)
+  * Keep iterating over all registered VIC's until there are no pending
+  * interrupts.
+  */
+-static asmlinkage void __exception_irq_entry vic_handle_irq(struct pt_regs *regs)
++static void __exception_irq_entry vic_handle_irq(struct pt_regs *regs)
+ {
+ 	int i, handled;
+ 
+diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
+index 1846e7d..eb6e91e 100644
+--- a/drivers/irqchip/irq-vt8500.c
++++ b/drivers/irqchip/irq-vt8500.c
+@@ -178,8 +178,7 @@ static struct irq_domain_ops vt8500_irq_domain_ops = {
+ 	.xlate = irq_domain_xlate_onecell,
+ };
+ 
+-static asmlinkage
+-void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
++static void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
+ {
+ 	u32 stat, i;
+ 	int irqnr, virq;
+diff --git a/drivers/irqchip/irq-zevio.c b/drivers/irqchip/irq-zevio.c
+index 8ed04c4..ceb3a43 100644
+--- a/drivers/irqchip/irq-zevio.c
++++ b/drivers/irqchip/irq-zevio.c
+@@ -50,7 +50,7 @@ static void zevio_irq_ack(struct irq_data *irqd)
+ 	readl(gc->reg_base + regs->ack);
+ }
+ 
+-static asmlinkage void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
++static void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
+ {
+ 	int irqnr;
+ 
