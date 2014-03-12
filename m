@@ -1,55 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaCLVfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 17:35:50 -0400
-Received: from smtprelay0143.hostedemail.com ([216.40.44.143]:53799 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750981AbaCLVfl (ORCPT
+	id S1752841AbaCLVgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 17:36:09 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:52854 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594AbaCLVf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 17:35:41 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:4321:5007:6642:7652:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: actor17_142b7ffe50210
-X-Filterd-Recvd-Size: 1578
-Message-ID: <1394660137.3915.58.camel@joe-AO722>
-Subject: Re: [PATCH] Scsi: lpfc: lpfc_init: Remove useless casting value
-From: Joe Perches <joe@perches.com>
-To: Matei Oprea <eu@opreamatei.ro>
-Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        ROSEdu Kernel Community <firefly@lists.rosedu.org>
-Date: Wed, 12 Mar 2014 14:35:37 -0700
-In-Reply-To: <1394659247-20037-1-git-send-email-eu@opreamatei.ro>
-References: <1394659247-20037-1-git-send-email-eu@opreamatei.ro>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Mar 2014 17:35:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394658311-17769-2-git-send-email-jgunthorpe@obsidianresearch.com>
+References: <1394658311-17769-1-git-send-email-jgunthorpe@obsidianresearch.com>
+	<1394658311-17769-2-git-send-email-jgunthorpe@obsidianresearch.com>
+Date: Wed, 12 Mar 2014 16:35:54 -0500
+Message-ID: <CAL_Jsq+qdbiwXErkZv1zZ9rphYY9NP6zHmmjw313tMvGeSTODg@mail.gmail.com>
+Subject: Re: [PATCH v2a RESEND 2/2] of_mdio: Allow the DT to specify the phy
+ ID and avoid autoprobing
+From: Rob Herring <robherring2@gmail.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Florian Fainelli <f.fainelli@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-12 at 23:20 +0200, Matei Oprea wrote:
-> Remove useless casting value returned by k[cmz]alloc
-> to (struct lpfc_sli_ring *).
-> 
-> Found using coccinelle
+On Wed, Mar 12, 2014 at 4:05 PM, Jason Gunthorpe
+<jgunthorpe@obsidianresearch.com> wrote:
+> This makes the generic of_mdiobus_register parse the DT compatible string for
+> the pattern ethernet-phy-idAAAA.BBBB. If present it should be a value that
+> matches the phy-id register normally readable through MDIO.
+>
+> When the ID is given the phy autoprobing is defeated and the phy is
+> created directly.
+>
+> This is necessary to support phy's that cannot be autoprobed when
+> of_mdiobus_register is called. Specifically, my case has the phy in reset at
+> of_mdiobus_register, the reset is only released once the ethernet driver
+> starts, before it attaches to the phy.
+>
+> Tested on ARM Kirkwood with phy id 0x01410e90 (Marvell 88E1318)
+>
+> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+> ---
+>  drivers/of/of_mdio.c | 30 +++++++++++++++++++++++++++++-
+>  1 file changed, 29 insertions(+), 1 deletion(-)
+>
+> There was some reworking of the original code in v3.14-rc6, this resolves the
+> merge conflicts and I retested the resolved patch on Kirkwood.
+>
+> Florian, do you know what path to mainline a this patch should take?
 
-trivial note:
+Via David's net tree.
 
-> diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-[]
-> @@ -4731,8 +4731,7 @@ lpfc_sli_driver_resource_setup(struct lpfc_hba *phba)
-[]
-> -		phba->sli.ring = (struct lpfc_sli_ring *)
-> -			kzalloc(LPFC_SLI3_MAX_RING *
-> +		phba->sli.ring = kzalloc(LPFC_SLI3_MAX_RING *
->  			sizeof(struct lpfc_sli_ring), GFP_KERNEL);
+>
+> Thanks,
+> Jason
+>
+> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+> index 5b3c24f..6cdcbda 100644
+> --- a/drivers/of/of_mdio.c
+> +++ b/drivers/of/of_mdio.c
+> @@ -43,6 +43,30 @@ static void of_set_phy_supported(struct phy_device *phydev, u32 max_speed)
+>         }
+>  }
+>
+> +/* Extract the clause 22 phy ID from the compatible string of the form
+> + * ethernet-phy-idAAAA.BBBB */
+> +static int of_get_phy_id(struct device_node *device, u32 *phy_id)
+> +{
+> +       const char *cp;
+> +       int cplen, l;
+> +       unsigned int upper, lower;
+> +
+> +       cp = of_get_property(device, "compatible", &cplen);
+> +       if (cp == NULL)
+> +               return -EINVAL;
+> +       while (cplen > 0) {
 
-Using kcalloc would have been even nicer too
+This can all be:
 
-		phba->sli.ring = kcalloc(LPFC_SLI3_MAX_RING,
-					 sizeof(struct lpfc_sli_ring),
-					 GFP_KERNEL);
+  of_property_for_each_string(device, "compatible", prop, cp)
 
-
+> +               if (sscanf(cp, "ethernet-phy-id%4x.%4x", &upper, &lower) == 2) {
+> +                       *phy_id = ((upper & 0xFFFF) << 16) | (lower & 0xFFFF);
+> +                       return 0;
+> +               }
+> +
+> +               l = strlen(cp) + 1;
+> +               cp += l;
+> +               cplen -= l;
+> +       }
+> +       return -EINVAL;
+> +}
+> +
+>  static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *child,
+>                                    u32 addr)
+>  {
+> @@ -50,11 +74,15 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
+>         bool is_c45;
+>         int rc;
+>         u32 max_speed = 0;
+> +       u32 phy_id;
+>
+>         is_c45 = of_device_is_compatible(child,
+>                                          "ethernet-phy-ieee802.3-c45");
+>
+> -       phy = get_phy_device(mdio, addr, is_c45);
+> +       if (!is_c45 && !of_get_phy_id(child, &phy_id))
+> +               phy = phy_device_create(mdio, addr, phy_id, 0, NULL);
+> +       else
+> +               phy = get_phy_device(mdio, addr, is_c45);
+>         if (!phy || IS_ERR(phy))
+>                 return 1;
+>
+> --
+> 1.8.1.2
+>
