@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461AbaCLNxZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 09:53:25 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:41769 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248AbaCLNxY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 09:53:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1394148326-21556-1-git-send-email-garyservin@gmail.com>
-References: <1394148326-21556-1-git-send-email-garyservin@gmail.com>
-Date: Wed, 12 Mar 2014 14:53:23 +0100
-Message-ID: <CACRpkdbjbjeePQipX7nbLXJKnYWFUXhbDLEXPGX5z+EE8R-q3Q@mail.gmail.com>
-Subject: Re: [PATCH] gpio: mcp23s08: Trivial: Fixed coding style issues
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Gary Servin <garyservin@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Jiri Kosina <trivial@kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754524AbaCLNxe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 09:53:34 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:54523 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476AbaCLNxc (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 12 Mar 2014 09:53:32 -0400
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+From: joeyli <jlee@suse.com>
+To: Julian Wollrath <jwollrath@web.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Lee@linutronix.de,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+In-Reply-To: <20140312112010.48e46749@ilfaris>
+References: <20140310110410.5b2218f6@ilfaris>
+	 <alpine.DEB.2.02.1403101123470.18573@ionos.tec.linutronix.de>
+	 <20140311142910.27594027@ilfaris>
+	 <alpine.DEB.2.02.1403111454140.18573@ionos.tec.linutronix.de>
+	 <20140311181513.0f73383c@ilfaris>
+	 <1394596807.26565.135.camel@linux-s257.site>
+	 <20140312112010.48e46749@ilfaris>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Mar 2014 21:52:34 +0800
+Message-ID: <1394632354.26565.152.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 12:25 AM, Gary Servin <garyservin@gmail.com> wrote:
+於 三，2014-03-12 於 11:20 +0100，Julian Wollrath 提到：
+> > This patch restricts the position to run acpi_early_init() before
+> > timekeeping_init() when only "CMOS RTC Not Present" bit set in FADT.
+> > 
+> > Could you please help to test it on your machine?
+> That patch fixes the problem, thank you.
+> 
+> Cheers,
+> Julian Wollrath
+> > 
 
-> This coding style issue was detected using the checkpatch.pl script
->
-> Signed-off-by: Gary Servin <garyservin@gmail.com>
+Thanks for your test.
 
-Sometimes the compiler is just too forgiving :-/
-Thanks a lot for fixing this, patch applied.
 
-Yours,
-Linus Walleij
+Regards
+Joey Lee
+
