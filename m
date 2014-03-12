@@ -1,55 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468AbaCLJj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 05:39:27 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:49858 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaCLJjY (ORCPT
+	id S1753491AbaCLJkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 05:40:20 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:48713 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752854AbaCLJkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 05:39:24 -0400
-Date: Wed, 12 Mar 2014 09:39:18 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
-Subject: Re: [PATCH v4 4/6] pinctrl: st: Use ARRAY_SIZE instead of raw value
- for number of delays
-Message-ID: <20140312093918.GF5672@lee--X1>
-References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
- <1394614210-15698-5-git-send-email-maxime.coquelin@st.com>
+	Wed, 12 Mar 2014 05:40:18 -0400
+Date: Wed, 12 Mar 2014 05:40:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.4.82-rt102
+Message-ID: <20140312054016.4d7197b8@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394614210-15698-5-git-send-email-maxime.coquelin@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch replaces the raw values with ARRAY_SIZE for assigning the
-> ninput_delays and noutput_delays fields of STiH416's st_pctl_data struct.
-> 
-> CC: Lee Jones <lee.jones@linaro.org>
-> Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
-> ---
->  drivers/pinctrl/pinctrl-st.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Dear RT Folks,
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I'm pleased to announce the 3.4.82-rt102 stable release.
+
+I'm posting this without an -rc release because it only contains a
+revert of a patch that caused the kernel to fail to compile.
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.4-rt
+  Head SHA1: 66a57c5a3f52221765f71b4182277f6c0581d36e
+
+
+Or to build 3.4.82-rt102 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.82.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.82-rt102.patch.xz
+
+
+
+You can also build from 3.4.82-rt101 by applying the incremental patch:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.82-rt101-rt102.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from v3.4.82-rt101:
+
+---
+
+Steven Rostedt (Red Hat) (2):
+      Revert "swait: Add a few more users"
+      Linux 3.4.82-rt102
+
+----
+ drivers/net/wireless/orinoco/orinoco_usb.c | 2 +-
+ drivers/usb/gadget/f_fs.c                  | 2 +-
+ drivers/usb/gadget/inode.c                 | 4 ++--
+ localversion-rt                            | 2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+---------------------------
+diff --git a/drivers/net/wireless/orinoco/orinoco_usb.c b/drivers/net/wireless/orinoco/orinoco_usb.c
+index 8152c94..f634d45 100644
+--- a/drivers/net/wireless/orinoco/orinoco_usb.c
++++ b/drivers/net/wireless/orinoco/orinoco_usb.c
+@@ -714,7 +714,7 @@ static void ezusb_req_ctx_wait(struct ezusb_priv *upriv,
+ 			while (!ctx->done.done && msecs--)
+ 				udelay(1000);
+ 		} else {
+-			swait_event_interruptible(ctx->done.wait,
++			wait_event_interruptible(ctx->done.wait,
+ 						 ctx->done.done);
+ 		}
+ 		break;
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 54ea4e9..f52cb1a 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1255,7 +1255,7 @@ static void ffs_data_put(struct ffs_data *ffs)
+ 		pr_info("%s(): freeing\n", __func__);
+ 		ffs_data_clear(ffs);
+ 		BUG_ON(waitqueue_active(&ffs->ev.waitq) ||
+-		       swaitqueue_active(&ffs->ep0req_completion.wait));
++		       waitqueue_active(&ffs->ep0req_completion.wait));
+ 		kfree(ffs);
+ 	}
+ }
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index 2dfd196..e58b164 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -339,7 +339,7 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
+ 	spin_unlock_irq (&epdata->dev->lock);
+ 
+ 	if (likely (value == 0)) {
+-		value = swait_event_interruptible (done.wait, done.done);
++		value = wait_event_interruptible (done.wait, done.done);
+ 		if (value != 0) {
+ 			spin_lock_irq (&epdata->dev->lock);
+ 			if (likely (epdata->ep != NULL)) {
+@@ -348,7 +348,7 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
+ 				usb_ep_dequeue (epdata->ep, epdata->req);
+ 				spin_unlock_irq (&epdata->dev->lock);
+ 
+-				swait_event (done.wait, done.done);
++				wait_event (done.wait, done.done);
+ 				if (epdata->status == -ECONNRESET)
+ 					epdata->status = -EINTR;
+ 			} else {
+diff --git a/localversion-rt b/localversion-rt
+index 9ea5981f..33017cd 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt101
++-rt102
