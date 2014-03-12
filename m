@@ -1,192 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaCLSsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 14:48:08 -0400
-Received: from mailout.micron.com ([137.201.242.129]:43687 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737AbaCLSsG (ORCPT
+	id S1751573AbaCLStD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 14:49:03 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:44072 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaCLStA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 14:48:06 -0400
-Message-ID: <5320AFD0.7090401@micron.com>
-Date: Wed, 12 Mar 2014 12:04:48 -0700
-From: Sam Bradshaw <sbradshaw@micron.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	Wed, 12 Mar 2014 14:49:00 -0400
+Message-ID: <5320AC16.8030901@gmail.com>
+Date: Wed, 12 Mar 2014 19:48:54 +0100
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Felipe Franciosi <felipe@paradoxo.org>
-CC: <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa)" 
-	<asamymuthupa@micron.com>
-Subject: Re: [PATCH 2/2] mtip32xx: Unmap the DMA segments before completing
- the IO request
-References: <1394640348-9109-1-git-send-email-felipe@paradoxo.org> <1394640348-9109-3-git-send-email-felipe@paradoxo.org>
-In-Reply-To: <1394640348-9109-3-git-send-email-felipe@paradoxo.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20562.001
-X-TM-AS-Result: No--9.675300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+To: Warner Losh <imp@bsdimp.com>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robherring2@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        dev@linux-sunxi.org
+Subject: Re: [PATCH v3 4/9] of: mtd: add documentation for the ONFI NAND timing
+ mode property
+References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com> <1394647664-8258-5-git-send-email-b.brezillon.dev@gmail.com> <F8865D0A-59A7-41A7-AA7F-9B91DF5C8258@gmail.com>
+In-Reply-To: <F8865D0A-59A7-41A7-AA7F-9B91DF5C8258@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2014 09:05 AM, Felipe Franciosi wrote:
-> If the buffers are unmapped after completing a request, then stale data
-> might be in the request.
+Le 12/03/2014 19:27, Warner Losh a écrit :
+> On Mar 12, 2014, at 12:07 PM, Boris BREZILLON <b.brezillon.dev@gmail.com> wrote:
+>
+>> Add documentation for the ONFI NAND timing mode property.
+> I don’t see a Toggle/JEDEC mode timing property. Will that be defined for Toshiba, Samsung
+> and San Disk flash? Or will this be limited to Micron, Intel and Hynix (the only ones
+> supporting ONFI)?
 
-Good find, Felipe, thank you.  I would prefer something along the lines 
-of this patch to make sure to avoid double completions / dma_unmap_sg() 
-calls during surprise removal and/or timeout conditions.
+There is currently no Toggle/JEDEC timing mode support, and I don't know 
+what these
+timing modes describe.
+But I guess they can be converted to standard timings described in 
+nand_sdr_timings
+struct (or in your case in the future nand_ddr_timings struct).
 
-Jens: note that this patch also fixes a regression in the unaligned 
-workaround implementation that was introduced by the SRSI patch.
+Could you check that the timings described by these modes use the same 
+naming convention
+as those defined in the ONFI specification 
+(www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf
+  chapter 4.15.4) ?
 
-Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
-diff --git a/drivers/block/mtip32xx/mtip32xx.c 
-b/drivers/block/mtip32xx/mtip32xx.c
-index 5160269..390ac6f 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -252,38 +252,45 @@ static void mtip_async_complete(struct mtip_port 
-*port,
-  				void *data,
-  				int status)
-  {
--	struct mtip_cmd *command;
-+	struct mtip_cmd *cmd;
-  	struct driver_data *dd = data;
--	int cb_status = status ? -EIO : 0;
-+	int unaligned, cb_status = status ? -EIO : 0;
-+	void (*func)(void *, int);
+If this is the case, we can define a new DT property and new converters.
 
-  	if (unlikely(!dd) || unlikely(!port))
-  		return;
+Best Regards,
 
--	command = &port->commands[tag];
-+	cmd = &port->commands[tag];
+Boris
 
-  	if (unlikely(status == PORT_IRQ_TF_ERR)) {
-  		dev_warn(&port->dd->pdev->dev,
-  			"Command tag %d failed due to TFE\n", tag);
-  	}
-
-+	/* Clear the active flag */
-+	atomic_set(&port->commands[tag].active, 0);
-+
-  	/* Upper layer callback */
--	if (likely(command->async_callback))
--		command->async_callback(command->async_data, cb_status);
-+	func = cmd->async_callback;
-+	if (likely(func && cmpxchg(&cmd->async_callback, func, 0) == func)) {
-
--	command->async_callback = NULL;
--	command->comp_func = NULL;
-+		/* Unmap the DMA scatter list entries */
-+		dma_unmap_sg(&dd->pdev->dev,
-+			cmd->sg,
-+			cmd->scatter_ents,
-+			cmd->direction);
-
--	/* Unmap the DMA scatter list entries */
--	dma_unmap_sg(&dd->pdev->dev,
--		command->sg,
--		command->scatter_ents,
--		command->direction);
-+		func(cmd->async_data, cb_status);
-+		unaligned = cmd->unaligned;
-
--	/* Clear the allocated and active bits for the command */
--	atomic_set(&port->commands[tag].active, 0);
--	release_slot(port, tag);
-+		/* Clear the allocated bit for the command */
-+		release_slot(port, tag);
-
--	up(&port->cmd_slot);
-+		if (unlikely(unaligned))
-+			up(&port->cmd_slot_unal);
-+		else
-+			up(&port->cmd_slot);
-+	}
-  }
-
-  /*
-@@ -660,11 +667,12 @@ static void mtip_timeout_function(unsigned long 
-int data)
-  {
-  	struct mtip_port *port = (struct mtip_port *) data;
-  	struct host_to_dev_fis *fis;
--	struct mtip_cmd *command;
--	int tag, cmdto_cnt = 0;
-+	struct mtip_cmd *cmd;
-+	int unaligned, tag, cmdto_cnt = 0;
-  	unsigned int bit, group;
-  	unsigned int num_command_slots;
-  	unsigned long to, tagaccum[SLOTBITS_IN_LONGS];
-+	void (*func)(void *, int);
-
-  	if (unlikely(!port))
-  		return;
-@@ -694,8 +702,8 @@ static void mtip_timeout_function(unsigned long int 
-data)
-  			group = tag >> 5;
-  			bit = tag & 0x1F;
-
--			command = &port->commands[tag];
--			fis = (struct host_to_dev_fis *) command->command;
-+			cmd = &port->commands[tag];
-+			fis = (struct host_to_dev_fis *) cmd->command;
-
-  			set_bit(tag, tagaccum);
-  			cmdto_cnt++;
-@@ -709,27 +717,30 @@ static void mtip_timeout_function(unsigned long 
-int data)
-  			 */
-  			writel(1 << bit, port->completed[group]);
-
--			/* Call the async completion callback. */
--			if (likely(command->async_callback))
--				command->async_callback(command->async_data,
--							 -EIO);
--			command->async_callback = NULL;
--			command->comp_func = NULL;
-+			/* Clear the active flag for the command */
-+			atomic_set(&port->commands[tag].active, 0);
-
--			/* Unmap the DMA scatter list entries */
--			dma_unmap_sg(&port->dd->pdev->dev,
--					command->sg,
--					command->scatter_ents,
--					command->direction);
-+			func = cmd->async_callback;
-+			if (func &&
-+			    cmpxchg(&cmd->async_callback, func, 0) == func) {
-
--			/*
--			 * Clear the allocated bit and active tag for the
--			 * command.
--			 */
--			atomic_set(&port->commands[tag].active, 0);
--			release_slot(port, tag);
-+				/* Unmap the DMA scatter list entries */
-+				dma_unmap_sg(&port->dd->pdev->dev,
-+						cmd->sg,
-+						cmd->scatter_ents,
-+						cmd->direction);
-
--			up(&port->cmd_slot);
-+				func(cmd->async_data, -EIO);
-+				unaligned = cmd->unaligned;
-+
-+				/* Clear the allocated bit for the command. */
-+				release_slot(port, tag);
-+
-+				if (unaligned)
-+					up(&port->cmd_slot_unal);
-+				else
-+					up(&port->cmd_slot);
-+			}
-  		}
-  	}
-
+> Warner
+>
+>
+>> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+>> ---
+>> Documentation/devicetree/bindings/mtd/nand.txt |    8 ++++++++
+>> 1 file changed, 8 insertions(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/mtd/nand.txt b/Documentation/devicetree/bindings/mtd/nand.txt
+>> index b53f92e..2046027 100644
+>> --- a/Documentation/devicetree/bindings/mtd/nand.txt
+>> +++ b/Documentation/devicetree/bindings/mtd/nand.txt
+>> @@ -19,3 +19,11 @@ errors per {size} bytes".
+>> The interpretation of these parameters is implementation-defined, so not all
+>> implementations must support all possible combinations. However, implementations
+>> are encouraged to further specify the value(s) they support.
+>> +
+>> +- onfi,nand-timing-mode: an integer encoding the supported ONFI timing modes of
+>> +  the NAND chip. Each supported mode is represented as a bit position (i.e. :
+>> +  mode 0 and 1 => (1 << 0) | (1 << 1) = 0x3).
+>> +  This is only used when the chip does not support the ONFI standard.
+>> +  The last bit set represent the closest mode fulfilling the NAND chip timings.
+>> +  For a full description of the different timing modes see this document:
+>> +  www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf
+>> -- 
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
