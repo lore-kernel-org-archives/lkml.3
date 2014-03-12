@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088AbaCLLUN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 07:20:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11139 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753655AbaCLLUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 07:20:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,637,1389772800"; 
-   d="scan'208";a="496884003"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 3/3 V2] mei: report consistently copy_from/to_user failures
-Date: Wed, 12 Mar 2014 13:19:13 +0200
-Message-Id: <1394623153-27046-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.5.3
+	id S1754111AbaCLLUm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 07:20:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62907 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753655AbaCLLUh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 07:20:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Antoine =?ISO-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, zmxu@marvell.com, jszhang@marvell.com,
+        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com
+Subject: Re: [PATCH 2/2] ARM: dts: berlin2q: add the Marvell BG2-Q DMP device tree
+Date: Wed, 12 Mar 2014 12:20:01 +0100
+Message-ID: <4569718.jGyZ5WigRr@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1394622364-6848-3-git-send-email-antoine.tenart@free-electrons.com>
+References: <1394622364-6848-1-git-send-email-antoine.tenart@free-electrons.com> <1394622364-6848-3-git-send-email-antoine.tenart@free-electrons.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:NBIv3oUjf9O+2yqHRMMu6gXNuqdh+lj6Cjzx6wO8Jj8
+ bDGynV8+3CQRHISHtTMJfn/dMLfwLB0030TilR/g6Ak+JQfS/l
+ /cQX+TNffMst89VsesyWGm5dFnsGqy1NI2JNcNiuua7W6N9Tul
+ 2GGVphqlGHDNYH29AL82em4J5x+/mqMejHzX6JO24yHbkqc6tp
+ k4zcCBCYMwggYRW8Pz0LBy4ly6pYKOKrGlaOVgRiCTOT303C1y
+ GaHecNzWzCHvHW7si+iXnIbuoD8HhDnGuH8F/yt9Nn0hRaNhMz
+ RSzSGNr2EV7q9A7nL5/sPjREB2Pb8s8SWYGgtNnneL5+cSZvgu
+ LKVLfXq9lxbf3WNEu7a8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+On Wednesday 12 March 2014 12:06:04 Antoine Ténart wrote:
+> +
+> +       soc {
+> +               apb@fc0000 {
+> +                       uart0: uart@9000 {
+> +                               status = "okay";
+> +                       };
+> +               };
+> +       };
+> +};
 
-Consistently display error on possible copy_from/to_user failures
-use dev_dbg  so it cannot be abused to flood the kernel log
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Reviewed-on: https://git-isdc.jer.intel.com/gerrit/1158
----
-V2: use dev_dbg instead of dev_err
+No need to duplicate both the label and the hierarchy here. The easiest
+way to do this is just
 
- drivers/misc/mei/amthif.c | 4 +++-
- drivers/misc/mei/main.c   | 5 +++--
- 2 files changed, 6 insertions(+), 3 deletions(-)
+	&uart0 {
+		status = "okay";
+	};
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index b75a7da..2052609 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -244,8 +244,10 @@ int mei_amthif_read(struct mei_device *dev, struct file *file,
- 	 * the buf_idx may point beyond */
- 	length = min_t(size_t, length, (cb->buf_idx - *offset));
- 
--	if (copy_to_user(ubuf, cb->response_buffer.data + *offset, length))
-+	if (copy_to_user(ubuf, cb->response_buffer.data + *offset, length)) {
-+		dev_dbg(&dev->pdev->dev, "failed to copy data to userland\n");
- 		rets = -EFAULT;
-+	}
- 	else {
- 		rets = length;
- 		if ((*offset + length) < cb->buf_idx) {
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 4e069b8..bc1c39e 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -280,6 +280,7 @@ copy_buffer:
- 	length = min_t(size_t, length, cb->buf_idx - *offset);
- 
- 	if (copy_to_user(ubuf, cb->response_buffer.data + *offset, length)) {
-+		dev_dbg(&dev->pdev->dev, "failed to copy data to userland\n");
- 		rets = -EFAULT;
- 		goto free;
- 	}
-@@ -400,7 +401,7 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
- 
- 	rets = copy_from_user(write_cb->request_buffer.data, ubuf, length);
- 	if (rets) {
--		dev_err(&dev->pdev->dev, "failed to copy data from userland\n");
-+		dev_dbg(&dev->pdev->dev, "failed to copy data from userland\n");
- 		rets = -EFAULT;
- 		goto out;
- 	}
-@@ -565,7 +566,7 @@ static long mei_ioctl(struct file *file, unsigned int cmd, unsigned long data)
- 	dev_dbg(&dev->pdev->dev, "copy connect data from user\n");
- 	if (copy_from_user(connect_data, (char __user *)data,
- 				sizeof(struct mei_connect_client_data))) {
--		dev_err(&dev->pdev->dev, "failed to copy data from userland\n");
-+		dev_dbg(&dev->pdev->dev, "failed to copy data from userland\n");
- 		rets = -EFAULT;
- 		goto out;
- 	}
--- 
-1.8.5.3
+since you already have the label.
 
+	Arnd
