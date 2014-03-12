@@ -1,121 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaCLVgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 17:36:09 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:52854 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594AbaCLVf4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 17:35:56 -0400
+	id S1752407AbaCLVhu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 17:37:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:57632 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721AbaCLVhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 17:37:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,641,1389772800"; 
+   d="scan'208";a="490797078"
+Message-ID: <5320D3AB.5060002@linux.intel.com>
+Date: Wed, 12 Mar 2014 14:37:47 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <1394658311-17769-2-git-send-email-jgunthorpe@obsidianresearch.com>
-References: <1394658311-17769-1-git-send-email-jgunthorpe@obsidianresearch.com>
-	<1394658311-17769-2-git-send-email-jgunthorpe@obsidianresearch.com>
-Date: Wed, 12 Mar 2014 16:35:54 -0500
-Message-ID: <CAL_Jsq+qdbiwXErkZv1zZ9rphYY9NP6zHmmjw313tMvGeSTODg@mail.gmail.com>
-Subject: Re: [PATCH v2a RESEND 2/2] of_mdio: Allow the DT to specify the phy
- ID and avoid autoprobing
-From: Rob Herring <robherring2@gmail.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Florian Fainelli <f.fainelli@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stefani Seibold <stefani@seibold.net>
+CC: Andy Lutomirski <luto@amacapital.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        the arch/x86 maintainers <x86@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net>	<CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com>	<CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>	<CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com>	<CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com>	<531F365B.4060000@linux.intel.com>	<CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>	<531F3D02.30706@linux.intel.com>	<CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com>	<CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com>	<CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>	<1394613046.995.51.camel@wall-e.seibold.net>	<CA+55aFyTCoipjhbAVCuhCgqb8JeSjGcmOU3xE6EFrjNpfspfqg@mail.gmail.com>	<CA+55aFxc8Qp-4_+n=upd-ghzkxpjCyRpesm3P7xtWjDyBe9MCw@mail.gmail.com> <CA+55aFyhS5jCWcxuK4bXKEPh+8HWbPE+gy1m4N9B-2HyT48+QA@mail.gmail.com>
+In-Reply-To: <CA+55aFyhS5jCWcxuK4bXKEPh+8HWbPE+gy1m4N9B-2HyT48+QA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 4:05 PM, Jason Gunthorpe
-<jgunthorpe@obsidianresearch.com> wrote:
-> This makes the generic of_mdiobus_register parse the DT compatible string for
-> the pattern ethernet-phy-idAAAA.BBBB. If present it should be a value that
-> matches the phy-id register normally readable through MDIO.
->
-> When the ID is given the phy autoprobing is defeated and the phy is
-> created directly.
->
-> This is necessary to support phy's that cannot be autoprobed when
-> of_mdiobus_register is called. Specifically, my case has the phy in reset at
-> of_mdiobus_register, the reset is only released once the ethernet driver
-> starts, before it attaches to the phy.
->
-> Tested on ARM Kirkwood with phy id 0x01410e90 (Marvell 88E1318)
->
-> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
-> ---
->  drivers/of/of_mdio.c | 30 +++++++++++++++++++++++++++++-
->  1 file changed, 29 insertions(+), 1 deletion(-)
->
-> There was some reworking of the original code in v3.14-rc6, this resolves the
-> merge conflicts and I retested the resolved patch on Kirkwood.
->
-> Florian, do you know what path to mainline a this patch should take?
+On 03/12/2014 12:41 PM, Linus Torvalds wrote:
+> 
+> So my reaction was "don't do that".
+> 
+> But people pointing out that we can't do what x86-64 does made me
+> think: we could avoid the whole "nasty code for a legacy case" by
+> making it the *non*-legacy case. We could get rid of the fixmap
+> HPET/VVAR entirely - on x86-64 (which can use those addresses) a
+> PC-relative addressing is probably actually better anyway, so mapping
+> them together with the vdso code shouldn't hurt.
+> 
 
-Via David's net tree.
+How would that deal with the legacy vsyscall case for x86-64?  Just rely
+on the "legacy vsyscall emulation" (which seems to have its own class of
+problems...)?
 
->
-> Thanks,
-> Jason
->
-> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> index 5b3c24f..6cdcbda 100644
-> --- a/drivers/of/of_mdio.c
-> +++ b/drivers/of/of_mdio.c
-> @@ -43,6 +43,30 @@ static void of_set_phy_supported(struct phy_device *phydev, u32 max_speed)
->         }
->  }
->
-> +/* Extract the clause 22 phy ID from the compatible string of the form
-> + * ethernet-phy-idAAAA.BBBB */
-> +static int of_get_phy_id(struct device_node *device, u32 *phy_id)
-> +{
-> +       const char *cp;
-> +       int cplen, l;
-> +       unsigned int upper, lower;
-> +
-> +       cp = of_get_property(device, "compatible", &cplen);
-> +       if (cp == NULL)
-> +               return -EINVAL;
-> +       while (cplen > 0) {
+	-hpa
 
-This can all be:
 
-  of_property_for_each_string(device, "compatible", prop, cp)
-
-> +               if (sscanf(cp, "ethernet-phy-id%4x.%4x", &upper, &lower) == 2) {
-> +                       *phy_id = ((upper & 0xFFFF) << 16) | (lower & 0xFFFF);
-> +                       return 0;
-> +               }
-> +
-> +               l = strlen(cp) + 1;
-> +               cp += l;
-> +               cplen -= l;
-> +       }
-> +       return -EINVAL;
-> +}
-> +
->  static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *child,
->                                    u32 addr)
->  {
-> @@ -50,11 +74,15 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
->         bool is_c45;
->         int rc;
->         u32 max_speed = 0;
-> +       u32 phy_id;
->
->         is_c45 = of_device_is_compatible(child,
->                                          "ethernet-phy-ieee802.3-c45");
->
-> -       phy = get_phy_device(mdio, addr, is_c45);
-> +       if (!is_c45 && !of_get_phy_id(child, &phy_id))
-> +               phy = phy_device_create(mdio, addr, phy_id, 0, NULL);
-> +       else
-> +               phy = get_phy_device(mdio, addr, is_c45);
->         if (!phy || IS_ERR(phy))
->                 return 1;
->
-> --
-> 1.8.1.2
->
