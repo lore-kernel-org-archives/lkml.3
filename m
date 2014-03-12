@@ -1,96 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673AbaCLVLW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 17:11:22 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54855 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692AbaCLVLV (ORCPT
+	id S1753112AbaCLVM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 17:12:57 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:61863 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018AbaCLVMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 17:11:21 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18nHN/4bBiV0981ZPLbnJ/q
-Date: Wed, 12 Mar 2014 14:11:13 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 5/5] drivers: bus: omap_l3: Change pr_crit() to
- dev_err() when IRQ request fails
-Message-ID: <20140312211113.GH1996@atomide.com>
-References: <1393937293-6036-1-git-send-email-peter.ujfalusi@ti.com>
- <1393937293-6036-6-git-send-email-peter.ujfalusi@ti.com>
- <5315E522.9090606@ti.com>
- <5316CE17.6010201@ti.com>
- <20140312172854.GD30897@atomide.com>
- <5320CBFF.3000909@ti.com>
+	Wed, 12 Mar 2014 17:12:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5320CBFF.3000909@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5320CAEC.6030008@amacapital.net>
+References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
+ <1394657163-7472-3-git-send-email-vgoyal@redhat.com> <5320CAEC.6030008@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 12 Mar 2014 14:12:33 -0700
+Message-ID: <CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
+To: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>
+Cc: ssorce@redhat.com, jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Santosh Shilimkar <santosh.shilimkar@ti.com> [140312 14:08]:
-> On Thursday 13 March 2014 01:28 AM, Tony Lindgren wrote:
-> > * Peter Ujfalusi <peter.ujfalusi@ti.com> [140304 23:14]:
-> >> On 03/04/2014 04:37 PM, Santosh Shilimkar wrote:
-> >>> On Tuesday 04 March 2014 08:48 PM, Peter Ujfalusi wrote:
-> >>>> Use dev_err() which will going to print the driver's name as well and the
-> >>>> KERN_ERR level is sufficient in this case (we also print via dev_err when
-> >>>> there is an error with the mem resources)
-> >>>>
-> >>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> >>>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >>>> ---
-> >>>>  drivers/bus/omap_l3_noc.c | 7 +++----
-> >>>>  1 file changed, 3 insertions(+), 4 deletions(-)
-> >>>>
-> >>>> diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-> >>>> index 0eff48585ae3..972691a668a3 100644
-> >>>> --- a/drivers/bus/omap_l3_noc.c
-> >>>> +++ b/drivers/bus/omap_l3_noc.c
-> >>>> @@ -158,8 +158,8 @@ static int omap4_l3_probe(struct platform_device *pdev)
-> >>>>  	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
-> >>>>  			       IRQF_DISABLED, "l3-dbg-irq", l3);
-> >>>>  	if (ret) {
-> >>>> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
-> >>>> -						l3->debug_irq);
-> >>>> +		dev_err(&pdev->dev, "request_irq failed for %d\n",
-> >>>> +			l3->debug_irq);
-> >>>>  		return ret;
-> >>>>  	}
-> >>>>  
-> >>>> @@ -167,8 +167,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
-> >>>>  	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
-> >>>>  			       IRQF_DISABLED, "l3-app-irq", l3);
-> >>>>  	if (ret)
-> >>>> -		pr_crit("L3: request_irq failed to register for 0x%x\n",
-> >>>> -						l3->app_irq);
-> >>>> +		dev_err(&pdev->dev, "request_irq failed for %d\n", l3->app_irq);
-> >>>>  
-> >>>>  	return ret;
-> >>>>  }
-> >>>>
-> >>> So this one change in the log level. If I look at now, may be dev_err
-> >>> is fine but the change is not same.
-> >>
-> >> Not sure what you mean by 'the change is not same'?
-> >> I just picked the old series and rebased it on linux-next, the patch is the
-> >> same as it was back in May 2013:
-> >> https://lkml.org/lkml/2013/5/2/205
-> >>
-> >> And yes, I have shortened the texts in the print, but the meaning of the
-> >> prints have not changed.
-> > 
-> > Santosh, got any more comments on this series?
-> > 
-> Nope. looks good
+On Wed, Mar 12, 2014 at 2:00 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On 03/12/2014 01:46 PM, Vivek Goyal wrote:
+>> Implement SO_PEERCGROUP along the lines of SO_PEERCRED. This returns the
+>> cgroup of first mounted hierarchy of the task. For the case of client,
+>> it represents the cgroup of client at the time of opening the connection.
+>> After that client cgroup might change.
+>
+> Even if people decide that sending cgroups over a unix socket is a good
+> idea, this API has my NAK in the strongest possible sense, for whatever
+> my NAK is worth.
+>
+> IMO SO_PEERCRED is a disaster.  Calling send(2) or write(2) should
+> *never* imply the use of a credential.  A program should always have to
+> *explicitly* request use of a credential.  What you want is SCM_CGROUP.
+>
+> (I've found privilege escalations before based on this observation, and
+> I suspect I'll find them again.)
+>
+>
+> Note that I think that you really want SCM_SOMETHING_ELSE and not
+> SCM_CGROUP, but I don't know what the use case is yet.
 
-OK probably best that Arnd or Olof picks these directly:
+This might not be quite as awful as I thought.  At least you're
+looking up the cgroup at connection time instead of at send time.
 
-Acked-by: Tony Lindgren <tony@atomide.com> 
+OTOH, this is still racy -- the socket could easily outlive the cgroup
+that created it.
+
+--Andy
