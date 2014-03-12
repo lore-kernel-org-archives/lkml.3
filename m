@@ -1,52 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513AbaCLB3E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Mar 2014 21:29:04 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33949 "EHLO zene.cmpxchg.org"
+	id S1756583AbaCLBaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Mar 2014 21:30:08 -0400
+Received: from mail.efficios.com ([78.47.125.74]:47336 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756487AbaCLB27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Mar 2014 21:28:59 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 5/8] memcg: remove unnecessary !mm check from try_get_mem_cgroup_from_mm()
-Date: Tue, 11 Mar 2014 21:28:31 -0400
-Message-Id: <1394587714-6966-6-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394587714-6966-1-git-send-email-hannes@cmpxchg.org>
-References: <1394587714-6966-1-git-send-email-hannes@cmpxchg.org>
+	id S1756566AbaCLBaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Mar 2014 21:30:06 -0400
+Date: Wed, 12 Mar 2014 01:30:09 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Message-ID: <1051752900.559.1394587809601.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140311211402.6245c6d0@gandalf.local.home>
+References: <1394499898-1537-1-git-send-email-mathieu.desnoyers@efficios.com> <20140311193450.60bbf8b0@gandalf.local.home> <1594586075.484.1394585553228.JavaMail.zimbra@efficios.com> <20140311211402.6245c6d0@gandalf.local.home>
+Subject: Re: [PATCH 1/2] Tracepoint API doc update: data argument
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: Tracepoint API doc update: data argument
+Thread-Index: 1NEv6LLzHZDQHlLMFbt3dWN7kaJTeg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users pass either a mm that has been established under task lock, or
-use a verified current->mm, which means the task can't be exiting.
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic Weisbecker" <fweisbec@gmail.com>,
+> "Andrew Morton" <akpm@linux-foundation.org>
+> Sent: Tuesday, March 11, 2014 9:14:02 PM
+> Subject: Re: [PATCH 1/2] Tracepoint API doc update: data argument
+> 
+> On Wed, 12 Mar 2014 00:52:33 +0000 (UTC)
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> 
+> > ----- Original Message -----
+> > > From: "Steven Rostedt" <rostedt@goodmis.org>
+> > > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> > > Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>,
+> > > "Frederic Weisbecker" <fweisbec@gmail.com>,
+> > > "Andrew Morton" <akpm@linux-foundation.org>
+> > > Sent: Tuesday, March 11, 2014 7:34:50 PM
+> > > Subject: Re: [PATCH 1/2] Tracepoint API doc update: data argument
+> > > 
+> > > On Mon, 10 Mar 2014 21:04:57 -0400
+> > > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > > 
+> > > > Describe the @data argument (probe private data).
+> > > > 
+> > > > Fixes: 38516ab59fbc "tracing: Let tracepoints have data passed to
+> > > > tracepoint callbacks"
+> > > > CC: Steven Rostedt <rostedt@goodmis.org>
+> > > > CC: Ingo Molnar <mingo@kernel.org>
+> > > > CC: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > CC: Andrew Morton <akpm@linux-foundation.org>
+> > > 
+> > > No signed-off-by.
+> > 
+> > Hi Steven,
+> > 
+> > I'm curious to understand the reason of this "no signed-off-by" on a
+> > trivial
+> > patch that fixes the missing DocBook comments for one of your previous
+> > commits that has been upstream for a few years. What am I missing ?
+> > Perhaps you meant this reply for my other documentation update patch (2/2)
+> > ?
+> > 
+> 
+> I mean, my scripts wont accept a patch that the author never added
+> their signed-off-by to.
+> 
+> In other words, resubmit, and add your own signed-off-by that happens to
+> be missing from this patch.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c | 7 -------
- 1 file changed, 7 deletions(-)
+Oh, sorry, I missed that. Will do.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index c40186cf22ad..1780e66ec61e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1075,13 +1075,6 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
- {
- 	struct mem_cgroup *memcg = NULL;
- 
--	if (!mm)
--		return NULL;
--	/*
--	 * Because we have no locks, mm->owner's may be being moved to other
--	 * cgroup. We use css_tryget() here even if this looks
--	 * pessimistic (rather than adding locks here).
--	 */
- 	rcu_read_lock();
- 	do {
- 		memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
+Thanks,
+
+Mathieu
+
+> 
+> -- Steve
+> 
+
 -- 
-1.9.0
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
