@@ -1,85 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255AbaCMUTo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 16:19:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15615 "EHLO mx1.redhat.com"
+	id S1755314AbaCMUV4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 16:21:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47927 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755200AbaCMUTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 16:19:42 -0400
-Date: Thu, 13 Mar 2014 16:19:38 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Simo Sorce <ssorce@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
-Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
-Message-ID: <20140313201938.GP18914@redhat.com>
-References: <1394673476.32465.215.camel@willson.li.ssimo.org>
- <CALCETrWbCuKfV4zMkZajDOGhGkKduW0C2L7uHv=vtvqhVeAc6w@mail.gmail.com>
- <1394675038.32465.223.camel@willson.li.ssimo.org>
- <CALCETrV7GE0YL1sDDqTUV81rWL9zk2vTR1-VLkR7CfTA-FSrgw@mail.gmail.com>
- <1394733077.32465.243.camel@willson.li.ssimo.org>
- <CALCETrXWzja6W6y=p9MrtynGZMsrD5KQu0KBK6Bs1dQxnesv2A@mail.gmail.com>
- <20140313195349.GM18914@redhat.com>
- <CALCETrUj4aPEd6ujXnUJNFq+BQkfQoF=XRChP1p5=ZysTN-zwg@mail.gmail.com>
- <20140313200649.GN18914@redhat.com>
- <20140313201755.GO18914@redhat.com>
+	id S1755032AbaCMUVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 16:21:54 -0400
+Date: Thu, 13 Mar 2014 21:21:52 +0100
+From: Jan Kara <jack@suse.cz>
+To: Roman Pen <r.peniaev@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data
+ integrity write
+Message-ID: <20140313202152.GC504@quack.suse.cz>
+References: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140313201755.GO18914@redhat.com>
+In-Reply-To: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 04:17:55PM -0400, Vivek Goyal wrote:
-> On Thu, Mar 13, 2014 at 04:06:49PM -0400, Vivek Goyal wrote:
-> > On Thu, Mar 13, 2014 at 12:58:14PM -0700, Andy Lutomirski wrote:
-> > > On Thu, Mar 13, 2014 at 12:53 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > > > On Thu, Mar 13, 2014 at 10:55:16AM -0700, Andy Lutomirski wrote:
-> > > >
-> > > > [..]
-> > > >> >> 2. Docker is a container system, so use the "container" (aka
-> > > >> >> namespace) APIs.  There are probably several clever things that could
-> > > >> >> be done with /proc/<pid>/ns.
-> > > >> >
-> > > >> > pid is racy, if it weren't I would simply go straight
-> > > >> > to /proc/<pid>/cgroups ...
-> > > >>
-> > > >> How about:
-> > > >>
-> > > >> open("/proc/self/ns/ipc", O_RDONLY);
-> > > >> send the result over SCM_RIGHTS?
-> > > >
-> > > > As I don't know I will ask. So what will server now do with this file
-> > > > descriptor of client's ipc namespace.
-> > > >
-> > > > IOW, what information/identifier does it contain which can be
-> > > > used to map to pre-configrued per container/per namespace policies.
-> > > 
-> > > Inode number, which will match that assigned to the container at runtime.
-> > > 
-> > 
-> > But what would I do with this inode number. I am assuming this is
-> > generated dynamically when respective namespace was created. To me
-> > this is like assigning a pid dynamically and one does not create
-> > policies in user space based on pid. Similarly I will not be able
-> > to create policies based on an inode number which is generated
-> > dynamically.
-> > 
-> > For it to be useful, it should map to something more static which
-> > user space understands.
-> 
-> Or could we do following.
-> 
-> open("/proc/self/cgroup", O_RDONLY);
-> send the result over SCM_RIGHTS
+On Sun 16-02-14 11:54:28, Roman Pen wrote:
+> In case of wbc->sync_mode == WB_SYNC_ALL we need to do data integrity write,
+> thus mark request as WRITE_SYNC.
+  The patch looks good to me and also makes generic mpage code more in sync
+with what e.g. XFS or ext4 do in their writepage functions. You can add:
 
-I guess that would not work. Client should be able to create a file,
-fake cgroup information and send fd.
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Thanks
-Vivek
+								Honza
+
+> Signed-off-by: Roman Pen <r.peniaev@gmail.com>
+> CC: Alexander Viro <viro@zeniv.linux.org.uk>
+> CC: linux-fsdevel@vger.kernel.org
+> CC: linux-kernel@vger.kernel.org
+> ---
+>  fs/mpage.c | 23 +++++++++++++++--------
+>  1 file changed, 15 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/mpage.c b/fs/mpage.c
+> index 4979ffa..4e0af5a 100644
+> --- a/fs/mpage.c
+> +++ b/fs/mpage.c
+> @@ -462,6 +462,7 @@ static int __mpage_writepage(struct page *page, struct writeback_control *wbc,
+>  	struct buffer_head map_bh;
+>  	loff_t i_size = i_size_read(inode);
+>  	int ret = 0;
+> +	int wr = (wbc->sync_mode == WB_SYNC_ALL ?  WRITE_SYNC : WRITE);
+>  
+>  	if (page_has_buffers(page)) {
+>  		struct buffer_head *head = page_buffers(page);
+> @@ -570,7 +571,7 @@ page_is_mapped:
+>  	 * This page will go to BIO.  Do we need to send this BIO off first?
+>  	 */
+>  	if (bio && mpd->last_block_in_bio != blocks[0] - 1)
+> -		bio = mpage_bio_submit(WRITE, bio);
+> +		bio = mpage_bio_submit(wr, bio);
+>  
+>  alloc_new:
+>  	if (bio == NULL) {
+> @@ -587,7 +588,7 @@ alloc_new:
+>  	 */
+>  	length = first_unmapped << blkbits;
+>  	if (bio_add_page(bio, page, length, 0) < length) {
+> -		bio = mpage_bio_submit(WRITE, bio);
+> +		bio = mpage_bio_submit(wr, bio);
+>  		goto alloc_new;
+>  	}
+>  
+> @@ -620,7 +621,7 @@ alloc_new:
+>  	set_page_writeback(page);
+>  	unlock_page(page);
+>  	if (boundary || (first_unmapped != blocks_per_page)) {
+> -		bio = mpage_bio_submit(WRITE, bio);
+> +		bio = mpage_bio_submit(wr, bio);
+>  		if (boundary_block) {
+>  			write_boundary_block(boundary_bdev,
+>  					boundary_block, 1 << blkbits);
+> @@ -632,7 +633,7 @@ alloc_new:
+>  
+>  confused:
+>  	if (bio)
+> -		bio = mpage_bio_submit(WRITE, bio);
+> +		bio = mpage_bio_submit(wr, bio);
+>  
+>  	if (mpd->use_writepage) {
+>  		ret = mapping->a_ops->writepage(page, wbc);
+> @@ -688,8 +689,11 @@ mpage_writepages(struct address_space *mapping,
+>  		};
+>  
+>  		ret = write_cache_pages(mapping, wbc, __mpage_writepage, &mpd);
+> -		if (mpd.bio)
+> -			mpage_bio_submit(WRITE, mpd.bio);
+> +		if (mpd.bio) {
+> +			int wr = (wbc->sync_mode == WB_SYNC_ALL ?
+> +				  WRITE_SYNC : WRITE);
+> +			mpage_bio_submit(wr, mpd.bio);
+> +		}
+>  	}
+>  	blk_finish_plug(&plug);
+>  	return ret;
+> @@ -706,8 +710,11 @@ int mpage_writepage(struct page *page, get_block_t get_block,
+>  		.use_writepage = 0,
+>  	};
+>  	int ret = __mpage_writepage(page, wbc, &mpd);
+> -	if (mpd.bio)
+> -		mpage_bio_submit(WRITE, mpd.bio);
+> +	if (mpd.bio) {
+> +		int wr = (wbc->sync_mode == WB_SYNC_ALL ?
+> +			  WRITE_SYNC : WRITE);
+> +		mpage_bio_submit(wr, mpd.bio);
+> +	}
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL(mpage_writepage);
+> -- 
+> 1.8.5.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
