@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586AbaCMJhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 05:37:42 -0400
+	id S1753555AbaCMJhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 05:37:39 -0400
 Received: from mailout4.w1.samsung.com ([210.118.77.14]:38555 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753516AbaCMJhg (ORCPT
+	with ESMTP id S1753513AbaCMJhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 05:37:36 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-92-53217c5df6ae
+	Thu, 13 Mar 2014 05:37:35 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-89-53217c5cc127
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org,
@@ -21,96 +21,77 @@ Cc: Tushar Behera <tushar.behera@linaro.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH v2 3/3] Documentation: mfd: s2mps11: Describe S5M8767 and
- S2MPS14 clocks
-Date: Thu, 13 Mar 2014 10:37:04 +0100
-Message-id: <1394703425-6462-4-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 2/3] mfd: sec-core: Add of_compatible strings for MFD cells
+Date: Thu, 13 Mar 2014 10:37:03 +0100
+Message-id: <1394703425-6462-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1394703425-6462-1-git-send-email-k.kozlowski@samsung.com>
 References: <1394703425-6462-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t/xK7qxNYrBBmc3sFhsnLGe1WL+kXOs
-	Fv1vFrJanHu1ktHi9QtDi7NNb9gt7n89ymix6fE1VovLu+awWcw4v4/JYu2Ru+wWS69fZLJ4
-	OuEim8WE6WtZLFr3HmG3OPmnl9HidDerxcUVX5gs1s94zWLR/ncvm8Wc6e+YHEQ91sxbw+hx
-	ua+XyWPl8i9sHptWdbJ53Lm2h81j3slAj81L6j36tqxi9Pi8SS6AM4rLJiU1J7MstUjfLoEr
-	4+aFq8wFLaIVBzq3sjUwPhHoYuTkkBAwkVh34RYzhC0mceHeerYuRi4OIYGljBLnV5xjhXD6
-	mCRWbHjIClLFJmAssXn5ErAqEYFmJol9Xx8zgSSYBU6xSEy+IQNiCwtESRyaNResgUVAVeLv
-	xedANRwcvAJuEo9nSICYEgIKEnMm2YCYnALuEv2TgkCKhYAKruztZZ3AyLuAkWEVo2hqaXJB
-	cVJ6rqFecWJucWleul5yfu4mRkj4f9nBuPiY1SFGAQ5GJR7eFcsVgoVYE8uKK3MPMUpwMCuJ
-	8JoXKAYL8aYkVlalFuXHF5XmpBYfYmTi4JRqYHR/d3ON/vXOAJsJ37ZL21neCskPcZoQX5G/
-	QrR3Lk/OT/WE0pI/23LXz9GcMT2kV+xyelHUmSefIxfoaJqqm215qidyv69nTff2478UlV0P
-	niw+W3HTTpB/gWi5Xci0Er8z8wuStDZ+LzxXsSv4+4aiX6+s73++N8EhwrKPYXdpeu46x0Mp
-	P5RYijMSDbWYi4oTAf9WAMddAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t/xK7oxNYrBBhMO8lpsnLGe1eL1C0OL
+	s01v2C3ufz3KaLHp8TVWi8u75rBZzDi/j8li7ZG77BZPJ1xkszj5p5fR4nQ3q8XFFV+YLNbP
+	eM1i0f53L5vFnOnvmBz4Pe5c28PmMe9koMfmJfUefVtWMXp83iQXwBrFZZOSmpNZllqkb5fA
+	lXF3lVTBQa6KtwfWMTcwruLoYuTkkBAwkdiw/AoThC0mceHeerYuRi4OIYGljBIfj72HcvqY
+	JJoed7KDVLEJGEtsXr4ELCEi0Mwkse/rYyYQh1ngLZPEnUM3gao4OIQF/CQWL0oBaWARUJXY
+	/fQRC4jNK+Amsa3vJgtIiYSAgsScSTYgJqeAu0T/pCCQCiGgiit7e1knMPIuYGRYxSiaWppc
+	UJyUnmuoV5yYW1yal66XnJ+7iRESml92MC4+ZnWIUYCDUYmHd8VyhWAh1sSy4srcQ4wSHMxK
+	IrzmBYrBQrwpiZVVqUX58UWlOanFhxiZODilGhjNNA+cW/DtqaFYfVmD+3PJLJuNPi+4Cna0
+	yNluPlOz3U7wfIOge+Lftr8yKdnpL4S4wg/H/b16fPPsl7OT9NRWeGT8yu0QOZWyVHvtzM1S
+	Ubx8N4zf7NzG8W+abLM3Y9J74+PH6x3v+XZMNql+NvfImamRRXM2f9jPpH/3VtErizUs12RD
+	TKWUWIozEg21mIuKEwF6hk+9KwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add bindings documentation for clocks on S5M8767 and S2MPS14 devices.
+Add of_compatible strings for MFD cells for regulator, clock and RTC
+drivers in S5M8767, S2MPS11 and S2MPS14 PMIC-s.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>
-Cc: devicetree@vger.kernel.org
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
 ---
- Documentation/devicetree/bindings/mfd/s2mps11.txt |   24 +++++++++++++--------
- 1 file changed, 15 insertions(+), 9 deletions(-)
+ drivers/mfd/sec-core.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-index 15ee89c3cc7b..67ea05ca8050 100644
---- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-+++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-@@ -16,20 +16,25 @@ Optional properties:
- - interrupts: Interrupt specifiers for interrupt sources.
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index d163c66edebb..c5b9b95b2099 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -55,28 +55,36 @@ static const struct mfd_cell s5m8763_devs[] = {
+ static const struct mfd_cell s5m8767_devs[] = {
+ 	{
+ 		.name = "s5m8767-pmic",
++		.of_compatible = "samsung,s5m8767-regulators",
+ 	}, {
+ 		.name = "s5m-rtc",
++		.of_compatible = "samsung,s5m8767-rtc",
+ 	}, {
+ 		.name = "s5m8767-clk",
++		.of_compatible = "samsung,s5m8767-clk",
+ 	}
+ };
  
- Optional nodes:
--- clocks: s2mps11 provides three(AP/CP/BT) buffered 32.768 KHz outputs, so to
--  register these as clocks with common clock framework instantiate a sub-node
--  named "clocks". It uses the common clock binding documented in :
-+- clocks: s2mps11 and s5m8767 provide three(AP/CP/BT) buffered 32.768 KHz
-+  outputs, so to register these as clocks with common clock framework
-+  instantiate a sub-node named "clocks". It uses the common clock binding
-+  documented in :
-   [Documentation/devicetree/bindings/clock/clock-bindings.txt]
-+  The s2mps14 provides two (AP/BT) buffered 32.768 KHz outputs.
-   - #clock-cells: should be 1.
+ static const struct mfd_cell s2mps11_devs[] = {
+ 	{
+ 		.name = "s2mps11-pmic",
++		.of_compatible = "samsung,s2mps11-regulators",
+ 	}, {
+ 		.name = "s2mps11-clk",
++		.of_compatible = "samsung,s2mps11-clk",
+ 	}
+ };
  
-   - The following is the list of clocks generated by the controller. Each clock
-     is assigned an identifier and client nodes use this identifier to specify
-     the clock which they consume.
--    Clock               ID
--    ----------------------
--    32KhzAP		0
--    32KhzCP		1
--    32KhzBT		2
-+    Clock               ID           Devices
-+    ----------------------------------------------------------
-+    32KhzAP		0            S2MPS11, S2MPS14, S5M8767
-+    32KhzCP		1            S2MPS11, S5M8767
-+    32KhzBT		2            S2MPS11, S2MPS14, S5M8767
-+
-+  - compatible: Should be one of: "samsung,s2mps11-clk", "samsung,s2mps14-clk",
-+		"samsung,s5m8767-clk"
+ static const struct mfd_cell s2mps14_devs[] = {
+ 	{
+ 		.name = "s2mps14-pmic",
++		.of_compatible = "samsung,s2mps14-regulators",
+ 	}, {
+ 		.name = "s2mps14-rtc",
++		.of_compatible = "samsung,s2mps14-rtc",
+ 	}, {
+ 		.name = "s2mps14-clk",
++		.of_compatible = "samsung,s2mps14-clk",
+ 	}
+ };
  
- - regulators: The regulators of s2mps11 that have to be instantiated should be
- included in a sub-node named 'regulators'. Regulator nodes included in this
-@@ -71,7 +76,8 @@ Example:
- 		compatible = "samsung,s2mps11-pmic";
- 		reg = <0x66>;
- 
--		s2m_osc: clocks{
-+		s2m_osc: clocks {
-+			compatible = "samsung,s2mps11-clk";
- 			#clock-cells = 1;
- 			clock-output-names = "xx", "yy", "zz";
- 		};
 -- 
 1.7.9.5
 
