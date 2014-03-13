@@ -1,39 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235AbaCMPa5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:30:57 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:51400 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449AbaCMPa4 (ORCPT
+	id S1754018AbaCMPdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:33:12 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:40078 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753632AbaCMPdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:30:56 -0400
-Message-ID: <5321CF2B.6090309@kernel.dk>
-Date: Thu, 13 Mar 2014 09:30:51 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 13 Mar 2014 11:33:09 -0400
+Date: Thu, 13 Mar 2014 16:33:04 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Archs <linux-arch@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Huiqingding <huding@redhat.com>
+Subject: Re: [GIT PULL v2] timers updates for 3.15
+Message-ID: <20140313153301.GA25296@localhost.localdomain>
+References: <1394642174-14315-1-git-send-email-fweisbec@gmail.com>
+ <20140313110510.GA10424@gmail.com>
 MIME-Version: 1.0
-To: Felipe Franciosi <felipe@paradoxo.org>, linux-kernel@vger.kernel.org
-CC: Sam Bradshaw <sbradshaw@micron.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [PATCH 2/2] mtip32xx: Unmap the DMA segments before completing
- the IO request
-References: <1394721261-2764-1-git-send-email-felipe@paradoxo.org> <1394721261-2764-3-git-send-email-felipe@paradoxo.org>
-In-Reply-To: <1394721261-2764-3-git-send-email-felipe@paradoxo.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140313110510.GA10424@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2014 08:34 AM, Felipe Franciosi wrote:
-> If the buffers are unmapped after completing a request, then stale data
-> might be in the request.
+On Thu, Mar 13, 2014 at 12:05:10PM +0100, Ingo Molnar wrote:
+> 
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > Ingo, Thomas,
+> > 
+> > Please pull the timers/cputime-fix-steal-v3 branch that can be found at:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> > 	timers/cputime-fix-steal-v3
+> > 
+> > Only the last patch changed to address Peterz concern on arch Kbuild
+> > layout. This got sorted out by running the script from b119fa61d440f
+> > to alpabetically sort the entries.
+> > 
+> > ---
+> > The main purpose of this set is to fix a bug on full dynticks configs
+> > where steal time accounting appears to be zero in /proc/stat even
+> > after a few seconds of competing guests running busy loops in a same
+> > host CPU. It's not a regression though as it was there since the
+> > beginning with full dynticks.
+> > 
+> > So patch [4/6] ("cputime: Fix jiffies based cputime assumption on
+> > steal accounting") is the most important patch of the series. The rest
+> > is mostly preparatory work to fix the bug plus various cleanups.
+> > 
+> > Thanks,
+> > 	Frederic
+> > ---
+> > 
+> > Frederic Weisbecker (6):
+> >       cputime: Fix nsecs_to_cputime() return type cast
+> >       cputime: Default implementation of nsecs -> cputime conversion
+> >       cputime: Bring cputime -> nsecs conversion
+> >       cputime: Fix jiffies based cputime assumption on steal accounting
+> >       sched: Remove needless round trip nsecs <-> tick conversion of steal time
+> >       arch: Remove stub cputime.h headers
+> > 
+> > 
+> >  arch/alpha/include/asm/Kbuild         |  7 ++++---
+> >  arch/alpha/include/asm/cputime.h      |  6 ------
+> >  arch/cris/include/asm/Kbuild          |  3 ++-
+> >  arch/cris/include/asm/cputime.h       |  6 ------
+> >  arch/frv/include/asm/Kbuild           |  5 +++--
+> >  arch/frv/include/asm/cputime.h        |  6 ------
+> >  arch/m32r/include/asm/Kbuild          |  5 +++--
+> >  arch/m32r/include/asm/cputime.h       |  6 ------
+> >  arch/microblaze/include/asm/Kbuild    |  5 +++--
+> >  arch/microblaze/include/asm/cputime.h |  1 -
+> >  arch/mn10300/include/asm/Kbuild       |  3 ++-
+> >  arch/mn10300/include/asm/cputime.h    |  1 -
+> >  arch/score/include/asm/Kbuild         |  4 ++--
+> >  arch/score/include/asm/cputime.h      |  6 ------
+> >  arch/x86/include/asm/Kbuild           |  1 +
+> >  arch/x86/include/asm/cputime.h        |  1 -
+> 
+> Does this tree also address the heavy conflicts with tip:core/locking? 
 
-Both should be marked for stable, I'll add that.
+Ah I didn't hear about that. Thomas told me there was a conflict issue but
+he couldn't tell me more about it.
 
-Sam, I'll queue these two up. Please re-send your fix for bug introduced 
-with the unaligned reduction as a proper patch, and I'll get that in too.
+> If not then we should probably carry this in a separate branch that 
+> merges tip:core/locking and tip:timers/core.
 
--- 
-Jens Axboe
+So I propose you something even more simple. The choice of tip:timers/core
+as a base was actually just about topic. But there is no dependency on it.
+(And actually sched/core would have been a better choice for a base if any).
 
+So in order to fix the conflict and minimize the dependencies, I just
+rebased the patches on top of tip:core/locking only. No merge on top of that.
+It seems to work pretty well.
+
+The pullable result is in sched/cputime on my tree. Let me know if that's ok
+for you.
+
+Thanks.
