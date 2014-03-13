@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaCMHIw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 03:08:52 -0400
-Received: from ns.horizon.com ([71.41.210.147]:20532 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751394AbaCMHIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 03:08:51 -0400
-Date: 13 Mar 2014 03:08:46 -0400
-Message-ID: <20140313070846.27888.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: torvalds@linux-foundation.org
-Subject: Re: [PATCH v2] x86: Remove compat vdso support
-Cc: hpa@linux.intel.com, linux@horizon.com, linux-kernel@vger.kernel.org,
-        luto@amacapital.net
-In-Reply-To: <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
+	id S1753121AbaCMHWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 03:22:09 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53017 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaCMHWG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 03:22:06 -0400
+Date: Thu, 13 Mar 2014 08:22:04 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minyard@acm.org" <minyard@acm.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+Message-ID: <20140313072204.GA7181@amd.pavel.ucw.cz>
+References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>
+ <1511662.Ly2fOjCGKz@vostro.rjw.lan>
+ <1392765307.3488.1.camel@x230.lan>
+ <20140312230007.GA1817@amd.pavel.ucw.cz>
+ <1394666568.25122.1.camel@x230>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394666568.25122.1.camel@x230>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Leader spake:
-> So 32-bit x86 is dead, dead, dead. There's absolutely no future to it.
-> We're not adding new stuff to "future-proof" it.
+On Wed 2014-03-12 23:22:49, Matthew Garrett wrote:
+> On Thu, 2014-03-13 at 00:00 +0100, Pavel Machek wrote:
+> > On Tue 2014-02-18 23:15:08, Matthew Garrett wrote:
+> > > For example, if you load the ACPI power meter driver before you've
+> > > installed the ACPI IPMI driver you'll typically get failures (most
+> > > vendors implement it via IPMI).
+> > 
+> > Would the right solution be to implement dependency between power
+> > meter and IMPI?
+> 
+> No. The power meter driver knows nothing about IPMI. It makes no IPMI
+> calls. There's no requirement that a vendor implement it via IPMI.
 
-I think you have a small error of perspective here.  I agree the future
-for 32-bit kernels is very limited.  But this is about 32-bit binary
-support, and lots of people run 32-bit binaries, even on 64-bit kernels.
+Yet you claim that IMPI is needed for that, and that's why you made
+IMPI default.
 
-The great majority of applications have no need for more than 4G of
-address space and frequently people would rather avoid the pointer
-bloat that going to 64 bits would cause.
-
-The whole reason that the x32 ABI has been added to the kernel is to
-better support this kind of application.  But non-long-mode binaries
-are still a lowest common denominator.
-
-E.g Firefox full releases come in 32- and 64-bit versions, but the
-precompiled betas are 32-bit only.
-
-It still may not be worth it, but 32-bit binaries will be with us
-for a long time.
+So ... do we need dmi-based blacklist?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
