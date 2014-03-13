@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaCMORd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 10:17:33 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:44120 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065AbaCMORa (ORCPT
+	id S1752994AbaCMOUK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 10:20:10 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42591 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752262AbaCMOUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 10:17:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1394456094-21671-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1394456094-21671-1-git-send-email-mika.westerberg@linux.intel.com>
-Date: Thu, 13 Mar 2014 15:17:29 +0100
-Message-ID: <CACRpkdYKpA0URPr2mAUehqoGmwARH4pdMBMrBrXJmN_m2Kd1cA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] gpio / ACPI: Rework ACPI GPIO events and add
- support for operation regions
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Lan Tianyu <tianyu.lan@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        Alan Cox <alan.cox@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+	Thu, 13 Mar 2014 10:20:08 -0400
+Date: Thu, 13 Mar 2014 10:20:07 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jagdish Gedia <jvgediya@gmail.com>
+cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: Check if usb device is suspended
+In-Reply-To: <CAOAoqGt_Y_weA2FjA8x-NrZS7zj+=Zw-TH5Xv+QUQDJQixmdsw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1403131017430.1292-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 1:54 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
+On Thu, 13 Mar 2014, Jagdish Gedia wrote:
 
-> This is second revision of the patch series. The first version is available
-> for example here [1].
+> Hi,
+> I want to check in my driver if usb device is suspended or not?
 
-I have applied patche 1 thru 4.
+Why do you need to check?  Your driver gets told every time the device 
+suspends and every time it resumes.  Therefore it should already know 
+the answer.
 
-Let's discuss patch 5 a bit before we continue.
+> currently i am doing it like
+> 
+> if(udev->state==USB_STATE_SUSPENDED)
+> 
+> Is this the proper way? Is this enough?
 
-Yours,
-Linus Walleij
+Aside from the fact that the device's state may change immediately 
+after you make this test, as Oliver pointed out, you also should 
+realize that this test might not give the correct answer if the device 
+is in the middle of suspending or resuming when the test runs.
+
+Alan Stern
+
