@@ -1,53 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaCMIqV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 04:46:21 -0400
-Received: from shrek-s3.podlesie.net ([85.14.110.209]:36256 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286AbaCMIqS (ORCPT
+	id S1753409AbaCMIvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 04:51:25 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:40441 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaCMIvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 04:46:18 -0400
-X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Mar 2014 04:46:18 EDT
-Date: Thu, 13 Mar 2014 09:38:39 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: antti.koskipaa@linux.intel.com, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: i915: black screen after boot on 915GM (Linux >= 3.4-rc1)
-Message-ID: <20140313083839.GA2396@shrek.podlesie.net>
+	Thu, 13 Mar 2014 04:51:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	<20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Thu, 13 Mar 2014 16:51:21 +0800
+Message-ID: <CACVXFVOqBuCcQC6ku0abqstkgJWGe21ZztB-eTsyDwsvDvXNZw@mail.gmail.com>
+Subject: Re: [PATCH 8/9] PCI: Ignore BAR contents when firmware left decoding disabled
+From: Ming Lei <tom.leiming@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Bjorn,
 
-The commit 3f2dc5ac05714711fc14f2bf0ee5e42d5c08c581 (drm/i915: Fix 915GM
-self-refresh enable/disable) causes strange regression on the HP Compaq
-nc6120. During and after boot to framebuffer console with just LVDS
-the screen is black (backlight on, but black). Starting a X server fixes
-the problem. Connecting an external VGA monitor also fixes the problem.
+I found this patch broke virtio-pci devices.
 
-Reverting this commit fixes the problem at least up to Linux 3.14.0-rc6.
+On Thu, Feb 27, 2014 at 3:37 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> Don't rely on BAR contents when the command register says the BAR is
+> disabled.
+>
+> If we receive a PCI device from firmware (or a hot-added device that was
+> just powered up) with the MEMORY or IO enable bits in the PCI command
+> register cleared, there's no reason to believe the BARs contain valid
+> addresses.
 
-I'm still using ACPI video problem workaround that effectively does:
+>From PCI LOCAL BUS SPECIFICATION, REV. 3.0, both
+PCI_COMMAND_IO and PCI_COMMAND_MEM should be
+cleared after reset, so looks the patch sets IORESOURCE_UNSET
+too early because PCI drivers may call pci_enable_device()
+(->pci_enable_resources()) to enable the two bits of
+PCI_COMMAND explicitly.
 
- static int acpi_video_bus_start_devices(struct acpi_video_bus *video)
- {
-- return acpi_video_bus_DOS(video, 0,
-+ return acpi_video_bus_DOS(video, 3,
-                            acpi_osi_is_win8() ? 1 : 0);
- }
+With this patch, driver can't enable device/resource with
+pci_enable_device() any more because IORESOURCE_UNSET
+has been set already.
 
-in drivers/acpi/video.c.
+>
+> In that case, we still know the type and size of the BAR, but this
+> patch marks the resource as "unset" so we have a chance to reassign it.
+>
+> Historically, we often used "BAR == 0" to decide the BAR is invalid.  But 0
+> is a legal BAR value, especially if the host bridge translates addresses,
+> so I think it's better to decide based on the PCI command register, and
+> store the conclusion in the IORESOURCE_UNSET bit.
+>
+> Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=679545
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=48451
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  drivers/pci/probe.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 6e34498ec9f0..02654b5ec1b9 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -177,9 +177,10 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+>
+>         mask = type ? PCI_ROM_ADDRESS_MASK : ~0;
+>
+> +       pci_read_config_word(dev, PCI_COMMAND, &orig_cmd);
+> +
+>         /* No printks while decoding is disabled! */
+>         if (!dev->mmio_always_on) {
+> -               pci_read_config_word(dev, PCI_COMMAND, &orig_cmd);
+>                 if (orig_cmd & PCI_COMMAND_DECODE_ENABLE) {
+>                         pci_write_config_word(dev, PCI_COMMAND,
+>                                 orig_cmd & ~PCI_COMMAND_DECODE_ENABLE);
+> @@ -215,9 +216,13 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+>                 if (res->flags & IORESOURCE_IO) {
+>                         l &= PCI_BASE_ADDRESS_IO_MASK;
+>                         mask = PCI_BASE_ADDRESS_IO_MASK & (u32) IO_SPACE_LIMIT;
+> +                       if (!(orig_cmd & PCI_COMMAND_IO))
+> +                               res->flags |= IORESOURCE_UNSET;
+>                 } else {
+>                         l &= PCI_BASE_ADDRESS_MEM_MASK;
+>                         mask = (u32)PCI_BASE_ADDRESS_MEM_MASK;
+> +                       if (!(orig_cmd & PCI_COMMAND_MEMORY))
+> +                               res->flags |= IORESOURCE_UNSET;
+>                 }
+>         } else {
+>                 res->flags |= (l & IORESOURCE_ROM_ENABLE);
+> @@ -252,6 +257,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+>                         /* Address above 32-bit boundary; disable the BAR */
+>                         pci_write_config_dword(dev, pos, 0);
+>                         pci_write_config_dword(dev, pos + 4, 0);
+> +                       res->flags |= IORESOURCE_UNSET;
+>                         region.start = 0;
+>                         region.end = sz64;
+>                         bar_disabled = true;
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I've added dmesgs from the last good commit and the bad commit at:
-https://bugs.freedesktop.org/show_bug.cgi?id=76103
 
 Thanks,
-Krzysiek
+-- 
+Ming Lei
