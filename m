@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaCMIhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 04:37:07 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:12889
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751286AbaCMIhC (ORCPT
+	id S1753460AbaCMIih (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 04:38:37 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54573 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaCMIie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 04:37:02 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1de2h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-From: Suresh Gupta <suresh.gupta@freescale.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <suresh.gupta@freescale.com>, Suresh Gupta <B42813@freescale.com>
-Subject: [PATCH] usb: gadget: fsl: Set dma_ops for FSL USB Gadget Device
-Date: Thu, 13 Mar 2014 19:37:12 +0530
-Message-ID: <1394719632-27101-1-git-send-email-suresh.gupta@freescale.com>
-X-Mailer: git-send-email 1.8.4.1
+	Thu, 13 Mar 2014 04:38:34 -0400
+Date: Thu, 13 Mar 2014 09:38:32 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minyard@acm.org" <minyard@acm.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+Message-ID: <20140313083832.GA8902@amd.pavel.ucw.cz>
+References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>
+ <1511662.Ly2fOjCGKz@vostro.rjw.lan>
+ <1392765307.3488.1.camel@x230.lan>
+ <20140312230007.GA1817@amd.pavel.ucw.cz>
+ <1394666568.25122.1.camel@x230>
+ <20140313072204.GA7181@amd.pavel.ucw.cz>
+ <1394695475.25122.4.camel@x230>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394695475.25122.4.camel@x230>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suresh Gupta <B42813@freescale.com>
+On Thu 2014-03-13 07:24:36, Matthew Garrett wrote:
+> On Thu, 2014-03-13 at 08:22 +0100, Pavel Machek wrote:
+> > On Wed 2014-03-12 23:22:49, Matthew Garrett wrote:
+> > > No. The power meter driver knows nothing about IPMI. It makes no IPMI
+> > > calls. There's no requirement that a vendor implement it via IPMI.
+> > 
+> > Yet you claim that IMPI is needed for that, and that's why you made
+> > IMPI default.
+> 
+> I claim that the ACPI spec defines the behaviour of IPMI operation
+> regions, and so we should default IPMI to Y in order to (by default)
+> implement the ACPI spec.
+> 
+> > So ... do we need dmi-based blacklist?
+> 
+> I don't see why.
 
-Signed-off-by: Suresh Gupta <B42813@freescale.com>
----
- drivers/usb/gadget/fsl_udc_core.c | 1 +
- 1 file changed, 1 insertion(+)
+Your reasoning for default y was that "power meter depends on
+this". Then, claim that "power meter does not officially depend on it"
+so it would be wrong to have a dependency.
 
-diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
-index 35b20e6..2a43d9d 100644
---- a/drivers/usb/gadget/fsl_udc_core.c
-+++ b/drivers/usb/gadget/fsl_udc_core.c
-@@ -2456,6 +2456,7 @@ static int __init fsl_udc_probe(struct platform_device *pdev)
- 	/* Setup gadget.dev and register with kernel */
- 	dev_set_name(&udc_controller->gadget.dev, "gadget");
- 	udc_controller->gadget.dev.of_node = pdev->dev.of_node;
-+	set_dma_ops(&udc_controller->gadget.dev, pdev->dev.archdata.dma_ops);
- 
- 	if (!IS_ERR_OR_NULL(udc_controller->transceiver))
- 		udc_controller->gadget.is_otg = 1;
+Defaults are not right solution; system should still work if I select
+non-default settings. Which you claim is not a case, but you don't see
+why you should fix it.
+								Pavel
 -- 
-1.7.11.7
-
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
