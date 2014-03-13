@@ -1,248 +1,393 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574AbaCMAdc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 20:33:32 -0400
-Received: from ozlabs.org ([203.10.76.45]:33865 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752416AbaCMAd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 20:33:29 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kees Cook <keescook@chromium.org>
+	id S1752349AbaCMAht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 20:37:49 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45754 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230AbaCMAhq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 20:37:46 -0400
+Date: Thu, 13 Mar 2014 00:37:40 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Herrmann <dh.herrmann@gmail.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Honig <ahonig@google.com>, Michal Marek <mmarek@suse.cz>,
-        "x86\@kernel.org" <x86@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] kallsyms: handle special absolute symbols
-In-Reply-To: <CAGXu5j+QoHH004usCiCfJU6DPQFnQ2gt3P4GDLS7Gx8Tz_gK+A@mail.gmail.com>
-References: <1394240425-11647-1-git-send-email-keescook@chromium.org> <1394240425-11647-3-git-send-email-keescook@chromium.org> <CAGXu5j+QoHH004usCiCfJU6DPQFnQ2gt3P4GDLS7Gx8Tz_gK+A@mail.gmail.com>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Thu, 13 Mar 2014 11:00:10 +1030
-Message-ID: <87y50fuei5.fsf@rustcorp.com.au>
+        David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        stable <stable@vger.kernel.org>, Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH] fs: fix i_writecount on shmem and friends
+Message-ID: <20140313003740.GL18016@ZenIV.linux.org.uk>
+References: <1393859798-1407-1-git-send-email-dh.herrmann@gmail.com>
+ <CA+55aFwzBoTc+09jZTGjfTQTfkgZwrN5m09snb+F9inLaDn0OA@mail.gmail.com>
+ <20140312181925.GK18016@ZenIV.linux.org.uk>
+ <CANq1E4QSFjDiYVmfrNJFfK6zW_HhSBd5d0QF-2t48DzUP+B6pw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANq1E4QSFjDiYVmfrNJFfK6zW_HhSBd5d0QF-2t48DzUP+B6pw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <keescook@chromium.org> writes:
-> On Fri, Mar 7, 2014 at 5:00 PM, Kees Cook <keescook@chromium.org> wrote:
->> This forces the entire per_cpu range to be reported as absolute
->> without losing their linker symbol types, when the per_cpu area is
->> 0-based. Without this, the variables are incorrectly shown as relocated
->> under kASLR on x86_64.
->>
->> Several kallsyms output in different boot states for comparison of
->> various symbols:
->>
->> $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.nokaslr
->> 0000000000000000 D __per_cpu_start
->> 0000000000004000 D gdt_page
->> 0000000000014280 D __per_cpu_end
->> ffffffff810001c8 T _stext
->> ffffffff81ee53c0 D __per_cpu_offset
->> $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr1
->> 000000001f200000 D __per_cpu_start
->> 000000001f204000 D gdt_page
->> 000000001f214280 D __per_cpu_end
->> ffffffffa02001c8 T _stext
->> ffffffffa10e53c0 D __per_cpu_offset
->> $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr2
->> 000000000d400000 D __per_cpu_start
->> 000000000d404000 D gdt_page
->> 000000000d414280 D __per_cpu_end
->> ffffffff8e4001c8 T _stext
->> ffffffff8f2e53c0 D __per_cpu_offset
->> $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr-fixed
->> 0000000000000000 D __per_cpu_start
->> 0000000000004000 D gdt_page
->> 0000000000014280 D __per_cpu_end
->> ffffffffadc001c8 T _stext
->> ffffffffaeae53c0 D __per_cpu_offset
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->> v2:
->>  - only force absolute when per_cpu starts at 0.
->> ---
->>  scripts/kallsyms.c |   20 +++++++++++++++++++-
->>  1 file changed, 19 insertions(+), 1 deletion(-)
->>
->> diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
->> index 08f30ac5b07d..d3f93b8eb277 100644
->> --- a/scripts/kallsyms.c
->> +++ b/scripts/kallsyms.c
->> @@ -34,6 +34,7 @@ struct sym_entry {
->>         unsigned int len;
->>         unsigned int start_pos;
->>         unsigned char *sym;
->> +       int force_absolute;
->>  };
->>
->>  struct addr_range {
->> @@ -51,6 +52,14 @@ static struct addr_range text_ranges[] = {
->>  #define text_range_text     (&text_ranges[0])
->>  #define text_range_inittext (&text_ranges[1])
->>
->> +/*
->> + * Variables in these ranges, when the start is 0 based, will be forced to
->> + * be handled as absolute addresses.
->> + */
->> +static struct addr_range abs_ranges[] = {
->> +       { "__per_cpu_start",    "__per_cpu_end", -1ULL, 0 },
->> +};
->> +
->>  static struct sym_entry *table;
->>  static unsigned int table_size, table_cnt;
->>  static int all_symbols = 0;
->> @@ -165,6 +174,10 @@ static int read_symbol(FILE *in, struct sym_entry *s)
->>         }
->>         strcpy((char *)s->sym + 1, str);
->>         s->sym[0] = stype;
->> +       s->force_absolute = 0;
->> +
->> +       /* Check if we've found special absolute symbol range. */
->> +       check_symbol_range(sym, s->addr, abs_ranges, ARRAY_SIZE(abs_ranges));
->>
->>         return 0;
->>  }
->> @@ -211,6 +224,11 @@ static int symbol_valid(struct sym_entry *s)
->>         if (s->addr < kernel_start_addr)
->>                 return 0;
->>
->> +       /* Force zero-based range special symbols into being absolute. */
->> +       i = symbol_in_range(s, abs_ranges, ARRAY_SIZE(abs_ranges));
->> +       if (i >= 0 && abs_ranges[i].start == 0)
->> +               s->force_absolute = 1;
->
-> Rusty, is this 0-detection workable for you? If so, should you or akpm
-> carry this series for 3.15?
+On Wed, Mar 12, 2014 at 11:30:09PM +0100, David Herrmann wrote:
+> Hi
+> 
+> > I think it's trying to fix the problem in the wrong place.  The bug is real,
+> > all right, but it's not that alloc_file() for non-regulars doesn't grab
+> > writecount; it's that drop_file_write_access() drops it for those.
+> >
+> > What the hell would we want to play with that counter for, anyway?  It's not
+> > as if they could be mmapped, so all it does is making pipe(2) and socket(2)
+> > more costly, for no visible reason.
+> 
+> Please see:
+>   shmem_zero_setup()
+>     shmem_file_setup()
+>       __shmem_file_setup()
+>         alloc_file()
+> 
+> shmem_zero_setup() is used by /dev/zero (drivers/char/mem.c) and
+> mmap(MAP_ANON). So yes, we do call mmap() on these files.
 
-Damn, sorry, I wrote this patch and seems like I didn't actually send it
-out.  No wonder you didn't respond :)
+We do, but how do you get anything even attempt deny_write_access() on
+those?  And what would the semantics of that be, anyway?
 
-This applies on top of your first cleanup patch:
+> I also disagree on "for no visible reason". The reason to do this is
+> uniformity. We make i_writecount work on all inodes regardless how
+> they got created. Breaking consistent behavior just to save an
+> atomic_inc_unless_negative() in the alloc_file() path seems
+> unreasonable to me.
 
-kallsyms: fix percpu vars on x86-64 with relocation.
+i_writecount is a hack used to implement MAP_DENYWRITE (ignored since way
+back) and to provide historical execve() behaviour (note, BTW, that it's
+not consistent - e.g. it does apply to binary itself, but not to shared
+libraries; scripts don't get much protection either - if the sucker was
+opened for write during execve(), you get ETXTBUSY, but as soon as execve()
+has opened the interpreter, script itself can be opened for write just fine).
 
-x86-64 has a problem: per-cpu variables are actually represented by
-their absolute offsets within the per-cpu area, but the symbols are
-not emitted as absolute.  Thus kallsyms naively creates them as offsets
-from _text, meaning their values change if the kernel is relocated
-(especially noticeable with CONFIG_RANDOMIZE_BASE):
+Maintaining it for pipes and sockets is just plain nuts.
 
- $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.nokaslr
- 0000000000000000 D __per_cpu_start
- 0000000000004000 D gdt_page
- 0000000000014280 D __per_cpu_end
- ffffffff810001c8 T _stext
- ffffffff81ee53c0 D __per_cpu_offset
- $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr1
- 000000001f200000 D __per_cpu_start
- 000000001f204000 D gdt_page
- 000000001f214280 D __per_cpu_end
- ffffffffa02001c8 T _stext
- ffffffffa10e53c0 D __per_cpu_offset
+> Anyhow, I haven't found any bug if we follow your recommendation.
+> Every path using alloc_file() either prevents write access on the
+> underlying inode (eg., anon-inode) or prevents user-space from getting
+> an FD (all the shmem_file_setup() paths). So it's up to you. Feel free
+> to fix it yourself, otherwise I will send a second patch following
+> your idea tomorrow.
 
-Making them absolute symbols is the Right Thing, but requires fixes to
-the relocs tool.  So for the moment, we add a --absolute-percpu option
-which makes them absolute from a kallsyms perspective:
+We want the same in __get_file_write_access() as well (i.e. doing nothing
+if the file isn't regular).
 
- $ egrep ' (gdt_|_(stext|_per_cpu_))' /proc/kallsyms # no KASLR
- 0000000000000000 A __per_cpu_start
- 000000000000a000 A gdt_page
- 0000000000013040 A __per_cpu_end
- ffffffff802001c8 T _stext
- ffffffff8099b180 D __per_cpu_offset
- ffffffff809a3000 D __per_cpu_load
- $ egrep ' (gdt_|_(stext|_per_cpu_))' /proc/kallsyms # With KASLR
- 0000000000000000 A __per_cpu_start
- 000000000000a000 A gdt_page
- 0000000000013040 A __per_cpu_end
- ffffffff89c001c8 T _stext
- ffffffff8a39d180 D __per_cpu_offset
- ffffffff8a3a5000 D __per_cpu_load
+file_take_write(), f_mnt_write_state and the rest of CONFIG_DEBUG_WRITECOUNT
+stuff should probably just disappear.
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+TBH, I'm none too happy about all those if (!special_file()) in that logics.
+I would rather have do_dentry_open() do something like
 
-diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index 3c6224728960..21013e739773 100644
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -51,9 +51,14 @@ static struct addr_range text_ranges[] = {
- #define text_range_text     (&text_ranges[0])
- #define text_range_inittext (&text_ranges[1])
- 
-+static struct addr_range percpu_range = {
-+	"__per_cpu_start", "__per_cpu_end", -1ULL, 0
-+};
-+
- static struct sym_entry *table;
- static unsigned int table_size, table_cnt;
- static int all_symbols = 0;
-+static int absolute_percpu = 0;
- static char symbol_prefix_char = '\0';
- static unsigned long long kernel_start_addr = 0;
- 
-@@ -166,6 +171,9 @@ static int read_symbol(FILE *in, struct sym_entry *s)
- 	strcpy((char *)s->sym + 1, str);
- 	s->sym[0] = stype;
- 
-+	/* Record if we've found __per_cpu_start/end. */
-+	check_symbol_range(sym, s->addr, &percpu_range, 1);
-+
- 	return 0;
- }
- 
-@@ -656,6 +664,15 @@ static void sort_symbols(void)
- 	qsort(table, table_cnt, sizeof(struct sym_entry), compare_symbols);
- }
- 
-+static void make_percpus_absolute(void)
-+{
-+	unsigned int i;
-+
-+	for (i = 0; i < table_cnt; i++)
-+		if (symbol_in_range(&table[i], &percpu_range, 1))
-+			table[i].sym[0] = 'A';
-+}
-+
- int main(int argc, char **argv)
+	if ((f->f_mode & FMODE_WRITE) && !special_file(inode->i_mode)) {
+		error = get_write_access(inode);
+		if (error)
+                        goto cleanup_file;
+                error = __mnt_want_write(f->f_path.mnt);
+		if (error) {
+			put_write_access(inode);
+			goto cleanup_file;
+		}
+		f->f_mode |= FMODE_WRITER;
+	}
+....
+cleanup_all:
+        fops_put(f->f_op);
+        if (f->f_mode & FMODE_WRITER) {
+                put_write_access(inode);
+		__mnt_drop_write(f->f_path.mnt);
+	}
+cleanup_file:
+....
+
+fput() would just do
+....
+        if (file->f_mode & FMODE_WRITER) {
+                put_write_access(inode);
+		__mnt_drop_write(mnt);
+	}
+....
+and alloc_file() would stop playing these games:
+        /*
+         * These mounts don't really matter in practice
+         * for r/o bind mounts.  They aren't userspace-
+         * visible.  We do this for consistency, and so
+         * that we can do debugging checks at __fput()
+         */
+        if ((mode & FMODE_WRITE) && !special_file(path->dentry->d_inode->i_mode)) {
+                file_take_write(file);
+                WARN_ON(mnt_clone_write(path->mnt));
+        }
+
+And to hell with __get_file_write_access()/drop_file_write_access().
+IOW, FMODE_WRITER == "we have bumped i_writecount and writer count on
+vfsmount".  Makes life much simpler...
+
+IOW, how about the following (completely untested):
+
+diff --git a/fs/file_table.c b/fs/file_table.c
+index 5b24008..ce1504f 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -52,7 +52,6 @@ static void file_free_rcu(struct rcu_head *head)
+ static inline void file_free(struct file *f)
  {
- 	if (argc >= 2) {
-@@ -663,6 +683,8 @@ int main(int argc, char **argv)
- 		for (i = 1; i < argc; i++) {
- 			if(strcmp(argv[i], "--all-symbols") == 0)
- 				all_symbols = 1;
-+			else if (strcmp(argv[i], "--absolute-percpu") == 0)
-+				absolute_percpu = 1;
- 			else if (strncmp(argv[i], "--symbol-prefix=", 16) == 0) {
- 				char *p = &argv[i][16];
- 				/* skip quote */
-@@ -679,6 +701,8 @@ int main(int argc, char **argv)
- 		usage();
+ 	percpu_counter_dec(&nr_files);
+-	file_check_state(f);
+ 	call_rcu(&f->f_u.fu_rcuhead, file_free_rcu);
+ }
  
- 	read_map(stdin);
-+	if (absolute_percpu)
-+		make_percpus_absolute();
- 	sort_symbols();
- 	optimize_token_table();
- 	write_src();
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index 2dcb37736d84..86a4fe75f453 100644
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -86,6 +86,10 @@ kallsyms()
- 		kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
- 	fi
+@@ -178,47 +177,12 @@ struct file *alloc_file(struct path *path, fmode_t mode,
+ 	file->f_mapping = path->dentry->d_inode->i_mapping;
+ 	file->f_mode = mode;
+ 	file->f_op = fop;
+-
+-	/*
+-	 * These mounts don't really matter in practice
+-	 * for r/o bind mounts.  They aren't userspace-
+-	 * visible.  We do this for consistency, and so
+-	 * that we can do debugging checks at __fput()
+-	 */
+-	if ((mode & FMODE_WRITE) && !special_file(path->dentry->d_inode->i_mode)) {
+-		file_take_write(file);
+-		WARN_ON(mnt_clone_write(path->mnt));
+-	}
+ 	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
+ 		i_readcount_inc(path->dentry->d_inode);
+ 	return file;
+ }
+ EXPORT_SYMBOL(alloc_file);
  
-+	if [ -n "${CONFIG_X86_64}" ]; then
-+		kallsymopt="${kallsymopt} --absolute-percpu"
-+	fi
-+
- 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
- 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
+-/**
+- * drop_file_write_access - give up ability to write to a file
+- * @file: the file to which we will stop writing
+- *
+- * This is a central place which will give up the ability
+- * to write to @file, along with access to write through
+- * its vfsmount.
+- */
+-static void drop_file_write_access(struct file *file)
+-{
+-	struct vfsmount *mnt = file->f_path.mnt;
+-	struct dentry *dentry = file->f_path.dentry;
+-	struct inode *inode = dentry->d_inode;
+-
+-	put_write_access(inode);
+-
+-	if (special_file(inode->i_mode))
+-		return;
+-	if (file_check_writeable(file) != 0)
+-		return;
+-	__mnt_drop_write(mnt);
+-	file_release_write(file);
+-}
+-
+ /* the real guts of fput() - releasing the last reference to file
+  */
+ static void __fput(struct file *file)
+@@ -253,8 +217,10 @@ static void __fput(struct file *file)
+ 	put_pid(file->f_owner.pid);
+ 	if ((file->f_mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
+ 		i_readcount_dec(inode);
+-	if (file->f_mode & FMODE_WRITE)
+-		drop_file_write_access(file);
++	if (file->f_mode & FMODE_WRITER) {
++		put_write_access(inode);
++		__mnt_drop_write(mnt);
++	}
+ 	file->f_path.dentry = NULL;
+ 	file->f_path.mnt = NULL;
+ 	file->f_inode = NULL;
+diff --git a/fs/open.c b/fs/open.c
+index b9ed8b2..ea765e4 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -632,35 +632,6 @@ out:
+ 	return error;
+ }
  
-
+-/*
+- * You have to be very careful that these write
+- * counts get cleaned up in error cases and
+- * upon __fput().  This should probably never
+- * be called outside of __dentry_open().
+- */
+-static inline int __get_file_write_access(struct inode *inode,
+-					  struct vfsmount *mnt)
+-{
+-	int error;
+-	error = get_write_access(inode);
+-	if (error)
+-		return error;
+-	/*
+-	 * Do not take mount writer counts on
+-	 * special files since no writes to
+-	 * the mount itself will occur.
+-	 */
+-	if (!special_file(inode->i_mode)) {
+-		/*
+-		 * Balanced in __fput()
+-		 */
+-		error = __mnt_want_write(mnt);
+-		if (error)
+-			put_write_access(inode);
+-	}
+-	return error;
+-}
+-
+ int open_check_o_direct(struct file *f)
+ {
+ 	/* NB: we're sure to have correct a_ops only after f_op->open */
+@@ -690,12 +661,15 @@ static int do_dentry_open(struct file *f,
+ 
+ 	path_get(&f->f_path);
+ 	inode = f->f_inode = f->f_path.dentry->d_inode;
+-	if (f->f_mode & FMODE_WRITE) {
+-		error = __get_file_write_access(inode, f->f_path.mnt);
+-		if (error)
++	if ((f->f_mode & FMODE_WRITE) && !special_file(inode->i_mode)) {
++		error = get_write_access(inode);
++		if (unlikely(error))
++			goto cleanup_file;
++		error = __mnt_want_write(f->f_path.mnt);
++		if (unlikely(error)) {
++			put_write_access(inode);
+ 			goto cleanup_file;
+-		if (!special_file(inode->i_mode))
+-			file_take_write(f);
++		}
+ 	}
+ 
+ 	f->f_mapping = inode->i_mapping;
+@@ -741,18 +715,9 @@ static int do_dentry_open(struct file *f,
+ 
+ cleanup_all:
+ 	fops_put(f->f_op);
+-	if (f->f_mode & FMODE_WRITE) {
++	if (f->f_mode & FMODE_WRITER) {
+ 		put_write_access(inode);
+-		if (!special_file(inode->i_mode)) {
+-			/*
+-			 * We don't consider this a real
+-			 * mnt_want/drop_write() pair
+-			 * because it all happenend right
+-			 * here, so just reset the state.
+-			 */
+-			file_reset_write(f);
+-			__mnt_drop_write(f->f_path.mnt);
+-		}
++		__mnt_drop_write(f->f_path.mnt);
+ 	}
+ cleanup_file:
+ 	path_put(&f->f_path);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 23b2a35..d9d88a0 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -125,6 +125,8 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
+ 
+ /* File needs atomic accesses to f_pos */
+ #define FMODE_ATOMIC_POS	((__force fmode_t)0x8000)
++/* Write access to underlying fs */
++#define FMODE_WRITER		((__force fmode_t)0x10000)
+ 
+ /* File was opened by fanotify and shouldn't generate fanotify events */
+ #define FMODE_NONOTIFY		((__force fmode_t)0x1000000)
+@@ -769,9 +771,6 @@ static inline int ra_has_index(struct file_ra_state *ra, pgoff_t index)
+ 		index <  ra->start + ra->size);
+ }
+ 
+-#define FILE_MNT_WRITE_TAKEN	1
+-#define FILE_MNT_WRITE_RELEASED	2
+-
+ struct file {
+ 	union {
+ 		struct llist_node	fu_llist;
+@@ -809,9 +808,6 @@ struct file {
+ 	struct list_head	f_tfile_llink;
+ #endif /* #ifdef CONFIG_EPOLL */
+ 	struct address_space	*f_mapping;
+-#ifdef CONFIG_DEBUG_WRITECOUNT
+-	unsigned long f_mnt_write_state;
+-#endif
+ } __attribute__((aligned(4)));	/* lest something weird decides that 2 is OK */
+ 
+ struct file_handle {
+@@ -829,49 +825,6 @@ static inline struct file *get_file(struct file *f)
+ #define fput_atomic(x)	atomic_long_add_unless(&(x)->f_count, -1, 1)
+ #define file_count(x)	atomic_long_read(&(x)->f_count)
+ 
+-#ifdef CONFIG_DEBUG_WRITECOUNT
+-static inline void file_take_write(struct file *f)
+-{
+-	WARN_ON(f->f_mnt_write_state != 0);
+-	f->f_mnt_write_state = FILE_MNT_WRITE_TAKEN;
+-}
+-static inline void file_release_write(struct file *f)
+-{
+-	f->f_mnt_write_state |= FILE_MNT_WRITE_RELEASED;
+-}
+-static inline void file_reset_write(struct file *f)
+-{
+-	f->f_mnt_write_state = 0;
+-}
+-static inline void file_check_state(struct file *f)
+-{
+-	/*
+-	 * At this point, either both or neither of these bits
+-	 * should be set.
+-	 */
+-	WARN_ON(f->f_mnt_write_state == FILE_MNT_WRITE_TAKEN);
+-	WARN_ON(f->f_mnt_write_state == FILE_MNT_WRITE_RELEASED);
+-}
+-static inline int file_check_writeable(struct file *f)
+-{
+-	if (f->f_mnt_write_state == FILE_MNT_WRITE_TAKEN)
+-		return 0;
+-	printk(KERN_WARNING "writeable file with no "
+-			    "mnt_want_write()\n");
+-	WARN_ON(1);
+-	return -EINVAL;
+-}
+-#else /* !CONFIG_DEBUG_WRITECOUNT */
+-static inline void file_take_write(struct file *filp) {}
+-static inline void file_release_write(struct file *filp) {}
+-static inline void file_reset_write(struct file *filp) {}
+-static inline void file_check_state(struct file *filp) {}
+-static inline int file_check_writeable(struct file *filp)
+-{
+-	return 0;
+-}
+-#endif /* CONFIG_DEBUG_WRITECOUNT */
+-
+ #define	MAX_NON_LFS	((1UL<<31) - 1)
+ 
+ /* Page cache limit. The filesystems should put that into their s_maxbytes 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index a48abea..7a08593 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1030,16 +1030,6 @@ config DEBUG_BUGVERBOSE
+ 	  of the BUG call as well as the EIP and oops trace.  This aids
+ 	  debugging but costs about 70-100K of memory.
+ 
+-config DEBUG_WRITECOUNT
+-	bool "Debug filesystem writers count"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enable this to catch wrong use of the writers count in struct
+-	  vfsmount.  This will increase the size of each file struct by
+-	  32 bits.
+-
+-	  If unsure, say N.
+-
+ config DEBUG_LIST
+ 	bool "Debug linked list manipulation"
+ 	depends on DEBUG_KERNEL
