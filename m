@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070AbaCMV7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:59:46 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37775 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969AbaCMV7p (ORCPT
+	id S1754256AbaCMWCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 18:02:53 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55976 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753235AbaCMWCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 17:59:45 -0400
-Message-ID: <53222A4E.70006@kernel.dk>
-Date: Thu, 13 Mar 2014 15:59:42 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 13 Mar 2014 18:02:51 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Ruchi Kandoi <kandoiruchi@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        ghackmann@google.com, john.stultz@linaro.org, toddpoynor@google.com
+Subject: Re: [PATCH v3] power: add an API to log wakeup reasons
+Date: Thu, 13 Mar 2014 23:18:14 +0100
+Message-ID: <1559784.2mnpODc5zV@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1394653598-17143-1-git-send-email-kandoiruchi@google.com>
+References: <1394653598-17143-1-git-send-email-kandoiruchi@google.com>
 MIME-Version: 1.0
-To: Sam Bradshaw <sbradshaw@micron.com>
-CC: linux-kernel@vger.kernel.org, Felipe Franciosi <felipe@paradoxo.org>,
-        david.vrabel@citrix.com,
-        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa)" 
-	<asamymuthupa@micron.com>
-Subject: Re: [PATCH] mtip32xx: mtip_async_complete() bug fixes
-References: <53221E92.3030707@micron.com> <53221CF5.2080000@kernel.dk> <5322242A.6080901@micron.com>
-In-Reply-To: <5322242A.6080901@micron.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2014 03:33 PM, Sam Bradshaw wrote:
-> On 03/13/2014 02:02 PM, Jens Axboe wrote:
->> On 03/13/2014 03:09 PM, Sam Bradshaw wrote:
->>> This patch fixes 2 issues in the fast completion path:
->>> 1) Possible double completions / double dma_unmap_sg() calls due to lack
->>> of atomicity in the check and subsequent dereference of the upper layer
->>> callback function. Fixed with cmpxchg before unmap and callback.
->>> 2) Regression in unaligned IO constraining workaround for p420m devices.
->>> Fixed by checking if IO is unaligned and using proper semaphore if so.
->>
->> Sam, what is this patch against? It doesn't apply to -rc6 and it doesn't
->> apply to for-3.15/drivers (the latter would be preferred/required). It
->> also seems to have line break issues.
->>
->
-> It's against for-3.15/drivers.  Sorry about the breaks; if I remove them
-> does it apply cleanly?
+Hi,
 
-Yep, this one is much better. Thanks!
+I saw the v4, but I don't have it handy, so replying here.
+
+On Wednesday, March 12, 2014 12:46:38 PM Ruchi Kandoi wrote:
+> For power management diagnostic purposes, it is often useful to know
+> what interrupts are frequently waking the system from low power
+> suspend mode, especially on battery-powered consumer electronics
+> devices that are expected to spend much of their time in low-power
+> suspend while not in active use.  For example, reduced battery life on
+> a mobile phone may be caused in part by frequent wakeups by broadcast
+> traffic on a busy wireless LAN even while the screen is off and the
+> phone not in active use.
+> 
+> Add API log_wakeup_reason() exposes it to userspace via the sysfs path
+> /sys/kernel/wakeup_reasons/last_resume_reason. This API would be called
+> from the paltform specific, or from the driver for the interrupt controller,
+> when the system resumes because of an IRQ. It logs the reasons which caused
+> the system to wakeup from the low-power mode.
+
+So what exactly is wrong with using wakeup sources for this purpose?
 
 -- 
-Jens Axboe
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
