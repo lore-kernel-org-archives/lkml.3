@@ -1,97 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247AbaCMPQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:16:50 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26773 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804AbaCMPQr (ORCPT
+	id S1754177AbaCMPPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:15:21 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42088 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752474AbaCMPPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:16:47 -0400
-Message-ID: <5321CBDA.1060705@oracle.com>
-Date: Thu, 13 Mar 2014 11:16:42 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] improve_stack: make stack dump output useful again
-References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com> <CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
-In-Reply-To: <CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 13 Mar 2014 11:15:17 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 7/7] ARM: sun6i: dt: Add A31 DMA controller to DTSI
+Date: Thu, 13 Mar 2014 16:14:19 +0100
+Message-Id: <1394723659-4995-8-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394723659-4995-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1394723659-4995-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2014 03:27 PM, Linus Torvalds wrote:
-> On Sat, Feb 22, 2014 at 4:19 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> Right now when people try to report issues in the kernel they send stack
->> dumps to eachother, which looks something like this:
->>
->> [    6.906437]  [<ffffffff811f0e90>] ? backtrace_test_irq_callback+0x20/0x20
->> [    6.907121]  [<ffffffff84388ce8>] dump_stack+0x52/0x7f
->> [    6.907640]  [<ffffffff811f0ec8>] backtrace_regression_test+0x38/0x110
->> [    6.908281]  [<ffffffff813596a0>] ? proc_create_data+0xa0/0xd0
->> [    6.908870]  [<ffffffff870a8040>] ? proc_modules_init+0x22/0x22
->> [    6.909480]  [<ffffffff810020c2>] do_one_initcall+0xc2/0x1e0
->> [...]
->>
->> However, most of the text you get is pure garbage.
->
-> I'd like to fix that, but I'd like to fix it in the kernel, and just
-> stop printing the hex addresses entirely.
->
-> However, your kind of script actually makes that worse, in that it
-> uses the redundant hex addresses for 'addr2line', and that tool is
-> known to not work with symbolic addresses, only with actual numerical
-> ones.
->
-> So I would *really* want to do this kernel change (possibly
-> conditional on RANDOMIZE_BASE_ADDRESS or whatever the config variable
-> is called):
->
->      diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
->      index d9c12d3022a7..58039e728f00 100644
->      --- a/arch/x86/kernel/dumpstack.c
->      +++ b/arch/x86/kernel/dumpstack.c
->      @@ -27,13 +27,12 @@ static int die_counter;
->
->       static void printk_stack_address(unsigned long address, int reliable)
->       {
->      -       pr_cont(" [<%p>] %s%pB\n",
->      -               (void *)address, reliable ? "" : "? ", (void *)address);
->      +       pr_cont(" %s[<%pB>]\n", reliable ? "" : "? ", (void *)address);
->       }
->
->       void printk_address(unsigned long address)
->       {
->      -       pr_cont(" [<%p>] %pS\n", (void *)address, (void *)address);
->      +       pr_cont(" [<%pS>]\n", (void *)address);
->       }
->
->       #ifdef CONFIG_FUNCTION_GRAPH_TRACER
->
-> which would make the kernel stack traces much prettier.
->
-> But that would require that there be a "resolve symbolic address" (if
-> CONFIG_KALLSYMS isn't enabled, it would still be hexadecimal) for the
-> address inside the [<>] thing..
->
-> I don't know of any sane tool that does that directly, but it
-> shouldn't be *that* hard. You can *almost* do it with
->
->    echo "p backtrace_regression_test+0x38" | gdb vmlinux
->
-> but you see the problem if you try that ;)
+Now that we have a DMA driver, we can add the DMA bindings in the DTSI for the
+controller and the devices supported that can use DMA.
 
-I've looked into doing it in the kernel, but it seems that it would require a rather
-large code addition just to deal with getting pretty line numbers.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/boot/dts/sun6i-a31.dtsi | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-Unless I'm missing something big, is it really worth it?
-
-
-Thanks,
-Sasha
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index 7fff9a20f079..e687b0d1e838 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -237,6 +237,15 @@
+ 		#size-cells = <1>;
+ 		ranges;
+ 
++		dma: dma-controller@01c02000 {
++			compatible = "allwinner,sun6i-a31-dma";
++			reg = <0x01c02000 0x1000>;
++			interrupts = <0 50 4>;
++			clocks = <&ahb1_gates 6>;
++			resets = <&ahb1_rst 6>;
++			#dma-cells = <1>;
++		};
++
+ 		pio: pinctrl@01c20800 {
+ 			compatible = "allwinner,sun6i-a31-pinctrl";
+ 			reg = <0x01c20800 0x400>;
+@@ -322,6 +331,8 @@
+ 			reg-io-width = <4>;
+ 			clocks = <&apb2_gates 16>;
+ 			resets = <&apb2_rst 16>;
++			dmas = <&dma 6>, <&dma 6>;
++			dma-names = "rx", "tx";
+ 			status = "disabled";
+ 		};
+ 
+@@ -333,6 +344,8 @@
+ 			reg-io-width = <4>;
+ 			clocks = <&apb2_gates 17>;
+ 			resets = <&apb2_rst 17>;
++			dmas = <&dma 7>, <&dma 7>;
++			dma-names = "rx", "tx";
+ 			status = "disabled";
+ 		};
+ 
+@@ -344,6 +357,8 @@
+ 			reg-io-width = <4>;
+ 			clocks = <&apb2_gates 18>;
+ 			resets = <&apb2_rst 18>;
++			dmas = <&dma 8>, <&dma 8>;
++			dma-names = "rx", "tx";
+ 			status = "disabled";
+ 		};
+ 
+@@ -355,6 +370,8 @@
+ 			reg-io-width = <4>;
+ 			clocks = <&apb2_gates 19>;
+ 			resets = <&apb2_rst 19>;
++			dmas = <&dma 9>, <&dma 9>;
++			dma-names = "rx", "tx";
+ 			status = "disabled";
+ 		};
+ 
+@@ -366,6 +383,8 @@
+ 			reg-io-width = <4>;
+ 			clocks = <&apb2_gates 20>;
+ 			resets = <&apb2_rst 20>;
++			dmas = <&dma 10>, <&dma 10>;
++			dma-names = "rx", "tx";
+ 			status = "disabled";
+ 		};
+ 
+@@ -377,6 +396,8 @@
+ 			reg-io-width = <4>;
+ 			clocks = <&apb2_gates 21>;
+ 			resets = <&apb2_rst 21>;
++			dmas = <&dma 22>, <&dma 22>;
++			dma-names = "rx", "tx";
+ 			status = "disabled";
+ 		};
+ 
+@@ -426,6 +447,8 @@
+ 			interrupts = <0 65 4>;
+ 			clocks = <&ahb1_gates 20>, <&spi0_clk>;
+ 			clock-names = "ahb", "mod";
++			dmas = <&dma 23>, <&dma 23>;
++			dma-names = "rx", "tx";
+ 			resets = <&ahb1_rst 20>;
+ 			status = "disabled";
+ 		};
+@@ -436,6 +459,8 @@
+ 			interrupts = <0 66 4>;
+ 			clocks = <&ahb1_gates 21>, <&spi1_clk>;
+ 			clock-names = "ahb", "mod";
++			dmas = <&dma 24>, <&dma 24>;
++			dma-names = "rx", "tx";
+ 			resets = <&ahb1_rst 21>;
+ 			status = "disabled";
+ 		};
+@@ -446,6 +471,8 @@
+ 			interrupts = <0 67 4>;
+ 			clocks = <&ahb1_gates 22>, <&spi2_clk>;
+ 			clock-names = "ahb", "mod";
++			dmas = <&dma 25>, <&dma 25>;
++			dma-names = "rx", "tx";
+ 			resets = <&ahb1_rst 22>;
+ 			status = "disabled";
+ 		};
+@@ -456,6 +483,8 @@
+ 			interrupts = <0 68 4>;
+ 			clocks = <&ahb1_gates 23>, <&spi3_clk>;
+ 			clock-names = "ahb", "mod";
++			dmas = <&dma 26>, <&dma 26>;
++			dma-names = "rx", "tx";
+ 			resets = <&ahb1_rst 23>;
+ 			status = "disabled";
+ 		};
+-- 
+1.9.0
 
