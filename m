@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171AbaCMKmt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:42:49 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:45381 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753779AbaCMKlX (ORCPT
+	id S1754282AbaCMKnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:43:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40378 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754182AbaCMKnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:41:23 -0400
-Message-Id: <20140313104120.192950172@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Thu, 13 Mar 2014 06:40:54 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>, Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH RT 1/5] net: sched: dev_deactivate_many(): use msleep(1) instead of yield()
- to wait for outstanding qdisc_run calls
-References: <20140313104053.933715112@goodmis.org>
+	Thu, 13 Mar 2014 06:43:05 -0400
+Date: Thu, 13 Mar 2014 11:43:03 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: dts: berlin2q: add the Marvell Armada 1500 pro
+ (BG2Q) device tree
+Message-ID: <20140313104303.GB4418@piout.net>
+References: <1394622364-6848-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1394622364-6848-2-git-send-email-antoine.tenart@free-electrons.com>
+ <532182EB.7090002@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-net-sched-dev_deactivate_many-use-msleep-1-instead-o.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <532182EB.7090002@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10.33-rt33-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On 13/03/2014 at 10:05:31 +0000, Sebastian Hesselbarth wrote :
+> On 03/12/2014 11:06 AM, Antoine Ténart wrote:
+> >+			compatible = "arm,cortex-a9-twd-timer";
+> >+			reg = <0xad0600 0x20>;
+> >+			clocks = <&sysclk>;
+> 
+> Playing with Chromecast, I remember local-timer running at sysclk/3 or
+> something. I know berlin2/berlin2cd is wrong here. Can you check that
+> for berlin2q local-timer also runs at sysclk/n?
+> 
 
-------------------
+Actually, what we have is sysclk = cpuclk/3 so I guess it depends on
+what you call sysclk.
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+> >+			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
+> >+			status = "okay";
+> >+		};
+> >+
+> >+		apb@e80000 {
+> >+			compatible = "simple-bus";
+> >+			#address-cells = <1>;
+> >+			#size-cells = <1>;
+> >+
+> >+			ranges = <0 0xe80000 0x10000>;
+> >+			interrupt-parent = <&aic>;
+> >+
+> >+			timer0: timer@2c00 {
+> >+				compatible = "snps,dw-apb-timer";
+> >+				reg = <0x2c00 0x14>;
+> >+				interrupts = <8>;
+> >+				clock-freq = <100000000>;
+> >+				status = "okay";
+> >+			};
+> >+
+> >+			timer1: timer@2c14 {
+> >+				compatible = "snps,dw-apb-timer";
+> >+				reg = <0x2c14 0x14>;
+> >+				clock-freq = <100000000>;
+> >+				status = "disabled";
+> >+			};
+> 
+> berlin2/berlin2cd have a vast amount of 8 apb timers. Any timers missing
+> here or did Marvell remove them?
+> 
+> 
+> Also for uart, can you please double-check if there is no uart2?
+> 
 
-On PREEMPT_RT enabled systems the interrupt handler run as threads at prio 50
-(by default). If a high priority userspace process tries to shut down a busy
-network interface it might spin in a yield loop waiting for the device to
-become idle. With the interrupt thread having a lower priority than the
-looping process it might never be scheduled and so result in a deadlock on UP
-systems.
+We don't have those informations, maybe Jisheng can help ?
 
-With Magic SysRq the following backtrace can be produced:
-
-> test_app R running      0   174    168 0x00000000
-> [<c02c7070>] (__schedule+0x220/0x3fc) from [<c02c7870>] (preempt_schedule_irq+0x48/0x80)
-> [<c02c7870>] (preempt_schedule_irq+0x48/0x80) from [<c0008fa8>] (svc_preempt+0x8/0x20)
-> [<c0008fa8>] (svc_preempt+0x8/0x20) from [<c001a984>] (local_bh_enable+0x18/0x88)
-> [<c001a984>] (local_bh_enable+0x18/0x88) from [<c025316c>] (dev_deactivate_many+0x220/0x264)
-> [<c025316c>] (dev_deactivate_many+0x220/0x264) from [<c023be04>] (__dev_close_many+0x64/0xd4)
-> [<c023be04>] (__dev_close_many+0x64/0xd4) from [<c023be9c>] (__dev_close+0x28/0x3c)
-> [<c023be9c>] (__dev_close+0x28/0x3c) from [<c023f7f0>] (__dev_change_flags+0x88/0x130)
-> [<c023f7f0>] (__dev_change_flags+0x88/0x130) from [<c023f904>] (dev_change_flags+0x10/0x48)
-> [<c023f904>] (dev_change_flags+0x10/0x48) from [<c024c140>] (do_setlink+0x370/0x7ec)
-> [<c024c140>] (do_setlink+0x370/0x7ec) from [<c024d2f0>] (rtnl_newlink+0x2b4/0x450)
-> [<c024d2f0>] (rtnl_newlink+0x2b4/0x450) from [<c024cfa0>] (rtnetlink_rcv_msg+0x158/0x1f4)
-> [<c024cfa0>] (rtnetlink_rcv_msg+0x158/0x1f4) from [<c0256740>] (netlink_rcv_skb+0xac/0xc0)
-> [<c0256740>] (netlink_rcv_skb+0xac/0xc0) from [<c024bbd8>] (rtnetlink_rcv+0x18/0x24)
-> [<c024bbd8>] (rtnetlink_rcv+0x18/0x24) from [<c02561b8>] (netlink_unicast+0x13c/0x198)
-> [<c02561b8>] (netlink_unicast+0x13c/0x198) from [<c025651c>] (netlink_sendmsg+0x264/0x2e0)
-> [<c025651c>] (netlink_sendmsg+0x264/0x2e0) from [<c022af98>] (sock_sendmsg+0x78/0x98)
-> [<c022af98>] (sock_sendmsg+0x78/0x98) from [<c022bb50>] (___sys_sendmsg.part.25+0x268/0x278)
-> [<c022bb50>] (___sys_sendmsg.part.25+0x268/0x278) from [<c022cf08>] (__sys_sendmsg+0x48/0x78)
-> [<c022cf08>] (__sys_sendmsg+0x48/0x78) from [<c0009320>] (ret_fast_syscall+0x0/0x2c)
-
-This patch works around the problem by replacing yield() by msleep(1), giving
-the interrupt thread time to finish, similar to other changes contained in the
-rt patch set. Using wait_for_completion() instead would probably be a better
-solution.
-
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- net/sched/sch_generic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
-index a7f838b..f84e69f 100644
---- a/net/sched/sch_generic.c
-+++ b/net/sched/sch_generic.c
-@@ -839,7 +839,7 @@ void dev_deactivate_many(struct list_head *head)
- 	/* Wait for outstanding qdisc_run calls. */
- 	list_for_each_entry(dev, head, unreg_list)
- 		while (some_qdisc_is_busy(dev))
--			yield();
-+			msleep(1);
- }
- 
- void dev_deactivate(struct net_device *dev)
 -- 
-1.8.5.3
-
-
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
