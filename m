@@ -1,164 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaCMAQw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 20:16:52 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:44971 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840AbaCMAQv (ORCPT
+	id S1752266AbaCMAWK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 20:22:10 -0400
+Received: from [143.182.124.37] ([143.182.124.37]:33214 "EHLO mga14.intel.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750926AbaCMAWH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 20:16:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1392349908-29685-1-git-send-email-vnagarnaik@google.com>
-References: <1392349908-29685-1-git-send-email-vnagarnaik@google.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Wed, 12 Mar 2014 17:16:20 -0700
-Message-ID: <CAL26m8LojQppYpQGhbZsAw7Qt1BrphBo=k+fcSZVdCctdzxF_Q@mail.gmail.com>
-Subject: Re: [PATCH] tracing: Fix array size mismatch in format string
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Laurent Chavey <chavey@google.com>,
+	Wed, 12 Mar 2014 20:22:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,642,1389772800"; 
+   d="scan'208";a="490881620"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
+        "Lu, Aaron" <aaron.lu@intel.com>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Content-Type: text/plain; charset=UTF-8
+        NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: RE: [RFC PATCH] mmc: core: Invoke sdio func driver's PM callbacks
+ from the sdio bus
+Thread-Topic: [RFC PATCH] mmc: core: Invoke sdio func driver's PM callbacks
+ from the sdio bus
+Thread-Index: AQHPPfBbcxFmTtb4JkCD2TnJYJX/EZreJbfw
+Date: Thu, 13 Mar 2014 00:21:54 +0000
+Message-ID: <17296D9F8FF2234F831FC3DF505A87A911A0A24A@shsmsx102.ccr.corp.intel.com>
+References: <1393588140-20605-1-git-send-email-ulf.hansson@linaro.org>
+	<531FC803.1030403@intel.com>
+	<17296D9F8FF2234F831FC3DF505A87A911A096AA@shsmsx102.ccr.corp.intel.com>
+	<531FFE2B.20501@intel.com>
+ <CAPDyKFpV2_rBeU6TSz8hdp9_aarAz+FkU4CV9pXrUWBdAyaVaA@mail.gmail.com>
+In-Reply-To: <CAPDyKFpV2_rBeU6TSz8hdp9_aarAz+FkU4CV9pXrUWBdAyaVaA@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
 
-Any chance you can take a look at this patch?
 
+> -----Original Message-----
+> From: Ulf Hansson [mailto:ulf.hansson@linaro.org]
+> Sent: Wednesday, March 12, 2014 8:41 PM
+> To: Chris Ball; Lu, Aaron; Wang, Xiaoming; Dong, Chuanxiao
+> Cc: linux-mmc@vger.kernel.org; Liu, Chuansheng; linux-kernel@vger.kernel.org;
+> NeilBrown; Rafael J. Wysocki
+> Subject: Re: [RFC PATCH] mmc: core: Invoke sdio func driver's PM callbacks from the
+> sdio bus
+> 
+> On 12 March 2014 07:26, Aaron Lu <aaron.lu@intel.com> wrote:
+> > On 03/12/2014 11:44 AM, Dong, Chuanxiao wrote:
+> >> Hi Aaron,
+> >>
+> >> This patch is tested on Intel platform, and SDIO function driver's
+> suspend/resume callback will only be called once, which fixed this issue. Previously,
+> they can be called twice.
+> >>
+> >> Here is the tested-by:
+> >>
+> >> Tested-by: xiaoming wang <xiaoming.wang@intel.com>
+> >> Tested-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+> >
+> > Thanks a lot for the test!
+> >
+> > -Aaron
+> >
+> 
+> Thanks for helping out testing!
+> 
+> Just out of curiosity, which sdio func driver did you use (or maybe it hasn't been
+> upstreamed yet)?
+> 
+> Anyway, I suppose it's ->suspend callback don't return -ENOSYS with the
+> expectation of the card to be removed?
+> 
+> So I assume you want this to go to stable as well, right?
+
+Hi Uffe,
+
+We are testing based on BRCM WiFi driver. It is not in upstream. Actually no matter which kind of SDIO function driver it is, if this SDIO host device is an ACPI device which contains SDIO device as its children, the SDIO function driver's suspend will be called twice.
+
+And you are right, there is no -ENOSYS returned if the card is removed. It's better to have this patch go to stable as well.
 
 Thanks
+Chuanxiao
 
-Vaibhav
-
-
-On Thu, Feb 13, 2014 at 7:51 PM, Vaibhav Nagarnaik
-<vnagarnaik@google.com> wrote:
-> In event format strings, the array size is reported in two locations.
-> One in array subscript and then via the "size:" attribute. The values
-> reported there have a mismatch.
->
-> For e.g., in sched:sched_switch the prev_comm and next_comm character
-> arrays have subscript values as [32] where as the actual field size is
-> 16.
->
-> name: sched_switch
-> ID: 301
-> format:
->         field:unsigned short common_type;       offset:0;       size:2; signed:0;
->         field:unsigned char common_flags;       offset:2;       size:1; signed:0;
->         field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
->         field:int common_pid;   offset:4;       size:4; signed:1;
->
->         field:char prev_comm[32];       offset:8;       size:16;        signed:1;
->         field:pid_t prev_pid;   offset:24;      size:4; signed:1;
->         field:int prev_prio;    offset:28;      size:4; signed:1;
->         field:long prev_state;  offset:32;      size:8; signed:1;
->         field:char next_comm[32];       offset:40;      size:16;        signed:1;
->         field:pid_t next_pid;   offset:56;      size:4; signed:1;
->         field:int next_prio;    offset:60;      size:4; signed:1;
->
-> After bisection, the following commit was blamed:
-> 92edca0 tracing: Use direct field, type and system names
->
-> This commit removes the duplication of strings for field->name and
-> field->type assuming that all the strings passed in
-> __trace_define_field() are immutable. This is not true for arrays, where
-> the type string is created in event_storage variable and field->type for
-> all array fields points to event_storage.
->
-> Use __stringify() to create a string constant for the type string.
->
-> Also, get rid of event_storage and event_storage_mutex that are not
-> needed anymore.
->
-> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-> ---
-> * Fix warning from previous version about mixed declarations.
->
->  include/linux/ftrace_event.h | 4 ----
->  include/trace/ftrace.h       | 7 ++-----
->  kernel/trace/trace_events.c  | 6 ------
->  kernel/trace/trace_export.c  | 7 ++-----
->  4 files changed, 4 insertions(+), 20 deletions(-)
->
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index 4e4cc28..4cdb3a1 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -495,10 +495,6 @@ enum {
->         FILTER_TRACE_FN,
->  };
->
-> -#define EVENT_STORAGE_SIZE 128
-> -extern struct mutex event_storage_mutex;
-> -extern char event_storage[EVENT_STORAGE_SIZE];
-> -
->  extern int trace_event_raw_init(struct ftrace_event_call *call);
->  extern int trace_define_field(struct ftrace_event_call *call, const char *type,
->                               const char *name, int offset, int size,
-> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-> index 1a8b28d..1ee19a2 100644
-> --- a/include/trace/ftrace.h
-> +++ b/include/trace/ftrace.h
-> @@ -310,15 +310,12 @@ static struct trace_event_functions ftrace_event_type_funcs_##call = {    \
->  #undef __array
->  #define __array(type, item, len)                                       \
->         do {                                                            \
-> -               mutex_lock(&event_storage_mutex);                       \
-> +               char *type_str = #type"["__stringify(len)"]";           \
->                 BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);                 \
-> -               snprintf(event_storage, sizeof(event_storage),          \
-> -                        "%s[%d]", #type, len);                         \
-> -               ret = trace_define_field(event_call, event_storage, #item, \
-> +               ret = trace_define_field(event_call, type_str, #item,   \
->                                  offsetof(typeof(field), item),         \
->                                  sizeof(field.item),                    \
->                                  is_signed_type(type), FILTER_OTHER);   \
-> -               mutex_unlock(&event_storage_mutex);                     \
->                 if (ret)                                                \
->                         return ret;                                     \
->         } while (0);
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index e71ffd4..22826c7 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -27,12 +27,6 @@
->
->  DEFINE_MUTEX(event_mutex);
->
-> -DEFINE_MUTEX(event_storage_mutex);
-> -EXPORT_SYMBOL_GPL(event_storage_mutex);
-> -
-> -char event_storage[EVENT_STORAGE_SIZE];
-> -EXPORT_SYMBOL_GPL(event_storage);
-> -
->  LIST_HEAD(ftrace_events);
->  static LIST_HEAD(ftrace_common_fields);
->
-> diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-> index 7c3e3e7..ee0a509 100644
-> --- a/kernel/trace/trace_export.c
-> +++ b/kernel/trace/trace_export.c
-> @@ -95,15 +95,12 @@ static void __always_unused ____ftrace_check_##name(void)           \
->  #undef __array
->  #define __array(type, item, len)                                       \
->         do {                                                            \
-> +               char *type_str = #type"["__stringify(len)"]";           \
->                 BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);                 \
-> -               mutex_lock(&event_storage_mutex);                       \
-> -               snprintf(event_storage, sizeof(event_storage),          \
-> -                        "%s[%d]", #type, len);                         \
-> -               ret = trace_define_field(event_call, event_storage, #item, \
-> +               ret = trace_define_field(event_call, type_str, #item,   \
->                                  offsetof(typeof(field), item),         \
->                                  sizeof(field.item),                    \
->                                  is_signed_type(type), filter_type);    \
-> -               mutex_unlock(&event_storage_mutex);                     \
->                 if (ret)                                                \
->                         return ret;                                     \
->         } while (0);
-> --
-> 1.9.0.rc1.175.g0b1dcb5
->
+> 
+> Kind regards
+> Uffe
+> 
+> >>
+> >> Thanks
+> >> Chuanxiao
+> >>
+> >>> -----Original Message-----
+> >>> From: Lu, Aaron
+> >>> Sent: Wednesday, March 12, 2014 10:36 AM
+> >>> To: Ulf Hansson; linux-mmc@vger.kernel.org; Chris Ball; Liu,
+> >>> Chuansheng; Dong, Chuanxiao
+> >>> Cc: linux-kernel@vger.kernel.org; NeilBrown; Rafael J. Wysocki
+> >>> Subject: Re: [RFC PATCH] mmc: core: Invoke sdio func driver's PM
+> >>> callbacks from the sdio bus
+> >>>
+> >>> Hi Chuansheng & Chuanxiao,
+> >>>
+> >>> Can you please help us testing this patch on your platform and let
+> >>> us know the test result? Thanks.
+> >>>
+> >>> -Aaron
+> >>>
+> >>> On 02/28/2014 07:49 PM, Ulf Hansson wrote:
+> >>>> The sdio func device is added to the driver model after the card
+> >>>> device.
+> >>>>
+> >>>> This means the sdio func device will be suspend before the card
+> >>>> device and thus resumed after. The consequence are the mmc core
+> >>>> don't explicity need to protect itself from receiving sdio requests
+> >>>> in suspended state. Instead that can be handled from the sdio bus,
+> >>>> which is thus invokes the PM callbacks instead of old dummy function.
+> >>>>
+> >>>> In the case were the sdio func driver don't implement the PM
+> >>>> callbacks the mmc core will in the early phase of system suspend,
+> >>>> remove the card from the driver model and thus power off it.
+> >>>>
+> >>>> Cc: Aaron Lu <aaron.lu@intel.com>
+> >>>> Cc: NeilBrown <neilb@suse.de>
+> >>>> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> >>>> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+> >>>> ---
+> >>>>
+> >>>> Note, this patch has only been compile tested. Would appreciate if
+> >>>> some with SDIO and a sdio func driver could help out to test this.
+> >>>> Especially the libertas driver would be nice.
+> >>>>
+> >>>> ---
+> >>>>  drivers/mmc/core/sdio.c     |   45 ++++---------------------------------------
+> >>>>  drivers/mmc/core/sdio_bus.c |   14 +-------------
+> >>>>  2 files changed, 5 insertions(+), 54 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+> >>>> index
+> >>>> 4d721c6..9933e42 100644
+> >>>> --- a/drivers/mmc/core/sdio.c
+> >>>> +++ b/drivers/mmc/core/sdio.c
+> >>>> @@ -943,40 +943,21 @@ static int mmc_sdio_pre_suspend(struct
+> >>>> mmc_host
+> >>> *host)
+> >>>>   */
+> >>>>  static int mmc_sdio_suspend(struct mmc_host *host)  {
+> >>>> -   int i, err = 0;
+> >>>> -
+> >>>> -   for (i = 0; i < host->card->sdio_funcs; i++) {
+> >>>> -           struct sdio_func *func = host->card->sdio_func[i];
+> >>>> -           if (func && sdio_func_present(func) && func->dev.driver) {
+> >>>> -                   const struct dev_pm_ops *pmops =
+> func->dev.driver->pm;
+> >>>> -                   err = pmops->suspend(&func->dev);
+> >>>> -                   if (err)
+> >>>> -                           break;
+> >>>> -           }
+> >>>> -   }
+> >>>> -   while (err && --i >= 0) {
+> >>>> -           struct sdio_func *func = host->card->sdio_func[i];
+> >>>> -           if (func && sdio_func_present(func) && func->dev.driver) {
+> >>>> -                   const struct dev_pm_ops *pmops =
+> func->dev.driver->pm;
+> >>>> -                   pmops->resume(&func->dev);
+> >>>> -           }
+> >>>> -   }
+> >>>> -
+> >>>> -   if (!err && mmc_card_keep_power(host) &&
+> mmc_card_wake_sdio_irq(host))
+> >>> {
+> >>>> +   if (mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host))
+> >>>> + {
+> >>>>             mmc_claim_host(host);
+> >>>>             sdio_disable_wide(host->card);
+> >>>>             mmc_release_host(host);
+> >>>>     }
+> >>>>
+> >>>> -   if (!err && !mmc_card_keep_power(host))
+> >>>> +   if (!mmc_card_keep_power(host))
+> >>>>             mmc_power_off(host);
+> >>>>
+> >>>> -   return err;
+> >>>> +   return 0;
+> >>>>  }
+> >>>>
+> >>>>  static int mmc_sdio_resume(struct mmc_host *host)  {
+> >>>> -   int i, err = 0;
+> >>>> +   int err = 0;
+> >>>>
+> >>>>     BUG_ON(!host);
+> >>>>     BUG_ON(!host->card);
+> >>>> @@ -1019,24 +1000,6 @@ static int mmc_sdio_resume(struct mmc_host
+> *host)
+> >>>>             wake_up_process(host->sdio_irq_thread);
+> >>>>     mmc_release_host(host);
+> >>>>
+> >>>> -   /*
+> >>>> -    * If the card looked to be the same as before suspending, then
+> >>>> -    * we proceed to resume all card functions.  If one of them returns
+> >>>> -    * an error then we simply return that error to the core and the
+> >>>> -    * card will be redetected as new.  It is the responsibility of
+> >>>> -    * the function driver to perform further tests with the extra
+> >>>> -    * knowledge it has of the card to confirm the card is indeed the
+> >>>> -    * same as before suspending (same MAC address for network cards,
+> >>>> -    * etc.) and return an error otherwise.
+> >>>> -    */
+> >>>> -   for (i = 0; !err && i < host->card->sdio_funcs; i++) {
+> >>>> -           struct sdio_func *func = host->card->sdio_func[i];
+> >>>> -           if (func && sdio_func_present(func) && func->dev.driver) {
+> >>>> -                   const struct dev_pm_ops *pmops =
+> func->dev.driver->pm;
+> >>>> -                   err = pmops->resume(&func->dev);
+> >>>> -           }
+> >>>> -   }
+> >>>> -
+> >>>>     host->pm_flags &= ~MMC_PM_KEEP_POWER;
+> >>>>     return err;
+> >>>>  }
+> >>>> diff --git a/drivers/mmc/core/sdio_bus.c
+> >>>> b/drivers/mmc/core/sdio_bus.c index 92d1ba8..4fa8fef9 100644
+> >>>> --- a/drivers/mmc/core/sdio_bus.c
+> >>>> +++ b/drivers/mmc/core/sdio_bus.c
+> >>>> @@ -197,20 +197,8 @@ static int sdio_bus_remove(struct device *dev)
+> >>>>
+> >>>>  #ifdef CONFIG_PM
+> >>>>
+> >>>> -#ifdef CONFIG_PM_SLEEP
+> >>>> -static int pm_no_operation(struct device *dev) -{
+> >>>> -   /*
+> >>>> -    * Prevent the PM core from calling SDIO device drivers' suspend
+> >>>> -    * callback routines, which it is not supposed to do, by using this
+> >>>> -    * empty function as the bus type suspend callaback for SDIO.
+> >>>> -    */
+> >>>> -   return 0;
+> >>>> -}
+> >>>> -#endif
+> >>>> -
+> >>>>  static const struct dev_pm_ops sdio_bus_pm_ops = {
+> >>>> -   SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
+> >>>> +   SET_SYSTEM_SLEEP_PM_OPS(pm_generic_suspend,
+> pm_generic_resume)
+> >>>>     SET_RUNTIME_PM_OPS(
+> >>>>             pm_generic_runtime_suspend,
+> >>>>             pm_generic_runtime_resume,
+> >>>>
+> >>
+> >
