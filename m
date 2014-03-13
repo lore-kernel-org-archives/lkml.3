@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793AbaCMQYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 12:24:16 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52274 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590AbaCMQYM (ORCPT
+	id S1754585AbaCMQ0C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 12:26:02 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:29218 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaCMQZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 12:24:12 -0400
-Date: Thu, 13 Mar 2014 17:24:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Hans de Goede <hdegoede@redhat.com>
-cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Carlo Caione <carlo.caione@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] irq: Add a new IRQF_ACK_BEFORE_UNMASK irq flagq
-In-Reply-To: <5321DACD.6010303@redhat.com>
-Message-ID: <alpine.DEB.2.02.1403131723590.18573@ionos.tec.linutronix.de>
-References: <1394579583-29316-1-git-send-email-hdegoede@redhat.com> <alpine.DEB.2.02.1403120944270.18573@ionos.tec.linutronix.de> <20140313133707.GA24821@linutronix.de> <alpine.DEB.2.02.1403131442480.18573@ionos.tec.linutronix.de>
- <5321DACD.6010303@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 13 Mar 2014 12:25:59 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18/yQqXog6NZF85jYWD6j+k
+Date: Thu, 13 Mar 2014 09:25:53 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] dma: omap-dma: Implement device_slave_caps callback
+Message-ID: <20140313162553.GA5576@atomide.com>
+References: <1394199404-7870-1-git-send-email-peter.ujfalusi@ti.com>
+ <20140312173700.GA1996@atomide.com>
+ <532162E1.8090608@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532162E1.8090608@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Mar 2014, Hans de Goede wrote:
-> Hi,
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [140313 00:52]:
+> Hi Tony,
 > 
-> On 03/13/2014 03:32 PM, Thomas Gleixner wrote:
-> > On Thu, 13 Mar 2014, Sebastian Andrzej Siewior wrote:
-> >> One side note: Since we need to specify IRQCHIP_EOI_THREADED and
-> >> handle_fasteoi_late_irq() as the handler, would it be easily doable to use
-> >> the handle_fasteoi_irq() handler and skip the EOI in the threaded mode?
-> >> But if it creates a mess then leave it as it is.
+> On 03/12/2014 07:37 PM, Tony Lindgren wrote:
+> > * Peter Ujfalusi <peter.ujfalusi@ti.com> [140307 05:39]:
+> >> With the callback implemented omap-dma can provide information to client
+> >> drivers regarding to supported address widths, directions, residue
+> >> granularity, etc.
 > > 
-> > Yeah, I was looking into that already. Patch below.
+> > This may need some testing against linux next with Russell's
+> > omap-dma.c clean-up series merged there. Peter, care to check
+> > if this patch is still valid against linux next?
+> 
+> The patch applies cleanly on top of linux-next fetched yesterday and I see
+> Russell's patches underneath.
+
+OK thanks for testing:
+
+Acked-by: Tony Lindgren <tony@atomide.com>
+
+> > Regards,
 > > 
-> > To resemble the late version you need to add IRQCHIP_EOI_THREADED and
-> > IRQCHIP_EOI_IF_HANDLED to your irq chip.
+> > Tony
+> >  
+> >> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> >> ---
+> >>  drivers/dma/omap-dma.c | 18 ++++++++++++++++++
+> >>  1 file changed, 18 insertions(+)
+> >>
+> >> diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+> >> index 64ceca2920b8..b19f04f4390b 100644
+> >> --- a/drivers/dma/omap-dma.c
+> >> +++ b/drivers/dma/omap-dma.c
+> >> @@ -1088,6 +1088,23 @@ static void omap_dma_free(struct omap_dmadev *od)
+> >>  	}
+> >>  }
+> >>  
+> >> +#define OMAP_DMA_BUSWIDTHS	(BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
+> >> +				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
+> >> +				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
+> >> +
+> >> +static int omap_dma_device_slave_caps(struct dma_chan *dchan,
+> >> +				      struct dma_slave_caps *caps)
+> >> +{
+> >> +	caps->src_addr_widths = OMAP_DMA_BUSWIDTHS;
+> >> +	caps->dstn_addr_widths = OMAP_DMA_BUSWIDTHS;
+> >> +	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
+> >> +	caps->cmd_pause = true;
+> >> +	caps->cmd_terminate = true;
+> >> +	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +
+> >>  static int omap_dma_probe(struct platform_device *pdev)
+> >>  {
+> >>  	struct omap_dmadev *od;
+> >> @@ -1118,6 +1135,7 @@ static int omap_dma_probe(struct platform_device *pdev)
+> >>  	od->ddev.device_prep_slave_sg = omap_dma_prep_slave_sg;
+> >>  	od->ddev.device_prep_dma_cyclic = omap_dma_prep_dma_cyclic;
+> >>  	od->ddev.device_control = omap_dma_control;
+> >> +	od->ddev.device_slave_caps = omap_dma_device_slave_caps;
+> >>  	od->ddev.dev = &pdev->dev;
+> >>  	INIT_LIST_HEAD(&od->ddev.channels);
+> >>  	INIT_LIST_HEAD(&od->pending);
+> >> -- 
+> >> 1.9.0
+> >>
 > 
-> Just gave this a review (in as far as I'm qualified to review core irq
-> code), looks good and I agree this is an improvement over the previous
-> version.
-> 
-> There is one behavioral change for irq-chips not setting the new
-> IRQCHIP_EOI_THREADED flag hiding in there.
-> 
-> Before if the conditional unmask conditions were true for the
-> ONESHOT case the code would do: "unmask; eoi", now it does
-> "eoi; unmask" I believe the new behavior is more correct, but, since
-> it is a behavior change I thought I should point this out.
-> 
-> I've also given this a test-run on sun4i and it works as advertised.
-> 
-> FWIW, this patch is:
-> Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-> Tested-by: Hans de Goede <hdegoede@redhat.com>
-> 
-> I'll include this in v3 of my irq-sun4i patch-set as it is a dependency
-> there.
-
-Sure, I split it up afterwards :)
-
