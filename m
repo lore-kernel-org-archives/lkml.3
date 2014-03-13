@@ -1,55 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645AbaCMKMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:12:50 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42114 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752829AbaCMKMp (ORCPT
+	id S1753971AbaCMKOP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:14:15 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:44073 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718AbaCMKON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:12:45 -0400
-Date: Thu, 13 Mar 2014 10:12:02 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Patch Tracking <patches@linaro.org>
-Subject: Re: [PATCH] perf: ARM64: wire up perf_regs and unwind support
-Message-ID: <20140313101202.GB11365@mudshark.cambridge.arm.com>
-References: <1392311193-21214-1-git-send-email-jean.pihet@linaro.org>
- <CAFrcx1=ZBWt1mak_6+=KbCFZEsaD3T_xZ8up4WBLSr6_JTkP1A@mail.gmail.com>
- <20140312174520.GB17308@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140312174520.GB17308@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Mar 2014 06:14:13 -0400
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        catalin.marinas@arm.com, will.deacon@arm.com, tim.bird@sonymobile.com
+Cc: gkulkarni@caviumnetworks.com, dsaxena@linaro.org, arndb@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v6 0/7] arm64: Add ftrace support
+Date: Thu, 13 Mar 2014 19:13:43 +0900
+Message-Id: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 05:45:20PM +0000, Catalin Marinas wrote:
-> On Wed, Mar 12, 2014 at 01:42:51PM +0100, Jean Pihet wrote:
-> > Hi,
-> > 
-> > On 13 February 2014 18:06, Jean Pihet <jean.pihet@linaro.org> wrote:
-> > > This patch hooks in the perf_regs and libunwind code for ARM64.
-> > > The tools/perf/arch/arm64 is created; it contains the arch specific
-> > > code for DWARF unwinding.
-> > >
-> > > Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-> > > Acked-by: Will Deacon <will.deacon@arm.com>
-> > 
-> > Ping on this patch. Can this one go into the perf tree?
-> 
-> I'm happy to take it as well if there are no objections from the perf
-> maintainers.
+This patchset implements a function tracer on arm64.
+There was another implementation from Cavium network, but both of us agreed
+to use my patchset as future base. He is supposed to review this code, too.
 
-I object :) Last time I took a patch for perf tools (via the arm tree) it
-ended in a conflict from hell and we vowed not to take tools patches via
-arch trees again.
+The only issue that I had some concern on was "fault protection" code
+in prepare_ftrace_return(). With discussions with Steven and Tim (as author
+of arm ftrace), I removed that code since I'm not quite sure about possibility
+of "fault" occurrences in this function.
 
-Will
+The code is tested on ARMv8 Fast Model with the following tracers & events:
+     function tracer with dynamic ftrace
+     function graph tracer with dynamic ftrace
+     syscall tracepoint (but only for AArch64 tasks)
+     irqsoff & preemptirqsoff (which use CALLER_ADDRx)
+and also verified with in-kernel tests, FTRACE_SELFTEST, FTRACE_STARTUP_TEST
+and EVENT_TRACE_TEST_SYSCALLS.
+
+Prerequisites are:
+ * "arm64: make a single hook to syscall_trace() for all syscall features" patch
+ * "arm64: split syscall_trace() into separate functions for enter/exit" patch
+ * "arm64: Add regs_return_value() in syscall.h" patch
+
+Please be careful:
+* Patch [3/7] gets warnings from checkpatch, but they are based on the
+  original's coding style.
+* Patch [7/7] may conflict with my audit patch because both changes the same
+  location in syscall_trace_enter/exit(). I expect the functions are called
+  in this order:
+  On entry,
+     * tracehook_report_syscall(ENTER)
+     * trace_sys_enter()
+     * audit_syscall_entry()
+  On exit,
+     * audit_sysscall_exit()
+     * trace_sys_exit()
+     * tracehook_report_syscall(EXIT) 
+
+Changes from v5 to v6:
+* changed the order of patches to avoid any bisect error (I have not tried
+  though)
+* added EM_AARCH64 and R_AARCH64_ABS64 definitions in scripts/recordmcount.c
+  just in case elf.h on host machine doesn't have them. [3/7]
+* updated a frame pointer (x29) in _mcount() to make it look like a normal
+  function [4/7]
+* aligned with the patch, "arm64: split syscall_trace() into separate
+  functions for enter/exit" [7/7]
+* defined ARCH_TRACE_IGNORE_COMPAT_SYSCALLS in order not to trace compat
+  syscalls [7/7]
+
+Chnages from v4 to v5:
+* improved the description of stack layout [1/7]
+* aligned with the change in "arm64: make a single hook to syscall_trace()
+  for all syscall features" v3 [5/7]
+
+Changes from v3 to v4:
+* removed unnecessary "#ifdef" [1,2/7]
+* changed stack depth from 48B to 16B in mcount()/ftrace_caller() (a bug) [1/7]
+* changed MCOUNT_INSN_SIZE to AARCH64_INSN_SIZE [1,7/7]
+* added a guard againt TIF_SYSCALL_TRACEPOINT [5/7]
+* corrected the second argument passed to trace_sys_exit() (a bug) [5/7]
+* aligned with the change in "arm64: make a single hook to syscall_trace()
+  for all syscall features" v2 [5/7]
+
+Changes from v2 to v3:
+* optimized register usages in asm (by not saving x0, x1, and x2)
+* removed "fault protection" code in prepare_ftrace_return()
+* rewrote ftrace_modify_code() using "hotpatch" interfaces
+* revised descriptions in comments
+
+Changes from v1 to v2:
+* splitted one patch into some pieces for easier review
+  (especially function tracer + dynamic ftrace + CALLER_ADDRx)
+* put return_address() in a separate file
+* renamed __mcount to _mcount (it was my mistake)
+* changed stackframe handling to get parent's frame pointer
+* removed ARCH_SUPPORTS_FTRACE_OPS
+* switched to "hotpatch" interfaces from Huawai
+* revised descriptions in comments
+
+AKASHI Takahiro (7):
+  arm64: add __ASSEMBLY__ in asm/insn.h
+  arm64: Add 'notrace' attribute to unwind_frame() for ftrace
+  ftrace: Add arm64 support to recordmcount
+  arm64: Add ftrace support
+  arm64: ftrace: Add dynamic ftrace support
+  arm64: ftrace: Add CALLER_ADDRx macros
+  arm64: ftrace: Add system call tracepoint
+
+ arch/arm64/Kconfig                 |    6 +
+ arch/arm64/include/asm/ftrace.h    |   69 ++++++++++++
+ arch/arm64/include/asm/insn.h      |    2 +
+ arch/arm64/include/asm/syscall.h   |    1 +
+ arch/arm64/include/asm/unistd.h    |    2 +
+ arch/arm64/kernel/Makefile         |    7 +-
+ arch/arm64/kernel/arm64ksyms.c     |    4 +
+ arch/arm64/kernel/entry-ftrace.S   |  218 ++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/ftrace.c         |  177 +++++++++++++++++++++++++++++
+ arch/arm64/kernel/ptrace.c         |   48 ++++----
+ arch/arm64/kernel/return_address.c |   55 +++++++++
+ arch/arm64/kernel/stacktrace.c     |    2 +-
+ scripts/recordmcount.c             |    9 ++
+ scripts/recordmcount.pl            |    5 +
+ 14 files changed, 583 insertions(+), 22 deletions(-)
+ create mode 100644 arch/arm64/include/asm/ftrace.h
+ create mode 100644 arch/arm64/kernel/entry-ftrace.S
+ create mode 100644 arch/arm64/kernel/ftrace.c
+ create mode 100644 arch/arm64/kernel/return_address.c
+
+-- 
+1.7.9.5
+
