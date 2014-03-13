@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880AbaCMTAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 15:00:09 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:20613 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626AbaCMTAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 15:00:07 -0400
-Message-ID: <1394737202.2452.8.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: mm: mmap_sem lock assertion failure in __mlock_vma_pages_range
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Mar 2014 12:00:02 -0700
-In-Reply-To: <531F8C3A.1040502@oracle.com>
-References: <531F6689.60307@oracle.com>
-				<1394568453.2786.28.camel@buesod1.americas.hpqcorp.net>
-			 <20140311133051.bf5ca716ef189746ebcff431@linux-foundation.org>
-			 <531F75D1.3060909@oracle.com>
-		 <1394570844.2786.42.camel@buesod1.americas.hpqcorp.net>
-		 <531F79F7.5090201@oracle.com>
-	 <1394574323.2786.45.camel@buesod1.americas.hpqcorp.net>
-	 <531F8C3A.1040502@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1754946AbaCMTCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 15:02:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41831 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752866AbaCMTCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 15:02:43 -0400
+Message-ID: <532200A6.7060608@zytor.com>
+Date: Thu, 13 Mar 2014 12:01:58 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Stefani Seibold <stefani@seibold.net>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3/3] x86, vdso32: handle 32 bit vDSO larger one page
+References: <1394664680-17799-1-git-send-email-stefani@seibold.net> <1394664680-17799-4-git-send-email-stefani@seibold.net> <5320E689.7060607@zytor.com> <CALCETrXQJvkk-5ncSgTyoy9sCN0AT+h9-1F6wAnxqRm242PjrQ@mail.gmail.com> <5321D45C.7040504@zytor.com> <CALCETrVy3oW=qvJWbGtKTZ=0dZLjHtmBphPDnP1N8nLmXc=+9A@mail.gmail.com> <5321F418.1030304@zytor.com> <5321F72E.7030109@zytor.com> <CALCETrXjJeXqJj3muJhfNeiQ7Te+8WSow+LtjKPM9dySfDtbaA@mail.gmail.com>
+In-Reply-To: <CALCETrXjJeXqJj3muJhfNeiQ7Te+8WSow+LtjKPM9dySfDtbaA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-11 at 18:20 -0400, Sasha Levin wrote:
-> On 03/11/2014 05:45 PM, Davidlohr Bueso wrote:
-> > On Tue, 2014-03-11 at 17:02 -0400, Sasha Levin wrote:
-> >> >On 03/11/2014 04:47 PM, Davidlohr Bueso wrote:
-> >>>> > >>Bingo! With the above patch:
-> >>>>> > >> >
-> >>>>> > >> >[  243.565794] kernel BUG at mm/vmacache.c:76!
-> >>>>> > >> >[  243.566720] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> >>>>> > >> >[  243.568048] Dumping ftrace buffer:
-> >>>>> > >> >[  243.568740]    (ftrace buffer empty)
-> >>>>> > >> >[  243.569481] Modules linked in:
-> >>>>> > >> >[  243.570203] CPU: 10 PID: 10073 Comm: trinity-c332 Tainted: G        W    3.14.0-rc5-next-20140307-sasha-00010-g1f812cb-dirty #143
-> >>> > >and this is also part of the DEBUG_PAGEALLOC + trinity combo! I suspect
-> >>> > >the root cause it the same as Fengguang's report.
-> >> >
-> >> >The BUG still happens without DEBUG_PAGEALLOC.
-> > Any idea what trinity itself is doing?
-> >
-> > Could you add the following, I just want to make sure the bug isn't
-> > being caused by an overflow:
+On 03/13/2014 11:32 AM, Andy Lutomirski wrote:
 > 
-> Not hitting that WARN.
+> I don't recall anyone suggesting keeping the name.  CONFIG_COMPAT_VDSO
+> will henceforth be a silly name, since the "compat" mode won't have a
+> vdso.
+> 
 
-Sasha, could you please try the following patch:
-https://lkml.org/lkml/2014/3/13/312
+Linus suggested it:
+> What might be acceptable then is to just keep the old config name, and
+> if the COMPAT_VDSO config is enabled, you just disable the non-compat
+> vdso. At least that way, presumably any opensuse people would have
+> their kernel config continue working.
 
-thanks.
+	...
+
+> The consensus was that the default should be no vdso, right?  My most
+> recent patchset calls it CONFIG_ENABLE_VDSO32_BY_DEFAULT and defaults
+> to n.
+
+On any practical system, the vdso needs to be turned on -- the syscall
+performance difference is very significant.
+
+>> It is important that anyone who actually cares about performance unsets
+>> the option.
+> 
+> Should there be a warning at startup if the option is set?
+
+Possibly.  Not sure if anyone will read it.
+
+	-hpa
+
 
