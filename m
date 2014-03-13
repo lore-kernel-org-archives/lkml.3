@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592AbaCMVko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:40:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20941 "EHLO mx1.redhat.com"
+	id S1754645AbaCMVlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 17:41:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40492 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754324AbaCMVkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 17:40:41 -0400
+	id S1754241AbaCMVk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 17:40:28 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -14,251 +14,336 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Dave Chinner <david@fromorbit.com>,
         "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org
-Subject: [PATCH 5/6] tools/vm/page-types.c: add file scanning mode
-Date: Thu, 13 Mar 2014 17:39:45 -0400
-Message-Id: <1394746786-6397-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 2/6] mm/memory-failure.c: report and recovery for memory error on dirty pagecache
+Date: Thu, 13 Mar 2014 17:39:42 -0400
+Message-Id: <1394746786-6397-3-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1394746786-6397-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1394746786-6397-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a new mode for file scanning, where when page-types
-is called with -f <filepath>, it registers a given file to /proc/kpagecache,
-and scans pages in the pagecache of the file.
+This patch implements dirty pagecache error handling with a new pagecache
+tag, which is set on the error address in pagecache of the affected file.
+
+Before this patch, memory errors on dirty pagecache were reported only
+insufficiently due to non-stickiness of AS_EIO which is cleared once checked.
+As a result, the newest data on dirty page might be lost. This could happen
+even if the applications are well written to handle the error report because
+accesses to the error address can happen concurrently. In addition to
+stickiness, the granularity of error containment is also problematic.
+AS_EIO is mapping wide flag, so a whole file is tainted by a single error,
+which is not desirable. These problems are solved with a new pagecache tag.
+
+In pagecache tag approach, we have to allocate another page and link it
+to pagecache tree at the error address in order to keep radix_tree_node
+for the address on memory, which makes code complex. But it helps us to
+introduce error recovery with full page overwrite (added in later patch.)
+
+Unifying error reporting between memory error and normal IO errors is ideal
+in a long run, but at first let's solve it separately. I hope that some code
+in this patch will be helpful when thinking of the unification.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- tools/vm/page-types.c | 117 +++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 101 insertions(+), 16 deletions(-)
+ include/linux/fs.h         |   3 +
+ include/linux/pagemap.h    |  11 +++
+ include/linux/radix-tree.h |   4 ++
+ mm/filemap.c               |  14 ++++
+ mm/memory-failure.c        | 170 +++++++++++++++++++++++++++++++++++----------
+ 5 files changed, 167 insertions(+), 35 deletions(-)
 
-diff --git v3.14-rc6.orig/tools/vm/page-types.c v3.14-rc6/tools/vm/page-types.c
-index f9be24d9efac..e9f1882378c7 100644
---- v3.14-rc6.orig/tools/vm/page-types.c
-+++ v3.14-rc6/tools/vm/page-types.c
-@@ -33,6 +33,7 @@
- #include <sys/errno.h>
- #include <sys/fcntl.h>
- #include <sys/mount.h>
-+#include <sys/stat.h>
- #include <sys/statfs.h>
- #include "../../include/uapi/linux/magic.h"
- #include "../../include/uapi/linux/kernel-page-flags.h"
-@@ -75,6 +76,7 @@
+diff --git v3.14-rc6.orig/include/linux/fs.h v3.14-rc6/include/linux/fs.h
+index 60829565e552..1e8966919044 100644
+--- v3.14-rc6.orig/include/linux/fs.h
++++ v3.14-rc6/include/linux/fs.h
+@@ -475,6 +475,9 @@ struct block_device {
+ #define PAGECACHE_TAG_DIRTY	0
+ #define PAGECACHE_TAG_WRITEBACK	1
+ #define PAGECACHE_TAG_TOWRITE	2
++#ifdef CONFIG_MEMORY_FAILURE
++#define PAGECACHE_TAG_HWPOISON	3
++#endif
  
- #define KPF_BYTES		8
- #define PROC_KPAGEFLAGS		"/proc/kpageflags"
-+#define PROC_KPAGECACHE		"/proc/kpagecache"
+ int mapping_tagged(struct address_space *mapping, int tag);
  
- /* [32-] kernel hacking assistances */
- #define KPF_RESERVED		32
-@@ -158,6 +160,7 @@ static int		opt_raw;	/* for kernel developers */
- static int		opt_list;	/* list pages (in ranges) */
- static int		opt_no_summary;	/* don't show summary */
- static pid_t		opt_pid;	/* process to walk */
-+static int		opt_file;	/* walk over pagecache of file */
- 
- #define MAX_ADDR_RANGES	1024
- static int		nr_addr_ranges;
-@@ -178,6 +181,7 @@ static int		page_size;
- 
- static int		pagemap_fd;
- static int		kpageflags_fd;
-+static int		kpagecache_fd;
- 
- static int		opt_hwpoison;
- static int		opt_unpoison;
-@@ -276,6 +280,13 @@ static unsigned long kpageflags_read(uint64_t *buf,
- 	return do_u64_read(kpageflags_fd, PROC_KPAGEFLAGS, buf, index, pages);
+diff --git v3.14-rc6.orig/include/linux/pagemap.h v3.14-rc6/include/linux/pagemap.h
+index 70adf09a4cfc..5e234d0d0baf 100644
+--- v3.14-rc6.orig/include/linux/pagemap.h
++++ v3.14-rc6/include/linux/pagemap.h
+@@ -586,4 +586,15 @@ static inline int add_to_page_cache(struct page *page,
+ 	return error;
  }
  
-+static unsigned long kpagecache_read(uint64_t *buf,
-+				     unsigned long index,
-+				     unsigned long pages)
++#ifdef CONFIG_MEMORY_FAILURE
++bool mapping_hwpoisoned_range(struct address_space *mapping,
++				loff_t start_byte, loff_t end_byte);
++#else
++static inline bool mapping_hwpoisoned_range(struct address_space *mapping,
++				loff_t start_byte, loff_t end_byte)
 +{
-+	return do_u64_read(kpagecache_fd, PROC_KPAGECACHE, buf, index, pages);
++	return false;
 +}
++#endif /* CONFIG_MEMORY_FAILURE */
 +
- static unsigned long pagemap_read(uint64_t *buf,
- 				  unsigned long index,
- 				  unsigned long pages)
-@@ -358,7 +369,7 @@ static void show_page_range(unsigned long voffset,
- 	}
+ #endif /* _LINUX_PAGEMAP_H */
+diff --git v3.14-rc6.orig/include/linux/radix-tree.h v3.14-rc6/include/linux/radix-tree.h
+index 6e14a8e06105..9bbc36eb5fc5 100644
+--- v3.14-rc6.orig/include/linux/radix-tree.h
++++ v3.14-rc6/include/linux/radix-tree.h
+@@ -58,7 +58,11 @@ static inline int radix_tree_is_indirect_ptr(void *ptr)
  
- 	if (count) {
--		if (opt_pid)
-+		if (opt_pid || opt_file)
- 			printf("%lx\t", voff);
- 		printf("%lx\t%lx\t%s\n",
- 				index, count, page_flag_name(flags0));
-@@ -378,6 +389,19 @@ static void show_page(unsigned long voffset,
- 	printf("%lx\t%s\n", offset, page_flag_name(flags));
- }
+ /*** radix-tree API starts here ***/
  
-+#define __NR_PAGECACHE_TAGS	4
-+#define KPC_TAGS_BITS	__NR_PAGECACHE_TAGS
-+#define KPC_TAGS_OFFSET	(64 - KPC_TAGS_BITS)
-+#define KPC_TAGS_MASK	(((1ULL << KPC_TAGS_BITS) - 1) << KPC_TAGS_OFFSET)
-+#define KPC_TAGS(entry)	((entry & KPC_TAGS_MASK) >> KPC_TAGS_OFFSET)
-+
-+static void show_file_page(unsigned long voffset,
-+			   unsigned long offset, uint64_t flags, uint64_t entry)
-+{
-+	printf("%lx\t%lx\t%llx\t%s\n",
-+	       voffset, offset, KPC_TAGS(entry), page_flag_name(flags));
-+}
-+
- static void show_summary(void)
- {
- 	size_t i;
-@@ -564,10 +588,15 @@ static void add_page(unsigned long voffset,
- 	if (opt_unpoison)
- 		unpoison_page(offset);
++#ifdef CONFIG_MEMORY_FAILURE
++#define RADIX_TREE_MAX_TAGS 4
++#else
+ #define RADIX_TREE_MAX_TAGS 3
++#endif
  
--	if (opt_list == 1)
--		show_page_range(voffset, offset, flags);
--	else if (opt_list == 2)
--		show_page(voffset, offset, flags);
-+	if (opt_pid || !opt_file) {
-+		if (opt_list == 1)
-+			show_page_range(voffset, offset, flags);
-+		else if (opt_list == 2)
-+			show_page(voffset, offset, flags);
-+	} else {
-+		if (opt_list)
-+			show_file_page(voffset, offset, flags, pme);
+ /* root tags are stored in gfp_mask, shifted by __GFP_BITS_SHIFT */
+ struct radix_tree_root {
+diff --git v3.14-rc6.orig/mm/filemap.c v3.14-rc6/mm/filemap.c
+index 8c24eda539d8..887f2dfaf185 100644
+--- v3.14-rc6.orig/mm/filemap.c
++++ v3.14-rc6/mm/filemap.c
+@@ -285,6 +285,12 @@ int filemap_fdatawait_range(struct address_space *mapping, loff_t start_byte,
+ 	if (end_byte < start_byte)
+ 		goto out;
+ 
++	if (unlikely(mapping_hwpoisoned_range(mapping, start_byte,
++					      end_byte + 1))) {
++		ret = -EHWPOISON;
++		goto out;
 +	}
- 
- 	nr_pages[hash_slot(flags)]++;
- 	total_pages++;
-@@ -646,6 +675,41 @@ static void walk_task(unsigned long index, unsigned long count)
- 	}
- }
- 
-+char *kpagecache_path;
-+struct stat kpagecache_stat;
 +
-+#define KPAGECACHE_BATCH	(64 << 10)	/* 64k pages */
-+static void walk_file(unsigned long index, unsigned long count)
-+{
-+	uint64_t buf[KPAGECACHE_BATCH];
-+	unsigned long batch;
-+	unsigned long pages;
-+	unsigned long pfn;
-+	unsigned long i;
-+	unsigned long end_index = count;
-+	unsigned long size;
-+
-+	stat(kpagecache_path, &kpagecache_stat);
-+	size = kpagecache_stat.st_size;
-+	if (size > 0)
-+		size = (size - 1) / 4096;
-+	end_index = min_t(unsigned long, index + count - 1, size);
-+	while (index <= end_index) {
-+		batch = min_t(unsigned long, count, PAGEMAP_BATCH);
-+		pages = kpagecache_read(buf, index, batch);
-+		if (pages == 0)
-+			break;
-+		for (i = 0; i < pages; i++) {
-+			pfn = buf[i] & ((1UL << 52) - 1UL);
-+			if (pfn)
-+				walk_pfn(index + i, pfn, 1, buf[i]);
+ 	pagevec_init(&pvec, 0);
+ 	while ((index <= end) &&
+ 			(nr_pages = pagevec_lookup_tag(&pvec, mapping, &index,
+@@ -1133,6 +1139,10 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
+ 			if (unlikely(page == NULL))
+ 				goto no_cached_page;
+ 		}
++		if (unlikely(PageHWPoison(page))) {
++			error = -EHWPOISON;
++			goto readpage_error;
 +		}
+ 		if (PageReadahead(page)) {
+ 			page_cache_async_readahead(mapping,
+ 					ra, filp, page,
+@@ -2100,6 +2110,10 @@ inline int generic_write_checks(struct file *file, loff_t *pos, size_t *count, i
+         if (unlikely(*pos < 0))
+                 return -EINVAL;
+ 
++	if (unlikely(mapping_hwpoisoned_range(file->f_mapping, *pos,
++					      *pos + *count)))
++		return -EHWPOISON;
 +
-+		index += pages;
-+		count -= pages;
+ 	if (!isblk) {
+ 		/* FIXME: this is for backwards compatibility with 2.4 */
+ 		if (file->f_flags & O_APPEND)
+diff --git v3.14-rc6.orig/mm/memory-failure.c v3.14-rc6/mm/memory-failure.c
+index 1feeff9770cd..34f2c046af22 100644
+--- v3.14-rc6.orig/mm/memory-failure.c
++++ v3.14-rc6/mm/memory-failure.c
+@@ -55,6 +55,7 @@
+ #include <linux/memory_hotplug.h>
+ #include <linux/mm_inline.h>
+ #include <linux/kfifo.h>
++#include <linux/pagevec.h>
+ #include "internal.h"
+ 
+ int sysctl_memory_failure_early_kill __read_mostly = 0;
+@@ -611,55 +612,154 @@ static int me_pagecache_clean(struct page *p, unsigned long pfn)
+ }
+ 
+ /*
++ * Check PAGECACHE_TAG_HWPOISON within a given address range, and return
++ * true if we find at least one page with the tag set.
++ */
++bool mapping_hwpoisoned_range(struct address_space *mapping,
++				loff_t start_byte, loff_t end_byte)
++{
++	void **slot;
++	struct radix_tree_iter iter;
++	pgoff_t start_index;
++	pgoff_t end_index = 0;
++	bool hwpoisoned = false;
++	if (!sysctl_memory_failure_recovery)
++		return false;
++	start_index = start_byte >> PAGE_CACHE_SHIFT;
++	if (end_byte > 0)
++		end_index = (end_byte - 1) >> PAGE_CACHE_SHIFT;
++	rcu_read_lock();
++	radix_tree_for_each_tagged(slot, &mapping->page_tree, &iter,
++			start_index, end_index, PAGECACHE_TAG_HWPOISON) {
++		hwpoisoned = true;
++		break;
 +	}
++	rcu_read_unlock();
++	return hwpoisoned;
 +}
 +
- static void add_addr_range(unsigned long offset, unsigned long size)
- {
- 	if (nr_addr_ranges >= MAX_ADDR_RANGES)
-@@ -666,10 +730,12 @@ static void walk_addr_ranges(void)
- 		add_addr_range(0, ULONG_MAX);
- 
- 	for (i = 0; i < nr_addr_ranges; i++)
--		if (!opt_pid)
--			walk_pfn(0, opt_offset[i], opt_size[i], 0);
--		else
-+		if (opt_pid)
- 			walk_task(opt_offset[i], opt_size[i]);
-+		else if (opt_file)
-+			walk_file(opt_offset[i], opt_size[i]);
-+		else
-+			walk_pfn(0, opt_offset[i], opt_size[i], 0);
- 
- 	close(kpageflags_fd);
- }
-@@ -699,9 +765,7 @@ static void usage(void)
- "            -a|--addr    addr-spec     Walk a range of pages\n"
- "            -b|--bits    bits-spec     Walk pages with specified bits\n"
- "            -p|--pid     pid           Walk process address space\n"
--#if 0 /* planned features */
- "            -f|--file    filename      Walk file address space\n"
--#endif
- "            -l|--list                  Show page details in ranges\n"
- "            -L|--list-each             Show page details one by one\n"
- "            -N|--no-summary            Don't show summary info\n"
-@@ -801,6 +865,18 @@ static void parse_pid(const char *str)
- 
- static void parse_file(const char *name)
++static bool get_pagecache_tag_hwpoison(struct address_space *mapping,
++					pgoff_t index)
++{
++	bool tag;
++	rcu_read_lock();
++	tag = radix_tree_tag_get(&mapping->page_tree, index,
++				 PAGECACHE_TAG_HWPOISON);
++	rcu_read_unlock();
++	return tag;
++}
++
++static void set_pagecache_tag_hwpoison(struct address_space *mapping,
++					pgoff_t idx)
++{
++	spin_lock_irq(&mapping->tree_lock);
++	radix_tree_tag_set(&mapping->page_tree, idx, PAGECACHE_TAG_HWPOISON);
++	spin_unlock_irq(&mapping->tree_lock);
++}
++
++static void clear_pagecache_tag_hwpoison(struct address_space *mapping,
++					pgoff_t idx)
++{
++	spin_lock_irq(&mapping->tree_lock);
++	radix_tree_tag_clear(&mapping->page_tree, idx, PAGECACHE_TAG_HWPOISON);
++	spin_unlock_irq(&mapping->tree_lock);
++}
++
++/*
+  * Dirty pagecache page
++ *
++ * Memory error reporting (important especially on dirty pagecache error
++ * because dirty data is lost) with AS_EIO flag has some problems:
++ *  1) AS_EIO is not sticky, so when a thread received an error report and
++ *     failed to take proper actions with it, the error flag will be lost
++ *     and other threads read/write with old data from storage and use it
++ *     as if no memory error happens.
++ *  2) mapping->flags is file-wide information, while the memory error is an
++ *     event on a single page. So we lose the info about where in the file
++ *     was corrupted.
++ *  3) Even dirty pagecache error can be recoverable if there is a copy data
++ *     of the newest version in user processes' buffers, but with AS_EIO
++ *     we can't handle that case.
++ *
++ * To solve these, we handle dirty pagecache errors by replacing the error
++ * page with alternative one which has PAGECACHE_TAG_HWPOISON at the page
++ * index on mapping->page_tree set. Although setting PAGECACHE_TAG_HWPOISON
++ * is enough for its purpose, we also set PG_HWPoison for users to find the
++ * page easily (for example with tools/vm/page-types.c.) The page looks
++ * similar to a normal hwpoisoned page, but it's not isolated (connected to
++ * pagecache), or the memory at the physical address is not really corrupted.
++ *
++ * This quasi-hwpoisoned page works to keep reporting the error for all
++ * processes which try to access to the error address until it is resolved
++ * or the system reboots.
++ *
+  * Issues: when the error hit a hole page the error is not properly
+  * propagated.
+  */
+ static int me_pagecache_dirty(struct page *p, unsigned long pfn)
  {
 +	int ret;
-+	kpagecache_path = (char *)name;
-+	kpagecache_fd = checked_open(PROC_KPAGECACHE, O_RDWR);
-+	ret = write(kpagecache_fd, name, strlen(name));
-+	if (ret != (int)strlen(name))
-+		fatal("Failed to set file on %s\n", PROC_KPAGECACHE);
-+}
+ 	struct address_space *mapping = page_mapping(p);
++	pgoff_t index;
++	struct inode *inode = NULL;
++	struct page *new;
+ 
+ 	SetPageError(p);
+-	/* TBD: print more information about the file. */
+ 	if (mapping) {
++		index = page_index(p);
++		/*
++		 * we take inode refcount to keep it's pagecache or mapping
++		 * on the memory until the error is resolved.
++		 */
++		inode = igrab(mapping->host);
++		pr_info("MCE %#lx: memory error on dirty pagecache (page offset:%lu, inode:%lu, dev:%s)\n",
++			page_to_pfn(p), index, inode->i_ino, inode->i_sb->s_id);
++	}
 +
-+static void close_kpagecache(void)
-+{
-+	write(kpagecache_fd, NULL, 1);
-+	close(kpagecache_fd);
++	ret = me_pagecache_clean(p, pfn);
++
++	if (inode) {
++		/*
++		 * There's a potential race where some other thread can
++		 * allocate another page and add it at the error address of
++		 * the mapping, before the below code adds an alternative
++		 * (quasi-hwpoisoned) page. In such case, we detect it by
++		 * the failure of add_to_page_cache_lru(), and we give up
++		 * doing error containment (fallback to old the AS_EIO things).
++		 */
++		new = page_cache_alloc_cold(mapping);
++		if (!new)
++			goto out_iput;
++		ret = add_to_page_cache_lru(new, mapping, page_index(p),
++					    GFP_KERNEL);
++		if (ret)
++			goto out_put_page;
+ 		/*
+-		 * IO error will be reported by write(), fsync(), etc.
+-		 * who check the mapping.
+-		 * This way the application knows that something went
+-		 * wrong with its dirty file data.
+-		 *
+-		 * There's one open issue:
+-		 *
+-		 * The EIO will be only reported on the next IO
+-		 * operation and then cleared through the IO map.
+-		 * Normally Linux has two mechanisms to pass IO error
+-		 * first through the AS_EIO flag in the address space
+-		 * and then through the PageError flag in the page.
+-		 * Since we drop pages on memory failure handling the
+-		 * only mechanism open to use is through AS_AIO.
+-		 *
+-		 * This has the disadvantage that it gets cleared on
+-		 * the first operation that returns an error, while
+-		 * the PageError bit is more sticky and only cleared
+-		 * when the page is reread or dropped.  If an
+-		 * application assumes it will always get error on
+-		 * fsync, but does other operations on the fd before
+-		 * and the page is dropped between then the error
+-		 * will not be properly reported.
+-		 *
+-		 * This can already happen even without hwpoisoned
+-		 * pages: first on metadata IO errors (which only
+-		 * report through AS_EIO) or when the page is dropped
+-		 * at the wrong time.
+-		 *
+-		 * So right now we assume that the application DTRT on
+-		 * the first EIO, but we're not worse than other parts
+-		 * of the kernel.
++		 * Newly allocated page can remain on pagevec, so without
++		 * draining it subsequent isolation doesn't work.
+ 		 */
+-		mapping_set_error(mapping, EIO);
++		lru_add_drain_all();
++		if (isolate_lru_page(new))
++			goto out;
++		inc_zone_page_state(new, NR_ISOLATED_ANON +
++				    page_is_file_cache(new));
++		SetPageHWPoison(new);
++		page_cache_release(new);
++		set_pagecache_tag_hwpoison(mapping, page_index(p));
++		unlock_page(new);
++		ret = RECOVERED;
+ 	}
++	return ret;
+ 
+-	return me_pagecache_clean(p, pfn);
++out:
++	delete_from_page_cache(new);
++	unlock_page(new);
++out_put_page:
++	page_cache_release(new);
++out_iput:
++	iput(mapping->host);
++	mapping_set_error(mapping, EIO);
++	return FAILED;
  }
  
- static void parse_addr_range(const char *optarg)
-@@ -953,6 +1029,7 @@ int main(int argc, char *argv[])
- 			break;
- 		case 'f':
- 			parse_file(optarg);
-+			opt_file = 1;
- 			break;
- 		case 'a':
- 			parse_addr_range(optarg);
-@@ -989,18 +1066,26 @@ int main(int argc, char *argv[])
- 		}
- 	}
- 
--	if (opt_list && opt_pid)
--		printf("voffset\t");
--	if (opt_list == 1)
--		printf("offset\tlen\tflags\n");
--	if (opt_list == 2)
--		printf("offset\tflags\n");
-+	if (opt_pid || !opt_file) {
-+		if (opt_pid)
-+			printf("voffset\t");
-+		if (opt_list == 1)
-+			printf("offset\tlen\tflags\n");
-+		if (opt_list == 2)
-+			printf("offset\tflags\n");
-+	} else {
-+		if (opt_list)
-+			printf("pgoff\tpfn\ttags\tflags\n");
-+	}
- 
- 	walk_addr_ranges();
- 
- 	if (opt_list == 1)
- 		show_page_range(0, 0, 0);  /* drain the buffer */
- 
-+	if (opt_file == 1)
-+		close_kpagecache();
-+
- 	if (opt_no_summary)
- 		return 0;
- 
+ /*
 -- 
 1.8.5.3
 
