@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaCMKPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:15:10 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:35616 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556AbaCMKPH (ORCPT
+	id S1754178AbaCMKPU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:15:20 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:63678 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556AbaCMKPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:15:07 -0400
+	Thu, 13 Mar 2014 06:15:15 -0400
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         catalin.marinas@arm.com, will.deacon@arm.com, tim.bird@sonymobile.com
@@ -14,9 +14,9 @@ Cc: gkulkarni@caviumnetworks.com, dsaxena@linaro.org, arndb@arndb.de,
         linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
         linux-kernel@vger.kernel.org,
         AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v6 6/7] arm64: ftrace: Add CALLER_ADDRx macros
-Date: Thu, 13 Mar 2014 19:13:49 +0900
-Message-Id: <1394705630-12384-7-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH v6 7/7] arm64: ftrace: Add system call tracepoint
+Date: Thu, 13 Mar 2014 19:13:50 +0900
+Message-Id: <1394705630-12384-8-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
 References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
@@ -25,131 +25,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CALLER_ADDRx returns caller's address at specified level in call stacks.
-They are used for several tracers like irqsoff and preemptoff.
-Strange to say, however, they are refered even without FTRACE.
+This patch allows system call entry or exit to be traced as ftrace events,
+ie. sys_enter_*/sys_exit_*, if CONFIG_FTRACE_SYSCALLS is enabled.
+Those events appear and can be controlled under
+    ${sysfs}/tracing/events/syscalls/
 
-Please note that this implementation assumes that we have frame pointers.
-(which means kernel should be compiled with -fno-omit-frame-pointer.)
+Please note that we can't trace compat system calls here because
+AArch32 mode does not share the same syscall table with AArch64.
+Just define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS in order to avoid unexpected
+results (bogus syscalls reported or even hang-up).
 
 Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 ---
- arch/arm64/include/asm/ftrace.h    |   13 ++++++++-
- arch/arm64/kernel/Makefile         |    3 +-
- arch/arm64/kernel/return_address.c |   55 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 69 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm64/kernel/return_address.c
+ arch/arm64/Kconfig               |    1 +
+ arch/arm64/include/asm/ftrace.h  |   20 ++++++++++++++++
+ arch/arm64/include/asm/syscall.h |    1 +
+ arch/arm64/include/asm/unistd.h  |    2 ++
+ arch/arm64/kernel/ptrace.c       |   48 ++++++++++++++++++++++----------------
+ 5 files changed, 52 insertions(+), 20 deletions(-)
 
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 6954959..b1dcdb4 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -43,6 +43,7 @@ config ARM64
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_PATA_PLATFORM
+ 	select HAVE_PERF_EVENTS
++	select HAVE_SYSCALL_TRACEPOINTS
+ 	select IRQ_DOMAIN
+ 	select MODULES_USE_ELF_RELA
+ 	select NO_BOOTMEM
 diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
-index ed5c448..c44c4b1 100644
+index c44c4b1..4ef06f1 100644
 --- a/arch/arm64/include/asm/ftrace.h
 +++ b/arch/arm64/include/asm/ftrace.h
-@@ -18,6 +18,7 @@
- 
- #ifndef __ASSEMBLY__
- extern void _mcount(unsigned long);
-+extern void *return_address(unsigned int);
- 
- struct dyn_arch_ftrace {
- 	/* No extra data needed for arm64 */
-@@ -33,6 +34,16 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
- 	 */
- 	return addr;
- }
--#endif /* __ASSEMBLY__ */
+@@ -44,6 +44,26 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+ #define CALLER_ADDR4 ((unsigned long)return_address(4))
+ #define CALLER_ADDR5 ((unsigned long)return_address(5))
+ #define CALLER_ADDR6 ((unsigned long)return_address(6))
 +
-+#define HAVE_ARCH_CALLER_ADDR
++#include <asm/compat.h>
 +
-+#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
-+#define CALLER_ADDR1 ((unsigned long)return_address(1))
-+#define CALLER_ADDR2 ((unsigned long)return_address(2))
-+#define CALLER_ADDR3 ((unsigned long)return_address(3))
-+#define CALLER_ADDR4 ((unsigned long)return_address(4))
-+#define CALLER_ADDR5 ((unsigned long)return_address(5))
-+#define CALLER_ADDR6 ((unsigned long)return_address(6))
-+#endif /* ifndef __ASSEMBLY__ */
++/*
++ * Because AArch32 mode does not share the same syscall table with AArch64,
++ * tracing compat syscalls may result in reporting bogus syscalls or even
++ * hang-up, so just do not trace them.
++ * See kernel/trace/trace_syscalls.c
++ *
++ * x86 code says:
++ * If the user realy wants these, then they should use the
++ * raw syscall tracepoints with filtering.
++ */
++#define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS 1
++static inline bool arch_trace_is_compat_syscall(struct pt_regs *regs)
++{
++        if (is_compat_task())
++                return true;
++        return false;
++}
+ #endif /* ifndef __ASSEMBLY__ */
  
  #endif /* __ASM_FTRACE_H */
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index ac67fd0..b5bfa7f 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -7,12 +7,13 @@ AFLAGS_head.o		:= -DTEXT_OFFSET=$(TEXT_OFFSET)
+diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
+index 70ba9d4..383771e 100644
+--- a/arch/arm64/include/asm/syscall.h
++++ b/arch/arm64/include/asm/syscall.h
+@@ -18,6 +18,7 @@
  
- CFLAGS_REMOVE_ftrace.o = -pg
- CFLAGS_REMOVE_insn.o = -pg
-+CFLAGS_REMOVE_return_address.o = -pg
+ #include <linux/err.h>
  
- # Object file lists.
- arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
- 			   entry-fpsimd.o process.o ptrace.o setup.o signal.o	\
- 			   sys.o stacktrace.o time.o traps.o io.o vdso.o	\
--			   hyp-stub.o psci.o cpu_ops.o insn.o
-+			   hyp-stub.o psci.o cpu_ops.o insn.o return_address.o
++extern const void *sys_call_table[];
  
- arm64-obj-$(CONFIG_COMPAT)		+= sys32.o kuser32.o signal32.o 	\
- 					   sys_compat.o
-diff --git a/arch/arm64/kernel/return_address.c b/arch/arm64/kernel/return_address.c
-new file mode 100644
-index 0000000..89102a6
---- /dev/null
-+++ b/arch/arm64/kernel/return_address.c
-@@ -0,0 +1,55 @@
-+/*
-+ * arch/arm64/kernel/return_address.c
-+ *
-+ * Copyright (C) 2013 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
+ static inline int syscall_get_nr(struct task_struct *task,
+ 				 struct pt_regs *regs)
+diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
+index 82ce217..c335479 100644
+--- a/arch/arm64/include/asm/unistd.h
++++ b/arch/arm64/include/asm/unistd.h
+@@ -28,3 +28,5 @@
+ #endif
+ #define __ARCH_WANT_SYS_CLONE
+ #include <uapi/asm/unistd.h>
 +
-+#include <linux/export.h>
-+#include <linux/ftrace.h>
++#define NR_syscalls (__NR_syscalls)
+diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+index 9993a8f..9c52b3e 100644
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -41,6 +41,9 @@
+ #include <asm/traps.h>
+ #include <asm/system_misc.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/syscalls.h>
 +
-+#include <asm/stacktrace.h>
-+
-+struct return_address_data {
-+	unsigned int level;
-+	void *addr;
-+};
-+
-+static int save_return_addr(struct stackframe *frame, void *d)
-+{
-+	struct return_address_data *data = d;
-+
-+	if (!data->level) {
-+		data->addr = (void *)frame->pc;
-+		return 1;
-+	} else {
-+		--data->level;
-+		return 0;
+ /*
+  * TODO: does not yet catch signals sent when the child dies.
+  * in exit.c or in signal.c.
+@@ -1062,29 +1065,31 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+ {
+ 	unsigned long saved_reg;
+ 
+-	if (!test_thread_flag(TIF_SYSCALL_TRACE))
+-		return regs->syscallno;
++	if (test_thread_flag(TIF_SYSCALL_TRACE)) {
++		/*
++		 * A scrach register (ip(r12) on AArch32, x7 on AArch64) is
++		 * used to denote syscall entry/exit:
++		 *   0 -> entry
++		 */
++		if (is_compat_task()) {
++			saved_reg = regs->regs[12];
++			regs->regs[12] = 0;
++		} else {
++			saved_reg = regs->regs[7];
++			regs->regs[7] = 0;
++		}
+ 
+-	/*
+-	 * A scrach register (ip(r12) on AArch32, x7 on AArch64) is
+-	 * used to denote syscall entry/exit:
+-	 *   0 -> entry
+-	 */
+-	if (is_compat_task()) {
+-		saved_reg = regs->regs[12];
+-		regs->regs[12] = 0;
+-	} else {
+-		saved_reg = regs->regs[7];
+-		regs->regs[7] = 0;
+-	}
++		if (tracehook_report_syscall_entry(regs))
++			regs->syscallno = ~0UL;
+ 
+-	if (tracehook_report_syscall_entry(regs))
+-		regs->syscallno = ~0UL;
++		if (is_compat_task())
++			regs->regs[12] = saved_reg;
++		else
++			regs->regs[7] = saved_reg;
 +	}
-+}
+ 
+-	if (is_compat_task())
+-		regs->regs[12] = saved_reg;
+-	else
+-		regs->regs[7] = saved_reg;
++	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
++		trace_sys_enter(regs, regs->syscallno);
+ 
+ 	return regs->syscallno;
+ }
+@@ -1093,6 +1098,9 @@ asmlinkage void syscall_trace_exit(struct pt_regs *regs)
+ {
+ 	unsigned long saved_reg;
+ 
++	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
++		trace_sys_exit(regs, regs_return_value(regs));
 +
-+void *return_address(unsigned int level)
-+{
-+	struct return_address_data data;
-+	struct stackframe frame;
-+	register unsigned long current_sp asm ("sp");
-+
-+	data.level = level + 2;
-+	data.addr = NULL;
-+
-+	frame.fp = (unsigned long)__builtin_frame_address(0);
-+	frame.sp = current_sp;
-+	frame.pc = (unsigned long)return_address; /* dummy */
-+
-+	walk_stackframe(&frame, save_return_addr, &data);
-+
-+	if (!data.level)
-+		return data.addr;
-+	else
-+		return NULL;
-+}
-+EXPORT_SYMBOL_GPL(return_address);
+ 	if (!test_thread_flag(TIF_SYSCALL_TRACE))
+ 		return;
+ 
 -- 
 1.7.9.5
 
