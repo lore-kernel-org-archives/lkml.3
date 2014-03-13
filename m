@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765AbaCMW7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 18:59:46 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:41898 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490AbaCMW7o (ORCPT
+	id S1754911AbaCMXBd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 19:01:33 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:38509 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191AbaCMXBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 18:59:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <53222F1A.8090205@oracle.com>
-References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
-	<CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
-	<5321CBDA.1060705@oracle.com>
-	<CA+55aFwDKSKyxC4rTBiFMRVr6xYtL96ZYCQqNSVLJV0-=FLTUg@mail.gmail.com>
-	<53222F1A.8090205@oracle.com>
-Date: Thu, 13 Mar 2014 15:59:43 -0700
-X-Google-Sender-Auth: KLikCDa07wcF_T1dRS7sW7EF47U
-Message-ID: <CA+55aFxi5VQFu6_MVaVWhwj+bo-orQUmsKRakr_1Txfu1bEcpg@mail.gmail.com>
-Subject: Re: [RFC] improve_stack: make stack dump output useful again
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 13 Mar 2014 19:01:32 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org
+Cc: Stefani Seibold <stefani@seibold.net>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v4 0/2] x86: Remove compat vdso support
+Date: Thu, 13 Mar 2014 16:01:25 -0700
+Message-Id: <cover.1394751608.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 3:20 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> I'll fix it up and re-send this patch.
+This applies to -linus and should replace tip/x86/vdso -- Stefani
+will presumably rebase the rest of that branch.
 
-The problem (as you will find out) is that "addr2line" doesn't take
-symbolic names.
+Changes from v3:
+ - Don't rename the config option
+ - Switch the default value of CONFIG_COMPAT_VDSO
+ - Fix numerous typos in comments and docs
 
-So either addr2line needs to be improved (which really would be a good
-idea regardless), or your script needs to use "nm" or "gdb" or
-something to first translate the symbol+off into a hex number (which
-will not match the kernel-provided hex number when base randomization
-is in effect, but it will match the pre-randomized data in the vmlinux
-file, so then addr2line would work).
+Changes from v2: Update a comment that I missed.
 
-              Linus
+Changes from v1:
+ - CONFIG_ENABLE_VDSO32_BY_DEFAULT now defaults to n
+ - Improved the config text and description
+ - Improved the kernel parameter docs
+
+Andy Lutomirski (2):
+  x86: Remove compat vdso support
+  x86_32: Remove user bit from identity map PDE
+
+ Documentation/kernel-parameters.txt  |  22 +++-
+ arch/x86/Kconfig                     |  26 ++--
+ arch/x86/include/asm/elf.h           |   4 -
+ arch/x86/include/asm/fixmap.h        |   8 --
+ arch/x86/include/asm/pgtable_types.h |   7 +-
+ arch/x86/include/asm/vdso.h          |   5 +-
+ arch/x86/vdso/vdso-layout.lds.S      |   2 +-
+ arch/x86/vdso/vdso32-setup.c         | 232 ++++-------------------------------
+ arch/x86/vdso/vdso32/vdso32.lds.S    |   2 -
+ 9 files changed, 59 insertions(+), 249 deletions(-)
+
+-- 
+1.8.5.3
+
