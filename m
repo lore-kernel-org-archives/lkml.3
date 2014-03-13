@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaCMRIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 13:08:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14323 "EHLO mga09.intel.com"
+	id S1754664AbaCMRJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 13:09:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2868 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753804AbaCMRIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 13:08:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,648,1389772800"; 
-   d="scan'208";a="471773805"
-Date: Thu, 13 Mar 2014 19:14:21 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Lan Tianyu <tianyu.lan@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        Alan Cox <alan.cox@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/5] gpio / ACPI: Rework ACPI GPIO events and add
- support for operation regions
-Message-ID: <20140313171421.GW5018@intel.com>
-References: <1394456094-21671-1-git-send-email-mika.westerberg@linux.intel.com>
- <CACRpkdYKpA0URPr2mAUehqoGmwARH4pdMBMrBrXJmN_m2Kd1cA@mail.gmail.com>
+	id S1752752AbaCMRJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 13:09:00 -0400
+Date: Thu, 13 Mar 2014 18:08:50 +0100
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Gleb Natapov <gleb@kernel.org>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: SVM: fix cr8 intercept window
+Message-ID: <20140313170846.GA23297@potion.brq.redhat.com>
+References: <1394561478-8815-1-git-send-email-rkrcmar@redhat.com>
+ <20140312010513.GA8131@amt.cnet>
+ <20140312104047.GA7488@potion.brq.redhat.com>
+ <53209741.3060204@redhat.com>
+ <20140313135206.GB30596@minantech.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CACRpkdYKpA0URPr2mAUehqoGmwARH4pdMBMrBrXJmN_m2Kd1cA@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140313135206.GB30596@minantech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 03:17:29PM +0100, Linus Walleij wrote:
-> On Mon, Mar 10, 2014 at 1:54 PM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> 
-> > This is second revision of the patch series. The first version is available
-> > for example here [1].
-> 
-> I have applied patche 1 thru 4.
+2014-03-13 15:52+0200, Gleb Natapov:
+> On Wed, Mar 12, 2014 at 06:20:01PM +0100, Paolo Bonzini wrote:
+> > Il 12/03/2014 11:40, Radim Krčmář ha scritto:
+> > >2014-03-11 22:05-0300, Marcelo Tosatti:
+> > >>On Tue, Mar 11, 2014 at 07:11:18PM +0100, Radim Krčmář wrote:
+> > >>>We always disable cr8 intercept in its handler, but only re-enable it
+> > >>>if handling KVM_REQ_EVENT, so there can be a window where we do not
+> > >>>intercept cr8 writes, which allows an interrupt to disrupt a higher
+> > >>>priority task.
+> > >>>
+> > >>>Fix this by disabling intercepts in the same function that re-enables
+> > >>>them when needed. This fixes BSOD in Windows 2008.
+> > >>>
+> > >>>Cc: <stable@vger.kernel.org>
+> > >>>Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+> > >>>---
+> > >>> arch/x86/kvm/svm.c | 6 +++---
+> > >>> 1 file changed, 3 insertions(+), 3 deletions(-)
+> > >>>
+> > >>>diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> > >>>index 64d9bb9..f676c18 100644
+> > >>>--- a/arch/x86/kvm/svm.c
+> > >>>+++ b/arch/x86/kvm/svm.c
+> > >>>@@ -3003,10 +3003,8 @@ static int cr8_write_interception(struct vcpu_svm *svm)
+> > >>> 	u8 cr8_prev = kvm_get_cr8(&svm->vcpu);
+> > >>> 	/* instruction emulation calls kvm_set_cr8() */
+> > >>> 	r = cr_interception(svm);
+> > >>>-	if (irqchip_in_kernel(svm->vcpu.kvm)) {
+> > >>>-		clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
+> > >>>+	if (irqchip_in_kernel(svm->vcpu.kvm))
+> > >>> 		return r;
+> > >>>-	}
+> > 
+> > I think that the old code here makes little sense, and for two reasons:
+> > 
+> I agree that old code is wrong and the patch looks correct, but I only
+> see how the bug may cause pending IRR to not be delivered in time,
+> not how interrupt can disrupt a higher priority task.
 
-Thanks!
+True, the commit message is bad.
+We BSOD only because IRR is not injected right after lowering the TPR
+and code depends on values that had to be computed in it.
+
+Paolo, can you change the last sentence to ", which means we don't
+inject pending IRR immediately."?  (or do we just forget it?)
+
+Thanks.
+
+---
+ My model of what is happening had misconceptions about Windows, KVM and
+ SVM ... explained BSOD in IRQL 0xc more directly though, so it lasted
+ till Paolo's review -- the list of things to (re)read is long.
