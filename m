@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464AbaCMVkc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:40:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44744 "EHLO mx1.redhat.com"
+	id S1754495AbaCMVkj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 17:40:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45312 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752854AbaCMVk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 17:40:29 -0400
+	id S1753235AbaCMVkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 17:40:31 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -14,59 +14,186 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Dave Chinner <david@fromorbit.com>,
         "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org
-Subject: [PATCH 6/6] Documentation: update Documentation/vm/pagemap.txt
-Date: Thu, 13 Mar 2014 17:39:46 -0400
-Message-Id: <1394746786-6397-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 4/6] fs/proc/page.c: introduce /proc/kpagecache interface
+Date: Thu, 13 Mar 2014 17:39:44 -0400
+Message-Id: <1394746786-6397-5-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1394746786-6397-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1394746786-6397-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a chapter about kpagecache interface.
+/proc/pid/pagemap is one of powerful analyzing and testing features about
+page mapping. This is also useful to know about page status combined with
+/proc/kpageflag or /proc/kpagecount. One missing is the similar interface to
+scan over pagecache of a given file without opening it or mapping it to
+virtual address, which could impact other workloads. So this patch provides it.
+
+Usage is simple: 1) write a file path to be scanned into the interface,
+and 2) read 64-bit entries, each of which is associated with the page on
+each page index.
+
+Good in-kernel tree example is tools/vm/page-types.c (some code added on
+it in the later patch.)
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- Documentation/vm/pagemap.txt | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ fs/proc/page.c     | 106 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h |  11 ++++--
+ 2 files changed, 113 insertions(+), 4 deletions(-)
 
-diff --git v3.14-rc6.orig/Documentation/vm/pagemap.txt v3.14-rc6/Documentation/vm/pagemap.txt
-index 5948e455c4d2..c8039263fc45 100644
---- v3.14-rc6.orig/Documentation/vm/pagemap.txt
-+++ v3.14-rc6/Documentation/vm/pagemap.txt
-@@ -150,3 +150,32 @@ once.
- Reading from any of the files will return -EINVAL if you are not starting
- the read on an 8-byte boundary (e.g., if you sought an odd number of bytes
- into the file), or if the size of the read is not a multiple of 8 bytes.
+diff --git v3.14-rc6.orig/fs/proc/page.c v3.14-rc6/fs/proc/page.c
+index e647c55275d9..4be6f72783d3 100644
+--- v3.14-rc6.orig/fs/proc/page.c
++++ v3.14-rc6/fs/proc/page.c
+@@ -9,6 +9,8 @@
+ #include <linux/seq_file.h>
+ #include <linux/hugetlb.h>
+ #include <linux/kernel-page-flags.h>
++#include <linux/path.h>
++#include <linux/namei.h>
+ #include <asm/uaccess.h>
+ #include "internal.h"
+ 
+@@ -212,10 +214,114 @@ static const struct file_operations proc_kpageflags_operations = {
+ 	.read = kpageflags_read,
+ };
+ 
++static struct path kpagecache_path;
 +
++#define KPC_TAGS_BITS	__NR_PAGECACHE_TAGS
++#define KPC_TAGS_OFFSET	(64 - KPC_TAGS_BITS)
++#define KPC_TAGS_MASK	(((1LL << KPC_TAGS_BITS) - 1) << KPC_TAGS_OFFSET)
++#define KPC_TAGS(bits)	(((bits) << KPC_TAGS_OFFSET) & KPC_TAGS_MASK)
++/* a few bits remaining between two fields. */
++#define KPC_PFN_BITS	(64 - PAGE_CACHE_SHIFT)
++#define KPC_PFN_MASK	((1LL << KPC_PFN_BITS) - 1)
++#define KPC_PFN(pfn)	((pfn) & KPC_PFN_MASK)
 +
-+kpagecache, from file perspective
-+---------------------------------
++static u64 get_pagecache_tags(struct radix_tree_root *root, unsigned long index)
++{
++	int i;
++	unsigned long tags = 0;
++	for (i = 0; i < __NR_PAGECACHE_TAGS; i++)
++		if (radix_tree_tag_get(root, index, i))
++			tags |=  1 << i;
++	return KPC_TAGS(tags);
++}
 +
-+Similarly to pagemap, we have a interface /proc/kpagecache to let userspace
-+know about pagecache profile for a given file. Unlike pagemap interface,
-+we don't have to mmap() and fault in the target file, so the impact on other
-+workloads (maybe profile targets) is minimum.
++static ssize_t kpagecache_read(struct file *file, char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	u64 __user *out = (u64 __user *)buf;
++	unsigned long src = *ppos;
++	struct address_space *mapping;
++	loff_t size;
++	pgoff_t index;
++	struct radix_tree_iter iter;
++	void **slot;
++	ssize_t ret = 0;
 +
-+To use this interface, firstly we open it and write the name of the target
-+file to it for setup. And then we can read the pagecache info of the file.
-+The file contains the array of 64-bit entries for each page offset. Data
-+format is like below:
++	if (!kpagecache_path.dentry)
++		return 0;
++	if (src & KPMMASK || count & KPMMASK)
++		return -EINVAL;
++	mapping = kpagecache_path.dentry->d_inode->i_mapping;
++	size = i_size_read(mapping->host);
++	if (!size)
++		return 0;
++	size = (size - 1) >> PAGE_CACHE_SHIFT;
++	index = src / KPMSIZE;
++	count = min_t(unsigned long, count, ((size + 1) * KPMSIZE) - src);
 +
-+    * Bits  0-49  page frame number (PFN) if present
-+    * Bits 50-59  zero (reserved)
-+    * Bits 60-63  pagecache tags
++	rcu_read_lock();
++	radix_tree_for_each_slot(slot, &mapping->page_tree,
++				 &iter, index, index + count / KPMSIZE - 1) {
++		struct page *page = radix_tree_deref_slot(slot);
++		u64 entry;
++		if (unlikely(!page))
++			continue;
++		entry = get_pagecache_tags(&mapping->page_tree, iter.index);
++		entry |= KPC_PFN(page_to_pfn(page));
++		count = (iter.index - index + 1) * KPMSIZE;
++		if (put_user(entry, out + iter.index - index))
++			break;
++	}
++	rcu_read_unlock();
++	*ppos += count;
++	if (!ret)
++		ret = count;
++	return ret;
++}
 +
-+Good example is tools/vm/page-types.c, where we can get the list of pages
-+belonging to the file like below:
++static ssize_t kpagecache_write(struct file *file, const char __user *pathname,
++			       size_t count, loff_t *ppos)
++{
++	struct path path;
++	int err;
++	struct address_space *mapping;
 +
-+  $ dd if=/dev/urandom of=file bs=4096 count=2
-+  $ date >> file
-+  $ tools/vm/page-types -f file -Nl
-+  pgoff	pfn	tags	flags
-+  0	3305f	0	__RU_l______________________________
-+  1	374bb	0	__RU_l______________________________
-+  2	6c5ac	1	___UDlA_____________________________
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
++	if (!pathname) {
++		if (kpagecache_path.dentry) {
++			path_put(&kpagecache_path);
++			kpagecache_path.mnt = NULL;
++			kpagecache_path.dentry = NULL;
++		}
++		return count;
++	}
++
++	err = user_path_at(AT_FDCWD, pathname, LOOKUP_FOLLOW, &path);
++	if (err)
++		return -EINVAL;
++	if (kpagecache_path.dentry != path.dentry) {
++		path_put(&kpagecache_path);
++		kpagecache_path.mnt = path.mnt;
++		kpagecache_path.dentry = path.dentry;
++	} else
++		path_put(&path);
++	return count;
++}
++
++static const struct file_operations proc_kpagecache_operations = {
++	.llseek		= mem_lseek,
++	.read		= kpagecache_read,
++	.write		= kpagecache_write,
++};
++
+ static int __init proc_page_init(void)
+ {
+ 	proc_create("kpagecount", S_IRUSR, NULL, &proc_kpagecount_operations);
+ 	proc_create("kpageflags", S_IRUSR, NULL, &proc_kpageflags_operations);
++	proc_create("kpagecache", S_IRUSR|S_IWUSR, NULL,
++			&proc_kpagecache_operations);
+ 	return 0;
+ }
+ fs_initcall(proc_page_init);
+diff --git v3.14-rc6.orig/include/linux/fs.h v3.14-rc6/include/linux/fs.h
+index 1e8966919044..6bf7ddcfc138 100644
+--- v3.14-rc6.orig/include/linux/fs.h
++++ v3.14-rc6/include/linux/fs.h
+@@ -472,12 +472,15 @@ struct block_device {
+  * Radix-tree tags, for tagging dirty and writeback pages within the pagecache
+  * radix trees
+  */
+-#define PAGECACHE_TAG_DIRTY	0
+-#define PAGECACHE_TAG_WRITEBACK	1
+-#define PAGECACHE_TAG_TOWRITE	2
++enum {
++	PAGECACHE_TAG_DIRTY,
++	PAGECACHE_TAG_WRITEBACK,
++	PAGECACHE_TAG_TOWRITE,
+ #ifdef CONFIG_MEMORY_FAILURE
+-#define PAGECACHE_TAG_HWPOISON	3
++	PAGECACHE_TAG_HWPOISON,
+ #endif
++	__NR_PAGECACHE_TAGS,
++};
+ 
+ int mapping_tagged(struct address_space *mapping, int tag);
+ 
 -- 
 1.8.5.3
 
