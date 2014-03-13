@@ -1,188 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaCMBaX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 21:30:23 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:62512 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239AbaCMBaR (ORCPT
+	id S1752656AbaCMBlx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 21:41:53 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:39769 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382AbaCMBlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 21:30:17 -0400
+	Wed, 12 Mar 2014 21:41:51 -0400
+Message-ID: <53210CCA.90907@linaro.org>
+Date: Wed, 12 Mar 2014 20:41:30 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6ZbKFMgcm4upR7gTnYwZ15UJpxzctOwWMsGyONipq8aw@mail.gmail.com>
-References: <1394053603-3724-1-git-send-email-suravee.suthikulpanit@amd.com>
-	<CAErSpo4MMJh9b0aivwGSbxCMVw24He1+Vo_LH0R0E+fYM5aThg@mail.gmail.com>
-	<5317D9B0.1080502@amd.com>
-	<5318160D.8070305@amd.com>
-	<CAErSpo59=52bqgyvqk1x7kcgFmRtdZhT6faYTi3wy7KDtk5=Pw@mail.gmail.com>
-	<5318D475.9040701@amd.com>
-	<CAErSpo5Dq3M5ik=dgF5dLsZV87XJeT3nEiYptPBXPCyLZ9xhgA@mail.gmail.com>
-	<CAErSpo6ZbKFMgcm4upR7gTnYwZ15UJpxzctOwWMsGyONipq8aw@mail.gmail.com>
-Date: Wed, 12 Mar 2014 19:30:16 -0600
-Message-ID: <CAL-B5D0+4vyOCGZafZr==xhas492yWwb4YKksmBR+JzMcZgoPA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] amd/pci: Add AMD hostbridge supports for newer AMD systems
-From: Myron Stowe <myron.stowe@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        kim.naru@amd.com,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>, wim@iguana.be
+CC: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: fix ARCH_BCM_MOBILE dependency
+References: <1394662322-12445-1-git-send-email-elder@linaro.org> <5320F516.5080707@roeck-us.net>
+In-Reply-To: <5320F516.5080707@roeck-us.net>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on Bjorn's latest response it looks as if pci_acpi_scan_root()
-is only used as a fallback when the platform's BIOS has not put a
-proper ACPI SRAT table and/or _PXM method in place.  It will be
-interesting to see if the 'dmesg' log and 'acpidump' information ends
-up proving this out.
+On 03/12/2014 07:00 PM, Guenter Roeck wrote:
+> On 03/12/2014 03:12 PM, Alex Elder wrote:
+>> Starting with this commit:
+>>      047ef2fa rename ARCH_BCM to ARCH_BCM_MOBILE (clocksource)
+>> the meaning of the ARCH_BCM config option is changed to represent
+>> all Broadcom chips with code in the mach-bcm directory.
+>>
+>> Configuration options related to specific Broadcom platforms should
+>> now use another symbol (currently ARCH_BCM_MOBILE, ARCH_BCM2835, or
+>> ARCH_BCM_5301X).
+>>
+>> The BCM_KONA_WDT config option indicates a dependency on ARCH_BCM,
+>> but it should be ARCH_BCM_MOBILE instead.  Fix that.
+>>
+>> Signed-off-by: Alex Elder <elder@linaro.org>
+> 
+> Hi Alex,
+> 
+> Markus Mayer already submitted a similar patch:
+>     http://patchwork.roeck-us.net/patch/1263/
 
-Regardless of the above, if I'm understanding your patches -
-specifically 1/3 - it looks as if the arch/x86/pci/amd_bus.c changes
-remove a lot of the CPU family specifics and yield a generally more
-generic approach that won't have to be constantly updated as new AMD
-CPU families are introduced going forward (exactly the situation we
-are now in).  Today, before patch 1/3 here, amd_bus.c only handles AMD
-CPU families K8, 0x10, and 0x11 (ref: static struct
-pci_hostbridge_probe pci_probes[] __initdata = { ...) and as such,
-when the 0x15 family was introduced, the response supplied upstream
-was to add to an existing quirk - commit f62ef5f.  I believe with the
-approach supplied here - patch 1/3 - the 'quirk_amd_nb_node()' quirk
-becomes obsolete and can be removed.  Do you agree?
+Yes someone else pointed that out to me shortly
+after I sent mine.  I wasn't aware he had done it.
+I discovered the problem independently today and
+just sent out the fix.  Thanks.
 
-Myron
+					-Alex
 
-On Wed, Mar 12, 2014 at 3:13 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Mar 11, 2014 at 12:12 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Thu, Mar 6, 2014 at 1:03 PM, Suravee Suthikulpanit
->> <suravee.suthikulpanit@amd.com> wrote:
->>> On 3/6/2014 11:40 AM, Bjorn Helgaas wrote:
->>>>
->>>> [+cc Yinghai, sorry I didn't think of it before]
->>>>
->>>> On Wed, Mar 5, 2014 at 11:30 PM, Suravee Suthikulpanit
->>>> <suravee.suthikulpanit@amd.com> wrote:
->>>>>
->>>>> On 3/5/2014 8:13 PM, Suravee Suthikulanit wrote:
->>>>>>
->>>>>>
->>>>>> On 3/5/2014 3:24 PM, Bjorn Helgaas wrote:
->>>>>>>
->>>>>>>
->>>>>>> [+cc linux-acpi]
->>>>>>>
->>>>>>> On Wed, Mar 5, 2014 at 2:06 PM,  <suravee.suthikulpanit@amd.com> wrote:
->>>>>>>>
->>>>>>>>
->>>>>>>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->>>>>>>>
->>>>>>>> The current code only supports upto AMD hostbridge for family11h.
->>>>>>>> This causes PCI numa_node information to be reported incorrectly
->>>>>>>> for newer family with multi sockets.
->>>>>>>
->>>>>>>
->>>>>>>
->>>>>>> Where is the incorrect reporting?  In ACPI tables?  Is this patch a
->>>>>>> way to cover up firmware defects in the ACPI description?  Or is this
->>>>>>> for machines without ACPI (it seems unlikely that machines with new
->>>>>>> AMD processors would not have ACPI)?
->>>>>>
->>>>>>
->>>>>>
->>>>>> This is incorrectly reported in the sysfs for each PCI device (e.g.
->>>>>> /devices/pci0000:50/0000:50:00.2/numa_node). Without the patch, they
->>>>>> return -1.
->>>>>>
->>>>>> In file arch/x86/pci/acpi.c, in function pci_acpi_scan_root(), it is
->>>>>> queries the node information as following:
->>>>>>
->>>>>> #ifdef CONFIG_ACPI_NUMA
->>>>>>       pxm = acpi_get_pxm(device->handle);
->>>>>>       if (pxm >= 0)
->>>>>>           node = pxm_to_node(pxm);
->>>>>>       if (node != -1)
->>>>>>           set_mp_bus_to_node(busnum, node);
->>>>>>       else
->>>>>> #endif
->>>>>>           node = get_mp_bus_to_node(busnum);
->>>>>>
->>>>>> In this case, I see that the acpi_get_pxm() returns -1.  Therefore, it
->>>>>> falls back to using the node information in mp_bus_to_node[].  So,
->>>>>> without this patch, it would also returning -1.
->>>>>>
->>>>>> Also, the spec mentioned that the _PXM is optional, so I am not sure if
->>>>>> this is a firmware bug.
->>>>>
->>>>>
->>>>> I am not quite familiar with the ACPI for this part.  However, after
->>>>> taking
->>>>> a look at the code (in driver/acpi/pci_root.c: acpi_pci_root_add()), I
->>>>> believe it's trying to locate _PXM method in the DSDT table, in which I
->>>>> don't see any _PXM methods.
->>>>
->>>>
->>>> This sure looks like a firmware bug.  True, _PXM is optional, but if
->>>> the firmware doesn't provide it, nobody should be surprised that the
->>>> OS thinks everything is in the same proximity domain.
->>>>
->>>> I would not endorse extending amd_bus.c for new CPUs.  That just
->>>> covers up firmware problems like this, and if you ever run a different
->>>> OS on the box, you'll trip over them again.  And I don't think a patch
->>>> like this will even be a possibility for Windows.
->>>
->>> I understand and am trying to verify this with the BIOS engineers. However,
->>> this is currently affecting family15h servers out in the field.  We can try
->>> to fix ACPI for newer generation of machines, but it won't be practical to
->>> push this BIOS fix to all the BIOS vendors and system vendors for older
->>> platforms, as they tend to.
->>>
->>> What if I localize the extension to the changes to access node information
->>> in the hostbridge for just the famil15h which is mostly used in our main
->>> server products? Would that be acceptable?
->>
->> I assume the system is fully functional even without these patches,
->> right?  The only effect of these changes should be a performance
->> improvement.
->>
->> So the choices are:
->>
->>   1) Change the BIOS to provide _PXM
->>   2) Change Linux with your patches
->>
->> Either way, the customer has to upgrade something.  Choice 1) gets you
->> the performance improvement on all Linux and Windows releases, even
->> the ones that are already in the field.  Choice 2) fixes future Linux
->> distros and whatever old releases you can convince the distro to
->> backport to, and doesn't help Windows at all.  It makes work for all
->> the distros and we (i.e., I) have to worry about maintaining this in
->> the future.
->>
->> I'm curious to see what your BIOS folks say.  It seems strange that
->> after all these years, they wouldn't provide something relatively
->> simple like _PXM, so I wonder if there's more to the story.
->
-> I looked at this a bit more.  Your patches fill in the
-> mp_bus_to_node[] table, and pci_acpi_scan_root() uses
-> get_mp_bus_to_node() to get that information back out.  But
-> pci_acpi_scan_root() only uses get_mp_bus_to_node() if acpi_get_pxm()
-> fails, or if pxm_to_node() returns -1.
->
-> If acpi_get_pxm() failed, that's pretty good indication that the _PXM
-> method is missing or broken.  If pxm_to_node() failed, it looks like
-> that could mean the SRAT table is missing or broken, and we didn't
-> fill in the relevant pxm_to_node_map[] entry.  So it's possible that
-> we do have a _PXM method, but there's something wrong with the SRAT.
->
-> Can you collect an acpidump and complete dmesg log from a system with
-> the problem?  They might be too big for the mailing list; if so, you
-> can attach them to a kernel.org bugzilla and just include the URL
-> here.
->
-> Bjorn
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
