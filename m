@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaCMHtF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 03:49:05 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57074 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777AbaCMHtD (ORCPT
+	id S1753294AbaCMHzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 03:55:39 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:33029 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777AbaCMHzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 03:49:03 -0400
-Message-ID: <532162E1.8090608@ti.com>
-Date: Thu, 13 Mar 2014 09:48:49 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 13 Mar 2014 03:55:36 -0400
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] dma: omap-dma: Implement device_slave_caps callback
-References: <1394199404-7870-1-git-send-email-peter.ujfalusi@ti.com> <20140312173700.GA1996@atomide.com>
-In-Reply-To: <20140312173700.GA1996@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <531F9540.4020906@hurleysoftware.com>
+References: <CAMuHMdVV_NrQ3PPJwPNx7MoM9TWLdk02d+10zNipNcC7VC0HAA@mail.gmail.com>
+	<CAMuHMdVwpQEWAVHA5BO2xXzaNc1DTdteDMWFHQ=MFJoo4Afm_A@mail.gmail.com>
+	<531E7F81.20400@hurleysoftware.com>
+	<CAMuHMdUeUjuBe0tWpYBZqwqWT=euPAn6fwzmXMYCP573Q1BDXQ@mail.gmail.com>
+	<531EF864.5020104@hurleysoftware.com>
+	<CAMuHMdVgg-AbhiRPFJt=nXpP6chPw7L+ZMu8a3rnC61gaSZ41A@mail.gmail.com>
+	<531F9540.4020906@hurleysoftware.com>
+Date: Thu, 13 Mar 2014 08:55:36 +0100
+X-Google-Sender-Auth: 6EVbhVvVRSEa2Wwg7pjq9EqYoBk
+Message-ID: <CAMuHMdU+1p+Z5dbb3Fee+3JR2Zf=se3raE5su0Z5c2+ZTBCz2w@mail.gmail.com>
+Subject: Re: serial core: crash / race condition on unbind
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+Hi Peter,
 
-On 03/12/2014 07:37 PM, Tony Lindgren wrote:
-> * Peter Ujfalusi <peter.ujfalusi@ti.com> [140307 05:39]:
->> With the callback implemented omap-dma can provide information to client
->> drivers regarding to supported address widths, directions, residue
->> granularity, etc.
-> 
-> This may need some testing against linux next with Russell's
-> omap-dma.c clean-up series merged there. Peter, care to check
-> if this patch is still valid against linux next?
-
-The patch applies cleanly on top of linux-next fetched yesterday and I see
-Russell's patches underneath.
-
--- 
-Péter
-
-> 
-> Regards,
-> 
-> Tony
->  
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> ---
->>  drivers/dma/omap-dma.c | 18 ++++++++++++++++++
->>  1 file changed, 18 insertions(+)
+On Tue, Mar 11, 2014 at 11:59 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> On 03/11/2014 11:35 AM, Geert Uytterhoeven wrote:
+>> On Tue, Mar 11, 2014 at 12:49 PM, Peter Hurley <peter@hurleysoftware.com>
+>> wrote:
+>>> On 03/11/2014 06:58 AM, Geert Uytterhoeven wrote:
+>>>> On Tue, Mar 11, 2014 at 4:14 AM, Peter Hurley <peter@hurleysoftware.com>
+>>>> wrote:
+>>>>>>            state->uart_port = NULL;
+>>>>>
+>>>>> How did this ever work?
+>>>>>
+>>>>> Detaching the ll driver from the tty port in this manner is not ok;
+>>>>> as you already note, it blows up if consoles are still running.
+>>>>
+>>>> No one unbinds serial drivers using serial_core, as all these drivers are
+>>>> for fixed hardware?
+>>>
+>>> Yep, never tested until now :)
+>>> Do you need this to work?
 >>
->> diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
->> index 64ceca2920b8..b19f04f4390b 100644
->> --- a/drivers/dma/omap-dma.c
->> +++ b/drivers/dma/omap-dma.c
->> @@ -1088,6 +1088,23 @@ static void omap_dma_free(struct omap_dmadev *od)
->>  	}
->>  }
->>  
->> +#define OMAP_DMA_BUSWIDTHS	(BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
->> +				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
->> +				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
->> +
->> +static int omap_dma_device_slave_caps(struct dma_chan *dchan,
->> +				      struct dma_slave_caps *caps)
->> +{
->> +	caps->src_addr_widths = OMAP_DMA_BUSWIDTHS;
->> +	caps->dstn_addr_widths = OMAP_DMA_BUSWIDTHS;
->> +	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
->> +	caps->cmd_pause = true;
->> +	caps->cmd_terminate = true;
->> +	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
->> +
->> +	return 0;
->> +}
->> +
->>  static int omap_dma_probe(struct platform_device *pdev)
->>  {
->>  	struct omap_dmadev *od;
->> @@ -1118,6 +1135,7 @@ static int omap_dma_probe(struct platform_device *pdev)
->>  	od->ddev.device_prep_slave_sg = omap_dma_prep_slave_sg;
->>  	od->ddev.device_prep_dma_cyclic = omap_dma_prep_dma_cyclic;
->>  	od->ddev.device_control = omap_dma_control;
->> +	od->ddev.device_slave_caps = omap_dma_device_slave_caps;
->>  	od->ddev.dev = &pdev->dev;
->>  	INIT_LIST_HEAD(&od->ddev.channels);
->>  	INIT_LIST_HEAD(&od->pending);
->> -- 
->> 1.9.0
->>
+>> Well, "need" may be a bit strong. Crashes are not so nice.
+>
+> :)
+>
+> What I meant was, 'is this a debug situation that I can eventually get to?'
+> or 'are you on the verge of shipping product and this is a priority?'
 
+"This is a debug situation that I can eventually get to?".
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
