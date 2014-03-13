@@ -1,184 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525AbaCMQS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 12:18:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65316 "EHLO mga02.intel.com"
+	id S1754704AbaCMQUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 12:20:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34669 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754449AbaCMQSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 12:18:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,648,1389772800"; 
-   d="scan'208";a="471738812"
-From: Zhang Rui <rui.zhang@intel.com>
-To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH V2 08/13] ACPI: introduce dummy lpss scan handler
-Date: Fri, 14 Mar 2014 00:16:48 +0800
-Message-Id: <1394727413-3587-9-git-send-email-rui.zhang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394727413-3587-1-git-send-email-rui.zhang@intel.com>
-References: <1394727413-3587-1-git-send-email-rui.zhang@intel.com>
+	id S1753830AbaCMQUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 12:20:43 -0400
+Message-ID: <5321DACD.6010303@redhat.com>
+Date: Thu, 13 Mar 2014 17:20:29 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Carlo Caione <carlo.caione@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] irq: Add a new IRQF_ACK_BEFORE_UNMASK irq flagq
+References: <1394579583-29316-1-git-send-email-hdegoede@redhat.com> <alpine.DEB.2.02.1403120944270.18573@ionos.tec.linutronix.de> <20140313133707.GA24821@linutronix.de> <alpine.DEB.2.02.1403131442480.18573@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1403131442480.18573@ionos.tec.linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the lpss scan handler is compiled out, aka, CONFIG_X86_INTEL_LPSS
-is cleared, those ACPI device objects will be recgonized as regular
-_HID devices, and a platform device would be created for each of them.
-This is wrong because the platform drivers for those devices would
-be loaded, but with broken behavior.
+Hi,
 
-In order to fix this, a dummy lpss scan handler is introduced
-to prevent those platform devices from being created.
-Plus, this dummy scan handler is needed as well if lpt_clk_init() fails.
+On 03/13/2014 03:32 PM, Thomas Gleixner wrote:
+> On Thu, 13 Mar 2014, Sebastian Andrzej Siewior wrote:
+>> One side note: Since we need to specify IRQCHIP_EOI_THREADED and
+>> handle_fasteoi_late_irq() as the handler, would it be easily doable to use
+>> the handle_fasteoi_irq() handler and skip the EOI in the threaded mode?
+>> But if it creates a mess then leave it as it is.
+> 
+> Yeah, I was looking into that already. Patch below.
+> 
+> To resemble the late version you need to add IRQCHIP_EOI_THREADED and
+> IRQCHIP_EOI_IF_HANDLED to your irq chip.
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
----
- drivers/acpi/Makefile    |    2 +-
- drivers/acpi/acpi_lpss.c |   66 +++++++++++++++++++++++++++++++++-------------
- drivers/acpi/internal.h  |    4 ---
- 3 files changed, 48 insertions(+), 24 deletions(-)
+Just gave this a review (in as far as I'm qualified to review core irq
+code), looks good and I agree this is an improvement over the previous
+version.
 
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index 9a43893..2173e30 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -39,7 +39,7 @@ acpi-y				+= processor_core.o
- acpi-y				+= ec.o
- acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
- acpi-y				+= pci_root.o pci_link.o pci_irq.o
--acpi-$(CONFIG_X86_INTEL_LPSS)	+= acpi_lpss.o
-+acpi-y				+= acpi_lpss.o
- acpi-y				+= acpi_platform.o
- acpi-y				+= acpi_pnp.o
- acpi-y				+= power.o
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index 6745fe1..6f753fe 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -24,6 +24,8 @@
- 
- ACPI_MODULE_NAME("acpi_lpss");
- 
-+#ifdef CONFIG_X86_INTEL_LPSS
-+
- #define LPSS_CLK_SIZE	0x04
- #define LPSS_LTR_SIZE	0x18
- 
-@@ -142,39 +144,48 @@ static struct lpss_device_desc byt_i2c_dev_desc = {
- 	.shared_clock = &i2c_clock,
- };
- 
-+#define LPSS_PTR(desc) (unsigned long)&desc
-+
-+#else
-+
-+#define LPSS_PTR(desc) 0
-+
-+#endif
-+
- static const struct acpi_device_id acpi_lpss_device_ids[] = {
- 	/* Generic LPSS devices */
--	{ "INTL9C60", (unsigned long)&lpss_dma_desc },
-+	{ "INTL9C60", LPSS_PTR(lpss_dma_desc) },
- 
- 	/* Lynxpoint LPSS devices */
--	{ "INT33C0", (unsigned long)&lpt_dev_desc },
--	{ "INT33C1", (unsigned long)&lpt_dev_desc },
--	{ "INT33C2", (unsigned long)&lpt_dev_desc },
--	{ "INT33C3", (unsigned long)&lpt_dev_desc },
--	{ "INT33C4", (unsigned long)&lpt_uart_dev_desc },
--	{ "INT33C5", (unsigned long)&lpt_uart_dev_desc },
--	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
-+	{ "INT33C0", LPSS_PTR(lpt_dev_desc) },
-+	{ "INT33C1", LPSS_PTR(lpt_dev_desc) },
-+	{ "INT33C2", LPSS_PTR(lpt_dev_desc) },
-+	{ "INT33C3", LPSS_PTR(lpt_dev_desc) },
-+	{ "INT33C4", LPSS_PTR(lpt_uart_dev_desc) },
-+	{ "INT33C5", LPSS_PTR(lpt_uart_dev_desc) },
-+	{ "INT33C6", LPSS_PTR(lpt_sdio_dev_desc) },
- 	{ "INT33C7", },
- 
- 	/* BayTrail LPSS devices */
--	{ "80860F0A", (unsigned long)&byt_uart_dev_desc },
--	{ "80860F0E", (unsigned long)&byt_spi_dev_desc },
--	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
--	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
-+	{ "80860F0A", LPSS_PTR(byt_uart_dev_desc) },
-+	{ "80860F0E", LPSS_PTR(byt_spi_dev_desc) },
-+	{ "80860F14", LPSS_PTR(byt_sdio_dev_desc) },
-+	{ "80860F41", LPSS_PTR(byt_i2c_dev_desc) },
- 	{ "INT33B2", },
- 
--	{ "INT3430", (unsigned long)&lpt_dev_desc },
--	{ "INT3431", (unsigned long)&lpt_dev_desc },
--	{ "INT3432", (unsigned long)&lpt_dev_desc },
--	{ "INT3433", (unsigned long)&lpt_dev_desc },
--	{ "INT3434", (unsigned long)&lpt_uart_dev_desc },
--	{ "INT3435", (unsigned long)&lpt_uart_dev_desc },
--	{ "INT3436", (unsigned long)&lpt_sdio_dev_desc },
-+	{ "INT3430", LPSS_PTR(lpt_dev_desc) },
-+	{ "INT3431", LPSS_PTR(lpt_dev_desc) },
-+	{ "INT3432", LPSS_PTR(lpt_dev_desc) },
-+	{ "INT3433", LPSS_PTR(lpt_dev_desc) },
-+	{ "INT3434", LPSS_PTR(lpt_uart_dev_desc) },
-+	{ "INT3435", LPSS_PTR(lpt_uart_dev_desc) },
-+	{ "INT3436", LPSS_PTR(lpt_sdio_dev_desc) },
- 	{ "INT3437", },
- 
- 	{ }
- };
- 
-+#ifdef CONFIG_X86_INTEL_LPSS
- static int is_memory(struct acpi_resource *res, void *not_used)
- {
- 	struct resource r;
-@@ -431,10 +442,27 @@ static struct acpi_scan_handler lpss_handler = {
- 	.attach = acpi_lpss_create_device,
- };
- 
-+#endif /* CONFIG_X86_INTEL_LPSS */
-+
-+static int acpi_lpss_dummy_attach(struct acpi_device *adev,
-+				const struct acpi_device_id *id)
-+{
-+	return 1;
-+}
-+
-+static struct acpi_scan_handler lpss_dummy_handler = {
-+	.ids = acpi_lpss_device_ids,
-+	.attach = acpi_lpss_dummy_attach,
-+};
-+
- void __init acpi_lpss_init(void)
- {
-+#ifdef CONFIG_X86_INTEL_LPSS 
- 	if (!lpt_clk_init()) {
- 		bus_register_notifier(&platform_bus_type, &acpi_lpss_nb);
- 		acpi_scan_add_handler(&lpss_handler);
-+		return;
- 	}
-+#endif
-+	acpi_scan_add_handler(&lpss_dummy_handler);
- }
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 74ea3f1..a0c9368 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -67,11 +67,7 @@ int acpi_debugfs_init(void);
- #else
- static inline void acpi_debugfs_init(void) { return; }
- #endif
--#ifdef CONFIG_X86_INTEL_LPSS
- void acpi_lpss_init(void);
--#else
--static inline void acpi_lpss_init(void) {}
--#endif
- 
- bool acpi_queue_hotplug_work(struct work_struct *work);
- bool acpi_scan_is_offline(struct acpi_device *adev, bool uevent);
--- 
-1.7.9.5
+There is one behavioral change for irq-chips not setting the new
+IRQCHIP_EOI_THREADED flag hiding in there.
 
+Before if the conditional unmask conditions were true for the
+ONESHOT case the code would do: "unmask; eoi", now it does
+"eoi; unmask" I believe the new behavior is more correct, but, since
+it is a behavior change I thought I should point this out.
+
+I've also given this a test-run on sun4i and it works as advertised.
+
+FWIW, this patch is:
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Tested-by: Hans de Goede <hdegoede@redhat.com>
+
+I'll include this in v3 of my irq-sun4i patch-set as it is a dependency
+there.
+
+Regards,
+
+Hans
