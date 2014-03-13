@@ -1,92 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596AbaCMKGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:06:47 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:38200 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381AbaCMKGp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:06:45 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Subject: [GIT PULL] at91: DT update for 3.15 #1
-Date: Thu, 13 Mar 2014 11:06:37 +0100
-Message-ID: <1394705197-29992-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	id S1753692AbaCMKIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:08:38 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:35505 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752829AbaCMKIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 06:08:36 -0400
+X-IronPort-AV: E=Sophos;i="4.97,646,1389744000"; 
+   d="scan'208";a="110948863"
+Message-ID: <1394705313.25873.13.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next v7 0/9] xen-netback: TX grant mapping with
+ SKBTX_DEV_ZEROCOPY instead of copy
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Date: Thu, 13 Mar 2014 10:08:33 +0000
+In-Reply-To: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+On Thu, 2014-03-06 at 21:48 +0000, Zoltan Kiss wrote:
+> A long known problem of the upstream netback implementation that on the TX
+> path (from guest to Dom0) it copies the whole packet from guest memory into
+> Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
+> huge perfomance penalty. The classic kernel version of netback used grant
+> mapping, and to get notified when the page can be unmapped, it used page
+> destructors. Unfortunately that destructor is not an upstreamable solution.
+> Ian Campbell's skb fragment destructor patch series [1] tried to solve this
+> problem, however it seems to be very invasive on the network stack's code,
+> and therefore haven't progressed very well.
+> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
+> know when the skb is freed up. That is the way KVM solved the same problem,
+> and based on my initial tests it can do the same for us. Avoiding the extra
+> copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower AMD
+> Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
+> running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
+> switch)
 
-This is one request for AT91 DT update for 3.15. A lot of forgotten bits that
-are corrected here, and old DT properties that are removed, nothing really new.
-I think that the little modifications to the documentation can also go the
-arm-soc way: there is no fundamental change to the binding, only more coherence
-added.
+Do you have any other numbers? e.g. for a modern Intel or AMD system? A
+slower box is likely to make the difference between copy and map larger,
+whereas modern Intel for example is supposed to be very good at copying.
 
-Thanks, best regards,
+> Based on my investigations the packet get only copied if it is delivered to
+> Dom0 IP stack through deliver_skb, which is due to this [2] patch. This affects
+> DomU->Dom0 IP traffic and when Dom0 does routing/NAT for the guest. That's a bit
+> unfortunate, but luckily it doesn't cause a major regression for this usecase.
 
-The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
+Numbers?
 
-  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
+> In the future we should try to eliminate that copy somehow.
+> There are a few spinoff tasks which will be addressed in separate patches:
+> - grant copy the header directly instead of map and memcpy. This should help
+>   us avoiding TLB flushing
+> - use something else than ballooned pages
+> - fix grant map to use page->index properly
+> I've tried to broke it down to smaller patches, with mixed results, so I
+> welcome suggestions on that part as well:
+> 1: Use skb->cb to store pending_idx
+> 2: Some refactoring
+> 3: Change RX path for mapped SKB fragments (moved here to keep bisectability,
+> review it after #4)
+> 4: Introduce TX grant mapping
+> 5: Remove old TX grant copy definitons and fix indentations
+> 6: Add stat counters for zerocopy
+> 7: Handle guests with too many frags
+> 8: Timeout packets in RX path
+> 9: Aggregate TX unmap operations
+> 
+> v2: I've fixed some smaller things, see the individual patches. I've added a
+> few new stat counters, and handling the important use case when an older guest
+> sends lots of slots. Instead of delayed copy now we timeout packets on the RX
+> path, based on the assumption that otherwise packets should get stucked
+> anywhere else. Finally some unmap batching to avoid too much TLB flush
+> 
+> v3: Apart from fixing a few things mentioned in responses the important change
+> is the use the hypercall directly for grant [un]mapping, therefore we can
+> avoid m2p override.
+> 
+> v4: Now we are using a new grant mapping API to avoid m2p_override. The RX queue
+> timeout logic changed also.
+> 
+> v5: Only minor fixes based on Wei's comments
+> 
+> v6: Important bugfixes for xenvif_poll exit path and zerocopy callback, see
+> first 2 patches. Also rework of handling packets with too many slots, and
+> reorder the series a bit.
+> 
+> v7: Small fixes in comments/log messages/error paths, and merging the frag
+> overflow stats patch into its parent.
+> 
+> [1] http://lwn.net/Articles/491522/
+> [2] https://lkml.org/lkml/2012/7/20/363
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> 
 
-are available in the git repository at:
 
-  git://github.com/at91linux/linux-at91.git tags/at91-dt
-
-for you to fetch changes up to 1d33a2c9e9279f1e41836effb91309c90608a0e2:
-
-  ARM: at91/dt: at91-cosino: remove useless adc properties (2014-03-12 19:11:29 +0100)
-
-----------------------------------------------------------------
-First batch of AT91 DT material for 3.15
-- activate DMA for NAND flash controller
-- some binding documentation update for usba and ADC (iio) drivers
-- removal of some deprecated ADC (iio) properties
-
-----------------------------------------------------------------
-Alexandre Belloni (9):
-      ARM: at91/DT: atmel_usba correct atmel,vbus-gpio meaning
-      Documentation: dt: iio: improve atmel-adc documentation
-      Documentation: dt: iio: move arm/atmel-adc.txt to iio/adc/at91_adc.txt
-      ARM: at91/dt: at91-ariag25: remove useless adc properties
-      ARM: at91/dt: at91sam9260: remove useless adc properties
-      ARM: at91/dt: at91sam9g45: remove useless adc properties
-      ARM: at91/dt: at91sam9x5: remove useless adc properties
-      ARM: at91/dt: sama5d3: remove useless adc properties
-      ARM: at91/dt: at91-cosino: remove useless adc properties
-
-Ludovic Desroches (1):
-      ARM: at91: sama5d3: get rid of atmel_tsadcc driver
-
-Nicolas Ferre (1):
-      ARM: at91/DT: add NAND + DMA property
-
- .../{arm/atmel-adc.txt => iio/adc/at91_adc.txt}    | 33 +++++++++++-----------
- .../devicetree/bindings/usb/atmel-usb.txt          |  4 +--
- arch/arm/boot/dts/at91-ariag25.dts                 |  1 -
- arch/arm/boot/dts/at91-cosino.dtsi                 |  1 -
- arch/arm/boot/dts/at91-cosino_mega2560.dts         |  1 -
- arch/arm/boot/dts/at91sam9260.dtsi                 | 11 ++++----
- arch/arm/boot/dts/at91sam9g45.dtsi                 | 12 ++++----
- arch/arm/boot/dts/at91sam9n12.dtsi                 |  1 +
- arch/arm/boot/dts/at91sam9x5.dtsi                  | 14 +++++----
- arch/arm/boot/dts/sama5d3.dtsi                     | 28 ++++++------------
- arch/arm/boot/dts/sama5d3xdm.dtsi                  |  6 ++--
- 11 files changed, 52 insertions(+), 60 deletions(-)
- rename Documentation/devicetree/bindings/{arm/atmel-adc.txt => iio/adc/at91_adc.txt} (73%)
-
--- 
-Nicolas Ferre
