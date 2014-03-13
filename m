@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaCMQh2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 12:37:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31368 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754290AbaCMQh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 12:37:26 -0400
-Date: Thu, 13 Mar 2014 17:36:32 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Davidlohr Bueso <davi@redhat.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH -next] mm,vmacache: also flush cache for VM_CLONE
-Message-ID: <20140313163632.GA30737@redhat.com>
-References: <CA+55aFw88xiY+o5FE6VtHNkpUZDK3FPt31oCpNsgn1BH7wAPZw@mail.gmail.com> <20140308194405.GA32403@redhat.com> <CA+55aFzk=XtRFPQM4rGgTXj8AD2RLrm5pfAsKwGOZPHLgb+Ziw@mail.gmail.com> <20140309125710.GA1829@redhat.com> <CA+55aFxyGJFEz5NnHtK1wn8oDLy9n-CttttKL_0AM69gN8JzxQ@mail.gmail.com> <20140309170909.GA13335@redhat.com> <CA+55aFxEGj9poWNLAncvrrOTzjDtrwMnOM_d3ACqRkcvY86qHA@mail.gmail.com> <1394481375.3867.1.camel@buesod1.americas.hpqcorp.net> <20140313145941.GA26215@redhat.com> <CA+55aFyNd7L+G3hFauJPxUOengK-_o2G-SFmVooPZ-sE6xBj=g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyNd7L+G3hFauJPxUOengK-_o2G-SFmVooPZ-sE6xBj=g@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754550AbaCMQkJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 12:40:09 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:44369 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787AbaCMQkG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 12:40:06 -0400
+Message-ID: <1394728800.8457.48.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: RFC: 'ioctl' for keyrings
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, dmitry.kasatkin@gmail.com,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 13 Mar 2014 12:40:00 -0400
+In-Reply-To: <22093.1394727459@warthog.procyon.org.uk>
+References: <21625.1394725646@warthog.procyon.org.uk>
+	 <22093.1394727459@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031316-8236-0000-0000-000000BE99B6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13, Linus Torvalds wrote:
->
-> On Mar 13, 2014 8:11 AM, "Oleg Nesterov" <oleg@redhat.com> wrote:
-> >
-> > Suppose that a kernel thread T does, say,
-> >
-> >         use_mm(foreign_mm);
-> >         get_user(...);
-> >         unuse_mm();
->
-> That would be a major bug. Kernel threads cannot access use memory.
+On Thu, 2014-03-13 at 16:17 +0000, David Howells wrote: 
+> David Howells <dhowells@redhat.com> wrote:
+> 
+> > I can fix this in one of a number of ways:
+> > 
+> >  (1) Provide a generic control operation (analogous with ioctl()) that allows
+> >      the user to make some general operation on a key (querying it, altering
+> >      it, interacting with hardware).
+> > 
+> >  (2) Provide an alter operation that only allows the key to be altered.
+> >      Looking at trusted_update(), though, I have a suspicion that this may not
+> >      be sufficient as that also seems to invoke an interaction with the TPM.
+> > 
+> >  (3) Provide separate, specific keyctl functions for the special operations
+> >      required by encrypted and trusted keys (and other key types potentially)
+> >      that are then validated in the core and routed to the key type.
+> 
+>   (4) Simply make key_update() look for the encrypted and trusted key types
+>       and call a special key type op for those.  The main ->update op will be
+>       taking preparsed data and would no longer be callable in this situation.
 
-Unless a kernel thread does use_mm() ;)
+I prefer this last option. Define a separate 'update' option for trusted
+and encrypted keys, which would only create or modify, but never replace
+an existing key.
 
-> Has
-> somebody added anything that crazy?
+thanks,
 
-Hmm. aio no longer uses use_mm()... But there are other users:
-
-	drivers/usb/gadget/inode.c  582   use_mm(mm);
-	drivers/vhost/vhost.c       211   use_mm(dev->mm);
-	virt/kvm/async_pf.c          68   use_mm(mm);
-
-And yes, they do copy_to/from_user().
-
-Hmm, but at first glance async_pf_execute() doesn't need use_mm() at all.
-And perhaps other callers can use get_user_pages() too.
-
-> The kernel thread "use_mm" is to avoid unnecessary context switches of the
-> tlb when switching to a kennel thread, exactly *because* a kernel thread is
-> never supposed to access use space, so it cannot care what user memory is
-> attached.
-
-It seems that you are talking about switch_mm-like things or I misunderstood.
-use_mm() actually changes ->mm, not only ->active_mm.
-
-> So I object vet much to making kernel threads special on this context,
-> unless the "special" bit is some VM_BUG_ON() or similar.
-
-See above. Perhaps we can kill use_mm() (personally I don't think we should),
-but until then vmacache needs this check afaics.
-
-Oleg.
+Mimi
 
