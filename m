@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931AbaCMPHE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:07:04 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56632 "EHLO
+	id S1754176AbaCMPJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:09:00 -0400
+Received: from relay.parallels.com ([195.214.232.42]:56685 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554AbaCMPG4 (ORCPT
+	with ESMTP id S1752474AbaCMPHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:06:56 -0400
+	Thu, 13 Mar 2014 11:07:01 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [PATCH RESEND -mm 02/12] memcg: fix race in memcg cache destruction path
-Date: Thu, 13 Mar 2014 19:06:40 +0400
-Message-ID: <94fc308b9074e45a2aac7a06cf357a33c5d97c9f.1394708827.git.vdavydov@parallels.com>
+        <devel@openvz.org>, Frederic Weisbecker <fweisbec@redhat.com>
+Subject: [PATCH RESEND -mm 09/12] fork: do not charge thread_info to kmemcg
+Date: Thu, 13 Mar 2014 19:06:47 +0400
+Message-ID: <75194ada8e572be8ecc11c81024a4948515fd5b1.1394708827.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1394708827.git.vdavydov@parallels.com>
 References: <cover.1394708827.git.vdavydov@parallels.com>
@@ -25,262 +25,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We schedule memcg cache shrink+destruction work (memcg_params::destroy)
-from two places: when we turn memcg offline
-(mem_cgroup_destroy_all_caches) and when the last page of the cache is
-freed (memcg_params::nr_pages reachs zero, see memcg_release_pages,
-mem_cgroup_destroy_cache). Since the latter can happen while the work
-scheduled from mem_cgroup_destroy_all_caches is in progress or still
-pending, we need to be cautious to avoid races there - we should
-accurately bail out in one of those functions if we see that the other
-is in progress. Currently we only check if memcg_params::nr_pages is 0
-in the destruction work handler and do not destroy the cache if so. But
-that's not enough. An example of race we can get is shown below:
+This patch reverts 2ad306b17c0a ("fork: protect architectures where
+THREAD_SIZE >= PAGE_SIZE against fork bombs").
 
-  CPU0					CPU1
-  ----					----
-  kmem_cache_destroy_work_func:		memcg_release_pages:
-					  atomic_sub_and_test(1<<order, &s->
-							memcg_params->nr_pages)
-					  /* reached 0 => schedule destroy */
-
-    atomic_read(&cachep->memcg_params->nr_pages)
-    /* 0 => going to destroy the cache */
-    kmem_cache_destroy(cachep);
-
-					  mem_cgroup_destroy_cache(s):
-					    /* the cache was destroyed on CPU0
-					       - use after free */
-
-An obvious way to fix this would be substituting the nr_pages counter
-with a reference counter and make memcg take a reference. The cache
-destruction would be then scheduled from that thread which decremented
-the refcount to 0. Generally, this is what this patch does, but there is
-one subtle thing here - the work handler serves not only for cache
-destruction, it also shrinks the cache if it's still in use (we can't
-call shrink directly from mem_cgroup_destroy_all_caches due to locking
-dependencies). We handle this by noting that we should only issue shrink
-if called from mem_cgroup_destroy_all_caches, because the cache is
-already empty when we release its last page. And if we drop the
-reference taken by memcg in the work handler, we can detect who exactly
-scheduled the worker - mem_cgroup_destroy_all_caches or
-memcg_release_pages.
+The reasoning behind this is that charging thread_info is the last piece
+that prevents us from reparenting kmemcg on css offline. The point is
+that we can't reliably track all thread_info pages accounted to a
+particular cgroup, because (a) it is freed in __put_task_struct and (b)
+on exit tasks are moved to the root cgroup. That said, given a cgroup
+there is no sane way to find all tasks (including zombies) that charged
+thread_info to this cgroup. Of course, we could uncharge thread_info on
+task exit, but that wouldn't help us against fork bombs. So revert and
+forget about this.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Glauber Costa <glommer@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@redhat.com>
 ---
- include/linux/memcontrol.h |    1 -
- include/linux/slab.h       |    7 ++--
- mm/memcontrol.c            |   86 +++++++++++++-------------------------------
- mm/slab.h                  |   17 +++++++--
- 4 files changed, 42 insertions(+), 69 deletions(-)
+ include/linux/thread_info.h |    2 --
+ kernel/fork.c               |    4 ++--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index e9dfcdad24c5..bbe48913c56e 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -512,7 +512,6 @@ void memcg_update_array_size(int num_groups);
- struct kmem_cache *
- __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
+diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
+index fddbe2023a5d..1807bb194816 100644
+--- a/include/linux/thread_info.h
++++ b/include/linux/thread_info.h
+@@ -61,8 +61,6 @@ extern long do_no_restart_syscall(struct restart_block *parm);
+ # define THREADINFO_GFP		(GFP_KERNEL | __GFP_NOTRACK)
+ #endif
  
--void mem_cgroup_destroy_cache(struct kmem_cache *cachep);
- int __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
- 
- /**
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 3dd389aa91c7..3ed53de256ea 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -522,8 +522,8 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
-  * @memcg: pointer to the memcg this cache belongs to
-  * @list: list_head for the list of all caches in this memcg
-  * @root_cache: pointer to the global, root cache, this cache was derived from
-- * @dead: set to true after the memcg dies; the cache may still be around.
-- * @nr_pages: number of pages that belongs to this cache.
-+ * @refcount: the reference counter; cache destruction will be scheduled when
-+ *            it reaches zero
-  * @destroy: worker to be called whenever we are ready, or believe we may be
-  *           ready, to destroy this cache.
-  */
-@@ -538,8 +538,7 @@ struct memcg_cache_params {
- 			struct mem_cgroup *memcg;
- 			struct list_head list;
- 			struct kmem_cache *root_cache;
--			bool dead;
--			atomic_t nr_pages;
-+			atomic_t refcount;
- 			struct work_struct destroy;
- 		};
- 	};
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b183aaf1b616..cf32254ae1ee 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3141,6 +3141,7 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
- 		s->memcg_params->root_cache = root_cache;
- 		INIT_WORK(&s->memcg_params->destroy,
- 				kmem_cache_destroy_work_func);
-+		atomic_set(&s->memcg_params->refcount, 1);
- 		css_get(&memcg->css);
- 	} else
- 		s->memcg_params->is_root_cache = true;
-@@ -3262,64 +3263,24 @@ static inline void memcg_resume_kmem_account(void)
- static void kmem_cache_destroy_work_func(struct work_struct *w)
- {
- 	struct kmem_cache *cachep;
--	struct memcg_cache_params *p;
+-#define THREADINFO_GFP_ACCOUNTED (THREADINFO_GFP | __GFP_KMEMCG)
 -
--	p = container_of(w, struct memcg_cache_params, destroy);
-+	struct memcg_cache_params *params;
- 
--	cachep = memcg_params_to_cache(p);
-+	params = container_of(w, struct memcg_cache_params, destroy);
-+	cachep = memcg_params_to_cache(params);
- 
--	/*
--	 * If we get down to 0 after shrink, we could delete right away.
--	 * However, memcg_release_pages() already puts us back in the workqueue
--	 * in that case. If we proceed deleting, we'll get a dangling
--	 * reference, and removing the object from the workqueue in that case
--	 * is unnecessary complication. We are not a fast path.
--	 *
--	 * Note that this case is fundamentally different from racing with
--	 * shrink_slab(): if memcg_cgroup_destroy_cache() is called in
--	 * kmem_cache_shrink, not only we would be reinserting a dead cache
--	 * into the queue, but doing so from inside the worker racing to
--	 * destroy it.
--	 *
--	 * So if we aren't down to zero, we'll just schedule a worker and try
--	 * again
--	 */
--	if (atomic_read(&cachep->memcg_params->nr_pages) != 0)
-+	if (atomic_read(&params->refcount) != 0) {
-+		/*
-+		 * We were scheduled from mem_cgroup_destroy_all_caches().
-+		 * Shrink the cache and drop the reference taken by memcg.
-+		 */
- 		kmem_cache_shrink(cachep);
--	else
--		kmem_cache_destroy(cachep);
--}
- 
--void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
--{
--	if (!cachep->memcg_params->dead)
--		return;
-+		/* cache is still in use? */
-+		if (!atomic_dec_and_test(&params->refcount))
-+			return;
-+	}
- 
--	/*
--	 * There are many ways in which we can get here.
--	 *
--	 * We can get to a memory-pressure situation while the delayed work is
--	 * still pending to run. The vmscan shrinkers can then release all
--	 * cache memory and get us to destruction. If this is the case, we'll
--	 * be executed twice, which is a bug (the second time will execute over
--	 * bogus data). In this case, cancelling the work should be fine.
--	 *
--	 * But we can also get here from the worker itself, if
--	 * kmem_cache_shrink is enough to shake all the remaining objects and
--	 * get the page count to 0. In this case, we'll deadlock if we try to
--	 * cancel the work (the worker runs with an internal lock held, which
--	 * is the same lock we would hold for cancel_work_sync().)
--	 *
--	 * Since we can't possibly know who got us here, just refrain from
--	 * running if there is already work pending
--	 */
--	if (work_pending(&cachep->memcg_params->destroy))
--		return;
--	/*
--	 * We have to defer the actual destroying to a workqueue, because
--	 * we might currently be in a context that cannot sleep.
--	 */
--	schedule_work(&cachep->memcg_params->destroy);
-+	kmem_cache_destroy(cachep);
- }
- 
- int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-@@ -3360,12 +3321,12 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- 		 * kmem_cache_destroy() will call kmem_cache_shrink internally,
- 		 * and that could spawn the workers again: it is likely that
- 		 * the cache still have active pages until this very moment.
--		 * This would lead us back to mem_cgroup_destroy_cache.
-+		 * This would lead us back to memcg_release_pages().
- 		 *
--		 * But that will not execute at all if the "dead" flag is not
--		 * set, so flip it down to guarantee we are in control.
-+		 * But that will not execute at all if the refcount is > 0, so
-+		 * increment it to guarantee we are in control.
- 		 */
--		c->memcg_params->dead = false;
-+		atomic_inc(&c->memcg_params->refcount);
- 		cancel_work_sync(&c->memcg_params->destroy);
- 		kmem_cache_destroy(c);
- 
-@@ -3378,7 +3339,6 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- 
- static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
+ /*
+  * flag set/clear/test wrappers
+  * - pass TIF_xxxx constants to these functions
+diff --git a/kernel/fork.c b/kernel/fork.c
+index ea1bb6a54823..c22bdaa5db4e 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -150,7 +150,7 @@ void __weak arch_release_thread_info(struct thread_info *ti)
+ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
+ 						  int node)
  {
--	struct kmem_cache *cachep;
- 	struct memcg_cache_params *params;
+-	struct page *page = alloc_pages_node(node, THREADINFO_GFP_ACCOUNTED,
++	struct page *page = alloc_pages_node(node, THREADINFO_GFP,
+ 					     THREAD_SIZE_ORDER);
  
- 	if (!memcg_kmem_is_active(memcg))
-@@ -3395,9 +3355,13 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
+ 	return page ? page_address(page) : NULL;
+@@ -158,7 +158,7 @@ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
  
- 	mutex_lock(&memcg->slab_caches_mutex);
- 	list_for_each_entry(params, &memcg->memcg_slab_caches, list) {
--		cachep = memcg_params_to_cache(params);
--		cachep->memcg_params->dead = true;
--		schedule_work(&cachep->memcg_params->destroy);
-+		/*
-+		 * Since we still hold the reference to the cache params from
-+		 * the memcg, the work could not have been scheduled from
-+		 * memcg_release_pages(), and this cannot fail.
-+		 */
-+		if (!schedule_work(&params->destroy))
-+			BUG();
- 	}
- 	mutex_unlock(&memcg->slab_caches_mutex);
- }
-diff --git a/mm/slab.h b/mm/slab.h
-index 3045316b7c9d..b8caee243b88 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -122,7 +122,7 @@ static inline bool is_root_cache(struct kmem_cache *s)
- static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+ static inline void free_thread_info(struct thread_info *ti)
  {
- 	if (!is_root_cache(s))
--		atomic_add(1 << order, &s->memcg_params->nr_pages);
-+		atomic_add(1 << order, &s->memcg_params->refcount);
+-	free_memcg_kmem_pages((unsigned long)ti, THREAD_SIZE_ORDER);
++	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
  }
- 
- static inline void memcg_release_pages(struct kmem_cache *s, int order)
-@@ -130,8 +130,19 @@ static inline void memcg_release_pages(struct kmem_cache *s, int order)
- 	if (is_root_cache(s))
- 		return;
- 
--	if (atomic_sub_and_test((1 << order), &s->memcg_params->nr_pages))
--		mem_cgroup_destroy_cache(s);
-+	if (atomic_sub_and_test((1 << order), &s->memcg_params->refcount)) {
-+		/*
-+		 * We have to defer the actual destroying to a workqueue,
-+		 * because we might currently be in a context that cannot
-+		 * sleep.
-+		 *
-+		 * Note we cannot fail here, because if the work scheduled from
-+		 * mem_cgroup_destroy_all_caches() were still pending, the
-+		 * cache refcount wouldn't reach zero.
-+		 */
-+		if (!schedule_work(&s->memcg_params->destroy))
-+			BUG();
-+	}
- }
- 
- static inline bool slab_equal_or_root(struct kmem_cache *s,
+ # else
+ static struct kmem_cache *thread_info_cache;
 -- 
 1.7.10.4
 
