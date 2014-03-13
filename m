@@ -1,247 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220AbaCMKnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:43:09 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:39845 "EHLO
+	id S1754599AbaCMKrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:47:10 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:40363 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754187AbaCMKnG (ORCPT
+	by vger.kernel.org with ESMTP id S1753958AbaCMKqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:43:06 -0400
-Message-Id: <20140313104304.335334016@goodmis.org>
+	Thu, 13 Mar 2014 06:46:54 -0400
+Message-Id: <20140313104626.944700242@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 13 Mar 2014 06:42:56 -0400
+Date: Thu, 13 Mar 2014 06:46:26 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>, Don Estabrook <don.estabrook@gmail.com>
-Subject: [PATCH RT 4/5] crypto: Reduce preempt disabled regions, more algos
-References: <20140313104252.175070082@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0004-crypto-Reduce-preempt-disabled-regions-more-algos.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 0/4] Linux 3.2.55-rt81-rc1
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.14-rt30-rc1 stable review patch.
-If anyone has any objections, please let me know.
 
-------------------
+Dear RT Folks,
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+This is the RT stable review cycle of patch 3.2.55-rt81-rc1.
 
-Don Estabrook reported
-| kernel: WARNING: CPU: 2 PID: 858 at kernel/sched/core.c:2428 migrate_disable+0xed/0x100()
-| kernel: WARNING: CPU: 2 PID: 858 at kernel/sched/core.c:2462 migrate_enable+0x17b/0x200()
-| kernel: WARNING: CPU: 3 PID: 865 at kernel/sched/core.c:2428 migrate_disable+0xed/0x100()
+Please scream at me if I messed something up. Please test the patches too.
 
-and his backtrace showed some crypto functions which looked fine.
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candidate).
 
-The problem is the following sequence:
+The pre-releases will not be pushed to the git repository, only the
+final release is.
 
-glue_xts_crypt_128bit()
-{
-	blkcipher_walk_virt(); /* normal migrate_disable() */
+If all goes well, this patch will be converted to the next main release
+on 3/18/2014.
 
-	glue_fpu_begin(); /* get atomic */
+Enjoy,
 
-	while (nbytes) {
-		__glue_xts_crypt_128bit();
-		blkcipher_walk_done(); /* with nbytes = 0, migrate_enable()
-					* while we are atomic */
-	};
-	glue_fpu_end() /* no longer atomic */
-}
+-- Steve
 
-and this is why the counter get out of sync and the warning is printed.
-The other problem is that we are non-preemptible between
-glue_fpu_begin() and glue_fpu_end() and the latency grows. To fix this,
-I shorten the FPU off region and ensure blkcipher_walk_done() is called
-with preemption enabled. This might hurt the performance because we now
-enable/disable the FPU state more often but we gain lower latency and
-the bug is gone.
 
-Cc: stable-rt@vger.kernel.org
-Reported-by: Don Estabrook <don.estabrook@gmail.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To build 3.2.55-rt81-rc directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.55.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.55-rt81-rc.patch.xz
+
+You can also build from 3.2.55-rt80 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.55-rt80-rt81-rc.patch.xz
+
+
+Changes from 3.2.55-rt80:
+
 ---
- arch/x86/crypto/cast5_avx_glue.c | 21 +++++++++------------
- arch/x86/crypto/glue_helper.c    | 19 +++++++++----------
- 2 files changed, 18 insertions(+), 22 deletions(-)
-
-diff --git a/arch/x86/crypto/cast5_avx_glue.c b/arch/x86/crypto/cast5_avx_glue.c
-index c663181..2d48e83 100644
---- a/arch/x86/crypto/cast5_avx_glue.c
-+++ b/arch/x86/crypto/cast5_avx_glue.c
-@@ -60,7 +60,7 @@ static inline void cast5_fpu_end(bool fpu_enabled)
- static int ecb_crypt(struct blkcipher_desc *desc, struct blkcipher_walk *walk,
- 		     bool enc)
- {
--	bool fpu_enabled = false;
-+	bool fpu_enabled;
- 	struct cast5_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	const unsigned int bsize = CAST5_BLOCK_SIZE;
- 	unsigned int nbytes;
-@@ -76,7 +76,7 @@ static int ecb_crypt(struct blkcipher_desc *desc, struct blkcipher_walk *walk,
- 		u8 *wsrc = walk->src.virt.addr;
- 		u8 *wdst = walk->dst.virt.addr;
- 
--		fpu_enabled = cast5_fpu_begin(fpu_enabled, nbytes);
-+		fpu_enabled = cast5_fpu_begin(false, nbytes);
- 
- 		/* Process multi-block batch */
- 		if (nbytes >= bsize * CAST5_PARALLEL_BLOCKS) {
-@@ -104,10 +104,9 @@ static int ecb_crypt(struct blkcipher_desc *desc, struct blkcipher_walk *walk,
- 		} while (nbytes >= bsize);
- 
- done:
-+		cast5_fpu_end(fpu_enabled);
- 		err = blkcipher_walk_done(desc, walk, nbytes);
- 	}
--
--	cast5_fpu_end(fpu_enabled);
- 	return err;
- }
- 
-@@ -231,7 +230,7 @@ done:
- static int cbc_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
- 		       struct scatterlist *src, unsigned int nbytes)
- {
--	bool fpu_enabled = false;
-+	bool fpu_enabled;
- 	struct blkcipher_walk walk;
- 	int err;
- 
-@@ -240,12 +239,11 @@ static int cbc_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
- 	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
- 
- 	while ((nbytes = walk.nbytes)) {
--		fpu_enabled = cast5_fpu_begin(fpu_enabled, nbytes);
-+		fpu_enabled = cast5_fpu_begin(false, nbytes);
- 		nbytes = __cbc_decrypt(desc, &walk);
-+		cast5_fpu_end(fpu_enabled);
- 		err = blkcipher_walk_done(desc, &walk, nbytes);
- 	}
--
--	cast5_fpu_end(fpu_enabled);
- 	return err;
- }
- 
-@@ -315,7 +313,7 @@ done:
- static int ctr_crypt(struct blkcipher_desc *desc, struct scatterlist *dst,
- 		     struct scatterlist *src, unsigned int nbytes)
- {
--	bool fpu_enabled = false;
-+	bool fpu_enabled;
- 	struct blkcipher_walk walk;
- 	int err;
- 
-@@ -324,13 +322,12 @@ static int ctr_crypt(struct blkcipher_desc *desc, struct scatterlist *dst,
- 	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
- 
- 	while ((nbytes = walk.nbytes) >= CAST5_BLOCK_SIZE) {
--		fpu_enabled = cast5_fpu_begin(fpu_enabled, nbytes);
-+		fpu_enabled = cast5_fpu_begin(false, nbytes);
- 		nbytes = __ctr_crypt(desc, &walk);
-+		cast5_fpu_end(fpu_enabled);
- 		err = blkcipher_walk_done(desc, &walk, nbytes);
- 	}
- 
--	cast5_fpu_end(fpu_enabled);
--
- 	if (walk.nbytes) {
- 		ctr_crypt_final(desc, &walk);
- 		err = blkcipher_walk_done(desc, &walk, 0);
-diff --git a/arch/x86/crypto/glue_helper.c b/arch/x86/crypto/glue_helper.c
-index 22ce4f6..40bcaca 100644
---- a/arch/x86/crypto/glue_helper.c
-+++ b/arch/x86/crypto/glue_helper.c
-@@ -39,7 +39,7 @@ static int __glue_ecb_crypt_128bit(const struct common_glue_ctx *gctx,
- 	void *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	const unsigned int bsize = 128 / 8;
- 	unsigned int nbytes, i, func_bytes;
--	bool fpu_enabled = false;
-+	bool fpu_enabled;
- 	int err;
- 
- 	err = blkcipher_walk_virt(desc, walk);
-@@ -49,7 +49,7 @@ static int __glue_ecb_crypt_128bit(const struct common_glue_ctx *gctx,
- 		u8 *wdst = walk->dst.virt.addr;
- 
- 		fpu_enabled = glue_fpu_begin(bsize, gctx->fpu_blocks_limit,
--					     desc, fpu_enabled, nbytes);
-+					     desc, false, nbytes);
- 
- 		for (i = 0; i < gctx->num_funcs; i++) {
- 			func_bytes = bsize * gctx->funcs[i].num_blocks;
-@@ -71,10 +71,10 @@ static int __glue_ecb_crypt_128bit(const struct common_glue_ctx *gctx,
- 		}
- 
- done:
-+		glue_fpu_end(fpu_enabled);
- 		err = blkcipher_walk_done(desc, walk, nbytes);
- 	}
- 
--	glue_fpu_end(fpu_enabled);
- 	return err;
- }
- 
-@@ -194,7 +194,7 @@ int glue_cbc_decrypt_128bit(const struct common_glue_ctx *gctx,
- 			    struct scatterlist *src, unsigned int nbytes)
- {
- 	const unsigned int bsize = 128 / 8;
--	bool fpu_enabled = false;
-+	bool fpu_enabled;
- 	struct blkcipher_walk walk;
- 	int err;
- 
-@@ -203,12 +203,12 @@ int glue_cbc_decrypt_128bit(const struct common_glue_ctx *gctx,
- 
- 	while ((nbytes = walk.nbytes)) {
- 		fpu_enabled = glue_fpu_begin(bsize, gctx->fpu_blocks_limit,
--					     desc, fpu_enabled, nbytes);
-+					     desc, false, nbytes);
- 		nbytes = __glue_cbc_decrypt_128bit(gctx, desc, &walk);
-+		glue_fpu_end(fpu_enabled);
- 		err = blkcipher_walk_done(desc, &walk, nbytes);
- 	}
- 
--	glue_fpu_end(fpu_enabled);
- 	return err;
- }
- EXPORT_SYMBOL_GPL(glue_cbc_decrypt_128bit);
-@@ -278,7 +278,7 @@ int glue_ctr_crypt_128bit(const struct common_glue_ctx *gctx,
- 			  struct scatterlist *src, unsigned int nbytes)
- {
- 	const unsigned int bsize = 128 / 8;
--	bool fpu_enabled = false;
-+	bool fpu_enabled;
- 	struct blkcipher_walk walk;
- 	int err;
- 
-@@ -287,13 +287,12 @@ int glue_ctr_crypt_128bit(const struct common_glue_ctx *gctx,
- 
- 	while ((nbytes = walk.nbytes) >= bsize) {
- 		fpu_enabled = glue_fpu_begin(bsize, gctx->fpu_blocks_limit,
--					     desc, fpu_enabled, nbytes);
-+					     desc, false, nbytes);
- 		nbytes = __glue_ctr_crypt_128bit(gctx, desc, &walk);
-+		glue_fpu_end(fpu_enabled);
- 		err = blkcipher_walk_done(desc, &walk, nbytes);
- 	}
- 
--	glue_fpu_end(fpu_enabled);
--
- 	if (walk.nbytes) {
- 		glue_ctr_crypt_final_128bit(
- 			gctx->funcs[gctx->num_funcs - 1].fn_u.ctr, desc, &walk);
--- 
-1.8.5.3
 
 
+Marc Kleine-Budde (1):
+      net: sched: dev_deactivate_many(): use msleep(1) instead of yield() to wait for outstanding qdisc_run calls
+
+Sebastian Andrzej Siewior (1):
+      fs: jbd2: pull your plug when waiting for space
+
+Steven Rostedt (1):
+      cpu_chill: Add a UNINTERRUPTIBLE hrtimer_nanosleep
+
+Steven Rostedt (Red Hat) (1):
+      Linux 3.2.55-rt81-rc
+
+----
+ fs/jbd2/checkpoint.c    |  2 ++
+ kernel/hrtimer.c        | 25 ++++++++++++++++++-------
+ localversion-rt         |  2 +-
+ net/sched/sch_generic.c |  2 +-
+ 4 files changed, 22 insertions(+), 9 deletions(-)
