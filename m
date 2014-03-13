@@ -1,82 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278AbaCMQdS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 12:33:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21711 "EHLO mx1.redhat.com"
+	id S1754226AbaCMQfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 12:35:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43486 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751833AbaCMQdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 12:33:16 -0400
-Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
-From: Simo Sorce <ssorce@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
-In-Reply-To: <20140313150034.GG18914@redhat.com>
-References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
-	 <1394657163-7472-3-git-send-email-vgoyal@redhat.com>
-	 <5320CAEC.6030008@amacapital.net>
-	 <CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
-	 <20140313141422.GB18914@redhat.com>
-	 <1394722534.32465.227.camel@willson.li.ssimo.org>
-	 <20140313150034.GG18914@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Mar 2014 12:33:09 -0400
-Message-ID: <1394728389.32465.230.camel@willson.li.ssimo.org>
+	id S1753243AbaCMQfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 12:35:47 -0400
+Date: Thu, 13 Mar 2014 12:35:31 -0400
+From: "Frank Ch. Eigler" <fche@redhat.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: Re: [RFC PATCH v2] Tracepoint: register/unregister struct tracepoint
+Message-ID: <20140313163531.GD14899@redhat.com>
+References: <1394727048-11204-1-git-send-email-mathieu.desnoyers@efficios.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394727048-11204-1-git-send-email-mathieu.desnoyers@efficios.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-13 at 11:00 -0400, Vivek Goyal wrote:
-> On Thu, Mar 13, 2014 at 10:55:34AM -0400, Simo Sorce wrote:
-> 
-> [..]
-> > > > This might not be quite as awful as I thought.  At least you're
-> > > > looking up the cgroup at connection time instead of at send time.
-> > > > 
-> > > > OTOH, this is still racy -- the socket could easily outlive the cgroup
-> > > > that created it.
-> > > 
-> > > That's a good point. What guarantees that previous cgroup was not
-> > > reassigned to a different container.
-> > > 
-> > > What if a process A opens the connection with sssd. Process A passes the
-> > > file descriptor to a different process B in a differnt container.
-> > 
-> > Stop right here.
-> > If the process passes the fd it is not my problem anymore.
-> > The process can as well just 'proxy' all the information to another
-> > process.
-> > 
-> > We just care to properly identify the 'original' container, we are not
-> > in the business of detecting malicious behavior. That's something other
-> > mechanism need to protect against (SELinux or other LSMs, normal
-> > permissions, capabilities, etc...).
-> > 
-> > > Process A exits. Container gets removed from system and new one gets
-> > > launched which uses same cgroup as old one. Now process B sends a new
-> > > request and SSSD will serve it based on policy of newly launched
-> > > container.
-> > > 
-> > > This sounds very similar to pid race where socket/connection will outlive
-> > > the pid.
-> > 
-> > Nope, completely different.
-> > 
-> 
-> I think you missed my point. Passing file descriptor is not the problem.
-> Problem is reuse of same cgroup name for a different container while
-> socket lives on. And it is same race as reuse of a pid for a different
-> process.
+Hi -
 
-The cgroup name should not be reused of course, if userspace does that,
-it is userspace's issue. cgroup names are not a constrained namespace
-like pids which force the kernel to reuse them for processes of a
-different nature.
+On Thu, Mar 13, 2014 at 12:10:48PM -0400, Mathieu Desnoyers wrote:
 
-Simo.
+> [...]  Moreover, tracers are responsible for unregistering the probe
+> before the module containing its associated tracepoint is unloaded.
 
+Could you spell out please how a tracer is supposed to know early
+enough that the module is going to be unloaded?
+
+- FChE
