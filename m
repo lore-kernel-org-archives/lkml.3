@@ -1,141 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499AbaCMN1Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 09:27:25 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:44301 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266AbaCMN1Y (ORCPT
+	id S1752924AbaCMN31 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 09:29:27 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:36528 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaCMN3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 09:27:24 -0400
-Message-ID: <5321B230.6030109@gmail.com>
-Date: Thu, 13 Mar 2014 21:27:12 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+	Thu, 13 Mar 2014 09:29:25 -0400
+Message-ID: <5321B2B2.9060109@acm.org>
+Date: Thu, 13 Mar 2014 08:29:22 -0500
+From: Corey Minyard <minyard@acm.org>
+Reply-To: minyard@acm.org
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: gxt@mprc.pku.edu.cn
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch/unicore32/kernel/ksyms.c: remove several undefined exported
- symbols
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Pavel Machek <pavel@ucw.cz>, Matthew Garrett <matthew.garrett@nebula.com>
+CC: "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com> <1511662.Ly2fOjCGKz@vostro.rjw.lan> <1392765307.3488.1.camel@x230.lan> <20140312230007.GA1817@amd.pavel.ucw.cz> <1394666568.25122.1.camel@x230> <20140313072204.GA7181@amd.pavel.ucw.cz> <1394695475.25122.4.camel@x230> <20140313083832.GA8902@amd.pavel.ucw.cz>
+In-Reply-To: <20140313083832.GA8902@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For 'csum_partial_copy_nocheck()', it has default definition in
-'asm-generic'.
+On 03/13/2014 03:38 AM, Pavel Machek wrote:
+> On Thu 2014-03-13 07:24:36, Matthew Garrett wrote:
+>> On Thu, 2014-03-13 at 08:22 +0100, Pavel Machek wrote:
+>>> On Wed 2014-03-12 23:22:49, Matthew Garrett wrote:
+>>>> No. The power meter driver knows nothing about IPMI. It makes no IPMI
+>>>> calls. There's no requirement that a vendor implement it via IPMI.
+>>> Yet you claim that IMPI is needed for that, and that's why you made
+>>> IMPI default.
+>> I claim that the ACPI spec defines the behaviour of IPMI operation
+>> regions, and so we should default IPMI to Y in order to (by default)
+>> implement the ACPI spec.
+>>
+>>> So ... do we need dmi-based blacklist?
+>> I don't see why.
+> Your reasoning for default y was that "power meter depends on
+> this". Then, claim that "power meter does not officially depend on it"
+> so it would be wrong to have a dependency.
 
-For '__raw_reads?()' and '__raw_writes?()' are used by the drivers
-which no relationship with allmodconfig for unicode32, the related
-modules are:
+I believe the correct statement is "On some systems power meter depends
+on it".
 
-  drivers/mmc/host/omap.c
-  drivers/mtd/nand/atmel_nand.c
-  drivers/mtd/nand/pxa3xx_nand.c
-  drivers/usb/gadget/at91_udc.c
+>
+> Defaults are not right solution; system should still work if I select
+> non-default settings. Which you claim is not a case, but you don't see
+> why you should fix it.
 
-Others are only within some architectures (not kernel wide).
+If something is implemented using IPMI, then IPMI has to be there to
+use it.  Matthew's statement was:
 
+For example, if you load the ACPI power meter driver before you've
+installed the ACPI IPMI driver you'll typically get failures (most
+vendors implement it via IPMI).
 
-The related error with allmodconfig for unicode32:
+Other things besides the power meter can be implemented using IPMI, it's
+up to the vendor.  How will those things work if IPMI is not available?
 
-    CC      arch/unicore32/kernel/ksyms.o
-  arch/unicore32/kernel/ksyms.c:29: error: ‘__backtrace’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:29: error: type defaults to ‘int’ in declaration of ‘__backtrace’
-  arch/unicore32/kernel/ksyms.c:38: error: ‘csum_partial_copy_nocheck’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:38: error: type defaults to ‘int’ in declaration of ‘csum_partial_copy_nocheck’
-  arch/unicore32/kernel/ksyms.c:39: error: ‘__csum_ipv6_magic’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:39: error: type defaults to ‘int’ in declaration of ‘__csum_ipv6_magic’
-  arch/unicore32/kernel/ksyms.c:43: error: ‘__raw_readsb’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:43: error: type defaults to ‘int’ in declaration of ‘__raw_readsb’
-  arch/unicore32/kernel/ksyms.c:46: error: ‘__raw_readsw’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:46: error: type defaults to ‘int’ in declaration of ‘__raw_readsw’
-  arch/unicore32/kernel/ksyms.c:49: error: ‘__raw_readsl’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:49: error: type defaults to ‘int’ in declaration of ‘__raw_readsl’
-  arch/unicore32/kernel/ksyms.c:52: error: ‘__raw_writesb’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:52: error: type defaults to ‘int’ in declaration of ‘__raw_writesb’
-  arch/unicore32/kernel/ksyms.c:55: error: ‘__raw_writesw’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:55: error: type defaults to ‘int’ in declaration of ‘__raw_writesw’
-  arch/unicore32/kernel/ksyms.c:58: error: ‘__raw_writesl’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:58: error: type defaults to ‘int’ in declaration of ‘__raw_writesl’
-  arch/unicore32/kernel/ksyms.c:79: error: ‘__get_user_1’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:79: error: type defaults to ‘int’ in declaration of ‘__get_user_1’
-  arch/unicore32/kernel/ksyms.c:80: error: ‘__get_user_2’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:80: error: type defaults to ‘int’ in declaration of ‘__get_user_2’
-  arch/unicore32/kernel/ksyms.c:81: error: ‘__get_user_4’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:81: error: type defaults to ‘int’ in declaration of ‘__get_user_4’
-  arch/unicore32/kernel/ksyms.c:83: error: ‘__put_user_1’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:83: error: type defaults to ‘int’ in declaration of ‘__put_user_1’
-  arch/unicore32/kernel/ksyms.c:84: error: ‘__put_user_2’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:84: error: type defaults to ‘int’ in declaration of ‘__put_user_2’
-  arch/unicore32/kernel/ksyms.c:85: error: ‘__put_user_4’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:85: error: type defaults to ‘int’ in declaration of ‘__put_user_4’
-  arch/unicore32/kernel/ksyms.c:86: error: ‘__put_user_8’ undeclared here (not in a function)
-  arch/unicore32/kernel/ksyms.c:86: error: type defaults to ‘int’ in declaration of ‘__put_user_8’
+-corey
 
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- arch/unicore32/kernel/ksyms.c |   33 ---------------------------------
- 1 file changed, 33 deletions(-)
-
-diff --git a/arch/unicore32/kernel/ksyms.c b/arch/unicore32/kernel/ksyms.c
-index d285d71..63afc7f 100644
---- a/arch/unicore32/kernel/ksyms.c
-+++ b/arch/unicore32/kernel/ksyms.c
-@@ -26,8 +26,6 @@
- EXPORT_SYMBOL(find_next_zero_bit);
- EXPORT_SYMBOL(find_next_bit);
- 
--EXPORT_SYMBOL(__backtrace);
--
- 	/* platform dependent support */
- EXPORT_SYMBOL(__udelay);
- EXPORT_SYMBOL(__const_udelay);
-@@ -35,28 +33,6 @@ EXPORT_SYMBOL(__const_udelay);
- 	/* networking */
- EXPORT_SYMBOL(csum_partial);
- EXPORT_SYMBOL(csum_partial_copy_from_user);
--EXPORT_SYMBOL(csum_partial_copy_nocheck);
--EXPORT_SYMBOL(__csum_ipv6_magic);
--
--	/* io */
--#ifndef __raw_readsb
--EXPORT_SYMBOL(__raw_readsb);
--#endif
--#ifndef __raw_readsw
--EXPORT_SYMBOL(__raw_readsw);
--#endif
--#ifndef __raw_readsl
--EXPORT_SYMBOL(__raw_readsl);
--#endif
--#ifndef __raw_writesb
--EXPORT_SYMBOL(__raw_writesb);
--#endif
--#ifndef __raw_writesw
--EXPORT_SYMBOL(__raw_writesw);
--#endif
--#ifndef __raw_writesl
--EXPORT_SYMBOL(__raw_writesl);
--#endif
- 
- 	/* string / mem functions */
- EXPORT_SYMBOL(strchr);
-@@ -76,15 +52,6 @@ EXPORT_SYMBOL(__copy_from_user);
- EXPORT_SYMBOL(__copy_to_user);
- EXPORT_SYMBOL(__clear_user);
- 
--EXPORT_SYMBOL(__get_user_1);
--EXPORT_SYMBOL(__get_user_2);
--EXPORT_SYMBOL(__get_user_4);
--
--EXPORT_SYMBOL(__put_user_1);
--EXPORT_SYMBOL(__put_user_2);
--EXPORT_SYMBOL(__put_user_4);
--EXPORT_SYMBOL(__put_user_8);
--
- EXPORT_SYMBOL(__ashldi3);
- EXPORT_SYMBOL(__ashrdi3);
- EXPORT_SYMBOL(__divsi3);
--- 
-1.7.9.5
