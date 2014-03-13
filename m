@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331AbaCMXCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 19:02:23 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:57980 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754935AbaCMXBh (ORCPT
+	id S1754777AbaCMXEJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 19:04:09 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54305 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191AbaCMXEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 19:01:37 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org
-Cc: Stefani Seibold <stefani@seibold.net>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v4 2/2] x86_32: Remove user bit from identity map PDE
-Date: Thu, 13 Mar 2014 16:01:27 -0700
-Message-Id: <e240a977f3c7cbd525a091fd6521499ec4b8e94f.1394751608.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <cover.1394751608.git.luto@amacapital.net>
-References: <cover.1394751608.git.luto@amacapital.net>
-In-Reply-To: <cover.1394751608.git.luto@amacapital.net>
-References: <cover.1394751608.git.luto@amacapital.net>
+	Thu, 13 Mar 2014 19:04:05 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53223964.2080408@roeck-us.net>
+Date: Thu, 13 Mar 2014 16:04:04 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
+        James Ralston <james.d.ralston@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/8] mfd: lpc_ich: Fix ACPI enable bitmask
+References: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com> <20140313151601.GA4479@roeck-us.net> <20140313152534.GC10356@lee--X1> <20140313225040.GK28504@lee--X1>
+In-Reply-To: <20140313225040.GK28504@lee--X1>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only reason that the user bit was set was to support userspace
-access to the compat vDSO in the fixmap.  The compat vDSO is gone,
-so the user bit can be removed.
+On 03/13/2014 03:50 PM, Lee Jones wrote:
+>>>> The original bitmask of 0x10 was incorrect and would result in a write
+>>>> to a reserved read-only bit instead of enabling the ACPI I/O
+>>>> region.  Update it to the proper value of 0x80.
+>>>>
+>>>> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+>>>> Tested-by: Rajat Jain <rajatjain@juniper.net>
+>>>> Cc: Guenter Roeck <linux@roeck-us.net>
+>>>> Cc: James Ralston <james.d.ralston@intel.com>
+>>>> Cc: Samuel Ortiz <sameo@linux.intel.com>
+>>>> Cc: Lee Jones <lee.jones@linaro.org>
+>>>
+>>> Who is going to pick up this series ?
+>>
+>> I will, once I've completed the review.
+>
+> Okay review complete, phew!
+>
+> Guenter, How do you want to play this? Do you want me to create an
+> immutable branch for you to pull from?
+>
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/include/asm/pgtable_types.h | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+I'll be happy if I can pull it from -next. Is it going to be there
+anytime soon ?
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 1aa9ccd..757f9c4 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -214,13 +214,8 @@
- #ifdef CONFIG_X86_64
- #define __PAGE_KERNEL_IDENT_LARGE_EXEC	__PAGE_KERNEL_LARGE_EXEC
- #else
--/*
-- * For PDE_IDENT_ATTR include USER bit. As the PDE and PTE protection
-- * bits are combined, this will alow user to access the high address mapped
-- * VDSO in the presence of CONFIG_COMPAT_VDSO
-- */
- #define PTE_IDENT_ATTR	 0x003		/* PRESENT+RW */
--#define PDE_IDENT_ATTR	 0x067		/* PRESENT+RW+USER+DIRTY+ACCESSED */
-+#define PDE_IDENT_ATTR	 0x063		/* PRESENT+RW+DIRTY+ACCESSED */
- #define PGD_IDENT_ATTR	 0x001		/* PRESENT (no other attributes) */
- #endif
- 
--- 
-1.8.5.3
+Thanks,
+Guenter
 
