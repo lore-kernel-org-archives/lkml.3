@@ -1,840 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743AbaCMSNg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 14:13:36 -0400
-Received: from mail.efficios.com ([78.47.125.74]:56822 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754122AbaCMSNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 14:13:35 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [RFC PATCH v3] Tracepoint: register/unregister struct tracepoint
-Date: Thu, 13 Mar 2014 14:12:51 -0400
-Message-Id: <1394734371-13782-1-git-send-email-mathieu.desnoyers@efficios.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754841AbaCMSNl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 14:13:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56515 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754719AbaCMSNi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 14:13:38 -0400
+Date: Thu, 13 Mar 2014 18:10:33 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 5/7] arm64: ftrace: Add dynamic ftrace support
+Message-ID: <20140313181033.GH25472@mudshark.cambridge.arm.com>
+References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394705630-12384-6-git-send-email-takahiro.akashi@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394705630-12384-6-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register/unregister tracepoint probes with struct tracepoint pointer
-rather than tracepoint name.
+On Thu, Mar 13, 2014 at 10:13:48AM +0000, AKASHI Takahiro wrote:
+> This patch allows "dynamic ftrace" if CONFIG_DYNAMIC_FTRACE is enabled.
+> Here we can turn on and off tracing dynamically per-function base.
+> 
+> On arm64, this is done by patching single branch instruction to _mcount()
+> inserted by gcc -pg option. The branch is replaced to NOP initially at
+> kernel start up, and later on, NOP to branch to ftrace_caller() when
+> enabled or branch to NOP when disabled.
+> Please note that ftrace_caller() is a counterpart of _mcount() in case of
+> 'static' ftrace.
+> 
+> More details on architecture specific requirements are described in
+> Documentation/trace/ftrace-design.txt.
+> 
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  arch/arm64/Kconfig               |    1 +
+>  arch/arm64/include/asm/ftrace.h  |   15 +++++
+>  arch/arm64/kernel/entry-ftrace.S |   43 +++++++++++++++
+>  arch/arm64/kernel/ftrace.c       |  113 ++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 172 insertions(+)
+> 
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 6b3fef6..6954959 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -33,6 +33,7 @@ config ARM64
+>  	select HAVE_DMA_API_DEBUG
+>  	select HAVE_DMA_ATTRS
+>  	select HAVE_DMA_CONTIGUOUS
+> +	select HAVE_DYNAMIC_FTRACE
+>  	select HAVE_EFFICIENT_UNALIGNED_ACCESS
+>  	select HAVE_FTRACE_MCOUNT_RECORD
+>  	select HAVE_FUNCTION_TRACER
+> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
+> index 58ea595..ed5c448 100644
+> --- a/arch/arm64/include/asm/ftrace.h
+> +++ b/arch/arm64/include/asm/ftrace.h
+> @@ -18,6 +18,21 @@
+>  
+>  #ifndef __ASSEMBLY__
+>  extern void _mcount(unsigned long);
+> +
+> +struct dyn_arch_ftrace {
+> +	/* No extra data needed for arm64 */
+> +};
+> +
+> +extern unsigned long ftrace_graph_call;
+> +
+> +static inline unsigned long ftrace_call_adjust(unsigned long addr)
+> +{
+> +	/*
+> +	 * addr is the address of the mcount call instruction.
+> +	 * recordmcount does the necessary offset calculation.
+> +	 */
+> +	return addr;
+> +}
 
-This change, which vastly simplifies tracepoint.c, has been proposed by
-Steven Rostedt.
+You could just as easily implement this as a dummy macro, but I guess it
+doesn't matter either way.
 
->From this point on, the tracers need to pass a struct tracepoint pointer
-to probe register/unregister. A probe can now only be connected to a
-tracepoint that exists. Moreover, tracers are responsible for
-unregistering the probe before the module containing its associated
-tracepoint is unloaded.
+>  #endif /* __ASSEMBLY__ */
+>  
+>  #endif /* __ASM_FTRACE_H */
+> diff --git a/arch/arm64/kernel/entry-ftrace.S b/arch/arm64/kernel/entry-ftrace.S
+> index 0ac31c8..c0fbe10 100644
+> --- a/arch/arm64/kernel/entry-ftrace.S
+> +++ b/arch/arm64/kernel/entry-ftrace.S
+> @@ -86,6 +86,7 @@
+>  	add	\reg, \reg, #8
+>  	.endm
+>  
+> +#ifndef CONFIG_DYNAMIC_FTRACE
+>  /*
+>   * void _mcount(unsigned long return_address)
+>   * @return_address: return address to instrumented function
+> @@ -134,6 +135,48 @@ skip_ftrace_call:
+>  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>  ENDPROC(_mcount)
+>  
+> +#else /* CONFIG_DYNAMIC_FTRACE */
+> +/*
+> + * _mcount() is used to build the kernel with -pg option, but all the branch
+> + * instructions to _mcount() are replaced to NOP initially at kernel start up,
+> + * and later on, NOP to branch to ftrace_caller() when enabled or branch to
+> + * NOP when disabled per-function base.
+> + */
+> +ENTRY(_mcount)
+> +	ret
+> +ENDPROC(_mcount)
 
-Changes since v1:
-- Adapt ftrace/perf callers,
-- Update tracepoint.h macro,
-- Build tested.
+Judging by your comment then, this should never be called. Is that right? If
+so, we could add a BUG-equivalent so we know if we missed an mcount during
+patching.
 
-Changes since v2:
-- Introduce for_each_tracepoint() iterator to allow listing the
-  currently loaded tracepoints, for modules using coming/going
-  notifiers to track tracepoints.
+> +/*
+> + * void ftrace_caller(unsigned long return_address)
+> + * @return_address: return address to instrumented function
+> + *
+> + * This function is a counterpart of _mcount() in 'static' ftrace, and
+> + * makes calls to:
+> + *     - tracer function to probe instrumented function's entry,
+> + *     - ftrace_graph_caller to set up an exit hook
+> + */
+> +ENTRY(ftrace_caller)
+> +	mcount_enter
+> +
+> +	mcount_get_pc0	x0		//     function's pc
+> +	mcount_get_lr	x1		//     function's lr
+> +
+> +	.global ftrace_call
+> +ftrace_call:				// tracer(pc, lr);
+> +	nop				// This will be replaced with "bl xxx"
+> +					// where xxx can be any kind of tracer.
+> +
+> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> +	.global ftrace_graph_call
+> +ftrace_graph_call:			// ftrace_graph_caller();
+> +	nop				// If enabled, this will be replaced
+> +					// "b ftrace_graph_caller"
+> +#endif
+> +
+> +	mcount_exit
+> +ENDPROC(ftrace_caller)
+> +#endif /* CONFIG_DYNAMIC_FTRACE */
+> +
+>  ENTRY(ftrace_stub)
+>  	ret
+>  ENDPROC(ftrace_stub)
+> diff --git a/arch/arm64/kernel/ftrace.c b/arch/arm64/kernel/ftrace.c
+> index a559ab8..8c26476 100644
+> --- a/arch/arm64/kernel/ftrace.c
+> +++ b/arch/arm64/kernel/ftrace.c
+> @@ -17,6 +17,89 @@
+>  #include <asm/ftrace.h>
+>  #include <asm/insn.h>
+>  
+> +#ifdef CONFIG_DYNAMIC_FTRACE
+> +/*
+> + * Replace a single instruction, which may be a branch or NOP.
+> + * If @validate == true, a replaced instruction is checked against 'old'.
+> + */
+> +static int ftrace_modify_code(unsigned long pc, unsigned int old,
+> +			      unsigned int new, bool validate)
+> +{
+> +	unsigned int replaced;
 
-Still needs testing.
+u32 is a bit clearer for instructions.
 
-This patch applies on top of 1b39437c61f562f82d6a4e3218470339a44620f7,
-after applying:
-- "Tracepoint cleanup: remove unused API functions"
-- "Tracepoint API doc update: data argument"
+> +	/*
+> +	 * Note:
+> +	 * Due to modules and __init, code can disappear and change,
+> +	 * we need to protect against faulting as well as code changing.
+> +	 * We do this by aarch64_insn_*() which use the probe_kernel_*().
+> +	 *
+> +	 * No lock is held here because all the modifications are run
+> +	 * through stop_machine().
+> +	 */
+> +	if (validate) {
+> +		if (aarch64_insn_read((void *)pc, &replaced))
+> +			return -EFAULT;
+> +
+> +		if (replaced != old)
+> +			return -EINVAL;
+> +	}
+> +	if (aarch64_insn_patch_text_nosync((void *)pc, new))
+> +		return -EPERM;
 
-Not-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Frank Ch. Eigler <fche@redhat.com>
-CC: Johannes Berg <johannes.berg@intel.com>
----
- include/linux/ftrace_event.h |    1 +
- include/linux/tracepoint.h   |   23 ++-
- include/trace/ftrace.h       |    2 +
- kernel/trace/trace_events.c  |    8 +-
- kernel/tracepoint.c          |  470 ++++++++++++++++--------------------------
- 5 files changed, 204 insertions(+), 300 deletions(-)
+I think you're better off propagating the errors here, rather than
+overriding them with EFAULT/EINVAL/EPERM.
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 4e4cc28..1592c1c 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -230,6 +230,7 @@ struct ftrace_event_call {
- 	struct list_head	list;
- 	struct ftrace_event_class *class;
- 	char			*name;
-+	struct tracepoint	*tp;
- 	struct trace_event	event;
- 	const char		*print_fmt;
- 	struct event_filter	*filter;
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 812b255..e52d012 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -37,16 +37,21 @@ struct tracepoint {
- 
- /*
-  * Connect a probe to a tracepoint.
-- * Internal API, should not be used directly.
-  */
--extern int tracepoint_probe_register(const char *name, void *probe, void *data);
-+extern int tracepoint_probe_register(struct tracepoint *tp, void *probe,
-+		void *data);
- 
- /*
-  * Disconnect a probe from a tracepoint.
-- * Internal API, should not be used directly.
-  */
--extern int
--tracepoint_probe_unregister(const char *name, void *probe, void *data);
-+extern int tracepoint_probe_unregister(struct tracepoint *tp, void *probe,
-+		void *data);
-+
-+/*
-+ * Tracepoint iterator.
-+ */
-+void for_each_tracepoint(void (*fct)(struct tracepoint *tp, void *priv),
-+		void *priv);
- 
- #ifdef CONFIG_MODULES
- struct tp_module {
-@@ -160,14 +165,14 @@ static inline void tracepoint_synchronize_unregister(void)
- 	static inline int						\
- 	register_trace_##name(void (*probe)(data_proto), void *data)	\
- 	{								\
--		return tracepoint_probe_register(#name, (void *)probe,	\
--						 data);			\
-+		return tracepoint_probe_register(&__tracepoint_##name,	\
-+						(void *)probe, data);	\
- 	}								\
- 	static inline int						\
- 	unregister_trace_##name(void (*probe)(data_proto), void *data)	\
- 	{								\
--		return tracepoint_probe_unregister(#name, (void *)probe, \
--						   data);		\
-+		return tracepoint_probe_unregister(&__tracepoint_##name,\
-+						(void *)probe, data);	\
- 	}								\
- 	static inline void						\
- 	check_trace_callback_type_##name(void (*cb)(data_proto))	\
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 1a8b28d..415b986 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -625,6 +625,7 @@ static struct ftrace_event_class __used __refdata event_class_##call = { \
- 									\
- static struct ftrace_event_call __used event_##call = {			\
- 	.name			= #call,				\
-+	.tp			= &__tracepoint_##call,			\
- 	.class			= &event_class_##template,		\
- 	.event.funcs		= &ftrace_event_type_funcs_##template,	\
- 	.print_fmt		= print_fmt_##template,			\
-@@ -639,6 +640,7 @@ static const char print_fmt_##call[] = print;				\
- 									\
- static struct ftrace_event_call __used event_##call = {			\
- 	.name			= #call,				\
-+	.tp			= &__tracepoint_##call,			\
- 	.class			= &event_class_##template,		\
- 	.event.funcs		= &ftrace_event_type_funcs_##call,	\
- 	.print_fmt		= print_fmt_##call,			\
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index f3989ce..0e39692 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -201,22 +201,22 @@ int ftrace_event_reg(struct ftrace_event_call *call,
- 
- 	switch (type) {
- 	case TRACE_REG_REGISTER:
--		return tracepoint_probe_register(call->name,
-+		return tracepoint_probe_register(call->tp,
- 						 call->class->probe,
- 						 file);
- 	case TRACE_REG_UNREGISTER:
--		tracepoint_probe_unregister(call->name,
-+		tracepoint_probe_unregister(call->tp,
- 					    call->class->probe,
- 					    file);
- 		return 0;
- 
- #ifdef CONFIG_PERF_EVENTS
- 	case TRACE_REG_PERF_REGISTER:
--		return tracepoint_probe_register(call->name,
-+		return tracepoint_probe_register(call->tp,
- 						 call->class->perf_probe,
- 						 call);
- 	case TRACE_REG_PERF_UNREGISTER:
--		tracepoint_probe_unregister(call->name,
-+		tracepoint_probe_unregister(call->tp,
- 					    call->class->perf_probe,
- 					    call);
- 		return 0;
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index cc6c8b6..e93e2bf 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -34,8 +34,8 @@ extern struct tracepoint * const __stop___tracepoints_ptrs[];
- static const int tracepoint_debug;
- 
- /*
-- * Tracepoints mutex protects the builtin and module tracepoints and the hash
-- * table, as well as the local module list.
-+ * Tracepoints mutex protects the builtin and module tracepoints, as
-+ * well as the local module list.
-  */
- static DEFINE_MUTEX(tracepoints_mutex);
- 
-@@ -45,26 +45,10 @@ static LIST_HEAD(tracepoint_module_list);
- #endif /* CONFIG_MODULES */
- 
- /*
-- * Tracepoint hash table, containing the active tracepoints.
-- * Protected by tracepoints_mutex.
-- */
--#define TRACEPOINT_HASH_BITS 6
--#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
--static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
--
--/*
-  * Note about RCU :
-  * It is used to delay the free of multiple probes array until a quiescent
-  * state is reached.
-- * Tracepoint entries modifications are protected by the tracepoints_mutex.
-  */
--struct tracepoint_entry {
--	struct hlist_node hlist;
--	struct tracepoint_func *funcs;
--	int refcount;	/* Number of times armed. 0 if disarmed. */
--	char name[0];
--};
--
- struct tp_probes {
- 	union {
- 		struct rcu_head rcu;
-@@ -94,34 +78,35 @@ static inline void release_probes(struct tracepoint_func *old)
- 	}
- }
- 
--static void debug_print_probes(struct tracepoint_entry *entry)
-+static
-+void debug_print_probes(struct tracepoint_func *funcs)
- {
- 	int i;
- 
--	if (!tracepoint_debug || !entry->funcs)
-+	if (!tracepoint_debug || !funcs)
- 		return;
- 
--	for (i = 0; entry->funcs[i].func; i++)
--		printk(KERN_DEBUG "Probe %d : %p\n", i, entry->funcs[i].func);
-+	for (i = 0; funcs[i].func; i++)
-+		printk(KERN_DEBUG "Probe %d : %p\n", i, funcs[i].func);
- }
- 
--static struct tracepoint_func *
--tracepoint_entry_add_probe(struct tracepoint_entry *entry,
--			   void *probe, void *data)
-+static
-+struct tracepoint_func *func_add(struct tracepoint_func **funcs,
-+		struct tracepoint_func *tp_func)
- {
- 	int nr_probes = 0;
- 	struct tracepoint_func *old, *new;
- 
--	if (WARN_ON(!probe))
-+	if (WARN_ON(!tp_func->func))
- 		return ERR_PTR(-EINVAL);
- 
--	debug_print_probes(entry);
--	old = entry->funcs;
-+	debug_print_probes(*funcs);
-+	old = *funcs;
- 	if (old) {
- 		/* (N -> N+1), (N != 0, 1) probes */
- 		for (nr_probes = 0; old[nr_probes].func; nr_probes++)
--			if (old[nr_probes].func == probe &&
--			    old[nr_probes].data == data)
-+			if (old[nr_probes].func == tp_func->func &&
-+			    old[nr_probes].data == tp_func->data)
- 				return ERR_PTR(-EEXIST);
- 	}
- 	/* + 2 : one for new probe, one for NULL func */
-@@ -130,33 +115,31 @@ tracepoint_entry_add_probe(struct tracepoint_entry *entry,
- 		return ERR_PTR(-ENOMEM);
- 	if (old)
- 		memcpy(new, old, nr_probes * sizeof(struct tracepoint_func));
--	new[nr_probes].func = probe;
--	new[nr_probes].data = data;
-+	new[nr_probes] = *tp_func;
- 	new[nr_probes + 1].func = NULL;
--	entry->refcount = nr_probes + 1;
--	entry->funcs = new;
--	debug_print_probes(entry);
-+	*funcs = new;
-+	debug_print_probes(*funcs);
- 	return old;
- }
- 
--static void *
--tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
--			      void *probe, void *data)
-+static
-+void *func_remove(struct tracepoint_func **funcs,
-+		struct tracepoint_func *tp_func)
- {
- 	int nr_probes = 0, nr_del = 0, i;
- 	struct tracepoint_func *old, *new;
- 
--	old = entry->funcs;
-+	old = *funcs;
- 
- 	if (!old)
- 		return ERR_PTR(-ENOENT);
- 
--	debug_print_probes(entry);
-+	debug_print_probes(*funcs);
- 	/* (N -> M), (N > 1, M >= 0) probes */
--	if (probe) {
-+	if (tp_func->func) {
- 		for (nr_probes = 0; old[nr_probes].func; nr_probes++) {
--			if (old[nr_probes].func == probe &&
--			     old[nr_probes].data == data)
-+			if (old[nr_probes].func == tp_func->func &&
-+			     old[nr_probes].data == tp_func->data)
- 				nr_del++;
- 		}
- 	}
-@@ -167,9 +150,8 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
- 	 */
- 	if (nr_probes - nr_del == 0) {
- 		/* N -> 0, (N > 1) */
--		entry->funcs = NULL;
--		entry->refcount = 0;
--		debug_print_probes(entry);
-+		*funcs = NULL;
-+		debug_print_probes(*funcs);
- 		return old;
- 	} else {
- 		int j = 0;
-@@ -179,90 +161,35 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
- 		if (new == NULL)
- 			return ERR_PTR(-ENOMEM);
- 		for (i = 0; old[i].func; i++)
--			if (old[i].func != probe || old[i].data != data)
-+			if (old[i].func != tp_func->func
-+					|| old[i].data != tp_func->data)
- 				new[j++] = old[i];
- 		new[nr_probes - nr_del].func = NULL;
--		entry->refcount = nr_probes - nr_del;
--		entry->funcs = new;
-+		*funcs = new;
- 	}
--	debug_print_probes(entry);
-+	debug_print_probes(*funcs);
- 	return old;
- }
- 
- /*
-- * Get tracepoint if the tracepoint is present in the tracepoint hash table.
-- * Must be called with tracepoints_mutex held.
-- * Returns NULL if not present.
-+ * Add the probe function to a tracepoint.
-  */
--static struct tracepoint_entry *get_tracepoint(const char *name)
-+static
-+int tracepoint_add_func(struct tracepoint *tp,
-+		struct tracepoint_func *func)
- {
--	struct hlist_head *head;
--	struct tracepoint_entry *e;
--	u32 hash = jhash(name, strlen(name), 0);
--
--	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
--	hlist_for_each_entry(e, head, hlist) {
--		if (!strcmp(name, e->name))
--			return e;
--	}
--	return NULL;
--}
-+	struct tracepoint_func *old, *tp_funcs;
- 
--/*
-- * Add the tracepoint to the tracepoint hash table. Must be called with
-- * tracepoints_mutex held.
-- */
--static struct tracepoint_entry *add_tracepoint(const char *name)
--{
--	struct hlist_head *head;
--	struct tracepoint_entry *e;
--	size_t name_len = strlen(name) + 1;
--	u32 hash = jhash(name, name_len-1, 0);
--
--	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
--	hlist_for_each_entry(e, head, hlist) {
--		if (!strcmp(name, e->name)) {
--			printk(KERN_NOTICE
--				"tracepoint %s busy\n", name);
--			return ERR_PTR(-EEXIST);	/* Already there */
--		}
--	}
--	/*
--	 * Using kmalloc here to allocate a variable length element. Could
--	 * cause some memory fragmentation if overused.
--	 */
--	e = kmalloc(sizeof(struct tracepoint_entry) + name_len, GFP_KERNEL);
--	if (!e)
--		return ERR_PTR(-ENOMEM);
--	memcpy(&e->name[0], name, name_len);
--	e->funcs = NULL;
--	e->refcount = 0;
--	hlist_add_head(&e->hlist, head);
--	return e;
--}
-+	if (tp->regfunc && !static_key_enabled(&tp->key))
-+		tp->regfunc();
- 
--/*
-- * Remove the tracepoint from the tracepoint hash table. Must be called with
-- * mutex_lock held.
-- */
--static inline void remove_tracepoint(struct tracepoint_entry *e)
--{
--	hlist_del(&e->hlist);
--	kfree(e);
--}
--
--/*
-- * Sets the probe callback corresponding to one tracepoint.
-- */
--static void set_tracepoint(struct tracepoint_entry **entry,
--	struct tracepoint *elem, int active)
--{
--	WARN_ON(strcmp((*entry)->name, elem->name) != 0);
--
--	if (elem->regfunc && !static_key_enabled(&elem->key) && active)
--		elem->regfunc();
--	else if (elem->unregfunc && static_key_enabled(&elem->key) && !active)
--		elem->unregfunc();
-+	tp_funcs = tp->funcs;
-+	old = func_add(&tp_funcs, func);
-+	if (IS_ERR(old)) {
-+		WARN_ON_ONCE(1);
-+		return PTR_ERR(old);
-+	}
-+	release_probes(old);
- 
- 	/*
- 	 * rcu_assign_pointer has a smp_wmb() which makes sure that the new
-@@ -271,203 +198,124 @@ static void set_tracepoint(struct tracepoint_entry **entry,
- 	 * include/linux/tracepoints.h. A matching smp_read_barrier_depends()
- 	 * is used.
- 	 */
--	rcu_assign_pointer(elem->funcs, (*entry)->funcs);
--	if (active && !static_key_enabled(&elem->key))
--		static_key_slow_inc(&elem->key);
--	else if (!active && static_key_enabled(&elem->key))
--		static_key_slow_dec(&elem->key);
-+	rcu_assign_pointer(tp->funcs, tp_funcs);
-+	if (!static_key_enabled(&tp->key))
-+		static_key_slow_inc(&tp->key);
-+	return 0;
- }
- 
- /*
-- * Disable a tracepoint and its probe callback.
-+ * Remove a probe function from a tracepoint.
-  * Note: only waiting an RCU period after setting elem->call to the empty
-  * function insures that the original callback is not used anymore. This insured
-  * by preempt_disable around the call site.
-  */
--static void disable_tracepoint(struct tracepoint *elem)
--{
--	if (elem->unregfunc && static_key_enabled(&elem->key))
--		elem->unregfunc();
--
--	if (static_key_enabled(&elem->key))
--		static_key_slow_dec(&elem->key);
--	rcu_assign_pointer(elem->funcs, NULL);
--}
--
--/**
-- * tracepoint_update_probe_range - Update a probe range
-- * @begin: beginning of the range
-- * @end: end of the range
-- *
-- * Updates the probe callback corresponding to a range of tracepoints.
-- * Called with tracepoints_mutex held.
-- */
--static void tracepoint_update_probe_range(struct tracepoint * const *begin,
--					  struct tracepoint * const *end)
-+static
-+int tracepoint_remove_func(struct tracepoint *tp,
-+		struct tracepoint_func *func)
- {
--	struct tracepoint * const *iter;
--	struct tracepoint_entry *mark_entry;
-+	struct tracepoint_func *old, *tp_funcs;
- 
--	if (!begin)
--		return;
--
--	for (iter = begin; iter < end; iter++) {
--		mark_entry = get_tracepoint((*iter)->name);
--		if (mark_entry) {
--			set_tracepoint(&mark_entry, *iter,
--					!!mark_entry->refcount);
--		} else {
--			disable_tracepoint(*iter);
--		}
-+	tp_funcs = tp->funcs;
-+	old = func_remove(&tp_funcs, func);
-+	if (IS_ERR(old)) {
-+		WARN_ON_ONCE(1);
-+		return PTR_ERR(old);
- 	}
--}
--
--#ifdef CONFIG_MODULES
--void module_update_tracepoints(void)
--{
--	struct tp_module *tp_mod;
--
--	list_for_each_entry(tp_mod, &tracepoint_module_list, list)
--		tracepoint_update_probe_range(tp_mod->tracepoints_ptrs,
--			tp_mod->tracepoints_ptrs + tp_mod->num_tracepoints);
--}
--#else /* CONFIG_MODULES */
--void module_update_tracepoints(void)
--{
--}
--#endif /* CONFIG_MODULES */
-+	release_probes(old);
- 
-+	if (!tp_funcs) {
-+		/* Removed last function */
-+		if (tp->unregfunc && static_key_enabled(&tp->key))
-+			tp->unregfunc();
- 
--/*
-- * Update probes, removing the faulty probes.
-- * Called with tracepoints_mutex held.
-- */
--static void tracepoint_update_probes(void)
--{
--	/* Core kernel tracepoints */
--	tracepoint_update_probe_range(__start___tracepoints_ptrs,
--		__stop___tracepoints_ptrs);
--	/* tracepoints in modules. */
--	module_update_tracepoints();
--}
--
--static struct tracepoint_func *
--tracepoint_add_probe(const char *name, void *probe, void *data)
--{
--	struct tracepoint_entry *entry;
--	struct tracepoint_func *old;
--
--	entry = get_tracepoint(name);
--	if (!entry) {
--		entry = add_tracepoint(name);
--		if (IS_ERR(entry))
--			return (struct tracepoint_func *)entry;
-+		if (static_key_enabled(&tp->key))
-+			static_key_slow_dec(&tp->key);
- 	}
--	old = tracepoint_entry_add_probe(entry, probe, data);
--	if (IS_ERR(old) && !entry->refcount)
--		remove_tracepoint(entry);
--	return old;
-+	rcu_assign_pointer(tp->funcs, tp_funcs);
-+	return 0;
- }
- 
- /**
-  * tracepoint_probe_register -  Connect a probe to a tracepoint
-- * @name: tracepoint name
-+ * @tp: tracepoint
-  * @probe: probe handler
-  * @data: probe private data
-  *
-  * Returns 0 if ok, error value on error.
-- * The probe address must at least be aligned on the architecture pointer size.
-+ * Note: if @tp is within a module, the caller is responsible for
-+ * monitoring the module "going" notifier to unregister the probe before
-+ * the module is gone.
-  */
--int tracepoint_probe_register(const char *name, void *probe, void *data)
-+int tracepoint_probe_register(struct tracepoint *tp, void *probe, void *data)
- {
--	struct tracepoint_func *old;
-+	struct tracepoint_func tp_func;
-+	int ret;
- 
- 	mutex_lock(&tracepoints_mutex);
--	old = tracepoint_add_probe(name, probe, data);
--	if (IS_ERR(old)) {
--		mutex_unlock(&tracepoints_mutex);
--		return PTR_ERR(old);
--	}
--	tracepoint_update_probes();		/* may update entry */
-+	tp_func.func = probe;
-+	tp_func.data = data;
-+	ret = tracepoint_add_func(tp, &tp_func);
- 	mutex_unlock(&tracepoints_mutex);
--	release_probes(old);
--	return 0;
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(tracepoint_probe_register);
- 
--static struct tracepoint_func *
--tracepoint_remove_probe(const char *name, void *probe, void *data)
--{
--	struct tracepoint_entry *entry;
--	struct tracepoint_func *old;
--
--	entry = get_tracepoint(name);
--	if (!entry)
--		return ERR_PTR(-ENOENT);
--	old = tracepoint_entry_remove_probe(entry, probe, data);
--	if (IS_ERR(old))
--		return old;
--	if (!entry->refcount)
--		remove_tracepoint(entry);
--	return old;
--}
--
- /**
-  * tracepoint_probe_unregister -  Disconnect a probe from a tracepoint
-- * @name: tracepoint name
-+ * @tp: tracepoint
-  * @probe: probe function pointer
-  * @data: probe private data
-  *
-- * We do not need to call a synchronize_sched to make sure the probes have
-- * finished running before doing a module unload, because the module unload
-- * itself uses stop_machine(), which insures that every preempt disabled section
-- * have finished.
-+ * Returns 0 if ok, error value on error.
-  */
--int tracepoint_probe_unregister(const char *name, void *probe, void *data)
-+int tracepoint_probe_unregister(struct tracepoint *tp, void *probe, void *data)
- {
--	struct tracepoint_func *old;
-+	struct tracepoint_func tp_func;
-+	int ret;
- 
- 	mutex_lock(&tracepoints_mutex);
--	old = tracepoint_remove_probe(name, probe, data);
--	if (IS_ERR(old)) {
--		mutex_unlock(&tracepoints_mutex);
--		return PTR_ERR(old);
--	}
--	tracepoint_update_probes();		/* may update entry */
-+	tp_func.func = probe;
-+	tp_func.data = data;
-+	ret = tracepoint_remove_func(tp, &tp_func);
- 	mutex_unlock(&tracepoints_mutex);
--	release_probes(old);
--	return 0;
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(tracepoint_probe_unregister);
- 
--static LIST_HEAD(old_probes);
--static int need_update;
--
--static void tracepoint_add_old_probes(void *old)
--{
--	need_update = 1;
--	if (old) {
--		struct tp_probes *tp_probes = container_of(old,
--			struct tp_probes, probes[0]);
--		list_add(&tp_probes->u.list, &old_probes);
--	}
--}
--
- #ifdef CONFIG_MODULES
- bool trace_module_has_bad_taint(struct module *mod)
- {
- 	return mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP));
- }
- 
--static int tracepoint_module_coming(struct module *mod)
-+/*
-+ * Ensure the tracer unregistered the module's probes before the module
-+ * teardown is performed. Prevents leaks of probe and data pointers.
-+ */
-+static
-+void tp_module_going_check_quiescent(struct tracepoint * const *begin,
-+		struct tracepoint * const *end)
- {
--	struct tp_module *tp_mod, *iter;
-+	struct tracepoint * const *iter;
-+
-+	if (!begin)
-+		return;
-+	for (iter = begin; iter < end; iter++)
-+		WARN_ON_ONCE((*iter)->funcs);
-+}
-+
-+static
-+int tracepoint_module_coming(struct module *mod)
-+{
-+	struct tp_module *tp_mod;
- 	int ret = 0;
- 
- 	/*
--	 * We skip modules that taint the kernel, especially those with different
--	 * module headers (for forced load), to make sure we don't cause a crash.
--	 * Staging and out-of-tree GPL modules are fine.
-+	 * We skip modules that taint the kernel, especially those with
-+	 * different module headers (for forced load), to make sure we
-+	 * don't cause a crash. Staging and out-of-tree GPL modules are
-+	 * fine.
- 	 */
- 	if (trace_module_has_bad_taint(mod))
- 		return 0;
-@@ -479,41 +327,24 @@ static int tracepoint_module_coming(struct module *mod)
- 	}
- 	tp_mod->num_tracepoints = mod->num_tracepoints;
- 	tp_mod->tracepoints_ptrs = mod->tracepoints_ptrs;
--
--	/*
--	 * tracepoint_module_list is kept sorted by struct module pointer
--	 * address for iteration on tracepoints from a seq_file that can release
--	 * the mutex between calls.
--	 */
--	list_for_each_entry_reverse(iter, &tracepoint_module_list, list) {
--		BUG_ON(iter == tp_mod);	/* Should never be in the list twice */
--		if (iter < tp_mod) {
--			/* We belong to the location right after iter. */
--			list_add(&tp_mod->list, &iter->list);
--			goto module_added;
--		}
--	}
--	/* We belong to the beginning of the list */
--	list_add(&tp_mod->list, &tracepoint_module_list);
--module_added:
--	tracepoint_update_probe_range(mod->tracepoints_ptrs,
--		mod->tracepoints_ptrs + mod->num_tracepoints);
-+	list_add_tail(&tp_mod->list, &tracepoint_module_list);
- end:
- 	mutex_unlock(&tracepoints_mutex);
- 	return ret;
- }
- 
--static int tracepoint_module_going(struct module *mod)
-+static
-+int tracepoint_module_going(struct module *mod)
- {
- 	struct tp_module *pos;
- 
- 	mutex_lock(&tracepoints_mutex);
--	tracepoint_update_probe_range(mod->tracepoints_ptrs,
--		mod->tracepoints_ptrs + mod->num_tracepoints);
- 	list_for_each_entry(pos, &tracepoint_module_list, list) {
- 		if (pos->tracepoints_ptrs == mod->tracepoints_ptrs) {
- 			list_del(&pos->list);
- 			kfree(pos);
-+			tp_module_going_check_quiescent(mod->tracepoints_ptrs,
-+				mod->tracepoints_ptrs + mod->num_tracepoints);
- 			break;
- 		}
- 	}
-@@ -527,8 +358,9 @@ static int tracepoint_module_going(struct module *mod)
- 	return 0;
- }
- 
-+static
- int tracepoint_module_notify(struct notifier_block *self,
--			     unsigned long val, void *data)
-+		unsigned long val, void *data)
- {
- 	struct module *mod = data;
- 	int ret = 0;
-@@ -551,6 +383,70 @@ struct notifier_block tracepoint_module_nb = {
- 	.priority = 0,
- };
- 
-+static
-+void for_each_tracepoint_range(struct tracepoint * const *begin,
-+		struct tracepoint * const *end,
-+		void (*fct)(struct tracepoint *tp, void *priv),
-+		void *priv)
-+{
-+	struct tracepoint * const *iter;
-+
-+	if (!begin)
-+		return;
-+	for (iter = begin; iter < end; iter++)
-+		fct(*iter, priv);
-+}
-+
-+static
-+void for_each_kernel_tracepoint(void (*fct)(struct tracepoint *tp, void *priv),
-+		void *priv)
-+{
-+	for_each_tracepoint_range(__start___tracepoints_ptrs,
-+		__stop___tracepoints_ptrs, fct, priv);
-+}
-+
-+#ifdef CONFIG_MODULES
-+static
-+void for_each_module_tracepoint(void (*fct)(struct tracepoint *tp, void *priv),
-+		void *priv)
-+{
-+	struct tp_module *tp_mod;
-+
-+	list_for_each_entry(tp_mod, &tracepoint_module_list, list)
-+		for_each_tracepoint_range(tp_mod->tracepoints_ptrs,
-+			tp_mod->tracepoints_ptrs + tp_mod->num_tracepoints,
-+			fct, priv);
-+}
-+#else /* CONFIG_MODULES */
-+static
-+void for_each_module_tracepoint(void (*fct)(struct tracepoint *tp, void *priv),
-+		void *priv)
-+{
-+}
-+#endif /* CONFIG_MODULES */
-+
-+/**
-+ * for_each_tracepoint - iteration on all tracepoints
-+ * @fct: callback
-+ * @priv: private data
-+ *
-+ * Modules using "coming" and "going" notifiers to get notified of
-+ * tracepoints within modules need to know the full listing of
-+ * tracepoints beforehand. The callback function is called with the
-+ * tracepoints mutex held.
-+ */
-+void for_each_tracepoint(void (*fct)(struct tracepoint *tp, void *priv),
-+		void *priv)
-+{
-+	mutex_lock(&tracepoints_mutex);
-+	/* Core kernel tracepoints */
-+	for_each_kernel_tracepoint(fct, priv);
-+	/* Tracepoints in modules */
-+	for_each_module_tracepoint(fct, priv);
-+	mutex_unlock(&tracepoints_mutex);
-+}
-+EXPORT_SYMBOL_GPL(for_each_tracepoint);
-+
- static int init_tracepoints(void)
- {
- 	return register_module_notifier(&tracepoint_module_nb);
--- 
-1.7.10.4
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Replace tracer function in ftrace_caller()
+> + */
+> +int ftrace_update_ftrace_func(ftrace_func_t func)
+> +{
+> +	unsigned long pc;
+> +	unsigned int new;
+> +
+> +	pc = (unsigned long)&ftrace_call;
+> +	new = aarch64_insn_gen_branch_imm(pc, (unsigned long)func, true);
+> +
+> +	return ftrace_modify_code(pc, 0, new, false);
+> +}
+> +
+> +/*
+> + * Turn on the call to ftrace_caller() in instrumented function
+> + */
+> +int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
+> +{
+> +	unsigned long pc = rec->ip;
+> +	unsigned int old, new;
+> +
+> +	old = aarch64_insn_gen_nop();
+> +	new = aarch64_insn_gen_branch_imm(pc, addr, true);
+> +
+> +	return ftrace_modify_code(pc, old, new, true);
+> +}
+> +
+> +/*
+> + * Turn off the call to ftrace_caller() in instrumented function
+> + */
+> +int ftrace_make_nop(struct module *mod,
+> +		    struct dyn_ftrace *rec, unsigned long addr)
+> +{
+> +	unsigned long pc = rec->ip;
+> +	unsigned int old, new;
+> +
+> +	old = aarch64_insn_gen_branch_imm(pc, addr, true);
+> +	new = aarch64_insn_gen_nop();
+> +
+> +	return ftrace_modify_code(pc, old, new, true);
+> +}
+> +
+> +int __init ftrace_dyn_arch_init(void *data)
+> +{
+> +	*(unsigned long *)data = 0;
+> +
+> +	return 0;
+> +}
+> +#endif /* CONFIG_DYNAMIC_FTRACE */
+> +
+>  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+>  /*
+>   * function_graph tracer expects ftrace_return_to_handler() to be called
+> @@ -61,4 +144,34 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
+>  		return;
+>  	}
+>  }
+> +
+> +#ifdef CONFIG_DYNAMIC_FTRACE
+> +/*
+> + * Turn on/off the call to ftrace_graph_caller() in ftrace_caller()
+> + * depending on @enable.
+> + */
+> +static int ftrace_modify_graph_caller(bool enable)
+> +{
+> +	unsigned long pc = (unsigned long)&ftrace_graph_call;
+> +	unsigned int branch, nop, old, new;
+> +
+> +	branch = aarch64_insn_gen_branch_imm(pc,
+> +			(unsigned long)ftrace_graph_caller, false);
+> +	nop = aarch64_insn_gen_nop();
+> +	old = enable ? nop : branch;
+> +	new = enable ? branch : nop;
+> +
+> +	return ftrace_modify_code(pc, old, new, true);
 
+You could rewrite this as:
+
+	if (enable)
+		return ftrace_modify_code(pc, nop, branch, true);
+	else
+		return ftrace_modify_code(pc, branch, nop, true);
+
+which I find easier to read.
+
+Will
