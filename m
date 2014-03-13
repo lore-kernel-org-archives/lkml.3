@@ -1,116 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196AbaCMVwx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:52:53 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:50255 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969AbaCMVwv (ORCPT
+	id S1754070AbaCMV7q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 17:59:46 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:37775 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752969AbaCMV7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 17:52:51 -0400
+	Thu, 13 Mar 2014 17:59:45 -0400
+Message-ID: <53222A4E.70006@kernel.dk>
+Date: Thu, 13 Mar 2014 15:59:42 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <1394742919-32163-4-git-send-email-joelf@ti.com>
-References: <1394742919-32163-1-git-send-email-joelf@ti.com>
-	<1394742919-32163-4-git-send-email-joelf@ti.com>
-Date: Thu, 13 Mar 2014 16:52:50 -0500
-X-Google-Sender-Auth: DnrLkViGsIMju06ul9EAaAhPPiY
-Message-ID: <CAL_JsqJVPVybd90WUv_nCqUJMUgR+Ep3yxrX2+psNYqic-WQ1Q@mail.gmail.com>
-Subject: Re: [RFC 3/5] ARM: OMAP2+: timer: Add clocksource initialization and
- powerup support
-From: Rob Herring <robh@kernel.org>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
-        Nishanth Menon <nm@ti.com>, Suman Anna <s-anna@ti.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sam Bradshaw <sbradshaw@micron.com>
+CC: linux-kernel@vger.kernel.org, Felipe Franciosi <felipe@paradoxo.org>,
+        david.vrabel@citrix.com,
+        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa)" 
+	<asamymuthupa@micron.com>
+Subject: Re: [PATCH] mtip32xx: mtip_async_complete() bug fixes
+References: <53221E92.3030707@micron.com> <53221CF5.2080000@kernel.dk> <5322242A.6080901@micron.com>
+In-Reply-To: <5322242A.6080901@micron.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 3:35 PM, Joel Fernandes <joelf@ti.com> wrote:
-> Introduce a generic omap timer initialization function that can
-> be used by all SoCs for which support is available in the clocksource
-> driver introduced in the series.
+On 03/13/2014 03:33 PM, Sam Bradshaw wrote:
+> On 03/13/2014 02:02 PM, Jens Axboe wrote:
+>> On 03/13/2014 03:09 PM, Sam Bradshaw wrote:
+>>> This patch fixes 2 issues in the fast completion path:
+>>> 1) Possible double completions / double dma_unmap_sg() calls due to lack
+>>> of atomicity in the check and subsequent dereference of the upper layer
+>>> callback function. Fixed with cmpxchg before unmap and callback.
+>>> 2) Regression in unaligned IO constraining workaround for p420m devices.
+>>> Fixed by checking if IO is unaligned and using proper semaphore if so.
+>>
+>> Sam, what is this patch against? It doesn't apply to -rc6 and it doesn't
+>> apply to for-3.15/drivers (the latter would be preferred/required). It
+>> also seems to have line break issues.
+>>
 >
-> The function will also be responsible for calling clock initialization
-> required for everything else to work.
->
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
->  arch/arm/mach-omap2/common.h |    1 +
->  arch/arm/mach-omap2/timer.c  |   28 ++++++++++++++++++++++++++++
->  2 files changed, 29 insertions(+)
->
-> diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
-> index a6aae30..e58d9a4 100644
-> --- a/arch/arm/mach-omap2/common.h
-> +++ b/arch/arm/mach-omap2/common.h
-> @@ -92,6 +92,7 @@ extern void omap3_secure_sync32k_timer_init(void);
->  extern void omap3_gptimer_timer_init(void);
->  extern void omap4_local_timer_init(void);
->  extern void omap5_realtime_timer_init(void);
-> +void omap_generic_timer_init(void);
->
->  void omap2420_init_early(void);
->  void omap2430_init_early(void);
-> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-> index 74044aa..08c73a0 100644
-> --- a/arch/arm/mach-omap2/timer.c
-> +++ b/arch/arm/mach-omap2/timer.c
-> @@ -324,6 +324,25 @@ static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
->         return r;
->  }
->
-> +int __init omap_dmtimer_powerup(struct omap_dm_timer *timer,
-> +                                       struct device_node *np) {
+> It's against for-3.15/drivers.  Sorry about the breaks; if I remove them
+> does it apply cleanly?
 
-This function seems unrelated to the commit message.
+Yep, this one is much better. Thanks!
 
-> +       struct omap_hwmod *oh;
-> +       const char *oh_name = NULL;
-> +
-> +       of_property_read_string_index(np, "ti,hwmods", 0, &oh_name);
-> +       if (!oh_name)
-> +               return -ENODEV;
-> +
-> +       oh = omap_hwmod_lookup(oh_name);
-> +       if (!oh)
-> +               return -ENODEV;
-> +
-> +       omap_hwmod_setup_one(oh_name);
-> +
-> +       omap_hwmod_enable(oh);
-> +       return 0;
-> +}
-> +
->  static void __init omap2_gp_clockevent_init(int gptimer_id,
->                                                 const char *fck_source,
->                                                 const char *property)
-> @@ -615,6 +634,15 @@ static OMAP_SYS_32K_TIMER_INIT(4, 1, "timer_32k_ck", "ti,timer-alwon",
->                                2, "sys_clkin_ck", NULL);
->  #endif
->
-> +void omap_generic_timer_init(void)
-> +{
-> +       if (!of_have_populated_dt())
-> +               BUG_ON("Generic timer init should only be used for DT boot\n");
+-- 
+Jens Axboe
 
-I thought omap2 is always DT boot now.
-
-> +
-> +       omap_clk_init();
-
-Can't you use CLK_OF_DECLARE and remove this? Then you can remove the
-init_time function hook completely.
-
-> +       clocksource_of_init();
-> +}
-> +
->  #ifdef CONFIG_ARCH_OMAP4
->  #ifdef CONFIG_HAVE_ARM_TWD
->  static DEFINE_TWD_LOCAL_TIMER(twd_local_timer, OMAP44XX_LOCAL_TWD_BASE, 29);
-> --
-> 1.7.9.5
->
