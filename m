@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaCLX6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 19:58:09 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57026 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751162AbaCLX6H (ORCPT
+	id S1752628AbaCMAA1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 20:00:27 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:57800 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840AbaCMAAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 19:58:07 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: joeyli <jlee@suse.com>, Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-Date: Thu, 13 Mar 2014 01:13:27 +0100
-Message-ID: <4475332.ToUgLzVgqU@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.02.1403130045050.18573@ionos.tec.linutronix.de>
-References: <20140310110410.5b2218f6@ilfaris> <1554867.utJVyPuT6A@vostro.rjw.lan> <alpine.DEB.2.02.1403130045050.18573@ionos.tec.linutronix.de>
+	Wed, 12 Mar 2014 20:00:25 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5320F516.5080707@roeck-us.net>
+Date: Wed, 12 Mar 2014 17:00:22 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Alex Elder <elder@linaro.org>, wim@iguana.be
+CC: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: fix ARCH_BCM_MOBILE dependency
+References: <1394662322-12445-1-git-send-email-elder@linaro.org>
+In-Reply-To: <1394662322-12445-1-git-send-email-elder@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 13, 2014 12:49:07 AM Thomas Gleixner wrote:
-> On Thu, 13 Mar 2014, Rafael J. Wysocki wrote:
-> > I agree, and we need to fix that for 3.14.  Patch is appended.
-> 
-> You beat me by a few minutes. Was about to send out the same, just
-> with a more spicy changelog :)
-> 
-> > ---
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Subject: ACPI / init: Invoke early ACPI initialization later
-> > 
-> > Commit 73f7d1ca3263 (ACPI / init: Run acpi_early_init() before
-> > timekeeping_init()) optimistically moved the early ACPI initialization
-> > before timekeeping_init(), but that didn't work, because it broke fast
-> > TSC calibration for Julian Wollrath on Thinkpad x121e (and most likely
-> > for others too).  The reason is that acpi_early_init() enables the SCI
-> > and that interferes with the fast TSC calibration mechanism.
-> > 
-> > Thus follow the original idea to execute acpi_early_init() before
-> > efi_enter_virtual_mode() to help the EFI people for now and we can
-> > revisit the other problem that commit 73f7d1ca3263 attempted to
-> > address in the future (if really necessary).
-> 
-> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+On 03/12/2014 03:12 PM, Alex Elder wrote:
+> Starting with this commit:
+>      047ef2fa rename ARCH_BCM to ARCH_BCM_MOBILE (clocksource)
+> the meaning of the ARCH_BCM config option is changed to represent
+> all Broadcom chips with code in the mach-bcm directory.
+>
+> Configuration options related to specific Broadcom platforms should
+> now use another symbol (currently ARCH_BCM_MOBILE, ARCH_BCM2835, or
+> ARCH_BCM_5301X).
+>
+> The BCM_KONA_WDT config option indicates a dependency on ARCH_BCM,
+> but it should be ARCH_BCM_MOBILE instead.  Fix that.
+>
+> Signed-off-by: Alex Elder <elder@linaro.org>
 
-Thanks!
+Hi Alex,
 
-I have a plan to push this to Linus for -rc7.
+Markus Mayer already submitted a similar patch:
+	http://patchwork.roeck-us.net/patch/1263/
 
-Rafael
+Guenter
+
+
 
