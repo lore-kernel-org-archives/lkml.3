@@ -1,87 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079AbaCMPW2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:22:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43506 "EHLO arroyo.ext.ti.com"
+	id S1753952AbaCMPYr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:24:47 -0400
+Received: from mail.efficios.com ([78.47.125.74]:56140 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753180AbaCMPW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:22:27 -0400
-Date: Thu, 13 Mar 2014 10:20:24 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH][next] phy: core: make NULL a valid phy reference if
- !CONFIG_GENERIC_PHY
-Message-ID: <20140313152024.GF4599@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1394709073-1980-1-git-send-email-grygorii.strashko@ti.com>
+	id S1753364AbaCMPYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:24:43 -0400
+Date: Thu, 13 Mar 2014 15:24:46 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lttng-dev <lttng-dev@lists.lttng.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andi Kleen <andi@firstfloor.org>
+Message-ID: <970465661.2809.1394724286739.JavaMail.zimbra@efficios.com>
+In-Reply-To: <209084517.2310.1394680253793.JavaMail.zimbra@efficios.com>
+References: <20140307150920.881849073@goodmis.org> <285520930.1511.1394642395537.JavaMail.zimbra@efficios.com> <20140312135059.2d497b58@gandalf.local.home> <1906756968.1732.1394650035535.JavaMail.zimbra@efficios.com> <20140312145802.4819511e@gandalf.local.home> <1177120325.1928.1394653861180.JavaMail.zimbra@efficios.com> <20140312204907.6b8d402c@gandalf.local.home> <209084517.2310.1394680253793.JavaMail.zimbra@efficios.com>
+Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
+ set via debugfs
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="924gEkU1VlJlwnwX"
-Content-Disposition: inline
-In-Reply-To: <1394709073-1980-1-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: tracing: Warn if a tracepoint is not set via debugfs
+Thread-Index: ZO6W9Q/mPv73L7DJARa/wrrhGftR/k9LNx3m
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---924gEkU1VlJlwnwX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+----- Original Message -----
+> From: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> To: "Steven Rostedt" <rostedt@goodmis.org>
+> Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic
+> Weisbecker" <fweisbec@gmail.com>, "Andrew Morton" <akpm@linux-foundation.org>, "Johannes Berg"
+> <johannes.berg@intel.com>, "Linus Torvalds" <torvalds@linux-foundation.org>, "Peter Zijlstra"
+> <peterz@infradead.org>, "Thomas Gleixner" <tglx@linutronix.de>, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+> "lttng-dev" <lttng-dev@lists.lttng.org>, "Rusty Russell" <rusty@rustcorp.com.au>, "Andi Kleen" <andi@firstfloor.org>
+> Sent: Wednesday, March 12, 2014 11:10:53 PM
+> Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not set via debugfs
+> 
+> ----- Original Message -----
+> > From: "Steven Rostedt" <rostedt@goodmis.org>
+> > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> > Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
+> > "Ingo Molnar" <mingo@kernel.org>, "Frederic
+> > Weisbecker" <fweisbec@gmail.com>, "Andrew Morton"
+> > <akpm@linux-foundation.org>, "Johannes Berg"
+> > <johannes.berg@intel.com>, "Linus Torvalds"
+> > <torvalds@linux-foundation.org>, "Peter Zijlstra"
+> > <peterz@infradead.org>, "Thomas Gleixner" <tglx@linutronix.de>, "Greg
+> > Kroah-Hartman" <gregkh@linuxfoundation.org>,
+> > "lttng-dev" <lttng-dev@lists.lttng.org>, "Rusty Russell"
+> > <rusty@rustcorp.com.au>, "Andi Kleen" <andi@firstfloor.org>
+> > Sent: Wednesday, March 12, 2014 8:49:07 PM
+> > Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
+> > set via debugfs
+> > 
+> > On Wed, 12 Mar 2014 19:51:01 +0000 (UTC)
+> > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > 
+> > > This only leaves tracepoints in header files and the impact of LTO as
+> > > requirements for having tracepoint callsites with the same name across
+> > > modules.
+> > 
+> > The only thing that needs to be unique is the struct tracepoint
+> > __tracepoint_##name. There should not be any duplicates of those. I
+> > can't see how the LTO would duplicate a data structure without screwing
+> > everything (not just tracepoints) up.
+> > 
+> > We can still have more than one trace_##name() called, as that is
+> > handled by the static key.
+> 
+> Hrm, I seem to have mixed up the concerns regarding compiler
+> optimisations between the static keys with those related to tracepoints
+> (including that their predecessors "kernel markers" worked more like
+> static keys than tracepoint). I did work in both area pretty much at the
+> same time back in 2007-2008.
+> 
+> Having gotten my head back up straight, I now see the point in your
+> proposal. Thanks for bearing with me.
+> 
+> Even if we ever want to have tracepoints within header files, as long
+> as we have the DECLARE_TRACE() within the header, and a DEFINE_TRACE()
+> in one location in the loaded kernel image (or a loaded module we depend
+> on), it should be possible too. All tracepoint.c cares about is the site
+> defined by DEFINE_TRACE().
 
-On Thu, Mar 13, 2014 at 01:11:13PM +0200, Grygorii Strashko wrote:
-> This fixes a regression on Keystone 2 platforms caused by patch
-> 57303488cd37da58263e842de134dc65f7c626d5
-> "usb: dwc3: adapt dwc3 core to use Generic PHY Framework" which adds
-> optional support of generic phy in DWC3 core.
->=20
-> On Keystone 2 platforms the USB is not working now because
-> CONFIG_GENERIC_PHY isn't set and, as result, Generic PHY APIs stubs
-> return -ENOSYS always. The log shows:
->  dwc3 2690000.dwc3: failed to initialize core
->  dwc3: probe of 2690000.dwc3 failed with error -38
->=20
-> Hence, fix it by making NULL a valid phy reference in Generic PHY
-> APIs stubs in the same way as it was done by the patch
-> 04c2facad8fee66c981a51852806d8923336f362 "drivers: phy: Make NULL
-> a valid phy reference".
->=20
-> CC: Kishon Vijay Abraham I <kishon@ti.com>
-> CC: Felipe Balbi <balbi@ti.com>
-> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+I just prepared a patch implementing your idea. I will post it as RFC very
+soon. The callers will still need to be adapted, so this is just to show
+the tracepoint.c/h modifications.
 
-nice :-)
+Thanks!
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+Mathieu
 
---=20
-balbi
+> 
+> > 
+> > Note, I'm scrambling to get ready for my trip tomorrow. Thus, I'm not
+> > as much at the computer. I may work on some patches in my 6 hour
+> > layover though.
+> 
+> Allright. Have a good trip!
+> 
+> Thanks,
+> 
+> Mathieu
+> 
+> > 
+> > -- Steve
+> > 
+> 
+> --
+> Mathieu Desnoyers
+> EfficiOS Inc.
+> http://www.efficios.com
+> 
 
---924gEkU1VlJlwnwX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTIcy4AAoJEIaOsuA1yqREE8YQAKIoMrFLDDUEPvdarfhQCN23
-PSsXaIYt4N7r2FRi3g3k0bnVLLrqJs+8Pfa8VCuNG5RP8mXLxyRGlVILzab56ueI
-mlBG7+0QW/tPIObznj30eUo0JwFZmKvEzLz/h4SXpTGs5ZYYJS2+C/vFHk6AIX3h
-Idok3vfs8re9yc74eYwEmhaJ9zEBIT6ORh4fFrocrNVZh3p1ZcTd8p+8voiFIEaT
-MBTfmHPTPePszJRzt4GE2IQC2NDO/Tt0NIkwKrMphPynRGD+XgRYcLDFX56ULHaT
-muILN9IcJhQiPET5YJPu8TXbWljNxjidL0j9JCleKjf9NdhJPMY+56Mi97X+x1MK
-ILVujN6ZJdA6+EhULxkSUz/3pnjsJ5aIrzaJcE+qnW6yDbvyRQ1gZp2JD1KZTHE6
-AzrOT39DPZfTFQv4PmjRn58sf77oBtgFM2hoBbDJzPf3iL9pZ4k+ZZCKXgzS0Stl
-b2a6QcVushOGJrNfk5f9H1NZ1j1TZWdxCzXS1Xu6cjgaMp8NSfPQtRFxyzhs+3xD
-O0cc/QlpHeOf2sU4IivS8/KLsAzkWZrftyF2CVu7UJqPNbpFRC82xb++Q56kBpqV
-AEPr9laSpNVdQSnx5I7cl3kaHEXYCNy4m6GwY8AfscVDk7zgQ9soJb2bGr0n0JEg
-kow+REBpxu3nBoqiOasW
-=+3I/
------END PGP SIGNATURE-----
-
---924gEkU1VlJlwnwX--
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
