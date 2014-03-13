@@ -1,157 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394AbaCMGFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 02:05:51 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:37056 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267AbaCMGFu (ORCPT
+	id S1751903AbaCMGWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 02:22:47 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:53931 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388AbaCMGWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 02:05:50 -0400
-From: Alex Shi <alex.shi@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com
-Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
-        linux@arm.linux.org.uk, tony.luck@intel.com, fenghua.yu@intel.com,
-        james.hogan@imgtec.com, alex.shi@linaro.org, jason.low2@hp.com,
-        viresh.kumar@linaro.org, hanjun.guo@linaro.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
-        wangyun@linux.vnet.ibm.com, mgorman@suse.de
-Subject: [PATCH 8/8] sched: rename update_*_cpu_load
-Date: Thu, 13 Mar 2014 13:57:29 +0800
-Message-Id: <1394690249-14130-9-git-send-email-alex.shi@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1394690249-14130-1-git-send-email-alex.shi@linaro.org>
-References: <1394690249-14130-1-git-send-email-alex.shi@linaro.org>
+	Thu, 13 Mar 2014 02:22:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394686919.25122.2.camel@x230>
+References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
+	<CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
+	<alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
+	<1394686919.25122.2.camel@x230>
+Date: Wed, 12 Mar 2014 23:22:43 -0700
+X-Google-Sender-Auth: ZQ8XwKntgiOnU7T1zKhMocOMc0w
+Message-ID: <CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "jmorris@namei.org" <jmorris@namei.org>,
+        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we have no cpu_load update, rename the related functions:
-s/update_idle_cpu_load/update_idle_rt_avg/
-s/update_cpu_load_nohz/update_rt_avg_nohz/
-s/update_cpu_load_active/update_avg_load_active/
+On Wed, Mar 12, 2014 at 10:01 PM, Matthew Garrett
+<matthew.garrett@nebula.com> wrote:
+> On Fri, 2014-02-28 at 14:03 +1100, James Morris wrote:
+>
+>> Ok, which tree should take this?  I'm happy to, although most of it is
+>> outside security/ .
+>
+> Should I be looking for someone else to take them instead? :)
 
-No functional change.
+Andrew, is this series[1] something you'd be okay taking? It touches
+many different areas, so you might be best for it.
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
----
- include/linux/sched.h    | 2 +-
- kernel/sched/core.c      | 2 +-
- kernel/sched/fair.c      | 2 +-
- kernel/sched/proc.c      | 8 ++++----
- kernel/sched/sched.h     | 4 ++--
- kernel/time/tick-sched.c | 2 +-
- 6 files changed, 10 insertions(+), 10 deletions(-)
+-Kees
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 60c18de..26727fc 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -174,7 +174,7 @@ extern unsigned long this_cpu_load(void);
- 
- 
- extern void calc_global_load(unsigned long ticks);
--extern void update_cpu_load_nohz(void);
-+extern void update_rt_avg_nohz(void);
- 
- extern unsigned long get_parent_ip(unsigned long addr);
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f271997..bfa63fd 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2429,7 +2429,7 @@ void scheduler_tick(void)
- 	raw_spin_lock(&rq->lock);
- 	update_rq_clock(rq);
- 	curr->sched_class->task_tick(rq, curr, 0);
--	update_cpu_load_active(rq);
-+	update_avg_load_active(rq);
- 	raw_spin_unlock(&rq->lock);
- 
- 	perf_event_task_tick();
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6469907..814699b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -7012,7 +7012,7 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
- 
- 		raw_spin_lock_irq(&rq->lock);
- 		update_rq_clock(rq);
--		update_idle_cpu_load(rq);
-+		update_idle_rt_avg(rq);
- 		raw_spin_unlock_irq(&rq->lock);
- 
- 		rebalance_domains(rq, CPU_IDLE);
-diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-index dd3c2d9..42b7706 100644
---- a/kernel/sched/proc.c
-+++ b/kernel/sched/proc.c
-@@ -423,7 +423,7 @@ static void calc_load_account_active(struct rq *this_rq)
-  * Called from nohz_idle_balance() to update the load ratings before doing the
-  * idle balance.
-  */
--void update_idle_cpu_load(struct rq *this_rq)
-+void update_idle_rt_avg(struct rq *this_rq)
- {
- 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
- 
-@@ -440,17 +440,17 @@ void update_idle_cpu_load(struct rq *this_rq)
- /*
-  * Called from tick_nohz_idle_exit()
-  */
--void update_cpu_load_nohz(void)
-+void update_rt_avg_nohz(void)
- {
- 	struct rq *this_rq = this_rq();
--	update_idle_cpu_load(this_rq);
-+	update_idle_rt_avg(this_rq);
- }
- #endif /* CONFIG_NO_HZ */
- 
- /*
-  * Called from scheduler_tick()
-  */
--void update_cpu_load_active(struct rq *this_rq)
-+void update_avg_load_active(struct rq *this_rq)
- {
- 	this_rq->last_load_update_tick = jiffies;
- 	sched_avg_update(this_rq);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index a5391cf..51409ef 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -21,7 +21,7 @@ extern unsigned long calc_load_update;
- extern atomic_long_t calc_load_tasks;
- 
- extern long calc_load_fold_active(struct rq *this_rq);
--extern void update_cpu_load_active(struct rq *this_rq);
-+extern void update_avg_load_active(struct rq *this_rq);
- 
- /*
-  * Helpers for converting nanosecond timing to jiffy resolution
-@@ -1209,7 +1209,7 @@ extern void init_dl_task_timer(struct sched_dl_entity *dl_se);
- 
- unsigned long to_ratio(u64 period, u64 runtime);
- 
--extern void update_idle_cpu_load(struct rq *this_rq);
-+extern void update_idle_rt_avg(struct rq *this_rq);
- 
- extern void init_task_runnable_average(struct task_struct *p);
- 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 9f8af69..b1a400a 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -866,7 +866,7 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
- {
- 	/* Update jiffies first */
- 	tick_do_update_jiffies64(now);
--	update_cpu_load_nohz();
-+	update_rt_avg_nohz();
- 
- 	calc_load_exit_idle();
- 	touch_softlockup_watchdog();
+[1] https://lkml.org/lkml/2014/2/26/811
+
 -- 
-1.8.1.2
-
+Kees Cook
+Chrome OS Security
