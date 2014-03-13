@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164AbaCMStn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 14:49:43 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:14100 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754729AbaCMStm (ORCPT
+	id S1754466AbaCMSxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 14:53:31 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37313 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178AbaCMSxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 14:49:42 -0400
-Message-ID: <1394736566.26600.23.camel@pippen.local.home>
-Subject: Re: [PATCH v6 4/7] arm64: Add ftrace support
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Mar 2014 14:49:26 -0400
-In-Reply-To: <20140313183705.GK25472@mudshark.cambridge.arm.com>
-References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
-	 <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
-	 <1394705630-12384-5-git-send-email-takahiro.akashi@linaro.org>
-	 <20140313170834.GE25472@mudshark.cambridge.arm.com>
-	 <1394735259.26600.14.camel@pippen.local.home>
-	 <20140313183705.GK25472@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-4+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Thu, 13 Mar 2014 14:53:30 -0400
+Date: Thu, 13 Mar 2014 18:53:25 +0000
+From: Mark Brown <broonie@kernel.org>
+To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140313185325.GF366@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Wl2tksQRuA3a9k2N"
+Content-Disposition: inline
+X-Cookie: Some assembly required.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: linux-next: Tree for Mar 13
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-13 at 18:37 +0000, Will Deacon wrote:
->  
-> > No, return_hooker is consistent with all the other archs. Hey, it's a
-> > rugby position! Note, which I was when I played. ;-)
-> 
-> Hehe, in which case your children will be able to execute that line of
-> ftrace!
-> 
 
-My kids already know I was :-)
+--Wl2tksQRuA3a9k2N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > > 
-> > > > +       trace.func = self_addr;
-> > > 
-> > > in kernel/ftrace/ftrace.c there's an smb_wmb() between setting up
-> > > tracing_graph_pause and setting the ret_stack with a comment saying:
-> > > 
-> > >     /* Make sure the tasks see the -1 first: */
-> > > 
-> > > Why don't we have a corresponding read-barrier here?
-> > 
-> > The corresponding rmb is in kernel/trace/trace_function_graph
-> > ftrace_push_return_trace().
-> 
-> Okey doke then, I guess we don't really care about tracing_graph_pause
-> getting out-of-sync with curr_ret_stack.
+Hi all,
 
-Yep, the tracing_graph_pause is more to prevent crazy stuff happening
-when an interrupt comes in. So it is just local cpu context, and doesn't
-have issues with other CPUS. If it takes a bit for the task to see it go
-to zero, the worse thing is that you might miss a few tracing functions
-until that gets synced. Which will probably happen by the time tracing
-is fully activated anyway.
+I've uploaded -next for today.  There were no new issues today and no
+trees needed reverting.  This build has been tested with ARM
+multi_v7_defconfig and x86 allmodconfig between each merge.
 
--- Steve
+Thanks,
+Mark
 
+--Wl2tksQRuA3a9k2N
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTIf6iAAoJELSic+t+oim9jsoP+wROyX4EkDiF7Dqqpf5UY49z
+d2bbd5rmxqL8vHUkdFNCT7DCJ/7MiPUwhtHi253GEi0XXb57B/EPVLFyvdPwW2XT
+h///tBbTyyXUYiBAg/VQXypZf+SMGBOCt1QNK8wmVe68TdPSf+/39/fVfY1QMwTN
+y4VOHYkV0ff3rrZ4degRX+0yBMnIRXzPREjzBcCTJuiXAv369fTavZsXzPCdXCfr
+JBHMGHBA2IIJU5VgmzTUFgv9lxW752a0Qe2K7mRwH3yJqxg/9Um2UxJSFk+BZ/Z0
+QD+4t1DZNxSXqtWRhXbNM/3ygwFZkGynvnNJJrTQQdgjzuCppHQ1KmQjFMyrO5qB
+caZ0flMM8MO1rdT+qpl1ZVXINxK/XmQr5J9FCo5tfWmOVHiXHyc0JnY8lfMbR4Xl
+iuhKcQYxJ2Ve/Eh2sfdg3tmqRbQgx+Hup5yncRlTentxyfJJuesmYezIo8Z2+NzP
+pw0tdsP22ORA3cOOp46iMYgOmHH6Sy+5FfB8tw9tdcEE2eNVA1k7bk8WXXJOWI4s
+qibSO1N5I7D0FWGyVbeyx12ilgdc2lAw+9OtBjoRoWvZr790hiSbvkxV+FllBKAQ
+sCj7JfOGvgn68mMunUReHV/HDPc2ADwvDQwRR3afVg2k0+w8olGSZa5j53lyVH41
+6f2QHQ6lms85tAZ4zpUi
+=YkBY
+-----END PGP SIGNATURE-----
+
+--Wl2tksQRuA3a9k2N--
