@@ -1,108 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbaCMVQp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:16:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999AbaCMVQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754137AbaCMVQn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 17:16:43 -0400
+Received: from mailout.micron.com ([137.201.242.129]:55426 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943AbaCMVQm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Mar 2014 17:16:42 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: acme@redhat.com
-Cc: jolsa@redhat.com, jmario@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH] perf: Speed up thread map generation
-Date: Thu, 13 Mar 2014 17:16:37 -0400
-Message-Id: <1394745397-96149-1-git-send-email-dzickus@redhat.com>
+Message-ID: <5322242A.6080901@micron.com>
+Date: Thu, 13 Mar 2014 14:33:30 -0700
+From: Sam Bradshaw <sbradshaw@micron.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>
+CC: <linux-kernel@vger.kernel.org>, Felipe Franciosi <felipe@paradoxo.org>,
+        <david.vrabel@citrix.com>,
+        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa)" 
+	<asamymuthupa@micron.com>
+Subject: Re: [PATCH] mtip32xx: mtip_async_complete() bug fixes
+References: <53221E92.3030707@micron.com> <53221CF5.2080000@kernel.dk>
+In-Reply-To: <53221CF5.2080000@kernel.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20564.002
+X-TM-AS-Result: No--9.621500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When trying to capture perf data on a system running spejbb2013,
-perf hung for about 15 minutes.  This is because it took that
-long to gather about 10,000 thread maps and process them.
+On 03/13/2014 02:02 PM, Jens Axboe wrote:
+> On 03/13/2014 03:09 PM, Sam Bradshaw wrote:
+>> This patch fixes 2 issues in the fast completion path:
+>> 1) Possible double completions / double dma_unmap_sg() calls due to lack
+>> of atomicity in the check and subsequent dereference of the upper layer
+>> callback function. Fixed with cmpxchg before unmap and callback.
+>> 2) Regression in unaligned IO constraining workaround for p420m devices.
+>> Fixed by checking if IO is unaligned and using proper semaphore if so.
+> 
+> Sam, what is this patch against? It doesn't apply to -rc6 and it doesn't 
+> apply to for-3.15/drivers (the latter would be preferred/required). It 
+> also seems to have line break issues.
+> 
 
-I don't think a user wants to wait that long.
+It's against for-3.15/drivers.  Sorry about the breaks; if I remove them
+does it apply cleanly?
 
-Instead, recognize that thread maps are roughly equivalent to
-pid maps and just quickly copy those instead.
 
-To do this, I synthesize 'fork' events, this eventually calls
-thread__fork() and copies the maps over.
-
-The overhead goes from 15 minutes down to about a few seconds.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- tools/perf/util/event.c |   39 ++++++++++++++++++++++++++++++++++++---
- 1 files changed, 36 insertions(+), 3 deletions(-)
-
----
-Based on perf/core: 1c075d114d0f3be
-
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 55eebe9..95e5649 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -129,6 +129,28 @@ out:
- 	return tgid;
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index b2012b7..624e9d9 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -252,38 +252,45 @@ static void mtip_async_complete(struct mtip_port *port,
+ 				void *data,
+ 				int status)
+ {
+-	struct mtip_cmd *command;
++	struct mtip_cmd *cmd;
+ 	struct driver_data *dd = data;
+-	int cb_status = status ? -EIO : 0;
++	int unaligned, cb_status = status ? -EIO : 0;
++	void (*func)(void *, int);
+ 
+ 	if (unlikely(!dd) || unlikely(!port))
+ 		return;
+ 
+-	command = &port->commands[tag];
++	cmd = &port->commands[tag];
+ 
+ 	if (unlikely(status == PORT_IRQ_TF_ERR)) {
+ 		dev_warn(&port->dd->pdev->dev,
+ 			"Command tag %d failed due to TFE\n", tag);
+ 	}
+ 
+-	/* Unmap the DMA scatter list entries */
+-	dma_unmap_sg(&dd->pdev->dev,
+-		command->sg,
+-		command->scatter_ents,
+-		command->direction);
++	/* Clear the active flag */
++	atomic_set(&port->commands[tag].active, 0);
+ 
+ 	/* Upper layer callback */
+-	if (likely(command->async_callback))
+-		command->async_callback(command->async_data, cb_status);
++	func = cmd->async_callback;
++	if (likely(func && cmpxchg(&cmd->async_callback, func, 0) == func)) {
+ 
+-	command->async_callback = NULL;
+-	command->comp_func = NULL;
++		/* Unmap the DMA scatter list entries */
++		dma_unmap_sg(&dd->pdev->dev,
++			cmd->sg,
++			cmd->scatter_ents,
++			cmd->direction);
+ 
+-	/* Clear the allocated and active bits for the command */
+-	atomic_set(&port->commands[tag].active, 0);
+-	release_slot(port, tag);
++		func(cmd->async_data, cb_status);
++		unaligned = cmd->unaligned;
+ 
+-	up(&port->cmd_slot);
++		/* Clear the allocated bit for the command */
++		release_slot(port, tag);
++
++		if (unlikely(unaligned))
++			up(&port->cmd_slot_unal);
++		else
++			up(&port->cmd_slot);
++	}
  }
  
-+static int perf_event__synthesize_fork(struct perf_tool *tool,
-+				       union perf_event *event, pid_t pid,
-+				       pid_t tgid, perf_event__handler_t process,
-+				       struct machine *machine)
-+{
-+	memset(&event->fork, 0, sizeof(event->fork) + machine->id_hdr_size);
-+
-+	/* this is really a clone event but we use fork to synthesize it */
-+	event->fork.ppid = tgid;
-+	event->fork.ptid = tgid;
-+	event->fork.pid  = tgid;
-+	event->fork.tid  = pid;
-+	event->fork.header.type = PERF_RECORD_FORK;
-+
-+	event->fork.header.size = (sizeof(event->fork) + machine->id_hdr_size);
-+
-+	if (process(tool, event, &synth_sample, machine) != 0)
-+		return -1;
-+
-+	return 0;
-+}
-+
- int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 				       union perf_event *event,
- 				       pid_t pid, pid_t tgid,
-@@ -287,6 +309,11 @@ static int __event__synthesize_thread(union perf_event *comm_event,
- 	DIR *tasks;
- 	struct dirent dirent, *next;
- 	pid_t tgid;
-+	union perf_event *fork_event;
-+
-+	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
-+	if (fork_event == NULL)
-+		return -1;
+ /*
+@@ -660,11 +667,12 @@ static void mtip_timeout_function(unsigned long int data)
+ {
+ 	struct mtip_port *port = (struct mtip_port *) data;
+ 	struct host_to_dev_fis *fis;
+-	struct mtip_cmd *command;
+-	int tag, cmdto_cnt = 0;
++	struct mtip_cmd *cmd;
++	int unaligned, tag, cmdto_cnt = 0;
+ 	unsigned int bit, group;
+ 	unsigned int num_command_slots;
+ 	unsigned long to, tagaccum[SLOTBITS_IN_LONGS];
++	void (*func)(void *, int);
  
- 	/* special case: only send one comm event using passed in pid */
- 	if (!full) {
-@@ -326,9 +353,15 @@ static int __event__synthesize_thread(union perf_event *comm_event,
- 		if (tgid == -1)
- 			return -1;
+ 	if (unlikely(!port))
+ 		return;
+@@ -694,8 +702,8 @@ static void mtip_timeout_function(unsigned long int data)
+ 			group = tag >> 5;
+ 			bit = tag & 0x1F;
  
--		/* process the thread's maps too */
--		rc = perf_event__synthesize_mmap_events(tool, mmap_event, _pid, tgid,
--							process, machine, mmap_data);
-+		if (_pid == pid) {
-+			/* process the parent's maps too */
-+			rc = perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
-+						process, machine, mmap_data);
-+		} else {
-+			/* only fork the tid's map, to save time */
-+			rc = perf_event__synthesize_fork(tool, fork_event, _pid, tgid,
-+						 process, machine);
-+		}
+-			command = &port->commands[tag];
+-			fis = (struct host_to_dev_fis *) command->command;
++			cmd = &port->commands[tag];
++			fis = (struct host_to_dev_fis *) cmd->command;
  
- 		if (rc)
- 			return rc;
--- 
-1.7.1
-
+ 			set_bit(tag, tagaccum);
+ 			cmdto_cnt++;
+@@ -709,27 +717,30 @@ static void mtip_timeout_function(unsigned long int data)
+ 			 */
+ 			writel(1 << bit, port->completed[group]);
+ 
+-			/* Unmap the DMA scatter list entries */
+-			dma_unmap_sg(&port->dd->pdev->dev,
+-					command->sg,
+-					command->scatter_ents,
+-					command->direction);
++			/* Clear the active flag for the command */
++			atomic_set(&port->commands[tag].active, 0);
+ 
+-			/* Call the async completion callback. */
+-			if (likely(command->async_callback))
+-				command->async_callback(command->async_data,
+-							 -EIO);
+-			command->async_callback = NULL;
+-			command->comp_func = NULL;
++			func = cmd->async_callback;
++			if (func &&
++			    cmpxchg(&cmd->async_callback, func, 0) == func) {
+ 
+-			/*
+-			 * Clear the allocated bit and active tag for the
+-			 * command.
+-			 */
+-			atomic_set(&port->commands[tag].active, 0);
+-			release_slot(port, tag);
++				/* Unmap the DMA scatter list entries */
++				dma_unmap_sg(&port->dd->pdev->dev,
++						cmd->sg,
++						cmd->scatter_ents,
++						cmd->direction);
+ 
+-			up(&port->cmd_slot);
++				func(cmd->async_data, -EIO);
++				unaligned = cmd->unaligned;
++
++				/* Clear the allocated bit for the command. */
++				release_slot(port, tag);
++
++				if (unaligned)
++					up(&port->cmd_slot_unal);
++				else
++					up(&port->cmd_slot);
++			}
+ 		}
+ 	}
+ 
+diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
+index 54174cb..ffb955e 100644
+--- a/drivers/block/mtip32xx/mtip32xx.h
++++ b/drivers/block/mtip32xx/mtip32xx.h
+@@ -92,7 +92,7 @@
+ 
+ /* Driver name and version strings */
+ #define MTIP_DRV_NAME		"mtip32xx"
+-#define MTIP_DRV_VERSION	"1.3.0"
++#define MTIP_DRV_VERSION	"1.3.1"
+ 
+ /* Maximum number of minor device numbers per device. */
+ #define MTIP_MAX_MINORS		16
