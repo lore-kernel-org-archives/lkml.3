@@ -1,106 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaCMH25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 03:28:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33565 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289AbaCMH2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 03:28:53 -0400
-Date: Thu, 13 Mar 2014 00:28:18 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-6f008e72cd111a119b5d8de8c5438d892aae99eb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20140312122442.GB27965@twins.programming.kicks-ass.net>
-References: <20140312122442.GB27965@twins.programming.kicks-ass.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] locking/mutex: Fix debug checks
-Git-Commit-ID: 6f008e72cd111a119b5d8de8c5438d892aae99eb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753427AbaCMH3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 03:29:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62315 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751394AbaCMH3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 03:29:04 -0400
+Message-ID: <53215E22.8020207@redhat.com>
+Date: Thu, 13 Mar 2014 15:28:34 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Qin Chuanyu <qinchuanyu@huawei.com>
+Subject: Re: [PATCH net V2] vhost: net: switch to use data copy if pending
+ DMAs exceed the limit
+References: <1394170107-12018-1-git-send-email-jasowang@redhat.com> <20140310080310.GA754@redhat.com>
+In-Reply-To: <20140310080310.GA754@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6f008e72cd111a119b5d8de8c5438d892aae99eb
-Gitweb:     http://git.kernel.org/tip/6f008e72cd111a119b5d8de8c5438d892aae99eb
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 12 Mar 2014 13:24:42 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 12 Mar 2014 13:49:47 +0100
+On 03/10/2014 04:03 PM, Michael S. Tsirkin wrote:
+> On Fri, Mar 07, 2014 at 01:28:27PM +0800, Jason Wang wrote:
+>> > We used to stop the handling of tx when the number of pending DMAs
+>> > exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
+>> > of both host and guest. But it was too aggressive in some cases, since
+>> > any delay or blocking of a single packet may delay or block the guest
+>> > transmission. Consider the following setup:
+>> > 
+>> >     +-----+        +-----+
+>> >     | VM1 |        | VM2 |
+>> >     +--+--+        +--+--+
+>> >        |              |
+>> >     +--+--+        +--+--+
+>> >     | tap0|        | tap1|
+>> >     +--+--+        +--+--+
+>> >        |              |
+>> >     pfifo_fast   htb(10Mbit/s)
+>> >        |              |
+>> >     +--+--------------+---+
+>> >     |     bridge          |
+>> >     +--+------------------+
+>> >        |
+>> >     pfifo_fast
+>> >        |
+>> >     +-----+
+>> >     | eth0|(100Mbit/s)
+>> >     +-----+
+>> > 
+>> > - start two VMs and connect them to a bridge
+>> > - add an physical card (100Mbit/s) to that bridge
+>> > - setup htb on tap1 and limit its throughput to 10Mbit/s
+>> > - run two netperfs in the same time, one is from VM1 to VM2. Another is
+>> >   from VM1 to an external host through eth0.
+>> > - result shows that not only the VM1 to VM2 traffic were throttled but
+>> >   also the VM1 to external host through eth0 is also throttled somehow.
+>> > 
+>> > This is because the delay added by htb may lead the delay the finish
+>> > of DMAs and cause the pending DMAs for tap0 exceeds the limit
+>> > (VHOST_MAX_PEND). In this case vhost stop handling tx request until
+>> > htb send some packets. The problem here is all of the packets
+>> > transmission were blocked even if it does not go to VM2.
+>> > 
+>> > We can solve this issue by relaxing it a little bit: switching to use
+>> > data copy instead of stopping tx when the number of pending DMAs
+>> > exceed half of the vq size. This is safe because:
+>> > 
+>> > - The number of pending DMAs were still limited (half of the vq size)
+>> > - The out of order completion during mode switch can make sure that
+>> >   most of the tx buffers were freed in time in guest.
+>> > 
+>> > So even if about 50% packets were delayed in zero-copy case, vhost
+>> > could continue to do the transmission through data copy in this case.
+>> > 
+>> > Test result:
+>> > 
+>> > Before this patch:
+>> > VM1 to VM2 throughput is 9.3Mbit/s
+>> > VM1 to External throughput is 40Mbit/s
+>> > CPU utilization is 7%
+>> > 
+>> > After this patch:
+>> > VM1 to VM2 throughput is 9.3Mbit/s
+>> > Vm1 to External throughput is 93Mbit/s
+>> > CPU utilization is 16%
+>> > 
+>> > Completed performance test on 40gbe shows no obvious changes in both
+>> > throughput and cpu utilization with this patch.
+>> > 
+>> > The patch only solve this issue when unlimited sndbuf. We still need a
+>> > solution for limited sndbuf.
+>> > 
+>> > Cc: Michael S. Tsirkin <mst@redhat.com>
+>> > Cc: Qin Chuanyu <qinchuanyu@huawei.com>
+>> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> I thought hard about this.
+> Here's what worries me: if there are still head of line
+> blocking issues lurking in the stack, they will still
+> hurt guests such as windows which rely on timely
+> completion of buffers, but it makes it
+> that much harder to reproduce the problems with
+> linux guests which don't.
+> And this will make even it harder to figure out
+> whether zero copy is actually active to diagnose
+> high cpu utilization cases.
 
-locking/mutex: Fix debug checks
+Yes.
+>
+>
+> So I think this is a good trick, but let's make
+> this path conditional on a new debugging module parameter:
+> how about head_of_line_blocking with default off?
 
-OK, so commit:
+Sure. But the head of line blocking was only partially solved in the
+patch since we only support in-order completion of zerocopy packets.
+Maybe we need consider switching to out of order completion even for
+zerocopy skbs?
+> This way if we suspect packets are delayed forever
+> somewhere, we can enable that and see guest networking block.
+>
+> Additionally, I think we should add a way to count zero copy
+> and non zero copy packets.
+> I see two ways to implement this: add tracepoints in vhost-net
+> or add counters in tun accessible with ethtool.
+> This can be a patch on top and does not have to block
+> this one though.
+>
 
-  1d8fe7dc8078 ("locking/mutexes: Unlock the mutex without the wait_lock")
-
-generates this boot warning when CONFIG_DEBUG_MUTEXES=y:
-
-  WARNING: CPU: 0 PID: 139 at /usr/src/linux-2.6/kernel/locking/mutex-debug.c:82 debug_mutex_unlock+0x155/0x180() DEBUG_LOCKS_WARN_ON(lock->owner != current)
-
-And that makes sense, because as soon as we release the lock a
-new owner can come in...
-
-One would think that !__mutex_slowpath_needs_to_unlock()
-implementations suffer the same, but for DEBUG we fall back to
-mutex-null.h which has an unconditional 1 for that.
-
-The mutex debug code requires the mutex to be unlocked after
-doing the debug checks, otherwise it can find inconsistent
-state.
-
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: jason.low2@hp.com
-Link: http://lkml.kernel.org/r/20140312122442.GB27965@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/locking/mutex-debug.c | 6 ++++++
- kernel/locking/mutex.c       | 7 +++++++
- 2 files changed, 13 insertions(+)
-
-diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
-index faf6f5b..e1191c9 100644
---- a/kernel/locking/mutex-debug.c
-+++ b/kernel/locking/mutex-debug.c
-@@ -83,6 +83,12 @@ void debug_mutex_unlock(struct mutex *lock)
- 
- 	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
- 	mutex_clear_owner(lock);
-+
-+	/*
-+	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
-+	 * mutexes so that we can do it here after we've verified state.
-+	 */
-+	atomic_set(&lock->count, 1);
- }
- 
- void debug_mutex_init(struct mutex *lock, const char *name,
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index 02c61a9..14fe72c 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -34,6 +34,13 @@
- #ifdef CONFIG_DEBUG_MUTEXES
- # include "mutex-debug.h"
- # include <asm-generic/mutex-null.h>
-+/*
-+ * Must be 0 for the debug case so we do not do the unlock outside of the
-+ * wait_lock region. debug_mutex_unlock() will do the actual unlock in this
-+ * case.
-+ */
-+# undef __mutex_slowpath_needs_to_unlock
-+# define  __mutex_slowpath_needs_to_unlock()	0
- #else
- # include "mutex.h"
- # include <asm/mutex.h>
+Yes, I post a RFC about 2 years ago, see
+https://lkml.org/lkml/2012/4/9/478 which only traces generic vhost
+behaviours. I can refresh this and add some -net specific tracepoints.
