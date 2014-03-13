@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaCMGXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 02:23:39 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:63040 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaCMGXi (ORCPT
+	id S1753259AbaCMGZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 02:25:54 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:63087 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189AbaCMGZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 02:23:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <87lhwevk98.fsf@rustcorp.com.au>
-References: <1394240425-11647-1-git-send-email-keescook@chromium.org>
-	<1394240425-11647-3-git-send-email-keescook@chromium.org>
-	<CAGXu5j+QoHH004usCiCfJU6DPQFnQ2gt3P4GDLS7Gx8Tz_gK+A@mail.gmail.com>
-	<87y50fuei5.fsf@rustcorp.com.au>
-	<CAGXu5j+Zto=D_UYgn6DLVcOQyB_8sAs86masY8iuDTU5ZEZ8OQ@mail.gmail.com>
-	<87lhwevk98.fsf@rustcorp.com.au>
-Date: Wed, 12 Mar 2014 23:23:37 -0700
-X-Google-Sender-Auth: xPM7f8IT2KExLBHkCMi1LDr4Od4
-Message-ID: <CAGXu5jJvbdLqCNwrbrV-k-j2-=mDuccoodu3OuQg6eEduCvkqQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] kallsyms: handle special absolute symbols
-From: Kees Cook <keescook@chromium.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Honig <ahonig@google.com>, Michal Marek <mmarek@suse.cz>,
-        "x86@kernel.org" <x86@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 13 Mar 2014 02:25:53 -0400
+Message-ID: <1394691946.5396.43.camel@marge.simpson.net>
+Subject: [PATCH] block,loop: ratelimit error messages
+From: Mike Galbraith <bitbucket@online.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 13 Mar 2014 07:25:46 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:4Qom62zuZbX/AkqSh992qeioC4kbp9c8DrmA00nB4O/
+ nU2Uj7wGK5GGlLxqxwO5qdfcneQ9Dyp5BRvsf8M+Mo9G7XEKgb
+ rEWO2Rj+1oIjQK2f+6nkh5WdyF9USS+xQgSrZHq0pqfVW+Ht4e
+ 3t+dVBbnUowY7F7l6TG/ldzAToDWakuDItbaZsRH0H2evcyjdB
+ gbVqitaVlvR/4cXHp2q5C5/T7pfh6KHgyWL2FB2dwFboRf3QrR
+ 6S4ZZgx1RRspqBwZ9ydnvcG9rmhFxRURrgxQpQR9c4387o8i2l
+ IhLEz1RXmgJU8gP4f+WDSFIyZkxaJafe2E0irYQugGI3N8dWPc
+ WNJ3wjGgrvLbWsPjeVpFpxy9lWUg2V2VndPPCRPTe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 8:40 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Kees Cook <keescook@chromium.org> writes:
->> Why not just do this with 0-base-address detection like my v2? That
->> would mean we don't need to remember to add this flag in the future to
->> imagined new architectures that might want this 0-based per_cpu
->> feature.
->
-> Because future architectures will get this right and emit absolute
-> symbols.  I hope!
->
-> I'm swamped at the moment, but am hoping to investigate that for
-> x86-64.  This is a stop-gap.
 
-Okay, I'm convinced. :)
+Metric tons of high speed spew is not helpful when things go pear shaped.
+systemd lost its mind, forgot how to stop services it insists on being
+sole manager of, massive printk() flood ensued, box eventually died.
 
-Acked-by: Kees Cook <keescook@chromium.org>
+[16206.684000] loop: Write error at byte offset 11412291584, length 4096.
+[16206.684000] systemd-journald[1758]: /dev/kmsg buffer overrun, some messages lost.
+[16206.684000] loop: Write error at byte offset 13155434496, length 4096.
+[16206.684000] loop: Write error at byte offset 13155438592, length 4096.
+[16206.684000] loop: Write error at byte offset 13155442688, length 4096.
+[16206.684000] loop: Write error at byte offset 13960736768, length 4096.
+[16206.684000] loop: Write error at byte offset 14229172224, length 4096.
+[16206.684000] systemd-journald[1758]: /dev/kmsg buffer overrun, some messages lost.
+[16206.684000] loop: Write error at byte offset 14766043136, length 4096.
+[16206.684000] loop: Write error at byte offset 15034478592, length 4096.
+[16206.684000] systemd-journald[1758]: /dev/kmsg buffer overrun, some messages lost.
 
-Thanks!
+Signed-off-by: Mike Galbraith <bitbucket@online.de>
+---
+ drivers/block/loop.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
--Kees
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -237,7 +237,7 @@ static int __do_lo_send_write(struct fil
+ 	file_end_write(file);
+ 	if (likely(bw == len))
+ 		return 0;
+-	printk(KERN_ERR "loop: Write error at byte offset %llu, length %i.\n",
++	printk_ratelimited(KERN_ERR "loop: Write error at byte offset %llu, length %i.\n",
+ 			(unsigned long long)pos, len);
+ 	if (bw >= 0)
+ 		bw = -EIO;
+@@ -277,7 +277,7 @@ static int do_lo_send_write(struct loop_
+ 		return __do_lo_send_write(lo->lo_backing_file,
+ 				page_address(page), bvec->bv_len,
+ 				pos);
+-	printk(KERN_ERR "loop: Transfer error at byte offset %llu, "
++	printk_ratelimited(KERN_ERR "loop: Transfer error at byte offset %llu, "
+ 			"length %i.\n", (unsigned long long)pos, bvec->bv_len);
+ 	if (ret > 0)
+ 		ret = -EIO;
+@@ -316,7 +316,7 @@ static int lo_send(struct loop_device *l
+ out:
+ 	return ret;
+ fail:
+-	printk(KERN_ERR "loop: Failed to allocate temporary page for write.\n");
++	printk_ratelimited(KERN_ERR "loop: Failed to allocate temporary page for write.\n");
+ 	ret = -ENOMEM;
+ 	goto out;
+ }
+@@ -345,7 +345,7 @@ lo_splice_actor(struct pipe_inode_info *
+ 		size = p->bsize;
+ 
+ 	if (lo_do_transfer(lo, READ, page, buf->offset, p->page, p->offset, size, IV)) {
+-		printk(KERN_ERR "loop: transfer error block %ld\n",
++		printk_ratelimited(KERN_ERR "loop: transfer error block %ld\n",
+ 		       page->index);
+ 		size = -EINVAL;
+ 	}
 
--- 
-Kees Cook
-Chrome OS Security
+
