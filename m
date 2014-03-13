@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaCMGDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 02:03:40 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:39858 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629AbaCMGDj (ORCPT
+	id S1752995AbaCMGEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 02:04:42 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:51067 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaCMGEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 02:03:39 -0400
+	Thu, 13 Mar 2014 02:04:40 -0400
 From: Alex Shi <alex.shi@linaro.org>
 To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com
 Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
@@ -17,9 +17,9 @@ Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
         akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
         fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
         wangyun@linux.vnet.ibm.com, mgorman@suse.de
-Subject: [PATCH 5/8] sched: clean up cpu_load update
-Date: Thu, 13 Mar 2014 13:57:26 +0800
-Message-Id: <1394690249-14130-6-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH 6/8] sched: rewrite update_cpu_load_nohz
+Date: Thu, 13 Mar 2014 13:57:27 +0800
+Message-Id: <1394690249-14130-7-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1394690249-14130-1-git-send-email-alex.shi@linaro.org>
 References: <1394690249-14130-1-git-send-email-alex.shi@linaro.org>
@@ -27,67 +27,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we don't decay the rq->cpu_load, so we don't need the
-pending_updates. But we still want update rq->rt_avg, so
-still keep rq->last_load_update_tick and func __update_cpu_load.
+After change to sched_avg, the cpu load in idle exit was decayed.
+So, it maybe near zero if waking a long time sleep task, or, a full
+non-decay load if waking a new forked task. Then, we can use it to
+reflect the cpu load, don't need to pretend 0.
 
 Signed-off-by: Alex Shi <alex.shi@linaro.org>
 ---
- kernel/sched/proc.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ kernel/sched/proc.c | 19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-index a2435c5..057bb9b 100644
+index 057bb9b..383c4ba 100644
 --- a/kernel/sched/proc.c
 +++ b/kernel/sched/proc.c
-@@ -404,8 +404,7 @@ static void calc_load_account_active(struct rq *this_rq)
-  * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-  * every tick. We fix it up based on jiffies.
-  */
--static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
--			      unsigned long pending_updates)
-+static void __update_cpu_load(struct rq *this_rq, unsigned long this_load)
- {
- 	this_rq->nr_load_updates++;
- 
-@@ -449,7 +448,6 @@ void update_idle_cpu_load(struct rq *this_rq)
- {
- 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
- 	unsigned long load = get_rq_runnable_load(this_rq);
--	unsigned long pending_updates;
- 
- 	/*
- 	 * bail if there's load or we're actually up-to-date.
-@@ -457,10 +455,9 @@ void update_idle_cpu_load(struct rq *this_rq)
- 	if (load || curr_jiffies == this_rq->last_load_update_tick)
- 		return;
- 
--	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
- 	this_rq->last_load_update_tick = curr_jiffies;
- 
--	__update_cpu_load(this_rq, load, pending_updates);
-+	__update_cpu_load(this_rq, load);
+@@ -461,28 +461,13 @@ void update_idle_cpu_load(struct rq *this_rq)
  }
  
  /*
-@@ -483,7 +480,7 @@ void update_cpu_load_nohz(void)
- 		 * We were idle, this means load 0, the current load might be
- 		 * !0 due to remote wakeups and the sort.
- 		 */
--		__update_cpu_load(this_rq, 0, pending_updates);
-+		__update_cpu_load(this_rq, 0);
- 	}
- 	raw_spin_unlock(&this_rq->lock);
- }
-@@ -499,7 +496,7 @@ void update_cpu_load_active(struct rq *this_rq)
- 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
- 	 */
- 	this_rq->last_load_update_tick = jiffies;
--	__update_cpu_load(this_rq, load, 1);
-+	__update_cpu_load(this_rq, load);
+- * Called from tick_nohz_idle_exit() -- try and fix up the ticks we missed.
++ * Called from tick_nohz_idle_exit()
+  */
+ void update_cpu_load_nohz(void)
+ {
+ 	struct rq *this_rq = this_rq();
+-	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+-	unsigned long pending_updates;
+-
+-	if (curr_jiffies == this_rq->last_load_update_tick)
+-		return;
  
- 	calc_load_account_active(this_rq);
+-	raw_spin_lock(&this_rq->lock);
+-	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
+-	if (pending_updates) {
+-		this_rq->last_load_update_tick = curr_jiffies;
+-		/*
+-		 * We were idle, this means load 0, the current load might be
+-		 * !0 due to remote wakeups and the sort.
+-		 */
+-		__update_cpu_load(this_rq, 0);
+-	}
+-	raw_spin_unlock(&this_rq->lock);
++	update_idle_cpu_load(this_rq);
  }
+ #endif /* CONFIG_NO_HZ */
+ 
 -- 
 1.8.1.2
 
