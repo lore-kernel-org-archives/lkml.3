@@ -1,199 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490AbaCMO0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 10:26:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18785 "EHLO mx1.redhat.com"
+	id S1753586AbaCMO2B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 10:28:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56659 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753362AbaCMO0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 10:26:22 -0400
-From: Igor Mammedov <imammedo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, imammedo@redhat.com,
-        bp@suse.de, paul.gortmaker@windriver.com, JBeulich@suse.com,
-        prarit@redhat.com, drjones@redhat.com, toshi.kani@hp.com,
-        x86@kernel.org, riel@redhat.com, gong.chen@linux.intel.com
-Subject: [PATCH 1/3] x86: replace timeouts when booting secondary CPU with infinite wait loop
-Date: Thu, 13 Mar 2014 15:25:18 +0100
-Message-Id: <1394720720-8484-2-git-send-email-imammedo@redhat.com>
-In-Reply-To: <1394720720-8484-1-git-send-email-imammedo@redhat.com>
-References: <1394720720-8484-1-git-send-email-imammedo@redhat.com>
+	id S1752270AbaCMO17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 10:27:59 -0400
+Date: Thu, 13 Mar 2014 10:27:55 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Simo Sorce <ssorce@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
+Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
+Message-ID: <20140313142755.GC18914@redhat.com>
+References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
+ <1394657163-7472-3-git-send-email-vgoyal@redhat.com>
+ <5320CAEC.6030008@amacapital.net>
+ <CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
+ <1394658983.32465.203.camel@willson.li.ssimo.org>
+ <CALCETrU29CpcK4dVRD45BGOD7AVEudADiFxOgFgKWkpFzw07eg@mail.gmail.com>
+ <1394673476.32465.215.camel@willson.li.ssimo.org>
+ <CALCETrWbCuKfV4zMkZajDOGhGkKduW0C2L7uHv=vtvqhVeAc6w@mail.gmail.com>
+ <1394675038.32465.223.camel@willson.li.ssimo.org>
+ <CALCETrV7GE0YL1sDDqTUV81rWL9zk2vTR1-VLkR7CfTA-FSrgw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrV7GE0YL1sDDqTUV81rWL9zk2vTR1-VLkR7CfTA-FSrgw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hang is observed on virtual machines during CPU hotplug,
-especially in big guests with many CPUs. (It reproducible
-more often if host is over-committed).
+On Wed, Mar 12, 2014 at 07:12:25PM -0700, Andy Lutomirski wrote:
 
-It happens because master CPU gives up waiting on
-secondary CPU and allows it to run wild. As result
-AP causes locking or crashing system. For example
-as described here: https://lkml.org/lkml/2014/3/6/257
+[..]
+> >> Can you give a realistic example?
+> >>
+> >> I could say that I'd like to disclose information to processes based
+> >> on their rlimits at the time they connected, but I don't think that
+> >> would carry much weight.
+> >
+> > We want to be able to show different user's list from SSSD based on the
+> > docker container that is asking for it.
+> >
+> > This works by having libnsss_sss.so from the containerized application
+> > connect to an SSSD daemon running on the host or in another container.
+> >
+> > The only way to distinguish between containers "from the outside" is to
+> > lookup the cgroup of the requesting process. It has a unique container
+> > ID, and can therefore be mapped to the appropriate policy that will let
+> > us decide which 'user domain' to serve to the container.
+> >
+> 
+> I can think of at least three other ways to do this.
+> 
+> 1. Fix Docker to use user namespaces and use the uid of the requesting
+> process via SCM_CREDENTIALS.
 
-If master CPU have sent STARTUP IPI successfully,
-make it wait indefinitely till AP boots.
-To ensure that AP won't ever run wild, make it
-wait at early startup till master CPU confirms its
-intention to wait for it.
+Using user namespaces sounds like the right way to do it (atleast
+conceptually). But I think hurdle here is that people are not convinced
+yet that user namespaces are secure and work well. IOW, some people
+don't seem to think that user namespaces are ready yet.
 
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
----
- arch/x86/kernel/cpu/common.c |   18 ++++++++++-
- arch/x86/kernel/smpboot.c    |   68 ++----------------------------------------
- 2 files changed, 19 insertions(+), 67 deletions(-)
+I guess that's the reason people are looking for other ways to
+achieve their goal.
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 8e28bf2..e048e87 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1235,16 +1235,22 @@ void cpu_init(void)
- 	struct task_struct *me;
- 	struct tss_struct *t;
- 	unsigned long v;
--	int cpu;
-+	int cpu = stack_smp_processor_id();
- 	int i;
- 
- 	/*
-+	 * wait till the master CPU completes it's STARTUP sequence,
-+	 * and decides to wait till this AP boots
-+	 */
-+	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-+		cpu_relax();
-+
-+	/*
- 	 * Load microcode on this cpu if a valid microcode is available.
- 	 * This is early microcode loading procedure.
- 	 */
- 	load_ucode_ap();
- 
--	cpu = stack_smp_processor_id();
- 	t = &per_cpu(init_tss, cpu);
- 	oist = &per_cpu(orig_ist, cpu);
- 
-@@ -1335,6 +1341,14 @@ void cpu_init(void)
- 	struct tss_struct *t = &per_cpu(init_tss, cpu);
- 	struct thread_struct *thread = &curr->thread;
- 
-+	/*
-+	 * wait till the master CPU completes it's STARTUP sequence,
-+	 * and decides to wait till this AP boots
-+	 */
-+	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-+		cpu_relax();
-+
-+
- 	show_ucode_info_early();
- 
- 	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 37e11e5..8bf67bd 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -111,7 +111,6 @@ atomic_t init_deasserted;
- static void smp_callin(void)
- {
- 	int cpuid, phys_id;
--	unsigned long timeout;
- 
- 	/*
- 	 * If waken up by an INIT in an 82489DX configuration
-@@ -129,37 +128,6 @@ static void smp_callin(void)
- 	 * (This works even if the APIC is not enabled.)
- 	 */
- 	phys_id = read_apic_id();
--	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
--		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
--					phys_id, cpuid);
--	}
--	pr_debug("CPU#%d (phys ID: %d) waiting for CALLOUT\n", cpuid, phys_id);
--
--	/*
--	 * STARTUP IPIs are fragile beasts as they might sometimes
--	 * trigger some glue motherboard logic. Complete APIC bus
--	 * silence for 1 second, this overestimates the time the
--	 * boot CPU is spending to send the up to 2 STARTUP IPIs
--	 * by a factor of two. This should be enough.
--	 */
--
--	/*
--	 * Waiting 2s total for startup (udelay is not yet working)
--	 */
--	timeout = jiffies + 2*HZ;
--	while (time_before(jiffies, timeout)) {
--		/*
--		 * Has the boot CPU finished it's STARTUP sequence?
--		 */
--		if (cpumask_test_cpu(cpuid, cpu_callout_mask))
--			break;
--		cpu_relax();
--	}
--
--	if (!time_before(jiffies, timeout)) {
--		panic("%s: CPU%d started up but did not get a callout!\n",
--		      __func__, cpuid);
--	}
- 
- 	/*
- 	 * the boot CPU has finished the init stage and is spinning
-@@ -749,7 +717,6 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 	unsigned long start_ip = real_mode_header->trampoline_start;
- 
- 	unsigned long boot_error = 0;
--	int timeout;
- 	int cpu0_nmi_registered = 0;
- 
- 	/* Just in case we booted with a single CPU. */
-@@ -818,12 +785,9 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 		pr_debug("After Callout %d\n", cpu);
- 
- 		/*
--		 * Wait 5s total for a response
-+		 * Wait till AP completes initial initialization
- 		 */
--		for (timeout = 0; timeout < 50000; timeout++) {
--			if (cpumask_test_cpu(cpu, cpu_callin_mask))
--				break;	/* It has booted */
--			udelay(100);
-+		while (!cpumask_test_cpu(cpu, cpu_callin_mask)) {
- 			/*
- 			 * Allow other tasks to run while we wait for the
- 			 * AP to come online. This also gives a chance
-@@ -832,33 +796,7 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 			 */
- 			schedule();
- 		}
--
--		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
--			print_cpu_msr(&cpu_data(cpu));
--			pr_debug("CPU%d: has booted.\n", cpu);
--		} else {
--			boot_error = 1;
--			if (*trampoline_status == 0xA5A5A5A5)
--				/* trampoline started but...? */
--				pr_err("CPU%d: Stuck ??\n", cpu);
--			else
--				/* trampoline code not run */
--				pr_err("CPU%d: Not responding\n", cpu);
--			if (apic->inquire_remote_apic)
--				apic->inquire_remote_apic(apicid);
--		}
--	}
--
--	if (boot_error) {
--		/* Try to put things back the way they were before ... */
--		numa_remove_cpu(cpu); /* was set by numa_add_cpu */
--
--		/* was set by do_boot_cpu() */
--		cpumask_clear_cpu(cpu, cpu_callout_mask);
--
--		/* was set by cpu_init() */
--		cpumask_clear_cpu(cpu, cpu_initialized_mask);
--
-+	} else {
- 		set_cpu_present(cpu, false);
- 		per_cpu(x86_cpu_to_apicid, cpu) = BAD_APICID;
- 	}
--- 
-1.7.1
-
+Thanks
+Vivek
