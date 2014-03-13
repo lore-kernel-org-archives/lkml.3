@@ -1,97 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaCMNiX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 09:38:23 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44767 "EHLO bear.ext.ti.com"
+	id S1753425AbaCMNih (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 09:38:37 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37622 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752714AbaCMNiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 09:38:21 -0400
-Message-ID: <5321B4B4.9010806@ti.com>
-Date: Thu, 13 Mar 2014 21:37:56 +0800
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+	id S1751804AbaCMNif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 09:38:35 -0400
+Message-ID: <5321B4B4.30602@ti.com>
+Date: Thu, 13 Mar 2014 15:37:56 +0200
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>, "Balbi, Felipe" <balbi@ti.com>
-CC: "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH][next] phy: core: make NULL a valid phy reference if !CONFIG_GENERIC_PHY
-References: <1394709073-1980-1-git-send-email-grygorii.strashko@ti.com>
-In-Reply-To: <1394709073-1980-1-git-send-email-grygorii.strashko@ti.com>
+	<linux-arm-kernel@lists.infradead.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "joelf@ti.com" <joelf@ti.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        "nsekhar@ti.com" <nsekhar@ti.com>, Jyri Sarha <jsarha@ti.com>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>
+Subject: Re: [PATCH 10/18] dma: edma: Reduce debug print verbosity for non
+ verbose debugging
+References: <1394702320-21743-1-git-send-email-peter.ujfalusi@ti.com>	 <1394702320-21743-11-git-send-email-peter.ujfalusi@ti.com> <1394715211.28803.239.camel@smile.fi.intel.com>
+In-Reply-To: <1394715211.28803.239.camel@smile.fi.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 March 2014 07:11 PM, Strashko, Grygorii wrote:
-> This fixes a regression on Keystone 2 platforms caused by patch
-> 57303488cd37da58263e842de134dc65f7c626d5
-> "usb: dwc3: adapt dwc3 core to use Generic PHY Framework" which adds
-> optional support of generic phy in DWC3 core.
+On 03/13/2014 02:53 PM, Shevchenko, Andriy wrote:
+> On Thu, 2014-03-13 at 11:18 +0200, Peter Ujfalusi wrote:
+>> Do not print the paRAM information when verbose debugging is not asked and
+>> also reduce the number of lines printed in edma_prep_dma_cyclic()
+>>
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> ---
+>>  drivers/dma/edma.c | 11 +++++------
+>>  1 file changed, 5 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+>> index e4f4a0cef58c..e2aa42b8342f 100644
+>> --- a/drivers/dma/edma.c
+>> +++ b/drivers/dma/edma.c
+>> @@ -141,7 +141,7 @@ static void edma_execute(struct edma_chan *echan)
+>>  	for (i = 0; i < nslots; i++) {
+>>  		j = i + edesc->processed;
+>>  		edma_write_slot(echan->slot[i], &edesc->pset[j]);
+>> -		dev_dbg(echan->vchan.chan.device->dev,
+>> +		dev_vdbg(echan->vchan.chan.device->dev,
+>>  			"\n pset[%d]:\n"
+>>  			"  chnum\t%d\n"
+>>  			"  slot\t%d\n"
 > 
-> On Keystone 2 platforms the USB is not working now because
-> CONFIG_GENERIC_PHY isn't set and, as result, Generic PHY APIs stubs
-> return -ENOSYS always. The log shows:
->  dwc3 2690000.dwc3: failed to initialize core
->  dwc3: probe of 2690000.dwc3 failed with error -38
-> 
-> Hence, fix it by making NULL a valid phy reference in Generic PHY
-> APIs stubs in the same way as it was done by the patch
-> 04c2facad8fee66c981a51852806d8923336f362 "drivers: phy: Make NULL
-> a valid phy reference".
-> 
-> CC: Kishon Vijay Abraham I <kishon@ti.com>
-> CC: Felipe Balbi <balbi@ti.com>
-> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
-This fixes the regression seen in Linux next and patch seems
-reasonable to me.
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> I believe you may move this code to separate function and reuse it
+> later.
 
-Felipe, Kishon,
-Can you guys pick this fix if you are ok by it. Thanks
+As the per patch description, I only changed the debug level in this patch.
 
+> Moreover %d is not good specifier for unsigned types, maybe %u?
 
->  include/linux/phy/phy.h |    8 ++++++++
->  1 file changed, 8 insertions(+)
+You are right for unsigned type %u is the correct. This is why we have %d
+since j, echan->ch_num and echan->slot[i] are integer.
+
 > 
-> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-> index e2f5ca9..5a9b193 100644
-> --- a/include/linux/phy/phy.h
-> +++ b/include/linux/phy/phy.h
-> @@ -204,21 +204,29 @@ static inline void phy_pm_runtime_forbid(struct phy *phy)
->  
->  static inline int phy_init(struct phy *phy)
->  {
-> +	if (!phy)
-> +		return 0;
->  	return -ENOSYS;
->  }
->  
->  static inline int phy_exit(struct phy *phy)
->  {
-> +	if (!phy)
-> +		return 0;
->  	return -ENOSYS;
->  }
->  
->  static inline int phy_power_on(struct phy *phy)
->  {
-> +	if (!phy)
-> +		return 0;
->  	return -ENOSYS;
->  }
->  
->  static inline int phy_power_off(struct phy *phy)
->  {
-> +	if (!phy)
-> +		return 0;
->  	return -ENOSYS;
->  }
->  
+>> @@ -554,9 +554,8 @@ static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
+>>  	edesc->cyclic = 1;
+>>  	edesc->pset_nr = nslots;
+>>  
+>> -	dev_dbg(dev, "%s: nslots=%d\n", __func__, nslots);
+>> -	dev_dbg(dev, "%s: period_len=%d\n", __func__, period_len);
+>> -	dev_dbg(dev, "%s: buf_len=%d\n", __func__, buf_len);
+>> +	dev_dbg(dev, "%s: channel=%d nslots=%d period_len=%d buf_len=%d\n",
+>> +		__func__, echan->ch_num, nslots, period_len, buf_len);
 > 
+> Consider to use proper specifiers for size_t types, namely %zd.
 
+I just collapsed the three line of dev_dbg into one and have not really
+checked the formats.
+For size_t the correct format should be %zu.
+I'll fix this up for the next version.
+
+>>  
+>>  	for (i = 0; i < nslots; i++) {
+>>  		/* Allocate a PaRAM slot, if needed */
+>> @@ -590,8 +589,8 @@ static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
+>>  		else
+>>  			src_addr += period_len;
+>>  
+>> -		dev_dbg(dev, "%s: Configure period %d of buf:\n", __func__, i);
+>> -		dev_dbg(dev,
+>> +		dev_vdbg(dev, "%s: Configure period %d of buf:\n", __func__, i);
+>> +		dev_vdbg(dev,
+> 
+> See the first comment.
+
+As the per patch description, I only changed the debug level in this patch.
+This can be done as a separate patch later IMO as part of a bigger debug cleanup.
+
+-- 
+Péter
