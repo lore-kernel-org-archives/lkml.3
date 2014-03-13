@@ -1,127 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314AbaCMPLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:11:46 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56628 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245AbaCMPGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:06:55 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [PATCH RESEND -mm 01/12] memcg: flush cache creation works before memcg cache destruction
-Date: Thu, 13 Mar 2014 19:06:39 +0400
-Message-ID: <4cccfcf74595f26532a6dda7264dc420df82fb8a.1394708827.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1394708827.git.vdavydov@parallels.com>
-References: <cover.1394708827.git.vdavydov@parallels.com>
+	id S1754353AbaCMPME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:12:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1975 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754292AbaCMPLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:11:45 -0400
+Date: Thu, 13 Mar 2014 15:59:41 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Davidlohr Bueso <davi@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] mm,vmacache: also flush cache for VM_CLONE
+Message-ID: <20140313145941.GA26215@redhat.com>
+References: <1393537704.2899.3.camel@buesod1.americas.hpqcorp.net> <20140308184040.GA29602@redhat.com> <CA+55aFw88xiY+o5FE6VtHNkpUZDK3FPt31oCpNsgn1BH7wAPZw@mail.gmail.com> <20140308194405.GA32403@redhat.com> <CA+55aFzk=XtRFPQM4rGgTXj8AD2RLrm5pfAsKwGOZPHLgb+Ziw@mail.gmail.com> <20140309125710.GA1829@redhat.com> <CA+55aFxyGJFEz5NnHtK1wn8oDLy9n-CttttKL_0AM69gN8JzxQ@mail.gmail.com> <20140309170909.GA13335@redhat.com> <CA+55aFxEGj9poWNLAncvrrOTzjDtrwMnOM_d3ACqRkcvY86qHA@mail.gmail.com> <1394481375.3867.1.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394481375.3867.1.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we get to memcg cache destruction, either from the root cache
-destruction path or when turning memcg offline, there still might be
-memcg cache creation works pending that was scheduled before we
-initiated destruction. We need to flush them before starting to destroy
-memcg caches, otherwise we can get a leaked kmem cache or, even worse,
-an attempt to use after free.
+Sorry for delay, I was distracted...
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@gmail.com>
----
- mm/memcontrol.c |   32 +++++++++++++++++++++++++++++++-
- 1 file changed, 31 insertions(+), 1 deletion(-)
+On 03/10, Davidlohr Bueso wrote:
+>
+> @@ -841,9 +841,6 @@ static struct mm_struct *dup_mm(struct task_struct *tsk)
+>  	if (mm->binfmt && !try_module_get(mm->binfmt->module))
+>  		goto free_pt;
+>
+> -	/* initialize the new vmacache entries */
+> -	vmacache_flush(tsk);
+> -
+>  	return mm;
+>
+>  free_pt:
+> @@ -887,6 +884,9 @@ static int copy_mm(unsigned long clone_flags, struct task_struct *tsk)
+>  	if (!oldmm)
+>  		return 0;
+>
+> +	/* initialize the new vmacache entries */
+> +	vmacache_flush(tsk);
+> +
+>  	if (clone_flags & CLONE_VM) {
+>  		atomic_inc(&oldmm->mm_users);
+>  		mm = oldmm;
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9d489a9e7701..b183aaf1b616 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2904,6 +2904,7 @@ static DEFINE_MUTEX(set_limit_mutex);
- 
- #ifdef CONFIG_MEMCG_KMEM
- static DEFINE_MUTEX(activate_kmem_mutex);
-+static struct workqueue_struct *memcg_cache_create_wq;
- 
- static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
- {
-@@ -3327,6 +3328,15 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- 	int i, failed = 0;
- 
- 	/*
-+	 * Since the cache is being destroyed, it shouldn't be allocated from
-+	 * any more, and therefore no new memcg cache creation works could be
-+	 * scheduled. However, there still might be pending works scheduled
-+	 * before the cache destruction was initiated. Flush them before
-+	 * destroying child caches to avoid nasty races.
-+	 */
-+	flush_workqueue(memcg_cache_create_wq);
-+
-+	/*
- 	 * If the cache is being destroyed, we trust that there is no one else
- 	 * requesting objects from it. Even if there are, the sanity checks in
- 	 * kmem_cache_destroy should caught this ill-case.
-@@ -3374,6 +3384,15 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
- 	if (!memcg_kmem_is_active(memcg))
- 		return;
- 
-+	/*
-+	 * By the time we get here, the cgroup must be empty. That said no new
-+	 * allocations can happen from its caches, and therefore no new memcg
-+	 * cache creation works can be scheduled. However, there still might be
-+	 * pending works scheduled before the cgroup was turned offline. Flush
-+	 * them before destroying memcg caches to avoid nasty races.
-+	 */
-+	flush_workqueue(memcg_cache_create_wq);
-+
- 	mutex_lock(&memcg->slab_caches_mutex);
- 	list_for_each_entry(params, &memcg->memcg_slab_caches, list) {
- 		cachep = memcg_params_to_cache(params);
-@@ -3418,7 +3437,7 @@ static void __memcg_create_cache_enqueue(struct mem_cgroup *memcg,
- 	cw->cachep = cachep;
- 
- 	INIT_WORK(&cw->work, memcg_create_cache_work_func);
--	schedule_work(&cw->work);
-+	queue_work(memcg_cache_create_wq, &cw->work);
- }
- 
- static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
-@@ -3621,10 +3640,20 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order)
- 	VM_BUG_ON_PAGE(mem_cgroup_is_root(memcg), page);
- 	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
- }
-+
-+static void __init memcg_kmem_init(void)
-+{
-+	memcg_cache_create_wq = alloc_workqueue("memcg_cache_create", 0, 1);
-+	BUG_ON(!memcg_cache_create_wq);
-+}
- #else
- static inline void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
- {
- }
-+
-+static void __init memcg_kmem_init(void)
-+{
-+}
- #endif /* CONFIG_MEMCG_KMEM */
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-@@ -7181,6 +7210,7 @@ static int __init mem_cgroup_init(void)
- 	enable_swap_cgroup();
- 	mem_cgroup_soft_limit_tree_init();
- 	memcg_stock_init();
-+	memcg_kmem_init();
- 	return 0;
- }
- subsys_initcall(mem_cgroup_init);
--- 
-1.7.10.4
+Yes. But it seems that use_mm() and unuse_mm() should invalidate vmacache too.
+
+Suppose that a kernel thread T does, say,
+
+	use_mm(foreign_mm);
+	get_user(...);
+	unuse_mm();
+
+This can trigger a fault and populate T->vmacache[]. If this code is called
+again vmacache_find() can use the stale entries.
+
+Or, assuming that only a kernel thread can do use_mm(), we can change
+vmacache_valid() to also check !PF_KTHREAD.
+
+Hmm. Another problem is that use_mm() doesn't take ->mmap_sem and thus
+it can race with vmacache_flush_all()...
+
+
+Finally. Shouldn't vmacache_update() check current->mm == mm as well?
+What if access_remote_vm/get_user_pages trigger find_vma() ??? Unless
+I missed something this is not theoretical at all and can lead to the
+corrupted vmacache, no?
+
+Oleg.
 
