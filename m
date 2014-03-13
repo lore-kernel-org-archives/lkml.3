@@ -1,120 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037AbaCMMiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 08:38:00 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:46000 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaCMMh6 (ORCPT
+	id S1752304AbaCMMiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 08:38:55 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:47680 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaCMMiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 08:37:58 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-1a-5321a6a4453b
-Message-id: <5321A6A2.9070509@samsung.com>
-Date: Thu, 13 Mar 2014 13:37:54 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 2/3] mfd: sec-core: Add of_compatible strings for MFD
- cells
-References: <1394703425-6462-1-git-send-email-k.kozlowski@samsung.com>
- <1394703425-6462-3-git-send-email-k.kozlowski@samsung.com>
- <53219F80.9000300@samsung.com> <1394712996.20773.1.camel@AMDC1943>
-In-reply-to: <1394712996.20773.1.camel@AMDC1943>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t/xq7pLlikGG3yZI2KxccZ6VovXLwwt
-	zja9Ybe4//Uoo8Wmx9dYLS7vmsNmMeP8PiaLtUfusls8nXCRzeLkn15Gi9PdrBYXV3xhsmj/
-	u5fNYs70d0wOfB53ru1h85h3MtBj85J6j74tqxg9Pm+SC2CN4rJJSc3JLEst0rdL4MrYs+gO
-	U8EjgYqe3RfYGhgbeLsYOTkkBEwkLrxcxwRhi0lcuLeerYuRi0NIYCmjxMtTU6Ccz4wSZyes
-	ZgGp4hXQkmjeeIK9i5GDg0VAVeLG7yqQMJuAmsTnhkdsILaoQITE3Imb2SDKBSV+TL4H1ioi
-	YChxcPd2JpCZzAJzWSRmvz7LDJIQFgiRaNtzHqxBSOAEo8TUb5UgNqeAgcScfedYQWxmATOJ
-	Ry3rmCFseYnNa94yT2AUmIVkxywkZbOQlC1gZF7FKJpamlxQnJSea6RXnJhbXJqXrpecn7uJ
-	ERIlX3cwLj1mdYhRgINRiYc3YKlCsBBrYllxZe4hRgkOZiUR3sJFisFCvCmJlVWpRfnxRaU5
-	qcWHGJk4OKUaGHUNqo7N+jrHMtBp36sv0sXczGFblC4vLj43M6HdolE9tv+pfBnzkrqXGYHT
-	26TSPz9aoSXr26yTsddz4ZqFPzIf6XCsjUhnWjs7Z/OKV+9PcbG+mMT2lONF1Zzjx+fd7Lm2
-	0PCOu1z1Bl+mXR9z+x+1MjN9WrFeylwiw7p+uz/vzufcNX8KeJRYijMSDbWYi4oTAaDlyntw	AgAA
+	Thu, 13 Mar 2014 08:38:52 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] OF: kobj node lifecycle fixes
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <1386958139-6130-1-git-send-email-panto@antoniou-consulting.com>
+References: <1386958139-6130-1-git-send-email-panto@antoniou-consulting.com >
+Date: Thu, 13 Mar 2014 12:38:36 +0000
+Message-Id: <20140313123836.CF666C40E11@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.03.2014 13:16, Krzysztof Kozlowski wrote:
-> On Thu, 2014-03-13 at 13:07 +0100, Tomasz Figa wrote:
->> Hi Krzysztof,
->>
->> On 13.03.2014 10:37, Krzysztof Kozlowski wrote:
->>> Add of_compatible strings for MFD cells for regulator, clock and RTC
->>> drivers in S5M8767, S2MPS11 and S2MPS14 PMIC-s.
->>>
->>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->>> ---
->>>    drivers/mfd/sec-core.c |    8 ++++++++
->>>    1 file changed, 8 insertions(+)
->>>
->>> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
->>> index d163c66edebb..c5b9b95b2099 100644
->>> --- a/drivers/mfd/sec-core.c
->>> +++ b/drivers/mfd/sec-core.c
->>> @@ -55,28 +55,36 @@ static const struct mfd_cell s5m8763_devs[] = {
->>>    static const struct mfd_cell s5m8767_devs[] = {
->>>    	{
->>>    		.name = "s5m8767-pmic",
->>> +		.of_compatible = "samsung,s5m8767-regulators",
->>>    	}, {
->>>    		.name = "s5m-rtc",
->>> +		.of_compatible = "samsung,s5m8767-rtc",
->>>    	}, {
->>>    		.name = "s5m8767-clk",
->>> +		.of_compatible = "samsung,s5m8767-clk",
->>>    	}
->>>    };
->>>
->>>    static const struct mfd_cell s2mps11_devs[] = {
->>>    	{
->>>    		.name = "s2mps11-pmic",
->>> +		.of_compatible = "samsung,s2mps11-regulators",
->>>    	}, {
->>>    		.name = "s2mps11-clk",
->>> +		.of_compatible = "samsung,s2mps11-clk",
->>>    	}
->>>    };
->>>
->>>    static const struct mfd_cell s2mps14_devs[] = {
->>>    	{
->>>    		.name = "s2mps14-pmic",
->>> +		.of_compatible = "samsung,s2mps14-regulators",
->>>    	}, {
->>>    		.name = "s2mps14-rtc",
->>> +		.of_compatible = "samsung,s2mps14-rtc",
->>>    	}, {
->>>    		.name = "s2mps14-clk",
->>> +		.of_compatible = "samsung,s2mps14-clk",
->>>    	}
->>>    };
->>
->> Are these compatible strings documented anywhere?
->
-> The "-clk" compatible strings are (in next patch). The "-rtc" and
-> "-regulators" are not.
+On Fri, 13 Dec 2013 20:08:59 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+> After the move to having device nodes be proper kobjects the lifecycle
+> of the node needs to be controlled better.
+> 
+> At first convert of_add_node() in the unflattened functions to
+> of_init_node() which initializes the kobject so that of_node_get/put
+> work correctly even before of_init is called.
+> 
+> Afterwards introduce of_node_is_initialized & of_node_is_attached that
+> query the underlying kobject about the state (attached means kobj
+> is visible in sysfs)
+> 
+> Using that make sure the lifecycle of the tree is correct at all
+> times.
+> 
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 
-Hmm, this doesn't sound good.
+Merged with some rework, thanks
 
-> Actually they aren't also used by child driver (each child driver parses
-> from parent of_node).
+g.
 
-Do you need to add compatible strings to mfd_cell entries of such cells 
-then?
+> ---
+>  drivers/of/base.c  | 96 ++++++++++++++++++++++++++++++++++++++++++++----------
+>  drivers/of/fdt.c   |  3 +-
+>  include/linux/of.h | 15 +++++++++
+>  3 files changed, 95 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 78cd546..39dda4c 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -245,45 +245,104 @@ static int __of_node_add(struct device_node *np)
+>  int of_node_add(struct device_node *np)
+>  {
+>  	int rc = 0;
+> -	kobject_init(&np->kobj, &of_node_ktype);
+> +
+> +	BUG_ON(!of_node_is_initialized(np));
+> +
+> +	if (!of_kset) {
+> +		pr_warn("%s: of_node_add before of_init on %s\n",
+> +				__func__, np->full_name);
+> +		return 0;
+> +	}
+> +
+>  	mutex_lock(&of_aliases_mutex);
+> -	if (of_kset)
+> -		rc = __of_node_add(np);
+> +	rc = __of_node_add(np);
+>  	mutex_unlock(&of_aliases_mutex);
+>  	return rc;
+>  }
+>  
+> +/*
+> + * Initialize a new device node
+> + *
+> + * At the moment it is just initializing the kobj of the node.
+> + * This occurs during unflattening and when creating dynamic nodes.
+> + */
+> +void of_node_init(struct device_node *np)
+> +{
+> +	kobject_init(&np->kobj, &of_node_ktype);
+> +}
+> +
+>  #if defined(CONFIG_OF_DYNAMIC)
+>  static void of_node_remove(struct device_node *np)
+>  {
+>  	struct property *pp;
+>  
+> -	for_each_property_of_node(np, pp)
+> -		sysfs_remove_bin_file(&np->kobj, &pp->attr);
+> +	BUG_ON(!of_node_is_initialized(np));
+> +
+> +	/* only remove properties if on sysfs */
+> +	if (of_node_is_attached(np)) {
+> +		for_each_property_of_node(np, pp)
+> +			sysfs_remove_bin_file(&np->kobj, &pp->attr);
+> +		/* delete from sysfs */
+> +		kobject_del(&np->kobj);
+> +	}
+>  
+> -	kobject_del(&np->kobj);
+> +	/* finally remove the kobj_init ref */
+> +	of_node_put(np);
+>  }
+>  #endif
+>  
+> +/* recursively attach the tree */
+> +static __init int __of_populate(struct device_node *np)
+> +{
+> +	struct device_node *child;
+> +	int rc;
+> +
+> +	/* add the parent first */
+> +	rc = __of_node_add(np);
+> +	if (rc)
+> +		return rc;
+> +
+> +	/* the children afterwards */
+> +	__for_each_child_of_node(np, child) {
+> +		rc = __of_populate(child);
+> +		if (rc)
+> +			return rc;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  static int __init of_init(void)
+>  {
+>  	struct device_node *np;
+> +	int rc;
+>  
+>  	of_kset = kset_create_and_add("devicetree", NULL, firmware_kobj);
+>  	if (!of_kset)
+>  		return -ENOMEM;
+>  
+> -	/* Make sure all nodes added before this time get added to sysfs */
+>  	mutex_lock(&of_aliases_mutex);
+> -	for_each_of_allnodes(np)
+> -		__of_node_add(np);
+> -	mutex_unlock(&of_aliases_mutex);
+> +
+> +	/* find root */
+> +	np = of_find_node_by_path("/");
+> +	if (np == NULL) {
+> +		rc = -EINVAL;
+> +		goto out;
+> +	}
+> +	/* populate */
+> +	rc = __of_populate(np);
+> +	of_node_put(np);
+>  
+>  	/* Symlink in /proc as required by userspace ABI */
+> -	if (of_allnodes)
+> -		proc_symlink("device-tree", NULL, "/sys/firmware/devicetree/base");
+> +	if (rc != 0)
+> +		goto out;
+>  
+> -	return 0;
+> +	proc_symlink("device-tree", NULL, "/sys/firmware/devicetree/base");
+> +
+> +out:
+> +	mutex_unlock(&of_aliases_mutex);
+> +
+> +	return rc;
+>  }
+>  core_initcall(of_init);
+>  
+> @@ -1587,6 +1646,10 @@ static int of_property_notify(int action, struct device_node *np,
+>  {
+>  	struct of_prop_reconfig pr;
+>  
+> +	/* only call notifiers if the node is attached */
+> +	if (!of_node_is_attached(np))
+> +		return 0;
+> +
+>  	pr.dn = np;
+>  	pr.prop = prop;
+>  	return of_reconfig_notify(action, &pr);
+> @@ -1626,11 +1689,8 @@ int of_add_property(struct device_node *np, struct property *prop)
+>  	*next = prop;
+>  	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  
+> -	/* at early boot, bail hear and defer setup to of_init() */
+> -	if (!of_kset)
+> -		return 0;
+> -
+> -	__of_add_property(np, prop);
+> +	if (of_node_is_attached(np))
+> +		__of_add_property(np, prop);
+>  
+>  	return 0;
+>  }
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index d5d62cd..3ca75fb 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -327,7 +327,8 @@ static void * unflatten_dt_node(struct boot_param_header *blob,
+>  		if (!np->type)
+>  			np->type = "<NULL>";
+>  
+> -		of_node_add(np);
+> +		/* initialize node (do not add) */
+> +		of_node_init(np);
+>  	}
+>  	while (tag == OF_DT_BEGIN_NODE || tag == OF_DT_NOP) {
+>  		if (tag == OF_DT_NOP)
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index f285222..f13e773 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -76,6 +76,21 @@ struct of_phandle_args {
+>  
+>  extern int of_node_add(struct device_node *node);
+>  
+> +/* initialize a node */
+> +extern void of_node_init(struct device_node *node);
+> +
+> +/* true when node is initialized */
+> +static inline int of_node_is_initialized(struct device_node *node)
+> +{
+> +	return node && node->kobj.state_initialized;
+> +}
+> +
+> +/* true when node is attached (i.e. present on sysfs) */
+> +static inline int of_node_is_attached(struct device_node *node)
+> +{
+> +	return node && node->kobj.state_in_sysfs;
+> +}
+> +
+>  #ifdef CONFIG_OF_DYNAMIC
+>  extern struct device_node *of_node_get(struct device_node *node);
+>  extern void of_node_put(struct device_node *node);
+> -- 
+> 1.7.12
+> 
 
-Best regards,
-Tomasz
