@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbaCMGDF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 02:03:05 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:55693 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592AbaCMGDE (ORCPT
+	id S1753337AbaCMGDk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 02:03:40 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:39858 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629AbaCMGDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 02:03:04 -0400
+	Thu, 13 Mar 2014 02:03:39 -0400
 From: Alex Shi <alex.shi@linaro.org>
 To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com
 Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
@@ -17,9 +17,9 @@ Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
         akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
         fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
         wangyun@linux.vnet.ibm.com, mgorman@suse.de
-Subject: [PATCH 4/8] sched: remove LB_BIAS
-Date: Thu, 13 Mar 2014 13:57:25 +0800
-Message-Id: <1394690249-14130-5-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH 5/8] sched: clean up cpu_load update
+Date: Thu, 13 Mar 2014 13:57:26 +0800
+Message-Id: <1394690249-14130-6-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1394690249-14130-1-git-send-email-alex.shi@linaro.org>
 References: <1394690249-14130-1-git-send-email-alex.shi@linaro.org>
@@ -27,39 +27,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't need LB_BIAS now. so remove it.
+Since we don't decay the rq->cpu_load, so we don't need the
+pending_updates. But we still want update rq->rt_avg, so
+still keep rq->last_load_update_tick and func __update_cpu_load.
 
 Signed-off-by: Alex Shi <alex.shi@linaro.org>
 ---
- Documentation/timers/NO_HZ.txt | 2 --
- kernel/sched/features.h        | 1 -
- 2 files changed, 3 deletions(-)
+ kernel/sched/proc.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/timers/NO_HZ.txt b/Documentation/timers/NO_HZ.txt
-index cca122f..84dd71d 100644
---- a/Documentation/timers/NO_HZ.txt
-+++ b/Documentation/timers/NO_HZ.txt
-@@ -177,8 +177,6 @@ not come for free:
- 	slightly differently than those for non-adaptive-tick CPUs.
- 	This might in turn perturb load-balancing of real-time tasks.
+diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+index a2435c5..057bb9b 100644
+--- a/kernel/sched/proc.c
++++ b/kernel/sched/proc.c
+@@ -404,8 +404,7 @@ static void calc_load_account_active(struct rq *this_rq)
+  * scheduler tick (TICK_NSEC). With tickless idle this will not be called
+  * every tick. We fix it up based on jiffies.
+  */
+-static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+-			      unsigned long pending_updates)
++static void __update_cpu_load(struct rq *this_rq, unsigned long this_load)
+ {
+ 	this_rq->nr_load_updates++;
  
--6.	The LB_BIAS scheduler feature is disabled by adaptive ticks.
--
- Although improvements are expected over time, adaptive ticks is quite
- useful for many types of real-time and compute-intensive applications.
- However, the drawbacks listed above mean that adaptive ticks should not
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index 5716929..fe3c1cb 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -43,7 +43,6 @@ SCHED_FEAT(ARCH_POWER, true)
+@@ -449,7 +448,6 @@ void update_idle_cpu_load(struct rq *this_rq)
+ {
+ 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+ 	unsigned long load = get_rq_runnable_load(this_rq);
+-	unsigned long pending_updates;
  
- SCHED_FEAT(HRTICK, false)
- SCHED_FEAT(DOUBLE_TICK, false)
--SCHED_FEAT(LB_BIAS, true)
+ 	/*
+ 	 * bail if there's load or we're actually up-to-date.
+@@ -457,10 +455,9 @@ void update_idle_cpu_load(struct rq *this_rq)
+ 	if (load || curr_jiffies == this_rq->last_load_update_tick)
+ 		return;
+ 
+-	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
+ 	this_rq->last_load_update_tick = curr_jiffies;
+ 
+-	__update_cpu_load(this_rq, load, pending_updates);
++	__update_cpu_load(this_rq, load);
+ }
  
  /*
-  * Decrement CPU power based on time not spent running tasks
+@@ -483,7 +480,7 @@ void update_cpu_load_nohz(void)
+ 		 * We were idle, this means load 0, the current load might be
+ 		 * !0 due to remote wakeups and the sort.
+ 		 */
+-		__update_cpu_load(this_rq, 0, pending_updates);
++		__update_cpu_load(this_rq, 0);
+ 	}
+ 	raw_spin_unlock(&this_rq->lock);
+ }
+@@ -499,7 +496,7 @@ void update_cpu_load_active(struct rq *this_rq)
+ 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+ 	 */
+ 	this_rq->last_load_update_tick = jiffies;
+-	__update_cpu_load(this_rq, load, 1);
++	__update_cpu_load(this_rq, load);
+ 
+ 	calc_load_account_active(this_rq);
+ }
 -- 
 1.8.1.2
 
