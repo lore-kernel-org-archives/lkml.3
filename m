@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561AbaCMP75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:59:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42967 "EHLO mx2.suse.de"
+	id S1754592AbaCMP77 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:59:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42966 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754248AbaCMP6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754238AbaCMP6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Mar 2014 11:58:43 -0400
 From: Jan Kara <jack@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3/6] printk: Enable interrupts before calling console_trylock_for_printk()
-Date: Thu, 13 Mar 2014 16:58:35 +0100
-Message-Id: <1394726318-2757-4-git-send-email-jack@suse.cz>
+Subject: [PATCH 0/6 v2] printk: Cleanups and softlockup avoidance
+Date: Thu, 13 Mar 2014 16:58:32 +0100
+Message-Id: <1394726318-2757-1-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1394726318-2757-1-git-send-email-jack@suse.cz>
-References: <1394726318-2757-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need interrupts disabled when calling console_trylock_for_printk()
-only so that cpu id we pass to can_use_console() remains valid (for
-other things console_sem provides all the exclusion we need and
-deadlocks on console_sem due to interrupts are impossible because we use
-down_trylock()).  However if we are rescheduled, we are guaranteed to
-run on an online cpu so we can easily just get the cpu id in
-can_use_console().
+  Hello,
 
-We can loose a bit of performance when we enable interrupts in
-vprintk_emit() and then disable them again in console_unlock() but OTOH
-it can somewhat reduce interrupt latency caused by console_unlock()
-especially since later in the patch series we will want to spin on
-console_sem in console_trylock_for_printk().
+  this is another piece of the printk softlockup saga series. Let me first
+remind the problem:
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+Currently, console_unlock() prints messages from kernel printk buffer to
+console while the buffer is non-empty. When serial console is attached,
+printing is slow and thus other CPUs in the system have plenty of time
+to append new messages to the buffer while one CPU is printing. Thus the
+CPU can spend unbounded amount of time doing printing in console_unlock().
+This is especially serious since vprintk_emit() calls console_unlock()
+with interrupts disabled.
+    
+In practice users have observed a CPU can spend tens of seconds printing
+in console_unlock() (usually during boot when hundreds of SCSI devices
+are discovered) resulting in RCU stalls (CPU doing printing doesn't
+reach quiescent state for a long time), softlockup reports (IPIs for the
+printing CPU don't get served and thus other CPUs are spinning waiting
+for the printing CPU to process IPIs), and eventually a machine death
+(as messages from stalls and lockups append to printk buffer faster than
+we are able to print). So these machines are unable to boot with serial
+console attached. Also during artificial stress testing SATA disk
+disappears from the system because its interrupts aren't served for too
+long.
 ---
- kernel/printk/printk.c | 29 ++++++++++++++++++-----------
- 1 file changed, 18 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 7a8ffd89875c..56649edfae9c 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1314,10 +1314,9 @@ static int have_callable_console(void)
- /*
-  * Can we actually use the console at this time on this cpu?
-  *
-- * Console drivers may assume that per-cpu resources have
-- * been allocated. So unless they're explicitly marked as
-- * being able to cope (CON_ANYTIME) don't call them until
-- * this CPU is officially up.
-+ * Console drivers may assume that per-cpu resources have been allocated. So
-+ * unless they're explicitly marked as being able to cope (CON_ANYTIME) don't
-+ * call them until this CPU is officially up.
-  */
- static inline int can_use_console(unsigned int cpu)
- {
-@@ -1330,8 +1329,10 @@ static inline int can_use_console(unsigned int cpu)
-  * console_lock held, and 'console_locked' set) if it
-  * is successful, false otherwise.
-  */
--static int console_trylock_for_printk(unsigned int cpu)
-+static int console_trylock_for_printk(void)
- {
-+	unsigned int cpu = smp_processor_id();
-+
- 	if (!console_trylock())
- 		return 0;
- 	/*
-@@ -1501,7 +1502,8 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		 */
- 		if (!oops_in_progress && !lockdep_recursing(current)) {
- 			recursion_bug = 1;
--			goto out_restore_irqs;
-+			local_irq_restore(flags);
-+			return 0;
- 		}
- 		zap_locks();
- 	}
-@@ -1597,17 +1599,22 @@ asmlinkage int vprintk_emit(int facility, int level,
- 
- 	logbuf_cpu = UINT_MAX;
- 	raw_spin_unlock(&logbuf_lock);
-+	lockdep_on();
-+	local_irq_restore(flags);
-+
-+	/*
-+	 * Disable preemption to avoid being preempted while holding
-+	 * console_sem which would prevent anyone from printing to console
-+	 */
-+	preempt_disable();
- 	/*
- 	 * Try to acquire and then immediately release the console semaphore.
- 	 * The release will print out buffers and wake up /dev/kmsg and syslog()
- 	 * users.
- 	 */
--	if (console_trylock_for_printk(this_cpu))
-+	if (console_trylock_for_printk())
- 		console_unlock();
--
--	lockdep_on();
--out_restore_irqs:
--	local_irq_restore(flags);
-+	preempt_enable();
- 
- 	return printed_len;
- }
--- 
-1.8.1.4
+This is a revised series using my new approach to the problem which doesn't
+let CPU out of console_unlock() until there's someone else to take over the
+printing. The main difference since the last version is that instead of
+passing printing duty to different CPUs via IPIs we use dedicated kthreads.
+This method is somewhat less reliable (in a sense that there are more
+situations in which handover needn't work at all - e.g. when the currently
+printing CPU holds a spinlock and the CPU where kthread is scheduled to run is
+spinning on this spinlock) but the code is much simpler and in my practical
+testing kthread approach was good enough to avoid any problems (with one
+exception - see below).
 
+The patch set is organized as follows:
+
+Patch 1 is just a cleanup which can be taken on its own (a result of my
+research in kernel history ;).
+
+Patches 2 and 3 change vprintk_emit() to call console_unlock() with interrupts
+enabled so they help to reduce interrupt latency in common case when printk()
+itself is called with interrupts enabled.
+
+Patch 4 is a cleanup of printk_sched() facility from Steven.
+
+Patch 5 is the meat of this series implementing passing of printing duty from
+current CPU after printing printk.offload_chars. We wake up a kthread which
+starts spinning on console_sem to take over printing.
+
+Patch 6 fixes lockups in one situation which I hit in my testing - if someone
+calls stop_machine(), handing over of printing stops working (see commit
+message for details). If you find this too hacky, I'm ok with dropping this
+patch at least for now because I'm not sure this problem can be hit without
+artificially stressing the machine.
+
+What do you guys think?
+
+						Merry Christmas ;)
+								Honza
