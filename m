@@ -1,86 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975AbaCMCSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 22:18:54 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:57691 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaCMCSx (ORCPT
+	id S1753000AbaCMCV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 22:21:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35080 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752568AbaCMCVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 22:18:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+Ka0SiP_wRHENjordFjm5G4RYiQQunAMt8PrM63S9u9A@mail.gmail.com>
-References: <20140312132441.GA29079@shuo-gentoo>
-	<CAGXu5j+Ka0SiP_wRHENjordFjm5G4RYiQQunAMt8PrM63S9u9A@mail.gmail.com>
-Date: Thu, 13 Mar 2014 10:18:34 +0800
-Message-ID: <CAG3giQWiNEPiEZEuY-zQCvUOtm8_p4tfj04AFXJ13402CPTZ-w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pstore: fix buffer overflow while write offset equal
- to buffer size
-From: Shuo Liu <shuox.liu@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-        "Liu, ShuoX" <shuox.liu@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 12 Mar 2014 22:21:55 -0400
+Message-ID: <1394677305.20857.29.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH v3] net: phy: fix uninitalized WOL parameters in
+ phy_ethtool_get_wol
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 13 Mar 2014 02:21:45 +0000
+In-Reply-To: <1394578975-12588-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1394484661-4554-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	 <1394578975-12588-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-cJ6XNnnryeEvTdHkSyDc"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:882:98de:919:dfab
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-13 0:50 GMT+08:00 Kees Cook <keescook@chromium.org>:
-> On Wed, Mar 12, 2014 at 6:24 AM, Liu Shuo <shuox.liu@gmail.com> wrote:
->> From: Liu ShuoX <shuox.liu@intel.com>
->>
->> In case new offset is equal to prz->buffer_size, it won't wrap at this
->> time and will return old(overflow) value next time.
->>
->> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
->
-> This seems correct; good catch. Have you seen this problem happen, or
-> is this just from reading the code?
-Thanks.
-We indeed hit it when we enhanced the ramoops tracing.
 
->
-> Acked-by: Kees Cook <keescook@chromium.org>
->
-> -Kees
->
->> ---
->> fs/pstore/ram_core.c | 4 ++--
->> 1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
->> index de272d4..ff7e3d4 100644
->> --- a/fs/pstore/ram_core.c
->> +++ b/fs/pstore/ram_core.c
->> @@ -54,7 +54,7 @@ static size_t buffer_start_add_atomic(struct
->> persistent_ram_zone *prz, size_t a)
->>         do {
->>                 old = atomic_read(&prz->buffer->start);
->>                 new = old + a;
->> -               while (unlikely(new > prz->buffer_size))
->> +               while (unlikely(new >= prz->buffer_size))
->>                         new -= prz->buffer_size;
->>         } while (atomic_cmpxchg(&prz->buffer->start, old, new) != old);
->>
->> @@ -91,7 +91,7 @@ static size_t buffer_start_add_locked(struct
->> persistent_ram_zone *prz, size_t a)
->>
->>         old = atomic_read(&prz->buffer->start);
->>         new = old + a;
->> -       while (unlikely(new > prz->buffer_size))
->> +       while (unlikely(new >= prz->buffer_size))
->>                 new -= prz->buffer_size;
->>         atomic_set(&prz->buffer->start, new);
->>
->> --
->> 1.8.3.2
->>
->>
->>
->
->
->
-> --
-> Kees Cook
-> Chrome OS Security
+--=-cJ6XNnnryeEvTdHkSyDc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, 2014-03-12 at 00:02 +0100, Sebastian Hesselbarth wrote:
+> phy_ethtool_get_wol is a helper to get current WOL settings from
+> a phy device. When using this helper on a PHY without .get_wol
+> callback, struct ethtool_wolinfo is never set-up correctly and
+> may contain misleading information about WOL status.
+>=20
+> To fix this, always zero relevant fields of struct ethtool_wolinfo
+> regardless of .get_wol callback availability.
+
+Sorry, I still disagree with this.
+
+You're trying to make phy_ethtool_get_wol() do two subtly different
+things:
+- Provide an implementation of ethtool_ops::get_wol, leaving the net
+  driver only to look up phy_device
+- Provide a standalone function for executing ETHTOOL_GWOL on a
+  phy_device
+
+You may notice that phy_suspend() already sets wol.cmd =3D ETHTOOL_GWOL.
+So it seems to me like it's taking responsibility for initialising the
+structure like ethtool_get_wol() does.  The bug is then that
+phy_suspend() doesn't clear the rest of the structure.  That is not the
+responsibility of phy_ethtool_get_wol().
+
+Ben.
+
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+> ---
+> Changelog:
+> v1->v2:
+> - clear whole struct ethtool_wolinfo
+> - check for non-NULL phy_device
+> v2->v3:
+> - only clear ->supported and ->wolopts (Suggested by Ben Hutchings)
+>=20
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Florian Fainelli <f.fainelli@gmail.com>
+> Cc: Ben Hutchings <ben@decadent.org.uk>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/net/phy/phy.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+> index 19c9eca0ef26..94234a91a50f 100644
+> --- a/drivers/net/phy/phy.c
+> +++ b/drivers/net/phy/phy.c
+> @@ -1092,7 +1092,9 @@ EXPORT_SYMBOL(phy_ethtool_set_wol);
+> =20
+>  void phy_ethtool_get_wol(struct phy_device *phydev, struct ethtool_wolin=
+fo *wol)
+>  {
+> -	if (phydev->drv->get_wol)
+> +	wol->supported =3D wol->wolopts =3D 0;
+> +
+> +	if (phydev && phydev->drv->get_wol)
+>  		phydev->drv->get_wol(phydev, wol);
+>  }
+>  EXPORT_SYMBOL(phy_ethtool_get_wol);
+
+--=20
+Ben Hutchings
+Experience is directly proportional to the value of equipment destroyed.
+                                                         - Carolyn Scheppne=
+r
+
+--=-cJ6XNnnryeEvTdHkSyDc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAUyEWOee/yOyVhhEJAQoQtxAAnaZ6iZcw/qt6LK/r9YoH89oFKHmBFsSO
+k/4qX4TuYvoPgLgipZXLZj6HH0PlZIFA3bo/E9wkIhxb9VDtulsHnjcI6PLOwnA5
++SxuO/Wquv3bcZaPVzHiqoM11bmxJP3EuSEU8GPYrgf43e1qifEetHFRvdBiZSNW
+Sk8fBzv0sWqru+wpfZr/vFe8veU4I1eucBfgiiKhMFbMxMw7gIEmd2w/r2VV3HEG
+/L5ljIoTEvuYJ2ajjbGSsag4C6DayHlce+CM7MYAOyWdj0onktFiBsHvYaFAbX0j
+zfXLPQFWJdn4K7D0GCGn3am/Lqm36hchJQkZe7FCuYWhKRtIMcgGuCX9uVUygeri
+W+hpkc3G4pO24CczmspUIy4S5RCRNc3bKZxejYRpu2F9zBgdLK4M/bgOWUdQOcBa
+2GfkARIvH27z/J4BzV9NgKtrpwqnzO7fQ/GN3lU/sVIvbfgd+ydoD5N2fd/JvySI
+PROMJaZgmF+1uLE9ICNUglbdC7cJXo/yHOjp7ALIPQmjLd+kAxpApk//oIQYBwl9
+U7ClZ1ribbmJo5Zk2Tq7HKUdnPILpWOcKxBVNJ2ceQ0cREepS1RTLTqqqqFbGxlD
+/R9DpPZv/J4DtMYqsAhTfxrdDP6qX+EYq4fJe2AGb4BFrTGo2RTEo85TP7Y5ZJqf
+zz3O/+NKR3Y=
+=gFGA
+-----END PGP SIGNATURE-----
+
+--=-cJ6XNnnryeEvTdHkSyDc--
