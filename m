@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285AbaCMKRd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:17:33 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:48069 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271AbaCMKR1 (ORCPT
+	id S1754197AbaCMKTh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:19:37 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:41524 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753939AbaCMKTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:17:27 -0400
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: wad@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        arndb@arndb.de
-Cc: dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v3 1/3] asm-generic: Add generic seccomp.h for secure computing mode 1
-Date: Thu, 13 Mar 2014 19:17:01 +0900
-Message-Id: <1394705823-12465-2-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394705823-12465-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1393320025-2855-1-git-send-email-takahiro.akashi@linaro.org>
- <1394705823-12465-1-git-send-email-takahiro.akashi@linaro.org>
+	Thu, 13 Mar 2014 06:19:34 -0400
+Date: Thu, 13 Mar 2014 10:19:07 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        will.deacon@arm.com, acme@ghostprotocols.net, jean.pihet@linaro.org,
+        jolsa@redhat.com, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] ARM64, perf: Add support for perf registers API
+Message-ID: <20140313101907.GC17308@arm.com>
+References: <1391451509-31265-2-git-send-email-jean.pihet@linaro.org>
+ <tip-1acfb01a43db9d8cde2d4c1d51746bae0b46b06b@git.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-1acfb01a43db9d8cde2d4c1d51746bae0b46b06b@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Those values (__NR_seccomp_*) are used solely in secure_computing()
-to identify mode 1 system calls. If compat system calls have different
-syscall numbers, asm/seccomp.h may override them.
+Hi Ingo,
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- include/asm-generic/seccomp.h |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
- create mode 100644 include/asm-generic/seccomp.h
+On Thu, Mar 13, 2014 at 12:27:45AM -0700, tip-bot for Jean Pihet wrote:
+> Commit-ID:  1acfb01a43db9d8cde2d4c1d51746bae0b46b06b
+> Gitweb:     http://git.kernel.org/tip/1acfb01a43db9d8cde2d4c1d51746bae0b46b06b
+> Author:     Jean Pihet <jean.pihet@linaro.org>
+> AuthorDate: Mon, 3 Feb 2014 19:18:27 +0100
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 12 Mar 2014 13:45:28 +0100
+> 
+> ARM64, perf: Add support for perf registers API
+> 
+> This patch implements the functions required for the perf
+> registers API, allowing the perf tool to interface kernel
+> register dumps with libunwind in order to provide userspace
+> backtracing. Compat mode is also supported.
+> 
+> Only the general purpose user space registers are exported,
+> i.e.:  PERF_REG_ARM_X0,
+>  ...
+>  PERF_REG_ARM_X28,
+>  PERF_REG_ARM_FP,
+>  PERF_REG_ARM_LR,
+>  PERF_REG_ARM_SP,
+>  PERF_REG_ARM_PC
+> and not the PERF_REG_ARM_V* registers.
+> 
+> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> Acked-by: Will Deacon <will.deacon@arm.com>
+> Cc: Arnaldo <acme@ghostprotocols.net>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: patches@linaro.org
+> Cc: linaro-kernel@lists.linaro.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Link: http://lkml.kernel.org/r/1391451509-31265-2-git-send-email-jean.pihet@linaro.org
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  arch/arm64/Kconfig                      |  2 ++
+>  arch/arm64/include/asm/ptrace.h         |  1 +
+>  arch/arm64/include/uapi/asm/Kbuild      |  1 +
+>  arch/arm64/include/uapi/asm/perf_regs.h | 40 ++++++++++++++++++++++++++++++
+>  arch/arm64/kernel/Makefile              |  1 +
+>  arch/arm64/kernel/perf_regs.c           | 44 +++++++++++++++++++++++++++++++++
+>  6 files changed, 89 insertions(+)
 
-diff --git a/include/asm-generic/seccomp.h b/include/asm-generic/seccomp.h
-new file mode 100644
-index 0000000..5e97022
---- /dev/null
-+++ b/include/asm-generic/seccomp.h
-@@ -0,0 +1,28 @@
-+/*
-+ * include/asm-generic/seccomp.h
-+ *
-+ * Copyright (C) 2014 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_GENERIC_SECCOMP_H
-+#define _ASM_GENERIC_SECCOMP_H
-+
-+#include <asm-generic/unistd.h>
-+
-+#if defined(CONFIG_COMPAT) && !defined(__NR_seccomp_read_32)
-+#define __NR_seccomp_read_32		__NR_read
-+#define __NR_seccomp_write_32		__NR_write
-+#define __NR_seccomp_exit_32		__NR_exit
-+#define __NR_seccomp_sigreturn_32	__NR_rt_sigreturn
-+#endif /* CONFIG_COMPAT && ! already defined */
-+
-+#define __NR_seccomp_read		__NR_read
-+#define __NR_seccomp_write		__NR_write
-+#define __NR_seccomp_exit		__NR_exit
-+#define __NR_seccomp_sigreturn		__NR_rt_sigreturn
-+
-+#endif /* _ASM_GENERIC_SECCOMP_H */
+As I replied to Jean yesterday, I merged the arch/arm64 patches already
+in the arm64 tree. Is it late to drop them from tip (and avoid potential
+conflicts)?
+
+But please take the perf tools patch (tools/perf/arch/arm64/...).
+
+Thanks.
+
 -- 
-1.7.9.5
-
+Catalin
