@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355AbaCMT6i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 15:58:38 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:39206 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755236AbaCMT6f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 15:58:35 -0400
+	id S1755371AbaCMUAA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 16:00:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42791 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754593AbaCMT77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 15:59:59 -0400
+Message-ID: <53220DEB.6030902@zytor.com>
+Date: Thu, 13 Mar 2014 12:58:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140313195349.GM18914@redhat.com>
-References: <5320CAEC.6030008@amacapital.net> <CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
- <1394658983.32465.203.camel@willson.li.ssimo.org> <CALCETrU29CpcK4dVRD45BGOD7AVEudADiFxOgFgKWkpFzw07eg@mail.gmail.com>
- <1394673476.32465.215.camel@willson.li.ssimo.org> <CALCETrWbCuKfV4zMkZajDOGhGkKduW0C2L7uHv=vtvqhVeAc6w@mail.gmail.com>
- <1394675038.32465.223.camel@willson.li.ssimo.org> <CALCETrV7GE0YL1sDDqTUV81rWL9zk2vTR1-VLkR7CfTA-FSrgw@mail.gmail.com>
- <1394733077.32465.243.camel@willson.li.ssimo.org> <CALCETrXWzja6W6y=p9MrtynGZMsrD5KQu0KBK6Bs1dQxnesv2A@mail.gmail.com>
- <20140313195349.GM18914@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Mar 2014 12:58:14 -0700
-Message-ID: <CALCETrUj4aPEd6ujXnUJNFq+BQkfQoF=XRChP1p5=ZysTN-zwg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Simo Sorce <ssorce@redhat.com>,
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Pavel Emelyanov <xemul@parallels.com>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Stefani Seibold <stefani@seibold.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Andi Kleen <ak@linux.intel.com>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH 3/3] x86, vdso32: handle 32 bit vDSO larger one page
+References: <1394664680-17799-1-git-send-email-stefani@seibold.net>	<1394664680-17799-4-git-send-email-stefani@seibold.net>	<5320E689.7060607@zytor.com>	<CALCETrXQJvkk-5ncSgTyoy9sCN0AT+h9-1F6wAnxqRm242PjrQ@mail.gmail.com>	<5321D45C.7040504@zytor.com>	<CALCETrVy3oW=qvJWbGtKTZ=0dZLjHtmBphPDnP1N8nLmXc=+9A@mail.gmail.com>	<5321F418.1030304@zytor.com>	<5321F72E.7030109@zytor.com>	<CALCETrXjJeXqJj3muJhfNeiQ7Te+8WSow+LtjKPM9dySfDtbaA@mail.gmail.com>	<CA+55aFyOp6V_tE-sXKVi+=6yVwHQb0sLWSNbk=N7KbhBrx9QhA@mail.gmail.com>	<CA+55aFyCSL==4Ff4JT3uFKN_28mz92ef1L67-4OUGqHZ8HXUhg@mail.gmail.com>	<CALCETrVa2XPc5JBDbDdH1ciavi2tuqwBf7picE4TVf69n_PcKw@mail.gmail.com>	<CA+55aFwDn3zA0gEn2r3nJVPWuv-pLYyrj4=8_gt1xFTd2g_Dwg@mail.gmail.com>	<8cf1b00c-ef93-4ad0-97f7-53888b50d160@email.android.com> <CA+55aFxWsm=P5h1o=BNrwkcy2ZadFsVxpegxJ0rskPVcmo_Ljw@mail.gmail.com>
+In-Reply-To: <CA+55aFxWsm=P5h1o=BNrwkcy2ZadFsVxpegxJ0rskPVcmo_Ljw@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 12:53 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Thu, Mar 13, 2014 at 10:55:16AM -0700, Andy Lutomirski wrote:
->
-> [..]
->> >> 2. Docker is a container system, so use the "container" (aka
->> >> namespace) APIs.  There are probably several clever things that could
->> >> be done with /proc/<pid>/ns.
->> >
->> > pid is racy, if it weren't I would simply go straight
->> > to /proc/<pid>/cgroups ...
->>
->> How about:
->>
->> open("/proc/self/ns/ipc", O_RDONLY);
->> send the result over SCM_RIGHTS?
->
-> As I don't know I will ask. So what will server now do with this file
-> descriptor of client's ipc namespace.
->
-> IOW, what information/identifier does it contain which can be
-> used to map to pre-configrued per container/per namespace policies.
+On 03/13/2014 12:37 PM, Linus Torvalds wrote:
+> There are big advantages to "minimal code" at fixed addresses. The
+> vdso=native thing fills the page with 0xcc just to not give useful
+> instructions (still on my phone, so that may be a bogus memory)
+> 
+> That said, I doubt we care just for OpenSUSE 9. Let it be slower.
 
-Inode number, which will match that assigned to the container at runtime.
+Yes.
 
-(I'm not sure this is a great idea -- there's no convention that "I
-have an fd for a namespace" means "I'm a daemon in that namespace".)
-
---Andy
-
->
-> Thanks
-> Vivek
+	-hpa
 
 
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
