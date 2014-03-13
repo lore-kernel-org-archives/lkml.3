@@ -1,42 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbaCMD7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 23:59:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59940 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123AbaCMD7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 23:59:36 -0400
-Message-ID: <53212D14.1090906@zytor.com>
-Date: Wed, 12 Mar 2014 20:59:16 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1750960AbaCMEEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 00:04:50 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:36814 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaCMEEp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 00:04:45 -0400
+Date: Wed, 12 Mar 2014 22:04:40 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alexander Gordeev <agordeev@redhat.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
+        intel-linux-scu@intel.com, support@lsi.com, DL-MPTFusionLinux@lsi.com,
+        qla2xxx-upstream@qlogic.com, iscsi-driver@qlogic.com,
+        pv-drivers@vmware.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 00/23] scsi: Use pci_enable_msix_range() instead of
+ pci_enable_msix()
+Message-ID: <20140313040440.GB26657@google.com>
+References: <cover.1393191330.git.agordeev@redhat.com>
 MIME-Version: 1.0
-To: joeyli <jlee@suse.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-References: <20140310110410.5b2218f6@ilfaris>	 <alpine.DEB.2.02.1403121722030.18573@ionos.tec.linutronix.de>	 <alpine.DEB.2.02.1403121729060.18573@ionos.tec.linutronix.de>	 <1554867.utJVyPuT6A@vostro.rjw.lan>	 <alpine.DEB.2.02.1403130049500.18573@ionos.tec.linutronix.de>	 <1394678307.26565.218.camel@linux-s257.site>  <532121D2.40805@zytor.com> <1394682954.26565.228.camel@linux-s257.site>
-In-Reply-To: <1394682954.26565.228.camel@linux-s257.site>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1393191330.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2014 08:55 PM, joeyli wrote:
+On Mon, Feb 24, 2014 at 09:02:00AM +0100, Alexander Gordeev wrote:
+> Hello!
 > 
-> So do not care "CMOS RTC Not Present", if TAD is present then we use it
-> instead of CMOS RTC in all kernel code? or we still can use CMOS RTC?
+> This series is against James Bottomley's SCSI tree [1], but it needs
+> commit f7fc32c ("PCI/MSI: Add pci_enable_msi_exact() and
+> pci_enable_msix_exact()") from from Bjorn Helgaas's PCI tree [2]:
 > 
+> 1. git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git for-next
+> 2. git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/msi
+> 
+> Recently pci_enable_msix_exact() function has been accepted to
+> the mainline. That is a variation of pci_enable_msix_range() which
+> allows a device driver to request a particular number of MSI-Xs.
+> 
+> As result, most of the changes posted in version 1 of this series
+> are invalidated and need to use pci_enable_msix_exact() instead of
+> originally posted pci_enable_msix_range() usages.
+> 
+> I removed almost all ACKs, since unlike pci_enable_msix_range()
+> function which returns the number of MSI-Xs allocated or negative
+> errno, pci_enable_msix_exact() returns either zero success code or
+> a negative errno. Although this change is simple, it still entails
+> an updated error code analysis and would be better reviewed by
+> driver maintainers.
 
-Why would we use *both*!?  How would that possibly make sense?
+Hi James,
 
-	-hpa
+I think Alexander sent these to linux-scsi hoping that you would handle
+them, but I know it's a hassle because they depend on f7fc32c, which went
+in after the merge window.
 
+I'd be glad to review these and apply them through my tree, unless you want
+to do it.  I'd like to get these merged in the v3.15 merge window so
+Alexander can move on to something else.  I haven't checked for merge
+conflicts with scsi.git yet, but I assume they'd be pretty trivial if there
+are any.
 
+Bjorn
+
+> Cc: iss_storagedev@hp.com
+> Cc: intel-linux-scu@intel.com
+> Cc: support@lsi.com
+> Cc: DL-MPTFusionLinux@lsi.com
+> Cc: qla2xxx-upstream@qlogic.com
+> Cc: iscsi-driver@qlogic.com
+> Cc: pv-drivers@vmware.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> 
+> Alexander Gordeev (23):
+>   be2iscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   bfa: Do not call pci_enable_msix() after it failed once
+>   bfa: Cleanup bfad_setup_intr() function
+>   bfa: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   csiostor: Remove superfluous call to pci_disable_msix()
+>   csiostor: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   fnic: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   hpsa: Fallback to MSI rather than to INTx if MSI-X failed
+>   hpsa: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   isci: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   lpfc: Remove superfluous call to pci_disable_msix()
+>   lpfc: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   megaraid: Fail resume if MSI-X re-initialization failed
+>   megaraid: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   mpt2sas: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   mpt3sas: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   pm8001: Fix invalid return when request_irq() failed
+>   pm8001: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   pmcraid: Get rid of a redundant assignment
+>   pmcraid: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   qla2xxx: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   qla4xxx: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   vmw_pvscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
+> 
+>  drivers/scsi/be2iscsi/be_main.c           |    6 +--
+>  drivers/scsi/bfa/bfad.c                   |   62 ++++++++++++-----------------
+>  drivers/scsi/csiostor/csio_hw.h           |    2 +-
+>  drivers/scsi/csiostor/csio_isr.c          |   24 ++++-------
+>  drivers/scsi/fnic/fnic_isr.c              |    4 +-
+>  drivers/scsi/hpsa.c                       |   12 +-----
+>  drivers/scsi/isci/init.c                  |    2 +-
+>  drivers/scsi/lpfc/lpfc_init.c             |   54 ++++++++++++-------------
+>  drivers/scsi/megaraid/megaraid_sas_base.c |   24 +++++------
+>  drivers/scsi/mpt2sas/mpt2sas_base.c       |    6 +-
+>  drivers/scsi/mpt3sas/mpt3sas_base.c       |    4 +-
+>  drivers/scsi/pm8001/pm8001_init.c         |   44 +++++++++++----------
+>  drivers/scsi/pmcraid.c                    |   14 +------
+>  drivers/scsi/qla2xxx/qla_isr.c            |   27 +++++-------
+>  drivers/scsi/qla4xxx/ql4_nx.c             |    2 +-
+>  drivers/scsi/vmw_pvscsi.c                 |    2 +-
+>  16 files changed, 121 insertions(+), 168 deletions(-)
+> 
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
