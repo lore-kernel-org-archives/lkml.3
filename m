@@ -1,78 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985AbaCMVWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:22:04 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:46898 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392AbaCMVWB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 17:22:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140313200649.GN18914@redhat.com>
-References: <1394658983.32465.203.camel@willson.li.ssimo.org>
- <CALCETrU29CpcK4dVRD45BGOD7AVEudADiFxOgFgKWkpFzw07eg@mail.gmail.com>
- <1394673476.32465.215.camel@willson.li.ssimo.org> <CALCETrWbCuKfV4zMkZajDOGhGkKduW0C2L7uHv=vtvqhVeAc6w@mail.gmail.com>
- <1394675038.32465.223.camel@willson.li.ssimo.org> <CALCETrV7GE0YL1sDDqTUV81rWL9zk2vTR1-VLkR7CfTA-FSrgw@mail.gmail.com>
- <1394733077.32465.243.camel@willson.li.ssimo.org> <CALCETrXWzja6W6y=p9MrtynGZMsrD5KQu0KBK6Bs1dQxnesv2A@mail.gmail.com>
- <20140313195349.GM18914@redhat.com> <CALCETrUj4aPEd6ujXnUJNFq+BQkfQoF=XRChP1p5=ZysTN-zwg@mail.gmail.com>
- <20140313200649.GN18914@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Mar 2014 14:21:40 -0700
-Message-ID: <CALCETrUGOR=_QNvDXQ0+zvPg7ZKVVohaXj91EGop80hGM7xNLw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Simo Sorce <ssorce@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754209AbaCMVWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 17:22:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9720 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753521AbaCMVWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 17:22:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,649,1389772800"; 
+   d="scan'208";a="498053665"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, eranian@google.com,
+        acme@redhat.com, namhyung@kernel.org, jolsa@redhat.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] perf, x86: Disallow setting undefined bits for PEBS events
+Date: Thu, 13 Mar 2014 14:22:12 -0700
+Message-Id: <1394745733-27855-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 1:06 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Thu, Mar 13, 2014 at 12:58:14PM -0700, Andy Lutomirski wrote:
->> On Thu, Mar 13, 2014 at 12:53 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > On Thu, Mar 13, 2014 at 10:55:16AM -0700, Andy Lutomirski wrote:
->> >
->> > [..]
->> >> >> 2. Docker is a container system, so use the "container" (aka
->> >> >> namespace) APIs.  There are probably several clever things that could
->> >> >> be done with /proc/<pid>/ns.
->> >> >
->> >> > pid is racy, if it weren't I would simply go straight
->> >> > to /proc/<pid>/cgroups ...
->> >>
->> >> How about:
->> >>
->> >> open("/proc/self/ns/ipc", O_RDONLY);
->> >> send the result over SCM_RIGHTS?
->> >
->> > As I don't know I will ask. So what will server now do with this file
->> > descriptor of client's ipc namespace.
->> >
->> > IOW, what information/identifier does it contain which can be
->> > used to map to pre-configrued per container/per namespace policies.
->>
->> Inode number, which will match that assigned to the container at runtime.
->>
->
-> But what would I do with this inode number. I am assuming this is
-> generated dynamically when respective namespace was created. To me
-> this is like assigning a pid dynamically and one does not create
-> policies in user space based on pid. Similarly I will not be able
-> to create policies based on an inode number which is generated
-> dynamically.
->
-> For it to be useful, it should map to something more static which
-> user space understands.
+From: Andi Kleen <ak@linux.intel.com>
 
-Like what?  I imagine that, at best, sssd will be hardcoding some
-understanding of Docker's cgroup names.  As an alternative, it could
-ask Docker for a uid or an inode number of something else -- it's
-hardcoding an understanding of Docker anyway.  And Docker needs to
-cooperate regardless, since otherwise it could change its cgroup
-naming or stop using cgroups entirely.
+The SDM forbids setting various event qualifiers with PEBS
+events. The magic cycles:pp event uses it, but it has caused
+problems in the past. We continue allowing it for cycles:pp,
+but forbid it for all other events to follow the SDM.
 
---Andy
+SDM Vol 3 18.8.4:
+"PEBS events are only valid when the following fields of
+IA32_PERFEVTSELx are all zero: AnyThread, Edge, Invert, Cmask."
+
+One visible change from this is that the cycles:pp event
+can now only be set with "cycles:pp", but not with
+raw form. If that was a problem we can allow it again.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event.h       |  2 +-
+ arch/x86/kernel/cpu/perf_event_intel.c | 26 +++++++++++++++++++++++---
+ 2 files changed, 24 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 1cca3d8..cf1eda1 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -461,7 +461,7 @@ struct x86_pmu {
+ 	int		pebs_record_size;
+ 	void		(*drain_pebs)(struct pt_regs *regs);
+ 	struct event_constraint *pebs_constraints;
+-	void		(*pebs_aliases)(struct perf_event *event);
++	void		(*pebs_aliases)(struct perf_event *event, bool *changed);
+ 	int 		max_pebs_events;
+ 
+ 	/*
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index bf0a64c..f42562e 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1691,7 +1691,7 @@ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+ 	intel_put_shared_regs_event_constraints(cpuc, event);
+ }
+ 
+-static void intel_pebs_aliases_core2(struct perf_event *event)
++static void intel_pebs_aliases_core2(struct perf_event *event, bool *changed)
+ {
+ 	if ((event->hw.config & X86_RAW_EVENT_MASK) == 0x003c) {
+ 		/*
+@@ -1716,10 +1716,11 @@ static void intel_pebs_aliases_core2(struct perf_event *event)
+ 
+ 		alt_config |= (event->hw.config & ~X86_RAW_EVENT_MASK);
+ 		event->hw.config = alt_config;
++		*changed = true;
+ 	}
+ }
+ 
+-static void intel_pebs_aliases_snb(struct perf_event *event)
++static void intel_pebs_aliases_snb(struct perf_event *event, bool *changed)
+ {
+ 	if ((event->hw.config & X86_RAW_EVENT_MASK) == 0x003c) {
+ 		/*
+@@ -1744,18 +1745,26 @@ static void intel_pebs_aliases_snb(struct perf_event *event)
+ 
+ 		alt_config |= (event->hw.config & ~X86_RAW_EVENT_MASK);
+ 		event->hw.config = alt_config;
++		*changed = true;
+ 	}
+ }
+ 
++#define ARCH_PERFMON_NOT_WITH_PEBS 	\
++	(ARCH_PERFMON_EVENTSEL_ANY | 	\
++	 ARCH_PERFMON_EVENTSEL_CMASK | 	\
++	 ARCH_PERFMON_EVENTSEL_EDGE | 	\
++	 ARCH_PERFMON_EVENTSEL_INV)
++
+ static int intel_pmu_hw_config(struct perf_event *event)
+ {
++	bool changed = false;
+ 	int ret = x86_pmu_hw_config(event);
+ 
+ 	if (ret)
+ 		return ret;
+ 
+ 	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
+-		x86_pmu.pebs_aliases(event);
++		x86_pmu.pebs_aliases(event, &changed);
+ 
+ 	if (intel_pmu_needs_lbr_smpl(event)) {
+ 		ret = intel_pmu_setup_lbr_filter(event);
+@@ -1766,6 +1775,17 @@ static int intel_pmu_hw_config(struct perf_event *event)
+ 	if (event->attr.type != PERF_TYPE_RAW)
+ 		return 0;
+ 
++	/* 
++	 * SDM Vol 3 18.8.4: 
++	 * "PEBS events are only valid when the following fields of 
++	 * IA32_PERFEVTSELx are all zero: AnyThread, Edge, Invert, Cmask.
++	 *
++	 * We only make an exception for the magic pebs aliases.
++	 */
++	if (event->attr.precise_ip && !changed &&
++		(event->attr.config & ARCH_PERFMON_NOT_WITH_PEBS))
++		return -EINVAL;
++
+ 	if (!(event->attr.config & ARCH_PERFMON_EVENTSEL_ANY))
+ 		return 0;
+ 
+-- 
+1.8.5.3
+
