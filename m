@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534AbaCMQqR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 12:46:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58929 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832AbaCMQqP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 12:46:15 -0400
-Date: Thu, 13 Mar 2014 11:43:15 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Suman Anna <s-anna@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Bjorn Andersson <bjorn@kryo.se>, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv4 4/7] hwspinlock/core: add common OF helpers
-Message-ID: <20140313164315.GQ18529@joshc.qualcomm.com>
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
- <1389658764-39199-5-git-send-email-s-anna@ti.com>
- <CAJAp7Oi7wD+VsMAd37gT04yZ4TH4ygXFmheDhvmWuanUjpBmVQ@mail.gmail.com>
- <52F92524.3080402@ti.com>
- <CAK=WgbY0wDtGCm71E8VXi2g5+VcGogHEy8jdekTRg8xtp6-3rQ@mail.gmail.com>
- <CAJAp7Ohf43hbKatCwS5Y1+OfEkJYWOkuhZhW-E_=t_9mfM+UaA@mail.gmail.com>
- <53160F8F.9060405@ti.com>
+	id S1754615AbaCMQqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 12:46:48 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:42824 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753787AbaCMQqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 12:46:47 -0400
+Date: Thu, 13 Mar 2014 09:46:43 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
+Subject: [PATCH] iio: force snprintf for PAGE_SIZE bufs
+Message-ID: <20140313164643.GA19171@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53160F8F.9060405@ti.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 11:38:23AM -0600, Suman Anna wrote:
-> Hi Ohad,
-> 
-> On 03/02/2014 02:19 PM, Bjorn Andersson wrote:
-> >On Sat, Mar 1, 2014 at 9:14 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> >>On Mon, Feb 10, 2014 at 9:14 PM, Suman Anna <s-anna@ti.com> wrote:
-> >>>On 02/07/2014 04:49 PM, Bjorn Andersson wrote:
-> >>>Ohad,
-> >>>Do you have any objections to the return code convention change?
-> >>
-> >>Unless strictly needed, I prefer we don't switch to the ERR_PTR code
-> >>convention, as it reduces code readability and increases chances of
-> >>user bugs.
-> >>
-> >>In our case, switching to ERR_PTR and friends seems only to optimize a
-> >>few error paths, and I'm not sure it's a big win over simplicity.
-> >
-> >When introducing the ability to reference a hwspin lock via a phandle
-> >in device tree it makes a big difference to be able to differ between
-> >the case of "initialization failed" or "device not yet probed"; so
-> >that the client knows if it should fail or retry later.
-> >
-> 
-> Can you confirm the changes you want me to make, so that I can refresh and
-> post a v5 for 3.15?
+This is a tiny preventative measure to make sure we can't write beyond
+PAGE_SIZE on the buffers being used in sysfs for iio. There is currently
+no way for this to happen, but the change makes this code more robust
+for the future.
 
-What's the status on this?  I'm assuming this is going to miss 3.15?
-Having DT support in the core will be useful to move the Qualcomm
-hwspinlock driver forward as well.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ drivers/iio/industrialio-core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index acc911a836ca..64bb64f35af8 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -340,7 +340,7 @@ ssize_t iio_enum_read(struct iio_dev *indio_dev,
+ 	else if (i >= e->num_items)
+ 		return -EINVAL;
+ 
+-	return sprintf(buf, "%s\n", e->items[i]);
++	return snprintf(buf, PAGE_SIZE, "%s\n", e->items[i]);
+ }
+ EXPORT_SYMBOL_GPL(iio_enum_read);
+ 
+@@ -836,7 +836,7 @@ static ssize_t iio_show_dev_name(struct device *dev,
+ 				 char *buf)
+ {
+ 	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+-	return sprintf(buf, "%s\n", indio_dev->name);
++	return snprintf(buf, PAGE_SIZE, "%s\n", indio_dev->name);
+ }
+ 
+ static DEVICE_ATTR(name, S_IRUGO, iio_show_dev_name, NULL);
+-- 
+1.7.9.5
+
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Kees Cook
+Chrome OS Security
