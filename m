@@ -1,205 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137AbaCMVQn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:16:43 -0400
-Received: from mailout.micron.com ([137.201.242.129]:55426 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943AbaCMVQm (ORCPT
+	id S1753522AbaCMVVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 17:21:19 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54975 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890AbaCMVVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 17:16:42 -0400
-Message-ID: <5322242A.6080901@micron.com>
-Date: Thu, 13 Mar 2014 14:33:30 -0700
-From: Sam Bradshaw <sbradshaw@micron.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	Thu, 13 Mar 2014 17:21:17 -0400
+Date: Thu, 13 Mar 2014 21:20:55 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+Cc: Jyri Sarha <jsarha@ti.com>, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        kuninori.morimoto.gx@renesas.com, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, Li.Xiubo@freescale.com,
+        linux-doc@vger.kernel.org, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org, robh+dt@kernel.org, rob@landley.net,
+        galak@codeaurora.org, moinejf@free.fr
+Message-ID: <20140313212055.GN366@sirena.org.uk>
+References: <1394593331-22867-1-git-send-email-Guangyu.Chen@freescale.com>
+ <5320280C.6080004@ti.com>
+ <20140312093353.GH1177@MrMyself>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: <linux-kernel@vger.kernel.org>, Felipe Franciosi <felipe@paradoxo.org>,
-        <david.vrabel@citrix.com>,
-        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa)" 
-	<asamymuthupa@micron.com>
-Subject: Re: [PATCH] mtip32xx: mtip_async_complete() bug fixes
-References: <53221E92.3030707@micron.com> <53221CF5.2080000@kernel.dk>
-In-Reply-To: <53221CF5.2080000@kernel.dk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20564.002
-X-TM-AS-Result: No--9.621500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="c6397Mob2532IpCX"
+Content-Disposition: inline
+In-Reply-To: <20140312093353.GH1177@MrMyself>
+X-Cookie: Some assembly required.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH v2] ASoC: simple-card: overwrite
+ cpu_dai->fmt with codec_dai->fmt
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2014 02:02 PM, Jens Axboe wrote:
-> On 03/13/2014 03:09 PM, Sam Bradshaw wrote:
->> This patch fixes 2 issues in the fast completion path:
->> 1) Possible double completions / double dma_unmap_sg() calls due to lack
->> of atomicity in the check and subsequent dereference of the upper layer
->> callback function. Fixed with cmpxchg before unmap and callback.
->> 2) Regression in unaligned IO constraining workaround for p420m devices.
->> Fixed by checking if IO is unaligned and using proper semaphore if so.
-> 
-> Sam, what is this patch against? It doesn't apply to -rc6 and it doesn't 
-> apply to for-3.15/drivers (the latter would be preferred/required). It 
-> also seems to have line break issues.
-> 
 
-It's against for-3.15/drivers.  Sorry about the breaks; if I remove them
-does it apply cleanly?
+--c6397Mob2532IpCX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Mar 12, 2014 at 05:33:54PM +0800, Nicolin Chen wrote:
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index b2012b7..624e9d9 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -252,38 +252,45 @@ static void mtip_async_complete(struct mtip_port *port,
- 				void *data,
- 				int status)
- {
--	struct mtip_cmd *command;
-+	struct mtip_cmd *cmd;
- 	struct driver_data *dd = data;
--	int cb_status = status ? -EIO : 0;
-+	int unaligned, cb_status = status ? -EIO : 0;
-+	void (*func)(void *, int);
- 
- 	if (unlikely(!dd) || unlikely(!port))
- 		return;
- 
--	command = &port->commands[tag];
-+	cmd = &port->commands[tag];
- 
- 	if (unlikely(status == PORT_IRQ_TF_ERR)) {
- 		dev_warn(&port->dd->pdev->dev,
- 			"Command tag %d failed due to TFE\n", tag);
- 	}
- 
--	/* Unmap the DMA scatter list entries */
--	dma_unmap_sg(&dd->pdev->dev,
--		command->sg,
--		command->scatter_ents,
--		command->direction);
-+	/* Clear the active flag */
-+	atomic_set(&port->commands[tag].active, 0);
- 
- 	/* Upper layer callback */
--	if (likely(command->async_callback))
--		command->async_callback(command->async_data, cb_status);
-+	func = cmd->async_callback;
-+	if (likely(func && cmpxchg(&cmd->async_callback, func, 0) == func)) {
- 
--	command->async_callback = NULL;
--	command->comp_func = NULL;
-+		/* Unmap the DMA scatter list entries */
-+		dma_unmap_sg(&dd->pdev->dev,
-+			cmd->sg,
-+			cmd->scatter_ents,
-+			cmd->direction);
- 
--	/* Clear the allocated and active bits for the command */
--	atomic_set(&port->commands[tag].active, 0);
--	release_slot(port, tag);
-+		func(cmd->async_data, cb_status);
-+		unaligned = cmd->unaligned;
- 
--	up(&port->cmd_slot);
-+		/* Clear the allocated bit for the command */
-+		release_slot(port, tag);
-+
-+		if (unlikely(unaligned))
-+			up(&port->cmd_slot_unal);
-+		else
-+			up(&port->cmd_slot);
-+	}
- }
- 
- /*
-@@ -660,11 +667,12 @@ static void mtip_timeout_function(unsigned long int data)
- {
- 	struct mtip_port *port = (struct mtip_port *) data;
- 	struct host_to_dev_fis *fis;
--	struct mtip_cmd *command;
--	int tag, cmdto_cnt = 0;
-+	struct mtip_cmd *cmd;
-+	int unaligned, tag, cmdto_cnt = 0;
- 	unsigned int bit, group;
- 	unsigned int num_command_slots;
- 	unsigned long to, tagaccum[SLOTBITS_IN_LONGS];
-+	void (*func)(void *, int);
- 
- 	if (unlikely(!port))
- 		return;
-@@ -694,8 +702,8 @@ static void mtip_timeout_function(unsigned long int data)
- 			group = tag >> 5;
- 			bit = tag & 0x1F;
- 
--			command = &port->commands[tag];
--			fis = (struct host_to_dev_fis *) command->command;
-+			cmd = &port->commands[tag];
-+			fis = (struct host_to_dev_fis *) cmd->command;
- 
- 			set_bit(tag, tagaccum);
- 			cmdto_cnt++;
-@@ -709,27 +717,30 @@ static void mtip_timeout_function(unsigned long int data)
- 			 */
- 			writel(1 << bit, port->completed[group]);
- 
--			/* Unmap the DMA scatter list entries */
--			dma_unmap_sg(&port->dd->pdev->dev,
--					command->sg,
--					command->scatter_ents,
--					command->direction);
-+			/* Clear the active flag for the command */
-+			atomic_set(&port->commands[tag].active, 0);
- 
--			/* Call the async completion callback. */
--			if (likely(command->async_callback))
--				command->async_callback(command->async_data,
--							 -EIO);
--			command->async_callback = NULL;
--			command->comp_func = NULL;
-+			func = cmd->async_callback;
-+			if (func &&
-+			    cmpxchg(&cmd->async_callback, func, 0) == func) {
- 
--			/*
--			 * Clear the allocated bit and active tag for the
--			 * command.
--			 */
--			atomic_set(&port->commands[tag].active, 0);
--			release_slot(port, tag);
-+				/* Unmap the DMA scatter list entries */
-+				dma_unmap_sg(&port->dd->pdev->dev,
-+						cmd->sg,
-+						cmd->scatter_ents,
-+						cmd->direction);
- 
--			up(&port->cmd_slot);
-+				func(cmd->async_data, -EIO);
-+				unaligned = cmd->unaligned;
-+
-+				/* Clear the allocated bit for the command. */
-+				release_slot(port, tag);
-+
-+				if (unaligned)
-+					up(&port->cmd_slot_unal);
-+				else
-+					up(&port->cmd_slot);
-+			}
- 		}
- 	}
- 
-diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
-index 54174cb..ffb955e 100644
---- a/drivers/block/mtip32xx/mtip32xx.h
-+++ b/drivers/block/mtip32xx/mtip32xx.h
-@@ -92,7 +92,7 @@
- 
- /* Driver name and version strings */
- #define MTIP_DRV_NAME		"mtip32xx"
--#define MTIP_DRV_VERSION	"1.3.0"
-+#define MTIP_DRV_VERSION	"1.3.1"
- 
- /* Maximum number of minor device numbers per device. */
- #define MTIP_MAX_MINORS		16
+> I'm not sure if there's any defect from this idea, but as long as we
+> keep DAIFMT settings identical for both dai-link ends, it'll be a
+> neater way.
+
+> So I'd like to pend this patch and wait for further solution from that
+> topic.
+
+My understanding of the binding had been that exactly one of the devices
+on the link would have each master flag set and the code was parsing
+both devices together in order to come up with the setting.  Obviously I
+didn't check the code closely enough here.  It seems that the Renesas
+devices actually do this, though just due to a bug in the master/slave
+handling.  The patch you posted would essentially implement that
+(without validating the settings on the CPU side, but that could be
+added).
+
+The above suggestion would also work though it *is* a change in the
+binding and right now we don't have code for it.  We need something here
+very soon, the merge window is going to open shortly and we ought to
+avoid having the problematic code in v3.15 if we can - indeed I'd really
+prefer to get something into v3.14 if possible (though this patch
+doesn't apply cleanly there and it's *very* late).
+
+Thoughts?
+
+--c6397Mob2532IpCX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTIiE0AAoJELSic+t+oim9MTwP/iIqldFiWtJrJf0jh4W9uJ3A
+gl3AVyXfFJ2K9IL/vaOdISreKa8DBqDrXbKTyofGL6WSC79jvKdgVQpOvTH+2fYm
+M6wXR/Z6KZCujdPPbe92W3mbfhvVbJ31tOX/asDn5KkBKxwaYUml0Pxqno1NG7fi
+UuO5biq4t9v7ofdkK99CareN11Lvgn+IFqsafRnT222YJx6bFzCgYgQaftbjxa/9
+NxQvFKYK/SH+PUifH9nnqYKEwZzWmHjPFTNfEE6SuQ5gZ11ZK5/sAeRblgr079YH
+j/8uOuizME3cuwo21qqrRWz72gBOVp5X/pBPFzoalz+Fu5jWtg4xBfwvauileSHJ
+Lgzr+9RlY4JgtAa+7HnHV9QteVCceYbEefe/hEl+AhKiayLUge66+TiUJLhueno6
+Xtiz/syOYirPkBbIRmiJmWLZ0wTb9YMlCh4Wq1lr+KZ+huY/uyrjupRC9DotRPVZ
+YI3DCSxa1H+XhtDTPftcW2Wqg4hrbfoCVQ14Er2Hg/awLsxQ2afdRA8LAMDCN0gX
+C3oItFUSvrnTjnp7W8t7XCuIrvD1cmDGKK71IKdJVMY+R+j4xQgNnUXY/L++gHgZ
+mnqBOe9M3TMRHBrIAnJrEwDgUOfkdybkxuiiSXB8wu0CNfG4IcRiOi4XZNrZgVjh
+EK1ytWVQR3v7tlUYmU+p
+=ZYFF
+-----END PGP SIGNATURE-----
+
+--c6397Mob2532IpCX--
