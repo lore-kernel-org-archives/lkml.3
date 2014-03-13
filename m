@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353AbaCMPME (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:12:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1975 "EHLO mx1.redhat.com"
+	id S1754381AbaCMPMz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:12:55 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48558 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754292AbaCMPLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:11:45 -0400
-Date: Thu, 13 Mar 2014 15:59:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Davidlohr Bueso <davi@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] mm,vmacache: also flush cache for VM_CLONE
-Message-ID: <20140313145941.GA26215@redhat.com>
-References: <1393537704.2899.3.camel@buesod1.americas.hpqcorp.net> <20140308184040.GA29602@redhat.com> <CA+55aFw88xiY+o5FE6VtHNkpUZDK3FPt31oCpNsgn1BH7wAPZw@mail.gmail.com> <20140308194405.GA32403@redhat.com> <CA+55aFzk=XtRFPQM4rGgTXj8AD2RLrm5pfAsKwGOZPHLgb+Ziw@mail.gmail.com> <20140309125710.GA1829@redhat.com> <CA+55aFxyGJFEz5NnHtK1wn8oDLy9n-CttttKL_0AM69gN8JzxQ@mail.gmail.com> <20140309170909.GA13335@redhat.com> <CA+55aFxEGj9poWNLAncvrrOTzjDtrwMnOM_d3ACqRkcvY86qHA@mail.gmail.com> <1394481375.3867.1.camel@buesod1.americas.hpqcorp.net>
+	id S1753715AbaCMPMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:12:52 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>
+CC: <balbi@ti.com>, <rogerq@ti.com>, <kishon@ti.com>, <rob@landley.net>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
+        <tony@atomide.com>, <anatol.pomozov@gmail.com>,
+        <bcousson@baylibre.com>, George Cherian <george.cherian@ti.com>
+Subject: [PATCH v4 0/5] Add USB nodes for am43xx epos and gp evm
+Date: Thu, 13 Mar 2014 20:41:11 +0530
+Message-ID: <1394723476-8580-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394481375.3867.1.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for delay, I was distracted...
+The patch series adds USB dt nodes for am43xx epos and gp evm
+Boot tested with linux-next + Tony's omap-for-v3.15/dt
 
-On 03/10, Davidlohr Bueso wrote:
->
-> @@ -841,9 +841,6 @@ static struct mm_struct *dup_mm(struct task_struct *tsk)
->  	if (mm->binfmt && !try_module_get(mm->binfmt->module))
->  		goto free_pt;
->
-> -	/* initialize the new vmacache entries */
-> -	vmacache_flush(tsk);
-> -
->  	return mm;
->
->  free_pt:
-> @@ -887,6 +884,9 @@ static int copy_mm(unsigned long clone_flags, struct task_struct *tsk)
->  	if (!oldmm)
->  		return 0;
->
-> +	/* initialize the new vmacache entries */
-> +	vmacache_flush(tsk);
-> +
->  	if (clone_flags & CLONE_VM) {
->  		atomic_inc(&oldmm->mm_users);
->  		mm = oldmm;
+Changes from v1 -> v2
+	* Reorder "doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue"
+	* Address v1 coments on "ARM: dts: AM4372: Add USB nodes"  
 
-Yes. But it seems that use_mm() and unuse_mm() should invalidate vmacache too.
+Changes from v2 -> v3
+	* Removed unwanted dwc3_1 and dwc3_2 nodes from am437x-gp-evm.dts 
+	  and am43x-epos-evm.dts 
 
-Suppose that a kernel thread T does, say,
+Changes from v3 -> v4
+	* Refreshed on top of Tony's omap-for-v3.15/dt tree
+	* Added usb_phy0_always_on_clk32k and usb_phy1_always_on_clk32k Patch 2
+	* Used the above clocks in Patch 3 
+	* Patch 4 and 5 edited the unwanted portions of commit log
 
-	use_mm(foreign_mm);
-	get_user(...);
-	unuse_mm();
+George Cherian (5):
+  doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue
+  ARM: dts: am43xx clock data
+  ARM: dts: AM4372: Add USB nodes
+  ARM: dts: am437x-gp-evm: Enable USB
+  ARM: dts: am43x-epos-evm: Enable USB
 
-This can trigger a fault and populate T->vmacache[]. If this code is called
-again vmacache_find() can use the stale entries.
+ Documentation/devicetree/bindings/usb/omap-usb.txt |  4 +-
+ arch/arm/boot/dts/am4372.dtsi                      | 94 ++++++++++++++++++++++
+ arch/arm/boot/dts/am437x-gp-evm.dts                | 26 ++++++
+ arch/arm/boot/dts/am43x-epos-evm.dts               | 27 +++++++
+ arch/arm/boot/dts/am43xx-clocks.dtsi               | 33 ++++++++
+ 5 files changed, 183 insertions(+), 1 deletion(-)
 
-Or, assuming that only a kernel thread can do use_mm(), we can change
-vmacache_valid() to also check !PF_KTHREAD.
-
-Hmm. Another problem is that use_mm() doesn't take ->mmap_sem and thus
-it can race with vmacache_flush_all()...
-
-
-Finally. Shouldn't vmacache_update() check current->mm == mm as well?
-What if access_remote_vm/get_user_pages trigger find_vma() ??? Unless
-I missed something this is not theoretical at all and can lead to the
-corrupted vmacache, no?
-
-Oleg.
+-- 
+1.8.3.1
 
