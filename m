@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaCMKMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:12:44 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:34860 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829AbaCMKMm (ORCPT
+	id S1753787AbaCMKMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:12:54 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:62809 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829AbaCMKMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:12:42 -0400
+	Thu, 13 Mar 2014 06:12:51 -0400
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 To: will.deacon@arm.com
 Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
@@ -14,53 +14,86 @@ Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
         linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
         linux-kernel@vger.kernel.org, linux-audit@redhat.com,
         AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v4 0/3] arm64: prerequisites for audit and ftrace
-Date: Thu, 13 Mar 2014 19:11:28 +0900
-Message-Id: <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH v4 1/3] arm64: make a single hook to syscall_trace() for all syscall features
+Date: Thu, 13 Mar 2014 19:11:29 +0900
+Message-Id: <1394705491-12343-2-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393564465-3862-1-git-send-email-takahiro.akashi@linaro.org>
+In-Reply-To: <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org>
 References: <1393564465-3862-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains some patches commonly applied for audit and ftrace.
+Currently syscall_trace() is called only for ptrace.
+With additional TIF_xx flags defined, it is now called in all the cases
+of audit, ftrace and seccomp in addition to ptrace.
 
-Patch [1/3] defines syscall trace related TIF_* flags in order to add hooks,
-including ftrace, audit and seccomp, later on.  Those features will be
-implemented in separate patchsets, but it's safe to check for all TIF_*
-now because they can not be turned on anyway.
+Acked-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+---
+ arch/arm64/include/asm/thread_info.h |   13 +++++++++++++
+ arch/arm64/kernel/entry.S            |    5 +++--
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
-Patch [2/3] doesn't change a behavior but make it easy and manageable to
-confirm we invoke those hooks in correct order by splitting syscall_trace().
-
-Patch [3/3] adds a commonly used function, which returns a return value of
-system call.
-
-Changes v3 -> v4:
-* added "arm64: split syscall_trace() into separate functions for enter/
-  exit", which is just a preparation for adding syscall trace hooks later.
-
-Changes v2 -> v3:
-* reverted a change in syscall_trace() in v1 [1/2]
-* added "arm64: Add regs_return_value() in syscall.h" patch which was
-  previously included in audit patch [2/2]
-
-Changes v1 -> v2:
-* added a guard against TIF_SYSCALL_TRACE at tracehook_report_syscall_*()
-* renamed _TIF_WORK_SYSCALL to _TIF_SYSCALL_WORK
-
-AKASHI Takahiro (3):
-  arm64: make a single hook to syscall_trace() for all syscall features
-  arm64: split syscall_trace() into separate functions for enter/exit
-  arm64: Add regs_return_value() in syscall.h
-
- arch/arm64/include/asm/ptrace.h      |    5 ++++
- arch/arm64/include/asm/thread_info.h |   13 +++++++++
- arch/arm64/kernel/entry.S            |   15 +++++------
- arch/arm64/kernel/ptrace.c           |   48 ++++++++++++++++++++++++++--------
- 4 files changed, 62 insertions(+), 19 deletions(-)
-
+diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+index 720e70b..0a8b2a9 100644
+--- a/arch/arm64/include/asm/thread_info.h
++++ b/arch/arm64/include/asm/thread_info.h
+@@ -91,6 +91,9 @@ static inline struct thread_info *current_thread_info(void)
+ /*
+  * thread information flags:
+  *  TIF_SYSCALL_TRACE	- syscall trace active
++ *  TIF_SYSCALL_TRACEPOINT - syscall tracepoint for ftrace
++ *  TIF_SYSCALL_AUDIT	- syscall auditing
++ *  TIF_SECOMP		- syscall secure computing
+  *  TIF_SIGPENDING	- signal pending
+  *  TIF_NEED_RESCHED	- rescheduling necessary
+  *  TIF_NOTIFY_RESUME	- callback before returning to user
+@@ -101,6 +104,9 @@ static inline struct thread_info *current_thread_info(void)
+ #define TIF_NEED_RESCHED	1
+ #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
+ #define TIF_SYSCALL_TRACE	8
++#define TIF_SYSCALL_AUDIT	9
++#define TIF_SYSCALL_TRACEPOINT	10
++#define TIF_SECCOMP		11
+ #define TIF_POLLING_NRFLAG	16
+ #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
+ #define TIF_FREEZE		19
+@@ -112,10 +118,17 @@ static inline struct thread_info *current_thread_info(void)
+ #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
+ #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
+ #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
++#define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
++#define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
++#define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
++#define _TIF_SECCOMP		(1 << TIF_SECCOMP)
+ #define _TIF_32BIT		(1 << TIF_32BIT)
+ 
+ #define _TIF_WORK_MASK		(_TIF_NEED_RESCHED | _TIF_SIGPENDING | \
+ 				 _TIF_NOTIFY_RESUME)
+ 
++#define _TIF_SYSCALL_WORK	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
++				 _TIF_SYSCALL_TRACEPOINT | _TIF_SECCOMP)
++
+ #endif /* __KERNEL__ */
+ #endif /* __ASM_THREAD_INFO_H */
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index 39ac630..f9f2cae 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -631,8 +631,9 @@ el0_svc_naked:					// compat entry point
+ 	enable_irq
+ 
+ 	get_thread_info tsk
+-	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall tracing
+-	tbnz	x16, #TIF_SYSCALL_TRACE, __sys_trace // are we tracing syscalls?
++	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall hooks
++	tst	x16, #_TIF_SYSCALL_WORK
++	b.ne	__sys_trace
+ 	adr	lr, ret_fast_syscall		// return address
+ 	cmp     scno, sc_nr                     // check upper syscall limit
+ 	b.hs	ni_sys
 -- 
 1.7.9.5
 
