@@ -1,236 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaCMWZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 18:25:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42007 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753769AbaCMWZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 18:25:01 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org
-Subject: [PATCH 3/6] mm/memory-failure.c: add code to resolve quasi-hwpoisoned page
-Date: Thu, 13 Mar 2014 17:39:43 -0400
-Message-Id: <1394746786-6397-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1394746786-6397-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1394746786-6397-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1754233AbaCMWdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 18:33:55 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:40563
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753601AbaCMWdw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 18:33:52 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(z569dhz98dIc89bh936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h906i1155h)
+Date: Thu, 13 Mar 2014 15:33:16 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: Zynq macb
+References: <c6344e9b-fa32-4313-8950-59030c4bffb8@AM1EHSMHS003.ehs.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <c6344e9b-fa32-4313-8950-59030c4bffb8@AM1EHSMHS003.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <73734ba5-00d3-445d-8c6f-a1a868cdd537@CH1EHSMHS024.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces three ways to resolve quasi-hwpoisoned pages:
- 1. unpoison: this is a test feature, but if users accept data lost (then
-    continue with rereading old data from storage,) this could be tolerable.
- 2. truncate: if discarding a part of a file which includes a memory error
-    is OK for your applications, this could be reasonable too.
- 3. full page overwrite: if your application is prepared to dirty pagecache
-    error and it has a copy data (or it can recreate the proper data,)
-    the application can overwrite the page-sized address range on the error
-    and continue to run without caring about the error.
+On Thu, 2014-03-13 at 03:16PM -0700, Sören Brinkmann wrote:
+> Hi Nicolas,
+> 
+> I did some testing on the current linux-next tree and ran iperf on Zynq.
+> It seems that network and even the whole system can collapse when doing
+> that.
+> I don't really know what's going on, but once I saw the message:
+> 	"inconsistent Rx descriptor chain"
+> printed twice (system frozen afterwards).
+> 
+> I don't know what exactly is going wrong, but suspect something around
+> memory/DMA. I have no clue whether it makes any sense or not, but I
+> tried using the macb_* functions instead of the gem_* ones (see diff below).
+> That seems to result in a stable system and working Ethernet.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- include/linux/pagemap.h | 16 +++++++++++++
- mm/filemap.c            | 14 ++++++++---
- mm/memory-failure.c     | 62 ++++++++++++++++++++++++++++++++++++++++++++++++-
- mm/truncate.c           |  7 ++++++
- 4 files changed, 95 insertions(+), 4 deletions(-)
+That was a little too early. After roughly 25 minutest the system runs
+into a deadlock:
+  BUG: spinlock lockup suspected on CPU#1, iperf/774
+   lock: 0xeda0366c, .magic: dead4ead, .owner: swapper/0/0, .owner_cpu: 0
+  CPU: 1 PID: 774 Comm: iperf Tainted: G        W    3.14.0-rc6-next-20140312-xilinx-dirty #41
+  [<c00153c0>] (unwind_backtrace) from [<c0011e70>] (show_stack+0x10/0x14)
+  [<c0011e70>] (show_stack) from [<c03d6b50>] (dump_stack+0x80/0xcc)
+  [<c03d6b50>] (dump_stack) from [<c00670ac>] (do_raw_spin_lock+0xd4/0x190)
+  [<c00670ac>] (do_raw_spin_lock) from [<c03dc79c>] (_raw_spin_lock_irqsave+0x58/0x64)
+  [<c03dc79c>] (_raw_spin_lock_irqsave) from [<c02b0810>] (macb_start_xmit+0x24/0x2d0)
+  [<c02b0810>] (macb_start_xmit) from [<c0321b10>] (dev_hard_start_xmit+0x334/0x470)
+  [<c0321b10>] (dev_hard_start_xmit) from [<c0339aa8>] (sch_direct_xmit+0x78/0x2f8)
+  [<c0339aa8>] (sch_direct_xmit) from [<c0321f60>] (__dev_queue_xmit+0x314/0x704)
+  [<c0321f60>] (__dev_queue_xmit) from [<c034cb3c>] (ip_finish_output+0x6c4/0x894)
+  [<c034cb3c>] (ip_finish_output) from [<c034cf24>] (ip_local_out+0x74/0x90)
+  [<c034cf24>] (ip_local_out) from [<c034d340>] (ip_queue_xmit+0x400/0x5c4)
+  [<c034d340>] (ip_queue_xmit) from [<c03634b8>] (tcp_transmit_skb+0xa18/0xab0)
+  [<c03634b8>] (tcp_transmit_skb) from [<c035856c>] (tcp_recvmsg+0x92c/0xae4)
+  [<c035856c>] (tcp_recvmsg) from [<c03806f0>] (inet_recvmsg+0x1c0/0x1fc)
+  [<c03806f0>] (inet_recvmsg) from [<c030769c>] (sock_recvmsg+0x7c/0x98)
+  [<c030769c>] (sock_recvmsg) from [<c0309988>] (SyS_recvfrom+0x9c/0x108)
+  [<c0309988>] (SyS_recvfrom) from [<c0309a08>] (sys_recv+0x14/0x18)
+  [<c0309a08>] (sys_recv) from [<c000ea60>] (ret_fast_syscall+0x0/0x48)
 
-diff --git v3.14-rc6.orig/include/linux/pagemap.h v3.14-rc6/include/linux/pagemap.h
-index 5e234d0d0baf..715962f7ea7a 100644
---- v3.14-rc6.orig/include/linux/pagemap.h
-+++ v3.14-rc6/include/linux/pagemap.h
-@@ -589,12 +589,28 @@ static inline int add_to_page_cache(struct page *page,
- #ifdef CONFIG_MEMORY_FAILURE
- bool mapping_hwpoisoned_range(struct address_space *mapping,
- 				loff_t start_byte, loff_t end_byte);
-+bool page_quasi_hwpoisoned(struct address_space *mapping, struct page *page);
-+void hwpoison_resolve_pagecache_error(struct address_space *mapping,
-+				struct page *page, bool free);
-+bool hwpoison_partial_overwrite(struct address_space *mapping,
-+				loff_t pos, size_t count);
- #else
- static inline bool mapping_hwpoisoned_range(struct address_space *mapping,
- 				loff_t start_byte, loff_t end_byte)
- {
- 	return false;
- }
-+static inline bool page_quasi_hwpoisoned(struct address_space *mapping,
-+					struct page *page)
-+{
-+	return false;
-+}
-+#define hwpoison_resolve_pagecache_error(mapping, page, free) do {} while (0)
-+static inline bool hwpoison_partial_overwrite(struct address_space *mapping,
-+				loff_t pos, size_t count)
-+{
-+	return false;
-+}
- #endif /* CONFIG_MEMORY_FAILURE */
- 
- #endif /* _LINUX_PAGEMAP_H */
-diff --git v3.14-rc6.orig/mm/filemap.c v3.14-rc6/mm/filemap.c
-index 887f2dfaf185..f58b36e313ad 100644
---- v3.14-rc6.orig/mm/filemap.c
-+++ v3.14-rc6/mm/filemap.c
-@@ -2110,8 +2110,7 @@ inline int generic_write_checks(struct file *file, loff_t *pos, size_t *count, i
-         if (unlikely(*pos < 0))
-                 return -EINVAL;
- 
--	if (unlikely(mapping_hwpoisoned_range(file->f_mapping, *pos,
--					      *pos + *count)))
-+	if (unlikely(hwpoison_partial_overwrite(file->f_mapping, *pos, *count)))
- 		return -EHWPOISON;
- 
- 	if (!isblk) {
-@@ -2222,7 +2221,13 @@ generic_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
- 	end = (pos + write_len - 1) >> PAGE_CACHE_SHIFT;
- 
- 	written = filemap_write_and_wait_range(mapping, pos, pos + write_len - 1);
--	if (written)
-+	/*
-+	 * When the write range includes hwpoisoned region (then written is
-+	 * -EHWPOISON,) we already confirmed in generic_write_checks() that
-+	 * it's full page overwrite and we can safely invalidate the error,
-+	 * so the write doesn't have to fail.
-+	 */
-+	if (written && written != -EHWPOISON)
- 		goto out;
- 
- 	/*
-@@ -2362,6 +2367,9 @@ static ssize_t generic_perform_write(struct file *file,
- 		if (mapping_writably_mapped(mapping))
- 			flush_dcache_page(page);
- 
-+		if (page_quasi_hwpoisoned(mapping, page))
-+			hwpoison_resolve_pagecache_error(mapping, page, false);
-+
- 		pagefault_disable();
- 		copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
- 		pagefault_enable();
-diff --git v3.14-rc6.orig/mm/memory-failure.c v3.14-rc6/mm/memory-failure.c
-index 34f2c046af22..0eca5449d251 100644
---- v3.14-rc6.orig/mm/memory-failure.c
-+++ v3.14-rc6/mm/memory-failure.c
-@@ -665,6 +665,57 @@ static void clear_pagecache_tag_hwpoison(struct address_space *mapping,
- 	spin_unlock_irq(&mapping->tree_lock);
- }
- 
-+inline bool page_quasi_hwpoisoned(struct address_space *mapping,
-+					struct page *page)
-+{
-+	if (!sysctl_memory_failure_recovery)
-+		return false;
-+	return unlikely(get_pagecache_tag_hwpoison(mapping, page_index(page)));
-+}
-+
-+/*
-+ * This function clears a quasi-hwpoisoned page and turns it into a normal
-+ * LRU page. Callers should check that @page is really quasi-hwpoisoned,
-+ * and must not call this for real error pages.
-+ */
-+void hwpoison_resolve_pagecache_error(struct address_space *mapping,
-+				      struct page *page, bool free)
-+{
-+	VM_BUG_ON(PageLRU(page));
-+	VM_BUG_ON(!PageLocked(page));
-+
-+	ClearPageHWPoison(page);
-+	clear_pagecache_tag_hwpoison(mapping, page_index(page));
-+	dec_zone_page_state(page, NR_ISOLATED_ANON + page_is_file_cache(page));
-+	putback_lru_page(page);
-+	if (free) {
-+		lru_add_drain_all();
-+		delete_from_page_cache(page);
-+	}
-+	iput(mapping->host);
-+}
-+
-+/*
-+ * Return true if a given range [pos, pos+count) *partially* overlaps with
-+ * hwpoisoned page. Effectively it checks only boundary pages' overlapness.
-+ */
-+bool hwpoison_partial_overwrite(struct address_space *mapping,
-+				loff_t pos, size_t count)
-+{
-+	if (!sysctl_memory_failure_recovery)
-+		return false;
-+	if (!mapping_hwpoisoned_range(mapping, pos, pos + count))
-+		return false;
-+
-+	if (!PAGE_ALIGNED(pos) &&
-+	    get_pagecache_tag_hwpoison(mapping, pos >> PAGE_SHIFT))
-+		return true;
-+	if (!PAGE_ALIGNED(pos + count) &&
-+	    get_pagecache_tag_hwpoison(mapping, (pos + count) >> PAGE_SHIFT))
-+		return true;
-+	return false;
-+}
-+
- /*
-  * Dirty pagecache page
-  *
-@@ -691,7 +742,10 @@ static void clear_pagecache_tag_hwpoison(struct address_space *mapping,
-  *
-  * This quasi-hwpoisoned page works to keep reporting the error for all
-  * processes which try to access to the error address until it is resolved
-- * or the system reboots.
-+ * or the system reboots. Quasi-hwpoisoned pages can be resolved by unpoison,
-+ * truncate, and full page overwrite. In full page overwrite, the quasi-
-+ * hwpoisoned pages safely turn into the normal LRU pages, so we expect
-+ * userspace to do this when they received the error report if possible.
-  *
-  * Issues: when the error hit a hole page the error is not properly
-  * propagated.
-@@ -1496,12 +1550,18 @@ int unpoison_memory(unsigned long pfn)
- 	 * the free buddy page pool.
- 	 */
- 	if (TestClearPageHWPoison(page)) {
-+		struct address_space *mapping = page_mapping(page);
-+		if (mapping && page_quasi_hwpoisoned(mapping, page)) {
-+			hwpoison_resolve_pagecache_error(mapping, page, true);
-+			goto unlock;
-+		}
- 		pr_info("MCE: Software-unpoisoned page %#lx\n", pfn);
- 		atomic_long_sub(nr_pages, &num_poisoned_pages);
- 		freeit = 1;
- 		if (PageHuge(page))
- 			clear_page_hwpoison_huge_page(page);
- 	}
-+unlock:
- 	unlock_page(page);
- 
- 	put_page(page);
-diff --git v3.14-rc6.orig/mm/truncate.c v3.14-rc6/mm/truncate.c
-index 353b683afd6e..92d7097dfc6d 100644
---- v3.14-rc6.orig/mm/truncate.c
-+++ v3.14-rc6/mm/truncate.c
-@@ -103,6 +103,10 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
- 	cancel_dirty_page(page, PAGE_CACHE_SIZE);
- 
- 	ClearPageMappedToDisk(page);
-+
-+	if (page_quasi_hwpoisoned(mapping, page))
-+		hwpoison_resolve_pagecache_error(mapping, page, false);
-+
- 	delete_from_page_cache(page);
- 	return 0;
- }
-@@ -439,6 +443,9 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
- 	if (page_has_private(page) && !try_to_release_page(page, GFP_KERNEL))
- 		return 0;
- 
-+	if (page_quasi_hwpoisoned(mapping, page))
-+		hwpoison_resolve_pagecache_error(mapping, page, false);
-+
- 	spin_lock_irq(&mapping->tree_lock);
- 	if (PageDirty(page))
- 		goto failed;
--- 
-1.8.5.3
+  	Sören
+
 
