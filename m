@@ -1,112 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983AbaCMM5W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 08:57:22 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:39211 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaCMM5V (ORCPT
+	id S1752216AbaCMNAq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 09:00:46 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:30689 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032AbaCMNAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 08:57:21 -0400
-Date: Thu, 13 Mar 2014 23:57:11 +1100 (EST)
-From: Austin Boyle <boyle.austin@gmail.com>
-To: Gerlando Falauto <gerlando.falauto@keymile.com>
-cc: Austin Boyle <boyle.austin@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Marek Vasut <marex@denx.de>, Angus Clark <angus.clark@st.com>
-Subject: Re: [PATCH] mtd: m25p80: Flash protection support for STmicro
- chips
-In-Reply-To: <531D80AB.5010209@keymile.com>
-Message-ID: <alpine.DEB.2.02.1403132239490.4383@austin-Satellite-L510>
-References: <1357257748.31023.12.camel@pc786-ubu.GNET.GLOBAL.VPN> <528D15B6.2030800@keymile.com> <530F4CDE.7010205@keymile.com> <20140305081008.GP13420@norris-Latitude-E6410> <20140305083153.GR13420@norris-Latitude-E6410> <CADnxWiqfaaRoaL+B_WQxx38-gpSDmdFQPLN-bs-moGRECXeJxg@mail.gmail.com>
- <531D80AB.5010209@keymile.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 13 Mar 2014 09:00:44 -0400
+X-IronPort-AV: E=Sophos;i="4.97,647,1389772800"; 
+   d="scan'208";a="19017699"
+Message-ID: <5321ABF9.4090503@broadcom.com>
+Date: Thu, 13 Mar 2014 14:00:41 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Tomasz Figa <tomasz.figa@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Rob Herring <robh+dt@kernel.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Chen-Yu Tsai <wens@csie.org>
+Subject: Re: [RFC] dt: bindings: add bindings for Broadcom bcm43xx sdio devices
+References: <1392059868-8782-1-git-send-email-arend@broadcom.com> <530D1E69.7010504@wwwdotorg.org> <53218565.6080605@broadcom.com> <53218B9F.7030904@gmail.com>
+In-Reply-To: <53218B9F.7030904@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/13/2014 11:42 AM, Tomasz Figa wrote:
+> Hi Arend,
+> 
+> On 13.03.2014 11:16, Arend van Spriel wrote:
+>> On 02/25/2014 11:51 PM, Stephen Warren wrote:
+>>> On 02/10/2014 12:17 PM, Arend van Spriel wrote:
+>>>> The Broadcom bcm43xx sdio devices are fullmac devices that may be
+>>>> integrated in ARM platforms. Currently, the brcmfmac driver for
+>>>> these devices support use of platform data. This patch specifies
+>>>> the bindings that allow this platform data to be expressed in the
+>>>> devicetree.
+>>>
+>>>> diff --git
+>>>> a/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
+>>>> b/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
+>>>>
+>>>
+>>>> + - compatible : Should be "brcm,bcm43xx-fmac".
+>>>> + - wlan-supply : phandle for fixed regulator used to control power for
+>>>> +    the device/module.
+>>>
+>>> Ignoring the fact that perhaps this should just be a GPIO instead and
+>>> assuming it actually make sense for this to be a regulator:
+>>>
+>>> Why "fixed regulator" not just "the regulator". There shouldn't be any
+>>> requirement for the power supply to the device to be fixed; the driver
+>>> should (a) set the voltage (which will be a no-op for a fixed regulator
+>>> already providing that voltage), then (b) enable the regulator. That
+>>> would allow a PMIC with programmable voltage to be feeding the device.
+>>>
+>>> Now, if this property was really intended to control some enable GPIO on
+>>> the device, as others have said, this shouldn't be a regulator property
+>>> but rather a GPIO property. However, there is definitely some power
+>>> supply fed to the device, so you definitely need /some/ supply property
+>>> here.
+>>>
+>>> Aren't there other enable GPIOs required? These should be specified
+>>> in DT.
+>>>
+>>> Doesn't the WiFi chip/module require a (32KHz?) clock? If so, that needs
+>>> to be represented in DT. Preferably write the binding to require
+>>> clock-names (name-based lookup) rather than just clocks (index-based
+>>> lookup).
+>>
+>> Hi Stephen,
+>>
+>> Thanks for these comments. While I agree with most of them, I am having
+>> some difficulty with the DT concept. Essentially, a DT node describes a
+>> part of the system.
+> 
+> That's correct. A DT node represents a component of a system and its
+> contents should contain all resources and other device-specific data
+> required for this device to operate or optional.
+> 
+>> My scope for this change is probably limited wearing
+>> my brcmfmac glasses. Am I correct in assuming that a DT node may be
+>> processed/used by multiple drivers.
+> 
+> It may be, but it is usually not. The typical use case for such scheme
+> is a bus-like topology, where devices on the bus are sub-nodes of the
+> bus controller node and may contain some bus-specific information, such
+> as chip select (e.g. SPI), address (e.g. I2C) or maximum bus speed.
+> 
+>> As an example, the 32 kHz clock is
+>> not something brcmfmac cares about. It simple needs to be available and
+>> hooked up to the wlan device.
+> 
+> Not really. The driver should care about any resources needed for the
+> device to operate. In this case, a 32 kHz clock even if wired to the
+> chip, sometimes is not operational until it gets ungated. This is not an
+> artificial example, as on many boards I used to work with the 32 kHz
+> clock was driven by a PMIC with clock gating control through I2C, gated
+> by default.
+> 
+> Moreover, (well, 32 kHz might not be the best example) from power saving
+> reasons, it might be a good idea to let the driver control the clock and
+> gate it whenever it is not necessary.
 
-Hi Gerlando,
+Hi Tomasz,
 
-On Mon, 10 Mar 2014, Gerlando Falauto wrote:
-> What do you mean exactly by "it is optional"?
-> I agree with you that an explicit ioctl(MEMLOCK) is order for locking to take 
-> place. However, this seems to be the default action for the u-boot 
-> environment userspace tools. They will issue a MEMUNLOCK/MEMLOCK pair when 
-> trying to write some changes to the environment, without even checking the 
-> return value. This would of course fail silently when the feature was not 
-> implemented (as it was the case before the original patch was applied) and 
-> everything was working as expected.
-> Now linux supports this feature, and u-boot doesn't, so as soon as you write 
-> something to the flash from userspace, it will be locked and u-boot won't 
-> ever be able to write to it again.
->
-OK I understand your point after checking the code for the u-boot tool.
+Thanks. That clarifies things.
 
-> In my opinion, we're breaking something here (call it userspace API or 
-> otherwise). My suggestion would then be to make it an optional feature to be 
-> explicitly enabled on the device tree, like Heicho did for CFI flashes:
->
-> http://lists.infradead.org/pipermail/linux-mtd/2013-January/045536.html
->
-> Or I guess another way would be to implement the _is_locked() function, so to 
-> have the userspace tools check the locking status before unlocking, and only 
-> lock it again if was locked in the first place.
-> It wouldn't fix my issue right away (as the userspace tools don't currenctly 
-> perform this check), but at least it would provide some way out here without 
-> breaking compatibility with the existing u-boot.
->
-I prefer this suggestion of implementing _is_locked(). It is a simple 
-change so may as well be done while fixing the lock/unlock code anyway. 
-One could say it is counterintuitive for ioctl(MEMLOCK) not to work
-without previous configuration, as in the first suggestion. If people are 
-passionate about making the feature configurable it could be done 
-separately once we've fixed the logic with _lock/_unlock and 
-adding _is_locked.
+>> The DT should have another node for this
+>> clock which a (common) clock driver picks up. So having it referenced in
+>> this node is purely informational, right?
+> 
+> You are confusing here provider with consumer. The bcm43xx chip is
+> clearly a consumer of a 32 kHz clock and so its DT node should specify
+> this.
+> 
+> A DT node for a clock, would be a clock provider node and that would be
+> handled by common clock framework in case of Linux indeed. A clock
+> provider node doesn't have to be limited to a single clock, though. In
+> the case I mentioned above, PMIC node would be a clock provider and PMIC
+> driver would register necessary clocks in common clock framework.
 
-I will submit a change to the u-boot env tool to check the locking state 
-if supported and restore the same state after - obviously more 
-correct, regardless of the decision made here.
+I see. I figured the provider driver would not do that when the device
+tree did not contain a consumer. Either, it is now clear what is
+required from brcmfmac driver regarding clocks and gpios. Just still not
+sure about the wlan-supply property. Does it depend on the specific
+platform whether it is a gpio or regulator, ie. should I support both
+(mutual exclusive or not).
 
-Not ideal but in the meantime if someone needs to ensure the device is 
-unlocked they can run the flash_unlock from mtd-utils after writing u-boot
-environment variables from the userspace tool. (Call it a user space 
-work around for a user space bug?)
-
-> Uhm, I believe it should read like this (unprotected portion is of course "n 
-> - protected portion"):
->
-> SR BPs | Protected portion
-> ---------------------------
->  0    | 0/n
->  1    | 1/n
->  2    | 2/n
->  3    | min(4,n)/n
->  4    | min(8,n)/n
->  5    | min(16,n)/n
->  6    | min(32,n)/n
->  7    | min(64,n)/n
->
-Yes sorry that was a typo in the previous email, should have been powers 
-of 2 as above and the patch. Also technically correct about the min macro, 
-as you saw I was just terminating the loop before that condition was met.
-
->> A patch with this implementation follows. Let me know what you think. I
->> have a spreadsheet summarising the block protect bits for the STmicro
->> devices I can share if it will help.
->
-> Could you please share this?
-It sounds like you have already done your own research but here is what I 
-have: 
-https://docs.google.com/spreadsheet/ccc?key=0AhKBO-EQCLLkdGR1Q05qLUs2RURsMFA4V2s2X1llY3c&usp=sharing
-
-Thanks for your comments on this issue and patch. I will resubmit 
-another version addressing your points soon.
-
-Cheers,
-Austin.
+Regards,
+Arend
