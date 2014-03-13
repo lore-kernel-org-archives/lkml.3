@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932AbaCMKNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:13:47 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34747 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863AbaCMKNE (ORCPT
+	id S1753645AbaCMKMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:12:50 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42114 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752829AbaCMKMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:13:04 -0400
-Date: Thu, 13 Mar 2014 10:12:35 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: James Morris <jmorris@namei.org>
-Cc: Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+	Thu, 13 Mar 2014 06:12:45 -0400
+Date: Thu, 13 Mar 2014 10:12:02 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: Re: Trusted kernel patchset for Secure Boot lockdown
-Message-ID: <20140313101235.753c3ec0@alan.etchedpixels.co.uk>
-In-Reply-To: <alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
-References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
-	<CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
-	<alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
-	<1394686919.25122.2.camel@x230>
-	<CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
-	<alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Patch Tracking <patches@linaro.org>
+Subject: Re: [PATCH] perf: ARM64: wire up perf_regs and unwind support
+Message-ID: <20140313101202.GB11365@mudshark.cambridge.arm.com>
+References: <1392311193-21214-1-git-send-email-jean.pihet@linaro.org>
+ <CAFrcx1=ZBWt1mak_6+=KbCFZEsaD3T_xZ8up4WBLSr6_JTkP1A@mail.gmail.com>
+ <20140312174520.GB17308@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140312174520.GB17308@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Mar 2014 20:33:06 +1100 (EST)
-James Morris <jmorris@namei.org> wrote:
-
-> On Wed, 12 Mar 2014, Kees Cook wrote:
-> 
-> > On Wed, Mar 12, 2014 at 10:01 PM, Matthew Garrett
-> > <matthew.garrett@nebula.com> wrote:
-> > > On Fri, 2014-02-28 at 14:03 +1100, James Morris wrote:
-> > >
-> > >> Ok, which tree should take this?  I'm happy to, although most of it is
-> > >> outside security/ .
-> > >
-> > > Should I be looking for someone else to take them instead? :)
+On Wed, Mar 12, 2014 at 05:45:20PM +0000, Catalin Marinas wrote:
+> On Wed, Mar 12, 2014 at 01:42:51PM +0100, Jean Pihet wrote:
+> > Hi,
 > > 
-> > Andrew, is this series[1] something you'd be okay taking? It touches
-> > many different areas, so you might be best for it.
+> > On 13 February 2014 18:06, Jean Pihet <jean.pihet@linaro.org> wrote:
+> > > This patch hooks in the perf_regs and libunwind code for ARM64.
+> > > The tools/perf/arch/arm64 is created; it contains the arch specific
+> > > code for DWARF unwinding.
+> > >
+> > > Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> > > Acked-by: Will Deacon <will.deacon@arm.com>
+> > 
+> > Ping on this patch. Can this one go into the perf tree?
 > 
-> I'll take it, but there's unanswered review feedback (your response to the 
-> first question), and Alan raised some doubts about the patches which I'm 
-> not sure have been resolved.
+> I'm happy to take it as well if there are no objections from the perf
+> maintainers.
 
-I have a series of doubts about their completeness which didn't get any
-answer at all, and one on the misleading use of the term "secure" as
-opposed to "measured" 8)
+I object :) Last time I took a patch for perf tools (via the arm tree) it
+ended in a conflict from hell and we vowed not to take tools patches via
+arch trees again.
 
-I don't think it's reasonable to have a policy of refusing them until
-they cover all cases. It's not like it can be dropped into staging and
-refined.
-
-So other than the usual moan about people naming things "security" being
-like putting "i-" and "e-" on the front of stuff to make it sound cool
-when it isn't what it says I'm fine 8)
-
-I would prefer it did the revocation of CAP_SYS_RAWIO or at least
-documented the absolute requirement.
-
-Alan
+Will
