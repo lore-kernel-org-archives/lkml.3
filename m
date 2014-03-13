@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208AbaCMNiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 09:38:05 -0400
-Received: from smtp-out-088.synserver.de ([212.40.185.88]:1096 "EHLO
-	smtp-out-042.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751154AbaCMNiD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 09:38:03 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 11748
-Message-ID: <5321B4DD.5040306@metafoo.de>
-Date: Thu, 13 Mar 2014 14:38:37 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1753361AbaCMNiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 09:38:23 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44767 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752714AbaCMNiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 09:38:21 -0400
+Message-ID: <5321B4B4.9010806@ti.com>
+Date: Thu, 13 Mar 2014 21:37:56 +0800
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dmaengine@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com, joelf@ti.com,
-        nsekhar@ti.com, Liam Girdwood <lgirdwood@gmail.com>,
-        Jyri Sarha <jsarha@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@kernel.org>, mporter@linaro.org,
-        dan.j.williams@intel.com, vinod.koul@intel.com
-Subject: Re: [alsa-devel] [PATCH 14/18] ASoC: davinci: Add edma dmaengine
- platform driver
-References: <1394702320-21743-1-git-send-email-peter.ujfalusi@ti.com> <1394702320-21743-15-git-send-email-peter.ujfalusi@ti.com> <53218835.3080909@metafoo.de> <5321AC84.7080004@ti.com>
-In-Reply-To: <5321AC84.7080004@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>, "Balbi, Felipe" <balbi@ti.com>
+CC: "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH][next] phy: core: make NULL a valid phy reference if !CONFIG_GENERIC_PHY
+References: <1394709073-1980-1-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1394709073-1980-1-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2014 02:03 PM, Peter Ujfalusi wrote:
-> On 03/13/2014 12:28 PM, Lars-Peter Clausen wrote:
->>> +int edma_pcm_platform_register(struct device *dev)
->>> +{
->>> +    if (dev->of_node)
->>> +        return snd_dmaengine_pcm_register(dev,
->>> +                    &edma_dmaengine_pcm_config,
->>> +                    SND_DMAENGINE_PCM_FLAG_NO_RESIDUE);
->>
->> Since the edma dmaengine driver implements the slave cap API there is no need
->> to manually specify SND_DMAENGINE_PCM_FLAG_NO_RESIDUE manually. But since the
->> edma driver sets the granularity to DMA_RESIDUE_GRANULARITY_DESCRIPTOR in this
->> case the generic dmaengine will not set SND_DMAENGINE_PCM_FLAG_NO_RESIDUE
->> automatically since it assumes that the dmaengine driver is capable of
->> properly reporting the DMA position.
->
-> Hrm, I see. For eDMA I think we can support DMA_RESIDUE_GRANULARITY_SEGMENT
-> granularity. Since according to the documentation the _SEGMENT means that the
-> DMA position will be updated per periods, which is basically the same thing
-> what we are doing at the moment when the granularity is
-> DMA_RESIDUE_GRANULARITY_DESCRIPTOR.
->  From ALSA point of view at least they are the same: neither of them can report
-> exact position, the DMA pointer jumps from period to period.
->
-> IMHO in the generic dmaengine PCM we should set the SNDRV_PCM_INFO_BATCH for
-> both cases.
->
+On Thursday 13 March 2014 07:11 PM, Strashko, Grygorii wrote:
+> This fixes a regression on Keystone 2 platforms caused by patch
+> 57303488cd37da58263e842de134dc65f7c626d5
+> "usb: dwc3: adapt dwc3 core to use Generic PHY Framework" which adds
+> optional support of generic phy in DWC3 core.
+> 
+> On Keystone 2 platforms the USB is not working now because
+> CONFIG_GENERIC_PHY isn't set and, as result, Generic PHY APIs stubs
+> return -ENOSYS always. The log shows:
+>  dwc3 2690000.dwc3: failed to initialize core
+>  dwc3: probe of 2690000.dwc3 failed with error -38
+> 
+> Hence, fix it by making NULL a valid phy reference in Generic PHY
+> APIs stubs in the same way as it was done by the patch
+> 04c2facad8fee66c981a51852806d8923336f362 "drivers: phy: Make NULL
+> a valid phy reference".
+> 
+> CC: Kishon Vijay Abraham I <kishon@ti.com>
+> CC: Felipe Balbi <balbi@ti.com>
+> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+This fixes the regression seen in Linux next and patch seems
+reasonable to me.
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Ups, sorry mixed up DMA_RESIDUE_GRANULARITY_SEGMENT and 
-DMA_RESIDUE_GRANULARITY_DESCRIPTOR. You can just remove the 
-SND_DMAENGINE_PCM_FLAG_NO_RESIDUE when registering the dmaengine PCM driver 
-and everything will still work as expected.
+Felipe, Kishon,
+Can you guys pick this fix if you are ok by it. Thanks
+
+
+>  include/linux/phy/phy.h |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+> index e2f5ca9..5a9b193 100644
+> --- a/include/linux/phy/phy.h
+> +++ b/include/linux/phy/phy.h
+> @@ -204,21 +204,29 @@ static inline void phy_pm_runtime_forbid(struct phy *phy)
+>  
+>  static inline int phy_init(struct phy *phy)
+>  {
+> +	if (!phy)
+> +		return 0;
+>  	return -ENOSYS;
+>  }
+>  
+>  static inline int phy_exit(struct phy *phy)
+>  {
+> +	if (!phy)
+> +		return 0;
+>  	return -ENOSYS;
+>  }
+>  
+>  static inline int phy_power_on(struct phy *phy)
+>  {
+> +	if (!phy)
+> +		return 0;
+>  	return -ENOSYS;
+>  }
+>  
+>  static inline int phy_power_off(struct phy *phy)
+>  {
+> +	if (!phy)
+> +		return 0;
+>  	return -ENOSYS;
+>  }
+>  
+> 
+
