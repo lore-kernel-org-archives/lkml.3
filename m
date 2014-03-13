@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaCMKOe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:14:34 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:32800 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976AbaCMKOa (ORCPT
+	id S1754169AbaCMKWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:22:22 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:42376 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753791AbaCMKWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:14:30 -0400
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        catalin.marinas@arm.com, will.deacon@arm.com, tim.bird@sonymobile.com
-Cc: gkulkarni@caviumnetworks.com, dsaxena@linaro.org, arndb@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v6 2/7] arm64: Add 'notrace' attribute to unwind_frame() for ftrace
-Date: Thu, 13 Mar 2014 19:13:45 +0900
-Message-Id: <1394705630-12384-3-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
- <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
+	Thu, 13 Mar 2014 06:22:20 -0400
+Date: Thu, 13 Mar 2014 10:22:03 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Patch Tracking <patches@linaro.org>
+Subject: Re: [PATCH] perf: ARM64: wire up perf_regs and unwind support
+Message-ID: <20140313102203.GC30339@arm.com>
+References: <1392311193-21214-1-git-send-email-jean.pihet@linaro.org>
+ <CAFrcx1=ZBWt1mak_6+=KbCFZEsaD3T_xZ8up4WBLSr6_JTkP1A@mail.gmail.com>
+ <20140312174520.GB17308@arm.com>
+ <20140313101202.GB11365@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140313101202.GB11365@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-walk_stackframe() calls unwind_frame(), and if walk_stackframe() is
-"notrace", unwind_frame() should be also "notrace".
+On Thu, Mar 13, 2014 at 10:12:02AM +0000, Will Deacon wrote:
+> On Wed, Mar 12, 2014 at 05:45:20PM +0000, Catalin Marinas wrote:
+> > On Wed, Mar 12, 2014 at 01:42:51PM +0100, Jean Pihet wrote:
+> > > On 13 February 2014 18:06, Jean Pihet <jean.pihet@linaro.org> wrote:
+> > > > This patch hooks in the perf_regs and libunwind code for ARM64.
+> > > > The tools/perf/arch/arm64 is created; it contains the arch specific
+> > > > code for DWARF unwinding.
+> > > >
+> > > > Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> > > > Acked-by: Will Deacon <will.deacon@arm.com>
+> > > 
+> > > Ping on this patch. Can this one go into the perf tree?
+> > 
+> > I'm happy to take it as well if there are no objections from the perf
+> > maintainers.
+> 
+> I object :) Last time I took a patch for perf tools (via the arm tree) it
+> ended in a conflict from hell and we vowed not to take tools patches via
+> arch trees again.
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- arch/arm64/kernel/stacktrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Works for me ;)
 
-diff --git a/arch/arm64/kernel/stacktrace.c b/arch/arm64/kernel/stacktrace.c
-index c3b6c63..54122c4 100644
---- a/arch/arm64/kernel/stacktrace.c
-+++ b/arch/arm64/kernel/stacktrace.c
-@@ -35,7 +35,7 @@
-  *	ldp	x29, x30, [sp]
-  *	add	sp, sp, #0x10
-  */
--int unwind_frame(struct stackframe *frame)
-+int notrace unwind_frame(struct stackframe *frame)
- {
- 	unsigned long high, low;
- 	unsigned long fp = frame->fp;
 -- 
-1.7.9.5
-
+Catalin
