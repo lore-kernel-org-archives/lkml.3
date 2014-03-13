@@ -1,40 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaCMOJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 10:09:48 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59779 "EHLO
+	id S1753053AbaCMONZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 10:13:25 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60227 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112AbaCMOJq (ORCPT
+	with ESMTP id S1752314AbaCMONY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 10:09:46 -0400
-Date: Thu, 13 Mar 2014 14:09:01 +0000
+	Thu, 13 Mar 2014 10:13:24 -0400
+Date: Thu, 13 Mar 2014 14:13:17 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        Robert Baldyga <r.baldyga@samsung.com>, sameo@linux.intel.com,
-        myungjoo.ham@samsung.com, dmitry.torokhov@gmail.com,
-        cooloney@gmail.com, rpurdie@rpsys.net, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, lgirdwood@gmail.com, a.zummo@towertech.it,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-leds@vger.kernel.org,
-        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
-        k.kozlowski@samsung.com
-Message-ID: <20140313140901.GW366@sirena.org.uk>
-References: <1394703532-494-1-git-send-email-r.baldyga@samsung.com>
- <1394703532-494-5-git-send-email-r.baldyga@samsung.com>
- <532191E6.6080108@samsung.com>
- <20140313125504.GA10356@lee--X1>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140313141317.GX366@sirena.org.uk>
+References: <1394697961-4440-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="I33OQG5IFrqF2BWt"
+	protocol="application/pgp-signature"; boundary="CRrRoVXEpX/Dc4YP"
 Content-Disposition: inline
-In-Reply-To: <20140313125504.GA10356@lee--X1>
+In-Reply-To: <1394697961-4440-1-git-send-email-k.kozlowski@samsung.com>
 X-Cookie: Some assembly required.
 User-Agent: Mutt/1.5.22 (2013-10-16)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 4/4] mfd: max8997: move regmap handling to function
- drivers
+Subject: Re: [PATCH] regmap: irq: Set data pointer only on
+ regmap_add_irq_chip success
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,50 +32,44 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---I33OQG5IFrqF2BWt
+--CRrRoVXEpX/Dc4YP
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Mar 13, 2014 at 12:55:04PM +0000, Lee Jones wrote:
-> > Is it necessary? If previous mfd driver has various i2c line, previous =
-mfd driver
-> > initialize regmap/i2c setting on mfd driver.
-> > I'm not sure that regmap/i2c setting code move from mfd driver to each =
-driver.
-> >=20
-> > Dear Lee Jones,
-> > I need your opinion about moving regmap/i2c code from mfd driver to eac=
-h driver.
+On Thu, Mar 13, 2014 at 09:06:01AM +0100, Krzysztof Kozlowski wrote:
+> After setting the 'data' pointer (wchich is returned to the caller for
+> freeing later) the regmap_add_irq_chip() could still fail for various
+> reasons (ENOMEM, regmap_read or regmap_write failure). In such case the
+> memory under 'data' was freed in error path and error value was returned
+> but the 'data' variable was not changed.
+>=20
+> This could lead to errors if the caller passed such 'data' to
+> regmap_del_irq_chip().
 
-> I'd rather take advice from Mark on this one.
+If the user is calling regmap_del_irq_chip() after the add failed then
+I'd expect things to break anyway...
 
-I don't really case that much; I'm having a hard time seeing it as
-particularly useful to do the refactoring but if it makes people
-happy...  Keeping things in the core would help promote reusability I
-guess but I'm not sure that's likely to actually happen with this sort
-of driver/device.
-
---I33OQG5IFrqF2BWt
+--CRrRoVXEpX/Dc4YP
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTIbv6AAoJELSic+t+oim90ZUP/2+p9Guto8SsGiGIsf4AZHrb
-YNgb7rBjGWuX07oxXR3x6e5zpu+8LL1SSItlF/Xj/9p9xakJyU4AlVhQXkaTNbpv
-l8gmu/ZA1FTn8V7+qFT5dsWoX1AsDn62bELWXlnh0z9zXRJCRzNwv14zMf25e+BI
-oXS+9qSUkO3Vp3lXiH165OMAiNgZ+GFpkFfIN2rFX91w3gBOCiEkd0Zs2ZyUNpOe
-T5MHtWcMQNvTGcFuYWy4wyhkTQ46sSho0BgJa/UHdjUUhFGF2pWxXTPNpNo9al9P
-gNfKg5kiPcnh7ytNbwzcxhw5nH1ydK+wj8/27o2Cdkpqum+AoTmHCGsXGIQHF7AS
-RbpRyJo/p3sxtd++m+elzIW8PlCYbILz/mTvT1tVeee/MOPSxw7DgxOWxeyhGwNk
-kjhAUklm8jafgnjBTi1a3AZ4Nbe3D0mejqYuhUf+V/FwxYu9/xatzbYCOaitYRzH
-6rDsXE/iewg+ZYuXJysWfgWwk0zKWdehqaTtukO+OL7o9se5oGbU0tplPagEmCUn
-BkwLPurRtkMeMcA+H0eR5BLoFx9N+qeQ7riy2VIhLpEPM2rwwQbDqJjMz1r9Gml+
-RleaJmeyJNClYITNrnG/SetrOHvnH/UbEzKsh3kwv+5B7+DZsWkJqTmUUfO9XfOg
-SPl8W/+XB4h0yHalLzg6
-=nS7y
+iQIcBAEBAgAGBQJTIbz6AAoJELSic+t+oim9EJUP/0ERAVdJ0n6mLp3unf84hrZA
+WPQmtTKqBGJvmIknbu2TExEmlqoDdVXdDvJYwtQ7w8Jqx8MkRTi2PHu6Mh6zFGN5
+i8aacQU3Ix4RzEKUW/7+RIVT1wHd7xmuh1MvDGzow5u+6qwvGQDpnzVJzZ5oUs2R
+cCWhyMR5KjwEaiGF/TLpe9aoF4GGkvOZ6FxqrvKrzTfJlbipUeDAt453kmgV6cks
+dQPAz8e+dw9gGABGCykkvpSLrVSJmCiVues3B49j9qRdULq5OWRre1pRhMI6uw+z
+D+bH2HTE6fDEW0t3mm0ccJG5x+94AATEVtPlJrHG5G6FPNJSIQagHn+ScpmwowWD
+pfAkUKzgUMMR53Ngv8OuWhLHICYJB94mTA7QWrcPp8htmUHcaOIHeDosydb69wXf
+zmW++jtiE8xPNLb5nitcVbehpC1IqQQ33AL9dY5g9jUZ938zVjnEhN2zFjpcoEVl
+ksoKm/sTjjIY3ulyxfNlz15ZmyhQ6wyOkTQsYOjdJtAJRzDlmGwA1u/nbHqMwTN8
+rfEAEN9a9IRQBoiesSxGtnkCb8yqJg79qwUh4VmcRwtTeztukuGXiJ57xBrwloQd
+y3Af6EUS6bjefxrc3Ljh86ZvFdMy8Boae6sVxcdvePyGUV8rVl/oR3tcqJ12h3ua
+qxUXqzPsn2eN/D1Xtj/u
+=a2KB
 -----END PGP SIGNATURE-----
 
---I33OQG5IFrqF2BWt--
+--CRrRoVXEpX/Dc4YP--
