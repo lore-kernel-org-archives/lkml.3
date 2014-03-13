@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063AbaCMDmE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 23:42:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59813 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752729AbaCMDmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 23:42:02 -0400
-Message-ID: <532128F0.7090709@zytor.com>
-Date: Wed, 12 Mar 2014 20:41:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753174AbaCMDse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 23:48:34 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:38098 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766AbaCMDsd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 23:48:33 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: joeyli <jlee@suse.com>, Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-References: <20140310110410.5b2218f6@ilfaris> <alpine.DEB.2.02.1403121722030.18573@ionos.tec.linutronix.de> <alpine.DEB.2.02.1403121729060.18573@ionos.tec.linutronix.de> <1554867.utJVyPuT6A@vostro.rjw.lan> <alpine.DEB.2.02.1403130049500.18573@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1403130049500.18573@ionos.tec.linutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140312133403.GB29079@shuo-gentoo>
+References: <20140312132441.GA29079@shuo-gentoo>
+	<20140312133403.GB29079@shuo-gentoo>
+Date: Wed, 12 Mar 2014 20:48:32 -0700
+X-Google-Sender-Auth: pV9Yei-LABSo_Y5Ro9JgZ-Y0S_E
+Message-ID: <CAGXu5jJuUf4dwFqAZJgqRduw_oEN=H-FUh8vEDuThnhp9MPxKg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pstore: fix memory leak when decompress using big_oops_buf
+From: Kees Cook <keescook@chromium.org>
+To: Liu Shuo <shuox.liu@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Zhang Yanmin <yanmin_zhang@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2014 05:54 PM, Thomas Gleixner wrote:
-> 
-> From the timekeeping POV there is absolutely no need to set the wall
-> clock time early. The kernel boot phase does not care about wall time
-> at all. We should have it done before we hit userspace, but not even
-> that is a hard requirement.
-> 
+On Wed, Mar 12, 2014 at 6:34 AM, Liu Shuo <shuox.liu@gmail.com> wrote:
+> From: Liu ShuoX <shuox.liu@intel.com>
+>
+> After sucessful decompressing, the buffer which pointed by 'buf' will be
+> lost as 'buf' is overwrite by 'big_oops_buf' and will never be freed.
+> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
 
-This is a key observation, I believe.
+Thanks again!
 
-	-hpa
+Acked-by: Kees Cook <keescook@chromium.org>
 
+-Kees
+
+> ---
+> fs/pstore/platform.c | 1 +
+> 1 file changed, 1 insertion(+)
+>
+> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+> index 78c3c20..46d269e 100644
+> --- a/fs/pstore/platform.c
+> +++ b/fs/pstore/platform.c
+> @@ -497,6 +497,7 @@ void pstore_get_records(int quiet)
+>                                                         big_oops_buf_sz);
+>
+>                         if (unzipped_len > 0) {
+> +                               kfree(buf);
+>                                 buf = big_oops_buf;
+>                                 size = unzipped_len;
+>                                 compressed = false;
+> --
+> 1.8.3.2
+>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
