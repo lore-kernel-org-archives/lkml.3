@@ -1,70 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945AbaCMNwN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 09:52:13 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:61968 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbaCMNwL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 09:52:11 -0400
-Date: Thu, 13 Mar 2014 15:52:06 +0200
-From: Gleb Natapov <gleb@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: SVM: fix cr8 intercept window
-Message-ID: <20140313135206.GB30596@minantech.com>
-References: <1394561478-8815-1-git-send-email-rkrcmar@redhat.com>
- <20140312010513.GA8131@amt.cnet>
- <20140312104047.GA7488@potion.brq.redhat.com>
- <53209741.3060204@redhat.com>
+	id S1752961AbaCMN4e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 09:56:34 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:10021 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751369AbaCMN4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 09:56:33 -0400
+X-IronPort-AV: E=Sophos;i="4.97,647,1389744000"; 
+   d="scan'208";a="111009358"
+Message-ID: <1394718990.25873.70.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next v7 4/9] xen-netback: Introduce TX grant mapping
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Date: Thu, 13 Mar 2014 13:56:30 +0000
+In-Reply-To: <5321B006.9070608@citrix.com>
+References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
+		 <1394142511-14827-5-git-send-email-zoltan.kiss@citrix.com>
+	 <1394706812.25873.28.camel@kazak.uk.xensource.com>
+	 <5321B006.9070608@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <53209741.3060204@redhat.com>
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 06:20:01PM +0100, Paolo Bonzini wrote:
-> Il 12/03/2014 11:40, Radim Krčmář ha scritto:
-> >2014-03-11 22:05-0300, Marcelo Tosatti:
-> >>On Tue, Mar 11, 2014 at 07:11:18PM +0100, Radim Krčmář wrote:
-> >>>We always disable cr8 intercept in its handler, but only re-enable it
-> >>>if handling KVM_REQ_EVENT, so there can be a window where we do not
-> >>>intercept cr8 writes, which allows an interrupt to disrupt a higher
-> >>>priority task.
-> >>>
-> >>>Fix this by disabling intercepts in the same function that re-enables
-> >>>them when needed. This fixes BSOD in Windows 2008.
-> >>>
-> >>>Cc: <stable@vger.kernel.org>
-> >>>Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> >>>---
-> >>> arch/x86/kvm/svm.c | 6 +++---
-> >>> 1 file changed, 3 insertions(+), 3 deletions(-)
-> >>>
-> >>>diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> >>>index 64d9bb9..f676c18 100644
-> >>>--- a/arch/x86/kvm/svm.c
-> >>>+++ b/arch/x86/kvm/svm.c
-> >>>@@ -3003,10 +3003,8 @@ static int cr8_write_interception(struct vcpu_svm *svm)
-> >>> 	u8 cr8_prev = kvm_get_cr8(&svm->vcpu);
-> >>> 	/* instruction emulation calls kvm_set_cr8() */
-> >>> 	r = cr_interception(svm);
-> >>>-	if (irqchip_in_kernel(svm->vcpu.kvm)) {
-> >>>-		clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-> >>>+	if (irqchip_in_kernel(svm->vcpu.kvm))
-> >>> 		return r;
-> >>>-	}
-> 
-> I think that the old code here makes little sense, and for two reasons:
-> 
-I agree that old code is wrong and the patch looks correct, but I only
-see how the bug may cause pending IRR to not be delivered in time,
-not how interrupt can disrupt a higher priority task.
+On Thu, 2014-03-13 at 13:17 +0000, Zoltan Kiss wrote:
+> On 13/03/14 10:33, Ian Campbell wrote:
+> > On Thu, 2014-03-06 at 21:48 +0000, Zoltan Kiss wrote:
+> >> @@ -135,13 +146,31 @@ struct xenvif {
+> >>   	pending_ring_idx_t pending_cons;
+> >>   	u16 pending_ring[MAX_PENDING_REQS];
+> >>   	struct pending_tx_info pending_tx_info[MAX_PENDING_REQS];
+> >> +	grant_handle_t grant_tx_handle[MAX_PENDING_REQS];
+> >>
+> >>   	/* Coalescing tx requests before copying makes number of grant
+> >>   	 * copy ops greater or equal to number of slots required. In
+> >>   	 * worst case a tx request consumes 2 gnttab_copy.
+> >>   	 */
+> >>   	struct gnttab_copy tx_copy_ops[2*MAX_PENDING_REQS];
+> >> -
+> >> +	struct gnttab_map_grant_ref tx_map_ops[MAX_PENDING_REQS];
+> >> +	struct gnttab_unmap_grant_ref tx_unmap_ops[MAX_PENDING_REQS];
+> >
+> > I wonder if we should break some of these arrays into separate
+> > allocations? Wasn't there a problem with sizeof(struct xenvif) at one
+> > point?
+> tx_copy_ops will be removed in the next patch. Yes, for grant_copy_op we 
+> allocate it separately, because it has MAX_SKB_FRAGS * 
+> XEN_NETIF_RX_RING_SIZE elements, but that's for the RX thread
 
---
-			Gleb.
+OK
+
+> >> diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+> >> index bc32627..1fe9fe5 100644
+> >> --- a/drivers/net/xen-netback/interface.c
+> >> +++ b/drivers/net/xen-netback/interface.c
+> >> @@ -493,6 +533,23 @@ void xenvif_disconnect(struct xenvif *vif)
+> >>
+> >>   void xenvif_free(struct xenvif *vif)
+> >>   {
+> >> +	int i, unmap_timeout = 0;
+> >> +
+> >> +	for (i = 0; i < MAX_PENDING_REQS; ++i) {
+> >> +		if (vif->grant_tx_handle[i] != NETBACK_INVALID_HANDLE) {
+> >> +			unmap_timeout++;
+> >> +			schedule_timeout(msecs_to_jiffies(1000));
+> >> +			if (unmap_timeout > 9 &&
+> >> +			    net_ratelimit())
+> >
+> > Does this really reach 80 columns when unwrapped?
+> Not here, but in a later patch 9 will be replaced with 
+> worst_case_skb_lifetime.
+
+OK.
+
+> > (there seems to my eye to be a lot of overaggressive wrapping in this
+> > patch, but nevermind)
+> I tried to fix every warning and error noticed by checkpatch.pl, however 
+> there are still a few lines longer than 80, just because I couldn't 
+> reasonably wrap them.
+
+I thought checkpatch had been reined in a bit wrt 80 columns because the
+cure is often worse than the disease. Anyway, it's there now.
+
+> >
+> >> +				netdev_err(vif->dev,
+> >> +					   "Page still granted! Index: %x\n",
+> >> +					   i);
+> >> +			i = -1;
+> >
+> > Should there not be a break here? Otherwise don't we restart the for
+> > loop from 0 again? If that is intentional then a comment would be very
+> > useful.
+> Yes, that's intentional, we shouldn't exit this loop until everything is 
+> unmapped. An i-- would be fine as well. I will put a comment there.
+
+Yes please do, it's very non-obvious what is going on. I'm almost
+inclined to suggest that this is one of the few places where a goto
+retry might be appropriate.
+
+Can you also add a comment saying what is doing the actual unmap work
+which we are waiting for here since it is not actually part of the loop.
+Might a barrier be needed to ensure we see that work happening?
+
+> >
+> >> @@ -919,11 +873,38 @@ err:
+> >>   	return NULL;
+> >>   }
+> >>
+> >> +static inline void xenvif_grant_handle_set(struct xenvif *vif,
+> >> +					   u16 pending_idx,
+> >> +					   grant_handle_t handle)
+> >> +{
+> >> +	if (unlikely(vif->grant_tx_handle[pending_idx] !=
+> >> +		     NETBACK_INVALID_HANDLE)) {
+> >> +		netdev_err(vif->dev,
+> >
+> > Is this in any way guest triggerable? Needs to be ratelimited in that
+> > case (and arguably even if not?)
+> It shouldn't be guest triggerable. It only means netback really screwed 
+> up the accounting of granted pages. There is a BUG right after it, and 
+> the kernel should panic here.
+
+OK.
+
+> >> +			   "Trying to unmap invalid handle! pending_idx: %x\n",
+> >> +			   pending_idx);
+> >> +		BUG();
+> >> +	}
+> >> +	vif->grant_tx_handle[pending_idx] = NETBACK_INVALID_HANDLE;
+> >> +}
+> >> +
+> >> @@ -1001,6 +982,17 @@ static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
+> >>
+> >>   		pending_idx = frag_get_pending_idx(frag);
+> >>
+> >> +		/* If this is not the first frag, chain it to the previous*/
+> >> +		if (unlikely(prev_pending_idx == INVALID_PENDING_IDX))
+> >> +			skb_shinfo(skb)->destructor_arg =
+> >> +				&vif->pending_tx_info[pending_idx].callback_struct;
+> >> +		else if (likely(pending_idx != prev_pending_idx))
+> >> +			vif->pending_tx_info[prev_pending_idx].callback_struct.ctx =
+> >> +				&(vif->pending_tx_info[pending_idx].callback_struct);
+> >
+> > #define callback_for(vif, pending_idx) .... would make this and a bunch
+> > of other places a lot less verbose IMHO.
+> Yeah, I was thinking about that, but it's really used here and 2 places 
+> in tx_submit, so I didn't bother to do it.
+
+That's still 5-6 uses I think. Worth it IMHO.
+
+Thanks,
+
+Ian.
+
