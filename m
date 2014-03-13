@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479AbaCMKpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:45:52 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:40034 "EHLO
+	id S1754220AbaCMKnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:43:09 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:39845 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754381AbaCMKob (ORCPT
+	by vger.kernel.org with ESMTP id S1754187AbaCMKnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:44:31 -0400
-Message-Id: <20140313104429.114872157@goodmis.org>
+	Thu, 13 Mar 2014 06:43:06 -0400
+Message-Id: <20140313104304.335334016@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 13 Mar 2014 06:44:17 -0400
+Date: Thu, 13 Mar 2014 06:42:56 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -17,129 +17,230 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>, Ulrich Obergfell <uobergfe@redhat.com>
-Subject: [PATCH RT 3/4] cpu_chill: Add a UNINTERRUPTIBLE hrtimer_nanosleep
-References: <20140313104414.588331401@goodmis.org>
+        <stable-rt@vger.kernel.org>, Don Estabrook <don.estabrook@gmail.com>
+Subject: [PATCH RT 4/5] crypto: Reduce preempt disabled regions, more algos
+References: <20140313104252.175070082@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0003-cpu_chill-Add-a-UNINTERRUPTIBLE-hrtimer_nanosleep.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0004-crypto-Reduce-preempt-disabled-regions-more-algos.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4.82-rt103-rc1 stable review patch.
+3.8.13.14-rt30-rc1 stable review patch.
 If anyone has any objections, please let me know.
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-We hit another bug that was caused by switching cpu_chill() from
-msleep() to hrtimer_nanosleep().
+Don Estabrook reported
+| kernel: WARNING: CPU: 2 PID: 858 at kernel/sched/core.c:2428 migrate_disable+0xed/0x100()
+| kernel: WARNING: CPU: 2 PID: 858 at kernel/sched/core.c:2462 migrate_enable+0x17b/0x200()
+| kernel: WARNING: CPU: 3 PID: 865 at kernel/sched/core.c:2428 migrate_disable+0xed/0x100()
 
-This time it is a livelock. The problem is that hrtimer_nanosleep()
-calls schedule with the state == TASK_INTERRUPTIBLE. But these means
-that if a signal is pending, the scheduler wont schedule, and will
-simply change the current task state back to TASK_RUNNING. This
-nullifies the whole point of cpu_chill() in the first place. That is,
-if a task is spinning on a try_lock() and it preempted the owner of the
-lock, if it has a signal pending, it will never give up the CPU to let
-the owner of the lock run.
+and his backtrace showed some crypto functions which looked fine.
 
-I made a static function __hrtimer_nanosleep() that takes a fifth
-parameter "state", which determines the task state of that the
-nanosleep() will be in. The normal hrtimer_nanosleep() will act the
-same, but cpu_chill() will call the __hrtimer_nanosleep() directly with
-the TASK_UNINTERRUPTIBLE state.
+The problem is the following sequence:
 
-cpu_chill() only cares that the first sleep happens, and does not care
-about the state of the restart schedule (in hrtimer_nanosleep_restart).
+glue_xts_crypt_128bit()
+{
+	blkcipher_walk_virt(); /* normal migrate_disable() */
+
+	glue_fpu_begin(); /* get atomic */
+
+	while (nbytes) {
+		__glue_xts_crypt_128bit();
+		blkcipher_walk_done(); /* with nbytes = 0, migrate_enable()
+					* while we are atomic */
+	};
+	glue_fpu_end() /* no longer atomic */
+}
+
+and this is why the counter get out of sync and the warning is printed.
+The other problem is that we are non-preemptible between
+glue_fpu_begin() and glue_fpu_end() and the latency grows. To fix this,
+I shorten the FPU off region and ensure blkcipher_walk_done() is called
+with preemption enabled. This might hurt the performance because we now
+enable/disable the FPU state more often but we gain lower latency and
+the bug is gone.
 
 Cc: stable-rt@vger.kernel.org
-Reported-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Don Estabrook <don.estabrook@gmail.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- kernel/hrtimer.c | 25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ arch/x86/crypto/cast5_avx_glue.c | 21 +++++++++------------
+ arch/x86/crypto/glue_helper.c    | 19 +++++++++----------
+ 2 files changed, 18 insertions(+), 22 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index a87d70d..5342f82 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1724,12 +1724,13 @@ void hrtimer_init_sleeper(struct hrtimer_sleeper *sl, struct task_struct *task)
- }
- EXPORT_SYMBOL_GPL(hrtimer_init_sleeper);
- 
--static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mode)
-+static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mode,
-+				unsigned long state)
+diff --git a/arch/x86/crypto/cast5_avx_glue.c b/arch/x86/crypto/cast5_avx_glue.c
+index c663181..2d48e83 100644
+--- a/arch/x86/crypto/cast5_avx_glue.c
++++ b/arch/x86/crypto/cast5_avx_glue.c
+@@ -60,7 +60,7 @@ static inline void cast5_fpu_end(bool fpu_enabled)
+ static int ecb_crypt(struct blkcipher_desc *desc, struct blkcipher_walk *walk,
+ 		     bool enc)
  {
- 	hrtimer_init_sleeper(t, current);
+-	bool fpu_enabled = false;
++	bool fpu_enabled;
+ 	struct cast5_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	const unsigned int bsize = CAST5_BLOCK_SIZE;
+ 	unsigned int nbytes;
+@@ -76,7 +76,7 @@ static int ecb_crypt(struct blkcipher_desc *desc, struct blkcipher_walk *walk,
+ 		u8 *wsrc = walk->src.virt.addr;
+ 		u8 *wdst = walk->dst.virt.addr;
  
- 	do {
--		set_current_state(TASK_INTERRUPTIBLE);
-+		set_current_state(state);
- 		hrtimer_start_expires(&t->timer, mode);
- 		if (!hrtimer_active(&t->timer))
- 			t->task = NULL;
-@@ -1773,7 +1774,8 @@ long __sched hrtimer_nanosleep_restart(struct restart_block *restart)
- 				HRTIMER_MODE_ABS);
- 	hrtimer_set_expires_tv64(&t.timer, restart->nanosleep.expires);
+-		fpu_enabled = cast5_fpu_begin(fpu_enabled, nbytes);
++		fpu_enabled = cast5_fpu_begin(false, nbytes);
  
--	if (do_nanosleep(&t, HRTIMER_MODE_ABS))
-+	/* cpu_chill() does not care about restart state. */
-+	if (do_nanosleep(&t, HRTIMER_MODE_ABS, TASK_INTERRUPTIBLE))
- 		goto out;
+ 		/* Process multi-block batch */
+ 		if (nbytes >= bsize * CAST5_PARALLEL_BLOCKS) {
+@@ -104,10 +104,9 @@ static int ecb_crypt(struct blkcipher_desc *desc, struct blkcipher_walk *walk,
+ 		} while (nbytes >= bsize);
  
- 	rmtp = restart->nanosleep.rmtp;
-@@ -1790,8 +1792,10 @@ out:
- 	return ret;
+ done:
++		cast5_fpu_end(fpu_enabled);
+ 		err = blkcipher_walk_done(desc, walk, nbytes);
+ 	}
+-
+-	cast5_fpu_end(fpu_enabled);
+ 	return err;
  }
  
--long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
--		       const enum hrtimer_mode mode, const clockid_t clockid)
-+static long
-+__hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
-+		    const enum hrtimer_mode mode, const clockid_t clockid,
-+		    unsigned long state)
+@@ -231,7 +230,7 @@ done:
+ static int cbc_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
+ 		       struct scatterlist *src, unsigned int nbytes)
  {
- 	struct restart_block *restart;
- 	struct hrtimer_sleeper t;
-@@ -1804,7 +1808,7 @@ long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
+-	bool fpu_enabled = false;
++	bool fpu_enabled;
+ 	struct blkcipher_walk walk;
+ 	int err;
  
- 	hrtimer_init_on_stack(&t.timer, clockid, mode);
- 	hrtimer_set_expires_range_ns(&t.timer, timespec_to_ktime(*rqtp), slack);
--	if (do_nanosleep(&t, mode))
-+	if (do_nanosleep(&t, mode, state))
- 		goto out;
+@@ -240,12 +239,11 @@ static int cbc_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
+ 	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
  
- 	/* Absolute timers do not update the rmtp value and restart: */
-@@ -1831,6 +1835,12 @@ out:
- 	return ret;
+ 	while ((nbytes = walk.nbytes)) {
+-		fpu_enabled = cast5_fpu_begin(fpu_enabled, nbytes);
++		fpu_enabled = cast5_fpu_begin(false, nbytes);
+ 		nbytes = __cbc_decrypt(desc, &walk);
++		cast5_fpu_end(fpu_enabled);
+ 		err = blkcipher_walk_done(desc, &walk, nbytes);
+ 	}
+-
+-	cast5_fpu_end(fpu_enabled);
+ 	return err;
  }
  
-+long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
-+		       const enum hrtimer_mode mode, const clockid_t clockid)
-+{
-+	return __hrtimer_nanosleep(rqtp, rmtp, mode, clockid, TASK_INTERRUPTIBLE);
-+}
-+
- SYSCALL_DEFINE2(nanosleep, struct timespec __user *, rqtp,
- 		struct timespec __user *, rmtp)
+@@ -315,7 +313,7 @@ done:
+ static int ctr_crypt(struct blkcipher_desc *desc, struct scatterlist *dst,
+ 		     struct scatterlist *src, unsigned int nbytes)
  {
-@@ -1857,7 +1867,8 @@ void cpu_chill(void)
- 	unsigned int freeze_flag = current->flags & PF_NOFREEZE;
+-	bool fpu_enabled = false;
++	bool fpu_enabled;
+ 	struct blkcipher_walk walk;
+ 	int err;
  
- 	current->flags |= PF_NOFREEZE;
--	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
-+	__hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC,
-+			    TASK_UNINTERRUPTIBLE);
- 	if (!freeze_flag)
- 		current->flags &= ~PF_NOFREEZE;
+@@ -324,13 +322,12 @@ static int ctr_crypt(struct blkcipher_desc *desc, struct scatterlist *dst,
+ 	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
+ 
+ 	while ((nbytes = walk.nbytes) >= CAST5_BLOCK_SIZE) {
+-		fpu_enabled = cast5_fpu_begin(fpu_enabled, nbytes);
++		fpu_enabled = cast5_fpu_begin(false, nbytes);
+ 		nbytes = __ctr_crypt(desc, &walk);
++		cast5_fpu_end(fpu_enabled);
+ 		err = blkcipher_walk_done(desc, &walk, nbytes);
+ 	}
+ 
+-	cast5_fpu_end(fpu_enabled);
+-
+ 	if (walk.nbytes) {
+ 		ctr_crypt_final(desc, &walk);
+ 		err = blkcipher_walk_done(desc, &walk, 0);
+diff --git a/arch/x86/crypto/glue_helper.c b/arch/x86/crypto/glue_helper.c
+index 22ce4f6..40bcaca 100644
+--- a/arch/x86/crypto/glue_helper.c
++++ b/arch/x86/crypto/glue_helper.c
+@@ -39,7 +39,7 @@ static int __glue_ecb_crypt_128bit(const struct common_glue_ctx *gctx,
+ 	void *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	const unsigned int bsize = 128 / 8;
+ 	unsigned int nbytes, i, func_bytes;
+-	bool fpu_enabled = false;
++	bool fpu_enabled;
+ 	int err;
+ 
+ 	err = blkcipher_walk_virt(desc, walk);
+@@ -49,7 +49,7 @@ static int __glue_ecb_crypt_128bit(const struct common_glue_ctx *gctx,
+ 		u8 *wdst = walk->dst.virt.addr;
+ 
+ 		fpu_enabled = glue_fpu_begin(bsize, gctx->fpu_blocks_limit,
+-					     desc, fpu_enabled, nbytes);
++					     desc, false, nbytes);
+ 
+ 		for (i = 0; i < gctx->num_funcs; i++) {
+ 			func_bytes = bsize * gctx->funcs[i].num_blocks;
+@@ -71,10 +71,10 @@ static int __glue_ecb_crypt_128bit(const struct common_glue_ctx *gctx,
+ 		}
+ 
+ done:
++		glue_fpu_end(fpu_enabled);
+ 		err = blkcipher_walk_done(desc, walk, nbytes);
+ 	}
+ 
+-	glue_fpu_end(fpu_enabled);
+ 	return err;
  }
+ 
+@@ -194,7 +194,7 @@ int glue_cbc_decrypt_128bit(const struct common_glue_ctx *gctx,
+ 			    struct scatterlist *src, unsigned int nbytes)
+ {
+ 	const unsigned int bsize = 128 / 8;
+-	bool fpu_enabled = false;
++	bool fpu_enabled;
+ 	struct blkcipher_walk walk;
+ 	int err;
+ 
+@@ -203,12 +203,12 @@ int glue_cbc_decrypt_128bit(const struct common_glue_ctx *gctx,
+ 
+ 	while ((nbytes = walk.nbytes)) {
+ 		fpu_enabled = glue_fpu_begin(bsize, gctx->fpu_blocks_limit,
+-					     desc, fpu_enabled, nbytes);
++					     desc, false, nbytes);
+ 		nbytes = __glue_cbc_decrypt_128bit(gctx, desc, &walk);
++		glue_fpu_end(fpu_enabled);
+ 		err = blkcipher_walk_done(desc, &walk, nbytes);
+ 	}
+ 
+-	glue_fpu_end(fpu_enabled);
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(glue_cbc_decrypt_128bit);
+@@ -278,7 +278,7 @@ int glue_ctr_crypt_128bit(const struct common_glue_ctx *gctx,
+ 			  struct scatterlist *src, unsigned int nbytes)
+ {
+ 	const unsigned int bsize = 128 / 8;
+-	bool fpu_enabled = false;
++	bool fpu_enabled;
+ 	struct blkcipher_walk walk;
+ 	int err;
+ 
+@@ -287,13 +287,12 @@ int glue_ctr_crypt_128bit(const struct common_glue_ctx *gctx,
+ 
+ 	while ((nbytes = walk.nbytes) >= bsize) {
+ 		fpu_enabled = glue_fpu_begin(bsize, gctx->fpu_blocks_limit,
+-					     desc, fpu_enabled, nbytes);
++					     desc, false, nbytes);
+ 		nbytes = __glue_ctr_crypt_128bit(gctx, desc, &walk);
++		glue_fpu_end(fpu_enabled);
+ 		err = blkcipher_walk_done(desc, &walk, nbytes);
+ 	}
+ 
+-	glue_fpu_end(fpu_enabled);
+-
+ 	if (walk.nbytes) {
+ 		glue_ctr_crypt_final_128bit(
+ 			gctx->funcs[gctx->num_funcs - 1].fn_u.ctr, desc, &walk);
 -- 
 1.8.5.3
 
