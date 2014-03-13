@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaCMJF6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 05:05:58 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:58375 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753192AbaCMJFz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 05:05:55 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Thu, 13 Mar 2014 09:05:49 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: WARN_ON() and X session lost from i915 on 3.14-rc6
-Message-ID: <20140313090549.GA8998@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Pavel Machek <pavel@ucw.cz>, daniel.vetter@ffwll.ch,
-	jani.nikula@linux.intel.com, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org,
-	kernel list <linux-kernel@vger.kernel.org>
-References: <20140312233039.GA5582@amd.pavel.ucw.cz>
- <20140312235209.GA4615@nuc-i3427.alporthouse.com>
- <20140313084002.GB8902@amd.pavel.ucw.cz>
+	id S1753490AbaCMJHZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 05:07:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25786 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753192AbaCMJHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 05:07:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,646,1389772800"; 
+   d="scan'208";a="491114896"
+Date: Thu, 13 Mar 2014 17:06:54 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Alex Shi <alex.shi@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [sched/balance] INFO: possible recursive locking detected
+Message-ID: <20140313090654.GJ27627@localhost>
+References: <20140303142526.GA8517@localhost>
+ <5321618F.3090801@linaro.org>
+ <20140313085341.GC27627@localhost>
+ <5321739B.1000506@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140313084002.GB8902@amd.pavel.ucw.cz>
+In-Reply-To: <5321739B.1000506@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 09:40:02AM +0100, Pavel Machek wrote:
-> On Wed 2014-03-12 23:52:09, Chris Wilson wrote:
-> > On Thu, Mar 13, 2014 at 12:30:39AM +0100, Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > This cost me two half-written mails...
-> > > 
-> > > So far it happened once, so it may be very infrequent; but I do not
-> > > think I seen similar failure from i915 before, so it may be an
-> > > regression. Well...
+On Thu, Mar 13, 2014 at 05:00:11PM +0800, Alex Shi wrote:
+> On 03/13/2014 04:53 PM, Fengguang Wu wrote:
+> > On Thu, Mar 13, 2014 at 03:43:11PM +0800, Alex Shi wrote:
+> >> On 03/03/2014 10:25 PM, Fengguang Wu wrote:
+> >>> Greetings,
+> >>>
+> >>> I got the below dmesg and the first bad commit is
+> >>>
+> >>> https://github.com/alexshi/power-scheduling.git single-balance.bak
+> >>> commit 2adc591a5cb6768ad11e63be9011906aa171148d
+> >>> Author:     Alex Shi <alex.shi@linaro.org>
+> >>> AuthorDate: Fri Feb 28 15:25:09 2014 +0800
+> >>> Commit:     Alex Shi <alex.shi@linaro.org>
+> >>> CommitDate: Sun Mar 2 09:16:38 2014 +0800
+> >>>
+> >>>     sched/balance: replace new_idle_balance
+> >>>     
+> >>>     Curren idle_balance will pull task on half of this group. That is
+> >>>     not needed in central balance.
+> >>
+> >>
+> >> Thanks for your testing, Fengguang!
+> >>
+> >> I fixed this issue and updated to the git tree. Is the single-balance
+> >> branch still in your performance radar? :)
 > > 
-> > It's a userspace use-after-free bug. Please file a bug on
-> > bugs.freedesktop.org.
+> > Sure, however you know it's costly to queue tests for one single tree.
+> > If your trees are directly based on -rcX kernels, that would cut the
+> > tests required for comparison by half.
 > 
-> Could we get some better messages from the kernel? Userspace should
-> not be able to produce WARN_ON()s.
+> Thanks a lot! I will keep in mind for this point.
+> rebased on rc6 kernel for that branch. :)
 
-Indeed, we have already pruned those errors and WARNs, in favour of a
-real error code, precisely because they are user triggerable.
- 
-> (This is debian 6.0.8; do you think it is worth reporting? I don't
-> think I should go to bugs.freedesktop.org...)
+That's great!
 
-I guess your userspace is roughly xf86-video-intel-2.17 and friends.
-Quite a few changes since then, but I've forgotten if this bug was ever
-addressed explicitly. Most likely it has been...
--Chris
+> Thanks again for generous help!
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+You are welcome. I've queued alexshi/single-balance for testing.
+
+Thanks,
+Fengguang
