@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858AbaCMJaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 05:30:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39744 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753410AbaCMJaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 05:30:07 -0400
-Date: Thu, 13 Mar 2014 10:29:17 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-arm-kernel@lists.infradead.org,
-        devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v2 2/4] irqchip: sun4i: Fix irq 0 not working
-Message-ID: <20140313092917.GE2815@lukather>
-References: <1394644627-12315-1-git-send-email-hdegoede@redhat.com>
- <1394644627-12315-3-git-send-email-hdegoede@redhat.com>
+	id S1753852AbaCMJa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 05:30:58 -0400
+Received: from tundra.namei.org ([65.99.196.166]:37602 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753593AbaCMJa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 05:30:56 -0400
+Date: Thu, 13 Mar 2014 20:33:06 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Kees Cook <keescook@chromium.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+In-Reply-To: <CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
+References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com> <CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com> <alpine.LRH.2.02.1402281402090.26521@tundra.namei.org> <1394686919.25122.2.camel@x230>
+ <CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3199z2xwsLUuj0Hj"
-Content-Disposition: inline
-In-Reply-To: <1394644627-12315-3-git-send-email-hdegoede@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 12 Mar 2014, Kees Cook wrote:
 
---3199z2xwsLUuj0Hj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Wed, Mar 12, 2014 at 10:01 PM, Matthew Garrett
+> <matthew.garrett@nebula.com> wrote:
+> > On Fri, 2014-02-28 at 14:03 +1100, James Morris wrote:
+> >
+> >> Ok, which tree should take this?  I'm happy to, although most of it is
+> >> outside security/ .
+> >
+> > Should I be looking for someone else to take them instead? :)
+> 
+> Andrew, is this series[1] something you'd be okay taking? It touches
+> many different areas, so you might be best for it.
 
-On Wed, Mar 12, 2014 at 06:17:05PM +0100, Hans de Goede wrote:
-> SUN4I_IRQ_VECTOR_REG containing 0 can mean one of 3 things:
-> 1) no more irqs pending
-> 2) irq 0 pending
-> 3) spurious irq
->=20
-> So if we immediately get a reading of 0, check the irq-pending reg
-> to differentiate between 2 and 3. We only do this once to avoid
-> the extra check in the common case of 1) hapening after having
-> read the vector-reg once.
->=20
-> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+I'll take it, but there's unanswered review feedback (your response to the 
+first question), and Alan raised some doubts about the patches which I'm 
+not sure have been resolved.
 
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Maxime
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---3199z2xwsLUuj0Hj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTIXptAAoJEBx+YmzsjxAgDJUP/2ofr5IXee0nNVXFOEVHWUfh
-e9/l9br7wFpzc7D1qBKYpyWZiCTNYXqzq2BBDzuJhQ7KH1auv91A6MUGbxNVXJpy
-XrjLyqrYoT+7RkFC23QPfvGwpduhUrULELZu1AX3KZCOEIo74xKU1SQaT7Odlc1Q
-Q6v2NYur/9S26CuxNBNnHbS8J8icok7vY54beX3GKQj7nGWyJdHlKY3lHk9sonG4
-W2lmsbsYqhHOF+BaeC/zo9Kbcz8E6KNFbMkDOzEFC3CGBFV2auq2yM6jwC8HqYWt
-jAZFsueqeHXCf8RRKyhHZu/3q58zmSka54UXF1PkY+Xcs89RKMMZ3svieOIUZftI
-GprLuCWwsCWO2hmZSc3mmOgyqKub2sd7NojUjC5CrydQzNBN5+/Hx/FBVR8GZBSO
-I5Y1LINPADc9D+i64nTMGo44BIHF8ldI3hpVfU4k3Jy2Za8rddlgrQIzNlIOfCq7
-c7d03Jhs0XdFRg4xLigq/Q/ZhkfSXV2Gqbxx9NVT+3AznIPz/gofDoZ/UrmlavUr
-VPpKfOmHZv6wF73cmNUJ8ojVyugK5ddJquavtpt01/GQezxume8tqrh1gzizqliG
-8qIrAG6ogAHeTXKQQyPH2Q1MkoGSFKBQrAO9AJ2NirjDxRcmP7PAS5PaDHdpNmKN
-5RZotXzjfKgVNbWaQCXe
-=tzIA
------END PGP SIGNATURE-----
-
---3199z2xwsLUuj0Hj--
+-- 
+James Morris
+<jmorris@namei.org>
