@@ -1,89 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaCMTut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 15:50:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20042 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755335AbaCMTuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 15:50:46 -0400
-From: Hans de Goede <hdegoede@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com, Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 2/3] irqchip: sun4i: Simplify irq mapping
-Date: Thu, 13 Mar 2014 20:50:01 +0100
-Message-Id: <1394740202-1952-3-git-send-email-hdegoede@redhat.com>
-In-Reply-To: <1394740202-1952-1-git-send-email-hdegoede@redhat.com>
-References: <1394740202-1952-1-git-send-email-hdegoede@redhat.com>
+	id S1755388AbaCMTve (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 15:51:34 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:34881 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755294AbaCMTuc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 15:50:32 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 10/11] cgroup: make cgrp_dfl_root mountable
+Date: Thu, 13 Mar 2014 15:50:12 -0400
+Message-Id: <1394740213-17626-11-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1394740213-17626-1-git-send-email-tj@kernel.org>
+References: <1394740213-17626-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we're using handle_fasteio_irq for all interrupts, we can get rid
-of having 2 irq_chip structs by making sun4i_irq_ack a nop for all irqs
-except irq 0.
+cgrp_dfl_root will be used as the default unified hierarchy.  This
+patch makes cgrp_dfl_root mountable by making the following changes.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+* cgroup_init_early() now initializes cgrp_dfl_root w/
+  CGRP_ROOT_SANE_BEHAVIOR.  The default hierarchy is always sane.
+
+* parse_cgroupfs_options() and cgroup_mount() are updated such that
+  cgrp_dfl_root is mounted if sane_behavior is specified w/o any
+  subsystems.
+
+* rebind_subsystems() now populates the root directory of
+  cgrp_dfl_root.  Note that the function still guarantees success of
+  rebinding subsystems to cgrp_dfl_root.  If populating fails while
+  rebinding to cgrp_dfl_root, it whines but ignores the error.
+
+* For backward compatibility, the default hierarchy shows up in
+  /proc/$PID/cgroup only after it's explicitly mounted so that
+  userland which doesn't make use of it doesn't see any change.
+
+* "current_css_set_cg_links" file of debug cgroup now treats the
+  default hierarchy the same as other hierarchies.  This is visible to
+  userland.  Given that it's for debug controller, this should be
+  fine.
+
+* While at it, implement cgroup_on_dfl() which tests whether a give
+  cgroup is on the default hierarchy or not.
+
+The above changes make cgrp_dfl_root mostly equivalent to other
+controllers but the actual unified hierarchy behaviors are not
+implemented yet.  Let's plug child cgroup creation in cgrp_dfl_root
+from create_cgroup() for now.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/irqchip/irq-sun4i.c | 27 ++++-----------------------
- 1 file changed, 4 insertions(+), 23 deletions(-)
+ include/linux/cgroup.h | 10 ++++++
+ kernel/cgroup.c        | 94 ++++++++++++++++++++++++++++++++------------------
+ 2 files changed, 71 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
-index 0a71990..6a8c88d 100644
---- a/drivers/irqchip/irq-sun4i.c
-+++ b/drivers/irqchip/irq-sun4i.c
-@@ -45,6 +45,9 @@ static void sun4i_irq_ack(struct irq_data *irqd)
- 	int reg = irq / 32;
- 	u32 val;
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 79993ac..7e9fa50 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -250,6 +250,9 @@ enum {
+ 	 *
+ 	 * - "cgroup.clone_children" is removed.
+ 	 *
++	 * - If mount is requested with sane_behavior but without any
++	 *   subsystem, the default unified hierarchy is mounted.
++	 *
+ 	 * - cpuset: tasks will be kept in empty cpusets when hotplug happens
+ 	 *   and take masks of ancestors with non-empty cpus/mems, instead of
+ 	 *   being moved to an ancestor.
+@@ -468,6 +471,13 @@ struct cftype {
+ #endif
+ };
  
-+	if (irq != 0)
-+		return; /* Only IRQ 0 / the ENMI needs to be acked */
++extern struct cgroup_root cgrp_dfl_root;
 +
- 	val = readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
- 	writel(val | (1 << irq_off),
- 	       sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
-@@ -74,24 +77,8 @@ static void sun4i_irq_unmask(struct irq_data *irqd)
- 	       sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
++static inline bool cgroup_on_dfl(const struct cgroup *cgrp)
++{
++	return cgrp->root == &cgrp_dfl_root;
++}
++
+ /*
+  * See the comment above CGRP_ROOT_SANE_BEHAVIOR for details.  This
+  * function can be called as long as @cgrp is accessible.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 36d1a53..c42230c 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -142,7 +142,13 @@ static const char *cgroup_subsys_name[] = {
+  * unattached - it never has more than a single cgroup, and all tasks are
+  * part of that cgroup.
+  */
+-static struct cgroup_root cgrp_dfl_root;
++struct cgroup_root cgrp_dfl_root;
++
++/*
++ * The default hierarchy always exists but is hidden until mounted for the
++ * first time.  This is for backward compatibility.
++ */
++static bool cgrp_dfl_root_visible;
+ 
+ /* The list of hierarchy roots */
+ 
+@@ -999,10 +1005,22 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 			return -EBUSY;
+ 	}
+ 
+-	if (dst_root != &cgrp_dfl_root) {
+-		ret = cgroup_populate_dir(&dst_root->cgrp, ss_mask);
+-		if (ret)
++	ret = cgroup_populate_dir(&dst_root->cgrp, ss_mask);
++	if (ret) {
++		if (dst_root != &cgrp_dfl_root)
+ 			return ret;
++
++		/*
++		 * Rebinding back to the default root is not allowed to
++		 * fail.  Using both default and non-default roots should
++		 * be rare.  Moving subsystems back and forth even more so.
++		 * Just warn about it and continue.
++		 */
++		if (cgrp_dfl_root_visible) {
++			pr_warning("cgroup: failed to create files (%d) while rebinding 0x%lx to default root\n",
++				   ret, ss_mask);
++			pr_warning("cgroup: you may retry by moving them to a different hierarchy and unbinding\n");
++		}
+ 	}
+ 
+ 	/*
+@@ -1011,7 +1029,7 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 	 */
+ 	mutex_unlock(&cgroup_mutex);
+ 	for_each_subsys(ss, ssid)
+-		if ((ss_mask & (1 << ssid)) && ss->root != &cgrp_dfl_root)
++		if (ss_mask & (1 << ssid))
+ 			cgroup_clear_dir(&ss->root->cgrp, 1 << ssid);
+ 	mutex_lock(&cgroup_mutex);
+ 
+@@ -1039,8 +1057,7 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 			ss->bind(css);
+ 	}
+ 
+-	if (dst_root != &cgrp_dfl_root)
+-		kernfs_activate(dst_root->cgrp.kn);
++	kernfs_activate(dst_root->cgrp.kn);
+ 	return 0;
  }
  
--/*
-- * Since sun4i and sun5i are single core SOCs there is no need to mask non
-- * oneshot IRQs, to achieve this we use handle_fasteoi_irq with a dummy eoi.
-- */
--static void sun4i_irq_dummy_eoi(struct irq_data *irqd)
--{
--}
--
- static struct irq_chip sun4i_irq_chip = {
- 	.name		= "sun4i_irq",
--	.irq_eoi	= sun4i_irq_dummy_eoi,
--	.irq_mask	= sun4i_irq_mask,
--	.irq_unmask	= sun4i_irq_unmask,
--};
--
--/* IRQ 0 / the ENMI needs a late eoi call */
--static struct irq_chip sun4i_irq_chip_enmi = {
--	.name		= "sun4i_irq",
- 	.irq_eoi	= sun4i_irq_ack,
- 	.irq_mask	= sun4i_irq_mask,
- 	.irq_unmask	= sun4i_irq_unmask,
-@@ -101,13 +88,7 @@ static struct irq_chip sun4i_irq_chip_enmi = {
- static int sun4i_irq_map(struct irq_domain *d, unsigned int virq,
- 			 irq_hw_number_t hw)
- {
--	if (hw == 0)
--		irq_set_chip_and_handler(virq, &sun4i_irq_chip_enmi,
--					 handle_fasteoi_irq);
--	else
--		irq_set_chip_and_handler(virq, &sun4i_irq_chip,
--					 handle_fasteoi_irq);
--
-+	irq_set_chip_and_handler(virq, &sun4i_irq_chip, handle_fasteoi_irq);
- 	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+@@ -1190,16 +1207,6 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+ 			return -ENOENT;
+ 	}
  
+-	/*
+-	 * If the 'all' option was specified select all the subsystems,
+-	 * otherwise if 'none', 'name=' and a subsystem name options
+-	 * were not specified, let's default to 'all'
+-	 */
+-	if (all_ss || (!one_ss && !opts->none && !opts->name))
+-		for_each_subsys(ss, i)
+-			if (!ss->disabled)
+-				set_bit(i, &opts->subsys_mask);
+-
+ 	/* Consistency checks */
+ 
+ 	if (opts->flags & CGRP_ROOT_SANE_BEHAVIOR) {
+@@ -1211,6 +1218,23 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+ 			pr_err("cgroup: sane_behavior: noprefix, xattr, clone_children, release_agent and name are not allowed\n");
+ 			return -EINVAL;
+ 		}
++	} else {
++		/*
++		 * If the 'all' option was specified select all the
++		 * subsystems, otherwise if 'none', 'name=' and a subsystem
++		 * name options were not specified, let's default to 'all'
++		 */
++		if (all_ss || (!one_ss && !opts->none && !opts->name))
++			for_each_subsys(ss, i)
++				if (!ss->disabled)
++					set_bit(i, &opts->subsys_mask);
++
++		/*
++		 * We either have to specify by name or by subsystems. (So
++		 * all empty hierarchies must have a name).
++		 */
++		if (!opts->subsys_mask && !opts->name)
++			return -EINVAL;
+ 	}
+ 
+ 	/*
+@@ -1226,13 +1250,6 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+ 	if (opts->subsys_mask && opts->none)
+ 		return -EINVAL;
+ 
+-	/*
+-	 * We either have to specify by name or by subsystems. (So all
+-	 * empty hierarchies must have a name).
+-	 */
+-	if (!opts->subsys_mask && !opts->name)
+-		return -EINVAL;
+-
  	return 0;
+ }
+ 
+@@ -1487,6 +1504,14 @@ retry:
+ 		goto out_unlock;
+ 
+ 	/* look for a matching existing root */
++	if (!opts.subsys_mask && !opts.none && !opts.name) {
++		cgrp_dfl_root_visible = true;
++		root = &cgrp_dfl_root;
++		cgroup_get(&root->cgrp);
++		ret = 0;
++		goto out_unlock;
++	}
++
+ 	for_each_root(root) {
+ 		bool name_match = false;
+ 
+@@ -3622,6 +3647,13 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 	struct cgroup_subsys *ss;
+ 	struct kernfs_node *kn;
+ 
++	/*
++	 * XXX: The default hierarchy isn't fully implemented yet.  Block
++	 * !root cgroup creation on it for now.
++	 */
++	if (root == &cgrp_dfl_root)
++		return -EINVAL;
++
+ 	/* allocate the cgroup and its ID, 0 is reserved for the root */
+ 	cgrp = kzalloc(sizeof(*cgrp), GFP_KERNEL);
+ 	if (!cgrp)
+@@ -4061,7 +4093,8 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+  */
+ int __init cgroup_init_early(void)
+ {
+-	static struct cgroup_sb_opts __initdata opts = { };
++	static struct cgroup_sb_opts __initdata opts =
++		{ .flags = CGRP_ROOT_SANE_BEHAVIOR };
+ 	struct cgroup_subsys *ss;
+ 	int i;
+ 
+@@ -4198,7 +4231,7 @@ int proc_cgroup_show(struct seq_file *m, void *v)
+ 		struct cgroup *cgrp;
+ 		int ssid, count = 0;
+ 
+-		if (root == &cgrp_dfl_root)
++		if (root == &cgrp_dfl_root && !cgrp_dfl_root_visible)
+ 			continue;
+ 
+ 		seq_printf(m, "%d:", root->hierarchy_id);
+@@ -4631,15 +4664,10 @@ static int current_css_set_cg_links_read(struct seq_file *seq, void *v)
+ 	cset = rcu_dereference(current->cgroups);
+ 	list_for_each_entry(link, &cset->cgrp_links, cgrp_link) {
+ 		struct cgroup *c = link->cgrp;
+-		const char *name = "?";
+-
+-		if (c != &cgrp_dfl_root.cgrp) {
+-			cgroup_name(c, name_buf, NAME_MAX + 1);
+-			name = name_buf;
+-		}
+ 
++		cgroup_name(c, name_buf, NAME_MAX + 1);
+ 		seq_printf(seq, "Root %d group %s\n",
+-			   c->root->hierarchy_id, name);
++			   c->root->hierarchy_id, name_buf);
+ 	}
+ 	rcu_read_unlock();
+ 	up_read(&css_set_rwsem);
 -- 
-1.9.0
+1.8.5.3
 
