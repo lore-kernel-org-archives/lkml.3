@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985AbaCMXSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 19:18:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45319 "EHLO
+	id S1755250AbaCMXTA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 19:19:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45327 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565AbaCMXSs (ORCPT
+	with ESMTP id S1755098AbaCMXS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 19:18:48 -0400
-Date: Thu, 13 Mar 2014 16:18:31 -0700
+	Thu, 13 Mar 2014 19:18:57 -0400
+Date: Thu, 13 Mar 2014 16:18:42 -0700
 From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-22085a66c2fab6cf9b9393c056a3600a6b4735de@git.kernel.org>
+Message-ID: <tip-8f86a7373a1c8ee52d3cc64adf7f2ace13fd24ed@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, bp@suse.de, hpa@linux.intel.com
-In-Reply-To: <1394384725-10796-2-git-send-email-bp@alien8.de>
-References: <1394384725-10796-2-git-send-email-bp@alien8.de>
+In-Reply-To: <1394384725-10796-3-git-send-email-bp@alien8.de>
+References: <1394384725-10796-3-git-send-email-bp@alien8.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86: Add another set of MSR accessor functions
-Git-Commit-ID: 22085a66c2fab6cf9b9393c056a3600a6b4735de
+Subject: [tip:x86/cpu] x86, AMD:
+  Convert to the new bit access MSR accessors
+Git-Commit-ID: 8f86a7373a1c8ee52d3cc64adf7f2ace13fd24ed
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,142 +32,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  22085a66c2fab6cf9b9393c056a3600a6b4735de
-Gitweb:     http://git.kernel.org/tip/22085a66c2fab6cf9b9393c056a3600a6b4735de
+Commit-ID:  8f86a7373a1c8ee52d3cc64adf7f2ace13fd24ed
+Gitweb:     http://git.kernel.org/tip/8f86a7373a1c8ee52d3cc64adf7f2ace13fd24ed
 Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Sun, 9 Mar 2014 18:05:23 +0100
+AuthorDate: Sun, 9 Mar 2014 18:05:24 +0100
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 13 Mar 2014 15:34:45 -0700
+CommitDate: Thu, 13 Mar 2014 15:35:03 -0700
 
-x86: Add another set of MSR accessor functions
+x86, AMD: Convert to the new bit access MSR accessors
 
-We very often need to set or clear a bit in an MSR as a result of doing
-some sort of a hardware configuration. Add generic versions of that
-repeated functionality in order to save us a bunch of duplicated code in
-the early CPU vendor detection/config code.
+... and save us a bunch of code.
 
 Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1394384725-10796-2-git-send-email-bp@alien8.de
+Link: http://lkml.kernel.org/r/1394384725-10796-3-git-send-email-bp@alien8.de
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/msr.h |  2 ++
- arch/x86/lib/msr.c         | 89 +++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 90 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/amd.c | 48 ++++++++++++-----------------------------------
+ 1 file changed, 12 insertions(+), 36 deletions(-)
 
-diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
-index e139b13..de36f22 100644
---- a/arch/x86/include/asm/msr.h
-+++ b/arch/x86/include/asm/msr.h
-@@ -214,6 +214,8 @@ do {                                                            \
- 
- struct msr *msrs_alloc(void);
- void msrs_free(struct msr *msrs);
-+int msr_set_bit(u32 msr, u8 bit);
-+int msr_clear_bit(u32 msr, u8 bit);
- 
- #ifdef CONFIG_SMP
- int rdmsr_on_cpu(unsigned int cpu, u32 msr_no, u32 *l, u32 *h);
-diff --git a/arch/x86/lib/msr.c b/arch/x86/lib/msr.c
-index 8f8eebd..db9db44 100644
---- a/arch/x86/lib/msr.c
-+++ b/arch/x86/lib/msr.c
-@@ -8,7 +8,7 @@ struct msr *msrs_alloc(void)
- 
- 	msrs = alloc_percpu(struct msr);
- 	if (!msrs) {
--		pr_warning("%s: error allocating msrs\n", __func__);
-+		pr_warn("%s: error allocating msrs\n", __func__);
- 		return NULL;
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index c67ffa6..b85e43a 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -233,9 +233,7 @@ static void init_amd_k7(struct cpuinfo_x86 *c)
+ 	if (c->x86_model >= 6 && c->x86_model <= 10) {
+ 		if (!cpu_has(c, X86_FEATURE_XMM)) {
+ 			printk(KERN_INFO "Enabling disabled K7/SSE Support.\n");
+-			rdmsr(MSR_K7_HWCR, l, h);
+-			l &= ~0x00008000;
+-			wrmsr(MSR_K7_HWCR, l, h);
++			msr_clear_bit(MSR_K7_HWCR, 15);
+ 			set_cpu_cap(c, X86_FEATURE_XMM);
+ 		}
  	}
+@@ -509,14 +507,8 @@ static void early_init_amd(struct cpuinfo_x86 *c)
+ #endif
  
-@@ -21,3 +21,90 @@ void msrs_free(struct msr *msrs)
- 	free_percpu(msrs);
+ 	/* F16h erratum 793, CVE-2013-6885 */
+-	if (c->x86 == 0x16 && c->x86_model <= 0xf) {
+-		u64 val;
+-
+-		rdmsrl(MSR_AMD64_LS_CFG, val);
+-		if (!(val & BIT(15)))
+-			wrmsrl(MSR_AMD64_LS_CFG, val | BIT(15));
+-	}
+-
++	if (c->x86 == 0x16 && c->x86_model <= 0xf)
++		msr_set_bit(MSR_AMD64_LS_CFG, 15);
  }
- EXPORT_SYMBOL(msrs_free);
-+
-+/**
-+ * Read an MSR with error handling
-+ *
-+ * @msr: MSR to read
-+ * @m: value to read into
-+ *
-+ * It returns read data only on success, otherwise it doesn't change the output
-+ * argument @m.
-+ *
-+ */
-+int msr_read(u32 msr, struct msr *m)
-+{
-+	int err;
-+	u64 val;
-+
-+	err = rdmsrl_safe(msr, &val);
-+	if (!err)
-+		m->q = val;
-+
-+	return err;
-+}
-+
-+/**
-+ * Write an MSR with error handling
-+ *
-+ * @msr: MSR to write
-+ * @m: value to write
-+ */
-+int msr_write(u32 msr, struct msr *m)
-+{
-+	return wrmsrl_safe(msr, m->q);
-+}
-+
-+static inline int __flip_bit(u32 msr, u8 bit, bool set)
-+{
-+	struct msr m, m1;
-+	int err = -EINVAL;
-+
-+	if (bit > 63)
-+		return err;
-+
-+	err = msr_read(msr, &m);
-+	if (err)
-+		return err;
-+
-+	m1 = m;
-+	if (set)
-+		m1.q |=  BIT_64(bit);
-+	else
-+		m1.q &= ~BIT_64(bit);
-+
-+	if (m1.q == m.q)
-+		return 0;
-+
-+	err = msr_write(msr, &m);
-+	if (err)
-+		return err;
-+
-+	return 1;
-+}
-+
-+/**
-+ * Set @bit in a MSR @msr.
-+ *
-+ * Retval:
-+ * < 0: An error was encountered.
-+ * = 0: Bit was already set.
-+ * > 0: Hardware accepted the MSR write.
-+ */
-+int msr_set_bit(u32 msr, u8 bit)
-+{
-+	return __flip_bit(msr, bit, true);
-+}
-+
-+/**
-+ * Clear @bit in a MSR @msr.
-+ *
-+ * Retval:
-+ * < 0: An error was encountered.
-+ * = 0: Bit was already cleared.
-+ * > 0: Hardware accepted the MSR write.
-+ */
-+int msr_clear_bit(u32 msr, u8 bit)
-+{
-+	return __flip_bit(msr, bit, false);
-+}
+ 
+ static const int amd_erratum_383[];
+@@ -536,11 +528,8 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 	 * Errata 63 for SH-B3 steppings
+ 	 * Errata 122 for all steppings (F+ have it disabled by default)
+ 	 */
+-	if (c->x86 == 0xf) {
+-		rdmsrl(MSR_K7_HWCR, value);
+-		value |= 1 << 6;
+-		wrmsrl(MSR_K7_HWCR, value);
+-	}
++	if (c->x86 == 0xf)
++		msr_set_bit(MSR_K7_HWCR, 6);
+ #endif
+ 
+ 	early_init_amd(c);
+@@ -623,14 +612,11 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 	    (c->x86_model >= 0x10) && (c->x86_model <= 0x1f) &&
+ 	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
+ 
+-		if (!rdmsrl_safe(0xc0011005, &value)) {
+-			value |= 1ULL << 54;
+-			wrmsrl_safe(0xc0011005, value);
++		if (msr_set_bit(0xc0011005, 54) > 0) {
+ 			rdmsrl(0xc0011005, value);
+-			if (value & (1ULL << 54)) {
++			if (value & BIT_64(54)) {
+ 				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
+-				printk(KERN_INFO FW_INFO "CPU: Re-enabling "
+-				  "disabled Topology Extensions Support\n");
++				pr_info(FW_INFO "CPU: Re-enabling disabled Topology Extensions Support.\n");
+ 			}
+ 		}
+ 	}
+@@ -709,19 +695,12 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 		 * Disable GART TLB Walk Errors on Fam10h. We do this here
+ 		 * because this is always needed when GART is enabled, even in a
+ 		 * kernel which has no MCE support built in.
+-		 * BIOS should disable GartTlbWlk Errors themself. If
+-		 * it doesn't do it here as suggested by the BKDG.
++		 * BIOS should disable GartTlbWlk Errors already. If
++		 * it doesn't, do it here as suggested by the BKDG.
+ 		 *
+ 		 * Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=33012
+ 		 */
+-		u64 mask;
+-		int err;
+-
+-		err = rdmsrl_safe(MSR_AMD64_MCx_MASK(4), &mask);
+-		if (err == 0) {
+-			mask |= (1 << 10);
+-			wrmsrl_safe(MSR_AMD64_MCx_MASK(4), mask);
+-		}
++		msr_set_bit(MSR_AMD64_MCx_MASK(4), 10);
+ 
+ 		/*
+ 		 * On family 10h BIOS may not have properly enabled WC+ support,
+@@ -733,10 +712,7 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 		 * NOTE: we want to use the _safe accessors so as not to #GP kvm
+ 		 * guests on older kvm hosts.
+ 		 */
+-
+-		rdmsrl_safe(MSR_AMD64_BU_CFG2, &value);
+-		value &= ~(1ULL << 24);
+-		wrmsrl_safe(MSR_AMD64_BU_CFG2, value);
++		msr_clear_bit(MSR_AMD64_BU_CFG2, 24);
+ 
+ 		if (cpu_has_amd_erratum(c, amd_erratum_383))
+ 			set_cpu_bug(c, X86_BUG_AMD_TLB_MMATCH);
