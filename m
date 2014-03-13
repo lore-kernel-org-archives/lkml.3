@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026AbaCMLCk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 07:02:40 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:59661 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753623AbaCMLCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 07:02:38 -0400
-X-IronPort-AV: E=Sophos;i="4.97,646,1389744000"; 
-   d="scan'208";a="110959856"
-Message-ID: <1394708555.25873.43.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH net-next v7 4/9] xen-netback: Introduce TX
- grant mapping
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <jonathan.davies@citrix.com>, <wei.liu2@citrix.com>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Date: Thu, 13 Mar 2014 11:02:35 +0000
-In-Reply-To: <53218EDA.8040904@citrix.com>
-References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
-		<1394142511-14827-5-git-send-email-zoltan.kiss@citrix.com>
-	 <1394706812.25873.28.camel@kazak.uk.xensource.com>
-	 <53218EDA.8040904@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1754090AbaCMLDS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 07:03:18 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46950 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753483AbaCMLDQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 07:03:16 -0400
+Date: Thu, 13 Mar 2014 07:02:58 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Shreyas Bhatewara <sbhatewara@vmware.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] vmxnet3: fix building without CONFIG_PCI_MSI
+Message-ID: <20140313110258.GB20768@hmsreliant.think-freely.org>
+References: <7825453.7LB7BmvA2b@wuerfel>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7825453.7LB7BmvA2b@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-13 at 10:56 +0000, David Vrabel wrote:
-> On 13/03/14 10:33, Ian Campbell wrote:
-> > On Thu, 2014-03-06 at 21:48 +0000, Zoltan Kiss wrote:
-> >> @@ -135,13 +146,31 @@ struct xenvif {
-> >>  	pending_ring_idx_t pending_cons;
-> >>  	u16 pending_ring[MAX_PENDING_REQS];
-> >>  	struct pending_tx_info pending_tx_info[MAX_PENDING_REQS];
-> >> +	grant_handle_t grant_tx_handle[MAX_PENDING_REQS];
-> >>  
-> >>  	/* Coalescing tx requests before copying makes number of grant
-> >>  	 * copy ops greater or equal to number of slots required. In
-> >>  	 * worst case a tx request consumes 2 gnttab_copy.
-> >>  	 */
-> >>  	struct gnttab_copy tx_copy_ops[2*MAX_PENDING_REQS];
-> >> -
-> >> +	struct gnttab_map_grant_ref tx_map_ops[MAX_PENDING_REQS];
-> >> +	struct gnttab_unmap_grant_ref tx_unmap_ops[MAX_PENDING_REQS];
-> > 
-> > I wonder if we should break some of these arrays into separate
-> > allocations? Wasn't there a problem with sizeof(struct xenvif) at one
-> > point?
+On Thu, Mar 13, 2014 at 10:44:34AM +0100, Arnd Bergmann wrote:
+> Since commit d25f06ea466e "vmxnet3: fix netpoll race condition",
+> the vmxnet3 driver fails to build when CONFIG_PCI_MSI is disabled,
+> because it unconditionally references the vmxnet3_msix_rx()
+> function.
 > 
-> alloc_netdev() falls back to vmalloc() if the kmalloc failed so there's
-> no need to split these structures.
+> To fix this, use the same #ifdef in the caller that exists around
+> the function definition.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
+> Cc: "VMware, Inc." <pv-drivers@vmware.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: stable@vger.kernel.org
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-Is vmalloc space in abundant supply? For some reason I thought it was
-limited (maybe that's a 32-bit only limitation?)
-
+> ---
+> Found this during randconfig testing on ARM. Most of the time when
+> I report network driver problems, they get fixed in the netdev tree
+> before I even find them, but since this is for a patch marked "stable",
+> I made a proper patch anyway.
+> 
+> Please ignore if this is already a known problem, otherwise make sure
+> the original patch doesn't get backported without addressing this
+> issue first.
+> 
+> diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+> index cbd898f..28965ad 100644
+> --- a/drivers/net/vmxnet3/vmxnet3_drv.c
+> +++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+> @@ -1761,13 +1761,16 @@ static void
+>  vmxnet3_netpoll(struct net_device *netdev)
+>  {
+>  	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
+> -	int i;
+>  
+>  	switch (adapter->intr.type) {
+> -	case VMXNET3_IT_MSIX:
+> +#ifdef CONFIG_PCI_MSI
+> +	case VMXNET3_IT_MSIX: {
+> +		int i;
+>  		for (i = 0; i < adapter->num_rx_queues; i++)
+>  			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
+>  		break;
+> +	}
+> +#endif
+>  	case VMXNET3_IT_MSI:
+>  	default:
+>  		vmxnet3_intr(0, adapter->netdev);
+> 
+> 
