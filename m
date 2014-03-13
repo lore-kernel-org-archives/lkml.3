@@ -1,146 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaCMKtK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:49:10 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:45619 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753945AbaCMKnF (ORCPT
+	id S1754156AbaCMKms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:42:48 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:44667 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753687AbaCMKmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:43:05 -0400
-Message-Id: <20140313104304.191442354@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Thu, 13 Mar 2014 06:42:55 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>, Ulrich Obergfell <uobergfe@redhat.com>
-Subject: [PATCH RT 3/5] cpu_chill: Add a UNINTERRUPTIBLE hrtimer_nanosleep
-References: <20140313104252.175070082@goodmis.org>
+	Thu, 13 Mar 2014 06:42:44 -0400
+Message-ID: <53218B9F.7030904@gmail.com>
+Date: Thu, 13 Mar 2014 11:42:39 +0100
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0003-cpu_chill-Add-a-UNINTERRUPTIBLE-hrtimer_nanosleep.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+To: Arend van Spriel <arend@broadcom.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Rob Herring <robh+dt@kernel.org>
+CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chen-Yu Tsai <wens@csie.org>
+Subject: Re: [RFC] dt: bindings: add bindings for Broadcom bcm43xx sdio devices
+References: <1392059868-8782-1-git-send-email-arend@broadcom.com> <530D1E69.7010504@wwwdotorg.org> <53218565.6080605@broadcom.com>
+In-Reply-To: <53218565.6080605@broadcom.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.14-rt30-rc1 stable review patch.
-If anyone has any objections, please let me know.
+Hi Arend,
 
-------------------
+On 13.03.2014 11:16, Arend van Spriel wrote:
+> On 02/25/2014 11:51 PM, Stephen Warren wrote:
+>> On 02/10/2014 12:17 PM, Arend van Spriel wrote:
+>>> The Broadcom bcm43xx sdio devices are fullmac devices that may be
+>>> integrated in ARM platforms. Currently, the brcmfmac driver for
+>>> these devices support use of platform data. This patch specifies
+>>> the bindings that allow this platform data to be expressed in the
+>>> devicetree.
+>>
+>>> diff --git a/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt b/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
+>>
+>>> + - compatible : Should be "brcm,bcm43xx-fmac".
+>>> + - wlan-supply : phandle for fixed regulator used to control power for
+>>> +	the device/module.
+>>
+>> Ignoring the fact that perhaps this should just be a GPIO instead and
+>> assuming it actually make sense for this to be a regulator:
+>>
+>> Why "fixed regulator" not just "the regulator". There shouldn't be any
+>> requirement for the power supply to the device to be fixed; the driver
+>> should (a) set the voltage (which will be a no-op for a fixed regulator
+>> already providing that voltage), then (b) enable the regulator. That
+>> would allow a PMIC with programmable voltage to be feeding the device.
+>>
+>> Now, if this property was really intended to control some enable GPIO on
+>> the device, as others have said, this shouldn't be a regulator property
+>> but rather a GPIO property. However, there is definitely some power
+>> supply fed to the device, so you definitely need /some/ supply property
+>> here.
+>>
+>> Aren't there other enable GPIOs required? These should be specified in DT.
+>>
+>> Doesn't the WiFi chip/module require a (32KHz?) clock? If so, that needs
+>> to be represented in DT. Preferably write the binding to require
+>> clock-names (name-based lookup) rather than just clocks (index-based
+>> lookup).
+>
+> Hi Stephen,
+>
+> Thanks for these comments. While I agree with most of them, I am having
+> some difficulty with the DT concept. Essentially, a DT node describes a
+> part of the system.
 
-From: Steven Rostedt <rostedt@goodmis.org>
+That's correct. A DT node represents a component of a system and its 
+contents should contain all resources and other device-specific data 
+required for this device to operate or optional.
 
-We hit another bug that was caused by switching cpu_chill() from
-msleep() to hrtimer_nanosleep().
+> My scope for this change is probably limited wearing
+> my brcmfmac glasses. Am I correct in assuming that a DT node may be
+> processed/used by multiple drivers.
 
-This time it is a livelock. The problem is that hrtimer_nanosleep()
-calls schedule with the state == TASK_INTERRUPTIBLE. But these means
-that if a signal is pending, the scheduler wont schedule, and will
-simply change the current task state back to TASK_RUNNING. This
-nullifies the whole point of cpu_chill() in the first place. That is,
-if a task is spinning on a try_lock() and it preempted the owner of the
-lock, if it has a signal pending, it will never give up the CPU to let
-the owner of the lock run.
+It may be, but it is usually not. The typical use case for such scheme 
+is a bus-like topology, where devices on the bus are sub-nodes of the 
+bus controller node and may contain some bus-specific information, such 
+as chip select (e.g. SPI), address (e.g. I2C) or maximum bus speed.
 
-I made a static function __hrtimer_nanosleep() that takes a fifth
-parameter "state", which determines the task state of that the
-nanosleep() will be in. The normal hrtimer_nanosleep() will act the
-same, but cpu_chill() will call the __hrtimer_nanosleep() directly with
-the TASK_UNINTERRUPTIBLE state.
+> As an example, the 32 kHz clock is
+> not something brcmfmac cares about. It simple needs to be available and
+> hooked up to the wlan device.
 
-cpu_chill() only cares that the first sleep happens, and does not care
-about the state of the restart schedule (in hrtimer_nanosleep_restart).
+Not really. The driver should care about any resources needed for the 
+device to operate. In this case, a 32 kHz clock even if wired to the 
+chip, sometimes is not operational until it gets ungated. This is not an 
+artificial example, as on many boards I used to work with the 32 kHz 
+clock was driven by a PMIC with clock gating control through I2C, gated 
+by default.
 
-Cc: stable-rt@vger.kernel.org
-Reported-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- kernel/hrtimer.c | 25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+Moreover, (well, 32 kHz might not be the best example) from power saving 
+reasons, it might be a good idea to let the driver control the clock and 
+gate it whenever it is not necessary.
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 2e66fbb..9e46abe 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1731,12 +1731,13 @@ void hrtimer_init_sleeper(struct hrtimer_sleeper *sl, struct task_struct *task)
- }
- EXPORT_SYMBOL_GPL(hrtimer_init_sleeper);
- 
--static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mode)
-+static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mode,
-+				unsigned long state)
- {
- 	hrtimer_init_sleeper(t, current);
- 
- 	do {
--		set_current_state(TASK_INTERRUPTIBLE);
-+		set_current_state(state);
- 		hrtimer_start_expires(&t->timer, mode);
- 		if (!hrtimer_active(&t->timer))
- 			t->task = NULL;
-@@ -1780,7 +1781,8 @@ long __sched hrtimer_nanosleep_restart(struct restart_block *restart)
- 				HRTIMER_MODE_ABS);
- 	hrtimer_set_expires_tv64(&t.timer, restart->nanosleep.expires);
- 
--	if (do_nanosleep(&t, HRTIMER_MODE_ABS))
-+	/* cpu_chill() does not care about restart state. */
-+	if (do_nanosleep(&t, HRTIMER_MODE_ABS, TASK_INTERRUPTIBLE))
- 		goto out;
- 
- 	rmtp = restart->nanosleep.rmtp;
-@@ -1797,8 +1799,10 @@ out:
- 	return ret;
- }
- 
--long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
--		       const enum hrtimer_mode mode, const clockid_t clockid)
-+static long
-+__hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
-+		    const enum hrtimer_mode mode, const clockid_t clockid,
-+		    unsigned long state)
- {
- 	struct restart_block *restart;
- 	struct hrtimer_sleeper t;
-@@ -1811,7 +1815,7 @@ long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
- 
- 	hrtimer_init_on_stack(&t.timer, clockid, mode);
- 	hrtimer_set_expires_range_ns(&t.timer, timespec_to_ktime(*rqtp), slack);
--	if (do_nanosleep(&t, mode))
-+	if (do_nanosleep(&t, mode, state))
- 		goto out;
- 
- 	/* Absolute timers do not update the rmtp value and restart: */
-@@ -1838,6 +1842,12 @@ out:
- 	return ret;
- }
- 
-+long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
-+		       const enum hrtimer_mode mode, const clockid_t clockid)
-+{
-+	return __hrtimer_nanosleep(rqtp, rmtp, mode, clockid, TASK_INTERRUPTIBLE);
-+}
-+
- SYSCALL_DEFINE2(nanosleep, struct timespec __user *, rqtp,
- 		struct timespec __user *, rmtp)
- {
-@@ -1864,7 +1874,8 @@ void cpu_chill(void)
- 	unsigned int freeze_flag = current->flags & PF_NOFREEZE;
- 
- 	current->flags |= PF_NOFREEZE;
--	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
-+	__hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC,
-+			    TASK_UNINTERRUPTIBLE);
- 	if (!freeze_flag)
- 		current->flags &= ~PF_NOFREEZE;
- }
--- 
-1.8.5.3
+> The DT should have another node for this
+> clock which a (common) clock driver picks up. So having it referenced in
+> this node is purely informational, right?
 
+You are confusing here provider with consumer. The bcm43xx chip is 
+clearly a consumer of a 32 kHz clock and so its DT node should specify this.
 
+A DT node for a clock, would be a clock provider node and that would be 
+handled by common clock framework in case of Linux indeed. A clock 
+provider node doesn't have to be limited to a single clock, though. In 
+the case I mentioned above, PMIC node would be a clock provider and PMIC 
+driver would register necessary clocks in common clock framework.
+
+Best regards,
+Tomasz
