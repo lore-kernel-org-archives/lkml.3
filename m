@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaCMJyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 05:54:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50659 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753192AbaCMJyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 05:54:53 -0400
-X-IronPort-AV: E=Sophos;i="4.97,646,1389715200"; 
-   d="scan'208";a="9689732"
-Message-ID: <53217E46.3060100@cn.fujitsu.com>
-Date: Thu, 13 Mar 2014 17:45:42 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1753563AbaCMJz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 05:55:58 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:43673 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaCMJz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 05:55:56 -0400
+Date: Thu, 13 Mar 2014 10:56:57 +0100
+From: Carlo Caione <carlo@caione.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Hans de Goede <hdegoede@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Subject: Re: [linux-sunxi] Re: [PATCH v2 4/4] irqchip: sun4i: Use
+ handle_fasteoi_late_irq for the ENMI (irq 0)
+Message-ID: <20140313095657.GA32357@localhost.fastwebnet.it>
+References: <1394644627-12315-1-git-send-email-hdegoede@redhat.com>
+ <1394644627-12315-5-git-send-email-hdegoede@redhat.com>
+ <20140313093457.GF2815@lukather>
 MIME-Version: 1.0
-To: stable@vger.kernel.org
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, viro@zeniv.linux.org.uk,
-        bcrl@kvack.org, jmoyer@redhat.com, kosaki.motohiro@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org, miaox@cn.fujitsu.com,
-        tangchen <tangchen@cn.fujitsu.com>, guz.fnst@cn.fujitsu.com
-Subject: Re: [RESEND v2 PATCH 0/2] Bug fix in aio ring page migration
-References: <1394439334-28523-1-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1394439334-28523-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/13 17:51:46,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/13 17:51:54,
-	Serialize complete at 2014/03/13 17:51:54
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140313093457.GF2815@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset has been applied to linux-next, and these problems also exist
-in 3.12.y and 3.13.y stable tree.
-So please merge this patchset to 3.12.y and 3.13.y stable tree.
-
-commit 692c9b8c5ee8d263bb8348171f0bebd3d84eb2c1
-Author: Tang Chen <tangchen@cn.fujitsu.com>
-Date:   Mon Mar 10 16:15:33 2014 +0800
-
-    aio, memory-hotplug: Fix confliction when migrating and accessing ring pages.
-
-commit e0f5e0add36d2e3c456cf2f4283673ed834b3c24
-Author: Tang Chen <tangchen@cn.fujitsu.com>
-Date:   Mon Mar 10 16:15:34 2014 +0800
-
-    aio, mem-hotplug: Add memory barrier to aio ring page migration.
-
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/fs/aio.c?id=692c9b8c5ee8d263bb8348171f0bebd3d84eb2c1
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/fs/aio.c?id=e0f5e0add36d2e3c456cf2f4283673ed834b3c24
-
-https://lkml.org/lkml/2014/3/10/56
-https://lkml.org/lkml/2014/3/10/58
-
-
-On 03/10/2014 04:15 PM, Tang Chen wrote:
-
-> This patch-set fixes the following two problems:
+On Thu, Mar 13, 2014 at 10:34:57AM +0100, Maxime Ripard wrote:
+> On Wed, Mar 12, 2014 at 06:17:07PM +0100, Hans de Goede wrote:
+> > The ENMI needs to have the ack done *after* clearing the interrupt source,
+> > otherwise we will get a spurious interrupt for each real interrupt. Switch
+> > to the new handle_fasteoi_late_irq handler which gives us the desired behavior.
+> > 
+> > Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+> > ---
+> >  drivers/irqchip/irq-sun4i.c | 11 +++++++++--
+> >  1 file changed, 9 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+> > index 8a2fbee..4b1c874 100644
+> > --- a/drivers/irqchip/irq-sun4i.c
+> > +++ b/drivers/irqchip/irq-sun4i.c
+> > @@ -77,15 +77,22 @@ static void sun4i_irq_unmask(struct irq_data *irqd)
+> >  static struct irq_chip sun4i_irq_chip = {
+> >  	.name		= "sun4i_irq",
+> >  	.irq_ack	= sun4i_irq_ack,
+> > +	.irq_eoi	= sun4i_irq_ack, /* For the ENMI */
 > 
-> 1. Need to use ctx->completion_lock to protect ring pages
->    from being mis-written while migration.
+> Hmmm, I wonder if that actually does something.
 > 
-> 2. Need memory barrier to ensure memory copy is done before
->    ctx->ring_pages[] is updated.
+> There's been a patch floating around that I was sure was merged, but
+> apparently wasn't that remove sun4i_irq_ack, because the register we
+> were writing to are in read only, and it wasn't doing anything.
 > 
-> NOTE: AIO ring page migration was implemented since Linux 3.12.
->       So we need to merge these two patches into 3.12 stable tree.
+> >  	.irq_mask	= sun4i_irq_mask,
+> >  	.irq_unmask	= sun4i_irq_unmask,
+> > +	.flags		= IRQCHIP_EOI_THREADED, /* Only affects the ENMI */
+> >  };
+> >  
+> >  static int sun4i_irq_map(struct irq_domain *d, unsigned int virq,
+> >  			 irq_hw_number_t hw)
+> >  {
+> > -	irq_set_chip_and_handler(virq, &sun4i_irq_chip,
+> > -				 handle_level_irq);
+> > +	if (hw == 0) /* IRQ 0, the ENMI needs special handling */
+> > +		irq_set_chip_and_handler(virq, &sun4i_irq_chip,
+> > +					 handle_fasteoi_late_irq);
+> > +	else
+> > +		irq_set_chip_and_handler(virq, &sun4i_irq_chip,
+> > +					 handle_level_irq);
+> > +
+> >  	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
 > 
-> Tang Chen (2):
->   aio, memory-hotplug: Fix confliction when migrating and accessing
->     ring pages.
->   aio, mem-hotplug: Add memory barrier to aio ring page migration.
-> 
->  fs/aio.c |   42 ++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 42 insertions(+), 0 deletions(-)
-> 
+> Could that solve the other NMI-related issue we have with Carlo's
+> patches?
 
+Yes, I think that the issue is the same. I'll submit a new revision for
+the irqchip patchset soon.
+The only thing that it is not clear to me is whether the problem is
+still there for the NMI controller also for edge-triggered interrupts or
+not (hard to verify it experimentally).
 
+Regards,
+
+-- 
+Carlo Caione
