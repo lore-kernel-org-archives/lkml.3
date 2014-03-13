@@ -1,55 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338AbaCMQBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 12:01:49 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:40841 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbaCMP6D (ORCPT
+	id S1753969AbaCMQEP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 12:04:15 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:45722 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbaCMQEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:58:03 -0400
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: kvmarm@lists.cs.columbia.edu
-Cc: tech@virtualopensystems.com, n.nikolaev@virtualopensystems.com,
-        agraf@suse.de, christoffer.dall@linaro.org, marc.zyngier@arm.com,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        kvm@vger.kernel.org (open list:KERNEL VIRTUAL MA...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [RFC PATCH 2/4] KVM: irqfd should depend on CONFIG_HAVE_KVM_IRQ_ROUTING
-Date: Thu, 13 Mar 2014 16:57:27 +0100
-Message-Id: <1394726249-1547-3-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394726249-1547-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1394726249-1547-1-git-send-email-a.motakis@virtualopensystems.com>
+	Thu, 13 Mar 2014 12:04:13 -0400
+Message-ID: <5321D6FA.4040500@gopivotal.com>
+Date: Thu, 13 Mar 2014 16:04:10 +0000
+From: Glyn Normington <gnormington@gopivotal.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Steve Powell <spowell@gopivotal.com>
+Subject: Re: [PATCH] control groups: documentation improvements
+References: <20140310113928.GC18700@gnimac.gopivotal.com> <20140310140724.GA25290@htj.dyndns.org> <531DC971.6020208@gopivotal.com> <20140310142014.GC25290@htj.dyndns.org>
+In-Reply-To: <20140310142014.GC25290@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With an ARM VGIC we have an IRQ chip in the kernel (using the hardware
-support), but the irqfd feature is still not available due to a dependency
-on IRQ routing. The prototypes of kvm_irqfd and kvm_irqfd_release should
-be conditionally compiled depending on HAVE_KVM_IRQ_ROUTING instead of
-HAVE_KVM_IRQCHIP.
+Hi Tejun
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-Signed-off-by: Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>
+Stepping back from the patch for a while, we'd like to explore the issues you raise. Please bear with us as we try to capture the ideas precisely.
+
+Continued inline...
+
+Regards,
+Glyn (& Steve Powell, copied)
+
+On 10/03/2014 14:20, Tejun Heo wrote:
+> Hey,
+>
+> On Mon, Mar 10, 2014 at 02:17:21PM +0000, Glyn Normington wrote:
+>> Then we missed how to create a hierarchy with no associated
+>> subsystems. The only way I can think of is to use mount, specify no
+>> subsystems on -o (which defaults to all the subsystems defined in
+>> the kernel), and run it in a kernel with no subsystems defined
+>> (which seems unlikely these days).
+>>
+>> Is that what you had in mind or is there some other way of creating
+>> a hierarchy with no subsystems attached?
+> Hierarchy name should be specified "-o name=" for hierarchies w/o any
+> controllers.
+
+According to cgroups.txt:
+
+  When passing a name=<x> option for a new hierarchy, you need to
+  specify subsystems manually; the legacy behaviour of mounting all
+  subsystems when none are explicitly specified is not supported when
+  you give a subsystem a name.
+
+So the documentation certainly does not make it clear that it is valid to specify no subsystems.
+
+We tried this (on a 3.11 kernel) and can't get it to work:
+
+# mount -t cgroup -o name=th none /home/glyn/h1
+
+mount: wrong fs type, bad option, bad superblock on none,
+     missing codepage or helper program, or other error
+     (for several filesystems (e.g. nfs, cifs) you might
+     need a /sbin/mount.<type> helper program) In some
+     cases useful info is found in syslog - try dmesg |
+     tail or so
+
+Please could you supply an example which works?
+
+>>>> Clarify that subsystems may be attached to multiple hierarchies,
+>>>> although this isn't very useful, and explain what happens.
+>>> And a subsystem may only be attached to a single hierarchy.
+>> Perhaps that's what should happen, but the following experiment
+>> demonstrates a subsystem being attached to two hierarchies:
+>>
+>> $ pwd
+>> /home/vagrant
+>> $ mkdir mem1
+>> $ mkdir mem2
+>> $ sudo su
+>> # mount -t cgroup -o memory none /home/vagrant/mem1
+>> # mount -t cgroup -o memory none /home/vagrant/mem2
+>> # cd mem1
+>> # mkdir inst1
+>> # ls inst1
+>> cgroup.clone_children  memory.failcnt ...
+>> # ls ../mem2
+>> cgroup.clone_children  inst1 memory.limit_in_bytes ...
+>> # cd inst1
+>> # echo 1000000 > memory.limit_in_bytes
+>> # cat memory.limit_in_bytes
+>> 1003520
+>> # cat ../../mem2/inst1/memory.limit_in_bytes
+>> 1003520
+>> # echo $$ > tasks
+>> # cat tasks
+>> 1365
+>> 1409
+>> # cat ../../mem2/inst1/tasks
+>> 1365
+>> 1411
+> You're mounting the same hierarchy twice.  Those are two views into
+> the same hierarchy.
+>
+> Thanks.
+>
+Yes, it does appear that this is what is going on, but to explain it this way turns out to be more complicated than one might expect. Here's an attempt...
+
 ---
- include/linux/kvm_host.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+  A*hierarchy*  is a non-empty set of cgroups arranged in a tree and a
+  non-empty set of subsystems such that the cgroups in the hierarchy
+  partition all the tasks in the system (in other words, every task in the
+  system is in exactly one of the cgroups in the hierarchy) and each
+  subsystem attaches its own state to each cgroup in the hierarchy.
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index b8e9a43..8728159 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -936,7 +936,7 @@ static inline void kvm_free_irq_routing(struct kvm *kvm) {}
- void kvm_eventfd_init(struct kvm *kvm);
- int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args);
- 
--#ifdef CONFIG_HAVE_KVM_IRQCHIP
-+#ifdef CONFIG_HAVE_KVM_IRQ_ROUTING
- int kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args);
- void kvm_irqfd_release(struct kvm *kvm);
- void kvm_irq_routing_update(struct kvm *, struct kvm_irq_routing_table *);
--- 
-1.8.3.2
+  There may be zero or more active hierarchies. Each hierarchy has one
+  or more views associated with it. A *view* is an instance of the cgroup
+  virtual filesystem. The tree of cgroups of a hierarchy is represented
+  by the directory tree in the cgroup virtual filesystem of each view of
+  the hierarchy. All the directory trees in the cgroup virtual filesystem
+  of the views of a given hierarchy have identical content.
+
+  No subsystem may participate in more than one hierarchy.
+---
+
+We'd also need to explain the behaviour of mount and umount with respect to views. The first time a cgroup mount is performed with a given set of subsystems, a hierarchy is created and a view of the hierarchy is created and associated with a cgroup filesystem at the mount point. Subsequently, if another cgroup mount is performed with the same set of subsystems, no new hierarchy is created but a new view of the existing hierarchy is created and associated with the cgroup filesystem at the new mount point.
+
+Unmounting a cgroup mount point destroys a particular view and destroys the hierarchy associated with the view if and only if the view is the only (remaining) view of the hierarchy.
+
+So does introducing the concept of a view really help? The wording in the patch does without the concept by allowing two "hierarchies" to have identical content (so they are indistinguishable).
+
+"views" don't seem to have any practical benefit. If we can avoid explaining concepts which have no use, we probably should. ;-)
+
 
