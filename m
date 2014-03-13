@@ -1,165 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715AbaCMR0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 13:26:20 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55183 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754122AbaCMR0N (ORCPT
+	id S1754755AbaCMR2g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 13:28:36 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:37587 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126AbaCMR2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 13:26:13 -0400
-Date: Thu, 13 Mar 2014 17:25:46 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Antoine =?utf-8?Q?T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-Cc: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "zmxu@marvell.com" <zmxu@marvell.com>,
-        "jszhang@marvell.com" <jszhang@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] ARM: dts: berlin2q: add the Marvell Armada 1500
- pro
-Message-ID: <20140313172546.GB25870@e106331-lin.cambridge.arm.com>
-References: <1394719607-25018-1-git-send-email-antoine.tenart@free-electrons.com>
- <1394719607-25018-2-git-send-email-antoine.tenart@free-electrons.com>
+	Thu, 13 Mar 2014 13:28:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394719607-25018-2-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5321D45C.7040504@zytor.com>
+References: <1394664680-17799-1-git-send-email-stefani@seibold.net>
+ <1394664680-17799-4-git-send-email-stefani@seibold.net> <5320E689.7060607@zytor.com>
+ <CALCETrXQJvkk-5ncSgTyoy9sCN0AT+h9-1F6wAnxqRm242PjrQ@mail.gmail.com> <5321D45C.7040504@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 13 Mar 2014 10:28:10 -0700
+Message-ID: <CALCETrVy3oW=qvJWbGtKTZ=0dZLjHtmBphPDnP1N8nLmXc=+9A@mail.gmail.com>
+Subject: Re: [PATCH 3/3] x86, vdso32: handle 32 bit vDSO larger one page
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stefani Seibold <stefani@seibold.net>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 02:06:45PM +0000, Antoine Ténart wrote:
-> Adds initial support for the Marvell Armada 1500 pro (BG2Q) SoC (Berlin family).
-> The SoC has nodes for cpu, l2 cache controller, interrupt controllers, local
-> timer, apb timers and uarts for now.
-> 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  arch/arm/boot/dts/berlin2q.dtsi | 167 ++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 167 insertions(+)
->  create mode 100644 arch/arm/boot/dts/berlin2q.dtsi
-> 
-> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-> new file mode 100644
-> index 000000000000..1cb76031dfe6
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/berlin2q.dtsi
-> @@ -0,0 +1,167 @@
-> +/*
-> + * Copyright (C) 2014 Antoine Ténart <antoine.tenart@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2. This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <dt-bindings/interrupt-controller/arm-gic.h>
-> +
-> +#include "skeleton.dtsi"
-> +
-> +/ {
-> +	model = "Marvell Armada 1500 pro (BG2-Q) SoC";
-> +	compatible = "marvell,berlin2q", "marvell,berlin";
-> +
-> +	cpus {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		cpu@0 {
-> +			compatible = "arm,cortex-a9";
-> +			device_type = "cpu";
-> +			next-level-cache = <&l2>;
-> +			reg = <0>;
-> +		};
-> +
-> +		cpu@1 {
-> +			compatible = "arm,cortex-a9";
-> +			device_type = "cpu";
-> +			next-level-cache = <&l2>;
-> +			reg = <1>;
-> +		};
-> +
-> +		cpu@2 {
-> +			compatible = "arm,cortex-a9";
-> +			device_type = "cpu";
-> +			next-level-cache = <&l2>;
-> +			reg = <2>;
-> +		};
-> +
-> +		cpu@3 {
-> +			compatible = "arm,cortex-a9";
-> +			device_type = "cpu";
-> +			next-level-cache = <&l2>;
-> +			reg = <3>;
-> +		};
-> +	};
-> +
-> +	clocks {
-> +		#address-cells = <0>;
-> +		#size-cells = <0>;
-> +
-> +		smclk: sysmgr-clock {
-> +			compatible = "fixed-clock";
-> +			#clock-cells = <0>;
-> +			clock-frequency = <25000000>;
-> +		};
-> +
-> +		sysclk: system-clock {
-> +			compatible = "fixed-clock";
-> +			#clock-cells = <0>;
-> +			clock-frequency = <400000000>;
-> +		};
-> +	};
+On Thu, Mar 13, 2014 at 8:53 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 03/12/2014 03:59 PM, Andy Lutomirski wrote:
+>>
+>> Note that this code is completely unnecessary if either of my patch
+>> sets is accepted.  Since you're the maintainer, can you give an
+>> opinion? :)
+>>
+>
+> I'm trying to unwind all the patches going around, Linus' feedback and
+> so on, and figure out what this means in concrete terms especially in
+> the light of the 3.15 merge window coming up.
+>
+> I tried to apply your patchset "[PATCH v2 0/2] x86: Relocate the compat
+> vdso per process" on top of tip:x86/vdso, but it conflicts pretty hard
+> -- I guess you are using a different baseline, but that makes it
+> complicated to deal with.
 
-I am very much not keen on having container nodes like this.
+It applies to -linus.  I think that we should resolve the compat
+issues first and then add timing code on top, since a decent chunk of
+Stefani's changes will be unnecessary once the compat vdso is either
+gone or unified with the non-compat vdso.
 
-A "clocks" container is non-standard, and not guarantee to probe. The
-fact these clocks probe currently is an artifact of the current
-organisation of Linux rather than any conscious decision.
+Does this mean you prefer the relocation approach to the compat vdso
+removal approach?  It seems like Linus is okay with either one.
 
-The #address-cells and #size-cells properties are useless, as no
-address space is defined. The node is not a simple-bus, has no ranges,
-and doesn't have a compatible string that implies an address space.
+--Andy
 
-Is there any reason you need to use a clocks container here and can't
-put these directly under the root?
+>
+> Otherwise, it seems the logical way forward.  Could you and/or Stefani
+> work out the conflicts between the patchsets?
+>
+> In the meantime I'm going to apply Stefani's first patch.
+>
+>         -hpa
+>
 
-> +
-> +	soc {
-> +		compatible = "simple-bus";
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +
-> +		ranges = <0 0xf7000000 0x1000000>;
-> +		interrupt-parent = <&gic>;
-> +
-> +		l2: l2-cache-controller@ac0000 {
-> +			compatible = "arm,pl310-cache";
-> +			reg = <0xac0000 0x1000>;
-> +			cache-level = <2>;
-> +		};
-> +
-> +		local-timer@ad0600 {
-> +			compatible = "arm,cortex-a9-twd-timer";
-> +			reg = <0xad0600 0x20>;
-> +			clocks = <&sysclk>;
-> +			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
-> +			status = "okay";
 
-Given that nodes are assumed by default to be okay, this can be dropped.
 
-I think it only makes sense to have a status property in a common dtsi
-where the value is "disabled".
-
-Otherwise, this dtsi looks sane to me.
-
-Thanks,
-Mark.
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
