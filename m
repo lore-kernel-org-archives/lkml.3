@@ -1,148 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256AbaCMPLE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:11:04 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56655 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753755AbaCMPG6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:06:58 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [PATCH RESEND -mm 05/12] memcg: add pointer from memcg_cache_params to cache
-Date: Thu, 13 Mar 2014 19:06:43 +0400
-Message-ID: <99561ce2ebc2284279d9c12e11de1993777f063f.1394708827.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1394708827.git.vdavydov@parallels.com>
-References: <cover.1394708827.git.vdavydov@parallels.com>
+	id S1754233AbaCMPLC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:11:02 -0400
+Received: from [143.182.124.21] ([143.182.124.21]:21029 "EHLO mga03.intel.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753394AbaCMPK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:10:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,647,1389772800"; 
+   d="scan'208";a="491309162"
+Date: Thu, 13 Mar 2014 17:18:16 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Lan Tianyu <tianyu.lan@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        Alan Cox <alan.cox@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 5/5] gpio / ACPI: Add support for ACPI GPIO operation
+ regions
+Message-ID: <20140313151816.GR5018@intel.com>
+References: <1394456094-21671-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1394456094-21671-6-git-send-email-mika.westerberg@linux.intel.com>
+ <CACRpkdY3z-XGHwn5sQKM-8cKYHzr3_40h53032ETN6PaDW779w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdY3z-XGHwn5sQKM-8cKYHzr3_40h53032ETN6PaDW779w@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While iterating over the memcg_slab_caches list we need to obtain the
-cache a particular memcg_params is corresponding to, because
-memcg_params are actually linked, not caches. Currently to achieve that,
-we employ the fact that each root cache tracks all its child caches in
-its memcg_caches array, so that given a memcg_params we can find the
-memcg cache by doing something like this:
+On Thu, Mar 13, 2014 at 03:32:01PM +0100, Linus Walleij wrote:
+> On Mon, Mar 10, 2014 at 1:54 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> 
+> Here:
+> 
+> > +static acpi_status
+> > +acpi_gpio_adr_space_handler(u32 function, acpi_physical_address address,
+> > +                           u32 bits, u64 *value, void *handler_context,
+> > +                           void *region_context)
+> > +{
+> > +       struct acpi_gpio_chip *achip = region_context;
+> > +       struct gpio_chip *chip = achip->chip;
+> > +       struct acpi_resource_gpio *agpio;
+> > +       struct acpi_resource *ares;
+> > +       acpi_status status;
+> > +       bool pull;
+> 
+> Should be named pull_up, right?
 
-  root = memcg_params->root_cache;
-  memcg = memcg_params->memcg;
-  memcg_cache = root->memcg_params->memcg_caches[memcg->kmemcg_id];
+Yes.
 
-Apart from being cumbersome, this is not going to work when reparenting
-of memcg caches is introduced. So let's embed a pointer back to the
-memcg cache into the memcg_cache_params struct.
+> 
+> > +       int i;
+> > +
+> > +       status = acpi_buffer_to_resource(achip->conn_info.connection,
+> > +                                        achip->conn_info.length, &ares);
+> > +       if (ACPI_FAILURE(status))
+> > +               return status;
+> > +
+> > +       if (WARN_ON(ares->type != ACPI_RESOURCE_TYPE_GPIO)) {
+> > +               ACPI_FREE(ares);
+> > +               return AE_BAD_PARAMETER;
+> > +       }
+> > +
+> > +       agpio = &ares->data.gpio;
+> > +       pull = agpio->pin_config == ACPI_PIN_CONFIG_PULLUP;
+> 
+> So here ACPI tells us that the pin is pulled up.
+> 
+> And I am suspicious since this is strictly speaking pin control business
+> and not GPIO, and I won't let pin control stuff sneak into the GPIO
+> subsystem under the radar just because I'm not paying close enough
+> attention.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@gmail.com>
----
- include/linux/slab.h |    2 ++
- mm/memcontrol.c      |   28 +++-------------------------
- 2 files changed, 5 insertions(+), 25 deletions(-)
+This has more to do in finding out what will be the initial value of the
+GPIO when we set it to output (given that it is output).
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index ee9f1b0382ac..f2fd4212976e 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -520,6 +520,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
-  *
-  * Child caches will hold extra metadata needed for its operation. Fields are:
-  *
-+ * @cachep: back pointer to the memcg cache
-  * @memcg: pointer to the memcg this cache belongs to
-  * @list: list_head for the list of all caches in this memcg
-  * @root_cache: pointer to the global, root cache, this cache was derived from
-@@ -536,6 +537,7 @@ struct memcg_cache_params {
- 			struct kmem_cache *memcg_caches[0];
- 		};
- 		struct {
-+			struct kmem_cache *cachep;
- 			struct mem_cgroup *memcg;
- 			struct list_head list;
- 			struct kmem_cache *root_cache;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3659d90d5a40..626a37e01126 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2912,19 +2912,6 @@ static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
- 		memcg_kmem_is_active(memcg);
- }
- 
--/*
-- * This is a bit cumbersome, but it is rarely used and avoids a backpointer
-- * in the memcg_cache_params struct.
-- */
--static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
--{
--	struct kmem_cache *cachep;
--
--	VM_BUG_ON(p->is_root_cache);
--	cachep = p->root_cache;
--	return cache_from_memcg_idx(cachep, memcg_cache_id(p->memcg));
--}
--
- #ifdef CONFIG_SLABINFO
- static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
- {
-@@ -2938,7 +2925,7 @@ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
- 
- 	mutex_lock(&memcg->slab_caches_mutex);
- 	list_for_each_entry(params, &memcg->memcg_slab_caches, list)
--		cache_show(memcg_params_to_cache(params), m);
-+		cache_show(params->cachep, m);
- 	mutex_unlock(&memcg->slab_caches_mutex);
- 
- 	return 0;
-@@ -3137,6 +3124,7 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
- 		return -ENOMEM;
- 
- 	if (memcg) {
-+		s->memcg_params->cachep = s;
- 		s->memcg_params->memcg = memcg;
- 		s->memcg_params->root_cache = root_cache;
- 		INIT_WORK(&s->memcg_params->destroy,
-@@ -3184,11 +3172,6 @@ void memcg_register_cache(struct kmem_cache *s)
- 	 */
- 	smp_wmb();
- 
--	/*
--	 * Initialize the pointer to this cache in its parent's memcg_params
--	 * before adding it to the memcg_slab_caches list, otherwise we can
--	 * fail to convert memcg_params_to_cache() while traversing the list.
--	 */
- 	VM_BUG_ON(root->memcg_params->memcg_caches[id]);
- 	root->memcg_params->memcg_caches[id] = s;
- 
-@@ -3220,11 +3203,6 @@ void memcg_unregister_cache(struct kmem_cache *s)
- 	list_del(&s->memcg_params->list);
- 	mutex_unlock(&memcg->slab_caches_mutex);
- 
--	/*
--	 * Clear the pointer to this cache in its parent's memcg_params only
--	 * after removing it from the memcg_slab_caches list, otherwise we can
--	 * fail to convert memcg_params_to_cache() while traversing the list.
--	 */
- 	VM_BUG_ON(root->memcg_params->memcg_caches[id] != s);
- 	root->memcg_params->memcg_caches[id] = NULL;
- }
-@@ -3266,7 +3244,7 @@ static void kmem_cache_destroy_work_func(struct work_struct *w)
- 	struct memcg_cache_params *params;
- 
- 	params = container_of(w, struct memcg_cache_params, destroy);
--	cachep = memcg_params_to_cache(params);
-+	cachep = params->cachep;
- 
- 	if (atomic_read(&params->refcount) != 0) {
- 		/*
--- 
-1.7.10.4
+> I have been told that these things are not dynamic (i.e. we only get
+> informed that a pin is pulled up/down, we cannot actively change the
+> config) is this correct?
 
+As far as I can tell, yes.
+
+> If any sort of advanced pin control business is going to come into
+> ACPI a sibling driver in drivers/pinctrl/pinctrl-acpi.c needs to be
+> created that can select CONFIG_PINCONF properly reflect this
+> stuff in debugfs etc. (Maybe also give proper names on the pins
+> since I hear this is coming to ACPI!)
+
+No advanced pin control business, just GPIO stuff :)
+
+> > +       if (WARN_ON(agpio->io_restriction == ACPI_IO_RESTRICT_INPUT &&
+> > +           function == ACPI_WRITE)) {
+> > +               ACPI_FREE(ares);
+> > +               return AE_BAD_PARAMETER;
+> > +       }
+> > +
+> > +       for (i = 0; i < agpio->pin_table_length; i++) {
+> > +               unsigned pin = agpio->pin_table[i];
+> > +               struct acpi_gpio_connection *conn;
+> > +               struct gpio_desc *desc;
+> > +               bool found;
+> > +
+> > +               desc = gpiochip_get_desc(chip, pin);
+> > +               if (IS_ERR(desc)) {
+> > +                       status = AE_ERROR;
+> > +                       goto out;
+> > +               }
+> > +
+> > +               mutex_lock(&achip->conn_lock);
+> > +
+> > +               found = false;
+> > +               list_for_each_entry(conn, &achip->conns, node) {
+> > +                       if (conn->desc == desc) {
+> > +                               found = true;
+> > +                               break;
+> > +                       }
+> > +               }
+> > +               if (!found) {
+> > +                       int ret;
+> > +
+> > +                       ret = gpiochip_request_own_desc(desc, "ACPI:OpRegion");
+> > +                       if (ret) {
+> > +                               status = AE_ERROR;
+> > +                               mutex_unlock(&achip->conn_lock);
+> > +                               goto out;
+> > +                       }
+> > +
+> > +                       switch (agpio->io_restriction) {
+> > +                       case ACPI_IO_RESTRICT_INPUT:
+> > +                               gpiod_direction_input(desc);
+> > +                               break;
+> > +                       case ACPI_IO_RESTRICT_OUTPUT:
+> > +                               gpiod_direction_output(desc, pull);
+> 
+> Can you explain why the fact that the line is pulled down affects the
+> default output value like this? I don't get it.
+
+That's the thing - ACPI doesn't tell us what is the initial value of the
+pin. There is no such field in GpioIo() resource.
+
+So I'm assuming here that if it says that the pin is pulled up, the default
+value will be high.
+
+> A comment in the code would be needed I think.
+> 
+> This looks more like a typical piece of code for open collector/drain
+> (which is already handled by gpiolib) not pull up/down.
+>
+> 
+> > +                               break;
+> > +                       default:
+> > +                               /*
+> > +                                * Assume that the BIOS has configured the
+> > +                                * direction and pull accordingly.
+> > +                                */
+> > +                               break;
+> > +                       }
+> > +
+> > +                       conn = kzalloc(sizeof(*conn), GFP_KERNEL);
+> > +                       if (!conn) {
+> > +                               status = AE_NO_MEMORY;
+> > +                               mutex_unlock(&achip->conn_lock);
+> > +                               goto out;
+> > +                       }
+> > +
+> > +                       conn->desc = desc;
+> > +
+> > +                       list_add_tail(&conn->node, &achip->conns);
+> > +               }
+> > +
+> > +               mutex_unlock(&achip->conn_lock);
+> > +
+> > +
+> > +               if (function == ACPI_WRITE)
+> > +                       gpiod_set_raw_value(desc, !!((1 << i) & *value));
+> 
+> What is this? How can the expression !!((1 << i) possibly evaluate to
+> anything else than "true"? I don't get it. Just (desc, *value) seem more
+> apropriate.
+
+We are dealing with multiple pins here. So for example if
+agpio->pin_table_length == 2 and *value == 0x2 we get:
+
+i == 0: !!((1 << 0) & 0x2) --> false
+i == 1: !!((1 << 1) & 0x2) --> true
+
+Maybe
+
+	gpiod_set_raw_value(desc, (*value >> i) & 1);
+
+is cleaner?
