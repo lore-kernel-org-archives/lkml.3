@@ -1,171 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270AbaCMMqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 08:46:13 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:37126 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaCMMqL (ORCPT
+	id S1752248AbaCMMt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 08:49:59 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:46646 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbaCMMt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 08:46:11 -0400
-Date: Thu, 13 Mar 2014 05:44:57 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Suleiman Souhlal <suleiman@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: performance regression due to commit e82e0561("mm: vmscan: obey
- proportional scanning requirements for kswapd")
-In-Reply-To: <20140312165447.GO10663@suse.de>
-Message-ID: <alpine.LSU.2.11.1403130516050.10128@eggly.anvils>
-References: <20140218080122.GO26593@yliu-dev.sh.intel.com> <20140312165447.GO10663@suse.de>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 13 Mar 2014 08:49:57 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-bc-5321a9706f04
+Message-id: <1394714991.20773.5.camel@AMDC1943>
+Subject: Re: [PATCH v2 2/3] mfd: sec-core: Add of_compatible strings for MFD
+ cells
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Tomasz Figa <t.figa@samsung.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Thu, 13 Mar 2014 13:49:51 +0100
+In-reply-to: <5321A6A2.9070509@samsung.com>
+References: <1394703425-6462-1-git-send-email-k.kozlowski@samsung.com>
+ <1394703425-6462-3-git-send-email-k.kozlowski@samsung.com>
+ <53219F80.9000300@samsung.com> <1394712996.20773.1.camel@AMDC1943>
+ <5321A6A2.9070509@samsung.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsVy+t/xa7oFKxWDDWZvlbfYOGM9q8XZpjfs
+	Fve/HmW02PT4GqvF5V1z2CxmnN/HZLH2yF12i6cTLrJZnPzTy2hxupvV4uKKL0wW62e8ZrFo
+	/7uXzWLO9HdMDnwed67tYfOYdzLQY/OSeo++LasYPT5vkgtgjeKySUnNySxLLdK3S+DK6Lu6
+	jqlgoUjFjZ2PGRsYt/F3MXJySAiYSEw9fYAVwhaTuHBvPVsXIxeHkMBSRok5qxayQDifGSV+
+	71vEDlLFK6AvsWvWOkYQW1ggRKJtz3k2EJtNwFhi8/IlQDYHh4iAm8T9TT4gYWaBn8wSe76B
+	lbMIqEr0TvsHVs4poC1x6+l8Voj5Lxklvh06wQLRoC4xad4iZoiLlCR2t3eyQ8TlJTavecsM
+	cYOgxI/J91gmMArMQtIyC0nZLCRlCxiZVzGKppYmFxQnpeca6hUn5haX5qXrJefnbmKExMmX
+	HYyLj1kdYhTgYFTi4V2xXCFYiDWxrLgy9xCjBAezkghv4SLFYCHelMTKqtSi/Pii0pzU4kOM
+	TBycUg2MFo36aY2zvz6suHW88dyB0G2ChY//1z5VX8m9yWeC0NGwU28mi6TfMOt4E+4QN2GK
+	d2cL/7Y3Mge+vPeelfiyOGObdx3/2cPHud9yHL5bfWr1rr9FN1Li724J3v5Y+0PuxADDc6vs
+	lmbqLeJ3/7rdiVdNTWhfxknhb6siSroXXU3qc/B6eDCLV4mlOCPRUIu5qDgRAMLAcxdxAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Mar 2014, Mel Gorman wrote:
-> On Tue, Feb 18, 2014 at 04:01:22PM +0800, Yuanhan Liu wrote:
-> > Hi,
-> > 
-> > Commit e82e0561("mm: vmscan: obey proportional scanning requirements for
-> > kswapd") caused a big performance regression(73%) for vm-scalability/
-> > lru-file-readonce testcase on a system with 256G memory without swap.
-> > 
-> > That testcase simply looks like this:
-> >      truncate -s 1T /tmp/vm-scalability.img
-> >      mkfs.xfs -q /tmp/vm-scalability.img
-> >      mount -o loop /tmp/vm-scalability.img /tmp/vm-scalability
-> > 
-> >      SPARESE_FILE="/tmp/vm-scalability/sparse-lru-file-readonce"
-> >      for i in `seq 1 120`; do
-> >          truncate $SPARESE_FILE-$i -s 36G
-> >          timeout --foreground -s INT 300 dd bs=4k if=$SPARESE_FILE-$i of=/dev/null
-> >      done
-> > 
-> >      wait
-> > 
+On Thu, 2014-03-13 at 13:37 +0100, Tomasz Figa wrote:
+> On 13.03.2014 13:16, Krzysztof Kozlowski wrote:
+> > On Thu, 2014-03-13 at 13:07 +0100, Tomasz Figa wrote:
+> >> Hi Krzysztof,
+> >>
+> >> On 13.03.2014 10:37, Krzysztof Kozlowski wrote:
+> >>> Add of_compatible strings for MFD cells for regulator, clock and RTC
+> >>> drivers in S5M8767, S2MPS11 and S2MPS14 PMIC-s.
+> >>>
+> >>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> >>> ---
+> >>>    drivers/mfd/sec-core.c |    8 ++++++++
+> >>>    1 file changed, 8 insertions(+)
+> >>>
+> >>> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+> >>> index d163c66edebb..c5b9b95b2099 100644
+> >>> --- a/drivers/mfd/sec-core.c
+> >>> +++ b/drivers/mfd/sec-core.c
+> >>> @@ -55,28 +55,36 @@ static const struct mfd_cell s5m8763_devs[] = {
+> >>>    static const struct mfd_cell s5m8767_devs[] = {
+> >>>    	{
+> >>>    		.name = "s5m8767-pmic",
+> >>> +		.of_compatible = "samsung,s5m8767-regulators",
+> >>>    	}, {
+> >>>    		.name = "s5m-rtc",
+> >>> +		.of_compatible = "samsung,s5m8767-rtc",
+> >>>    	}, {
+> >>>    		.name = "s5m8767-clk",
+> >>> +		.of_compatible = "samsung,s5m8767-clk",
+> >>>    	}
+> >>>    };
+> >>>
+> >>>    static const struct mfd_cell s2mps11_devs[] = {
+> >>>    	{
+> >>>    		.name = "s2mps11-pmic",
+> >>> +		.of_compatible = "samsung,s2mps11-regulators",
+> >>>    	}, {
+> >>>    		.name = "s2mps11-clk",
+> >>> +		.of_compatible = "samsung,s2mps11-clk",
+> >>>    	}
+> >>>    };
+> >>>
+> >>>    static const struct mfd_cell s2mps14_devs[] = {
+> >>>    	{
+> >>>    		.name = "s2mps14-pmic",
+> >>> +		.of_compatible = "samsung,s2mps14-regulators",
+> >>>    	}, {
+> >>>    		.name = "s2mps14-rtc",
+> >>> +		.of_compatible = "samsung,s2mps14-rtc",
+> >>>    	}, {
+> >>>    		.name = "s2mps14-clk",
+> >>> +		.of_compatible = "samsung,s2mps14-clk",
+> >>>    	}
+> >>>    };
+> >>
+> >> Are these compatible strings documented anywhere?
+> >
+> > The "-clk" compatible strings are (in next patch). The "-rtc" and
+> > "-regulators" are not.
 > 
-> The filename implies that it's a sparse file with no IO but does not say
-> what the truncate function/program/whatever actually does. If it's really a
-> sparse file then the dd process should be reading zeros and writing them to
-> NULL without IO. Where are pages being dirtied? Does the truncate command
-> really create a sparse file or is it something else?
+> Hmm, this doesn't sound good.
 > 
-> > Actually, it's not the newlly added code(obey proportional scanning)
-> > in that commit caused the regression. But instead, it's the following
-> > change:
-> > +
-> > +               if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
-> > +                       continue;
-> > +
-> > 
-> > 
-> > -               if (nr_reclaimed >= nr_to_reclaim &&
-> > -                   sc->priority < DEF_PRIORITY)
-> > +               if (global_reclaim(sc) && !current_is_kswapd())
-> >                         break;
-> > 
-> > The difference is that we might reclaim more than requested before
-> > in the first round reclaimming(sc->priority == DEF_PRIORITY).
-> > 
-> > So, for a testcase like lru-file-readonce, the dirty rate is fast, and
-> > reclaimming SWAP_CLUSTER_MAX(32 pages) each time is not enough for catching
-> > up the dirty rate. And thus page allocation stalls, and performance drops:
-...
-> > I made a patch which simply keeps reclaimming more if sc->priority == DEF_PRIORITY.
-> > I'm not sure it's the right way to go or not. Anyway, I pasted it here for comments.
-> > 
+> > Actually they aren't also used by child driver (each child driver parses
+> > from parent of_node).
 > 
-> The impact of the patch is that a direct reclaimer will now scan and
-> reclaim more pages than requested so the unlucky reclaiming process will
-> stall for longer than it should while others make forward progress.
-> 
-> That would explain the difference in allocstall figure as each stall is
-> now doing more work than it did previously. The throughput figure is
-> harder to explain. What is it measuring?
-> 
-> Any idea why kswapd is failing to keep up?
-> 
-> I'm not saying the patch is wrong but there appears to be more going on
-> that is explained in the changelog. Is the full source of the benchmark
-> suite available? If so, can you point me to it and the exact commands
-> you use to run the testcase please?
+> Do you need to add compatible strings to mfd_cell entries of such cells 
+> then?
 
-I missed Yuanhan's mail, but seeing your reply reminds me of another
-issue with that proportionality patch - or perhaps more thought would
-show them to be two sides of the same issue, with just one fix required.
-Let me throw our patch into the cauldron.
+>From my point of view there isn't any special need for them (except for
+clk).
 
-[PATCH] mm: revisit shrink_lruvec's attempt at proportionality
+Dear Lee,
 
-We have a memcg reclaim test which exerts a certain amount of pressure,
-and expects to see a certain range of page reclaim in response.  It's a
-very wide range allowed, but the test repeatably failed on v3.11 onwards,
-because reclaim goes wild and frees up almost everything.
+Do you wish to have these compatibles for all of child drivers even when
+they aren't used directly by them? If yes then probably I should
+document them.
 
-This wild behaviour bisects to Mel's "scan_adjusted" commit e82e0561dae9
-"mm: vmscan: obey proportional scanning requirements for kswapd".  That
-attempts to achieve proportionality between anon and file lrus: to the
-extent that once one of those is empty, it then tries to empty the other.
-Stop that.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+Best regards,
+Krzysztof
 
-We've been running happily with this for months; but all that time it's
-been on my TODO list with a "needs more thought" tag before we could
-upstream it, and I never got around to that.  We also have a somewhat
-similar, but older and quite independent, fix to get_scan_count() from
-Suleiman, which I'd meant to send along at the same time: I'll dig that
-one out tomorrow or the day after.
-
- mm/vmscan.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
-
---- 3.14-rc6/mm/vmscan.c	2014-02-02 18:49:07.949302116 -0800
-+++ linux/mm/vmscan.c	2014-03-13 04:38:04.664030175 -0700
-@@ -2019,7 +2019,6 @@ static void shrink_lruvec(struct lruvec
- 	unsigned long nr_reclaimed = 0;
- 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
- 	struct blk_plug plug;
--	bool scan_adjusted = false;
- 
- 	get_scan_count(lruvec, sc, nr);
- 
-@@ -2042,7 +2041,7 @@ static void shrink_lruvec(struct lruvec
- 			}
- 		}
- 
--		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
-+		if (nr_reclaimed < nr_to_reclaim)
- 			continue;
- 
- 		/*
-@@ -2064,6 +2063,15 @@ static void shrink_lruvec(struct lruvec
- 		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
- 		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
- 
-+		/*
-+		 * It's just vindictive to attack the larger once the smaller
-+		 * has gone to zero.  And given the way we stop scanning the
-+		 * smaller below, this makes sure that we only make one nudge
-+		 * towards proportionality once we've got nr_to_reclaim.
-+		 */
-+		if (!nr_file || !nr_anon)
-+			break;
-+
- 		if (nr_file > nr_anon) {
- 			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
- 						targets[LRU_ACTIVE_ANON] + 1;
-@@ -2093,8 +2101,6 @@ static void shrink_lruvec(struct lruvec
- 		nr_scanned = targets[lru] - nr[lru];
- 		nr[lru] = targets[lru] * (100 - percentage) / 100;
- 		nr[lru] -= min(nr[lru], nr_scanned);
--
--		scan_adjusted = true;
- 	}
- 	blk_finish_plug(&plug);
- 	sc->nr_reclaimed += nr_reclaimed;
