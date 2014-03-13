@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235AbaCMOOc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 10:14:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51575 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275AbaCMOOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 10:14:30 -0400
-Date: Thu, 13 Mar 2014 10:14:22 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        ssorce@redhat.com, jkaluza@redhat.com, lpoetter@redhat.com,
-        kay@redhat.com
-Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
-Message-ID: <20140313141422.GB18914@redhat.com>
-References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
- <1394657163-7472-3-git-send-email-vgoyal@redhat.com>
- <5320CAEC.6030008@amacapital.net>
- <CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
+	id S1753286AbaCMOQV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 10:16:21 -0400
+Received: from 14.mo7.mail-out.ovh.net ([178.33.251.19]:38311 "EHLO
+	mo7.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751154AbaCMOQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 10:16:20 -0400
+X-Greylist: delayed 15909 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Mar 2014 10:16:20 EDT
+Message-ID: <01095ac2f40e88e8736294e68c2fac05.squirrel@ssl0.ovh.net>
+In-Reply-To: <20140313135416.GB7083@laugharne.auvation.com>
+References: <1394703895-9588-1-git-send-email-mourn@2600fr.org>
+    <20140313135046.GA7083@laugharne.auvation.com>
+    <20140313135416.GB7083@laugharne.auvation.com>
+Date: Thu, 13 Mar 2014 15:13:04 +0100
+Subject: Re: [PATCH] staging: android: fix coding style
+From: "mourn" <mourn@2600fr.org>
+To: "Mark Einon" <mark@einon.net>
+Cc: mourn@2600fr.org, devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        rebecca@android.com, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Webmail-UserID: mourn%2600fr.org
+X-Originating-IP: 82.120.247.142
+X-Ovh-Tracer-Id: 13614381675286480825
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrvdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 02:12:33PM -0700, Andy Lutomirski wrote:
-> On Wed, Mar 12, 2014 at 2:00 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > On 03/12/2014 01:46 PM, Vivek Goyal wrote:
-> >> Implement SO_PEERCGROUP along the lines of SO_PEERCRED. This returns the
-> >> cgroup of first mounted hierarchy of the task. For the case of client,
-> >> it represents the cgroup of client at the time of opening the connection.
-> >> After that client cgroup might change.
-> >
-> > Even if people decide that sending cgroups over a unix socket is a good
-> > idea, this API has my NAK in the strongest possible sense, for whatever
-> > my NAK is worth.
-> >
-> > IMO SO_PEERCRED is a disaster.  Calling send(2) or write(2) should
-> > *never* imply the use of a credential.  A program should always have to
-> > *explicitly* request use of a credential.  What you want is SCM_CGROUP.
-> >
-> > (I've found privilege escalations before based on this observation, and
-> > I suspect I'll find them again.)
-> >
-> >
-> > Note that I think that you really want SCM_SOMETHING_ELSE and not
-> > SCM_CGROUP, but I don't know what the use case is yet.
-> 
-> This might not be quite as awful as I thought.  At least you're
-> looking up the cgroup at connection time instead of at send time.
-> 
-> OTOH, this is still racy -- the socket could easily outlive the cgroup
-> that created it.
 
-That's a good point. What guarantees that previous cgroup was not
-reassigned to a different container.
+> The changes look good, however you should be a bit more specific about
+> what the
+> fixes are, and that you used checkpatch.pl to find them (I assume).
+>
 
-What if a process A opens the connection with sssd. Process A passes the
-file descriptor to a different process B in a differnt container.
-Process A exits. Container gets removed from system and new one gets
-launched which uses same cgroup as old one. Now process B sends a new
-request and SSSD will serve it based on policy of newly launched
-container.
+Yes, you are right. I can edit the commit log.
 
-This sounds very similar to pid race where socket/connection will outlive
-the pid.
+> Also, Signed-off-by: should state your full name, which I'm also assuming
+> isn't
+> 'mourn'. Please see Documentation/SubmittingPatches.
+>
+
+I have a bit of a problem here. Some companies forbid their employees to
+openly participate in open source projects. A request to the legal
+department will take around 6 months with no hope of positive result...
 
 Thanks
-Vivek
+
+
