@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaCMJoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 05:44:25 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:38990 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682AbaCMJoX (ORCPT
+	id S1753562AbaCMJoy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 05:44:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58619 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaCMJow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 05:44:23 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-6a-53217df66c8c
-Message-id: <1394703860.6546.1.camel@AMDC1943>
-Subject: Re: [PATCH v3 2/4] mfd: max8997: handle IRQs using regmap
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, myungjoo.ham@samsung.com,
-        cw00.choi@samsung.com, dmitry.torokhov@gmail.com, cooloney@gmail.com,
-        rpurdie@rpsys.net, dbaryshkov@gmail.com, dwmw2@infradead.org,
-        lgirdwood@gmail.com, broonie@kernel.org, a.zummo@towertech.it,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-leds@vger.kernel.org,
-        rtc-linux@googlegroups.com, m.szyprowski@samsung.com
-Date: Thu, 13 Mar 2014 10:44:20 +0100
-In-reply-to: <1394703532-494-3-git-send-email-r.baldyga@samsung.com>
-References: <1394703532-494-1-git-send-email-r.baldyga@samsung.com>
- <1394703532-494-3-git-send-email-r.baldyga@samsung.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t/xa7rfahWDDb71yFksuXiV3WLqwyds
-	Fkd3TmSyuP7lOavFpCfvmS0OL3rBaDFx5WRmi/tfjzJafLvSwWRx89M3VovLu+awWWx9s47R
-	Yu2Ru+wWtxtXsFlc23uc2eLB4Z3sFrt3PWW12N/ZwWhxupvVQdhj56y77B57Jp5k89i8Qstj
-	06pONo871/awecw7GeixZ/4PVo++LasYPabP+8nk8XmTnMf6LVuZArijuGxSUnMyy1KL9O0S
-	uDLmbDrNXrCJveLfuqcsDYxnWbsYOTkkBEwkug++Z4SwxSQu3FvP1sXIxSEksJRR4tbzDiYI
-	5zOjxPvuWywgVbwCehLzT/awgdjCAk4SD9/1MIHYbALGEpuXLwGLiwhoSdz5OJ8dpJlZ4DCz
-	xL4HHWDrWARUJaYsmQZWxCngIrHvx2awZiGBWolPC8+A1TALqEtMmreIGeIkJYnd7Z3sEHF5
-	ic1r3jJDHCEo8WPyPZYJjAKzkLTMQlI2C0nZAkbmVYyiqaXJBcVJ6bmGesWJucWleel6yfm5
-	mxghcfllB+PiY1aHGAU4GJV4eFcsVwgWYk0sK67MPcQowcGsJMI7v1IxWIg3JbGyKrUoP76o
-	NCe1+BAjEwenVANj5ptza/Kuhk2wueJy4ot3y2H1wgpbQdF0CdZ6pbSJdxokF8VfeNH/7q5Q
-	PK9y2nwNk5v3znO/5g4rn/jl+VGBxffPGpfoxfZrzFbnvbx67T0e9sBPf6ZfN1gd/PTN56jM
-	lSpSJ7JqF2YXXEjiDdw9pZPx/Opd5ad+F9qKamyzWPaq+ihfs1mIEktxRqKhFnNRcSIA2pcm
-	I6kCAAA=
+	Thu, 13 Mar 2014 05:44:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Shreyas Bhatewara <sbhatewara@vmware.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH] vmxnet3: fix building without CONFIG_PCI_MSI
+Date: Thu, 13 Mar 2014 10:44:34 +0100
+Message-ID: <7825453.7LB7BmvA2b@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:/ckG+5ndPAr4eBHIaTnx7pIfyVsMjv2nC3R8FlsY66c
+ Ezzz7+j7Yhl+uYjEF3KDKf4Xv92ynhkuDE5DdSGo4mn2SBSuQs
+ MDRz9czuUHjzllX5Rg3cmdNZ4UaNGZ6w/drtrzKTgULDJ6yQmn
+ 66tg2XVO0shsKNqYqiAdRBReKGZiiu+JH0V3CH62iCYziHFVhg
+ ALs8YjJ3IQ/v4Yce2WmfigPW7o9HEWi3mUWT7wcQi2eQR39jxm
+ NGaZpOQgDs65zvOQ0ElPIgi0xvgSoXLuW2D2iP7kIJyDbhLypW
+ Wict5oQ7o6pHa3ropYyLUAUEfF+gdYiwxPlLfXmObONDxKXrkC
+ 2Fqj7Xq+0zLDh3OJC5mo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-13 at 10:38 +0100, Robert Baldyga wrote:
-> This patch modifies mfd driver to use regmap for handling interrupts.
-> It allows to simplify irq handling process. This modifications needed
-> to make small changes in function drivers, which use interrupts.
-> 
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> ---
->  drivers/extcon/extcon-max8997.c     |    3 +-
->  drivers/mfd/Kconfig                 |    2 +-
->  drivers/mfd/Makefile                |    2 +-
->  drivers/mfd/max8997-irq.c           |  373 -----------------------------------
->  drivers/mfd/max8997.c               |  112 ++++++++++-
->  drivers/rtc/rtc-max8997.c           |    2 +-
->  include/linux/mfd/max8997-private.h |   63 +++++-
->  7 files changed, 165 insertions(+), 392 deletions(-)
->  delete mode 100644 drivers/mfd/max8997-irq.c
+Since commit d25f06ea466e "vmxnet3: fix netpoll race condition",
+the vmxnet3 driver fails to build when CONFIG_PCI_MSI is disabled,
+because it unconditionally references the vmxnet3_msix_rx()
+function.
 
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To fix this, use the same #ifdef in the caller that exists around
+the function definition.
 
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
+Cc: "VMware, Inc." <pv-drivers@vmware.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: stable@vger.kernel.org
+---
+Found this during randconfig testing on ARM. Most of the time when
+I report network driver problems, they get fixed in the netdev tree
+before I even find them, but since this is for a patch marked "stable",
+I made a proper patch anyway.
 
-Best regards,
-Krzysztof Kozlowski
+Please ignore if this is already a known problem, otherwise make sure
+the original patch doesn't get backported without addressing this
+issue first.
+
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index cbd898f..28965ad 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -1761,13 +1761,16 @@ static void
+ vmxnet3_netpoll(struct net_device *netdev)
+ {
+ 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
+-	int i;
+ 
+ 	switch (adapter->intr.type) {
+-	case VMXNET3_IT_MSIX:
++#ifdef CONFIG_PCI_MSI
++	case VMXNET3_IT_MSIX: {
++		int i;
+ 		for (i = 0; i < adapter->num_rx_queues; i++)
+ 			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
+ 		break;
++	}
++#endif
+ 	case VMXNET3_IT_MSI:
+ 	default:
+ 		vmxnet3_intr(0, adapter->netdev);
 
