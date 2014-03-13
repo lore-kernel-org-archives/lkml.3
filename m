@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaCMNJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 09:09:58 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:58031 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866AbaCMNJ4 (ORCPT
+	id S1752678AbaCMNNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 09:13:36 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:48599 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751112AbaCMNNe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 09:09:56 -0400
-Date: Thu, 13 Mar 2014 13:09:50 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 2/3] mfd: sec-core: Add of_compatible strings for MFD
- cells
-Message-ID: <20140313130950.GB10356@lee--X1>
-References: <1394703425-6462-1-git-send-email-k.kozlowski@samsung.com>
- <1394703425-6462-3-git-send-email-k.kozlowski@samsung.com>
- <53219F80.9000300@samsung.com>
- <1394712996.20773.1.camel@AMDC1943>
- <5321A6A2.9070509@samsung.com>
- <1394714991.20773.5.camel@AMDC1943>
+	Thu, 13 Mar 2014 09:13:34 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Hayes Wang'" <hayeswang@realtek.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH net-next v3 1/2] r8152: add
+ RTL8152_EARLY_AGG_TIMEOUT_SUPER
+Thread-Topic: [PATCH net-next v3 1/2] r8152: add
+ RTL8152_EARLY_AGG_TIMEOUT_SUPER
+Thread-Index: AQHPPrSolKsaLpuJVEW9JmxsG/15JZre/YjQ
+Date: Thu, 13 Mar 2014 13:12:35 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6DCB6E@AcuExch.aculab.com>
+References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
+ <1394712342-15778-1-Taiwan-albertk@realtek.com>
+ <1394712342-15778-2-Taiwan-albertk@realtek.com>
+In-Reply-To: <1394712342-15778-2-Taiwan-albertk@realtek.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394714991.20773.5.camel@AMDC1943>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<snip>
+From: Hayes Wang
+...
 
-> > >> Are these compatible strings documented anywhere?
-> > >
-> > > The "-clk" compatible strings are (in next patch). The "-rtc" and
-> > > "-regulators" are not.
-> > 
-> > Hmm, this doesn't sound good.
-> > 
-> > > Actually they aren't also used by child driver (each child driver parses
-> > > from parent of_node).
-> > 
-> > Do you need to add compatible strings to mfd_cell entries of such cells 
-> > then?
+I should have spotted this before.
+
+>  /* USB_RX_EARLY_AGG */
+> -#define EARLY_AGG_SUPPER	0x0e832981
+> +#define EARLY_AGG_SUPER	((((rx_buf_sz - 1522) / 4) << 16) | \
+> +	(u32)(CONFIG_RTL8152_EARLY_AGG_TIMEOUT_SUPER <= 0 ? 85 * 125 : \
+> +	min(CONFIG_RTL8152_EARLY_AGG_TIMEOUT_SUPER * 125, 0xffff)))
+>  #define EARLY_AGG_HIGH		0x0e837a12
+>  #define EARLY_AGG_SLOW		0x0e83ffff
 > 
-> From my point of view there isn't any special need for them (except for
-> clk).
-> 
-> Dear Lee,
-> 
-> Do you wish to have these compatibles for all of child drivers even when
-> they aren't used directly by them? If yes then probably I should
-> document them.
+> @@ -1978,7 +1980,7 @@ static void r8153_set_rx_agg(struct r8152 *tp)
+>  			ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_BUF_TH,
+>  					RX_THR_SUPPER);
+>  			ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_EARLY_AGG,
+> -					EARLY_AGG_SUPPER);
+> +					EARLY_AGG_SUPER);
+>  		} else {
+>  			ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_BUF_TH,
+>  					RX_THR_HIGH);
 
-It's your call, either remove the unused ones or document them all.
+It looks as though rx_buf_sz should be a parameter to EARLY_AGG_SUPER.
 
-I don't really mind either way. In the previous version I asked if
-there was any reason why you weren't applying compatible strings to
-the other cells; "subordinate drivers don't use them" is a perfectly
-reasonable reason.
+	David
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+
