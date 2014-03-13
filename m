@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007AbaCMLIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 07:08:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49253 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561AbaCMLIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 07:08:37 -0400
-Message-ID: <1394708896.3577.21.camel@paszta.hi.pengutronix.de>
-Subject: Re: [GIT PULL] Move device tree graph parsing helpers to drivers/of
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Grant Likely <grant.likely@linaro.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Date: Thu, 13 Mar 2014 12:08:16 +0100
-In-Reply-To: <20140310143758.3734FC405FA@trevor.secretlab.ca>
-References: <1394126000.3622.66.camel@paszta.hi.pengutronix.de>
-	 < 20140307182330.75168C40AE3@trevor.secretlab.ca>
-	 <20140310102630.3cb1bcd7@ samsung.com>
-	 <20140310143758.3734FC405FA@trevor.secretlab.ca>
+	id S1754082AbaCMLJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 07:09:21 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:47010 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753565AbaCMLJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 07:09:20 -0400
+X-IronPort-AV: E=Sophos;i="4.97,646,1389744000"; 
+   d="scan'208";a="110962079"
+Message-ID: <532191D4.3000501@citrix.com>
+Date: Thu, 13 Mar 2014 11:09:08 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <jonathan.davies@citrix.com>, <wei.liu2@citrix.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH net-next v7 4/9] xen-netback: Introduce TX
+ grant mapping
+References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>		<1394142511-14827-5-git-send-email-zoltan.kiss@citrix.com>	 <1394706812.25873.28.camel@kazak.uk.xensource.com>	 <53218EDA.8040904@citrix.com> <1394708555.25873.43.camel@kazak.uk.xensource.com>
+In-Reply-To: <1394708555.25873.43.camel@kazak.uk.xensource.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Am Montag, den 10.03.2014, 14:37 +0000 schrieb Grant Likely:
-> > > Nak. I made comments that haven't been resolved yet. I've replied with
-> > > more detail tonight. The big issues are how drivers handle the optional
-> > > 'ports' node and I do not agree to the double-linkage in the binding
-> > > description.
-
-so as I understand it, nobody is against dropping the double-linkage
-*if* we can agree on a way to recreate the backlinks in the kernel.
-My current suggestion would be to parse the complete device tree into an
-internal graph structure once, at boot to achieve this. This code could
-look for the optional 'ports' node if and only if the parent device node
-contains #address-cells != <1> or #size-cells != <0> properties.
-
-People completely disagree about the direction the phandle links should
-point in. I am still of the opinion that the generic binding should
-describe just the topology, that the endpoint links in the kernel should
-represent an undirected graph and the direction of links should not
-matter at all for the generic graph bindings.
-
-There's also no consensus about the simplified bindings, but this is an
-issue I'd like to separate from this series.
-
-> > If I understood well, you're requesting to revert all those six patches
-> > that were imported via git pull from my tree (and from Greg and Russell),
-> > right?
-> > 
-> > E. g. reverting those changesets:
-> > 	d484700a3695 f2a575f67695 4329b93b283c 6ff60d397b17 4d56ed5a009b fd9fdb78a9bf
-> > 
-> > as it seems that there's no easy way to revert a git pull.
+On 13/03/14 11:02, Ian Campbell wrote:
+> On Thu, 2014-03-13 at 10:56 +0000, David Vrabel wrote:
+>> On 13/03/14 10:33, Ian Campbell wrote:
+>>> On Thu, 2014-03-06 at 21:48 +0000, Zoltan Kiss wrote:
+>>>> @@ -135,13 +146,31 @@ struct xenvif {
+>>>>  	pending_ring_idx_t pending_cons;
+>>>>  	u16 pending_ring[MAX_PENDING_REQS];
+>>>>  	struct pending_tx_info pending_tx_info[MAX_PENDING_REQS];
+>>>> +	grant_handle_t grant_tx_handle[MAX_PENDING_REQS];
+>>>>  
+>>>>  	/* Coalescing tx requests before copying makes number of grant
+>>>>  	 * copy ops greater or equal to number of slots required. In
+>>>>  	 * worst case a tx request consumes 2 gnttab_copy.
+>>>>  	 */
+>>>>  	struct gnttab_copy tx_copy_ops[2*MAX_PENDING_REQS];
+>>>> -
+>>>> +	struct gnttab_map_grant_ref tx_map_ops[MAX_PENDING_REQS];
+>>>> +	struct gnttab_unmap_grant_ref tx_unmap_ops[MAX_PENDING_REQS];
+>>>
+>>> I wonder if we should break some of these arrays into separate
+>>> allocations? Wasn't there a problem with sizeof(struct xenvif) at one
+>>> point?
+>>
+>> alloc_netdev() falls back to vmalloc() if the kmalloc failed so there's
+>> no need to split these structures.
 > 
-> All trees containing the branch would need to be reverted.
->
-> > I suspect that this will likely cause some harm when merging from our
-> > trees upstream.
-> 
-> It means any tree containing that branch *must* be rewound. See my reply
-> to rmk.
+> Is vmalloc space in abundant supply? For some reason I thought it was
+> limited (maybe that's a 32-bit only limitation?)
 
-> I've made a proposal on how I could be happy with leaving the
-> branches alone. I'm not particularly happy, but there is a way to
-> resolve things without reverts or rewinds.
+It is limited in 32-bit, but 64-bit has stupid amounts.
 
-I'm not sure if maybe I misunderstood or missed a mail, but I haven't
-seen a proposal to resolve the situation without rewinds. Given that
-Mauro already reverted the media tree and applied conflicting changes,
-that's probably not going to happen?
+/proc/meminfo:
 
-regards
-Philipp
+VmallocTotal:   34359738367 kB
 
+David
