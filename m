@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159AbaCMSFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 14:05:46 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:33049 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112AbaCMSFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 14:05:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1394733526.32465.250.camel@willson.li.ssimo.org>
-References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
- <1394657163-7472-3-git-send-email-vgoyal@redhat.com> <5320CAEC.6030008@amacapital.net>
- <CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
- <1394658983.32465.203.camel@willson.li.ssimo.org> <CALCETrU29CpcK4dVRD45BGOD7AVEudADiFxOgFgKWkpFzw07eg@mail.gmail.com>
- <1394673476.32465.215.camel@willson.li.ssimo.org> <CALCETrWbCuKfV4zMkZajDOGhGkKduW0C2L7uHv=vtvqhVeAc6w@mail.gmail.com>
- <1394675038.32465.223.camel@willson.li.ssimo.org> <CALCETrV7GE0YL1sDDqTUV81rWL9zk2vTR1-VLkR7CfTA-FSrgw@mail.gmail.com>
- <1394733077.32465.243.camel@willson.li.ssimo.org> <CALCETrXWzja6W6y=p9MrtynGZMsrD5KQu0KBK6Bs1dQxnesv2A@mail.gmail.com>
- <1394733526.32465.250.camel@willson.li.ssimo.org>
-From: Tim Hockin <thockin@google.com>
-Date: Thu, 13 Mar 2014 11:05:15 -0700
-Message-ID: <CAO_RewYiZVpbu8axKY+FtkaarjA_DohD2e==jcvdWn68ubcR+w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
-To: Simo Sorce <ssorce@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754905AbaCMSFf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 14:05:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20812 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754979AbaCMSE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 14:04:29 -0400
+From: Hans de Goede <hdegoede@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com, Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH v3 2/4] irqchip: sun4i: Fix irq 0 not working
+Date: Thu, 13 Mar 2014 19:03:52 +0100
+Message-Id: <1394733834-26839-3-git-send-email-hdegoede@redhat.com>
+In-Reply-To: <1394733834-26839-1-git-send-email-hdegoede@redhat.com>
+References: <1394733834-26839-1-git-send-email-hdegoede@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't buy that it is not practical.  Not convenient, maybe.  Not
-clean, sure.  But it is practical - it uses mechanisms that exist on
-all kernels today.  That is a win, to me.
+SUN4I_IRQ_VECTOR_REG containing 0 can mean one of 3 things:
+1) no more irqs pending
+2) irq 0 pending
+3) spurious irq
 
-On Thu, Mar 13, 2014 at 10:58 AM, Simo Sorce <ssorce@redhat.com> wrote:
-> On Thu, 2014-03-13 at 10:55 -0700, Andy Lutomirski wrote:
->>
->> So give each container its own unix socket.  Problem solved, no?
->
-> Not really practical if you have hundreds of containers.
->
-> Simo.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+So if we immediately get a reading of 0, check the irq-pending reg
+to differentiate between 2 and 3. We only do this once to avoid
+the extra check in the common case of 1) hapening after having
+read the vector-reg once.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/irqchip/irq-sun4i.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+index a5438d8..5c25048 100644
+--- a/drivers/irqchip/irq-sun4i.c
++++ b/drivers/irqchip/irq-sun4i.c
+@@ -140,10 +140,24 @@ static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *re
+ {
+ 	u32 irq, hwirq;
+ 
++	/*
++	 * hwirq == 0 can mean one of 3 things:
++	 * 1) no more irqs pending
++	 * 2) irq 0 pending
++	 * 3) spurious irq
++	 * So if we immediately get a reading of 0, check the irq-pending reg
++	 * to differentiate between 2 and 3. We only do this once to avoid
++	 * the extra check in the common case of 1 hapening after having
++	 * read the vector-reg once.
++	 */
+ 	hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
+-	while (hwirq != 0) {
++	if (hwirq == 0 &&
++		  !(readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0)) & BIT(0)))
++		return;
++
++	do {
+ 		irq = irq_find_mapping(sun4i_irq_domain, hwirq);
+ 		handle_IRQ(irq, regs);
+ 		hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
+-	}
++	} while (hwirq != 0);
+ }
+-- 
+1.9.0
+
