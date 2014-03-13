@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbaCMIvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 04:51:25 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:40441 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286AbaCMIvW (ORCPT
+	id S1753425AbaCMIxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 04:53:36 -0400
+Received: from moutng.kundenserver.de ([212.227.126.130]:58682 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192AbaCMIxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 04:51:22 -0400
+	Thu, 13 Mar 2014 04:53:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>, yuanyabin1978@sina.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
+        "Krogerus, Heikki" <heikki.krogerus@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
+Date: Thu, 13 Mar 2014 09:52:17 +0100
+Message-ID: <4757683.7Ln0Vh5c4G@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CACRpkdZrRYY0U5zDwoKRarAH=W6UmxGKX_gWR6nYPM64t6Dzpg@mail.gmail.com>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com> <1394463171.2270.54.camel@shinybook.infradead.org> <CACRpkdZrRYY0U5zDwoKRarAH=W6UmxGKX_gWR6nYPM64t6Dzpg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
-	<20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com>
-Date: Thu, 13 Mar 2014 16:51:21 +0800
-Message-ID: <CACVXFVOqBuCcQC6ku0abqstkgJWGe21ZztB-eTsyDwsvDvXNZw@mail.gmail.com>
-Subject: Re: [PATCH 8/9] PCI: Ignore BAR contents when firmware left decoding disabled
-From: Ming Lei <tom.leiming@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:tig444sQHXgFQT44F0iVKg+efLc2RVUWbrPRdoMrrQG
+ xpWsjsvIjugopHsqSex4RfJIPZ7XBKMMnUDrZsjWgcpMApEaCX
+ UNLpieEB/GRlGAw0It6zmZym6nmV29GOb2RAqEpfU3xcJ+pvQ3
+ 36Y90f5jwJ0Pn5L58YPEHFg+df3WAxqU8faEvhpdyvRGAkezVC
+ DMqXHPqGJB/+qodVfDr8Npn1n+/nLLUYbxWl1Iog0OCJI3KaL1
+ Y3b2DVW9oWAfbZ2+dajD7vGJX6ad33JMThJmrkt9RSBmWWGCvq
+ Tmbuch8lBP8czTNzLFDollcsaVxZDSYCMS7oEadpIrr681b53E
+ CnWAUcESGq5+Zm65vJnw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+On Thursday 13 March 2014 09:17:04 Linus Walleij wrote:
+> 
+> Again as Russell stated that doesn't necessarily influence any memory
+> coherency or the physical address pointer written into the DMAC
+> hardware at all, does it? The transfers can still happen between the
+> peripheral and DMAC, and the IOMMU can still be sitting in the middle
+> of things, in front of the DMAC not the device, needing to be flushed etc.
+> 
+> Sorry if I don't get it... maybe this is one of these funny Intel things
+> I cannot wrap my head around properly.
 
-I found this patch broke virtio-pci devices.
+The device pointer we pass into dma_map_* can be used for anything that
+the underlying dma_map_ops implementation requires. This includes
+determining:
 
-On Thu, Feb 27, 2014 at 3:37 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Don't rely on BAR contents when the command register says the BAR is
-> disabled.
->
-> If we receive a PCI device from firmware (or a hot-added device that was
-> just powered up) with the MEMORY or IO enable bits in the PCI command
-> register cleared, there's no reason to believe the BARs contain valid
-> addresses.
+* coherency
+* offsets between bus and cpu physical address
+* presence of IOMMU
+* limits in available bus address space (dma_mask)
+* iommu context ID (normally the location on the PCI bus)
 
->From PCI LOCAL BUS SPECIFICATION, REV. 3.0, both
-PCI_COMMAND_IO and PCI_COMMAND_MEM should be
-cleared after reset, so looks the patch sets IORESOURCE_UNSET
-too early because PCI drivers may call pci_enable_device()
-(->pci_enable_resources()) to enable the two bits of
-PCI_COMMAND explicitly.
+The difference is that on ARM we usually care about the first
+four, which may be different for each device. The case that Dave is
+interested in is when these four are known implicitly but the fifth
+one is not know but depends on the slave device.
 
-With this patch, driver can't enable device/resource with
-pci_enable_device() any more because IORESOURCE_UNSET
-has been set already.
-
->
-> In that case, we still know the type and size of the BAR, but this
-> patch marks the resource as "unset" so we have a chance to reassign it.
->
-> Historically, we often used "BAR == 0" to decide the BAR is invalid.  But 0
-> is a legal BAR value, especially if the host bridge translates addresses,
-> so I think it's better to decide based on the PCI command register, and
-> store the conclusion in the IORESOURCE_UNSET bit.
->
-> Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=679545
-> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=48451
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> ---
->  drivers/pci/probe.c |    8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 6e34498ec9f0..02654b5ec1b9 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -177,9 +177,10 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
->
->         mask = type ? PCI_ROM_ADDRESS_MASK : ~0;
->
-> +       pci_read_config_word(dev, PCI_COMMAND, &orig_cmd);
-> +
->         /* No printks while decoding is disabled! */
->         if (!dev->mmio_always_on) {
-> -               pci_read_config_word(dev, PCI_COMMAND, &orig_cmd);
->                 if (orig_cmd & PCI_COMMAND_DECODE_ENABLE) {
->                         pci_write_config_word(dev, PCI_COMMAND,
->                                 orig_cmd & ~PCI_COMMAND_DECODE_ENABLE);
-> @@ -215,9 +216,13 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
->                 if (res->flags & IORESOURCE_IO) {
->                         l &= PCI_BASE_ADDRESS_IO_MASK;
->                         mask = PCI_BASE_ADDRESS_IO_MASK & (u32) IO_SPACE_LIMIT;
-> +                       if (!(orig_cmd & PCI_COMMAND_IO))
-> +                               res->flags |= IORESOURCE_UNSET;
->                 } else {
->                         l &= PCI_BASE_ADDRESS_MEM_MASK;
->                         mask = (u32)PCI_BASE_ADDRESS_MEM_MASK;
-> +                       if (!(orig_cmd & PCI_COMMAND_MEMORY))
-> +                               res->flags |= IORESOURCE_UNSET;
->                 }
->         } else {
->                 res->flags |= (l & IORESOURCE_ROM_ENABLE);
-> @@ -252,6 +257,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
->                         /* Address above 32-bit boundary; disable the BAR */
->                         pci_write_config_dword(dev, pos, 0);
->                         pci_write_config_dword(dev, pos + 4, 0);
-> +                       res->flags |= IORESOURCE_UNSET;
->                         region.start = 0;
->                         region.end = sz64;
->                         bar_disabled = true;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-Thanks,
--- 
-Ming Lei
+	Arnd
