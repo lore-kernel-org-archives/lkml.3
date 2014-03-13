@@ -1,109 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692AbaCMKIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:08:38 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:35505 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752829AbaCMKIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:08:36 -0400
-X-IronPort-AV: E=Sophos;i="4.97,646,1389744000"; 
-   d="scan'208";a="110948863"
-Message-ID: <1394705313.25873.13.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH net-next v7 0/9] xen-netback: TX grant mapping with
- SKBTX_DEV_ZEROCOPY instead of copy
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Date: Thu, 13 Mar 2014 10:08:33 +0000
-In-Reply-To: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+	id S1753778AbaCMKIo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:08:44 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:55195 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753696AbaCMKIk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 06:08:40 -0400
+Message-ID: <532183A4.5020600@gmail.com>
+Date: Thu, 13 Mar 2014 10:08:36 +0000
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>
+CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: dts: berlin2q: add the Marvell BG2-Q DMP device
+ tree
+References: <1394622364-6848-1-git-send-email-antoine.tenart@free-electrons.com> <1394622364-6848-3-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1394622364-6848-3-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-06 at 21:48 +0000, Zoltan Kiss wrote:
-> A long known problem of the upstream netback implementation that on the TX
-> path (from guest to Dom0) it copies the whole packet from guest memory into
-> Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
-> huge perfomance penalty. The classic kernel version of netback used grant
-> mapping, and to get notified when the page can be unmapped, it used page
-> destructors. Unfortunately that destructor is not an upstreamable solution.
-> Ian Campbell's skb fragment destructor patch series [1] tried to solve this
-> problem, however it seems to be very invasive on the network stack's code,
-> and therefore haven't progressed very well.
-> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
-> know when the skb is freed up. That is the way KVM solved the same problem,
-> and based on my initial tests it can do the same for us. Avoiding the extra
-> copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower AMD
-> Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
-> running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
-> switch)
+On 03/12/2014 11:06 AM, Antoine Ténart wrote:
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>   arch/arm/boot/dts/Makefile         |  3 ++-
+>   arch/arm/boot/dts/berlin2q-dmp.dts | 32 ++++++++++++++++++++++++++++++++
+>   2 files changed, 34 insertions(+), 1 deletion(-)
+>   create mode 100644 arch/arm/boot/dts/berlin2q-dmp.dts
+>
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 032030361bef..1a2adadfb962 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -52,7 +52,8 @@ dtb-$(CONFIG_ARCH_BCM_MOBILE) += bcm11351-brt.dtb \
+>   dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
+>   dtb-$(CONFIG_ARCH_BERLIN) += \
+>   	berlin2-sony-nsz-gs7.dtb	\
+> -	berlin2cd-google-chromecast.dtb
+> +	berlin2cd-google-chromecast.dtb	\
+> +	berlin2q-dmp.dtb
 
-Do you have any other numbers? e.g. for a modern Intel or AMD system? A
-slower box is likely to make the difference between copy and map larger,
-whereas modern Intel for example is supposed to be very good at copying.
+If it is "the" Marvell reference board, the file should be named
+berlin2q-marvell-dmp.dtb.
 
-> Based on my investigations the packet get only copied if it is delivered to
-> Dom0 IP stack through deliver_skb, which is due to this [2] patch. This affects
-> DomU->Dom0 IP traffic and when Dom0 does routing/NAT for the guest. That's a bit
-> unfortunate, but luckily it doesn't cause a major regression for this usecase.
+>   dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
+>   	da850-evm.dtb
+>   dtb-$(CONFIG_ARCH_DOVE) += dove-cm-a510.dtb \
+> diff --git a/arch/arm/boot/dts/berlin2q-dmp.dts b/arch/arm/boot/dts/berlin2q-dmp.dts
+> new file mode 100644
+> index 000000000000..6a98860e0251
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/berlin2q-dmp.dts
+> @@ -0,0 +1,32 @@
+> +/*
+> + * Copyright (C) 2014 Antoine Ténart <antoine.tenart@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +/dts-v1/;
+> +#include "berlin2q.dtsi"
+> +
+> +/ {
+> +	model = "Marvell BG2-Q DMP";
+> +	compatible = "marvell,berlin2q-dmp", "marvell,berlin2q", "marvell,berlin";
+> +
+> +	memory {
+> +		device_type = "memory";
+> +		reg = <0x00000000 0x40000000>;
 
-Numbers?
+Please double-check Jisheng's comment about memory size.
 
-> In the future we should try to eliminate that copy somehow.
-> There are a few spinoff tasks which will be addressed in separate patches:
-> - grant copy the header directly instead of map and memcpy. This should help
->   us avoiding TLB flushing
-> - use something else than ballooned pages
-> - fix grant map to use page->index properly
-> I've tried to broke it down to smaller patches, with mixed results, so I
-> welcome suggestions on that part as well:
-> 1: Use skb->cb to store pending_idx
-> 2: Some refactoring
-> 3: Change RX path for mapped SKB fragments (moved here to keep bisectability,
-> review it after #4)
-> 4: Introduce TX grant mapping
-> 5: Remove old TX grant copy definitons and fix indentations
-> 6: Add stat counters for zerocopy
-> 7: Handle guests with too many frags
-> 8: Timeout packets in RX path
-> 9: Aggregate TX unmap operations
-> 
-> v2: I've fixed some smaller things, see the individual patches. I've added a
-> few new stat counters, and handling the important use case when an older guest
-> sends lots of slots. Instead of delayed copy now we timeout packets on the RX
-> path, based on the assumption that otherwise packets should get stucked
-> anywhere else. Finally some unmap batching to avoid too much TLB flush
-> 
-> v3: Apart from fixing a few things mentioned in responses the important change
-> is the use the hypercall directly for grant [un]mapping, therefore we can
-> avoid m2p override.
-> 
-> v4: Now we are using a new grant mapping API to avoid m2p_override. The RX queue
-> timeout logic changed also.
-> 
-> v5: Only minor fixes based on Wei's comments
-> 
-> v6: Important bugfixes for xenvif_poll exit path and zerocopy callback, see
-> first 2 patches. Also rework of handling packets with too many slots, and
-> reorder the series a bit.
-> 
-> v7: Small fixes in comments/log messages/error paths, and merging the frag
-> overflow stats patch into its parent.
-> 
-> [1] http://lwn.net/Articles/491522/
-> [2] https://lkml.org/lkml/2012/7/20/363
-> 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> 
+> +	};
+> +
+> +	choosen {
+> +		bootargs = "console=ttyS0,115200 earlyprintk";
+> +	};
+> +
+> +	soc {
+> +		apb@fc0000 {
+> +			uart0: uart@9000 {
+> +				status = "okay";
+> +			};
+> +		};
+> +	};
 
+And Arnd's comment about using &uart0 instead.
+
+Beside the comments made, this all looks fine.
+
+Sebastian
+
+> +};
+>
 
