@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227AbaCMKQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:16:42 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:43625 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543AbaCMKQi (ORCPT
+	id S1754235AbaCMKRL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:17:11 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61286 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753608AbaCMKRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:16:38 -0400
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
-        catalin.marinas@arm.com, will.deacon@arm.com
-Cc: dsaxena@linaro.org, arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v7 2/2] arm64: audit: Add audit hook in syscall_trace_enter/exit()
-Date: Thu, 13 Mar 2014 19:16:07 +0900
-Message-Id: <1394705767-12423-3-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394705767-12423-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1393564635-3921-1-git-send-email-takahiro.akashi@linaro.org>
- <1394705767-12423-1-git-send-email-takahiro.akashi@linaro.org>
+	Thu, 13 Mar 2014 06:17:09 -0400
+Message-ID: <532185A0.3020007@gmail.com>
+Date: Thu, 13 Mar 2014 10:17:04 +0000
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        zmxu@marvell.com, jszhang@marvell.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: dts: berlin2q: add the Marvell Armada 1500 pro
+ (BG2Q) device tree
+References: <1394622364-6848-1-git-send-email-antoine.tenart@free-electrons.com> <1394622364-6848-2-git-send-email-antoine.tenart@free-electrons.com> <20140312122210.GA3040@piout.net> <532180E0.9060108@gmail.com> <20140313100838.GA4418@piout.net>
+In-Reply-To: <20140313100838.GA4418@piout.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds auditing functions on entry to or exit from
-every system call invocation.
+On 03/13/2014 10:08 AM, Alexandre Belloni wrote:
+> On 13/03/2014 at 09:56:48 +0000, Sebastian Hesselbarth wrote :
+>> On 03/12/2014 12:22 PM, Alexandre Belloni wrote:
+>>>
+>>> The 25MHz crystal is on the board, please move it to the board dts.
+>>
+>> If you can confirm that sysmgr clock comes directly from this crystal,
+>> I agree. If it is fed into a pll and can possibly be modified or gated,
+>> make it depend on a 25MHz board crystal. If 25MHz is the only option
+>> for this clock input, I could also live with it being part of the SoC
+>> description.
+>>
+>
+> Yeah, after more discussion, the 25 MHz crystl is the only option and it
+> is fed to an oscillator that generate the reference clock for the PLLs.
+> It is probably fine to let it in the dtsi.
+>
 
-Acked-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- arch/arm64/kernel/ptrace.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+Fine, I am planing to do more work on Berlin and especially clocks next
+cycle. So most of the fixed-clocks will vanish anyway.
 
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index 9c52b3e..d10c637 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -19,6 +19,7 @@
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
- 
-+#include <linux/audit.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
- #include <linux/mm.h>
-@@ -38,6 +39,7 @@
- #include <asm/compat.h>
- #include <asm/debug-monitors.h>
- #include <asm/pgtable.h>
-+#include <asm/syscall.h>
- #include <asm/traps.h>
- #include <asm/system_misc.h>
- 
-@@ -1091,6 +1093,9 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
- 	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
- 		trace_sys_enter(regs, regs->syscallno);
- 
-+	audit_syscall_entry(syscall_get_arch(current, regs), regs->syscallno,
-+		regs->orig_x0, regs->regs[1], regs->regs[2], regs->regs[3]);
-+
- 	return regs->syscallno;
- }
- 
-@@ -1098,6 +1103,8 @@ asmlinkage void syscall_trace_exit(struct pt_regs *regs)
- {
- 	unsigned long saved_reg;
- 
-+	audit_syscall_exit(regs);
-+
- 	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
- 		trace_sys_exit(regs, regs_return_value(regs));
- 
--- 
-1.7.9.5
+BTW, back at ELCE/ARM summit I successfully enabled SMP for berlin2.
+I'll dig that patch out for you to re-test on Quad-core bg2q.
 
+Sebastian
