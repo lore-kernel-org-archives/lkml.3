@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaCMQyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 12:54:14 -0400
-Received: from mail.efficios.com ([78.47.125.74]:56553 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238AbaCMQyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 12:54:12 -0400
-Date: Thu, 13 Mar 2014 16:54:16 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Message-ID: <1670411611.2880.1394729656679.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140313163531.GD14899@redhat.com>
-References: <1394727048-11204-1-git-send-email-mathieu.desnoyers@efficios.com> <20140313163531.GD14899@redhat.com>
-Subject: Re: [RFC PATCH v2] Tracepoint: register/unregister struct
- tracepoint
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1754392AbaCMQ5O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 12:57:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53529 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804AbaCMQ5M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 12:57:12 -0400
+Date: Thu, 13 Mar 2014 12:57:10 -0400 (EDT)
+Message-Id: <20140313.125710.1893798649203550983.davem@davemloft.net>
+To: arnd@arndb.de
+Cc: nhorman@tuxdriver.com, sbhatewara@vmware.com, pv-drivers@vmware.com,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] vmxnet3: fix building without CONFIG_PCI_MSI
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <7825453.7LB7BmvA2b@wuerfel>
+References: <7825453.7LB7BmvA2b@wuerfel>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Tracepoint: register/unregister struct tracepoint
-Thread-Index: xVU1L//+Qjhh8RXmx1D+BWKpBpnXqg==
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Mar 2014 09:57:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Frank Ch. Eigler" <fche@redhat.com>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: "Steven Rostedt" <rostedt@goodmis.org>, linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic
-> Weisbecker" <fweisbec@gmail.com>, "Andrew Morton" <akpm@linux-foundation.org>, "Johannes Berg"
-> <johannes.berg@intel.com>
-> Sent: Thursday, March 13, 2014 12:35:31 PM
-> Subject: Re: [RFC PATCH v2] Tracepoint: register/unregister struct tracepoint
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 13 Mar 2014 10:44:34 +0100
+
+> Since commit d25f06ea466e "vmxnet3: fix netpoll race condition",
+> the vmxnet3 driver fails to build when CONFIG_PCI_MSI is disabled,
+> because it unconditionally references the vmxnet3_msix_rx()
+> function.
 > 
-> Hi -
+> To fix this, use the same #ifdef in the caller that exists around
+> the function definition.
 > 
-> On Thu, Mar 13, 2014 at 12:10:48PM -0400, Mathieu Desnoyers wrote:
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
+> Cc: "VMware, Inc." <pv-drivers@vmware.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: stable@vger.kernel.org
+> ---
+> Found this during randconfig testing on ARM. Most of the time when
+> I report network driver problems, they get fixed in the netdev tree
+> before I even find them, but since this is for a patch marked "stable",
+> I made a proper patch anyway.
 > 
-> > [...]  Moreover, tracers are responsible for unregistering the probe
-> > before the module containing its associated tracepoint is unloaded.
-> 
-> Could you spell out please how a tracer is supposed to know early
-> enough that the module is going to be unloaded?
+> Please ignore if this is already a known problem, otherwise make sure
+> the original patch doesn't get backported without addressing this
+> issue first.
 
-There are two ways this can be done.
-
-One use-case is when the probe and the callsite are within the same module,
-or if the module containing the probe has a symbol dependency on the callsite.
-In this case the probe normally unregisters itself from a module exit function
-before the module unloads.
-
-The other use-case is if the tracer has a module coming/going notifier
-tracking the module's tracepoint callsites. The going notifier should
-be run before the tracepoint.c going notifier. A notifier with negative
-priority should have this effect, since the tracepoint.c notifier has
-priority 0.
-
-Thoughts ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Applied, and queued up for -stable, thanks.
