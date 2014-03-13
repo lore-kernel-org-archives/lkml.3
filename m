@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060AbaCMNJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 09:09:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50470 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaCMNJK (ORCPT
+	id S1753162AbaCMNJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 09:09:58 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:58031 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866AbaCMNJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 09:09:10 -0400
-Date: Thu, 13 Mar 2014 14:09:05 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Hans de Goede <hdegoede@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Carlo Caione <carlo.caione@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] irq: Add a new IRQF_ACK_BEFORE_UNMASK irq flag
-Message-ID: <20140313130905.GA23445@linutronix.de>
-References: <1394579583-29316-1-git-send-email-hdegoede@redhat.com>
- <alpine.DEB.2.02.1403120944270.18573@ionos.tec.linutronix.de>
+	Thu, 13 Mar 2014 09:09:56 -0400
+Date: Thu, 13 Mar 2014 13:09:50 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v2 2/3] mfd: sec-core: Add of_compatible strings for MFD
+ cells
+Message-ID: <20140313130950.GB10356@lee--X1>
+References: <1394703425-6462-1-git-send-email-k.kozlowski@samsung.com>
+ <1394703425-6462-3-git-send-email-k.kozlowski@samsung.com>
+ <53219F80.9000300@samsung.com>
+ <1394712996.20773.1.camel@AMDC1943>
+ <5321A6A2.9070509@samsung.com>
+ <1394714991.20773.5.camel@AMDC1943>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1403120944270.18573@ionos.tec.linutronix.de>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394714991.20773.5.camel@AMDC1943>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner | 2014-03-12 11:38:24 [+0100]:
+<snip>
 
->Untested patch below.
-Tested-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> > >> Are these compatible strings documented anywhere?
+> > >
+> > > The "-clk" compatible strings are (in next patch). The "-rtc" and
+> > > "-regulators" are not.
+> > 
+> > Hmm, this doesn't sound good.
+> > 
+> > > Actually they aren't also used by child driver (each child driver parses
+> > > from parent of_node).
+> > 
+> > Do you need to add compatible strings to mfd_cell entries of such cells 
+> > then?
+> 
+> From my point of view there isn't any special need for them (except for
+> clk).
+> 
+> Dear Lee,
+> 
+> Do you wish to have these compatibles for all of child drivers even when
+> they aren't used directly by them? If yes then probably I should
+> document them.
 
-on DA850 / OMAP-L138. Without:
-  59:        560   cp_intc  ohci_hcd:usb2
-with the patch
-  59:        280   cp_intc  ohci_hcd:usb2
+It's your call, either remove the unused ones or document them all.
 
-that makes a difference of 280 interrupts. Prior the patch each
-interrupt was handled twice and returned once with IRQ_HANDLED and the
-second time with IRQ_NONE. With the proper EOI ack I don't see the
-IRQ_NONE anymore.
+I don't really mind either way. In the previous version I asked if
+there was any reason why you weren't applying compatible strings to
+the other cells; "subordinate drivers don't use them" is a perfectly
+reasonable reason.
 
-Sebastian
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
