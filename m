@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306AbaCMKRf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:17:35 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:43048 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177AbaCMKRd (ORCPT
+	id S1754335AbaCMKRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:17:44 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:41239 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754316AbaCMKRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:17:33 -0400
+	Thu, 13 Mar 2014 06:17:41 -0400
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 To: wad@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com,
         arndb@arndb.de
 Cc: dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         patches@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v3 2/3] arm64: Add seccomp support
-Date: Thu, 13 Mar 2014 19:17:02 +0900
-Message-Id: <1394705823-12465-3-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH v3 3/3] arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h
+Date: Thu, 13 Mar 2014 19:17:03 +0900
+Message-Id: <1394705823-12465-4-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1394705823-12465-1-git-send-email-takahiro.akashi@linaro.org>
 References: <1393320025-2855-1-git-send-email-takahiro.akashi@linaro.org>
@@ -24,146 +24,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-secure_computing() should always be called first in syscall_trace_enter().
-If it returns non-zero, we should stop further handling. Then that system
-call may eventually fail, be trapped or the process itself be killed
-depending on loaded rules.
-In this case, syscall_trace_enter() returns a dedicated value in order to
-skip a normal syscall table lookup because a seccomp rule may have already
-overridden errno.
+kernel/seccomp.c includes linux/compat.h and, indicrectly, asm/compat.h
+via asm/syscall.h. Due to the duplicated definitions of is_compat_task,
+compiling this file will fail in the case of !CONFIG_COMPAT.
+So this patch
+1) removes is_compat_task() definition from asm/compat.h
+2) replaces asm/compat.h to linux/compat.h in kernel/*.c
 
 Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 ---
- arch/arm64/Kconfig               |   14 ++++++++++++++
- arch/arm64/include/asm/seccomp.h |   25 +++++++++++++++++++++++++
- arch/arm64/include/asm/unistd.h  |    3 +++
- arch/arm64/kernel/entry.S        |    4 ++++
- arch/arm64/kernel/ptrace.c       |    6 ++++++
- 5 files changed, 52 insertions(+)
- create mode 100644 arch/arm64/include/asm/seccomp.h
+ arch/arm64/include/asm/compat.h   |    5 -----
+ arch/arm64/kernel/hw_breakpoint.c |    2 +-
+ arch/arm64/kernel/process.c       |    2 +-
+ arch/arm64/kernel/ptrace.c        |    2 +-
+ arch/arm64/kernel/signal.c        |    2 +-
+ 5 files changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 7ca6799..21b33f4 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -27,6 +27,7 @@ config ARM64
- 	select HARDIRQS_SW_RESEND
- 	select HAVE_ARCH_AUDITSYSCALL
- 	select HAVE_ARCH_JUMP_LABEL
-+	select HAVE_ARCH_SECCOMP_FILTER
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_C_RECORDMCOUNT
- 	select HAVE_DEBUG_BUGVERBOSE
-@@ -229,6 +230,19 @@ config HAVE_ARCH_TRANSPARENT_HUGEPAGE
+diff --git a/arch/arm64/include/asm/compat.h b/arch/arm64/include/asm/compat.h
+index fda2704..3b334f9 100644
+--- a/arch/arm64/include/asm/compat.h
++++ b/arch/arm64/include/asm/compat.h
+@@ -305,11 +305,6 @@ static inline int is_compat_thread(struct thread_info *thread)
  
- source "mm/Kconfig"
+ #else /* !CONFIG_COMPAT */
  
-+config SECCOMP
-+	bool "Enable seccomp to safely compute untrusted bytecode"
-+	---help---
-+	  This kernel feature is useful for number crunching applications
-+	  that may need to compute untrusted bytecode during their
-+	  execution. By using pipes or other transports made available to
-+	  the process as file descriptors supporting the read/write
-+	  syscalls, it's possible to isolate those applications in
-+	  their own address space using seccomp. Once seccomp is
-+	  enabled via prctl(PR_SET_SECCOMP), it cannot be disabled
-+	  and the task is only allowed to execute a few safe syscalls
-+	  defined by each seccomp mode.
-+
- config XEN_DOM0
- 	def_bool y
- 	depends on XEN
-diff --git a/arch/arm64/include/asm/seccomp.h b/arch/arm64/include/asm/seccomp.h
-new file mode 100644
-index 0000000..c76fac9
---- /dev/null
-+++ b/arch/arm64/include/asm/seccomp.h
-@@ -0,0 +1,25 @@
-+/*
-+ * arch/arm64/include/asm/seccomp.h
-+ *
-+ * Copyright (C) 2014 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_SECCOMP_H
-+#define _ASM_SECCOMP_H
-+
-+#include <asm/unistd.h>
-+
-+#ifdef CONFIG_COMPAT
-+#define __NR_seccomp_read_32		__NR_compat_read
-+#define __NR_seccomp_write_32		__NR_compat_write
-+#define __NR_seccomp_exit_32		__NR_compat_exit
-+#define __NR_seccomp_sigreturn_32	__NR_compat_rt_sigreturn
-+#endif /* CONFIG_COMPAT */
-+
-+#include <asm-generic/seccomp.h>
-+
-+#endif /* _ASM_SECCOMP_H */
-diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
-index 04f5d22..28bf882 100644
---- a/arch/arm64/include/asm/unistd.h
-+++ b/arch/arm64/include/asm/unistd.h
-@@ -30,6 +30,9 @@
-  * Compat syscall numbers used by the AArch64 kernel.
-  */
- #define __NR_compat_restart_syscall	0
-+#define __NR_compat_exit		1
-+#define __NR_compat_read		3
-+#define __NR_compat_write		4
- #define __NR_compat_sigreturn		119
- #define __NR_compat_rt_sigreturn	173
+-static inline int is_compat_task(void)
+-{
+-	return 0;
+-}
+-
+ static inline int is_compat_thread(struct thread_info *thread)
+ {
+ 	return 0;
+diff --git a/arch/arm64/kernel/hw_breakpoint.c b/arch/arm64/kernel/hw_breakpoint.c
+index f17f581..a45e2db 100644
+--- a/arch/arm64/kernel/hw_breakpoint.c
++++ b/arch/arm64/kernel/hw_breakpoint.c
+@@ -20,6 +20,7 @@
  
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index f06ee35..6ef266a 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -650,6 +650,10 @@ ENDPROC(el0_svc)
- __sys_trace:
- 	mov	x0, sp
- 	bl	syscall_trace_enter
-+#ifdef CONFIG_SECCOMP
-+	cmp	w0, #-EPERM			// check seccomp result
-+	b.eq	ret_to_user			// -EPERM means 'rejected'
-+#endif
- 	adr	lr, __sys_trace_return		// return address
- 	uxtw	scno, w0			// syscall number (possibly new)
- 	mov	x1, sp				// pointer to regs
+ #define pr_fmt(fmt) "hw-breakpoint: " fmt
+ 
++#include <linux/compat.h>
+ #include <linux/cpu_pm.h>
+ #include <linux/errno.h>
+ #include <linux/hw_breakpoint.h>
+@@ -27,7 +28,6 @@
+ #include <linux/ptrace.h>
+ #include <linux/smp.h>
+ 
+-#include <asm/compat.h>
+ #include <asm/current.h>
+ #include <asm/debug-monitors.h>
+ #include <asm/hw_breakpoint.h>
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index 1c0a9be..02eefc6 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -20,6 +20,7 @@
+ 
+ #include <stdarg.h>
+ 
++#include <linux/compat.h>
+ #include <linux/export.h>
+ #include <linux/sched.h>
+ #include <linux/kernel.h>
+@@ -44,7 +45,6 @@
+ #include <linux/personality.h>
+ #include <linux/notifier.h>
+ 
+-#include <asm/compat.h>
+ #include <asm/cacheflush.h>
+ #include <asm/fpsimd.h>
+ #include <asm/mmu_context.h>
 diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index d10c637..be2bb4c 100644
+index be2bb4c..674bae2 100644
 --- a/arch/arm64/kernel/ptrace.c
 +++ b/arch/arm64/kernel/ptrace.c
-@@ -20,12 +20,14 @@
+@@ -20,6 +20,7 @@
   */
  
  #include <linux/audit.h>
-+#include <linux/errno.h>
++#include <linux/compat.h>
+ #include <linux/errno.h>
  #include <linux/kernel.h>
  #include <linux/sched.h>
- #include <linux/mm.h>
- #include <linux/smp.h>
- #include <linux/ptrace.h>
- #include <linux/user.h>
-+#include <linux/seccomp.h>
- #include <linux/security.h>
- #include <linux/init.h>
- #include <linux/signal.h>
-@@ -1067,6 +1069,10 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
- {
- 	unsigned long saved_reg;
+@@ -38,7 +39,6 @@
+ #include <linux/tracehook.h>
+ #include <linux/elf.h>
  
-+	if (secure_computing(regs->syscallno) == -1)
-+		/* seccomp failures shouldn't expose any additional code. */
-+		return -EPERM;
-+
- 	if (test_thread_flag(TIF_SYSCALL_TRACE)) {
- 		/*
- 		 * A scrach register (ip(r12) on AArch32, x7 on AArch64) is
+-#include <asm/compat.h>
+ #include <asm/debug-monitors.h>
+ #include <asm/pgtable.h>
+ #include <asm/syscall.h>
+diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+index 890a591..4a09989 100644
+--- a/arch/arm64/kernel/signal.c
++++ b/arch/arm64/kernel/signal.c
+@@ -17,6 +17,7 @@
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
++#include <linux/compat.h>
+ #include <linux/errno.h>
+ #include <linux/signal.h>
+ #include <linux/personality.h>
+@@ -25,7 +26,6 @@
+ #include <linux/tracehook.h>
+ #include <linux/ratelimit.h>
+ 
+-#include <asm/compat.h>
+ #include <asm/debug-monitors.h>
+ #include <asm/elf.h>
+ #include <asm/cacheflush.h>
 -- 
 1.7.9.5
 
