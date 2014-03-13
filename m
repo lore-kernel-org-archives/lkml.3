@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbaCMPdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:33:12 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:40078 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753632AbaCMPdJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:33:09 -0400
-Date: Thu, 13 Mar 2014 16:33:04 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Archs <linux-arch@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Huiqingding <huding@redhat.com>
-Subject: Re: [GIT PULL v2] timers updates for 3.15
-Message-ID: <20140313153301.GA25296@localhost.localdomain>
-References: <1394642174-14315-1-git-send-email-fweisbec@gmail.com>
- <20140313110510.GA10424@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140313110510.GA10424@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754258AbaCMPdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:33:20 -0400
+Received: from mail.efficios.com ([78.47.125.74]:56227 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754178AbaCMPdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:33:17 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC PATCH 2/3] Tracepoint API doc update: data argument
+Date: Thu, 13 Mar 2014 11:32:58 -0400
+Message-Id: <1394724779-17892-2-git-send-email-mathieu.desnoyers@efficios.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1394724779-17892-1-git-send-email-mathieu.desnoyers@efficios.com>
+References: <1394724779-17892-1-git-send-email-mathieu.desnoyers@efficios.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 12:05:10PM +0100, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > Ingo, Thomas,
-> > 
-> > Please pull the timers/cputime-fix-steal-v3 branch that can be found at:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> > 	timers/cputime-fix-steal-v3
-> > 
-> > Only the last patch changed to address Peterz concern on arch Kbuild
-> > layout. This got sorted out by running the script from b119fa61d440f
-> > to alpabetically sort the entries.
-> > 
-> > ---
-> > The main purpose of this set is to fix a bug on full dynticks configs
-> > where steal time accounting appears to be zero in /proc/stat even
-> > after a few seconds of competing guests running busy loops in a same
-> > host CPU. It's not a regression though as it was there since the
-> > beginning with full dynticks.
-> > 
-> > So patch [4/6] ("cputime: Fix jiffies based cputime assumption on
-> > steal accounting") is the most important patch of the series. The rest
-> > is mostly preparatory work to fix the bug plus various cleanups.
-> > 
-> > Thanks,
-> > 	Frederic
-> > ---
-> > 
-> > Frederic Weisbecker (6):
-> >       cputime: Fix nsecs_to_cputime() return type cast
-> >       cputime: Default implementation of nsecs -> cputime conversion
-> >       cputime: Bring cputime -> nsecs conversion
-> >       cputime: Fix jiffies based cputime assumption on steal accounting
-> >       sched: Remove needless round trip nsecs <-> tick conversion of steal time
-> >       arch: Remove stub cputime.h headers
-> > 
-> > 
-> >  arch/alpha/include/asm/Kbuild         |  7 ++++---
-> >  arch/alpha/include/asm/cputime.h      |  6 ------
-> >  arch/cris/include/asm/Kbuild          |  3 ++-
-> >  arch/cris/include/asm/cputime.h       |  6 ------
-> >  arch/frv/include/asm/Kbuild           |  5 +++--
-> >  arch/frv/include/asm/cputime.h        |  6 ------
-> >  arch/m32r/include/asm/Kbuild          |  5 +++--
-> >  arch/m32r/include/asm/cputime.h       |  6 ------
-> >  arch/microblaze/include/asm/Kbuild    |  5 +++--
-> >  arch/microblaze/include/asm/cputime.h |  1 -
-> >  arch/mn10300/include/asm/Kbuild       |  3 ++-
-> >  arch/mn10300/include/asm/cputime.h    |  1 -
-> >  arch/score/include/asm/Kbuild         |  4 ++--
-> >  arch/score/include/asm/cputime.h      |  6 ------
-> >  arch/x86/include/asm/Kbuild           |  1 +
-> >  arch/x86/include/asm/cputime.h        |  1 -
-> 
-> Does this tree also address the heavy conflicts with tip:core/locking? 
+Describe the @data argument (probe private data).
 
-Ah I didn't hear about that. Thomas told me there was a conflict issue but
-he couldn't tell me more about it.
+Fixes: 38516ab59fbc "tracing: Let tracepoints have data passed to tracepoint callbacks"
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ kernel/tracepoint.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-> If not then we should probably carry this in a separate branch that 
-> merges tip:core/locking and tip:timers/core.
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index 0faf2a4..cc6c8b6 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -373,6 +373,7 @@ tracepoint_add_probe(const char *name, void *probe, void *data)
+  * tracepoint_probe_register -  Connect a probe to a tracepoint
+  * @name: tracepoint name
+  * @probe: probe handler
++ * @data: probe private data
+  *
+  * Returns 0 if ok, error value on error.
+  * The probe address must at least be aligned on the architecture pointer size.
+@@ -415,6 +416,7 @@ tracepoint_remove_probe(const char *name, void *probe, void *data)
+  * tracepoint_probe_unregister -  Disconnect a probe from a tracepoint
+  * @name: tracepoint name
+  * @probe: probe function pointer
++ * @data: probe private data
+  *
+  * We do not need to call a synchronize_sched to make sure the probes have
+  * finished running before doing a module unload, because the module unload
+-- 
+1.7.10.4
 
-So I propose you something even more simple. The choice of tip:timers/core
-as a base was actually just about topic. But there is no dependency on it.
-(And actually sched/core would have been a better choice for a base if any).
-
-So in order to fix the conflict and minimize the dependencies, I just
-rebased the patches on top of tip:core/locking only. No merge on top of that.
-It seems to work pretty well.
-
-The pullable result is in sched/cputime on my tree. Let me know if that's ok
-for you.
-
-Thanks.
