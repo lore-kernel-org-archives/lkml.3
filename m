@@ -1,134 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407AbaCMIEF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 04:04:05 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:20419 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856AbaCMID4 (ORCPT
+	id S1753348AbaCMIG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 04:06:26 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:32859 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213AbaCMIGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 04:03:56 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-f3-532166665b45
-Message-id: <53216666.4080500@samsung.com>
-Date: Thu, 13 Mar 2014 17:03:50 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, myungjoo.ham@samsung.com,
-        dmitry.torokhov@gmail.com, cooloney@gmail.com, rpurdie@rpsys.net,
-        dbaryshkov@gmail.com, dwmw2@infradead.org, lgirdwood@gmail.com,
-        broonie@kernel.org, a.zummo@towertech.it, paul.gortmaker@windriver.com,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-leds@vger.kernel.org, rtc-linux@googlegroups.com,
-        m.szyprowski@samsung.com, k.kozlowski@samsung.com
-Subject: Re: [PATCH v2 2/3] mfd: max8997: handle IRQs using regmap
-References: <1394631466-6429-1-git-send-email-r.baldyga@samsung.com>
- <1394631466-6429-3-git-send-email-r.baldyga@samsung.com>
- <532111FA.2010706@samsung.com> <53216272.7050304@samsung.com>
-In-reply-to: <53216272.7050304@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsWyRsSkWDctTTHYYOd6A4slF6+yW0x9+ITN
-	4ujOiUwWk568Z7Y4vOgFo8XElZOZLV6/MLS4//Uoo8W3Kx1MFjc/fWO1uLxrDpvF1jfrGC3W
-	HrnLbnG7cQWbxbW9x5ktHhzeyW6xe9dTVov9nR2MFqe7WR2EPXbOusvusWfiSTaPzSu0PDat
-	6mTzuHNtD5vHvJOBHnvm/2D16NuyitFj+ryfTB6fN8l5rN+ylSmAO4rLJiU1J7MstUjfLoEr
-	41zfLMaCh6IVPffesTUwnhLsYuTkkBAwkXjbc5MZwhaTuHBvPVsXIxeHkMBSRomul1/ZYYom
-	fXvDDpGYzijRfvQFM4TzilHi0oxLbCBVvAJaEv+3vGMBsVkEVCX+Nq1lArHZgOL7X9wAqxEV
-	CJNYOf0KC0S9oMSPyffAbBGgmjsf54NtYxY4yizxvkEOxBYWcJLo2n+WFWLZfkaJGZensIIk
-	OAW0JX7c2g/VoCOxv3UaG4QtL7F5zVuw6yQEznBINLxfwARxkYDEt8mHgLZxACVkJTYdgPpZ
-	UuLgihssExjFZiG5aRaSsbOQjF3AyLyKUTS1ILmgOCm9yFivODG3uDQvXS85P3cTIzBNnP73
-	rH8H490D1ocYk4FWTmSWEk3OB6aZvJJ4Q2MzIwtTE1NjI3NLM9KElcR57z9MChISSE8sSc1O
-	TS1ILYovKs1JLT7EyMTBKdXAmGjZzxoSI8pblrl8W9MsEe61y7euYPA/sp5/ykF+vknnLr2K
-	9N9Z9zZ7pt+Ti1plnFlWGhyvI5dv/Hk17QDrsiD11MebbXuX8c3LU3jBXzzhk+ha4f13Tx0X
-	clV/sPKD3oEV667yqZr9338v3DTGnU144fxvPxTn9Xd5TmAyZlgjHNfzTSNhrhJLcUaioRZz
-	UXEiAFzsDQcpAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMKsWRmVeSWpSXmKPExsVy+t9jQd20NMVgg/231SyWXLzKbjH14RM2
-	i6M7JzJZTHryntni8KIXjBYTV05mtnj9wtDi/tejjBbfrnQwWdz89I3V4vKuOWwWW9+sY7RY
-	e+Quu8XtxhVsFtf2Hme2eHB4J7vF7l1PWS32d3YwWpzuZnUQ9tg56y67x56JJ9k8Nq/Q8ti0
-	qpPN4861PWwe804GeuyZ/4PVo2/LKkaP6fN+Mnl83iTnsX7LVqYA7qgGRpuM1MSU1CKF1Lzk
-	/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoO+UFMoSc0qBQgGJxcVK+naY
-	JoSGuOlawDRG6PqGBMH1GBmggYQ1jBnn+mYxFjwUrei5946tgfGUYBcjJ4eEgInEpG9v2CFs
-	MYkL99azdTFycQgJTGeUaD/6ghnCecUocWnGJTaQKl4BLYn/W96xgNgsAqoSf5vWMoHYbEDx
-	/S9ugNWICoRJrJx+hQWiXlDix+R7YLYIUM2dj/PBtjELHGWWeN8gB2ILCzhJdO0/ywqxbD+j
-	xIzLU1hBEpwC2hI/bu2HatCR2N86jQ3ClpfYvOYt8wRGgVlIdsxCUjYLSdkCRuZVjKKpBckF
-	xUnpuUZ6xYm5xaV56XrJ+bmbGMFJ6Jn0DsZVDRaHGAU4GJV4eFcsVwgWYk0sK67MPcQowcGs
-	JMLr6aMYLMSbklhZlVqUH19UmpNafIgxGRgEE5mlRJPzgQkyryTe0NjEzMjSyNzQwsjYnDRh
-	JXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYZztduhs72dTScFXu8mWWpdO7D4vv3W/r2SHi
-	XS4eUJpeueuuGsNuQ+fPf+XzF0yU0VnzXvELa0KE8jIWXQYOXtYXCY8Ld+6dNunVdIWzC5dL
-	ypc75DydtftT7vN7RfN2LXv9TGkrwxurozPu7p4x/03/K9sjejvPKE1bVpBp1yuxLs0yVnzL
-	cyWW4oxEQy3mouJEAAgKE2SGAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 13 Mar 2014 04:06:22 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-31-532166f9d190
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] regmap: irq: Set data pointer only on regmap_add_irq_chip
+ success
+Date: Thu, 13 Mar 2014 09:06:01 +0100
+Message-id: <1394697961-4440-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOJMWRmVeSWpSXmKPExsVy+t/xq7o/0xSDDRp7hCymPnzCZtG8eD2b
+	xesXhhaXd81hc2Dx2LSqk81j/9w17B59W1YxenzeJBfAEsVlk5Kak1mWWqRvl8CVse/hWtaC
+	o1wVB9+sZWlgvMDRxcjJISFgIjF/cQ8zhC0mceHeerYuRi4OIYGljBIr9u9mh3D6mCRm3PrG
+	AlLFJmAssXn5EjYQW0SgRGLPrSYmEJtZwFDi57s/7CC2sECIxIe3F8GmsgioSjSenAlUz8HB
+	K+AmcWWlEIgpIaAgMWeSzQRG7gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQjz/ZQfj
+	4mNWhxgFOBiVeHhXLFcIFmJNLCuuzD3EKMHBrCTC6+mjGCzEm5JYWZValB9fVJqTWnyIkYmD
+	U6qB0Wmt5OWzTyYtPXz84Pdrn9mOLdgl71y4aNY9V48DNlu39O9l33zvicRnjRP/GpapF9QU
+	LhC+Z8a2bg6fsMORF/NffVeOmSUh8uP49J97F/y6YXPo4dWIB9Nv3zzU3Pxw0R4zjsfmKRp/
+	JIUeNSYYRizy1NZcYddx4cxihiv7KrLOfcmv052yqzJXiaU4I9FQi7moOBEA8Bf4AtoBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
+After setting the 'data' pointer (wchich is returned to the caller for
+freeing later) the regmap_add_irq_chip() could still fail for various
+reasons (ENOMEM, regmap_read or regmap_write failure). In such case the
+memory under 'data' was freed in error path and error value was returned
+but the 'data' variable was not changed.
 
-On 03/13/2014 04:46 PM, Robert Baldyga wrote:
-> Hi,
-> On 03/13/2014 03:03 AM, Chanwoo Choi wrote:
->> Hi Robert,
->>
->> On 03/12/2014 10:37 PM, Robert Baldyga wrote:
->>> This patch modifies mfd driver to use regmap for handling interrupts.
->>> It allows to simplify irq handling process. This modifications needed
->>> to make small changes in function drivers, which use interrupts.
->>>
->>> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
->>> ---
->>>  drivers/extcon/extcon-max8997.c     |   35 ++--
->>>  drivers/mfd/Kconfig                 |    2 +-
->>>  drivers/mfd/Makefile                |    2 +-
->>>  drivers/mfd/max8997-irq.c           |  373 -----------------------------------
->>>  drivers/mfd/max8997.c               |  113 ++++++++++-
->>>  drivers/rtc/rtc-max8997.c           |    2 +-
->>>  include/linux/mfd/max8997-private.h |   65 +++++-
->>>  7 files changed, 183 insertions(+), 409 deletions(-)
->>>  delete mode 100644 drivers/mfd/max8997-irq.c
->>>
->>> diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
->>> index f258c08..15fc5c0 100644
->>> --- a/drivers/extcon/extcon-max8997.c
->>> +++ b/drivers/extcon/extcon-max8997.c
->>> @@ -46,15 +46,15 @@ struct max8997_muic_irq {
->>>  };
->>>  
->>>  static struct max8997_muic_irq muic_irqs[] = {
->>> -	{ MAX8997_MUICIRQ_ADCError,	"muic-ADCERROR" },
->>> -	{ MAX8997_MUICIRQ_ADCLow,	"muic-ADCLOW" },
->>> -	{ MAX8997_MUICIRQ_ADC,		"muic-ADC" },
->>> -	{ MAX8997_MUICIRQ_VBVolt,	"muic-VBVOLT" },
->>> -	{ MAX8997_MUICIRQ_DBChg,	"muic-DBCHG" },
->>> -	{ MAX8997_MUICIRQ_DCDTmr,	"muic-DCDTMR" },
->>> -	{ MAX8997_MUICIRQ_ChgDetRun,	"muic-CHGDETRUN" },
->>> -	{ MAX8997_MUICIRQ_ChgTyp,	"muic-CHGTYP" },
->>> -	{ MAX8997_MUICIRQ_OVP,		"muic-OVP" },
->>> +	{ MAX8997_MUICIRQ_ADCERROR,	"MUIC-ADCERROR" },
->>> +	{ MAX8997_MUICIRQ_ADCLOW,	"MUIC-ADCLOW" },
->>> +	{ MAX8997_MUICIRQ_ADC,		"MUIC-ADC" },
->>> +	{ MAX8997_MUICIRQ_VBVOLT,	"MUIC-VBVOLT" },
->>> +	{ MAX8997_MUICIRQ_DBCHG,	"MUIC-DBCHG" },
->>> +	{ MAX8997_MUICIRQ_DCDTMR,	"MUIC-DCDTMR" },
->>> +	{ MAX8997_MUICIRQ_CHGDETRUN,	"MUIC-CHGDETRUN" },
->>> +	{ MAX8997_MUICIRQ_CHGTYP,	"MUIC-CHGTYP" },
->>> +	{ MAX8997_MUICIRQ_OVP,		"MUIC-OVP" },
->>>  };
->>
->>
->> Why did you modify interrput name? Did you have some reason?
->> I think this modification don't need it.
-> 
-> I did it to have one naming convention in max8997-private.h file. Any
-> other interrupt names uses upper case, but MUIC iqr's from some reason
-> uses CamelCase. I think it's much better to have consistent style in
-> entire file.
+This could lead to errors if the caller passed such 'data' to
+regmap_del_irq_chip().
 
-If you want to modify interrupt name, I think you better separate patch for
-this modification. This patch handle only regmap according to the title of this patch.
+The 'data' pointer should be changed atomically from the caller
+perspective - set it only on regmap_add_irq_chip() success.
 
-Thanks,
-Chanwoo Choi
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/base/regmap/regmap-irq.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index 82692068d3cb..6d5d04d473f1 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -368,8 +368,6 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 	if (!d)
+ 		return -ENOMEM;
+ 
+-	*data = d;
+-
+ 	d->status_buf = kzalloc(sizeof(unsigned int) * chip->num_regs,
+ 				GFP_KERNEL);
+ 	if (!d->status_buf)
+@@ -506,6 +504,8 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 		goto err_domain;
+ 	}
+ 
++	*data = d;
++
+ 	return 0;
+ 
+ err_domain:
+-- 
+1.7.9.5
 
