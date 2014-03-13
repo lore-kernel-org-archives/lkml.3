@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174AbaCMDse (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 23:48:34 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:38098 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766AbaCMDsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 23:48:33 -0400
+	id S1753220AbaCMDtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 23:49:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59863 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752966AbaCMDtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 23:49:42 -0400
+Message-ID: <53212A96.8020005@zytor.com>
+Date: Wed, 12 Mar 2014 20:48:38 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140312133403.GB29079@shuo-gentoo>
-References: <20140312132441.GA29079@shuo-gentoo>
-	<20140312133403.GB29079@shuo-gentoo>
-Date: Wed, 12 Mar 2014 20:48:32 -0700
-X-Google-Sender-Auth: pV9Yei-LABSo_Y5Ro9JgZ-Y0S_E
-Message-ID: <CAGXu5jJuUf4dwFqAZJgqRduw_oEN=H-FUh8vEDuThnhp9MPxKg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] pstore: fix memory leak when decompress using big_oops_buf
-From: Kees Cook <keescook@chromium.org>
-To: Liu Shuo <shuox.liu@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        Zhang Yanmin <yanmin_zhang@linux.intel.com>
+To: stefani@seibold.net, Andy Lutomirski <luto@amacapital.net>
+CC: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
+Subject: Re: [PATCH 0/3] Improve 32 bit vDSO time
+References: <1394664680-17799-1-git-send-email-stefani@seibold.net> <CALCETrViaEdPsZO_xKaoihkNzayB+vhwpAO0YvNbfXZH2tOLUg@mail.gmail.com> <20140313001143.Horde.HpQnD8JBClJFZRY7b8BtnQ1@webmail.your-server.de>
+In-Reply-To: <20140313001143.Horde.HpQnD8JBClJFZRY7b8BtnQ1@webmail.your-server.de>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 6:34 AM, Liu Shuo <shuox.liu@gmail.com> wrote:
-> From: Liu ShuoX <shuox.liu@intel.com>
->
-> After sucessful decompressing, the buffer which pointed by 'buf' will be
-> lost as 'buf' is overwrite by 'big_oops_buf' and will never be freed.
-> Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+On 03/12/2014 04:11 PM, stefani@seibold.net wrote:
+> 
+> I will do this when your patch is pulled into tip. For now we have the
+> choice, but i preferer our solution removing the compat vdso.
+> 
 
-Thanks again!
+Sorry, that didn't parse from me.
 
-Acked-by: Kees Cook <keescook@chromium.org>
+Also, if you state a preference, could you please motivate it?
 
--Kees
-
-> ---
-> fs/pstore/platform.c | 1 +
-> 1 file changed, 1 insertion(+)
->
-> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-> index 78c3c20..46d269e 100644
-> --- a/fs/pstore/platform.c
-> +++ b/fs/pstore/platform.c
-> @@ -497,6 +497,7 @@ void pstore_get_records(int quiet)
->                                                         big_oops_buf_sz);
->
->                         if (unzipped_len > 0) {
-> +                               kfree(buf);
->                                 buf = big_oops_buf;
->                                 size = unzipped_len;
->                                 compressed = false;
-> --
-> 1.8.3.2
->
+	-hpa
 
 
-
--- 
-Kees Cook
-Chrome OS Security
