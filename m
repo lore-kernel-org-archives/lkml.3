@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035AbaCMKkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:40:09 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35941 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753513AbaCMKkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:40:06 -0400
-Message-ID: <53218AEA.3060301@ti.com>
-Date: Thu, 13 Mar 2014 12:39:38 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754059AbaCMKlY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:41:24 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:38155 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753583AbaCMKlV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 06:41:21 -0400
+Message-Id: <20140313104120.788398330@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 13 Mar 2014 06:40:58 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 5/5] Linux 3.10.33-rt33-rc1
+References: <20140313104053.933715112@goodmis.org>
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <balbi@ti.com>, <kishon@ti.com>, <rob@landley.net>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <tony@atomide.com>,
-        <anatol.pomozov@gmail.com>, <bcousson@baylibre.com>
-Subject: Re: [PATCH v3 5/5] ARM: dts: am43x-epos-evm: Enable USB
-References: <1394193422-18242-1-git-send-email-george.cherian@ti.com> <1394193422-18242-6-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1394193422-18242-6-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0005-Linux-3.10.33-rt33-rc1.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2014 01:57 PM, George Cherian wrote:
-> Enable
-> 	- ocp2scp
-> 	- USB PHY control module
-> 	- USB PHY
-> 	- dwc3_omap
-> 	- USB
+3.10.33-rt33-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-we are not enabling "PHY control module" here.
+------------------
 
-> 
-> for am43x-epos-evm
-> 
-> Signed-off-by: George Cherian <george.cherian@ti.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-With the description change.
+---
+ localversion-rt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Roger Quadros <rogerq@ti.com>
+diff --git a/localversion-rt b/localversion-rt
+index ce6a482..c8c4d21 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt32
++-rt33-rc1
+-- 
+1.8.5.3
 
-cheers,
--roger
-
-> ---
->  arch/arm/boot/dts/am43x-epos-evm.dts | 18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/am43x-epos-evm.dts b/arch/arm/boot/dts/am43x-epos-evm.dts
-> index a7d0db1..0ced342 100644
-> --- a/arch/arm/boot/dts/am43x-epos-evm.dts
-> +++ b/arch/arm/boot/dts/am43x-epos-evm.dts
-> @@ -251,3 +251,21 @@
->  	pinctrl-0 = <&spi1_pins>;
->  	status = "okay";
->  };
-> +
-> +&usb2_phy1 {
-> +	status = "okay";
-> +};
-> +
-> +&usb1 {
-> +	dr_mode = "peripheral";
-> +	status = "okay";
-> +};
-> +
-> +&usb2_phy2 {
-> +	status = "okay";
-> +};
-> +
-> +&usb2 {
-> +	dr_mode = "host";
-> +	status = "okay";
-> +};
-> 
 
