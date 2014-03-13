@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaCMNsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 09:48:09 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43250 "EHLO comal.ext.ti.com"
+	id S1753228AbaCMNss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 09:48:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2094 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061AbaCMNsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 09:48:08 -0400
-Message-ID: <5321B701.5050004@ti.com>
-Date: Thu, 13 Mar 2014 21:47:45 +0800
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751702AbaCMNso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 09:48:44 -0400
+Date: Thu, 13 Mar 2014 09:48:40 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Cong Wang <cwang@twopensource.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, tj@kernel.org, ssorce@redhat.com,
+        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
+Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
+Message-ID: <20140313134840.GA18914@redhat.com>
+References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
+ <1394657163-7472-3-git-send-email-vgoyal@redhat.com>
+ <CAHA+R7OrNoa7_J-rOskxgdvkM5gAnQyoFBeCXSziY7XMd-yLNA@mail.gmail.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, "Balbi, Felipe" <balbi@ti.com>
-CC: "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH][next] phy: core: make NULL a valid phy reference if !CONFIG_GENERIC_PHY
-References: <1394709073-1980-1-git-send-email-grygorii.strashko@ti.com> <5321B4B4.9010806@ti.com> <5321B5FA.2030806@ti.com>
-In-Reply-To: <5321B5FA.2030806@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHA+R7OrNoa7_J-rOskxgdvkM5gAnQyoFBeCXSziY7XMd-yLNA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 March 2014 09:43 PM, Kishon Vijay Abraham I wrote:
-> Hi Santosh,
+On Wed, Mar 12, 2014 at 01:58:57PM -0700, Cong Wang wrote:
+> On Wed, Mar 12, 2014 at 1:46 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > @@ -1098,6 +1135,16 @@ static int unix_stream_connect(struct socket *sock, struct sockaddr *uaddr,
+> >         if (newsk == NULL)
+> >                 goto out;
+> >
+> > +       err = init_peercgroup(newsk);
+> > +       if (err)
+> > +               goto out;
+> > +
+> > +       err = alloc_cgroup_path(sk);
+> > +       if (err)
+> > +               goto out;
+> > +
+> > +       err = -ENOMEM;
+> > +
 > 
-> On Thursday 13 March 2014 07:07 PM, Santosh Shilimkar wrote:
->> On Thursday 13 March 2014 07:11 PM, Strashko, Grygorii wrote:
->>> This fixes a regression on Keystone 2 platforms caused by patch
->>> 57303488cd37da58263e842de134dc65f7c626d5
->>> "usb: dwc3: adapt dwc3 core to use Generic PHY Framework" which adds
->>> optional support of generic phy in DWC3 core.
->>>
->>> On Keystone 2 platforms the USB is not working now because
->>> CONFIG_GENERIC_PHY isn't set and, as result, Generic PHY APIs stubs
->>> return -ENOSYS always. The log shows:
->>>   dwc3 2690000.dwc3: failed to initialize core
->>>   dwc3: probe of 2690000.dwc3 failed with error -38
->>>
->>> Hence, fix it by making NULL a valid phy reference in Generic PHY
->>> APIs stubs in the same way as it was done by the patch
->>> 04c2facad8fee66c981a51852806d8923336f362 "drivers: phy: Make NULL
->>> a valid phy reference".
->>>
->>> CC: Kishon Vijay Abraham I <kishon@ti.com>
->>> CC: Felipe Balbi <balbi@ti.com>
->>> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>> ---
->> This fixes the regression seen in Linux next and patch seems
->> reasonable to me.
->> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>
->> Felipe, Kishon,
->> Can you guys pick this fix if you are ok by it. Thanks
-> 
-> I've already given a PULL request to Greg for 3.15. Is it ok to take this in -rc cycle?
-> 
-Am not sure because this is breaking the existing functionality.
-May be you can request Greg to pull this fix as well.
+> Don't we need to free the cgroup_path on error path
+> in this function?
 
-Regards,
-Santosh
+Previous allocated cgroup_path is now in newsk->cgroup_path and I was
+relying on __sk_free() freeing that memory if error happens.
+
+unix_release_sock(sk)
+  sock_put()
+    sk_free()
+      __sk_free()
+        kfree(sk->cgroup_path)
+
+Do you see a problem with that?
+
+Thanks
+Vivek
