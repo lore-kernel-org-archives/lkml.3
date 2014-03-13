@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880AbaCMXps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 19:45:48 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51337 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354AbaCMXpY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 19:45:24 -0400
-X-AuditID: 9c93016f-b7b09ae000000557-16-53224311fa87
-Date: Fri, 14 Mar 2014 08:45:21 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: Re: [PATCH v3] zram: support REQ_DISCARD
-Message-ID: <20140313234521.GA2479@lge.com>
-References: <1394611269-7582-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20140312133318.60c5e63ba26e9bf71098cc6e@linux-foundation.org>
- <20140313024617.GA4900@lge.com>
- <20140313134035.5362a0b51b0a3c280ddc7667@linux-foundation.org>
+	id S1754998AbaCMXti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 19:49:38 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37386 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754036AbaCMXtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 19:49:36 -0400
+Message-ID: <532243F5.4040609@ti.com>
+Date: Thu, 13 Mar 2014 18:49:09 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140313134035.5362a0b51b0a3c280ddc7667@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Tony Lindgren <tony@atomide.com>
+CC: Rob Herring <robh@kernel.org>, Tero Kristo <t-kristo@ti.com>,
+        Nishanth Menon <nm@ti.com>, Suman Anna <s-anna@ti.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC 4/5] clocksource: omap-timer: Introduce clocksource driver
+ for OMAP SoCs
+References: <1394742919-32163-1-git-send-email-joelf@ti.com> <1394742919-32163-5-git-send-email-joelf@ti.com> <20140313204851.GB23432@atomide.com>
+In-Reply-To: <20140313204851.GB23432@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 01:40:35PM -0700, Andrew Morton wrote:
-> On Thu, 13 Mar 2014 11:46:17 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+On 03/13/2014 03:48 PM, Tony Lindgren wrote:
+> * Joel Fernandes <joelf@TI.com> [140313 13:43]:
+>> We introduce functions to initialize clocksource and clockevent, use
+>> CLOCKSOURCE_OF_DECLARE to declare the clocksource, and handle the clocksource
+>> selection on a per-SoC basis (Currently only AM335x is supported). Powering up
+>> of the timer will be done with the help of the mach-omap layer function that's
+>> introduced earlier in the series.
+>>
+>> We make a local copy of dmtimer API for use by clocksource, the original
+>> dmtimer API in plat-omap is kept as-is till the migration of all SoCs is
+>> completed after which it can't be deleted.
+>>
+>> Signed-off-by: Joel Fernandes <joelf@ti.com>
+>> ---
+>>  drivers/clocksource/Makefile     |    1 +
+>>  drivers/clocksource/omap-timer.c | 1157 ++++++++++++++++++++++++++++++++++++++
+>>  drivers/clocksource/omap-timer.h |  422 ++++++++++++++
+>>  3 files changed, 1580 insertions(+)
+>>  create mode 100644 drivers/clocksource/omap-timer.c
+>>  create mode 100644 drivers/clocksource/omap-timer.h
 > 
-> > Hello, Andrew.
-> > 
-> > I applied all your comments in below patch. :)
-> 
-> OK, thanks.  I'll grab this instead of v5 - I wasn't thinking very
-> clearly with the lock hold time issue.  Let's go for low latency then
-> worry about it later if this function starts showing on profiles.
+> Hmm this leaves duplicate arch/arm/plat-omap/dmtimer.c code, please
 
-Okay.
+Sure, ofcourse- but how else can we make sure everything works while we do
+the migration in steps. We can get rid of the duplicate once everything is
+migrated.
 
-> 
-> I modified your code comments somewhat - please check.
->
+> sort out that issue too by allowing omap1 and omap3 still to use
+> the legacy timer init functions but with timer code under
+> drivers/clocksource/omap-timer.c.
 
-All changes looks good!
-Thanks for fixing it.
+Sorry, I didn't follow. I didn't see OMAP3 using legacy timer stuff. To me
+it looks like OMAP3 migration should be straight forward along the same
+lines as this RFC patchset. Could you elaborate a bit more what the legacy
+functions you mentioned for OMAP1 are? I will just like to keep everything
+in drivers/clocksource/ private for now till we're done migrating most
+platforms. IMO once we get system timers working for omap2+, then we can
+look into omap1 :)
 
-Thanks.
+> And not the that drivers/clocksource/omap-timer.h won't be needed at
+> all, those defines can stay private to the drivers/clocksource/omap-timer.c.
 
+Actually- I wanted it separate because omap-timer.c is already huge at 1157
+lines. Infact the largest among the clocksource drivers. Is that fair?
+
+> So this patch really should just be moving of the code to the new
+> location.
+
+To be honest, its not just a simple moving of code, there are new things
+such as selecting correct timer, new functions for clockevent and
+clocksource init, different handling of clocks etc.
+
+Thanks,
+-Joel
