@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773AbaCMVq4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:46:56 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32839 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752854AbaCMVqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 17:46:54 -0400
-Date: Thu, 13 Mar 2014 16:44:51 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH][next] phy: core: make NULL a valid phy reference if
- !CONFIG_GENERIC_PHY
-Message-ID: <20140313214450.GG27355@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1394709073-1980-1-git-send-email-grygorii.strashko@ti.com>
- <20140313152024.GF4599@saruman.home>
+	id S1754660AbaCMVsJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 17:48:09 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58174 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaCMVsH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 17:48:07 -0400
+Date: Thu, 13 Mar 2014 21:47:59 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140313214759.GO366@sirena.org.uk>
+References: <1394697961-4440-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NDin8bjvE/0mNLFQ"
+	protocol="application/pgp-signature"; boundary="o605RBccvup4jNEP"
 Content-Disposition: inline
-In-Reply-To: <20140313152024.GF4599@saruman.home>
+In-Reply-To: <1394697961-4440-1-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: Some assembly required.
 User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: irq: Set data pointer only on
+ regmap_add_irq_chip success
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---NDin8bjvE/0mNLFQ
+
+--o605RBccvup4jNEP
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On Thu, Mar 13, 2014 at 09:06:01AM +0100, Krzysztof Kozlowski wrote:
+> After setting the 'data' pointer (wchich is returned to the caller for
+> freeing later) the regmap_add_irq_chip() could still fail for various
+> reasons (ENOMEM, regmap_read or regmap_write failure). In such case the
+> memory under 'data' was freed in error path and error value was returned
+> but the 'data' variable was not changed.
 
-On Thu, Mar 13, 2014 at 10:20:24AM -0500, Felipe Balbi wrote:
-> On Thu, Mar 13, 2014 at 01:11:13PM +0200, Grygorii Strashko wrote:
-> > This fixes a regression on Keystone 2 platforms caused by patch
-> > 57303488cd37da58263e842de134dc65f7c626d5
-> > "usb: dwc3: adapt dwc3 core to use Generic PHY Framework" which adds
-> > optional support of generic phy in DWC3 core.
-> >=20
-> > On Keystone 2 platforms the USB is not working now because
-> > CONFIG_GENERIC_PHY isn't set and, as result, Generic PHY APIs stubs
-> > return -ENOSYS always. The log shows:
-> >  dwc3 2690000.dwc3: failed to initialize core
-> >  dwc3: probe of 2690000.dwc3 failed with error -38
-> >=20
-> > Hence, fix it by making NULL a valid phy reference in Generic PHY
-> > APIs stubs in the same way as it was done by the patch
-> > 04c2facad8fee66c981a51852806d8923336f362 "drivers: phy: Make NULL
-> > a valid phy reference".
-> >=20
-> > CC: Kishon Vijay Abraham I <kishon@ti.com>
-> > CC: Felipe Balbi <balbi@ti.com>
-> > CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> > Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->=20
-> nice :-)
->=20
-> Acked-by: Felipe Balbi <balbi@ti.com>
+Applied, thanks.
 
-Greg, if your tree isn't closed yet, could you consider this patch still
-for v3.15 merge window ? Grygorii found a regression on Keystone
-platforms which this patch fixes. Let me know if you need the original
-patch and myself or Kishon can send it to you.
-
---=20
-balbi
-
---NDin8bjvE/0mNLFQ
+--o605RBccvup4jNEP
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTIibSAAoJEIaOsuA1yqRELbQQAKBL6jwsYLi5V5SPhqAYqXZD
-O8WJc94ieXkpczmKsS2a8NIdN7d8gLuJX0NRVSAFhnUK2sTkTYubMFycakC+oZRR
-KFIBRdb8b5o0gNLCIozKoirkpz0QjFp2VwpBFzLBpHHmiu5wTqAYSmFy3P4ZZUpn
-919EcbxZIcnPx1B+OXqfzf8OQdlH50WTcvijcMBztvzvwKJ7VyEH3ojCP8HoLMr8
-CoJWBpc2DeesJccqSbm91g6xrmhE4tTAgLMDJSo2ykbB46VQ8npKB5R6grpxvnbS
-a27xW6u56Ig8I569LnsLszdrxsI+K1MA/TTCNVQZcbruRO5OmztRBw001VcE/ndO
-472Mw+5FiUO5JOxFGTDYmXu7p45b2dmTi3WoDfBDCk5qavgDb7rMuFO8LlNO3JTi
-sGf8abu0Mb16eYIl0iNCog5OIOSNTwkLMjnJ89dQHgz2raP7o1dxly4WaAu6UFi6
-FhIUTvOY2a06/zMcL7whUR5Mld5M+nt0OvOB8B3a3XskUdSGYQiAMCuRdjEioVfD
-YDSRItNwSnDQw4cD0vi3n8tdoZ7jzSVrsEV59eqL0HbtgHt2U01xobMBOIdsuk0J
-oyfsUILZb2LscqN0W1l0WcJLCy6Uws2250JqbOxv5RnrR/MEED23KLoxFRpt5pfU
-Y9cD9P7SHsCJ/ptYY3VC
-=Rw3M
+iQIcBAEBAgAGBQJTIieMAAoJELSic+t+oim99RsQAJsTTJnaU+sljg9rXfAEK31P
+PMeH7K5LRPtsayAuCINPWz3bW4r+Y/7N/TF3KUjd9qRN4nYfEvNoqTrSzY1MO3NC
+3IMjVa90P+o8+CPK8D8jPdEXP2blSB4mM5pxr5OP6Bx6rt0qFMHMTl1GPszPSLl6
+k4i0r7KAP624UScaHQhgn7E7WKBabfzmgNqo/RQ+kpiTqB9wqXyG2+LBMbzHMuSE
+GP1S6EvfiyZlXNjMWmFstpmlm27BewHg9j0mnRdOJcCSQXI4t1G5dJRACZ7AAb7B
+HGz5d/TNasi3rDUBhO/R57tsIoGdNBy6JpwXO1dlKqvk+r5oLucJ2b9dEBXnvNji
+vIWHylEWAFTygMa0PBSicSTsx7E2pdKHaDIoFNl33h6DYn+jvYxGSUTSSnfpnd7Z
+Xm3+Psw8cJeXAbD7hGw3F5qI6p8rPl3QINEmBTC5H5G5Xs53oEWPGbqJKc5DtzdP
+TLfVgZJLsTuUVCj58F7UjQzOvaEtjbRuYkB1+4ghol4O4eyE/aZ8hpgToqGMHKaA
+BkynYqJClohzTmmVeYmNNiDyFyWHcCOppwkl/b+oqXdCLrHj9D7td2vJySdW5ZMu
+vRSxw9mEpc3yRhht+6jfF+T62pVaCL37x3QHZpRmhHTIayMoRAiq4RvqiDagZK9x
+x4t9SMaub/ESWazHHfr+
+=+FMh
 -----END PGP SIGNATURE-----
 
---NDin8bjvE/0mNLFQ--
+--o605RBccvup4jNEP--
