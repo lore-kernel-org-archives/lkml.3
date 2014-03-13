@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaCMQRt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 12:17:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47558 "EHLO mx1.redhat.com"
+	id S1754437AbaCMQSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 12:18:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:65273 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506AbaCMQRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 12:17:47 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <21625.1394725646@warthog.procyon.org.uk>
-References: <21625.1394725646@warthog.procyon.org.uk>
-Cc: dhowells@redhat.com, torvalds@linux-foundation.org,
-        zohar@linux.vnet.ibm.com, dmitry.kasatkin@gmail.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: RFC: 'ioctl' for keyrings
-Date: Thu, 13 Mar 2014 16:17:39 +0000
-Message-ID: <22093.1394727459@warthog.procyon.org.uk>
-To: unlisted-recipients:; (no To-header on input)
+	id S1754171AbaCMQSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 12:18:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,648,1389772800"; 
+   d="scan'208";a="471738703"
+From: Zhang Rui <rui.zhang@intel.com>
+To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH V2 05/13] ACPI: check and enumerate CMOS RTC devices explicitly
+Date: Fri, 14 Mar 2014 00:16:45 +0800
+Message-Id: <1394727413-3587-6-git-send-email-rui.zhang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394727413-3587-1-git-send-email-rui.zhang@intel.com>
+References: <1394727413-3587-1-git-send-email-rui.zhang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+For CMOS RTC devices, the acpi pnp scan handler does not work because
+there is already a cmos rtc scan handler installed, thus we need to
+check those devices and enumerate them to PNP bus explicitly.
 
-> I can fix this in one of a number of ways:
-> 
->  (1) Provide a generic control operation (analogous with ioctl()) that allows
->      the user to make some general operation on a key (querying it, altering
->      it, interacting with hardware).
-> 
->  (2) Provide an alter operation that only allows the key to be altered.
->      Looking at trusted_update(), though, I have a suspicion that this may not
->      be sufficient as that also seems to invoke an interaction with the TPM.
-> 
->  (3) Provide separate, specific keyctl functions for the special operations
->      required by encrypted and trusted keys (and other key types potentially)
->      that are then validated in the core and routed to the key type.
+Note: the CMOS RTC device id is not removed from ACPI pnp scan handler
+      id list, thus, if cmos rtc scan handler is compiled out, the ACPI
+      pnp scan handler will be attached to the CMOS RTC devices instead,
+      to prevent these devices from being created to platform bus.
 
-  (4) Simply make key_update() look for the encrypted and trusted key types
-      and call a special key type op for those.  The main ->update op will be
-      taking preparsed data and would no longer be callable in this situation.
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/acpi/acpi_pnp.c |   22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
-David
+diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+index 2a7f86f..6fa482a 100644
+--- a/drivers/acpi/acpi_pnp.c
++++ b/drivers/acpi/acpi_pnp.c
+@@ -349,9 +349,29 @@ static struct acpi_scan_handler acpi_pnp_handler = {
+ 	.attach = acpi_pnp_scan_handler_attach,
+ };
+ 
++/*
++ * For CMOS RTC devices, the acpi pnp spcan handler does not work because
++ * there is already a cmos rtc scan handler installed, thus we need to
++ * check those devices and enumerate them to PNP bus explicitly.
++ */
++static int is_cmos_rtc_device(struct acpi_device *adev)
++{
++	struct acpi_device_id ids[] = {
++		{ "PNP0B00" },
++		{ "PNP0B01" },
++		{ "PNP0B02" },
++		{""},
++	};
++	return !acpi_match_device_ids(adev, ids);
++}
++
+ bool acpi_is_pnp_device(struct acpi_device *device)
+ {
+-	return !!(device->handler == &acpi_pnp_handler);
++	if (device->handler == &acpi_pnp_handler)
++		return true;
++	if (is_cmos_rtc_device(device))
++		return true;
++	return false;
+ }
+ EXPORT_SYMBOL_GPL(acpi_is_pnp_device);
+ 
+-- 
+1.7.9.5
+
