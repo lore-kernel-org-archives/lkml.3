@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000AbaCMCV4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 22:21:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35080 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752568AbaCMCVz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 22:21:55 -0400
-Message-ID: <1394677305.20857.29.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH v3] net: phy: fix uninitalized WOL parameters in
- phy_ethtool_get_wol
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 13 Mar 2014 02:21:45 +0000
-In-Reply-To: <1394578975-12588-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1394484661-4554-2-git-send-email-sebastian.hesselbarth@gmail.com>
-	 <1394578975-12588-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-cJ6XNnnryeEvTdHkSyDc"
-X-Mailer: Evolution 3.8.5-2+b3 
+	id S1752866AbaCMC3v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 22:29:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1205 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752568AbaCMC3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 22:29:50 -0400
+Message-ID: <1394677788.5094.89.camel@deneb.redhat.com>
+Subject: [GIT PULL] generic early_ioremap support
+From: Mark Salter <msalter@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 12 Mar 2014 22:29:48 -0400
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:882:98de:919:dfab
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andrew,
 
---=-cJ6XNnnryeEvTdHkSyDc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Could you add this series into the -mm tree for v3.15?
 
-On Wed, 2014-03-12 at 00:02 +0100, Sebastian Hesselbarth wrote:
-> phy_ethtool_get_wol is a helper to get current WOL settings from
-> a phy device. When using this helper on a PHY without .get_wol
-> callback, struct ethtool_wolinfo is never set-up correctly and
-> may contain misleading information about WOL status.
->=20
-> To fix this, always zero relevant fields of struct ethtool_wolinfo
-> regardless of .get_wol callback availability.
+The following changes since commit c3bebc71c4bcdafa24b506adf0c1de3c1f77e2e0:
 
-Sorry, I still disagree with this.
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-03-04 08:44:32 -0800)
 
-You're trying to make phy_ethtool_get_wol() do two subtly different
-things:
-- Provide an implementation of ethtool_ops::get_wol, leaving the net
-  driver only to look up phy_device
-- Provide a standalone function for executing ETHTOOL_GWOL on a
-  phy_device
+are available in the git repository at:
 
-You may notice that phy_suspend() already sets wol.cmd =3D ETHTOOL_GWOL.
-So it seems to me like it's taking responsibility for initialising the
-structure like ethtool_get_wol() does.  The bug is then that
-phy_suspend() doesn't clear the rest of the structure.  That is not the
-responsibility of phy_ethtool_get_wol().
 
-Ben.
+  git://github.com/mosalter/linux.git tags/for-v3.15
 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
-> ---
-> Changelog:
-> v1->v2:
-> - clear whole struct ethtool_wolinfo
-> - check for non-NULL phy_device
-> v2->v3:
-> - only clear ->supported and ->wolopts (Suggested by Ben Hutchings)
->=20
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: Ben Hutchings <ben@decadent.org.uk>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/phy/phy.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
-> index 19c9eca0ef26..94234a91a50f 100644
-> --- a/drivers/net/phy/phy.c
-> +++ b/drivers/net/phy/phy.c
-> @@ -1092,7 +1092,9 @@ EXPORT_SYMBOL(phy_ethtool_set_wol);
-> =20
->  void phy_ethtool_get_wol(struct phy_device *phydev, struct ethtool_wolin=
-fo *wol)
->  {
-> -	if (phydev->drv->get_wol)
-> +	wol->supported =3D wol->wolopts =3D 0;
-> +
-> +	if (phydev && phydev->drv->get_wol)
->  		phydev->drv->get_wol(phydev, wol);
->  }
->  EXPORT_SYMBOL(phy_ethtool_get_wol);
+for you to fetch changes up to b27e0658d90c63dc2696eca44f7701a903cb13c5:
 
---=20
-Ben Hutchings
-Experience is directly proportional to the value of equipment destroyed.
-                                                         - Carolyn Scheppne=
-r
+  doc/kernel-parameters.txt: add early_ioremap_debug (2014-03-09 12:53:50 -0400)
 
---=-cJ6XNnnryeEvTdHkSyDc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+----------------------------------------------------------------
+generic early_ioremap support
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+----------------------------------------------------------------
+Dave Young (1):
+      x86/mm: sparse warning fix for early_memremap
 
-iQIVAwUAUyEWOee/yOyVhhEJAQoQtxAAnaZ6iZcw/qt6LK/r9YoH89oFKHmBFsSO
-k/4qX4TuYvoPgLgipZXLZj6HH0PlZIFA3bo/E9wkIhxb9VDtulsHnjcI6PLOwnA5
-+SxuO/Wquv3bcZaPVzHiqoM11bmxJP3EuSEU8GPYrgf43e1qifEetHFRvdBiZSNW
-Sk8fBzv0sWqru+wpfZr/vFe8veU4I1eucBfgiiKhMFbMxMw7gIEmd2w/r2VV3HEG
-/L5ljIoTEvuYJ2ajjbGSsag4C6DayHlce+CM7MYAOyWdj0onktFiBsHvYaFAbX0j
-zfXLPQFWJdn4K7D0GCGn3am/Lqm36hchJQkZe7FCuYWhKRtIMcgGuCX9uVUygeri
-W+hpkc3G4pO24CczmspUIy4S5RCRNc3bKZxejYRpu2F9zBgdLK4M/bgOWUdQOcBa
-2GfkARIvH27z/J4BzV9NgKtrpwqnzO7fQ/GN3lU/sVIvbfgd+ydoD5N2fd/JvySI
-PROMJaZgmF+1uLE9ICNUglbdC7cJXo/yHOjp7ALIPQmjLd+kAxpApk//oIQYBwl9
-U7ClZ1ribbmJo5Zk2Tq7HKUdnPILpWOcKxBVNJ2ceQ0cREepS1RTLTqqqqFbGxlD
-/R9DpPZv/J4DtMYqsAhTfxrdDP6qX+EYq4fJe2AGb4BFrTGo2RTEo85TP7Y5ZJqf
-zz3O/+NKR3Y=
-=gFGA
------END PGP SIGNATURE-----
+Mark Salter (5):
+      mm: create generic early_ioremap() support
+      x86: use generic early_ioremap
+      arm64: initialize pgprot info earlier in boot
+      arm64: add early_ioremap support
+      doc/kernel-parameters.txt: add early_ioremap_debug
 
---=-cJ6XNnnryeEvTdHkSyDc--
+ Documentation/arm64/memory.txt      |   4 +-
+ Documentation/kernel-parameters.txt |   5 +
+ arch/arm64/Kconfig                  |   1 +
+ arch/arm64/include/asm/Kbuild       |   1 +
+ arch/arm64/include/asm/fixmap.h     |  67 ++++++++++
+ arch/arm64/include/asm/io.h         |   1 +
+ arch/arm64/include/asm/memory.h     |   2 +-
+ arch/arm64/include/asm/mmu.h        |   1 +
+ arch/arm64/kernel/early_printk.c    |   8 +-
+ arch/arm64/kernel/head.S            |   9 +-
+ arch/arm64/kernel/setup.c           |   4 +
+ arch/arm64/mm/ioremap.c             |  85 +++++++++++++
+ arch/arm64/mm/mmu.c                 |  44 +------
+ arch/x86/Kconfig                    |   1 +
+ arch/x86/include/asm/Kbuild         |   1 +
+ arch/x86/include/asm/fixmap.h       |   6 +
+ arch/x86/include/asm/io.h           |  14 +--
+ arch/x86/mm/ioremap.c               | 224 +--------------------------------
+ arch/x86/mm/pgtable_32.c            |   2 +-
+ include/asm-generic/early_ioremap.h |  42 +++++++
+ mm/Kconfig                          |   3 +
+ mm/Makefile                         |   1 +
+ mm/early_ioremap.c                  | 245 ++++++++++++++++++++++++++++++++++++
+ 23 files changed, 482 insertions(+), 289 deletions(-)
+ create mode 100644 arch/arm64/include/asm/fixmap.h
+ create mode 100644 include/asm-generic/early_ioremap.h
+ create mode 100644 mm/early_ioremap.c
+
+
