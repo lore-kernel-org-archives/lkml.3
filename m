@@ -1,554 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660AbaCMPSZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:18:25 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:42034 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753919AbaCMPPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:15:10 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio Lopez <emilio@elopez.com.ar>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v5 2/7] ARM: sunxi: Split out the various machines into separate files
-Date: Thu, 13 Mar 2014 16:14:14 +0100
-Message-Id: <1394723659-4995-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394723659-4995-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1394723659-4995-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1754474AbaCMPTw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:19:52 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43361 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753632AbaCMPTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:19:49 -0400
+Date: Thu, 13 Mar 2014 10:17:56 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: George Cherian <george.cherian@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <balbi@ti.com>, <rogerq@ti.com>, <kishon@ti.com>, <rob@landley.net>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
+        <tony@atomide.com>, <anatol.pomozov@gmail.com>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH v4 0/5] Add USB nodes for am43xx epos and gp evm
+Message-ID: <20140313151756.GE4599@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1394723476-8580-1-git-send-email-george.cherian@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6e7ZaeXHKrTJCxdu"
+Content-Disposition: inline
+In-Reply-To: <1394723476-8580-1-git-send-email-george.cherian@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will allow to add per-SoC hooks more easily.
+--6e7ZaeXHKrTJCxdu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/mach-sunxi/Makefile  |   6 +-
- arch/arm/mach-sunxi/restart.c | 104 +++++++++++++++++++++++++++
- arch/arm/mach-sunxi/restart.h |  20 ++++++
- arch/arm/mach-sunxi/sun4i.c   |  36 ++++++++++
- arch/arm/mach-sunxi/sun5i.c   |  37 ++++++++++
- arch/arm/mach-sunxi/sun6i.c   |  49 +++++++++++++
- arch/arm/mach-sunxi/sun7i.c   |  36 ++++++++++
- arch/arm/mach-sunxi/sunxi.c   | 164 ------------------------------------------
- 8 files changed, 287 insertions(+), 165 deletions(-)
- create mode 100644 arch/arm/mach-sunxi/restart.c
- create mode 100644 arch/arm/mach-sunxi/restart.h
- create mode 100644 arch/arm/mach-sunxi/sun4i.c
- create mode 100644 arch/arm/mach-sunxi/sun5i.c
- create mode 100644 arch/arm/mach-sunxi/sun6i.c
- create mode 100644 arch/arm/mach-sunxi/sun7i.c
- delete mode 100644 arch/arm/mach-sunxi/sunxi.c
+On Thu, Mar 13, 2014 at 08:41:11PM +0530, George Cherian wrote:
+> The patch series adds USB dt nodes for am43xx epos and gp evm
+> Boot tested with linux-next + Tony's omap-for-v3.15/dt
+>=20
+> Changes from v1 -> v2
+> 	* Reorder "doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue"
+> 	* Address v1 coments on "ARM: dts: AM4372: Add USB nodes" =20
+>=20
+> Changes from v2 -> v3
+> 	* Removed unwanted dwc3_1 and dwc3_2 nodes from am437x-gp-evm.dts=20
+> 	  and am43x-epos-evm.dts=20
+>=20
+> Changes from v3 -> v4
+> 	* Refreshed on top of Tony's omap-for-v3.15/dt tree
+> 	* Added usb_phy0_always_on_clk32k and usb_phy1_always_on_clk32k Patch 2
+> 	* Used the above clocks in Patch 3=20
+> 	* Patch 4 and 5 edited the unwanted portions of commit log
 
-diff --git a/arch/arm/mach-sunxi/Makefile b/arch/arm/mach-sunxi/Makefile
-index d9397202d6ec..6b3d36f180ae 100644
---- a/arch/arm/mach-sunxi/Makefile
-+++ b/arch/arm/mach-sunxi/Makefile
-@@ -1,2 +1,6 @@
--obj-$(CONFIG_ARCH_SUNXI) += sunxi.o
-+obj-$(CONFIG_ARCH_SUNXI) += restart.o
-+obj-$(CONFIG_ARCH_SUNXI) += sun4i.o
-+obj-$(CONFIG_ARCH_SUNXI) += sun5i.o
-+obj-$(CONFIG_ARCH_SUNXI) += sun6i.o
-+obj-$(CONFIG_ARCH_SUNXI) += sun7i.o
- obj-$(CONFIG_SMP) += platsmp.o headsmp.o
-diff --git a/arch/arm/mach-sunxi/restart.c b/arch/arm/mach-sunxi/restart.c
-new file mode 100644
-index 000000000000..60c2d5cd9632
---- /dev/null
-+++ b/arch/arm/mach-sunxi/restart.c
-@@ -0,0 +1,104 @@
-+/*
-+ * Restart code for Allwinner SoCs
-+ *
-+ * Copyright (C) 2012-2014 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/mod_devicetable.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/reboot.h>
-+
-+#include "restart.h"
-+
-+#define SUN4I_WATCHDOG_CTRL_REG		0x00
-+#define SUN4I_WATCHDOG_CTRL_RESTART		BIT(0)
-+#define SUN4I_WATCHDOG_MODE_REG		0x04
-+#define SUN4I_WATCHDOG_MODE_ENABLE		BIT(0)
-+#define SUN4I_WATCHDOG_MODE_RESET_ENABLE	BIT(1)
-+
-+#define SUN6I_WATCHDOG1_IRQ_REG		0x00
-+#define SUN6I_WATCHDOG1_CTRL_REG	0x10
-+#define SUN6I_WATCHDOG1_CTRL_RESTART		BIT(0)
-+#define SUN6I_WATCHDOG1_CONFIG_REG	0x14
-+#define SUN6I_WATCHDOG1_CONFIG_RESTART		BIT(0)
-+#define SUN6I_WATCHDOG1_CONFIG_IRQ		BIT(1)
-+#define SUN6I_WATCHDOG1_MODE_REG	0x18
-+#define SUN6I_WATCHDOG1_MODE_ENABLE		BIT(0)
-+
-+static void __iomem *wdt_base;
-+
-+void sun4i_restart(enum reboot_mode mode, const char *cmd)
-+{
-+	if (!wdt_base)
-+		return;
-+
-+	/* Enable timer and set reset bit in the watchdog */
-+	writel(SUN4I_WATCHDOG_MODE_ENABLE | SUN4I_WATCHDOG_MODE_RESET_ENABLE,
-+	       wdt_base + SUN4I_WATCHDOG_MODE_REG);
-+
-+	/*
-+	 * Restart the watchdog. The default (and lowest) interval
-+	 * value for the watchdog is 0.5s.
-+	 */
-+	writel(SUN4I_WATCHDOG_CTRL_RESTART, wdt_base + SUN4I_WATCHDOG_CTRL_REG);
-+
-+	while (1) {
-+		mdelay(5);
-+		writel(SUN4I_WATCHDOG_MODE_ENABLE | SUN4I_WATCHDOG_MODE_RESET_ENABLE,
-+		       wdt_base + SUN4I_WATCHDOG_MODE_REG);
-+	}
-+}
-+
-+void sun6i_restart(enum reboot_mode mode, const char *cmd)
-+{
-+	if (!wdt_base)
-+		return;
-+
-+	/* Disable interrupts */
-+	writel(0, wdt_base + SUN6I_WATCHDOG1_IRQ_REG);
-+
-+	/* We want to disable the IRQ and just reset the whole system */
-+	writel(SUN6I_WATCHDOG1_CONFIG_RESTART,
-+		wdt_base + SUN6I_WATCHDOG1_CONFIG_REG);
-+
-+	/* Enable timer. The default and lowest interval value is 0.5s */
-+	writel(SUN6I_WATCHDOG1_MODE_ENABLE,
-+		wdt_base + SUN6I_WATCHDOG1_MODE_REG);
-+
-+	/* Restart the watchdog. */
-+	writel(SUN6I_WATCHDOG1_CTRL_RESTART,
-+		wdt_base + SUN6I_WATCHDOG1_CTRL_REG);
-+
-+	while (1) {
-+		mdelay(5);
-+		writel(SUN6I_WATCHDOG1_MODE_ENABLE,
-+			wdt_base + SUN6I_WATCHDOG1_MODE_REG);
-+	}
-+}
-+
-+static struct of_device_id sunxi_restart_ids[] = {
-+	{ .compatible = "allwinner,sun4i-wdt" },
-+	{ .compatible = "allwinner,sun6i-wdt" },
-+	{ /*sentinel*/ }
-+};
-+
-+void sunxi_setup_restart(void)
-+{
-+	struct device_node *np;
-+
-+	np = of_find_matching_node(NULL, sunxi_restart_ids);
-+	if (WARN(!np, "unable to setup watchdog restart"))
-+		return;
-+
-+	wdt_base = of_iomap(np, 0);
-+	WARN(!wdt_base, "failed to map watchdog base address");
-+}
-diff --git a/arch/arm/mach-sunxi/restart.h b/arch/arm/mach-sunxi/restart.h
-new file mode 100644
-index 000000000000..ef039db8f544
---- /dev/null
-+++ b/arch/arm/mach-sunxi/restart.h
-@@ -0,0 +1,20 @@
-+/*
-+ * Restart code for Allwinner SoCs
-+ *
-+ * Copyright (C) 2012-2014 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#ifndef _SUNXI_RESTART_H_
-+#define _SUNXI_RESTART_H_
-+
-+void sun4i_restart(enum reboot_mode mode, const char *cmd);
-+void sun6i_restart(enum reboot_mode mode, const char *cmd);
-+void sunxi_setup_restart(void);
-+
-+#endif
-diff --git a/arch/arm/mach-sunxi/sun4i.c b/arch/arm/mach-sunxi/sun4i.c
-new file mode 100644
-index 000000000000..fc28b89b3378
---- /dev/null
-+++ b/arch/arm/mach-sunxi/sun4i.c
-@@ -0,0 +1,36 @@
-+/*
-+ * Device Tree support for Allwinner A10 SoCs
-+ *
-+ * Copyright (C) 2012-2014 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/of_platform.h>
-+
-+#include <asm/mach/arch.h>
-+
-+#include "restart.h"
-+
-+static void __init sun4i_dt_init(void)
-+{
-+	sunxi_setup_restart();
-+
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+static const char * const sun4i_board_dt_compat[] = {
-+	"allwinner,sun4i-a10",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(SUN4I_DT, "Allwinner sun4i (A10) Family")
-+	.init_machine	= sun4i_dt_init,
-+	.dt_compat	= sun4i_board_dt_compat,
-+	.restart	= sun4i_restart,
-+MACHINE_END
-diff --git a/arch/arm/mach-sunxi/sun5i.c b/arch/arm/mach-sunxi/sun5i.c
-new file mode 100644
-index 000000000000..623a95ad93b7
---- /dev/null
-+++ b/arch/arm/mach-sunxi/sun5i.c
-@@ -0,0 +1,37 @@
-+/*
-+ * Device Tree support for Allwinner A20 SoCs
-+ *
-+ * Copyright (C) 2013-2014 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/of_platform.h>
-+
-+#include <asm/mach/arch.h>
-+
-+#include "restart.h"
-+
-+static void __init sun5i_dt_init(void)
-+{
-+	sunxi_setup_restart();
-+
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+static const char * const sun5i_board_dt_compat[] = {
-+	"allwinner,sun5i-a10s",
-+	"allwinner,sun5i-a13",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(SUN5I_DT, "Allwinner sun5i (A13/A10s) Family")
-+	.init_machine	= sun5i_dt_init,
-+	.dt_compat	= sun5i_board_dt_compat,
-+	.restart	= sun4i_restart,
-+MACHINE_END
-diff --git a/arch/arm/mach-sunxi/sun6i.c b/arch/arm/mach-sunxi/sun6i.c
-new file mode 100644
-index 000000000000..c5dc81988ce9
---- /dev/null
-+++ b/arch/arm/mach-sunxi/sun6i.c
-@@ -0,0 +1,49 @@
-+/*
-+ * Device Tree support for Allwinner A31 SoCs
-+ *
-+ * Copyright (C) 2013-2014 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clocksource.h>
-+#include <linux/init.h>
-+#include <linux/of_platform.h>
-+
-+#include <asm/mach/arch.h>
-+
-+#include "common.h"
-+#include "restart.h"
-+
-+static void __init sun6i_dt_init(void)
-+{
-+	sunxi_setup_restart();
-+
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+extern void __init sun6i_reset_init(void);
-+static void __init sun6i_timer_init(void)
-+{
-+	of_clk_init(NULL);
-+	sun6i_reset_init();
-+	clocksource_of_init();
-+}
-+
-+static const char * const sun6i_board_dt_compat[] = {
-+	"allwinner,sun6i-a31",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(SUN6I_DT, "Allwinner sun6i (A31) Family")
-+	.init_machine	= sun6i_dt_init,
-+	.init_time	= sun6i_timer_init,
-+	.dt_compat	= sun6i_board_dt_compat,
-+	.restart	= sun6i_restart,
-+	.smp		= smp_ops(sun6i_smp_ops),
-+MACHINE_END
-diff --git a/arch/arm/mach-sunxi/sun7i.c b/arch/arm/mach-sunxi/sun7i.c
-new file mode 100644
-index 000000000000..2e6a8ee1966b
---- /dev/null
-+++ b/arch/arm/mach-sunxi/sun7i.c
-@@ -0,0 +1,36 @@
-+/*
-+ * Device Tree support for Allwinner A20 SoCs
-+ *
-+ * Copyright (C) 2013-2014 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/of_platform.h>
-+
-+#include <asm/mach/arch.h>
-+
-+#include "restart.h"
-+
-+static void __init sun7i_dt_init(void)
-+{
-+	sunxi_setup_restart();
-+
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+static const char * const sun7i_board_dt_compat[] = {
-+	"allwinner,sun7i-a20",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(SUN7I_DT, "Allwinner sun7i (A20) Family")
-+	.init_machine	= sun7i_dt_init,
-+	.dt_compat	= sun7i_board_dt_compat,
-+	.restart	= sun4i_restart,
-+MACHINE_END
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-deleted file mode 100644
-index aeea6ceea725..000000000000
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ /dev/null
-@@ -1,164 +0,0 @@
--/*
-- * Device Tree support for Allwinner A1X SoCs
-- *
-- * Copyright (C) 2012 Maxime Ripard
-- *
-- * Maxime Ripard <maxime.ripard@free-electrons.com>
-- *
-- * This file is licensed under the terms of the GNU General Public
-- * License version 2.  This program is licensed "as is" without any
-- * warranty of any kind, whether express or implied.
-- */
--
--#include <linux/clk-provider.h>
--#include <linux/clocksource.h>
--#include <linux/delay.h>
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/of_address.h>
--#include <linux/of_irq.h>
--#include <linux/of_platform.h>
--#include <linux/io.h>
--#include <linux/reboot.h>
--
--#include <asm/mach/arch.h>
--#include <asm/mach/map.h>
--#include <asm/system_misc.h>
--
--#include "common.h"
--
--#define SUN4I_WATCHDOG_CTRL_REG		0x00
--#define SUN4I_WATCHDOG_CTRL_RESTART		BIT(0)
--#define SUN4I_WATCHDOG_MODE_REG		0x04
--#define SUN4I_WATCHDOG_MODE_ENABLE		BIT(0)
--#define SUN4I_WATCHDOG_MODE_RESET_ENABLE	BIT(1)
--
--#define SUN6I_WATCHDOG1_IRQ_REG		0x00
--#define SUN6I_WATCHDOG1_CTRL_REG	0x10
--#define SUN6I_WATCHDOG1_CTRL_RESTART		BIT(0)
--#define SUN6I_WATCHDOG1_CONFIG_REG	0x14
--#define SUN6I_WATCHDOG1_CONFIG_RESTART		BIT(0)
--#define SUN6I_WATCHDOG1_CONFIG_IRQ		BIT(1)
--#define SUN6I_WATCHDOG1_MODE_REG	0x18
--#define SUN6I_WATCHDOG1_MODE_ENABLE		BIT(0)
--
--static void __iomem *wdt_base;
--
--static void sun4i_restart(enum reboot_mode mode, const char *cmd)
--{
--	if (!wdt_base)
--		return;
--
--	/* Enable timer and set reset bit in the watchdog */
--	writel(SUN4I_WATCHDOG_MODE_ENABLE | SUN4I_WATCHDOG_MODE_RESET_ENABLE,
--	       wdt_base + SUN4I_WATCHDOG_MODE_REG);
--
--	/*
--	 * Restart the watchdog. The default (and lowest) interval
--	 * value for the watchdog is 0.5s.
--	 */
--	writel(SUN4I_WATCHDOG_CTRL_RESTART, wdt_base + SUN4I_WATCHDOG_CTRL_REG);
--
--	while (1) {
--		mdelay(5);
--		writel(SUN4I_WATCHDOG_MODE_ENABLE | SUN4I_WATCHDOG_MODE_RESET_ENABLE,
--		       wdt_base + SUN4I_WATCHDOG_MODE_REG);
--	}
--}
--
--static void sun6i_restart(enum reboot_mode mode, const char *cmd)
--{
--	if (!wdt_base)
--		return;
--
--	/* Disable interrupts */
--	writel(0, wdt_base + SUN6I_WATCHDOG1_IRQ_REG);
--
--	/* We want to disable the IRQ and just reset the whole system */
--	writel(SUN6I_WATCHDOG1_CONFIG_RESTART,
--		wdt_base + SUN6I_WATCHDOG1_CONFIG_REG);
--
--	/* Enable timer. The default and lowest interval value is 0.5s */
--	writel(SUN6I_WATCHDOG1_MODE_ENABLE,
--		wdt_base + SUN6I_WATCHDOG1_MODE_REG);
--
--	/* Restart the watchdog. */
--	writel(SUN6I_WATCHDOG1_CTRL_RESTART,
--		wdt_base + SUN6I_WATCHDOG1_CTRL_REG);
--
--	while (1) {
--		mdelay(5);
--		writel(SUN6I_WATCHDOG1_MODE_ENABLE,
--			wdt_base + SUN6I_WATCHDOG1_MODE_REG);
--	}
--}
--
--static struct of_device_id sunxi_restart_ids[] = {
--	{ .compatible = "allwinner,sun4i-wdt" },
--	{ .compatible = "allwinner,sun6i-wdt" },
--	{ /*sentinel*/ }
--};
--
--static void sunxi_setup_restart(void)
--{
--	struct device_node *np;
--
--	np = of_find_matching_node(NULL, sunxi_restart_ids);
--	if (WARN(!np, "unable to setup watchdog restart"))
--		return;
--
--	wdt_base = of_iomap(np, 0);
--	WARN(!wdt_base, "failed to map watchdog base address");
--}
--
--static void __init sunxi_dt_init(void)
--{
--	sunxi_setup_restart();
--
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
--}
--
--static const char * const sunxi_board_dt_compat[] = {
--	"allwinner,sun4i-a10",
--	"allwinner,sun5i-a10s",
--	"allwinner,sun5i-a13",
--	NULL,
--};
--
--DT_MACHINE_START(SUNXI_DT, "Allwinner A1X (Device Tree)")
--	.init_machine	= sunxi_dt_init,
--	.dt_compat	= sunxi_board_dt_compat,
--	.restart	= sun4i_restart,
--MACHINE_END
--
--static const char * const sun6i_board_dt_compat[] = {
--	"allwinner,sun6i-a31",
--	NULL,
--};
--
--extern void __init sun6i_reset_init(void);
--static void __init sun6i_timer_init(void)
--{
--	of_clk_init(NULL);
--	sun6i_reset_init();
--	clocksource_of_init();
--}
--
--DT_MACHINE_START(SUN6I_DT, "Allwinner sun6i (A31) Family")
--	.init_machine	= sunxi_dt_init,
--	.init_time	= sun6i_timer_init,
--	.dt_compat	= sun6i_board_dt_compat,
--	.restart	= sun6i_restart,
--	.smp		= smp_ops(sun6i_smp_ops),
--MACHINE_END
--
--static const char * const sun7i_board_dt_compat[] = {
--	"allwinner,sun7i-a20",
--	NULL,
--};
--
--DT_MACHINE_START(SUN7I_DT, "Allwinner sun7i (A20) Family")
--	.init_machine	= sunxi_dt_init,
--	.dt_compat	= sun7i_board_dt_compat,
--	.restart	= sun4i_restart,
--MACHINE_END
--- 
-1.9.0
+hope there's still time for v3.15, it would be great to see these
+patches in v3.15-final.
 
+--=20
+balbi
+
+--6e7ZaeXHKrTJCxdu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTIcwjAAoJEIaOsuA1yqREy6cP/2Ta4rXw5scCNhTWGhu47S44
+02mm53HXnC7+i/CXg3K9KAuK356TvJucmhatKRo33dwbVsvbXfSDjB3oakNWSL04
+J2093pzsDautlR4jK16J60E+AFE7Ua9vLcrorpRa8pv1rMczNqjyxWLiA1Cxl0Tg
+ELACGvhXMSq5DlvLj4A4QyvdI4s8T3WxU3Pkrp9jB9Y2p14pwMq7NnJE5iuL5e87
+UzM8OpayKKr3GNYeaC5Fg//q4U6ff9tEyB0bV5RvwZuUGkmtJpvgUNEAbxb6jZP5
+jjNk7kgcxlfV8vIts3HeeyKSqgohgTbtooNvh0wPZ4yxyrKLPKGj5m4B15EhdXzx
+jLG8R6Ed16osNp1s6h95Y59FkUYnRn/jKchtMeDuF2dmHH0exB94IxFxUvr6ONEt
+6+6ogp1xRK8fZPiwe5Za9id6TRECNc+xWfwT9Y5asdlmP8XlnPguSsZoy6j1Z4uZ
+Ny8WYXlOBjjtYnDOcGqu3SeY1xbz/luZ7MQn5oeogIyp7BtzlhoiYI3CfP0jZ/cx
+b/SAb3m0LD0DIk9Cd+nfU0iByN48h/y2chniApWwLWKn1ifmdMxt+KdX1mZ3hglP
+clFBQ4gZALaH6aer6TJ1BAq8BEDuOdNBeLYSifl1ZNgw/RboKqk9MbZuYtEGdNY+
+Dqs5IaJyZEZYx0GT/9D0
+=zyWB
+-----END PGP SIGNATURE-----
+
+--6e7ZaeXHKrTJCxdu--
