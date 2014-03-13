@@ -1,148 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309AbaCMXTK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 19:19:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45338 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755113AbaCMXTF (ORCPT
+	id S1755015AbaCMXWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 19:22:16 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35708 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754152AbaCMXWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 19:19:05 -0400
-Date: Thu, 13 Mar 2014 16:18:53 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-c0a639ad0bc6b178b46996bd1f821a04643e2bde@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de, hpa@linux.intel.com
-In-Reply-To: <1394384725-10796-4-git-send-email-bp@alien8.de>
-References: <1394384725-10796-4-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, Intel:
-  Convert to the new bit access MSR accessors
-Git-Commit-ID: c0a639ad0bc6b178b46996bd1f821a04643e2bde
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Thu, 13 Mar 2014 19:22:13 -0400
+Date: Thu, 13 Mar 2014 23:21:40 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+Message-ID: <20140313232140.03bdaac3@alan.etchedpixels.co.uk>
+In-Reply-To: <1394746248.27846.3.camel@x230>
+References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
+	<CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
+	<alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
+	<1394686919.25122.2.camel@x230>
+	<CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
+	<alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
+	<1394726363.25122.16.camel@x230>
+	<20140313212450.67f1de8e@alan.etchedpixels.co.uk>
+	<1394746248.27846.3.camel@x230>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c0a639ad0bc6b178b46996bd1f821a04643e2bde
-Gitweb:     http://git.kernel.org/tip/c0a639ad0bc6b178b46996bd1f821a04643e2bde
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Sun, 9 Mar 2014 18:05:25 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 13 Mar 2014 15:35:09 -0700
+On Thu, 13 Mar 2014 21:30:48 +0000
+Matthew Garrett <matthew.garrett@nebula.com> wrote:
 
-x86, Intel: Convert to the new bit access MSR accessors
+> On Thu, 2014-03-13 at 21:24 +0000, One Thousand Gnomes wrote:
+> 
+> > If I have CAP_SYS_RAWIO I can make arbitary ring 0 calls from userspace,
+> > trivially and in a fashion well known and documented.
+> 
+> How?
 
-... and save some lines of code.
+You want a list... there are load of places all over the kernel that have
+assumptions that RAWIO = safe from the boringly mundane like MSR access
+to the more obscure driver "this is RAWIO trust the user" cases of which
+there are plenty.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1394384725-10796-4-git-send-email-bp@alien8.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/uapi/asm/msr-index.h |  9 ++++++---
- arch/x86/kernel/cpu/intel.c           | 30 +++++++-----------------------
- 2 files changed, 13 insertions(+), 26 deletions(-)
+If you are going to do something "secure" then do it *right* otherwise
+you are not actually implementing anything, just making fake security
+noises.
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index c19fc60..045e6db 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -368,14 +368,16 @@
- #define THERM_LOG_THRESHOLD1           (1 << 9)
- 
- /* MISC_ENABLE bits: architectural */
--#define MSR_IA32_MISC_ENABLE_FAST_STRING	(1ULL << 0)
-+#define MSR_BIT_FAST_STRING				0
-+#define MSR_IA32_MISC_ENABLE_FAST_STRING	(1ULL << MSR_BIT_FAST_STRING)
- #define MSR_IA32_MISC_ENABLE_TCC		(1ULL << 1)
- #define MSR_IA32_MISC_ENABLE_EMON		(1ULL << 7)
- #define MSR_IA32_MISC_ENABLE_BTS_UNAVAIL	(1ULL << 11)
- #define MSR_IA32_MISC_ENABLE_PEBS_UNAVAIL	(1ULL << 12)
- #define MSR_IA32_MISC_ENABLE_ENHANCED_SPEEDSTEP	(1ULL << 16)
- #define MSR_IA32_MISC_ENABLE_MWAIT		(1ULL << 18)
--#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID	(1ULL << 22)
-+#define MSR_BIT_LIMIT_CPUID				22
-+#define MSR_IA32_MISC_ENABLE_LIMIT_CPUID	(1ULL << MSR_BIT_LIMIT_CPUID);
- #define MSR_IA32_MISC_ENABLE_XTPR_DISABLE	(1ULL << 23)
- #define MSR_IA32_MISC_ENABLE_XD_DISABLE		(1ULL << 34)
- 
-@@ -385,7 +387,8 @@
- #define MSR_IA32_MISC_ENABLE_SPLIT_LOCK_DISABLE	(1ULL << 4)
- #define MSR_IA32_MISC_ENABLE_L3CACHE_DISABLE	(1ULL << 6)
- #define MSR_IA32_MISC_ENABLE_SUPPRESS_LOCK	(1ULL << 8)
--#define MSR_IA32_MISC_ENABLE_PREFETCH_DISABLE	(1ULL << 9)
-+#define MSR_BIT_PRF_DIS				9
-+#define MSR_IA32_MISC_ENABLE_PREFETCH_DISABLE	(1ULL << MSR_BIT_PRF_DIS)
- #define MSR_IA32_MISC_ENABLE_FERR		(1ULL << 10)
- #define MSR_IA32_MISC_ENABLE_FERR_MULTIPLEX	(1ULL << 10)
- #define MSR_IA32_MISC_ENABLE_TM2		(1ULL << 13)
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 5cd9bfa..44ca631 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -31,11 +31,7 @@ static void early_init_intel(struct cpuinfo_x86 *c)
- 
- 	/* Unmask CPUID levels if masked: */
- 	if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
--		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
--
--		if (misc_enable & MSR_IA32_MISC_ENABLE_LIMIT_CPUID) {
--			misc_enable &= ~MSR_IA32_MISC_ENABLE_LIMIT_CPUID;
--			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-+		if (msr_clear_bit(MSR_IA32_MISC_ENABLE, MSR_BIT_LIMIT_CPUID) > 0) {
- 			c->cpuid_level = cpuid_eax(0);
- 			get_cpu_cap(c);
- 		}
-@@ -129,16 +125,9 @@ static void early_init_intel(struct cpuinfo_x86 *c)
- 	 * Ingo Molnar reported a Pentium D (model 6) and a Xeon
- 	 * (model 2) with the same problem.
- 	 */
--	if (c->x86 == 15) {
--		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
--
--		if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
--			printk(KERN_INFO "kmemcheck: Disabling fast string operations\n");
--
--			misc_enable &= ~MSR_IA32_MISC_ENABLE_FAST_STRING;
--			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
--		}
--	}
-+	if (c->x86 == 15)
-+		if (msr_clear_bit(MSR_IA32_MISC_ENABLE, MSR_BIT_FAST_STRING) > 0)
-+			pr_info("kmemcheck: Disabling fast string operations\n");
- #endif
- 
- 	/*
-@@ -197,8 +186,6 @@ static void intel_smp_check(struct cpuinfo_x86 *c)
- 
- static void intel_workarounds(struct cpuinfo_x86 *c)
- {
--	unsigned long lo, hi;
--
- #ifdef CONFIG_X86_F00F_BUG
- 	/*
- 	 * All current models of Pentium and Pentium with MMX technology CPUs
-@@ -229,12 +216,9 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
- 	 * Hardware prefetcher may cause stale data to be loaded into the cache.
- 	 */
- 	if ((c->x86 == 15) && (c->x86_model == 1) && (c->x86_mask == 1)) {
--		rdmsr(MSR_IA32_MISC_ENABLE, lo, hi);
--		if ((lo & MSR_IA32_MISC_ENABLE_PREFETCH_DISABLE) == 0) {
--			printk (KERN_INFO "CPU: C0 stepping P4 Xeon detected.\n");
--			printk (KERN_INFO "CPU: Disabling hardware prefetching (Errata 037)\n");
--			lo |= MSR_IA32_MISC_ENABLE_PREFETCH_DISABLE;
--			wrmsr(MSR_IA32_MISC_ENABLE, lo, hi);
-+		if (msr_set_bit(MSR_IA32_MISC_ENABLE, MSR_BIT_PRF_DIS) > 0) {
-+			pr_info("CPU: C0 stepping P4 Xeon detected.\n");
-+			pr_info("CPU: Disabling hardware prefetching (Errata 037)\n");
- 		}
- 	}
- 
+SELinux required user space changes, fiddle with CAP_SYS_RAWIO will need
+userspace changes IFF you want to run 'secure' mode. That I think is
+acceptable.
+
+You can even avoid the userspace issues with a small amount of checking.
+If you don't want to touch capability sets then make the default
+behaviour for capable(x) in fact be
+
+	capable(x & ~secure_forbidden)
+
+for a measured kernel and add a 
+
+	capable_always()
+
+for the cases you want to not break.
+
+As for mem= and exactmap, it has nothing to do with /dev/mem and
+everything to do with giving the kernel a memory map where some of the
+space it thinks is RAM is in fact devices, rom, space etc. If the kernel
+is given a false memory map it will misbehave. Exploitably - well given
+the kind of things people have achieved in the past - quite possibly.
+
+If you are not prepared to do the job right, then I don't think it
+belongs upstream. Let's do it right, and if we have to tweak a few bits
+of userspace to make them work in measured mode (but without breaking
+anything in normal modes) then it's worth doing the job properly.
+
+I don't think we need to break any userspace for "normal" mode to do
+this. Userspace in measured mode is going to change anyway. It already
+has just for things like module signing.
+
+(As an aside you may also then want to think about whether you allow
+measured userspace elements that secure_forbidden is considered to be 0
+for so you can sign userspace apps that are allowed to do RAWIO)
+
+Alan
