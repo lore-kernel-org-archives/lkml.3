@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaCMVob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:44:31 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:49974 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392AbaCMVo3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 17:44:29 -0400
+	id S1754474AbaCMVp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 17:45:56 -0400
+Received: from sauhun.de ([89.238.76.85]:49519 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753439AbaCMVpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 17:45:55 -0400
+Date: Thu, 13 Mar 2014 22:45:45 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-i2c@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Subject: [NOTICE] away from the net until March, 23rd
+Message-ID: <20140313214544.GH2696@katana>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwqTbsYCyPf6_i6RmBkPHpEhJjiRfZm6_1_yPa_kUkYiQ@mail.gmail.com>
-References: <20140308194405.GA32403@redhat.com>
-	<CA+55aFzk=XtRFPQM4rGgTXj8AD2RLrm5pfAsKwGOZPHLgb+Ziw@mail.gmail.com>
-	<20140309125710.GA1829@redhat.com>
-	<CA+55aFxyGJFEz5NnHtK1wn8oDLy9n-CttttKL_0AM69gN8JzxQ@mail.gmail.com>
-	<20140309170909.GA13335@redhat.com>
-	<CA+55aFxEGj9poWNLAncvrrOTzjDtrwMnOM_d3ACqRkcvY86qHA@mail.gmail.com>
-	<1394481375.3867.1.camel@buesod1.americas.hpqcorp.net>
-	<20140313145941.GA26215@redhat.com>
-	<CA+55aFyNd7L+G3hFauJPxUOengK-_o2G-SFmVooPZ-sE6xBj=g@mail.gmail.com>
-	<20140313163632.GA30737@redhat.com>
-	<20140313182702.GA3429@redhat.com>
-	<CA+55aFwqTbsYCyPf6_i6RmBkPHpEhJjiRfZm6_1_yPa_kUkYiQ@mail.gmail.com>
-Date: Thu, 13 Mar 2014 14:44:28 -0700
-X-Google-Sender-Auth: X5GBqjDV3UPBGiHPXQ0DkBaoleA
-Message-ID: <CA+55aFzBjMQGapsS1Jw3rdrPaOYYPn7NamtjN47_W_r1QKX+8Q@mail.gmail.com>
-Subject: Re: async_pf.c && use_mm() (Was: mm,vmacache: also flush cache for VM_CLONE)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Davidlohr Bueso <davi@redhat.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Enx9fNJ0XV5HaWRu"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 12:14 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Maybe it uses use_mm just to increment the usage count. Which is bogus, and
-> it should just "get" it instead, but whatever.
->
-> On my phone, so I can't check the details.
 
-Ok, no longer on my phone, and no, it clearly does the reference count with a
+--Enx9fNJ0XV5HaWRu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-    atomic_inc(&work->mm->mm_count);
+Hi,
 
-separately. The use_mm/unuse_mm seems entirely specious.
+I'll be away from the net and emails from March, 14th until March, 23rd.
+For urgent matters, I'll trust the I2C mailing list to take care.
 
-Maybe it has some historical meaning to it.
+Kind regards,
 
-               Linus
+   Wolfram
+
+
+--Enx9fNJ0XV5HaWRu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTIicIAAoJEBQN5MwUoCm2YXUQALVktGxzRDrnZUjAxETpCAbF
++xt4XKEJahU98WWRncfIUthVi5iyyiG0rIL+lM7ryqA9wPIqBne2qRtd92XVRlZo
+Dud3El7PUReScOPJScNbpeFfQB2877jwmhYL6cAPQLUQ1VMmER1qhN3G/nCQ2le6
+RGxm8H69YtkbqMEs6cIrc7lDW2p++U28wNvc0G+/+lk4IweK3rsHjX1KdYV5AeHc
+LlKw+dLPBldzhswpZ4vafwE/btW+qpUHcm6gHDRS53E+2hbnQc9YpwOwH9D+N9sf
+gACAn9W5geRjp5D5LXOWSQ4ib9O33+c53FIkf1oCLbHvi/q+m/H3aZ8TasdcN5OX
+1sdwJtJhZuJwvpVlijT5Qp9KzAbXNYmVQ65OlQuIgS6Wtey2NMyQF8cmCiJ4L46c
+EEXYvHJmQVor/0mDNUPhZEyPuSu7nVowhD/M6VGE544PrFuPGfQocqSdRbThgAhg
+AGXxmPgqXqQuA9wE6UDNCXwbWNaLP4wy03NHGbktCgiqyAm40gfaW3ohNDxdrgRe
+IEiWxeO/R6hoA2ZnQJfs973ThHuEheSiWEh3wyEUXcUcW1nmuW8HQzJye1sxScFO
+XCKWBPkkGv+XHLG/gJKL8Gi7C1XV5TEvITJa+6/+6lSc37ETgMaJBV+18cJ6m0YV
+/bn7HzF3UxsG0sKeqIKD
+=4Ru3
+-----END PGP SIGNATURE-----
+
+--Enx9fNJ0XV5HaWRu--
