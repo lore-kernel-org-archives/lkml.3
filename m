@@ -1,97 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101AbaCMVPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:15:51 -0400
-Received: from sauhun.de ([89.238.76.85]:34078 "EHLO pokefinder.org"
+	id S1754209AbaCMVQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 17:16:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9354 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753835AbaCMVPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 17:15:45 -0400
-Date: Thu, 13 Mar 2014 22:15:39 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: David Howells <dhowells@redhat.com>
-Cc: wolfram@the-dreams.de, khali@linux-fr.org, linux-i2c@vger.kernel.org,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] i2c: Add message transfer tracepoints for SMBUS [ver
- #2]
-Message-ID: <20140313211539.GB2696@katana>
-References: <20140306133559.29345.61422.stgit@warthog.procyon.org.uk>
- <20140306133606.29345.97103.stgit@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4bRzO86E/ozDv8r1"
-Content-Disposition: inline
-In-Reply-To: <20140306133606.29345.97103.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752999AbaCMVQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 17:16:42 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: acme@redhat.com
+Cc: jolsa@redhat.com, jmario@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH] perf: Speed up thread map generation
+Date: Thu, 13 Mar 2014 17:16:37 -0400
+Message-Id: <1394745397-96149-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When trying to capture perf data on a system running spejbb2013,
+perf hung for about 15 minutes.  This is because it took that
+long to gather about 10,000 thread maps and process them.
 
---4bRzO86E/ozDv8r1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I don't think a user wants to wait that long.
 
-On Thu, Mar 06, 2014 at 01:36:06PM +0000, David Howells wrote:
-> The SMBUS tracepoints can be enabled thusly:
->=20
-> 	echo 1 >/sys/kernel/debug/tracing/events/i2c/enable
->=20
-> and will dump messages that can be viewed in /sys/kernel/debug/tracing/tr=
-ace
-> that look like:
->=20
->          ... smbus_read: i2c-0 a=3D051 f=3D0000 c=3Dfa BYTE_DATA
->          ... smbus_reply: i2c-0 a=3D051 f=3D0000 c=3Dfa BYTE_DATA l=3D1 [=
-39]
->          ... smbus_result: i2c-0 a=3D051 f=3D0000 c=3Dfa BYTE_DATA rd res=
-=3D0
->=20
-> formatted as:
->=20
-> 	i2c-<adapter-nr>
-> 	a=3D<addr>
-> 	f=3D<flags>
-> 	c=3D<command>
-> 	<protocol-name>
-> 	<rd|wr>
-> 	res=3D<result>
-> 	l=3D<data-len>
-> 	[<data-block>]
->=20
->=20
-> The adapters to be traced can be selected by something like:
->=20
-> 	echo adapter_nr=3D=3D1 >/sys/kernel/debug/tracing/events/i2c/filter
->=20
-> Note that this shares the same filter and enablement as i2c.
->=20
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Instead, recognize that thread maps are roughly equivalent to
+pid maps and just quickly copy those instead.
 
-Applied to for-next, thanks!
+To do this, I synthesize 'fork' events, this eventually calls
+thread__fork() and copies the maps over.
 
+The overhead goes from 15 minutes down to about a few seconds.
 
---4bRzO86E/ozDv8r1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ tools/perf/util/event.c |   39 ++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 36 insertions(+), 3 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+---
+Based on perf/core: 1c075d114d0f3be
 
-iQIcBAEBAgAGBQJTIh/7AAoJEBQN5MwUoCm2UD0QAKctRYUHobrs+tz/46xRLziP
-s51XmvZMT53z/dQdGcw5HakxnR9p1k7sIywAW8xyC0IQyH2W8gThsiLlQ3DwBY/N
-JaPLFSHxa8eQaRA2bIDvShfPA4TJrUYeFHcok7e++p9ljaaA59BJhTY8epFVjok1
-AMQz1QXOexH0aBC3qBL+mUF0ZBKtMblkBaGc2Qg/ge1a9sx5agmthUIH8q0YpuG+
-hrfaXSmV4nFmOFn1Umj0DJ2qFxULSLkvQJCf6TYi/w2aJ++QEK3nqvcP2MEcJ2V6
-5hpTJizjAjYOA36rk1fjIhkAN/IxLkZYqWXRjuFlqE2uWus61lMmS9OO20GR1utb
-W3BoGubbjWA2CeLjrYViHq9M8dYGESifnL6ktUEYHrVt7/MVBvUz7M5rHyO38WwP
-hKAXYSbUY5d7nZkCY2FrdcaZoPKQHBsQGWJCsMdJSGYTuOI6d1KTbzfYPhU+6Me8
-0SwJTvwBlBBpm0x9Ph5GANKuZl5yd4nWy5PqUFQ5US5SWSN3vcYUannbp8OoUyVK
-21Rw/J30mGOn0tiJxKt44bzrXtYOeexO5k/s7UOl1edxEYGPush6ZDopWQSVtA4t
-ZS7ytsYj2sUfSY+iZSuXShP+tq8HwypbiNonm65e6TWrjNzJODMj5w+8YMLE2zLu
-Ub0hFX3NmngT8PM9Knpu
-=BlAA
------END PGP SIGNATURE-----
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 55eebe9..95e5649 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -129,6 +129,28 @@ out:
+ 	return tgid;
+ }
+ 
++static int perf_event__synthesize_fork(struct perf_tool *tool,
++				       union perf_event *event, pid_t pid,
++				       pid_t tgid, perf_event__handler_t process,
++				       struct machine *machine)
++{
++	memset(&event->fork, 0, sizeof(event->fork) + machine->id_hdr_size);
++
++	/* this is really a clone event but we use fork to synthesize it */
++	event->fork.ppid = tgid;
++	event->fork.ptid = tgid;
++	event->fork.pid  = tgid;
++	event->fork.tid  = pid;
++	event->fork.header.type = PERF_RECORD_FORK;
++
++	event->fork.header.size = (sizeof(event->fork) + machine->id_hdr_size);
++
++	if (process(tool, event, &synth_sample, machine) != 0)
++		return -1;
++
++	return 0;
++}
++
+ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 				       union perf_event *event,
+ 				       pid_t pid, pid_t tgid,
+@@ -287,6 +309,11 @@ static int __event__synthesize_thread(union perf_event *comm_event,
+ 	DIR *tasks;
+ 	struct dirent dirent, *next;
+ 	pid_t tgid;
++	union perf_event *fork_event;
++
++	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
++	if (fork_event == NULL)
++		return -1;
+ 
+ 	/* special case: only send one comm event using passed in pid */
+ 	if (!full) {
+@@ -326,9 +353,15 @@ static int __event__synthesize_thread(union perf_event *comm_event,
+ 		if (tgid == -1)
+ 			return -1;
+ 
+-		/* process the thread's maps too */
+-		rc = perf_event__synthesize_mmap_events(tool, mmap_event, _pid, tgid,
+-							process, machine, mmap_data);
++		if (_pid == pid) {
++			/* process the parent's maps too */
++			rc = perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
++						process, machine, mmap_data);
++		} else {
++			/* only fork the tid's map, to save time */
++			rc = perf_event__synthesize_fork(tool, fork_event, _pid, tgid,
++						 process, machine);
++		}
+ 
+ 		if (rc)
+ 			return rc;
+-- 
+1.7.1
 
---4bRzO86E/ozDv8r1--
