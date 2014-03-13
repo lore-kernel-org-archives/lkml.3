@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348AbaCMIG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 04:06:26 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:32859 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213AbaCMIGW (ORCPT
+	id S1753424AbaCMIHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 04:07:21 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:61405 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213AbaCMIHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 04:06:22 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-31-532166f9d190
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] regmap: irq: Set data pointer only on regmap_add_irq_chip
- success
-Date: Thu, 13 Mar 2014 09:06:01 +0100
-Message-id: <1394697961-4440-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOJMWRmVeSWpSXmKPExsVy+t/xq7o/0xSDDRp7hCymPnzCZtG8eD2b
-	xesXhhaXd81hc2Dx2LSqk81j/9w17B59W1YxenzeJBfAEsVlk5Kak1mWWqRvl8CVse/hWtaC
-	o1wVB9+sZWlgvMDRxcjJISFgIjF/cQ8zhC0mceHeerYuRi4OIYGljBIr9u9mh3D6mCRm3PrG
-	AlLFJmAssXn5EjYQW0SgRGLPrSYmEJtZwFDi57s/7CC2sECIxIe3F8GmsgioSjSenAlUz8HB
-	K+AmcWWlEIgpIaAgMWeSzQRG7gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQjz/ZQfj
-	4mNWhxgFOBiVeHhXLFcIFmJNLCuuzD3EKMHBrCTC6+mjGCzEm5JYWZValB9fVJqTWnyIkYmD
-	U6qB0Wmt5OWzTyYtPXz84Pdrn9mOLdgl71y4aNY9V48DNlu39O9l33zvicRnjRP/GpapF9QU
-	LhC+Z8a2bg6fsMORF/NffVeOmSUh8uP49J97F/y6YXPo4dWIB9Nv3zzU3Pxw0R4zjsfmKRp/
-	JIUeNSYYRizy1NZcYddx4cxihiv7KrLOfcmv052yqzJXiaU4I9FQi7moOBEA8Bf4AtoBAAA=
+	Thu, 13 Mar 2014 04:07:14 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] power: bq24190: Remove gratuitous dummy function
+Date: Thu, 13 Mar 2014 09:07:10 +0100
+Message-Id: <1394698031-1313-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After setting the 'data' pointer (wchich is returned to the caller for
-freeing later) the regmap_add_irq_chip() could still fail for various
-reasons (ENOMEM, regmap_read or regmap_write failure). In such case the
-memory under 'data' was freed in error path and error value was returned
-but the 'data' variable was not changed.
+From: Thierry Reding <treding@nvidia.com>
 
-This could lead to errors if the caller passed such 'data' to
-regmap_del_irq_chip().
+Check for OF support using IS_ENABLED(CONFIG_OF). This will enable the
+compiler to eliminate dead code if OF support is disabled. With that in
+place, the dummy implementation of bq24190_setup_dt() for non-DT setups
+can be removed as the compiler will automatically discard the function
+when appropriate.
 
-The 'data' pointer should be changed atomically from the caller
-perspective - set it only on regmap_add_irq_chip() success.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/base/regmap/regmap-irq.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/power/bq24190_charger.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index 82692068d3cb..6d5d04d473f1 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -368,8 +368,6 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 	if (!d)
- 		return -ENOMEM;
+diff --git a/drivers/power/bq24190_charger.c b/drivers/power/bq24190_charger.c
+index ad3ff8fbfbbb..f5b21c0d0ba3 100644
+--- a/drivers/power/bq24190_charger.c
++++ b/drivers/power/bq24190_charger.c
+@@ -1312,7 +1312,6 @@ out:
+ 	return ret;
+ }
  
--	*data = d;
--
- 	d->status_buf = kzalloc(sizeof(unsigned int) * chip->num_regs,
- 				GFP_KERNEL);
- 	if (!d->status_buf)
-@@ -506,6 +504,8 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 		goto err_domain;
- 	}
+-#ifdef CONFIG_OF
+ static int bq24190_setup_dt(struct bq24190_dev_info *bdi)
+ {
+ 	bdi->irq = irq_of_parse_and_map(bdi->dev->of_node, 0);
+@@ -1321,12 +1320,6 @@ static int bq24190_setup_dt(struct bq24190_dev_info *bdi)
  
-+	*data = d;
-+
  	return 0;
+ }
+-#else
+-static int bq24190_setup_dt(struct bq24190_dev_info *bdi)
+-{
+-	return -1;
+-}
+-#endif
  
- err_domain:
+ static int bq24190_setup_pdata(struct bq24190_dev_info *bdi,
+ 		struct bq24190_platform_data *pdata)
+@@ -1388,7 +1381,7 @@ static int bq24190_probe(struct i2c_client *client,
+ 
+ 	i2c_set_clientdata(client, bdi);
+ 
+-	if (dev->of_node)
++	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+ 		ret = bq24190_setup_dt(bdi);
+ 	else
+ 		ret = bq24190_setup_pdata(bdi, pdata);
 -- 
-1.7.9.5
+1.8.4.2
 
