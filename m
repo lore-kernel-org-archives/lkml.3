@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457AbaCMPN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:13:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51024 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754417AbaCMPNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:13:20 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: <balbi@ti.com>, <rogerq@ti.com>, <kishon@ti.com>, <rob@landley.net>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        <tony@atomide.com>, <anatol.pomozov@gmail.com>,
-        <bcousson@baylibre.com>, George Cherian <george.cherian@ti.com>
-Subject: [PATCH v4 2/5] ARM: dts: am43xx clock data
-Date: Thu, 13 Mar 2014 20:41:13 +0530
-Message-ID: <1394723476-8580-3-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1394723476-8580-1-git-send-email-george.cherian@ti.com>
-References: <1394723476-8580-1-git-send-email-george.cherian@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754055AbaCMPPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:15:13 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42027 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753915AbaCMPPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:15:08 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v5 1/7] clk: sunxi: Remove calls to clk_put
+Date: Thu, 13 Mar 2014 16:14:13 +0100
+Message-Id: <1394723659-4995-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394723659-4995-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1394723659-4995-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add USB and USB PHY reference clock data
+Callers of clk_put must disable the clock first. This also means that as long
+as the clock is enabled the driver should hold a reference to that clock.
+Hence, the call to clk_put here are bogus and should be removed.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/boot/dts/am43xx-clocks.dtsi | 32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+ drivers/clk/sunxi/clk-sunxi.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am43xx-clocks.dtsi b/arch/arm/boot/dts/am43xx-clocks.dtsi
-index 142009c..c74d45c 100644
---- a/arch/arm/boot/dts/am43xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/am43xx-clocks.dtsi
-@@ -653,4 +653,36 @@
- 		clocks = <&clk_32768_ck>, <&clk_32k_tpm_ck>;
- 		reg = <0x4260>;
- 	};
-+
-+	usb_phy0_always_on_clk32k: usb_phy0_always_on_clk32k {
-+		#clock-cells = <0>;
-+		compatible = "fixed-factor-clock";
-+		clocks = <&clk_32768_ck>;
-+		clock-mult = <1>;
-+		clock-div = <1>;
-+	};
-+
-+	usb_phy1_always_on_clk32k: usb_phy1_always_on_clk32k {
-+		#clock-cells = <0>;
-+		compatible = "fixed-factor-clock";
-+		clocks = <&clk_32768_ck>;
-+		clock-mult = <1>;
-+		clock-div = <1>;
-+	};
-+
-+	usb_otg_ss0_refclk960m: usb_otg_ss0_refclk960m {
-+		#clock-cells = <0>;
-+	        compatible = "ti,gate-clock";
-+		clocks = <&dpll_per_clkdcoldo>;
-+	        ti,bit-shift = <8>;
-+	        reg = <0x8a60>;
-+	};
-+
-+	usb_otg_ss1_refclk960m: usb_otg_ss1_refclk960m {
-+		#clock-cells = <0>;
-+	        compatible = "ti,gate-clock";
-+		clocks = <&dpll_per_clkdcoldo>;
-+	        ti,bit-shift = <8>;
-+		reg = <0x8a68>;
-+	};
- };
+diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+index 23baad9d934a..7119c02c9fa8 100644
+--- a/drivers/clk/sunxi/clk-sunxi.c
++++ b/drivers/clk/sunxi/clk-sunxi.c
+@@ -1290,17 +1290,13 @@ static void __init sunxi_clock_protect(void)
+ 
+ 	/* memory bus clock - sun5i+ */
+ 	clk = clk_get(NULL, "mbus");
+-	if (!IS_ERR(clk)) {
++	if (!IS_ERR(clk))
+ 		clk_prepare_enable(clk);
+-		clk_put(clk);
+-	}
+ 
+ 	/* DDR clock - sun4i+ */
+ 	clk = clk_get(NULL, "pll5_ddr");
+-	if (!IS_ERR(clk)) {
++	if (!IS_ERR(clk))
+ 		clk_prepare_enable(clk);
+-		clk_put(clk);
+-	}
+ }
+ 
+ static void __init sunxi_init_clocks(void)
 -- 
-1.8.3.1
+1.9.0
 
