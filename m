@@ -1,144 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191AbaCMQR7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 12:17:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65216 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600AbaCMQR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 12:17:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,648,1389772800"; 
-   d="scan'208";a="471738511"
-From: Zhang Rui <rui.zhang@intel.com>
-To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH V2 0/13] ACPI: change the way of enumerating PNPACPI/Platform devices
-Date: Fri, 14 Mar 2014 00:16:40 +0800
-Message-Id: <1394727413-3587-1-git-send-email-rui.zhang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754776AbaCMQX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 12:23:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52244 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754443AbaCMQXX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 12:23:23 -0400
+Date: Thu, 13 Mar 2014 17:23:25 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Stefani Seibold <stefani@seibold.net>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] x86: Remove compat vdso support
+In-Reply-To: <CA+55aFyhS5jCWcxuK4bXKEPh+8HWbPE+gy1m4N9B-2HyT48+QA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1403131555590.18573@ionos.tec.linutronix.de>
+References: <f23ea19270122375e8d2efe0646bbe6101c451b4.1394499629.git.luto@amacapital.net> <CALCETrXd_7K2rc-JPDFtxQWE+ZURzY6qfOLR9DDtjp-nBG1Sgg@mail.gmail.com> <CA+55aFzPntnPHCbNa6PNdeKQmFBsF4JNu0BHix8LsP2ybYQ-Yg@mail.gmail.com>
+ <CALCETrXai1eS9FFC=EsxzSy51fMjgEh+zD6meDJiovLirPKf2Q@mail.gmail.com> <CA+55aFzB9jjOjxT=m=5t04L3JONe5HhEhuHUXtqDYREmEjQrgQ@mail.gmail.com> <531F365B.4060000@linux.intel.com> <CA+55aFxmkBnwDfKhX7h1qoJ3emD=+ugc3OLNDH79a1kGu7He1Q@mail.gmail.com>
+ <531F3D02.30706@linux.intel.com> <CALCETrXt5=N7U-f1i+oCkbF5xqc0Qn8U_C9B47grcuEagAhDEA@mail.gmail.com> <CALCETrWCXY-hwZh2U4QPp0YeeGuPXFUrUuCn7h-5H+TvdXEq5Q@mail.gmail.com> <CA+55aFz+OfvtXLxg4CA4C6GPGh8F_aDuG6nnFFCCBpjTPLP1zA@mail.gmail.com>
+ <1394613046.995.51.camel@wall-e.seibold.net> <CA+55aFyTCoipjhbAVCuhCgqb8JeSjGcmOU3xE6EFrjNpfspfqg@mail.gmail.com> <CA+55aFxc8Qp-4_+n=upd-ghzkxpjCyRpesm3P7xtWjDyBe9MCw@mail.gmail.com> <CA+55aFyhS5jCWcxuK4bXKEPh+8HWbPE+gy1m4N9B-2HyT48+QA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all,
+On Wed, 12 Mar 2014, Linus Torvalds wrote:
+> On Wed, Mar 12, 2014 at 8:46 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> >  - do *not* add the HPET/VVAR page games to the legacy case. Get rid
+> > of the remap_pfn_pages() games entirely.
+> 
+> .. actually, another approach would be to do the HPET/VVAR page games,
+> but make them non-legacy.
+> 
+> The reason I hate seeing those remap_pfn_range() things is because
+> it's nasty code for a legacy case that I think shouldn't have new code
+> written for it, especially when it won't get testing by developers.
+> 
+> So my reaction was "don't do that".
+> 
+> But people pointing out that we can't do what x86-64 does made me
+> think: we could avoid the whole "nasty code for a legacy case" by
+> making it the *non*-legacy case. We could get rid of the fixmap
+> HPET/VVAR entirely - on x86-64 (which can use those addresses) a
+> PC-relative addressing is probably actually better anyway, so mapping
+> them together with the vdso code shouldn't hurt.
+> 
+> That would remove my objections to doing all this stuff for a case
+> that developers won't see and use (the whole "It's dead, Jim"
+> objection) . And it would unify the 32-bit and 64-bit cases.
+>
+> Together with Andy's "remove legacy 32-bit fixmap vdso", I'd feel that
+> this is actually an _improvement_ to the current situation.
+> 
+> Would something like that be more acceptable to everybody?
 
-Currently, PNP bus is used as the default bus for for enumerating ACPI
-devices with _HID/_CID.
-For a device that needs to be enumerated to platform bus, we need to add
-its id string to the platform scan handler white list explicitly.
+Definitely yes.
 
-This becomes a problem as more and more _HID devices need to be
-enumerated to platform bus nowadays, thus the list is continuously growing.
+Thanks,
 
-So, a solution that uses platform bus for _HID enumeration by default
-is preferred.
+	tglx
 
-In order to do this, this patch set
-First (Patch 1~5), changes the way of enumerating PNP devices.
-We introduce a white list to create PNP devices instead. The white list contains
-all the pnp_device_id strings in all the pnp drivers, thus this change is
-transparent to PNP core and all the PNP drivers.
-Second (Patch 6~13), changes the code to enumerate ACPI _HID devices to platform
-bus by default, unless the device already has a scan handler attached.
 
-The patches of this patch set has been tested on my desktop machine,
-I can see that there are four PNP devices disappeared from PNP bus
-/sys/bus/pnp/devices/00:01/id:PNP0200
-/sys/bus/pnp/devices/00:02/id:INT0800
-/sys/bus/pnp/devices/00:03/id:PNP0103
-/sys/bus/pnp/devices/00:0a/id:PNP0c04
-and all of these devices have no associated drivers in kernel.
-
-At the same time there are 17 more platform devices created,
-/sys/bus/platform/devices/INT0800:00  
-/sys/bus/platform/devices/INT3F0D:00  
-/sys/bus/platform/devices/PNP0103:00  (HPET)
-/sys/bus/platform/devices/PNP0B00:00  (CMOS RTC)
-/sys/bus/platform/devices/PNP0C01:00  (system board)
-/sys/bus/platform/devices/PNP0C01:00  (system board)
-/sys/bus/platform/devices/PNP0C02:00  (General ID for reserving resources)
-/sys/bus/platform/devices/PNP0C02:01  (General ID for reserving resources)
-/sys/bus/platform/devices/PNP0C02:03  (General ID for reserving resources)
-/sys/bus/platform/devices/PNP0C04:00  (Numeric data processor?)
-/sys/bus/platform/devices/PNP0C0B:00  (ACPI fan)
-/sys/bus/platform/devices/PNP0C0B:01  (ACPI fan)
-/sys/bus/platform/devices/PNP0C0B:02  (ACPI fan)
-/sys/bus/platform/devices/PNP0C0B:03  (ACPI fan)
-/sys/bus/platform/devices/PNP0C0B:04  (ACPI fan)
-/sys/bus/platform/devices/PNP0C0D:00  (ACPI lid)
-/sys/bus/platform/devices/PNP0C14:00  (ACPI wmi)
-
-Clarification:
-Although it seems that we are introducing a much bigger white list to replace
-a small one, the benefit is that
-1. without the patch, the acpi_platform scan handler white list is
-   continuously growing.
-2. with the patch set, the PNPACPI scan handler white list will become
-   smaller and smaller by
-   a) remove the ids from the PNPACPI white list, for the devices
-      that are never enumerated via ACPI
-   b) remove the ids from the PNPACPI whilte list and convert the drivers to
-      platform bus drivers, for the devices that are not PNP devices in nature.
-   which will be done later.
-
-Known Issue:
-PNP bus does not check the device resources when adding a new PNP device,
-while Platform bus does by invoking insert_resource() in platform_device_add().
-This results in failure when creating platform device node for some ACPI
-device objects in case there is resource conflict.
-In my desktop, I can see that
-Creating PNP0200:00 (DMA controller) fails because its resource (IO: 0x81 ~ 0x91)
-conflicts with "0080-008f : dma page reg"
-and
-Creating PNP0C02:02 fails because its resource (IO: 0x72 ~ 0x7f)
-conflicts with "0070-0077 : PNP0B00:00" (CMOS RTC).
-
-thanks,
-rui
-
-----------------------------------------------------------------
-Changes from v1:
-1.move acpi pnp scan handler from drivers/pnp/pnpacpi/core.c to
-  drivers/acpi/acpi-pnp.c, because the scan handler needs to be always built
-  in to prevent platform devices from being created for those ACPI devices.
-2.remove the __init tag for the acpi pnp scan handler because the scan
-  handler is still needed after system initialization, for hotplug.
-3.introduce enumerable_id flag for devices that can be enumerated to platform
-  bus.
-4.introduce excluded id list for creating platform devices, because some
-  devices have _HID but they will never be associated with a platform driver.
-5.introduce dummy lpss/container/memory_hotplug scan handler to prevent
-  platform devices from being created for those ACPI device objects.
-
-----------------------------------------------------------------
-Zhang Rui (13):
-      ACPI: introduce .match() callback for ACPI scan handler
-      PNPACPI: use whilte list for pnpacpi device enumeration
-      PNPACPI: remove ids that does not comply with the ACPI PNP id rule
-      PNPACPI: remove unsupported serial PNP ids from acpi pnp scan handler id lsit
-      CPI: check and enumerate CMOS RTC devices explicitly
-      ACPI: introduce enumerable_id flag
-      ACPI: use platform bus as the default bus for _HID enumeration
-      ACPI: introduce dummy lpss scan handler
-      ACPI: introduce acpi platform exclude id list
-      Revert "ACPI / PNP: skip ACPI device nodes associated with physical nodes already"
-      ACPI: create both PNP and Platform device nodes for PNP0C01/PNP0C02
-      ACPI: introduce dummy container scan handler
-      ACPI: introduce dummy acpi memory hotplug scan handler
-
- drivers/acpi/Makefile          |    7 +-
- drivers/acpi/acpi_lpss.c       |   66 +++++--
- drivers/acpi/acpi_memhotplug.c |   43 +++--
- drivers/acpi/acpi_platform.c   |   38 ++--
- drivers/acpi/acpi_pnp.c        |  394 ++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/container.c       |   21 +++
- drivers/acpi/internal.h        |   15 +-
- drivers/acpi/scan.c            |   38 ++--
- drivers/pnp/pnpacpi/core.c     |   32 +---
- include/acpi/acpi_bus.h        |    4 +-
- include/linux/acpi.h           |    2 +
- 11 files changed, 544 insertions(+), 116 deletions(-)
- create mode 100644 drivers/acpi/acpi_pnp.c
 
