@@ -1,97 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163AbaCMPdR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:33:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46114 "EHLO mx1.redhat.com"
+	id S1754436AbaCMPeK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:34:10 -0400
+Received: from mail.efficios.com ([78.47.125.74]:56221 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753632AbaCMPdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:33:12 -0400
-Date: Thu, 13 Mar 2014 16:32:18 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1753785AbaCMPdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:33:14 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Davidlohr Bueso <davi@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] mm,vmacache: also flush cache for VM_CLONE
-Message-ID: <20140313153218.GA28278@redhat.com>
-References: <20140308184040.GA29602@redhat.com> <CA+55aFw88xiY+o5FE6VtHNkpUZDK3FPt31oCpNsgn1BH7wAPZw@mail.gmail.com> <20140308194405.GA32403@redhat.com> <CA+55aFzk=XtRFPQM4rGgTXj8AD2RLrm5pfAsKwGOZPHLgb+Ziw@mail.gmail.com> <20140309125710.GA1829@redhat.com> <CA+55aFxyGJFEz5NnHtK1wn8oDLy9n-CttttKL_0AM69gN8JzxQ@mail.gmail.com> <20140309170909.GA13335@redhat.com> <CA+55aFxEGj9poWNLAncvrrOTzjDtrwMnOM_d3ACqRkcvY86qHA@mail.gmail.com> <1394481375.3867.1.camel@buesod1.americas.hpqcorp.net> <20140313145941.GA26215@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140313145941.GA26215@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [RFC PATCH 1/3] Tracepoint cleanup: remove unused API functions
+Date: Thu, 13 Mar 2014 11:32:57 -0400
+Message-Id: <1394724779-17892-1-git-send-email-mathieu.desnoyers@efficios.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13, Oleg Nesterov wrote:
->
-> Yes. But it seems that use_mm() and unuse_mm() should invalidate vmacache too.
->
-> Suppose that a kernel thread T does, say,
->
-> 	use_mm(foreign_mm);
-> 	get_user(...);
-> 	unuse_mm();
->
-> This can trigger a fault and populate T->vmacache[]. If this code is called
-> again vmacache_find() can use the stale entries.
->
-> Or, assuming that only a kernel thread can do use_mm(), we can change
-> vmacache_valid() to also check !PF_KTHREAD.
+After the following commit:
 
-Yes, I think we should check PF_KTHREAD, because
+commit b75ef8b44b1cb95f5a26484b0e2fe37a63b12b44
+Author: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date:   Wed Aug 10 15:18:39 2011 -0400
 
-> Hmm. Another problem is that use_mm() doesn't take ->mmap_sem and thus
-> it can race with vmacache_flush_all()...
+    Tracepoint: Dissociate from module mutex
 
-this also closes this race. use_mm() users should not use vmacache at all.
+The following functions became unnecessary:
 
-> Finally. Shouldn't vmacache_update() check current->mm == mm as well?
-> What if access_remote_vm/get_user_pages trigger find_vma() ??? Unless
-> I missed something this is not theoretical at all and can lead to the
-> corrupted vmacache, no?
+- tracepoint_probe_register_noupdate,
+- tracepoint_probe_unregister_noupdate,
+- tracepoint_probe_update_all.
 
-Looks like a real problem or I am totally confused. I think we need
-something like below (uncompiled).
+In fact, none of the in-kernel tracers, nor LTTng, nor SystemTAP use
+them. Remove those.
 
-Oleg.
+Moreover, the functions:
 
---- x/mm/vmacache.c
-+++ x/mm/vmacache.c
-@@ -30,20 +30,24 @@ void vmacache_flush_all(struct mm_struct
- 	rcu_read_unlock();
- }
+- tracepoint_iter_start,
+- tracepoint_iter_next,
+- tracepoint_iter_stop,
+- tracepoint_iter_reset.
+
+are unused by in-kernel tracers, LTTng and SystemTAP. Remove those too.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Frank Ch. Eigler <fche@redhat.com>
+CC: Johannes Berg <johannes.berg@intel.com>
+---
+ include/linux/tracepoint.h |   18 -----
+ kernel/tracepoint.c        |  179 --------------------------------------------
+ 2 files changed, 197 deletions(-)
+
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index 7159a0a..812b255 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -48,12 +48,6 @@ extern int tracepoint_probe_register(const char *name, void *probe, void *data);
+ extern int
+ tracepoint_probe_unregister(const char *name, void *probe, void *data);
  
-+static bool vmacache_valid_mm(mm)
-+{
-+	return current->mm == mm && !(current->flags & PF_KTHREAD);
-+}
-+
- void vmacache_update(unsigned long addr, struct vm_area_struct *newvma)
- {
--	int idx = VMACACHE_HASH(addr);
--	current->vmacache[idx] = newvma;
-+	if (vmacache_valid_mm(newvma->vm_mm))
-+		current->vmacache[VMACACHE_HASH(addr)] = newvma;
- }
- 
- static bool vmacache_valid(struct mm_struct *mm)
- {
--	struct task_struct *curr = current;
+-extern int tracepoint_probe_register_noupdate(const char *name, void *probe,
+-					      void *data);
+-extern int tracepoint_probe_unregister_noupdate(const char *name, void *probe,
+-						void *data);
+-extern void tracepoint_probe_update_all(void);
 -
--	if (mm != curr->mm)
-+	if (!vmacache_valid_mm(mm))
- 		return false;
+ #ifdef CONFIG_MODULES
+ struct tp_module {
+ 	struct list_head list;
+@@ -68,18 +62,6 @@ static inline bool trace_module_has_bad_taint(struct module *mod)
+ }
+ #endif /* CONFIG_MODULES */
  
- 	if (mm->vmacache_seqnum != curr->vmacache_seqnum) {
-+		struct task_struct *curr = current;
- 		/*
- 		 * First attempt will always be invalid, initialize
- 		 * the new cache for this task here.
+-struct tracepoint_iter {
+-#ifdef CONFIG_MODULES
+-	struct tp_module *module;
+-#endif /* CONFIG_MODULES */
+-	struct tracepoint * const *tracepoint;
+-};
+-
+-extern void tracepoint_iter_start(struct tracepoint_iter *iter);
+-extern void tracepoint_iter_next(struct tracepoint_iter *iter);
+-extern void tracepoint_iter_stop(struct tracepoint_iter *iter);
+-extern void tracepoint_iter_reset(struct tracepoint_iter *iter);
+-
+ /*
+  * tracepoint_synchronize_unregister must be called between the last tracepoint
+  * probe unregistration and the end of module exit to make sure there is no
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index 031cc56..0faf2a4 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -451,185 +451,6 @@ static void tracepoint_add_old_probes(void *old)
+ 	}
+ }
+ 
+-/**
+- * tracepoint_probe_register_noupdate -  register a probe but not connect
+- * @name: tracepoint name
+- * @probe: probe handler
+- *
+- * caller must call tracepoint_probe_update_all()
+- */
+-int tracepoint_probe_register_noupdate(const char *name, void *probe,
+-				       void *data)
+-{
+-	struct tracepoint_func *old;
+-
+-	mutex_lock(&tracepoints_mutex);
+-	old = tracepoint_add_probe(name, probe, data);
+-	if (IS_ERR(old)) {
+-		mutex_unlock(&tracepoints_mutex);
+-		return PTR_ERR(old);
+-	}
+-	tracepoint_add_old_probes(old);
+-	mutex_unlock(&tracepoints_mutex);
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(tracepoint_probe_register_noupdate);
+-
+-/**
+- * tracepoint_probe_unregister_noupdate -  remove a probe but not disconnect
+- * @name: tracepoint name
+- * @probe: probe function pointer
+- *
+- * caller must call tracepoint_probe_update_all()
+- */
+-int tracepoint_probe_unregister_noupdate(const char *name, void *probe,
+-					 void *data)
+-{
+-	struct tracepoint_func *old;
+-
+-	mutex_lock(&tracepoints_mutex);
+-	old = tracepoint_remove_probe(name, probe, data);
+-	if (IS_ERR(old)) {
+-		mutex_unlock(&tracepoints_mutex);
+-		return PTR_ERR(old);
+-	}
+-	tracepoint_add_old_probes(old);
+-	mutex_unlock(&tracepoints_mutex);
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(tracepoint_probe_unregister_noupdate);
+-
+-/**
+- * tracepoint_probe_update_all -  update tracepoints
+- */
+-void tracepoint_probe_update_all(void)
+-{
+-	LIST_HEAD(release_probes);
+-	struct tp_probes *pos, *next;
+-
+-	mutex_lock(&tracepoints_mutex);
+-	if (!need_update) {
+-		mutex_unlock(&tracepoints_mutex);
+-		return;
+-	}
+-	if (!list_empty(&old_probes))
+-		list_replace_init(&old_probes, &release_probes);
+-	need_update = 0;
+-	tracepoint_update_probes();
+-	mutex_unlock(&tracepoints_mutex);
+-	list_for_each_entry_safe(pos, next, &release_probes, u.list) {
+-		list_del(&pos->u.list);
+-		call_rcu_sched(&pos->u.rcu, rcu_free_old_probes);
+-	}
+-}
+-EXPORT_SYMBOL_GPL(tracepoint_probe_update_all);
+-
+-/**
+- * tracepoint_get_iter_range - Get a next tracepoint iterator given a range.
+- * @tracepoint: current tracepoints (in), next tracepoint (out)
+- * @begin: beginning of the range
+- * @end: end of the range
+- *
+- * Returns whether a next tracepoint has been found (1) or not (0).
+- * Will return the first tracepoint in the range if the input tracepoint is
+- * NULL.
+- */
+-static int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
+-	struct tracepoint * const *begin, struct tracepoint * const *end)
+-{
+-	if (!*tracepoint && begin != end) {
+-		*tracepoint = begin;
+-		return 1;
+-	}
+-	if (*tracepoint >= begin && *tracepoint < end)
+-		return 1;
+-	return 0;
+-}
+-
+-#ifdef CONFIG_MODULES
+-static void tracepoint_get_iter(struct tracepoint_iter *iter)
+-{
+-	int found = 0;
+-	struct tp_module *iter_mod;
+-
+-	/* Core kernel tracepoints */
+-	if (!iter->module) {
+-		found = tracepoint_get_iter_range(&iter->tracepoint,
+-				__start___tracepoints_ptrs,
+-				__stop___tracepoints_ptrs);
+-		if (found)
+-			goto end;
+-	}
+-	/* Tracepoints in modules */
+-	mutex_lock(&tracepoints_mutex);
+-	list_for_each_entry(iter_mod, &tracepoint_module_list, list) {
+-		/*
+-		 * Sorted module list
+-		 */
+-		if (iter_mod < iter->module)
+-			continue;
+-		else if (iter_mod > iter->module)
+-			iter->tracepoint = NULL;
+-		found = tracepoint_get_iter_range(&iter->tracepoint,
+-			iter_mod->tracepoints_ptrs,
+-			iter_mod->tracepoints_ptrs
+-				+ iter_mod->num_tracepoints);
+-		if (found) {
+-			iter->module = iter_mod;
+-			break;
+-		}
+-	}
+-	mutex_unlock(&tracepoints_mutex);
+-end:
+-	if (!found)
+-		tracepoint_iter_reset(iter);
+-}
+-#else /* CONFIG_MODULES */
+-static void tracepoint_get_iter(struct tracepoint_iter *iter)
+-{
+-	int found = 0;
+-
+-	/* Core kernel tracepoints */
+-	found = tracepoint_get_iter_range(&iter->tracepoint,
+-			__start___tracepoints_ptrs,
+-			__stop___tracepoints_ptrs);
+-	if (!found)
+-		tracepoint_iter_reset(iter);
+-}
+-#endif /* CONFIG_MODULES */
+-
+-void tracepoint_iter_start(struct tracepoint_iter *iter)
+-{
+-	tracepoint_get_iter(iter);
+-}
+-EXPORT_SYMBOL_GPL(tracepoint_iter_start);
+-
+-void tracepoint_iter_next(struct tracepoint_iter *iter)
+-{
+-	iter->tracepoint++;
+-	/*
+-	 * iter->tracepoint may be invalid because we blindly incremented it.
+-	 * Make sure it is valid by marshalling on the tracepoints, getting the
+-	 * tracepoints from following modules if necessary.
+-	 */
+-	tracepoint_get_iter(iter);
+-}
+-EXPORT_SYMBOL_GPL(tracepoint_iter_next);
+-
+-void tracepoint_iter_stop(struct tracepoint_iter *iter)
+-{
+-}
+-EXPORT_SYMBOL_GPL(tracepoint_iter_stop);
+-
+-void tracepoint_iter_reset(struct tracepoint_iter *iter)
+-{
+-#ifdef CONFIG_MODULES
+-	iter->module = NULL;
+-#endif /* CONFIG_MODULES */
+-	iter->tracepoint = NULL;
+-}
+-EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
+-
+ #ifdef CONFIG_MODULES
+ bool trace_module_has_bad_taint(struct module *mod)
+ {
+-- 
+1.7.10.4
 
