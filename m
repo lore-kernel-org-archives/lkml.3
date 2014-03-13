@@ -1,98 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241AbaCMMGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 08:06:20 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:48212 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769AbaCMMGQ (ORCPT
+	id S1754281AbaCMMHe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 08:07:34 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:47543 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534AbaCMMHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 08:06:16 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2DC6ETd012677, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: [PATCH net-next v3 1/2] r8152: add RTL8152_EARLY_AGG_TIMEOUT_SUPER
-Date: Thu, 13 Mar 2014 20:05:41 +0800
-Message-ID: <1394712342-15778-2-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-1-Taiwan-albertk@realtek.com>
-References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com>
- <1394712342-15778-1-Taiwan-albertk@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+	Thu, 13 Mar 2014 08:07:32 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-8e-53219f829e3d
+Message-id: <53219F80.9000300@samsung.com>
+Date: Thu, 13 Mar 2014 13:07:28 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: Tushar Behera <tushar.behera@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v2 2/3] mfd: sec-core: Add of_compatible strings for MFD
+ cells
+References: <1394703425-6462-1-git-send-email-k.kozlowski@samsung.com>
+ <1394703425-6462-3-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1394703425-6462-3-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsVy+t/xy7pN8xWDDVZN4rTYOGM9q8XrF4YW
+	Z5vesFvc/3qU0WLT42usFpd3zWGzmHF+H5PF2iN32S2eTrjIZnHyTy+jxeluVouLK74wWbT/
+	3ctmMWf6OyYHPo871/awecw7GeixeUm9R9+WVYwenzfJBbBGcdmkpOZklqUW6dslcGVcmLWF
+	qWAzT8W6tzuYGhiPcnYxcnJICJhIHJ/5jhnCFpO4cG89WxcjF4eQwFJGiT0fF7KAJIQEPjNK
+	dE/nA7F5BbQk2r7/YgKxWQRUJa7dvgZmswmoSXxueMQGYosKREjMnbiZDaJeUOLH5HssIENF
+	BLYwSXRducoI4jALzGKSuLC5CaxbWCBEom3PeTaIbc2MEj//i4DYnALuErP7joHVMAtYS6yc
+	tI0RwpaX2LzmLfMERoFZSJbMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh
+	cfJ1B+PSY1aHGAU4GJV4eAOWKgQLsSaWFVfmHmKU4GBWEuFVm6MYLMSbklhZlVqUH19UmpNa
+	fIiRiYNTqoFx+lY2n38JSWze8lMm1N7M4w3bGeBv+MnLd+4d1/W/g55fWnU18lBwhtvWV89C
+	3V8kbpnYtPdTk84biSTZd+K5G9/6csiw8MvZX5SKqJi4UcGz1up/eJLfkul3X/6vMF90Yd3y
+	Tanp+kb/RDf7rzaeNNnu56kW46svUjbMEFNOf+E808WS/Qy3EktxRqKhFnNRcSIAkJE25XEC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For slow CPU, the frequent bulk transfer would cause poor throughput.
-One solution is to increase the timeout of the aggregation. It let
-the hw could complete the bulk transfer later and fill more packets
-into the buffer. Besides, it could reduce the frequency of the bulk
-transfer efficiently and improve the performance.
+Hi Krzysztof,
 
-However, the optimization value of the timeout depends on the
-capability of the hardware, especially the CPU. For example, according
-to the experiment, the timeout 164 us is better than the default
-value for the chromebook with the ARM CPU.
+On 13.03.2014 10:37, Krzysztof Kozlowski wrote:
+> Add of_compatible strings for MFD cells for regulator, clock and RTC
+> drivers in S5M8767, S2MPS11 and S2MPS14 PMIC-s.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>   drivers/mfd/sec-core.c |    8 ++++++++
+>   1 file changed, 8 insertions(+)
+>
+> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+> index d163c66edebb..c5b9b95b2099 100644
+> --- a/drivers/mfd/sec-core.c
+> +++ b/drivers/mfd/sec-core.c
+> @@ -55,28 +55,36 @@ static const struct mfd_cell s5m8763_devs[] = {
+>   static const struct mfd_cell s5m8767_devs[] = {
+>   	{
+>   		.name = "s5m8767-pmic",
+> +		.of_compatible = "samsung,s5m8767-regulators",
+>   	}, {
+>   		.name = "s5m-rtc",
+> +		.of_compatible = "samsung,s5m8767-rtc",
+>   	}, {
+>   		.name = "s5m8767-clk",
+> +		.of_compatible = "samsung,s5m8767-clk",
+>   	}
+>   };
+>
+>   static const struct mfd_cell s2mps11_devs[] = {
+>   	{
+>   		.name = "s2mps11-pmic",
+> +		.of_compatible = "samsung,s2mps11-regulators",
+>   	}, {
+>   		.name = "s2mps11-clk",
+> +		.of_compatible = "samsung,s2mps11-clk",
+>   	}
+>   };
+>
+>   static const struct mfd_cell s2mps14_devs[] = {
+>   	{
+>   		.name = "s2mps14-pmic",
+> +		.of_compatible = "samsung,s2mps14-regulators",
+>   	}, {
+>   		.name = "s2mps14-rtc",
+> +		.of_compatible = "samsung,s2mps14-rtc",
+>   	}, {
+>   		.name = "s2mps14-clk",
+> +		.of_compatible = "samsung,s2mps14-clk",
+>   	}
+>   };
 
-Now add RTL8152_EARLY_AGG_TIMEOUT_SUPER to let someone could choose
-desired timeout value if he wants to get the best performance.
+Are these compatible strings documented anywhere?
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/Kconfig | 12 ++++++++++++
- drivers/net/usb/r8152.c |  6 ++++--
- 2 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
-index 7e7269f..a8639b8 100644
---- a/drivers/net/usb/Kconfig
-+++ b/drivers/net/usb/Kconfig
-@@ -102,6 +102,18 @@ config USB_RTL8152
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called r8152.
- 
-+	menu "Aggregation Settings"
-+		depends on USB_RTL8152
-+
-+	config RTL8152_EARLY_AGG_TIMEOUT_SUPER
-+		int "rx early agg timeout for super speed (unit: us)"
-+		default 85
-+		help
-+		  This is the rx early agg timeout for USB super speed.
-+		  The vaild value is 1 ~ 525 us.
-+
-+	endmenu
-+
- config USB_USBNET
- 	tristate "Multi-purpose USB Networking Framework"
- 	select MII
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index aa1d5b2..756c0a6 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -316,7 +316,9 @@
- #define PCUT_STATUS		0x0001
- 
- /* USB_RX_EARLY_AGG */
--#define EARLY_AGG_SUPPER	0x0e832981
-+#define EARLY_AGG_SUPER	((((rx_buf_sz - 1522) / 4) << 16) | \
-+	(u32)(CONFIG_RTL8152_EARLY_AGG_TIMEOUT_SUPER <= 0 ? 85 * 125 : \
-+	min(CONFIG_RTL8152_EARLY_AGG_TIMEOUT_SUPER * 125, 0xffff)))
- #define EARLY_AGG_HIGH		0x0e837a12
- #define EARLY_AGG_SLOW		0x0e83ffff
- 
-@@ -1978,7 +1980,7 @@ static void r8153_set_rx_agg(struct r8152 *tp)
- 			ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_BUF_TH,
- 					RX_THR_SUPPER);
- 			ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_EARLY_AGG,
--					EARLY_AGG_SUPPER);
-+					EARLY_AGG_SUPER);
- 		} else {
- 			ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_BUF_TH,
- 					RX_THR_HIGH);
--- 
-1.8.4.2
-
+Best regards,
+Tomasz
