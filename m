@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaCMSRZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 14:17:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49142 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522AbaCMSRW (ORCPT
+	id S1754862AbaCMSRz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 14:17:55 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:58658 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754719AbaCMSRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 14:17:22 -0400
-Message-ID: <5321F62F.6040804@infradead.org>
-Date: Thu, 13 Mar 2014 11:17:19 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 13 Mar 2014 14:17:54 -0400
 MIME-Version: 1.0
-To: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-scsi <linux-scsi@vger.kernel.org>, qla2xxx-upstream@qlogic.com
-Subject: Re: mmotm 2014-03-12-16-04 uploaded (scsi/qla2xxx)
-References: <20140312230510.69CD831C078@corp2gmr1-1.hot.corp.google.com>
-In-Reply-To: <20140312230510.69CD831C078@corp2gmr1-1.hot.corp.google.com>
+Date: Thu, 13 Mar 2014 11:17:53 -0700
+Message-ID: <CAA344TGKAajYm5LxK4Cy=UUcErkaPCq9B=xpNLY5KuPws6p4Rw@mail.gmail.com>
+Subject: TI wlxx driver, #define collision for 'QURIKS'
+From: nat ersoz <natersoz@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2014 04:05 PM, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2014-03-12-16-04 has been uploaded to
-> 
->    http://www.ozlabs.org/~akpm/mmotm/
-> 
-> mmotm-readme.txt says
-> 
-> README for mm-of-the-moment:
-> 
-> http://www.ozlabs.org/~akpm/mmotm/
-> 
-> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> more than once a week.
-> 
-> You will need quilt to apply these patches to the latest Linus release (3.x
-> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-> http://ozlabs.org/~akpm/mmotm/series
-> 
-> The file broken-out.tar.gz contains two datestamp files: .DATE and
-> .DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-> followed by the base kernel version against which this patch series is to
-> be applied.
-> 
+Greetings Linux Wifi developers, TI wlxxx specifically.
 
-from linux-next:
+I noticed a symbol definitions 'collision' in the TI wl12xx device
+driver source code.
+My working kernel is 3.13.0-rc3, but this is true for 3.14.rc3 as well
+as the wireless-next branch.
+http://git.kernel.org/cgit/linux/kernel/git/linville/wireless-next.git/
 
-on i386:
+These quirks and conditions may (likely it seems) conflict:
 
-drivers/scsi/qla2xxx/qla_init.c:5295:7: warning: format '%lx' expects argument of type 'long unsigned int', but argument 5 has type 'uint32_t' [-Wformat]
-drivers/scsi/qla2xxx/qla_init.c:5562:6: warning: format '%lx' expects argument of type 'long unsigned int', but argument 5 has type 'int' [-Wformat]
-drivers/scsi/qla2xxx/qla_init.c:5597:7: warning: format '%lx' expects argument of type 'long unsigned int', but argument 5 has type 'uint32_t' [-Wformat]
-drivers/scsi/qla2xxx/qla_attr.c:162:6: warning: format '%lx' expects argument of type 'long unsigned int', but argument 6 has type 'size_t' [-Wformat]
-drivers/scsi/qla2xxx/qla_attr.c:203:7: warning: format '%lx' expects argument of type 'long unsigned int', but argument 5 has type 'size_t' [-Wformat]
-drivers/scsi/qla2xxx/qla_attr.c:207:6: warning: format '%lx' expects argument of type 'long unsigned int', but argument 6 has type 'size_t' [-Wformat]
+File: linux/include/wl12xx.h:
+#define WL12XX_PLATFORM_QUIRK_EDGE_IRQ    BIT(0)
 
+File: drivers/net/wireless/ti/wlcore/wlcore.h
+#define WLCORE_QUIRK_END_OF_TRANSACTION        BIT(0)
 
+I think this might be a problem in several scenarios. Thoughts?
+Please CC me in replies. I am not subscribed to LKML.
+If I'm wasting time or completely off base, please merely reply as
+such and I will slink away.
 
--- 
-~Randy
+Thanks,
+
+Nat Ersoz
+natersoz@gmail.com
+425-417-5182 (cell)
