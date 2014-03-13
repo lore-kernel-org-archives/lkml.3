@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103AbaCMTY0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 15:24:26 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41026 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216AbaCMTYZ (ORCPT
+	id S1754957AbaCMTc7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 15:32:59 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:42113 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499AbaCMTc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 15:24:25 -0400
-Date: Thu, 13 Mar 2014 19:24:17 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Thu, 13 Mar 2014 15:32:58 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Message-ID: <20140313192417.GK366@sirena.org.uk>
-References: <1394697961-4440-1-git-send-email-k.kozlowski@samsung.com>
- <20140313141317.GX366@sirena.org.uk>
- <1394721184.20773.15.camel@AMDC1943>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SDQiEKxzCZ35UpgS"
-Content-Disposition: inline
-In-Reply-To: <1394721184.20773.15.camel@AMDC1943>
-X-Cookie: Some assembly required.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: irq: Set data pointer only on
- regmap_add_irq_chip success
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Subject: next-20140313 - build error in e1000e driver
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1394739168_1654P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 13 Mar 2014 15:32:48 -0400
+Message-ID: <59774.1394739168@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--==_Exmh_1394739168_1654P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
---SDQiEKxzCZ35UpgS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+My kernel has CONFIG_PM_SLEEP=3Dn, which leads to hilarity...
 
-On Thu, Mar 13, 2014 at 03:33:04PM +0100, Krzysztof Kozlowski wrote:
+  CC      drivers/net/ethernet/intel/e1000e/netdev.o
+drivers/net/ethernet/intel/e1000e/netdev.c:7079:13: error: 'e1000e_pm_sus=
+pend' undeclared here (not in a function)
+  .suspend =3D e1000e_pm_suspend,
+             =5E
+drivers/net/ethernet/intel/e1000e/netdev.c:7080:13: error: 'e1000e_pm_res=
+ume' undeclared here (not in a function)
+  .resume  =3D e1000e_pm_resume,
+             =5E
+make=5B5=5D: *** =5Bdrivers/net/ethernet/intel/e1000e/netdev.o=5D Error 1=
 
-> Yes, you're right but still I think that 'data' should be set in a
-> atomic way - only if regmap_add_irq_chip() succeeds. Usually a caller
-> passing a pointer for allocation expects that one of:
-> 1. Allocation succeeds and it is put under passed pointer;
-> 2. Allocation fails and no one touches my pointer.
+make=5B4=5D: *** =5Bdrivers/net/ethernet/intel/e1000e=5D Error 2
+make=5B3=5D: *** =5Bdrivers/net/ethernet/intel=5D Error 2
+make=5B2=5D: *** =5Bdrivers/net/ethernet=5D Error 2
+make=5B1=5D: *** =5Bdrivers/net=5D Error 2
+make: *** =5Bdrivers=5D Error 2
 
-Yeah, I probably will apply it but on the other hand nothing should be
-relying on this - the caller is just plain buggy, it's not really even
-supposed to be aware of the existence of data in the first place and is
-doing the equivalent of a double free.
+Commit 38a529b5d4 claims to fix a related issue, but doesn't seem to do s=
+o correctly.
 
---SDQiEKxzCZ35UpgS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Author: Mika Westerberg <mika.westerberg=40linux.intel.com>
+Date:   Thu Jan 16 14:39:39 2014 +0200
+
+    e1000e: Fix compilation warning when =21CONFIG_PM_SLEEP
+   =20
+    Commit 7509963c703b (e1000e: Fix a compile flag mis-match for
+    suspend/resume) moved suspend and resume hooks to be available when
+    CONFIG_PM is set. However, it can be set even if CONFIG_PM_SLEEP is n=
+ot set
+    causing following warnings to be emitted:
+   =20
+    drivers/net/ethernet/intel/e1000e/netdev.c:6178:12: warning:
+        =E2=80=98e1000_suspend=E2=80=99 defined but not used =5B-Wunused-=
+function=5D
+   =20
+    drivers/net/ethernet/intel/e1000e/netdev.c:6185:12: warning:
+        =E2=80=98e1000_resume=E2=80=99 defined but not used =5B-Wunused-f=
+unction=5D
+
+
+
+--==_Exmh_1394739168_1654P
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
 
-iQIcBAEBAgAGBQJTIgXeAAoJELSic+t+oim9HDIP/3jmR+ZH4oPvXpu8QogrzuGa
-pTIXQHZDeAvT0mCpOPIpzhcRlFlg98qg5QkBjOea7EywJTpNh8c2emwbTFc8S0w+
-OccmWznSMPZfGi7ytnfWveBnJxzx3IF83o+d0PGdwd8C9qu7W+0eTxZnW0axV13r
-yrfGWRV3hx3c1WDObimfG0stc09S4ZGTBleVhx25VfdBuod6PU2aorFLw/g1wjnM
-s3njHCS68vdi4LV6jMiR/GboC0Ro3JebSZo28a4tudSkWWb1vvwNiUxDY9fhsIWR
-ZBX/baZtikgHNVm3k7c6cxezdtjxvyGXrtVbVvf9qerQdEwAsqqhpZkMN0jhdkZE
-jf2dMWCpTdK4nJR4jxMh+Vs3qUxEzcHR0ljKoONDywJMqVVEbd049iVsTH/YvDVE
-9Rx61/72+cutEDlnKz6npB9nLYUbxfx3XdkRXU+/U77NYdn69QbCs2Q8pYjYuW79
-HqSKOY4d5HWH8X52aOg4kJ/IE5Zq4FrPW8eQfaksnUZ0vCM0RDeKjNhZ0iz/cUbD
-5OFbpqQMIGtNEJJ5pmQod80PXw7OBEORGhmnCg/qDg6RXjI+mb+DWhj0kfVjXGSS
-Rbg8Em25Ds+xpHjYlNXMNqOcXR3hE1x4UjyiGdNOxfkv+Mn9g+mS2TWVmRBb3DFs
-bEyKVlPUB6sn5r6xQ7GP
-=pAz3
+iQIVAwUBUyIH4AdmEQWDXROgAQI+2BAAqK/1BppxvGY6/wAdKVGf4O9uEoDSPVvU
+wbsUQNqideiisVhsIw7vjoFmBLfMeMOSboxNd3ToJmxIQgaIReYhTynI3dCGaHAC
+yu+XhMRlVezgv8TGl5B4x3F4g9gV70HE7PQcO4/v8ndr6UzzOHgoqgn7LPjoRH87
+VvxKsS8kzubHjeV6mvBxFmxHwH1yV9J3O9E5qPw5lK0XamOWUdfv9M4RJV/u7L3x
+kk7QcsJRqNOR2Qu6VrsbPGfiNgKWWVjLXRyr+NTavTu2enWFzimyfa3JCfFIKIok
+8NSBH5RxbpucEhLsAnjXLlROQiysLDoaHoG2hOeDmb6bw016H3FiiqqCk5SWrqlO
+ACWQ3N3rjAxp052FjlcT6HtyjFDMoqA7owOAsH4Tbm4yy8BTl6g8NDaeKPmm/h1G
+jfyerOI/blsBfT41LyExzBBo7/1SoMnXwgAnrb6AtdowIpqkjohO2noNrXjHjgGs
+Ch0C7gYTUs8EIoHZ3CPhjwEj46IJHItGg3A2oJxVdzxTvrpsNzzWWBrrAxmEMz/0
+RteF5IjFdVpJ+A5g1MeLTzld+BRZyTBoXj7oYxnPLyfzE/syqTlLHpDMicoU5CcO
+/XZdVZnMjobnhqUfgrNBlzeTev9MUIEbGfRHkyzhNWrlyx/qc8gS2AgVB8qsvLyX
+Or/2xPdI5L4=
+=4iK+
 -----END PGP SIGNATURE-----
 
---SDQiEKxzCZ35UpgS--
+--==_Exmh_1394739168_1654P--
