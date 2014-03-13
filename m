@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478AbaCMNks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 09:40:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42554 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752410AbaCMNkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 09:40:45 -0400
-Message-ID: <5321B535.5040802@ti.com>
-Date: Thu, 13 Mar 2014 15:40:05 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753502AbaCMNlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 09:41:07 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46355 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823AbaCMNlE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 09:41:04 -0400
+Message-ID: <5321B56D.1030004@codeaurora.org>
+Date: Thu, 13 Mar 2014 09:41:01 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-CC: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "joelf@ti.com" <joelf@ti.com>, "Koul, Vinod" <vinod.koul@intel.com>,
-        "nsekhar@ti.com" <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jyri Sarha <jsarha@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Mark Brown <broonie@kernel.org>,
-        "mporter@linaro.org" <mporter@linaro.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Ingo Molnar <mingo@kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [alsa-devel] [PATCH 13/18] dma: edma: Print the direction value
- as well when it is not supported
-References: <1394702320-21743-1-git-send-email-peter.ujfalusi@ti.com> <1394702320-21743-14-git-send-email-peter.ujfalusi@ti.com> <1394715793.28803.240.camel@smile.fi.intel.com>
-In-Reply-To: <1394715793.28803.240.camel@smile.fi.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] arm64: Fix __addr_ok and __range_ok macros
+References: <1394059289-3972-1-git-send-email-cov@codeaurora.org> <20140313112019.GD30339@arm.com>
+In-Reply-To: <20140313112019.GD30339@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2014 03:03 PM, Shevchenko, Andriy wrote:
-> On Thu, 2014-03-13 at 11:18 +0200, Peter Ujfalusi wrote:
->> In case of not supported direction it is better to print the direction also.
->> It is unlikely, but in such an event it helps with the debugging.
->>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> ---
->>  drivers/dma/edma.c | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
->> index 47abaac7eb18..69dd4e3de67e 100644
->> --- a/drivers/dma/edma.c
->> +++ b/drivers/dma/edma.c
->> @@ -426,7 +426,7 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
->>  		dev_width = echan->cfg.dst_addr_width;
->>  		burst = echan->cfg.dst_maxburst;
->>  	} else {
->> -		dev_err(dev, "%s: bad direction?\n", __func__);
->> +		dev_err(dev, "%s: bad direction: %d\n", __func__, direction);
-> 
-> Is it possible to have direction less than zero? Maybe %u?
+Hi Catalin, Will,
 
-It is 'enum dma_transfer_direction direction'. %d should be fine.
+Thanks for your feedback. I must admit I'm out of my depth here, so I just
+posted what I had, hoping to solicit comments like what you all have kindly
+provided.
 
-> 
->>  		return NULL;
->>  	}
+On 03/13/2014 07:20 AM, Catalin Marinas wrote:
+> On Wed, Mar 05, 2014 at 10:41:28PM +0000, Christopher Covington wrote:
+>> --- a/arch/arm64/include/asm/uaccess.h
+>> +++ b/arch/arm64/include/asm/uaccess.h
+>> @@ -66,12 +66,12 @@ static inline void set_fs(mm_segment_t fs)
+>>  #define segment_eq(a,b)	((a) == (b))
 >>  
->> @@ -519,7 +519,7 @@ static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
->>  		dev_width = echan->cfg.dst_addr_width;
->>  		burst = echan->cfg.dst_maxburst;
->>  	} else {
->> -		dev_err(dev, "%s: bad direction?\n", __func__);
->> +		dev_err(dev, "%s: bad direction: %d\n", __func__, direction);
+>>  /*
+>> - * Return 1 if addr < current->addr_limit, 0 otherwise.
+>> + * Return 1 if addr <= current->addr_limit, 0 otherwise.
+>>   */
+>>  #define __addr_ok(addr)							\
+>>  ({									\
+>>  	unsigned long flag;						\
+>> -	asm("cmp %1, %0; cset %0, lo"					\
+>> +	asm("cmp %1, %0; cset %0, ls"					\
+>>  		: "=&r" (flag)						\
+>>  		: "r" (addr), "0" (current_thread_info()->addr_limit)	\
+>>  		: "cc");						\
 > 
-> Ditto.
-> 
->>  		return NULL;
->>  	}
->>  
-> 
-> 
+> As Will said, this doesn't look right. Why do you need TASK_SIZE_64 to
+> be valid?
 
+I didn't encounter a case where this was necessary. I was just wondering if a
+change was needed for one macro, might it be needed for another? I'm now
+convinced that the answer is no.
+
+>> @@ -83,7 +83,7 @@ static inline void set_fs(mm_segment_t fs)
+>>   * Returns 1 if the range is valid, 0 otherwise.
+>>   *
+>>   * This is equivalent to the following test:
+>> - * (u65)addr + (u65)size < (u65)current->addr_limit
+>> + * (u65)addr + (u65)size <= current->addr_limit
+>>   *
+>>   * This needs 65-bit arithmetic.
+>>   */
+>> @@ -91,7 +91,7 @@ static inline void set_fs(mm_segment_t fs)
+>>  ({									\
+>>  	unsigned long flag, roksum;					\
+>>  	__chk_user_ptr(addr);						\
+>> -	asm("adds %1, %1, %3; ccmp %1, %4, #2, cc; cset %0, cc"		\
+>> +	asm("adds %1, %1, %3; ccmp %1, %4, #3, cc; cset %0, ls"		\
+>>  		: "=&r" (flag), "=&r" (roksum)				\
+>>  		: "1" (addr), "Ir" (size),				\
+>>  		  "r" (current_thread_info()->addr_limit)		\
+> 
+> Just trying to understand: if adds does not set the C flag, we go on and
+> do the ccmp. If addr + size <= addr_limit, "cset ls" sets the flag
+> variable. If addr + size actually sets the C flag, we need to make sure
+> that "cset ls" doesn't trigger, which would mean to set C flag and clear
+> Z flag. So why do you change the ccmp flags from #2 to #3? It looks to
+> me like #2 is enough.
+
+#2 is indeed sufficient. I'll respin using it.
+
+I think Will's suggested approach could also work but I figure since I've
+taken the time to understand the assembly I might as well fix the problem
+there rather than adding another step in the calculation for developers and
+compilers to parse. (I don't know if this code is performance critical, but I
+nevertheless wanted to see how the compiler handled Will's approach.
+Unfortunately my initial implementation resulted in unaligned opcode errors
+and I haven't yet dug in.)
+
+Thanks,
+Christopher
 
 -- 
-Péter
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
