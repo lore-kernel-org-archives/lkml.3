@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957AbaCMPHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:07:06 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56647 "EHLO
+	id S1754082AbaCMPHP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:07:15 -0400
+Received: from relay.parallels.com ([195.214.232.42]:56806 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753698AbaCMPG6 (ORCPT
+	with ESMTP id S1753787AbaCMPHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:06:58 -0400
+	Thu, 13 Mar 2014 11:07:07 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [PATCH RESEND -mm 04/12] memcg: move slab caches list/mutex init to memcg creation
-Date: Thu, 13 Mar 2014 19:06:42 +0400
-Message-ID: <0da16031316cf06d622e891f4afc8740c478d674.1394708827.git.vdavydov@parallels.com>
+        <devel@openvz.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH RESEND -mm 08/12] memcg: do not charge kmalloc_large allocations
+Date: Thu, 13 Mar 2014 19:06:46 +0400
+Message-ID: <a53def838a3b3648f471aef9e9862cbb68ecedb3.1394708827.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1394708827.git.vdavydov@parallels.com>
 References: <cover.1394708827.git.vdavydov@parallels.com>
@@ -25,40 +26,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I need them initialized for cgroups that haven't got kmem accounting
-initialized.
+We don't have a way to track kmalloc_large allocations so that charging
+them makes kmemcg reparenting impossible. Since such allocations are
+rare and can't be massively triggered from userspace, let's just ignore
+them.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Glauber Costa <glommer@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Pekka Enberg <penberg@kernel.org>
 ---
- mm/memcontrol.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/linux/slab.h |    2 +-
+ mm/slub.c            |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 21974ec406bb..3659d90d5a40 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5043,8 +5043,6 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
- 		goto out_rmid;
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 8091d009cd72..29dbf6f2fd3a 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -364,7 +364,7 @@ kmalloc_order(size_t size, gfp_t flags, unsigned int order)
+ {
+ 	void *ret;
  
- 	memcg->kmemcg_id = memcg_id;
--	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
--	mutex_init(&memcg->slab_caches_mutex);
+-	flags |= (__GFP_COMP | __GFP_KMEMCG);
++	flags |= __GFP_COMP;
+ 	ret = (void *) __get_free_pages(flags, order);
+ 	kmemleak_alloc(ret, size, 1, flags);
+ 	return ret;
+diff --git a/mm/slub.c b/mm/slub.c
+index bd75ec0e2ef8..3ea91fb54f41 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3334,7 +3334,7 @@ static void *kmalloc_large_node(size_t size, gfp_t flags, int node)
+ 	struct page *page;
+ 	void *ptr = NULL;
  
- 	/*
- 	 * We couldn't have accounted to this cgroup, because it hasn't got the
-@@ -5791,6 +5789,9 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- 	int ret;
- 
- 	memcg->kmemcg_id = -1;
-+	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
-+	mutex_init(&memcg->slab_caches_mutex);
-+
- 	ret = memcg_propagate_kmem(memcg);
- 	if (ret)
- 		return ret;
+-	flags |= __GFP_COMP | __GFP_NOTRACK | __GFP_KMEMCG;
++	flags |= __GFP_COMP | __GFP_NOTRACK;
+ 	page = alloc_pages_node(node, flags, get_order(size));
+ 	if (page)
+ 		ptr = page_address(page);
+@@ -3404,7 +3404,7 @@ void kfree(const void *x)
+ 	if (unlikely(!PageSlab(page))) {
+ 		BUG_ON(!PageCompound(page));
+ 		kfree_hook(x);
+-		__free_memcg_kmem_pages(page, compound_order(page));
++		__free_pages(page, compound_order(page));
+ 		return;
+ 	}
+ 	slab_free(page->slab_cache, page, object, _RET_IP_);
 -- 
 1.7.10.4
 
