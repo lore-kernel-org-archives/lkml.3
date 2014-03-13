@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaCMO0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 10:26:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60455 "EHLO mx1.redhat.com"
+	id S1753537AbaCMO0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 10:26:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38156 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753324AbaCMO0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 10:26:20 -0400
+	id S1753439AbaCMO0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 10:26:25 -0400
 From: Igor Mammedov <imammedo@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, imammedo@redhat.com,
         bp@suse.de, paul.gortmaker@windriver.com, JBeulich@suse.com,
         prarit@redhat.com, drjones@redhat.com, toshi.kani@hp.com,
         x86@kernel.org, riel@redhat.com, gong.chen@linux.intel.com
-Subject: [PATCH 2/3] x86: halt secondary CPU if master doesn't wait on it
-Date: Thu, 13 Mar 2014 15:25:19 +0100
-Message-Id: <1394720720-8484-3-git-send-email-imammedo@redhat.com>
+Subject: [PATCH 3/3] x86: cleanup not needed cpu_initialized_mask
+Date: Thu, 13 Mar 2014 15:25:20 +0100
+Message-Id: <1394720720-8484-4-git-send-email-imammedo@redhat.com>
 In-Reply-To: <1394720720-8484-1-git-send-email-imammedo@redhat.com>
 References: <1394720720-8484-1-git-send-email-imammedo@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if during CPU hotplug master CPU had errors during
-sending AP wake up IPIs, it fails hotplug operation.
-But AP might start and spin on never set
-cpu_callout_mask indefinitely, consuming power or
-host VCPU resources needlessly.
+cpu_initialized_mask is used in cpu_init() for detecting
+if AP has been already started. But now test could never
+return true since master CPU doesn't give up waiting on
+AP startup and native_cpu_up() checks for:
 
-On the other hand, master CPU marks AP with
-BAD_APICID if hotplug attempt failed, so use this
-fact to halt CPU to avoid needless spinning.
+ physid_isset(apicid, phys_cpu_present_map) &&
+ cpu_callin_mask
+
+so that it would not attempt to call do_boot_cpu() on
+already started AP.
+And since cpu_initialized_mask isn't used for anything
+else just remove it altogether.
 
 Signed-off-by: Igor Mammedov <imammedo@redhat.com>
 ---
- arch/x86/kernel/cpu/common.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/cpumask.h |    1 -
+ arch/x86/kernel/cpu/common.c   |   11 -----------
+ arch/x86/kernel/smpboot.c      |    2 --
+ 3 files changed, 0 insertions(+), 14 deletions(-)
 
+diff --git a/arch/x86/include/asm/cpumask.h b/arch/x86/include/asm/cpumask.h
+index 61c852f..c64c5f5 100644
+--- a/arch/x86/include/asm/cpumask.h
++++ b/arch/x86/include/asm/cpumask.h
+@@ -5,7 +5,6 @@
+ 
+ extern cpumask_var_t cpu_callin_mask;
+ extern cpumask_var_t cpu_callout_mask;
+-extern cpumask_var_t cpu_initialized_mask;
+ extern cpumask_var_t cpu_sibling_setup_mask;
+ 
+ extern void setup_cpu_local_masks(void);
 diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index e048e87..9f07b8e 100644
+index 9f07b8e..d1382f9 100644
 --- a/arch/x86/kernel/cpu/common.c
 +++ b/arch/x86/kernel/cpu/common.c
-@@ -1242,8 +1242,11 @@ void cpu_init(void)
- 	 * wait till the master CPU completes it's STARTUP sequence,
- 	 * and decides to wait till this AP boots
- 	 */
--	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-+	while (!cpumask_test_cpu(cpu, cpu_callout_mask)) {
- 		cpu_relax();
-+		if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID)
-+			halt();
-+	}
+@@ -47,7 +47,6 @@
+ #include "cpu.h"
  
- 	/*
- 	 * Load microcode on this cpu if a valid microcode is available.
-@@ -1345,8 +1348,11 @@ void cpu_init(void)
- 	 * wait till the master CPU completes it's STARTUP sequence,
- 	 * and decides to wait till this AP boots
- 	 */
--	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-+	while (!cpumask_test_cpu(cpu, cpu_callout_mask)) {
- 		cpu_relax();
-+		if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID)
-+			halt();
-+	}
+ /* all of these masks are initialized in setup_cpu_local_masks() */
+-cpumask_var_t cpu_initialized_mask;
+ cpumask_var_t cpu_callout_mask;
+ cpumask_var_t cpu_callin_mask;
  
+@@ -57,7 +56,6 @@ cpumask_var_t cpu_sibling_setup_mask;
+ /* correctly size the local cpu masks */
+ void __init setup_cpu_local_masks(void)
+ {
+-	alloc_bootmem_cpumask_var(&cpu_initialized_mask);
+ 	alloc_bootmem_cpumask_var(&cpu_callin_mask);
+ 	alloc_bootmem_cpumask_var(&cpu_callout_mask);
+ 	alloc_bootmem_cpumask_var(&cpu_sibling_setup_mask);
+@@ -1265,9 +1263,6 @@ void cpu_init(void)
+ 
+ 	me = current;
+ 
+-	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
+-		panic("CPU#%d already initialized!\n", cpu);
+-
+ 	pr_debug("Initializing CPU#%d\n", cpu);
+ 
+ 	clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
+@@ -1357,12 +1352,6 @@ void cpu_init(void)
  
  	show_ucode_info_early();
+ 
+-	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
+-		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
+-		for (;;)
+-			local_irq_enable();
+-	}
+-
+ 	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
+ 
+ 	if (cpu_has_vme || cpu_has_tsc || cpu_has_de)
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 8bf67bd..803f658 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1237,8 +1237,6 @@ static void __ref remove_cpu_from_maps(int cpu)
+ 	set_cpu_online(cpu, false);
+ 	cpumask_clear_cpu(cpu, cpu_callout_mask);
+ 	cpumask_clear_cpu(cpu, cpu_callin_mask);
+-	/* was set by cpu_init() */
+-	cpumask_clear_cpu(cpu, cpu_initialized_mask);
+ 	numa_remove_cpu(cpu);
+ }
+ 
 -- 
 1.7.1
 
