@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaCMJBF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 05:01:05 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:51282 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389AbaCMJAY (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Thu, 13 Mar 2014 05:00:24 -0400
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-From: joeyli <jlee@suse.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        John Stultz <john.stultz@linaro.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1403130905130.18573@ionos.tec.linutronix.de>
-References: <20140310110410.5b2218f6@ilfaris>
-	 <alpine.DEB.2.02.1403121722030.18573@ionos.tec.linutronix.de>
-	 <alpine.DEB.2.02.1403121729060.18573@ionos.tec.linutronix.de>
-	 <1554867.utJVyPuT6A@vostro.rjw.lan>
-	 <alpine.DEB.2.02.1403130049500.18573@ionos.tec.linutronix.de>
-	 <1394678307.26565.218.camel@linux-s257.site>  <532121D2.40805@zytor.com>
-	 <1394682954.26565.228.camel@linux-s257.site>  <53212D14.1090906@zytor.com>
-	 <1394683958.26565.235.camel@linux-s257.site>
-	 <alpine.DEB.2.02.1403130905130.18573@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Mar 2014 16:59:34 +0800
-Message-ID: <1394701174.26565.246.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1753449AbaCMJF6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 05:05:58 -0400
+Received: from mail.fireflyinternet.com ([87.106.93.118]:58375 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753192AbaCMJFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 05:05:55 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+Date: Thu, 13 Mar 2014 09:05:49 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: WARN_ON() and X session lost from i915 on 3.14-rc6
+Message-ID: <20140313090549.GA8998@nuc-i3427.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Pavel Machek <pavel@ucw.cz>, daniel.vetter@ffwll.ch,
+	jani.nikula@linux.intel.com, intel-gfx@lists.freedesktop.org,
+	dri-devel@lists.freedesktop.org,
+	kernel list <linux-kernel@vger.kernel.org>
+References: <20140312233039.GA5582@amd.pavel.ucw.cz>
+ <20140312235209.GA4615@nuc-i3427.alporthouse.com>
+ <20140313084002.GB8902@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140313084002.GB8902@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 四，2014-03-13 於 09:12 +0100，Thomas Gleixner 提到：
-> On Thu, 13 Mar 2014, joeyli wrote:
-> > 於 三，2014-03-12 於 20:59 -0700，H. Peter Anvin 提到：
-> > > On 03/12/2014 08:55 PM, joeyli wrote:
-> > > > 
-> > > > So do not care "CMOS RTC Not Present", if TAD is present then we use it
-> > > > instead of CMOS RTC in all kernel code? or we still can use CMOS RTC?
-> > > > 
+On Thu, Mar 13, 2014 at 09:40:02AM +0100, Pavel Machek wrote:
+> On Wed 2014-03-12 23:52:09, Chris Wilson wrote:
+> > On Thu, Mar 13, 2014 at 12:30:39AM +0100, Pavel Machek wrote:
+> > > Hi!
 > > > 
-> > > Why would we use *both*!?  How would that possibly make sense?
+> > > This cost me two half-written mails...
 > > > 
-> > > 	-hpa
-> > > 
+> > > So far it happened once, so it may be very infrequent; but I do not
+> > > think I seen similar failure from i915 before, so it may be an
+> > > regression. Well...
 > > 
-> > Yes, it does not make sense for using both.
-> > 
-> > I switched the code in get_rtc_time() set_rtc_time() to TAD when it
-> > present, just make sure I'm on the right path.
+> > It's a userspace use-after-free bug. Please file a bug on
+> > bugs.freedesktop.org.
 > 
-> No, you're not. get/set_rtc_time() is a complete trainwreck and as I
-> said before it should move into the rtc subsystem.
-> 
-> There is no reason at all to keep that stuff in the arch specific
-> code. It's there for historical reasons and that does not justify to
-> add more mess to it.
+> Could we get some better messages from the kernel? Userspace should
+> not be able to produce WARN_ON()s.
 
-Fully understand now. Thanks for your explanation.
+Indeed, we have already pruned those errors and WARNs, in favour of a
+real error code, precisely because they are user triggerable.
+ 
+> (This is debian 6.0.8; do you think it is worth reporting? I don't
+> think I should go to bugs.freedesktop.org...)
 
-> 
-> So the right thing to do is:
-> 
->  1) Add eventually missing functionality to the RTC subsystem  
-> 
->  2) Move the arch specific cmos stuff to the rtc subsystem as proper
->     drivers 
-> 
->  3) Add TAD there after #2 has been completed.
-> 
-> Any attempt to add TAD to arch/x86 is NACKed unconditionally.
-> 
-> Thanks,
-> 
-> 	tglx
+I guess your userspace is roughly xf86-video-intel-2.17 and friends.
+Quite a few changes since then, but I've forgotten if this bug was ever
+addressed explicitly. Most likely it has been...
+-Chris
 
-Does there have any people already start the work of #1 and #2? 
-
-
-Thanks
-Joey Lee
-
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
