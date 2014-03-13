@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007AbaCMBsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 21:48:08 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:50924 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802AbaCMBsF (ORCPT
+	id S1753054AbaCMBsL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 21:48:11 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:39618 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013AbaCMBsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 21:48:05 -0400
-Date: Thu, 13 Mar 2014 10:48:03 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-serial@vger.kernel.org, Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: Re: [PATCH] serial: sh-sci: Neaten dev_<level> uses
-Message-ID: <20140313014803.GP25813@verge.net.au>
-References: <1394532680-4264-1-git-send-email-geert@linux-m68k.org>
- <1394548060.21085.45.camel@joe-AO722>
- <1394557846.21085.54.camel@joe-AO722>
- <CAMuHMdXkLkMOhoiqJ8cxZMUm6SnaxC5WV=a2w=bv1=KW6nyqwQ@mail.gmail.com>
+	Wed, 12 Mar 2014 21:48:09 -0400
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Frank Mayhar <fmayhar@google.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: [PATCH] block:  Force sector and nr_sects to device alignment and granularity.
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1394474492.31499.177.camel@bobble.lax.corp.google.com>
+	<x49wqg0bwb4.fsf@segfault.boston.devel.redhat.com>
+	<1394553778.31499.180.camel@bobble.lax.corp.google.com>
+	<x491ty71dox.fsf@segfault.boston.devel.redhat.com>
+Date: Wed, 12 Mar 2014 21:47:59 -0400
+In-Reply-To: <x491ty71dox.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
+	message of "Wed, 12 Mar 2014 14:20:30 -0400")
+Message-ID: <yq1d2hq27jk.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdXkLkMOhoiqJ8cxZMUm6SnaxC5WV=a2w=bv1=KW6nyqwQ@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 07:55:50PM +0100, Geert Uytterhoeven wrote:
-> Hi Joe,
-> 
-> On Tue, Mar 11, 2014 at 6:10 PM, Joe Perches <joe@perches.com> wrote:
-> > Add missing newlines and coalesce formats.
-> > Realign arguments.
-> 
-> Thanks!
-> 
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> 
-> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>>>>> "Jeff" == Jeff Moyer <jmoyer@redhat.com> writes:
 
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
+>> The case that we were seeing was with an SSD that required TRIM on 8k
+>> boundaries and with an 8k granularity.  Since the file system was
+>> trying to do discards based on 4k alignment the driver complained
+>> mightily.
 
-Greg, could you pick up this one too?
+Jeff> but you managed to read my mind well enough.  The question is how
+Jeff> high up the stack do you put the logic for this?  Is it worth it
+Jeff> to duplicate the checks in the OS that are already done on the
+Jeff> device?  I don't know.  Martin, do you have an opinion on this?
 
+I'm no big fan of dropping information.
+
+My original intent with the discard granularity and alignment was to
+allow filesystems to use them to influence block allocation and layout.
+Not to affect how we issue commands at runtime.
+
+Since a storage device is free to ignore all or parts of any discard
+request I'd consider it somewhat broken if it actually complained.
+Especially so since the relevant knobs in the standard that we key off
+of are performance recommendations and not requirements that commands
+must adhere to.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
