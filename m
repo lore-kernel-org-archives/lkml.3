@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173AbaCME3s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 00:29:48 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46008 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaCME3k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 00:29:40 -0400
-Date: Thu, 13 Mar 2014 04:29:34 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: NeilBrown <neilb@suse.de>
+	id S1751112AbaCMEik (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 00:38:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:44388 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750754AbaCMEii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 00:38:38 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Kees Cook <keescook@chromium.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] fs: fix i_writecount on shmem and friends
-Message-ID: <20140313042934.GM18016@ZenIV.linux.org.uk>
-References: <1393859798-1407-1-git-send-email-dh.herrmann@gmail.com>
- <CA+55aFwzBoTc+09jZTGjfTQTfkgZwrN5m09snb+F9inLaDn0OA@mail.gmail.com>
- <20140312181925.GK18016@ZenIV.linux.org.uk>
- <20140313150800.07878c80@notabene.brown>
+        Andrew Honig <ahonig@google.com>, Michal Marek <mmarek@suse.cz>,
+        "x86\@kernel.org" <x86@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] kallsyms: handle special absolute symbols
+In-Reply-To: <CAGXu5j+Zto=D_UYgn6DLVcOQyB_8sAs86masY8iuDTU5ZEZ8OQ@mail.gmail.com>
+References: <1394240425-11647-1-git-send-email-keescook@chromium.org> <1394240425-11647-3-git-send-email-keescook@chromium.org> <CAGXu5j+QoHH004usCiCfJU6DPQFnQ2gt3P4GDLS7Gx8Tz_gK+A@mail.gmail.com> <87y50fuei5.fsf@rustcorp.com.au> <CAGXu5j+Zto=D_UYgn6DLVcOQyB_8sAs86masY8iuDTU5ZEZ8OQ@mail.gmail.com>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Thu, 13 Mar 2014 14:10:35 +1030
+Message-ID: <87lhwevk98.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140313150800.07878c80@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 03:08:00PM +1100, NeilBrown wrote:
-> +		inode = mddev->bitmap_info.file->f_mapping->host;
-> +		if (!S_ISREG(inode->i_mode)) {
-> +			printk(KERN_ERR "%s: error: bitmap file must be a regular file\n",
-> +			       mdname(mddev));
-> +			fput(mddev->bitmap_info.file);
-> +			mddev->bitmap_info.file = NULL;
-> +			return -EBADF;
-> +		}
-> +		if (atomic_read(&inode->i_writecount) != 1) {
+Kees Cook <keescook@chromium.org> writes:
+> Why not just do this with 0-base-address detection like my v2? That
+> would mean we don't need to remember to add this flag in the future to
+> imagined new architectures that might want this 0-based per_cpu
+> feature.
 
-Umm...  I think you ought to check more than that.  At the very least you
-want to check that you have it opened for write - you don't want e.g.
-a filesystem containing that puppy remounted r/o under you.  Another thing
-is, what happens if it's not a buffer cache backed one?  Hell, what happens
-if it's a file on NFS?  You are relying on bmap() working, right?  So it
-looks like you ought to check if ->bmap() is there.  And I really wonder
-how well does it play with journalling fs...
+Because future architectures will get this right and emit absolute
+symbols.  I hope!
+
+I'm swamped at the moment, but am hoping to investigate that for
+x86-64.  This is a stop-gap.
+
+Cheers,
+Rusty.
