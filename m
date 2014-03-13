@@ -1,268 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbaCMAkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 20:40:40 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:63283 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaCMAkh (ORCPT
+	id S1752558AbaCMAtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 20:49:12 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:26832 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751574AbaCMAtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 20:40:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <87y50fuei5.fsf@rustcorp.com.au>
-References: <1394240425-11647-1-git-send-email-keescook@chromium.org>
-	<1394240425-11647-3-git-send-email-keescook@chromium.org>
-	<CAGXu5j+QoHH004usCiCfJU6DPQFnQ2gt3P4GDLS7Gx8Tz_gK+A@mail.gmail.com>
-	<87y50fuei5.fsf@rustcorp.com.au>
-Date: Wed, 12 Mar 2014 17:40:36 -0700
-X-Google-Sender-Auth: gOPWIoYZskV_f6ny0Ze8NVthUec
-Message-ID: <CAGXu5j+Zto=D_UYgn6DLVcOQyB_8sAs86masY8iuDTU5ZEZ8OQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] kallsyms: handle special absolute symbols
-From: Kees Cook <keescook@chromium.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	Wed, 12 Mar 2014 20:49:11 -0400
+Date: Wed, 12 Mar 2014 20:49:07 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Honig <ahonig@google.com>, Michal Marek <mmarek@suse.cz>,
-        "x86@kernel.org" <x86@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Johannes Berg <johannes.berg@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lttng-dev <lttng-dev@lists.lttng.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
+ set via debugfs
+Message-ID: <20140312204907.6b8d402c@gandalf.local.home>
+In-Reply-To: <1177120325.1928.1394653861180.JavaMail.zimbra@efficios.com>
+References: <20140307150920.881849073@goodmis.org>
+	<20140312114611.43547df7@gandalf.local.home>
+	<437054772.1403.1394640336308.JavaMail.zimbra@efficios.com>
+	<20140312121813.1e0102aa@gandalf.local.home>
+	<285520930.1511.1394642395537.JavaMail.zimbra@efficios.com>
+	<20140312135059.2d497b58@gandalf.local.home>
+	<1906756968.1732.1394650035535.JavaMail.zimbra@efficios.com>
+	<20140312145802.4819511e@gandalf.local.home>
+	<1177120325.1928.1394653861180.JavaMail.zimbra@efficios.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 5:30 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Kees Cook <keescook@chromium.org> writes:
->> On Fri, Mar 7, 2014 at 5:00 PM, Kees Cook <keescook@chromium.org> wrote:
->>> This forces the entire per_cpu range to be reported as absolute
->>> without losing their linker symbol types, when the per_cpu area is
->>> 0-based. Without this, the variables are incorrectly shown as relocated
->>> under kASLR on x86_64.
->>>
->>> Several kallsyms output in different boot states for comparison of
->>> various symbols:
->>>
->>> $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.nokaslr
->>> 0000000000000000 D __per_cpu_start
->>> 0000000000004000 D gdt_page
->>> 0000000000014280 D __per_cpu_end
->>> ffffffff810001c8 T _stext
->>> ffffffff81ee53c0 D __per_cpu_offset
->>> $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr1
->>> 000000001f200000 D __per_cpu_start
->>> 000000001f204000 D gdt_page
->>> 000000001f214280 D __per_cpu_end
->>> ffffffffa02001c8 T _stext
->>> ffffffffa10e53c0 D __per_cpu_offset
->>> $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr2
->>> 000000000d400000 D __per_cpu_start
->>> 000000000d404000 D gdt_page
->>> 000000000d414280 D __per_cpu_end
->>> ffffffff8e4001c8 T _stext
->>> ffffffff8f2e53c0 D __per_cpu_offset
->>> $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr-fixed
->>> 0000000000000000 D __per_cpu_start
->>> 0000000000004000 D gdt_page
->>> 0000000000014280 D __per_cpu_end
->>> ffffffffadc001c8 T _stext
->>> ffffffffaeae53c0 D __per_cpu_offset
->>>
->>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>> ---
->>> v2:
->>>  - only force absolute when per_cpu starts at 0.
->>> ---
->>>  scripts/kallsyms.c |   20 +++++++++++++++++++-
->>>  1 file changed, 19 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
->>> index 08f30ac5b07d..d3f93b8eb277 100644
->>> --- a/scripts/kallsyms.c
->>> +++ b/scripts/kallsyms.c
->>> @@ -34,6 +34,7 @@ struct sym_entry {
->>>         unsigned int len;
->>>         unsigned int start_pos;
->>>         unsigned char *sym;
->>> +       int force_absolute;
->>>  };
->>>
->>>  struct addr_range {
->>> @@ -51,6 +52,14 @@ static struct addr_range text_ranges[] = {
->>>  #define text_range_text     (&text_ranges[0])
->>>  #define text_range_inittext (&text_ranges[1])
->>>
->>> +/*
->>> + * Variables in these ranges, when the start is 0 based, will be forced to
->>> + * be handled as absolute addresses.
->>> + */
->>> +static struct addr_range abs_ranges[] = {
->>> +       { "__per_cpu_start",    "__per_cpu_end", -1ULL, 0 },
->>> +};
->>> +
->>>  static struct sym_entry *table;
->>>  static unsigned int table_size, table_cnt;
->>>  static int all_symbols = 0;
->>> @@ -165,6 +174,10 @@ static int read_symbol(FILE *in, struct sym_entry *s)
->>>         }
->>>         strcpy((char *)s->sym + 1, str);
->>>         s->sym[0] = stype;
->>> +       s->force_absolute = 0;
->>> +
->>> +       /* Check if we've found special absolute symbol range. */
->>> +       check_symbol_range(sym, s->addr, abs_ranges, ARRAY_SIZE(abs_ranges));
->>>
->>>         return 0;
->>>  }
->>> @@ -211,6 +224,11 @@ static int symbol_valid(struct sym_entry *s)
->>>         if (s->addr < kernel_start_addr)
->>>                 return 0;
->>>
->>> +       /* Force zero-based range special symbols into being absolute. */
->>> +       i = symbol_in_range(s, abs_ranges, ARRAY_SIZE(abs_ranges));
->>> +       if (i >= 0 && abs_ranges[i].start == 0)
->>> +               s->force_absolute = 1;
->>
->> Rusty, is this 0-detection workable for you? If so, should you or akpm
->> carry this series for 3.15?
->
-> Damn, sorry, I wrote this patch and seems like I didn't actually send it
-> out.  No wonder you didn't respond :)
+On Wed, 12 Mar 2014 19:51:01 +0000 (UTC)
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
-Ah-ha, I was wondering. :)
+> This only leaves tracepoints in header files and the impact of LTO as
+> requirements for having tracepoint callsites with the same name across
+> modules.
 
-> This applies on top of your first cleanup patch:
->
-> kallsyms: fix percpu vars on x86-64 with relocation.
->
-> x86-64 has a problem: per-cpu variables are actually represented by
-> their absolute offsets within the per-cpu area, but the symbols are
-> not emitted as absolute.  Thus kallsyms naively creates them as offsets
-> from _text, meaning their values change if the kernel is relocated
-> (especially noticeable with CONFIG_RANDOMIZE_BASE):
->
->  $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.nokaslr
->  0000000000000000 D __per_cpu_start
->  0000000000004000 D gdt_page
->  0000000000014280 D __per_cpu_end
->  ffffffff810001c8 T _stext
->  ffffffff81ee53c0 D __per_cpu_offset
->  $ egrep ' (gdt_|_(stext|_per_cpu_))' /root/kallsyms.kaslr1
->  000000001f200000 D __per_cpu_start
->  000000001f204000 D gdt_page
->  000000001f214280 D __per_cpu_end
->  ffffffffa02001c8 T _stext
->  ffffffffa10e53c0 D __per_cpu_offset
->
-> Making them absolute symbols is the Right Thing, but requires fixes to
-> the relocs tool.  So for the moment, we add a --absolute-percpu option
-> which makes them absolute from a kallsyms perspective:
+The only thing that needs to be unique is the struct tracepoint
+__tracepoint_##name. There should not be any duplicates of those. I
+can't see how the LTO would duplicate a data structure without screwing
+everything (not just tracepoints) up.
 
-Why not just do this with 0-base-address detection like my v2? That
-would mean we don't need to remember to add this flag in the future to
-imagined new architectures that might want this 0-based per_cpu
-feature.
+We can still have more than one trace_##name() called, as that is
+handled by the static key.
 
--Kees
+Note, I'm scrambling to get ready for my trip tomorrow. Thus, I'm not
+as much at the computer. I may work on some patches in my 6 hour
+layover though.
 
->
->  $ egrep ' (gdt_|_(stext|_per_cpu_))' /proc/kallsyms # no KASLR
->  0000000000000000 A __per_cpu_start
->  000000000000a000 A gdt_page
->  0000000000013040 A __per_cpu_end
->  ffffffff802001c8 T _stext
->  ffffffff8099b180 D __per_cpu_offset
->  ffffffff809a3000 D __per_cpu_load
->  $ egrep ' (gdt_|_(stext|_per_cpu_))' /proc/kallsyms # With KASLR
->  0000000000000000 A __per_cpu_start
->  000000000000a000 A gdt_page
->  0000000000013040 A __per_cpu_end
->  ffffffff89c001c8 T _stext
->  ffffffff8a39d180 D __per_cpu_offset
->  ffffffff8a3a5000 D __per_cpu_load
->
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->
-> diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-> index 3c6224728960..21013e739773 100644
-> --- a/scripts/kallsyms.c
-> +++ b/scripts/kallsyms.c
-> @@ -51,9 +51,14 @@ static struct addr_range text_ranges[] = {
->  #define text_range_text     (&text_ranges[0])
->  #define text_range_inittext (&text_ranges[1])
->
-> +static struct addr_range percpu_range = {
-> +       "__per_cpu_start", "__per_cpu_end", -1ULL, 0
-> +};
-> +
->  static struct sym_entry *table;
->  static unsigned int table_size, table_cnt;
->  static int all_symbols = 0;
-> +static int absolute_percpu = 0;
->  static char symbol_prefix_char = '\0';
->  static unsigned long long kernel_start_addr = 0;
->
-> @@ -166,6 +171,9 @@ static int read_symbol(FILE *in, struct sym_entry *s)
->         strcpy((char *)s->sym + 1, str);
->         s->sym[0] = stype;
->
-> +       /* Record if we've found __per_cpu_start/end. */
-> +       check_symbol_range(sym, s->addr, &percpu_range, 1);
-> +
->         return 0;
->  }
->
-> @@ -656,6 +664,15 @@ static void sort_symbols(void)
->         qsort(table, table_cnt, sizeof(struct sym_entry), compare_symbols);
->  }
->
-> +static void make_percpus_absolute(void)
-> +{
-> +       unsigned int i;
-> +
-> +       for (i = 0; i < table_cnt; i++)
-> +               if (symbol_in_range(&table[i], &percpu_range, 1))
-> +                       table[i].sym[0] = 'A';
-> +}
-> +
->  int main(int argc, char **argv)
->  {
->         if (argc >= 2) {
-> @@ -663,6 +683,8 @@ int main(int argc, char **argv)
->                 for (i = 1; i < argc; i++) {
->                         if(strcmp(argv[i], "--all-symbols") == 0)
->                                 all_symbols = 1;
-> +                       else if (strcmp(argv[i], "--absolute-percpu") == 0)
-> +                               absolute_percpu = 1;
->                         else if (strncmp(argv[i], "--symbol-prefix=", 16) == 0) {
->                                 char *p = &argv[i][16];
->                                 /* skip quote */
-> @@ -679,6 +701,8 @@ int main(int argc, char **argv)
->                 usage();
->
->         read_map(stdin);
-> +       if (absolute_percpu)
-> +               make_percpus_absolute();
->         sort_symbols();
->         optimize_token_table();
->         write_src();
-> diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-> index 2dcb37736d84..86a4fe75f453 100644
-> --- a/scripts/link-vmlinux.sh
-> +++ b/scripts/link-vmlinux.sh
-> @@ -86,6 +86,10 @@ kallsyms()
->                 kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
->         fi
->
-> +       if [ -n "${CONFIG_X86_64}" ]; then
-> +               kallsymopt="${kallsymopt} --absolute-percpu"
-> +       fi
-> +
->         local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
->                       ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
->
->
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+-- Steve
