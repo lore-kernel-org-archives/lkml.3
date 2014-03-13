@@ -1,141 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547AbaCMKGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:06:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:8594 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752682AbaCMKGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:06:33 -0400
-X-IronPort-AV: E=Sophos;i="4.97,646,1389715200"; 
-   d="scan'208";a="9689783"
-Message-ID: <53218111.7040505@cn.fujitsu.com>
-Date: Thu, 13 Mar 2014 17:57:37 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1753596AbaCMKGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:06:47 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:38200 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381AbaCMKGp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 06:06:45 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+Subject: [GIT PULL] at91: DT update for 3.15 #1
+Date: Thu, 13 Mar 2014 11:06:37 +0100
+Message-ID: <1394705197-29992-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>
-CC: "'Kim'" <jaegeuk.kim@samsung.com>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'f2fs'" <linux-f2fs-devel@lists.sourceforge.net>
-Subject: Re: [f2fs-dev] [PATCH 3/5] f2fs: format segment_info's show for better
- legibility
-References: <5319A2D5.6060201@cn.fujitsu.com> <001801cf3e9c$ac3330d0$04999270$@samsung.com>
-In-Reply-To: <001801cf3e9c$ac3330d0$04999270$@samsung.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/13 18:03:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/13 18:03:43,
-	Serialize complete at 2014/03/13 18:03:43
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On 03/13/2014 05:13 PM, Chao Yu wrote:
+Arnd, Olof, Kevin,
 
-> Hi Gu,
-> 
->> -----Original Message-----
->> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
->> Sent: Friday, March 07, 2014 6:44 PM
->> To: Kim
->> Cc: linux-kernel; f2fs
->> Subject: [f2fs-dev] [PATCH 3/5] f2fs: format segment_info's show for better legibility
->>
->> The original segment_info's show is a bit out-of-format:
->>
->> [root@guz Demoes]# cat /proc/fs/f2fs/loop0/segment_info
->> 0 0 0 0 0 0 0 0 0 0 0
->> 0 0 0 0 0 0 0 0 0 0
->> 0 0 0 0 0 0 0 0 0 0
->> ......
->> 0 0 0 0 0 0 0 0 0 0
->> 0 0 1 0 0 1 [root@guz Demoes]#
->>
->> so we fix it here for better legibility.
->> [root@guz Demoes]# cat /proc/fs/f2fs/loop0/segment_info
->> 0 0 0 0 0 0 0 0 0 0
->> 0 0 0 0 0 0 0 0 0 0
->> 0 0 0 0 0 0 0 0 0 0
->> ......
->> 0 0 0 0 0 0 0 0 0 0
->> 0 0 1 0 0 1
->> [root@guz Demoes]#
-> 
-> Here is one case, this looks not legible.
-> 
-> 0 0 0 0 0 0 0 0 0 0
-> 1 0 0 0 0 0 0 0 0 0
-> 0 0 0 0 0 0 0 0 0 0
-> 0 0 0 0 0 0 0 0 0 0
-> 0 0 0 0 0 0 0 0 0 0
-> 0 0 0 0 0 0 509 512 512 512
-> 512 512 512 512 512 512 512 512 512 512
-> 512 512 512 512 331 278 0 0 0 0
-> 0 0 0 0 0 0 0 0 0 0
-> 0 0 0 0 0 0 0 512 512 512
-> 512 512 512 512 512 512 512 512 512 512
-> 0 512 512 512 512 512 512 1 0 512
-> 
-> So how about modifying code as following?
+This is one request for AT91 DT update for 3.15. A lot of forgotten bits that
+are corrected here, and old DT properties that are removed, nothing really new.
+I think that the little modifications to the documentation can also go the
+arm-soc way: there is no fundamental change to the binding, only more coherence
+added.
 
-> 
->>
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> 
-> Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-> 
->> ---
->>  fs/f2fs/super.c |    7 ++++---
->>  1 files changed, 4 insertions(+), 3 deletions(-)
->>
->> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
->> index 72df734..6e4851c 100644
->> --- a/fs/f2fs/super.c
->> +++ b/fs/f2fs/super.c
->> @@ -546,11 +546,12 @@ static int segment_info_seq_show(struct seq_file *seq, void *offset)
->>
->>  	for (i = 0; i < total_segs; i++) {
->>  		seq_printf(seq, "%u", get_valid_blocks(sbi, i, 1));
-> 
-> 		seq_printf(seq, "%-3u ", get_valid_blocks(sbi, i, 1));
+Thanks, best regards,
 
-Hmm, this patch has been applied to f2fs-dev tree, so maybe you can send a
-patch to enhance it directly!:)
+The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
 
-Regards,
-Gu
+  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
 
-> 
->> -		if (i != 0 && (i % 10) == 0)
->> -			seq_puts(seq, "\n");
->> +		if ((i % 10) == 9 || i == (total_segs - 1))
->> +			seq_putc(seq, '\n');
->>  		else
->> -			seq_puts(seq, " ");
->> +			seq_putc(seq, ' ');
->>  	}
->> +
->>  	return 0;
->>  }
->>
->> --
->> 1.7.7
->>
->>
->> ------------------------------------------------------------------------------
->> Subversion Kills Productivity. Get off Subversion & Make the Move to Perforce.
->> With Perforce, you get hassle-free workflows. Merge that actually works.
->> Faster operations. Version large binaries.  Built-in WAN optimization and the
->> freedom to use Git, Perforce or both. Make the move to Perforce.
->> http://pubads.g.doubleclick.net/gampad/clk?id=122218951&iu=/4140/ostg.clktrk
->> _______________________________________________
->> Linux-f2fs-devel mailing list
->> Linux-f2fs-devel@lists.sourceforge.net
->> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
-> 
-> 
+are available in the git repository at:
 
+  git://github.com/at91linux/linux-at91.git tags/at91-dt
 
+for you to fetch changes up to 1d33a2c9e9279f1e41836effb91309c90608a0e2:
+
+  ARM: at91/dt: at91-cosino: remove useless adc properties (2014-03-12 19:11:29 +0100)
+
+----------------------------------------------------------------
+First batch of AT91 DT material for 3.15
+- activate DMA for NAND flash controller
+- some binding documentation update for usba and ADC (iio) drivers
+- removal of some deprecated ADC (iio) properties
+
+----------------------------------------------------------------
+Alexandre Belloni (9):
+      ARM: at91/DT: atmel_usba correct atmel,vbus-gpio meaning
+      Documentation: dt: iio: improve atmel-adc documentation
+      Documentation: dt: iio: move arm/atmel-adc.txt to iio/adc/at91_adc.txt
+      ARM: at91/dt: at91-ariag25: remove useless adc properties
+      ARM: at91/dt: at91sam9260: remove useless adc properties
+      ARM: at91/dt: at91sam9g45: remove useless adc properties
+      ARM: at91/dt: at91sam9x5: remove useless adc properties
+      ARM: at91/dt: sama5d3: remove useless adc properties
+      ARM: at91/dt: at91-cosino: remove useless adc properties
+
+Ludovic Desroches (1):
+      ARM: at91: sama5d3: get rid of atmel_tsadcc driver
+
+Nicolas Ferre (1):
+      ARM: at91/DT: add NAND + DMA property
+
+ .../{arm/atmel-adc.txt => iio/adc/at91_adc.txt}    | 33 +++++++++++-----------
+ .../devicetree/bindings/usb/atmel-usb.txt          |  4 +--
+ arch/arm/boot/dts/at91-ariag25.dts                 |  1 -
+ arch/arm/boot/dts/at91-cosino.dtsi                 |  1 -
+ arch/arm/boot/dts/at91-cosino_mega2560.dts         |  1 -
+ arch/arm/boot/dts/at91sam9260.dtsi                 | 11 ++++----
+ arch/arm/boot/dts/at91sam9g45.dtsi                 | 12 ++++----
+ arch/arm/boot/dts/at91sam9n12.dtsi                 |  1 +
+ arch/arm/boot/dts/at91sam9x5.dtsi                  | 14 +++++----
+ arch/arm/boot/dts/sama5d3.dtsi                     | 28 ++++++------------
+ arch/arm/boot/dts/sama5d3xdm.dtsi                  |  6 ++--
+ 11 files changed, 52 insertions(+), 60 deletions(-)
+ rename Documentation/devicetree/bindings/{arm/atmel-adc.txt => iio/adc/at91_adc.txt} (73%)
+
+-- 
+Nicolas Ferre
