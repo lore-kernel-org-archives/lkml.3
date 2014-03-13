@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957AbaCMTc7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 15:32:59 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:42113 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499AbaCMTc6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 15:32:58 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: next-20140313 - build error in e1000e driver
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1394739168_1654P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 13 Mar 2014 15:32:48 -0400
-Message-ID: <59774.1394739168@turing-police.cc.vt.edu>
+	id S1755123AbaCMTeo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 15:34:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42263 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754499AbaCMTen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 15:34:43 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFwDn3zA0gEn2r3nJVPWuv-pLYyrj4=8_gt1xFTd2g_Dwg@mail.gmail.com>
+References: <1394664680-17799-1-git-send-email-stefani@seibold.net> <1394664680-17799-4-git-send-email-stefani@seibold.net> <5320E689.7060607@zytor.com> <CALCETrXQJvkk-5ncSgTyoy9sCN0AT+h9-1F6wAnxqRm242PjrQ@mail.gmail.com> <5321D45C.7040504@zytor.com> <CALCETrVy3oW=qvJWbGtKTZ=0dZLjHtmBphPDnP1N8nLmXc=+9A@mail.gmail.com> <5321F418.1030304@zytor.com> <5321F72E.7030109@zytor.com> <CALCETrXjJeXqJj3muJhfNeiQ7Te+8WSow+LtjKPM9dySfDtbaA@mail.gmail.com> <CA+55aFyOp6V_tE-sXKVi+=6yVwHQb0sLWSNbk=N7KbhBrx9QhA@mail.gmail.com> <CA+55aFyCSL==4Ff4JT3uFKN_28mz92ef1L67-4OUGqHZ8HXUhg@mail.gmail.com> <CALCETrVa2XPc5JBDbDdH1ciavi2tuqwBf7picE4TVf69n_PcKw@mail.gmail.com> <CA+55aFwDn3zA0gEn2r3nJVPWuv-pLYyrj4=8_gt1xFTd2g_Dwg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 3/3] x86, vdso32: handle 32 bit vDSO larger one page
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 13 Mar 2014 12:33:49 -0700
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: Pavel Emelyanov <xemul@parallels.com>, Ingo Molnar <mingo@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Andi Kleen <ak@linux.intel.com>, John Stultz <john.stultz@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Message-ID: <8cf1b00c-ef93-4ad0-97f7-53888b50d160@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1394739168_1654P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+If we have to stick anything in the fixmap it might add well be the real vdso...
 
-My kernel has CONFIG_PM_SLEEP=3Dn, which leads to hilarity...
+On March 13, 2014 12:21:54 PM PDT, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>On Mar 13, 2014 12:13 PM, "Andy Lutomirski" <luto@amacapital.net>
+>wrote:
+>>
+>> How?  We either set null in AT_SYSINFO_EHDR, we set something simple
+>> that SuSE is okay with (and compile separate images?) or we set
+>> something fancy and not relocated, and SuSE crashes.
+>
+>Yeah, I was thinking that "something simple is the fixmap space that
+>suse
+>would be happy with"
+>
+>Keyword being "simple", ie so simple that it's not a maintenance
+>headache
+>even if it's different from the "real" vdso.
+>
+>But I suspect we don't really need it.
+>
+>> On a related note: is it okay to keep the option called
+>> CONFIG_COMPAT_VDSO but change the default to n?
+>
+>Yes. If you start from scratch with a config, you have to get the
+>options
+>right. It's just the "I upgraded the kernel, did an oldconfig, and it
+>doesn't work" case that we should avoid.
+>
+>The alternative would be to make a new config name, but then it has to
+>default to the compatible state (iow no vdso at all by default),
+>because
+>that's the rule: make oldconfig should work for people.
+>
+>Basically, kernel upgrades should be nobrainers and "just work".
+>
+>     Linus
 
-  CC      drivers/net/ethernet/intel/e1000e/netdev.o
-drivers/net/ethernet/intel/e1000e/netdev.c:7079:13: error: 'e1000e_pm_sus=
-pend' undeclared here (not in a function)
-  .suspend =3D e1000e_pm_suspend,
-             =5E
-drivers/net/ethernet/intel/e1000e/netdev.c:7080:13: error: 'e1000e_pm_res=
-ume' undeclared here (not in a function)
-  .resume  =3D e1000e_pm_resume,
-             =5E
-make=5B5=5D: *** =5Bdrivers/net/ethernet/intel/e1000e/netdev.o=5D Error 1=
-
-make=5B4=5D: *** =5Bdrivers/net/ethernet/intel/e1000e=5D Error 2
-make=5B3=5D: *** =5Bdrivers/net/ethernet/intel=5D Error 2
-make=5B2=5D: *** =5Bdrivers/net/ethernet=5D Error 2
-make=5B1=5D: *** =5Bdrivers/net=5D Error 2
-make: *** =5Bdrivers=5D Error 2
-
-Commit 38a529b5d4 claims to fix a related issue, but doesn't seem to do s=
-o correctly.
-
-Author: Mika Westerberg <mika.westerberg=40linux.intel.com>
-Date:   Thu Jan 16 14:39:39 2014 +0200
-
-    e1000e: Fix compilation warning when =21CONFIG_PM_SLEEP
-   =20
-    Commit 7509963c703b (e1000e: Fix a compile flag mis-match for
-    suspend/resume) moved suspend and resume hooks to be available when
-    CONFIG_PM is set. However, it can be set even if CONFIG_PM_SLEEP is n=
-ot set
-    causing following warnings to be emitted:
-   =20
-    drivers/net/ethernet/intel/e1000e/netdev.c:6178:12: warning:
-        =E2=80=98e1000_suspend=E2=80=99 defined but not used =5B-Wunused-=
-function=5D
-   =20
-    drivers/net/ethernet/intel/e1000e/netdev.c:6185:12: warning:
-        =E2=80=98e1000_resume=E2=80=99 defined but not used =5B-Wunused-f=
-unction=5D
-
-
-
---==_Exmh_1394739168_1654P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUyIH4AdmEQWDXROgAQI+2BAAqK/1BppxvGY6/wAdKVGf4O9uEoDSPVvU
-wbsUQNqideiisVhsIw7vjoFmBLfMeMOSboxNd3ToJmxIQgaIReYhTynI3dCGaHAC
-yu+XhMRlVezgv8TGl5B4x3F4g9gV70HE7PQcO4/v8ndr6UzzOHgoqgn7LPjoRH87
-VvxKsS8kzubHjeV6mvBxFmxHwH1yV9J3O9E5qPw5lK0XamOWUdfv9M4RJV/u7L3x
-kk7QcsJRqNOR2Qu6VrsbPGfiNgKWWVjLXRyr+NTavTu2enWFzimyfa3JCfFIKIok
-8NSBH5RxbpucEhLsAnjXLlROQiysLDoaHoG2hOeDmb6bw016H3FiiqqCk5SWrqlO
-ACWQ3N3rjAxp052FjlcT6HtyjFDMoqA7owOAsH4Tbm4yy8BTl6g8NDaeKPmm/h1G
-jfyerOI/blsBfT41LyExzBBo7/1SoMnXwgAnrb6AtdowIpqkjohO2noNrXjHjgGs
-Ch0C7gYTUs8EIoHZ3CPhjwEj46IJHItGg3A2oJxVdzxTvrpsNzzWWBrrAxmEMz/0
-RteF5IjFdVpJ+A5g1MeLTzld+BRZyTBoXj7oYxnPLyfzE/syqTlLHpDMicoU5CcO
-/XZdVZnMjobnhqUfgrNBlzeTev9MUIEbGfRHkyzhNWrlyx/qc8gS2AgVB8qsvLyX
-Or/2xPdI5L4=
-=4iK+
------END PGP SIGNATURE-----
-
---==_Exmh_1394739168_1654P--
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
