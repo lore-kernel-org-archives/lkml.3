@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603AbaCMWDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 18:03:44 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:33797 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538AbaCMWDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 18:03:42 -0400
+	id S1754302AbaCMWKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 18:10:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44707 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753532AbaCMWKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 18:10:20 -0400
+Message-ID: <53222C78.3020408@zytor.com>
+Date: Thu, 13 Mar 2014 15:08:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <5321CBDA.1060705@oracle.com>
-References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
-	<CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
-	<5321CBDA.1060705@oracle.com>
-Date: Thu, 13 Mar 2014 15:03:41 -0700
-X-Google-Sender-Auth: ohAH8nT8xx5iIfSS_PJFqNVD7t4
-Message-ID: <CA+55aFwDKSKyxC4rTBiFMRVr6xYtL96ZYCQqNSVLJV0-=FLTUg@mail.gmail.com>
-Subject: Re: [RFC] improve_stack: make stack dump output useful again
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Stefani Seibold <stefani@seibold.net>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
+Subject: Re: [PATCH 0/3] Improve 32 bit vDSO time
+References: <1394664680-17799-1-git-send-email-stefani@seibold.net>	 <CALCETrViaEdPsZO_xKaoihkNzayB+vhwpAO0YvNbfXZH2tOLUg@mail.gmail.com>	 <20140313001143.Horde.HpQnD8JBClJFZRY7b8BtnQ1@webmail.your-server.de>	 <53212A96.8020005@zytor.com> <1394698270.1008.19.camel@wall-e.seibold.net>
+In-Reply-To: <1394698270.1008.19.camel@wall-e.seibold.net>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 8:16 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> I've looked into doing it in the kernel, but it seems that it would require
-> a rather
-> large code addition just to deal with getting pretty line numbers.
+On 03/13/2014 01:11 AM, Stefani Seibold wrote:
+> Am Mittwoch, den 12.03.2014, 20:48 -0700 schrieb H. Peter Anvin:
+>> On 03/12/2014 04:11 PM, stefani@seibold.net wrote:
+>>>
+>>> I will do this when your patch is pulled into tip. For now we have the
+>>> choice, but i preferer our solution removing the compat vdso.
+>>>
+>>
+>> Sorry, that didn't parse from me.
+> 
+> I thought it is a good idea to wait until the "remove compat vdso
+> support" is settled and pulled into tip.
+> 
+> If there is no objections against this patch i am happy to do the
+> job ;-)
+> 
+> BTW: Thanks to Andy for doing this job to git rid off this ugly compat
+> vDSO layer.
+> 
+>> Also, if you state a preference, could you please motivate it?
+> 
+> For the next three days i am very busy with a important project, so i
+> will rebase the vdso 32 bit time patch on Monday or Tuesday. 
+> 
 
-No no no. The *kernel* will never do line numbers, especially since
-only people who don't care about build performance compile with debug
-info, and even if you do do that, the kernel won't load it anyway.
+So when I get the updated patch from Andy I will pull it into tip,
+resetting the x86/vdso branch.  I'll then expect an upgraded and
+simplified patchset from you to put on top.
 
-You missed the point.
+Sounds like a plan.
 
-The kernel is going to *remove* all the hex numbers that your script
-relies on, because those hex numbers are completely worthless. They
-are worthless and annoying now, but they are *doubly* worthless if the
-kernel is compiled with base address randomization, since nobody will
-know what the hex numbers mean.
+	-hpa
 
-> Unless I'm missing something big, is it really worth it?
 
-You're missing something big. The patch I sent earlier *is* going to
-happen one of these days, possible for 3.15. So your script that looks
-at hex numbers is broken.
-
-You need to look at the *symbol* number. In this output:
-
-     [<ffffffff810020c2>] do_one_initcall+0xc2/0x1e0
-
-that "ffffffff810020c2" is crap, and is going away. The address that
-is meaningful and valid is the "do_one_initcall+0xc2" part.
-
-*That* is the part you'd use to parse in user space.
-
-Try it today with the CONFIG_RANDOMIZE_BASE option to see. Using the
-hex number doesn't *work*.
-
-          Linus
