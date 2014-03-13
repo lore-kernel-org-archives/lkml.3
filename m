@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137AbaCMP20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:28:26 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:47045 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754128AbaCMP2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:28:23 -0400
-Message-ID: <5321CE94.5070506@kernel.dk>
-Date: Thu, 13 Mar 2014 09:28:20 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754307AbaCMP3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:29:11 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43870 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753710AbaCMP3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:29:09 -0400
+Date: Thu, 13 Mar 2014 10:27:27 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Suresh Gupta <suresh.gupta@freescale.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Suresh Gupta <B42813@freescale.com>
+Subject: Re: [PATCH] usb: gadget: fsl: Set dma_ops for FSL USB Gadget Device
+Message-ID: <20140313152727.GJ4599@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1394719632-27101-1-git-send-email-suresh.gupta@freescale.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Alexander Gordeev <agordeev@redhat.com>
-CC: linux-kernel@vger.kernel.org, Mike Miller <mike.miller@hp.com>,
-        iss_storagedev@hp.com, linux-pci@vger.kernel.org,
-        Keith Busch <keith.busch@intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: Re: [PATCH v2 0/2] block: Use pci_enable_msix_exact() instead of
- pci_enable_msix()
-References: <cover.1393404496.git.agordeev@redhat.com> <20140313041231.GC26657@google.com>
-In-Reply-To: <20140313041231.GC26657@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ELVYuRnMxQ5nnKRy"
+Content-Disposition: inline
+In-Reply-To: <1394719632-27101-1-git-send-email-suresh.gupta@freescale.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2014 10:12 PM, Bjorn Helgaas wrote:
-> On Wed, Feb 26, 2014 at 10:02:40AM +0100, Alexander Gordeev wrote:
->> Changes since v1:
->>    - cciss: patch #1: a weird 'goto' removed;
->>    - cciss: patch #2: pci_enable_msix_exact() used, not pci_enable_msix_range();
->>    - rsxx: patch dropped - no need to change anything;
->>
->> As result of deprecation of MSI-X/MSI enablement functions
->> pci_enable_msix() and pci_enable_msi_block() all drivers
->> using these two interfaces need to be updated to use the
->> new pci_enable_msi_range()  or pci_enable_msi_exact()
->> and pci_enable_msix_range() or pci_enable_msix_exact()
->> interfaces.
->>
->> This change updates 'cciss' only, but there is also 'nvme' update
->> pending - I am waiting for Intel guys to clarify if they want to
->> route it thru their tree. If not, I will post the 'nvme' patch as
->> a follow-up to this series.
->
-> Hi Jens,
->
-> I'd like to get these merged during the v3.15 merge window.  I'd be glad to
-> review and apply them through my tree, unless you want to do it.  They do
-> depend on f7fc32c, which went in after the v3.14 merge window, which makes
-> it a bit of a hassle.
+--ELVYuRnMxQ5nnKRy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-My 3.15/drivers (and core) branch are based off 3.14-rc3, so it should 
-be OK. I've queued them up, as it's mostly a followup to the previous 
-ones from Alexander.
+Hi,
 
--- 
-Jens Axboe
+On Thu, Mar 13, 2014 at 07:37:12PM +0530, Suresh Gupta wrote:
+> From: Suresh Gupta <B42813@freescale.com>
 
+return -ENOLOG
+
+> Signed-off-by: Suresh Gupta <B42813@freescale.com>
+> ---
+>  drivers/usb/gadget/fsl_udc_core.c | 1 +
+>  1 file changed, 1 insertion(+)
+>=20
+> diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_u=
+dc_core.c
+> index 35b20e6..2a43d9d 100644
+> --- a/drivers/usb/gadget/fsl_udc_core.c
+> +++ b/drivers/usb/gadget/fsl_udc_core.c
+> @@ -2456,6 +2456,7 @@ static int __init fsl_udc_probe(struct platform_dev=
+ice *pdev)
+>  	/* Setup gadget.dev and register with kernel */
+>  	dev_set_name(&udc_controller->gadget.dev, "gadget");
+>  	udc_controller->gadget.dev.of_node =3D pdev->dev.of_node;
+> +	set_dma_ops(&udc_controller->gadget.dev, pdev->dev.archdata.dma_ops);
+
+why is the driver doing this ? Why is the driver given knowledge about
+details on archdata ?
+
+Why do you need this at all ?
+
+--=20
+balbi
+
+--ELVYuRnMxQ5nnKRy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTIc5fAAoJEIaOsuA1yqRER2UP/2uMxnmFEbWJco98x2exCfUS
+PudRfHYJ7/M969U3jCEmX7YIBk5ZY9NcYnTy/aYCjzfoQfNul3kyq6Vm4E11bwMm
+IQbJQtSQGIOZjizv7ccNEL8/B1oNbYBRNxoiI//D6oMfs6iwUQUXtfu0PH7Gg6Qs
+1YuYBbJAkc7/QaOMBapnhoyOCln8fwnic2Wp8yGMp6CPAWDP+r17mw6ppwoznmFd
+GaQHR9VN0Au6Rh2DmzFIegi3SzU9H5GSVDAmg4bHkaqbQi7N2D1/WcZBCFepQ3YW
+k5VbyHMFudKaHgEBK4R1rO/jKDuzUox44I8vUupg1NXPYbHJvPurgbFiaRnYe66s
+mvzwPt83ZxCY9Rq4/e4Rkk3zb/Js1eUCk9cFwSWHnvp7O98umiWqa+Pk/7qxo6NS
+aZAO9eCdm9Tzu3YQyMXU/aYegqpmvxQs99yerr472i0ivv6Fnft5/WYEEX/h/7t1
+8oHfko5OtlE+5Kr2xg5fX22FcGBBdyclyWF4H7X17/aPx80wudcCNmRk9NWPbSwu
+sV1sRwwvOiHI3mSwkdTnw0YIqZ93b3ZEHPaw9DR7uqzF6tFFYbnLUy2Ko+LJ+cx4
+OAMJOpDKRO8AmkAgye7dm9s1KJNxHXbqLQZjKGE9CsKBNygDaadbBHavZVl+07uN
+hbL2hwLsx9VtzdDYjFzX
+=O8ug
+-----END PGP SIGNATURE-----
+
+--ELVYuRnMxQ5nnKRy--
