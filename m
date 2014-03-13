@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaCMJQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 05:16:27 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:38118 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192AbaCMJQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 05:16:25 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Greg KH <greg@kroah.com>, Philipp Zabel <p.zabel@pengutronix.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the staging tree with the  tree
-Date: Thu, 13 Mar 2014 10:17:56 +0100
-Message-ID: <3306881.foYD0IDJn0@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140313005026.95bb2222270ded24b0a5deff@kernel.org>
-References: <20140313005026.95bb2222270ded24b0a5deff@kernel.org>
+	id S1753603AbaCMJT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 05:19:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57395 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753491AbaCMJTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 05:19:23 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <dmaengine@vger.kernel.org>
+CC: <davinci-linux-open-source@linux.davincidsp.com>, <joelf@ti.com>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, <nsekhar@ti.com>,
+        Jyri Sarha <jsarha@ti.com>, <mporter@linaro.org>,
+        <vinod.koul@intel.com>, <dan.j.williams@intel.com>
+Subject: [PATCH 01/18] platform_data: edma: Be precise with the paRAM struct
+Date: Thu, 13 Mar 2014 11:18:23 +0200
+Message-ID: <1394702320-21743-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394702320-21743-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1394702320-21743-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2435935.JEFXHChFDC"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The edmacc_param struct should follow the layout of the paRAM area in the
+HW. Be explicit on the size of the fields (u32) and also mark the struct
+as packed to avoid any padding on non 32bit architectures.
 
---nextPart2435935.JEFXHChFDC
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="us-ascii"
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ include/linux/platform_data/edma.h | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-Hi Mark,
-
-On Thursday 13 March 2014 00:50:26 Mark Brown wrote:
-> Hi Greg,
->=20
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/media/v4l2-core/v4l2-of.c between commit b9db140c1e4644d
-> ("[media] v4l: of: Support empty port nodes") from the v4l tree and
-> commit fd9fdb78a9bf ("[media] of: move graph helpers from
-> drivers/media/v4l2-core to drivers/of") from the staging tree.
->=20
-> I fixed it up by essentially dropping the support for empty port node=
-s
-> since there were more context differences than I was comfortable with=
-
-> in the changes in the new code.
-
-If I'm not mistaken the move of drivers/media/v4l2-core/v4l2-of.c to=20=
-
-drivers/of/of-graph.c has been canceled for v3.15 and related patches s=
-hould=20
-be dropped from the for-next branches in the very near future (the v4l =
-tree=20
-has already been rebased).
-
-=2D-=20
-Regards,
-
-Laurent Pinchart
-
---nextPart2435935.JEFXHChFDC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQEcBAABAgAGBQJTIXfLAAoJEIkPb2GL7hl1NOUH/2I3BQsUpF6ekd4pBgDD9No2
-CdruRTemTqGynwtjZSzh/8eZVg9GfovvmQ+JII5keBF8HcjgBjZed3ClctkrnILo
-Y0CTfkiXzxov87LFEO27BWCuph0e3sL959xLd+IO4vm8MRClRmaycG4oEZiDeiLE
-7rBAQuZj9ZFNeKzcXtA9NJjM2WyRxK5Y3RNJwjuAcDJxJNGHtaksPHqQcYXVZGzd
-r9zAh7ODeSOH3FKh+g2mEF47RlvWWHptgiVHVp1r3BmbThQya5ETMcpifFuWLmr1
-jbK/8R+cRhZd0tGFgVO7cpzu90QCaV/ZgzI+4NZb/b00HKq104VgNP/8AI7NvQM=
-=g2t0
------END PGP SIGNATURE-----
-
---nextPart2435935.JEFXHChFDC--
+diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
+index f50821cb64be..923f8a3e4ce0 100644
+--- a/include/linux/platform_data/edma.h
++++ b/include/linux/platform_data/edma.h
+@@ -43,15 +43,15 @@
+ 
+ /* PaRAM slots are laid out like this */
+ struct edmacc_param {
+-	unsigned int opt;
+-	unsigned int src;
+-	unsigned int a_b_cnt;
+-	unsigned int dst;
+-	unsigned int src_dst_bidx;
+-	unsigned int link_bcntrld;
+-	unsigned int src_dst_cidx;
+-	unsigned int ccnt;
+-};
++	u32 opt;
++	u32 src;
++	u32 a_b_cnt;
++	u32 dst;
++	u32 src_dst_bidx;
++	u32 link_bcntrld;
++	u32 src_dst_cidx;
++	u32 ccnt;
++} __packed;
+ 
+ /* fields in edmacc_param.opt */
+ #define SAM		BIT(0)
+-- 
+1.9.0
 
