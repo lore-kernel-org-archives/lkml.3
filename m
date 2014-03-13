@@ -1,175 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439AbaCMOb6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 10:31:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51198 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164AbaCMOb5 (ORCPT
+	id S1753532AbaCMOcH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 10:32:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43731 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164AbaCMOcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 10:31:57 -0400
-Date: Thu, 13 Mar 2014 15:32:05 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-cc: Hans de Goede <hdegoede@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Carlo Caione <carlo.caione@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] irq: Add a new IRQF_ACK_BEFORE_UNMASK irq flagq 
-In-Reply-To: <20140313133707.GA24821@linutronix.de>
-Message-ID: <alpine.DEB.2.02.1403131442480.18573@ionos.tec.linutronix.de>
-References: <1394579583-29316-1-git-send-email-hdegoede@redhat.com> <alpine.DEB.2.02.1403120944270.18573@ionos.tec.linutronix.de> <20140313133707.GA24821@linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 13 Mar 2014 10:32:02 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1394456094-21671-6-git-send-email-mika.westerberg@linux.intel.com>
+References: <1394456094-21671-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1394456094-21671-6-git-send-email-mika.westerberg@linux.intel.com>
+Date: Thu, 13 Mar 2014 15:32:01 +0100
+Message-ID: <CACRpkdY3z-XGHwn5sQKM-8cKYHzr3_40h53032ETN6PaDW779w@mail.gmail.com>
+Subject: Re: [PATCH v2 5/5] gpio / ACPI: Add support for ACPI GPIO operation regions
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Lan Tianyu <tianyu.lan@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        Alan Cox <alan.cox@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Mar 2014, Sebastian Andrzej Siewior wrote:
-> One side note: Since we need to specify IRQCHIP_EOI_THREADED and
-> handle_fasteoi_late_irq() as the handler, would it be easily doable to use
-> the handle_fasteoi_irq() handler and skip the EOI in the threaded mode?
-> But if it creates a mess then leave it as it is.
+On Mon, Mar 10, 2014 at 1:54 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
 
-Yeah, I was looking into that already. Patch below.
+Here:
 
-To resemble the late version you need to add IRQCHIP_EOI_THREADED and
-IRQCHIP_EOI_IF_HANDLED to your irq chip.
+> +static acpi_status
+> +acpi_gpio_adr_space_handler(u32 function, acpi_physical_address address,
+> +                           u32 bits, u64 *value, void *handler_context,
+> +                           void *region_context)
+> +{
+> +       struct acpi_gpio_chip *achip = region_context;
+> +       struct gpio_chip *chip = achip->chip;
+> +       struct acpi_resource_gpio *agpio;
+> +       struct acpi_resource *ares;
+> +       acpi_status status;
+> +       bool pull;
 
-Thanks,
+Should be named pull_up, right?
 
-	tglx
+> +       int i;
+> +
+> +       status = acpi_buffer_to_resource(achip->conn_info.connection,
+> +                                        achip->conn_info.length, &ares);
+> +       if (ACPI_FAILURE(status))
+> +               return status;
+> +
+> +       if (WARN_ON(ares->type != ACPI_RESOURCE_TYPE_GPIO)) {
+> +               ACPI_FREE(ares);
+> +               return AE_BAD_PARAMETER;
+> +       }
+> +
+> +       agpio = &ares->data.gpio;
+> +       pull = agpio->pin_config == ACPI_PIN_CONFIG_PULLUP;
 
-Index: tip/include/linux/irq.h
-===================================================================
---- tip.orig/include/linux/irq.h
-+++ tip/include/linux/irq.h
-@@ -355,6 +355,8 @@ struct irq_chip {
-  * IRQCHIP_ONOFFLINE_ENABLED:	Only call irq_on/off_line callbacks
-  *				when irq enabled
-  * IRQCHIP_SKIP_SET_WAKE:	Skip chip.irq_set_wake(), for this irq chip
-+ * IRQCHIP_ONESHOT_SAFE:	One shot does not require mask/unmask
-+ * IRQCHIP_EOI_THREADED:	Chip requires eoi() on unmask in threaded mode
-  */
- enum {
- 	IRQCHIP_SET_TYPE_MASKED		= (1 <<  0),
-@@ -363,6 +365,7 @@ enum {
- 	IRQCHIP_ONOFFLINE_ENABLED	= (1 <<  3),
- 	IRQCHIP_SKIP_SET_WAKE		= (1 <<  4),
- 	IRQCHIP_ONESHOT_SAFE		= (1 <<  5),
-+	IRQCHIP_EOI_THREADED		= (1 <<  6),
- };
- 
- /* This include will go away once we isolated irq_desc usage to core code */
-Index: tip/kernel/irq/chip.c
-===================================================================
---- tip.orig/kernel/irq/chip.c
-+++ tip/kernel/irq/chip.c
-@@ -281,6 +281,19 @@ void unmask_irq(struct irq_desc *desc)
- 	}
- }
- 
-+void unmask_threaded_irq(struct irq_desc *desc)
-+{
-+	struct irq_chip *chip = desc->irq_data.chip;
-+
-+	if (chip->flags & IRQCHIP_EOI_THREADED)
-+		chip->irq_eoi(&desc->irq_data);
-+
-+	if (chip->irq_unmask) {
-+		chip->irq_unmask(&desc->irq_data);
-+		irq_state_clr_masked(desc);
-+	}
-+}
-+
- /*
-  *	handle_nested_irq - Handle a nested irq from a irq thread
-  *	@irq:	the interrupt number
-@@ -435,6 +448,27 @@ static inline void preflow_handler(struc
- static inline void preflow_handler(struct irq_desc *desc) { }
- #endif
- 
-+static void cond_unmask_eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
-+{
-+	if (!(desc->istate & IRQS_ONESHOT)) {
-+		chip->irq_eoi(&desc->irq_data);
-+		return;
-+	}
-+	/*
-+	 * We need to unmask in the following cases:
-+	 * - Oneshot irq which did not wake the thread (caused by a
-+	 *   spurious interrupt or a primary handler handling it
-+	 *   completely).
-+	 */
-+	if (!irqd_irq_disabled(&desc->irq_data) &&
-+	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot) {
-+		chip->irq_eoi(&desc->irq_data);
-+		unmask_irq(desc);
-+	} else if (!(chip->flags & IRQCHIP_EOI_THREADED)) {
-+		chip->irq_eoi(&desc->irq_data);
-+	}
-+}
-+
- /**
-  *	handle_fasteoi_irq - irq handler for transparent controllers
-  *	@irq:	the interrupt number
-@@ -448,6 +482,8 @@ static inline void preflow_handler(struc
- void
- handle_fasteoi_irq(unsigned int irq, struct irq_desc *desc)
- {
-+	struct irq_chip *chip = desc->irq_data.chip;
-+
- 	raw_spin_lock(&desc->lock);
- 
- 	if (unlikely(irqd_irq_inprogress(&desc->irq_data)))
-@@ -473,18 +509,14 @@ handle_fasteoi_irq(unsigned int irq, str
- 	preflow_handler(desc);
- 	handle_irq_event(desc);
- 
--	if (desc->istate & IRQS_ONESHOT)
--		cond_unmask_irq(desc);
-+	cond_unmask_eoi_irq(desc, chip);
- 
--out_eoi:
--	desc->irq_data.chip->irq_eoi(&desc->irq_data);
--out_unlock:
- 	raw_spin_unlock(&desc->lock);
- 	return;
- out:
--	if (!(desc->irq_data.chip->flags & IRQCHIP_EOI_IF_HANDLED))
--		goto out_eoi;
--	goto out_unlock;
-+	if (!(chip->flags & IRQCHIP_EOI_IF_HANDLED))
-+		chip->irq_eoi(&desc->irq_data);
-+	raw_spin_unlock(&desc->lock);
- }
- 
- /**
-Index: tip/kernel/irq/internals.h
-===================================================================
---- tip.orig/kernel/irq/internals.h
-+++ tip/kernel/irq/internals.h
-@@ -74,6 +74,7 @@ extern void irq_percpu_enable(struct irq
- extern void irq_percpu_disable(struct irq_desc *desc, unsigned int cpu);
- extern void mask_irq(struct irq_desc *desc);
- extern void unmask_irq(struct irq_desc *desc);
-+extern void unmask_threaded_irq(struct irq_desc *desc);
- 
- extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
- 
-Index: tip/kernel/irq/manage.c
-===================================================================
---- tip.orig/kernel/irq/manage.c
-+++ tip/kernel/irq/manage.c
-@@ -748,7 +748,7 @@ again:
- 
- 	if (!desc->threads_oneshot && !irqd_irq_disabled(&desc->irq_data) &&
- 	    irqd_irq_masked(&desc->irq_data))
--		unmask_irq(desc);
-+		unmask_threaded_irq(desc);
- 
- out_unlock:
- 	raw_spin_unlock_irq(&desc->lock);
+So here ACPI tells us that the pin is pulled up.
 
+And I am suspicious since this is strictly speaking pin control business
+and not GPIO, and I won't let pin control stuff sneak into the GPIO
+subsystem under the radar just because I'm not paying close enough
+attention.
+
+I have been told that these things are not dynamic (i.e. we only get
+informed that a pin is pulled up/down, we cannot actively change the
+config) is this correct?
+
+If any sort of advanced pin control business is going to come into
+ACPI a sibling driver in drivers/pinctrl/pinctrl-acpi.c needs to be
+created that can select CONFIG_PINCONF properly reflect this
+stuff in debugfs etc. (Maybe also give proper names on the pins
+since I hear this is coming to ACPI!)
+
+> +       if (WARN_ON(agpio->io_restriction == ACPI_IO_RESTRICT_INPUT &&
+> +           function == ACPI_WRITE)) {
+> +               ACPI_FREE(ares);
+> +               return AE_BAD_PARAMETER;
+> +       }
+> +
+> +       for (i = 0; i < agpio->pin_table_length; i++) {
+> +               unsigned pin = agpio->pin_table[i];
+> +               struct acpi_gpio_connection *conn;
+> +               struct gpio_desc *desc;
+> +               bool found;
+> +
+> +               desc = gpiochip_get_desc(chip, pin);
+> +               if (IS_ERR(desc)) {
+> +                       status = AE_ERROR;
+> +                       goto out;
+> +               }
+> +
+> +               mutex_lock(&achip->conn_lock);
+> +
+> +               found = false;
+> +               list_for_each_entry(conn, &achip->conns, node) {
+> +                       if (conn->desc == desc) {
+> +                               found = true;
+> +                               break;
+> +                       }
+> +               }
+> +               if (!found) {
+> +                       int ret;
+> +
+> +                       ret = gpiochip_request_own_desc(desc, "ACPI:OpRegion");
+> +                       if (ret) {
+> +                               status = AE_ERROR;
+> +                               mutex_unlock(&achip->conn_lock);
+> +                               goto out;
+> +                       }
+> +
+> +                       switch (agpio->io_restriction) {
+> +                       case ACPI_IO_RESTRICT_INPUT:
+> +                               gpiod_direction_input(desc);
+> +                               break;
+> +                       case ACPI_IO_RESTRICT_OUTPUT:
+> +                               gpiod_direction_output(desc, pull);
+
+Can you explain why the fact that the line is pulled down affects the
+default output value like this? I don't get it.
+
+A comment in the code would be needed I think.
+
+This looks more like a typical piece of code for open collector/drain
+(which is already handled by gpiolib) not pull up/down.
+
+> +                               break;
+> +                       default:
+> +                               /*
+> +                                * Assume that the BIOS has configured the
+> +                                * direction and pull accordingly.
+> +                                */
+> +                               break;
+> +                       }
+> +
+> +                       conn = kzalloc(sizeof(*conn), GFP_KERNEL);
+> +                       if (!conn) {
+> +                               status = AE_NO_MEMORY;
+> +                               mutex_unlock(&achip->conn_lock);
+> +                               goto out;
+> +                       }
+> +
+> +                       conn->desc = desc;
+> +
+> +                       list_add_tail(&conn->node, &achip->conns);
+> +               }
+> +
+> +               mutex_unlock(&achip->conn_lock);
+> +
+> +
+> +               if (function == ACPI_WRITE)
+> +                       gpiod_set_raw_value(desc, !!((1 << i) & *value));
+
+What is this? How can the expression !!((1 << i) possibly evaluate to
+anything else than "true"? I don't get it. Just (desc, *value) seem more
+apropriate.
+
+Yours,
+Linus Walleij
