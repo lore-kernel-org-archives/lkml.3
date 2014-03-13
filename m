@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684AbaCMRW2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 13:22:28 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53884 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787AbaCMRW0 (ORCPT
+	id S1754647AbaCMR0H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 13:26:07 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:40557 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122AbaCMR0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 13:22:26 -0400
-Date: Thu, 13 Mar 2014 13:22:22 -0400 (EDT)
-Message-Id: <20140313.132222.536931544768069240.davem@davemloft.net>
-To: David.Laight@ACULAB.COM
-Cc: hayeswang@realtek.com, netdev@vger.kernel.org, nic_swsd@realtek.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next v3 1/2] r8152: add
- RTL8152_EARLY_AGG_TIMEOUT_SUPER
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6DCB6E@AcuExch.aculab.com>
-References: <1394712342-15778-1-Taiwan-albertk@realtek.com>
-	<1394712342-15778-2-Taiwan-albertk@realtek.com>
-	<063D6719AE5E284EB5DD2968C1650D6D0F6DCB6E@AcuExch.aculab.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Mar 2014 10:22:26 -0700 (PDT)
+	Thu, 13 Mar 2014 13:26:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394728389.32465.230.camel@willson.li.ssimo.org>
+References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
+ <1394657163-7472-3-git-send-email-vgoyal@redhat.com> <5320CAEC.6030008@amacapital.net>
+ <CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
+ <20140313141422.GB18914@redhat.com> <1394722534.32465.227.camel@willson.li.ssimo.org>
+ <20140313150034.GG18914@redhat.com> <1394728389.32465.230.camel@willson.li.ssimo.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 13 Mar 2014 10:25:43 -0700
+Message-ID: <CALCETrWqoc8nxbRQWpRKBu23N3ZXd98Cbk7xvvtZ6crKKR6mng@mail.gmail.com>
+Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
+To: Simo Sorce <ssorce@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Laight <David.Laight@ACULAB.COM>
-Date: Thu, 13 Mar 2014 13:12:35 +0000
+On Thu, Mar 13, 2014 at 9:33 AM, Simo Sorce <ssorce@redhat.com> wrote:
+> On Thu, 2014-03-13 at 11:00 -0400, Vivek Goyal wrote:
+>> On Thu, Mar 13, 2014 at 10:55:34AM -0400, Simo Sorce wrote:
+>>
+>> [..]
+>> > > > This might not be quite as awful as I thought.  At least you're
+>> > > > looking up the cgroup at connection time instead of at send time.
+>> > > >
+>> > > > OTOH, this is still racy -- the socket could easily outlive the cgroup
+>> > > > that created it.
+>> > >
+>> > > That's a good point. What guarantees that previous cgroup was not
+>> > > reassigned to a different container.
+>> > >
+>> > > What if a process A opens the connection with sssd. Process A passes the
+>> > > file descriptor to a different process B in a differnt container.
+>> >
+>> > Stop right here.
+>> > If the process passes the fd it is not my problem anymore.
+>> > The process can as well just 'proxy' all the information to another
+>> > process.
+>> >
+>> > We just care to properly identify the 'original' container, we are not
+>> > in the business of detecting malicious behavior. That's something other
+>> > mechanism need to protect against (SELinux or other LSMs, normal
+>> > permissions, capabilities, etc...).
+>> >
+>> > > Process A exits. Container gets removed from system and new one gets
+>> > > launched which uses same cgroup as old one. Now process B sends a new
+>> > > request and SSSD will serve it based on policy of newly launched
+>> > > container.
+>> > >
+>> > > This sounds very similar to pid race where socket/connection will outlive
+>> > > the pid.
+>> >
+>> > Nope, completely different.
+>> >
+>>
+>> I think you missed my point. Passing file descriptor is not the problem.
+>> Problem is reuse of same cgroup name for a different container while
+>> socket lives on. And it is same race as reuse of a pid for a different
+>> process.
+>
+> The cgroup name should not be reused of course, if userspace does that,
+> it is userspace's issue. cgroup names are not a constrained namespace
+> like pids which force the kernel to reuse them for processes of a
+> different nature.
+>
 
-> From: Hayes Wang
-> ...
-> 
-> I should have spotted this before.
-> 
->>  /* USB_RX_EARLY_AGG */
->> -#define EARLY_AGG_SUPPER	0x0e832981
->> +#define EARLY_AGG_SUPER	((((rx_buf_sz - 1522) / 4) << 16) | \
->> +	(u32)(CONFIG_RTL8152_EARLY_AGG_TIMEOUT_SUPER <= 0 ? 85 * 125 : \
->> +	min(CONFIG_RTL8152_EARLY_AGG_TIMEOUT_SUPER * 125, 0xffff)))
->>  #define EARLY_AGG_HIGH		0x0e837a12
->>  #define EARLY_AGG_SLOW		0x0e83ffff
->> 
->> @@ -1978,7 +1980,7 @@ static void r8153_set_rx_agg(struct r8152 *tp)
->>  			ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_BUF_TH,
->>  					RX_THR_SUPPER);
->>  			ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_EARLY_AGG,
->> -					EARLY_AGG_SUPPER);
->> +					EARLY_AGG_SUPER);
->>  		} else {
->>  			ocp_write_dword(tp, MCU_TYPE_USB, USB_RX_BUF_TH,
->>  					RX_THR_HIGH);
-> 
-> It looks as though rx_buf_sz should be a parameter to EARLY_AGG_SUPER.
+You're proposing a feature that will enshrine cgroups into the API use
+by non-cgroup-controlling applications.  I don't think that anyone
+thinks that cgroups are pretty, so this is an unfortunate thing to
+have to do.
 
-And I fundamentally disagree with this being a Kconfig parameter.
+I've suggested three different ways that your goal could be achieved
+without using cgroups at all.  You haven't really addressed any of
+them.
 
-Make it run-time calculated _or_ settable via ethtool.
+In order for something like this to go into the kernel, I would expect
+a real use case and a justification for why this is the right way to
+do it.
 
-Thanks.
+"Docker containers can be identified by cgroup path" is completely
+unconvincing to me.
+
+--Andy
