@@ -1,46 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031AbaCMCal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 22:30:41 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:12973
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752923AbaCMCaQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 22:30:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-From: Yuan Yao <yao.yuan@freescale.com>
-To: <wsa@the-dreams.de>, <marex@denx.de>
-CC: <mark.rutland@arm.com>, <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-i2c@vger.kernel.org>
-Subject: [PATCH v3 0/2] i2c: add DMA support for freescale i2c driver
-Date: Thu, 13 Mar 2014 09:47:55 +0800
-Message-ID: <1394675277-24913-1-git-send-email-yao.yuan@freescale.com>
-X-Mailer: git-send-email 1.8.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1752889AbaCMCjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 22:39:19 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:55166 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568AbaCMCjR (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 12 Mar 2014 22:39:17 -0400
+Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
+From: joeyli <jlee@suse.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Stultz <john.stultz@linaro.org>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1403130049500.18573@ionos.tec.linutronix.de>
+References: <20140310110410.5b2218f6@ilfaris>
+	 <alpine.DEB.2.02.1403121722030.18573@ionos.tec.linutronix.de>
+	 <alpine.DEB.2.02.1403121729060.18573@ionos.tec.linutronix.de>
+	 <1554867.utJVyPuT6A@vostro.rjw.lan>
+	 <alpine.DEB.2.02.1403130049500.18573@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Mar 2014 10:38:27 +0800
+Message-ID: <1394678307.26565.218.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+於 四，2014-03-13 於 01:54 +0100，Thomas Gleixner 提到：
+> On Thu, 13 Mar 2014, Rafael J. Wysocki wrote:
+> > Thus follow the original idea to execute acpi_early_init() before
+> > efi_enter_virtual_mode() to help the EFI people for now and we can
+> > revisit the other problem that commit 73f7d1ca3263 attempted to
+> > address in the future (if really necessary).
+> 
+> It's not necessary at all. In fact we really want to get rid of the
+> arch specific cmos stuff which is an historical leftover.
+> 
+> I talked to John Stultz earlier today and he agrees that there are
+> only a few trivial things to add to the RTC subsystem to make this
+> work.
+> 
 
-Changed in v3:
-- fix a bug when request the dma faild.
-- some minor fixes for coding style.
-- other minor fixes.
+I sent rtc-acpitad driver for RTC subsystem on last month, I will send
+second version.
 
-Changed in v2:
-- remove has_dma_support property
-- unify i2c_imx_dma_rx and i2c_imx_dma_tx
-- unify i2c_imx_dma_read and i2c_imx_pio_read
-- unify i2c_imx_dma_write and i2c_imx_pio_write
+For using TAD to set wall clock is because in ACPI 5.0 spec, there have
+a "CMOS RTC Not Present" flag in FADT to indicate OSPM should use TAD
+when this flag set:
 
-Added in v1:
-- Enable dma if it's support dma and transfer size bigger than the threshold.
-- Add device tree bindings for i2c eDMA support.
-- Add eDMA support for i2c driver.
+CMOS RTC Not Present
+
+If set, indicates that the CMOS RTC is either not implemented, or
+does not exist at the legacy addresses. OSPM uses the Control
+Method Time and Alarm Namespace device instead.
+
+
+So, the original thinking of patch is using TAD to replace CMOS
+interface in kernel for access RTC. The timekeeping_init() is the
+earliest function to access CMOS RTC, that's why move TAD before it.
+
+I hope can discuss about "CMOS RTC Not Present" flag. If hardware vendor
+set this flag in FADT, should we avoid to access CMOS RTC interface in
+any kernel code?
+
+> >From the timekeeping POV there is absolutely no need to set the wall
+> clock time early. The kernel boot phase does not care about wall time
+> at all. We should have it done before we hit userspace, but not even
+> that is a hard requirement.
+
+I agree! If kernel boot phase does not care about wall time, then we
+don't need parse DSDT for access TAD too early.
+
+> 
+> That TAD/EFI time mess is not going to happen before that is solved.
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+
+ACPI TAD return local time and timezone information so kernel can adjust
+wall time then don't need userspace involve. 
+
+
+Thanks a lot!
+Joey Lee
 
