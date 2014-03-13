@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbaCMS02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 14:26:28 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:38633 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468AbaCMS00 (ORCPT
+	id S1754981AbaCMS1s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 14:27:48 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:59470 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754690AbaCMS1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 14:26:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <1394680527-28970-3-git-send-email-mcgrof@do-not-panic.com>
-References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
-	<1394680527-28970-3-git-send-email-mcgrof@do-not-panic.com>
-Date: Thu, 13 Mar 2014 11:26:25 -0700
-Message-ID: <CAHA+R7Pf6rM5h1uGiqrru5LkN9C7Nm7V42cucHSOV1s7_+F7Gw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] bridge: trigger a bridge calculation upon port changes
-From: Cong Wang <cwang@twopensource.com>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, xen-devel@lists.xenproject.org, mcgrof@suse.com,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        bridge@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 13 Mar 2014 14:27:47 -0400
+Message-ID: <1394735259.26600.14.camel@pippen.local.home>
+Subject: Re: [PATCH v6 4/7] arm64: Add ftrace support
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 13 Mar 2014 14:27:39 -0400
+In-Reply-To: <20140313170834.GE25472@mudshark.cambridge.arm.com>
+References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
+	 <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
+	 <1394705630-12384-5-git-send-email-takahiro.akashi@linaro.org>
+	 <20140313170834.GE25472@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-4+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 8:15 PM, Luis R. Rodriguez
-<mcgrof@do-not-panic.com> wrote:
->                         spin_lock_bh(&p->br->lock);
->                         err = br_setport(p, tb);
-> +                       changed = br_stp_recalculate_bridge_id(p->br);
+On Thu, 2014-03-13 at 17:08 +0000, Will Deacon wrote:
 
-Looks like you only want to check if the mac addr gets changed here,
-but br_stp_recalculate_bridge_id() does more than just checking it,
-are you sure the side-effects are all what you want here?
+> > +       /*
+> > +        * Note:
+> > +        * No protection against faulting at *parent, which may be seen
+> > +        * on other archs. It's unlikely on AArch64.
+> > +        */
+> > +       old = *parent;
+> > +       *parent = return_hooker;
+> 
+> return_hook? People might take it personally otherwise ;)
 
->                         spin_unlock_bh(&p->br->lock);
-> +                       if (changed)
-> +                               call_netdevice_notifiers(NETDEV_CHANGEADDR,
-> +                                                        p->br->dev);
-> +                       netdev_update_features(p->br->dev);
+No, return_hooker is consistent with all the other archs. Hey, it's a
+rugby position! Note, which I was when I played. ;-)
 
-I think this is supposed to be in netdev event handler of br->dev
-instead of here.
+> 
+> > +       trace.func = self_addr;
+> 
+> in kernel/ftrace/ftrace.c there's an smb_wmb() between setting up
+> tracing_graph_pause and setting the ret_stack with a comment saying:
+> 
+>     /* Make sure the tasks see the -1 first: */
+> 
+> Why don't we have a corresponding read-barrier here?
+
+The corresponding rmb is in kernel/trace/trace_function_graph
+ftrace_push_return_trace().
+
+-- Steve
+
+
