@@ -1,125 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931AbaCMKQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:16:12 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:29897 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548AbaCMKQJ (ORCPT
+	id S1754195AbaCMKQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:16:26 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:41157 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543AbaCMKQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:16:09 -0400
-X-IronPort-AV: E=Sophos;i="4.97,646,1389772800"; 
-   d="scan'208";a="19197632"
-Message-ID: <53218565.6080605@broadcom.com>
-Date: Thu, 13 Mar 2014 11:16:05 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>, Rob Herring <robh+dt@kernel.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Chen-Yu Tsai <wens@csie.org>, Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [RFC] dt: bindings: add bindings for Broadcom bcm43xx sdio devices
-References: <1392059868-8782-1-git-send-email-arend@broadcom.com> <530D1E69.7010504@wwwdotorg.org>
-In-Reply-To: <530D1E69.7010504@wwwdotorg.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Mar 2014 06:16:23 -0400
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
+        catalin.marinas@arm.com, will.deacon@arm.com
+Cc: dsaxena@linaro.org, arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v7 0/2] arm64: Add audit support
+Date: Thu, 13 Mar 2014 19:16:05 +0900
+Message-Id: <1394705767-12423-1-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1393564635-3921-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1393564635-3921-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 11:51 PM, Stephen Warren wrote:
-> On 02/10/2014 12:17 PM, Arend van Spriel wrote:
->> The Broadcom bcm43xx sdio devices are fullmac devices that may be
->> integrated in ARM platforms. Currently, the brcmfmac driver for
->> these devices support use of platform data. This patch specifies
->> the bindings that allow this platform data to be expressed in the
->> devicetree.
-> 
->> diff --git a/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt b/Documentation/devicetree/bindings/staging/net/wireless/brcm,bcm43xx-fmac.txt
-> 
->> + - compatible : Should be "brcm,bcm43xx-fmac".
->> + - wlan-supply : phandle for fixed regulator used to control power for
->> +	the device/module.
-> 
-> Ignoring the fact that perhaps this should just be a GPIO instead and
-> assuming it actually make sense for this to be a regulator:
-> 
-> Why "fixed regulator" not just "the regulator". There shouldn't be any
-> requirement for the power supply to the device to be fixed; the driver
-> should (a) set the voltage (which will be a no-op for a fixed regulator
-> already providing that voltage), then (b) enable the regulator. That
-> would allow a PMIC with programmable voltage to be feeding the device.
-> 
-> Now, if this property was really intended to control some enable GPIO on
-> the device, as others have said, this shouldn't be a regulator property
-> but rather a GPIO property. However, there is definitely some power
-> supply fed to the device, so you definitely need /some/ supply property
-> here.
-> 
-> Aren't there other enable GPIOs required? These should be specified in DT.
-> 
-> Doesn't the WiFi chip/module require a (32KHz?) clock? If so, that needs
-> to be represented in DT. Preferably write the binding to require
-> clock-names (name-based lookup) rather than just clocks (index-based
-> lookup).
+(Please apply this patch after my ftrace patch to resolve some conflict
+on arm64/kernel/ptrace.c, functionally it doesn't depend on ftrace though)
 
-Hi Stephen,
+This patchset adds system call audit support on arm64.
+Both 32-bit (AUDIT_ARCH_ARM) and 64-bit tasks (AUDIT_ARCH_AARCH64)
+are supported. Since arm64 has the exact same set of system calls
+on LE and BE, we don't care about endianness (or more specifically
+__AUDIT_ARCH_64BIT bit in AUDIT_ARCH_*).
 
-Thanks for these comments. While I agree with most of them, I am having
-some difficulty with the DT concept. Essentially, a DT node describes a
-part of the system. My scope for this change is probably limited wearing
-my brcmfmac glasses. Am I correct in assuming that a DT node may be
-processed/used by multiple drivers. As an example, the 32 kHz clock is
-not something brcmfmac cares about. It simple needs to be available and
-hooked up to the wlan device. The DT should have another node for this
-clock which a (common) clock driver picks up. So having it referenced in
-this node is purely informational, right?
+There are some prerequisites for this patch to work correctly:
+* "audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL" patch
+* "audit: generic compat system call audit support" patch
+* "arm64: __NR_* definitions for compat syscalls" patch from Catalin
+* "arm64: make a single hook to syscall_trace() for all syscall features" patch
+* "arm64: split syscall_trace() into separate functions for enter/exit" patch
+* "arm64: Add regs_return_value() in syscall.h" patch
+* userspace audit tool (v2.3.2 + my patch for arm64)
 
-Regards,
-Arend
+Please review them as well for better understandings.
 
->> +Optional properties:
->> + - drive-strength : drive strength used for SDIO pins on device (default = 6mA).
-> 
-> As mentioned elsewhere, since that's a binding-specific property, rename
-> it brcm,drive-strength.
-> 
->> + - interrupt-parent : the phandle for the interrupt controller to which the
->> +	device interrupt (HOST_WAKE) is connected.
-> 
-> That's such a common property, individual bindings don't typically
-> mention it.
-> 
->> + - interrupts : interrupt specifier encoded according the interrupt controller
->> +	specified by interrupt-parent property.
-> 
-> The description of the property should say which interrupt (name and/or
-> description) it's describing, even if there's only 1.
-> 
-> 
->> +mmc3: mmc@01c20000 {
->> +	pinctrl-0 = <&mmc3_pins>;
->> +	pinctrl-1 = <&wifi_host_wake>;
->> +	vmmc-supply = <&mmc3_supply>;
->> +	bus-width = <4>;
-> 
-> None of that is really relevant to this binding, and may vary from SDIO
-> controller to SDIO controller, so may end up being wrong.
-> 
-> I'm not sure whether it makes sense to show the example inside some
-> arbitrary SDIO controller node. Perhaps /just/ put the WiFi node in the
-> example? The text above should be enough to describe that the node
-> should be inside an SDIO controller.
-> 
->> +	bcm4335: bcm4335@0 {
->> +		compatible = "brcm,bcm43xx-fmac";
->> +		wlan-supply = <&wlan-reg>;
->> +		drive-strength = <4>;
->> +		interrupt-parent = <&gpx2>;
->> +		interrupts = <5 IRQ_TYPE_LEVEL_HIGH>;
->> +		interrupt-names = "HOST_WAKE";
-> 
-> interrupt-names wasn't documented in the list of properties above.
-> Entries in *-names properties are usually lower-case.
-> 
+This code was tested on both 32-bit and 64-bit LE userland 
+in the following two ways:
+1) basic operations with auditctl/autrace
+  # auditctl -a exit,always -S openat -F path=/etc/inittab
+  # auditctl -a exit,always -F dir=/tmp -F perm=rw
+  # auditctl -a task,always
+  # autrace /bin/ls
+    by comparing output from autrace with one from strace
+
+2) audit-test-code (+ my workarounds for arm/arm64)
+  by running "audit-tool", "filter" and "syscalls" test categories.
+
+Changes v6 -> v7:
+* changed an include file in syscall.h from <linux/audit.h> to
+  <uapi/linux/audit.h> [1/2]
+* aligned with the patch, "arm64: split syscall_trace() into separate
+  functions for enter/exit" [2/2]
+
+Changes v5 -> v6:
+* removed and put "arm64: Add regs_return_value() in syscall.h" patch into
+  a separate set
+* aligned with the change in "arm64: make a single hook to syscall_trace()
+  for all syscall features" v3 [1/2]
+
+Changes v4 -> v5:
+* rebased to 3.14-rcX
+* added a guard against TIF_SYSCALL_AUDIT [3/3]
+* aligned with the change in "arm64: make a single hook to syscall_trace()
+  for all syscall features" v2 [3/3]
+
+Changes v3 -> v4:
+* Modified to sync with the patch, "make a single hook to syscall_trace()
+  for all syscall features"
+* aligned with "audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL" patch
+
+Changes v2 -> v3:
+* Remove asm/audit.h.
+  See "generic compat syscall audit support" patch v4
+* Remove endianness dependency, ie. AUDIT_ARCH_ARMEB/AARCH64EB.
+* Remove kernel/syscalls/Makefile which was used to create unistd32.h.
+  See Catalin's "Add __NR_* definitions for compat syscalls" patch
+
+Changes v1 -> v2:
+* Modified to utilize "generic compat system call audit" [3/6, 4/6, 5/6]
+  Please note that a required header, unistd_32.h, is automatically
+  generated from unistd32.h.
+* Refer to regs->orig_x0 instead of regs->x0 as the first argument of
+  system call in audit_syscall_entry() [6/6]
+* Include "Add regs_return_value() in syscall.h" patch [2/6],
+  which was not intentionally included in v1 because it could be added
+  by "kprobes support".
+
+AKASHI Takahiro (2):
+  arm64: Add audit support
+  arm64: audit: Add audit hook in syscall_trace_enter/exit()
+
+ arch/arm64/Kconfig               |    1 +
+ arch/arm64/include/asm/syscall.h |   15 +++++++++++++++
+ arch/arm64/kernel/ptrace.c       |    7 +++++++
+ include/uapi/linux/audit.h       |    1 +
+ 4 files changed, 24 insertions(+)
+
+-- 
+1.7.9.5
 
