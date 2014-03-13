@@ -1,77 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081AbaCMSE4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 14:04:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12391 "EHLO mx1.redhat.com"
+	id S1755129AbaCMSFi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 14:05:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51359 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755011AbaCMSEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 14:04:34 -0400
+	id S1754873AbaCMSE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 14:04:29 -0400
 From: Hans de Goede <hdegoede@redhat.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
         Maxime Ripard <maxime.ripard@free-electrons.com>
 Cc: linux-arm-kernel@lists.infradead.org,
         devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
         linux-sunxi@googlegroups.com, Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH v3 4/4] irqchip: sun4i: Don't ack IRQs != 0, fix acking of IRQ 0
-Date: Thu, 13 Mar 2014 19:03:54 +0100
-Message-Id: <1394733834-26839-5-git-send-email-hdegoede@redhat.com>
+Subject: [PATCH v3 1/4] irq: Add a new IRQCHIP_EOI_THREADED flag
+Date: Thu, 13 Mar 2014 19:03:51 +0100
+Message-Id: <1394733834-26839-2-git-send-email-hdegoede@redhat.com>
 In-Reply-To: <1394733834-26839-1-git-send-email-hdegoede@redhat.com>
 References: <1394733834-26839-1-git-send-email-hdegoede@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All IRQs except for IRQ 0 seem to not need acking, so drop acking for them.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-The ENMI needs to have the ack done *after* clearing the interrupt source,
-otherwise we will get a spurious interrupt for each real interrupt.
+This flag must be used in combination with handle_fasteoi_irq, when set
+handle_fasteoi_irq will delay the calling of chip->irq_eoi until the threaded
+handler has run.
 
-So use the new IRQCHIP_EOI_THREADED flag for this in combination with
-handle_fasteoi_irq. This uses a separate irq_chip struct for IRQ 0,
-since we only want this behavior for IRQ 0.
-
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Tested-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 ---
- drivers/irqchip/irq-sun4i.c | 19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ include/linux/irq.h    |  3 +++
+ kernel/irq/chip.c      | 48 ++++++++++++++++++++++++++++++++++++++++--------
+ kernel/irq/internals.h |  1 +
+ kernel/irq/manage.c    |  2 +-
+ 4 files changed, 45 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
-index 8a2fbee..a0ed1ea 100644
---- a/drivers/irqchip/irq-sun4i.c
-+++ b/drivers/irqchip/irq-sun4i.c
-@@ -76,16 +76,29 @@ static void sun4i_irq_unmask(struct irq_data *irqd)
- 
- static struct irq_chip sun4i_irq_chip = {
- 	.name		= "sun4i_irq",
--	.irq_ack	= sun4i_irq_ack,
- 	.irq_mask	= sun4i_irq_mask,
- 	.irq_unmask	= sun4i_irq_unmask,
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 7dc1003..0f036fb 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -349,6 +349,8 @@ struct irq_chip {
+  * IRQCHIP_ONOFFLINE_ENABLED:	Only call irq_on/off_line callbacks
+  *				when irq enabled
+  * IRQCHIP_SKIP_SET_WAKE:	Skip chip.irq_set_wake(), for this irq chip
++ * IRQCHIP_ONESHOT_SAFE:	One shot does not require mask/unmask
++ * IRQCHIP_EOI_THREADED:	Chip requires eoi() on unmask in threaded mode
+  */
+ enum {
+ 	IRQCHIP_SET_TYPE_MASKED		= (1 <<  0),
+@@ -357,6 +359,7 @@ enum {
+ 	IRQCHIP_ONOFFLINE_ENABLED	= (1 <<  3),
+ 	IRQCHIP_SKIP_SET_WAKE		= (1 <<  4),
+ 	IRQCHIP_ONESHOT_SAFE		= (1 <<  5),
++	IRQCHIP_EOI_THREADED		= (1 <<  6),
  };
  
-+/* IRQ 0 / the ENMI needs a late eoi call */
-+static struct irq_chip sun4i_irq_chip_enmi = {
-+	.name		= "sun4i_irq",
-+	.irq_eoi	= sun4i_irq_ack,
-+	.irq_mask	= sun4i_irq_mask,
-+	.irq_unmask	= sun4i_irq_unmask,
-+	.flags		= IRQCHIP_EOI_THREADED | IRQCHIP_EOI_IF_HANDLED,
-+};
-+
- static int sun4i_irq_map(struct irq_domain *d, unsigned int virq,
- 			 irq_hw_number_t hw)
- {
--	irq_set_chip_and_handler(virq, &sun4i_irq_chip,
--				 handle_level_irq);
-+	if (hw == 0)
-+		irq_set_chip_and_handler(virq, &sun4i_irq_chip_enmi,
-+					 handle_fasteoi_irq);
-+	else
-+		irq_set_chip_and_handler(virq, &sun4i_irq_chip,
-+					 handle_level_irq);
-+
- 	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+ /* This include will go away once we isolated irq_desc usage to core code */
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index dc04c16..6397df2 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -281,6 +281,19 @@ void unmask_irq(struct irq_desc *desc)
+ 	}
+ }
  
- 	return 0;
++void unmask_threaded_irq(struct irq_desc *desc)
++{
++	struct irq_chip *chip = desc->irq_data.chip;
++
++	if (chip->flags & IRQCHIP_EOI_THREADED)
++		chip->irq_eoi(&desc->irq_data);
++
++	if (chip->irq_unmask) {
++		chip->irq_unmask(&desc->irq_data);
++		irq_state_clr_masked(desc);
++	}
++}
++
+ /*
+  *	handle_nested_irq - Handle a nested irq from a irq thread
+  *	@irq:	the interrupt number
+@@ -435,6 +448,27 @@ static inline void preflow_handler(struct irq_desc *desc)
+ static inline void preflow_handler(struct irq_desc *desc) { }
+ #endif
+ 
++static void cond_unmask_eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
++{
++	if (!(desc->istate & IRQS_ONESHOT)) {
++		chip->irq_eoi(&desc->irq_data);
++		return;
++	}
++	/*
++	 * We need to unmask in the following cases:
++	 * - Oneshot irq which did not wake the thread (caused by a
++	 *   spurious interrupt or a primary handler handling it
++	 *   completely).
++	 */
++	if (!irqd_irq_disabled(&desc->irq_data) &&
++	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot) {
++		chip->irq_eoi(&desc->irq_data);
++		unmask_irq(desc);
++	} else if (!(chip->flags & IRQCHIP_EOI_THREADED)) {
++		chip->irq_eoi(&desc->irq_data);
++	}
++}
++
+ /**
+  *	handle_fasteoi_irq - irq handler for transparent controllers
+  *	@irq:	the interrupt number
+@@ -448,6 +482,8 @@ static inline void preflow_handler(struct irq_desc *desc) { }
+ void
+ handle_fasteoi_irq(unsigned int irq, struct irq_desc *desc)
+ {
++	struct irq_chip *chip = desc->irq_data.chip;
++
+ 	raw_spin_lock(&desc->lock);
+ 
+ 	if (unlikely(irqd_irq_inprogress(&desc->irq_data)))
+@@ -473,18 +509,14 @@ handle_fasteoi_irq(unsigned int irq, struct irq_desc *desc)
+ 	preflow_handler(desc);
+ 	handle_irq_event(desc);
+ 
+-	if (desc->istate & IRQS_ONESHOT)
+-		cond_unmask_irq(desc);
++	cond_unmask_eoi_irq(desc, chip);
+ 
+-out_eoi:
+-	desc->irq_data.chip->irq_eoi(&desc->irq_data);
+-out_unlock:
+ 	raw_spin_unlock(&desc->lock);
+ 	return;
+ out:
+-	if (!(desc->irq_data.chip->flags & IRQCHIP_EOI_IF_HANDLED))
+-		goto out_eoi;
+-	goto out_unlock;
++	if (!(chip->flags & IRQCHIP_EOI_IF_HANDLED))
++		chip->irq_eoi(&desc->irq_data);
++	raw_spin_unlock(&desc->lock);
+ }
+ 
+ /**
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index 001fa5b..e98bb56 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -73,6 +73,7 @@ extern void irq_percpu_enable(struct irq_desc *desc, unsigned int cpu);
+ extern void irq_percpu_disable(struct irq_desc *desc, unsigned int cpu);
+ extern void mask_irq(struct irq_desc *desc);
+ extern void unmask_irq(struct irq_desc *desc);
++extern void unmask_threaded_irq(struct irq_desc *desc);
+ 
+ extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
+ 
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 481a13c..9147fef 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -718,7 +718,7 @@ again:
+ 
+ 	if (!desc->threads_oneshot && !irqd_irq_disabled(&desc->irq_data) &&
+ 	    irqd_irq_masked(&desc->irq_data))
+-		unmask_irq(desc);
++		unmask_threaded_irq(desc);
+ 
+ out_unlock:
+ 	raw_spin_unlock_irq(&desc->lock);
 -- 
 1.9.0
 
