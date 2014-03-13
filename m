@@ -1,138 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742AbaCMPBR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:01:17 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:52014 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665AbaCMPBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:01:10 -0400
-Date: Thu, 13 Mar 2014 11:01:08 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Liu hua <sdu.liu@huawei.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, msalter@redhat.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Wang Nan <wangnan0@huawei.com>, peifeiyue@huawei.com,
-        wangkefeng.wang@huawei.com, Li Zefan <lizefan@huawei.com>
-Subject: Re: [ARM]Fixmap mapping region is not enough for system of 14+
- CPUs.
-In-Reply-To: <53215F99.8060804@huawei.com>
-Message-ID: <alpine.LFD.2.11.1403131049410.1217@knanqh.ubzr>
-References: <53203F9C.8040500@huawei.com> <53204956.30703@huawei.com> <alpine.LFD.2.11.1403121306280.1217@knanqh.ubzr> <53215F99.8060804@huawei.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1753514AbaCMPFR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:05:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41189 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751335AbaCMPFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:05:15 -0400
+Date: Thu, 13 Mar 2014 15:05:12 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Yong-Taek Lee <ytk.lee@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH v2] mm/page_alloc: fix freeing of MIGRATE_RESERVE
+ migratetype pages
+Message-ID: <20140313150512.GR10663@suse.de>
+References: <42197912.c6v2hLDCey@amdc1032>
+ <20140313142540.GQ10663@suse.de>
+ <3661570.lSOEkVGv4G@amdc1032>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <3661570.lSOEkVGv4G@amdc1032>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Mar 2014, Liu hua wrote:
-
-> On 2014/3/13 1:08, Nicolas Pitre wrote:
-> > On Wed, 12 Mar 2014, Liu hua wrote:
+On Thu, Mar 13, 2014 at 03:37:46PM +0100, Bartlomiej Zolnierkiewicz wrote:
+> On Thursday, March 13, 2014 02:25:40 PM Mel Gorman wrote:
+> > On Fri, Feb 14, 2014 at 07:34:17PM +0100, Bartlomiej Zolnierkiewicz wrote:
+> > > Pages allocated from MIGRATE_RESERVE migratetype pageblocks
+> > > are not freed back to MIGRATE_RESERVE migratetype free
+> > > lists in free_pcppages_bulk()->__free_one_page() if we got
+> > > to free_pcppages_bulk() through drain_[zone_]pages().
+> > > The freeing through free_hot_cold_page() is okay because
+> > > freepage migratetype is set to pageblock migratetype before
+> > > calling free_pcppages_bulk().  If pages of MIGRATE_RESERVE
+> > > migratetype end up on the free lists of other migratetype
+> > > whole Reserved pageblock may be later changed to the other
+> > > migratetype in __rmqueue_fallback() and it will be never
+> > > changed back to be a Reserved pageblock.  Fix the issue by
+> > > preserving freepage migratetype as a pageblock migratetype
+> > > (instead of overriding it to the requested migratetype)
+> > > for MIGRATE_RESERVE migratetype pages in rmqueue_bulk().
+> > > 
+> > > The problem was introduced in v2.6.31 by commit ed0ae21
+> > > ("page allocator: do not call get_pageblock_migratetype()
+> > > more than necessary").
+> > > 
+> > > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > > Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
+> > > Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> > > Cc: Mel Gorman <mgorman@suse.de>
+> > > Cc: Hugh Dickins <hughd@google.com>
 > > 
-> >> Hi Russell, Will or Nicolas,
-> >>
-> >> (In this mail, we only discuss ARM 32-bit linux.)
-> >>
-> >> As we know, the region (0xfff00000-0xfffdffff) is reserved as fixmap
-> >> mapping region.
-> >>
-> >> The function "kmap_atomic" maps highmem pages to this region referring
-> >> to CPUID and per-cpu variable "__kmap_atomic_idx" via
-> >>
-> >>   idx = type + KM_TYPE_NR * smp_processor_id();
-> >>   vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
-> >>
-> >> Size of region used by one cpu is 0x10000 (KM_TYPE_NR << PAGE_SHIFT).
-> >> And the total size of the fixmap mapping region is 0xe0000.
-> >> (only support 14 CPUs).
-> >>
-> >> So in a system of more than 14 CPUs, this region is not large enough.
-> >> should we change the memory layout on ARM Linux to support 14+ cpu system ?
-> >> Or can we do anything else to support that ?
+> > It's a pity about the unconditional pageblock lookup in that path but I
+> > didn't see a better way around it so
 > > 
-> > How many CPUs do you have?
-> > 
-> > What about the following patch?  If this doesn't work for you then more 
-> > intrusive changes will be needed.
-> > 
-> > diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-> > index 68ea615c2a..254f2df08d 100644
-> > --- a/arch/arm/include/asm/fixmap.h
-> > +++ b/arch/arm/include/asm/fixmap.h
-> > @@ -14,7 +14,17 @@
-> >   */
-> >  
-> >  #define FIXADDR_START		0xfff00000UL
-> > +
-> > +#if !defined(CONFIG_HAVE_TCM) && !defined(CONFIG_CPU_XSCALE)
-> > +/*
-> > + * If no TCM nor on on a XScale then enlarge the fixmap area to
-> > + * accommodate up to 30 CPUs.
-> > + */
-> > +#define FIXADDR_END		0xffff0000UL
-> > +#else
-> >  #define FIXADDR_END		0xfffe0000UL
-> One cpu need 0x10000-size region; So this patch can only support
-> uo to 15 CPUs
-Hmmm... You're right of course.
+> > Acked-by: Mel Gorman <mgorman@suse.de>
+> 
+> Thanks but does that mean that v3 should be abandoned:
+> 
+> 	https://lkml.org/lkml/2014/3/6/365
+> 
 
-> We have 16 CPUs in our system. And your patch cannot work if
-> the CPU number exceeds 15.
-> 
-> In addition, we can configure NR_CPUS up to 32. So should we
-> solve this problem completely?
-> 
-> There is an 1M-size hole between DMA mapping region and fixmap
-> mapping region(0xffe00000-0xfff00000).if this region are belonged
-> to fixmap mapping region, it can only support 30 CPUs.
-> 
-> Since we have alloced a second level page table to coverring
-> 0xffe00000 - 0xffffffff(2M). And 0xffff0000 upwards used as
-> vector pages. So if the left region is all used as fixmap mapping
-> region(size : 0x1f0000). Up to 31 CPUs is supported.
-> 
-> 
-> The following patch can solve our problem(up to 30 CPUs), But it
-> reduce the DMA region. What do you think about it ?
-> Is is necessory to solve this problem completely(up to 32 CPUs)
-> ?
-> 
-> 
-> Liu Hua
-> 
-> -----------------
-> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-> index 68ea615..8379891 100644
-> --- a/arch/arm/include/asm/fixmap.h
-> +++ b/arch/arm/include/asm/fixmap.h
-> @@ -13,7 +13,7 @@
->   * 0xfffe0000 and 0xfffeffff.
->   */
-> 
-> -#define FIXADDR_START              0xfff00000UL
-> +#define FIXADDR_START                0xffe00000UL
->  #define FIXADDR_END            0xfffe0000UL
->  #define FIXADDR_TOP            (FIXADDR_END - PAGE_SIZE)
-> 
-> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-> index 4afb376..0c40674 100644
-> --- a/arch/arm/include/asm/memory.h
-> +++ b/arch/arm/include/asm/memory.h
-> @@ -83,7 +83,7 @@
->   */
->  #define IOREMAP_MAX_ORDER      24
-> 
-> -#define CONSISTENT_END             (0xffe00000UL)
-> +#define CONSISTENT_END               (0xffd00000UL)
+Bah, no. v3 looks better. I was going through the vast pile of mail marked
+unread and thought it must be the latest version if it was still "new"
+and didn't search linux-mm. I was obviously thinking more clearly when I
+saw v2 the first time.
 
-Some systems might possibly have issues with a smaller DMA region. 
-I don't recall which though.
+Sorry for the confusion.
 
-you should also update Documentation/arm/memory.txt in your patch.
-Then I'd suggest you can repost it more formally for comments.
-
-
-Nicolas
+-- 
+Mel Gorman
+SUSE Labs
