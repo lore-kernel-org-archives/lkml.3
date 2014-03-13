@@ -1,63 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaCMMDu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 08:03:50 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34805 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439AbaCMMDt (ORCPT
+	id S1754166AbaCMMEU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 08:04:20 -0400
+Received: from mail.caobang.gov.vn ([123.30.179.69]:58766 "EHLO
+	mail.caobang.gov.vn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439AbaCMMES convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 08:03:49 -0400
-Date: Thu, 13 Mar 2014 13:04:36 +0100
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, zheng.z.yan@intel.com, bp@alien8.de,
-        ak@linux.intel.com
-Subject: [PATCH] perf/x86/uncore: fix missing end markers for SNB/IVB/HSW IMC
- PMU
-Message-ID: <20140313120436.GA14236@quad>
+	Thu, 13 Mar 2014 08:04:18 -0400
+X-Greylist: delayed 729 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Mar 2014 08:04:18 EDT
+Date: Thu, 13 Mar 2014 18:47:47 +0700 (ICT)
+From: Darlehen Unternehmen <namlh@caobang.gov.vn>
+Reply-To: "turkiyeloanservices@hotmail.com" <turkiyeloanservices@hotmail.com>
+Message-ID: <9667074.42749249.1394711267234.JavaMail.root@caobang.gov.vn>
+Subject: darlehen
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.58.78.20]
+X-Mailer: Zimbra 7.2.4_GA_2900 (ZimbraWebClient - GC33 (Win)/7.2.4_GA_2900)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This patch fixes a bug with the SNB/IVB/HSW uncore
-mmeory controller support.
 
-The PCI Ids tables for the memory controller were missing end markers.
-That could cause random crashes on boot during or after PCI device
-registration.
+Guten Tag Darlehen Antragsteller, Beantragen Sie jetzt Ihre 2% niedrigeren Zinssatz Darlehen. die unten stehenden folgende bei Interesse: 
+Name: 
+Darlehensbetrag : 
+Dauer: 
+Telefonnummer: 
+Grüßen,
+Jenny
 
-Signed-off-by: Stephane Erainan <eranian@google.com>
---
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index f509ab1..bd2253d 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -1989,6 +1989,7 @@ static DEFINE_PCI_DEVICE_TABLE(snb_uncore_pci_ids) = {
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SNB_IMC),
- 		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
- 	},
-+	{ /* end: all zeroes */ },
- };
- 
- static DEFINE_PCI_DEVICE_TABLE(ivb_uncore_pci_ids) = {
-@@ -1996,6 +1997,7 @@ static DEFINE_PCI_DEVICE_TABLE(ivb_uncore_pci_ids) = {
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_IMC),
- 		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
- 	},
-+	{ /* end: all zeroes */ },
- };
- 
- static DEFINE_PCI_DEVICE_TABLE(hsw_uncore_pci_ids) = {
-@@ -2003,6 +2005,7 @@ static DEFINE_PCI_DEVICE_TABLE(hsw_uncore_pci_ids) = {
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HSW_IMC),
- 		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
- 	},
-+	{ /* end: all zeroes */ },
- };
- 
- static struct pci_driver snb_uncore_pci_driver = {
