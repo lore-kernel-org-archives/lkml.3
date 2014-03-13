@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbaCMQWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 12:22:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65273 "EHLO mga02.intel.com"
+	id S1754269AbaCMQSB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 12:18:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:65216 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754278AbaCMQSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 12:18:07 -0400
+	id S1753776AbaCMQR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 12:17:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,648,1389772800"; 
-   d="scan'208";a="471738672"
+   d="scan'208";a="471738550"
 From: Zhang Rui <rui.zhang@intel.com>
 To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
         rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
         Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH V2 04/13] ACPI: remove unsupported serial PNP ids from acpi pnp scan handler id lsit
-Date: Fri, 14 Mar 2014 00:16:44 +0800
-Message-Id: <1394727413-3587-5-git-send-email-rui.zhang@intel.com>
+Subject: [PATCH V2 01/13] ACPI: introduce .match() callback for ACPI scan handler
+Date: Fri, 14 Mar 2014 00:16:41 +0800
+Message-Id: <1394727413-3587-2-git-send-email-rui.zhang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394727413-3587-1-git-send-email-rui.zhang@intel.com>
 References: <1394727413-3587-1-git-send-email-rui.zhang@intel.com>
@@ -24,32 +24,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "serial" pnp driver supports some unknown PNP modems (PNPCXXX/PNPDXXX)
-by matching magic strings in the pnp device name or the pnp device card name.
+Currently, ACPI scan handler uses strcmp() to match device ids
+and scan handler ids.
 
-ACPI enumerated PNP device neither supports pnp card, nor supports those magic
-strings in its device name, which means this mechamism never works for ACPI
-enumerated PNPCXXX/PNPDXXX devices.
-So it is safe to remove those two ids from the ACPI pnp scan handler id list.
+When converting PNPACPI enumeration into a scan handler, which I will do
+later in this patch set, the current code becomes not flexible enough
+because ACPI pnp scan handler requires wildcase and case insensitive support.
+
+Thus a per scan handler .match() callback is introduced in this patch,
+so that specified scan handler can have more flexible matching mechanism
+by introduce its own .match() callback.
 
 Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 ---
- drivers/acpi/acpi_pnp.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/acpi/scan.c     |   17 +++++++++++------
+ include/acpi/acpi_bus.h |    1 +
+ 2 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
-index db49e9e..2a7f86f 100644
---- a/drivers/acpi/acpi_pnp.c
-+++ b/drivers/acpi/acpi_pnp.c
-@@ -300,8 +300,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[]= {
- 	{"LTS0001"}, /* LG C1 EXPRESS DUAL (C1-PB11A3) touch screen (actually a FUJ02E6 in disguise) */
- 	{"WCI0003"}, /* Rockwell's (PORALiNK) 33600 INT PNP */
- 	{"WEC1022"}, /* Winbond CIR port, should not be probed. We should keep track of it to prevent the legacy serial driver from probing it */
--	{"PNPCXXX"}, /* Unknown PnP modems */
--	{"PNPDXXX"}, /* More unknown PnP modems */
- 	/* scl200wdt */
- 	{"NSC0800"}, /* National Semiconductor PC87307/PC97307 watchdog component */
- 	/* mpu401 */
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 57b053f..dca22eb 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -1907,14 +1907,19 @@ static bool acpi_scan_handler_matching(struct acpi_scan_handler *handler,
+ 	const struct acpi_device_id *devid;
+ 
+ 	for (devid = handler->ids; devid->id[0]; devid++)
+-		if (!strcmp((char *)devid->id, idstr)) {
+-			if (matchid)
+-				*matchid = devid;
+-
+-			return true;
+-		}
++		if (handler->match) {
++			if (handler->match(idstr, (char *)devid->id))
++				goto success;
++		} else
++			if (!strcmp((char *)devid->id, idstr))
++				goto success;
+ 
+ 	return false;
++
++success:
++	if (matchid)
++		*matchid = devid;
++	return true;
+ }
+ 
+ static struct acpi_scan_handler *acpi_scan_match_handler(char *idstr,
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 8256eb4..8c5e235 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -131,6 +131,7 @@ static inline struct acpi_hotplug_profile *to_acpi_hotplug_profile(
+ struct acpi_scan_handler {
+ 	const struct acpi_device_id *ids;
+ 	struct list_head list_node;
++	int (*match)(char *devid, char *handler_id);
+ 	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
+ 	void (*detach)(struct acpi_device *dev);
+ 	struct acpi_hotplug_profile hotplug;
 -- 
 1.7.9.5
 
