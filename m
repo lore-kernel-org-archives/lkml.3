@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474AbaCMMvr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 08:51:47 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:46752 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaCMMvp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 08:51:45 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-b9-5321a9dfc613
-Message-id: <5321A9DD.2060901@samsung.com>
-Date: Thu, 13 Mar 2014 13:51:41 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v2 3/3] Documentation: mfd: s2mps11: Describe S5M8767 and
- S2MPS14 clocks
-References: <1394703425-6462-1-git-send-email-k.kozlowski@samsung.com>
- <1394703425-6462-4-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1394703425-6462-4-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t/xa7r3VyoGG7zcKm6xccZ6Vov5R86x
-	WvS/Wchqce7VSkaL1y8MLc42vWG3uP/1KKPFpsfXWC0u75rDZjHj/D4mi7VH7rJbLL1+kcni
-	6YSLbBYTpq9lsWjde4Td4uSfXkaL092sFhdXfGGyaP+7l81izvR3TA4iHmvmrWH0uNzXy+Sx
-	cvkXNo9NqzrZPO5c28PmMe9koMfmJfUefVtWMXp83iQXwBnFZZOSmpNZllqkb5fAlbGxYxV7
-	wSnWiv19K5kaGO+wdDFyckgImEic2XOQGcIWk7hwbz1bFyMXh5DAUkaJ7z2vmCCcz4wSF/df
-	ZwSp4hXQkvg8dyNYB4uAqsS/u8tZQWw2ATWJzw2P2EBsUYEIibkTN7NB1AtK/Jh8jwVkkIjA
-	FiaJritXGUEcZoGvzBJ/ls4CqxIWiJNo+voAal0zo8TX99fA1nEKuEu8/jmRCcRmFrCWWDlp
-	GyOELS+xec1b5gmMArOQbJmFpGwWkrIFjMyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MULi
-	8csOxsXHrA4xCnAwKvHwrliuECzEmlhWXJl7iFGCg1lJhLdwkWKwEG9KYmVValF+fFFpTmrx
-	IUYmDk6pBsZpYStC1kToiTV2T07nUGF/vtNS2ljTw/KYzPb3qxK0+7Wqpu3XXOh7vM3H7ElY
-	govOuQ8cce7qHGsLpe1XR9U9m26bEG8dv8xAdOnc9JAiobUhmWVxHVzCvdy8RXqKr1d7HZa4
-	luqvMMNrtsCbdxaLH039uWXmjmcMjM+ef09yvLZ839xtn5VYijMSDbWYi4oTAVGTCnClAgAA
+	id S1752730AbaCMMyX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 08:54:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50181 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751032AbaCMMyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 08:54:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,647,1389772800"; 
+   d="scan'208";a="499155227"
+From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "joelf@ti.com" <joelf@ti.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        "nsekhar@ti.com" <nsekhar@ti.com>, Jyri Sarha <jsarha@ti.com>,
+        "mporter@linaro.org" <mporter@linaro.org>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>
+Subject: Re: [PATCH 10/18] dma: edma: Reduce debug print verbosity for non
+ verbose debugging
+Thread-Topic: [PATCH 10/18] dma: edma: Reduce debug print verbosity for non
+ verbose debugging
+Thread-Index: AQHPPrs9scX03rm1vUGLeGHgT19EDA==
+Date: Thu, 13 Mar 2014 12:53:32 +0000
+Message-ID: <1394715211.28803.239.camel@smile.fi.intel.com>
+References: <1394702320-21743-1-git-send-email-peter.ujfalusi@ti.com>
+	 <1394702320-21743-11-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1394702320-21743-11-git-send-email-peter.ujfalusi@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.73]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <CA549397B971CB4A9B3CE0783EBD2F9A@intel.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2DCseg3009242
 
-Hi Krzysztof,
-
-On 13.03.2014 10:37, Krzysztof Kozlowski wrote:
-> Add bindings documentation for clocks on S5M8767 and S2MPS14 devices.
->
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Tomasz Figa <t.figa@samsung.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
+On Thu, 2014-03-13 at 11:18 +0200, Peter Ujfalusi wrote:
+> Do not print the paRAM information when verbose debugging is not asked and
+> also reduce the number of lines printed in edma_prep_dma_cyclic()
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 > ---
->   Documentation/devicetree/bindings/mfd/s2mps11.txt |   24 +++++++++++++--------
->   1 file changed, 15 insertions(+), 9 deletions(-)
+>  drivers/dma/edma.c | 11 +++++------
+>  1 file changed, 5 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+> index e4f4a0cef58c..e2aa42b8342f 100644
+> --- a/drivers/dma/edma.c
+> +++ b/drivers/dma/edma.c
+> @@ -141,7 +141,7 @@ static void edma_execute(struct edma_chan *echan)
+>  	for (i = 0; i < nslots; i++) {
+>  		j = i + edesc->processed;
+>  		edma_write_slot(echan->slot[i], &edesc->pset[j]);
+> -		dev_dbg(echan->vchan.chan.device->dev,
+> +		dev_vdbg(echan->vchan.chan.device->dev,
+>  			"\n pset[%d]:\n"
+>  			"  chnum\t%d\n"
+>  			"  slot\t%d\n"
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+I believe you may move this code to separate function and reuse it
+later.
+Moreover %d is not good specifier for unsigned types, maybe %u?
 
-Best regards,
-Tomasz
+> @@ -554,9 +554,8 @@ static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
+>  	edesc->cyclic = 1;
+>  	edesc->pset_nr = nslots;
+>  
+> -	dev_dbg(dev, "%s: nslots=%d\n", __func__, nslots);
+> -	dev_dbg(dev, "%s: period_len=%d\n", __func__, period_len);
+> -	dev_dbg(dev, "%s: buf_len=%d\n", __func__, buf_len);
+> +	dev_dbg(dev, "%s: channel=%d nslots=%d period_len=%d buf_len=%d\n",
+> +		__func__, echan->ch_num, nslots, period_len, buf_len);
+
+Consider to use proper specifiers for size_t types, namely %zd.
+
+>  
+>  	for (i = 0; i < nslots; i++) {
+>  		/* Allocate a PaRAM slot, if needed */
+> @@ -590,8 +589,8 @@ static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
+>  		else
+>  			src_addr += period_len;
+>  
+> -		dev_dbg(dev, "%s: Configure period %d of buf:\n", __func__, i);
+> -		dev_dbg(dev,
+> +		dev_vdbg(dev, "%s: Configure period %d of buf:\n", __func__, i);
+> +		dev_vdbg(dev,
+
+See the first comment.
+
+>  			"\n pset[%d]:\n"
+>  			"  chnum\t%d\n"
+>  			"  slot\t%d\n"
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
