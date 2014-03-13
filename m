@@ -1,273 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbaCMDPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 23:15:54 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:63891 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715AbaCMDPv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 23:15:51 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        xen-devel@lists.xenproject.org, mcgrof@suse.com,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        bridge@lists.linux-foundation.org
-Subject: [PATCH 3/3] bridge: fix bridge root block on designated port
-Date: Wed, 12 Mar 2014 20:15:27 -0700
-Message-Id: <1394680527-28970-4-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
+	id S1753049AbaCMDVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 23:21:24 -0400
+Received: from mail.efficios.com ([78.47.125.74]:53476 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752834AbaCMDVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 23:21:23 -0400
+Date: Thu, 13 Mar 2014 03:21:27 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, "Frank Ch. Eigler" <fche@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lttng-dev <lttng-dev@lists.lttng.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Message-ID: <2020214533.2317.1394680887617.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140313031501.GW22728@two.firstfloor.org>
+References: <20140307150920.881849073@goodmis.org> <20140312135059.2d497b58@gandalf.local.home> <1906756968.1732.1394650035535.JavaMail.zimbra@efficios.com> <20140312145802.4819511e@gandalf.local.home> <1177120325.1928.1394653861180.JavaMail.zimbra@efficios.com> <20140312203515.GV22728@two.firstfloor.org> <1083852821.1959.1394657227042.JavaMail.zimbra@efficios.com> <20140313031501.GW22728@two.firstfloor.org>
+Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
+ set via debugfs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: tracing: Warn if a tracepoint is not set via debugfs
+Thread-Index: qOrPFm37aqhYRkZEXSeyIy8U+DjR/Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+----- Original Message -----
+> From: "Andi Kleen" <andi@firstfloor.org>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: "Andi Kleen" <andi@firstfloor.org>, "Steven Rostedt" <rostedt@goodmis.org>, "Frank Ch. Eigler" <fche@redhat.com>,
+> linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic Weisbecker" <fweisbec@gmail.com>, "Andrew
+> Morton" <akpm@linux-foundation.org>, "Johannes Berg" <johannes.berg@intel.com>, "Linus Torvalds"
+> <torvalds@linux-foundation.org>, "Peter Zijlstra" <peterz@infradead.org>, "Thomas Gleixner" <tglx@linutronix.de>,
+> "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>, "lttng-dev" <lttng-dev@lists.lttng.org>, "Rusty Russell"
+> <rusty@rustcorp.com.au>
+> Sent: Wednesday, March 12, 2014 11:15:01 PM
+> Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not set via debugfs
+> 
+> On Wed, Mar 12, 2014 at 08:47:07PM +0000, Mathieu Desnoyers wrote:
+> > ----- Original Message -----
+> > > From: "Andi Kleen" <andi@firstfloor.org>
+> > > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> > > Cc: "Steven Rostedt" <rostedt@goodmis.org>, "Frank Ch. Eigler"
+> > > <fche@redhat.com>, linux-kernel@vger.kernel.org, "Ingo
+> > > Molnar" <mingo@kernel.org>, "Frederic Weisbecker" <fweisbec@gmail.com>,
+> > > "Andrew Morton" <akpm@linux-foundation.org>,
+> > > "Johannes Berg" <johannes.berg@intel.com>, "Linus Torvalds"
+> > > <torvalds@linux-foundation.org>, "Peter Zijlstra"
+> > > <peterz@infradead.org>, "Thomas Gleixner" <tglx@linutronix.de>, "Greg
+> > > Kroah-Hartman" <gregkh@linuxfoundation.org>,
+> > > "lttng-dev" <lttng-dev@lists.lttng.org>, "Rusty Russell"
+> > > <rusty@rustcorp.com.au>, "Andi Kleen" <andi@firstfloor.org>
+> > > Sent: Wednesday, March 12, 2014 4:35:15 PM
+> > > Subject: Re: [for-next][PATCH 08/20] tracing: Warn if a tracepoint is not
+> > > set via debugfs
+> > > 
+> > > > So I understand that you wish to banish tracepoints from static inline
+> > > > functions within headers to ensure they only appear within a single
+> > > > module.
+> > > > This seems to be a step backward, but let's assume we stick to that
+> > > > rule.
+> > > > Then how do you envision dealing with Link-Time Optimisations (LTO) ?
+> > > 
+> > > I assume it uses the file name defines set by Kbuild?
+> > 
+> > Just to make sure I understand your question: I understand that you are
+> > asking
+> > whether tracepoints use file name defines at all in the naming of a
+> > tracepoint.
+> > The answer to this question is: No, they do not.
+> 
+> Ok. It uses kallsyms? That can change of course.
 
-Root port blocking was designed so that a bridge port can opt
-out of becoming the designated root port for a bridge. If a port
-however first becomes the designated root port and we then toggle
-the root port block on it we currently don't kick that port out of
-the designated root port. This fixes that. This is particularly
-important for net_devices that would wish to never become a root
-port from the start, currently toggling that off will enable root
-port flag but it won't really kick the bridge and do what you'd
-expect, the MAC address is kept on the bridge of the toggled port
-for root_block if it was the designated port.
+As I just replied to Steven, I now see that I mixed up concerns about
+static keys, and the prior kernel markers, with tracepoint concerns.
+The way they are implemented are very much different (Hey! I should know,
+I wrote that code some 6 years ago!) ;)
 
-In order to catch if a port with root port block preference is set
-we need to move our check for root block prior to the root selection
-so check for root blocked ports upon eveyr br_configuration_update().
-We also simply just prevent the root-blocked ports from consideration
-as root port candidates on br_should_become_root_port() and
-br_stp_recalculate_bridge_id().
+> > 
+> > > These don't change with
+> > > LTO. It's whatever was specified at compile time. Also LTO doesn't
+> > > inline over module boundaries (if the module is not built in)
+> > 
+> > Good to know. Can it inline core kernel functions into a module ?
+> 
+> Each module and the main kernel are currently LTO'ed separately.
+> 
+> In theory it would be possible to change this, but likely at some
+> compile time cost.
 
-The issue that this patch is trying to address and fix can be tested
-easily before and after this patch is applied using 2 TAP net_devices
-and then toggling at will with the root_block knob.
+OK, thanks for the explanations!
 
-ip tuntap add dev tap0 mode tap
-ip tuntap add dev tap1 mode tap
-ip link add dev br0 type bridge
-ip link show br0
-echo -------------------------------------------
-ip link set dev tap0 master br0
-ip link
-echo -------------------------------------------
-ip link set dev tap1 master br0
-ip link
-echo -------------------------------------------
+Mathieu
 
-Upon review at the above results you can toggle root_block
-on each port to see if you see the results you expect.
+> 
+> -Andi
+> 
 
-bridge link set dev tap0 root_block on
-ip link
-bridge link set dev tap1 root_block on
-ip link
-
-Toggling off root_block on any port should will bring back the
-port to be a candidate for designated root port:
-
-bridge link set dev tap1 root_block off
-ip link
-bridge link set dev tap0 root_block off
-ip link
-
-To nuke:
-
-ip tuntap del tap0 mode tap
-ip tuntap del tap0 mode tap
-
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: bridge@lists.linux-foundation.org
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
-Cc: kvm@vger.kernel.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- net/bridge/br_netlink.c | 18 ++++++++++++
- net/bridge/br_private.h |  1 +
- net/bridge/br_stp.c     | 73 +++++++++++++++++++++++++++++++++++++++++++++----
- net/bridge/br_stp_if.c  |  3 +-
- 4 files changed, 88 insertions(+), 7 deletions(-)
-
-diff --git a/net/bridge/br_netlink.c b/net/bridge/br_netlink.c
-index 6f1b26d..fbec354 100644
---- a/net/bridge/br_netlink.c
-+++ b/net/bridge/br_netlink.c
-@@ -324,6 +324,21 @@ static void br_set_port_flag(struct net_bridge_port *p, struct nlattr *tb[],
- 	}
- }
- 
-+static void br_kick_bridge_port(struct net_bridge_port *p)
-+{
-+	struct net_bridge *br = p->br;
-+	bool wasroot;
-+
-+	wasroot = br_is_root_bridge(br);
-+	br_become_designated_port(p);
-+
-+	br_configuration_update(br);
-+	br_port_state_selection(br);
-+
-+	if (br_is_root_bridge(br) && !wasroot)
-+		br_become_root_bridge(br);
-+}
-+
- /* Process bridge protocol info on port */
- static int br_setport(struct net_bridge_port *p, struct nlattr *tb[])
- {
-@@ -353,6 +368,9 @@ static int br_setport(struct net_bridge_port *p, struct nlattr *tb[])
- 		if (err)
- 			return err;
- 	}
-+
-+	br_kick_bridge_port(p);
-+
- 	return 0;
- }
- 
-diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
-index 32a06da..45d7917 100644
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -150,6 +150,7 @@ struct net_bridge_port
- 	u8				priority;
- 	u8				state;
- 	u16				port_no;
-+	bool				root_block_enabled;
- 	unsigned char			topology_change_ack;
- 	unsigned char			config_pending;
- 	port_id				port_id;
-diff --git a/net/bridge/br_stp.c b/net/bridge/br_stp.c
-index 3c86f05..f5741f3 100644
---- a/net/bridge/br_stp.c
-+++ b/net/bridge/br_stp.c
-@@ -59,6 +59,7 @@ static int br_should_become_root_port(const struct net_bridge_port *p,
- 
- 	br = p->br;
- 	if (p->state == BR_STATE_DISABLED ||
-+	   (p->flags & BR_ROOT_BLOCK) ||
- 	    br_is_designated_port(p))
- 		return 0;
- 
-@@ -104,7 +105,7 @@ static void br_root_port_block(const struct net_bridge *br,
- 			       struct net_bridge_port *p)
- {
- 
--	br_notice(br, "port %u(%s) tried to become root port (blocked)",
-+	br_notice(br, "port %u (%s) is now root blocked",
- 		  (unsigned int) p->port_no, p->dev->name);
- 
- 	p->state = BR_STATE_LISTENING;
-@@ -124,11 +125,7 @@ static void br_root_selection(struct net_bridge *br)
- 	list_for_each_entry(p, &br->port_list, list) {
- 		if (!br_should_become_root_port(p, root_port))
- 			continue;
--
--		if (p->flags & BR_ROOT_BLOCK)
--			br_root_port_block(br, p);
--		else
--			root_port = p->port_no;
-+		root_port = p->port_no;
- 	}
- 
- 	br->root_port = root_port;
-@@ -358,10 +355,74 @@ static void br_reply(struct net_bridge_port *p)
- 	br_transmit_config(p);
- }
- 
-+static bool br_root_port_block_check(struct net_bridge_port *p)
-+{
-+	bool designated = false;
-+
-+	if (p->root_block_enabled &&
-+	    !(p->flags & BR_ROOT_BLOCK)) {
-+		br_notice(p->br, "port %u (%s) is root block toggled off",
-+			  (unsigned int) p->port_no, p->dev->name);
-+		return false;
-+	}
-+
-+	if (p->flags & BR_ROOT_BLOCK &&
-+	    (p->root_block_enabled))
-+		return false;
-+
-+	if (!(p->flags & BR_ROOT_BLOCK))
-+		return false;
-+
-+	if (br_is_designated_port(p)) {
-+		designated = true;
-+		p->flags = BR_ROOT_BLOCK |
-+			   BR_LEARNING |
-+			   BR_FLOOD;
-+		p->priority = 0x8000 >> BR_PORT_BITS;
-+		br_init_port(p);
-+	}
-+
-+	br_root_port_block(p->br, p);
-+	p->root_block_enabled = true;
-+
-+	return designated;
-+}
-+
-+/* Updates block ports as required and returns true if one was designated */
-+static bool br_update_block_ports(struct net_bridge *br)
-+{
-+	struct net_bridge_port *p;
-+	bool designated = false;
-+
-+	list_for_each_entry(p, &br->port_list, list) {
-+		designated = br_root_port_block_check(p);
-+		if (designated)
-+			return designated;
-+	}
-+
-+	return false;
-+}
-+
-+static void br_update_designated_port(struct net_bridge *br)
-+{
-+	struct net_bridge_port *p;
-+
-+	list_for_each_entry(p, &br->port_list, list)
-+		br_become_designated_port(p);
-+}
-+
- /* called under bridge lock */
- void br_configuration_update(struct net_bridge *br)
- {
-+	bool designated_was_blocked = false;
-+
-+	designated_was_blocked = br_update_block_ports(br);
-+
- 	br_root_selection(br);
-+
-+	if (designated_was_blocked)
-+		br_update_designated_port(br);
-+
- 	br_designated_port_selection(br);
- }
- 
-diff --git a/net/bridge/br_stp_if.c b/net/bridge/br_stp_if.c
-index 4c9ad45..62b84af 100644
---- a/net/bridge/br_stp_if.c
-+++ b/net/bridge/br_stp_if.c
-@@ -230,10 +230,11 @@ bool br_stp_recalculate_bridge_id(struct net_bridge *br)
- 		return false;
- 
- 	list_for_each_entry(p, &br->port_list, list) {
-+		if (p->flags & BR_ROOT_BLOCK)
-+			continue;
- 		if (addr == br_mac_zero ||
- 		    memcmp(p->dev->dev_addr, addr, ETH_ALEN) < 0)
- 			addr = p->dev->dev_addr;
--
- 	}
- 
- 	if (ether_addr_equal(br->bridge_id.addr, addr))
 -- 
-1.8.5.3
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
