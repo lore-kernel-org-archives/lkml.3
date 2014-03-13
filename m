@@ -1,95 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaCMCjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 22:39:19 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:55166 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaCMCjR (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Wed, 12 Mar 2014 22:39:17 -0400
-Subject: Re: [RESEND] Fast TSC calibration fails with v3.14-rc1 and later
-From: joeyli <jlee@suse.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Julian Wollrath <jwollrath@web.de>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, John Stultz <john.stultz@linaro.org>,
-        "Ted Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1403130049500.18573@ionos.tec.linutronix.de>
-References: <20140310110410.5b2218f6@ilfaris>
-	 <alpine.DEB.2.02.1403121722030.18573@ionos.tec.linutronix.de>
-	 <alpine.DEB.2.02.1403121729060.18573@ionos.tec.linutronix.de>
-	 <1554867.utJVyPuT6A@vostro.rjw.lan>
-	 <alpine.DEB.2.02.1403130049500.18573@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Mar 2014 10:38:27 +0800
-Message-ID: <1394678307.26565.218.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1752880AbaCMCqM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 22:46:12 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:56339 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386AbaCMCqK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 22:46:10 -0400
+X-AuditID: 9c93017e-b7cf9ae000004b4b-0c-53211bef0859
+Date: Thu, 13 Mar 2014 11:46:17 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>
+Subject: Re: [PATCH v3] zram: support REQ_DISCARD
+Message-ID: <20140313024617.GA4900@lge.com>
+References: <1394611269-7582-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140312133318.60c5e63ba26e9bf71098cc6e@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140312133318.60c5e63ba26e9bf71098cc6e@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 四，2014-03-13 於 01:54 +0100，Thomas Gleixner 提到：
-> On Thu, 13 Mar 2014, Rafael J. Wysocki wrote:
-> > Thus follow the original idea to execute acpi_early_init() before
-> > efi_enter_virtual_mode() to help the EFI people for now and we can
-> > revisit the other problem that commit 73f7d1ca3263 attempted to
-> > address in the future (if really necessary).
+On Wed, Mar 12, 2014 at 01:33:18PM -0700, Andrew Morton wrote:
+> On Wed, 12 Mar 2014 17:01:09 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
 > 
-> It's not necessary at all. In fact we really want to get rid of the
-> arch specific cmos stuff which is an historical leftover.
+> > zram is ram based block device and can be used by backend of filesystem.
+> > When filesystem deletes a file, it normally doesn't do anything on data
+> > block of that file. It just marks on metadata of that file. This behavior
+> > has no problem on disk based block device, but has problems on ram based
+> > block device, since we can't free memory used for data block. To overcome
+> > this disadvantage, there is REQ_DISCARD functionality. If block device
+> > support REQ_DISCARD and filesystem is mounted with discard option,
+> > filesystem sends REQ_DISCARD to block device whenever some data blocks are
+> > discarded. All we have to do is to handle this request.
+> > 
+> > This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
+> > REQ_DISCARD request. With it, we can free memory used by zram if it isn't
+> > used.
+> > 
+> > ...
+> >
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -541,6 +541,33 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >  	return ret;
+> >  }
+> >  
+> > +static void zram_bio_discard(struct zram *zram, u32 index,
+> > +			     int offset, struct bio *bio)
 > 
-> I talked to John Stultz earlier today and he agrees that there are
-> only a few trivial things to add to the RTC subsystem to make this
-> work.
+> A little bit of documentation here wouldn't hurt.  "index" and "offset"
+> are pretty vague identifiers.  What do these args represent and what
+> are their units.
 > 
-
-I sent rtc-acpitad driver for RTC subsystem on last month, I will send
-second version.
-
-For using TAD to set wall clock is because in ACPI 5.0 spec, there have
-a "CMOS RTC Not Present" flag in FADT to indicate OSPM should use TAD
-when this flag set:
-
-CMOS RTC Not Present
-
-If set, indicates that the CMOS RTC is either not implemented, or
-does not exist at the legacy addresses. OSPM uses the Control
-Method Time and Alarm Namespace device instead.
-
-
-So, the original thinking of patch is using TAD to replace CMOS
-interface in kernel for access RTC. The timekeeping_init() is the
-earliest function to access CMOS RTC, that's why move TAD before it.
-
-I hope can discuss about "CMOS RTC Not Present" flag. If hardware vendor
-set this flag in FADT, should we avoid to access CMOS RTC interface in
-any kernel code?
-
-> >From the timekeeping POV there is absolutely no need to set the wall
-> clock time early. The kernel boot phase does not care about wall time
-> at all. We should have it done before we hit userspace, but not even
-> that is a hard requirement.
-
-I agree! If kernel boot phase does not care about wall time, then we
-don't need parse DSDT for access TAD too early.
-
+> > +{
+> > +	size_t n = bio->bi_iter.bi_size;
+> > +
+> > +	/*
+> > +	 * On some arch, logical block (4096) aligned request couldn't be
+> > +	 * aligned to PAGE_SIZE, since their PAGE_SIZE aren't 4096.
+> > +	 * Therefore we should handle this misaligned case here.
+> > +	 */
+> > +	if (offset) {
+> > +		if (n < offset)
+> > +			return;
+> > +
+> > +		n -= offset;
+> > +		index++;
+> > +	}
+> > +
+> > +	while (n >= PAGE_SIZE) {
+> > +		write_lock(&zram->meta->tb_lock);
+> > +		zram_free_page(zram, index);
+> > +		write_unlock(&zram->meta->tb_lock);
+> > +		index++;
+> > +		n -= PAGE_SIZE;
+> > +	}
 > 
-> That TAD/EFI time mess is not going to happen before that is solved.
+> We could take the lock a single time rather than once per page.  Was
+> there a reason for doing it this way?  If so, that should be documented
+> as well please - there is no way a reader can know the reason from this
+> code.
 > 
-> Thanks,
 > 
-> 	tglx
+> > +}
+> > +
+> >  static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >  {
+> >  	size_t index;
+> > @@ -676,6 +703,12 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
+> >  	offset = (bio->bi_iter.bi_sector &
+> >  		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
+> >  
+> > +	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
+> > +		zram_bio_discard(zram, index, offset, bio);
+> > +		bio_endio(bio, 0);
+> > +		return;
+> > +	}
+> > +
+> >  	bio_for_each_segment(bvec, bio, iter) {
+> >  		int max_transfer_size = PAGE_SIZE - offset;
+> >  
+> > @@ -845,6 +878,17 @@ static int create_device(struct zram *zram, int device_id)
+> >  					ZRAM_LOGICAL_BLOCK_SIZE);
+> >  	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
+> >  	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
+> > +	zram->disk->queue->limits.discard_granularity = PAGE_SIZE;
+> > +	zram->disk->queue->limits.max_discard_sectors = UINT_MAX;
+> > +	/*
+> > +	 * We will skip to discard mis-aligned range, so we can't ensure
+> > +	 * whether discarded region is zero or not.
+> > +	 */
 > 
+> That's a bit hard to follow.  What is it that is misaligned, relative
+> to what?
+> 
+> And where does this skipping occur?  zram_bio_discard() avoids
+> discarding partial pages at the start and end of the bio (I think).  Is
+> that what we're referring to here?  If so, what about the complete
+> pages between the two partial pages - they are zeroed on read.  Will
+> the code end up having to rezero those?
+> 
+> As you can tell, I'm struggling to understand what's going on here ;)
+> Some additional description of how it all works would be nice.  Perferably
+> as code comments so the information is permanent.
 
-ACPI TAD return local time and timezone information so kernel can adjust
-wall time then don't need userspace involve. 
+Hello, Andrew.
 
+I applied all your comments in below patch. :)
+Thanks for comment.
 
-Thanks a lot!
-Joey Lee
+------------->8---------------
+>From f77b0a5ad9bc27d5b3bc0b21ed1e98de51c62f1f Mon Sep 17 00:00:00 2001
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Date: Mon, 24 Feb 2014 14:30:43 +0900
+Subject: [PATCH v4] zram: support REQ_DISCARD
+
+zram is ram based block device and can be used by backend of filesystem.
+When filesystem deletes a file, it normally doesn't do anything on data
+block of that file. It just marks on metadata of that file. This behavior
+has no problem on disk based block device, but has problems on ram based
+block device, since we can't free memory used for data block. To overcome
+this disadvantage, there is REQ_DISCARD functionality. If block device
+support REQ_DISCARD and filesystem is mounted with discard option,
+filesystem sends REQ_DISCARD to block device whenever some data blocks are
+discarded. All we have to do is to handle this request.
+
+This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
+REQ_DISCARD request. With it, we can free memory used by zram if it isn't
+used.
+
+v2: handle unaligned case commented by Jerome
+v3: conditionally set zero to discard_zeroes_data commented by Minchan
+    reuse index, offset in __zram_make_request() commented by Sergey.
+v4: replenish code comments suggested by Andrew.
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 7631ef0..e3700cb 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -541,6 +541,48 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	return ret;
+ }
+ 
++/*
++ * zram_bio_discard - handler on discard request
++ * @index: physical block index by PAGE_SIZE unit
++ * @offset: offset within physical block
++ */
++static void zram_bio_discard(struct zram *zram, u32 index,
++			     int offset, struct bio *bio)
++{
++	size_t n = bio->bi_iter.bi_size;
++
++	/*
++	 * zram manages data by physical block size unit. Because logical block
++	 * size isn't identical with physical block size on some arch, we
++	 * could get discard request pointing to specific offset within certain
++	 * physical block. Although we can handle this request by reading that
++	 * physiclal block and decompressing and partially zeroing and
++	 * re-compressing and then re-storing it, it isn't reasonable because
++	 * our intention of handling discard request is to save memory.
++	 * So skipping this logical block is approriate here.
++	 */
++	if (offset) {
++		if (n < offset)
++			return;
++
++		n -= offset;
++		index++;
++	}
++
++	while (n >= PAGE_SIZE) {
++		/*
++		 * discard request can be too large so that the zram can
++		 * be stucked for a long time if we handle the request
++		 * at once. So handle the request by PAGE_SIZE unit at a time.
++		 */
++		write_lock(&zram->meta->tb_lock);
++		zram_free_page(zram, index);
++		write_unlock(&zram->meta->tb_lock);
++		index++;
++		n -= PAGE_SIZE;
++	}
++}
++
+ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ {
+ 	size_t index;
+@@ -676,6 +718,12 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
+ 	offset = (bio->bi_iter.bi_sector &
+ 		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
+ 
++	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
++		zram_bio_discard(zram, index, offset, bio);
++		bio_endio(bio, 0);
++		return;
++	}
++
+ 	bio_for_each_segment(bvec, bio, iter) {
+ 		int max_transfer_size = PAGE_SIZE - offset;
+ 
+@@ -845,6 +893,20 @@ static int create_device(struct zram *zram, int device_id)
+ 					ZRAM_LOGICAL_BLOCK_SIZE);
+ 	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
+ 	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
++	zram->disk->queue->limits.discard_granularity = PAGE_SIZE;
++	zram->disk->queue->limits.max_discard_sectors = UINT_MAX;
++	/*
++	 * zram_bio_discard() will clear all logical blocks if logical block
++	 * size is identical with physical block size(PAGE_SIZE). But if it is
++	 * different, we will skip to discard some parts of logical blocks in
++	 * whole request range which isn't aligned to physical block size.
++	 * So we can't ensure that some discarded logical block is zeroed.
++	 */
++	if (ZRAM_LOGICAL_BLOCK_SIZE == PAGE_SIZE)
++		zram->disk->queue->limits.discard_zeroes_data = 1;
++	else
++		zram->disk->queue->limits.discard_zeroes_data = 0;
++	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, zram->disk->queue);
+ 
+ 	add_disk(zram->disk);
+ 
+-- 
+1.7.9.5
 
