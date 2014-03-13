@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924AbaCMN31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 09:29:27 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:36528 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaCMN3Z (ORCPT
+	id S1753049AbaCMNcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 09:32:47 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:51002 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804AbaCMNcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 09:29:25 -0400
-Message-ID: <5321B2B2.9060109@acm.org>
-Date: Thu, 13 Mar 2014 08:29:22 -0500
-From: Corey Minyard <minyard@acm.org>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 13 Mar 2014 09:32:45 -0400
+Message-ID: <5321B378.9000603@borntraeger.net>
+Date: Thu, 13 Mar 2014 14:32:40 +0100
+From: Christian Borntraeger <christian@borntraeger.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>, Matthew Garrett <matthew.garrett@nebula.com>
-CC: "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
-References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com> <1511662.Ly2fOjCGKz@vostro.rjw.lan> <1392765307.3488.1.camel@x230.lan> <20140312230007.GA1817@amd.pavel.ucw.cz> <1394666568.25122.1.camel@x230> <20140313072204.GA7181@amd.pavel.ucw.cz> <1394695475.25122.4.camel@x230> <20140313083832.GA8902@amd.pavel.ucw.cz>
-In-Reply-To: <20140313083832.GA8902@amd.pavel.ucw.cz>
+To: stable@vger.kernel.org
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>, Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>
+Subject: 3.10.33 stable lockdep warning
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:7wvlesRHL1ZrEIMzfx93QUDMlUbNxTE4thE/LUVZMTu
+ f4avQ56AjaTAHZL14LzKS9Iu3465aWoY9AvbCqvpxOGDjdCdBW
+ uZ6aMYI/ft740jVPPS4aXsduzYXAdn1xeeHOGyez19ZSWBAis4
+ fdm61YDniNst821rS7kawKH2D8IXuiYVxfUmVaq+nHh5V5rQHc
+ t62Hen/kyxoE4l2/pf/paGKOd6lw2pXpsDZCNYgzktY0Hrp7Eg
+ S0DBQRVx8TYhN38DFq99Q2FUnAx6Ou9i1qVcojfrvrqsWWmPAl
+ 6jzF693rwoErAptkWZVcHp9pPbBnOxyoHSGAhsOoVG2NSg9TEr
+ lEDmK2x1OhrTYLe39iEs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2014 03:38 AM, Pavel Machek wrote:
-> On Thu 2014-03-13 07:24:36, Matthew Garrett wrote:
->> On Thu, 2014-03-13 at 08:22 +0100, Pavel Machek wrote:
->>> On Wed 2014-03-12 23:22:49, Matthew Garrett wrote:
->>>> No. The power meter driver knows nothing about IPMI. It makes no IPMI
->>>> calls. There's no requirement that a vendor implement it via IPMI.
->>> Yet you claim that IMPI is needed for that, and that's why you made
->>> IMPI default.
->> I claim that the ACPI spec defines the behaviour of IPMI operation
->> regions, and so we should default IPMI to Y in order to (by default)
->> implement the ACPI spec.
->>
->>> So ... do we need dmi-based blacklist?
->> I don't see why.
-> Your reasoning for default y was that "power meter depends on
-> this". Then, claim that "power meter does not officially depend on it"
-> so it would be wrong to have a dependency.
+3.10.33 spits the following warning:
 
-I believe the correct statement is "On some systems power meter depends
-on it".
+[   14.463408] ------------[ cut here ]------------
+[   14.463411] WARNING: at block/elevator.c:193
+[   14.463413] Modules linked in: vhost_net macvtap macvlan kvm dasd_eckd_mod dasd_mod zfcp scsi_transport_fc scsi_tgt qeth qdio ccwgroup dm_multipath sunrpc
+[   14.463430] CPU: 10 PID: 18762 Comm: dasdconf.sh Tainted: G        W    3.10.33+ #344
+[   14.463433] task: 00000004a4020000 ti: 00000004cfca8000 task.ti: 00000004cfca8000
+[   14.463435] Krnl PSW : 0704c00180000000 00000000003c6d56 (elevator_init+0xfe/0x144)
+[   14.463441]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:0 PM:0 EA:3
+Krnl GPRS: 0000000000000000 00000004a4020000 0000000000000000 00000004d199f028
+[   14.463446]            000000000019b4ae 0000000000000f13 0000000000000000 00000004ddcbb038
+[   14.463449]            00000004ddcbb000 ffffffff00000000 00000004bfcfd850 00000004b820c800
+[   14.463451]            000003ff801bcd2a 00000004d199e440 00000000003c6d4c 00000004cfcabb10
+[   14.463460] Krnl Code: 00000000003c6d46: c0e5ffeea38f	brasl	%r14,19b464
+           00000000003c6d4c: ec26ff9f007e	cij	%r2,0,6,3c6c8a
+          #00000000003c6d52: a7f40001		brc	15,3c6d54
+          >00000000003c6d56: a7f4ff9a		brc	15,3c6c8a
+           00000000003c6d5a: c020008b0327	larl	%r2,15273a8
+           00000000003c6d60: a7390000		lghi	%r3,0
+           00000000003c6d64: c0e5fffffb58	brasl	%r14,3c6414
+           00000000003c6d6a: b9040012		lgr	%r1,%r2
+[   14.463481] Call Trace:
+[   14.463482] ([<00000000003c6d4c>] elevator_init+0xf4/0x144)
+[   14.463486]  [<000003ff801b4daa>] dasd_change_state+0x36a/0xbe0 [dasd_mod]
+[   14.463492]  [<000003ff801b56b6>] dasd_set_target_state+0x96/0x110 [dasd_mod]
+[   14.463498]  [<000003ff801b5bc8>] dasd_generic_set_online+0xc4/0x2e4 [dasd_mod]
+[   14.463503]  [<00000000004d2ecc>] ccw_device_set_online+0xcc/0x4e0
+[   14.463507]  [<00000000004d3336>] online_store_recog_and_online+0x56/0x12c
+[   14.463510]  [<00000000004d58fa>] online_store+0x1b2/0x248
+[   14.463514]  [<00000000002f1b38>] sysfs_write_file+0xe4/0x188
+[   14.463517]  [<0000000000270a26>] vfs_write+0xa6/0x1cc
+[   14.463520]  [<0000000000270f68>] SyS_write+0x60/0xac
+[   14.463523]  [<0000000000636a9c>] sysc_nr_ok+0x22/0x28
+[   14.463526]  [<000003fffd6a8984>] 0x3fffd6a8984
+[   14.463529] 4 locks held by dasdconf.sh/18762:
+[   14.463531]  #0:  (sb_writers#3){.+.+.+}, at: [<0000000000270b3e>] vfs_write+0x1be/0x1cc
+[   14.463539]  #1:  (&buffer->mutex){+.+.+.}, at: [<00000000002f1a9a>] sysfs_write_file+0x46/0x188
+[   14.463546]  #2:  (s_active#28){.+.+.+}, at: [<00000000002f1b16>] sysfs_write_file+0xc2/0x188
+[   14.463554]  #3:  (&device->state_mutex){+.+.+.}, at: [<000003ff801b566c>] dasd_set_target_state+0x4c/0x110 [dasd_mod]
+[   14.463563] Last Breaking-Event-Address:
+[   14.463565]  [<00000000003c6d52>] elevator_init+0xfa/0x144
+[   14.463568] ---[ end trace 3ec4802a2d4e0d3e ]---
 
->
-> Defaults are not right solution; system should still work if I select
-> non-default settings. Which you claim is not a case, but you don't see
-> why you should fix it.
+So I guess we should pull in
+commit ef0899410ff630b2e75306da49996dbbfa318165
+Author:     Heiko Carstens <heiko.carstens@de.ibm.com>
+AuthorDate: Thu Oct 31 13:24:28 2013 +0100
+Commit:     Jens Axboe <axboe@kernel.dk>
+CommitDate: Fri Nov 8 09:10:29 2013 -0700
 
-If something is implemented using IPMI, then IPMI has to be there to
-use it.  Matthew's statement was:
+    s390/dasd: hold request queue sysfs lock when calling elevator_init()
 
-For example, if you load the ACPI power meter driver before you've
-installed the ACPI IPMI driver you'll typically get failures (most
-vendors implement it via IPMI).
+for 3.10.34 or later.
+I can confirm that this patch fixes the issue.
+Thanks
 
-Other things besides the power meter can be implemented using IPMI, it's
-up to the vendor.  How will those things work if IPMI is not available?
-
--corey
-
+Christian
