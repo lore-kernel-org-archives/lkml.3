@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755AbaCMR2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 13:28:36 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:37587 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126AbaCMR2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 13:28:31 -0400
+	id S1754734AbaCMR2d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 13:28:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56099 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753796AbaCMR2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 13:28:30 -0400
+Message-ID: <5321EAA2.8080807@ti.com>
+Date: Thu, 13 Mar 2014 19:28:02 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <5321D45C.7040504@zytor.com>
-References: <1394664680-17799-1-git-send-email-stefani@seibold.net>
- <1394664680-17799-4-git-send-email-stefani@seibold.net> <5320E689.7060607@zytor.com>
- <CALCETrXQJvkk-5ncSgTyoy9sCN0AT+h9-1F6wAnxqRm242PjrQ@mail.gmail.com> <5321D45C.7040504@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Mar 2014 10:28:10 -0700
-Message-ID: <CALCETrVy3oW=qvJWbGtKTZ=0dZLjHtmBphPDnP1N8nLmXc=+9A@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86, vdso32: handle 32 bit vDSO larger one page
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stefani Seibold <stefani@seibold.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: George Cherian <george.cherian@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <balbi@ti.com>, <kishon@ti.com>, <rob@landley.net>, <galak@codeaurora.org>,
+        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <tony@atomide.com>,
+        <anatol.pomozov@gmail.com>, <bcousson@baylibre.com>
+Subject: Re: [PATCH v4 2/5] ARM: dts: am43xx clock data
+References: <1394723476-8580-1-git-send-email-george.cherian@ti.com> <1394723476-8580-3-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1394723476-8580-3-git-send-email-george.cherian@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 8:53 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 03/12/2014 03:59 PM, Andy Lutomirski wrote:
->>
->> Note that this code is completely unnecessary if either of my patch
->> sets is accepted.  Since you're the maintainer, can you give an
->> opinion? :)
->>
->
-> I'm trying to unwind all the patches going around, Linus' feedback and
-> so on, and figure out what this means in concrete terms especially in
-> the light of the 3.15 merge window coming up.
->
-> I tried to apply your patchset "[PATCH v2 0/2] x86: Relocate the compat
-> vdso per process" on top of tip:x86/vdso, but it conflicts pretty hard
-> -- I guess you are using a different baseline, but that makes it
-> complicated to deal with.
+On 03/13/2014 05:11 PM, George Cherian wrote:
+> Add USB and USB PHY reference clock data
+> 
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> ---
+>  arch/arm/boot/dts/am43xx-clocks.dtsi | 32 ++++++++++++++++++++++++++++++++
+>  1 file changed, 32 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/am43xx-clocks.dtsi b/arch/arm/boot/dts/am43xx-clocks.dtsi
+> index 142009c..c74d45c 100644
+> --- a/arch/arm/boot/dts/am43xx-clocks.dtsi
+> +++ b/arch/arm/boot/dts/am43xx-clocks.dtsi
+> @@ -653,4 +653,36 @@
+>  		clocks = <&clk_32768_ck>, <&clk_32k_tpm_ck>;
+>  		reg = <0x4260>;
+>  	};
+> +
+> +	usb_phy0_always_on_clk32k: usb_phy0_always_on_clk32k {
+> +		#clock-cells = <0>;
+> +		compatible = "fixed-factor-clock";
+> +		clocks = <&clk_32768_ck>;
+> +		clock-mult = <1>;
+> +		clock-div = <1>;
+> +	};
+> +
+> +	usb_phy1_always_on_clk32k: usb_phy1_always_on_clk32k {
+> +		#clock-cells = <0>;
+> +		compatible = "fixed-factor-clock";
+> +		clocks = <&clk_32768_ck>;
+> +		clock-mult = <1>;
+> +		clock-div = <1>;
+> +	};
 
-It applies to -linus.  I think that we should resolve the compat
-issues first and then add timing code on top, since a decent chunk of
-Stefani's changes will be unnecessary once the compat vdso is either
-gone or unified with the non-compat vdso.
+Shouldn't these be like so?
 
-Does this mean you prefer the relocation approach to the compat vdso
-removal approach?  It seems like Linus is okay with either one.
+usb_phy0_always_on_clk32k: usb_phy0_always_on_clk32k {
+        #clock-cells = <0>;
+        compatible = "ti,gate-clock";
+        clocks = <&usbphy_32khz_clkmux>;
+        ti,bit-shift = <8>;
+        reg = <0x2a40>;
+};
 
---Andy
+usb_phy1_always_on_clk32k: usb_phy1_always_on_clk32k {
+        #clock-cells = <0>;
+        compatible = "ti,gate-clock";
+        clocks = <&usbphy_32khz_clkmux>;
+        ti,bit-shift = <8>;
+        reg = <0x2a48>;
+};
 
->
-> Otherwise, it seems the logical way forward.  Could you and/or Stefani
-> work out the conflicts between the patchsets?
->
-> In the meantime I'm going to apply Stefani's first patch.
->
->         -hpa
->
+> +
+> +	usb_otg_ss0_refclk960m: usb_otg_ss0_refclk960m {
+> +		#clock-cells = <0>;
+> +	        compatible = "ti,gate-clock";
+> +		clocks = <&dpll_per_clkdcoldo>;
+> +	        ti,bit-shift = <8>;
+> +	        reg = <0x8a60>;
+> +	};
+> +
+> +	usb_otg_ss1_refclk960m: usb_otg_ss1_refclk960m {
+> +		#clock-cells = <0>;
+> +	        compatible = "ti,gate-clock";
+> +		clocks = <&dpll_per_clkdcoldo>;
+> +	        ti,bit-shift = <8>;
+> +		reg = <0x8a68>;
+> +	};
+>  };
+> 
 
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+cheers,
+-roger
