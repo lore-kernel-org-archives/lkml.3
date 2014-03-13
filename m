@@ -1,292 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436AbaCMPeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 11:34:10 -0400
-Received: from mail.efficios.com ([78.47.125.74]:56221 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753785AbaCMPdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 11:33:14 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [RFC PATCH 1/3] Tracepoint cleanup: remove unused API functions
-Date: Thu, 13 Mar 2014 11:32:57 -0400
-Message-Id: <1394724779-17892-1-git-send-email-mathieu.desnoyers@efficios.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754124AbaCMPhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 11:37:47 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:59370 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369AbaCMPho (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 11:37:44 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-82-5321d0c678f3
+Message-id: <5321D0BF.6080605@samsung.com>
+Date: Thu, 13 Mar 2014 16:37:35 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [GIT PULL] Move device tree graph parsing helpers to drivers/of
+References: <1394126000.3622.66.camel@paszta.hi.pengutronix.de>
+ <20140307182330.75168C40AE3@trevor.secretlab.ca>
+ <20140310102630.3cb1bcd7@samsung.com>
+ <20140310143758.3734FC405FA@trevor.secretlab.ca>
+ <1394708896.3577.21.camel@paszta.hi.pengutronix.de>
+ <20140313113527.GM21483@n2100.arm.linux.org.uk> <5321CB04.6090700@samsung.com>
+In-reply-to: <5321CB04.6090700@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/xa7rHLigGG2y8Imgx/8g5Vov3G+cx
+	WRz4s4PRonnxejaLs01v2C06Jy5ht7i8aw6bRc+GrawWty/zWlxcJ29x994JFovWvUfYLQ6/
+	aWe1WD//FpsDn0dLcw+bx4ePcR6zO2ayemxa1cnmcefaHjaP/XPXsHv0/zXw6NuyitHj+I3t
+	TB6fN8kFcEVx2aSk5mSWpRbp2yVwZcx6+pipoFmq4ljnbJYGxrsiXYycHBICJhIHNvWzQdhi
+	EhfurQeyuTiEBJYySkyY2wzlfGKU+HByByNIFa+AlsSsPfNZQWwWAVWJi9OnMoPYbAKGEr1H
+	+8BqRAUiJOZO3MwGUS8o8WPyPRYQW0TAVOLao2fMIEOZBaaxSDTN2ABWJCzgI9F5/CY7xLYr
+	TBKvGk6BdXAKaEvsO7YabBuzgI7E/tZpbBC2vMTmNW+ZJzAKzEKyZBaSsllIyhYwMq9iFE0t
+	TS4oTkrPNdQrTswtLs1L10vOz93ECImtLzsYFx+zOsQowMGoxMPrcFgxWIg1say4MvcQowQH
+	s5IIr/UmoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGAVHd6a7Cj5uuJ6gYaffzLMo+KTY7s8tO
+	N62k88Cygxr9XvrTdLyWux7YxPO85sD97MzqTkPXSR2rzu8+cWl31o2Vd9rnGc564lp5s0Z8
+	S3bnr5yce2e4d4S8Y6rUmv7thk3v3bbd7xfcsNTQMrlTbqe5yfjf3oyCV8tymiyNkzWcLwlO
+	cslUYinOSDTUYi4qTgQAI4UHEYsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the following commit:
+On 13/03/14 16:13, Sylwester Nawrocki wrote:
+> On 13/03/14 12:35, Russell King - ARM Linux wrote:
+> [...]
+>> > Grant and myself have exchanged emails in private on this discussing what
+>> > should happen - essentially Grant's position is that he's happy to leave
+>> > this stuff queued provided a resolution to his concerns are forthcoming.
+>> > 
+>> > However, what I find incredibly unfair is that we're taking the rap for
+>> > these bad bindings.  From what I can see, these bad bindings were merged
+>> > into the V4L2 code with _zero_ review by DT maintainers.  It's quite
+>> > clear that DT maintainers would have objected to them had they seen them,
+>
+> Russell, it's just unfair what you're trying to impute here.  These 
+> bindings were floating on the mailing list for _several_ months before 
+> getting merged.
+> They were finally acked by Rob and Grant [1], [2], however it cannot be 
+> seen from the commits as the Ack come late, after I sent a pull request.
+> 
+>> > but they didn't.  And the lack of documentation of the bindings which
+>> > has been something that's been insisted on is also disgusting.
+>> >
+>> > And now we're now taking the pain for that oversight.
+>> > 
+>> > So... frankly, I've walked away from this dysfunctional situation.  I
+>> > don't see imx-drm moving out of drivers/staging due to this debacle for
+>> > many months - possibly never now given that no one can agree on this
+>> > stuff.  This just goes to show what a fscking joke mainline kernels are,
+>> > and why people just give up and go to vendor kernels which offer /much/
+>> > better support all round.
+>> > 
+>> > As far as I can see, it's proved impossible to define a set of bindings
+>> > for display devices which satisfy everyone.  So, rather than doing
+>> > /something/ so we can move forward, we end up doing /nothing/.
+>> > 
+>> > It's times like this where I start believing that /board files/ were the
+>> > best solution for ARM, because DT just carries soo many thorny issues
+>> > (such as these) and is a continual blocker.
+>
+> My experience and feelings are similar, I started to treat mainline
+> kernel much less seriously after similar DT related blocking issues.
+> An example is a simple patch series for couple drivers that was first 
+> posted in July 2013 and is still not merged, because the subsystem 
+> maintainer requires a DT binding maintainer Ack for everything and you
+> can wait to death to get one, specially if there are multiple iterations,
+> each needing attention of a DT binding maintainer. I remember opinions, 
+> when the process was being defined during one of the last kernel summits, 
+> that things may get longer to merge upstream, due to DT binding reviews. 
+> And that we must live with that. But these latencies are getting so 
+> ridiculously large that there is nothing left but to move to an 
+> alternative process.
+> 
+> Regarding moving forward doing /something/, rather than ending up
+> doing nothing - IMO it's the worst thing to rush DT binding being
+> merged upstream. I don't think an agreement can't be achieved soon, 
+> if not for this release then hopefully for next one.
 
-commit b75ef8b44b1cb95f5a26484b0e2fe37a63b12b44
-Author: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date:   Wed Aug 10 15:18:39 2011 -0400
+Sorry about the missing links:
 
-    Tracepoint: Dissociate from module mutex
-
-The following functions became unnecessary:
-
-- tracepoint_probe_register_noupdate,
-- tracepoint_probe_unregister_noupdate,
-- tracepoint_probe_update_all.
-
-In fact, none of the in-kernel tracers, nor LTTng, nor SystemTAP use
-them. Remove those.
-
-Moreover, the functions:
-
-- tracepoint_iter_start,
-- tracepoint_iter_next,
-- tracepoint_iter_stop,
-- tracepoint_iter_reset.
-
-are unused by in-kernel tracers, LTTng and SystemTAP. Remove those too.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Frank Ch. Eigler <fche@redhat.com>
-CC: Johannes Berg <johannes.berg@intel.com>
----
- include/linux/tracepoint.h |   18 -----
- kernel/tracepoint.c        |  179 --------------------------------------------
- 2 files changed, 197 deletions(-)
-
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 7159a0a..812b255 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -48,12 +48,6 @@ extern int tracepoint_probe_register(const char *name, void *probe, void *data);
- extern int
- tracepoint_probe_unregister(const char *name, void *probe, void *data);
- 
--extern int tracepoint_probe_register_noupdate(const char *name, void *probe,
--					      void *data);
--extern int tracepoint_probe_unregister_noupdate(const char *name, void *probe,
--						void *data);
--extern void tracepoint_probe_update_all(void);
--
- #ifdef CONFIG_MODULES
- struct tp_module {
- 	struct list_head list;
-@@ -68,18 +62,6 @@ static inline bool trace_module_has_bad_taint(struct module *mod)
- }
- #endif /* CONFIG_MODULES */
- 
--struct tracepoint_iter {
--#ifdef CONFIG_MODULES
--	struct tp_module *module;
--#endif /* CONFIG_MODULES */
--	struct tracepoint * const *tracepoint;
--};
--
--extern void tracepoint_iter_start(struct tracepoint_iter *iter);
--extern void tracepoint_iter_next(struct tracepoint_iter *iter);
--extern void tracepoint_iter_stop(struct tracepoint_iter *iter);
--extern void tracepoint_iter_reset(struct tracepoint_iter *iter);
--
- /*
-  * tracepoint_synchronize_unregister must be called between the last tracepoint
-  * probe unregistration and the end of module exit to make sure there is no
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 031cc56..0faf2a4 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -451,185 +451,6 @@ static void tracepoint_add_old_probes(void *old)
- 	}
- }
- 
--/**
-- * tracepoint_probe_register_noupdate -  register a probe but not connect
-- * @name: tracepoint name
-- * @probe: probe handler
-- *
-- * caller must call tracepoint_probe_update_all()
-- */
--int tracepoint_probe_register_noupdate(const char *name, void *probe,
--				       void *data)
--{
--	struct tracepoint_func *old;
--
--	mutex_lock(&tracepoints_mutex);
--	old = tracepoint_add_probe(name, probe, data);
--	if (IS_ERR(old)) {
--		mutex_unlock(&tracepoints_mutex);
--		return PTR_ERR(old);
--	}
--	tracepoint_add_old_probes(old);
--	mutex_unlock(&tracepoints_mutex);
--	return 0;
--}
--EXPORT_SYMBOL_GPL(tracepoint_probe_register_noupdate);
--
--/**
-- * tracepoint_probe_unregister_noupdate -  remove a probe but not disconnect
-- * @name: tracepoint name
-- * @probe: probe function pointer
-- *
-- * caller must call tracepoint_probe_update_all()
-- */
--int tracepoint_probe_unregister_noupdate(const char *name, void *probe,
--					 void *data)
--{
--	struct tracepoint_func *old;
--
--	mutex_lock(&tracepoints_mutex);
--	old = tracepoint_remove_probe(name, probe, data);
--	if (IS_ERR(old)) {
--		mutex_unlock(&tracepoints_mutex);
--		return PTR_ERR(old);
--	}
--	tracepoint_add_old_probes(old);
--	mutex_unlock(&tracepoints_mutex);
--	return 0;
--}
--EXPORT_SYMBOL_GPL(tracepoint_probe_unregister_noupdate);
--
--/**
-- * tracepoint_probe_update_all -  update tracepoints
-- */
--void tracepoint_probe_update_all(void)
--{
--	LIST_HEAD(release_probes);
--	struct tp_probes *pos, *next;
--
--	mutex_lock(&tracepoints_mutex);
--	if (!need_update) {
--		mutex_unlock(&tracepoints_mutex);
--		return;
--	}
--	if (!list_empty(&old_probes))
--		list_replace_init(&old_probes, &release_probes);
--	need_update = 0;
--	tracepoint_update_probes();
--	mutex_unlock(&tracepoints_mutex);
--	list_for_each_entry_safe(pos, next, &release_probes, u.list) {
--		list_del(&pos->u.list);
--		call_rcu_sched(&pos->u.rcu, rcu_free_old_probes);
--	}
--}
--EXPORT_SYMBOL_GPL(tracepoint_probe_update_all);
--
--/**
-- * tracepoint_get_iter_range - Get a next tracepoint iterator given a range.
-- * @tracepoint: current tracepoints (in), next tracepoint (out)
-- * @begin: beginning of the range
-- * @end: end of the range
-- *
-- * Returns whether a next tracepoint has been found (1) or not (0).
-- * Will return the first tracepoint in the range if the input tracepoint is
-- * NULL.
-- */
--static int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
--	struct tracepoint * const *begin, struct tracepoint * const *end)
--{
--	if (!*tracepoint && begin != end) {
--		*tracepoint = begin;
--		return 1;
--	}
--	if (*tracepoint >= begin && *tracepoint < end)
--		return 1;
--	return 0;
--}
--
--#ifdef CONFIG_MODULES
--static void tracepoint_get_iter(struct tracepoint_iter *iter)
--{
--	int found = 0;
--	struct tp_module *iter_mod;
--
--	/* Core kernel tracepoints */
--	if (!iter->module) {
--		found = tracepoint_get_iter_range(&iter->tracepoint,
--				__start___tracepoints_ptrs,
--				__stop___tracepoints_ptrs);
--		if (found)
--			goto end;
--	}
--	/* Tracepoints in modules */
--	mutex_lock(&tracepoints_mutex);
--	list_for_each_entry(iter_mod, &tracepoint_module_list, list) {
--		/*
--		 * Sorted module list
--		 */
--		if (iter_mod < iter->module)
--			continue;
--		else if (iter_mod > iter->module)
--			iter->tracepoint = NULL;
--		found = tracepoint_get_iter_range(&iter->tracepoint,
--			iter_mod->tracepoints_ptrs,
--			iter_mod->tracepoints_ptrs
--				+ iter_mod->num_tracepoints);
--		if (found) {
--			iter->module = iter_mod;
--			break;
--		}
--	}
--	mutex_unlock(&tracepoints_mutex);
--end:
--	if (!found)
--		tracepoint_iter_reset(iter);
--}
--#else /* CONFIG_MODULES */
--static void tracepoint_get_iter(struct tracepoint_iter *iter)
--{
--	int found = 0;
--
--	/* Core kernel tracepoints */
--	found = tracepoint_get_iter_range(&iter->tracepoint,
--			__start___tracepoints_ptrs,
--			__stop___tracepoints_ptrs);
--	if (!found)
--		tracepoint_iter_reset(iter);
--}
--#endif /* CONFIG_MODULES */
--
--void tracepoint_iter_start(struct tracepoint_iter *iter)
--{
--	tracepoint_get_iter(iter);
--}
--EXPORT_SYMBOL_GPL(tracepoint_iter_start);
--
--void tracepoint_iter_next(struct tracepoint_iter *iter)
--{
--	iter->tracepoint++;
--	/*
--	 * iter->tracepoint may be invalid because we blindly incremented it.
--	 * Make sure it is valid by marshalling on the tracepoints, getting the
--	 * tracepoints from following modules if necessary.
--	 */
--	tracepoint_get_iter(iter);
--}
--EXPORT_SYMBOL_GPL(tracepoint_iter_next);
--
--void tracepoint_iter_stop(struct tracepoint_iter *iter)
--{
--}
--EXPORT_SYMBOL_GPL(tracepoint_iter_stop);
--
--void tracepoint_iter_reset(struct tracepoint_iter *iter)
--{
--#ifdef CONFIG_MODULES
--	iter->module = NULL;
--#endif /* CONFIG_MODULES */
--	iter->tracepoint = NULL;
--}
--EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
--
- #ifdef CONFIG_MODULES
- bool trace_module_has_bad_taint(struct module *mod)
- {
--- 
-1.7.10.4
+[1] http://www.spinics.net/lists/linux-media/msg61899.html
+[2] http://www.spinics.net/lists/linux-media/msg62458.html
 
