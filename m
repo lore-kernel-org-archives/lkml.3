@@ -1,48 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293AbaCMMPc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 08:15:32 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:40135 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753652AbaCMMP0 (ORCPT
+	id S1754331AbaCMMQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 08:16:42 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:44839 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629AbaCMMQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 08:15:26 -0400
-Date: Thu, 13 Mar 2014 12:14:59 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/3] kmemleak: allow freeing internal objects after
- disabling kmemleak
-Message-ID: <20140313121459.GJ30339@arm.com>
-References: <53215492.40701@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53215492.40701@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Mar 2014 08:16:40 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-a4-5321a1a5205f
+Message-id: <1394712996.20773.1.camel@AMDC1943>
+Subject: Re: [PATCH v2 2/3] mfd: sec-core: Add of_compatible strings for MFD
+ cells
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Thu, 13 Mar 2014 13:16:36 +0100
+In-reply-to: <53219F80.9000300@samsung.com>
+References: <1394703425-6462-1-git-send-email-k.kozlowski@samsung.com>
+ <1394703425-6462-3-git-send-email-k.kozlowski@samsung.com>
+ <53219F80.9000300@samsung.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsVy+t/xq7pLFyoGG5zcZmGxccZ6VouzTW/Y
+	Le5/PcposenxNVaLy7vmsFnMOL+PyWLtkbvsFk8nXGSzOPmnl9HidDerxcUVX5gs1s94zWLR
+	/ncvm8Wc6e+YHPg87lzbw+Yx72Sgx+Yl9R59W1YxenzeJBfAGsVlk5Kak1mWWqRvl8CV0fp2
+	OVPBbP6KB7t3MzUwHuXuYuTkkBAwkbi+8Sk7hC0mceHeejYQW0hgKaPEhFOcXYxcQPZnRomL
+	MzYwdTFycPAK6Ev83BQCUiMsECLRtuc8WD2bgLHE5uVLwGwRARWJy6emM4L0MgvMZZGY/fos
+	M0iCRUBV4uP5H2DLOAW0JU62/mCBWLCEUaJ5/hNGkASzgLrEpHmLmCEuUpLY3d7JDhGXl9i8
+	5i1YnFdAUOLH5HssExgFZiFpmYWkbBaSsgWMzKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcx
+	QuLkyw7GxcesDjEKcDAq8fCuWK4QLMSaWFZcmXuIUYKDWUmEV22OYrAQb0piZVVqUX58UWlO
+	avEhRiYOTqkGxkn3efzYz+60C5jdK+astP9ouW9E9O8IO98WzehHz+TfveDZc67tbfO6908v
+	Lt9f/vtA/L0lGuct7tatjW6qe8CjdLPtRvOLM5Pycp9qzgx/XDc14sCjU1xXue3PnHbdrsu0
+	lXvGF/eb/kKeR/7c3vE+RnPi7o9nGrR/bGFY+U8zeu3hpwdllncosRRnJBpqMRcVJwIAV4UK
+	6nECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 06:47:46AM +0000, Li Zefan wrote:
-> +Freeing kmemleak internal objects
-> +---------------------------------
-> +
-> +To allow access to previosuly found memory leaks even when an error fatal
-> +to kmemleak happens, internal kmemleak objects won't be freed when kmemleak
-> +is disabled, and those objects may occupy a large part of physical
-> +memory.
-> +
-> +If you want to make sure they're freed before disabling kmemleak:
-> +
-> +  # echo scan=off > /sys/kernel/debug/kmemleak
-> +  # echo off > /sys/kernel/debug/kmemleak
+On Thu, 2014-03-13 at 13:07 +0100, Tomasz Figa wrote:
+> Hi Krzysztof,
+> 
+> On 13.03.2014 10:37, Krzysztof Kozlowski wrote:
+> > Add of_compatible strings for MFD cells for regulator, clock and RTC
+> > drivers in S5M8767, S2MPS11 and S2MPS14 PMIC-s.
+> >
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > ---
+> >   drivers/mfd/sec-core.c |    8 ++++++++
+> >   1 file changed, 8 insertions(+)
+> >
+> > diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+> > index d163c66edebb..c5b9b95b2099 100644
+> > --- a/drivers/mfd/sec-core.c
+> > +++ b/drivers/mfd/sec-core.c
+> > @@ -55,28 +55,36 @@ static const struct mfd_cell s5m8763_devs[] = {
+> >   static const struct mfd_cell s5m8767_devs[] = {
+> >   	{
+> >   		.name = "s5m8767-pmic",
+> > +		.of_compatible = "samsung,s5m8767-regulators",
+> >   	}, {
+> >   		.name = "s5m-rtc",
+> > +		.of_compatible = "samsung,s5m8767-rtc",
+> >   	}, {
+> >   		.name = "s5m8767-clk",
+> > +		.of_compatible = "samsung,s5m8767-clk",
+> >   	}
+> >   };
+> >
+> >   static const struct mfd_cell s2mps11_devs[] = {
+> >   	{
+> >   		.name = "s2mps11-pmic",
+> > +		.of_compatible = "samsung,s2mps11-regulators",
+> >   	}, {
+> >   		.name = "s2mps11-clk",
+> > +		.of_compatible = "samsung,s2mps11-clk",
+> >   	}
+> >   };
+> >
+> >   static const struct mfd_cell s2mps14_devs[] = {
+> >   	{
+> >   		.name = "s2mps14-pmic",
+> > +		.of_compatible = "samsung,s2mps14-regulators",
+> >   	}, {
+> >   		.name = "s2mps14-rtc",
+> > +		.of_compatible = "samsung,s2mps14-rtc",
+> >   	}, {
+> >   		.name = "s2mps14-clk",
+> > +		.of_compatible = "samsung,s2mps14-clk",
+> >   	}
+> >   };
+> 
+> Are these compatible strings documented anywhere?
 
-I would actually change the code to do a stop_scan_thread() as part of
-the "off" handling so that scan=off is not required (we can't put it as
-part of the kmemleak_disable because we need scan_mutex held).
+The "-clk" compatible strings are (in next patch). The "-rtc" and
+"-regulators" are not.
 
--- 
-Catalin
+Actually they aren't also used by child driver (each child driver parses
+from parent of_node).
+
+Best regards,
+Krzysztof
+
+
