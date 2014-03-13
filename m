@@ -1,261 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226AbaCMVk1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 17:40:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60934 "EHLO mx1.redhat.com"
+	id S1754776AbaCMVlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 17:41:51 -0400
+Received: from sauhun.de ([89.238.76.85]:38041 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752682AbaCMVkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 17:40:25 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org
-Subject: [PATCH 1/6] radix-tree: add end_index to support ranged iteration
-Date: Thu, 13 Mar 2014 17:39:41 -0400
-Message-Id: <1394746786-6397-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1394746786-6397-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1394746786-6397-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1754704AbaCMVlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 17:41:47 -0400
+Date: Thu, 13 Mar 2014 22:41:46 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] i2c for 3.14
+Message-ID: <20140313214136.GA12161@katana>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's useful if we can run only over a specific index range of radix trees,
-which this patch does. This patch changes only radix_tree_for_each_slot()
-and radix_tree_for_each_tagged(), because we need it only for them for now.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- drivers/gpu/drm/qxl/qxl_ttm.c |  2 +-
- include/linux/radix-tree.h    | 27 ++++++++++++++++++++-------
- kernel/irq/irqdomain.c        |  2 +-
- lib/radix-tree.c              |  8 ++++----
- mm/filemap.c                  |  4 ++--
- mm/shmem.c                    |  2 +-
- 6 files changed, 29 insertions(+), 16 deletions(-)
+--+QahgC5+KEYLbs62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git v3.14-rc6.orig/drivers/gpu/drm/qxl/qxl_ttm.c v3.14-rc6/drivers/gpu/drm/qxl/qxl_ttm.c
-index c7e7e6590c2b..ad477307e732 100644
---- v3.14-rc6.orig/drivers/gpu/drm/qxl/qxl_ttm.c
-+++ v3.14-rc6/drivers/gpu/drm/qxl/qxl_ttm.c
-@@ -398,7 +398,7 @@ static int qxl_sync_obj_wait(void *sync_obj,
- 		struct radix_tree_iter iter;
- 		int release_id;
- 
--		radix_tree_for_each_slot(slot, &qfence->tree, &iter, 0) {
-+		radix_tree_for_each_slot(slot, &qfence->tree, &iter, 0, ~0UL) {
- 			struct qxl_release *release;
- 
- 			release_id = iter.index;
-diff --git v3.14-rc6.orig/include/linux/radix-tree.h v3.14-rc6/include/linux/radix-tree.h
-index 403940787be1..6e14a8e06105 100644
---- v3.14-rc6.orig/include/linux/radix-tree.h
-+++ v3.14-rc6/include/linux/radix-tree.h
-@@ -265,6 +265,7 @@ static inline void radix_tree_preload_end(void)
-  * @index:	index of current slot
-  * @next_index:	next-to-last index for this chunk
-  * @tags:	bit-mask for tag-iterating
-+ * @end_index:  last index to be scanned
-  *
-  * This radix tree iterator works in terms of "chunks" of slots.  A chunk is a
-  * subinterval of slots contained within one radix tree leaf node.  It is
-@@ -277,6 +278,7 @@ struct radix_tree_iter {
- 	unsigned long	index;
- 	unsigned long	next_index;
- 	unsigned long	tags;
-+	unsigned long	end_index;
- };
- 
- #define RADIX_TREE_ITER_TAG_MASK	0x00FF	/* tag index in lower byte */
-@@ -288,10 +290,12 @@ struct radix_tree_iter {
-  *
-  * @iter:	pointer to iterator state
-  * @start:	iteration starting index
-+ * @end:	iteration ending index
-  * Returns:	NULL
-  */
- static __always_inline void **
--radix_tree_iter_init(struct radix_tree_iter *iter, unsigned long start)
-+radix_tree_iter_init(struct radix_tree_iter *iter, unsigned long start,
-+			unsigned long end)
- {
- 	/*
- 	 * Leave iter->tags uninitialized. radix_tree_next_chunk() will fill it
-@@ -303,6 +307,7 @@ radix_tree_iter_init(struct radix_tree_iter *iter, unsigned long start)
- 	 */
- 	iter->index = 0;
- 	iter->next_index = start;
-+	iter->end_index = end;
- 	return NULL;
- }
- 
-@@ -352,6 +357,8 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
- 		iter->tags >>= 1;
- 		if (likely(iter->tags & 1ul)) {
- 			iter->index++;
-+			if (iter->index > iter->end_index)
-+				return NULL;
- 			return slot + 1;
- 		}
- 		if (!(flags & RADIX_TREE_ITER_CONTIG) && likely(iter->tags)) {
-@@ -359,6 +366,8 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
- 
- 			iter->tags >>= offset;
- 			iter->index += offset + 1;
-+			if (iter->index > iter->end_index)
-+				return NULL;
- 			return slot + offset + 1;
- 		}
- 	} else {
-@@ -367,6 +376,8 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
- 		while (size--) {
- 			slot++;
- 			iter->index++;
-+			if (iter->index > iter->end_index)
-+				return NULL;
- 			if (likely(*slot))
- 				return slot;
- 			if (flags & RADIX_TREE_ITER_CONTIG) {
-@@ -391,7 +402,7 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
-  * Locks can be released and reacquired between iterations.
-  */
- #define radix_tree_for_each_chunk(slot, root, iter, start, flags)	\
--	for (slot = radix_tree_iter_init(iter, start) ;			\
-+	for (slot = radix_tree_iter_init(iter, start, ~0UL) ;		\
- 	      (slot = radix_tree_next_chunk(root, iter, flags)) ;)
- 
- /**
-@@ -414,11 +425,12 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
-  * @root:	the struct radix_tree_root pointer
-  * @iter:	the struct radix_tree_iter pointer
-  * @start:	iteration starting index
-+ * @end:	iteration ending index
-  *
-  * @slot points to radix tree slot, @iter->index contains its index.
-  */
--#define radix_tree_for_each_slot(slot, root, iter, start)		\
--	for (slot = radix_tree_iter_init(iter, start) ;			\
-+#define radix_tree_for_each_slot(slot, root, iter, start, end)		\
-+	for (slot = radix_tree_iter_init(iter, start, end) ;		\
- 	     slot || (slot = radix_tree_next_chunk(root, iter, 0)) ;	\
- 	     slot = radix_tree_next_slot(slot, iter, 0))
- 
-@@ -433,7 +445,7 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
-  * @slot points to radix tree slot, @iter->index contains its index.
-  */
- #define radix_tree_for_each_contig(slot, root, iter, start)		\
--	for (slot = radix_tree_iter_init(iter, start) ;			\
-+	for (slot = radix_tree_iter_init(iter, start, ~0UL) ;		\
- 	     slot || (slot = radix_tree_next_chunk(root, iter,		\
- 				RADIX_TREE_ITER_CONTIG)) ;		\
- 	     slot = radix_tree_next_slot(slot, iter,			\
-@@ -446,12 +458,13 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
-  * @root:	the struct radix_tree_root pointer
-  * @iter:	the struct radix_tree_iter pointer
-  * @start:	iteration starting index
-+ * @end:	iteration ending index
-  * @tag:	tag index
-  *
-  * @slot points to radix tree slot, @iter->index contains its index.
-  */
--#define radix_tree_for_each_tagged(slot, root, iter, start, tag)	\
--	for (slot = radix_tree_iter_init(iter, start) ;			\
-+#define radix_tree_for_each_tagged(slot, root, iter, start, end, tag)	\
-+	for (slot = radix_tree_iter_init(iter, start, end) ;		\
- 	     slot || (slot = radix_tree_next_chunk(root, iter,		\
- 			      RADIX_TREE_ITER_TAGGED | tag)) ;		\
- 	     slot = radix_tree_next_slot(slot, iter,			\
-diff --git v3.14-rc6.orig/kernel/irq/irqdomain.c v3.14-rc6/kernel/irq/irqdomain.c
-index f14033700c25..55fc49b412e1 100644
---- v3.14-rc6.orig/kernel/irq/irqdomain.c
-+++ v3.14-rc6/kernel/irq/irqdomain.c
-@@ -571,7 +571,7 @@ static int virq_debug_show(struct seq_file *m, void *private)
- 	mutex_lock(&irq_domain_mutex);
- 	list_for_each_entry(domain, &irq_domain_list, link) {
- 		int count = 0;
--		radix_tree_for_each_slot(slot, &domain->revmap_tree, &iter, 0)
-+		radix_tree_for_each_slot(slot, &domain->revmap_tree, &iter, 0, ~0UL)
- 			count++;
- 		seq_printf(m, "%c%-16s  %6u  %10u  %10u  %s\n",
- 			   domain == irq_default_domain ? '*' : ' ', domain->name,
-diff --git v3.14-rc6.orig/lib/radix-tree.c v3.14-rc6/lib/radix-tree.c
-index bd4a8dfdf0b8..487ba9c403d2 100644
---- v3.14-rc6.orig/lib/radix-tree.c
-+++ v3.14-rc6/lib/radix-tree.c
-@@ -1051,7 +1051,7 @@ radix_tree_gang_lookup(struct radix_tree_root *root, void **results,
- 	if (unlikely(!max_items))
- 		return 0;
- 
--	radix_tree_for_each_slot(slot, root, &iter, first_index) {
-+	radix_tree_for_each_slot(slot, root, &iter, first_index, ~0UL) {
- 		results[ret] = indirect_to_ptr(rcu_dereference_raw(*slot));
- 		if (!results[ret])
- 			continue;
-@@ -1093,7 +1093,7 @@ radix_tree_gang_lookup_slot(struct radix_tree_root *root,
- 	if (unlikely(!max_items))
- 		return 0;
- 
--	radix_tree_for_each_slot(slot, root, &iter, first_index) {
-+	radix_tree_for_each_slot(slot, root, &iter, first_index, ~0UL) {
- 		results[ret] = slot;
- 		if (indices)
- 			indices[ret] = iter.index;
-@@ -1130,7 +1130,7 @@ radix_tree_gang_lookup_tag(struct radix_tree_root *root, void **results,
- 	if (unlikely(!max_items))
- 		return 0;
- 
--	radix_tree_for_each_tagged(slot, root, &iter, first_index, tag) {
-+	radix_tree_for_each_tagged(slot, root, &iter, first_index, ~0UL, tag) {
- 		results[ret] = indirect_to_ptr(rcu_dereference_raw(*slot));
- 		if (!results[ret])
- 			continue;
-@@ -1167,7 +1167,7 @@ radix_tree_gang_lookup_tag_slot(struct radix_tree_root *root, void ***results,
- 	if (unlikely(!max_items))
- 		return 0;
- 
--	radix_tree_for_each_tagged(slot, root, &iter, first_index, tag) {
-+	radix_tree_for_each_tagged(slot, root, &iter, first_index, ~0UL, tag) {
- 		results[ret] = slot;
- 		if (++ret == max_items)
- 			break;
-diff --git v3.14-rc6.orig/mm/filemap.c v3.14-rc6/mm/filemap.c
-index 7a13f6ac5421..8c24eda539d8 100644
---- v3.14-rc6.orig/mm/filemap.c
-+++ v3.14-rc6/mm/filemap.c
-@@ -841,7 +841,7 @@ unsigned find_get_pages(struct address_space *mapping, pgoff_t start,
- 
- 	rcu_read_lock();
- restart:
--	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
-+	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start, ~0UL) {
- 		struct page *page;
- repeat:
- 		page = radix_tree_deref_slot(slot);
-@@ -985,7 +985,7 @@ unsigned find_get_pages_tag(struct address_space *mapping, pgoff_t *index,
- 	rcu_read_lock();
- restart:
- 	radix_tree_for_each_tagged(slot, &mapping->page_tree,
--				   &iter, *index, tag) {
-+				   &iter, *index, ~0UL, tag) {
- 		struct page *page;
- repeat:
- 		page = radix_tree_deref_slot(slot);
-diff --git v3.14-rc6.orig/mm/shmem.c v3.14-rc6/mm/shmem.c
-index 1f18c9d0d93e..973caa10fe1e 100644
---- v3.14-rc6.orig/mm/shmem.c
-+++ v3.14-rc6/mm/shmem.c
-@@ -346,7 +346,7 @@ static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
- 
- 	rcu_read_lock();
- restart:
--	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
-+	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start, ~0UL) {
- 		struct page *page;
- repeat:
- 		page = radix_tree_deref_slot(slot);
--- 
-1.8.5.3
+Linus,
 
+here is a Kconfig fix for the I2C subsystem. Please pull.
+
+Thanks,
+
+   Wolfram
+
+
+The following changes since commit fa389e220254c69ffae0d403eac4146171062d08:
+
+  Linux 3.14-rc6 (2014-03-09 19:41:57 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
+
+for you to fetch changes up to 62c19c9d29e65086e5ae76df371ed2e6b23f00cd:
+
+  i2c: Remove usage of orphaned symbol OF_I2C (2014-03-13 22:33:44 +0100)
+
+----------------------------------------------------------------
+Richard Weinberger (1):
+      i2c: Remove usage of orphaned symbol OF_I2C
+
+ drivers/i2c/busses/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--+QahgC5+KEYLbs62
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTIiYQAAoJEBQN5MwUoCm2ucQP/jVO7xub0KMO1AkHtoxHCLFw
+dScq/2ICdHaoUCryoJ0BVZBlvTIZNO7Z0DGPcTbLwDtg4p041GAosvHqtBGqvCtG
+78M2a+OY7RDNsNcddPuVNjl79DH51nSqlRukJ89+AqbHQ/DLgPH5OWBtsrKqMD/2
+ShvCJwGV1NfiLO5OhXQHNfr2ieXvfiV/VkC9T6Q/5lalU6mQAosI0PJBN/IJddOK
+NdoMioCKeiAuRD/G5GDURieNWJ3xfjp7NHt0dPbBPBVV3Ftosu1hvLYQJyi6xSdG
+whZTQU5ieBL+JWwjMOZq+tpwVT4cP7AMcnef4SHVRno7gSzDbIC9g6cOYOtDo9lB
+zKKN0sjlaes4BZjSSomyfUTaPmdaAl9W2heR7d3jmU0UtIuTnzoV0NK7DsSRbbWM
+iPjK17mreEJ/pN5ipCVeaGZFw9OLUMsmUFm4NLSqAU/GYAwmGUb5bV2soETa9Pz3
+COojosAKd4WYfj82whnwj9gC6u+vj4zftNrXogreB5WVYL1bV3/Bw+e151N2akxW
+w+hn1mIjqYvELmFp9LwQP+m4SDryPhhYSqbkABKL6idhGVRImY+1Pb72c0jkVbAP
+RTUVcNQJq6/jH06O8vJIMat9lPJbDlf0tscebuKeZmomurKmKo/Hd3CAhIiuEvmn
+uTFs8KLm2O60GhfkLmPZ
+=djEv
+-----END PGP SIGNATURE-----
+
+--+QahgC5+KEYLbs62--
