@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037AbaCMWhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 18:37:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44984 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754960AbaCMWhR (ORCPT
+	id S1755133AbaCMWiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 18:38:09 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:47807 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754176AbaCMWiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 18:37:17 -0400
-Date: Thu, 13 Mar 2014 15:37:03 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-b82ad3d3944193e5f95319c30fd24e39d0d7b510@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de, hpa@linux.intel.com
-In-Reply-To: <1394633584-5509-4-git-send-email-bp@alien8.de>
-References: <1394633584-5509-4-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86, pageattr:
-  Correct WBINVD spelling in comment
-Git-Commit-ID: b82ad3d3944193e5f95319c30fd24e39d0d7b510
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 13 Mar 2014 18:38:07 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Cc: arm-summit-discuss@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, linaro-kernel@lists.linaro.org
+Subject: [ANNOUNCE] ARM kernel mini-summit @ ELC: Call for Topics, Invitation Request
+Date: Thu, 13 Mar 2014 15:38:05 -0700
+Message-ID: <7hmwgtk9ma.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b82ad3d3944193e5f95319c30fd24e39d0d7b510
-Gitweb:     http://git.kernel.org/tip/b82ad3d3944193e5f95319c30fd24e39d0d7b510
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Wed, 12 Mar 2014 15:13:04 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 13 Mar 2014 15:32:45 -0700
+Hello,
 
-x86, pageattr: Correct WBINVD spelling in comment
+We will be holding a one-day, ARM kernel mini-summit at ELC this year in
+San Jose[1].  The mini-summit will be Monday, April 28th, and ELC starts
+on Tuesday.
 
-It is WBINVD, for INValiDate and not "wbindv". Use caps for instruction
-names, while at it.
+The ARM summit brings together maintainers and developers in the ARM
+community face to face to discuss current work and to plan for what is
+coming next. To keep the group small and encourage open discussion the
+event is invite-only.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1394633584-5509-4-git-send-email-bp@alien8.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/mm/pageattr.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+To propose a discussion topic and/or request an invitation:
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index b3b19f4..ba957c9 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -1377,10 +1377,10 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
- 	cache = cache_attr(mask_set);
- 
- 	/*
--	 * On success we use clflush, when the CPU supports it to
--	 * avoid the wbindv. If the CPU does not support it and in the
-+	 * On success we use CLFLUSH, when the CPU supports it to
-+	 * avoid the WBINVD. If the CPU does not support it and in the
- 	 * error case we fall back to cpa_flush_all (which uses
--	 * wbindv):
-+	 * WBINVD):
- 	 */
- 	if (!ret && cpu_has_clflush) {
- 		if (cpa.flags & (CPA_PAGES_ARRAY | CPA_ARRAY)) {
+1) subscribe yourself to arm-summit-discuss@lists.infradead.org:
+   http://lists.infradead.org/mailman/listinfo/arm-summit-discuss
+
+2) send your invite request and/or topic proposal to
+   arm-summit-discuss@lists.infradead.org with a subject prefix of 
+   "[ARM ATTEND]".  Also, please Cc the main linux-arm-kernel list.
+
+All topics and invitation requests will be reviewed by the program
+committee and decisions will be made by the end of March, so please get
+your requests/topics in soon.
+
+ARM mini-summit Program Committee,
+
+Arnd Bergmann
+Magnus Damm
+Kevin Hilman
+Simon Horman
+Olof Johansson
+Grant Likely
+
+[1] http://events.linuxfoundation.org/events/embedded-linux-conference
