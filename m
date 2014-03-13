@@ -1,43 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbaCRDTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 23:19:23 -0400
-Received: from smtprelay0146.hostedemail.com ([216.40.44.146]:33208 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751706AbaCRDTU (ORCPT
+	id S1753075AbaCRD0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 23:26:12 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:64189 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180AbaCRD0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 23:19:20 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:4321:5007:6642:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13160:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: event39_6e3b689af273e
-X-Filterd-Recvd-Size: 1283
-Message-ID: <1395112756.20860.1.camel@joe-AO722>
-Subject: Re: [PATCH 00/12] scsi/NCR5380: fix debugging macros and #include
- structure
-From: Joe Perches <joe@perches.com>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Sam Creasey <sammy@sammy.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michael Schmitz <schmitz@debian.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-m68k@vger.kernel.org
-Date: Mon, 17 Mar 2014 20:19:16 -0700
-In-Reply-To: <20140318002822.372705594@telegraphics.com.au>
-References: <20140318002822.372705594@telegraphics.com.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Mar 2014 23:26:10 -0400
+From: Masood Mehmood <ody.guru@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: eng.linux@digi.com, lidza.louina@gmail.com,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: dgap: Fixed sparse error: same symbol redeclared with different type
+Date: Thu, 13 Mar 2014 03:02:59 -0700
+Message-Id: <1394704979-4466-1-git-send-email-ody.guru@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-18 at 11:28 +1100, Finn Thain wrote:
-> This patch series addresses several issues with NCR5380 drivers:
-[]
-> 3. Broken debugging code.
+sparse reported dgap_do_fep_load is redeclared with different type. while
+fixing, I noticed __user attribute is used incorrectly in declaration.
+There is no need to define __user for firware->data.
 
-My preference would be to change dprintk to scsi_dbg
+Replaced the __user with 'const uchar *' from function dgap_do_fep_load and
+did the same for function dgap_do_bios_load
 
-Seems sensible otherwise.
+patch generated against: next-20140317
+
+Signed-off-by: Masood Mehmood <ody.guru@gmail.com>
+---
+ drivers/staging/dgap/dgap.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index bfafe7e..bbacbba 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -210,9 +210,8 @@ static uint dgap_config_get_useintr(struct board_t *bd);
+ static uint dgap_config_get_altpin(struct board_t *bd);
+ 
+ static int dgap_ms_sleep(ulong ms);
+-static void dgap_do_bios_load(struct board_t *brd, uchar __user *ubios,
+-				int len);
+-static void dgap_do_fep_load(struct board_t *brd, uchar __user *ufep, int len);
++static void dgap_do_bios_load(struct board_t *brd, const uchar *ubios, int len);
++static void dgap_do_fep_load(struct board_t *brd, const uchar *ufep, int len);
+ #ifdef DIGI_CONCENTRATORS_SUPPORTED
+ static void dgap_do_conc_load(struct board_t *brd, uchar *uaddr, int len);
+ #endif
+@@ -936,7 +935,7 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
+ 				fw_info[card_type].bios_name);
+ 			return ret;
+ 		}
+-		dgap_do_bios_load(brd, (char *)fw->data, fw->size);
++		dgap_do_bios_load(brd, fw->data, fw->size);
+ 		release_firmware(fw);
+ 
+ 		/* Wait for BIOS to test board... */
+@@ -954,7 +953,7 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
+ 				fw_info[card_type].fep_name);
+ 			return ret;
+ 		}
+-		dgap_do_fep_load(brd, (char *)fw->data, fw->size);
++		dgap_do_fep_load(brd, fw->data, fw->size);
+ 		release_firmware(fw);
+ 
+ 		/* Wait for FEP to load on board... */
+@@ -4350,7 +4349,7 @@ static int dgap_tty_register_ports(struct board_t *brd)
+  * Copies the BIOS code from the user to the board,
+  * and starts the BIOS running.
+  */
+-static void dgap_do_bios_load(struct board_t *brd, uchar __user *ubios, int len)
++static void dgap_do_bios_load(struct board_t *brd, const uchar *ubios, int len)
+ {
+ 	uchar *addr;
+ 	uint offset;
+@@ -4426,7 +4425,7 @@ static void dgap_do_wait_for_bios(struct board_t *brd)
+  * Copies the FEP code from the user to the board,
+  * and starts the FEP running.
+  */
+-static void dgap_do_fep_load(struct board_t *brd, uchar *ufep, int len)
++static void dgap_do_fep_load(struct board_t *brd, const uchar *ufep, int len)
+ {
+ 	uchar *addr;
+ 	uint offset;
+-- 
+1.8.3.1
 
