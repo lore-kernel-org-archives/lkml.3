@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250AbaCMUgQ (ORCPT <rfc822;w@1wt.eu>);
+	id S1755417AbaCMUg0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 16:36:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39684 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755170AbaCMUgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Mar 2014 16:36:16 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43342 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408AbaCMUgP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 16:36:15 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Rob Herring <robh@kernel.org>,
         Tero Kristo <t-kristo@ti.com>, Nishanth Menon <nm@ti.com>,
@@ -15,9 +14,9 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Joel Fernandes <joelf@ti.com>
-Subject: [RFC 1/5] ARM: dts: am33xx: Add clock nodes for timer1 and timer2
-Date: Thu, 13 Mar 2014 15:35:15 -0500
-Message-ID: <1394742919-32163-2-git-send-email-joelf@ti.com>
+Subject: [RFC 5/5] ARM: AM33xx: Move to using omap_generic_timer_init for init_time
+Date: Thu, 13 Mar 2014 15:35:19 -0500
+Message-ID: <1394742919-32163-6-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394742919-32163-1-git-send-email-joelf@ti.com>
 References: <1394742919-32163-1-git-send-email-joelf@ti.com>
@@ -27,31 +26,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Earlier patch in this series introduced a function omap_generic_timer_init
+for all DT platforms. Use it for AM33xx SoC.
+
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- arch/arm/boot/dts/am33xx.dtsi |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/mach-omap2/board-generic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 6d95d3d..4e6c959 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -347,6 +347,7 @@
- 
- 		timer1: timer@44e31000 {
- 			compatible = "ti,am335x-timer-1ms";
-+			clocks = <&timer1_fck>;
- 			reg = <0x44e31000 0x400>;
- 			interrupts = <67>;
- 			ti,hwmods = "timer1";
-@@ -355,6 +356,7 @@
- 
- 		timer2: timer@48040000 {
- 			compatible = "ti,am335x-timer";
-+			clocks = <&timer2_fck>;
- 			reg = <0x48040000 0x400>;
- 			interrupts = <68>;
- 			ti,hwmods = "timer2";
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index 8e3daa1..2182865 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -166,7 +166,7 @@ DT_MACHINE_START(AM33XX_DT, "Generic AM33XX (Flattened Device Tree)")
+ 	.handle_irq	= omap3_intc_handle_irq,
+ 	.init_machine	= omap_generic_init,
+ 	.init_late	= am33xx_init_late,
+-	.init_time	= omap3_gptimer_timer_init,
++	.init_time	= omap_generic_timer_init,
+ 	.dt_compat	= am33xx_boards_compat,
+ 	.restart	= am33xx_restart,
+ MACHINE_END
 -- 
 1.7.9.5
 
