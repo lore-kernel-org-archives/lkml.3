@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160AbaCMTIe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 15:08:34 -0400
-Received: from host171.canaca.com ([67.55.55.225]:52301 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866AbaCMTIc (ORCPT
+	id S1755074AbaCMTNj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 15:13:39 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:40600 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637AbaCMTNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 15:08:32 -0400
-X-Greylist: delayed 1580 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Mar 2014 15:08:32 EDT
-From: Simon Wood <simon@mungewell.org>
-To: linux-input@vger.kernel.org
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        simon@mungewell.org, Ivan Baldo <ibaldo@adinet.com.uy>,
-        evilcow <evilcow93@yahoo.com>
-Subject: [PATCH] HID: hid-lg4ff: Support new version of G27
-Date: Thu, 13 Mar 2014 12:42:03 -0600
-Message-Id: <1394736123-2102-1-git-send-email-simon@mungewell.org>
-X-Mailer: git-send-email 1.8.1.2
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Thu, 13 Mar 2014 15:13:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFyCSL==4Ff4JT3uFKN_28mz92ef1L67-4OUGqHZ8HXUhg@mail.gmail.com>
+References: <1394664680-17799-1-git-send-email-stefani@seibold.net>
+ <1394664680-17799-4-git-send-email-stefani@seibold.net> <5320E689.7060607@zytor.com>
+ <CALCETrXQJvkk-5ncSgTyoy9sCN0AT+h9-1F6wAnxqRm242PjrQ@mail.gmail.com>
+ <5321D45C.7040504@zytor.com> <CALCETrVy3oW=qvJWbGtKTZ=0dZLjHtmBphPDnP1N8nLmXc=+9A@mail.gmail.com>
+ <5321F418.1030304@zytor.com> <5321F72E.7030109@zytor.com> <CALCETrXjJeXqJj3muJhfNeiQ7Te+8WSow+LtjKPM9dySfDtbaA@mail.gmail.com>
+ <CA+55aFyOp6V_tE-sXKVi+=6yVwHQb0sLWSNbk=N7KbhBrx9QhA@mail.gmail.com> <CA+55aFyCSL==4Ff4JT3uFKN_28mz92ef1L67-4OUGqHZ8HXUhg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 13 Mar 2014 12:13:17 -0700
+Message-ID: <CALCETrVa2XPc5JBDbDdH1ciavi2tuqwBf7picE4TVf69n_PcKw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] x86, vdso32: handle 32 bit vDSO larger one page
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        Andi Kleen <ak@linux.intel.com>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has been reported that there is a new hardware version of the G27
-in the 'wild'. This patch add's this new revision so that it can be
-sent the command to switch to native mode.
+On Thu, Mar 13, 2014 at 12:06 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On my phone, so the lists will reject this, and sorry for top posting.
+>
+> Maybe we could do something similar to the vsyscall=native thing, where the
+> compat vdso just does the system calls, but at least uses syscall rather
+> than int80 when appropriate? Make the suse situation not suck horribly...
 
-Reported-by: "Ivan Baldo" <ibaldo@adinet.com.uy>
-Tested-by: "evilcow" <evilcow93@yahoo.com>
-Signed-off-by: Simon Wood <simon@mungewell.org>
----
- drivers/hid/hid-lg4ff.c | 2 ++
- 1 file changed, 2 insertions(+)
+How?  We either set null in AT_SYSINFO_EHDR, we set something simple
+that SuSE is okay with (and compile separate images?) or we set
+something fancy and not relocated, and SuSE crashes.
 
-diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
-index befe0e3..24883b4 100644
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -43,6 +43,7 @@
- #define G25_REV_MIN 0x22
- #define G27_REV_MAJ 0x12
- #define G27_REV_MIN 0x38
-+#define G27_2_REV_MIN 0x39
- 
- #define to_hid_device(pdev) container_of(pdev, struct hid_device, dev)
- 
-@@ -130,6 +131,7 @@ static const struct lg4ff_usb_revision lg4ff_revs[] = {
- 	{DFP_REV_MAJ,  DFP_REV_MIN,  &native_dfp},	/* Driving Force Pro */
- 	{G25_REV_MAJ,  G25_REV_MIN,  &native_g25},	/* G25 */
- 	{G27_REV_MAJ,  G27_REV_MIN,  &native_g27},	/* G27 */
-+	{G27_REV_MAJ,  G27_2_REV_MIN,  &native_g27},	/* G27 v2 */
- };
- 
- /* Recalculates X axis value accordingly to currently selected range */
--- 
-1.8.1.2
+At least for the 64-bit vsyscall case, modern code is polite enough to
+completely ignore the vsyscall page.  Unfortunately, modern 32-bit
+glibc looks at the exact same AT_SYSINFO_EHDR.
 
+If the syscall overhead is that bad, the dynamic relocation approach
+might be better...
+
+On a related note: is it okay to keep the option called
+CONFIG_COMPAT_VDSO but change the default to n?  The assumption is
+that everyone with OpenSUSE already has a working config, but new
+defconfig users will get the better choice?
+
+--Andy
