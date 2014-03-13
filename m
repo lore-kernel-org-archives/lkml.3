@@ -1,33 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410AbaCMBOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Mar 2014 21:14:31 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:46155 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaCMBOa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Mar 2014 21:14:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140312205327.74cb20ca@gandalf.local.home>
-References: <1392349908-29685-1-git-send-email-vnagarnaik@google.com>
- <CAL26m8LojQppYpQGhbZsAw7Qt1BrphBo=k+fcSZVdCctdzxF_Q@mail.gmail.com> <20140312205327.74cb20ca@gandalf.local.home>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Wed, 12 Mar 2014 18:13:59 -0700
-Message-ID: <CAL26m8LQHDGOGKj+K2BHieDd5g6W4bG+EHSov8h9_-HCbZHPJw@mail.gmail.com>
-Subject: Re: [PATCH] tracing: Fix array size mismatch in format string
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Laurent Chavey <chavey@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752791AbaCMBSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Mar 2014 21:18:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54403 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752471AbaCMBSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Mar 2014 21:18:03 -0400
+Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
+From: Simo Sorce <ssorce@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
+In-Reply-To: <CALCETrU29CpcK4dVRD45BGOD7AVEudADiFxOgFgKWkpFzw07eg@mail.gmail.com>
+References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
+	 <1394657163-7472-3-git-send-email-vgoyal@redhat.com>
+	 <5320CAEC.6030008@amacapital.net>
+	 <CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
+	 <1394658983.32465.203.camel@willson.li.ssimo.org>
+	 <CALCETrU29CpcK4dVRD45BGOD7AVEudADiFxOgFgKWkpFzw07eg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Mar 2014 21:17:56 -0400
+Message-ID: <1394673476.32465.215.camel@willson.li.ssimo.org>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 5:53 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> Your timing here isn't that great either, because I leave tomorrow for
-> another conference, and I'm currently trying to get everything ready
-> for that trip. Could you ping me again on Tuesday?
+On Wed, 2014-03-12 at 14:19 -0700, Andy Lutomirski wrote:
+> On Wed, Mar 12, 2014 at 2:16 PM, Simo Sorce <ssorce@redhat.com> wrote:
+> > On Wed, 2014-03-12 at 14:12 -0700, Andy Lutomirski wrote:
+> >> On Wed, Mar 12, 2014 at 2:00 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >> > On 03/12/2014 01:46 PM, Vivek Goyal wrote:
+> >> >> Implement SO_PEERCGROUP along the lines of SO_PEERCRED. This returns the
+> >> >> cgroup of first mounted hierarchy of the task. For the case of client,
+> >> >> it represents the cgroup of client at the time of opening the connection.
+> >> >> After that client cgroup might change.
+> >> >
+> >> > Even if people decide that sending cgroups over a unix socket is a good
+> >> > idea, this API has my NAK in the strongest possible sense, for whatever
+> >> > my NAK is worth.
+> >> >
+> >> > IMO SO_PEERCRED is a disaster.  Calling send(2) or write(2) should
+> >> > *never* imply the use of a credential.  A program should always have to
+> >> > *explicitly* request use of a credential.  What you want is SCM_CGROUP.
+> >> >
+> >> > (I've found privilege escalations before based on this observation, and
+> >> > I suspect I'll find them again.)
+> >> >
+> >> >
+> >> > Note that I think that you really want SCM_SOMETHING_ELSE and not
+> >> > SCM_CGROUP, but I don't know what the use case is yet.
+> >>
+> >> This might not be quite as awful as I thought.  At least you're
+> >> looking up the cgroup at connection time instead of at send time.
+> >>
+> >> OTOH, this is still racy -- the socket could easily outlive the cgroup
+> >> that created it.
+> >
+> > I think you do not understand how this whole problem space works.
+> >
+> > The problem is exactly the same as with SO_PEERCRED, so we are taking
+> > the same proven solution.
+> 
+> You mean the same proven crappy solution?
+> 
+> >
+> > Connection time is all we do and can care about.
+> 
+> You have not answered why.
 
-Will do.
+We are going to disclose information to the peer based on policy that
+depends on the cgroup the peer is part of. All we care for is who opened
+the connection, if the peer wants to pass on that information after it
+has obtained it there is nothing we can do, so connection time is all we
+really care about.
 
-Vaibhav
+Simo.
+
