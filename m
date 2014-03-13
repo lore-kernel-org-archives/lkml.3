@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195AbaCMTuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 15:50:19 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:56237 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754593AbaCMTuR (ORCPT
+	id S1755175AbaCMT6Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 15:58:24 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:37466 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740AbaCMT6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 15:50:17 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET cgroup/for-3.15] cgroup: prepare for the default unified hierarchy
-Date: Thu, 13 Mar 2014 15:50:02 -0400
-Message-Id: <1394740213-17626-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
+	Thu, 13 Mar 2014 15:58:21 -0400
+Date: Thu, 13 Mar 2014 12:58:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] [RFC] perf: Fix a race between ring_buffer_detach() and
+ ring_buffer_wakeup()
+Message-ID: <20140313195816.GJ21124@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1394199526-6400-1-git-send-email-alexander.shishkin@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394199526-6400-1-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031319-8236-0000-0000-000000BFF472
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Mar 07, 2014 at 03:38:46PM +0200, Alexander Shishkin wrote:
+> This is more of a problem description than an actual bugfix, but currently
+> ring_buffer_detach() can kick in while ring_buffer_wakeup() is traversing
+> the ring buffer's event list, leading to cpu stalls.
+> 
+> What this patch does is crude, but fixes the problem, which is: one rcu
+> grace period has to elapse between ring_buffer_detach() and subsequent
+> ring_buffer_attach(), otherwise either the attach will fail or the wakeup
+> will misbehave. Also, making it a call_rcu() callback will make it race
+> with attach().
+> 
+> Another solution that I see is to check for list_empty(&event->rb_entry)
+> before wake_up_all() in ring_buffer_wakeup() and restart the list
+> traversal if it is indeed empty, but that is ugly too as there will be
+> extra wakeups on some events.
+> 
+> Anything that I'm missing here? Any better ideas?
 
-The planned unified hierarchy is just around the corner.  We're gonna
-repurpose the dummy hierarchy to serve as the default unified
-hierarchy.  Controllers which aren't attached to other hierarchies are
-already automatically bound to the dummy hierarchy; however, the dummy
-hierarchy is minimally initialized during boot and can't currently act
-as a full hierarchy.
+Not sure it qualifies as "better", but git call to ring_buffer_detach()
+is going to free the event anyway, so the synchronize_rcu() and the
+INIT_LIST_HEAD() should not be needed in that case.  I am guessing that
+the same is true for perf_mmap_close().
 
-This patchset gradually turns the dummy hierarchy into fully
-functional default one and makes it mountable via selecting
-sane_behavior without any subsystems specified.  While this patchset
-does make the default hierarchy mountable, the unified hierarchy
-functionality isn't implemented yet and cgroup creation in the default
-hierarchy is rejected for now.
+So that leaves the call in perf_event_set_output(), which detaches from an
+old rb before attaching that same event to a new one.  So maybe have the
+synchronize_rcu() and INIT_LIST_HEAD() instead be in the "if (old_rb)",
+which might be a reasonably uncommon case?
 
-This lays down all the boilerplate work for the unified hierarchy.
-The next patchset will implement the actual unified functionality.
+							Thanx, Paul
 
-This patchset contains the following eleven patches.
-
- 0001-cgroup-cgroup-subsys-should-be-cleared-after-the-css.patch
- 0002-cgroup-relocate-setting-of-CGRP_DEAD.patch
- 0003-cgroup-reorganize-cgroup-bootstrapping.patch
- 0004-cgroup-use-cgroup_setup_root-to-initialize-cgroup_du.patch
- 0005-cgroup-remove-NULL-checks-from-pr_cont_-cgroup_-name.patch
- 0006-cgroup-treat-cgroup_dummy_root-as-an-equivalent-hier.patch
- 0007-cgroup-move-subsys_mask-from-cgroupfs_root-to-cgroup.patch
- 0008-cgroup-rename-cgroup_dummy_root-and-related-names.patch
- 0009-cgroup-drop-const-from-buffer-of-cftype-write_string.patch
- 0010-cgroup-make-cgrp_dfl_root-mountable.patch
- 0011-cgroup-implement-CFTYPE_ONLY_ON_DFL.patch
-
-0001-0002 are misc fix / prep.
-
-0003-0009 (mostly) turn the dummy hierarchy into a full hierarchy
-which takes on controllers which aren't attached to other hierarchies.
-
-0010-0011 make the default hierarchy mountable and implement
-CFTYPE_ONLY_DFL.
-
-This patchset is on top of cgroup/for-3.15 b8dadcb58d54 ("cpuset: use
-rcu_read_lock() to protect task_cs()").  diffstat follows.
-
- block/blk-throttle.c      |    4
- block/cfq-iosched.c       |    4
- include/linux/cgroup.h    |   57 ++---
- kernel/cgroup.c           |  464 +++++++++++++++++++++++++---------------------
- kernel/cgroup_freezer.c   |    2
- kernel/cpuset.c           |    2
- mm/hugetlb_cgroup.c       |    2
- mm/memcontrol.c           |    4
- net/core/netprio_cgroup.c |    2
- net/ipv4/tcp_memcontrol.c |    2
- security/device_cgroup.c  |    4
- 11 files changed, 295 insertions(+), 252 deletions(-)
-
-Thanks.
-
---
-tejun
+> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/events/core.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 661951a..bce41e0 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -3861,7 +3861,7 @@ static void ring_buffer_attach(struct perf_event *event,
+> 
+>  	spin_lock_irqsave(&rb->event_lock, flags);
+>  	if (list_empty(&event->rb_entry))
+> -		list_add(&event->rb_entry, &rb->event_list);
+> +		list_add_rcu(&event->rb_entry, &rb->event_list);
+>  	spin_unlock_irqrestore(&rb->event_lock, flags);
+>  }
+> 
+> @@ -3873,9 +3873,11 @@ static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
+>  		return;
+> 
+>  	spin_lock_irqsave(&rb->event_lock, flags);
+> -	list_del_init(&event->rb_entry);
+> +	list_del_rcu(&event->rb_entry);
+>  	wake_up_all(&event->waitq);
+>  	spin_unlock_irqrestore(&rb->event_lock, flags);
+> +	synchronize_rcu();
+> +	INIT_LIST_HEAD(&event->rb_entry);
+>  }
+> 
+>  static void ring_buffer_wakeup(struct perf_event *event)
+> -- 
+> 1.9.0
+> 
 
