@@ -1,93 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaCMGZy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 02:25:54 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:63087 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaCMGZx (ORCPT
+	id S1753287AbaCMG1t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 02:27:49 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:64793 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188AbaCMG1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 02:25:53 -0400
-Message-ID: <1394691946.5396.43.camel@marge.simpson.net>
-Subject: [PATCH] block,loop: ratelimit error messages
-From: Mike Galbraith <bitbucket@online.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 13 Mar 2014 07:25:46 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:4Qom62zuZbX/AkqSh992qeioC4kbp9c8DrmA00nB4O/
- nU2Uj7wGK5GGlLxqxwO5qdfcneQ9Dyp5BRvsf8M+Mo9G7XEKgb
- rEWO2Rj+1oIjQK2f+6nkh5WdyF9USS+xQgSrZHq0pqfVW+Ht4e
- 3t+dVBbnUowY7F7l6TG/ldzAToDWakuDItbaZsRH0H2evcyjdB
- gbVqitaVlvR/4cXHp2q5C5/T7pfh6KHgyWL2FB2dwFboRf3QrR
- 6S4ZZgx1RRspqBwZ9ydnvcG9rmhFxRURrgxQpQR9c4387o8i2l
- IhLEz1RXmgJU8gP4f+WDSFIyZkxaJafe2E0irYQugGI3N8dWPc
- WNJ3wjGgrvLbWsPjeVpFpxy9lWUg2V2VndPPCRPTe
+	Thu, 13 Mar 2014 02:27:47 -0400
+Message-ID: <53214FDE.50207@gmail.com>
+Date: Thu, 13 Mar 2014 07:27:42 +0100
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: "Yang, Wenyou" <Wenyou.Yang@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "b.brezillon@overkiz.com" <b.brezillon@overkiz.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "<linux-arm-kernel@lists.infradead.org> mailing list" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Lin, JM" <JM.Lin@atmel.com>
+Subject: Re: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
+References: <1393984400-14687-1-git-send-email-wenyou.yang@atmel.com> <635C1A75-4651-4B2C-AB64-E1D170A1F5F9@jcrosoft.com> <B256D81BAE5131468A838E5D7A24364172FF4EC4@penmbx01> <B256D81BAE5131468A838E5D7A24364172FFB955@penmbx01> <F73ABBC2-BFD3-43D5-9BAB-5D17CD585E89@jcrosoft.com> <B256D81BAE5131468A838E5D7A24364172FFBC8C@penmbx01> <C90D6485-5915-4FC6-AA67-C035265057B6@jcrosoft.com> <B256D81BAE5131468A838E5D7A24364173008EB4@penmbx01>
+In-Reply-To: <B256D81BAE5131468A838E5D7A24364173008EB4@penmbx01>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le 13/03/2014 07:00, Yang, Wenyou a écrit :
+> Hi JC,
+>
+>> -----Original Message-----
+>> From: Jean-Christophe PLAGNIOL-VILLARD [mailto:plagnioj@jcrosoft.com]
+>> Sent: Tuesday, March 11, 2014 7:14 PM
+>> To: Yang, Wenyou
+>> Cc: Jean-Christophe PLAGNIOL-VILLARD; mark.rutland@arm.com;
+>> devicetree@vger.kernel.org; pawel.moll@arm.com;
+>> ijc+devicetree@hellion.org.uk; linus.walleij@linaro.org; Linux Kernel
+>> list; b.brezillon@overkiz.com; robh+dt@kernel.org; galak@codeaurora.org;
+>> <linux-arm-kernel@lists.infradead.org> mailing list; Lin, JM
+>> Subject: Re: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
+>>
+>>
+>> On Mar 11, 2014, at 2:54 PM, Yang, Wenyou <Wenyou.Yang@atmel.com> wrote:
+>>
+>>>
+>>>> -----Original Message-----
+>>>> From: Jean-Christophe PLAGNIOL-VILLARD [mailto:plagnioj@jcrosoft.com]
+>>>> Sent: Tuesday, March 11, 2014 12:16 PM
+>>>> To: Yang, Wenyou
+>>>> Cc: Jean-Christophe PLAGNIOL-VILLARD; mark.rutland@arm.com;
+>>>> devicetree@vger.kernel.org; pawel.moll@arm.com;
+>>>> ijc+devicetree@hellion.org.uk; linus.walleij@linaro.org; Linux Kernel
+>>>> list; b.brezillon@overkiz.com; robh+dt@kernel.org;
+>>>> galak@codeaurora.org; <linux-arm-kernel@lists.infradead.org> mailing
+>>>> list
+>>>> Subject: Re: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
+>>>>
+>>>>
+>>>> On Mar 11, 2014, at 9:28 AM, Yang, Wenyou <Wenyou.Yang@atmel.com>
+>> wrote:
+>>>>> Hi JC,
+>>>>>
+>>>>>> -----Original Message-----
+>>>>>> From: Yang, Wenyou
+>>>>>> Sent: Wednesday, March 05, 2014 1:32 PM
+>>>>>> To: Jean-Christophe PLAGNIOL-VILLARD
+>>>>>> Cc: linus.walleij@linaro.org; b.brezillon@overkiz.com; <linux-arm-
+>>>>>> kernel@lists.infradead.org> mailing list; Linux Kernel list;
+>>>>>> devicetree@vger.kernel.org; robh+dt@kernel.org; pawel.moll@arm.com;
+>>>>>> mark.rutland@arm.com; ijc+devicetree@hellion.org.uk;
+>>>>>> galak@codeaurora.org
+>>>>>> Subject: RE: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
+>>>>>>
+>>>>>> Hi JC,
+>>>>>>
+>>>>>>> -----Original Message-----
+>>>>>>> From: Jean-Christophe PLAGNIOL-VILLARD
+>>>>>>> [mailto:plagnioj@jcrosoft.com]
+>>>>>>> Sent: Wednesday, March 05, 2014 12:58 PM
+>>>>>>> To: Yang, Wenyou
+>>>>>>> Cc: Jean-Christophe PLAGNIOL-VILLARD; linus.walleij@linaro.org;
+>>>>>>> b.brezillon@overkiz.com; <linux-arm-kernel@lists.infradead.org>
+>>>>>>> mailing list; Linux Kernel list; devicetree@vger.kernel.org;
+>>>>>>> robh+dt@kernel.org; pawel.moll@arm.com; mark.rutland@arm.com;
+>>>>>>> ijc+devicetree@hellion.org.uk; galak@codeaurora.org
+>>>>>>> Subject: Re: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
+>>>>>>>
+>>>>>>>
+>>>>>>> On Mar 5, 2014, at 9:53 AM, Wenyou Yang <wenyou.yang@atmel.com>
+>>>> wrote:
+>>>>>>>> In order to support the pinctrl sleep state.
+>>>>>>> As I said before NACK
+>>>>>>>
+>>>>>>> this is not the job of the pinctrl to describe gpio output or
+>>>>>>> input state
+>>>>>> But according to what said in the section "GPIO mode pitfalls" of
+>>>>>> Documentation/pinctrl.txt.
+>>>>>> It should be handle by the pinctrl.
+>>>>>>
+>>>>>> If not, to deal with the sleep state will be very complicated.
+>>>>>> Muxing the pins for FUNCTION to enable peripheral, then twist them
+>>>>>> over to GPIO mode and use gpio_direction_output() to drive it HIGH
+>>>>>> or LOW during sleep.
+>>>>>>
+>>>>>> --->8 ------------
+>>>>>> The solution is to not think that what the datasheet calls "GPIO
+>>>> mode"
+>>>>>> has to be handled by the <linux/gpio.h> interface. Instead view
+>>>>>> this as a certain pin config setting. Look in e.g.
+>>>>>> <linux/pinctrl/pinconf- generic.h> and you find this in the
+>> documentation:
+>>>>>> PIN_CONFIG_OUTPUT: this will configure the pin in output, use
+>>>> argument
+>>>>>>     1 to indicate high level, argument 0 to indicate low level.
+>>>>>>
+>>>>>> So it is perfectly possible to push a pin into "GPIO mode" and
+>>>>>> drive the line low as part of the usual pin control map.
+>>>>>> ---<8 ------------
+>>>>> Do you have any feedback?
+>>>> Here the issue is that you do drive the gpio and use as a gpio
+>>>>
+>>>> which means you request it as a GPIO so after you can not reswitch it
+>>>> to alternative function and the gpio is already requested as
+>>>> alternative function
+>>>>
+>>>> So basically you mess-up with the gpio API and pinctrl API by
+>>>> bypassing both
+>>> But I don't agree with you.
+>>>
+>>> As I known, in mainline the other SoC vendors provide such function,
+>> configure the gpio mode with output config by pinctrl.
+>>> For example, ST. nomadisk.
+>>> You can see it in the function: nmk_pin_config_set() of the file,
+>> pinctrl-nomadik.c.
+>>> It provides GPIO mode and OUTPUT config.
+>>>
+>>> This is a good solution, as what said in Documentation/pinctrl.txt,
+>>>
+>>> it is perfectly possible to push a pin into "GPIO mode" and drive the
+>> line low as part of the usual pin control map.
+>> This is simple if we use gpio mode as pinctrl tomorrow we will see gpio
+>> configuration in pinctrl such as chip reset, default led state etc...
+>>
+>> The pinctrl is not here to control a *GPIO* but to describe the
+>> configuration of pin.
+> What you said is the usual use case.
+>
+> But, in the Power Management scenario, there are the following requirements to meet:
+> When running time, the pins are configured as the PERIPH functions by the pinctrl default state as usaul.
+> When suspending to memory, the pins are configured as GPIO output low, output high or input by the pinctrl sleep state.
+> When resuming from suspended, the pins are configured back as the PERIPH functions.
+>
+> I just found the same implementation by Boris which is better.
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-August/194975.html
+>
+> Boris, Could you have something to say?
 
-Metric tons of high speed spew is not helpful when things go pear shaped.
-systemd lost its mind, forgot how to stop services it insists on being
-sole manager of, massive printk() flood ensued, box eventually died.
+Yes.
 
-[16206.684000] loop: Write error at byte offset 11412291584, length 4096.
-[16206.684000] systemd-journald[1758]: /dev/kmsg buffer overrun, some messages lost.
-[16206.684000] loop: Write error at byte offset 13155434496, length 4096.
-[16206.684000] loop: Write error at byte offset 13155438592, length 4096.
-[16206.684000] loop: Write error at byte offset 13155442688, length 4096.
-[16206.684000] loop: Write error at byte offset 13960736768, length 4096.
-[16206.684000] loop: Write error at byte offset 14229172224, length 4096.
-[16206.684000] systemd-journald[1758]: /dev/kmsg buffer overrun, some messages lost.
-[16206.684000] loop: Write error at byte offset 14766043136, length 4096.
-[16206.684000] loop: Write error at byte offset 15034478592, length 4096.
-[16206.684000] systemd-journald[1758]: /dev/kmsg buffer overrun, some messages lost.
+I still think the pinconf OUTPUT state is useful in some cases, and the
+one you described is obviously one of these (I needed it for a different
+reason : https://lkml.org/lkml/2013/8/28/203 which appeared to be a wrong
+one).
 
-Signed-off-by: Mike Galbraith <bitbucket@online.de>
----
- drivers/block/loop.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+But I'm not the pinctrl subsystem or the at91 pinctrl driver maintainer...
 
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -237,7 +237,7 @@ static int __do_lo_send_write(struct fil
- 	file_end_write(file);
- 	if (likely(bw == len))
- 		return 0;
--	printk(KERN_ERR "loop: Write error at byte offset %llu, length %i.\n",
-+	printk_ratelimited(KERN_ERR "loop: Write error at byte offset %llu, length %i.\n",
- 			(unsigned long long)pos, len);
- 	if (bw >= 0)
- 		bw = -EIO;
-@@ -277,7 +277,7 @@ static int do_lo_send_write(struct loop_
- 		return __do_lo_send_write(lo->lo_backing_file,
- 				page_address(page), bvec->bv_len,
- 				pos);
--	printk(KERN_ERR "loop: Transfer error at byte offset %llu, "
-+	printk_ratelimited(KERN_ERR "loop: Transfer error at byte offset %llu, "
- 			"length %i.\n", (unsigned long long)pos, bvec->bv_len);
- 	if (ret > 0)
- 		ret = -EIO;
-@@ -316,7 +316,7 @@ static int lo_send(struct loop_device *l
- out:
- 	return ret;
- fail:
--	printk(KERN_ERR "loop: Failed to allocate temporary page for write.\n");
-+	printk_ratelimited(KERN_ERR "loop: Failed to allocate temporary page for write.\n");
- 	ret = -ENOMEM;
- 	goto out;
- }
-@@ -345,7 +345,7 @@ lo_splice_actor(struct pipe_inode_info *
- 		size = p->bsize;
- 
- 	if (lo_do_transfer(lo, READ, page, buf->offset, p->page, p->offset, size, IV)) {
--		printk(KERN_ERR "loop: transfer error block %ld\n",
-+		printk_ratelimited(KERN_ERR "loop: transfer error block %ld\n",
- 		       page->index);
- 		size = -EINVAL;
- 	}
+Linus, do you have an opinion on this feature ?
 
+>>>>>>>> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+>>>>>>>> ---
+>>>>>>>> Hi Linus,
+>>>>>>>>
+>>>>>>>> The patch is based on branch: for-next
+>>>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctr
+>>>>>>>> l
+>>>>>>>>
+>>>>>>>> Best Regards,
+>>>>>>>> Wenyou Yang
+>>>>>>>>
+>>>>>>>> drivers/pinctrl/pinctrl-at91.c     |   31
+>>>>>>> +++++++++++++++++++++++++++++++
+>>>>>>>> include/dt-bindings/pinctrl/at91.h |    2 ++
+>>>>>>>> 2 files changed, 33 insertions(+)
+>>>>>>>>
+>>>>>>>> diff --git a/drivers/pinctrl/pinctrl-at91.c
+>>>>>>>> b/drivers/pinctrl/pinctrl-at91.c index 5d24aae..fc51e59 100644
+>>>>>>>> --- a/drivers/pinctrl/pinctrl-at91.c
+>>>>>>>> +++ b/drivers/pinctrl/pinctrl-at91.c
+>>>>>>>> @@ -62,6 +62,8 @@ static int gpio_banks;
+>>>>>>>> #define DEGLITCH	(1 << 2)
+>>>>>>>> #define PULL_DOWN	(1 << 3)
+>>>>>>>> #define DIS_SCHMIT	(1 << 4)
+>>>>>>>> +#define GPIO_OUTPUT_HIGH	(1 << 5)
+>>>>>>>> +#define GPIO_OUTPUT_LOW		(1 << 6)
+>>>>>>>> #define DEBOUNCE	(1 << 16)
+>>>>>>>> #define DEBOUNCE_VAL_SHIFT	17
+>>>>>>>> #define DEBOUNCE_VAL	(0x3fff << DEBOUNCE_VAL_SHIFT)
+>>>>>>>> @@ -152,12 +154,15 @@ struct at91_pinctrl_mux_ops {
+>>>>>>>> 	void (*set_pulldown)(void __iomem *pio, unsigned mask, bool
+>> is_on);
+>>>>>>>> 	bool (*get_schmitt_trig)(void __iomem *pio, unsigned pin);
+>>>>>>>> 	void (*disable_schmitt_trig)(void __iomem *pio, unsigned
+>> mask);
+>>>>>>>> +	bool (*get_gpio_output)(void __iomem *pio, unsigned mask);
+>>>>>>>> +	void (*set_gpio_output)(void __iomem *pio, unsigned mask,
+>>>> bool
+>>>>>>>> +is_high);
+>>>>>>>> 	/* irq */
+>>>>>>>> 	int (*irq_type)(struct irq_data *d, unsigned type); };
+>>>>>>>>
+>>>>>>>> static int gpio_irq_type(struct irq_data *d, unsigned type);
+>>>>>>>> static int alt_gpio_irq_type(struct irq_data *d, unsigned type);
+>>>>>>>> +static void at91_mux_gpio_enable(void __iomem *pio, unsigned
+>>>>>>>> +mask, bool input);
+>>>>>>>>
+>>>>>>>> struct at91_pinctrl {
+>>>>>>>> 	struct device		*dev;
+>>>>>>>> @@ -472,6 +477,20 @@ static bool
+>>>>>>>> at91_mux_pio3_get_schmitt_trig(void
+>>>>>>> __iomem *pio, unsigned pin)
+>>>>>>>> 	return (__raw_readl(pio + PIO_SCHMITT) >> pin) & 0x1; }
+>>>>>>>>
+>>>>>>>> +static bool at91_mux_pio3_get_gpio_output(void __iomem *pio,
+>>>>>>>> +unsigned
+>>>>>>>> +pin) {
+>>>>>>>> +	return (__raw_readl(pio + PIO_ODSR) >> pin) & 0x1; }
+>>>>>>>> +
+>>>>>>>> +static void at91_mux_pio3_set_gpio_output(void __iomem *pio,
+>>>>>>>> +						unsigned mask,
+>>>>>>>> +						bool is_high)
+>>>>>>>> +{
+>>>>>>>> +	at91_mux_gpio_enable(pio, mask, 0);
+>>>>>>>> +	writel_relaxed(mask, pio + (is_high ? PIO_SODR : PIO_CODR)); }
+>>>>>>>> +
+>>>>>>>> +
+>>>>>>>> static struct at91_pinctrl_mux_ops at91rm9200_ops = {
+>>>>>>>> 	.get_periph	= at91_mux_get_periph,
+>>>>>>>> 	.mux_A_periph	= at91_mux_set_A_periph,
+>>>>>>>> @@ -495,6 +514,8 @@ static struct at91_pinctrl_mux_ops
+>>>>>>>> at91sam9x5_ops
+>>>>>>> = {
+>>>>>>>> 	.set_pulldown	= at91_mux_pio3_set_pulldown,
+>>>>>>>> 	.get_schmitt_trig = at91_mux_pio3_get_schmitt_trig,
+>>>>>>>> 	.disable_schmitt_trig = at91_mux_pio3_disable_schmitt_trig,
+>>>>>>>> +	.get_gpio_output = at91_mux_pio3_get_gpio_output,
+>>>>>>>> +	.set_gpio_output = at91_mux_pio3_set_gpio_output,
+>>>>>>>> 	.irq_type	= alt_gpio_irq_type,
+>>>>>>>> };
+>>>>>>>>
+>>>>>>>> @@ -741,6 +762,10 @@ static int at91_pinconf_get(struct
+>>>>>>>> pinctrl_dev
+>>>>>>> *pctldev,
+>>>>>>>> 		*config |= PULL_DOWN;
+>>>>>>>> 	if (info->ops->get_schmitt_trig &&
+>>>>>>>> info->ops->get_schmitt_trig(pio,
+>>>>>>> pin))
+>>>>>>>> 		*config |= DIS_SCHMIT;
+>>>>>>>> +	if (info->ops->get_gpio_output) {
+>>>>>>>> +		*config |= info->ops->get_gpio_output(pio, pin) ?
+>>>>>>>> +					GPIO_OUTPUT_HIGH : GPIO_OUTPUT_LOW;
+>>>>>>>> +	}
+>>>>>>>>
+>>>>>>>> 	return 0;
+>>>>>>>> }
+>>>>>>>> @@ -778,6 +803,12 @@ static int at91_pinconf_set(struct
+>>>>>>>> pinctrl_dev
+>>>>>>> *pctldev,
+>>>>>>>> 			info->ops->set_pulldown(pio, mask, config &
+>> PULL_DOWN);
+>>>>>>>> 		if (info->ops->disable_schmitt_trig && config &
+>> DIS_SCHMIT)
+>>>>>>>> 			info->ops->disable_schmitt_trig(pio, mask);
+>>>>>>>> +		if (info->ops->set_gpio_output) {
+>>>>>>>> +			if (config & GPIO_OUTPUT_HIGH)
+>>>>>>>> +				info->ops->set_gpio_output(pio, mask, 1);
+>>>>>>>> +			if (config & GPIO_OUTPUT_LOW)
+>>>>>>>> +				info->ops->set_gpio_output(pio, mask, 0);
+>>>>>>>> +		};
+>>>>>>>>
+>>>>>>>> 	} /* for each config */
+>>>>>>>>
+>>>>>>>> diff --git a/include/dt-bindings/pinctrl/at91.h
+>>>>>>>> b/include/dt-bindings/pinctrl/at91.h
+>>>>>>>> index 0fee6ff..e799268 100644
+>>>>>>>> --- a/include/dt-bindings/pinctrl/at91.h
+>>>>>>>> +++ b/include/dt-bindings/pinctrl/at91.h
+>>>>>>>> @@ -15,6 +15,8 @@
+>>>>>>>> #define AT91_PINCTRL_DEGLITCH		(1 << 2)
+>>>>>>>> #define AT91_PINCTRL_PULL_DOWN		(1 << 3)
+>>>>>>>> #define AT91_PINCTRL_DIS_SCHMIT		(1 << 4)
+>>>>>>>> +#define AT91_PINCTRL_OUTPUT_HIGH	(1 << 5)
+>>>>>>>> +#define AT91_PINCTRL_OUTPUT_LOW		(1 << 6)
+>>>>>>>> #define AT91_PINCTRL_DEBOUNCE		(1 << 16)
+>>>>>>>> #define AT91_PINCTRL_DEBOUNCE_VAL(x)	(x << 17)
+>>>>>>>>
+>>>>>>>> --
+>>>>>>>> 1.7.9.5
+>>>>>>>>
+>>>>>
+>>>>> _______________________________________________
+>>>>> linux-arm-kernel mailing list
+>>>>> linux-arm-kernel@lists.infradead.org
+>>>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
+> Bes Regards,
+> Wenyou Yang
+>
 
