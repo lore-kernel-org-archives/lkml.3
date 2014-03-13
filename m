@@ -1,137 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427AbaCMH3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 03:29:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62315 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751394AbaCMH3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 03:29:04 -0400
-Message-ID: <53215E22.8020207@redhat.com>
-Date: Thu, 13 Mar 2014 15:28:34 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753273AbaCMH2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 03:28:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33556 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394AbaCMH2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 03:28:32 -0400
+Date: Thu, 13 Mar 2014 00:28:07 -0700
+From: tip-bot for Jean Pihet <tipbot@zytor.com>
+Message-ID: <tip-5aa158b708b07bab47147aa164e3948e8a4c548f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        will.deacon@arm.com, acme@ghostprotocols.net, jean.pihet@linaro.org,
+        jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        will.deacon@arm.com, acme@ghostprotocols.net, jean.pihet@linaro.org,
+        jolsa@redhat.com, tglx@linutronix.de
+In-Reply-To: <1391451509-31265-4-git-send-email-jean.pihet@linaro.org>
+References: <1391451509-31265-4-git-send-email-jean.pihet@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] ARM64, perf:
+  Support dwarf unwinding in compat mode
+Git-Commit-ID: 5aa158b708b07bab47147aa164e3948e8a4c548f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Qin Chuanyu <qinchuanyu@huawei.com>
-Subject: Re: [PATCH net V2] vhost: net: switch to use data copy if pending
- DMAs exceed the limit
-References: <1394170107-12018-1-git-send-email-jasowang@redhat.com> <20140310080310.GA754@redhat.com>
-In-Reply-To: <20140310080310.GA754@redhat.com>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2014 04:03 PM, Michael S. Tsirkin wrote:
-> On Fri, Mar 07, 2014 at 01:28:27PM +0800, Jason Wang wrote:
->> > We used to stop the handling of tx when the number of pending DMAs
->> > exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
->> > of both host and guest. But it was too aggressive in some cases, since
->> > any delay or blocking of a single packet may delay or block the guest
->> > transmission. Consider the following setup:
->> > 
->> >     +-----+        +-----+
->> >     | VM1 |        | VM2 |
->> >     +--+--+        +--+--+
->> >        |              |
->> >     +--+--+        +--+--+
->> >     | tap0|        | tap1|
->> >     +--+--+        +--+--+
->> >        |              |
->> >     pfifo_fast   htb(10Mbit/s)
->> >        |              |
->> >     +--+--------------+---+
->> >     |     bridge          |
->> >     +--+------------------+
->> >        |
->> >     pfifo_fast
->> >        |
->> >     +-----+
->> >     | eth0|(100Mbit/s)
->> >     +-----+
->> > 
->> > - start two VMs and connect them to a bridge
->> > - add an physical card (100Mbit/s) to that bridge
->> > - setup htb on tap1 and limit its throughput to 10Mbit/s
->> > - run two netperfs in the same time, one is from VM1 to VM2. Another is
->> >   from VM1 to an external host through eth0.
->> > - result shows that not only the VM1 to VM2 traffic were throttled but
->> >   also the VM1 to external host through eth0 is also throttled somehow.
->> > 
->> > This is because the delay added by htb may lead the delay the finish
->> > of DMAs and cause the pending DMAs for tap0 exceeds the limit
->> > (VHOST_MAX_PEND). In this case vhost stop handling tx request until
->> > htb send some packets. The problem here is all of the packets
->> > transmission were blocked even if it does not go to VM2.
->> > 
->> > We can solve this issue by relaxing it a little bit: switching to use
->> > data copy instead of stopping tx when the number of pending DMAs
->> > exceed half of the vq size. This is safe because:
->> > 
->> > - The number of pending DMAs were still limited (half of the vq size)
->> > - The out of order completion during mode switch can make sure that
->> >   most of the tx buffers were freed in time in guest.
->> > 
->> > So even if about 50% packets were delayed in zero-copy case, vhost
->> > could continue to do the transmission through data copy in this case.
->> > 
->> > Test result:
->> > 
->> > Before this patch:
->> > VM1 to VM2 throughput is 9.3Mbit/s
->> > VM1 to External throughput is 40Mbit/s
->> > CPU utilization is 7%
->> > 
->> > After this patch:
->> > VM1 to VM2 throughput is 9.3Mbit/s
->> > Vm1 to External throughput is 93Mbit/s
->> > CPU utilization is 16%
->> > 
->> > Completed performance test on 40gbe shows no obvious changes in both
->> > throughput and cpu utilization with this patch.
->> > 
->> > The patch only solve this issue when unlimited sndbuf. We still need a
->> > solution for limited sndbuf.
->> > 
->> > Cc: Michael S. Tsirkin <mst@redhat.com>
->> > Cc: Qin Chuanyu <qinchuanyu@huawei.com>
->> > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> I thought hard about this.
-> Here's what worries me: if there are still head of line
-> blocking issues lurking in the stack, they will still
-> hurt guests such as windows which rely on timely
-> completion of buffers, but it makes it
-> that much harder to reproduce the problems with
-> linux guests which don't.
-> And this will make even it harder to figure out
-> whether zero copy is actually active to diagnose
-> high cpu utilization cases.
+Commit-ID:  5aa158b708b07bab47147aa164e3948e8a4c548f
+Gitweb:     http://git.kernel.org/tip/5aa158b708b07bab47147aa164e3948e8a4c548f
+Author:     Jean Pihet <jean.pihet@linaro.org>
+AuthorDate: Mon, 3 Feb 2014 19:18:29 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 12 Mar 2014 13:45:30 +0100
 
-Yes.
->
->
-> So I think this is a good trick, but let's make
-> this path conditional on a new debugging module parameter:
-> how about head_of_line_blocking with default off?
+ARM64, perf: Support dwarf unwinding in compat mode
 
-Sure. But the head of line blocking was only partially solved in the
-patch since we only support in-order completion of zerocopy packets.
-Maybe we need consider switching to out of order completion even for
-zerocopy skbs?
-> This way if we suspect packets are delayed forever
-> somewhere, we can enable that and see guest networking block.
->
-> Additionally, I think we should add a way to count zero copy
-> and non zero copy packets.
-> I see two ways to implement this: add tracepoints in vhost-net
-> or add counters in tun accessible with ethtool.
-> This can be a patch on top and does not have to block
-> this one though.
->
+Add support for unwinding using the dwarf information in compat
+mode. Using the correct user stack pointer allows perf to record
+the frames correctly in the native and compat modes.
 
-Yes, I post a RFC about 2 years ago, see
-https://lkml.org/lkml/2012/4/9/478 which only traces generic vhost
-behaviours. I can refresh this and add some -net specific tracepoints.
+Note that although the dwarf frame unwinding works ok using
+libunwind in native mode (on ARMv7 & ARMv8), some changes are
+required to the libunwind code for the compat mode. Those
+changes are posted separately on the libunwind mailing list.
+
+Tested on ARMv8 platform with v8 and compat v7 binaries, the
+latter are statically built.
+
+Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Cc: Arnaldo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: patches@linaro.org
+Cc: linaro-kernel@lists.linaro.org
+Cc: linux-arm-kernel@lists.infradead.org
+Link: http://lkml.kernel.org/r/1391451509-31265-4-git-send-email-jean.pihet@linaro.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/arm64/include/asm/compat.h | 2 +-
+ arch/arm64/include/asm/ptrace.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/include/asm/compat.h b/arch/arm64/include/asm/compat.h
+index fda2704..e71f81f 100644
+--- a/arch/arm64/include/asm/compat.h
++++ b/arch/arm64/include/asm/compat.h
+@@ -228,7 +228,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+ 	return (u32)(unsigned long)uptr;
+ }
+ 
+-#define compat_user_stack_pointer() (current_pt_regs()->compat_sp)
++#define compat_user_stack_pointer() (user_stack_pointer(current_pt_regs()))
+ 
+ static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+index fbb0020..86d5b54 100644
+--- a/arch/arm64/include/asm/ptrace.h
++++ b/arch/arm64/include/asm/ptrace.h
+@@ -133,7 +133,7 @@ struct pt_regs {
+ 	(!((regs)->pstate & PSR_F_BIT))
+ 
+ #define user_stack_pointer(regs) \
+-	((regs)->sp)
++	(!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
+ 
+ /*
+  * Are the current registers suitable for user mode? (used to maintain
