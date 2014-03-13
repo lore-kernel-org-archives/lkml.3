@@ -1,132 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314AbaCMUV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 16:21:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47927 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755032AbaCMUVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 16:21:54 -0400
-Date: Thu, 13 Mar 2014 21:21:52 +0100
-From: Jan Kara <jack@suse.cz>
-To: Roman Pen <r.peniaev@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data
- integrity write
-Message-ID: <20140313202152.GC504@quack.suse.cz>
-References: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
+	id S1755188AbaCMUaR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 16:30:17 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:47152 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085AbaCMUaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 16:30:15 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/5M9kP33f4ATEI7/zXklKd
+Date: Thu, 13 Mar 2014 13:30:09 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Mugunthan V N <mugunthanvnm@ti.com>, devicetree@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, bcousson@baylibre.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RESEND PATCH 1/1] arm: dts: am33xx: correcting dt node unit
+ address for usb
+Message-ID: <20140313203009.GE5981@atomide.com>
+References: <1394109094-19205-1-git-send-email-mugunthanvnm@ti.com>
+ <20140306152637.GB25648@saruman.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
+In-Reply-To: <20140306152637.GB25648@saruman.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 16-02-14 11:54:28, Roman Pen wrote:
-> In case of wbc->sync_mode == WB_SYNC_ALL we need to do data integrity write,
-> thus mark request as WRITE_SYNC.
-  The patch looks good to me and also makes generic mpage code more in sync
-with what e.g. XFS or ext4 do in their writepage functions. You can add:
-
-Reviewed-by: Jan Kara <jack@suse.cz>
-
-								Honza
-
-> Signed-off-by: Roman Pen <r.peniaev@gmail.com>
-> CC: Alexander Viro <viro@zeniv.linux.org.uk>
-> CC: linux-fsdevel@vger.kernel.org
-> CC: linux-kernel@vger.kernel.org
-> ---
->  fs/mpage.c | 23 +++++++++++++++--------
->  1 file changed, 15 insertions(+), 8 deletions(-)
+* Felipe Balbi <balbi@ti.com> [140306 07:33]:
+> On Thu, Mar 06, 2014 at 06:01:34PM +0530, Mugunthan V N wrote:
+> > DT node's unit address should be its own register offset address to make it a
+> > unique across the system. This patch corrects the incorrect USB entries with
+> > correct register offset for unit address.
+> > 
+> > Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> > Cc: Felipe Balbi <balbi@ti.com>
+> > Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
 > 
-> diff --git a/fs/mpage.c b/fs/mpage.c
-> index 4979ffa..4e0af5a 100644
-> --- a/fs/mpage.c
-> +++ b/fs/mpage.c
-> @@ -462,6 +462,7 @@ static int __mpage_writepage(struct page *page, struct writeback_control *wbc,
->  	struct buffer_head map_bh;
->  	loff_t i_size = i_size_read(inode);
->  	int ret = 0;
-> +	int wr = (wbc->sync_mode == WB_SYNC_ALL ?  WRITE_SYNC : WRITE);
->  
->  	if (page_has_buffers(page)) {
->  		struct buffer_head *head = page_buffers(page);
-> @@ -570,7 +571,7 @@ page_is_mapped:
->  	 * This page will go to BIO.  Do we need to send this BIO off first?
->  	 */
->  	if (bio && mpd->last_block_in_bio != blocks[0] - 1)
-> -		bio = mpage_bio_submit(WRITE, bio);
-> +		bio = mpage_bio_submit(wr, bio);
->  
->  alloc_new:
->  	if (bio == NULL) {
-> @@ -587,7 +588,7 @@ alloc_new:
->  	 */
->  	length = first_unmapped << blkbits;
->  	if (bio_add_page(bio, page, length, 0) < length) {
-> -		bio = mpage_bio_submit(WRITE, bio);
-> +		bio = mpage_bio_submit(wr, bio);
->  		goto alloc_new;
->  	}
->  
-> @@ -620,7 +621,7 @@ alloc_new:
->  	set_page_writeback(page);
->  	unlock_page(page);
->  	if (boundary || (first_unmapped != blocks_per_page)) {
-> -		bio = mpage_bio_submit(WRITE, bio);
-> +		bio = mpage_bio_submit(wr, bio);
->  		if (boundary_block) {
->  			write_boundary_block(boundary_bdev,
->  					boundary_block, 1 << blkbits);
-> @@ -632,7 +633,7 @@ alloc_new:
->  
->  confused:
->  	if (bio)
-> -		bio = mpage_bio_submit(WRITE, bio);
-> +		bio = mpage_bio_submit(wr, bio);
->  
->  	if (mpd->use_writepage) {
->  		ret = mapping->a_ops->writepage(page, wbc);
-> @@ -688,8 +689,11 @@ mpage_writepages(struct address_space *mapping,
->  		};
->  
->  		ret = write_cache_pages(mapping, wbc, __mpage_writepage, &mpd);
-> -		if (mpd.bio)
-> -			mpage_bio_submit(WRITE, mpd.bio);
-> +		if (mpd.bio) {
-> +			int wr = (wbc->sync_mode == WB_SYNC_ALL ?
-> +				  WRITE_SYNC : WRITE);
-> +			mpage_bio_submit(wr, mpd.bio);
-> +		}
->  	}
->  	blk_finish_plug(&plug);
->  	return ret;
-> @@ -706,8 +710,11 @@ int mpage_writepage(struct page *page, get_block_t get_block,
->  		.use_writepage = 0,
->  	};
->  	int ret = __mpage_writepage(page, wbc, &mpd);
-> -	if (mpd.bio)
-> -		mpage_bio_submit(WRITE, mpd.bio);
-> +	if (mpd.bio) {
-> +		int wr = (wbc->sync_mode == WB_SYNC_ALL ?
-> +			  WRITE_SYNC : WRITE);
-> +		mpage_bio_submit(wr, mpd.bio);
-> +	}
->  	return ret;
->  }
->  EXPORT_SYMBOL(mpage_writepage);
+> Acked-by: Felipe Balbi <balbi@ti.com>
+
+Applying into omap-for-v3.15/fixes with cc stable v3.12+. If somebody
+wants it in earlier kernels it needs to be updated and posted
+to the lists.
+
+Regards,
+
+Tony
+
+> > This patch was posted long back (Aug. 30, 2013), below is the archive of the
+> > orginal patch.
+> > https://patchwork.kernel.org/patch/2852163/
+> > 
+> > ---
+> >  arch/arm/boot/dts/am33xx.dtsi | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> > index 7073429..9770e35 100644
+> > --- a/arch/arm/boot/dts/am33xx.dtsi
+> > +++ b/arch/arm/boot/dts/am33xx.dtsi
+> > @@ -453,7 +453,7 @@
+> >  			ti,hwmods = "usb_otg_hs";
+> >  			status = "disabled";
+> >  
+> > -			usb_ctrl_mod: control@44e10000 {
+> > +			usb_ctrl_mod: control@44e10620 {
+> >  				compatible = "ti,am335x-usb-ctrl-module";
+> >  				reg = <0x44e10620 0x10
+> >  					0x44e10648 0x4>;
+> > @@ -556,7 +556,7 @@
+> >  					"tx14", "tx15";
+> >  			};
+> >  
+> > -			cppi41dma: dma-controller@07402000 {
+> > +			cppi41dma: dma-controller@47402000 {
+> >  				compatible = "ti,am3359-cppi41";
+> >  				reg =  <0x47400000 0x1000
+> >  					0x47402000 0x1000
+> > -- 
+> > 1.9.0
+> > 
+> 
 > -- 
-> 1.8.5.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> balbi
+
+
+
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
