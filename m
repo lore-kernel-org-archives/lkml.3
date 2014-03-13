@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282AbaCMKnO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 06:43:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40378 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754182AbaCMKnF (ORCPT
+	id S1754325AbaCMKnb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 06:43:31 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:16809 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753984AbaCMKn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 06:43:05 -0400
-Date: Thu, 13 Mar 2014 11:43:03 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: dts: berlin2q: add the Marvell Armada 1500 pro
- (BG2Q) device tree
-Message-ID: <20140313104303.GB4418@piout.net>
-References: <1394622364-6848-1-git-send-email-antoine.tenart@free-electrons.com>
- <1394622364-6848-2-git-send-email-antoine.tenart@free-electrons.com>
- <532182EB.7090002@gmail.com>
+	Thu, 13 Mar 2014 06:43:27 -0400
+X-IronPort-AV: E=Sophos;i="4.97,646,1389744000"; 
+   d="scan'208";a="109512222"
+Message-ID: <1394707404.25873.36.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next v7 0/9] xen-netback: TX grant mapping with
+ SKBTX_DEV_ZEROCOPY instead of copy
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: David Miller <davem@davemloft.net>
+CC: <zoltan.kiss@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
+        <andrew.bennieston@citrix.com>
+Date: Thu, 13 Mar 2014 10:43:24 +0000
+In-Reply-To: <1394638843.3457.11.camel@kazak.uk.xensource.com>
+References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
+	 <20140307.160552.282750558679341658.davem@davemloft.net>
+	 <531B2B3E.5050800@citrix.com>
+	 <20140308.185759.494043114567727021.davem@davemloft.net>
+	 <1394638843.3457.11.camel@kazak.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <532182EB.7090002@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/03/2014 at 10:05:31 +0000, Sebastian Hesselbarth wrote :
-> On 03/12/2014 11:06 AM, Antoine Ténart wrote:
-> >+			compatible = "arm,cortex-a9-twd-timer";
-> >+			reg = <0xad0600 0x20>;
-> >+			clocks = <&sysclk>;
+On Wed, 2014-03-12 at 15:40 +0000, Ian Campbell wrote:
+> On Sat, 2014-03-08 at 18:57 -0500, David Miller wrote:
+> > From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> > Date: Sat, 8 Mar 2014 14:37:50 +0000
+> > 
+> > > Maybe you mixed up mine with that? But that's also not eligible to be
+> > > applied yet.
+> > 
+> > I can always revert the series if there are major objections.
 > 
-> Playing with Chromecast, I remember local-timer running at sysclk/3 or
-> something. I know berlin2/berlin2cd is wrong here. Can you check that
-> for berlin2q local-timer also runs at sysclk/n?
-> 
+> Zoltan -- does this patch series suffer from/expose the confusion
+> regarding RING_HAS_UNCONSUMED_REQUESTS which we are discussing
+> separately on xen-devel? If the answer is yes then I think this series
+> should be reverted for the time being because there seems to be some
+> fairly fundamental questions about the semantics of that macro.
 
-Actually, what we have is sysclk = cpuclk/3 so I guess it depends on
-what you call sysclk.
+The answer was yes but we think this is fixed by "xen-netback: Schedule
+NAPI from dealloc thread instead of callback" sent last night. I'll
+review that next.
 
-> >+			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
-> >+			status = "okay";
-> >+		};
-> >+
-> >+		apb@e80000 {
-> >+			compatible = "simple-bus";
-> >+			#address-cells = <1>;
-> >+			#size-cells = <1>;
-> >+
-> >+			ranges = <0 0xe80000 0x10000>;
-> >+			interrupt-parent = <&aic>;
-> >+
-> >+			timer0: timer@2c00 {
-> >+				compatible = "snps,dw-apb-timer";
-> >+				reg = <0x2c00 0x14>;
-> >+				interrupts = <8>;
-> >+				clock-freq = <100000000>;
-> >+				status = "okay";
-> >+			};
-> >+
-> >+			timer1: timer@2c14 {
-> >+				compatible = "snps,dw-apb-timer";
-> >+				reg = <0x2c14 0x14>;
-> >+				clock-freq = <100000000>;
-> >+				status = "disabled";
-> >+			};
-> 
-> berlin2/berlin2cd have a vast amount of 8 apb timers. Any timers missing
-> here or did Marvell remove them?
-> 
-> 
-> Also for uart, can you please double-check if there is no uart2?
-> 
+> If the answer is no then I will endeavour to review this version of the
+> series ASAP (hopefully tomorrow) and determine if I have any other major
+> objections which would warrant a revert.
 
-We don't have those informations, maybe Jisheng can help ?
+There was a few things which I would have preferred to see fixed (or
+understood) but what's done is done and I don't think any of it warrants
+a revert. I commented on a few things which I was sure about or which
+I'd like to see fixed in a follow up. I also let a bunch of minor stuff
+like coding style nits slip since it doesn't seem worth the churn now
+that it is in.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thanks,
+Ian.
+
