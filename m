@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaCMLV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 07:21:29 -0400
-Received: from [143.182.124.21] ([143.182.124.21]:35080 "EHLO mga03.intel.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753981AbaCMLVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 07:21:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,646,1389772800"; 
-   d="scan'208";a="491179476"
-Date: Thu, 13 Mar 2014 19:21:12 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>, monstr@monstr.eu,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-can@vger.kernel.org, robh+dt@kernel.org,
-        Kedareswara rao Appana <appana.durga.rao@xilinx.com>,
-        grant.likely@linaro.org, Kedareswara rao Appana <appanad@xilinx.com>,
-        wg@grandegger.com
-Subject: Re: [PATCH v5] can: xilinx CAN controller support.
-Message-ID: <20140313112112.GB8806@localhost>
-References: <5254bfec-c6fd-4681-a34d-706d51e60fbb@VA3EHSMHS004.ehs.local>
- <531DD493.3030306@monstr.eu>
- <531DD5E7.7090406@pengutronix.de>
- <3245971.RIuVmbVL0Z@wuerfel>
- <1964213d-6bd9-49fa-805e-42e1e0630fd5@VA3EHSMHS029.ehs.local>
- <20140311044555.GA12373@localhost>
- <546dbc60-dd7b-4249-bab8-ad7e008b9aad@AM1EHSMHS001.ehs.local>
+	id S1754033AbaCMLgH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 07:36:07 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50980 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753920AbaCMLfv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 07:35:51 -0400
+Date: Thu, 13 Mar 2014 11:35:28 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [GIT PULL] Move device tree graph parsing helpers to drivers/of
+Message-ID: <20140313113527.GM21483@n2100.arm.linux.org.uk>
+References: <1394126000.3622.66.camel@paszta.hi.pengutronix.de> <20140307182330.75168C40AE3@trevor.secretlab.ca> <20140310102630.3cb1bcd7@samsung.com> <20140310143758.3734FC405FA@trevor.secretlab.ca> <1394708896.3577.21.camel@paszta.hi.pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <546dbc60-dd7b-4249-bab8-ad7e008b9aad@AM1EHSMHS001.ehs.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1394708896.3577.21.camel@paszta.hi.pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+On Thu, Mar 13, 2014 at 12:08:16PM +0100, Philipp Zabel wrote:
+> I'm not sure if maybe I misunderstood or missed a mail, but I haven't
+> seen a proposal to resolve the situation without rewinds. Given that
+> Mauro already reverted the media tree and applied conflicting changes,
+> that's probably not going to happen?
 
-On Tue, Mar 11, 2014 at 10:38:14AM +0100, Michal Simek wrote:
-> On 03/11/2014 05:45 AM, Fengguang Wu wrote:
-> >>> You probably want something like
-> >>>
-> >>> 	config CAN_XILINX
-> >>> 	tristate "Xilinx CAN"
-> >>> 	depends on ARCH_ZYNQ || MICROBLAZE || COMPILE_TEST
-> >>> 	depends on COMMON_CLK && HAS_MMIO  # whatever you need for other architectures
-> >>
-> >> Fengguang: Are you use COMPILE_TEST in zero day testing system?
-> > 
-> > Yeah, the randconfig build/boot tests should cover both COMPILE_TEST
-> > and !COMPILE_TEST cases.
-> 
-> But the point is that randconfig is really random it means it definitely can
-> cover but not there is no certainty that for that build, you are running,
-> has both option for all architectures enabled.
-> Or do I read it wrongly?
+Grant and myself have exchanged emails in private on this discussing what
+should happen - essentially Grant's position is that he's happy to leave
+this stuff queued provided a resolution to his concerns are forthcoming.
 
-Good point!  Since the 0day system is running randconfig tests
-everyday, it has very good opportunity to cover the COMPILE_TEST case.
-But to be sure, I'll explicitly enable COMPILE_TEST in some cases.
+However, what I find incredibly unfair is that we're taking the rap for
+these bad bindings.  From what I can see, these bad bindings were merged
+into the V4L2 code with _zero_ review by DT maintainers.  It's quite
+clear that DT maintainers would have objected to them had they seen them,
+but they didn't.  And the lack of documentation of the bindings which
+has been something that's been insisted on is also disgusting.
 
-Thanks,
-Fengguang
+And now we're now taking the pain for that oversight.
+
+So... frankly, I've walked away from this dysfunctional situation.  I
+don't see imx-drm moving out of drivers/staging due to this debacle for
+many months - possibly never now given that no one can agree on this
+stuff.  This just goes to show what a fscking joke mainline kernels are,
+and why people just give up and go to vendor kernels which offer /much/
+better support all round.
+
+As far as I can see, it's proved impossible to define a set of bindings
+for display devices which satisfy everyone.  So, rather than doing
+/something/ so we can move forward, we end up doing /nothing/.
+
+It's times like this where I start believing that /board files/ were the
+best solution for ARM, because DT just carries soo many thorny issues
+(such as these) and is a continual blocker.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
