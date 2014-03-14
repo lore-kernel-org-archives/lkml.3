@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510AbaCNQjF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 12:39:05 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:51842 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754743AbaCNQjC (ORCPT
+	id S1755797AbaCNQjR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 12:39:17 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55918 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754743AbaCNQjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 12:39:02 -0400
+	Fri, 14 Mar 2014 12:39:06 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
@@ -14,74 +14,94 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
         Mike Galbraith <bitbucket@online.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [RFC PATCH 0/3] workqueue: Control cpu affinity of !WQ_SYSFS unbound workqueues 
-Date: Fri, 14 Mar 2014 17:38:48 +0100
-Message-Id: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/3] workqueues: Account unbound workqueue in a seperate list
+Date: Fri, 14 Mar 2014 17:38:50 +0100
+Message-Id: <1394815131-17271-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
+References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several types of workqueues. Some of them are bound to specific
-CPUs, some others are unbound and can be executed on any CPU.
+The workqueues are all listed in a global list protected by a big mutex.
+And this big mutex is used in apply_workqueue_attrs() as well.
 
-A tiny subset of the unbound workqueues have a sysfs representation
-in /sys/devices/virtual/workqueue/ and have a cpumask file than can
-be used to tweak their CPU affinity.
+Now as we plan to implement a directory to control the cpumask of
+all non-ABI unbound workqueues, we want to be able to iterate over all
+unbound workqueues and call apply_workqueue_attrs() for each of
+them with the new cpumask.
 
-But the vast majority of unbound workqueues aren't visible in sysfs.
+But the risk for a deadlock is on the way: we need to iterate the list
+of workqueues under wq_pool_mutex. But then apply_workqueue_attrs()
+itself calls wq_pool_mutex.
 
-They are a problem nowaday because people who work on CPU isolation
-(HPC, Real time, etc...) want to be able to migrate all the unbound
-workqueues away from specific CPUs.
+The easiest solution to work around this is to keep track of unbound
+workqueues in a separate list with a separate mutex.
 
-There are several possible solutions to solve this:
+It's not very pretty unfortunately.
 
-1) Affine the !WQ_SYSFS unbound workqueues to the CPUs outside the
-full dynticks mask. Full dynticks is expected to be a component in
-many CPU isolation configurations and its CPU mapping can be a good
-way to retrieve the desired set of isolated CPUs.
-
-On the drawbacks though we can notice the lack of consistency with
-WQ_SYSFS workqueue affinity interface, issues with ordering between
-workqueue and dynticks subsystem initialization, intrusion from
-the workqueue subsystem on dynticks internals.
-
-2) Implement a sysfs directory for each unbound !WQ_SYSFS. That sounds
-like a very nice solution as it uses existing and known interface.
-But workqueues appearing in the sysfs hierarchy are subject to become
-stable ABIs. And this is definetly not what we want.
-
-This could be worked around with a specific Kconfig to make sure that
-these workqueues won't be considered as a stable ABI. But we all know
-that all distros will enable this Kconfig symbol and that nobody
-reads, nor care about, warnings in Kconfig help text which thereby won't
-protect us against anything.
-
-3) Implement a single sysfs directory to map properties of all !WQ_SYSFS
-unbound workqueues. It would contain only the cpumask file to control
-the affinity of all these workqueues. But more can be added later.
-
-This complexifies the code a bit although not that much compared to
-solution 2 which requires some plumbling to cope with workqueues created
-before sysfs, as reported by Mike (I played with that a bit as well, as I
-took that direction initially). But it deals with all issues previously
-described.
-
-This patchset explores the third solution.
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	core/workqueue-anon-sysfs
-
-Thanks,
-	Frederic
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Not-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
+ kernel/workqueue.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-Frederic Weisbecker (3):
-      workqueue: Move workqueue bus attr to device attribute
-      workqueues: Account unbound workqueue in a seperate list
-      workqueue: Add anon workqueue sysfs hierarchy
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 4d230e3..ad8f727 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -232,6 +232,7 @@ struct wq_device;
+ struct workqueue_struct {
+ 	struct list_head	pwqs;		/* WR: all pwqs of this wq */
+ 	struct list_head	list;		/* PL: list of all workqueues */
++	struct list_head	unbound_list;	/* PL: list of unbound workqueues */
+ 
+ 	struct mutex		mutex;		/* protects this wq */
+ 	int			work_color;	/* WQ: current work color */
+@@ -288,9 +289,11 @@ static bool wq_numa_enabled;		/* unbound NUMA affinity enabled */
+ static struct workqueue_attrs *wq_update_unbound_numa_attrs_buf;
+ 
+ static DEFINE_MUTEX(wq_pool_mutex);	/* protects pools and workqueues list */
++static DEFINE_MUTEX(wq_unbound_mutex);	/* protects list of unbound workqueues */
+ static DEFINE_SPINLOCK(wq_mayday_lock);	/* protects wq->maydays list */
+ 
+ static LIST_HEAD(workqueues);		/* PL: list of all workqueues */
++static LIST_HEAD(workqueues_unbound);	/* PL: list of unbound workqueues */
+ static bool workqueue_freezing;		/* PL: have wqs started freezing? */
+ 
+ /* the per-cpu worker pools */
+@@ -4263,6 +4266,12 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
+ 
+ 	mutex_unlock(&wq_pool_mutex);
+ 
++	if (wq->flags & WQ_UNBOUND) {
++		mutex_lock(&wq_unbound_mutex);
++		list_add(&wq->unbound_list, &workqueues_unbound);
++		mutex_unlock(&wq_unbound_mutex);
++	}
++
+ 	return wq;
+ 
+ err_free_wq:
+@@ -4318,6 +4327,12 @@ void destroy_workqueue(struct workqueue_struct *wq)
+ 	list_del_init(&wq->list);
+ 	mutex_unlock(&wq_pool_mutex);
+ 
++	if (wq->flags & WQ_UNBOUND) {
++		mutex_lock(&wq_unbound_mutex);
++		list_del(&wq->unbound_list);
++		mutex_unlock(&wq_unbound_mutex);
++	}
++
+ 	workqueue_sysfs_unregister(wq);
+ 
+ 	if (wq->rescuer) {
+-- 
+1.8.3.1
 
-
- kernel/workqueue.c | 150 +++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 140 insertions(+), 10 deletions(-)
