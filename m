@@ -1,77 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395AbaCNP6W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:58:22 -0400
-Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:48140
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754809AbaCNP6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:58:18 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "keescook@chromium.org" <keescook@chromium.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: Trusted kernel patchset for Secure Boot lockdown
-Thread-Topic: Trusted kernel patchset for Secure Boot lockdown
-Thread-Index: AQHPP52rgdFEpLbAD0ahQ2OJgthmsZrgvR8A
-Date: Fri, 14 Mar 2014 15:58:02 +0000
-Message-ID: <1394812682.26846.5.camel@x230.mview.int.nebula.com>
-References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
-	 <CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
-	 <alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
-	 <1394686919.25122.2.camel@x230>
-	 <CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
-	 <alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
-	 <1394726363.25122.16.camel@x230>
-	 <20140313212450.67f1de8e@alan.etchedpixels.co.uk>
-	 <1394746248.27846.3.camel@x230>
-	 <20140313232140.03bdaac3@alan.etchedpixels.co.uk>
-	 <1394762250.6416.24.camel@x230.lan>
-	 <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
-	 <1394801518.6416.38.camel@x230.lan>
-	 <CAGXu5jLZcWh5WD0L8s3Q-GXdXCMnA57qtjfdFfQbv0fxYcuCTQ@mail.gmail.com>
-	 <1394811997.26846.2.camel@x230.mview.int.nebula.com>
-	 <CAGXu5j+3vVKhFPOsArYddA+QqhvVUunj8eYOF799rDv=3MGtyg@mail.gmail.com>
-In-Reply-To: <CAGXu5j+3vVKhFPOsArYddA+QqhvVUunj8eYOF799rDv=3MGtyg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.56.23.115]
-x-forefront-prvs: 0150F3F97D
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377424004)(24454002)(189002)(199002)(83072002)(33646001)(85852003)(74876001)(81686001)(19580405001)(79102001)(65816001)(66066001)(97336001)(80022001)(80976001)(76786001)(81816001)(63696002)(74502001)(69226001)(83322001)(19580395003)(46102001)(51856001)(31966008)(85306002)(77982001)(81342001)(59766001)(90146001)(4396001)(92726001)(95416001)(93516002)(54316002)(74366001)(86362001)(93136001)(56776001)(47976001)(92566001)(47446002)(76482001)(87936001)(74706001)(54356001)(56816005)(76796001)(77096001)(95666003)(94316002)(97186001)(47736001)(74662001)(49866001)(2656002)(50986001)(94946001)(87266001)(53806001)(81542001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB456;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:172.56.23.115;FPR:F9D8718E.83259F21.A9D1116C.88C26F79.2018F;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <810F24FF5F986543B694F546A00A701C@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	id S1755091AbaCNQGK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 12:06:10 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:41048 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727AbaCNQGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 12:06:08 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bob Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: ACPICA 20140214 auto-serialize weirds my machine...
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1394813101_1735P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 14 Mar 2014 12:05:01 -0400
+Message-ID: <14866.1394813101@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2EFwVgb017570
 
-On Fri, 2014-03-14 at 08:54 -0700, Kees Cook wrote:
+--==_Exmh_1394813101_1735P
+Content-Type: text/plain; charset=us-ascii
 
-> All the more reason to ignore command line at this point. For Chrome
-> OS, it's part of our boot state, so we don't care about it. For
-> generic Secure Boot, we can add checks for dangerous stuff as we go
-> forward. That's why I like this interface -- we can add to it as we
-> identify bad stuff, and it stay separate from other semantics.
+Surprisingly enough, this hasn't seemed to have bitten many Linux people yet,
+Google only finds a BSD thread (where the same ACPICA code is in use):
 
-Sure, it's just another reason not to want to use a capability-based
-interface - not all the policy we want to impose is related to
-processes, so capabilities really don't make sense. The current patchset
-adds a restriction to the acpi_rsdp argument, and I've no objection to
-adding one to limit the use of mem=.
+http://comments.gmane.org/gmane.os.dragonfly-bsd.user/1817
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+I found this, but haven't tried it yet:
+
+commit 5f1cb4a92e4c4aabd139ff9ca1e11c0e2db2ac59
+Author: Lv Zheng <lv.zheng@intel.com>
+Date:   Wed Feb 26 10:32:01 2014 +0800
+
+    ACPICA: Remove global option to serialize all control methods.
+
+    With the addition of the auto-serialization feature, this option
+    is obsolete and is completely removed. Lv Zheng.
+
+    This patch also updates acpi_serialize kernel parameter using the
+    new auto-serialization feature - acpi_gbl_auto_serialize_methods.
+
+This looks like a user nightmare waiting to happen, because:
+
+-   	acpi_serialize	[HW,ACPI] force serialization of AML methods
++	acpi_serialize=	[HW,ACPI] configure auto-serialization of AML methods
+
+Re-using a kernel parameter name with different semantics is just asking for trouble.
+
+I get this in my dmesg, and then I end up with all sorts of ACPI-related
+weirdness - everything from 4 or 5 temperature sensors evaporating to it
+claiming that my laptop doesn't have a battery bay (it may also be related to
+an issue I'm seeing with multiple graphics monitors as well, but I haven't
+verified that yet).
+
+We're going to need a better way to deal with this before it gets to
+mainline....
+
+[    0.119344] ACPI: Executed 1 blocks of module-level executable AML code
+[    0.135282] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+[    0.135288] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.135298] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.135307] ACPI Error: Method parse/execution failed [\EISC] (Node ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.135320] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.135328] ACPI Error: Method parse/execution failed [\ECRB] (Node ffff88012d02d5d8), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.135336] ACPI Error: Method parse/execution failed [\ECG5] (Node ffff88012d02d740), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.135343] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EINI] (Node ffff88012d02db00), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.135351] ACPI Error: Method parse/execution failed [\EV3_] (Node ffff88012d0314c0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.135359] ACPI Error: Method parse/execution failed [\_SB_.PCI0._INI] (Node ffff88012d026920), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.135574] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
+[    0.136283] ACPI: SSDT 0x00000000CE789598 000523 (v01 PmRef  Cpu0Cst  00003001 INTL 20051117)
+[    0.138312] ACPI: Dynamic OEM Table Load:
+[    0.138316] ACPI: SSDT 0x0000000000000000 000523 (v01 PmRef  Cpu0Cst  00003001 INTL 20051117)
+[    0.141483] ACPI: SSDT 0x00000000CE78AA98 000303 (v01 PmRef  ApIst    00003000 INTL 20051117)
+[    0.143683] ACPI: Dynamic OEM Table Load:
+[    0.143687] ACPI: SSDT 0x0000000000000000 000303 (v01 PmRef  ApIst    00003000 INTL 20051117)
+[    0.146215] ACPI: SSDT 0x00000000CE790C18 000119 (v01 PmRef  ApCst    00003000 INTL 20051117)
+[    0.148279] ACPI: Dynamic OEM Table Load:
+[    0.148282] ACPI: SSDT 0x0000000000000000 000119 (v01 PmRef  ApCst    00003000 INTL 20051117)
+[    0.152678] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+[    0.152684] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.152693] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.152702] ACPI Error: Method parse/execution failed [\EISC] (Node ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.152714] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.152722] ACPI Error: Method parse/execution failed [\ECBT] (Node ffff88012d02d588), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.152730] ACPI Error: Method parse/execution failed [\ECG3] (Node ffff88012d02d6c8), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.152737] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV.ECIN] (Node ffff88012d02d3d0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.152745] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV._REG] (Node ffff88012d02d3f8), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.152818] ACPI: Interpreter enabled
+[    0.152828] ACPI: (supports S0)
+[    0.152830] ACPI: Using IOAPIC for interrupt routing
+[    0.152883] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+[    0.156479] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+[    0.156485] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.156494] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.156504] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.UAR1._STA] (Node ffff88012d02fb28), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.156666] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+[    0.156671] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.156680] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.156689] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.LPTE.CLPS] (Node ffff88012d02fcb8), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.156702] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.LPTE._STA] (Node ffff88012d02fce0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.162229] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+[    0.162234] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.162244] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+[    0.162254] ACPI Error: Method parse/execution failed [\EISC] (Node ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+
+(you get the idea.  I get a total of 172 'ACPI Error:' messages before I get to
+a single-user prompt)
+
+--==_Exmh_1394813101_1735P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUyMorQdmEQWDXROgAQLLkQ//Ysr9UDcUBpgDqFRmO+bj0lExeHJJ4kZK
+neHeysDcGUijBB7gHwK+miuo7Ld/1dUTiGZMf6WikSEFJsz3y7fieB5Wkl74RLhB
+EXlk4bKuEcvBo5Xo90aBxbg1AqUUq+r6zwrBSAp9sskGyf9mS6VazjVhQ2SRHXJz
+IhI+6HsrRzwjvAfyT4kC2JD0v5FsVFixnXDZp8YnhpNlgLft++2Vh55GwyTHALCK
+jE0DaEMIs1ZQ29jiosiTEpu/IJDjl/ZubFPzEa113EyNRauhDA5UQFJRJZ3W61Mp
+j4TvT9BfKqXePU79B6w8O7XfoCSGAywRPHO7fUq+gTf/68yJHsWdGXcO+XeeEVcv
+5SXINGkKK//8Rl0Pv8V5YQ/JghGAezDuDWT2KLIZh4BF6lC/RHgsuuCA5yCyn5ZC
+IVBXJxpXN5ewnrWyiKwHzakvyTh8ixOB/zSUzkWdI+F1StfRRh4JJgc2ggjMBeHi
+OV+WnOQ4M0ZOP017W6YkJ9rqp+E3tPCLH+X6mC7TiWqS7gYt6aHfIHBEp5a3vZHc
+I4ZaVYqgtWt0LXeHMxkcmhatEcU47YlOUvRqq2GBg1g9xDbk0KOP7SDQ7Ve3xg0O
+IESbktkXJ+gFgfW1TXuhS9exFRPMuipfjbW2Xo+rqkncLXb/S7KlIrlAihFI1bxN
+Hk1WcQbGXB4=
+=ntYI
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1394813101_1735P--
