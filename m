@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471AbaCNGs6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 02:48:58 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10870 "EHLO mga11.intel.com"
+	id S1755507AbaCNGvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 02:51:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52725 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755302AbaCNGs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 02:48:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,652,1389772800"; 
-   d="scan'208";a="491756305"
-Date: Fri, 14 Mar 2014 14:48:53 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [sched/balance] INFO: possible recursive locking detected
-Message-ID: <20140314064853.GB29349@localhost>
-References: <20140303142526.GA8517@localhost>
- <5321618F.3090801@linaro.org>
- <20140313085341.GC27627@localhost>
- <5321739B.1000506@linaro.org>
- <20140314061643.GA28194@localhost>
- <5322A110.5030405@linaro.org>
+	id S1755234AbaCNGvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 02:51:44 -0400
+Message-ID: <5322A6FE.60209@suse.de>
+Date: Fri, 14 Mar 2014 07:51:42 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5322A110.5030405@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Fam Zheng <famz@redhat.com>, linux-kernel@vger.kernel.org
+CC: linux-scsi@vger.kernel.org, kvm@vger.kernel.org, pbonzini@redhat.com
+Subject: Re: [PATCH v2] scsi: Change sense buffer size to 252
+References: <1394776805-6784-1-git-send-email-famz@redhat.com>
+In-Reply-To: <1394776805-6784-1-git-send-email-famz@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 02:26:24PM +0800, Alex Shi wrote:
-> On 03/14/2014 02:16 PM, Fengguang Wu wrote:
-> > Alex,
-> > 
-> > Here are the test results for branch alexshi/single-balance
+On 03/14/2014 07:00 AM, Fam Zheng wrote:
+> According to SPC-4, section 4.5.2.1, 252 is the limit of sense data. So
+> increase the values.
 > 
+> Tested by hacking QEMU to fake virtio-scsi request sense len to 252.
+> Without this patch the driver stops working immediately when it gets the
+> request.
 > 
-> Thanks a lot! Fengguang.
-> Is the nex04 machine 4P*8 core * HT? and are a04/a06 atom box?
+> Signed-off-by: Fam Zheng <famz@redhat.com>
+> ---
+>  include/linux/virtio_scsi.h | 2 +-
+>  include/scsi/scsi_cmnd.h    | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+> index 4195b97..a437f7f 100644
+> --- a/include/linux/virtio_scsi.h
+> +++ b/include/linux/virtio_scsi.h
+> @@ -28,7 +28,7 @@
+>  #define _LINUX_VIRTIO_SCSI_H
+>  
+>  #define VIRTIO_SCSI_CDB_SIZE   32
+> -#define VIRTIO_SCSI_SENSE_SIZE 96
+> +#define VIRTIO_SCSI_SENSE_SIZE 252
+>  
+>  /* SCSI command request, followed by data-out */
+>  struct virtio_scsi_cmd_req {
+> diff --git a/include/scsi/scsi_cmnd.h b/include/scsi/scsi_cmnd.h
+> index 91558a1..a64dac03 100644
+> --- a/include/scsi/scsi_cmnd.h
+> +++ b/include/scsi/scsi_cmnd.h
+> @@ -104,7 +104,7 @@ struct scsi_cmnd {
+>  	struct request *request;	/* The command we are
+>  				   	   working on */
+>  
+> -#define SCSI_SENSE_BUFFERSIZE 	96
+> +#define SCSI_SENSE_BUFFERSIZE 	252
+>  	unsigned char *sense_buffer;
+>  				/* obtained by REQUEST SENSE when
+>  				 * CHECK CONDITION is received on original
+> 
+Not without careful review.
+Blindly increasing the buffersize is not a good idea; this define is
+used at several locations and even within the drivers themselves.
+So we cannot just increase the define for the SCSI stack.
 
-nex04 is Nehalem-EX. a04/06 are Atom servers.
+And, btw, so far I haven't come across any issue where a sense
+buffer overflow occurred. We first need to implement a proper sense
+code handling (descriptor sense parsing etc) before we need to worry
+about this.
 
-> Would you like to share the machine info for nhm8, nhm-white and xps2?
+Cheers,
 
-They are all 1S Nehalem PC.
-
-Thanks,
-Fengguang
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
