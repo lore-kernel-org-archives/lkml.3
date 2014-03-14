@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524AbaCNXbZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 19:31:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54872 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756440AbaCNXbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 19:31:21 -0400
-Date: Fri, 14 Mar 2014 23:32:14 +0000
-From: Greg KH <gregkh@linuxfoundation.org>
-To: mourn <mourn@2600fr.org>
-Cc: Mark Einon <mark@einon.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org,
-        rebecca@android.com
-Subject: Re: [PATCH] staging: android: fix coding style
-Message-ID: <20140314233214.GA1124@kroah.com>
-References: <1394703895-9588-1-git-send-email-mourn@2600fr.org>
- <20140313135046.GA7083@laugharne.auvation.com>
- <20140313135416.GB7083@laugharne.auvation.com>
- <01095ac2f40e88e8736294e68c2fac05.squirrel@ssl0.ovh.net>
+	id S1756577AbaCNXcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 19:32:47 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:59950 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756248AbaCNXcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 19:32:45 -0400
+Date: Sat, 15 Mar 2014 01:32:33 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: willy@linux.intel.com, kirill.shutemov@linux.intel.com,
+        david@fromorbit.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH] Support map_pages() for DAX
+Message-ID: <20140314233233.GA8310@node.dhcp.inet.fi>
+References: <1394838199-29102-1-git-send-email-toshi.kani@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <01095ac2f40e88e8736294e68c2fac05.squirrel@ssl0.ovh.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1394838199-29102-1-git-send-email-toshi.kani@hp.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 03:13:04PM +0100, mourn wrote:
-> 
-> > The changes look good, however you should be a bit more specific about
-> > what the
-> > fixes are, and that you used checkpatch.pl to find them (I assume).
-> >
-> 
-> Yes, you are right. I can edit the commit log.
-> 
-> > Also, Signed-off-by: should state your full name, which I'm also assuming
-> > isn't
-> > 'mourn'. Please see Documentation/SubmittingPatches.
-> >
-> 
-> I have a bit of a problem here. Some companies forbid their employees to
-> openly participate in open source projects. A request to the legal
-> department will take around 6 months with no hope of positive result...
+On Fri, Mar 14, 2014 at 05:03:19PM -0600, Toshi Kani wrote:
+> +void dax_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf,
+> +		get_block_t get_block)
+> +{
+> +	struct file *file = vma->vm_file;
+> +	struct inode *inode = file_inode(file);
+> +	struct buffer_head bh;
+> +	struct address_space *mapping = file->f_mapping;
+> +	unsigned long vaddr = (unsigned long)vmf->virtual_address;
+> +	pgoff_t pgoff = vmf->pgoff;
+> +	sector_t block;
+> +	pgoff_t size;
+> +	unsigned long pfn;
+> +	pte_t *pte = vmf->pte;
+> +	int error;
+> +
+> +	while (pgoff < vmf->max_pgoff) {
+> +		size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> +		if (pgoff >= size)
+> +			return;
+> +
+> +		memset(&bh, 0, sizeof(bh));
+> +		block = (sector_t)pgoff << (PAGE_SHIFT - inode->i_blkbits);
+> +		bh.b_size = PAGE_SIZE;
+> +		error = get_block(inode, block, &bh, 0);
+> +		if (error || bh.b_size < PAGE_SIZE)
+> +			goto next;
+> +
+> +		if (!buffer_mapped(&bh) || buffer_unwritten(&bh) ||
+> +		    buffer_new(&bh))
+> +			goto next;
+> +
+> +		/* Recheck i_size under i_mmap_mutex */
+> +		mutex_lock(&mapping->i_mmap_mutex);
 
-Then I can not take your patch, sorry, we can not take anonymous
-patches, as the documentation that describes what you mean by adding the
-"Signed-off-by:" line to a patch.
+NAK. Have you tested this with lockdep enabled?
 
-good luck with your legal department,
+->map_pages() called with page table lock taken and ->i_mmap_mutex
+should be taken before it. It seems we need to take ->i_mmap_mutex in
+do_read_fault() before calling ->map_pages().
 
-greg k-h
+Side note: I'm sceptical about whole idea to use i_mmap_mutux to protect
+against truncate. It will not scale good enough comparing lock_page()
+with its granularity.
+
+> +		size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> +		if (unlikely(pgoff >= size)) {
+> +			mutex_unlock(&mapping->i_mmap_mutex);
+> +			return;
+> +		}
+> +
+> +		error = dax_get_pfn(inode, &bh, &pfn);
+> +		if (error > 0)
+> +			dax_set_pte(vma, vaddr, pfn, pte);
+> +
+> +		mutex_unlock(&mapping->i_mmap_mutex);
+> +next:
+> +		vaddr += PAGE_SIZE;
+> +		pgoff++;
+> +		pte++;
+> +	}
+> +}
+> +EXPORT_SYMBOL_GPL(dax_map_pages);
+
+-- 
+ Kirill A. Shutemov
