@@ -1,68 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257AbaCNMHm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 08:07:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:58428 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753489AbaCNMHk (ORCPT
+	id S1754322AbaCNMMZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 08:12:25 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52980 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644AbaCNMMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 08:07:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tanmay Inamdar <tinamdar@apm.com>
-Subject: Re: [PATCH v4 2/4] arm64: dts: APM X-Gene PCIe device tree nodes
-Date: Fri, 14 Mar 2014 13:07:22 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
-        linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@apm.com, jcm@redhat.com
-References: <1394085963-27553-1-git-send-email-tinamdar@apm.com> <1394085963-27553-3-git-send-email-tinamdar@apm.com>
-In-Reply-To: <1394085963-27553-3-git-send-email-tinamdar@apm.com>
+	Fri, 14 Mar 2014 08:12:23 -0400
+Message-ID: <5322F20C.50600@ti.com>
+Date: Fri, 14 Mar 2014 14:11:56 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Kishon Vijay Abraham I <kishon@ti.com>, <balbi@ti.com>, <tony@atomide.com>
+CC: <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 7/8] ARM: dts: dra7: Add USB related nodes
+References: <1394197751-28984-1-git-send-email-rogerq@ti.com> <1394197751-28984-8-git-send-email-rogerq@ti.com> <5322DC0E.1020600@ti.com>
+In-Reply-To: <5322DC0E.1020600@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201403141307.23286.arnd@arndb.de>
-X-Provags-ID: V02:K0:CI9DpJh9l/07ebbivKnPZqyB79dIGfEhgVb/HrgaDog
- VICOK6qZNV2MS0kHDjswLkm5zpJrvD3kN09HbPdAN9kWqP0Y7f
- 9I1fGdYziHDrVlrMhp+IkpuKe56UsI0J+R7jGiMLS7HlYX1uBb
- TZmXfnbXLQvfOgeVfPQp6mu62WseZfGEFqfFcMT1DRzsG1OV30
- pgks16662fBTO6zexKS+MQ4v3t7Q/fHfc48KDOUS8cPdCjKfSS
- GNv8HHZ4RGzFHsjlfEPL+HmPXDAtT+TDK86RkdeO9OdT2QfHH6
- 4YAtemt0XdRamRYzzO5v9aD293TfU7EkoUOTMBzZhyzxBTF7vO
- 5mVd660aLypxGiGNksV1sNVah3JDSlmhw8YSb2NIb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 March 2014, Tanmay Inamdar wrote:
-> +		pcie0: pcie@1f2b0000 {
-> +			status = "disabled";
-> +			device_type = "pci";
-> +			compatible = "apm,xgene-storm-pcie", "apm,xgene-pcie";
-> +			#interrupt-cells = <1>;
-> +			#size-cells = <2>;
-> +			#address-cells = <3>;
-> +			reg = < 0x00 0x1f2b0000 0x0 0x00010000   /* Controller registers */
-> +				0xe0 0xd0000000 0x0 0x00200000>; /* PCI config space */
-> +			reg-names = "csr", "cfg";
-> +			ranges = <0x01000000 0x00 0x00000000 0xe0 0x00000000 0x00 0x00010000   /* io */
-> +				  0x02000000 0x00 0x10000000 0xe0 0x10000000 0x00 0x80000000>; /* mem */
-> +			dma-ranges = <0x42000000 0x40 0x00000000 0x40 0x00000000 0x40 0x00000000>;
-> +			interrupt-map-mask = <0x0 0x0 0x0 0x7>;
-> +			interrupt-map = <0x0 0x0 0x0 0x1 &gic 0x0 0xc2 0x1
-> +					 0x0 0x0 0x0 0x2 &gic 0x0 0xc3 0x1
-> +					 0x0 0x0 0x0 0x3 &gic 0x0 0xc4 0x1
-> +					 0x0 0x0 0x0 0x4 &gic 0x0 0xc5 0x1>;
-> +			clocks = <&pcie0clk 0>;
-> +		};
+On 03/14/2014 12:38 PM, Kishon Vijay Abraham I wrote:
+> Hi Roger,
+> 
+> On Friday 07 March 2014 06:39 PM, Roger Quadros wrote:
+>> Add nodes for the Super Speed USB controllers, omap-control-usb,
+>> USB2 PHY and USB3 PHY devices.
+>>
+>> Remove ocp2scp1 address space from hwmod data as it is
+>> now provided via device tree.
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>   arch/arm/boot/dts/dra7.dtsi               | 110 ++++++++++++++++++++++++++++++
+>>   arch/arm/mach-omap2/omap_hwmod_7xx_data.c |  10 ---
+>>   2 files changed, 110 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+>> index 597979b..1e73900 100644
+>> --- a/arch/arm/boot/dts/dra7.dtsi
+>> +++ b/arch/arm/boot/dts/dra7.dtsi
+>> @@ -811,6 +811,116 @@
+>>               clocks = <&sata_ref_clk>;
+>>               ti,hwmods = "sata";
+>>           };
+>> +
+>> +        omap_control_usb2phy1: control-phy@4a002300 {
+>> +            compatible = "ti,control-phy-usb2";
+>> +            reg = <0x4a002300 0x4>;
+>> +            reg-names = "power";
+>> +        };
+>> +
+>> +        omap_control_usb3phy1: control-phy@4a002370 {
+>> +            compatible = "ti,control-phy-pipe3";
+>> +            reg = <0x4a002370 0x4>;
+>> +            reg-names = "power";
+>> +        };
+>> +
+>> +        omap_control_usb2phy2: control-phy@0x4a002e74 {
+>> +            compatible = "ti,control-phy-usb2-dra7";
+>> +            reg = <0x4a002e74 0x4>;
+>> +            reg-names = "power";
+>> +        };
+>> +
+>> +        /* OCP2SCP1 */
+>> +        ocp2scp@4a080000 {
+>> +            compatible = "ti,omap-ocp2scp";
+>> +            #address-cells = <1>;
+>> +            #size-cells = <1>;
+>> +            ranges;
+>> +            reg = <0x4a080000 0x20>;
+>> +            ti,hwmods = "ocp2scp1";
+>> +
+>> +            usb2_phy1: phy@4a084000 {
+>> +                compatible = "ti,omap-usb2";
+>> +                reg = <0x4a084000 0x400>;
+>> +                ctrl-module = <&omap_control_usb2phy1>;
+>> +                clocks = <&usb_phy1_always_on_clk32k>,
+>> +                     <&usb_otg_ss1_refclk960m>;
+>> +                clock-names =    "wkupclk",
+>> +                        "refclk";
+>> +                #phy-cells = <0>;
+>> +            };
+>> +
+>> +            usb2_phy2: phy@4a085000 {
+>> +                compatible = "ti,omap-usb2";
+>> +                reg = <0x4a085000 0x400>;
+>> +                ctrl-module = <&omap_control_usb2phy2>;
+>> +                clocks = <&usb_phy2_always_on_clk32k>,
+>> +                     <&usb_otg_ss2_refclk960m>;
+>> +                clock-names =    "wkupclk",
+>> +                        "refclk";
+>> +                #phy-cells = <0>;
+>> +            };
+>> +
+>> +            usb3_phy1: phy@4a084400 {
+>> +                compatible = "ti,omap-usb3";
+>> +                reg = <0x4a084400 0x80>,
+>> +                      <0x4a084800 0x64>,
+>> +                      <0x4a084c00 0x40>;
+>> +                reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+>> +                ctrl-module = <&omap_control_usb3phy1>;
+>> +                clocks = <&usb_phy3_always_on_clk32k>,
+>> +                     <&sys_clkin1>,
+>> +                     <&usb_otg_ss1_refclk960m>,
+>> +                     <&dpll_core_h13x2_ck>;
+>> +                clock-names =    "wkupclk",
+>> +                        "sysclk",
+>> +                        "refclk",
+>> +                        "optclk";
+> 
+> Do we use this 'optclk' in driver?
 
-Is 0x40.0x00000000 the start of your RAM? I had expected RAM to start at 0.0,
-and in that case the dma-ranges property would be wrong.
+No we don't. Still the device seems to work without it.
+This is supposed to be USB_LFPS_TX_GFCLK or USB3PHY_REF_CLK.
 
-	Arnd
+Any idea why it works without that on OMAP5 as well?
+
+cheers,
+-roger
+
