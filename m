@@ -1,58 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755812AbaCNPgi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:36:38 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:44814 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755768AbaCNPgg (ORCPT
+	id S1755868AbaCNPg7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:36:59 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50990 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755492AbaCNPfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:36:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140314141143.GH12613@htj.dyndns.org>
-References: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
-	<20140218155945.ee2e22e07fa3b4f242b16a7f@linux-foundation.org>
-	<CACZ9PQV8RsaefFAOt5b-aL33G3CiD+3+fTuW15io6u1DH3XJ6Q@mail.gmail.com>
-	<CACZ9PQUKzsP4mwJSO3c=Z3W2pYr2AME-9j+1Cqg9t8a4T+uQQg@mail.gmail.com>
-	<20140313200119.GB504@quack.suse.cz>
-	<20140313143456.157404fd7f208638ca70e317@linux-foundation.org>
-	<20140314130712.GC12613@htj.dyndns.org>
-	<CACZ9PQUQX-sSNo+z0LB0Tefq9pSHFr6GjKg2tWzdAtw3OYYDsg@mail.gmail.com>
-	<20140314141143.GH12613@htj.dyndns.org>
-Date: Sat, 15 Mar 2014 00:36:35 +0900
-Message-ID: <CACZ9PQUupNLYQDcTRVdu3dZRsAvrz1aS1OGD20r=XzyJ_AObqQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data
- integrity write
-From: Roman Peniaev <r.peniaev@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 14 Mar 2014 11:35:14 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH v7 3/6] pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
+Date: Fri, 14 Mar 2014 15:34:29 +0000
+Message-Id: <1394811272-1547-4-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 11:11 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> On Fri, Mar 14, 2014 at 11:07:04PM +0900, Roman Peniaev wrote:
->> Seems the following message should be better:
->> When data inegrity operation (sync, fsync, fdatasync calls) happens
->> writeback control is set to WB_SYNC_ALL.
->> In that case all write requests are marked with WRITE_SYNC, but on
->> mpage writeback path
->> WRITE_SYNC is missed. This patch fixes this.
->>
->> Is it ok, what do you think?
->
-> I think the description should make it clear that WRITE_SYNC is about
-> latency, not about integrity and we probably should add comments
-> explaining why we're using WRITE_SYNC for WB_SYNC_ALL (because there
-> probably is someone waiting).
+Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
+As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
+the creation order has been changed for no good reason. Revert the order of
+creation as we are going to depend on the pci_host_bridge structure to retrieve the
+domain number of the root bus.
 
-I sent v2 of the patch where I tried to be more explicit in details.
-Please, check.
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+---
+ drivers/pci/probe.c | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
---
-Roman
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 6e34498..fd11c12 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -505,7 +505,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
+ 	kfree(bridge);
+ }
+ 
+-static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
++static struct pci_host_bridge *pci_alloc_host_bridge(void)
+ {
+ 	struct pci_host_bridge *bridge;
+ 
+@@ -514,7 +514,6 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+ 		return NULL;
+ 
+ 	INIT_LIST_HEAD(&bridge->windows);
+-	bridge->bus = b;
+ 	return bridge;
+ }
+ 
+@@ -1727,9 +1726,19 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	char bus_addr[64];
+ 	char *fmt;
+ 
++	bridge = pci_alloc_host_bridge();
++	if (!bridge)
++		return NULL;
++
++	bridge->dev.parent = parent;
++	bridge->dev.release = pci_release_host_bridge_dev;
++	error = pcibios_root_bridge_prepare(bridge);
++	if (error)
++		goto err_out;
++
+ 	b = pci_alloc_bus();
+ 	if (!b)
+-		return NULL;
++		goto err_out;
+ 
+ 	b->sysdata = sysdata;
+ 	b->ops = ops;
+@@ -1738,26 +1747,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
+ 		dev_dbg(&b2->dev, "bus already known\n");
+-		goto err_out;
++		goto err_bus_out;
+ 	}
+ 
+-	bridge = pci_alloc_host_bridge(b);
+-	if (!bridge)
+-		goto err_out;
+-
+-	bridge->dev.parent = parent;
+-	bridge->dev.release = pci_release_host_bridge_dev;
++	bridge->bus = b;
+ 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+-	error = pcibios_root_bridge_prepare(bridge);
+-	if (error) {
+-		kfree(bridge);
+-		goto err_out;
+-	}
+-
+ 	error = device_register(&bridge->dev);
+ 	if (error) {
+ 		put_device(&bridge->dev);
+-		goto err_out;
++		goto err_bus_out;
+ 	}
+ 	b->bridge = get_device(&bridge->dev);
+ 	device_enable_async_suspend(b->bridge);
+@@ -1814,8 +1812,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ class_dev_reg_err:
+ 	put_device(&bridge->dev);
+ 	device_unregister(&bridge->dev);
+-err_out:
++err_bus_out:
+ 	kfree(b);
++err_out:
++	kfree(bridge);
+ 	return NULL;
+ }
+ 
+-- 
+1.9.0
+
