@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492AbaCNPWs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:22:48 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:53840 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301AbaCNPWo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:22:44 -0400
+	id S1755344AbaCNPWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:22:09 -0400
+Received: from 124-84-246-161.wendulka.net ([84.246.161.124]:53751 "EHLO
+	ixit.cz" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754746AbaCNPWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 11:22:07 -0400
+X-Greylist: delayed 505 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Mar 2014 11:22:07 EDT
 MIME-Version: 1.0
-In-Reply-To: <20140314140542.f4ded6c50dbd8a1d937bf354@samsung.com>
-References: <20140314140542.f4ded6c50dbd8a1d937bf354@samsung.com>
-Date: Fri, 14 Mar 2014 20:52:43 +0530
-Message-ID: <CAK9yfHw7zYaX9EYFE+m3Mh-u8Uiyubx-cS0EwPmfW+0weLiBKw@mail.gmail.com>
-Subject: Re: [PATCH v11 10/27] iommu/exynos: use managed device helper functions
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Fri, 14 Mar 2014 17:14:10 +0100
+From: David Heidelberger <david.heidelberger@ixit.cz>
+To: linux-kernel@vger.kernel.org
+Cc: maillist-linux@barfooze.de, torvalds@linux-foundation.org
+Subject: [PATCH 1/4] glibc specific inclusion of sysinfo.h in kernel.h
+Message-ID: <130a9e0c237bae10e631a5ae52c5e2c8@ixit.cz>
+User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KyongHo,
+including sysinfo.h from kernel.h makes no sense whatsoever,
+but removing it breaks glibc's userspace header,
+which includes kernel.h instead of sysinfo.h from their sys/sysinfo.h.
+this seems to be a historical mistake.
+on musl, including any header that uses kernel.h directly or indirectly
+plus sys/sysinfo.h will produce a compile error due to redefinition of
+struct sysinfo.h.
+so for now, only include it on glibc in order not to break their 
+headers.
 
-On 14 March 2014 10:35, Cho KyongHo <pullip.cho@samsung.com> wrote:
-> This patch uses managed device helper functions in the probe().
->
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> ---
-[snip]
+Signed-off-by: John Spencer <maillist-linux@barfooze.de>
+Signed-off-by: David Heidelberger <david.heidelberger@ixit.cz>
+---
+  include/uapi/linux/kernel.h | 2 ++
+  1 file changed, 2 insertion(+)
 
-> +       data->clk = devm_clk_get(dev, "sysmmu");
-> +       if (IS_ERR(data->clk)) {
-> +               dev_info(dev, "No gate clock found!\n");
-> +               data->clk = NULL;
-> +       }
+diff --git a/include/uapi/linux/kernel.h b/include/uapi/linux/kernel.h
+index 321e399..8c45eeb 100644
+--- a/include/uapi/linux/kernel.h
++++ b/include/uapi/linux/kernel.h
+@@ -1,7 +1,9 @@
+  #ifndef _UAPI_LINUX_KERNEL_H
+  #define _UAPI_LINUX_KERNEL_H
 
-Why aren't you returning from here upon error?
++#ifdef __GLIBC__
+  #include <linux/sysinfo.h>
++#endif
 
-> +
-> +       ret = clk_prepare(data->clk);
-> +       if (ret) {
-> +               dev_err(dev, "Failed to prepare clk\n");
-> +               return ret;
->         }
->
->         data->sysmmu = dev;
-> @@ -556,17 +553,8 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
->
->         pm_runtime_enable(dev);
->
-> -       dev_dbg(dev, "Initialized\n");
-> +       dev_dbg(dev, "Probed and initialized\n");
-
-This message looks redundant.
-
+  /*
+   * 'kernel.h' contains some often-used function prototypes etc
+   */
 -- 
-With warm regards,
-Sachin
+1.8.4
