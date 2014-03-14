@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463AbaCNPWO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:22:14 -0400
-Received: from 124-84-246-161.wendulka.net ([84.246.161.124]:53753 "EHLO
+	id S1755413AbaCNPWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:22:13 -0400
+Received: from 124-84-246-161.wendulka.net ([84.246.161.124]:53754 "EHLO
 	ixit.cz" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755006AbaCNPWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754982AbaCNPWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 Mar 2014 11:22:07 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8;
  format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Fri, 14 Mar 2014 17:15:49 +0100
+Date: Fri, 14 Mar 2014 17:16:29 +0100
 From: David Heidelberger <david.heidelberger@ixit.cz>
 To: linux-kernel@vger.kernel.org
 Cc: maillist-linux@barfooze.de
-Subject: [PATCH 3/4] libc-compat.h: fix some issues arising from in6.h
-Message-ID: <13cd9a2535456ada92da2aaaeb377f85@ixit.cz>
+Subject: [PATCH 4/4] libc-compat.h: prevent redefinition of struct ethhdr
+Message-ID: <1259716fc4b4a6666e46f05a0707f481@ixit.cz>
 User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-namely redefinition of some structs provided by netinet/in.h.
 
 Signed-off-by: John Spencer <maillist-linux@barfooze.de>
 Tested-by: David Heidelberger <david.heidelberger@ixit.cz>
 ---
-  include/uapi/linux/libc-compat.h | 25 ++++++++-----------------
-  1 file changed, 8 insertions(+), 17 deletions(-)
+  include/uapi/linux/if_ether.h    | 4 +++-
+  include/uapi/linux/libc-compat.h | 6 ++++++
+  2 files changed, 9 insertions(+), 1 deletion(-)
 
+diff --git a/include/uapi/linux/if_ether.h 
+b/include/uapi/linux/if_ether.h
+index 2ce0f6a..18cfb23 100644
+--- a/include/uapi/linux/if_ether.h
++++ b/include/uapi/linux/if_ether.h
+@@ -22,6 +22,7 @@
+  #define _UAPI_LINUX_IF_ETHER_H
+
+  #include <linux/types.h>
++#include <linux/libc-compat.h>
+
+  /*
+   *	IEEE 802.3 Ethernet magic constants.  The frame sizes omit the 
+preamble
+@@ -131,11 +132,12 @@
+   *	This is an Ethernet frame header.
+   */
+
++#if __UAPI_DEF_ETHHDR
+  struct ethhdr {
+  	unsigned char	h_dest[ETH_ALEN];	/* destination eth addr	*/
+  	unsigned char	h_source[ETH_ALEN];	/* source ether addr	*/
+  	__be16		h_proto;		/* packet type ID field	*/
+  } __attribute__((packed));
+-
++#endif
+
+  #endif /* _UAPI_LINUX_IF_ETHER_H */
 diff --git a/include/uapi/linux/libc-compat.h 
 b/include/uapi/linux/libc-compat.h
-index 335e8a7..c16c34c 100644
+index c16c34c..c491d7a 100644
 --- a/include/uapi/linux/libc-compat.h
 +++ b/include/uapi/linux/libc-compat.h
-@@ -48,35 +48,26 @@
-  #ifndef _UAPI_LIBC_COMPAT_H
-  #define _UAPI_LIBC_COMPAT_H
+@@ -50,6 +50,12 @@
 
--/* We have included glibc headers... */
--#if defined(__GLIBC__)
-+#ifndef __KERNEL__ /* we're used from userspace */
+  #ifndef __KERNEL__ /* we're used from userspace */
 
--/* Coordinate with glibc netinet/in.h header. */
--#if defined(_NETINET_IN_H)
-+/* Coordinate with libc netinet/in.h header. */
-+#ifdef _NETINET_IN_H
++#ifdef _NETINET_IF_ETHER_H /* musl */
++#define __UAPI_DEF_ETHHDR 0
++#else /* glibc uses __NETINET_IF_ETHER_H, and includes the kernel 
+header. */
++#define __UAPI_DEF_ETHHDR 1
++#endif
++
+  /* Coordinate with libc netinet/in.h header. */
+  #ifdef _NETINET_IN_H
 
-  /* GLIBC headers included first so don't define anything
-   * that would already be defined. */
-  #define __UAPI_DEF_IN6_ADDR		0
--/* The exception is the in6_addr macros which must be defined
-- * if the glibc code didn't define them. This guard matches
-- * the guard in glibc/inet/netinet/in.h which defines the
-- * additional in6_addr macros e.g. s6_addr16, and s6_addr32. */
--#if defined(__USE_MISC) || defined (__USE_GNU)
-  #define __UAPI_DEF_IN6_ADDR_ALT		0
--#else
--#define __UAPI_DEF_IN6_ADDR_ALT		1
--#endif
-  #define __UAPI_DEF_SOCKADDR_IN6		0
-  #define __UAPI_DEF_IPV6_MREQ		0
-  #define __UAPI_DEF_IPPROTO_V6		0
-
--#else
-+#else /* defined(_NETINET_IN_H) */
-
-  /* Linux headers included first, and we must define everything
-- * we need. The expectation is that glibc will check the
-+ * we need. The expectation is that the libc will check the
-   * __UAPI_DEF_* defines and adjust appropriately. */
-  #define __UAPI_DEF_IN6_ADDR		1
--/* We unconditionally define the in6_addr macros and glibc must
-+/* We unconditionally define the in6_addr macros and the libc must
-   * coordinate. */
-  #define __UAPI_DEF_IN6_ADDR_ALT		1
-  #define __UAPI_DEF_SOCKADDR_IN6		1
-@@ -89,7 +80,7 @@
-  /* If we did not see any headers from any supported C libraries,
-   * or we are being included in the kernel, then define everything
-   * that we need. */
--#else /* !defined(__GLIBC__) */
-+#else /* __KERNEL__ */
-
-  /* Definitions for in6.h */
-  #define __UAPI_DEF_IN6_ADDR		1
-@@ -98,6 +89,6 @@
-  #define __UAPI_DEF_IPV6_MREQ		1
-  #define __UAPI_DEF_IPPROTO_V6		1
-
--#endif /* __GLIBC__ */
-+#endif /* __KERNEL__ */
-
-  #endif /* _UAPI_LIBC_COMPAT_H */
 -- 
 1.8.4
-
