@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567AbaCNVaq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:30:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54014 "EHLO
+	id S1756552AbaCNVao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:30:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54002 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756217AbaCNVaZ (ORCPT
+	with ESMTP id S1756210AbaCNVaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:30:25 -0400
+	Fri, 14 Mar 2014 17:30:24 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/16] perf machine: Factor machine__find_thread to take tid argument
-Date: Fri, 14 Mar 2014 18:30:10 -0300
-Message-Id: <1394832610-17818-17-git-send-email-acme@infradead.org>
+Subject: [PATCH 05/16] perf probe: Clarify x86 register naming for perf probe
+Date: Fri, 14 Mar 2014 18:29:59 -0300
+Message-Id: <1394832610-17818-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1394832610-17818-1-git-send-email-acme@infradead.org>
 References: <1394832610-17818-1-git-send-email-acme@infradead.org>
@@ -28,97 +24,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-Forcing the code to always search thread by pid/tid pair.
+Clarify how to specify x86 registers in perf probe. I recently ran into
+this problem and had to figure it out from the source.
 
-The PID value will be needed in future to determine the process thread
-leader for map groups sharing.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1394805606-25883-3-git-send-email-jolsa@redhat.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Link: http://lkml.kernel.org/r/1393596135-4227-3-git-send-email-andi@firstfloor.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/dwarf-unwind.c |  2 +-
- tools/perf/util/machine.c       | 13 +++++++++----
- tools/perf/util/machine.h       |  3 ++-
- 3 files changed, 12 insertions(+), 6 deletions(-)
+ tools/perf/Documentation/perf-probe.txt | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-index f16ea2808a75..c059ee81c038 100644
---- a/tools/perf/tests/dwarf-unwind.c
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -128,7 +128,7 @@ int test__dwarf_unwind(void)
- 	if (verbose > 1)
- 		machine__fprintf(machine, stderr);
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index b715cb71592b..1513935c399b 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -136,6 +136,8 @@ Each probe argument follows below syntax.
+ 'NAME' specifies the name of this argument (optional). You can use the name of local variable, local data structure member (e.g. var->field, var.field2), local array with fixed index (e.g. array[1], var->array[0], var->pointer[2]), or kprobe-tracer argument format (e.g. $retval, %ax, etc). Note that the name of this argument will be set as the last member name if you specify a local data structure member (e.g. field2 for 'var->field1.field2'.)
+ 'TYPE' casts the type of this argument (optional). If omitted, perf probe automatically set the type based on debuginfo. You can specify 'string' type only for the local variable or structure member which is an array of or a pointer to 'char' or 'unsigned char' type.
  
--	thread = machine__find_thread(machine, getpid());
-+	thread = machine__find_thread(machine, getpid(), getpid());
- 	if (!thread) {
- 		pr_err("Could not get thread\n");
- 		goto out;
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index a6799538069c..5cecd98c1bc0 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -327,9 +327,10 @@ struct thread *machine__findnew_thread(struct machine *machine, pid_t pid,
- 	return __machine__findnew_thread(machine, pid, tid, true);
- }
- 
--struct thread *machine__find_thread(struct machine *machine, pid_t tid)
-+struct thread *machine__find_thread(struct machine *machine, pid_t pid,
-+				    pid_t tid)
- {
--	return __machine__findnew_thread(machine, 0, tid, false);
-+	return __machine__findnew_thread(machine, pid, tid, false);
- }
- 
- int machine__process_comm_event(struct machine *machine, union perf_event *event,
-@@ -1114,7 +1115,9 @@ static void machine__remove_thread(struct machine *machine, struct thread *th)
- int machine__process_fork_event(struct machine *machine, union perf_event *event,
- 				struct perf_sample *sample)
- {
--	struct thread *thread = machine__find_thread(machine, event->fork.tid);
-+	struct thread *thread = machine__find_thread(machine,
-+						     event->fork.pid,
-+						     event->fork.tid);
- 	struct thread *parent = machine__findnew_thread(machine,
- 							event->fork.ppid,
- 							event->fork.ptid);
-@@ -1140,7 +1143,9 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
- int machine__process_exit_event(struct machine *machine, union perf_event *event,
- 				struct perf_sample *sample __maybe_unused)
- {
--	struct thread *thread = machine__find_thread(machine, event->fork.tid);
-+	struct thread *thread = machine__find_thread(machine,
-+						     event->fork.pid,
-+						     event->fork.tid);
- 
- 	if (dump_trace)
- 		perf_event__fprintf_task(event, stdout);
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 2e6c248c870f..c8c74a119398 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -41,7 +41,8 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
- 	return machine->vmlinux_maps[type];
- }
- 
--struct thread *machine__find_thread(struct machine *machine, pid_t tid);
-+struct thread *machine__find_thread(struct machine *machine, pid_t pid,
-+				    pid_t tid);
- 
- int machine__process_comm_event(struct machine *machine, union perf_event *event,
- 				struct perf_sample *sample);
++On x86 systems %REG is always the short form of the register: for example %AX. %RAX or %EAX is not valid.
++
+ LINE SYNTAX
+ -----------
+ Line range is described by following syntax.
 -- 
 1.8.1.4
 
