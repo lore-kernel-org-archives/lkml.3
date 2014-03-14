@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbaCNPtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:49:53 -0400
-Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:2955
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753707AbaCNPtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:49:52 -0400
-Date: Fri, 14 Mar 2014 21:15:30 +0530
-From: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>
-To: <jejb@kernel.org>, <JBottomley@Parallels.com>
-CC: <linux-scsi@vger.kernel.org>, <Sathya.Prakash@lsi.com>,
-        <Nagalakshmi.Nandigama@lsi.com>, <sreekanth.reddy@lsi.com>,
-        <linux-kernel@vger.kernel.org>, <sreekanthreddy0547@gmail.com>
-Subject: [PATCH 11/11][SCSI]mpt2sas: Bump mpt2sas driver version to
- 18.100.00.00
-Message-ID: <20140314154530.GA8075@lsi.com>
+	id S1754962AbaCNPwN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:52:13 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48067 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094AbaCNPwL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 11:52:11 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+PQYV0slG35ZbxMivrUwms
+Date: Fri, 14 Mar 2014 08:52:03 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: Rob Herring <robh@kernel.org>, Tero Kristo <t-kristo@ti.com>,
+        Nishanth Menon <nm@ti.com>, Suman Anna <s-anna@ti.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC 4/5] clocksource: omap-timer: Introduce clocksource driver
+ for OMAP SoCs
+Message-ID: <20140314155202.GA27560@atomide.com>
+References: <1394742919-32163-1-git-send-email-joelf@ti.com>
+ <1394742919-32163-5-git-send-email-joelf@ti.com>
+ <20140313204851.GB23432@atomide.com>
+ <532243F5.4040609@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(59766001)(81542001)(83506001)(47446002)(51856001)(36756003)(79102001)(6806004)(46406003)(85852003)(76482001)(56776001)(95666003)(81686001)(83072002)(74502001)(54316002)(54356001)(77982001)(81816001)(94946001)(19580395003)(69226001)(63696002)(20776003)(19580405001)(83322001)(33656001)(57986002)(90146001)(74662001)(50466002)(76786001)(4396001)(87266001)(92566001)(86362001)(74876001)(74366001)(46102001)(47976001)(93136001)(50986001)(93516002)(92726001)(47736001)(65816001)(74706001)(95416001)(85306002)(53806001)(31966008)(80976001)(94316002)(56816005)(87936001)(81342001)(97186001)(47776003)(97336001)(76176001)(77096001)(23726002)(44976005)(80022001)(49866001)(97756001)(76796001)(16796002)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR07MB388;H:COSEXCH10.lsi.com;CLIP:192.19.220.100;FPR:F4AB576B.F716B4EE.4FC4CF7F.B17A8101.200F4;PTR:cosexch10.lsi.com;A:1;MX:1;LANG:en;
-X-Forefront-PRVS: 0150F3F97D
-X-OriginatorOrg: lsi.com
+In-Reply-To: <532243F5.4040609@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bump mpt2sas driver version to 18.100.00.00.
+* Joel Fernandes <joelf@ti.com> [140313 16:52]:
+> On 03/13/2014 03:48 PM, Tony Lindgren wrote:
+> > * Joel Fernandes <joelf@TI.com> [140313 13:43]:
+> >> We introduce functions to initialize clocksource and clockevent, use
+> >> CLOCKSOURCE_OF_DECLARE to declare the clocksource, and handle the clocksource
+> >> selection on a per-SoC basis (Currently only AM335x is supported). Powering up
+> >> of the timer will be done with the help of the mach-omap layer function that's
+> >> introduced earlier in the series.
+> >>
+> >> We make a local copy of dmtimer API for use by clocksource, the original
+> >> dmtimer API in plat-omap is kept as-is till the migration of all SoCs is
+> >> completed after which it can't be deleted.
+> >>
+> >> Signed-off-by: Joel Fernandes <joelf@ti.com>
+> >> ---
+> >>  drivers/clocksource/Makefile     |    1 +
+> >>  drivers/clocksource/omap-timer.c | 1157 ++++++++++++++++++++++++++++++++++++++
+> >>  drivers/clocksource/omap-timer.h |  422 ++++++++++++++
+> >>  3 files changed, 1580 insertions(+)
+> >>  create mode 100644 drivers/clocksource/omap-timer.c
+> >>  create mode 100644 drivers/clocksource/omap-timer.h
+> > 
+> > Hmm this leaves duplicate arch/arm/plat-omap/dmtimer.c code, please
+> 
+> Sure, ofcourse- but how else can we make sure everything works while we do
+> the migration in steps. We can get rid of the duplicate once everything is
+> migrated.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
----
- drivers/scsi/mpt2sas/mpt2sas_base.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+That's not doing incremental changes then. You're not even modifying
+the existing omap_dm_timer functions, so please do the changes in incremental
+steps where things keep working throughout the series.
+ 
+> > sort out that issue too by allowing omap1 and omap3 still to use
+> > the legacy timer init functions but with timer code under
+> > drivers/clocksource/omap-timer.c.
+> 
+> Sorry, I didn't follow. I didn't see OMAP3 using legacy timer stuff. To me
+> it looks like OMAP3 migration should be straight forward along the same
+> lines as this RFC patchset. Could you elaborate a bit more what the legacy
+> functions you mentioned for OMAP1 are? I will just like to keep everything
+> in drivers/clocksource/ private for now till we're done migrating most
+> platforms. IMO once we get system timers working for omap2+, then we can
+> look into omap1 :)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
-index 6dbbaba..cc49cbf 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -69,8 +69,8 @@
- #define MPT2SAS_DRIVER_NAME		"mpt2sas"
- #define MPT2SAS_AUTHOR	"LSI Corporation <DL-MPTFusionLinux@lsi.com>"
- #define MPT2SAS_DESCRIPTION	"LSI MPT Fusion SAS 2.0 Device Driver"
--#define MPT2SAS_DRIVER_VERSION		"17.100.00.00"
--#define MPT2SAS_MAJOR_VERSION		17
-+#define MPT2SAS_DRIVER_VERSION		"18.100.00.00"
-+#define MPT2SAS_MAJOR_VERSION		18
- #define MPT2SAS_MINOR_VERSION		100
- #define MPT2SAS_BUILD_VERSION		00
- #define MPT2SAS_RELEASE_VERSION		00
--- 
-1.7.1
+Well omap3 is still also booting in legacy mode too.
+ 
+> > And not the that drivers/clocksource/omap-timer.h won't be needed at
+> > all, those defines can stay private to the drivers/clocksource/omap-timer.c.
+> 
+> Actually- I wanted it separate because omap-timer.c is already huge at 1157
+> lines. Infact the largest among the clocksource drivers. Is that fair?
 
+No need for it. We want to keep these functions private to the driver.
+ 
+> > So this patch really should just be moving of the code to the new
+> > location.
+> 
+> To be honest, its not just a simple moving of code, there are new things
+> such as selecting correct timer, new functions for clockevent and
+> clocksource init, different handling of clocks etc.
+
+Those changes should then be separate patches to prepare things so
+people can see what changes in arch/arm/plat-omap/dmtimer.c code.
+
+Regards,
+
+Tony
