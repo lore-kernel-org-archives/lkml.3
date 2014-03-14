@@ -1,132 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440AbaCNFhV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 01:37:21 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:49491 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaCNFhT (ORCPT
+	id S1752874AbaCNFjT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 01:39:19 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:53291 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834AbaCNFjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 01:37:19 -0400
-Message-ID: <53229584.7000100@monstr.eu>
-Date: Fri, 14 Mar 2014 06:37:08 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 14 Mar 2014 01:39:18 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        Punnaiah Choudary Kalluri 
-	<punnaiah.choudary.kalluri@xilinx.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Zynq macb
-References: <c6344e9b-fa32-4313-8950-59030c4bffb8@AM1EHSMHS003.ehs.local> <73734ba5-00d3-445d-8c6f-a1a868cdd537@CH1EHSMHS024.ehs.local>
-In-Reply-To: <73734ba5-00d3-445d-8c6f-a1a868cdd537@CH1EHSMHS024.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="7EAmv0r3cX2VDXHVioPQRjD023ftaAehV"
+In-Reply-To: <1394576402-2910-4-git-send-email-matthew.garrett@nebula.com>
+References: <1394576402-2910-1-git-send-email-matthew.garrett@nebula.com>
+	<1394576402-2910-4-git-send-email-matthew.garrett@nebula.com>
+Date: Fri, 14 Mar 2014 13:39:17 +0800
+Message-ID: <CAOLK0pwEzWNHT+yyqKiFMc05iVjTYk4wjLDOb=g=kOm7zttT=A@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ACPI: Don't re-select SBS battery if it's already selected
+From: Lan Tianyu <lantianyu1986@gmail.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---7EAmv0r3cX2VDXHVioPQRjD023ftaAehV
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+2014-03-12 6:20 GMT+08:00 Matthew Garrett <matthew.garrett@nebula.com>:
+> The existing SBS code explicitly sets the selected battery in the SBS
+> manager regardless of whether the battery in question is already selected.
+> This causes bus timeouts on Apple hardware. Check for this case and avoid
+> it.
+>
 
-On 03/13/2014 11:33 PM, S=C3=B6ren Brinkmann wrote:
-> On Thu, 2014-03-13 at 03:16PM -0700, S=C3=B6ren Brinkmann wrote:
->> Hi Nicolas,
->>
->> I did some testing on the current linux-next tree and ran iperf on Zyn=
-q.
->> It seems that network and even the whole system can collapse when doin=
-g
->> that.
->> I don't really know what's going on, but once I saw the message:
->> 	"inconsistent Rx descriptor chain"
->> printed twice (system frozen afterwards).
->>
->> I don't know what exactly is going wrong, but suspect something around=
+Hi Matthew:
+           This patch is to avoid a redundant battery select operation when
+the battery is selected. But the symptom "bus timeouts" is a bus transaction
+issue, right?  Will this happen during other SBS write/read operations? Do we
+need to increase the wait time of SMBUS transaction?
 
->> memory/DMA. I have no clue whether it makes any sense or not, but I
->> tried using the macb_* functions instead of the gem_* ones (see diff b=
-elow).
->> That seems to result in a stable system and working Ethernet.
->=20
-> That was a little too early. After roughly 25 minutest the system runs
-> into a deadlock:
->   BUG: spinlock lockup suspected on CPU#1, iperf/774
->    lock: 0xeda0366c, .magic: dead4ead, .owner: swapper/0/0, .owner_cpu:=
- 0
->   CPU: 1 PID: 774 Comm: iperf Tainted: G        W    3.14.0-rc6-next-20=
-140312-xilinx-dirty #41
->   [<c00153c0>] (unwind_backtrace) from [<c0011e70>] (show_stack+0x10/0x=
-14)
->   [<c0011e70>] (show_stack) from [<c03d6b50>] (dump_stack+0x80/0xcc)
->   [<c03d6b50>] (dump_stack) from [<c00670ac>] (do_raw_spin_lock+0xd4/0x=
-190)
->   [<c00670ac>] (do_raw_spin_lock) from [<c03dc79c>] (_raw_spin_lock_irq=
-save+0x58/0x64)
->   [<c03dc79c>] (_raw_spin_lock_irqsave) from [<c02b0810>] (macb_start_x=
-mit+0x24/0x2d0)
->   [<c02b0810>] (macb_start_xmit) from [<c0321b10>] (dev_hard_start_xmit=
-+0x334/0x470)
->   [<c0321b10>] (dev_hard_start_xmit) from [<c0339aa8>] (sch_direct_xmit=
-+0x78/0x2f8)
->   [<c0339aa8>] (sch_direct_xmit) from [<c0321f60>] (__dev_queue_xmit+0x=
-314/0x704)
->   [<c0321f60>] (__dev_queue_xmit) from [<c034cb3c>] (ip_finish_output+0=
-x6c4/0x894)
->   [<c034cb3c>] (ip_finish_output) from [<c034cf24>] (ip_local_out+0x74/=
-0x90)
->   [<c034cf24>] (ip_local_out) from [<c034d340>] (ip_queue_xmit+0x400/0x=
-5c4)
->   [<c034d340>] (ip_queue_xmit) from [<c03634b8>] (tcp_transmit_skb+0xa1=
-8/0xab0)
->   [<c03634b8>] (tcp_transmit_skb) from [<c035856c>] (tcp_recvmsg+0x92c/=
-0xae4)
->   [<c035856c>] (tcp_recvmsg) from [<c03806f0>] (inet_recvmsg+0x1c0/0x1f=
-c)
->   [<c03806f0>] (inet_recvmsg) from [<c030769c>] (sock_recvmsg+0x7c/0x98=
-)
->   [<c030769c>] (sock_recvmsg) from [<c0309988>] (SyS_recvfrom+0x9c/0x10=
-8)
->   [<c0309988>] (SyS_recvfrom) from [<c0309a08>] (sys_recv+0x14/0x18)
->   [<c0309a08>] (sys_recv) from [<c000ea60>] (ret_fast_syscall+0x0/0x48)=
-
-
-Do you have this change in your tree?
-https://github.com/Xilinx/linux-xlnx/commit/1a85939af40acca2bf963407b497c=
-c31c303ff3e
-
-I don't think we have sent this to mainline yet.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> ---
+>  drivers/acpi/sbs.c | 18 +++++++++++++-----
+>  1 file changed, 13 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/acpi/sbs.c b/drivers/acpi/sbs.c
+> index dbd4849..c386505 100644
+> --- a/drivers/acpi/sbs.c
+> +++ b/drivers/acpi/sbs.c
+> @@ -470,17 +470,25 @@ static struct device_attribute alarm_attr = {
+>  static int acpi_battery_read(struct acpi_battery *battery)
+>  {
+>         int result = 0, saved_present = battery->present;
+> -       u16 state;
+> +       u16 state, selected, desired;
+>
+>         if (battery->sbs->manager_present) {
+>                 result = acpi_smbus_read(battery->sbs->hc, SMBUS_READ_WORD,
+>                                 ACPI_SBS_MANAGER, 0x01, (u8 *)&state);
+>                 if (!result)
+>                         battery->present = state & (1 << battery->id);
+> -               state &= 0x0fff;
+> -               state |= 1 << (battery->id + 12);
+> -               acpi_smbus_write(battery->sbs->hc, SMBUS_WRITE_WORD,
+> -                                 ACPI_SBS_MANAGER, 0x01, (u8 *)&state, 2);
+> +               /*
+> +                * Don't switch battery if the correct one is already selected
+> +                */
+> +               selected = state & 0xf000;
+> +               desired = 1 << (battery->id + 12);
+> +               if (selected != desired) {
+> +                       state &= 0x0fff;
+> +                       state |= desired;
+> +                       acpi_smbus_write(battery->sbs->hc, SMBUS_WRITE_WORD,
+> +                                        ACPI_SBS_MANAGER, 0x01,
+> +                                        (u8 *)&state, 2);
+> +               }
+>         } else if (battery->id == 0)
+>                 battery->present = 1;
+>         if (result || !battery->present)
+> --
+> 1.8.5.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
 
---7EAmv0r3cX2VDXHVioPQRjD023ftaAehV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMilYQACgkQykllyylKDCEd7wCeL6u+0XBA6Q/34oByqcQQ63vj
-J9sAmwU/OOfvfPKEU3QyJBIhoz1niUpL
-=KQgz
------END PGP SIGNATURE-----
-
---7EAmv0r3cX2VDXHVioPQRjD023ftaAehV--
+-- 
+Best regards
+Tianyu Lan
