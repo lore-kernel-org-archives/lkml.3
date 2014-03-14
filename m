@@ -1,49 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880AbaCNOBm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:01:42 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:32813 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372AbaCNOBk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:01:40 -0400
-Date: Fri, 14 Mar 2014 10:01:36 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Glyn Normington <gnormington@gopivotal.com>
-Cc: Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
-        Steve Powell <spowell@gopivotal.com>
-Subject: Re: [PATCH] control groups: documentation improvements
-Message-ID: <20140314140136.GF12613@htj.dyndns.org>
-References: <20140310113928.GC18700@gnimac.gopivotal.com>
- <20140310140724.GA25290@htj.dyndns.org>
- <531DC971.6020208@gopivotal.com>
- <20140310142014.GC25290@htj.dyndns.org>
- <5321D6FA.4040500@gopivotal.com>
- <53225C69.3010202@huawei.com>
- <53230475.5050805@gopivotal.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53230475.5050805@gopivotal.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754631AbaCNOA6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:00:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754320AbaCNOA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 10:00:57 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 1/5] perf tests: Add tip/pid mmap automated tests
+Date: Fri, 14 Mar 2014 15:00:02 +0100
+Message-Id: <1394805606-25883-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
+References: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Adding automated test for memory maps lookup within
+multiple machines threads.
 
-On Fri, Mar 14, 2014 at 01:30:29PM +0000, Glyn Normington wrote:
-> Hi Li
-> 
-> Thanks! Inline...
-> 
-> Tejun: Li agrees with our reasoning on the "views" issue, but we'd
-> like your feedback too in preparation for a new patch.
+The test creates 4 threads and separated memory maps.
 
-I don't really mind as long as it's not wrong.  Can't be worse than
-now anyway.
+It checks that we could use thread__find_addr_map
+function with thread object based on TID to find
+memory maps.
 
-Thanks.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+---
+ tools/perf/Makefile.perf        |   1 +
+ tools/perf/perf.h               |   6 ++
+ tools/perf/tests/builtin-test.c |   4 +
+ tools/perf/tests/mmap-events.c  | 188 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h        |   1 +
+ 5 files changed, 200 insertions(+)
+ create mode 100644 tools/perf/tests/mmap-events.c
 
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 50d875d..9324a40 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -414,6 +414,7 @@ ifeq ($(ARCH),x86)
+ LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
+ endif
+ endif
++LIB_OBJS += $(OUTPUT)tests/mmap-events.o
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index e18a8b5..1138c41 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -15,6 +15,9 @@
+ #ifndef __NR_futex
+ # define __NR_futex 240
+ #endif
++#ifndef __NR_gettid
++# define __NR_gettid 224
++#endif
+ #endif
+ 
+ #if defined(__x86_64__)
+@@ -29,6 +32,9 @@
+ #ifndef __NR_futex
+ # define __NR_futex 202
+ #endif
++#ifndef __NR_gettid
++# define __NR_gettid 186
++#endif
+ #endif
+ 
+ #ifdef __powerpc__
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index b11bf8a..d7a9b3a 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -124,6 +124,10 @@ static struct test {
+ #endif
+ #endif
+ 	{
++		.desc = "Test mmap events",
++		.func = test__mmap_events,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/tests/mmap-events.c b/tools/perf/tests/mmap-events.c
+new file mode 100644
+index 0000000..5c7fd7e
+--- /dev/null
++++ b/tools/perf/tests/mmap-events.c
+@@ -0,0 +1,188 @@
++#include <unistd.h>
++#include <sys/syscall.h>
++#include <sys/types.h>
++#include <sys/mman.h>
++#include <pthread.h>
++#include <stdlib.h>
++#include <stdio.h>
++#include "debug.h"
++#include "tests.h"
++#include "machine.h"
++#include "thread_map.h"
++#include "symbol.h"
++#include "thread.h"
++
++#define THREADS 4
++
++static int go_away;
++
++struct thread_data {
++	pthread_t	pt;
++	pid_t		tid;
++	void		*map;
++	int		ready[2];
++};
++
++static struct thread_data threads[THREADS];
++
++static int thread_init(struct thread_data *td)
++{
++	void *map;
++
++	map = mmap(NULL, page_size, PROT_READ|PROT_WRITE,
++		   MAP_SHARED|MAP_ANONYMOUS, -1, 0);
++	if (map == MAP_FAILED) {
++		perror("mmap failed");
++		return -1;
++	}
++
++	td->map = map;
++	td->tid = syscall(SYS_gettid);
++
++	pr_debug("tid = %d, map = %p\n", td->tid, map);
++	return 0;
++}
++
++static void* thread(void *arg)
++{
++	struct thread_data *td = arg;
++	int go;
++
++	if (thread_init(td))
++		return NULL;
++
++	write(td->ready[1], &go, sizeof(int));
++
++	while (!go_away) {
++		usleep(100);
++	}
++
++	munmap(td->map, page_size);
++	return NULL;
++}
++
++static int thread_create(int i)
++{
++	struct thread_data *td = &threads[i];
++	int err, go;
++
++	if (pipe(td->ready))
++		return -1;
++
++	err = pthread_create(&td->pt, NULL, thread, td);
++	if (!err) {
++		ssize_t ret = read(td->ready[0], &go, sizeof(int));
++		err = ret != sizeof(int);
++	}
++
++	return err;
++}
++
++static int threads_create(void)
++{
++	struct thread_data *td0 = &threads[0];
++	int i, err = 0;
++
++	if (thread_init(td0))
++		return -1;
++
++	for (i = 1; !err && i < THREADS; i++)
++		err = thread_create(i);
++
++	return err;
++}
++
++static int threads_destroy(void)
++{
++	struct thread_data *td0 = &threads[0];
++	int i, err = 0;
++
++	munmap(td0->map, page_size);
++
++	go_away = 1;
++
++	for (i = 1; !err && i < THREADS; i++)
++		err = pthread_join(threads[i].pt, NULL);
++
++	return err;
++}
++
++typedef int (*synth_cb)(struct machine *machine);
++
++static int synth_all(struct machine *machine)
++{
++	return perf_event__synthesize_threads(NULL,
++					      perf_event__process,
++					      machine, 0);
++}
++
++static int synth_process(struct machine *machine)
++{
++	struct thread_map *map;
++	int err;
++
++	map = thread_map__new_by_tid(syscall(SYS_gettid));
++
++	err = perf_event__synthesize_thread_map(NULL, map,
++						perf_event__process,
++						machine, 0);
++
++	thread_map__delete(map);
++	return err;
++}
++
++static int mmap_events(synth_cb synth)
++{
++	struct machines machines;
++	struct machine *machine;
++	int err, i;
++
++	TEST_ASSERT_VAL("failed to create threads", !threads_create());
++
++	machines__init(&machines);
++	machine = &machines.host;
++
++	dump_trace = verbose > 1 ? 1 : 0;
++
++	err = synth(machine);
++
++	dump_trace = 0;
++
++	TEST_ASSERT_VAL("failed to destroy threads", !threads_destroy());
++	TEST_ASSERT_VAL("failed to synthesize maps", !err);
++
++	for (i = 0; i < THREADS; i++) {
++		struct thread_data *td = &threads[i];
++		struct addr_location al;
++		struct thread *thread;
++
++		thread = machine__findnew_thread(machine, getpid(), td->tid);
++
++		pr_debug("looking for map %p\n", td->map);
++
++		thread__find_addr_map(thread, machine,
++				      PERF_RECORD_MISC_USER, MAP__FUNCTION,
++				      (u64) (td->map + 1), &al);
++
++		if (!al.map) {
++			pr_debug("failed, couldn't find map\n");
++			err = -1;
++			break;
++		}
++
++		pr_debug("map %p, addr %lx\n", al.map, al.map->start);
++	}
++
++	machine__delete_threads(machine);
++	machines__exit(&machines);
++	return err;
++}
++
++int test__mmap_events(void)
++{
++	TEST_ASSERT_VAL("failed with sythesizing all",
++			!mmap_events(synth_all));
++	TEST_ASSERT_VAL("failed with sythesizing process",
++			!mmap_events(synth_process));
++	return 0;
++}
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index a24795c..3b2ba1e 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -41,6 +41,7 @@ int test__sample_parsing(void);
+ int test__keep_tracking(void);
+ int test__parse_no_sample_id_all(void);
+ int test__dwarf_unwind(void);
++int test__mmap_events(void);
+ 
+ #if defined(__x86_64__) || defined(__i386__)
+ #ifdef HAVE_DWARF_UNWIND_SUPPORT
 -- 
-tejun
+1.8.3.1
+
