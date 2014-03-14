@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804AbaCNUPB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 16:15:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:35690 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753570AbaCNUO7 convert rfc822-to-8bit (ORCPT
+	id S1756031AbaCNUPK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 16:15:10 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:40532 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753570AbaCNUPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 16:14:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,656,1389772800"; 
-   d="scan'208";a="500187624"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
-CC: Sabrina Dubroca <sd@queasysnail.net>, "Zheng, Lv" <lv.zheng@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: ACPICA 20140214 auto-serialize weirds my machine...
-Thread-Topic: ACPICA 20140214 auto-serialize weirds my machine...
-Thread-Index: AQHPP58qJGgIn67g10eWtMCYXVeqCZrhTmWA//+rv9CAAAfVhoAAApog
-Date: Fri, 14 Mar 2014 20:14:57 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E37C7F98B6@ORSMSX103.amr.corp.intel.com>
-References: <14866.1394813101@turing-police.cc.vt.edu>
- <20140314173801.GA3755@kria>
-            <94F2FBAB4432B54E8AACC7DFDE6C92E37C7F9876@ORSMSX103.amr.corp.intel.com>
- <22867.1394827457@turing-police.cc.vt.edu>
-In-Reply-To: <22867.1394827457@turing-police.cc.vt.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 14 Mar 2014 16:15:03 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+55aFyEu4POnixwxFCt+a8-ZJYBK-tCrdAP1yYgCPXq8x3ANg@mail.gmail.com>
+References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
+	<CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
+	<5321CBDA.1060705@oracle.com>
+	<CA+55aFwDKSKyxC4rTBiFMRVr6xYtL96ZYCQqNSVLJV0-=FLTUg@mail.gmail.com>
+	<20140313231227.GA32178@redhat.com>
+	<CAGXu5jLE6WHCwZVcMSUwQAa3=DW1LsxGd_1aGo8SzLpk8jC-xA@mail.gmail.com>
+	<20140314190824.GA6426@redhat.com>
+	<CA+55aFznCT20giHq8JxCRduky-dQtVLqpUYrcrK_3XeXN+Wyow@mail.gmail.com>
+	<CA+55aFyEu4POnixwxFCt+a8-ZJYBK-tCrdAP1yYgCPXq8x3ANg@mail.gmail.com>
+Date: Fri, 14 Mar 2014 13:15:02 -0700
+X-Google-Sender-Auth: 8ilpq70OSte53cCp6EW9KKalWZg
+Message-ID: <CAGXu5jKbvXdtOQMVV3Jig-cCd=yfMYTF5gZSReAxkEEfs198ow@mail.gmail.com>
+Subject: Re: [RFC] improve_stack: make stack dump output useful again
+From: Kees Cook <keescook@chromium.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have reproduced the problem here, and have reached an understanding of the problem.
+On Fri, Mar 14, 2014 at 12:41 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Mar 14, 2014 at 12:32 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> Hmm. Do you have CONFIG_KALLSYMS enabled?
+>
+> Just to clarify. KALLSYMS is required to figure out the symbol
+> addresses on a kaslr system. There's no way to look them up in a
+> System.map file or the object file, since the addresses aren't going
+> to match.
+>
+> Your symptoms really sound like you might not have KALLSYMS enabled.
+>
+> I wonder if we have a "select KALLSYMS" as part of RANDOMIZE_BASE,
+> since you need it for debug messages too (random hex numbers aren't
+> too useful ;)
 
-We are working on the solution, please disable auto-serialize for now.
-Thanks,
-Bob
+My weak preference would be to allow to build without that hard
+requirement (citing imagined space savings, blah blah). But since
+everything I normally use has KALLSYMS, I wouldn't object to doing it
+either. :)
 
+-Kees
 
-> -----Original Message-----
-> From: Valdis.Kletnieks@vt.edu [mailto:Valdis.Kletnieks@vt.edu]
-> Sent: Friday, March 14, 2014 1:04 PM
-> To: Moore, Robert
-> Cc: Sabrina Dubroca; Zheng, Lv; Wysocki, Rafael J; Len Brown; linux-
-> kernel@vger.kernel.org; linux-acpi@vger.kernel.org
-> Subject: Re: ACPICA 20140214 auto-serialize weirds my machine...
-> 
-> On Fri, 14 Mar 2014 19:36:54 -0000, "Moore, Robert" said:
-> > Sabrina, Valdis:
-> >
-> > Do either of you see any error messages like this:
-> >
-> > ACPI Error: Mutex [0x1] is not acquired, cannot release
-> (20140214/utmutex-437)
-> 
-> All of my "ACPI Error:" messages look like either:
-> 
-> ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is
-> too large (1) (20140214/dsmethod-362)
-> 
-> or
-> 
-> ACPI Error: Method parse/execution failed [\ECBT] (Node ffff88012d02d588),
-> AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> 
-> I should have a git bisect finished shortly...
+-- 
+Kees Cook
+Chrome OS Security
