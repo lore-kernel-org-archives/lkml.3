@@ -1,176 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746AbaCNMUe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 08:20:34 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:30735 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754423AbaCNMU3 (ORCPT
+	id S1754762AbaCNMWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 08:22:53 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36334 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153AbaCNMWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 08:20:29 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-8f-5322f409a0e6
-Message-id: <5322F407.208@samsung.com>
-Date: Fri, 14 Mar 2014 13:20:23 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Cho KyongHo <pullip.cho@samsung.com>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>
-Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: Re: [PATCH v11 12/27] ARM: dts: Add description of System MMU of
- Exynos SoCs
-References: <20140314140649.dc5958f420770af48e2376d9@samsung.com>
-In-reply-to: <20140314140649.dc5958f420770af48e2376d9@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42I5/e/4NV3OL0rBBje3W1vcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S3+9R5ktJiy6DCrxeE3
-	7awWJ//0MlrMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4MqYu/YWS8E1vYrOKcdYGxhvqXQxcnJICJhInNy1hhXC
-	FpO4cG89WxcjF4eQwFJGiZZpNxghnM+MEpPvr2PuYuTg4BVQk7jYkgjSwCKgKrH9zUpmEJsN
-	KPy54REbiM0voCWxpuk6C4gtKhAhMXfiZrA4r4CgxI/J91hAZooIrGOSOHZkJ5jDLPCbSeLZ
-	u8dgk4QFwiVuz3oA1i0k4Chx4NMKsPM4BZwkjj6cywhiMwtYS6yctA3KlpfYvOYt8wRGwVlI
-	lsxCUjYLSdkCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCFR93UH49JjVocYBTgYlXh4
-	ZxxVDBZiTSwrrsw9xCjBwawkwnvysVKwEG9KYmVValF+fFFpTmrxIUYmDk6pBkY3i8dpKmyn
-	vsxNfa9yt9PD5/n0pATXJR5ihg8fGXO6p7dPyc/iXLHufdgXf9b/0zSS/twMU70wM+P9Oo8K
-	hr9hB55cjooS4vMtnR9q9vqbgIaoIuvTBjeW64pva2U7YucZGU3XnpjPeffv0jfSVqsCJ3Yv
-	ttl0fh/72T+vFRfs9tGWFt51z0qJpTgj0VCLuag4EQAxl2d2mAIAAA==
+	Fri, 14 Mar 2014 08:22:49 -0400
+Date: Fri, 14 Mar 2014 12:22:31 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+Message-ID: <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
+In-Reply-To: <1394762250.6416.24.camel@x230.lan>
+References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
+	<CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
+	<alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
+	<1394686919.25122.2.camel@x230>
+	<CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
+	<alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
+	<1394726363.25122.16.camel@x230>
+	<20140313212450.67f1de8e@alan.etchedpixels.co.uk>
+	<1394746248.27846.3.camel@x230>
+	<20140313232140.03bdaac3@alan.etchedpixels.co.uk>
+	<1394762250.6416.24.camel@x230.lan>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KyongHo,
+> Have you actually looked at these patches? I've looked at every case of
+> RAWIO in the kernel. For cases that are hardware specific and tied to
+> fairly old hardware, I've ignored them. For cases which provide an
 
-On 14.03.2014 06:06, Cho KyongHo wrote:
-> This patch adds dts entries for the System MMU devices found on
-> Exynos4 and Exynos5 SoC series and the System MMU binding
-> documentation.
->
-> CC: Rob Herring <robherring2@gmail.com>
-> CC: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> ---
->   .../bindings/iommu/samsung,exynos4210-sysmmu.txt   |   86 +++++++
->   arch/arm/boot/dts/exynos4.dtsi                     |  107 ++++++++
->   arch/arm/boot/dts/exynos4210.dtsi                  |   23 +-
->   arch/arm/boot/dts/exynos4x12.dtsi                  |   77 +++++-
->   arch/arm/boot/dts/exynos5250.dtsi                  |  266 +++++++++++++++++++-
->   arch/arm/boot/dts/exynos5420.dtsi                  |  205 ++++++++++++++-
->   6 files changed, 758 insertions(+), 6 deletions(-)
->   create mode 100644 Documentation/devicetree/bindings/iommu/samsung,exynos4210-sysmmu.txt
->
-> diff --git a/Documentation/devicetree/bindings/iommu/samsung,exynos4210-sysmmu.txt b/Documentation/devicetree/bindings/iommu/samsung,exynos4210-sysmmu.txt
-> new file mode 100644
-> index 0000000..e4417bb
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iommu/samsung,exynos4210-sysmmu.txt
-> @@ -0,0 +1,86 @@
-> +Samsung Exynos IOMMU H/W, System MMU (System Memory Management Unit)
-> +
-> +Samsung's Exynos architecture contains System MMUs that enables scattered
-> +physical memory chunks visible as a contiguous region to DMA-capable peripheral
-> +devices like MFC, FIMC, FIMD, GScaler, FIMC-IS and so forth.
-> +
-> +System MMU is an IOMMU and supports identical translation table format to
-> +ARMv7 translation tables with minimum set of page properties including access
-> +permissions, shareability and security protection. In addition, System MMU has
-> +another capabilities like L2 TLB or block-fetch buffers to minimize translation
-> +latency.
-> +
-> +System MMUs are in many to one relation with peripheral devices, i.e. single
-> +peripheral device might have multiple System MMUs (usually one for each bus
-> +master), but one System MMU can handle transactions from only one peripheral
-> +device. The relation between a System MMU and the peripheral device needs to be
-> +defined in device node of the peripheral device.
-> +
-> +MFC in all Exynos SoCs and FIMD, M2M Scalers and G2D in Exynos5420 has 2 System
-> +MMUs.
-> +* MFC has one System MMU on its left and right bus.
-> +* FIMD in Exynos5420 has one System MMU for window 0 and 4, the other system MMU
-> +  for window 1, 2 and 3.
-> +* M2M Scalers and G2D in Exynos5420 has one System MMU on the read channel and
-> +  the other System MMU on the write channel.
-> +The drivers must consider how to handle those System MMUs. One of the idea is
-> +to implement child devices or sub-devices which are the client devices of the
-> +System MMU.
-> +
-> +Required properties:
-> +- compatible: Should be one of:
-> +		"samsung,sysmmu-v1"
-> +		"samsung,sysmmu-v2"
-> +		"samsung,sysmmu-v3.1"
-> +		"samsung,sysmmu-v3.2"
-> +		"samsung,sysmmu-v3.3"
-> +
-> +- reg: A tuple of base address and size of System MMU registers.
-> +- interrupt-parent: The phandle of the interrupt controller of System MMU
-> +- interrupts: An interrupt specifier for interrupt signal of System MMU,
-> +	      according to the format defined by a particular interrupt
-> +	      controller.
-> +- clock-names: Should be "sysmmu" if the System MMU is needed to gate its clock.
-> +               Please refer to the following documents:
-> +	       Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +	       Documentation/devicetree/bindings/clock/exynos4-clock.txt
-> +	       Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-> +	       Documentation/devicetree/bindings/clock/exynos5420-clock.txt
-> +	       Optional "master" if the clock to the System MMU is gated by
-> +	       another gate clock other than "sysmmu". The System MMU driver
-> +	       sets "master" the parent of "sysmmu".
-> +	       Exynos4 SoCs, there needs no "master" clockj.
-> +	       Exynos5 SoCs, some System MMUs must have "master" clocks.
-> +- clocks: Required if the System MMU is needed to gate its clock.
-> +	  Please refer to the documents listed above.
-> +- samsung,power-domain: Required if the System MMU is needed to gate its power.
-> +	  Please refer to the following document:
-> +	  Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-> +- mmu-masters: A phandle to device nodes representing the master for which
-> +               the System MMU can provide a translation. Any additional values
-> +	       after the phandle will be ignored because a System MMU never
-> +	       have two or more masters. "#stream-id-cells" specified in the
-> +	       master's node will be also ignored.
-> +	       If more than one phandle is specified, only the first phandle
-> +	       will be treated.
-> +
-> +Examples:
-> +	gsc_0: gsc@13e00000 {
-> +		compatible = "samsung,exynos5-gsc";
-> +		reg = <0x13e00000 0x1000>;
-> +		interrupts = <0 85 0>;
-> +		samsung,power-domain = <&pd_gsc>;
-> +		clocks = <&clock 256>;
-> +		clock-names = "gscl";
-> +	};
-> +
-> +	sysmmu_gsc0: sysmmu@13E80000 {
-> +		compatible = "samsung,exynos4210-sysmmu";
-> +		reg = <0x13E80000 0x1000>;
-> +		interrupt-parent = <&combiner>;
-> +		interrupts = <2 0>;
-> +		clock-names = "sysmmu", "master";
-> +		clocks = <&clock 262>, <&clock 256>;
-> +		samsung,power-domain = <&pd_gsc>;
-> +		mmu-masters = <&gsc_0>;
-> +	};
+Yes I have - and it's not exactly localised: it modifies stuff all over
+the tree when it shouldn't need to. It's a security policy. If it leaks
+policy all over the kernel then the implementation model is *wrong*.
 
-Binding documentation should be added in separate patch in front of the 
-series relying on such binding or with the patch adding binding 
-implementation to the driver, so DT maintainers can review the binding 
-and related code easily.
+> >default behaviour for capable(x) in fact be
+> >
+> >        capable(x & ~secure_forbidden)
+> >
+> >for a measured kernel and add a 
+> >
+> >        capable_always()
+> >
+> >for the cases you want to not break.
+> 
+> We could do that, but now the behaviour of the patchset is far less
+> obvious. capable(CAP_SYS_RAWIO) now means something different to every
+> other use of capable(), and we still need get_trusted_kernel() calls for
+> cases where the checks have nothing to do with processes and so
+> capabilities can't be used. 
 
-Changes to dts(i) files should be posted in a separate patch, preferably 
-at the end of the series, when any prerequisites are already available.
+You don't need get_measured_kernel() calls because thats hidden within
+capable/capable_always. And if the interaction is a complicated as you
+imply that again says to me the model is wrong. Complicated multi-way
+security interactions lead to complicated exploits leveraging the
+disconnects.
 
-Best regards,
-Tomasz
+But see further down...
+
+> > As for mem= and exactmap, it has nothing to do with /dev/mem and
+> > everything to do with giving the kernel a memory map where some of the
+> > space it thinks is RAM is in fact devices, rom, space etc. If the kernel
+> > is given a false memory map it will misbehave. Exploitably - well given
+> > the kind of things people have achieved in the past - quite possibly.
+> 
+> Sure. That's a worthwhile thing to fix, and it's something that dropping
+> CAP_SYS_RAWIO would do nothing to help you with.
+
+I didn't mention it with regards to CAP_SYS_RAWIO, just as a general
+example of stuff not dealt with. Again that one really suggests that the
+right approach is to whitelist allowed boot options not blacklist bad
+ones. It's the usual story with security, people fight bitterly not to do
+whitelisting, then spend two years and more effort fixing holes than
+doing whitelisting then eventually have to whitelist anyway. 
+
+(or maybe I'm just bitter and cynical)
+ 
+> We can do this without unnecessarily breaking any userspace. We just
+> can't do it by fiddling with capabilities.
+
+It should still be a security model nto spreading measured_kernel()
+checks about. Now if that means
+
+	capable(CAP_SYS_RAWIO)
+
+should become security-> interface hooks that pass something meaningful
+to the security layer then I'd rather we did the job properly in the first
+place and put the policy in one spot not all over the kernel.
+
+The question then becomes what do we need to pass beyond "CAP_SYS_RAWIO"
+so the policy can be in the right place - even for example imposed by
+SELinux rules.
+	
+
+> > I don't think we need to break any userspace for "normal" mode to do
+> > this. Userspace in measured mode is going to change anyway. It already
+> > has just for things like module signing.
+> 
+> This has been discussed at length. Nobody who's actually spent time
+> working on the problem wants to use capabilities. CAP_SYS_RAWIO is not
+> semantically identical to the trusted kernel bit. Trying to make them
+> semantically identical will break existing userspace.
+
+I never said it was. I said that getting rid of CAP_SYS_RAWIO and then
+dealing with *just* the exceptions to this is a lot cleaner, and likely
+to be more secure.
+
+Right now the 'measured' patches spew all over the place. That shouldn't
+be needed.
+
+In addition several of the cases that you point out could be fixed by
+replacing the CAP_SYS_RAWIO using stuff with a proper interface should
+probably just be *fixed* to provide that.
+
+> > (As an aside you may also then want to think about whether you allow
+> > measured userspace elements that secure_forbidden is considered to be 0
+> > for so you can sign userspace apps that are allowed to do RAWIO)
+> 
+> I'd be amazed if any of the applications that need RAWIO have had any
+> kind of meaningful security audit
+
+How re-assuring ;)
+
+Alan
