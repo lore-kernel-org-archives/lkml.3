@@ -1,43 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643AbaCNQMa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 12:12:30 -0400
-Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:9700
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753644AbaCNQMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 12:12:22 -0400
-Date: Fri, 14 Mar 2014 21:38:00 +0530
-From: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>
-To: <jejb@kernel.org>, <JBottomley@Parallels.com>
-CC: <linux-scsi@vger.kernel.org>, <Sathya.Prakash@lsi.com>,
-        <Nagalakshmi.Nandigama@lsi.com>, <sreekanth.reddy@lsi.com>,
-        <linux-kernel@vger.kernel.org>, <sreekanthreddy0547@gmail.com>
-Subject: [PATCH][SCSI]mpt3sas: Description Patch
-Message-ID: <20140314160800.GA8328@lsi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(46406003)(4396001)(95416001)(77982001)(93516002)(50986001)(90146001)(76786001)(76176001)(56816005)(47736001)(77096001)(83072002)(85852003)(76796001)(94316002)(59766001)(23726002)(47776003)(74706001)(63696002)(92726001)(87936001)(92566001)(47976001)(20776003)(79102001)(81816001)(94946001)(50466002)(74876001)(49866001)(87266001)(93136001)(57986002)(80022001)(19580405001)(46102001)(56776001)(19580395003)(54316002)(76482001)(69226001)(83322001)(85306002)(80976001)(74502001)(54356001)(81342001)(6806004)(97186001)(97336001)(74662001)(16796002)(31966008)(33656001)(44976005)(53806001)(47446002)(86362001)(65816001)(97756001)(81686001)(51856001)(83506001)(74366001)(95666003)(36756003)(81542001)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR07MB067;H:COSEXCH10.lsi.com;FPR:AC3E4405.A3D254CC.89D3514B.10FA2AD1.20155;PTR:cosexch10.lsi.com;A:1;MX:1;LANG:en;
-X-Forefront-PRVS: 0150F3F97D
-X-OriginatorOrg: lsi.com
+	id S1755598AbaCNQM2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 12:12:28 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:44716 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754766AbaCNQMY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 12:12:24 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-2b-53232a5517fd
+Message-id: <53232A53.4040708@samsung.com>
+Date: Fri, 14 Mar 2014 17:12:03 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Cho KyongHo <pullip.cho@samsung.com>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>
+Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: Re: [PATCH v11 20/27] iommu/exynos: allow having multiple System MMUs
+ for a master H/W
+References: <20140314141050.c8bedcb66532d277c496796d@samsung.com>
+In-reply-to: <20140314141050.c8bedcb66532d277c496796d@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42I5/e/4Vd1QLeVgg9OzLCzu3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7Bb/eg8yWkxZdJjV4vCb
+	dlaLk396GS1m3lrD4sDv8eTgPCaP2Q0XWTz+He5n8rhzbQ+bx+Yl9R6Tbyxn9OjbsorR4/Mm
+	OY8rR88wBXBGcdmkpOZklqUW6dslcGVMX7WRuWAWV8XNvlUsDYyzOboYOTkkBEwkZh07xgph
+	i0lcuLeerYuRi0NIYCmjRPuDn4wQzmdGia7zk4GqODh4BbQkVl5PAGlgEVCVOL9vAROIzSag
+	JvG54REbiM0PVLKm6ToLiC0qECExd+JmsDivgKDEj8n3WEBmigisY5I4dmQnmMMs8JtJ4tm7
+	x8wgVcICiRIPP00Cmyok4Chx/ddssEmcAk4SD258ZQSxmQWsJVZO2gZly0tsXvOWeQKj4Cwk
+	S2YhKZuFpGwBI/MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJCo+7KDcfExq0OMAhyMSjy8
+	F5SUg4VYE8uKK3MPMUpwMCuJ8K5QBQrxpiRWVqUW5ccXleakFh9iZOLglGpgdHOW6EpvF7jZ
+	u7Kh4U5naNq/RzUFf1el/z7QnTzp7MlqyVnTTmwRfCkoUNdqb57657dYWfOO/VObs8Tz85ia
+	PL7cv3pGfNkhPZfFZ+ftllIPWhY77bKAq1RTeN/B7yEmZ/R/MM/41nS24cZ9hZVhJv+XVHUm
+	y1dv/dnyx2Lmw+UtzLf969i/KrEUZyQaajEXFScCALp8NIGYAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please consider this patch set for next kernel release.
+Hi KyongHo,
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
----
+On 14.03.2014 06:10, Cho KyongHo wrote:
+> Some master device descriptor like fimc-is which is an abstraction
+> of very complex H/W may have multiple System MMUs. For those devices,
+> the design of the link between System MMU and its master H/W is needed
+> to be reconsidered.
+>
+> A link structure, sysmmu_list_data is introduced that provides a link
+> to master H/W and that has a pointer to the device descriptor of a
+> System MMU. Given a device descriptor of a master H/W, it is possible
+> to traverse all System MMUs that must be controlled along with the
+> master H/W.
 
-[PATCH 1/9][SCSI]mpt3sas: Added new driver module Parameter disable_eedp to Disable EEDP Support.
-[PATCH 2/9][SCSI]mpt3sas: MPI2.5 Rev G (2.5.2) specifications.
-[PATCH 3/9][SCSI]mpt3sas: Clear PFA Status on SGPIO when PFA Drive is Removed or Replaced.
-[PATCH 4/9][SCSI]mpt3sas: Bump mpt3sas driver version to 03.100.00.00.
-[PATCH 5/9][SCSI]mpt3sas: MPI2.5 Rev H (2.5.3) specifications.
-[PATCH 6/9][SCSI]mpt3sas: Copyright in driver sources is updated for year the 2014.
-[PATCH 7/9][SCSI]mpt3sas: Added OEM branding Strings.
-[PATCH 8/9][SCSI]mpt3sas: Added Reply Descriptor Post Queue (RDPQ) Array support.
-[PATCH 9/9][SCSI]mpt3sas: Bump mpt3sas driver version to 04.100.00.00.
+NAK.
+
+A device driver should handle particular hardware instances separately, 
+without abstracting a virtual hardware instance consisting of multiple 
+physical ones.
+
+If such abstraction is needed, it should be done above the exynos-iommu 
+driver, e.g. by something like iommu-composite driver that would 
+aggregate several IOMMUs. Keep in mind that such IOMMUs in a group could 
+be different, e.g. different Exynos SysMMU versions or even completely 
+different IPs handled by different drivers.
+
+Still, I don't think there is a real need for such abstraction. Instead, 
+related drivers shall be fixed to properly handle multiple memory 
+masters and their IOMMUs.
+
+Best regards,
+Tomasz
