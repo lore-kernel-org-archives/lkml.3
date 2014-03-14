@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229AbaCNXtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 19:49:52 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:53135 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754791AbaCNXtb (ORCPT
+	id S1756549AbaCNXy1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 19:54:27 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:44059 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756475AbaCNXyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 19:49:31 -0400
+	Fri, 14 Mar 2014 19:54:25 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: Vivek Goyal <vgoyal@redhat.com>
 Cc: Andy Lutomirski <luto@amacapital.net>, Simo Sorce <ssorce@redhat.com>,
@@ -14,37 +14,37 @@ Cc: Andy Lutomirski <luto@amacapital.net>, Simo Sorce <ssorce@redhat.com>,
         cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
         "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
         jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
-References: <1394658983.32465.203.camel@willson.li.ssimo.org>
+References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
+	<1394657163-7472-3-git-send-email-vgoyal@redhat.com>
+	<5320CAEC.6030008@amacapital.net>
+	<CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
+	<1394658983.32465.203.camel@willson.li.ssimo.org>
 	<CALCETrU29CpcK4dVRD45BGOD7AVEudADiFxOgFgKWkpFzw07eg@mail.gmail.com>
 	<1394673476.32465.215.camel@willson.li.ssimo.org>
 	<CALCETrWbCuKfV4zMkZajDOGhGkKduW0C2L7uHv=vtvqhVeAc6w@mail.gmail.com>
 	<1394675038.32465.223.camel@willson.li.ssimo.org>
 	<CALCETrV7GE0YL1sDDqTUV81rWL9zk2vTR1-VLkR7CfTA-FSrgw@mail.gmail.com>
-	<1394733077.32465.243.camel@willson.li.ssimo.org>
-	<CALCETrXWzja6W6y=p9MrtynGZMsrD5KQu0KBK6Bs1dQxnesv2A@mail.gmail.com>
-	<20140313195349.GM18914@redhat.com>
-	<CALCETrUj4aPEd6ujXnUJNFq+BQkfQoF=XRChP1p5=ZysTN-zwg@mail.gmail.com>
-	<20140313200649.GN18914@redhat.com>
-Date: Fri, 14 Mar 2014 16:49:23 -0700
-In-Reply-To: <20140313200649.GN18914@redhat.com> (Vivek Goyal's message of
-	"Thu, 13 Mar 2014 16:06:49 -0400")
-Message-ID: <8761ng2vek.fsf@xmission.com>
+	<20140313142755.GC18914@redhat.com>
+Date: Fri, 14 Mar 2014 16:54:18 -0700
+In-Reply-To: <20140313142755.GC18914@redhat.com> (Vivek Goyal's message of
+	"Thu, 13 Mar 2014 10:27:55 -0400")
+Message-ID: <87k3bw1glx.fsf@xmission.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19l9Ae9rx9uWM+sn55BucOOjdU6c8vVZPQ=
+X-XM-AID: U2FsdGVkX1/dvoxfTxBXlVv1zTvVPlkWcU7QetHuokk=
 X-SA-Exim-Connect-IP: 98.207.154.105
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3984]
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4865]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Vivek Goyal <vgoyal@redhat.com>
 X-Spam-Relay-Country: 
 Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
 X-Spam-Flag: No
@@ -56,47 +56,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Vivek Goyal <vgoyal@redhat.com> writes:
 
-> On Thu, Mar 13, 2014 at 12:58:14PM -0700, Andy Lutomirski wrote:
->> On Thu, Mar 13, 2014 at 12:53 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > On Thu, Mar 13, 2014 at 10:55:16AM -0700, Andy Lutomirski wrote:
->> >
->> > [..]
->> >> >> 2. Docker is a container system, so use the "container" (aka
->> >> >> namespace) APIs.  There are probably several clever things that could
->> >> >> be done with /proc/<pid>/ns.
->> >> >
->> >> > pid is racy, if it weren't I would simply go straight
->> >> > to /proc/<pid>/cgroups ...
->> >>
->> >> How about:
->> >>
->> >> open("/proc/self/ns/ipc", O_RDONLY);
->> >> send the result over SCM_RIGHTS?
->> >
->> > As I don't know I will ask. So what will server now do with this file
->> > descriptor of client's ipc namespace.
->> >
->> > IOW, what information/identifier does it contain which can be
->> > used to map to pre-configrued per container/per namespace policies.
->> 
->> Inode number, which will match that assigned to the container at runtime.
->> 
+> On Wed, Mar 12, 2014 at 07:12:25PM -0700, Andy Lutomirski wrote:
 >
-> But what would I do with this inode number. I am assuming this is
-> generated dynamically when respective namespace was created. To me
-> this is like assigning a pid dynamically and one does not create
-> policies in user space based on pid. Similarly I will not be able
-> to create policies based on an inode number which is generated
-> dynamically.
+>> I can think of at least three other ways to do this.
+>> 
+>> 1. Fix Docker to use user namespaces and use the uid of the requesting
+>> process via SCM_CREDENTIALS.
 >
-> For it to be useful, it should map to something more static which
-> user space understands.
+> Using user namespaces sounds like the right way to do it (atleast
+> conceptually). But I think hurdle here is that people are not convinced
+> yet that user namespaces are secure and work well. IOW, some people
+> don't seem to think that user namespaces are ready yet.
 
-But the mapping can be done in userspace.  stat all of the namespaces
-you care about, get their inode numbers, and then do a lookup.
+If the problem is user namespace immaturity patches or bug reports need
+to be sent for user namespaces.
 
-Hard coding string based names in the kernel the way cgroups does is
-really pretty terrible and it seriously limits the flexibility of the
-api, and so far breaks nested containers.
+Containers with user namespaces (however immature they are) are much
+more secure than running container with processes with uid == 0 inside
+of them.  User namespaces do considerably reduce the attack surface of
+what uid == 0 can do.
+
+> I guess that's the reason people are looking for other ways to
+> achieve their goal.
+
+It seems strange to work around a feature that is 99% of the way to
+solving their problem with more kernel patches.
 
 Eric
