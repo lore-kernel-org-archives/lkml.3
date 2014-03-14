@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaCNMhS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 08:37:18 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:44634 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaCNMhQ (ORCPT
+	id S1754218AbaCNMil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 08:38:41 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:44755 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753536AbaCNMij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 08:37:16 -0400
+	Fri, 14 Mar 2014 08:38:39 -0400
+Message-ID: <5322F82A.9000507@ahsoftware.de>
+Date: Fri, 14 Mar 2014 13:38:02 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140314084514.23100.72654.stgit@x230>
-References: <20140314084501.23100.13103.stgit@x230> <20140314084514.23100.72654.stgit@x230>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 14 Mar 2014 05:36:53 -0700
-X-Google-Sender-Auth: ZSLmntN7Ano0dxbSa1JSBPBoyyo
-Message-ID: <CAB=NE6WW8yX4kdy02j2fT4g0JvYj4a_XkiqYtXKZSMB7FHuwNg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ath10k: add firmware files
-To: Kalle Valo <kvalo@qca.qualcomm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>, David Woodhouse <dwmw2@infradead.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        ath10k@lists.infradead.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
+References: <5316FFCE.1060603@ti.com>	<1394018461-757-1-git-send-email-holler@ahsoftware.de>	<CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>	<5322D529.4070904@ahsoftware.de> <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>
+In-Reply-To: <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 1:45 AM, Kalle Valo <kvalo@qca.qualcomm.com> wrote:
-> +* No Reverse engineering, decompiling, decrypting, or disassembling of
-> +  this software is permitted.
+Am 14.03.2014 12:02, schrieb Linus Walleij:
+> On Fri, Mar 14, 2014 at 11:08 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+>> Am 11.03.2014 11:15, schrieb Linus Walleij:
+>>> On Wed, Mar 5, 2014 at 12:21 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+>>>
+>>>> The driver missed an of_xlate function to translate gpio numbers
+>>>> as found in the DT to the correct chip and number.
+>>>>
+>>>> While there I've set #gpio_cells to a fixed value of 2.
+>>>>
+>>>> I've used gpio-pxa.c as template for those changes and tested my changes
+>>>> successfully on a da850 board using entries for gpio-leds in a DT. So I didn't
+>>>> reinvent the wheel but just copied and tested stuff.
+>>>>
+>>>> Thanks to Grygorii Strashko for the hint to the existing code in gpio-pxa.
+>>>>
+>>>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>>
+>>> This v2 version applied, thanks!
+>>
+>> Thanks, but actually that should have been a fix for 3.14 with which the
+>> OF functionality for davinci gpio gets introduced. I assum with the
+>> patch in for-next, 3.14 will appear with that functionality broken and
+>> it will become a candidate for -stable.
+>
+> I just get the impression that DT support for DaVinci in v3.14 is so risky
+> and unstable that noone except those implementing it (i.e. you) is really
+> using it, is that correct?
 
-We have other firmware licenses that have this language already on
-linux-firmware but let us also keep in mind that linux-firmware will
-likely not only be used by Linux folks.
+Yes. DT support for DaVinci is still incomplete and I don't think there 
+are much people out there which already try to use it. Nevertheless is 
+using DT a much easier way (and more future-proof) than patching 
+board-files, if a board isn't one of those few supported dev-boards and 
+needs different configurations.
 
-<-- cut -->
+> In that case it is hardly a fix that we need to rush out to the entire world.
 
-> + NO LICENSES OR OTHER RIGHTS,
-> +WHETHER EXPRESS, IMPLIED, BASED ON ESTOPPEL OR OTHERWISE, ARE GRANTED
-> +TO ANY PARTY'S PATENTS, PATENT APPLICATIONS, OR PATENTABLE INVENTIONS
-> +BY VIRTUE OF THIS LICENSE OR THE DELIVERY OR PROVISION BY QUALCOMM
-> +ATHEROS, INC. OF THE SOFTWARE.
+Hmm, I think it's better to send something working and tested to world, 
+than something untested and non-working.
 
-This -- however is new to linux-firmware -- and I hereby raise a big
-red fucking flag. All other licenses on linux-firmware provide at the
-very least a limited patent grant. What makes Qualcomm special ?
+And especially things like pinctrl and gpio are fundamental to even try 
+to use DT. E.g. in my case I didn't even try to use DT for DaVinci 
+because it doesn't make sense without support for DT in gpio. And now 
+people will get promised but broken support for gpio in 3.14, which 
+might cost a lot of time, if someone tries to use it.
 
-> +FOR ANY DIRECT DAMAGES ARISING UNDER OR RESULTING FROM
-> +THIS AGREEMENT OR IN CONNECTION WITH ANY USE OF THE SOFTWARE SHALL NOT
-> +EXCEED A TOTAL AMOUNT OF US$5.00.
+And I thought the reason for -rc is actually to fix bugs. But I never 
+understood the magical ways and timings patches make their way into 
+mainline. ;)
 
-WTF - was this inspired by a Sci-Fi movie?
+Regards,
 
-  Luis
+Alexander Holler
