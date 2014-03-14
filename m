@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622AbaCOACq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 20:02:46 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:48781 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753713AbaCOACo (ORCPT
+	id S1756533AbaCOAGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 20:06:09 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:1027 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754883AbaCOAGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 20:02:44 -0400
-X-Sasl-enc: DxpbLVHVDbBwGlMrkcgPvj7Fnx+qSeMjz4f5qMmSkNsg 1394841763
-Date: Sat, 15 Mar 2014 00:03:43 +0000
-From: Greg KH <greg@kroah.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Tejun Heo <tj@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20140315000343.GD5687@kroah.com>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
- <20140312015021.GC10106@kroah.com>
- <1394596541.4840.70.camel@pasglop>
- <20140312113742.GM28112@sirena.org.uk>
- <1394654396.4840.94.camel@pasglop>
- <20140312200232.GA22332@htj.dyndns.org>
- <1394655292.4840.97.camel@pasglop>
- <20140312202102.GB22332@htj.dyndns.org>
- <1394671056.4840.103.camel@pasglop>
- <1394748895.15098.16.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394748895.15098.16.camel@pasglop>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Fri, 14 Mar 2014 20:06:07 -0400
+Message-ID: <1394841524.6784.213.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH] Support map_pages() for DAX
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: willy@linux.intel.com, kirill.shutemov@linux.intel.com,
+        david@fromorbit.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Fri, 14 Mar 2014 17:58:44 -0600
+In-Reply-To: <20140314233233.GA8310@node.dhcp.inet.fi>
+References: <1394838199-29102-1-git-send-email-toshi.kani@hp.com>
+	 <20140314233233.GA8310@node.dhcp.inet.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 09:14:55AM +1100, Benjamin Herrenschmidt wrote:
-> On Thu, 2014-03-13 at 11:37 +1100, Benjamin Herrenschmidt wrote:
-> > On Wed, 2014-03-12 at 16:21 -0400, Tejun Heo wrote:
-> > > It's a series of rather complex patches.  I really don't think
-> > > duplicating them is a good idea.  We can either resurrect the old API
-> > > to kill it again or set up a merge branch which I don't think is too
-> > > unusual in situations like this.
-> > 
-> > Right, a topic branch that gets merged in both driver-core-next and
-> > powerpc-next.
+On Sat, 2014-03-15 at 01:32 +0200, Kirill A. Shutemov wrote:
+> On Fri, Mar 14, 2014 at 05:03:19PM -0600, Toshi Kani wrote:
+> > +void dax_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf,
+> > +		get_block_t get_block)
+> > +{
+> > +	struct file *file = vma->vm_file;
+> > +	struct inode *inode = file_inode(file);
+> > +	struct buffer_head bh;
+> > +	struct address_space *mapping = file->f_mapping;
+> > +	unsigned long vaddr = (unsigned long)vmf->virtual_address;
+> > +	pgoff_t pgoff = vmf->pgoff;
+> > +	sector_t block;
+> > +	pgoff_t size;
+> > +	unsigned long pfn;
+> > +	pte_t *pte = vmf->pte;
+> > +	int error;
+> > +
+> > +	while (pgoff < vmf->max_pgoff) {
+> > +		size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> > +		if (pgoff >= size)
+> > +			return;
+> > +
+> > +		memset(&bh, 0, sizeof(bh));
+> > +		block = (sector_t)pgoff << (PAGE_SHIFT - inode->i_blkbits);
+> > +		bh.b_size = PAGE_SIZE;
+> > +		error = get_block(inode, block, &bh, 0);
+> > +		if (error || bh.b_size < PAGE_SIZE)
+> > +			goto next;
+> > +
+> > +		if (!buffer_mapped(&bh) || buffer_unwritten(&bh) ||
+> > +		    buffer_new(&bh))
+> > +			goto next;
+> > +
+> > +		/* Recheck i_size under i_mmap_mutex */
+> > +		mutex_lock(&mapping->i_mmap_mutex);
 > 
-> Just want to make sure we agree ... ie, the offending commit is already
-> in powerpc-next on my side and I can't really back it out (I could
-> revert it though).
+> NAK. Have you tested this with lockdep enabled?
+>
+> ->map_pages() called with page table lock taken and ->i_mmap_mutex
+> should be taken before it. It seems we need to take ->i_mmap_mutex in
+> do_read_fault() before calling ->map_pages().
 
-You can pull in driver-core-next into your tree if you want, it's not
-going to be reverted, and will be sent to Linus for 3.15-rc1, so you can
-base your work on it and fix up the api usage in your tree that way.
+Thanks for pointing this out! I will make sure to test with lockdep next
+time.
 
-thanks,
+> Side note: I'm sceptical about whole idea to use i_mmap_mutux to protect
+> against truncate. It will not scale good enough comparing lock_page()
+> with its granularity.
 
-greg k-h
+I see.  I will think about it as well.  
+
+Thanks,
+-Toshi
+
+
+
