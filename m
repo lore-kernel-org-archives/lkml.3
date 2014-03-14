@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868AbaCNPg7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:36:59 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50990 "EHLO
+	id S1755895AbaCNPhc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:37:32 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50982 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755492AbaCNPfO (ORCPT
+	by vger.kernel.org with ESMTP id S1755485AbaCNPfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:35:14 -0400
+	Fri, 14 Mar 2014 11:35:13 -0400
 From: Liviu Dudau <Liviu.Dudau@arm.com>
 To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
@@ -19,9 +19,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>,
         Tanmay Inamdar <tinamdar@apm.com>,
         Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v7 3/6] pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
-Date: Fri, 14 Mar 2014 15:34:29 +0000
-Message-Id: <1394811272-1547-4-git-send-email-Liviu.Dudau@arm.com>
+Subject: [PATCH v7 2/6] pci: OF: Fix the conversion of IO ranges into IO resources.
+Date: Fri, 14 Mar 2014 15:34:28 +0000
+Message-Id: <1394811272-1547-3-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
 References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
@@ -29,103 +29,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
-As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
-the creation order has been changed for no good reason. Revert the order of
-creation as we are going to depend on the pci_host_bridge structure to retrieve the
-domain number of the root bus.
+The ranges property for a host bridge controller in DT describes
+the mapping between the PCI bus address and the CPU physical address.
+The resources framework however expects that the IO resources start
+at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
+The conversion from pci ranges to resources failed to take that into account.
+
+In the process move the function into drivers/of/address.c as it now
+depends on pci_address_to_pio() code and make it return an error message.
 
 Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-Acked-by: Grant Likely <grant.likely@linaro.org>
 Tested-by: Tanmay Inamdar <tinamdar@apm.com>
 ---
- drivers/pci/probe.c | 36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ drivers/of/address.c       | 40 ++++++++++++++++++++++++++++++++++++
+ include/linux/of_address.h | 13 ++----------
+ 2 files changed, 42 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 6e34498..fd11c12 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -505,7 +505,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
- 	kfree(bridge);
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index be958ed..4eabd30 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -728,3 +728,43 @@ void __iomem *of_iomap(struct device_node *np, int index)
+ 	return ioremap(res.start, resource_size(&res));
  }
- 
--static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
-+static struct pci_host_bridge *pci_alloc_host_bridge(void)
- {
- 	struct pci_host_bridge *bridge;
- 
-@@ -514,7 +514,6 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
- 		return NULL;
- 
- 	INIT_LIST_HEAD(&bridge->windows);
--	bridge->bus = b;
- 	return bridge;
- }
- 
-@@ -1727,9 +1726,19 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	char bus_addr[64];
- 	char *fmt;
- 
-+	bridge = pci_alloc_host_bridge();
-+	if (!bridge)
-+		return NULL;
+ EXPORT_SYMBOL(of_iomap);
 +
-+	bridge->dev.parent = parent;
-+	bridge->dev.release = pci_release_host_bridge_dev;
-+	error = pcibios_root_bridge_prepare(bridge);
-+	if (error)
-+		goto err_out;
-+
- 	b = pci_alloc_bus();
- 	if (!b)
--		return NULL;
-+		goto err_out;
++/**
++ * of_pci_range_to_resource - Create a resource from an of_pci_range
++ * @range:	the PCI range that describes the resource
++ * @np:		device node where the range belongs to
++ * @res:	pointer to a valid resource that will be updated to
++ *              reflect the values contained in the range.
++ *
++ * Returns EINVAL if the range cannot be converted to resource.
++ *
++ * Note that if the range is an IO range, the resource will be converted
++ * using pci_address_to_pio() which can fail if it is called too early or
++ * if the range cannot be matched to any host bridge IO space (our case here).
++ * To guard against that we try to register the IO range first.
++ * If that fails we know that pci_address_to_pio() will do too.
++ */
++int of_pci_range_to_resource(struct of_pci_range *range,
++	struct device_node *np, struct resource *res)
++{
++	res->flags = range->flags;
++	if (res->flags & IORESOURCE_IO) {
++		unsigned long port = -1;
++		int err = pci_register_io_range(range->cpu_addr, range->size);
++		if (err)
++			return err;
++		port = pci_address_to_pio(range->cpu_addr);
++		if (port == (unsigned long)-1) {
++			res->start = (resource_size_t)OF_BAD_ADDR;
++			res->end = (resource_size_t)OF_BAD_ADDR;
++			return -EINVAL;
++		}
++		res->start = port;
++	} else {
++		res->start = range->cpu_addr;
++	}
++	res->end = res->start + range->size - 1;
++	res->parent = res->child = res->sibling = NULL;
++	res->name = np->full_name;
++	return 0;
++}
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 40c418d..a4b400d 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -23,17 +23,8 @@ struct of_pci_range {
+ #define for_each_of_pci_range(parser, range) \
+ 	for (; of_pci_range_parser_one(parser, range);)
  
- 	b->sysdata = sysdata;
- 	b->ops = ops;
-@@ -1738,26 +1747,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	if (b2) {
- 		/* If we already got to this bus through a different bridge, ignore it */
- 		dev_dbg(&b2->dev, "bus already known\n");
--		goto err_out;
-+		goto err_bus_out;
- 	}
- 
--	bridge = pci_alloc_host_bridge(b);
--	if (!bridge)
--		goto err_out;
+-static inline void of_pci_range_to_resource(struct of_pci_range *range,
+-					    struct device_node *np,
+-					    struct resource *res)
+-{
+-	res->flags = range->flags;
+-	res->start = range->cpu_addr;
+-	res->end = range->cpu_addr + range->size - 1;
+-	res->parent = res->child = res->sibling = NULL;
+-	res->name = np->full_name;
+-}
 -
--	bridge->dev.parent = parent;
--	bridge->dev.release = pci_release_host_bridge_dev;
-+	bridge->bus = b;
- 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
--	error = pcibios_root_bridge_prepare(bridge);
--	if (error) {
--		kfree(bridge);
--		goto err_out;
--	}
--
- 	error = device_register(&bridge->dev);
- 	if (error) {
- 		put_device(&bridge->dev);
--		goto err_out;
-+		goto err_bus_out;
- 	}
- 	b->bridge = get_device(&bridge->dev);
- 	device_enable_async_suspend(b->bridge);
-@@ -1814,8 +1812,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- class_dev_reg_err:
- 	put_device(&bridge->dev);
- 	device_unregister(&bridge->dev);
--err_out:
-+err_bus_out:
- 	kfree(b);
-+err_out:
-+	kfree(bridge);
- 	return NULL;
- }
- 
++extern int of_pci_range_to_resource(struct of_pci_range *range,
++		struct device_node *np, struct resource *res);
+ /* Translate a DMA address from device space to CPU space */
+ extern u64 of_translate_dma_address(struct device_node *dev,
+ 				    const __be32 *in_addr);
 -- 
 1.9.0
 
