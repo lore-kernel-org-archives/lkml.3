@@ -1,111 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039AbaCNJtM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 05:49:12 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46615 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755869AbaCNJtJ (ORCPT
+	id S1756048AbaCNJux (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 05:50:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36875 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755656AbaCNJuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 05:49:09 -0400
-Message-ID: <5322D089.7010605@free-electrons.com>
-Date: Fri, 14 Mar 2014 10:48:57 +0100
-From: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 14 Mar 2014 05:50:51 -0400
+Date: Fri, 14 Mar 2014 10:50:33 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] [RFC] perf: Fix a race between ring_buffer_detach() and
+ ring_buffer_wakeup()
+Message-ID: <20140314095033.GP27965@twins.programming.kicks-ass.net>
+References: <1394199526-6400-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140313195816.GJ21124@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] ARM: dts: berlin2q: add the Marvell Armada 1500
- pro
-References: <1394719607-25018-1-git-send-email-antoine.tenart@free-electrons.com> <1394719607-25018-2-git-send-email-antoine.tenart@free-electrons.com> <5322CC8B.6010905@gmail.com>
-In-Reply-To: <5322CC8B.6010905@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140313195816.GJ21124@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+On Thu, Mar 13, 2014 at 12:58:16PM -0700, Paul E. McKenney wrote:
+> On Fri, Mar 07, 2014 at 03:38:46PM +0200, Alexander Shishkin wrote:
+> > This is more of a problem description than an actual bugfix, but currently
+> > ring_buffer_detach() can kick in while ring_buffer_wakeup() is traversing
+> > the ring buffer's event list, leading to cpu stalls.
+> > 
+> > What this patch does is crude, but fixes the problem, which is: one rcu
+> > grace period has to elapse between ring_buffer_detach() and subsequent
+> > ring_buffer_attach(), otherwise either the attach will fail or the wakeup
+> > will misbehave. Also, making it a call_rcu() callback will make it race
+> > with attach().
+> > 
+> > Another solution that I see is to check for list_empty(&event->rb_entry)
+> > before wake_up_all() in ring_buffer_wakeup() and restart the list
+> > traversal if it is indeed empty, but that is ugly too as there will be
+> > extra wakeups on some events.
+> > 
+> > Anything that I'm missing here? Any better ideas?
+> 
+> Not sure it qualifies as "better", but git call to ring_buffer_detach()
+> is going to free the event anyway, so the synchronize_rcu() and the
+> INIT_LIST_HEAD() should not be needed in that case.  I am guessing that
+> the same is true for perf_mmap_close().
+> 
+> So that leaves the call in perf_event_set_output(), which detaches from an
+> old rb before attaching that same event to a new one.  So maybe have the
+> synchronize_rcu() and INIT_LIST_HEAD() instead be in the "if (old_rb)",
+> which might be a reasonably uncommon case?
 
-On 14/03/2014 10:31, Sebastian Hesselbarth wrote:
-> On 03/13/2014 03:06 PM, Antoine Ténart wrote:
->> +    clocks {
->> +        #address-cells = <0>;
->> +        #size-cells = <0>;
->> +
->> +        smclk: sysmgr-clock {
->> +            compatible = "fixed-clock";
->> +            #clock-cells = <0>;
->> +            clock-frequency = <25000000>;
->> +        };
->> +
->> +        sysclk: system-clock {
->> +            compatible = "fixed-clock";
->> +            #clock-cells = <0>;
->> +            clock-frequency = <400000000>;
->> +        };
->> +    };
->> +
->> +    soc {
-> [...]
->> +        local-timer@ad0600 {
->> +            compatible = "arm,cortex-a9-twd-timer";
->> +            reg = <0xad0600 0x20>;
->> +            clocks = <&sysclk>;
->
-> If I understand Jisheng correctly, this should be cpuclk/3. When
-> removing the clocks {} container above, please also take care of
-> it.
->
-> You can do
->
-> cpuclk: cpu-clock {
->      compatible = "fixed-clock";
->      #clock-cells = <0>;
->      clock-frequency = <1200000000>; /* <- put correct freq here */
-> };
->
-> sysclk: system-clock {
->      compatible = "fixed-factor-clock";
->      #clock-cells = <0>;
->      clocks = <&cpuclk>;
->      clock-multi = <1>;
->      clock-div = <3>;
-> };
->
-> Hopefully, we'll have proper clock drivers soon so we can just replace
-> referenced "fixed-*" clocks.
-
-Sure, this is why I only kept one fixed clock in this patch.
-
-I'll add the cpuclk here then.
-
->> +            timer0: timer@2c00 {
->> +                compatible = "snps,dw-apb-timer";
->> +                reg = <0x2c00 0x14>;
->> +                interrupts = <8>;
->> +                clock-freq = <100000000>;
->> +                status = "okay";
->> +            };
->> +
->> +            timer1: timer@2c14 {
->> +                compatible = "snps,dw-apb-timer";
->> +                reg = <0x2c14 0x14>;
->> +                clock-freq = <100000000>;
->> +                status = "disabled";
->> +            };
->
-> Please also add the remaining 6 apb timers.
-
-I don't have any information about the remaining 6 apb timers. I'll ask 
-Jisheng.
+How about something like so that only does the sync_rcu() if really
+needed.
 
 
-Antoine
+---
+ kernel/events/core.c     | 11 +++++++++--
+ kernel/events/internal.h |  1 +
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 661951ab8ae7..88c8c810e081 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3856,12 +3856,17 @@ static void ring_buffer_attach(struct perf_event *event,
+ {
+ 	unsigned long flags;
+ 
++	if (rb->rcu_batches == rcu_batches_completed()) {
++		synchronize_rcu();
++		INIT_LIST_HEAD(&event->rb_entry);
++	}
++
+ 	if (!list_empty(&event->rb_entry))
+ 		return;
+ 
+ 	spin_lock_irqsave(&rb->event_lock, flags);
+ 	if (list_empty(&event->rb_entry))
+-		list_add(&event->rb_entry, &rb->event_list);
++		list_add_rcu(&event->rb_entry, &rb->event_list);
+ 	spin_unlock_irqrestore(&rb->event_lock, flags);
+ }
+ 
+@@ -3873,9 +3878,11 @@ static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
+ 		return;
+ 
+ 	spin_lock_irqsave(&rb->event_lock, flags);
+-	list_del_init(&event->rb_entry);
++	list_del_rcu(&event->rb_entry);
+ 	wake_up_all(&event->waitq);
+ 	spin_unlock_irqrestore(&rb->event_lock, flags);
++
++	rb->rcu_batches = rcu_batches_completed();
+ }
+ 
+ static void ring_buffer_wakeup(struct perf_event *event)
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 569b218782ad..698b5881b2a4 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -30,6 +30,7 @@ struct ring_buffer {
+ 	/* poll crap */
+ 	spinlock_t			event_lock;
+ 	struct list_head		event_list;
++	unsigned long			rcu_batches;
+ 
+ 	atomic_t			mmap_count;
+ 	unsigned long			mmap_locked;
