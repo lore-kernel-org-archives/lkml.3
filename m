@@ -1,107 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004AbaCNJxL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 05:53:11 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:64392 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755925AbaCNJxI (ORCPT
+	id S1753376AbaCNJ5l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 05:57:41 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:36861 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277AbaCNJ5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 05:53:08 -0400
-Message-ID: <5322D1A0.9040601@gmail.com>
-Date: Fri, 14 Mar 2014 10:53:36 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>
-CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] ARM: dts: berlin2q: add the Marvell Armada 1500
- pro
-References: <1394719607-25018-1-git-send-email-antoine.tenart@free-electrons.com> <1394719607-25018-2-git-send-email-antoine.tenart@free-electrons.com> <5322CC8B.6010905@gmail.com> <5322D089.7010605@free-electrons.com>
-In-Reply-To: <5322D089.7010605@free-electrons.com>
+	Fri, 14 Mar 2014 05:57:39 -0400
+Message-ID: <5322D28C.9080009@redhat.com>
+Date: Fri, 14 Mar 2014 10:57:32 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: SVM: fix cr8 intercept window
+References: <1394561478-8815-1-git-send-email-rkrcmar@redhat.com> <20140312010513.GA8131@amt.cnet> <20140312104047.GA7488@potion.brq.redhat.com> <53209741.3060204@redhat.com> <20140313135206.GB30596@minantech.com> <20140313170846.GA23297@potion.brq.redhat.com>
+In-Reply-To: <20140313170846.GA23297@potion.brq.redhat.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2014 10:48 AM, Antoine Ténart wrote:
-> On 14/03/2014 10:31, Sebastian Hesselbarth wrote:
->> On 03/13/2014 03:06 PM, Antoine Ténart wrote:
->>> +    clocks {
->>> +        #address-cells = <0>;
->>> +        #size-cells = <0>;
->>> +
->>> +        smclk: sysmgr-clock {
->>> +            compatible = "fixed-clock";
->>> +            #clock-cells = <0>;
->>> +            clock-frequency = <25000000>;
->>> +        };
->>> +
->>> +        sysclk: system-clock {
->>> +            compatible = "fixed-clock";
->>> +            #clock-cells = <0>;
->>> +            clock-frequency = <400000000>;
->>> +        };
->>> +    };
->>> +
->>> +    soc {
->> [...]
->>> +        local-timer@ad0600 {
->>> +            compatible = "arm,cortex-a9-twd-timer";
->>> +            reg = <0xad0600 0x20>;
->>> +            clocks = <&sysclk>;
->>
->> If I understand Jisheng correctly, this should be cpuclk/3. When
->> removing the clocks {} container above, please also take care of
->> it.
->>
->> You can do
->>
->> cpuclk: cpu-clock {
->>      compatible = "fixed-clock";
->>      #clock-cells = <0>;
->>      clock-frequency = <1200000000>; /* <- put correct freq here */
->> };
->>
->> sysclk: system-clock {
->>      compatible = "fixed-factor-clock";
->>      #clock-cells = <0>;
->>      clocks = <&cpuclk>;
->>      clock-multi = <1>;
->>      clock-div = <3>;
->> };
->>
->> Hopefully, we'll have proper clock drivers soon so we can just replace
->> referenced "fixed-*" clocks.
->
-> Sure, this is why I only kept one fixed clock in this patch.
->
-> I'll add the cpuclk here then.
->
->>> +            timer0: timer@2c00 {
->>> +                compatible = "snps,dw-apb-timer";
->>> +                reg = <0x2c00 0x14>;
->>> +                interrupts = <8>;
->>> +                clock-freq = <100000000>;
->>> +                status = "okay";
->>> +            };
->>> +
->>> +            timer1: timer@2c14 {
->>> +                compatible = "snps,dw-apb-timer";
->>> +                reg = <0x2c14 0x14>;
->>> +                clock-freq = <100000000>;
->>> +                status = "disabled";
->>> +            };
->>
->> Please also add the remaining 6 apb timers.
->
-> I don't have any information about the remaining 6 apb timers. I'll ask
-> Jisheng.
+Il 13/03/2014 18:08, Radim Krčmář ha scritto:
+> > I agree that old code is wrong and the patch looks correct, but I only
+> > see how the bug may cause pending IRR to not be delivered in time,
+> > not how interrupt can disrupt a higher priority task.
 
-He replied to v1 of this patch with
+Right.  Also, on SMP guests the effect would likely be just a deadlock
+if a lower-priority ISR interrupted a higher priority task and accessed 
+shared data (since you need anyway a spinlock in addition to raising the 
+IRQL).
 
-"We still have 8 apb timers"
+A more likely explanation is that if the remote processor delays an IPI 
+too much, it will have a stable TLB entry.  The resulting random 
+corruption of paged memory is compatible with the BAD_POOL_HEADER error 
+codes that Radim observed.
 
-Sebastian
+> Paolo, can you change the last sentence to ", which means we don't
+> inject pending IRR immediately."?  (or do we just forget it?)
+
+It's already in Linus's tree.
+
+Paolo
