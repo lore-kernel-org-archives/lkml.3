@@ -1,96 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240AbaCNTub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 15:50:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38079 "EHLO mx2.suse.de"
+	id S1755560AbaCNTur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 15:50:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57520 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753444AbaCNTua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 15:50:30 -0400
-Date: Fri, 14 Mar 2014 20:50:27 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Or Gerlitz <ogerlitz@mellanox.com>
-cc: Roland Dreier <roland@kernel.org>, Sagi Grimberg <sagig@mellanox.com>,
-        Amir Vadai <amirv@mellanox.com>, Eli Cohen <eli@dev.mellanox.co.il>,
-        Eugenia Emantayev <eugenia@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Saeed Mahameed <saeedm@mellanox.com>,
-        Shlomo Pongratz <shlomop@mellanox.com>
-Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
- creating the QP
-In-Reply-To: <531F1550.3080401@mellanox.com>
-Message-ID: <alpine.LNX.2.00.1403142045240.3690@pobox.suse.cz>
-References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com> <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz> <CAG4TOxMw4siOqtjXrgUDaw8yWqYgSG4d8PqGuJ62AZBrC2O2AA@mail.gmail.com>
- <531F1550.3080401@mellanox.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754963AbaCNTub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 15:50:31 -0400
+Date: Fri, 14 Mar 2014 14:48:25 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, <balbi@ti.com>, <tony@atomide.com>,
+        <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 7/8] ARM: dts: dra7: Add USB related nodes
+Message-ID: <20140314194825.GA21808@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1394197751-28984-1-git-send-email-rogerq@ti.com>
+ <1394197751-28984-8-git-send-email-rogerq@ti.com>
+ <5322DC0E.1020600@ti.com>
+ <5322F20C.50600@ti.com>
+ <53231829.3060602@ti.com>
+ <53232185.6090305@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
+Content-Disposition: inline
+In-Reply-To: <53232185.6090305@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Mar 2014, Or Gerlitz wrote:
+--8t9RHnE3ZwKMSgU+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > It does seem that only using GFP_NOIO when we really need to would be
-> > a very difficult problem--how can we carry information about whether a
-> > particular packet is involved in freeing memory through all the layers
-> > of, say, NFS, TCP, IPSEC, bonding, &c?
-> 
-> Agree with all the above... next,
-> 
-> If we don't have away to nicely overcome the layer violations here, 
-> let's change IPoIB so they always ask the IB driver to allocate QPs used 
-> for Connected Mode in a GFP_NOIO manner, to be practical I suggest the 
-> following:
-> 
-> 1. Add new QP creation flag IB_QP_CREATE_USE_GFP to the existing 
-> creation flags of struct ib_qp_init_attr and a new "gfp_t gfp" field to 
-> that structure too
-> 
-> 2. in the IPoIB CM code, do the vzalloc allocation for new connection in 
-> GFP_NOIO manner and issue the call to create QP with setting the 
-> IB_QP_CREATE_USE_GFP flag and GFO_NOIO to the gfp field
-> 
-> 3. If the QP creation fails, with -EINVAL, issue a warning and retry the 
-> QP creation attempt without the GFP setting
-> 
-> 4. implement in the mlx4 driver the support for GFP directives on QP 
-> creation
+On Fri, Mar 14, 2014 at 05:34:29PM +0200, Roger Quadros wrote:
+> On 03/14/2014 04:54 PM, Kishon Vijay Abraham I wrote:
+> >=20
+> >=20
+> > On Friday 14 March 2014 05:41 PM, Roger Quadros wrote:
+> >> On 03/14/2014 12:38 PM, Kishon Vijay Abraham I wrote:
+> >>> Hi Roger,
+> >>>
+> >>> On Friday 07 March 2014 06:39 PM, Roger Quadros wrote:
+> >>>> Add nodes for the Super Speed USB controllers, omap-control-usb,
+> >>>> USB2 PHY and USB3 PHY devices.
+> >>>>
+> >>>> Remove ocp2scp1 address space from hwmod data as it is
+> >>>> now provided via device tree.
+> >>>>
+> >>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >>>> ---
+> >>>>    arch/arm/boot/dts/dra7.dtsi               | 110 +++++++++++++++++=
++++++++++++++
+> >>>>    arch/arm/mach-omap2/omap_hwmod_7xx_data.c |  10 ---
+> >>>>    2 files changed, 110 insertions(+), 10 deletions(-)
+> >>>>
+> >>>> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dt=
+si
+> >>>> index 597979b..1e73900 100644
+> >>>> --- a/arch/arm/boot/dts/dra7.dtsi
+> >>>> +++ b/arch/arm/boot/dts/dra7.dtsi
+> >>>> @@ -811,6 +811,116 @@
+> >>>>                clocks =3D <&sata_ref_clk>;
+> >>>>                ti,hwmods =3D "sata";
+> >>>>            };
+> >>>> +
+> >>>> +        omap_control_usb2phy1: control-phy@4a002300 {
+> >>>> +            compatible =3D "ti,control-phy-usb2";
+> >>>> +            reg =3D <0x4a002300 0x4>;
+> >>>> +            reg-names =3D "power";
+> >>>> +        };
+> >>>> +
+> >>>> +        omap_control_usb3phy1: control-phy@4a002370 {
+> >>>> +            compatible =3D "ti,control-phy-pipe3";
+> >>>> +            reg =3D <0x4a002370 0x4>;
+> >>>> +            reg-names =3D "power";
+> >>>> +        };
+> >>>> +
+> >>>> +        omap_control_usb2phy2: control-phy@0x4a002e74 {
+> >>>> +            compatible =3D "ti,control-phy-usb2-dra7";
+> >>>> +            reg =3D <0x4a002e74 0x4>;
+> >>>> +            reg-names =3D "power";
+> >>>> +        };
+> >>>> +
+> >>>> +        /* OCP2SCP1 */
+> >>>> +        ocp2scp@4a080000 {
+> >>>> +            compatible =3D "ti,omap-ocp2scp";
+> >>>> +            #address-cells =3D <1>;
+> >>>> +            #size-cells =3D <1>;
+> >>>> +            ranges;
+> >>>> +            reg =3D <0x4a080000 0x20>;
+> >>>> +            ti,hwmods =3D "ocp2scp1";
+> >>>> +
+> >>>> +            usb2_phy1: phy@4a084000 {
+> >>>> +                compatible =3D "ti,omap-usb2";
+> >>>> +                reg =3D <0x4a084000 0x400>;
+> >>>> +                ctrl-module =3D <&omap_control_usb2phy1>;
+> >>>> +                clocks =3D <&usb_phy1_always_on_clk32k>,
+> >>>> +                     <&usb_otg_ss1_refclk960m>;
+> >>>> +                clock-names =3D    "wkupclk",
+> >>>> +                        "refclk";
+> >>>> +                #phy-cells =3D <0>;
+> >>>> +            };
+> >>>> +
+> >>>> +            usb2_phy2: phy@4a085000 {
+> >>>> +                compatible =3D "ti,omap-usb2";
+> >>>> +                reg =3D <0x4a085000 0x400>;
+> >>>> +                ctrl-module =3D <&omap_control_usb2phy2>;
+> >>>> +                clocks =3D <&usb_phy2_always_on_clk32k>,
+> >>>> +                     <&usb_otg_ss2_refclk960m>;
+> >>>> +                clock-names =3D    "wkupclk",
+> >>>> +                        "refclk";
+> >>>> +                #phy-cells =3D <0>;
+> >>>> +            };
+> >>>> +
+> >>>> +            usb3_phy1: phy@4a084400 {
+> >>>> +                compatible =3D "ti,omap-usb3";
+> >>>> +                reg =3D <0x4a084400 0x80>,
+> >>>> +                      <0x4a084800 0x64>,
+> >>>> +                      <0x4a084c00 0x40>;
+> >>>> +                reg-names =3D "phy_rx", "phy_tx", "pll_ctrl";
+> >>>> +                ctrl-module =3D <&omap_control_usb3phy1>;
+> >>>> +                clocks =3D <&usb_phy3_always_on_clk32k>,
+> >>>> +                     <&sys_clkin1>,
+> >>>> +                     <&usb_otg_ss1_refclk960m>,
+> >>>> +                     <&dpll_core_h13x2_ck>;
+> >>>> +                clock-names =3D    "wkupclk",
+> >>>> +                        "sysclk",
+> >>>> +                        "refclk",
+> >>>> +                        "optclk";
+> >>>
+> >>> Do we use this 'optclk' in driver?
+> >>
+> >> No we don't. Still the device seems to work without it.
+> >> This is supposed to be USB_LFPS_TX_GFCLK or USB3PHY_REF_CLK.
+> >=20
+> > I think it should be enabled. Did you check the status of this clock
+> > in CM_L3INIT_CLKSTCTRL? Moreover USB_LFPS_TX_GFCLK is an interface
+> > clock, so IIUC setting the module mode will enable it.
+> >=20
+> > Btw how did you tell dpll_core_h13x2_ck enables USB_LFPS_TX_GFCLK?
+> >=20
+>=20
+> From the clock tree tool. It looks like the clock is gated
+> automatically with the module mode as you suggested. I'll get rid of
+> this clock reference then.
 
-1-4 make perfect sense to me.
+note that we can change the input clock of some parts of dwc3, maybe
+that's why it works without, we're probably using another clock as
+input.
 
-> 5. for the rest of the IB drivers, return -EINVAL if 
-> IB_QP_CREATE_USE_GFP is set
+--=20
+balbi
 
-Umm, why this?
+--8t9RHnE3ZwKMSgU+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> This will allow to provide working solution for mlx4 users and gradually 
-> add support for the rest of the IB drivers.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Oh, I see, so that's just a temporary measure.
+iQIcBAEBAgAGBQJTI10IAAoJEIaOsuA1yqREsB0P/Ro1DFR1pM02+qBmrvp5/Khh
+7fz9ScTmjayUDWBMSR1aNQLjm2q/G4sGPgrfbMZZ7WVuyHTQJLKWhR/yJEw+6Ct7
+7kIbHSFGNB/iegC649UYO/qgbjqgA+e4Y9WWsgt1T3REfzHke5M30NlID0VaLw/r
+JM5pCOVblLWt+KM+hyEo3ydZFZsQ0szBOTcY1flCj41Kh/11PX7PQK1X10ryWBHD
+zavhSwSTvjhnbQ7frIKvQ8GqbPpbFDMIakmB+NecWCpPqMc0DD1PNBTWT10F6lqO
+fY+hamslS1/mk7FDmRpOMoT9EqAMs7KhcD+h+iTys5kEWo50QyNxVJM58vGNSnz0
+pAAMl+5Y4LOyocEaE75/hs3JPnPSYXvZ8q0wMGtQ1E7MXwqWCHnNpyuagIX9mLaf
+aQD/tIrW3BTlVnW/xahNNYZSJOGTHNcG4bTYXUO49tZ1OObBPbbDrYL9pAFdGBB/
+ghFgMJzPjzTUV2/b03UfoimczA4N8XLXBUUY2bE+FIr3QYAfX4sg4rpQvfBZOwbB
+x763Js7ng78tyriKRpS92w0CN0P0ZoqXkhI5wDAv20FBbGf9DbtMMgfnqqHJLX11
+GG1DijpemBjHr01yfjuqRS935wt/hXJGlZhOgmYBTJZSOIBwVnsiK8SvA3ebeBOe
+nquSNEHcC12BA3791Q/Q
+=/Gt4
+-----END PGP SIGNATURE-----
 
-> as for proper patch planning
-> 
-> patch #1 / items 1 and 5
-> patch #2 / item 4
-> patch #3 / item 3
-> 
-> Re item 5 -- I made a check and the ehca, ipath and mthca driver already
-> return -EINVAL if provided with any creation flag, so you only need to patch
-> the qib driver in qib_create_qp() to do that as well which is trivial.
-> 
-> As for the rest of the code, you practically have it all by now, just need to
-> port the mlx4 changes you did to the suggested framework, remove the module
-> param (which you don't like either) and add the new gfp_t field to
-> ib_qp_init_attr
-> 
-> So sounds like a plan that makes sense?
-
-Sounds fine by me.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+--8t9RHnE3ZwKMSgU+--
