@@ -1,280 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727AbaCNViQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:38:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54059 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756346AbaCNVae (ORCPT
+	id S1756300AbaCNVac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:30:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12017 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756180AbaCNV3s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:30:34 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/16] perf ui/hists: Pass struct hpp to print functions
-Date: Fri, 14 Mar 2014 18:30:03 -0300
-Message-Id: <1394832610-17818-10-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1394832610-17818-1-git-send-email-acme@infradead.org>
-References: <1394832610-17818-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 14 Mar 2014 17:29:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,657,1389772800"; 
+   d="scan'208";a="472797015"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "Zheng, Lv" <lv.zheng@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Len Brown" <lenb@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Box, David E" <david.e.box@intel.com>
+Subject: RE: ACPICA 20140214 auto-serialize weirds my machine...
+Thread-Topic: ACPICA 20140214 auto-serialize weirds my machine...
+Thread-Index: AQHPP58qJGgIn67g10eWtMCYXVeqCZrhEhOQgAAHkPA=
+Date: Fri, 14 Mar 2014 21:29:45 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E37C7F995F@ORSMSX103.amr.corp.intel.com>
+References: <14866.1394813101@turing-police.cc.vt.edu> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+We have a fix for this and will send out a patch next week after additional testing.
 
-Instead of the pointer to buffer and its size so that it can also get
-private argument passed along with hpp.
+Thanks,
+Bob
 
-This is a preparation of further change.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1393809254-4480-4-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/gtk/hists.c  |  4 ++-
- tools/perf/ui/hist.c       | 87 +++++++++++++++++++++++++++++++++++-----------
- tools/perf/ui/stdio/hist.c |  6 ----
- tools/perf/util/hist.h     |  8 ++++-
- 4 files changed, 76 insertions(+), 29 deletions(-)
-
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 3dab00e748f2..430fd555b161 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -8,12 +8,14 @@
- 
- #define MAX_COLUMNS			32
- 
--static int __percent_color_snprintf(char *buf, size_t size, const char *fmt, ...)
-+static int __percent_color_snprintf(struct perf_hpp *hpp, const char *fmt, ...)
- {
- 	int ret = 0;
- 	va_list args;
- 	double percent;
- 	const char *markup;
-+	char *buf = hpp->buf;
-+	size_t size = hpp->size;
- 
- 	va_start(args, fmt);
- 	percent = va_arg(args, double);
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 085353435f07..0c427e5d37c7 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -8,6 +8,13 @@
- 
- /* hist period print (hpp) functions */
- 
-+#define hpp__call_print_fn(hpp, fn, fmt, ...)			\
-+({								\
-+	int __ret = fn(hpp, fmt, ##__VA_ARGS__);		\
-+	advance_hpp(hpp, __ret);				\
-+	__ret;							\
-+})
-+
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	       u64 (*get_field)(struct hist_entry *),
- 	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent)
-@@ -15,6 +22,8 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	int ret;
- 	struct hists *hists = he->hists;
- 	struct perf_evsel *evsel = hists_to_evsel(hists);
-+	char *buf = hpp->buf;
-+	size_t size = hpp->size;
- 
- 	if (fmt_percent) {
- 		double percent = 0.0;
-@@ -23,9 +32,9 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 			percent = 100.0 * get_field(he) /
- 				  hists->stats.total_period;
- 
--		ret = print_fn(hpp->buf, hpp->size, fmt, percent);
-+		ret = hpp__call_print_fn(hpp, print_fn, fmt, percent);
- 	} else
--		ret = print_fn(hpp->buf, hpp->size, fmt, get_field(he));
-+		ret = hpp__call_print_fn(hpp, print_fn, fmt, get_field(he));
- 
- 	if (perf_evsel__is_group_event(evsel)) {
- 		int prev_idx, idx_delta;
-@@ -50,22 +59,21 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 				 * have no sample
- 				 */
- 				if (fmt_percent) {
--					ret += print_fn(hpp->buf + ret,
--							hpp->size - ret,
--							fmt, 0.0);
-+					ret += hpp__call_print_fn(hpp, print_fn,
-+								  fmt, 0.0);
- 				} else {
--					ret += print_fn(hpp->buf + ret,
--							hpp->size - ret,
--							fmt, 0ULL);
-+					ret += hpp__call_print_fn(hpp, print_fn,
-+								  fmt, 0ULL);
- 				}
- 			}
- 
--			if (fmt_percent)
--				ret += print_fn(hpp->buf + ret, hpp->size - ret,
--						fmt, 100.0 * period / total);
--			else
--				ret += print_fn(hpp->buf + ret, hpp->size - ret,
--						fmt, period);
-+			if (fmt_percent) {
-+				ret += hpp__call_print_fn(hpp, print_fn, fmt,
-+							  100.0 * period / total);
-+			} else {
-+				ret += hpp__call_print_fn(hpp, print_fn, fmt,
-+							  period);
-+			}
- 
- 			prev_idx = perf_evsel__group_idx(evsel);
- 		}
-@@ -77,14 +85,22 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 			 * zero-fill group members at last which have no sample
- 			 */
- 			if (fmt_percent) {
--				ret += print_fn(hpp->buf + ret, hpp->size - ret,
--						fmt, 0.0);
-+				ret += hpp__call_print_fn(hpp, print_fn,
-+							  fmt, 0.0);
- 			} else {
--				ret += print_fn(hpp->buf + ret, hpp->size - ret,
--						fmt, 0ULL);
-+				ret += hpp__call_print_fn(hpp, print_fn,
-+							  fmt, 0ULL);
- 			}
- 		}
- 	}
-+
-+	/*
-+	 * Restore original buf and size as it's where caller expects
-+	 * the result will be saved.
-+	 */
-+	hpp->buf = buf;
-+	hpp->size = size;
-+
- 	return ret;
- }
- 
-@@ -116,6 +132,34 @@ static int hpp__width_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
- 	return len;							\
- }
- 
-+static int hpp_color_scnprintf(struct perf_hpp *hpp, const char *fmt, ...)
-+{
-+	va_list args;
-+	ssize_t ssize = hpp->size;
-+	double percent;
-+	int ret;
-+
-+	va_start(args, fmt);
-+	percent = va_arg(args, double);
-+	ret = value_color_snprintf(hpp->buf, hpp->size, fmt, percent);
-+	va_end(args);
-+
-+	return (ret >= ssize) ? (ssize - 1) : ret;
-+}
-+
-+static int hpp_entry_scnprintf(struct perf_hpp *hpp, const char *fmt, ...)
-+{
-+	va_list args;
-+	ssize_t ssize = hpp->size;
-+	int ret;
-+
-+	va_start(args, fmt);
-+	ret = vsnprintf(hpp->buf, hpp->size, fmt, args);
-+	va_end(args);
-+
-+	return (ret >= ssize) ? (ssize - 1) : ret;
-+}
-+
- #define __HPP_COLOR_PERCENT_FN(_type, _field)					\
- static u64 he_get_##_field(struct hist_entry *he)				\
- {										\
-@@ -126,7 +170,7 @@ static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
- 	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
--			  percent_color_snprintf, true);			\
-+			  hpp_color_scnprintf, true);				\
- }
- 
- #define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
-@@ -135,7 +179,7 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- {										\
- 	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
- 	return __hpp__fmt(hpp, he, he_get_##_field, fmt,			\
--			  scnprintf, true);					\
-+			  hpp_entry_scnprintf, true);				\
- }
- 
- #define __HPP_ENTRY_RAW_FN(_type, _field)					\
-@@ -148,7 +192,8 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
- 	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
--	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt, scnprintf, false);	\
-+	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt,			\
-+			  hpp_entry_scnprintf, false);				\
- }
- 
- #define HPP_PERCENT_FNS(_type, _str, _field, _min_width, _unit_width)	\
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 831fbb77d1ff..9bad89228472 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -306,12 +306,6 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
- 	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
- }
- 
--static inline void advance_hpp(struct perf_hpp *hpp, int inc)
--{
--	hpp->buf  += inc;
--	hpp->size -= inc;
--}
--
- static int hist_entry__period_snprintf(struct perf_hpp *hpp,
- 				       struct hist_entry *he)
- {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 97f924ec6af9..d51ed9898229 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -166,12 +166,18 @@ void perf_hpp__init(void);
- void perf_hpp__column_register(struct perf_hpp_fmt *format);
- void perf_hpp__column_enable(unsigned col);
- 
--typedef int (*hpp_snprint_fn)(char *buf, size_t size, const char *fmt, ...);
-+typedef int (*hpp_snprint_fn)(struct perf_hpp *hpp, const char *fmt, ...);
- 
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	       u64 (*get_field)(struct hist_entry *),
- 	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent);
- 
-+static inline void advance_hpp(struct perf_hpp *hpp, int inc)
-+{
-+	hpp->buf  += inc;
-+	hpp->size -= inc;
-+}
-+
- static inline size_t perf_hpp__use_color(void)
- {
- 	return !symbol_conf.field_sep;
--- 
-1.8.1.4
-
+> -----Original Message-----
+> From: Moore, Robert
+> Sent: Friday, March 14, 2014 2:03 PM
+> To: 'Valdis Kletnieks'; Zheng, Lv; Wysocki, Rafael J; Len Brown
+> Cc: linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org
+> Subject: RE: ACPICA 20140214 auto-serialize weirds my machine...
+> 
+> 
+> 
+> > -----Original Message-----
+> > From: Valdis Kletnieks [mailto:Valdis.Kletnieks@vt.edu]
+> > Sent: Friday, March 14, 2014 9:05 AM
+> > To: Zheng, Lv; Wysocki, Rafael J; Moore, Robert; Len Brown
+> > Cc: linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org
+> > Subject: ACPICA 20140214 auto-serialize weirds my machine...
+> >
+> > Surprisingly enough, this hasn't seemed to have bitten many Linux
+> > people yet, Google only finds a BSD thread (where the same ACPICA code
+> > is in
+> > use):
+> 
+> 
+> Yes, and the reason that it is rare to see this error is because the
+> problem is related to the use of the ASL Sync Level mechanism, which is
+> rarely used.
+> 
+> Bob
+> 
+> 
+> 
+> 
+> 
+> >
+> > http://comments.gmane.org/gmane.os.dragonfly-bsd.user/1817
+> >
+> > I found this, but haven't tried it yet:
+> >
+> > commit 5f1cb4a92e4c4aabd139ff9ca1e11c0e2db2ac59
+> > Author: Lv Zheng <lv.zheng@intel.com>
+> > Date:   Wed Feb 26 10:32:01 2014 +0800
+> >
+> >     ACPICA: Remove global option to serialize all control methods.
+> >
+> >     With the addition of the auto-serialization feature, this option
+> >     is obsolete and is completely removed. Lv Zheng.
+> >
+> >     This patch also updates acpi_serialize kernel parameter using the
+> >     new auto-serialization feature - acpi_gbl_auto_serialize_methods.
+> >
+> > This looks like a user nightmare waiting to happen, because:
+> >
+> > -   	acpi_serialize	[HW,ACPI] force serialization of AML methods
+> > +	acpi_serialize=	[HW,ACPI] configure auto-serialization of AML
+> > methods
+> >
+> > Re-using a kernel parameter name with different semantics is just
+> > asking for trouble.
+> >
+> > I get this in my dmesg, and then I end up with all sorts of
+> > ACPI-related weirdness - everything from 4 or 5 temperature sensors
+> > evaporating to it claiming that my laptop doesn't have a battery bay
+> > (it may also be related to an issue I'm seeing with multiple graphics
+> > monitors as well, but I haven't verified that yet).
+> >
+> > We're going to need a better way to deal with this before it gets to
+> > mainline....
+> >
+> > [    0.119344] ACPI: Executed 1 blocks of module-level executable AML
+> code
+> > [    0.135282] ACPI Error: Cannot acquire Mutex for method [SNVC],
+> current
+> > SyncLevel is too large (1) (20140214/dsmethod-362)
+> > [    0.135288] ACPI Error: Method parse/execution failed [\SMBF] (Node
+> > ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.135298] ACPI Error: Method parse/execution failed [\GENS] (Node
+> > ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.135307] ACPI Error: Method parse/execution failed [\EISC] (Node
+> > ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.135320] ACPI Error: Method parse/execution failed
+> > [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470),
+> > AE_AML_MUTEX_ORDER
+> > (20140214/psparse-536)
+> > [    0.135328] ACPI Error: Method parse/execution failed [\ECRB] (Node
+> > ffff88012d02d5d8), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.135336] ACPI Error: Method parse/execution failed [\ECG5] (Node
+> > ffff88012d02d740), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.135343] ACPI Error: Method parse/execution failed
+> > [\_SB_.PCI0.LPCB.EINI] (Node ffff88012d02db00), AE_AML_MUTEX_ORDER
+> > (20140214/psparse-536)
+> > [    0.135351] ACPI Error: Method parse/execution failed [\EV3_] (Node
+> > ffff88012d0314c0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.135359] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0._INI]
+> > (Node ffff88012d026920), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.135574] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
+> > [    0.136283] ACPI: SSDT 0x00000000CE789598 000523 (v01 PmRef  Cpu0Cst
+> > 00003001 INTL 20051117)
+> > [    0.138312] ACPI: Dynamic OEM Table Load:
+> > [    0.138316] ACPI: SSDT 0x0000000000000000 000523 (v01 PmRef  Cpu0Cst
+> > 00003001 INTL 20051117)
+> > [    0.141483] ACPI: SSDT 0x00000000CE78AA98 000303 (v01 PmRef  ApIst
+> > 00003000 INTL 20051117)
+> > [    0.143683] ACPI: Dynamic OEM Table Load:
+> > [    0.143687] ACPI: SSDT 0x0000000000000000 000303 (v01 PmRef  ApIst
+> > 00003000 INTL 20051117)
+> > [    0.146215] ACPI: SSDT 0x00000000CE790C18 000119 (v01 PmRef  ApCst
+> > 00003000 INTL 20051117)
+> > [    0.148279] ACPI: Dynamic OEM Table Load:
+> > [    0.148282] ACPI: SSDT 0x0000000000000000 000119 (v01 PmRef  ApCst
+> > 00003000 INTL 20051117)
+> > [    0.152678] ACPI Error: Cannot acquire Mutex for method [SNVC],
+> current
+> > SyncLevel is too large (1) (20140214/dsmethod-362)
+> > [    0.152684] ACPI Error: Method parse/execution failed [\SMBF] (Node
+> > ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.152693] ACPI Error: Method parse/execution failed [\GENS] (Node
+> > ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.152702] ACPI Error: Method parse/execution failed [\EISC] (Node
+> > ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.152714] ACPI Error: Method parse/execution failed
+> > [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470),
+> > AE_AML_MUTEX_ORDER
+> > (20140214/psparse-536)
+> > [    0.152722] ACPI Error: Method parse/execution failed [\ECBT] (Node
+> > ffff88012d02d588), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.152730] ACPI Error: Method parse/execution failed [\ECG3] (Node
+> > ffff88012d02d6c8), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.152737] ACPI Error: Method parse/execution failed
+> > [\_SB_.PCI0.LPCB.ECDV.ECIN] (Node ffff88012d02d3d0),
+> > AE_AML_MUTEX_ORDER
+> > (20140214/psparse-536)
+> > [    0.152745] ACPI Error: Method parse/execution failed
+> > [\_SB_.PCI0.LPCB.ECDV._REG] (Node ffff88012d02d3f8),
+> > AE_AML_MUTEX_ORDER
+> > (20140214/psparse-536)
+> > [    0.152818] ACPI: Interpreter enabled
+> > [    0.152828] ACPI: (supports S0)
+> > [    0.152830] ACPI: Using IOAPIC for interrupt routing
+> > [    0.152883] PCI: Using host bridge windows from ACPI; if necessary,
+> use
+> > "pci=nocrs" and report a bug
+> > [    0.156479] ACPI Error: Cannot acquire Mutex for method [SNVC],
+> current
+> > SyncLevel is too large (1) (20140214/dsmethod-362)
+> > [    0.156485] ACPI Error: Method parse/execution failed [\SMBF] (Node
+> > ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.156494] ACPI Error: Method parse/execution failed [\GENS] (Node
+> > ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.156504] ACPI Error: Method parse/execution failed
+> > [\_SB_.PCI0.LPCB.UAR1._STA] (Node ffff88012d02fb28),
+> > AE_AML_MUTEX_ORDER
+> > (20140214/psparse-536)
+> > [    0.156666] ACPI Error: Cannot acquire Mutex for method [SNVC],
+> current
+> > SyncLevel is too large (1) (20140214/dsmethod-362)
+> > [    0.156671] ACPI Error: Method parse/execution failed [\SMBF] (Node
+> > ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.156680] ACPI Error: Method parse/execution failed [\GENS] (Node
+> > ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.156689] ACPI Error: Method parse/execution failed
+> > [\_SB_.PCI0.LPCB.LPTE.CLPS] (Node ffff88012d02fcb8),
+> > AE_AML_MUTEX_ORDER
+> > (20140214/psparse-536)
+> > [    0.156702] ACPI Error: Method parse/execution failed
+> > [\_SB_.PCI0.LPCB.LPTE._STA] (Node ffff88012d02fce0),
+> > AE_AML_MUTEX_ORDER
+> > (20140214/psparse-536)
+> > [    0.162229] ACPI Error: Cannot acquire Mutex for method [SNVC],
+> current
+> > SyncLevel is too large (1) (20140214/dsmethod-362)
+> > [    0.162234] ACPI Error: Method parse/execution failed [\SMBF] (Node
+> > ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.162244] ACPI Error: Method parse/execution failed [\GENS] (Node
+> > ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> > [    0.162254] ACPI Error: Method parse/execution failed [\EISC] (Node
+> > ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> >
+> > (you get the idea.  I get a total of 172 'ACPI Error:' messages before
+> > I get to a single-user prompt)
