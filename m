@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672AbaCNRis (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 13:38:48 -0400
-Received: from smtprelay0008.hostedemail.com ([216.40.44.8]:42140 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753709AbaCNRir (ORCPT
+	id S1754853AbaCNRjA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 13:39:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:59379 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754729AbaCNRi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 13:38:47 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:966:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:4321:4385:5007:7652:10004:10400:10848:11026:11232:11658:11914:12296:12438:12517:12519:12740:13019:13069:13311:13357:13548,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cakes60_69152e42b3015
-X-Filterd-Recvd-Size: 1608
-Message-ID: <1394818720.3253.1.camel@joe-AO722>
-Subject: Re: [PATCH] virtio-blk: make the queue depth configurable
-From: Joe Perches <joe@perches.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, fes@google.com
-Date: Fri, 14 Mar 2014 10:38:40 -0700
-In-Reply-To: <1394818263-29947-1-git-send-email-tytso@mit.edu>
-References: <1394818263-29947-1-git-send-email-tytso@mit.edu>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Fri, 14 Mar 2014 13:38:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
+Date: Fri, 14 Mar 2014 18:38:08 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, "linux-pci" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linaro-kernel" <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com> <1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com> <20140314171457.GK18126@arm.com>
+In-Reply-To: <20140314171457.GK18126@arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201403141838.08900.arnd@arndb.de>
+X-Provags-ID: V02:K0:6lyxJDAQQR6megD4pKUSMVk29pBFQAJcNuaer8Y3qkf
+ ZcJiFqMYzqp4J4lsypvseNJ/y9yHhw64lMP7mVHYXwuSmVRGM5
+ RWYKbpVWYfeVid/8o535sRmcpEQ1BOeynG4M7qKD5joTEGntbv
+ P85AI8/QgaTf8EcFeRPqwEZ7RuODLo2E3kWRtqp4OQeEjATFsm
+ imTtRt43YhRtUpqykoyInD2aHKqOJFlluw3FSqsVA2YHASqCg9
+ 48js2iy1zFSE+9GnzMwiohhDN0rDstPpt+J6jnC1iu51RXSP04
+ 4H0vFtrkFe1wnq+rhMIJ395yNcn8SAVAqQa5eXbnjHZFyspP25
+ JbbwOgKPRRH4CFQ5NFCYaoVo1JEKgrt8E3Spp0jPd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-14 at 13:31 -0400, Theodore Ts'o wrote:
-> The current virtio block sets a queue depth of 64.  With a
-> sufficiently fast device, using a queue depth of 256 can double the
-> IOPS which can be sustained.  So make the queue depth something which
-> can be set at module load time or via a kernel boot-time parameter.
-[]
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-[]
-> @@ -481,6 +481,9 @@ static struct blk_mq_ops virtio_mq_ops = {
->  	.free_hctx	= blk_mq_free_single_hw_queue,
->  };
->  
-> +static int queue_depth = 64;
-> +module_param(queue_depth, int, 444);
+On Friday 14 March 2014, Catalin Marinas wrote:
+> On Fri, Mar 14, 2014 at 03:34:18PM +0000, Liviu Dudau wrote:
+> > --- /dev/null
+> > +++ b/arch/arm64/kernel/pci.c
+> [...]
+> > +int pci_register_io_range(phys_addr_t address, resource_size_t size)
+> [...]
+> > +unsigned long pci_address_to_pio(phys_addr_t address)
+> [...]
+> > +void pcibios_fixup_bus(struct pci_bus *bus)
+> [ actually most of this file ]
+> 
+> Maybe it was raised before already but can we have __weak generic
+> definitions of these functions? They don't seem to be arm64 specific in
+> any way.
+> 
 
-444?  Really Ted?
+I would definitely prefer that.
 
-0444
-
-
-
+	Arnd
