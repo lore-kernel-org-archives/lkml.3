@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797AbaCNQjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 12:39:17 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55918 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754743AbaCNQjG (ORCPT
+	id S1755919AbaCNQjj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 12:39:39 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:42791 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755447AbaCNQjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 12:39:06 -0400
+	Fri, 14 Mar 2014 12:39:07 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
@@ -14,9 +14,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
         Mike Galbraith <bitbucket@online.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/3] workqueues: Account unbound workqueue in a seperate list
-Date: Fri, 14 Mar 2014 17:38:50 +0100
-Message-Id: <1394815131-17271-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 3/3] workqueue: Add anon workqueue sysfs hierarchy
+Date: Fri, 14 Mar 2014 17:38:51 +0100
+Message-Id: <1394815131-17271-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
 References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
@@ -24,22 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The workqueues are all listed in a global list protected by a big mutex.
-And this big mutex is used in apply_workqueue_attrs() as well.
+We call "anon workqueues" the set of unbound workqueues that don't
+carry the WQ_SYSFS flag.
 
-Now as we plan to implement a directory to control the cpumask of
-all non-ABI unbound workqueues, we want to be able to iterate over all
-unbound workqueues and call apply_workqueue_attrs() for each of
-them with the new cpumask.
+They are a problem nowaday because people who work on CPU isolation
+(HPC, Real time, etc...) want to be able to migrate all the unbound
+workqueues away to a single CPU. This control is possible through sysfs
+but only with WQ_SYSFS workqueues.
 
-But the risk for a deadlock is on the way: we need to iterate the list
-of workqueues under wq_pool_mutex. But then apply_workqueue_attrs()
-itself calls wq_pool_mutex.
+Now we need to deal with the other unbound workqueues. There is two
+possible solutions:
 
-The easiest solution to work around this is to keep track of unbound
-workqueues in a separate list with a separate mutex.
+1) Implement a sysfs directory for each unbound !WQ_SYSFS. This could
+be done with a specific Kconfig to make sure that these workqueue
+won't be considered as a stable ABI. But we all know that all distros
+will enable this Kconfig symbol and that a warning in the Kconfig help
+text won't protect against anything.
 
-It's not very pretty unfortunately.
+2) Implement a single sysfs directory containing only the cpumask file
+to the control the affinity of all the !WQ_SYSFS workqueues.
+
+This patch implements the second solution.
+
+Two issues I have seen though:
+
+* This triggers the following warning in apply_workqueue_attrs():
+
+	/* creating multiple pwqs breaks ordering guarantee */
+	if (WARN_ON((wq->flags & __WQ_ORDERED) && !list_empty(&wq->pwqs)))
+		return -EINVAL;
+
+  I haven't yet checked into the details.
+
+* wq_calc_node_cpumask() tells that if NUMA affinity is not enabled,
+  cpumask is always used. Which suggest that if NUMA affinity is enabled
+  the cpumask may be ignored?
 
 Cc: Christoph Lameter <cl@linux.com>
 Cc: Kevin Hilman <khilman@linaro.org>
@@ -47,61 +66,149 @@ Cc: Mike Galbraith <bitbucket@online.de>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Not-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Not-Yet-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/workqueue.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ kernel/workqueue.c | 114 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 112 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 4d230e3..ad8f727 100644
+index ad8f727..aabee1f 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -232,6 +232,7 @@ struct wq_device;
- struct workqueue_struct {
- 	struct list_head	pwqs;		/* WR: all pwqs of this wq */
- 	struct list_head	list;		/* PL: list of all workqueues */
-+	struct list_head	unbound_list;	/* PL: list of unbound workqueues */
- 
- 	struct mutex		mutex;		/* protects this wq */
- 	int			work_color;	/* WQ: current work color */
-@@ -288,9 +289,11 @@ static bool wq_numa_enabled;		/* unbound NUMA affinity enabled */
+@@ -289,7 +289,8 @@ static bool wq_numa_enabled;		/* unbound NUMA affinity enabled */
  static struct workqueue_attrs *wq_update_unbound_numa_attrs_buf;
  
  static DEFINE_MUTEX(wq_pool_mutex);	/* protects pools and workqueues list */
-+static DEFINE_MUTEX(wq_unbound_mutex);	/* protects list of unbound workqueues */
+-static DEFINE_MUTEX(wq_unbound_mutex);	/* protects list of unbound workqueues */
++/* protects list of unbound workqueues and wq_anon_cpumask*/
++static DEFINE_MUTEX(wq_unbound_mutex);
  static DEFINE_SPINLOCK(wq_mayday_lock);	/* protects wq->maydays list */
  
  static LIST_HEAD(workqueues);		/* PL: list of all workqueues */
-+static LIST_HEAD(workqueues_unbound);	/* PL: list of unbound workqueues */
- static bool workqueue_freezing;		/* PL: have wqs started freezing? */
+@@ -3311,13 +3312,122 @@ static struct device_attribute wq_sysfs_unbound_attrs[] = {
+ 	__ATTR_NULL,
+ };
  
- /* the per-cpu worker pools */
-@@ -4263,6 +4266,12 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
- 
- 	mutex_unlock(&wq_pool_mutex);
- 
-+	if (wq->flags & WQ_UNBOUND) {
-+		mutex_lock(&wq_unbound_mutex);
-+		list_add(&wq->unbound_list, &workqueues_unbound);
-+		mutex_unlock(&wq_unbound_mutex);
++/* Protected by wq_unbound_mutex */
++static cpumask_t wq_anon_cpumask;
++static ssize_t wq_anon_cpumask_show(struct device *dev,
++				    struct device_attribute *attr, char *buf)
++{
++	int written;
++
++	mutex_lock(&wq_unbound_mutex);
++	written = cpumask_scnprintf(buf, PAGE_SIZE, &wq_anon_cpumask);
++	mutex_unlock(&wq_unbound_mutex);
++
++	written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
++
++	return written;
++}
++
++/* Must be called with wq_unbound_mutex held */
++static int wq_anon_cpumask_set(cpumask_var_t cpumask)
++{
++	struct workqueue_attrs *attrs;
++	struct workqueue_struct *wq;
++	int ret;
++
++	list_for_each_entry(wq, &workqueues_unbound, unbound_list) {
++		if (wq->flags & WQ_SYSFS)
++			continue;
++		attrs = wq_sysfs_prep_attrs(wq);
++		if (!attrs)
++			return -ENOMEM;
++
++		cpumask_copy(attrs->cpumask, cpumask);
++		ret = apply_workqueue_attrs(wq, attrs);
++		free_workqueue_attrs(attrs);
++		if (ret)
++			break;
 +	}
 +
- 	return wq;
- 
- err_free_wq:
-@@ -4318,6 +4327,12 @@ void destroy_workqueue(struct workqueue_struct *wq)
- 	list_del_init(&wq->list);
- 	mutex_unlock(&wq_pool_mutex);
- 
-+	if (wq->flags & WQ_UNBOUND) {
++	return ret;
++}
++
++static ssize_t wq_anon_cpumask_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	cpumask_var_t cpumask;
++	int ret = -EINVAL;
++
++	if (!zalloc_cpumask_var(&cpumask, GFP_KERNEL))
++		return -ENOMEM;
++
++	ret = cpumask_parse(buf, cpumask);
++	if (ret)
++		goto out;
++
++	get_online_cpus();
++	if (cpumask_intersects(cpumask, cpu_online_mask)) {
 +		mutex_lock(&wq_unbound_mutex);
-+		list_del(&wq->unbound_list);
++		ret = wq_anon_cpumask_set(cpumask);
++		if (!ret)
++			cpumask_copy(&wq_anon_cpumask, cpumask);
 +		mutex_unlock(&wq_unbound_mutex);
 +	}
++	put_online_cpus();
++out:
++	free_cpumask_var(cpumask);
++	return ret ? ret : count;
++}
 +
- 	workqueue_sysfs_unregister(wq);
++static void device_release(struct device *dev)
++{
++	kfree(dev);
++}
++
++static struct device_attribute wq_sysfs_anon_attr =
++	__ATTR(cpumask, 0644, wq_anon_cpumask_show, wq_anon_cpumask_store);
++
+ static struct bus_type wq_subsys = {
+ 	.name				= "workqueue",
+ };
  
- 	if (wq->rescuer) {
+ static int __init wq_sysfs_init(void)
+ {
+-	return subsys_virtual_register(&wq_subsys, NULL);
++	struct device *anon_dev;
++	int ret;
++
++	ret = subsys_virtual_register(&wq_subsys, NULL);
++	if (ret < 0)
++		return ret;
++
++	mutex_lock(&wq_unbound_mutex);
++	cpumask_copy(&wq_anon_cpumask, cpu_possible_mask);
++	mutex_unlock(&wq_unbound_mutex);
++
++	anon_dev = kzalloc(sizeof(*anon_dev), GFP_KERNEL);
++	if (!anon_dev)
++		return -ENOMEM;
++
++	anon_dev->bus = &wq_subsys;
++	anon_dev->init_name = "anon_wqs";
++	anon_dev->release = device_release;
++
++	ret = device_register(anon_dev);
++	if (ret) {
++		kfree(anon_dev);
++		return ret;
++	}
++
++	ret = device_create_file(anon_dev, &wq_sysfs_anon_attr);
++	if (ret) {
++		device_unregister(anon_dev);
++		return ret;
++	}
++
++	kobject_uevent(&anon_dev->kobj, KOBJ_ADD);
++
++	return 0;
+ }
+ core_initcall(wq_sysfs_init);
+ 
 -- 
 1.8.3.1
 
