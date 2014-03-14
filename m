@@ -1,172 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402AbaCNDAa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 23:00:30 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:39486 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901AbaCNDA3 (ORCPT
+	id S1755085AbaCNDHq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 23:07:46 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:1290 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563AbaCNDHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 23:00:29 -0400
-Message-ID: <532270BE.6000409@linaro.org>
-Date: Fri, 14 Mar 2014 12:00:14 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 13 Mar 2014 23:07:45 -0400
+Message-ID: <5322720F.1030706@huawei.com>
+Date: Fri, 14 Mar 2014 11:05:51 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 6/7] arm64: ftrace: Add CALLER_ADDRx macros
-References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org> <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org> <1394705630-12384-7-git-send-email-takahiro.akashi@linaro.org> <20140313155415.GB25472@mudshark.cambridge.arm.com>
-In-Reply-To: <20140313155415.GB25472@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] mm: per-thread vma caching
+References: <1393537704.2899.3.camel@buesod1.americas.hpqcorp.net> <20140303164002.02df915e12d05bb98762407f@linux-foundation.org> <1393894778.30648.29.camel@buesod1.americas.hpqcorp.net> <20140303172348.3f00c9df.akpm@linux-foundation.org> <1393900953.30648.32.camel@buesod1.americas.hpqcorp.net> <20140303191224.96f93142.akpm@linux-foundation.org> <1393902810.30648.36.camel@buesod1.americas.hpqcorp.net> <CA+55aFwsjHPe4CF009p_L6PyYdP=F2bzi9-Wm5T+O6XPOCS6fg@mail.gmail.com>
+In-Reply-To: <CA+55aFwsjHPe4CF009p_L6PyYdP=F2bzi9-Wm5T+O6XPOCS6fg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2014 12:54 AM, Will Deacon wrote:
-> On Thu, Mar 13, 2014 at 10:13:49AM +0000, AKASHI Takahiro wrote:
->> CALLER_ADDRx returns caller's address at specified level in call stacks.
->> They are used for several tracers like irqsoff and preemptoff.
->> Strange to say, however, they are refered even without FTRACE.
+Hi Davidlohr,
+
+On 2014/3/4 11:26, Linus Torvalds wrote:
+> On Mon, Mar 3, 2014 at 7:13 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
 >>
->> Please note that this implementation assumes that we have frame pointers.
->> (which means kernel should be compiled with -fno-omit-frame-pointer.)
->
-> How do you ensure that -fno-omit-frame-pointer is passed?
+>> Yes, I shortly realized that was silly... but I can say for sure it can
+>> happen and a quick qemu run confirms it. So I see your point as to
+>> asking why we need it, so now I'm looking for an explanation in the
+>> code.
+> 
+> We definitely *do* have users.
+> 
+> One example would be ptrace -> access_process_vm -> __access_remote_vm
+> -> get_user_pages() -> find_extend_vma() -> find_vma_prev -> find_vma.
+> 
 
-arm64 selects ARCH_WANT_FRAME_POINTERS, then FRAME_POINTER is on (lib/Kconfig.debug)
-and so -fno-omit-frame-pointer is appended (${TOP}/Makefile).
-(stacktrace.c also assumes FRAME_POINTER.)
+I raw this oops on 3.14.0-rc5-next-20140307, which is possible caused by
+your patch? Don't know how it was triggered.
 
-Do you think I should remove the comment above?
+[ 6072.026715] BUG: unable to handle kernel NULL pointer dereference at 00000000000007f8
+[ 6072.026729] IP: [<ffffffff811a0189>] follow_page_mask+0x69/0x620
+[ 6072.026742] PGD c1975f067 PUD c19479067 PMD 0
+[ 6072.026749] Oops: 0000 [#1] SMP
+[ 6072.026852] CPU: 2 PID: 13445 Comm: ps Not tainted 3.14.0-rc5-next-20140307-0.1-default+ #4
+[ 6072.026863] Hardware name: Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA              , BIO
+S CTSAV036 04/27/2011
+[ 6072.026872] task: ffff88061d8848a0 ti: ffff880618854000 task.ti: ffff880618854000
+[ 6072.026880] RIP: 0010:[<ffffffff811a0189>]  [<ffffffff811a0189>] follow_page_mask+0x69/0x620
+[ 6072.026889] RSP: 0018:ffff880618855c18  EFLAGS: 00010206
+[ 6072.026895] RAX: 00000000000000ff RBX: ffffffffffffffea RCX: ffff880618855d0c
+[ 6072.026902] RDX: 0000000000000000 RSI: 00007fff0a474cc7 RDI: ffff88061aef8f00
+[ 6072.026909] RBP: ffff880618855c88 R08: 0000000000000002 R09: 0000000000000000
+[ 6072.026916] R10: 0000000000000000 R11: 0000000000003485 R12: 00007fff0a474cc7
+[ 6072.026924] R13: 0000000000000016 R14: ffff88061aef8f00 R15: ffff880c1c842508
+[ 6072.026932] FS:  00007f4687701700(0000) GS:ffff880c26a00000(0000) knlGS:0000000000000000
+[ 6072.026940] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 6072.026947] CR2: 00000000000007f8 CR3: 0000000c184ee000 CR4: 00000000000007e0
+[ 6072.026955] Stack:
+[ 6072.026959]  ffff880618855c48 ffff880618855d0c 0000000018855c58 0000000000000246
+[ 6072.026969]  0000000000000000 0000000000000752 ffffffff817c975c 0000000000000000
+[ 6072.026980]  ffff880618855c88 0000000000000016 ffff880c1c842508 ffff88061d8848a0
+[ 6072.026989] Call Trace:
+[ 6072.026998]  [<ffffffff811a4b14>] __get_user_pages+0x204/0x5a0
+[ 6072.027007]  [<ffffffff811a4f62>] get_user_pages+0x52/0x60
+[ 6072.027015]  [<ffffffff811a5088>] __access_remote_vm+0x118/0x1f0
+[ 6072.027023]  [<ffffffff811a51bb>] access_process_vm+0x5b/0x80
+[ 6072.027033]  [<ffffffff812675a7>] proc_pid_cmdline+0x77/0x120
+[ 6072.027041]  [<ffffffff81267da2>] proc_info_read+0xa2/0xe0
+[ 6072.027050]  [<ffffffff811f439d>] vfs_read+0xad/0x1a0
+[ 6072.027057]  [<ffffffff811f45b5>] SyS_read+0x65/0xb0
+[ 6072.027066]  [<ffffffff8159ba12>] system_call_fastpath+0x16/0x1b
+[ 6072.027072] Code: f4 4c 89 f7 89 45 a4 e8 36 0e eb ff 48 3d 00 f0 ff ff 48 89 c3 0f 86 d7 00 00 00 4c 89 e0
+ 49 8b 56 40 48 c1 e8 27 25 ff 01 00 00 <48> 8b 0c c2 48 85 c9 75 3e 41 83 e5 08 74 1b 49 8b 87 90 00 00
+[ 6072.027134] RIP  [<ffffffff811a0189>] follow_page_mask+0x69/0x620
+[ 6072.027142]  RSP <ffff880618855c18>
+[ 6072.027146] CR2: 00000000000007f8
+[ 6072.134516] ---[ end trace 8d006e01f05d1ba8 ]---
 
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> ---
->>   arch/arm64/include/asm/ftrace.h    |   13 ++++++++-
->>   arch/arm64/kernel/Makefile         |    3 +-
->>   arch/arm64/kernel/return_address.c |   55 ++++++++++++++++++++++++++++++++++++
->>   3 files changed, 69 insertions(+), 2 deletions(-)
->>   create mode 100644 arch/arm64/kernel/return_address.c
->>
->> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
->> index ed5c448..c44c4b1 100644
->> --- a/arch/arm64/include/asm/ftrace.h
->> +++ b/arch/arm64/include/asm/ftrace.h
->> @@ -18,6 +18,7 @@
->>
->>   #ifndef __ASSEMBLY__
->>   extern void _mcount(unsigned long);
->> +extern void *return_address(unsigned int);
->>
->>   struct dyn_arch_ftrace {
->>   	/* No extra data needed for arm64 */
->> @@ -33,6 +34,16 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
->>   	 */
->>   	return addr;
->>   }
->> -#endif /* __ASSEMBLY__ */
->> +
->> +#define HAVE_ARCH_CALLER_ADDR
->> +
->> +#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
->> +#define CALLER_ADDR1 ((unsigned long)return_address(1))
->> +#define CALLER_ADDR2 ((unsigned long)return_address(2))
->> +#define CALLER_ADDR3 ((unsigned long)return_address(3))
->> +#define CALLER_ADDR4 ((unsigned long)return_address(4))
->> +#define CALLER_ADDR5 ((unsigned long)return_address(5))
->> +#define CALLER_ADDR6 ((unsigned long)return_address(6))
->
-> Could we change the core definitions of these macros (in linux/ftrace.h) to
-> use return_address, then provide an overridable version of return_address
-> that defaults to __builtin_return_address, instead of copy-pasting this
-> sequence?
 
-I think I understand what you mean, and will try to post a separate RFC,
-but I also want to hold off this change on this patch since such a change
-may raise a small controversy from other archs' maintainers.
-
->> diff --git a/arch/arm64/kernel/return_address.c b/arch/arm64/kernel/return_address.c
->> new file mode 100644
->> index 0000000..89102a6
->> --- /dev/null
->> +++ b/arch/arm64/kernel/return_address.c
->> @@ -0,0 +1,55 @@
->> +/*
->> + * arch/arm64/kernel/return_address.c
->> + *
->> + * Copyright (C) 2013 Linaro Limited
->> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#include <linux/export.h>
->> +#include <linux/ftrace.h>
->> +
->> +#include <asm/stacktrace.h>
->> +
->> +struct return_address_data {
->> +	unsigned int level;
->> +	void *addr;
->> +};
->> +
->> +static int save_return_addr(struct stackframe *frame, void *d)
->> +{
->> +	struct return_address_data *data = d;
->> +
->> +	if (!data->level) {
->> +		data->addr = (void *)frame->pc;
->> +		return 1;
->> +	} else {
->> +		--data->level;
->> +		return 0;
->> +	}
->> +}
->> +
->> +void *return_address(unsigned int level)
->> +{
->> +	struct return_address_data data;
->> +	struct stackframe frame;
->> +	register unsigned long current_sp asm ("sp");
->> +
->> +	data.level = level + 2;
->> +	data.addr = NULL;
->> +
->> +	frame.fp = (unsigned long)__builtin_frame_address(0);
->> +	frame.sp = current_sp;
->> +	frame.pc = (unsigned long)return_address; /* dummy */
->> +
->> +	walk_stackframe(&frame, save_return_addr, &data);
->> +
->> +	if (!data.level)
->> +		return data.addr;
->> +	else
->> +		return NULL;
->> +}
->> +EXPORT_SYMBOL_GPL(return_address);
->
-> This whole file is basically copied from arch/arm/, but it's not too much
-> code. Ideally the toolchain would have made use of the frame pointer, but it
-> looks like it doesn't bother.
-
-I confirmed that __builtin_return_address([123456]) doesn't work
-even with -fno-omit-frame-pointer.
-Keep this as it is.
-
--Takahiro AKASHI
-
-> Will
->
