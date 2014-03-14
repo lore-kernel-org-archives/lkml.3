@@ -1,180 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaCNVcG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:32:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25687 "EHLO mga02.intel.com"
+	id S1161090AbaCNVdz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:33:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20225 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756634AbaCNVcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:32:03 -0400
+	id S1756636AbaCNVcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 17:32:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,657,1389772800"; 
-   d="scan'208";a="492312093"
+   d="scan'208";a="472797954"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@infradead.org
 Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 09/10] perf, tools, test: Add test case for alias and JSON parsing
-Date: Fri, 14 Mar 2014 14:31:37 -0700
-Message-Id: <1394832698-322-10-git-send-email-andi@firstfloor.org>
+        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com
+Subject: perf: Add support for full Intel event lists v2
+Date: Fri, 14 Mar 2014 14:31:28 -0700
+Message-Id: <1394832698-322-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1394832698-322-1-git-send-email-andi@firstfloor.org>
-References: <1394832698-322-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+[v2: Review feedback addressed and some minor improvements]
 
-Add a simple test case to perf test that runs perf download and parses
-all the events. This needs adding an all event iterator to pmu.c
+perf has high level events which are useful in many cases. However
+there are some tuning situations where low level events in the CPU
+are needed. Traditionally this required specifying the event in 
+raw form (very awkward) or using non standard frontends
+like ocperf or patching in libpfm.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Makefile.perf        |  1 +
- tools/perf/tests/aliases.c      | 52 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/builtin-test.c |  4 ++++
- tools/perf/tests/tests.h        |  1 +
- tools/perf/util/pmu.c           | 18 ++++++++++++++
- tools/perf/util/pmu.h           |  2 ++
- 6 files changed, 78 insertions(+)
- create mode 100644 tools/perf/tests/aliases.c
+Intel CPUs can have very large event files (Haswell has ~336 core events,
+much more if you add uncore or all the offcore combinations), which is too
+large to describe through the kernel interface. It would require tying up
+significant amounts of unswappable memory for this.
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 8c4cc73..51bb490 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -416,6 +416,7 @@ endif
- LIB_OBJS += $(OUTPUT)tests/code-reading.o
- LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
- LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
-+LIB_OBJS += $(OUTPUT)tests/aliases.o
- ifndef NO_DWARF_UNWIND
- ifeq ($(ARCH),x86)
- LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
-diff --git a/tools/perf/tests/aliases.c b/tools/perf/tests/aliases.c
-new file mode 100644
-index 0000000..ec267d3
---- /dev/null
-+++ b/tools/perf/tests/aliases.c
-@@ -0,0 +1,52 @@
-+/* Check if we can set up all aliases and can read JSON files */
-+#include <stdlib.h>
-+#include "tests.h"
-+#include "pmu.h"
-+#include "evlist.h"
-+#include "parse-events.h"
-+
-+static struct perf_evlist *evlist;
-+
-+static int num_events;
-+static int failed;
-+
-+static int test_event(const char *name)
-+{
-+	int ret = parse_events(evlist, name);
-+
-+	if (ret) {
-+		/*
-+		 * We only print on failure because common perf setups
-+		 * have events that cannot be parsed.
-+		 */
-+		fprintf(stderr, "invalid or unsupported event: '%s'\n", name);
-+		ret = 0;
-+		failed++;
-+	} else
-+		num_events++;
-+	return ret;
-+}
-+
-+int test__aliases(void)
-+{
-+	int err;
-+
-+	/* Download JSON files */
-+	/* XXX assumes perf is installed */
-+	/* For now user must manually download */
-+	if (0 && system("perf download > /dev/null") < 0) {
-+		/* Don't error out for this for now */
-+		fprintf(stderr, "perf download failed\n");
-+	}
-+
-+	evlist = perf_evlist__new();
-+	if (evlist == NULL)
-+		return -ENOMEM;
-+
-+	err = pmu_iterate_events(test_event);
-+	fprintf(stderr, " Parsed %d events :", num_events);
-+	if (failed > 0)
-+		fprintf(stderr, " %d events failed", num_events);
-+	perf_evlist__delete(evlist);
-+	return err;
-+}
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index b11bf8a..b77468d 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -115,6 +115,10 @@ static struct test {
- 		.desc = "Test parsing with no sample_id_all bit set",
- 		.func = test__parse_no_sample_id_all,
- 	},
-+	{
-+		.desc = "Test parsing JSON aliases",
-+		.func = test__aliases,
-+	},
- #if defined(__x86_64__) || defined(__i386__)
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
- 	{
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index a24795c..d090866 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -41,6 +41,7 @@ int test__sample_parsing(void);
- int test__keep_tracking(void);
- int test__parse_no_sample_id_all(void);
- int test__dwarf_unwind(void);
-+int test__aliases(void);
- 
- #if defined(__x86_64__) || defined(__i386__)
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 8ae168c..fb58a51 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -869,3 +869,21 @@ bool pmu_have_event(const char *pname, const char *name)
- 	}
- 	return false;
- }
-+
-+int pmu_iterate_events(int (*func)(const char *name))
-+{
-+	int ret = 0;
-+	struct perf_pmu *pmu;
-+	struct perf_pmu_alias *alias;
-+
-+	perf_pmu__find("cpu"); /* Load PMUs */
-+	pmu = NULL;
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
-+		list_for_each_entry(alias, &pmu->aliases, list) {
-+			ret = func(alias->name);
-+			if (ret != 0)
-+				break;
-+		}
-+	}
-+	return ret;
-+}
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 62255bb..b885c55 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -47,5 +47,7 @@ bool pmu_have_event(const char *pname, const char *name);
- 
- int perf_pmu__test(void);
- 
-+int pmu_iterate_events(int (*func)(const char *name));
-+
- extern const char *json_file;
- #endif /* __PMU_H */
--- 
-1.8.5.3
+oprofile always had separate event list files that were maintained by 
+the CPU vendors. The oprofile events were shipped with the tool.
+The Intel events get updated regularly, for example to add references
+to the specification updates or add new events.
 
+Unfortunately oprofile usually did not keep up with these updates,
+so the events in oprofile were often out of date. In addition
+it ties up quite a bit of disk space, mostly for CPUs you don't have.
+
+This patch kit implements another mechanism that avoids these problems.
+Intel releases the event lists for CPUs in a standardized JSON format
+on a download server.
+
+I implemented an automatic downloader to get the event file for the
+current CPU.  The events are stored in ~/.events.
+Then perf adds a parser that converts the JSON format into perf event
+aliases, which then can be used directly as any other perf event.
+
+The parsing is done using a simple existing JSON library.
+
+The events are still abstracted for perf, but the abstraction mechanism is
+through the downloaded file instead of through the kernel.
+
+The JSON format and perf parser has some minor Intelisms, but they
+are simple and small and optional. It's easy to extend, so it would be
+possible to use it for other CPUs too, add different pmu attributes, and
+add new download sites to the downloader tool.
+
+Currently only core events are supported, uncore may come at a later
+point. No kernel changes, all code in perf user tools only.
+
+Some of the parser files are partially shared with separate event parser
+library and are thus 2-clause BSD licensed.
+
+Patches also available from
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/json
+
+Example output:
+
+% perf download 
+Downloading models file
+Downloading readme.txt
+2014-03-05 10:39:33 URL:https://download.01.org/perfmon/readme.txt [10320/10320] -> "readme.txt" [1]
+2014-03-05 10:39:34 URL:https://download.01.org/perfmon/mapfile.csv [1207/1207] -> "mapfile.csv" [1]
+Downloading events file
+% perf list
+...
+  br_inst_exec.all_branches                          [Speculative and retired
+                                                      branches]
+  br_inst_exec.all_conditional                       [Speculative and retired
+                                                      macro-conditional
+                                                      branches]
+  br_inst_exec.all_direct_jmp                        [Speculative and retired
+                                                      macro-unconditional
+                                                      branches excluding
+                                                      calls and indirects]
+... 333 more new events ...
+
+% perf stat -e br_inst_exec.all_direct_jmp true
+
+ Performance counter stats for 'true':
+
+             6,817      cpu/br_inst_exec.all_direct_jmp/                                   
+
+       0.003503212 seconds time elapsed
+
+One nice feature is that a pointer to the specification update is now
+included in the description, which will hopefully clear up many problems:
+
+% perf list
+...
+  mem_load_uops_l3_hit_retired.xsnp_hit              [Retired load uops which
+                                                      data sources were L3
+                                                      and cross-core snoop
+                                                      hits in on-pkg core
+                                                      cache. Supports address
+                                                      when precise. Spec
+                                                      update: HSM26, HSM30
+                                                      (Precise event)]
+...
+
+
+-Andi
