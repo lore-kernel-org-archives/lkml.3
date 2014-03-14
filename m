@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548AbaCNNlA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 09:41:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26768 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754171AbaCNNk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 09:40:59 -0400
-Date: Fri, 14 Mar 2014 09:40:57 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, jmario@redhat.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: Speed up thread map generation
-Message-ID: <20140314134057.GZ25953@redhat.com>
-References: <1394745397-96149-1-git-send-email-dzickus@redhat.com>
- <20140314131734.GB5276@krava.redhat.com>
+	id S1754626AbaCNNnc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 09:43:32 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:36534 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024AbaCNNn3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 09:43:29 -0400
+Date: Fri, 14 Mar 2014 09:43:24 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Tim Kryger <tim.kryger@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux Doc List <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/5] Add Broadcom Kona PWM Support
+Message-ID: <20140314134324.GY25092@beef>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140314131734.GB5276@krava.redhat.com>
+In-Reply-To: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 02:17:35PM +0100, Jiri Olsa wrote:
-> On Thu, Mar 13, 2014 at 05:16:37PM -0400, Don Zickus wrote:
+On Wed, Mar 12, 2014 at 01:15:41PM -0700, Tim Kryger wrote:
+> This series introduces the driver for the Kona PWM controller found in
+> Broadcom mobile SoCs like bcm281xx and updates the device tree and the
+> defconfig to enable use of this hardware on the bcm28155 AP board.
 > 
-> SNIP
+> Changes since v2:
+>   - SoC DTS file updated to use real clock's phandle + specifier
+>   - Toggle smooth mode off during apply so new settings take immediately
 > 
-> > +	event->fork.ptid = tgid;
-> > +	event->fork.pid  = tgid;
-> > +	event->fork.tid  = pid;
-> > +	event->fork.header.type = PERF_RECORD_FORK;
-> > +
-> > +	event->fork.header.size = (sizeof(event->fork) + machine->id_hdr_size);
-> > +
-> > +	if (process(tool, event, &synth_sample, machine) != 0)
-> > +		return -1;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> >  int perf_event__synthesize_mmap_events(struct perf_tool *tool,
-> >  				       union perf_event *event,
-> >  				       pid_t pid, pid_t tgid,
-> > @@ -287,6 +309,11 @@ static int __event__synthesize_thread(union perf_event *comm_event,
-> >  	DIR *tasks;
-> >  	struct dirent dirent, *next;
-> >  	pid_t tgid;
-> > +	union perf_event *fork_event;
-> > +
-> > +	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
-> > +	if (fork_event == NULL)
-> > +		return -1;
+> Changes since v1:
+>   - Fixed up macros to be clearer and more complete
+>   - Corrected spelling and punctuation mistakes
+>   - Added support for polarity
+>   - Made peripheral clock use more efficient
+>   - Made prescale and duty computation clearer
+>   - Moved Makefile addition to keep alphabetical
+>   - Split complex lines into multiple steps
 > 
-> need to be freed
-
-Doh.
-
+> Dependencies:
+> The "ARM: dts: Declare the PWM for bcm11351 (bcm281xx)" patch depends
+> upon "ARM: dts: bcm281xx: define real clocks" which is queued up in
+> for-next of arm-soc. See https://lkml.org/lkml/2014/2/14/451
 > 
-> maybe we could move the allocation one level up,
-> same as for mmap_event and comm_event
+> Tim Kryger (5):
+>   Documentation: dt: Add Kona PWM binding
+>   pwm: kona: Introduce Kona PWM controller support
 
-I thought about that too, just seemed silly to pass that through the
-function params.  Not sure if there are different mallocs from the callers.
+Thierry, are you planning to merge these first two for 3.15? If so, I
+will apply dts patches for my last mach-bcm 3.15 pull. I don't want to
+do so until the binding is accepted.
 
-I'll respin the patch with this though.
+-Matt
 
-> 
-> otherwise I think the logic with FORK event is correct
-
-Great!
-
-Cheers,
-Don
+>   ARM: dts: Declare the PWM for bcm11351 (bcm281xx)
+>   ARM: dts: Enable the PWM for bcm28155 AP board
+>   ARM: bcm_defconfig: Enable PWM and Backlight
