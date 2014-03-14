@@ -1,126 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822AbaCNKWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 06:22:47 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:31691 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752788AbaCNKWp (ORCPT
+	id S1753362AbaCNK3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 06:29:41 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:54113 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662AbaCNK3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 06:22:45 -0400
-X-Greylist: delayed 309 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Mar 2014 06:22:45 EDT
-From: Josh Wu <josh.wu@atmel.com>
-To: <g.liakhovetski@gmx.de>
-CC: <m.chehab@samsung.com>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Josh Wu <josh.wu@atmel.com>
-Subject: [PATCH] [media] ov2640: add support for async device registration
-Date: Fri, 14 Mar 2014 18:12:31 +0800
-Message-ID: <1394791952-12941-1-git-send-email-josh.wu@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 14 Mar 2014 06:29:39 -0400
+Date: Fri, 14 Mar 2014 10:29:34 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
+        James Ralston <james.d.ralston@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/8] mfd: lpc_ich: Fix ACPI enable bitmask
+Message-ID: <20140314102934.GA3432@lee--X1>
+References: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com>
+ <20140313151601.GA4479@roeck-us.net>
+ <20140313152534.GC10356@lee--X1>
+ <20140313225040.GK28504@lee--X1>
+ <53223964.2080408@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53223964.2080408@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the clock detection code to the beginning of the probe().
-If we meet any error in the clock detecting, then defer the probe.
+> >>>>The original bitmask of 0x10 was incorrect and would result in a write
+> >>>>to a reserved read-only bit instead of enabling the ACPI I/O
+> >>>>region.  Update it to the proper value of 0x80.
+> >>>>
+> >>>>Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+> >>>>Tested-by: Rajat Jain <rajatjain@juniper.net>
+> >>>>Cc: Guenter Roeck <linux@roeck-us.net>
+> >>>>Cc: James Ralston <james.d.ralston@intel.com>
+> >>>>Cc: Samuel Ortiz <sameo@linux.intel.com>
+> >>>>Cc: Lee Jones <lee.jones@linaro.org>
+> >>>
+> >>>Who is going to pick up this series ?
+> >>
+> >>I will, once I've completed the review.
+> >
+> >Okay review complete, phew!
+> >
+> >Guenter, How do you want to play this? Do you want me to create an
+> >immutable branch for you to pull from?
+> >
+> 
+> I'll be happy if I can pull it from -next. Is it going to be there
+> anytime soon ?
 
-Signed-off-by: Josh Wu <josh.wu@atmel.com>
----
- drivers/media/i2c/soc_camera/ov2640.c |   43 +++++++++++++++++++++------------
- 1 file changed, 28 insertions(+), 15 deletions(-)
+Well I pushed an updated version of the MFD today, so it should appear
+in -next this evening.
 
-diff --git a/drivers/media/i2c/soc_camera/ov2640.c b/drivers/media/i2c/soc_camera/ov2640.c
-index 6c6b1c3..fb9b6e9 100644
---- a/drivers/media/i2c/soc_camera/ov2640.c
-+++ b/drivers/media/i2c/soc_camera/ov2640.c
-@@ -22,6 +22,7 @@
- #include <linux/videodev2.h>
- 
- #include <media/soc_camera.h>
-+#include <media/v4l2-async.h>
- #include <media/v4l2-clk.h>
- #include <media/v4l2-subdev.h>
- #include <media/v4l2-ctrls.h>
-@@ -1069,6 +1070,7 @@ static int ov2640_probe(struct i2c_client *client,
- 	struct ov2640_priv	*priv;
- 	struct soc_camera_subdev_desc *ssdd = soc_camera_i2c_to_desc(client);
- 	struct i2c_adapter	*adapter = to_i2c_adapter(client->dev.parent);
-+	struct v4l2_clk		*clk;
- 	int			ret;
- 
- 	if (!ssdd) {
-@@ -1083,13 +1085,20 @@ static int ov2640_probe(struct i2c_client *client,
- 		return -EIO;
- 	}
- 
-+	clk = v4l2_clk_get(&client->dev, "mclk");
-+	if (IS_ERR(clk))
-+		return -EPROBE_DEFER;
-+
- 	priv = devm_kzalloc(&client->dev, sizeof(struct ov2640_priv), GFP_KERNEL);
- 	if (!priv) {
- 		dev_err(&adapter->dev,
- 			"Failed to allocate memory for private data!\n");
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto err_kzalloc;
- 	}
- 
-+	priv->clk = clk;
-+
- 	v4l2_i2c_subdev_init(&priv->subdev, client, &ov2640_subdev_ops);
- 	v4l2_ctrl_handler_init(&priv->hdl, 2);
- 	v4l2_ctrl_new_std(&priv->hdl, &ov2640_ctrl_ops,
-@@ -1097,23 +1106,26 @@ static int ov2640_probe(struct i2c_client *client,
- 	v4l2_ctrl_new_std(&priv->hdl, &ov2640_ctrl_ops,
- 			V4L2_CID_HFLIP, 0, 1, 1, 0);
- 	priv->subdev.ctrl_handler = &priv->hdl;
--	if (priv->hdl.error)
--		return priv->hdl.error;
--
--	priv->clk = v4l2_clk_get(&client->dev, "mclk");
--	if (IS_ERR(priv->clk)) {
--		ret = PTR_ERR(priv->clk);
--		goto eclkget;
-+	if (priv->hdl.error) {
-+		ret = priv->hdl.error;
-+		goto err_kzalloc;
- 	}
- 
- 	ret = ov2640_video_probe(client);
--	if (ret) {
--		v4l2_clk_put(priv->clk);
--eclkget:
--		v4l2_ctrl_handler_free(&priv->hdl);
--	} else {
--		dev_info(&adapter->dev, "OV2640 Probed\n");
--	}
-+	if (ret)
-+		goto err_probe;
-+
-+	ret = v4l2_async_register_subdev(&priv->subdev);
-+	if (ret)
-+		goto err_probe;
-+
-+	dev_info(&adapter->dev, "OV2640 Probed\n");
-+	return 0;
-+
-+err_probe:
-+	v4l2_ctrl_handler_free(&priv->hdl);
-+err_kzalloc:
-+	v4l2_clk_put(clk);
- 
- 	return ret;
- }
-@@ -1122,6 +1134,7 @@ static int ov2640_remove(struct i2c_client *client)
- {
- 	struct ov2640_priv       *priv = to_ov2640(client);
- 
-+	v4l2_async_unregister_subdev(&priv->subdev);
- 	v4l2_clk_put(priv->clk);
- 	v4l2_device_unregister_subdev(&priv->subdev);
- 	v4l2_ctrl_handler_free(&priv->hdl);
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
