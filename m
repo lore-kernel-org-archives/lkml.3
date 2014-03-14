@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117AbaCNJcZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 05:32:25 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:59049 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755974AbaCNJaY (ORCPT
+	id S1755969AbaCNJaX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 05:30:23 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:64220 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543AbaCNJaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 05:30:24 -0400
-X-AuditID: cbfee690-b7f266d00000287c-c8-5322cc27a1a2
+	Fri, 14 Mar 2014 05:30:15 -0400
+X-AuditID: cbfee68e-b7f566d000002344-f4-5322cc2549dd
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com, kyungmin.park@samsung.com
 Cc: rafael.j.wysocki@intel.com, nm@ti.com, b.zolnierkie@samsaung.com,
@@ -16,37 +16,38 @@ Cc: rafael.j.wysocki@intel.com, nm@ti.com, b.zolnierkie@samsaung.com,
         linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv3 5/8] devfreq: exynos4: Use SET_SYSTEM_SLEEP_PM_OPS macro
-Date: Fri, 14 Mar 2014 18:30:05 +0900
-Message-id: <1394789408-14648-6-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv3 2/8] devfreq: exynos4: Support devicetree to get device id of
+ Exynos4 SoC
+Date: Fri, 14 Mar 2014 18:30:02 +0900
+Message-id: <1394789408-14648-3-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1394789408-14648-1-git-send-email-cw00.choi@samsung.com>
 References: <1394789408-14648-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsWyRsSkUFf9jFKwwYV3UhYdPb9ZLK5/ec5q
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsWyRsSkUFf1jFKwwbNpehYdPb9ZLK5/ec5q
 	Mf/IOVaLc69WMlqcbXrDbrGwbQmLxeVdc9gsPvceYbSYcX4fk8XS6xeZLG43rmCzePPjLJPF
 	hOlrWSwer3jLbvHqYBuLA7/HmnlrGD1WLv/C5rF4z0smj5/Lt7N79G1Zxehx/MZ2Jo/Pm+Q8
-	Ns4NDeCI4rJJSc3JLEst0rdL4Mro/7qLsWARR8XS1jlMDYxN7F2MHBwSAiYS+5ZJdzFyApli
-	EhfurWfrYuTiEBJYyijx7fchZoiEicTv61MYIRKLGCWmrfvDCuE0MklsW7yfCaSKTUBLYv+L
-	G2wgtoiAucSupT/BRjELPGOSuNXfB1YkLOAlsfbEA3YQm0VAVWLV80OMIDavgKtEy66/UOvk
-	JD7seQRWwyngJvG2eRpYjRBQTV/3ASaQoRICb9kldmztZ4EYJCDxbfIhFoh/ZCU2HYCaIylx
-	cMUNlgmMwgsYGVYxiqYWJBcUJ6UXmegVJ+YWl+al6yXn525iBEbV6X/PJuxgvHfA+hBjMtC4
-	icxSosn5wKjMK4k3NDYzsjA1MTU2Mrc0I01YSZxX7VFSkJBAemJJanZqakFqUXxRaU5q8SFG
-	Jg5OqQbGaXICL3Jn2TyUb4trbQ/8sD5l8dq2WeEPpyhsUF75MdB1raT+rZV8LNcaX8ZN3zfn
-	VUxH2L4QE598Jh2F5iUnZpexVsywr35S9+HChW0p5mx6RZO71nyx9g2cd9PasTlRQS3SMZLx
-	Sr/POZndjxN+BmdlTHFi+fjIRkV6u4H2pA2H1gQGPj6hxFKckWioxVxUnAgAh8IwzcACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgK76GaVgg64LwhYdPb9ZLK5/ec5q
-	Mf/IOVaLc69WMlqcbXrDbrGwbQmLxeVdc9gsPvceYbSYcX4fk8XS6xeZLG43rmCzePPjLJPF
-	hOlrWSwer3jLbvHqYBuLA7/HmnlrGD1WLv/C5rF4z0smj5/Lt7N79G1Zxehx/MZ2Jo/Pm+Q8
-	Ns4NDeCIamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXL
-	zAG6XkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOY0f91F2PBIo6Kpa1z
-	mBoYm9i7GDk5JARMJH5fn8IIYYtJXLi3nq2LkYtDSGARo8S0dX9YIZxGJolti/czgVSxCWhJ
-	7H9xgw3EFhEwl9i19CdYB7PAMyaJW/19YEXCAl4Sa088AFvBIqAqser5IbAVvAKuEi27/jJD
-	rJOT+LDnEVgNp4CbxNvmaWA1QkA1fd0HmCYw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpec
-	n7uJERy1z6R2MK5ssDjEKMDBqMTD63BYMViINbGsuDL3EKMEB7OSCC/DPKVgId6UxMqq1KL8
-	+KLSnNTiQ4zJQFdNZJYSTc4HJpS8knhDYxMzI0sjc0MLI2Nz0oSVxHkPtFoHCgmkJ5akZqem
-	FqQWwWxh4uCUamBc65h+IXWqxi1j8WmCgSVsMZouMRwKfP2RR7dv2d/px3zL/JpJcPRCJWkt
-	22/r9azc/mzzfGj7JOHcr1sOXguP3NxxwFHsp/r5mBTDRSedF3bEGjPau27hvmOuVD9Ncdfk
-	nYW/eNUf39x066Nm1y57Dr3pbPKqF9v+yhQ1PV6zlifu453XF12UWIozEg21mIuKEwGGgN2V
+	Ns4NDeCI4rJJSc3JLEst0rdL4MpY1NPHUrBXoGJj93z2BsbnvF2MnBwSAiYSf98vZIWwxSQu
+	3FvP1sXIxSEksJRR4vPSu6wwRdt/P2WFSCxilGh48JwZwmlkkjjz7QQjSBWbgJbE/hc32EBs
+	EQFziV1Lf4KNYhZ4xiRxq7+PCSQhLBArsfnRRLCxLAKqEseaXoM18Aq4Stw8fhhqnZzEhz2P
+	2EFsTgE3ibfN08AWCAHV9HUfYAIZKiHwll3iydYfUIMEJL5NPsTSxcgBlJCV2HSAGWKOpMTB
+	FTdYJjAKL2BkWMUomlqQXFCclF5kpFecmFtcmpeul5yfu4kRGFen/z3r28F484D1IcZkoHET
+	maVEk/OBcZlXEm9obGZkYWpiamxkbmlGmrCSOO+ih0lBQgLpiSWp2ampBalF8UWlOanFhxiZ
+	ODilGhhXrN+/5sbGCbMdnIzXxBvZGjhOXraM6bDr0YC90Xee3xGa1+Nv13RWMFB85ZzvLbqt
+	t/+GubwXyvVasaugbkJVT96VhzZ6ory7Ddx0I2w0Sl5ftb6/KL1NI3/5Cjnl0JSjNxyZM6tu
+	bxNNK42K/i/18oeM9rajj1rvvs9afWTbjn6tAK0peh5KLMUZiYZazEXFiQAI4nTiwQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgK7qGaVggx9H1Cw6en6zWFz/8pzV
+	Yv6Rc6wW516tZLQ42/SG3WJh2xIWi8u75rBZfO49wmgx4/w+Joul1y8yWdxuXMFm8ebHWSaL
+	CdPXslg8XvGW3eLVwTYWB36PNfPWMHqsXP6FzWPxnpdMHj+Xb2f36NuyitHj+I3tTB6fN8l5
+	bJwbGsAR1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuW
+	mQN0vZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYxY1FPH0vBXoGKjd3z
+	2RsYn/N2MXJySAiYSGz//ZQVwhaTuHBvPVsXIxeHkMAiRomGB8+ZIZxGJokz304wglSxCWhJ
+	7H9xgw3EFhEwl9i19CdYB7PAMyaJW/19TCAJYYFYic2PJoKNZRFQlTjW9BqsgVfAVeLm8cNQ
+	6+QkPux5xA5icwq4Sbxtnga2QAiopq/7ANMERt4FjAyrGEVTC5ILipPScw31ihNzi0vz0vWS
+	83M3MYKj9pnUDsaVDRaHGAU4GJV4eB0OKwYLsSaWFVfmHmKU4GBWEuFlmKcULMSbklhZlVqU
+	H19UmpNafIgxGeiqicxSosn5wISSVxJvaGxiZmRpZG5oYWRsTpqwkjjvgVbrQCGB9MSS1OzU
+	1ILUIpgtTBycUg2MGVpGS2NevuoTNHxQffrvOvX9aXk/nqeqCDs+XtXY+9FUJyzK6mRfx+eA
+	Upt3UmdUnrUovip9pMno/0pJ/0uEVW0n9ysLQ5FtW9fuZgi4eDP6anTA/g11RbZNL5oEw8vu
+	/MjIiTb26F7iaxdxWCBE7N7KHSafrIV23cv7ISp5Z3XmPrF7mhVKLMUZiYZazEXFiQCKTPI4
 	HgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
@@ -55,37 +56,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch use SET_SYSTEM_SLEEP_PM_OPS macro instead of legacy method.
+This patch support DT(DeviceTree) method to probe exynos4_bus and get device
+id of each Exynos4 SoC by using dt helper function.
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- drivers/devfreq/exynos/exynos4_bus.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/devfreq/exynos/exynos4_bus.c | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
-index 60539e8..e5d2c5a 100644
+index 378e4bd..2d2b44b 100644
 --- a/drivers/devfreq/exynos/exynos4_bus.c
 +++ b/drivers/devfreq/exynos/exynos4_bus.c
-@@ -1247,6 +1247,7 @@ static int exynos4_busfreq_remove(struct platform_device *pdev)
- 	return 0;
+@@ -23,6 +23,7 @@
+ #include <linux/devfreq.h>
+ #include <linux/platform_device.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/of.h>
+ #include <linux/module.h>
+ 
+ /* Exynos4 ASV has been in the mailing list, but not upstreamed, yet. */
+@@ -1014,6 +1015,28 @@ unlock:
+ 	return NOTIFY_DONE;
  }
  
-+#ifdef CONFIG_PM_SLEEP
- static int exynos4_busfreq_resume(struct device *dev)
++static struct of_device_id exynos4_busfreq_id_match[] = {
++	{
++		.compatible = "samsung,exynos4210-busfreq",
++		.data = (void *)TYPE_BUSF_EXYNOS4210,
++	}, {
++		.compatible = "samsung,exynos4x12-busfreq",
++		.data = (void *)TYPE_BUSF_EXYNOS4x12,
++	},
++};
++
++static int exynos4_busfreq_get_driver_data(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	const struct of_device_id *match;
++
++	match = of_match_node(exynos4_busfreq_id_match, dev->of_node);
++	if (!match)
++		return -ENODEV;
++
++	return (int) match->data;
++}
++
+ static int exynos4_busfreq_probe(struct platform_device *pdev)
  {
- 	struct busfreq_data *data = dev_get_drvdata(dev);
-@@ -1254,9 +1255,10 @@ static int exynos4_busfreq_resume(struct device *dev)
- 	busfreq_mon_reset(data);
- 	return 0;
- }
-+#endif
+ 	struct busfreq_data *data;
+@@ -1027,7 +1050,7 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
  
- static const struct dev_pm_ops exynos4_busfreq_pm = {
--	.resume	= exynos4_busfreq_resume,
-+	SET_SYSTEM_SLEEP_PM_OPS(NULL, exynos4_busfreq_resume)
+-	data->type = pdev->id_entry->driver_data;
++	data->type = exynos4_busfreq_get_driver_data(pdev);
+ 	data->dmc[0].hw_base = S5P_VA_DMC0;
+ 	data->dmc[1].hw_base = S5P_VA_DMC1;
+ 	data->pm_notifier.notifier_call = exynos4_busfreq_pm_notifier_event;
+@@ -1151,6 +1174,7 @@ static struct platform_driver exynos4_busfreq_driver = {
+ 		.name	= "exynos4-busfreq",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &exynos4_busfreq_pm,
++		.of_match_table = exynos4_busfreq_id_match,
+ 	},
  };
  
- static const struct platform_device_id exynos4_busfreq_id[] = {
 -- 
 1.8.0
 
