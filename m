@@ -1,89 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbaCNWYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 18:24:40 -0400
-Received: from forward9.mail.yandex.net ([77.88.61.48]:58784 "EHLO
-	forward9.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843AbaCNWYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 18:24:39 -0400
-X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Mar 2014 18:24:38 EDT
-X-Yandex-Uniq: ff80224e-6863-480e-8719-1f8bf9a3b33b
-Authentication-Results: smtp9.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Message-ID: <1394835289.18748.31.camel@HP-250-G1-Notebook-PC>
-Subject: [PATCH 1/4] sched/rt: Sum number of all children tasks in hierarhy
- at rt_nr_running
-From: Kirill Tkhai <tkhai@yandex.ru>
-Reply-To: tkhai@yandex.ru
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Date: Sat, 15 Mar 2014 02:14:49 +0400
+	id S1756056AbaCNW0j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 18:26:39 -0400
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:29759
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754873AbaCNW0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 18:26:38 -0400
+Message-ID: <1394835987.12479.119.camel@snotra.buserror.net>
+Subject: Re: [PATCH 9/9] powerpc/pm: support deep sleep feature on T1040
+From: Scott Wood <scottwood@freescale.com>
+To: Kevin Hao <haokexin@gmail.com>
+CC: Chenhui Zhao <chenhui.zhao@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>,
+        <Jason.Jin@freescale.com>
+Date: Fri, 14 Mar 2014 17:26:27 -0500
+In-Reply-To: <20140313074613.GD26692@pek-khao-d1.corp.ad.wrs.com>
+References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
+	 <1394168285-32275-9-git-send-email-chenhui.zhao@freescale.com>
+	 <1394586624.13761.132.camel@snotra.buserror.net>
+	 <20140312055755.GA17203@pek-khao-d1.corp.ad.wrs.com>
+	 <1394646185.13761.145.camel@snotra.buserror.net>
+	 <20140313074613.GD26692@pek-khao-d1.corp.ad.wrs.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: CO1PR04CA003.namprd04.prod.outlook.com (10.141.49.13) To
+ DM2PR03MB398.namprd03.prod.outlook.com (10.141.84.140)
+X-Forefront-PRVS: 0150F3F97D
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(189002)(57704003)(199002)(51704005)(377424004)(74662001)(42186004)(97186001)(51856001)(551934002)(62966002)(74502001)(81342001)(56776001)(85306002)(1411001)(80976001)(46102001)(69226001)(54316002)(95666003)(74366001)(81686001)(53806001)(31966008)(81542001)(47446002)(33646001)(88136002)(86362001)(65816001)(80022001)(47736001)(76482001)(90146001)(92726001)(56816005)(77096001)(83072002)(85852003)(77156001)(76786001)(76796001)(74706001)(93516002)(59766001)(20776003)(23676002)(93916002)(50226001)(81816001)(92566001)(83322001)(87266001)(50466002)(89996001)(94946001)(87976001)(47776003)(47976001)(74876001)(49866001)(95416001)(94316002)(79102001)(63696002)(50986001)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB398;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:CA27DC94.9FF55319.FDF01DAF.80A7D3DE.203D3;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-{inc,dec}_rt_tasks used to count entities which are directly queued
-on rt_rq. If an entity was not a task (i.e., it is some queue), its
-children were not counted.
+On Thu, 2014-03-13 at 15:46 +0800, Kevin Hao wrote:
+> On Wed, Mar 12, 2014 at 12:43:05PM -0500, Scott Wood wrote:
+> > > Shouldn't we use "readback, sync" here? The following is quoted form t4240RM:
+> > >   To guarantee that the results of any sequence of writes to configuration
+> > >   registers are in effect, the final configuration register write should be
+> > >   immediately followed by a read of the same register, and that should be
+> > >   followed by a SYNC instruction. Then accesses can safely be made to memory
+> > >   regions affected by the configuration register write.
+> > 
+> > I agree that the sync before the readback is probably not necessary,
+> > since transactions to the same address should already be ordered.
+> > 
+> > A sync after the readback helps if you're trying to order the readback
+> > with subsequent memory accesses, though in that case wouldn't a sync
+> > alone (no readback) be adequate?
+> 
+> No, we don't just want to order the subsequent memory access here.
+> The 'write, readback, sync' is the required sequence if we want to make
+> sure that the writing to CCSR register does really take effect.
+> 
+> >  Though maybe not always -- see the
+> > comment near the end of fsl_elbc_write_buf() in
+> > drivers/mtd/nand_fsl_elbc.c.  I guess the readback does more than just
+> > make sure the device has seen the write, ensuring that the device has
+> > finished the transaction to the point of acting on another one.
+> 
+> Agree.
+> 
+> > 
+> > The data dependency plus isync sequence, which is done by the normal I/O
+> > accessors used from C code, orders the readback versus all future
+> > instructions (not just I/O).  The delay loop is not I/O.
+> 
+> According to the PowerISA, the sequence 'load, date dependency, isync' only
+> order the load accesses. 
 
-There is no problem here, but now we want to count number of all tasks
-which are actually queued under the rt_rq in all the hierarhy (except
-throttled rt queues).
+The point is to order the delay loop after the load, not to order
+storage versus storage.
 
-Empty queues are not able to be queued and all of the places, which
-use rt_nr_running, just compare it with zero, so we do not break
-anything here.
+This is a sequence we're already using on all of our I/O loads
+(excluding accesses like in this patch that don't use the standard
+accessors).  I'm confident that it works even if it's not
+architecturally guaranteed.  I'm not sure that there exists a clear
+architectural way of synchronizing non-storage instructions relative to
+storage instructions.
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/rt.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+Given that isync is documented as preventing any execution of
+instructions after the isync until all previous instructions complete,
+it doesn't seem to make sense for the architecture to explicitly talk
+about loads (as opposed to any other instruction) following a load,
+dependent conditional branch, isync sequence.
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index d8cdf16..e4def13 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1045,12 +1045,23 @@ void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
- #endif /* CONFIG_RT_GROUP_SCHED */
- 
- static inline
-+unsigned int rt_se_nr_running(struct sched_rt_entity *rt_se)
-+{
-+	struct rt_rq *group_rq = group_rt_rq(rt_se);
-+
-+	if (group_rq)
-+		return group_rq->rt_nr_running;
-+	else
-+		return 1;
-+}
-+
-+static inline
- void inc_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
- {
- 	int prio = rt_se_prio(rt_se);
- 
- 	WARN_ON(!rt_prio(prio));
--	rt_rq->rt_nr_running++;
-+	rt_rq->rt_nr_running += rt_se_nr_running(rt_se);
- 
- 	inc_rt_prio(rt_rq, prio);
- 	inc_rt_migration(rt_se, rt_rq);
-@@ -1062,7 +1073,7 @@ void dec_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
- {
- 	WARN_ON(!rt_prio(rt_se_prio(rt_se)));
- 	WARN_ON(!rt_rq->rt_nr_running);
--	rt_rq->rt_nr_running--;
-+	rt_rq->rt_nr_running -= rt_se_nr_running(rt_se);
- 
- 	dec_rt_prio(rt_rq, rt_se_prio(rt_se));
- 	dec_rt_migration(rt_se, rt_rq);
+> So if we want to order all the storage access as well
+> as execution synchronization, we should choose sync here.
 
+Do we need execution synchronization or context synchronization?
 
+The t4240 RM section that talks about a readback and a sync is in the
+context of subsequent memory operations ("Then accesses can safely be
+made to memory regions affected..."), not arbitrary instructions.  There
+are also a couple other places in the RM where isync is recommended
+instead (when setting LAWs or CCSRBAR), even though those also only
+involve memory accesses.
+
+In any case, this is not performance critical and thus it's better to
+oversynchronize than undersynchronize.
+
+-Scott
 
 
