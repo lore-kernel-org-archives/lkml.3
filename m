@@ -1,82 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910AbaCNSkp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 14:40:45 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:58339 "EHLO smtp6-g21.free.fr"
+	id S1756041AbaCNSls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 14:41:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:13970 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755037AbaCNSkn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 14:40:43 -0400
-Date: Fri, 14 Mar 2014 19:40:37 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Jyri Sarha <jsarha@ti.com>
-Cc: Mark Brown <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>, <linux-kernel@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: [alsa-devel] [PATCH v2 3/4] ASoC: simple-card: accept many DAI
- links
-Message-ID: <20140314194037.7da888cd@armhf>
-In-Reply-To: <5322E4FC.7060605@ti.com>
-References: <cover.1394533640.git.moinejf@free.fr>
-	<d71a2b62b331302772d35b3cd35c6dc5da1e9e5d.1394533640.git.moinejf@free.fr>
-	<5322E4FC.7060605@ti.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754585AbaCNSlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 14:41:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,656,1389772800"; 
+   d="scan'208";a="492221065"
+Message-ID: <1394822501.28803.280.camel@smile.fi.intel.com>
+Subject: Re: [PATCH v5 2/2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org, levex@linux.com,
+        lars@metafoo.de, jaswinder.singh@linaro.org, dmaengine@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 14 Mar 2014 20:41:41 +0200
+In-Reply-To: <1394819415-2511-3-git-send-email-sthokal@xilinx.com>
+References: <1394819415-2511-1-git-send-email-sthokal@xilinx.com>
+	 <1394819415-2511-3-git-send-email-sthokal@xilinx.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Mar 2014 13:16:12 +0200
-Jyri Sarha <jsarha@ti.com> wrote:
-
-> On 03/11/2014 11:36 AM, Jean-Francois Moine wrote:
-> > Some simple audio cards may have many DAI links.
-> > This patch extends the simple-card driver for handling such cards.
-> >
-> > Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> > ---
-> [...]
+On Fri, 2014-03-14 at 23:20 +0530, Srikanth Thokala wrote:
+> This is the driver for the AXI Video Direct Memory Access (AXI
+> VDMA) core, which is a soft Xilinx IP core that provides high-
+> bandwidth direct memory access between memory and AXI4-Stream
+> type video target peripherals. The core provides efficient two
+> dimensional DMA operations with independent asynchronous read
+> and write channel operation.
 > 
-> Why can't you just use two simple-card instances in your setup?
+> This module works on Zynq (ARM Based SoC) and Microblaze platforms.
 
-My machine has only one audio device (kirkwood). This one has two
-outputs. The first one (I2S) is connected to the HDMI transmitter, and
-the other one (S/PDIF) is connected to both the HDMI transmitter and the
-S/PDIF connector. There can be only one playback stream, either via
-I2S, or S/PDIF, or both, with the final output either to HDMI or S/PDIF
-or both:
+Few comments below.
 
-           /--> I2S -----+-> HDMI
-platform -+             /
-           \-> S/PDIF -+
-                        \--> S/PDIF
+[]
 
-DPCM permits to activate both I2S and S/PDIF, but it does not handle
-the format and rate constraints (both outputs are always activated with
-the platform constraints).
+> +++ b/drivers/dma/xilinx/xilinx_vdma.c
 
-So, the actual solution I use is 3 DAI links (= 3 PCMs):
-- HDMI via I2S
-- HDMI via S/PDIF (no S/PDIF output)
-- S/PDIF via S/PDIF (no HDMI output)
+[]
 
-> You need to update the DT-binding document too when you are changing the 
-> binding. That way it would also be easier to follow what you are trying 
-> to accomplish here.
+> +/**
+> + * xilinx_vdma_prep_slave_sg - prepare a descriptor for a DMA_SLAVE transaction
+> + * @dchan: DMA channel
+> + * @xt: Interleaved template pointer
+> + * @flags: transfer ack flags
+> + *
+> + * Return: Async transaction descriptor on success and NULL on failure
+> + */
+> +static struct dma_async_tx_descriptor *
+> +xilinx_vdma_dma_prep_interleaved(struct dma_chan *dchan,
+> +				 struct dma_interleaved_template *xt,
+> +				 unsigned long flags)
+> +{
+> +	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+> +	struct xilinx_vdma_tx_descriptor *desc;
+> +	struct xilinx_vdma_tx_segment *segment, *prev = NULL;
+> +	struct xilinx_vdma_desc_hw *hw;
+> +
+> +	if ((xt->dir != DMA_MEM_TO_DEV) && (xt->dir != DMA_DEV_TO_MEM))
+> +		return NULL;
 
-Some people want to have 2 different patchs: one for the code and the
-other one for the DT change. Some other people like you want only one
-patch. Which is the right way?
+!is_slave_direction()
 
-> The sysclk and tdm properties appear to only work in the dais of the 
-> first dai-link and __asoc_simple_card_dai_init() will not be called for 
-> other dais at all. The DT-binding of this implementation would look 
-> pretty hairy to me.
+[]
 
-I will add an other dynamic structure for these properties.
+> +static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
+> +				  struct device_node *node)
+> +{
+> +	struct xilinx_vdma_chan *chan;
+> +	bool has_dre = false;
+> +	u32 value, width;
+> +	int err;
+
+[]
+
+> +	width = value >> 3; /* Convert bits to bytes */
+> +
+> +	/* If data width is greater than 8 bytes, DRE is not in hw */
+> +	if (width > 8)
+> +		has_dre = false;
+> +
+> +	if (!has_dre)
+> +		xdev->common.copy_align = fls(width - 1);
+
+Is width power of two? For me looks like it should be fls(width) - 1;
+
+So, device can't work with alignment less than defined in this case,
+correct?
+
+[]
+
+> +/**
+> + * xilinx_vdma_probe - Driver probe function
+> + * @pdev: Pointer to the platform_device structure
+> + *
+> + * Return: '0' on success and failure value on error
+> + */
+> +static int xilinx_vdma_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *node = pdev->dev.of_node;
+> +	struct xilinx_vdma_device *xdev;
+> +	struct device_node *child;
+> +	struct resource *io;
+> +	u32 num_frames;
+> +	int i, err;
+> +
+> +	dev_info(&pdev->dev, "Probing xilinx axi vdma engine\n");
+
+dev_dbg? Or move this to the end of function and change text to
+something like "Probed ..."
+
 
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
+
