@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173AbaCNNMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 09:12:50 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:61552 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503AbaCNNMs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 09:12:48 -0400
+	id S1754137AbaCNNRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 09:17:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55150 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753109AbaCNNRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 09:17:38 -0400
+Date: Fri, 14 Mar 2014 14:17:35 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@redhat.com, jmario@redhat.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: Speed up thread map generation
+Message-ID: <20140314131734.GB5276@krava.redhat.com>
+References: <1394745397-96149-1-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [85.250.70.16]
-In-Reply-To: <CAJAp7Ohf43hbKatCwS5Y1+OfEkJYWOkuhZhW-E_=t_9mfM+UaA@mail.gmail.com>
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
- <1389658764-39199-5-git-send-email-s-anna@ti.com> <CAJAp7Oi7wD+VsMAd37gT04yZ4TH4ygXFmheDhvmWuanUjpBmVQ@mail.gmail.com>
- <52F92524.3080402@ti.com> <CAK=WgbY0wDtGCm71E8VXi2g5+VcGogHEy8jdekTRg8xtp6-3rQ@mail.gmail.com>
- <CAJAp7Ohf43hbKatCwS5Y1+OfEkJYWOkuhZhW-E_=t_9mfM+UaA@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 14 Mar 2014 15:12:26 +0200
-Message-ID: <CAK=WgbYS+eJSTBXF=OeWjuL6iSbH+Y1RYewARKh9yAXHKKZ_cA@mail.gmail.com>
-Subject: Re: [PATCHv4 4/7] hwspinlock/core: add common OF helpers
-To: Bjorn Andersson <bjorn@kryo.se>
-Cc: Suman Anna <s-anna@ti.com>, Mark Rutland <mark.rutland@arm.com>,
-        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394745397-96149-1-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 2, 2014 at 10:19 PM, Bjorn Andersson <bjorn@kryo.se> wrote:
-> When introducing the ability to reference a hwspin lock via a phandle
-> in device tree it makes a big difference to be able to differ between
-> the case of "initialization failed" or "device not yet probed"; so
-> that the client knows if it should fail or retry later.
+On Thu, Mar 13, 2014 at 05:16:37PM -0400, Don Zickus wrote:
 
-I'm not convinced.
+SNIP
 
-The only advantage this brings is to avoid retrying in case a fatal
-error has occurred. Such fatal errors are extremely rare, and when
-they show up - extremely painful, and I suspect that optimizing them
-wouldn't be a big win.
+> +	event->fork.ptid = tgid;
+> +	event->fork.pid  = tgid;
+> +	event->fork.tid  = pid;
+> +	event->fork.header.type = PERF_RECORD_FORK;
+> +
+> +	event->fork.header.size = (sizeof(event->fork) + machine->id_hdr_size);
+> +
+> +	if (process(tool, event, &synth_sample, machine) != 0)
+> +		return -1;
+> +
+> +	return 0;
+> +}
+> +
+>  int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+>  				       union perf_event *event,
+>  				       pid_t pid, pid_t tgid,
+> @@ -287,6 +309,11 @@ static int __event__synthesize_thread(union perf_event *comm_event,
+>  	DIR *tasks;
+>  	struct dirent dirent, *next;
+>  	pid_t tgid;
+> +	union perf_event *fork_event;
+> +
+> +	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
+> +	if (fork_event == NULL)
+> +		return -1;
 
-OTOH, keeping the code easier to read and less error prone is a big
-win. I prefer we keep it simple for now.
+need to be freed
 
-Thanks,
-Ohad.
+maybe we could move the allocation one level up,
+same as for mmap_event and comm_event
+
+otherwise I think the logic with FORK event is correct
+
+jirka
