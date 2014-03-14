@@ -1,49 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440AbaCNFZu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 01:25:50 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:53042 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513AbaCNFZs (ORCPT
+	id S1753142AbaCNF0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 01:26:25 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:38040 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455AbaCNF0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 01:25:48 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] media: davinci: vpbe: fix build warning
-Date: Fri, 14 Mar 2014 10:55:35 +0530
-Message-Id: <1394774735-22320-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 14 Mar 2014 01:26:24 -0400
+Message-ID: <532292F2.1000306@linaro.org>
+Date: Fri, 14 Mar 2014 14:26:10 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 5/7] arm64: ftrace: Add dynamic ftrace support
+References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org> <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org> <1394705630-12384-6-git-send-email-takahiro.akashi@linaro.org> <20140313181033.GH25472@mudshark.cambridge.arm.com>
+In-Reply-To: <20140313181033.GH25472@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On 03/14/2014 03:10 AM, Will Deacon wrote:
+> On Thu, Mar 13, 2014 at 10:13:48AM +0000, AKASHI Takahiro wrote:
+>> This patch allows "dynamic ftrace" if CONFIG_DYNAMIC_FTRACE is enabled.
+>> Here we can turn on and off tracing dynamically per-function base.
+>>
+>> On arm64, this is done by patching single branch instruction to _mcount()
+>> inserted by gcc -pg option. The branch is replaced to NOP initially at
+>> kernel start up, and later on, NOP to branch to ftrace_caller() when
+>> enabled or branch to NOP when disabled.
+>> Please note that ftrace_caller() is a counterpart of _mcount() in case of
+>> 'static' ftrace.
+>>
+>> More details on architecture specific requirements are described in
+>> Documentation/trace/ftrace-design.txt.
+>>
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> ---
+>>   arch/arm64/Kconfig               |    1 +
+>>   arch/arm64/include/asm/ftrace.h  |   15 +++++
+>>   arch/arm64/kernel/entry-ftrace.S |   43 +++++++++++++++
+>>   arch/arm64/kernel/ftrace.c       |  113 ++++++++++++++++++++++++++++++++++++++
+>>   4 files changed, 172 insertions(+)
+>>
+>> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+>> index 6b3fef6..6954959 100644
+>> --- a/arch/arm64/Kconfig
+>> +++ b/arch/arm64/Kconfig
+>> @@ -33,6 +33,7 @@ config ARM64
+>>   	select HAVE_DMA_API_DEBUG
+>>   	select HAVE_DMA_ATTRS
+>>   	select HAVE_DMA_CONTIGUOUS
+>> +	select HAVE_DYNAMIC_FTRACE
+>>   	select HAVE_EFFICIENT_UNALIGNED_ACCESS
+>>   	select HAVE_FTRACE_MCOUNT_RECORD
+>>   	select HAVE_FUNCTION_TRACER
+>> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
+>> index 58ea595..ed5c448 100644
+>> --- a/arch/arm64/include/asm/ftrace.h
+>> +++ b/arch/arm64/include/asm/ftrace.h
+>> @@ -18,6 +18,21 @@
+>>
+>>   #ifndef __ASSEMBLY__
+>>   extern void _mcount(unsigned long);
+>> +
+>> +struct dyn_arch_ftrace {
+>> +	/* No extra data needed for arm64 */
+>> +};
+>> +
+>> +extern unsigned long ftrace_graph_call;
+>> +
+>> +static inline unsigned long ftrace_call_adjust(unsigned long addr)
+>> +{
+>> +	/*
+>> +	 * addr is the address of the mcount call instruction.
+>> +	 * recordmcount does the necessary offset calculation.
+>> +	 */
+>> +	return addr;
+>> +}
+>
+> You could just as easily implement this as a dummy macro, but I guess it
+> doesn't matter either way.
 
-this patch fixes following build warning
-drivers/media/platform/davinci/vpbe_display.c: In function 'vpbe_start_streaming':
-drivers/media/platform/davinci/vpbe_display.c:344: warning: unused variable 'vpbe_dev'
+FYI, all archs define this as an inline function.
+Leave it as it is.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpbe_display.c |    1 -
- 1 file changed, 1 deletion(-)
+>>   #endif /* __ASSEMBLY__ */
+>>
+>>   #endif /* __ASM_FTRACE_H */
+>> diff --git a/arch/arm64/kernel/entry-ftrace.S b/arch/arm64/kernel/entry-ftrace.S
+>> index 0ac31c8..c0fbe10 100644
+>> --- a/arch/arm64/kernel/entry-ftrace.S
+>> +++ b/arch/arm64/kernel/entry-ftrace.S
+>> @@ -86,6 +86,7 @@
+>>   	add	\reg, \reg, #8
+>>   	.endm
+>>
+>> +#ifndef CONFIG_DYNAMIC_FTRACE
+>>   /*
+>>    * void _mcount(unsigned long return_address)
+>>    * @return_address: return address to instrumented function
+>> @@ -134,6 +135,48 @@ skip_ftrace_call:
+>>   #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>>   ENDPROC(_mcount)
+>>
+>> +#else /* CONFIG_DYNAMIC_FTRACE */
+>> +/*
+>> + * _mcount() is used to build the kernel with -pg option, but all the branch
+>> + * instructions to _mcount() are replaced to NOP initially at kernel start up,
+>> + * and later on, NOP to branch to ftrace_caller() when enabled or branch to
+>> + * NOP when disabled per-function base.
+>> + */
+>> +ENTRY(_mcount)
+>> +	ret
+>> +ENDPROC(_mcount)
+>
+> Judging by your comment then, this should never be called. Is that right? If
+> so, we could add a BUG-equivalent so we know if we missed an mcount during
+> patching.
 
-diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
-index 7a0e40e..b4f12d0 100644
---- a/drivers/media/platform/davinci/vpbe_display.c
-+++ b/drivers/media/platform/davinci/vpbe_display.c
-@@ -341,7 +341,6 @@ static int vpbe_start_streaming(struct vb2_queue *vq, unsigned int count)
- {
- 	struct vpbe_fh *fh = vb2_get_drv_priv(vq);
- 	struct vpbe_layer *layer = fh->layer;
--	struct vpbe_device *vpbe_dev = fh->disp_dev->vpbe_dev;
- 	int ret;
- 
- 	/* Get the next frame from the buffer queue */
--- 
-1.7.9.5
+Steven explained this.
 
+>> +/*
+>> + * void ftrace_caller(unsigned long return_address)
+>> + * @return_address: return address to instrumented function
+>> + *
+>> + * This function is a counterpart of _mcount() in 'static' ftrace, and
+>> + * makes calls to:
+>> + *     - tracer function to probe instrumented function's entry,
+>> + *     - ftrace_graph_caller to set up an exit hook
+>> + */
+>> +ENTRY(ftrace_caller)
+>> +	mcount_enter
+>> +
+>> +	mcount_get_pc0	x0		//     function's pc
+>> +	mcount_get_lr	x1		//     function's lr
+>> +
+>> +	.global ftrace_call
+>> +ftrace_call:				// tracer(pc, lr);
+>> +	nop				// This will be replaced with "bl xxx"
+>> +					// where xxx can be any kind of tracer.
+>> +
+>> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+>> +	.global ftrace_graph_call
+>> +ftrace_graph_call:			// ftrace_graph_caller();
+>> +	nop				// If enabled, this will be replaced
+>> +					// "b ftrace_graph_caller"
+>> +#endif
+>> +
+>> +	mcount_exit
+>> +ENDPROC(ftrace_caller)
+>> +#endif /* CONFIG_DYNAMIC_FTRACE */
+>> +
+>>   ENTRY(ftrace_stub)
+>>   	ret
+>>   ENDPROC(ftrace_stub)
+>> diff --git a/arch/arm64/kernel/ftrace.c b/arch/arm64/kernel/ftrace.c
+>> index a559ab8..8c26476 100644
+>> --- a/arch/arm64/kernel/ftrace.c
+>> +++ b/arch/arm64/kernel/ftrace.c
+>> @@ -17,6 +17,89 @@
+>>   #include <asm/ftrace.h>
+>>   #include <asm/insn.h>
+>>
+>> +#ifdef CONFIG_DYNAMIC_FTRACE
+>> +/*
+>> + * Replace a single instruction, which may be a branch or NOP.
+>> + * If @validate == true, a replaced instruction is checked against 'old'.
+>> + */
+>> +static int ftrace_modify_code(unsigned long pc, unsigned int old,
+>> +			      unsigned int new, bool validate)
+>> +{
+>> +	unsigned int replaced;
+>
+> u32 is a bit clearer for instructions.
+
+Fix it.
+
+>> +	/*
+>> +	 * Note:
+>> +	 * Due to modules and __init, code can disappear and change,
+>> +	 * we need to protect against faulting as well as code changing.
+>> +	 * We do this by aarch64_insn_*() which use the probe_kernel_*().
+>> +	 *
+>> +	 * No lock is held here because all the modifications are run
+>> +	 * through stop_machine().
+>> +	 */
+>> +	if (validate) {
+>> +		if (aarch64_insn_read((void *)pc, &replaced))
+>> +			return -EFAULT;
+>> +
+>> +		if (replaced != old)
+>> +			return -EINVAL;
+>> +	}
+>> +	if (aarch64_insn_patch_text_nosync((void *)pc, new))
+>> +		return -EPERM;
+>
+> I think you're better off propagating the errors here, rather than
+> overriding them with EFAULT/EINVAL/EPERM.
+
+Steven explained this.
+
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/*
+>> + * Replace tracer function in ftrace_caller()
+>> + */
+>> +int ftrace_update_ftrace_func(ftrace_func_t func)
+>> +{
+>> +	unsigned long pc;
+>> +	unsigned int new;
+>> +
+>> +	pc = (unsigned long)&ftrace_call;
+>> +	new = aarch64_insn_gen_branch_imm(pc, (unsigned long)func, true);
+>> +
+>> +	return ftrace_modify_code(pc, 0, new, false);
+>> +}
+>> +
+>> +/*
+>> + * Turn on the call to ftrace_caller() in instrumented function
+>> + */
+>> +int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
+>> +{
+>> +	unsigned long pc = rec->ip;
+>> +	unsigned int old, new;
+>> +
+>> +	old = aarch64_insn_gen_nop();
+>> +	new = aarch64_insn_gen_branch_imm(pc, addr, true);
+>> +
+>> +	return ftrace_modify_code(pc, old, new, true);
+>> +}
+>> +
+>> +/*
+>> + * Turn off the call to ftrace_caller() in instrumented function
+>> + */
+>> +int ftrace_make_nop(struct module *mod,
+>> +		    struct dyn_ftrace *rec, unsigned long addr)
+>> +{
+>> +	unsigned long pc = rec->ip;
+>> +	unsigned int old, new;
+>> +
+>> +	old = aarch64_insn_gen_branch_imm(pc, addr, true);
+>> +	new = aarch64_insn_gen_nop();
+>> +
+>> +	return ftrace_modify_code(pc, old, new, true);
+>> +}
+>> +
+>> +int __init ftrace_dyn_arch_init(void *data)
+>> +{
+>> +	*(unsigned long *)data = 0;
+>> +
+>> +	return 0;
+>> +}
+>> +#endif /* CONFIG_DYNAMIC_FTRACE */
+>> +
+>>   #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+>>   /*
+>>    * function_graph tracer expects ftrace_return_to_handler() to be called
+>> @@ -61,4 +144,34 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
+>>   		return;
+>>   	}
+>>   }
+>> +
+>> +#ifdef CONFIG_DYNAMIC_FTRACE
+>> +/*
+>> + * Turn on/off the call to ftrace_graph_caller() in ftrace_caller()
+>> + * depending on @enable.
+>> + */
+>> +static int ftrace_modify_graph_caller(bool enable)
+>> +{
+>> +	unsigned long pc = (unsigned long)&ftrace_graph_call;
+>> +	unsigned int branch, nop, old, new;
+>> +
+>> +	branch = aarch64_insn_gen_branch_imm(pc,
+>> +			(unsigned long)ftrace_graph_caller, false);
+>> +	nop = aarch64_insn_gen_nop();
+>> +	old = enable ? nop : branch;
+>> +	new = enable ? branch : nop;
+>> +
+>> +	return ftrace_modify_code(pc, old, new, true);
+>
+> You could rewrite this as:
+>
+> 	if (enable)
+> 		return ftrace_modify_code(pc, nop, branch, true);
+> 	else
+> 		return ftrace_modify_code(pc, branch, nop, true);
+>
+> which I find easier to read.
+
+Yep, fix it.
+
+-Takahiro AKASHI
+
+> Will
+>
