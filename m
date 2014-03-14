@@ -1,101 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614AbaCNN2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 09:28:43 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:36976 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432AbaCNN2l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 09:28:41 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-70-53230407b96f
-Message-id: <53230404.6070601@samsung.com>
-Date: Fri, 14 Mar 2014 14:28:36 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Cho KyongHo <pullip.cho@samsung.com>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>
-Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: Re: [PATCH v11 10/27] iommu/exynos: use managed device helper functions
-References: <20140314140542.f4ded6c50dbd8a1d937bf354@samsung.com>
-In-reply-to: <20140314140542.f4ded6c50dbd8a1d937bf354@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e/4ZV12FuVggyszWSzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7Bb/eg8yWkxZdJjV4vCb
-	dlaLk396GS1m3lrD4sDv8eTgPCaP2Q0XWTz+He5n8rhzbQ+bx+Yl9R6Tbyxn9OjbsorR4/Mm
-	OY8rR88wBXBGcdmkpOZklqUW6dslcGX0HjnNXnCFu+LhjjnsDYyrOLsYOTkkBEwkFp0/ywhh
-	i0lcuLeerYuRi0NIYCmjxPkDs6Gcz4wSh7efYwKp4hXQkpjR2MkCYrMIqEosu/sRzGYTUJP4
-	3PCIDcTmB6pZ03QdLC4qECExd+JmNoheQYkfk++xgAwVEVjHJHHsyE4wh1ngN5PEs3ePmUGq
-	hAUCJF6cbADrFhJwlLg4cSI7iM0p4CTR/HUtmM0sYC2xctI2RghbXmLzmrfMExgFZyFZMgtJ
-	2SwkZQsYmVcxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525ihMTd1x2MS49ZHWIU4GBU4uGdcVQx
-	WIg1say4MvcQowQHs5II78nHSsFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGDsfM/uevlqg1Hlj
-	gq7m8U9T+N+fk0nfPutM5S+JHROn3mqoKA1d/fgvj1h9Zqz3DqYtMy9PO/Y62c7chLHn4wnT
-	BJ4wxqlJinkLRS4v/ltc5TJfudjlXPs9sdomFenKKqO/jtels7cUsok9dSnun3bN0+P7loA6
-	5XWxPyqWeJ3y716+ISO1WYmlOCPRUIu5qDgRAJGqBzOZAgAA
+	id S1754629AbaCNNaZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 09:30:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59917 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753927AbaCNNaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 09:30:24 -0400
+Date: Fri, 14 Mar 2014 14:30:21 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        pmladek@suse.cz, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 5/6] printk: Hand over printing to console if printing
+ too long
+Message-ID: <20140314133021.GE18583@quack.suse.cz>
+References: <1394726318-2757-1-git-send-email-jack@suse.cz>
+ <1394726318-2757-6-git-send-email-jack@suse.cz>
+ <20140313160625.1c62ca6bba080286194aa868@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140313160625.1c62ca6bba080286194aa868@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KyongHo,
+On Thu 13-03-14 16:06:25, Andrew Morton wrote:
+> On Thu, 13 Mar 2014 16:58:37 +0100 Jan Kara <jack@suse.cz> wrote:
+> 
+> > Currently, console_unlock() prints messages from kernel printk buffer to
+> > console while the buffer is non-empty. When serial console is attached,
+> > printing is slow and thus other CPUs in the system have plenty of time
+> > to append new messages to the buffer while one CPU is printing. Thus the
+> > CPU can spend unbounded amount of time doing printing in console_unlock().
+> > This is especially serious problem if the printk() calling
+> > console_unlock() was called with interrupts disabled.
+> > 
+> > In practice users have observed a CPU can spend tens of seconds printing
+> > in console_unlock() (usually during boot when hundreds of SCSI devices
+> > are discovered) resulting in RCU stalls (CPU doing printing doesn't
+> > reach quiescent state for a long time), softlockup reports (IPIs for the
+> > printing CPU don't get served and thus other CPUs are spinning waiting
+> > for the printing CPU to process IPIs), and eventually a machine death
+> > (as messages from stalls and lockups append to printk buffer faster than
+> > we are able to print). So these machines are unable to boot with serial
+> > console attached. Also during artificial stress testing SATA disk
+> > disappears from the system because its interrupts aren't served for too
+> > long.
+> > 
+> > This patch implements a mechanism where after printing specified number
+> > of characters (tunable as a kernel parameter printk.offload_chars), CPU
+> > doing printing asks for help by setting PRINTK_HANDOVER_B bit in
+> > printk_handover_state variable and wakes up one of dedicated kthreads.
+> > As soon as the printing CPU notices kthread got scheduled and is
+> > spinning on console_sem, it drops console_sem and exits
+> > console_unlock(). kthread then takes over printing instead.  This way no
+> > CPU should spend printing too long even if there is heavy printk
+> > traffic.
+> 
+> Sigh ;)
+> 
+> Creating yet more kernel threads to solve this problem is a bit sad. 
+> Is there no way in which we can borrow one of the existing threads?
+  I realized I didn't react to the above. I've checked which kernel threads
+are running on my system and I can see:
+rcu related threads, ksoftirqd, various fs threads, kauditd - nothing
+really seems as a good fit. Then there are various workqueue related
+threads - these aren't really suitable either. Finally I can see migration
+threads (from kernel/stop_machine.c) - I'm not sure I want to mess with
+these - especially since they can run any function somebody passes to them
+and when that function calls printk() things might get interesting.
 
-On 14.03.2014 06:05, Cho KyongHo wrote:
-> This patch uses managed device helper functions in the probe().
->
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> ---
->   drivers/iommu/exynos-iommu.c |   64 +++++++++++++++++-------------------------
->   1 file changed, 26 insertions(+), 38 deletions(-)
->
-> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> index 36e6b73..33b424d 100644
-> --- a/drivers/iommu/exynos-iommu.c
-> +++ b/drivers/iommu/exynos-iommu.c
-> @@ -499,51 +499,48 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
->
->   static int exynos_sysmmu_probe(struct platform_device *pdev)
->   {
-> -	int ret;
-> +	int irq, ret;
->   	struct device *dev = &pdev->dev;
->   	struct sysmmu_drvdata *data;
->   	struct resource *res;
->
-> -	data = kzalloc(sizeof(*data), GFP_KERNEL);
-> -	if (!data) {
-> -		dev_dbg(dev, "Not enough memory\n");
-> -		ret = -ENOMEM;
-> -		goto err_alloc;
-> -	}
-> +	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
-> +	if (!data)
-> +		return -ENOMEM;
->
->   	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->   	if (!res) {
-> -		dev_dbg(dev, "Unable to find IOMEM region\n");
-> -		ret = -ENOENT;
-> -		goto err_init;
-> +		dev_err(dev, "Unable to find IOMEM region\n");
-> +		return -ENOENT;
->   	}
+So I would go for starting the threads only if printk.offload_chars ever
+gets set to value > 0.
 
-No need to check for error and print message, because 
-devm_ioremap_resource() already checks the passed resource and handles 
-error cases.
-
-Best regards,
-Tomasz
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
