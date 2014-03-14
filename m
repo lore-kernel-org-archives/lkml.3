@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044AbaCNCrg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 22:47:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753692AbaCNCrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 22:47:35 -0400
-Date: Fri, 14 Mar 2014 10:47:26 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Linn Crosetto <linn@hp.com>
-Cc: WANG Chao <chaowang@redhat.com>, kexec@lists.infradead.org,
-        horms@verge.net.au, ebiederm@xmission.com, hpa@zytor.com,
-        trenn@suse.de, vgoyal@redhat.com, matt@console-pimps.org, bp@alien8.de,
-        toshi.kani@hp.com, dyoung@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] x86: Pass memory range via E820 for kdump
-Message-ID: <20140314024726.GA2245@dhcp-16-126.nay.redhat.com>
-References: <1394464149-30384-1-git-send-email-chaowang@redhat.com>
- <1394464149-30384-5-git-send-email-chaowang@redhat.com>
- <20140313222428.GW7672@oranje.fc.hp.com>
+	id S1755333AbaCNCwT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 22:52:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47152 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466AbaCNCwS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 22:52:18 -0400
+Date: Thu, 13 Mar 2014 19:51:44 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-1f2cbcf648962cdcf511d234cb39745baa9f5d07@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        luto@amacapital.net, david.vrabel@citrix.com, tglx@linutronix.de,
+        hpa@linux.intel.com, fengguang.wu@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        luto@amacapital.net, david.vrabel@citrix.com, tglx@linutronix.de,
+        fengguang.wu@intel.com, hpa@linux.intel.com
+In-Reply-To: <4bb4690899106eb11430b1186d5cc66ca9d1660c.1394751608.git.luto@amacapital.net>
+References: <4bb4690899106eb11430b1186d5cc66ca9d1660c.1394751608.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, vdso, xen: Remove stray reference to FIX_VDSO
+Git-Commit-ID: 1f2cbcf648962cdcf511d234cb39745baa9f5d07
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140313222428.GW7672@oranje.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [..]
-> 
-> I tested on a prototype system with 231 entries in the map with good results.
-> Everything succeeds when using kexec to initiate a fast reboot. For crash, it
-> works with and without --pass-memmap-cmdline when using noefi. I hit the
-> following panic when initiating a crash leaving EFI enabled in the crash kernel:
-> 
->  ? __unmap_pmd_range+0x77/0x190
->  unmap_pmd_range+0xcf/0x1c0
->  populate_pgd+0x16d/0x250
->  __cpa_process_fault+0x15/0xb0
->  __change_page_attr+0x15e/0x2a0
->  __change_page_attr_set_clr+0x59/0xc0
->  kernel_map_pages_in_pgd+0x7a/0xb0
->  __map_region+0x46/0x64
->  ? early_idt_handlers+0x117/0x120
->  efi_map_region_fixed+0xd/0xf
->  efi_enter_virtual_mode+0x4c/0x476
->  ? early_idt_handlers+0x117/0x120
->  ? early_idt_handlers+0x117/0x120
->  start_kernel+0x2e5/0x376
->  ? repair_env_string+0x5b/0x5b
->  ? memblock_reserve+0x49/0x4e
->  x86_64_start_reservations+0x2a/0x2c
->  x86_64_start_kernel+0x19f/0x1ae
-> 
-> However, I was able to reproduce this panic using an earlier version of
-> kexec-tools, so I believe it is unrelated to this patch.
+Commit-ID:  1f2cbcf648962cdcf511d234cb39745baa9f5d07
+Gitweb:     http://git.kernel.org/tip/1f2cbcf648962cdcf511d234cb39745baa9f5d07
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Thu, 13 Mar 2014 19:44:47 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 13 Mar 2014 19:44:47 -0700
 
-Can you test with matt's tree to see if it works?
-If it still happens please post the full log.
+x86, vdso, xen: Remove stray reference to FIX_VDSO
 
-Thanks
-Dave
+Checkin
+
+    b0b49f2673f0 x86, vdso: Remove compat vdso support
+
+... removed the VDSO from the fixmap, and thus FIX_VDSO; remove a
+stray reference in Xen.
+
+Found by Fengguang Wu's test robot.
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Link: http://lkml.kernel.org/r/4bb4690899106eb11430b1186d5cc66ca9d1660c.1394751608.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/xen/mmu.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 256282e..21c6a42 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2058,7 +2058,6 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
+ 	case FIX_RO_IDT:
+ #ifdef CONFIG_X86_32
+ 	case FIX_WP_TEST:
+-	case FIX_VDSO:
+ # ifdef CONFIG_HIGHMEM
+ 	case FIX_KMAP_BEGIN ... FIX_KMAP_END:
+ # endif
