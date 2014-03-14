@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296AbaCNPVi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:21:38 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:37480 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755235AbaCNPVh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:21:37 -0400
-Date: Fri, 14 Mar 2014 15:24:17 +0000
-From: Minchan Kim <minchan@kernel.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Jason Evans <je@fb.com>
-Subject: Re: [RFC 3/6] mm: support madvise(MADV_FREE)
-Message-ID: <20140314152417.GA4008@gmail.com>
-References: <1394779070-8545-1-git-send-email-minchan@kernel.org>
- <1394779070-8545-4-git-send-email-minchan@kernel.org>
- <20140314133311.GA6316@node.dhcp.inet.fi>
+	id S1755463AbaCNPWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:22:14 -0400
+Received: from 124-84-246-161.wendulka.net ([84.246.161.124]:53753 "EHLO
+	ixit.cz" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755006AbaCNPWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 11:22:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140314133311.GA6316@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Fri, 14 Mar 2014 17:15:49 +0100
+From: David Heidelberger <david.heidelberger@ixit.cz>
+To: linux-kernel@vger.kernel.org
+Cc: maillist-linux@barfooze.de
+Subject: [PATCH 3/4] libc-compat.h: fix some issues arising from in6.h
+Message-ID: <13cd9a2535456ada92da2aaaeb377f85@ixit.cz>
+User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 03:33:11PM +0200, Kirill A. Shutemov wrote:
-> On Fri, Mar 14, 2014 at 03:37:47PM +0900, Minchan Kim wrote:
-> > diff --git a/include/linux/mm.h b/include/linux/mm.h
-> > index c1b7414c7bef..9b048cabce27 100644
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> > @@ -933,10 +933,16 @@ void page_address_init(void);
-> >   * Please note that, confusingly, "page_mapping" refers to the inode
-> >   * address_space which maps the page from disk; whereas "page_mapped"
-> >   * refers to user virtual address space into which the page is mapped.
-> > + *
-> > + * PAGE_MAPPING_LZFREE bit is set along with PAGE_MAPPING_ANON bit
-> > + * and then page->mapping points to an anon_vma. This flag is used
-> > + * for lazy freeing the page instead of swap.
-> >   */
-> >  #define PAGE_MAPPING_ANON	1
-> >  #define PAGE_MAPPING_KSM	2
-> > -#define PAGE_MAPPING_FLAGS	(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM)
-> > +#define PAGE_MAPPING_LZFREE	4
-> > +#define PAGE_MAPPING_FLAGS	(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM | \
-> > +				 PAGE_MAPPING_LZFREE)
-> 
-> Is it safe to use third bit in pointer everywhere?
+namely redefinition of some structs provided by netinet/in.h.
 
-I overlooked ARCH_SLAB_MINALIGN which is 8 byte for most arch but
-surely some of arch would have less than it(ex, 4 byte).
+Signed-off-by: John Spencer <maillist-linux@barfooze.de>
+Tested-by: David Heidelberger <david.heidelberger@ixit.cz>
+---
+  include/uapi/linux/libc-compat.h | 25 ++++++++-----------------
+  1 file changed, 8 insertions(+), 17 deletions(-)
 
-Alternative is PG_private or PG_private2. That flags is used for
-file pages mostly while zsmalloc uses it but it should not LRU page.
-Other thing in mm/ is memory-hotplug but I guess we don't need to set
-PG_private because I couldn't find PagePrivate for that.
+diff --git a/include/uapi/linux/libc-compat.h 
+b/include/uapi/linux/libc-compat.h
+index 335e8a7..c16c34c 100644
+--- a/include/uapi/linux/libc-compat.h
++++ b/include/uapi/linux/libc-compat.h
+@@ -48,35 +48,26 @@
+  #ifndef _UAPI_LIBC_COMPAT_H
+  #define _UAPI_LIBC_COMPAT_H
 
-So, I think using that flag for anon page has no problem if we tweak
-page_has_private works with only !PageAnon.
+-/* We have included glibc headers... */
+-#if defined(__GLIBC__)
++#ifndef __KERNEL__ /* we're used from userspace */
 
-> 
-> -- 
->  Kirill A. Shutemov
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+-/* Coordinate with glibc netinet/in.h header. */
+-#if defined(_NETINET_IN_H)
++/* Coordinate with libc netinet/in.h header. */
++#ifdef _NETINET_IN_H
+
+  /* GLIBC headers included first so don't define anything
+   * that would already be defined. */
+  #define __UAPI_DEF_IN6_ADDR		0
+-/* The exception is the in6_addr macros which must be defined
+- * if the glibc code didn't define them. This guard matches
+- * the guard in glibc/inet/netinet/in.h which defines the
+- * additional in6_addr macros e.g. s6_addr16, and s6_addr32. */
+-#if defined(__USE_MISC) || defined (__USE_GNU)
+  #define __UAPI_DEF_IN6_ADDR_ALT		0
+-#else
+-#define __UAPI_DEF_IN6_ADDR_ALT		1
+-#endif
+  #define __UAPI_DEF_SOCKADDR_IN6		0
+  #define __UAPI_DEF_IPV6_MREQ		0
+  #define __UAPI_DEF_IPPROTO_V6		0
+
+-#else
++#else /* defined(_NETINET_IN_H) */
+
+  /* Linux headers included first, and we must define everything
+- * we need. The expectation is that glibc will check the
++ * we need. The expectation is that the libc will check the
+   * __UAPI_DEF_* defines and adjust appropriately. */
+  #define __UAPI_DEF_IN6_ADDR		1
+-/* We unconditionally define the in6_addr macros and glibc must
++/* We unconditionally define the in6_addr macros and the libc must
+   * coordinate. */
+  #define __UAPI_DEF_IN6_ADDR_ALT		1
+  #define __UAPI_DEF_SOCKADDR_IN6		1
+@@ -89,7 +80,7 @@
+  /* If we did not see any headers from any supported C libraries,
+   * or we are being included in the kernel, then define everything
+   * that we need. */
+-#else /* !defined(__GLIBC__) */
++#else /* __KERNEL__ */
+
+  /* Definitions for in6.h */
+  #define __UAPI_DEF_IN6_ADDR		1
+@@ -98,6 +89,6 @@
+  #define __UAPI_DEF_IPV6_MREQ		1
+  #define __UAPI_DEF_IPPROTO_V6		1
+
+-#endif /* __GLIBC__ */
++#endif /* __KERNEL__ */
+
+  #endif /* _UAPI_LIBC_COMPAT_H */
+-- 
+1.8.4
+
