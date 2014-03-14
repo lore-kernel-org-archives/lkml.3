@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143AbaCQGvt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 02:51:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26921 "EHLO mx1.redhat.com"
+	id S1756302AbaCQGy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 02:54:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60704 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258AbaCQGvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 02:51:48 -0400
-Date: Mon, 17 Mar 2014 07:51:43 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf sched latency: prettify printed table
-Message-ID: <20140317065143.GA1240@krava.brq.redhat.com>
-References: <1394900258-6896-1-git-send-email-artagnon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394900258-6896-1-git-send-email-artagnon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752359AbaCQGyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 02:54:54 -0400
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 0/8 v3] printk: Cleanups and softlockup avoidance
+Date: Fri, 14 Mar 2014 17:21:44 +0100
+Message-Id: <1394814112-20200-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 15, 2014 at 12:17:38PM -0400, Ramkumar Ramachandra wrote:
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-> ---
->  tools/perf/builtin-sched.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+  Hello,
 
-ENOCHANGELOG ;-)
+  this is another revision of the printk softlockup series. Since previous
+version I have fixed up some small problems pointed out by Andrew, added
+possibility to configure out the printk offloading logic (for small systems),
+and offload kthreads are now started only once printk.offload_chars is set
+to value > 0.
 
-please provide changelog details how's the output prettified
-(before/after example)
+Intro for the newcomers to the series below.
 
-thanks,
-jirka
+---
+
+Currently, console_unlock() prints messages from kernel printk buffer to
+console while the buffer is non-empty. When serial console is attached,
+printing is slow and thus other CPUs in the system have plenty of time
+to append new messages to the buffer while one CPU is printing. Thus the
+CPU can spend unbounded amount of time doing printing in console_unlock().
+This is especially serious since vprintk_emit() calls console_unlock()
+with interrupts disabled.
+    
+In practice users have observed a CPU can spend tens of seconds printing
+in console_unlock() (usually during boot when hundreds of SCSI devices
+are discovered) resulting in RCU stalls (CPU doing printing doesn't
+reach quiescent state for a long time), softlockup reports (IPIs for the
+printing CPU don't get served and thus other CPUs are spinning waiting
+for the printing CPU to process IPIs), and eventually a machine death
+(as messages from stalls and lockups append to printk buffer faster than
+we are able to print). So these machines are unable to boot with serial
+console attached. Also during artificial stress testing SATA disk
+disappears from the system because its interrupts aren't served for too
+long.
+
+This is a revised series using my new approach to the problem which doesn't
+let CPU out of console_unlock() until there's someone else to take over the
+printing. The main difference since the last version is that instead of
+passing printing duty to different CPUs via IPIs we use dedicated kthreads.
+This method is somewhat less reliable (in a sense that there are more
+situations in which handover needn't work at all - e.g. when the currently
+printing CPU holds a spinlock and the CPU where kthread is scheduled to run is
+spinning on this spinlock) but the code is much simpler and in my practical
+testing kthread approach was good enough to avoid any problems (with one
+exception - see patch 8/8).
+
+								Honza
