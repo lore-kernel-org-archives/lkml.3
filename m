@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200AbaCNC4W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 22:56:22 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:62831 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844AbaCNC4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 22:56:20 -0400
-From: Chema Gonzalez <chema@google.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Eric Dumazet <edumazet@google.com>
-Cc: linux-kernel@vger.kernel.org, Chema Gonzalez <chema@google.com>
-Subject: [PATCH] procfs: make smp_affinity values go+r
-Date: Thu, 13 Mar 2014 19:50:55 -0700
-Message-Id: <1394765455-1217-1-git-send-email-chema@google.com>
-X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
+	id S1755363AbaCNC7Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 22:59:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6786 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754547AbaCNC7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 22:59:23 -0400
+Date: Thu, 13 Mar 2014 22:59:21 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] user namespace: fix incorrect memory barriers
+Message-ID: <alpine.LRH.2.02.1403132242440.18199@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Includes:
-- /proc/irq/default_smp_affinity
-- /proc/irq/*/affinity_hint
-- /proc/irq/*/smp_affinity
-- /proc/irq/*/smp_affinity_list
+smp_read_barrier_depends() can be used if there is data dependency between
+the readers - i.e. if the read operation after the barrier uses address
+that was obtained from the read operation before the barrier.
 
-Users can distill the same information by reading /proc/interrupts.
+In this file, there is only control dependency, no data dependecy, so the
+use of smp_read_barrier_depends() is incorrect. The code could fail in the
+following way:
+* the cpu predicts that idx < entries is true and starts executing the
+  body of the for loop
+* the cpu fetches map->extent[0].first and map->extent[0].count
+* the cpu fetches map->nr_extents
+* the cpu verifies that idx < extents is true, so it commits the
+  instructions in the body of the for loop
 
-Signed-off-by: Chema Gonzalez <chema@google.com>
+The problem is that in this scenario, the cpu read map->extent[0].first
+and map->nr_extents in the wrong order. We need a full read memory barrier
+to prevent it.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@vger.kernel.org	# 3.5+
+
 ---
- kernel/irq/proc.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/user_namespace.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 36f6ee1..ac1ba2f 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -324,15 +324,15 @@ void register_irq_proc(unsigned int irq, struct irq_desc *desc)
+Index: linux-3.14-rc5/kernel/user_namespace.c
+===================================================================
+--- linux-3.14-rc5.orig/kernel/user_namespace.c	2014-03-14 03:28:50.000000000 +0100
++++ linux-3.14-rc5/kernel/user_namespace.c	2014-03-14 03:29:36.000000000 +0100
+@@ -152,7 +152,7 @@ static u32 map_id_range_down(struct uid_
  
- #ifdef CONFIG_SMP
- 	/* create /proc/irq/<irq>/smp_affinity */
--	proc_create_data("smp_affinity", 0600, desc->dir,
-+	proc_create_data("smp_affinity", 0644, desc->dir,
- 			 &irq_affinity_proc_fops, (void *)(long)irq);
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -176,7 +176,7 @@ static u32 map_id_down(struct uid_gid_ma
  
- 	/* create /proc/irq/<irq>/affinity_hint */
--	proc_create_data("affinity_hint", 0400, desc->dir,
-+	proc_create_data("affinity_hint", 0444, desc->dir,
- 			 &irq_affinity_hint_proc_fops, (void *)(long)irq);
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -199,7 +199,7 @@ static u32 map_id_up(struct uid_gid_map 
  
- 	/* create /proc/irq/<irq>/smp_affinity_list */
--	proc_create_data("smp_affinity_list", 0600, desc->dir,
-+	proc_create_data("smp_affinity_list", 0644, desc->dir,
- 			 &irq_affinity_list_proc_fops, (void *)(long)irq);
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].lower_first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -615,9 +615,8 @@ static ssize_t map_write(struct file *fi
+ 	 * were written before the count of the extents.
+ 	 *
+ 	 * To achieve this smp_wmb() is used on guarantee the write
+-	 * order and smp_read_barrier_depends() is guaranteed that we
+-	 * don't have crazy architectures returning stale data.
+-	 *
++	 * order and smp_rmb() is guaranteed that we don't have crazy
++	 * architectures returning stale data.
+ 	 */
+ 	mutex_lock(&id_map_mutex);
  
- 	proc_create_data("node", 0444, desc->dir,
-@@ -372,7 +372,7 @@ void unregister_handler_proc(unsigned int irq, struct irqaction *action)
- static void register_default_affinity_proc(void)
- {
- #ifdef CONFIG_SMP
--	proc_create("irq/default_smp_affinity", 0600, NULL,
-+	proc_create("irq/default_smp_affinity", 0644, NULL,
- 		    &default_affinity_proc_fops);
- #endif
- }
--- 
-1.9.0.279.gdc9e3eb
-
