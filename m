@@ -1,198 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326AbaCNSdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 14:33:50 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:55593 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756292AbaCNSds (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 14:33:48 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 2/3] vrange: Add purged page detection on setting memory non-volatile
-Date: Fri, 14 Mar 2014 11:33:32 -0700
-Message-Id: <1394822013-23804-3-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
-References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
+	id S1756428AbaCNSeI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 14:34:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9157 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756384AbaCNSeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 14:34:03 -0400
+Date: Fri, 14 Mar 2014 14:33:49 -0400
+From: Dave Jones <davej@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] improve_stack: make stack dump output useful again
+Message-ID: <20140314183349.GA3889@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Kees Cook <keescook@chromium.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
+ <CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
+ <5321CBDA.1060705@oracle.com>
+ <CA+55aFwDKSKyxC4rTBiFMRVr6xYtL96ZYCQqNSVLJV0-=FLTUg@mail.gmail.com>
+ <20140313231227.GA32178@redhat.com>
+ <CAGXu5jLE6WHCwZVcMSUwQAa3=DW1LsxGd_1aGo8SzLpk8jC-xA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jLE6WHCwZVcMSUwQAa3=DW1LsxGd_1aGo8SzLpk8jC-xA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users of volatile ranges will need to know if memory was discarded.
-This patch adds the purged state tracking required to inform userland
-when it marks memory as non-volatile that some memory in that range
-was purged and needs to be regenerated.
+On Fri, Mar 14, 2014 at 11:31:11AM -0700, Kees Cook wrote:
+ > On Thu, Mar 13, 2014 at 4:12 PM, Dave Jones <davej@redhat.com> wrote:
+ > > On Thu, Mar 13, 2014 at 03:03:41PM -0700, Linus Torvalds wrote:
+ > >
+ > >  > You need to look at the *symbol* number. In this output:
+ > >  >
+ > >  >      [<ffffffff810020c2>] do_one_initcall+0xc2/0x1e0
+ > >  >
+ > >  > that "ffffffff810020c2" is crap, and is going away. The address that
+ > >  > is meaningful and valid is the "do_one_initcall+0xc2" part.
+ > >  >
+ > >  > *That* is the part you'd use to parse in user space.
+ > >  >
+ > >  > Try it today with the CONFIG_RANDOMIZE_BASE option to see. Using the
+ > >  > hex number doesn't *work*.
+ > >
+ > > That reminds me, perf top is still busted when this option is enabled.
+ > 
+ > Hrm, works for me. I'm not very familiar with what to expect, but
+ > comparing output between kaslr boot and nokaslr boot, it looks the
+ > same to me.
 
-This simplified implementation which uses some of the logic from
-Minchan's earlier efforts, so credit to Minchan for his work.
+I don't get kernel symbols resolved at all when it's enabled
+Disabling the config option makes them come back again.
+I didn't try nokaslr.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Robert Love <rlove@google.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Hansen <dave@sr71.net>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mike Hommey <mh@glandium.org>
-Cc: Taras Glek <tglek@mozilla.com>
-Cc: Dhaval Giani <dgiani@mozilla.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org <linux-mm@kvack.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/swap.h   | 15 +++++++++++--
- include/linux/vrange.h | 13 ++++++++++++
- mm/vrange.c            | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 83 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 46ba0c6..18c12f9 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -70,8 +70,19 @@ static inline int current_is_kswapd(void)
- #define SWP_HWPOISON_NUM 0
- #endif
- 
--#define MAX_SWAPFILES \
--	((1 << MAX_SWAPFILES_SHIFT) - SWP_MIGRATION_NUM - SWP_HWPOISON_NUM)
-+
-+/*
-+ * Purged volatile range pages
-+ */
-+#define SWP_VRANGE_PURGED_NUM 1
-+#define SWP_VRANGE_PURGED (MAX_SWAPFILES + SWP_HWPOISON_NUM + SWP_MIGRATION_NUM)
-+
-+
-+#define MAX_SWAPFILES ((1 << MAX_SWAPFILES_SHIFT)	\
-+				- SWP_MIGRATION_NUM	\
-+				- SWP_HWPOISON_NUM	\
-+				- SWP_VRANGE_PURGED_NUM	\
-+			)
- 
- /*
-  * Magic header for a swap area. The first part of the union is
-diff --git a/include/linux/vrange.h b/include/linux/vrange.h
-index 652396b..c4a1616 100644
---- a/include/linux/vrange.h
-+++ b/include/linux/vrange.h
-@@ -1,7 +1,20 @@
- #ifndef _LINUX_VRANGE_H
- #define _LINUX_VRANGE_H
- 
-+#include <linux/swap.h>
-+#include <linux/swapops.h>
-+
- #define VRANGE_NONVOLATILE 0
- #define VRANGE_VOLATILE 1
- 
-+static inline swp_entry_t swp_entry_mk_vrange_purged(void)
-+{
-+	return swp_entry(SWP_VRANGE_PURGED, 0);
-+}
-+
-+static inline int entry_is_vrange_purged(swp_entry_t entry)
-+{
-+	return swp_type(entry) == SWP_VRANGE_PURGED;
-+}
-+
- #endif /* _LINUX_VRANGE_H */
-diff --git a/mm/vrange.c b/mm/vrange.c
-index acb4356..844571b 100644
---- a/mm/vrange.c
-+++ b/mm/vrange.c
-@@ -8,6 +8,60 @@
- #include <linux/mm_inline.h>
- #include "internal.h"
- 
-+struct vrange_walker {
-+	struct vm_area_struct *vma;
-+	int pages_purged;
-+};
-+
-+static int vrange_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
-+				struct mm_walk *walk)
-+{
-+	struct vrange_walker *vw = walk->private;
-+	pte_t *pte;
-+	spinlock_t *ptl;
-+
-+	if (pmd_trans_huge(*pmd))
-+		return 0;
-+	if (pmd_trans_unstable(pmd))
-+		return 0;
-+
-+	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
-+	for (; addr != end; pte++, addr += PAGE_SIZE) {
-+		if (!pte_present(*pte)) {
-+			swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
-+
-+			if (unlikely(entry_is_vrange_purged(vrange_entry))) {
-+				vw->pages_purged = 1;
-+				break;
-+			}
-+		}
-+	}
-+	pte_unmap_unlock(pte - 1, ptl);
-+	cond_resched();
-+
-+	return 0;
-+}
-+
-+static unsigned long vrange_check_purged(struct mm_struct *mm,
-+					 struct vm_area_struct *vma,
-+					 unsigned long start,
-+					 unsigned long end)
-+{
-+	struct vrange_walker vw;
-+	struct mm_walk vrange_walk = {
-+		.pmd_entry = vrange_pte_range,
-+		.mm = vma->vm_mm,
-+		.private = &vw,
-+	};
-+	vw.pages_purged = 0;
-+	vw.vma = vma;
-+
-+	walk_page_range(start, end, &vrange_walk);
-+
-+	return vw.pages_purged;
-+
-+}
-+
- static ssize_t do_vrange(struct mm_struct *mm, unsigned long start,
- 				unsigned long end, int mode, int *purged)
- {
-@@ -57,6 +111,9 @@ static ssize_t do_vrange(struct mm_struct *mm, unsigned long start,
- 			break;
- 		case VRANGE_NONVOLATILE:
- 			new_flags &= ~VM_VOLATILE;
-+			lpurged |= vrange_check_purged(mm, vma,
-+							vma->vm_start,
-+							vma->vm_end);
- 		}
- 
- 		pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
--- 
-1.8.3.2
+	Dave
 
