@@ -1,61 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815AbaCNImN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 04:42:13 -0400
-Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:1600 "EHLO
-	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755656AbaCNImK (ORCPT
+	id S1755820AbaCNIot (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 04:44:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35465 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755374AbaCNIoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 04:42:10 -0400
-Message-ID: <5322C0CC.1080605@xs4all.nl>
-Date: Fri, 14 Mar 2014 09:41:48 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+	Fri, 14 Mar 2014 04:44:46 -0400
+Date: Fri, 14 Mar 2014 09:44:29 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Srinivas <venkateshs@google.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, mingo@elte.hu,
+        ak@linux.intel.com, zheng.z.yan@intel.com
+Subject: Re: [PATCH] perf/x86/intel: Use rdmsrl_safe when initializing RAPL
+ PMU.
+Message-ID: <20140314084429.GO27965@twins.programming.kicks-ass.net>
+References: <1394739386-22260-1-git-send-email-venkateshs@google.com>
 MIME-Version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        LMML <linux-media@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: [PATCH] media: davinci: vpbe: fix build warning
-References: <1394774735-22320-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1394774735-22320-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394739386-22260-1-git-send-email-venkateshs@google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2014 06:25 AM, Lad, Prabhakar wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> 
-> this patch fixes following build warning
-> drivers/media/platform/davinci/vpbe_display.c: In function 'vpbe_start_streaming':
-> drivers/media/platform/davinci/vpbe_display.c:344: warning: unused variable 'vpbe_dev'
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Thu, Mar 13, 2014 at 12:36:26PM -0700, Venkatesh Srinivas wrote:
+> CPUs which should support the RAPL counters according to
+> Family/Model/Stepping may still issue #GP when attempting to access
+> the RAPL MSRs. This may happen when Linux is running under KVM and
+> we are passing-through host F/M/S data, for example. Use rdmsrl_safe
+> to first access the RAPL_POWER_UNIT MSR; if this fails, do not
+> attempt to use this PMU.
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
-
-Thanks!
-
-	Hans
-
-> ---
->  drivers/media/platform/davinci/vpbe_display.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
-> index 7a0e40e..b4f12d0 100644
-> --- a/drivers/media/platform/davinci/vpbe_display.c
-> +++ b/drivers/media/platform/davinci/vpbe_display.c
-> @@ -341,7 +341,6 @@ static int vpbe_start_streaming(struct vb2_queue *vq, unsigned int count)
->  {
->  	struct vpbe_fh *fh = vb2_get_drv_priv(vq);
->  	struct vpbe_layer *layer = fh->layer;
-> -	struct vpbe_device *vpbe_dev = fh->disp_dev->vpbe_dev;
->  	int ret;
->  
->  	/* Get the next frame from the buffer queue */
-> 
-
+This kvm thing is getting tedious :-(
