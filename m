@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481AbaCNM0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 08:26:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58735 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753065AbaCNM0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 08:26:24 -0400
-Date: Fri, 14 Mar 2014 13:26:21 +0100
-From: Jan Kara <jack@suse.cz>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 5/6] printk: Hand over printing to console if printing
- too long
-Message-ID: <20140314122621.GC18583@quack.suse.cz>
-References: <1394726318-2757-1-git-send-email-jack@suse.cz>
- <1394726318-2757-6-git-send-email-jack@suse.cz>
- <20140313160625.1c62ca6bba080286194aa868@linux-foundation.org>
- <20140313232636.02766d06@alan.etchedpixels.co.uk>
+	id S1754643AbaCNM1S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 08:27:18 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:35065 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024AbaCNM1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 08:27:16 -0400
+Date: Fri, 14 Mar 2014 16:27:14 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: bad rss-counter message in 3.14rc5
+Message-ID: <20140314122714.GR13448@moon>
+References: <20140310220158.7e8b7f2a.akpm@linux-foundation.org>
+ <20140311053017.GB14329@redhat.com>
+ <20140311132024.GC32390@moon>
+ <531F0E39.9020100@oracle.com>
+ <20140311134158.GD32390@moon>
+ <20140311142817.GA26517@redhat.com>
+ <20140311143750.GE32390@moon>
+ <20140311171045.GA4693@redhat.com>
+ <20140311173603.GG32390@moon>
+ <20140311173917.GB4693@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140313232636.02766d06@alan.etchedpixels.co.uk>
+In-Reply-To: <20140311173917.GB4693@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-03-14 23:26:36, One Thousand Gnomes wrote:
-> > Creating yet more kernel threads to solve this problem is a bit sad. 
-> > Is there no way in which we can borrow one of the existing threads?
+On Tue, Mar 11, 2014 at 01:39:17PM -0400, Dave Jones wrote:
+>  > 
+>  > Sasha already gave a link to the syscalls sequence, so no rush.
 > 
-> schedule_work()
-> 
-> Surely that's all we need, if we get bunged up for a bit then it ends up
-> on a work queue item and everyone with a billion disks and a 9600 baud
-> serial port is still happy. Nobody else will ever see it.
-  Yes, I know about schedule_work() and I've used it about an year (and ~10
-patchset iterations) ago when first trying to solve this problem. The
-problem with using workqueues is that if workqueue code ever does printk()
-while holding some workqueue lock, we could deadlock when trying to do
-schedule_work() from printk which might need the same lock. And people were
-objecting to restricting workqueue code to not call printk(). That's why
-I've chosen dedicated kthreads were we have tight control over what they
-do.
+> It'd be nice to get a more concise reproducer, his list had a little of everything in there.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Dave, could you please send me your config privately so I would try to reproduce
+the issue locally maybe it shed some light on the problem.
+
+	Cyrill
