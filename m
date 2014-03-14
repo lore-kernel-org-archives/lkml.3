@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791AbaCNGnc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 02:43:32 -0400
-Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:34421 "EHLO
-	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755256AbaCNGna convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 02:43:30 -0400
-X-Spam-scanned: scanned by InterNLnet Mail Scan System
-X-Spam-Flag: NO
-X-Spam-Score: -4.4
-X-Spam-Languages: en
-Message-ID: <5322A50D.4040702@topic.nl>
-Date: Fri, 14 Mar 2014 07:43:25 +0100
-From: Mike Looijmans <mike.looijmans@topic.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755471AbaCNGs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 02:48:58 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10870 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755302AbaCNGs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 02:48:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,652,1389772800"; 
+   d="scan'208";a="491756305"
+Date: Fri, 14 Mar 2014 14:48:53 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Alex Shi <alex.shi@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [sched/balance] INFO: possible recursive locking detected
+Message-ID: <20140314064853.GB29349@localhost>
+References: <20140303142526.GA8517@localhost>
+ <5321618F.3090801@linaro.org>
+ <20140313085341.GC27627@localhost>
+ <5321739B.1000506@linaro.org>
+ <20140314061643.GA28194@localhost>
+ <5322A110.5030405@linaro.org>
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nsekhar@ti.com>, <khilman@deeprootsystems.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [PATCH] i2c-davinci: Handle signals gracefully
-References: <1389265885-26777-1-git-send-email-mike.looijmans@topic.nl> <20140309202107.GA2835@katana> <531D92F7.7080509@topic.nl> <20140310105952.GA7227@katana> <20140310152406.GD11592@katana>
-In-Reply-To: <20140310152406.GD11592@katana>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [192.168.80.45]
-X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
-X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5322A110.5030405@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-﻿On 03/10/2014 04:24 PM, Wolfram Sang wrote:
->
->>>> Even more, you should complete the whole transfer. There are devices
->>>> where things can really go wrong if you send a half-complete command and
->>>> then start with the next one. So, not checking signals at all is the way
->>>> to go for I2C drivers. There is some cruft left, so I am happy about
->>>> patches fixing that, with testing on real HW. Like yours here.
->>>
->>> I agree.
->>>
->>> I know the Zynq (using a cadence controller) also lets signals
->>> interrupt I2C transfers, so I'll propose a patch to Xilinx and CC to
->>> you and linux-i2c to completely remove signal handling from that
->>> driver as well.
->>
->> Cool, thanks!
->
-> Are you going to update the davinci patch as well?
+On Fri, Mar 14, 2014 at 02:26:24PM +0800, Alex Shi wrote:
+> On 03/14/2014 02:16 PM, Fengguang Wu wrote:
+> > Alex,
+> > 
+> > Here are the test results for branch alexshi/single-balance
+> 
+> 
+> Thanks a lot! Fengguang.
+> Is the nex04 machine 4P*8 core * HT? and are a04/a06 atom box?
 
-An amended patch is on its way now. I forgot to set the subject to "PATCHv2" 
-though.
+nex04 is Nehalem-EX. a04/06 are Atom servers.
 
-Mike.
+> Would you like to share the machine info for nhm8, nhm-white and xps2?
 
+They are all 1S Nehalem PC.
 
-
-Met vriendelijke groet / kind regards,
-
-Mike Looijmans
-
-TOPIC Embedded Systems
-Eindhovenseweg 32-C, NL-5683 KH Best
-Postbus 440, NL-5680 AK Best
-Telefoon: (+31) (0) 499 33 69 79
-Telefax:  (+31) (0) 499 33 69 70
-E-mail: mike.looijmans@topic.nl
-Website: www.topic.nl
-
-Please consider the environment before printing this e-mail
-
+Thanks,
+Fengguang
