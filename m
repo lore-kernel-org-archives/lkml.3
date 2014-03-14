@@ -1,127 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041AbaCNSls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 14:41:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13970 "EHLO mga02.intel.com"
+	id S1756134AbaCNSme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 14:42:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41062 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754585AbaCNSlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 14:41:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,656,1389772800"; 
-   d="scan'208";a="492221065"
-Message-ID: <1394822501.28803.280.camel@smile.fi.intel.com>
-Subject: Re: [PATCH v5 2/2] dma: Add Xilinx AXI Video Direct Memory Access
- Engine driver support
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org, levex@linux.com,
-        lars@metafoo.de, jaswinder.singh@linaro.org, dmaengine@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 14 Mar 2014 20:41:41 +0200
-In-Reply-To: <1394819415-2511-3-git-send-email-sthokal@xilinx.com>
-References: <1394819415-2511-1-git-send-email-sthokal@xilinx.com>
-	 <1394819415-2511-3-git-send-email-sthokal@xilinx.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b2 
-Mime-Version: 1.0
+	id S1754585AbaCNSmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 14:42:32 -0400
+Message-ID: <53234D78.5050901@redhat.com>
+Date: Fri, 14 Mar 2014 19:42:00 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 1/3] irqchip: sun4i: Don't mask + unmask for the non oneshot
+ case
+References: <1394740202-1952-1-git-send-email-hdegoede@redhat.com> <1394740202-1952-2-git-send-email-hdegoede@redhat.com> <alpine.DEB.2.02.1403141228290.18573@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1403141228290.18573@ionos.tec.linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-14 at 23:20 +0530, Srikanth Thokala wrote:
-> This is the driver for the AXI Video Direct Memory Access (AXI
-> VDMA) core, which is a soft Xilinx IP core that provides high-
-> bandwidth direct memory access between memory and AXI4-Stream
-> type video target peripherals. The core provides efficient two
-> dimensional DMA operations with independent asynchronous read
-> and write channel operation.
+Hi,
+
+On 03/14/2014 12:35 PM, Thomas Gleixner wrote:
+> On Thu, 13 Mar 2014, Hans de Goede wrote:
 > 
-> This module works on Zynq (ARM Based SoC) and Microblaze platforms.
+>> Since sun4i and sun5i are single core SOCs there is no need to mask non
+>> oneshot IRQs, to achieve this we use handle_fasteoi_irq with a dummy eoi.
+> 
+> This is slightly wrong :)
+> 
+> Even on a SMP system there is no need to mask the interrupt when the
+> controller works like that sunxi one. If the controller is not broken
+> beyond repair then it does not deliver the same interrupt to a
+> different cpu. Such a thing would always deliver it to all cores and
+> those would race to grab the spinlock and mask it. I've seen such
+> horror, but don't ask how that performs.
+> 
+> The reason why you can spare the mask/unmask dance is that the
+> controller does not require any action and clears the interrupt when
+> the level goes back to inactive. That happens when the device handler
+> acks it at the device level.
+> 
+> Now there might be the case when the device reactivates the interrupt
+> before the RETI. But that does not matter as we run the primary
+> interrupt handlers with interrupts disabled.
 
-Few comments below.
+Ok, I'm going to wait a bit to see if Maxime has anything to say
+to this second series, and then I'll do a v2 with the commit msg
+fixed.
 
-[]
+Regards,
 
-> +++ b/drivers/dma/xilinx/xilinx_vdma.c
-
-[]
-
-> +/**
-> + * xilinx_vdma_prep_slave_sg - prepare a descriptor for a DMA_SLAVE transaction
-> + * @dchan: DMA channel
-> + * @xt: Interleaved template pointer
-> + * @flags: transfer ack flags
-> + *
-> + * Return: Async transaction descriptor on success and NULL on failure
-> + */
-> +static struct dma_async_tx_descriptor *
-> +xilinx_vdma_dma_prep_interleaved(struct dma_chan *dchan,
-> +				 struct dma_interleaved_template *xt,
-> +				 unsigned long flags)
-> +{
-> +	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
-> +	struct xilinx_vdma_tx_descriptor *desc;
-> +	struct xilinx_vdma_tx_segment *segment, *prev = NULL;
-> +	struct xilinx_vdma_desc_hw *hw;
-> +
-> +	if ((xt->dir != DMA_MEM_TO_DEV) && (xt->dir != DMA_DEV_TO_MEM))
-> +		return NULL;
-
-!is_slave_direction()
-
-[]
-
-> +static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
-> +				  struct device_node *node)
-> +{
-> +	struct xilinx_vdma_chan *chan;
-> +	bool has_dre = false;
-> +	u32 value, width;
-> +	int err;
-
-[]
-
-> +	width = value >> 3; /* Convert bits to bytes */
-> +
-> +	/* If data width is greater than 8 bytes, DRE is not in hw */
-> +	if (width > 8)
-> +		has_dre = false;
-> +
-> +	if (!has_dre)
-> +		xdev->common.copy_align = fls(width - 1);
-
-Is width power of two? For me looks like it should be fls(width) - 1;
-
-So, device can't work with alignment less than defined in this case,
-correct?
-
-[]
-
-> +/**
-> + * xilinx_vdma_probe - Driver probe function
-> + * @pdev: Pointer to the platform_device structure
-> + *
-> + * Return: '0' on success and failure value on error
-> + */
-> +static int xilinx_vdma_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *node = pdev->dev.of_node;
-> +	struct xilinx_vdma_device *xdev;
-> +	struct device_node *child;
-> +	struct resource *io;
-> +	u32 num_frames;
-> +	int i, err;
-> +
-> +	dev_info(&pdev->dev, "Probing xilinx axi vdma engine\n");
-
-dev_dbg? Or move this to the end of function and change text to
-something like "Probed ..."
+Hans
 
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
-
+> 
+> Thanks,
+> 
+> 	tglx
+>  
+>> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+>> ---
+>>  drivers/irqchip/irq-sun4i.c | 11 ++++++++++-
+>>  1 file changed, 10 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+>> index a0ed1ea..0a71990 100644
+>> --- a/drivers/irqchip/irq-sun4i.c
+>> +++ b/drivers/irqchip/irq-sun4i.c
+>> @@ -74,8 +74,17 @@ static void sun4i_irq_unmask(struct irq_data *irqd)
+>>  	       sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
+>>  }
+>>  
+>> +/*
+>> + * Since sun4i and sun5i are single core SOCs there is no need to mask non
+>> + * oneshot IRQs, to achieve this we use handle_fasteoi_irq with a dummy eoi.
+>> + */
+>> +static void sun4i_irq_dummy_eoi(struct irq_data *irqd)
+>> +{
+>> +}
+>> +
+>>  static struct irq_chip sun4i_irq_chip = {
+>>  	.name		= "sun4i_irq",
+>> +	.irq_eoi	= sun4i_irq_dummy_eoi,
+>>  	.irq_mask	= sun4i_irq_mask,
+>>  	.irq_unmask	= sun4i_irq_unmask,
+>>  };
+>> @@ -97,7 +106,7 @@ static int sun4i_irq_map(struct irq_domain *d, unsigned int virq,
+>>  					 handle_fasteoi_irq);
+>>  	else
+>>  		irq_set_chip_and_handler(virq, &sun4i_irq_chip,
+>> -					 handle_level_irq);
+>> +					 handle_fasteoi_irq);
+>>  
+>>  	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+>>  
+>> -- 
+>> 1.9.0
+>>
+>>
