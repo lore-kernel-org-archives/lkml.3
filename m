@@ -1,102 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034AbaCNQwC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 12:52:02 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:64149 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903AbaCNQv6 (ORCPT
+	id S1756052AbaCNQyS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 12:54:18 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:57647 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754809AbaCNQyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 12:51:58 -0400
-Message-ID: <532333A7.1000801@linaro.org>
-Date: Sat, 15 Mar 2014 01:51:51 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 14 Mar 2014 12:54:16 -0400
+Date: Fri, 14 Mar 2014 12:54:10 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>
+Cc: Devicetree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tim Kryger <tim.kryger@linaro.org>
+Subject: Re: [PATCH v5 5/5] ARM: dts: add bcm590xx pmu support and enable for
+ bcm28155-ap
+Message-ID: <20140314165410.GC25092@beef>
+References: <1394633237-16837-1-git-send-email-mporter@linaro.org>
+ <1394633237-16837-6-git-send-email-mporter@linaro.org>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@redhat.com" <eparis@redhat.com>,
-        "rgb@redhat.com" <rgb@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>
-Subject: Re: [PATCH v4 2/3] arm64: split syscall_trace() into separate functions
- for enter/exit
-References: <1393564465-3862-1-git-send-email-takahiro.akashi@linaro.org> <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org> <1394705491-12343-3-git-send-email-takahiro.akashi@linaro.org> <20140313184149.GL25472@mudshark.cambridge.arm.com>
-In-Reply-To: <20140313184149.GL25472@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394633237-16837-6-git-send-email-mporter@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2014 03:41 AM, Will Deacon wrote:
-> On Thu, Mar 13, 2014 at 10:11:30AM +0000, AKASHI Takahiro wrote:
->> As done in arm, this change makes it easy to confirm we invoke syscall
->> related hooks, including syscall tracepoint, audit and seccomp which would
->> be implemented later, in correct order. That is, undoing operations in the
->> opposite order on exit that they were done on entry.
->>
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> ---
->>   arch/arm64/kernel/entry.S  |   10 ++++-----
->>   arch/arm64/kernel/ptrace.c |   48 ++++++++++++++++++++++++++++++++++----------
->>   2 files changed, 41 insertions(+), 17 deletions(-)
->
-> [...]
->
->> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
->> index 6a8928b..9993a8f 100644
->> --- a/arch/arm64/kernel/ptrace.c
->> +++ b/arch/arm64/kernel/ptrace.c
->> @@ -1058,29 +1058,27 @@ long arch_ptrace(struct task_struct *child, long request,
->>   	return ptrace_request(child, request, addr, data);
->>   }
->>
->> -asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
->> +asmlinkage int syscall_trace_enter(struct pt_regs *regs)
->>   {
->>   	unsigned long saved_reg;
->>
->>   	if (!test_thread_flag(TIF_SYSCALL_TRACE))
->>   		return regs->syscallno;
->>
->> +	/*
->> +	 * A scrach register (ip(r12) on AArch32, x7 on AArch64) is
->> +	 * used to denote syscall entry/exit:
->> +	 *   0 -> entry
->> +	 */
->
-> You could add an enum, like we have on ARM (ptrace_syscall_dir) for the two
-> directions.
->
->>   	if (is_compat_task()) {
->> -		/* AArch32 uses ip (r12) for scratch */
->>   		saved_reg = regs->regs[12];
->> -		regs->regs[12] = dir;
->> +		regs->regs[12] = 0;
->>   	} else {
->> -		/*
->> -		 * Save X7. X7 is used to denote syscall entry/exit:
->> -		 *   X7 = 0 -> entry, = 1 -> exit
->> -		 */
->>   		saved_reg = regs->regs[7];
->> -		regs->regs[7] = dir;
->> +		regs->regs[7] = 0;
->
-> This code could also be refactored so we calculated the register number
-> once, then avoid the if (is_compact_task()) check all over the place.
->
-> Similarly on the exit path.
+On Wed, Mar 12, 2014 at 10:07:17AM -0400, Matt Porter wrote:
+> Add a dtsi to support the BCM590xx PMUs used by the BCM281xx family
+> of SoCs. Enable regulators for use with the dwc2 and sdhci on
+> bcm28155-ap.
+> 
+> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+> Signed-off-by: Matt Porter <mporter@linaro.org>
+> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 
-OK, I will implement tracehook_report_syscall() as in arm.
+Applied to mach-bcm armsoc/for-3.15/dt
 
--Takahiro AKASHI
-
-
-> Will
->
+-Matt
