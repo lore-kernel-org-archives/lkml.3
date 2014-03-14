@@ -1,45 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092AbaCNQzj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 12:55:39 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:64590 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755240AbaCNQzh (ORCPT
+	id S1755674AbaCNQ6D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 12:58:03 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:47404 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341AbaCNQ6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 12:55:37 -0400
-Date: Fri, 14 Mar 2014 12:55:33 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Alex Elder <elder@linaro.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Cc: Mark Brown <broonie@kernel.org>, Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        bcm-kernel-feedback-list@broadcom.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: bcm28155-ap: leave camldo1 on to fix reboot
-Message-ID: <20140314165533.GD25092@beef>
-References: <1394630079-12063-1-git-send-email-mporter@linaro.org>
+	Fri, 14 Mar 2014 12:58:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394630079-12063-1-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5323078E.4060903@samsung.com>
+References: <20140314140951.3d443a3096e80297c9fecef0@samsung.com>
+	<5323078E.4060903@samsung.com>
+Date: Fri, 14 Mar 2014 22:27:59 +0530
+Message-ID: <CAK9yfHx_=Os1G46nNO1HDA3tigkRNeHKN1KGCvuN=w7dRTkfjg@mail.gmail.com>
+Subject: Re: [PATCH v11 15/27] iommu/exynos: use convenient macro to handle
+ gate clocks
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Cho KyongHo <pullip.cho@samsung.com>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 09:14:39AM -0400, Matt Porter wrote:
-> The BCM28155-AP board has a bootloader that expects the camldo1
-> regulator to be enabled on entry. Currently, the camldo1 regulator
-> is disabled when no longer in use as is the case during a reboot /
-> warm reset. This causes the early bootloader to hang upon entry. Add
-> regulator-always-on to the camldo1 constraint to fix reboot.
-> 
-> Reported-by: Alex Elder <elder@linaro.org>
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-> ---
-> [Depends on BCM59056 regulator series dts support:
->  http://www.gossamer-threads.com/lists/linux/kernel/1885489]
+ Hi KyongHo,
 
-Applied to mach-bcm armsoc/for-3.15/dt
+On 14 March 2014 19:13, Tomasz Figa <t.figa@samsung.com> wrote:
+> Hi KyongHo,
+>
+>
+> On 14.03.2014 06:09, Cho KyongHo wrote:
+>>
+>> exynos-iommu driver must care about master H/W's gate clock as well as
+>> System MMU's gate clock. To enhance readability of the source code,
+>> macros to gate/ungate those clocks are defined.
+>>
+>> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+>> ---
+>>   drivers/iommu/exynos-iommu.c |   34 ++++++++++++++++++++++------------
+>>   1 file changed, 22 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+>> index 71e77f1..cef62d0 100644
+>> --- a/drivers/iommu/exynos-iommu.c
+>> +++ b/drivers/iommu/exynos-iommu.c
+>> @@ -101,6 +101,16 @@
+>>   #define REG_PB1_SADDR         0x054
+>>   #define REG_PB1_EADDR         0x058
+>>
+>> +#define __clk_gate_ctrl(data, clk, en) do {            \
+>> +               if (data->clk)                          \
+>> +                       clk_##en##able(data->clk);      \
+>> +       } while (0)
+>> +
+>> +#define __sysmmu_clk_enable(data)      __clk_gate_ctrl(data, clk, en)
+>> +#define __sysmmu_clk_disable(data)     __clk_gate_ctrl(data, clk, dis)
+>> +#define __master_clk_enable(data)      __clk_gate_ctrl(data, clk_master,
+>> en)
+>> +#define __master_clk_disable(data)     __clk_gate_ctrl(data, clk_master,
+>> dis)
+>> +
+>
+>
+> I'd say that such macros only obfuscate code, without any gains, as you can
+> see in diffstat - this patch adds more lines than it removes.
+>
+> Please drop this change.
 
--Matt
+ I agree with Tomasz here.
+
+
+-- 
+With warm regards,
+Sachin
