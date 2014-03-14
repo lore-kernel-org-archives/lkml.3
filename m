@@ -1,122 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895AbaCNPhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:37:32 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50982 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755485AbaCNPfN (ORCPT
+	id S1755748AbaCNPhx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:37:53 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:60819 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754815AbaCNPhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:35:13 -0400
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v7 2/6] pci: OF: Fix the conversion of IO ranges into IO resources.
-Date: Fri, 14 Mar 2014 15:34:28 +0000
-Message-Id: <1394811272-1547-3-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+	Fri, 14 Mar 2014 11:37:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140314125822.GA16457@localhost>
+References: <1394660614-4436-1-git-send-email-ast@plumgrid.com>
+	<1394660614-4436-2-git-send-email-ast@plumgrid.com>
+	<20140314125822.GA16457@localhost>
+Date: Fri, 14 Mar 2014 08:37:27 -0700
+Message-ID: <CAMEtUuzqzAHf64DHBao3xKzHdhrp77JEZhe-_c5oC3Vr63QxNA@mail.gmail.com>
+Subject: Re: [PATCH v10 net-next 1/3] filter: add Extended BPF interpreter and converter
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ranges property for a host bridge controller in DT describes
-the mapping between the PCI bus address and the CPU physical address.
-The resources framework however expects that the IO resources start
-at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
-The conversion from pci ranges to resources failed to take that into account.
+On Fri, Mar 14, 2014 at 5:58 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> On Wed, Mar 12, 2014 at 02:43:32PM -0700, Alexei Starovoitov wrote:
+>> diff --git a/include/linux/filter.h b/include/linux/filter.h
+>> index e568c8ef896b..6e6aab5e062b 100644
+>> --- a/include/linux/filter.h
+>> +++ b/include/linux/filter.h
+>> @@ -25,20 +25,45 @@ struct sock;
+>>  struct sk_filter
+>>  {
+>>       atomic_t                refcnt;
+>> -     unsigned int            len;    /* Number of filter blocks */
+>> +     /* len - number of insns in sock_filter program
+>> +      * len_ext - number of insns in socket_filter_ext program
+>> +      * jited - true if either original or extended program was JITed
+>> +      * orig_prog - original sock_filter program if not NULL
+>> +      */
+>> +     unsigned int            len;
+>> +     unsigned int            len_ext;
+>> +     unsigned int            jited:1;
+>
+> This is consuming 4 bytes just to store the jited bit. I think you can
+> scratch that bit from len, given the maximum filter length for bpf. I
+> think the the jited bit change that David suggested have to come in
+> first place as a separated patch in the series.
 
-In the process move the function into drivers/of/address.c as it now
-depends on pci_address_to_pio() code and make it return an error message.
+It was reviewed so many times that I would prefer not to break it
+apart just to split it for single 'jited' bitfield, though I agree with taking
+one bit from len.
+I actually proposed it in 'bool vs bitfield' thread few days ago.
+I think it can be done as a separate commit after this one goes in.
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-Tested-by: Tanmay Inamdar <tinamdar@apm.com>
----
- drivers/of/address.c       | 40 ++++++++++++++++++++++++++++++++++++
- include/linux/of_address.h | 13 ++----------
- 2 files changed, 42 insertions(+), 11 deletions(-)
+>> +     struct sock_filter      *orig_prog;
+>
+> If your new extended filtering is not used, this consumes 8 extra
+> bytes + len_ext (bytes) in x86_64. I think a more generic way to make
+> this is that you can move the original bpf filter and its length at
+> the bottom of this structure after insns to store something like:
+>
+> struct sk_bpf_compat {
+>         struct sock_filter      *prog;
+>         unsigned int            len;
+> };
+>
+> This would be only allocated when you filtering approach is used. For
+> that you'll need some enum in sk_filter to indicate the filtering
+> approach, but we'll save 8 bytes per filter in the end with regards to
+> this current patch.
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index be958ed..4eabd30 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -728,3 +728,43 @@ void __iomem *of_iomap(struct device_node *np, int index)
- 	return ioremap(res.start, resource_size(&res));
- }
- EXPORT_SYMBOL(of_iomap);
-+
-+/**
-+ * of_pci_range_to_resource - Create a resource from an of_pci_range
-+ * @range:	the PCI range that describes the resource
-+ * @np:		device node where the range belongs to
-+ * @res:	pointer to a valid resource that will be updated to
-+ *              reflect the values contained in the range.
-+ *
-+ * Returns EINVAL if the range cannot be converted to resource.
-+ *
-+ * Note that if the range is an IO range, the resource will be converted
-+ * using pci_address_to_pio() which can fail if it is called too early or
-+ * if the range cannot be matched to any host bridge IO space (our case here).
-+ * To guard against that we try to register the IO range first.
-+ * If that fails we know that pci_address_to_pio() will do too.
-+ */
-+int of_pci_range_to_resource(struct of_pci_range *range,
-+	struct device_node *np, struct resource *res)
-+{
-+	res->flags = range->flags;
-+	if (res->flags & IORESOURCE_IO) {
-+		unsigned long port = -1;
-+		int err = pci_register_io_range(range->cpu_addr, range->size);
-+		if (err)
-+			return err;
-+		port = pci_address_to_pio(range->cpu_addr);
-+		if (port == (unsigned long)-1) {
-+			res->start = (resource_size_t)OF_BAD_ADDR;
-+			res->end = (resource_size_t)OF_BAD_ADDR;
-+			return -EINVAL;
-+		}
-+		res->start = port;
-+	} else {
-+		res->start = range->cpu_addr;
-+	}
-+	res->end = res->start + range->size - 1;
-+	res->parent = res->child = res->sibling = NULL;
-+	res->name = np->full_name;
-+	return 0;
-+}
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index 40c418d..a4b400d 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -23,17 +23,8 @@ struct of_pci_range {
- #define for_each_of_pci_range(parser, range) \
- 	for (; of_pci_range_parser_one(parser, range);)
- 
--static inline void of_pci_range_to_resource(struct of_pci_range *range,
--					    struct device_node *np,
--					    struct resource *res)
--{
--	res->flags = range->flags;
--	res->start = range->cpu_addr;
--	res->end = range->cpu_addr + range->size - 1;
--	res->parent = res->child = res->sibling = NULL;
--	res->name = np->full_name;
--}
--
-+extern int of_pci_range_to_resource(struct of_pci_range *range,
-+		struct device_node *np, struct resource *res);
- /* Translate a DMA address from device space to CPU space */
- extern u64 of_translate_dma_address(struct device_node *dev,
- 				    const __be32 *in_addr);
--- 
-1.9.0
+this is also can be done as separate commit after this one.
+Though I don't like the idea, because access to 'prog' and 'len'
+becomes very complicated. In every place we need a helper
+function to calculate an offset to this 'sk_bpf_compat',
+then typecast that memory location, etc.
+Imo single pointer is much cleaner.
 
+Thanks
+Alexei
