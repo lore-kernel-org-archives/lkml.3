@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461AbaCNVai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:30:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53987 "EHLO
+	id S1030196AbaCNVax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:30:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54046 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756203AbaCNVaW (ORCPT
+	with ESMTP id S1756308AbaCNVac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:30:22 -0400
+	Fri, 14 Mar 2014 17:30:32 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/16] perf kvm: introduce --list-cmds for use by scripts
-Date: Fri, 14 Mar 2014 18:30:08 -0300
-Message-Id: <1394832610-17818-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/16] perf ui/gtk: Reuse generic __hpp__fmt() code
+Date: Fri, 14 Mar 2014 18:30:02 -0300
+Message-Id: <1394832610-17818-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1394832610-17818-1-git-send-email-acme@infradead.org>
 References: <1394832610-17818-1-git-send-email-acme@infradead.org>
@@ -24,173 +27,175 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Introduce
+The __hpp__color_fmt used in the gtk code can be replace by the generic
+code with small change in print_fn callback.
 
-  $ perf kvm --list-cmds
+This is a preparation to upcoming changes and no functional changes
+intended.
 
-to dump a raw list of commands for use by the completion script. In
-order to do this, introduce parse_options_subcommand() for handling
-subcommands as a special case in the parse-options machinery.
-
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1393896396-10427-1-git-send-email-artagnon@gmail.com
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1393809254-4480-3-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c        | 12 +++++-------
- tools/perf/perf-completion.sh   |  2 +-
- tools/perf/util/parse-options.c | 37 +++++++++++++++++++++++++++++++++----
- tools/perf/util/parse-options.h |  8 +++++++-
- 4 files changed, 46 insertions(+), 13 deletions(-)
+ tools/perf/ui/gtk/hists.c | 73 +++++++----------------------------------------
+ tools/perf/ui/hist.c      |  9 ++----
+ tools/perf/util/hist.h    |  6 ++++
+ 3 files changed, 19 insertions(+), 69 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index a7350519c63f..21c164b8f9db 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1691,17 +1691,15 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
- 		OPT_END()
- 	};
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 5b95c44f3435..3dab00e748f2 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -8,16 +8,22 @@
+ 
+ #define MAX_COLUMNS			32
+ 
+-static int __percent_color_snprintf(char *buf, size_t size, double percent)
++static int __percent_color_snprintf(char *buf, size_t size, const char *fmt, ...)
+ {
+ 	int ret = 0;
++	va_list args;
++	double percent;
+ 	const char *markup;
+ 
++	va_start(args, fmt);
++	percent = va_arg(args, double);
++	va_end(args);
++
+ 	markup = perf_gtk__get_percent_color(percent);
+ 	if (markup)
+ 		ret += scnprintf(buf, size, markup);
+ 
+-	ret += scnprintf(buf + ret, size - ret, " %6.2f%%", percent);
++	ret += scnprintf(buf + ret, size - ret, fmt, percent);
+ 
+ 	if (markup)
+ 		ret += scnprintf(buf + ret, size - ret, "</span>");
+@@ -25,66 +31,6 @@ static int __percent_color_snprintf(char *buf, size_t size, double percent)
+ 	return ret;
+ }
  
 -
--	const char * const kvm_usage[] = {
--		"perf kvm [<options>] {top|record|report|diff|buildid-list|stat}",
--		NULL
--	};
-+	const char *const kvm_subcommands[] = { "top", "record", "report", "diff",
-+						"buildid-list", "stat", NULL };
-+	const char *kvm_usage[] = { NULL, NULL };
- 
- 	perf_host  = 0;
- 	perf_guest = 1;
- 
--	argc = parse_options(argc, argv, kvm_options, kvm_usage,
--			PARSE_OPT_STOP_AT_NON_OPTION);
-+	argc = parse_options_subcommand(argc, argv, kvm_options, kvm_subcommands, kvm_usage,
-+					PARSE_OPT_STOP_AT_NON_OPTION);
- 	if (!argc)
- 		usage_with_options(kvm_usage, kvm_options);
- 
-diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
-index 496e2abb5482..ae3a57694b6b 100644
---- a/tools/perf/perf-completion.sh
-+++ b/tools/perf/perf-completion.sh
-@@ -123,7 +123,7 @@ __perf_main ()
- 		__perfcomp_colon "$evts" "$cur"
- 	# List subcommands for 'perf kvm'
- 	elif [[ $prev == "kvm" ]]; then
--		subcmds="top record report diff buildid-list stat"
-+		subcmds=$($cmd $prev --list-cmds)
- 		__perfcomp_colon "$subcmds" "$cur"
- 	# List long option names
- 	elif [[ $cur == --* ]];  then
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index d22e3f8017dc..bf48092983c6 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -407,7 +407,9 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 		if (internal_help && !strcmp(arg + 2, "help"))
- 			return usage_with_options_internal(usagestr, options, 0);
- 		if (!strcmp(arg + 2, "list-opts"))
--			return PARSE_OPT_LIST;
-+			return PARSE_OPT_LIST_OPTS;
-+		if (!strcmp(arg + 2, "list-cmds"))
-+			return PARSE_OPT_LIST_SUBCMDS;
- 		switch (parse_long_opt(ctx, arg + 2, options)) {
- 		case -1:
- 			return parse_options_usage(usagestr, options, arg + 2, 0);
-@@ -433,25 +435,45 @@ int parse_options_end(struct parse_opt_ctx_t *ctx)
- 	return ctx->cpidx + ctx->argc;
+-static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+-			    u64 (*get_field)(struct hist_entry *))
+-{
+-	int ret;
+-	double percent = 0.0;
+-	struct hists *hists = he->hists;
+-	struct perf_evsel *evsel = hists_to_evsel(hists);
+-
+-	if (hists->stats.total_period)
+-		percent = 100.0 * get_field(he) / hists->stats.total_period;
+-
+-	ret = __percent_color_snprintf(hpp->buf, hpp->size, percent);
+-
+-	if (perf_evsel__is_group_event(evsel)) {
+-		int prev_idx, idx_delta;
+-		struct hist_entry *pair;
+-		int nr_members = evsel->nr_members;
+-
+-		prev_idx = perf_evsel__group_idx(evsel);
+-
+-		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
+-			u64 period = get_field(pair);
+-			u64 total = pair->hists->stats.total_period;
+-
+-			evsel = hists_to_evsel(pair->hists);
+-			idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
+-
+-			while (idx_delta--) {
+-				/*
+-				 * zero-fill group members in the middle which
+-				 * have no sample
+-				 */
+-				ret += __percent_color_snprintf(hpp->buf + ret,
+-								hpp->size - ret,
+-								0.0);
+-			}
+-
+-			percent = 100.0 * period / total;
+-			ret += __percent_color_snprintf(hpp->buf + ret,
+-							hpp->size - ret,
+-							percent);
+-
+-			prev_idx = perf_evsel__group_idx(evsel);
+-		}
+-
+-		idx_delta = nr_members - prev_idx - 1;
+-
+-		while (idx_delta--) {
+-			/*
+-			 * zero-fill group members at last which have no sample
+-			 */
+-			ret += __percent_color_snprintf(hpp->buf + ret,
+-							hpp->size - ret,
+-							0.0);
+-		}
+-	}
+-	return ret;
+-}
+-
+ #define __HPP_COLOR_PERCENT_FN(_type, _field)					\
+ static u64 he_get_##_field(struct hist_entry *he)				\
+ {										\
+@@ -95,7 +41,8 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
+ 				       struct perf_hpp *hpp,			\
+ 				       struct hist_entry *he)			\
+ {										\
+-	return __hpp__color_fmt(hpp, he, he_get_##_field);			\
++	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
++			  __percent_color_snprintf, true);			\
  }
  
--int parse_options(int argc, const char **argv, const struct option *options,
--		  const char * const usagestr[], int flags)
-+int parse_options_subcommand(int argc, const char **argv, const struct option *options,
-+			const char *const subcommands[], const char *usagestr[], int flags)
+ __HPP_COLOR_PERCENT_FN(overhead, period)
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 6094562c9523..085353435f07 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -8,12 +8,9 @@
+ 
+ /* hist period print (hpp) functions */
+ 
+-typedef int (*hpp_snprint_fn)(char *buf, size_t size, const char *fmt, ...);
+-
+-static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+-		      u64 (*get_field)(struct hist_entry *),
+-		      const char *fmt, hpp_snprint_fn print_fn,
+-		      bool fmt_percent)
++int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
++	       u64 (*get_field)(struct hist_entry *),
++	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent)
  {
- 	struct parse_opt_ctx_t ctx;
+ 	int ret;
+ 	struct hists *hists = he->hists;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index a59743fa3ef7..97f924ec6af9 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -166,6 +166,12 @@ void perf_hpp__init(void);
+ void perf_hpp__column_register(struct perf_hpp_fmt *format);
+ void perf_hpp__column_enable(unsigned col);
  
- 	perf_header__set_cmdline(argc, argv);
- 
-+	/* build usage string if it's not provided */
-+	if (subcommands && !usagestr[0]) {
-+		struct strbuf buf = STRBUF_INIT;
++typedef int (*hpp_snprint_fn)(char *buf, size_t size, const char *fmt, ...);
 +
-+		strbuf_addf(&buf, "perf %s [<options>] {", argv[0]);
-+		for (int i = 0; subcommands[i]; i++) {
-+			if (i)
-+				strbuf_addstr(&buf, "|");
-+			strbuf_addstr(&buf, subcommands[i]);
-+		}
-+		strbuf_addstr(&buf, "}");
++int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
++	       u64 (*get_field)(struct hist_entry *),
++	       const char *fmt, hpp_snprint_fn print_fn, bool fmt_percent);
 +
-+		usagestr[0] = strdup(buf.buf);
-+		strbuf_release(&buf);
-+	}
-+
- 	parse_options_start(&ctx, argc, argv, flags);
- 	switch (parse_options_step(&ctx, options, usagestr)) {
- 	case PARSE_OPT_HELP:
- 		exit(129);
- 	case PARSE_OPT_DONE:
- 		break;
--	case PARSE_OPT_LIST:
-+	case PARSE_OPT_LIST_OPTS:
- 		while (options->type != OPTION_END) {
- 			printf("--%s ", options->long_name);
- 			options++;
- 		}
- 		exit(130);
-+	case PARSE_OPT_LIST_SUBCMDS:
-+		for (int i = 0; subcommands[i]; i++)
-+			printf("%s ", subcommands[i]);
-+		exit(130);
- 	default: /* PARSE_OPT_UNKNOWN */
- 		if (ctx.argv[0][1] == '-') {
- 			error("unknown option `%s'", ctx.argv[0] + 2);
-@@ -464,6 +486,13 @@ int parse_options(int argc, const char **argv, const struct option *options,
- 	return parse_options_end(&ctx);
- }
- 
-+int parse_options(int argc, const char **argv, const struct option *options,
-+		  const char * const usagestr[], int flags)
-+{
-+	return parse_options_subcommand(argc, argv, options, NULL,
-+					(const char **) usagestr, flags);
-+}
-+
- #define USAGE_OPTS_WIDTH 24
- #define USAGE_GAP         2
- 
-diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
-index cbf0149cf221..d8dac8ac5f37 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -140,6 +140,11 @@ extern int parse_options(int argc, const char **argv,
-                          const struct option *options,
-                          const char * const usagestr[], int flags);
- 
-+extern int parse_options_subcommand(int argc, const char **argv,
-+				const struct option *options,
-+				const char *const subcommands[],
-+				const char *usagestr[], int flags);
-+
- extern NORETURN void usage_with_options(const char * const *usagestr,
-                                         const struct option *options);
- 
-@@ -148,7 +153,8 @@ extern NORETURN void usage_with_options(const char * const *usagestr,
- enum {
- 	PARSE_OPT_HELP = -1,
- 	PARSE_OPT_DONE,
--	PARSE_OPT_LIST,
-+	PARSE_OPT_LIST_OPTS,
-+	PARSE_OPT_LIST_SUBCMDS,
- 	PARSE_OPT_UNKNOWN,
- };
- 
+ static inline size_t perf_hpp__use_color(void)
+ {
+ 	return !symbol_conf.field_sep;
 -- 
 1.8.1.4
 
