@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340AbaCNRYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 13:24:10 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:56262 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755504AbaCNRYI (ORCPT
+	id S1756462AbaCNRYQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 13:24:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48282 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756365AbaCNRYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 13:24:08 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Bob Moore <robert.moore@intel.com>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: ACPICA 20140214 auto-serialize weirds my machine...
-In-Reply-To: Your message of "Fri, 14 Mar 2014 17:10:46 +0100."
-             <53232A06.9010201@intel.com>
-From: Valdis.Kletnieks@vt.edu
-References: <14866.1394813101@turing-police.cc.vt.edu>
-            <53232A06.9010201@intel.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1394817840_1735P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 14 Mar 2014 13:24:00 -0400
-Message-ID: <21867.1394817840@turing-police.cc.vt.edu>
+	Fri, 14 Mar 2014 13:24:11 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Patrick Palka <patrick@parcs.ath.cx>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/2] perf bench: Fix NULL pointer dereference in "perf bench all"
+Date: Fri, 14 Mar 2014 14:23:59 -0300
+Message-Id: <1394817839-26310-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1394817839-26310-1-git-send-email-acme@infradead.org>
+References: <1394817839-26310-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1394817840_1735P
-Content-Type: text/plain; charset=us-ascii
+From: Patrick Palka <patrick@parcs.ath.cx>
 
-On Fri, 14 Mar 2014 17:10:46 +0100, "Rafael J. Wysocki" said:
+The for_each_bench() macro must check that the "benchmarks" field of a
+collection is not NULL before dereferencing it because the "all"
+collection in particular has a NULL "benchmarks" field (signifying that
+it has no benchmarks to iterate over).
 
-> We have a commit that removes this command line argument already.
+This fixes this NULL pointer dereference when running "perf bench all":
 
-Oh, OK..
+  [root@ssdandy ~]# perf bench all
+  <SNIP>
 
-> But those messages:
->
-> >
-> > [    0.119344] ACPI: Executed 1 blocks of module-level executable AML code
-> > [    0.135282] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+  # Running mem/memset benchmark...
+  # Copying 1MB Bytes ...
 
-> shouldn't be there regardless.
->
-> I'm going to look at this issue later today.
+         2.453675 GB/Sec
+        12.056327 GB/Sec (with prefault)
 
-OK. I've got a 'git bisect' down to about 75 commits already, I'll finish
-that up if it will help.  And feel free to toss me a patch if you need
-something tested...
+  Segmentation fault (core dumped)
+  [root@ssdandy ~]#
 
---==_Exmh_1394817840_1735P
-Content-Type: application/pgp-signature
+Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1394664051-6037-1-git-send-email-patrick@parcs.ath.cx
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-bench.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index e47f90cc7b98..8a987d252780 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -76,7 +76,7 @@ static struct collection collections[] = {
+ 
+ /* Iterate over all benchmarks within a collection: */
+ #define for_each_bench(coll, bench) \
+-	for (bench = coll->benchmarks; bench->name; bench++)
++	for (bench = coll->benchmarks; bench && bench->name; bench++)
+ 
+ static void dump_benchmarks(struct collection *coll)
+ {
+-- 
+1.8.1.4
 
-iQIVAwUBUyM7MAdmEQWDXROgAQIoWQ/+OjudDjTAFto+R0nbbFuJQm949UtWNLms
-0xbkZLEIXH2vxkKMYRGcj4bK411wN2kAGfpX+Yaw5B7Ufe1hEGZ1AAFdJbC0Q/x5
-gAW8Rg+0LQ/C2eJ2QgpxEOeMvvb2JFNbZra6sKn+DuYFilGx3+/xaKYaCIM4W74H
-MWAphJ9ZfTt3FA7OSOgEXwZB4NbEyKt7gcwYRVNyc5qKmELpqEmBL3+DRI1dj+Oq
-aqSxl/q/oyNhAu6APZLs4kwCeLjiJu2S9TvpEzc9BzszwyMWBPZ8UPMekTTAdqh6
-cOONGm75K9CKjMl/BV1UKwg4kHvIbgzhrXLpysoQtgj65SHqERsb9Rw9q0Vs7bTS
-AX6IUZsIjyomJpSxvJmTyC5kBkT1wLcrlsone1mlhs+6OMkTevO84EIxNFSkttE1
-3IOnAD/sBfY3fomrWv6RaND1/NBdxC8NiAL6ueYR3wxxg2HHw5vIetXSv+sQJIcc
-aBnHnSvQ4G476H1z5TvC9PVPcLsgz3wpY8a8LF7ImdtSyMOXPuLuANdLcznCCim/
-IGBwYX7gxukASfLz5K+kOT662QKKQm6dskGRjV7w0+w2CQYYh7BsE6VbyGQ3YmMz
-qeEBwg8vgZ/rpAnWS5t/NZX+8djH7CzYCvQMNxXI0iHkOZ/8jxEdxmrWLvTGNxqu
-2Cj6xEz3TmQ=
-=xXxi
------END PGP SIGNATURE-----
-
---==_Exmh_1394817840_1735P--
