@@ -1,146 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204AbaCNDOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 23:14:11 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:46240 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844AbaCNDOF (ORCPT
+	id S1754731AbaCNDuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 23:50:50 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:41431 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808AbaCNDus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 23:14:05 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-e4-532273fbc8e8
-Message-id: <532273FB.6040303@samsung.com>
-Date: Fri, 14 Mar 2014 12:14:03 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        rafael.j.wysocki@intel.com, nm@ti.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCHv2 0/8] devfreq: exynos4: Support dt and use common ppmu
- driver
-References: <1394698649-20996-1-git-send-email-cw00.choi@samsung.com>
- <2117336.08cyWySR1X@amdc1032>
-In-reply-to: <2117336.08cyWySR1X@amdc1032>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsWyRsSkSPd3sVKwQf8eeYuNM9azWsw/co7V
-	4tyrlYwWZ5vesFssbFvCYnF51xw2i8+9RxgtZpzfx2Sx9PpFJovbjSvYLN78OMtkMWH6WhaL
-	xyveslu8OtjG4sDnsWbeGkaPlcu/sHks3vOSyaNvyypGj+M3tjN5fN4k57FxbmgAexSXTUpq
-	TmZZapG+XQJXxtRFU1kLlktXHJi8hbGB8YZoFyMnh4SAiURLyzpGCFtM4sK99WxdjFwcQgJL
-	GSXWH53MClO05cs8JojEIkaJD9P+sUA4rxglWh/eA6viFdCSmDF5DzOIzSKgKnFwwh8wmw0o
-	vv/FDTYQW1QgTGLl9CssEPWCEj8m3wOzRQQsJNaueAs2lFngFpPE2W9TwBLCAiEStw4dAWsW
-	EkiV+LLpJJjNCTR0V9MzdhCbWUBHYn/rNDYIW15i85q3zCCDJAQmckg8u/kZ6iIBiW+TDwEN
-	5QBKyEpsOsAM8ZqkxMEVN1gmMIrNQnLTLCRjZyEZu4CReRWjaGpBckFxUnqRqV5xYm5xaV66
-	XnJ+7iZGYEyf/vds4g7G+wesDzEmA62cyCwlmpwPTAl5JfGGxmZGFqYmpsZG5pZmpAkrifOm
-	P0oKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDIJ+SftndP64rgdRK6Zdf27E3SujovPrNZ
-	6LjFFymT4hJGtZ6PwSLLU/LW8P0xLXNUaHoTut2c99LbFTu21p8y9glsi970SG5HY/u2nQea
-	0osOO1yfxcXNeyCp4+K65Re373Z9uv6Z8OdN6j6KVjkW85W40/487HU47izCGjY7y285b6Ln
-	LxUlluKMREMt5qLiRAA0Q0ix/wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJKsWRmVeSWpSXmKPExsVy+t9jAd3fxUrBBmc7xSw2zljPajH/yDlW
-	i3OvVjJanG16w26xsG0Ji8XlXXPYLD73HmG0mHF+H5PF0usXmSxuN65gs3jz4yyTxYTpa1ks
-	Hq94y27x6mAbiwOfx5p5axg9Vi7/wuaxeM9LJo++LasYPY7f2M7k8XmTnMfGuaEB7FENjDYZ
-	qYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QDcrKZQl5pQC
-	hQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwlrGDOmLprKWrBcuuLA5C2MDYw3RLsYOTkk
-	BEwktnyZxwRhi0lcuLeerYuRi0NIYBGjxIdp/1ggnFeMEq0P77GCVPEKaEnMmLyHGcRmEVCV
-	ODjhD5jNBhTf/+IGG4gtKhAmsXL6FRaIekGJH5PvgdkiAhYSa1e8BRvKLHCLSeLstylgCWGB
-	EIlbh46ANQsJpEp82XQSzOYEGrqr6Rk7iM0soCOxv3UaG4QtL7F5zVvmCYwCs5DsmIWkbBaS
-	sgWMzKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxghPGM6kdjCsbLA4xCnAwKvHwOhxWDBZi
-	TSwrrsw9xCjBwawkwlsVoRQsxJuSWFmVWpQfX1Sak1p8iDEZGAQTmaVEk/OBySyvJN7Q2MTM
-	yNLI3NDCyNicNGElcd4DrdaBQgLpiSWp2ampBalFMFuYODilGhhDnSXYnJTivdhqF/R47b/b
-	O/eJ3sN79tWLk2dISjdbNP+Qd3zAvlSf4U9mYZOP60H/lj1SlZ37owRef1iuGFN+O7Yr9svc
-	Cz95D7y84am8ITQ8u/DYXo49Td+NomwWfd7yL1/cyKaj9MOyP77nJ5Xsl9m9qepjyfUHd+V0
-	eJuiMn57Kci/l1NiKc5INNRiLipOBADh0buKXAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 13 Mar 2014 23:50:48 -0400
+Message-ID: <53227C90.8070708@linaro.org>
+Date: Fri, 14 Mar 2014 12:50:40 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 7/7] arm64: ftrace: Add system call tracepoint
+References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org> <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org> <1394705630-12384-8-git-send-email-takahiro.akashi@linaro.org> <20140313162548.GD25472@mudshark.cambridge.arm.com>
+In-Reply-To: <20140313162548.GD25472@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 03/14/2014 01:43 AM, Bartlomiej Zolnierkiewicz wrote:
-> 
-> Hi,
-> 
-> On Thursday, March 13, 2014 05:17:21 PM Chanwoo Choi wrote:
->> This patchset support devicetree and use common ppmu driver instead of
->> individual code of exynos4_bus.c to remove duplicate code. Also this patchset
->> get the resources for busfreq from dt data by using DT helper function.
->> - PPMU register address
->> - PPMU clock
->> - Regulator for INT/MIF block
+On 03/14/2014 01:25 AM, Will Deacon wrote:
+> On Thu, Mar 13, 2014 at 10:13:50AM +0000, AKASHI Takahiro wrote:
+>> This patch allows system call entry or exit to be traced as ftrace events,
+>> ie. sys_enter_*/sys_exit_*, if CONFIG_FTRACE_SYSCALLS is enabled.
+>> Those events appear and can be controlled under
+>>      ${sysfs}/tracing/events/syscalls/
 >>
->> This patchset use SET_SYSTEM_SLEEP_PM_OPS macro intead of legacy method.
->> To remove power-leakage in suspend state, before entering suspend state,
->> disable ppmu clocks.
+>> Please note that we can't trace compat system calls here because
+>> AArch32 mode does not share the same syscall table with AArch64.
+>> Just define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS in order to avoid unexpected
+>> results (bogus syscalls reported or even hang-up).
 >>
->> Changes from v1:
->> - Add exynos4_bus.txt documentation for devicetree guide
->> - Fix probe failure if CONFIG_PM_OPP is disabled
->> - Fix typo and resource leak(regulator/clock/memory) when happening probe failure
->> - Add additionally comment for PPMU usage instead of previous PPC
->> - Split separate patch to remove ambiguous of patch
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> ---
+>>   arch/arm64/Kconfig               |    1 +
+>>   arch/arm64/include/asm/ftrace.h  |   20 ++++++++++++++++
+>>   arch/arm64/include/asm/syscall.h |    1 +
+>>   arch/arm64/include/asm/unistd.h  |    2 ++
+>>   arch/arm64/kernel/ptrace.c       |   48 ++++++++++++++++++++++----------------
+>>   5 files changed, 52 insertions(+), 20 deletions(-)
 >>
->> Chanwoo Choi (8):
->>   devfreq: exynos4: Support devicetree to get device id of Exynos4 SoC
->>   devfreq: exynos4: Use common ppmu driver and get ppmu address from dt data
->>   devfreq: exynos4: Add ppmu's clock control and code clean about regulator control
->>   devfreq: exynos4: Fix bug of resource leak and code clean on probe()
->>   devfreq: exynos4: Use SET_SYSTEM_SLEEP_PM_OPS macro
->>   devfreq: exynos4: Fix power-leakage of clock on suspend state
->>   devfreq: exynos4: Add CONFIG_PM_OPP dependency to fix probe fail
->>   devfreq: exynos4: Add busfreq driver for exynos4210/exynos4x12
+>> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+>> index 6954959..b1dcdb4 100644
+>> --- a/arch/arm64/Kconfig
+>> +++ b/arch/arm64/Kconfig
+>> @@ -43,6 +43,7 @@ config ARM64
+>>   	select HAVE_MEMBLOCK
+>>   	select HAVE_PATA_PLATFORM
+>>   	select HAVE_PERF_EVENTS
+>> +	select HAVE_SYSCALL_TRACEPOINTS
+>>   	select IRQ_DOMAIN
+>>   	select MODULES_USE_ELF_RELA
+>>   	select NO_BOOTMEM
+>> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
+>> index c44c4b1..4ef06f1 100644
+>> --- a/arch/arm64/include/asm/ftrace.h
+>> +++ b/arch/arm64/include/asm/ftrace.h
+>> @@ -44,6 +44,26 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+>>   #define CALLER_ADDR4 ((unsigned long)return_address(4))
+>>   #define CALLER_ADDR5 ((unsigned long)return_address(5))
+>>   #define CALLER_ADDR6 ((unsigned long)return_address(6))
+>> +
+>> +#include <asm/compat.h>
+>> +
+>> +/*
+>> + * Because AArch32 mode does not share the same syscall table with AArch64,
+>> + * tracing compat syscalls may result in reporting bogus syscalls or even
+>> + * hang-up, so just do not trace them.
+>> + * See kernel/trace/trace_syscalls.c
+>> + *
+>> + * x86 code says:
+>> + * If the user realy wants these, then they should use the
+>> + * raw syscall tracepoints with filtering.
+>
+> Fair enough.
+>
+>> + */
+>> +#define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS 1
+>
+> You don't need the '1' here.
+
+OK.
+
+>> +static inline bool arch_trace_is_compat_syscall(struct pt_regs *regs)
+>> +{
+>> +        if (is_compat_task())
+>> +                return true;
+>> +        return false;
+>> +}
+>
+> return is_compat_task();
+
+Fix it.
+
+>>   #endif /* ifndef __ASSEMBLY__ */
 >>
->>  .../devicetree/bindings/devfreq/exynos4_bus.txt    |  49 +++
->>  drivers/devfreq/Kconfig                            |   1 +
->>  drivers/devfreq/exynos/Makefile                    |   2 +-
->>  drivers/devfreq/exynos/exynos4_bus.c               | 415 ++++++++++++++-------
->>  4 files changed, 341 insertions(+), 126 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
-> 
-> Thanks for updating this patchset.  There are still some minor issues
-> left though:
-> 
-> - patch #4 should be at beginning of the patch series
-> 
-> - moving of devfreq_unregister_opp_notifier(dev, data->devfreq) from
->   exynos4_bus_exit() to exynos4_busfreq_remove() should be in patch #4
->   (which should really be at the beggining of patch series) not #3
-> 
-> - handling of iounmap(data->ppmu[i].hw_base) should be added to
->   exynos4_bus_exit() in patch #2 not #3
-> 
-> - patch #8 summary and description should mention fact that it adds DT
->   binding documentation (not the driver itself) and the patch itself
->   can be slighlty polished
+>>   #endif /* __ASM_FTRACE_H */
+>> diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
+>> index 70ba9d4..383771e 100644
+>> --- a/arch/arm64/include/asm/syscall.h
+>> +++ b/arch/arm64/include/asm/syscall.h
+>> @@ -18,6 +18,7 @@
+>>
+>>   #include <linux/err.h>
+>>
+>> +extern const void *sys_call_table[];
+>>
+>>   static inline int syscall_get_nr(struct task_struct *task,
+>>   				 struct pt_regs *regs)
+>> diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
+>> index 82ce217..c335479 100644
+>> --- a/arch/arm64/include/asm/unistd.h
+>> +++ b/arch/arm64/include/asm/unistd.h
+>> @@ -28,3 +28,5 @@
+>>   #endif
+>>   #define __ARCH_WANT_SYS_CLONE
+>>   #include <uapi/asm/unistd.h>
+>> +
+>> +#define NR_syscalls (__NR_syscalls)
+>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+>> index 9993a8f..9c52b3e 100644
+>> --- a/arch/arm64/kernel/ptrace.c
+>> +++ b/arch/arm64/kernel/ptrace.c
+>> @@ -41,6 +41,9 @@
+>>   #include <asm/traps.h>
+>>   #include <asm/system_misc.h>
+>>
+>> +#define CREATE_TRACE_POINTS
+>> +#include <trace/events/syscalls.h>
+>> +
+>>   /*
+>>    * TODO: does not yet catch signals sent when the child dies.
+>>    * in exit.c or in signal.c.
+>> @@ -1062,29 +1065,31 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+>>   {
+>>   	unsigned long saved_reg;
+>>
+>> -	if (!test_thread_flag(TIF_SYSCALL_TRACE))
+>> -		return regs->syscallno;
+>> +	if (test_thread_flag(TIF_SYSCALL_TRACE)) {
+>> +		/*
+>> +		 * A scrach register (ip(r12) on AArch32, x7 on AArch64) is
+>> +		 * used to denote syscall entry/exit:
+>> +		 *   0 -> entry
+>> +		 */
+>> +		if (is_compat_task()) {
+>
+> if (arch_trace_is_compat_syscall())
 
-OK, I'll re-order the sequence of patchset and modify minior issues about your comment.
-Also, I'll modify the patch description for patch8.
+I don't mind either way, but this part of code comes from the original
+syscall_trace() (ie. ptrace stuff), and has nothing to do with ftrace events.
+(You know, arch_trace_is_compat_syscall() is currently defined in asm/ftrace.h.)
+So I'd like to keep it unchanged unless you really want.
 
-> 
-> One important note about this patchset not mentioned in the cover
-> letter is that it is improving currently unused driver (because of
-> DT-only mach-exynos conversion the only user was removed in June 2013
-> and from the reading the code I suspect that even that user hadn't
-> worked previously).  As such this patch series should not cause any
-> regressions.
+> With those changes:
+>
+>    Acked-by: Will Deacon <will.deacon@arm.com>
 
-I don't understand correct your meaning.I explained DT support on upper
-patchset description by using DT helper function and I added PPMU descritpion.
-Also, Each patch include detailed description of patch content.
+Thank you,
+-Takahiro AKASHI
 
-What is more needed?
-
-Best Regards,
-Chanwoo Choi
-
-
-
-
-
+> Will
+>
