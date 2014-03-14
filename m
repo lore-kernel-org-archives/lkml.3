@@ -1,182 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367AbaCNXSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 19:18:37 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:35524
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755511AbaCNXSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 19:18:36 -0400
-Message-ID: <1394839107.12479.154.camel@snotra.buserror.net>
-Subject: Re: [PATCH 9/9] powerpc/pm: support deep sleep feature on T1040
-From: Scott Wood <scottwood@freescale.com>
-To: Chenhui Zhao <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>, <Jason.Jin@freescale.com>
-Date: Fri, 14 Mar 2014 18:18:27 -0500
-In-Reply-To: <20140312104005.GH4706@localhost.localdomain>
-References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
-	 <1394168285-32275-9-git-send-email-chenhui.zhao@freescale.com>
-	 <1394586624.13761.132.camel@snotra.buserror.net>
-	 <20140312104005.GH4706@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	id S1756528AbaCNXSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 19:18:53 -0400
+Received: from imap.thunk.org ([74.207.234.97]:41569 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756497AbaCNXSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 19:18:48 -0400
+Date: Fri, 14 Mar 2014 19:18:32 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+Message-ID: <20140314231832.GA653@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+	Matthew Garrett <matthew.garrett@nebula.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"jmorris@namei.org" <jmorris@namei.org>,
+	"keescook@chromium.org" <keescook@chromium.org>,
+	"linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>,
+	"akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+	"hpa@zytor.com" <hpa@zytor.com>,
+	"jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+	"linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+	"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+References: <1394746248.27846.3.camel@x230>
+ <20140313232140.03bdaac3@alan.etchedpixels.co.uk>
+ <1394762250.6416.24.camel@x230.lan>
+ <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
+ <1394801518.6416.38.camel@x230.lan>
+ <20140314170655.0ce398a3@alan.etchedpixels.co.uk>
+ <1394820664.26846.18.camel@x230.mview.int.nebula.com>
+ <20140314214806.54a3d031@alan.etchedpixels.co.uk>
+ <1394834193.1286.11.camel@x230>
+ <20140314220840.29a12171@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: CO1PR07CA011.namprd07.prod.outlook.com (10.141.49.41) To
- BLUPR03MB389.namprd03.prod.outlook.com (10.141.78.11)
-X-Forefront-PRVS: 0150F3F97D
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377424004)(24454002)(51704005)(189002)(199002)(51856001)(93516002)(20776003)(81816001)(63696002)(47776003)(69226001)(46102001)(74662001)(88136002)(74502001)(81686001)(47446002)(95666003)(79102001)(59766001)(23676002)(31966008)(94316002)(94946001)(54316002)(56776001)(76482001)(80022001)(65816001)(53806001)(86362001)(33646001)(93916002)(95416001)(42186004)(74366001)(87976001)(97186001)(77096001)(77156001)(74876001)(50466002)(74706001)(87266001)(76786001)(76796001)(56816005)(47736001)(50226001)(49866001)(89996001)(85852003)(83072002)(85306002)(50986001)(47976001)(19580405001)(83322001)(19580395003)(62966002)(80976001)(81342001)(81542001)(92566001)(90146001)(92726001)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB389;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:BC3372DF.A7F69680.FDF47AB4.D1D8224A.205E8;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140314220840.29a12171@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-12 at 18:40 +0800, Chenhui Zhao wrote:
-> On Tue, Mar 11, 2014 at 08:10:24PM -0500, Scott Wood wrote:
-> > On Fri, 2014-03-07 at 12:58 +0800, Chenhui Zhao wrote:
-> > > From: Zhao Chenhui <chenhui.zhao@freescale.com>
-> > > 
-> > > T1040 supports deep sleep feature, which can switch off most parts of
-> > > the SoC when it is in deep sleep mode. This way, it becomes more
-> > > energy-efficient.
-> > > 
-> > > The DDR controller will also be powered off in deep sleep. Therefore,
-> > > the last stage (the latter part of fsl_dp_enter_low) will run without DDR
-> > > access. This piece of code and related TLBs will be prefetched.
-> > > 
-> > > Due to the different initialization code between 32-bit and 64-bit, they
-> > > have seperate resume entry and precedure.
-> > > 
-> > > The feature supports 32-bit and 64-bit kernel mode.
-> > > 
-> > > Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> > > ---
-> > >  arch/powerpc/include/asm/booke_save_regs.h |    3 +
-> > >  arch/powerpc/kernel/cpu_setup_fsl_booke.S  |   17 ++
-> > >  arch/powerpc/kernel/head_fsl_booke.S       |   30 +++
-> > >  arch/powerpc/platforms/85xx/Makefile       |    2 +-
-> > >  arch/powerpc/platforms/85xx/deepsleep.c    |  201 +++++++++++++++++++
-> > >  arch/powerpc/platforms/85xx/qoriq_pm.c     |   38 ++++
-> > >  arch/powerpc/platforms/85xx/sleep.S        |  295 ++++++++++++++++++++++++++++
-> > >  arch/powerpc/sysdev/fsl_soc.h              |    7 +
-> > >  8 files changed, 592 insertions(+), 1 deletions(-)
-> > >  create mode 100644 arch/powerpc/platforms/85xx/deepsleep.c
-> > >  create mode 100644 arch/powerpc/platforms/85xx/sleep.S
-> > > 
-> > > diff --git a/arch/powerpc/include/asm/booke_save_regs.h b/arch/powerpc/include/asm/booke_save_regs.h
-> > > index 87c357a..37c1f6c 100644
-> > > --- a/arch/powerpc/include/asm/booke_save_regs.h
-> > > +++ b/arch/powerpc/include/asm/booke_save_regs.h
-> > > @@ -88,6 +88,9 @@
-> > >  #define HIBERNATION_FLAG	1
-> > >  #define DEEPSLEEP_FLAG		2
-> > >  
-> > > +#define CPLD_FLAG	1
-> > > +#define FPGA_FLAG	2
-> > 
-> > What is this?
+On Fri, Mar 14, 2014 at 10:08:40PM +0000, One Thousand Gnomes wrote:
+> > Signed userspace is not a requirement, and therefore any solution that
+> > relies on a signed initrd is inadequate. There are use cases that
+> > require verification of the initrd and other levels. This isn't one of
+> > them.
 > 
-> We have two kind of boards, QDS and RDB.
-> They have different register map. Use the flag to indicate the current board is using which kind
-> of register map.
+> The job of the kernel is to solve the general problem. There are lots of
+> people who happen to care about verification beyond the kernel so it
+> shouldn't be ignored. And they can do do things like load trusted SELinux
+> rulesets even if you can't support it in your environment.
 
-CPLD versus FPGA is not a meaningful difference.  We don't care what
-technology is used to implement programmable logic -- we care what
-programming interface is exposed.  Customers will have their own boards
-that will likely not imitate either of these programming interfaces, but
-what they do have will still probably be implemented in a CPLD or FPGA.
-Likewise, Freescale may have future reference boards whose CPLD/FPGA is
-not compatible.
+This is really a question about goals and trust models.  Alan is
+arguing that we should support trust models and goals which go far
+beyond the goals and trust model of the UEFI Forum.
 
-So use better naming, and structure the code so it's easy to plug in
-implementations for new or custom boards.
- 
-> > > diff --git a/arch/powerpc/kernel/head_fsl_booke.S b/arch/powerpc/kernel/head_fsl_booke.S
-> > > index 20204fe..3285752 100644
-> > > --- a/arch/powerpc/kernel/head_fsl_booke.S
-> > > +++ b/arch/powerpc/kernel/head_fsl_booke.S
-> > > @@ -162,6 +162,19 @@ _ENTRY(__early_start)
-> > >  #include "fsl_booke_entry_mapping.S"
-> > >  #undef ENTRY_MAPPING_BOOT_SETUP
-> > >  
-> > > +#if defined(CONFIG_SUSPEND) && defined(CONFIG_FSL_CORENET_RCPM)
-> > > +	/* if deep_sleep_flag != 0, jump to the deep sleep resume entry */
-> > > +	LOAD_REG_ADDR(r4, deep_sleep_flag)
-> > > +	lwz	r3, 0(r4)
-> > > +	cmpwi	r3, 0
-> > > +	beq	11f
-> > > +	/* clear deep_sleep_flag */
-> > > +	li	r3, 0
-> > > +	stw	r3, 0(r4)
-> > > +	b	fsl_deepsleep_resume
-> > > +11:
-> > > +#endif
-> > 
-> > Why do you come in via the normal kernel entry, versus specifying a
-> > direct entry point for deep sleep resume?  How does U-Boot even know
-> > what the normal entry is when resuming?
-> 
-> I wish to return to a specified point (like 64-bit mode), but the code in
-> fsl_booke_entry_mapping.S only can run in the first page. Because it
-> only setups a temp mapping of 4KB.
+Matthew is, I think, trying to make the argument that his patches
+fulfill the goals that are needed so we can boot Linux distribution
+kernels on UEFI secure boot machines without worrying about Microsoft
+deciding to revoke keys so that Red Hat or SuSE will no longer be able
+to be bootable on desktops that are certified for Windows 8.  And
+while we might want to improve the framework to support other trust
+models later on, supporting distro kernels on Windows 8 certified PC's
+is important enough that we should let these patches into mainline.
 
-Why do you need the entry mapping on 32-bit but not 64-bit?
-> 
-> > > +#if defined(CONFIG_SUSPEND) && defined(CONFIG_FSL_CORENET_RCPM)
-> > > +_ENTRY(__entry_deep_sleep)
-> > > +/*
-> > > + * Bootloader will jump to here when resuming from deep sleep.
-> > > + * After executing the init code in fsl_booke_entry_mapping.S,
-> > > + * will jump to the real resume entry.
-> > > + */
-> > > +	li	r8, 1
-> > > +	bl	12f
-> > > +12:	mflr	r9
-> > > +	addi	r9, r9, (deep_sleep_flag - 12b)
-> > > +	stw	r8, 0(r9)
-> > > +	b __early_start
-> > > +deep_sleep_flag:
-> > > +	.long	0
-> > > +#endif
-> > 
-> > It's a bit ambiguous to say "entry_deep_sleep" when it's resuming rather
-> > than entering...
-> 
-> How about __fsl_entry_resume?
+Is that a fair summary of the two viewpoints?
 
-fsl_booke_deep_sleep_resume
+Personally, I think that we are fortunate that Windows 8 has been
+enough of a train wreck that huge numbers of users have been taking
+Windows 8 systems and upgrading them to Windows 7, and hence the need
+for Distro kernels that can boot on fully locked down Windows 8 PC's.
+But at some point, whether it is a few years or a decade later (if
+Windows 7 lives on as long as XP :-), Windows 7 will be EOL'ed, and
+even before that, UEFI secure boot will be enabled by default.
 
-> > > +#define FSLDELAY(count)		\
-> > > +	li	r3, (count)@l;	\
-> > > +	slwi	r3, r3, 10;	\
-> > > +	mtctr	r3;		\
-> > > +101:	nop;			\
-> > > +	bdnz	101b;
-> > 
-> > You don't need a namespace prefix on local macros in a non-header file.
-> > 
-> > Is the timebase stopped where you're calling this from?
-> 
-> No. My purpose is to avoid jump in the last stage of entering deep sleep.
-> Jump may cause problem at that time.
+Right now, even though Lenovo laptops are shipping with Windows
+8. UEFI secure boot is not made mandatory (although it is on enough to
+brick the laptop when it runs into bugs wwith the UEFI BIOS code,
+sigh).  But sooner or later, UEFI secure boot will be on by default,
+and then if Linux distros don't have kernels where the installer can
+be run without needing to twiddle BIOS settings, it might make it
+harder for the "Year of the Desktop" to come about.
 
-"bdnz" is a jump.
+So as far as the narrow question of whether we should accept these
+patches, I think it's a good thing.  Personally, I'm always going to
+be disabling UEFI secure boot (even if it doesn't brick my laptop),
+because for me, the security guarantees it provides isn't worth it.
+But there will be people who want to be able to install Linux on
+Windows 8 certified PC's without tweaking BIOS settings, so merging
+the UEFI secure boot is a good thing, so long as those of use who
+don't want to have anything to do with UEFI secure boot can disable
+it.
 
-What problems do you think a jump will cause?
+Regards,
 
-> > You also probably want to do a "sync, readback, data dependency, isync"
-> > sequence to make sure that the store has hit CCSR before you begin your
-> > delay (or is a delay required at all if you do that?).
-> 
-> Yes. It is safer with a sync sequence.
-> 
-> The DDR controller need some time to signal the external DDR modules to
-> enter self refresh mode.
-
-Is it documented how much time it requires?
-
--Scott
-
-
+					- Ted
