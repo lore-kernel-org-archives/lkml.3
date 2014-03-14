@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901AbaCND5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 23:57:34 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:59471 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753786AbaCND5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 23:57:33 -0400
-Date: Fri, 14 Mar 2014 03:57:31 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1403140356090.7219@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751641AbaCNEHq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 00:07:46 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58899 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709AbaCNEHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 00:07:45 -0400
+Date: Fri, 14 Mar 2014 00:07:41 -0400 (EDT)
+Message-Id: <20140314.000741.1829674011496195593.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: David.Laight@ACULAB.COM, netdev@vger.kernel.org, nic_swsd@realtek.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next v3 1/2] r8152:
+ addRTL8152_EARLY_AGG_TIMEOUT_SUPER
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <A56A13416A724183888BB62CEFD2B817@realtek.com.tw>
+References: <063D6719AE5E284EB5DD2968C1650D6D0F6DCB6E@AcuExch.aculab.com>
+	<20140313.132222.536931544768069240.davem@davemloft.net>
+	<A56A13416A724183888BB62CEFD2B817@realtek.com.tw>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 13 Mar 2014 21:07:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: hayeswang <hayeswang@realtek.com>
+Date: Fri, 14 Mar 2014 10:37:21 +0800
 
-Hi Linus,
+>  From: David Miller [mailto:davem@davemloft.net] 
+>  Sent: Friday, March 14, 2014 1:22 AM
+> [...]
+>> And I fundamentally disagree with this being a Kconfig parameter.
+>> 
+>> Make it run-time calculated _or_ settable via ethtool.
+> 
+> Excuse me. How should I make it run-time calculated without a
+> Kconfig parameter? Should I use module_param? 
 
-pretty minor set of fixes for radeon, ttm and vmwgfx,
-ttm ones are a regression and an oops seen on server chipsets.
-
-Dave.
-
-The following changes since commit fa389e220254c69ffae0d403eac4146171062d08:
-
-  Linux 3.14-rc6 (2014-03-09 19:41:57 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to f042cc4a607d675452134884c26e8d0d395dd979:
-
-  Merge tag 'ttm-fixes-3.14-2014-03-12' of git://people.freedesktop.org/~thomash/linux into drm-fixes (2014-03-13 17:31:24 +1000)
-
-----------------------------------------------------------------
-
-Alex Deucher (4):
-      drm/radeon: fix runpm disabling on non-PX harder
-      drm/radeon/cik: properly set sdma ring status on disable
-      drm/radeon/cik: stop the sdma engines in the enable() function
-      drm/radeon/cik: properly set compute ring status on disable
-
-Dave Airlie (3):
-      Merge tag 'vmwgfx-fixes-3.14-2014-03-13' of git://people.freedesktop.org/~thomash/linux into drm-fixes
-      Merge branch 'drm-fixes-3.14' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-      Merge tag 'ttm-fixes-3.14-2014-03-12' of git://people.freedesktop.org/~thomash/linux into drm-fixes
-
-Rob Clark (1):
-      drm/ttm: don't oops if no invalidate_caches()
-
-Thomas Hellstrom (2):
-      drm/ttm: Work around performance regression with VM_PFNMAP
-      drm/vmwgfx: Fix a surface reference corner-case in legacy emulation mode
-
- drivers/gpu/drm/radeon/cik.c            |  5 ++++-
- drivers/gpu/drm/radeon/cik_sdma.c       | 14 +++++++-------
- drivers/gpu/drm/radeon/radeon_kms.c     | 10 +++++++++-
- drivers/gpu/drm/ttm/ttm_bo.c            |  8 +++++---
- drivers/gpu/drm/ttm/ttm_bo_vm.c         | 12 +++++++-----
- drivers/gpu/drm/vmwgfx/vmwgfx_surface.c | 18 ++++++++++++++++++
- 6 files changed, 50 insertions(+), 17 deletions(-)
+You run-time determine the setting based upon the negotiated link
+speed and traffic patterns.
