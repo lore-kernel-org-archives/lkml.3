@@ -1,105 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848AbaCNSWR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 14:22:17 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:9631 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461AbaCNSWQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 14:22:16 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-13-532348d6bb31
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-ide@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ata: ahci_st: remove deprecated struct ahci_platform_data
- usage
-Date: Fri, 14 Mar 2014 19:21:59 +0100
-Message-id: <1561239.uqrRD3ZCZp@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jQd1rHsrBBie+21jc/3qU0WLT42us
-	Fsd2PGKyuLxrDpvFr+VHGR1YPTat6mTzuHNtD5vH5iX1Hp83yQWwRHHZpKTmZJalFunbJXBl
-	vP7dxFywVaCi/UVGA+NB3i5GTg4JAROJvSefMUHYYhIX7q1n62Lk4hASmM4osWzrAyinhUni
-	zd0TLCBVbAJWEhPbVzGC2CICshJXpj1kBCliFmhllJi9Yio7SEJYIEzi+N9FYGNZBFQl1q5+
-	yNrFyMHBK6Ap0bozHSQsKuApsWP7SjYQm1dAUOLH5Htg85kF5CX27Z/KCmFrSazfeZxpAiPf
-	LCRls5CUzUJStoCReRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcFA+k97BuKrB4hCjAAej
-	Eg/vBSXlYCHWxLLiytxDjBIczEoivPuNgUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7ZaBwoJ
-	pCeWpGanphakFsFkmTg4pRoYg/5MucjReviPTUTD7KNF57js9ngzMcaff93wUHSB4LLeXBPz
-	5S9ltFO/5kSuZLs+edHkzFd7p7yc/+b5AYHo/X+uFO3x2bFg+avczWu9Yl6F1+plLr1T1z03
-	9++RYC2jg4z1FT8dXjidyNWf4VYjy6t5SYR39/IZZR8U7HKuvXwtNefnFFHrnUosxRmJhlrM
-	RcWJAIRxsBxGAgAA
+	id S1755418AbaCNSYx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 14:24:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42056 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754478AbaCNSYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 14:24:52 -0400
+Date: Fri, 14 Mar 2014 19:23:31 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Davidlohr Bueso <davi@redhat.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: async_pf.c && use_mm() (Was: mm,vmacache: also flush cache for
+	VM_CLONE)
+Message-ID: <20140314182331.GA11482@redhat.com>
+References: <CA+55aFxyGJFEz5NnHtK1wn8oDLy9n-CttttKL_0AM69gN8JzxQ@mail.gmail.com> <20140309170909.GA13335@redhat.com> <CA+55aFxEGj9poWNLAncvrrOTzjDtrwMnOM_d3ACqRkcvY86qHA@mail.gmail.com> <1394481375.3867.1.camel@buesod1.americas.hpqcorp.net> <20140313145941.GA26215@redhat.com> <CA+55aFyNd7L+G3hFauJPxUOengK-_o2G-SFmVooPZ-sE6xBj=g@mail.gmail.com> <20140313163632.GA30737@redhat.com> <20140313182702.GA3429@redhat.com> <CA+55aFwqTbsYCyPf6_i6RmBkPHpEhJjiRfZm6_1_yPa_kUkYiQ@mail.gmail.com> <CA+55aFzBjMQGapsS1Jw3rdrPaOYYPn7NamtjN47_W_r1QKX+8Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzBjMQGapsS1Jw3rdrPaOYYPn7NamtjN47_W_r1QKX+8Q@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct ahci_platform_data is deprecated (please see comments in
-<linux/ahci_platform.h> for details).  Convert ahci_st driver to
-use custom ->host_stop method instead.
+On 03/13, Linus Torvalds wrote:
+>
+> Ok, no longer on my phone, and no, it clearly does the reference count with a
+>
+>     atomic_inc(&work->mm->mm_count);
+>
+> separately. The use_mm/unuse_mm seems entirely specious.
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
----
-Compile tested only.
+Yes, it really looks as if we can simply remove it.
 
- drivers/ata/ahci_st.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+But once again, with or without use_mm() it seems that the refcounting
+is buggy. get_user_pages() is simply wrong if ->mm_users == 0 and
+exit_mmap/etc was already called (or in progress).
 
-Index: b/drivers/ata/ahci_st.c
-===================================================================
---- a/drivers/ata/ahci_st.c	2014-03-14 19:17:32.216568395 +0100
-+++ b/drivers/ata/ahci_st.c	2014-03-14 19:18:27.912567444 +0100
-@@ -87,10 +87,11 @@ static int st_ahci_deassert_resets(struc
+So I think we need something like below, but I can't test this change
+or audit other (potential) users of kvm_async_pf->mm.
+
+Perhaps this is not a bug and somehow it is guaranteed that, say,
+kvm_clear_async_pf_completion_queue() must be always called before the
+caller of kvm_setup_async_pf() can exit? I don't know, but in this case
+we do not need any accounting and this should be documented.
+
+Gleb, what do you think?
+
+Oleg.
+
+--- x/virt/kvm/async_pf.c
++++ x/virt/kvm/async_pf.c
+@@ -65,11 +65,9 @@ static void async_pf_execute(struct work_struct *work)
+ 
+ 	might_sleep();
+ 
+-	use_mm(mm);
+ 	down_read(&mm->mmap_sem);
+ 	get_user_pages(current, mm, addr, 1, 1, 0, NULL, NULL);
+ 	up_read(&mm->mmap_sem);
+-	unuse_mm(mm);
+ 
+ 	spin_lock(&vcpu->async_pf.lock);
+ 	list_add_tail(&apf->link, &vcpu->async_pf.done);
+@@ -85,7 +83,7 @@ static void async_pf_execute(struct work_struct *work)
+ 	if (waitqueue_active(&vcpu->wq))
+ 		wake_up_interruptible(&vcpu->wq);
+ 
+-	mmdrop(mm);
++	mmput(mm);
+ 	kvm_put_kvm(vcpu->kvm);
+ }
+ 
+@@ -98,7 +96,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
+ 				   typeof(*work), queue);
+ 		list_del(&work->queue);
+ 		if (cancel_work_sync(&work->work)) {
+-			mmdrop(work->mm);
++			mmput(work->mm);
+ 			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
+ 			kmem_cache_free(async_pf_cache, work);
+ 		}
+@@ -162,7 +160,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+ 	work->addr = gfn_to_hva(vcpu->kvm, gfn);
+ 	work->arch = *arch;
+ 	work->mm = current->mm;
+-	atomic_inc(&work->mm->mm_count);
++	atomic_inc(&work->mm->mm_users);
+ 	kvm_get_kvm(work->vcpu->kvm);
+ 
+ 	/* this can't really happen otherwise gfn_to_pfn_async
+@@ -180,7 +178,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+ 	return 1;
+ retry_sync:
+ 	kvm_put_kvm(work->vcpu->kvm);
+-	mmdrop(work->mm);
++	mmput(work->mm);
+ 	kmem_cache_free(async_pf_cache, work);
  	return 0;
  }
- 
--static void st_ahci_exit(struct device *dev)
-+static void st_ahci_host_stop(struct ata_host *host)
- {
-+	struct ahci_host_priv *hpriv = host->private_data;
-+	struct device *dev = host->dev;
- 	struct st_ahci_drv_data *drv_data = dev_get_drvdata(dev);
--	struct ahci_host_priv *hpriv = drv_data->hpriv;
- 	int err;
- 
- 	if (drv_data->pwr) {
-@@ -127,17 +128,21 @@ static int st_ahci_probe_resets(struct p
- 	return st_ahci_deassert_resets(&pdev->dev);
- }
- 
-+static struct ata_port_operations st_ahci_port_ops = {
-+	.inherits	= &ahci_platform_ops,
-+	.host_stop	= st_ahci_host_stop,
-+};
-+
- static const struct ata_port_info st_ahci_port_info = {
- 	.flags          = AHCI_FLAG_COMMON,
- 	.pio_mask       = ATA_PIO4,
- 	.udma_mask      = ATA_UDMA6,
--	.port_ops       = &ahci_platform_ops,
-+	.port_ops       = &st_ahci_port_ops,
- };
- 
- static int st_ahci_probe(struct platform_device *pdev)
- {
- 	struct st_ahci_drv_data *drv_data;
--	struct ahci_platform_data *pdata;
- 	struct ahci_host_priv *hpriv;
- 	int err;
- 
-@@ -147,13 +152,6 @@ static int st_ahci_probe(struct platform
- 
- 	platform_set_drvdata(pdev, drv_data);
- 
--	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
--	if (!pdata)
--		return -ENOMEM;
--
--	pdata->exit = st_ahci_exit;
--	pdev->dev.platform_data = pdata;
--
- 	hpriv = ahci_platform_get_resources(pdev);
- 	if (IS_ERR(hpriv))
- 		return PTR_ERR(hpriv);
 
