@@ -1,77 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058AbaCNOR6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:17:58 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:43773 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754337AbaCNOR5 (ORCPT
+	id S1755510AbaCNOSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:18:11 -0400
+Received: from mail-yk0-f178.google.com ([209.85.160.178]:38726 "EHLO
+	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041AbaCNOSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:17:57 -0400
+	Fri, 14 Mar 2014 10:18:09 -0400
+Date: Fri, 14 Mar 2014 11:18:03 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 5/5] perf tools: Share process map groups within process
+ threads
+Message-ID: <20140314141803.GF2396@ghostprotocols.net>
+References: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
+ <1394805606-25883-6-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140314141143.GH12613@htj.dyndns.org>
-References: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
-	<20140218155945.ee2e22e07fa3b4f242b16a7f@linux-foundation.org>
-	<CACZ9PQV8RsaefFAOt5b-aL33G3CiD+3+fTuW15io6u1DH3XJ6Q@mail.gmail.com>
-	<CACZ9PQUKzsP4mwJSO3c=Z3W2pYr2AME-9j+1Cqg9t8a4T+uQQg@mail.gmail.com>
-	<20140313200119.GB504@quack.suse.cz>
-	<20140313143456.157404fd7f208638ca70e317@linux-foundation.org>
-	<20140314130712.GC12613@htj.dyndns.org>
-	<CACZ9PQUQX-sSNo+z0LB0Tefq9pSHFr6GjKg2tWzdAtw3OYYDsg@mail.gmail.com>
-	<20140314141143.GH12613@htj.dyndns.org>
-Date: Fri, 14 Mar 2014 23:17:56 +0900
-Message-ID: <CACZ9PQWtHJh6j_bKwB-HF4h3rU3813AN2qUibkCs7tmXUrLJoQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data
- integrity write
-From: Roman Peniaev <r.peniaev@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394805606-25883-6-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 11:11 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> On Fri, Mar 14, 2014 at 11:07:04PM +0900, Roman Peniaev wrote:
->> Seems the following message should be better:
->> When data inegrity operation (sync, fsync, fdatasync calls) happens
->> writeback control is set to WB_SYNC_ALL.
->> In that case all write requests are marked with WRITE_SYNC, but on
->> mpage writeback path
->> WRITE_SYNC is missed. This patch fixes this.
->>
->> Is it ok, what do you think?
->
-> I think the description should make it clear that WRITE_SYNC is about
-> latency, not about integrity and we probably should add comments
-> explaining why we're using WRITE_SYNC for WB_SYNC_ALL (because there
-> probably is someone waiting).
->
->> Also, could you please help me do understand how can I guarantee
->> integrity in case of block device with big volatile
->> cache and filesystem, which does not support REQ_FLUSH/FUA?
->
-> If a device has a volatile cache but doesn't support flush, it can't
-> guarantee integrity.  There's no way for its user to determine or
-> force whether certain data is on non-volatile media.  It's an
-> inherently broken device.
+Em Fri, Mar 14, 2014 at 03:00:06PM +0100, Jiri Olsa escreveu:
+> Sharing map groups within all process threads. This way
+> there's only one copy of mmap info and it's reachale
+> from any thread within the process.
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Don Zickus <dzickus@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> ---
+>  tools/perf/util/map.h    |  2 ++
+>  tools/perf/util/thread.c | 37 ++++++++++++++++++++++++++++++++++---
+>  2 files changed, 36 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+> index 99a6488..d4c8df2 100644
+> --- a/tools/perf/util/map.h
+> +++ b/tools/perf/util/map.h
+> @@ -59,6 +59,8 @@ struct map_groups {
+>  	struct rb_root	 maps[MAP__NR_TYPES];
+>  	struct list_head removed_maps[MAP__NR_TYPES];
+>  	struct machine	 *machine;
+> +	/* Used for thread sharing */
+> +	int		  refcnt;
 
-No, no. Not device does not support flush, filesystem does not care about flush.
-(take any old school, e.g. ext2)
+So in the end you use those get/put ops for ref counting, cool. We need
+some more of those for other stuff like those pointers in hist_entries
+to dead_threads, etc.
 
-We did some write, and then we did fsync.
-But filesystem does not support REQ_FLUSH/FUA so block device will never
-get the checkpoint where it should really flush everything.
+- Arnaldo
 
-So, fsync will not guarantee any integrity in that case.
-
-
->
-> Thanks.
->
-> --
-> tejun
+>  };
+>  
+>  static inline struct kmap *map__kmap(struct map *map)
+> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+> index 7c1aad0..2599754 100644
+> --- a/tools/perf/util/thread.c
+> +++ b/tools/perf/util/thread.c
+> @@ -156,6 +156,16 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
+>  	return 0;
+>  }
+>  
+> +static struct thread* thread__get_leader(struct thread *thread)
+> +{
+> +	pid_t pid = thread->pid_;
+> +
+> +	if (pid == thread->tid)
+> +		return thread;
+> +
+> +	return machine__findnew_thread(thread->machine, pid, pid);
+> +}
+> +
+>  static struct map_groups* thread__map_groups_alloc(struct thread *thread)
+>  {
+>  	struct map_groups* mg = zalloc(sizeof(*mg));
+> @@ -172,13 +182,34 @@ struct map_groups* thread__map_groups_get(struct thread *thread)
+>  {
+>  	struct map_groups* mg = thread->mg;
+>  
+> -	if (!mg)
+> -		mg = thread__map_groups_alloc(thread);
+> +	if (!mg) {
+> +		struct thread *leader = thread__get_leader(thread);
+> +
+> +		if (!leader)
+> +			return NULL;
+> +
+> +		if (leader->mg)
+> +			mg = leader->mg;
+> +		else
+> +			mg = thread__map_groups_alloc(leader);
+> +
+> +		if (leader != thread)
+> +			thread->mg = mg;
+> +
+> +		mg->refcnt++;
+> +	}
+>  
+>  	return mg;
+>  }
+>  
+>  void thread__map_groups_put(struct thread *thread)
+>  {
+> -	zfree(&thread->mg);
+> +	struct map_groups* mg = thread->mg;
+> +
+> +	if (mg) {
+> +		BUG_ON(!mg->refcnt);
+> +
+> +		if (!--mg->refcnt)
+> +			zfree(&thread->mg);
+> +	}
+>  }
+> -- 
+> 1.8.3.1
