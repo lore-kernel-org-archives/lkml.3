@@ -1,157 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705AbaCNBdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 21:33:53 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:13857 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbaCNBdw (ORCPT
+	id S1754565AbaCNBpV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 21:45:21 -0400
+Received: from mailout.micron.com ([137.201.242.129]:41849 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900AbaCNBpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 21:33:52 -0400
-Message-ID: <53225C69.3010202@huawei.com>
-Date: Fri, 14 Mar 2014 09:33:29 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 13 Mar 2014 21:45:20 -0400
+Message-ID: <53225F2B.4020709@micron.com>
+Date: Thu, 13 Mar 2014 18:45:15 -0700
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Thunderbird/28.0
 MIME-Version: 1.0
-To: Glyn Normington <gnormington@gopivotal.com>
-CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Steve Powell <spowell@gopivotal.com>
-Subject: Re: [PATCH] control groups: documentation improvements
-References: <20140310113928.GC18700@gnimac.gopivotal.com> <20140310140724.GA25290@htj.dyndns.org> <531DC971.6020208@gopivotal.com> <20140310142014.GC25290@htj.dyndns.org> <5321D6FA.4040500@gopivotal.com>
-In-Reply-To: <5321D6FA.4040500@gopivotal.com>
+To: Jens Axboe <axboe@kernel.dk>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>
+Subject: [PATCH] mtip32xx: Fix ERO and NoSnoop values in PCIe upstream on
+ AMD systems
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20564.002
+X-TM-AS-Result: No--3.573100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/3/14 0:04, Glyn Normington wrote:
-> Hi Tejun
-> 
-> Stepping back from the patch for a while, we'd like to explore the issues you raise. Please bear with us as we try to capture the ideas precisely.
-> 
-> Continued inline...
-> 
-> Regards,
-> Glyn (& Steve Powell, copied)
-> 
-> On 10/03/2014 14:20, Tejun Heo wrote:
->> Hey,
->>
->> On Mon, Mar 10, 2014 at 02:17:21PM +0000, Glyn Normington wrote:
->>> Then we missed how to create a hierarchy with no associated
->>> subsystems. The only way I can think of is to use mount, specify no
->>> subsystems on -o (which defaults to all the subsystems defined in
->>> the kernel), and run it in a kernel with no subsystems defined
->>> (which seems unlikely these days).
->>>
->>> Is that what you had in mind or is there some other way of creating
->>> a hierarchy with no subsystems attached?
->> Hierarchy name should be specified "-o name=" for hierarchies w/o any
->> controllers.
-> 
-> According to cgroups.txt:
-> 
->  When passing a name=<x> option for a new hierarchy, you need to
->  specify subsystems manually; the legacy behaviour of mounting all
->  subsystems when none are explicitly specified is not supported when
->  you give a subsystem a name.
-> 
-> So the documentation certainly does not make it clear that it is valid to specify no subsystems.
-> 
-> We tried this (on a 3.11 kernel) and can't get it to work:
-> 
-> # mount -t cgroup -o name=th none /home/glyn/h1
 
-# mount -t cgroup -o name=th,none none /home/glyn/h1
+A hardware quirk in P320h/P420m interfere with PCIe transactions on some
+AMD chipsets, making P320h/P420m unusable. This workaround is to disable
+ERO and NoSnoop bits in the parent and root complex for normal functioning
+of these devices
 
-and then
+NOTE: This workaround is specific to AMD chipset with a PCIe upstream
+device with device id 0x5aXX
 
-# mount -t cgroup -o name=th none /home/glyn/h2
+Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
+---
+ drivers/block/mtip32xx/mtip32xx.c |   53 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 53 insertions(+), 0 deletions(-)
 
-> 
-> mount: wrong fs type, bad option, bad superblock on none,
->     missing codepage or helper program, or other error
->     (for several filesystems (e.g. nfs, cifs) you might
->     need a /sbin/mount.<type> helper program) In some
->     cases useful info is found in syslog - try dmesg |
->     tail or so
-> 
-> Please could you supply an example which works?
-> 
->>>>> Clarify that subsystems may be attached to multiple hierarchies,
->>>>> although this isn't very useful, and explain what happens.
->>>> And a subsystem may only be attached to a single hierarchy.
->>> Perhaps that's what should happen, but the following experiment
->>> demonstrates a subsystem being attached to two hierarchies:
->>>
->>> $ pwd
->>> /home/vagrant
->>> $ mkdir mem1
->>> $ mkdir mem2
->>> $ sudo su
->>> # mount -t cgroup -o memory none /home/vagrant/mem1
->>> # mount -t cgroup -o memory none /home/vagrant/mem2
->>> # cd mem1
->>> # mkdir inst1
->>> # ls inst1
->>> cgroup.clone_children  memory.failcnt ...
->>> # ls ../mem2
->>> cgroup.clone_children  inst1 memory.limit_in_bytes ...
->>> # cd inst1
->>> # echo 1000000 > memory.limit_in_bytes
->>> # cat memory.limit_in_bytes
->>> 1003520
->>> # cat ../../mem2/inst1/memory.limit_in_bytes
->>> 1003520
->>> # echo $$ > tasks
->>> # cat tasks
->>> 1365
->>> 1409
->>> # cat ../../mem2/inst1/tasks
->>> 1365
->>> 1411
->> You're mounting the same hierarchy twice.  Those are two views into
->> the same hierarchy.
->>
->> Thanks.
->>
-> Yes, it does appear that this is what is going on, but to explain it this way turns out to be more complicated than one might expect. Here's an attempt...
-> 
-
-Yeah, this can only confuse people.
-
-I don't think we need extra explanation, because we all know the same
-filesystem can have more than one mount point, and cgroupfs is no
-different.
-
-> ---
->  A*hierarchy*  is a non-empty set of cgroups arranged in a tree and a
->  non-empty set of subsystems such that the cgroups in the hierarchy
->  partition all the tasks in the system (in other words, every task in the
->  system is in exactly one of the cgroups in the hierarchy) and each
->  subsystem attaches its own state to each cgroup in the hierarchy.
-> 
->  There may be zero or more active hierarchies. Each hierarchy has one
->  or more views associated with it. A *view* is an instance of the cgroup
->  virtual filesystem. The tree of cgroups of a hierarchy is represented
->  by the directory tree in the cgroup virtual filesystem of each view of
->  the hierarchy. All the directory trees in the cgroup virtual filesystem
->  of the views of a given hierarchy have identical content.
-> 
->  No subsystem may participate in more than one hierarchy.
-> ---
-> 
-> We'd also need to explain the behaviour of mount and umount with respect to views. The first time a cgroup mount is performed with a given set of subsystems, a hierarchy is created and a view of the hierarchy is created and associated with a cgroup filesystem at the mount point. Subsequently, if another cgroup mount is performed with the same set of subsystems, no new hierarchy is created but a new view of the existing hierarchy is created and associated with the cgroup filesystem at the new mount point.
-> 
-> Unmounting a cgroup mount point destroys a particular view and destroys the hierarchy associated with the view if and only if the view is the only (remaining) view of the hierarchy.
-> 
-> So does introducing the concept of a view really help? The wording in the patch does without the concept by allowing two "hierarchies" to have identical content (so they are indistinguishable).
-> 
-> "views" don't seem to have any practical benefit. If we can avoid explaining concepts which have no use, we probably should. ;-)
-> 
-> 
-> .
-> 
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 624e9d9..8c462d3 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -4479,6 +4479,57 @@ static DEFINE_HANDLER(5);
+ static DEFINE_HANDLER(6);
+ static DEFINE_HANDLER(7);
+ 
++static void mtip_disable_link_opts(struct driver_data *dd, struct pci_dev *pdev)
++{
++	int pos;
++	unsigned short pcie_dev_ctrl;
++
++	pos = pci_find_capability(pdev, PCI_CAP_ID_EXP);
++	if (pos) {
++		pci_read_config_word(pdev,
++			pos + PCI_EXP_DEVCTL,
++			&pcie_dev_ctrl);
++		if (pcie_dev_ctrl & (1 << 11) ||
++		    pcie_dev_ctrl & (1 << 4)) {
++			dev_info(&dd->pdev->dev,
++				"Disabling ERO/No-Snoop on bridge device %04x:%04x\n",
++					pdev->vendor, pdev->device);
++			pcie_dev_ctrl &= ~(PCI_EXP_DEVCTL_NOSNOOP_EN |
++						PCI_EXP_DEVCTL_RELAX_EN);
++			pci_write_config_word(pdev,
++				pos + PCI_EXP_DEVCTL,
++				pcie_dev_ctrl);
++		}
++	}
++}
++
++static void mtip_fix_ero_nosnoop(struct driver_data *dd, struct pci_dev *pdev)
++{
++	/*
++	 * This workaround is specific to AMD/ATI chipset with a PCI upstream
++	 * device with device id 0x5aXX
++	 */
++	if (pdev->bus && pdev->bus->self) {
++		if (pdev->bus->self->vendor == PCI_VENDOR_ID_ATI &&
++		    ((pdev->bus->self->device & 0xff00) == 0x5a00)) {
++			mtip_disable_link_opts(dd, pdev->bus->self);
++		} else {
++			/* Check further up the topology */
++			struct pci_dev *parent_dev = pdev->bus->self;
++			if (parent_dev->bus &&
++				parent_dev->bus->parent &&
++				parent_dev->bus->parent->self &&
++				parent_dev->bus->parent->self->vendor ==
++					 PCI_VENDOR_ID_ATI &&
++				(parent_dev->bus->parent->self->device &
++					0xff00) == 0x5a00) {
++				mtip_disable_link_opts(dd,
++					parent_dev->bus->parent->self);
++			}
++		}
++	}
++}
++
+ /*
+  * Called for each supported PCI device detected.
+  *
+@@ -4630,6 +4681,8 @@ static int mtip_pci_probe(struct pci_dev *pdev,
+ 		goto msi_initialize_err;
+ 	}
+ 
++	mtip_fix_ero_nosnoop(dd, pdev);
++
+ 	/* Initialize the block layer. */
+ 	rv = mtip_block_initialize(dd);
+ 	if (rv < 0) {
+-- 
+1.7.1
 
