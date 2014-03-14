@@ -1,90 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363AbaCNC7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 22:59:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6786 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754547AbaCNC7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 22:59:23 -0400
-Date: Thu, 13 Mar 2014 22:59:21 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] user namespace: fix incorrect memory barriers
-Message-ID: <alpine.LRH.2.02.1403132242440.18199@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1755402AbaCNDAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 23:00:30 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:39486 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754901AbaCNDA3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 23:00:29 -0400
+Message-ID: <532270BE.6000409@linaro.org>
+Date: Fri, 14 Mar 2014 12:00:14 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Will Deacon <will.deacon@arm.com>
+CC: "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 6/7] arm64: ftrace: Add CALLER_ADDRx macros
+References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org> <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org> <1394705630-12384-7-git-send-email-takahiro.akashi@linaro.org> <20140313155415.GB25472@mudshark.cambridge.arm.com>
+In-Reply-To: <20140313155415.GB25472@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-smp_read_barrier_depends() can be used if there is data dependency between
-the readers - i.e. if the read operation after the barrier uses address
-that was obtained from the read operation before the barrier.
+On 03/14/2014 12:54 AM, Will Deacon wrote:
+> On Thu, Mar 13, 2014 at 10:13:49AM +0000, AKASHI Takahiro wrote:
+>> CALLER_ADDRx returns caller's address at specified level in call stacks.
+>> They are used for several tracers like irqsoff and preemptoff.
+>> Strange to say, however, they are refered even without FTRACE.
+>>
+>> Please note that this implementation assumes that we have frame pointers.
+>> (which means kernel should be compiled with -fno-omit-frame-pointer.)
+>
+> How do you ensure that -fno-omit-frame-pointer is passed?
 
-In this file, there is only control dependency, no data dependecy, so the
-use of smp_read_barrier_depends() is incorrect. The code could fail in the
-following way:
-* the cpu predicts that idx < entries is true and starts executing the
-  body of the for loop
-* the cpu fetches map->extent[0].first and map->extent[0].count
-* the cpu fetches map->nr_extents
-* the cpu verifies that idx < extents is true, so it commits the
-  instructions in the body of the for loop
+arm64 selects ARCH_WANT_FRAME_POINTERS, then FRAME_POINTER is on (lib/Kconfig.debug)
+and so -fno-omit-frame-pointer is appended (${TOP}/Makefile).
+(stacktrace.c also assumes FRAME_POINTER.)
 
-The problem is that in this scenario, the cpu read map->extent[0].first
-and map->nr_extents in the wrong order. We need a full read memory barrier
-to prevent it.
+Do you think I should remove the comment above?
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@vger.kernel.org	# 3.5+
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> ---
+>>   arch/arm64/include/asm/ftrace.h    |   13 ++++++++-
+>>   arch/arm64/kernel/Makefile         |    3 +-
+>>   arch/arm64/kernel/return_address.c |   55 ++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 69 insertions(+), 2 deletions(-)
+>>   create mode 100644 arch/arm64/kernel/return_address.c
+>>
+>> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
+>> index ed5c448..c44c4b1 100644
+>> --- a/arch/arm64/include/asm/ftrace.h
+>> +++ b/arch/arm64/include/asm/ftrace.h
+>> @@ -18,6 +18,7 @@
+>>
+>>   #ifndef __ASSEMBLY__
+>>   extern void _mcount(unsigned long);
+>> +extern void *return_address(unsigned int);
+>>
+>>   struct dyn_arch_ftrace {
+>>   	/* No extra data needed for arm64 */
+>> @@ -33,6 +34,16 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+>>   	 */
+>>   	return addr;
+>>   }
+>> -#endif /* __ASSEMBLY__ */
+>> +
+>> +#define HAVE_ARCH_CALLER_ADDR
+>> +
+>> +#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
+>> +#define CALLER_ADDR1 ((unsigned long)return_address(1))
+>> +#define CALLER_ADDR2 ((unsigned long)return_address(2))
+>> +#define CALLER_ADDR3 ((unsigned long)return_address(3))
+>> +#define CALLER_ADDR4 ((unsigned long)return_address(4))
+>> +#define CALLER_ADDR5 ((unsigned long)return_address(5))
+>> +#define CALLER_ADDR6 ((unsigned long)return_address(6))
+>
+> Could we change the core definitions of these macros (in linux/ftrace.h) to
+> use return_address, then provide an overridable version of return_address
+> that defaults to __builtin_return_address, instead of copy-pasting this
+> sequence?
 
----
- kernel/user_namespace.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+I think I understand what you mean, and will try to post a separate RFC,
+but I also want to hold off this change on this patch since such a change
+may raise a small controversy from other archs' maintainers.
 
-Index: linux-3.14-rc5/kernel/user_namespace.c
-===================================================================
---- linux-3.14-rc5.orig/kernel/user_namespace.c	2014-03-14 03:28:50.000000000 +0100
-+++ linux-3.14-rc5/kernel/user_namespace.c	2014-03-14 03:29:36.000000000 +0100
-@@ -152,7 +152,7 @@ static u32 map_id_range_down(struct uid_
- 
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].first;
- 		last = first + map->extent[idx].count - 1;
-@@ -176,7 +176,7 @@ static u32 map_id_down(struct uid_gid_ma
- 
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].first;
- 		last = first + map->extent[idx].count - 1;
-@@ -199,7 +199,7 @@ static u32 map_id_up(struct uid_gid_map 
- 
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].lower_first;
- 		last = first + map->extent[idx].count - 1;
-@@ -615,9 +615,8 @@ static ssize_t map_write(struct file *fi
- 	 * were written before the count of the extents.
- 	 *
- 	 * To achieve this smp_wmb() is used on guarantee the write
--	 * order and smp_read_barrier_depends() is guaranteed that we
--	 * don't have crazy architectures returning stale data.
--	 *
-+	 * order and smp_rmb() is guaranteed that we don't have crazy
-+	 * architectures returning stale data.
- 	 */
- 	mutex_lock(&id_map_mutex);
- 
+>> diff --git a/arch/arm64/kernel/return_address.c b/arch/arm64/kernel/return_address.c
+>> new file mode 100644
+>> index 0000000..89102a6
+>> --- /dev/null
+>> +++ b/arch/arm64/kernel/return_address.c
+>> @@ -0,0 +1,55 @@
+>> +/*
+>> + * arch/arm64/kernel/return_address.c
+>> + *
+>> + * Copyright (C) 2013 Linaro Limited
+>> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#include <linux/export.h>
+>> +#include <linux/ftrace.h>
+>> +
+>> +#include <asm/stacktrace.h>
+>> +
+>> +struct return_address_data {
+>> +	unsigned int level;
+>> +	void *addr;
+>> +};
+>> +
+>> +static int save_return_addr(struct stackframe *frame, void *d)
+>> +{
+>> +	struct return_address_data *data = d;
+>> +
+>> +	if (!data->level) {
+>> +		data->addr = (void *)frame->pc;
+>> +		return 1;
+>> +	} else {
+>> +		--data->level;
+>> +		return 0;
+>> +	}
+>> +}
+>> +
+>> +void *return_address(unsigned int level)
+>> +{
+>> +	struct return_address_data data;
+>> +	struct stackframe frame;
+>> +	register unsigned long current_sp asm ("sp");
+>> +
+>> +	data.level = level + 2;
+>> +	data.addr = NULL;
+>> +
+>> +	frame.fp = (unsigned long)__builtin_frame_address(0);
+>> +	frame.sp = current_sp;
+>> +	frame.pc = (unsigned long)return_address; /* dummy */
+>> +
+>> +	walk_stackframe(&frame, save_return_addr, &data);
+>> +
+>> +	if (!data.level)
+>> +		return data.addr;
+>> +	else
+>> +		return NULL;
+>> +}
+>> +EXPORT_SYMBOL_GPL(return_address);
+>
+> This whole file is basically copied from arch/arm/, but it's not too much
+> code. Ideally the toolchain would have made use of the frame pointer, but it
+> looks like it doesn't bother.
+
+I confirmed that __builtin_return_address([123456]) doesn't work
+even with -fno-omit-frame-pointer.
+Keep this as it is.
+
+-Takahiro AKASHI
+
+> Will
+>
