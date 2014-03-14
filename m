@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103AbaCNCOO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 22:14:14 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:62814 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563AbaCNCOM (ORCPT
+	id S1755395AbaCNCPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 22:15:12 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:37843 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563AbaCNCPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 22:14:12 -0400
-From: Daniel Jeong <gshark.jeong@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Daniel Jeong <gshark.jeong@gmail.com>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Bryan Wu <cooloney@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] backlight: lm3639: use devm_backlight_device_register()
-Date: Fri, 14 Mar 2014 11:14:00 +0900
-Message-Id: <1394763240-10176-1-git-send-email-gshark.jeong@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 13 Mar 2014 22:15:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <11925125.x6prlrSt00@vostro.rjw.lan>
+References: <1394653598-17143-1-git-send-email-kandoiruchi@google.com>
+	<1559784.2mnpODc5zV@vostro.rjw.lan>
+	<CAL8qYTMKM-DrkxED-51YPRczWJpeEfZy25PORtUasi=7e58i6Q@mail.gmail.com>
+	<11925125.x6prlrSt00@vostro.rjw.lan>
+Date: Thu, 13 Mar 2014 19:15:09 -0700
+Message-ID: <CAL8qYTNGxhzH=-pLC8OC3-e25a15vEvorBQFXxcW8zS8H+wToQ@mail.gmail.com>
+Subject: Re: [PATCH v3] power: add an API to log wakeup reasons
+From: Ruchi Kandoi <kandoiruchi@google.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Greg Hackmann <ghackmann@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Todd Poynor <toddpoynor@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- change to use devm_backlight_device_register() for simple cleanup.
+True, we could create new wakeup sources specifically to
+track this information, perhaps as needed once an IRQ is first
+observed to trigger a wakeup.
 
-Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
----
- drivers/video/backlight/lm3639_bl.c |   17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
+We would want to know which wakeup sources were responsible for the
+most recent wakeup, since we keep a timeline of suspend/resume events
+with wakeup reasons and durations.  It may require some extra work to
+keep track of this information.
 
-diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
-index 6fd60ad..5f36808 100644
---- a/drivers/video/backlight/lm3639_bl.c
-+++ b/drivers/video/backlight/lm3639_bl.c
-@@ -349,8 +349,9 @@ static int lm3639_probe(struct i2c_client *client,
- 	props.brightness = pdata->init_brt_led;
- 	props.max_brightness = pdata->max_brt_led;
- 	pchip->bled =
--	    backlight_device_register("lm3639_bled", pchip->dev, pchip,
--				      &lm3639_bled_ops, &props);
-+	    devm_backlight_device_register(pchip->dev, "lm3639_bled",
-+					   pchip->dev, pchip, &lm3639_bled_ops,
-+					   &props);
- 	if (IS_ERR(pchip->bled)) {
- 		dev_err(&client->dev, "fail : backlight register\n");
- 		ret = PTR_ERR(pchip->bled);
-@@ -360,7 +361,7 @@ static int lm3639_probe(struct i2c_client *client,
- 	ret = device_create_file(&(pchip->bled->dev), &dev_attr_bled_mode);
- 	if (ret < 0) {
- 		dev_err(&client->dev, "failed : add sysfs entries\n");
--		goto err_bled_mode;
-+		goto err_out;
- 	}
- 
- 	/* flash */
-@@ -391,8 +392,6 @@ err_torch:
- 	led_classdev_unregister(&pchip->cdev_flash);
- err_flash:
- 	device_remove_file(&(pchip->bled->dev), &dev_attr_bled_mode);
--err_bled_mode:
--	backlight_device_unregister(pchip->bled);
- err_out:
- 	return ret;
- }
-@@ -407,10 +406,8 @@ static int lm3639_remove(struct i2c_client *client)
- 		led_classdev_unregister(&pchip->cdev_torch);
- 	if (&pchip->cdev_flash)
- 		led_classdev_unregister(&pchip->cdev_flash);
--	if (pchip->bled) {
-+	if (pchip->bled)
- 		device_remove_file(&(pchip->bled->dev), &dev_attr_bled_mode);
--		backlight_device_unregister(pchip->bled);
--	}
- 	return 0;
- }
- 
-@@ -432,6 +429,6 @@ static struct i2c_driver lm3639_i2c_driver = {
- module_i2c_driver(lm3639_i2c_driver);
- 
- MODULE_DESCRIPTION("Texas Instruments Backlight+Flash LED driver for LM3639");
--MODULE_AUTHOR("Daniel Jeong <daniel.jeong@ti.com>");
--MODULE_AUTHOR("G.Shark Jeong <gshark.jeong@gmail.com>");
-+MODULE_AUTHOR("Daniel Jeong <gshark.jeong@gmail.com>");
-+MODULE_AUTHOR("Ldd Mlp <ldd-mlp@list.ti.com>");
- MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+Apart from Google, other vendors like Qualcomm and Nvidia have already
+introduced similar kinds of logging in their respective interrupt
+controller drivers. We would really like to make this a standardized
+logging for debugging purposes.
 
+
+
+On Thu, Mar 13, 2014 at 6:06 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Thursday, March 13, 2014 05:43:20 PM Ruchi Kandoi wrote:
+>> This should be true most of the times.
+>>
+>> But there might be cases otherwise too.
+>>
+>> For instance, there was a bug earlier with wi-fi which would cause the
+>> system to wake up but not get hold of a wakeup source because there
+>> wasn't any work for it to do. In that case, the wakeup sources would
+>> not log such an event.
+>>
+>> Additionally, there could be a situation where an IRQ caused the
+>> system to resume from suspend. And since the system was up, a driver
+>> could take a wakeup source. In this case we would assume that the
+>> driver would have woken the system, but in reality the driver held the
+>> wakeup source only because the system was up and did not cause the
+>> wake up to happen.
+>
+> But you can create special wakeup sources associated with interrupts (in
+> addition to the existing ones) and use the statistics for those.
+>
+> It is possible to define wakeup sources that don't correspond to any
+> devices.
+>
+> Rafael
+>
+>
+>> On Thu, Mar 13, 2014 at 3:18 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> > Hi,
+>> >
+>> > I saw the v4, but I don't have it handy, so replying here.
+>> >
+>> > On Wednesday, March 12, 2014 12:46:38 PM Ruchi Kandoi wrote:
+>> >> For power management diagnostic purposes, it is often useful to know
+>> >> what interrupts are frequently waking the system from low power
+>> >> suspend mode, especially on battery-powered consumer electronics
+>> >> devices that are expected to spend much of their time in low-power
+>> >> suspend while not in active use.  For example, reduced battery life on
+>> >> a mobile phone may be caused in part by frequent wakeups by broadcast
+>> >> traffic on a busy wireless LAN even while the screen is off and the
+>> >> phone not in active use.
+>> >>
+>> >> Add API log_wakeup_reason() exposes it to userspace via the sysfs path
+>> >> /sys/kernel/wakeup_reasons/last_resume_reason. This API would be called
+>> >> from the paltform specific, or from the driver for the interrupt controller,
+>> >> when the system resumes because of an IRQ. It logs the reasons which caused
+>> >> the system to wakeup from the low-power mode.
+>> >
+>> > So what exactly is wrong with using wakeup sources for this purpose?
+>> >
+>> > --
+>> > I speak only for myself.
+>> > Rafael J. Wysocki, Intel Open Source Technology Center.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
