@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338AbaCNFCt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 01:02:49 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:50610 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755256AbaCNFCp (ORCPT
+	id S1755402AbaCNFDA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 01:03:00 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:9801 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755349AbaCNFC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 01:02:45 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-77-53228d73bf62
-Date: Fri, 14 Mar 2014 14:02:43 +0900
+	Fri, 14 Mar 2014 01:02:56 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-40-53228d7f6223
+Date: Fri, 14 Mar 2014 14:02:54 +0900
 From: Cho KyongHo <pullip.cho@samsung.com>
 To: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
         Linux DeviceTree <devicetree@vger.kernel.org>,
@@ -24,40 +24,39 @@ Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
         Varun Sethi <Varun.Sethi@freescale.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v11 03/27] iommu/exynos: change error handling when page table
- update is failed
-Message-id: <20140314140243.853cb1fc76afdc7e713c58da@samsung.com>
+Subject: [PATCH v11 04/27] iommu/exynos: fix L2TLB invalidation
+Message-id: <20140314140254.32dbc0cd8cde8f4ffcf71c9f@samsung.com>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t8zQ93iXqVgg5b/1hZ37p5jtZh/BEi8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zY936XqVgg56NfBZ37p5jtZh/BEi8
 	OvKDyWLBfmuLztkb2C16F1xls9j0+BqrxeVdc9gsZpzfx2RxYcVGdospiw6zWhx+085qcfJP
 	L6PF+hmvWSxm3lrD4sDv8eTgPCaP2Q0XWTz+He5n8rhzbQ+bx+Yl9R6Tbyxn9OjbsorR4/Mm
-	OY8rR88wBXBGcdmkpOZklqUW6dslcGX0373GWPBEtWLCxeOsDYyvZLsYOTgkBEwkFr5V7GLk
-	BDLFJC7cW8/WxcjFISSwjFHix79edoiEicT37dMYIRKLGCUuLjvJAuFMZpLY1tXECDKJRUBV
-	4shzSZAGNgEtidVzj4M1iAi0MUl8bTwE1sAsMJdZ4tnap6wgVcICiRJ7XjQzgdi8Ao4SO29M
-	YoRYZyFxoamDHSIuKPFj8j0WEJsZaOrmbU2sELa8xOY1b5lBhkoI9HJIrDp7mRkkwSIgIPFt
-	Msg2kN9kJTYdYIaYKSlxcMUNlgmMIrOQjJ2FZOwsJGMXMDKvYhRNLUguKE5KLzLVK07MLS7N
-	S9dLzs/dxAiJ3ok7GO8fsD7EmAy0ciKzlGhyPjD680riDY3NjCxMTUyNjcwtzUgTVhLnTX+U
-	FCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB0SHIRpBf5dlnbUsDjrMPpy9w9hXJ25d/UPbO
-	50UutrnHJKY0tkQoBvmEqh8qMczgi7G/F/WoPttd/Ou/FarZZ033dDY+Msw5dWrPI/tQqT9q
-	qjrs2m/CuFq35M8T2Lrz7X3l59PenP19bUURv/uvQsHHs1+2JJ93tw/YbT9t9/edtUoaBovK
-	lFiKMxINtZiLihMBvqP7ifQCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd3iXqVgg8VzzSzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
-	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAH6QEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY0X/3GmPBE9WK
-	CRePszYwvpLtYuTkkBAwkfi+fRojhC0mceHeerYuRi4OIYFFjBIXl51kgXAmM0ls62oCquLg
-	YBFQlTjyXBKkgU1AS2L13OOMIDUiAm1MEl8bD4E1MAvMZZZ4tvYpK0iVsECixJ4XzUwgNq+A
-	o8TOG5Og1llIXGjqYIeIC0r8mHyPBcRmBpq6eVsTK4QtL7F5zVvmCYx8s5CUzUJSNgtJ2QJG
-	5lWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwcnhmdQOxpUNFocYBTgYlXh4HQ4rBguxJpYV
-	V+YeYpTgYFYS4a2KUAoW4k1JrKxKLcqPLyrNSS0+xJgM9PZEZinR5Hxg4soriTc0NjEzsjQy
-	szAyMTcnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBsaoTR2JIa7KuW5VJ7d2tCnOvi9Z
-	2hw069Qdv4mLHDi2Oh+um3/U9ml5sEQN2yf3k+Wp+9YmXjohuvE3Sz3P35x/8Z8P+ehP65/X
-	evnBmiTPV+0RNz768bfGzQne2PtTQePspLNxBz++uPD5W9DNk1YPjl1neru04H3HW84NSUeS
-	e9SiWHb2Oj1UYinOSDTUYi4qTgQAeLTMh1IDAAA=
+	OY8rR88wBXBGcdmkpOZklqUW6dslcGVsWDKZqeCHRMW8x1fYGxh/CHcxcnJICJhIHDk6mQ3C
+	FpO4cG89kM3FISSwjFFi7c1PTDBF3193sEMkFjFKvF3dyAjhTGaS+LblHyNIFYuAqsSkFc/Y
+	QWw2AS2J1XOPgxWJCLQxSXxtPMQC4jALzGWWeLb2KStIlbCAvcTtvl1g3bwCjhKT+35C7bOQ
+	uNDUwQ4RF5T4MfkeC4jNDDR187YmVghbXmLzmrfMEPW9HBJ7ZnJDXCEg8W0yyDIOoLisxKYD
+	UCWSEgdX3GCZwCgyC8nUWUimzkIydQEj8ypG0dSC5ILipPQiY73ixNzi0rx0veT83E2MkPjt
+	38F494D1IcZkoJUTmaVEk/OB8Z9XEm9obGZkYWpiamxkbmlGmrCSOO/9h0lBQgLpiSWp2amp
+	BalF8UWlOanFhxiZODilGhj35rb47nG+9Ha34ceG6qvvNBrk70ukq+SnHz4vIVTKbb3mgtSx
+	rRbLGzVcd7Ek6iZ+tehYYPP3Qvfm2lXTop9F3FnfITzFce73b0+Kfz/1vWjHl3Dy+D3Z3evl
+	hB+fWf1OyGxh/qr4uOVPpSar6ZrZfsrROcIhaLcryUDw7A0ncb9Hn3gKVa4osRRnJBpqMRcV
+	JwIAtsJ9g/UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t9jAd36XqVgg9cdHBZ37p5jtZh/BEi8
+	OvKDyWLBfmuLztkb2C16F1xls9j0+BqrxeVdc9gsZpzfx2RxYcVGdospiw6zWhx+085qcfJP
+	L6PF+hmvWSxm3lrD4sDv8eTgPCaP2Q0XWTz+He5n8rhzbQ+bx+Yl9R6Tbyxn9OjbsorR4/Mm
+	OY8rR88wBXBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gB9oKRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM2LBkMlPBD4mK
+	eY+vsDcw/hDuYuTkkBAwkfj+uoMdwhaTuHBvPVsXIxeHkMAiRom3qxsZIZzJTBLftvxjBKli
+	EVCVmLTiGVgHm4CWxOq5x8GKRATamCS+Nh5iAXGYBeYySzxb+5QVpEpYwF7idt8usG5eAUeJ
+	yX0/mSD2WUhcaILYzSsgKPFj8j0WEJsZaOrmbU2sELa8xOY1b5knMPLNQlI2C0nZLCRlCxiZ
+	VzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEp4dn0jsYVzVYHGIU4GBU4uGdcVQxWIg1say4
+	MvcQowQHs5IIb1WEUrAQb0piZVVqUX58UWlOavEhxmSgvycyS4km5wNTV15JvKGxiZmRpZGZ
+	hZGJuTlpwkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MK7YH3NaaM/dS/v5/2n+Xt7xX//D
+	LBGPS3LRQotOSn66/+/2DD3x/pjgrPB+6QKBJ9ucUuqOXj/fU2b+lz1P+mxNN9/3b//e/Lo7
+	90CPf2WNAZ9xZFXXTP5Vq9xt1iy9rf//mm7Ap3+K/Lphc3SWvFo5/bSaefZ5v8dxnyOCFiTp
+	RVk5G+k631ZiKc5INNRiLipOBADeCRjsUwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -65,166 +64,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes not to panic on any error when updating page table.
-Instead prints error messages with callstack.
+L2TLB is 8-way set-associative TLB with 512 entries. The number of
+sets is 64.
+A single 4KB(small page) translation information is cached
+only to a set whose index is the same with the lower 6 bits of the page
+frame number.
+A single 64KB(large page) translation information can be
+cached to any 16 sets whose top two bits of their indices are the same
+with the bit [5:4] of the page frame number.
+A single 1MB(section) or larger translation information can be cached to
+any set in the TLB.
+
+It is required to invalidate entire sets that may cache the target
+translation information to guarantee that the L2TLB has no stale data.
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |   58 ++++++++++++++++++++++++++++++++----------
- 1 file changed, 44 insertions(+), 14 deletions(-)
+ drivers/iommu/exynos-iommu.c |   31 ++++++++++++++++++++++++++-----
+ 1 file changed, 26 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 1c3a397..4a74ed8 100644
+index 4a74ed8..0d26aeb 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -812,13 +812,18 @@ finish:
- static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
- 					short *pgcounter)
- {
-+	if (lv1ent_section(sent)) {
-+		WARN(1, "Trying mapping on %#08lx mapped with 1MiB page", iova);
-+		return ERR_PTR(-EADDRINUSE);
-+	}
-+
- 	if (lv1ent_fault(sent)) {
- 		unsigned long *pent;
- 
- 		pent = kzalloc(LV2TABLE_SIZE, GFP_ATOMIC);
- 		BUG_ON((unsigned long)pent & (LV2TABLE_SIZE - 1));
- 		if (!pent)
--			return NULL;
-+			return ERR_PTR(-ENOMEM);
- 
- 		*sent = mk_lv1ent_page(__pa(pent));
- 		*pgcounter = NUM_LV2ENTRIES;
-@@ -829,14 +834,21 @@ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
- 	return page_entry(sent, iova);
+@@ -225,9 +225,14 @@ static void __sysmmu_tlb_invalidate(void __iomem *sfrbase)
  }
  
--static int lv1set_section(unsigned long *sent, phys_addr_t paddr, short *pgcnt)
-+static int lv1set_section(unsigned long *sent, unsigned long iova,
-+			  phys_addr_t paddr, short *pgcnt)
+ static void __sysmmu_tlb_invalidate_entry(void __iomem *sfrbase,
+-						unsigned long iova)
++				unsigned long iova, unsigned int num_inv)
  {
--	if (lv1ent_section(sent))
-+	if (lv1ent_section(sent)) {
-+		WARN(1, "Trying mapping on 1MiB@%#08lx that is mapped",
-+			iova);
- 		return -EADDRINUSE;
+-	__raw_writel((iova & SPAGE_MASK) | 1, sfrbase + REG_MMU_FLUSH_ENTRY);
++	unsigned int i;
++	for (i = 0; i < num_inv; i++) {
++		__raw_writel((iova & SPAGE_MASK) | 1,
++				sfrbase + REG_MMU_FLUSH_ENTRY);
++		iova += SPAGE_SIZE;
 +	}
+ }
  
- 	if (lv1ent_page(sent)) {
--		if (*pgcnt != NUM_LV2ENTRIES)
-+		if (*pgcnt != NUM_LV2ENTRIES) {
-+			WARN(1, "Trying mapping on 1MiB@%#08lx that is mapped",
-+				iova);
- 			return -EADDRINUSE;
-+		}
+ static void __sysmmu_set_ptbase(void __iomem *sfrbase,
+@@ -477,7 +482,8 @@ static bool exynos_sysmmu_disable(struct device *dev)
+ 	return disabled;
+ }
  
- 		kfree(page_entry(sent, 0));
- 
-@@ -854,8 +866,10 @@ static int lv2set_page(unsigned long *pent, phys_addr_t paddr, size_t size,
- 								short *pgcnt)
+-static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
++static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
++					size_t size)
  {
- 	if (size == SPAGE_SIZE) {
--		if (!lv2ent_fault(pent))
-+		if (!lv2ent_fault(pent)) {
-+			WARN(1, "Trying mapping on 4KiB where mapping exists");
- 			return -EADDRINUSE;
-+		}
- 
- 		*pent = mk_lv2ent_spage(paddr);
- 		pgtable_flush(pent, pent + 1);
-@@ -864,7 +878,10 @@ static int lv2set_page(unsigned long *pent, phys_addr_t paddr, size_t size,
- 		int i;
- 		for (i = 0; i < SPAGES_PER_LPAGE; i++, pent++) {
- 			if (!lv2ent_fault(pent)) {
--				memset(pent, 0, sizeof(*pent) * i);
-+				WARN(1,
-+				"Trying mapping on 64KiB where mapping exists");
-+				if (i > 0)
-+					memset(pent - i, 0, sizeof(*pent) * i);
- 				return -EADDRINUSE;
- 			}
- 
-@@ -892,7 +909,7 @@ static int exynos_iommu_map(struct iommu_domain *domain, unsigned long iova,
- 	entry = section_entry(priv->pgtable, iova);
- 
- 	if (size == SECT_SIZE) {
--		ret = lv1set_section(entry, paddr,
-+		ret = lv1set_section(entry, iova, paddr,
- 					&priv->lv2entcnt[lv1ent_offset(iova)]);
- 	} else {
- 		unsigned long *pent;
-@@ -900,17 +917,16 @@ static int exynos_iommu_map(struct iommu_domain *domain, unsigned long iova,
- 		pent = alloc_lv2entry(entry, iova,
- 					&priv->lv2entcnt[lv1ent_offset(iova)]);
- 
--		if (!pent)
--			ret = -ENOMEM;
-+		if (IS_ERR(pent))
-+			ret = PTR_ERR(pent);
- 		else
- 			ret = lv2set_page(pent, paddr, size,
- 					&priv->lv2entcnt[lv1ent_offset(iova)]);
- 	}
- 
--	if (ret) {
-+	if (ret)
- 		pr_debug("%s: Failed to map iova 0x%lx/0x%x bytes\n",
- 							__func__, iova, size);
--	}
- 
- 	spin_unlock_irqrestore(&priv->pgtablelock, flags);
- 
-@@ -924,6 +940,7 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
- 	struct sysmmu_drvdata *data;
  	unsigned long flags;
- 	unsigned long *ent;
-+	size_t err_pgsize;
+ 	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
+@@ -487,9 +493,24 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
+ 	if (is_sysmmu_active(data)) {
+ 		int i;
+ 		for (i = 0; i < data->nsfrs; i++) {
++			unsigned int maj;
++			unsigned int num_inv = 1;
++			maj = __raw_readl(data->sfrbases[i] + REG_MMU_VERSION);
++			/*
++			 * L2TLB invalidation required
++			 * 4KB page: 1 invalidation
++			 * 64KB page: 16 invalidation
++			 * 1MB page: 64 invalidation
++			 * because it is set-associative TLB
++			 * with 8-way and 64 sets.
++			 * 1MB page can be cached in one of all sets.
++			 * 64KB page can be one of 16 consecutive sets.
++			 */
++			if ((maj >> 28) == 2) /* major version number */
++				num_inv = min_t(unsigned int, size / PAGE_SIZE, 64);
+ 			if (sysmmu_block(data->sfrbases[i])) {
+ 				__sysmmu_tlb_invalidate_entry(
+-						data->sfrbases[i], iova);
++					data->sfrbases[i], iova, num_inv);
+ 				sysmmu_unblock(data->sfrbases[i]);
+ 			}
+ 		}
+@@ -999,7 +1020,7 @@ done:
  
- 	BUG_ON(priv->pgtable == NULL);
- 
-@@ -932,7 +949,10 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
- 	ent = section_entry(priv->pgtable, iova);
- 
- 	if (lv1ent_section(ent)) {
--		BUG_ON(size < SECT_SIZE);
-+		if (size < SECT_SIZE) {
-+			err_pgsize = SECT_SIZE;
-+			goto err;
-+		}
- 
- 		*ent = 0;
- 		pgtable_flush(ent, ent + 1);
-@@ -964,7 +984,10 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
- 	}
- 
- 	/* lv1ent_large(ent) == true here */
--	BUG_ON(size < LPAGE_SIZE);
-+	if (size < LPAGE_SIZE) {
-+		err_pgsize = LPAGE_SIZE;
-+		goto err;
-+	}
- 
- 	memset(ent, 0, sizeof(*ent) * SPAGES_PER_LPAGE);
- 	pgtable_flush(ent, ent + SPAGES_PER_LPAGE);
-@@ -979,8 +1002,15 @@ done:
- 		sysmmu_tlb_invalidate_entry(data->dev, iova);
+ 	spin_lock_irqsave(&priv->lock, flags);
+ 	list_for_each_entry(data, &priv->clients, node)
+-		sysmmu_tlb_invalidate_entry(data->dev, iova);
++		sysmmu_tlb_invalidate_entry(data->dev, iova, size);
  	spin_unlock_irqrestore(&priv->lock, flags);
  
--
  	return size;
-+err:
-+	spin_unlock_irqrestore(&priv->pgtablelock, flags);
-+
-+	WARN(1,
-+	"%s: Failed due to size(%#x) @ %#08lx is smaller than page size %#x\n",
-+	__func__, size, iova, err_pgsize);
-+
-+	return 0;
- }
- 
- static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
 -- 
 1.7.9.5
 
