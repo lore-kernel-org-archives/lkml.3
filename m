@@ -1,402 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256AbaCNCWB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 22:22:01 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:55391 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211AbaCNCV7 (ORCPT
+	id S1755361AbaCNCW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 22:22:27 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:18898 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755309AbaCNCWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 22:21:59 -0400
-X-AuditID: 85900ec0-d1328b9000001514-dc-532267c325b1
-Subject: [PATCH V3] serial/uart/8250: Add tunable RX interrupt trigger I/F
- of FIFO buffers
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan <gnomes@lxorguk.ukuu.org.uk>
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@nvidia.com>, Jingoo Han <jg1.han@samsung.com>,
+	Thu, 13 Mar 2014 22:22:24 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-35-532267dd6d0f
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Lee Jones'" <lee.jones@linaro.org>, "'Bryan Wu'" <cooloney@gmail.com>
+Cc: "'Daniel Jeong'" <gshark.jeong@gmail.com>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
-Date: Fri, 14 Mar 2014 11:21:54 +0900
-Message-ID: <20140314022154.4345.23024.stgit@yunodevel>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        "'Bryan Wu'" <cooloney@gmail.com>,
+        "'Lee Jones'" <lee.jones@linaro.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1394763240-10176-1-git-send-email-gshark.jeong@gmail.com>
+In-reply-to: <1394763240-10176-1-git-send-email-gshark.jeong@gmail.com>
+Subject: Re: [PATCH] backlight: lm3639: use devm_backlight_device_register()
+Date: Fri, 14 Mar 2014 11:22:21 +0900
+Message-id: <000901cf3f2c$3af30630$b0d91290$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8/Kxg/22H4QiDzR2GVRmmrvjSeuAAAMZ/w
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t8zA9176UrBBi9amSyO7pzIZDF5dxer
+	xeWFl1gt7n89ymhxou8DkLtrDpvFuocvmCzWz7/F5sDhsXPWXXaPVxfusHjcubaHzaNvyypG
+	j+M3tjN5fN4kF8AWxWWTkpqTWZZapG+XwJWx5P505oL/IhVt+1ayNjBuFOxi5OSQEDCRWHDm
+	MDuELSZx4d56ti5GLg4hgWWMEp/3rGaBKToyfzojRGI6o0Tz2ndMEM5vRokvZ3ezgVSxCahJ
+	fPkCMUpEwF2icd5DZpAiZoG9TBJ/vq1hAkkICbhJHP/zFmgsBwcnUNGtI2EgprCAj0Tz0TyQ
+	ChYBVYlvi/+BVfMK2Ep83zSNBcIWlPgx+R6YzSygJbF+53EmCFteYvOat8wgYyQE1CUe/dWF
+	uMBI4tj048wQJSIS+168A7tfQuAvu8S+O8dZIXYJSHybfIgFoldWYtMBZoh/JSUOrrjBMoFR
+	YhaSzbOQbJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAiJ6P4djHcPWB9i
+	TAZaP5FZSjQ5H5gQ8kriDY3NjCxMTUyNjcwtzUgTVhLnvf8wKUhIID2xJDU7NbUgtSi+qDQn
+	tfgQIxMHp1QD43yF678+n4o/y6kwP9bu0KZUBbckFVFp2XOvbyZUXpV3evNwRX1bSYL53eYF
+	LP8zzzlxzPkusXelnnOA9dzK9VZzrIL2aqtzcq7vrc7bpaonxTd9xryg06WfL71y3Sy3e94u
+	BvdnwdGtx6ct10owLZ/GYH4w4qPiXW3lzQYf+N4kNborq3ImKbEUZyQaajEXFScCAIqolfv+	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBKsWRmVeSWpSXmKPExsVy+t9jQd276UrBBn/PWFkc3TmRyWLy7i5W
+	i8sLL7Fa3P96lNHiRN8HIHfXHDaLdQ9fMFmsn3+LzYHDY+esu+wery7cYfG4c20Pm0ffllWM
+	HsdvbGfy+LxJLoAtqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
+	ycUnQNctMwfoIiWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxpL705kL
+	/otUtO1bydrAuFGwi5GTQ0LAROLI/OmMELaYxIV769m6GLk4hASmM0o0r33HBOH8ZpT4cnY3
+	G0gVm4CaxJcvh9lBbBEBd4nGeQ+ZQYqYBfYySfz5toYJJCEk4CZx/M9bli5GDg5OoKJbR8JA
+	TGEBH4nmo3kgFSwCqhLfFv8Dq+YVsJX4vmkaC4QtKPFj8j0wm1lAS2L9zuNMELa8xOY1b5lB
+	xkgIqEs8+qsLcYGRxLHpx5khSkQk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQn
+	peca6hUn5haX5qXrJefnbmIEp4tnUjsYVzZYHGIU4GBU4uF1OKwYLMSaWFZcmXuIUYKDWUmE
+	typCKViINyWxsiq1KD++qDQntfgQYzLQoxOZpUST84GpLK8k3tDYxMzI0sjMwsjE3Jw0YSVx
+	3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGDVqOF6xfH64MDtNln/GGaYZrjeevldqF5r2X7M7
+	Ifu62N+l07b/4J/IOXHGvjNy+Yyez7Vu2JSFxsy0MBKt1TuolP98Ib+Mes9u597OKcJ5gvXx
+	RsYdTL+K/Zkb/vWyrRMLLTCziLafvuno05LtrH932J5/JLNovcH7RxUrVTc2bNeVMFJYrMRS
+	nJFoqMVcVJwIAMatd6NbAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add tunable RX interrupt trigger I/F of FIFO buffers.
-Serial devices are used as not only message communication devices but control
-or sending communication devices. For the latter uses, normally small data
-will be exchanged, so user applications want to receive data unit as soon as
-possible for real-time tendency. If we have a sensor which sends a 1 byte data
-each time and must control a device based on the sensor feedback, the RX
-interrupt should be triggered for each data.
+On Friday, March 14, 2014 11:14 AM, Daniel Jeong wrote:
+> 
+>  change to use devm_backlight_device_register() for simple cleanup.
+> 
+> Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
 
-According to HW specification of serial UART devices, RX interrupt trigger
-can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
-in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
-the trigger to only 8bytes.
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-This patch makes a 16550A device change RX interrupt trigger from userland.
+Lee Jones,
+Would you merge this patch into your backlight tree?
 
-<How to use>
-- Read current setting
- # cat /sys/dev/char/4\:64/rx_int_trig
- 8
+Best regards,
+Jingoo Han
 
-- Write user setting
- # echo 1 > /sys/dev/char/4\:64/rx_int_trig
- # cat /sys/dev/char/4\:64/rx_int_trig
- 1
-
-<Support uart device>
-- 16550A (1, 4, 8, or 14 bytes)
-
-Changed in V2:
- - Use _IOW for TIOCSFIFORTRIG definition
- - Pass the interrupt trigger value itself
-
-Changes in V3:
- - Change I/F from ioctl(2) to sysfs(rx_int_trig)
-
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Aaron Sierra <asierra@xes-inc.com>
-Cc: Stephen Warren <swarren@nvidia.com>
-Cc: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/tty/serial/8250/8250_core.c |  189 ++++++++++++++++++++++++++++++++++-
- drivers/tty/serial/serial_core.c    |   18 ++-
- include/linux/serial_8250.h         |    1 
- include/linux/serial_core.h         |    4 +
- 4 files changed, 198 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 69932b7..c945ceb 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -531,11 +531,9 @@ static void serial8250_clear_fifos(struct uart_8250_port *p)
- 
- void serial8250_clear_and_reinit_fifos(struct uart_8250_port *p)
- {
--	unsigned char fcr;
--
- 	serial8250_clear_fifos(p);
--	fcr = uart_config[p->port.type].fcr;
--	serial_out(p, UART_FCR, fcr);
-+	p->fcr = uart_config[p->port.type].fcr;
-+	serial_out(p, UART_FCR, p->fcr);
- }
- EXPORT_SYMBOL_GPL(serial8250_clear_and_reinit_fifos);
- 
-@@ -2325,10 +2323,19 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
- 		if ((baud < 2400 && !up->dma) || fifo_bug) {
- 			fcr &= ~UART_FCR_TRIGGER_MASK;
- 			fcr |= UART_FCR_TRIGGER_1;
-+			/* Don't use user setting RX trigger */
-+			up->fcr = 0;
- 		}
- 	}
- 
- 	/*
-+	 * If up->fcr exists, a user has opened this port, changed RX trigger,
-+	 * or read RX trigger before. So, we don't need to change up->fcr here.
-+	 */
-+	if (!up->fcr)
-+		up->fcr = fcr;
-+
-+	/*
- 	 * MCR-based auto flow control.  When AFE is enabled, RTS will be
- 	 * deasserted when the receive FIFO contains more characters than
- 	 * the trigger, or the MCR RTS bit is cleared.  In the case where
-@@ -2455,15 +2462,15 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
- 	 * is written without DLAB set, this mode will be disabled.
- 	 */
- 	if (port->type == PORT_16750)
--		serial_port_out(port, UART_FCR, fcr);
-+		serial_port_out(port, UART_FCR, up->fcr);
- 
- 	serial_port_out(port, UART_LCR, cval);		/* reset DLAB */
- 	up->lcr = cval;					/* Save LCR */
- 	if (port->type != PORT_16750) {
- 		/* emulated UARTs (Lucent Venus 167x) need two steps */
--		if (fcr & UART_FCR_ENABLE_FIFO)
-+		if (up->fcr & UART_FCR_ENABLE_FIFO)
- 			serial_port_out(port, UART_FCR, UART_FCR_ENABLE_FIFO);
--		serial_port_out(port, UART_FCR, fcr);		/* set fcr */
-+		serial_port_out(port, UART_FCR, up->fcr);	/* set fcr */
- 	}
- 	serial8250_set_mctrl(port, port->mctrl);
- 	spin_unlock_irqrestore(&port->lock, flags);
-@@ -2656,6 +2663,172 @@ static int serial8250_request_port(struct uart_port *port)
- 	return ret;
- }
- 
-+static unsigned char convert_fcr2val(struct uart_8250_port *up,
-+				     unsigned char fcr)
-+{
-+	unsigned char val = 0, trig_raw = fcr & UART_FCR_TRIGGER_MASK;
-+
-+	switch (up->port.type) {
-+	case PORT_16550A:
-+		if (trig_raw == UART_FCR_R_TRIG_00)
-+			val = 1;
-+		else if (trig_raw == UART_FCR_R_TRIG_01)
-+			val = 4;
-+		else if (trig_raw == UART_FCR_R_TRIG_10)
-+			val = 8;
-+		else if (trig_raw == UART_FCR_R_TRIG_11)
-+			val = 14;
-+		break;
-+	}
-+	return val;
-+}
-+
-+static int convert_val2rxtrig(struct uart_8250_port *up, unsigned char val)
-+{
-+	switch (up->port.type) {
-+	case PORT_16550A:
-+		if (val == 1)
-+			return UART_FCR_R_TRIG_00;
-+		else if (val == 4)
-+			return UART_FCR_R_TRIG_01;
-+		else if (val == 8)
-+			return UART_FCR_R_TRIG_10;
-+		else if (val == 14)
-+			return UART_FCR_R_TRIG_11;
-+		break;
-+	default:
-+		pr_info("Not support RX-trigger setting for this serial %u\n",
-+			up->port.type);
-+	}
-+	return -EINVAL;
-+}
-+
-+static unsigned char do_get_rx_int_trig(struct tty_port *port)
-+{
-+	struct uart_state *state = container_of(port, struct uart_state, port);
-+	struct uart_port *uport = state->uart_port;
-+	struct uart_8250_port *up =
-+		container_of(uport, struct uart_8250_port, port);
-+
-+	if (!(up->capabilities & UART_CAP_FIFO) || uport->fifosize <= 1)
-+		return 0;
-+
-+	if (!up->fcr)
-+		/* termios is not set yet */
-+		up->fcr = uart_config[up->port.type].fcr;
-+
-+	return convert_fcr2val(up, up->fcr);
-+}
-+
-+static unsigned char do_serial8250_get_rx_int_trig(struct tty_port *port)
-+{
-+	unsigned char rx_trig_byte;
-+
-+	mutex_lock(&port->mutex);
-+	rx_trig_byte = do_get_rx_int_trig(port);
-+	mutex_unlock(&port->mutex);
-+
-+	return rx_trig_byte;
-+}
-+
-+static ssize_t serial8250_get_attr_rx_int_trig(struct device *dev,
-+	struct device_attribute *attr, char *buf)
-+{
-+	struct tty_port *port = dev_get_drvdata(dev);
-+	unsigned char rx_trig_byte;
-+
-+	rx_trig_byte = do_serial8250_get_rx_int_trig(port);
-+	/* rx_trig_byte == 0 means RX interrupt trigger is undefined */
-+	if (!rx_trig_byte)
-+		return -EINVAL;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", rx_trig_byte);
-+}
-+
-+static int do_set_rx_int_trig(struct tty_port *port, unsigned char val)
-+{
-+	struct uart_state *state = container_of(port, struct uart_state, port);
-+	struct uart_port *uport = state->uart_port;
-+	struct uart_8250_port *up =
-+		container_of(uport, struct uart_8250_port, port);
-+	unsigned char fcr;
-+	int rx_trig;
-+
-+	if (!(up->capabilities & UART_CAP_FIFO) || uport->fifosize <= 1)
-+		return -EINVAL;
-+
-+	rx_trig = convert_val2rxtrig(up, val);
-+	if (rx_trig < 0)
-+		return rx_trig;
-+
-+	serial8250_clear_fifos(up);
-+	if (!up->fcr)
-+		/* termios is not set yet */
-+		fcr = uart_config[up->port.type].fcr;
-+	else
-+		fcr = up->fcr;
-+	fcr &= ~UART_FCR_TRIGGER_MASK;
-+	fcr |= (unsigned char)rx_trig;
-+	up->fcr = fcr;
-+	serial_out(up, UART_FCR, up->fcr);
-+	return 0;
-+}
-+
-+static int do_serial8250_set_rx_int_trig(struct tty_port *port,
-+					 unsigned char val)
-+{
-+	int ret;
-+
-+	mutex_lock(&port->mutex);
-+	ret = do_set_rx_int_trig(port, val);
-+	mutex_unlock(&port->mutex);
-+
-+	return ret;
-+}
-+
-+static ssize_t serial8250_set_attr_rx_int_trig(struct device *dev,
-+	struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct tty_port *port = dev_get_drvdata(dev);
-+	unsigned char val;
-+	int ret;
-+
-+	if (!count)
-+		return -EINVAL;
-+
-+	ret = kstrtou8(buf, 10, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = do_serial8250_set_rx_int_trig(port, val);
-+	if (ret < 0)
-+		return ret;
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(rx_int_trig, S_IRUSR | S_IWUSR | S_IRGRP,
-+		   serial8250_get_attr_rx_int_trig,
-+		   serial8250_set_attr_rx_int_trig);
-+
-+static struct attribute *serial8250_dev_attrs[] = {
-+	&dev_attr_rx_int_trig.attr,
-+	NULL,
-+	};
-+
-+static struct attribute_group serial8250_dev_attr_group = {
-+	.attrs = serial8250_dev_attrs,
-+	};
-+
-+static void register_dev_spec_attr_grp(struct uart_8250_port *up)
-+{
-+	switch (up->port.type) {
-+	case PORT_16550A:
-+		up->port.dev_spec_attr_group = &serial8250_dev_attr_group;
-+		break;
-+	}
-+}
-+
- static void serial8250_config_port(struct uart_port *port, int flags)
- {
- 	struct uart_8250_port *up =
-@@ -2704,6 +2877,8 @@ static void serial8250_config_port(struct uart_port *port, int flags)
- 	if ((port->type == PORT_XR17V35X) ||
- 	   (port->type == PORT_XR17D15X))
- 		port->handle_irq = exar_handle_irq;
-+
-+	register_dev_spec_attr_grp(up);
- }
- 
- static int
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index ece2049..5cfa732 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2548,15 +2548,16 @@ static struct attribute *tty_dev_attrs[] = {
- 	NULL,
- 	};
- 
--static const struct attribute_group tty_dev_attr_group = {
-+static struct attribute_group tty_dev_attr_group = {
- 	.attrs = tty_dev_attrs,
- 	};
- 
--static const struct attribute_group *tty_dev_attr_groups[] = {
--	&tty_dev_attr_group,
--	NULL
--	};
--
-+static void make_uport_attr_grps(struct uart_port *uport)
-+{
-+	uport->attr_grps[0] = &tty_dev_attr_group;
-+	if (uport->dev_spec_attr_group)
-+		uport->attr_grps[1] = uport->dev_spec_attr_group;
-+}
- 
- /**
-  *	uart_add_one_port - attach a driver-defined port structure
-@@ -2607,12 +2608,15 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
- 
- 	uart_configure_port(drv, state, uport);
- 
-+	make_uport_attr_grps(uport);
-+
- 	/*
- 	 * Register the port whether it's detected or not.  This allows
- 	 * setserial to be used to alter this ports parameters.
- 	 */
- 	tty_dev = tty_port_register_device_attr(port, drv->tty_driver,
--			uport->line, uport->dev, port, tty_dev_attr_groups);
-+			uport->line, uport->dev, port,
-+			(const struct attribute_group **)uport->attr_grps);
- 	if (likely(!IS_ERR(tty_dev))) {
- 		device_set_wakeup_capable(tty_dev, 1);
- 	} else {
-diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
-index af47a8a..2ce1152 100644
---- a/include/linux/serial_8250.h
-+++ b/include/linux/serial_8250.h
-@@ -76,6 +76,7 @@ struct uart_8250_port {
- 	unsigned short		bugs;		/* port bugs */
- 	unsigned int		tx_loadsz;	/* transmit fifo load size */
- 	unsigned char		acr;
-+	unsigned char		fcr;
- 	unsigned char		ier;
- 	unsigned char		lcr;
- 	unsigned char		mcr;
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index f729be9..7e3122f 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -113,6 +113,8 @@ struct uart_icount {
- 
- typedef unsigned int __bitwise__ upf_t;
- 
-+#define MAX_ATTR_GRPS		3
-+
- struct uart_port {
- 	spinlock_t		lock;			/* port lock */
- 	unsigned long		iobase;			/* in/out[bwl] */
-@@ -195,6 +197,8 @@ struct uart_port {
- 	unsigned int		line;			/* port index */
- 	resource_size_t		mapbase;		/* for ioremap */
- 	struct device		*dev;			/* parent device */
-+	struct attribute_group	*dev_spec_attr_group;	/* specific attribute */
-+	struct attribute_group	*attr_grps[MAX_ATTR_GRPS];/* all attr. groups */
- 	unsigned char		hub6;			/* this should be in the 8250 driver */
- 	unsigned char		suspended;
- 	unsigned char		irq_wake;
+> ---
+>  drivers/video/backlight/lm3639_bl.c |   17 +++++++----------
+>  1 file changed, 7 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
+> index 6fd60ad..5f36808 100644
+> --- a/drivers/video/backlight/lm3639_bl.c
+> +++ b/drivers/video/backlight/lm3639_bl.c
+> @@ -349,8 +349,9 @@ static int lm3639_probe(struct i2c_client *client,
+>  	props.brightness = pdata->init_brt_led;
+>  	props.max_brightness = pdata->max_brt_led;
+>  	pchip->bled =
+> -	    backlight_device_register("lm3639_bled", pchip->dev, pchip,
+> -				      &lm3639_bled_ops, &props);
+> +	    devm_backlight_device_register(pchip->dev, "lm3639_bled",
+> +					   pchip->dev, pchip, &lm3639_bled_ops,
+> +					   &props);
+>  	if (IS_ERR(pchip->bled)) {
+>  		dev_err(&client->dev, "fail : backlight register\n");
+>  		ret = PTR_ERR(pchip->bled);
+> @@ -360,7 +361,7 @@ static int lm3639_probe(struct i2c_client *client,
+>  	ret = device_create_file(&(pchip->bled->dev), &dev_attr_bled_mode);
+>  	if (ret < 0) {
+>  		dev_err(&client->dev, "failed : add sysfs entries\n");
+> -		goto err_bled_mode;
+> +		goto err_out;
+>  	}
+> 
+>  	/* flash */
+> @@ -391,8 +392,6 @@ err_torch:
+>  	led_classdev_unregister(&pchip->cdev_flash);
+>  err_flash:
+>  	device_remove_file(&(pchip->bled->dev), &dev_attr_bled_mode);
+> -err_bled_mode:
+> -	backlight_device_unregister(pchip->bled);
+>  err_out:
+>  	return ret;
+>  }
+> @@ -407,10 +406,8 @@ static int lm3639_remove(struct i2c_client *client)
+>  		led_classdev_unregister(&pchip->cdev_torch);
+>  	if (&pchip->cdev_flash)
+>  		led_classdev_unregister(&pchip->cdev_flash);
+> -	if (pchip->bled) {
+> +	if (pchip->bled)
+>  		device_remove_file(&(pchip->bled->dev), &dev_attr_bled_mode);
+> -		backlight_device_unregister(pchip->bled);
+> -	}
+>  	return 0;
+>  }
+> 
+> @@ -432,6 +429,6 @@ static struct i2c_driver lm3639_i2c_driver = {
+>  module_i2c_driver(lm3639_i2c_driver);
+> 
+>  MODULE_DESCRIPTION("Texas Instruments Backlight+Flash LED driver for LM3639");
+> -MODULE_AUTHOR("Daniel Jeong <daniel.jeong@ti.com>");
+> -MODULE_AUTHOR("G.Shark Jeong <gshark.jeong@gmail.com>");
+> +MODULE_AUTHOR("Daniel Jeong <gshark.jeong@gmail.com>");
+> +MODULE_AUTHOR("Ldd Mlp <ldd-mlp@list.ti.com>");
+>  MODULE_LICENSE("GPL v2");
+> --
+> 1.7.9.5
 
