@@ -1,169 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535AbaCNXKw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 19:10:52 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:26531 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198AbaCNXKv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 19:10:51 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: willy@linux.intel.com, kirill.shutemov@linux.intel.com,
-        david@fromorbit.com, linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [RFC PATCH] Support map_pages() for DAX
-Date: Fri, 14 Mar 2014 17:03:19 -0600
-Message-Id: <1394838199-29102-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1756563AbaCNXLa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 19:11:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38095 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756545AbaCNXL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 19:11:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,657,1389772800"; 
+   d="asc'?scan'208";a="498955738"
+Message-ID: <1394838585.2167.86.camel@jtkirshe-mobl>
+Subject: Re: [RFC PATCH] MAINTAINERS: Add linux.nics@intel.com to INTEL
+ ETHERNET DRIVERS
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: David Miller <davem@davemloft.net>
+Cc: joe@perches.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 14 Mar 2014 16:09:45 -0700
+In-Reply-To: <20140314.154301.2284386287213663606.davem@davemloft.net>
+References: <1394730705.3915.82.camel@joe-AO722>
+	 <20140314.154301.2284386287213663606.davem@davemloft.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-ooUblQEfFfYrJeNsrc70"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DAX provides direct access to NVDIMM and bypasses the page caches.
-Newly introduced map_pages() callback reduces page faults by adding
-mappings around a faulted page, which is not supported for DAX.
 
-This patch implements map_pages() callback for DAX.  It reduces a
-number of page faults and increases read performance of DAX as shown
-below.  The values in parenthesis are relative to the base DAX results.
+--=-ooUblQEfFfYrJeNsrc70
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-iozone results of mmap read/re-read tests [KB/sec]
- 64KB:  read: 3,560,777 (x1.6) re-read: 9,086,412 (x1.8) pfault:   121 (-20%)
- 128MB: read: 4,374,906 (x1.7) re-read: 6,137,189 (x2.4) pfault: 8,312 (-87%)
+On Fri, 2014-03-14 at 15:43 -0400, David Miller wrote:
+> From: Joe Perches <joe@perches.com>
+> Date: Thu, 13 Mar 2014 10:11:45 -0700
+>=20
+> > If this is added to the driver files, then maybe it's
+> > appropriate to add to MAINTAINERS as well.
+> >=20
+> > Signed-off-by: Joe Perches <joe@perches.com>
+>=20
+> Intel folks, this look ok to you?
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-----
-Applies on top of DAX patchset [1] and fault-around patchset [2].
+Yeah, it is fine.  Sorry, I overlooked this because of the RFC.
 
-[1] https://lkml.org/lkml/2014/2/25/460
-[2] https://lkml.org/lkml/2014/2/27/546
----
- fs/dax.c           |   68 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/ext4/file.c     |    6 +++++
- include/linux/fs.h |    5 ++++
- 3 files changed, 79 insertions(+)
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
-diff --git a/fs/dax.c b/fs/dax.c
-index c8dfab0..bc54705 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -476,3 +476,71 @@ int dax_zero_page_range(struct inode *inode, loff_t from, unsigned length,
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(dax_zero_page_range);
-+
-+static void dax_set_pte(struct vm_area_struct *vma, unsigned long addr,
-+			unsigned long pfn, pte_t *pte)
-+{
-+	pte_t entry;
-+
-+	if (addr < vma->vm_start || addr >= vma->vm_end)
-+		return;
-+
-+	if (!pte_none(*pte))
-+		return;
-+
-+	entry = pte_mkspecial(pfn_pte(pfn, vma->vm_page_prot));
-+	set_pte_at(vma->vm_mm, addr, pte, entry);
-+	update_mmu_cache(vma, addr, pte);
-+}
-+
-+void dax_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf,
-+		get_block_t get_block)
-+{
-+	struct file *file = vma->vm_file;
-+	struct inode *inode = file_inode(file);
-+	struct buffer_head bh;
-+	struct address_space *mapping = file->f_mapping;
-+	unsigned long vaddr = (unsigned long)vmf->virtual_address;
-+	pgoff_t pgoff = vmf->pgoff;
-+	sector_t block;
-+	pgoff_t size;
-+	unsigned long pfn;
-+	pte_t *pte = vmf->pte;
-+	int error;
-+
-+	while (pgoff < vmf->max_pgoff) {
-+		size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		if (pgoff >= size)
-+			return;
-+
-+		memset(&bh, 0, sizeof(bh));
-+		block = (sector_t)pgoff << (PAGE_SHIFT - inode->i_blkbits);
-+		bh.b_size = PAGE_SIZE;
-+		error = get_block(inode, block, &bh, 0);
-+		if (error || bh.b_size < PAGE_SIZE)
-+			goto next;
-+
-+		if (!buffer_mapped(&bh) || buffer_unwritten(&bh) ||
-+		    buffer_new(&bh))
-+			goto next;
-+
-+		/* Recheck i_size under i_mmap_mutex */
-+		mutex_lock(&mapping->i_mmap_mutex);
-+		size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		if (unlikely(pgoff >= size)) {
-+			mutex_unlock(&mapping->i_mmap_mutex);
-+			return;
-+		}
-+
-+		error = dax_get_pfn(inode, &bh, &pfn);
-+		if (error > 0)
-+			dax_set_pte(vma, vaddr, pfn, pte);
-+
-+		mutex_unlock(&mapping->i_mmap_mutex);
-+next:
-+		vaddr += PAGE_SIZE;
-+		pgoff++;
-+		pte++;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(dax_map_pages);
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index eb19383..15965ea 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -205,6 +205,11 @@ static int ext4_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 					/* Is this the right get_block? */
- }
- 
-+static void ext4_dax_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	return dax_map_pages(vma, vmf, ext4_get_block);
-+}
-+
- static int ext4_dax_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- {
- 	return dax_mkwrite(vma, vmf, ext4_get_block);
-@@ -212,6 +217,7 @@ static int ext4_dax_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 
- static const struct vm_operations_struct ext4_dax_vm_ops = {
- 	.fault		= ext4_dax_fault,
-+	.map_pages	= ext4_dax_map_pages,
- 	.page_mkwrite	= ext4_dax_mkwrite,
- 	.remap_pages	= generic_file_remap_pages,
- };
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index d0381ab..3bd1042 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2527,6 +2527,7 @@ ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, const struct iovec *,
- 		loff_t, unsigned segs, get_block_t, dio_iodone_t, int flags);
- int dax_fault(struct vm_area_struct *, struct vm_fault *, get_block_t);
- int dax_mkwrite(struct vm_area_struct *, struct vm_fault *, get_block_t);
-+void dax_map_pages(struct vm_area_struct *, struct vm_fault *, get_block_t);
- #else
- static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
- {
-@@ -2545,6 +2546,10 @@ static inline ssize_t dax_do_io(int rw, struct kiocb *iocb, struct inode *inode,
- {
- 	return -ENOTTY;
- }
-+static inline void dax_map_pages(struct vm_area_struct *vma,
-+		struct vm_fault *vmf, get_block_t get_block)
-+{
-+}
- #endif
- 
- /* Can't be a function because PAGE_CACHE_SIZE is defined in pagemap.h */
+--=-ooUblQEfFfYrJeNsrc70
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAABCgAGBQJTI4w5AAoJEOVv75VaS+3OAXoP+QEbxRgWiNMkNGU05jFGpSOy
+Eg9rutWZyY/BWpzk90DRmp7B9OZnUuOGtwdYZrTsUyXeb3UoVNEGpCPV8kcpmKFC
+9yhzTeXZgEj3KOuM7DIrztQL16Th14r9i5qVYwTl06OjCmU8bfOKUokD0gS+Jz2C
+M/tb0N8QWPF2gRRv35SJ86s/+HYgmxqzamNZ5oxG9Ah6szSp9WmAbtpSfc+t+TIa
+B4cJ/TmyxTRzS4u2/PddiDlThNDL6/d13DyXqMkIOO1EPv+1Lpm6DPER8huPlPR9
+Bmy85TjkztwgyRRWA3U0d+eYtxqSUbvLSfvYsjwJflNgFcVcq87XTfPloDw1UI89
+l2ZDllB9/kND0bVJuKGuNm0qLXfdtn10XtjSe9PToUPOomolteqs7dL9rD/YKX/f
+yL1Xu1Jk0U/pGgH7C9hreHCcwCD9DbDii0hGOjVZuvkF2qjcHJgrX0K23i1jPdPB
+PAMopC4OKeXwqpHEgvdwRH4wqcaYAfwm8TyqsaT2xbviuhsJSqafT8fKci8haj6Y
+eI42qP0NAF+OkFiK94QD1sPPkRHY5dUWifBp2VuOfvzfD1IGe4Ik0VBm0Gbh1VXx
+PqkufpXmKrQPpNzUAqaS/aI9KVb7mfk2+ru7rr8/1ACDxAUdDd5y5qQSBD+O2uUL
+3Zaa/pD2OQzEOYiV05lf
+=r0N5
+-----END PGP SIGNATURE-----
+
+--=-ooUblQEfFfYrJeNsrc70--
+
