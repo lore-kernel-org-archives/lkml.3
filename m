@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741AbaCNTIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 15:08:44 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:59624 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755682AbaCNTIm (ORCPT
+	id S1755895AbaCNTLC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 15:11:02 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:61085 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755085AbaCNTK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 15:08:42 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 3/3] workqueue: Add anon workqueue sysfs hierarchy
-References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
-	<1394815131-17271-4-git-send-email-fweisbec@gmail.com>
-Date: Fri, 14 Mar 2014 12:08:39 -0700
-In-Reply-To: <1394815131-17271-4-git-send-email-fweisbec@gmail.com> (Frederic
-	Weisbecker's message of "Fri, 14 Mar 2014 17:38:51 +0100")
-Message-ID: <7ha9csionc.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	Fri, 14 Mar 2014 15:10:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
+Date: Fri, 14 Mar 2014 20:10:39 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-pci" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linaro-kernel" <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com> <201403141838.08900.arnd@arndb.de> <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403142010.39886.arnd@arndb.de>
+X-Provags-ID: V02:K0:ysy7IQqfkAj4vMut+DNAevOiNIGx4DLDYw5d++iD34j
+ tn/YpClw+D6LQXKp3VMBJev1+DZYtL/3wFRPeS17he7DsM1qML
+ A6CEwSomZ6jGuoakig2bVfDP1dwxelYs8ZNoWCfx3vw313nNCQ
+ vJU1bq23aifWtjsCoid7kDpp+GSlrTBzxs5JK5Tq3+LBYdaQPj
+ T8KkIIa4uizwNUk26htl9BZ3zEVZ7bAigYhfbT0g0QePHgj+B/
+ CEuSedi20MRHxYCyjijyaQSERbmLEMIksyFLWItA9gH/IMgpyB
+ asIdjC8J8vv5ZLfPdrjOVJGKE7448cTK9EG6jPLAXEO99+BNs3
+ K8sdsjUd235o1+ZUeKcEtt613MS51QGR5za2ySh4a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec@gmail.com> writes:
+On Friday 14 March 2014, Liviu Dudau wrote:
+> > 
+> 
+> I haven't seen any reaction from Bjorn on this, so I threaded carefully on that
+> subject. I'm new to this so I don't know how to handle this.
+> 
+> To my mind, and looking at the way every architecture has been setup, the pcibios_*
+> function are intended to be provided by the architecture.
 
-> We call "anon workqueues" the set of unbound workqueues that don't
-> carry the WQ_SYSFS flag.
->
-> They are a problem nowaday because people who work on CPU isolation
-> (HPC, Real time, etc...) want to be able to migrate all the unbound
-> workqueues away to a single CPU. This control is possible through sysfs
-> but only with WQ_SYSFS workqueues.
->
-> Now we need to deal with the other unbound workqueues. There is two
-> possible solutions:
->
-> 1) Implement a sysfs directory for each unbound !WQ_SYSFS. This could
-> be done with a specific Kconfig to make sure that these workqueue
-> won't be considered as a stable ABI. But we all know that all distros
-> will enable this Kconfig symbol and that a warning in the Kconfig help
-> text won't protect against anything.
->
-> 2) Implement a single sysfs directory containing only the cpumask file
-> to the control the affinity of all the !WQ_SYSFS workqueues.
->
-> This patch implements the second solution.
->
-> Two issues I have seen though:
->
-> * This triggers the following warning in apply_workqueue_attrs():
->
-> 	/* creating multiple pwqs breaks ordering guarantee */
-> 	if (WARN_ON((wq->flags & __WQ_ORDERED) && !list_empty(&wq->pwqs)))
-> 		return -EINVAL;
->
->   I haven't yet checked into the details.
+That is definitely correct.
 
-I tried to test this series and ran into this too for the kmmcd
-workqueue.  Looking at the commit that introduced this check, it looks
-changing attributes will break the ordering constraints[1], so it's
-prevented all together.  hmmm...
+> No matter how much wishful
+> thinking we are going to put in here, it will not change the fact that the non-arm64
+> specific version of pcibios_fixup_bus() that I wrote is not shared by anyone else
+> and it will remain "for arm64 use only" regardless to where it is placed until the
+> next architecture comes into the kernel. And even then its adoption is questionable.
 
-Kevin
+Agreed as well.
 
-[1]
-commit 8719dceae2f98a578507c0f6b49c93f320bd729c
-Author: Tejun Heo <tj@kernel.org>
-Date:   Tue Mar 12 11:30:04 2013 -0700
+> If we are looking for simple and common implementations of this function, maybe we
+> should look at why microblaze and powerpc versions, that are identical, are not being
+> made the default __weak implementation.
 
-workqueue: reject adjusting max_active or applying attrs to ordered
-workqueues
+Microblaze could most likely just be moved over to your version. The only
+reason it is shared with the powerpc implementation is that they were
+anticipating the code to become shared again and that it was known to
+be working with flattened device tree.
 
-Adjusting max_active of or applying new workqueue_attrs to an ordered
-workqueue breaks its ordering guarantee.  The former is obvious.  The
-latter is because applying attrs creates a new pwq (pool_workqueue) and
-there is no ordering constraint between the old and new pwqs.
+> As for the other two functions, I've no special attachment to where they are present
+> and I'm happy to move them into drivers/pci on the condition that the patchset doesn't
+> double in size. The reason why I'm weary of touching other architectures in a significant
+> way is the current lack of engineering bandwidth and way of testing all the architectures.
+> My low friction approach has been to introduce them in arm64 and then slowly move them
+> into core (and yes, I know about good intentions and the road to hell.)
 
-Make apply_workqueue_attrs() and workqueue_set_max_active() trigger
-WARN_ON() if those operations are requested on an ordered workqueue
-and fail / ignore respectively.
+I think everyone working on PCI is fed up with having arch-specific implementations
+of all these, and Bjorn has been very supportive of generic infrastructure in the
+past. Even just adding a generic infrastructure in a common place that is used
+only by one architecture in my mind would be a significant improvement.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+	Arnd
