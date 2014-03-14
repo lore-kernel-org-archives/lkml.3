@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372AbaCNMzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 08:55:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52801 "EHLO
+	id S1753666AbaCNMzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 08:55:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52808 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318AbaCNMzj (ORCPT
+	with ESMTP id S1754461AbaCNMzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 08:55:39 -0400
-Date: Fri, 14 Mar 2014 05:55:23 -0700
+	Fri, 14 Mar 2014 08:55:50 -0400
+Date: Fri, 14 Mar 2014 05:55:34 -0700
 From: tip-bot for Hans de Goede <tipbot@zytor.com>
-Message-ID: <tip-56af0416b00f6edc7845a7b3f2ef179e385c8e15@git.kernel.org>
+Message-ID: <tip-649ff46e5e29868e915354ed1e9bebcf0faec3ae@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         hdegoede@redhat.com, tglx@linutronix.de,
         maxime.ripard@free-electrons.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         hdegoede@redhat.com, tglx@linutronix.de,
         maxime.ripard@free-electrons.com
-In-Reply-To: <1394733834-26839-3-git-send-email-hdegoede@redhat.com>
-References: <1394733834-26839-3-git-send-email-hdegoede@redhat.com>
+In-Reply-To: <1394733834-26839-4-git-send-email-hdegoede@redhat.com>
+References: <1394733834-26839-4-git-send-email-hdegoede@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] irqchip: sun4i: Fix irq 0 not working
-Git-Commit-ID: 56af0416b00f6edc7845a7b3f2ef179e385c8e15
+Subject: [tip:irq/core] irqchip: sun4i:
+  Fix a comment about mask register initialization
+Git-Commit-ID: 649ff46e5e29868e915354ed1e9bebcf0faec3ae
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,64 +34,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  56af0416b00f6edc7845a7b3f2ef179e385c8e15
-Gitweb:     http://git.kernel.org/tip/56af0416b00f6edc7845a7b3f2ef179e385c8e15
+Commit-ID:  649ff46e5e29868e915354ed1e9bebcf0faec3ae
+Gitweb:     http://git.kernel.org/tip/649ff46e5e29868e915354ed1e9bebcf0faec3ae
 Author:     Hans de Goede <hdegoede@redhat.com>
-AuthorDate: Thu, 13 Mar 2014 19:03:52 +0100
+AuthorDate: Thu, 13 Mar 2014 19:03:53 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Fri, 14 Mar 2014 13:43:33 +0100
 
-irqchip: sun4i: Fix irq 0 not working
+irqchip: sun4i: Fix a comment about mask register initialization
 
-SUN4I_IRQ_VECTOR_REG containing 0 can mean one of 3 things:
-
-1) no more irqs pending
-2) irq 0 pending
-3) spurious irq
-
-So if we immediately get a reading of 0, check the irq-pending reg
-to differentiate between 2 and 3. We only do this once to avoid
-the extra check in the common case of 1) hapening after having
-read the vector-reg once.
+The comment was claiming that we were masking all irqs, while the code actually
+*un*masks all of them.
 
 Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-sunxi@googlegroups.com
-Link: http://lkml.kernel.org/r/1394733834-26839-3-git-send-email-hdegoede@redhat.com
+Link: http://lkml.kernel.org/r/1394733834-26839-4-git-send-email-hdegoede@redhat.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/irqchip/irq-sun4i.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/irqchip/irq-sun4i.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
-index 1599955..7ae85ec 100644
+index 7ae85ec..60a28c6 100644
 --- a/drivers/irqchip/irq-sun4i.c
 +++ b/drivers/irqchip/irq-sun4i.c
-@@ -140,10 +140,24 @@ static void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs)
- {
- 	u32 irq, hwirq;
+@@ -109,7 +109,7 @@ static int __init sun4i_of_init(struct device_node *node,
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(1));
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(2));
  
-+	/*
-+	 * hwirq == 0 can mean one of 3 things:
-+	 * 1) no more irqs pending
-+	 * 2) irq 0 pending
-+	 * 3) spurious irq
-+	 * So if we immediately get a reading of 0, check the irq-pending reg
-+	 * to differentiate between 2 and 3. We only do this once to avoid
-+	 * the extra check in the common case of 1 hapening after having
-+	 * read the vector-reg once.
-+	 */
- 	hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
--	while (hwirq != 0) {
-+	if (hwirq == 0 &&
-+		  !(readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0)) & BIT(0)))
-+		return;
-+
-+	do {
- 		irq = irq_find_mapping(sun4i_irq_domain, hwirq);
- 		handle_IRQ(irq, regs);
- 		hwirq = readl(sun4i_irq_base + SUN4I_IRQ_VECTOR_REG) >> 2;
--	}
-+	} while (hwirq != 0);
- }
+-	/* Mask all the interrupts */
++	/* Unmask all the interrupts, ENABLE_REG(x) is used for masking */
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(0));
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(1));
+ 	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(2));
