@@ -1,146 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379AbaCNWvS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 18:51:18 -0400
-Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:24917
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1755578AbaCNWxO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 18:53:14 -0400
+Received: from mail-bl2lp0204.outbound.protection.outlook.com ([207.46.163.204]:8541
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755526AbaCNWvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 18:51:17 -0400
-Message-ID: <1394837469.12479.134.camel@snotra.buserror.net>
-Subject: Re: [PATCH 7/9] fsl: add EPU FSM configuration for deep sleep
-From: Scott Wood <scottwood@freescale.com>
-To: Chenhui Zhao <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>, <Jason.Jin@freescale.com>
-Date: Fri, 14 Mar 2014 17:51:09 -0500
-In-Reply-To: <20140312083410.GF4706@localhost.localdomain>
-References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
-	 <1394168285-32275-7-git-send-email-chenhui.zhao@freescale.com>
-	 <1394582923.13761.81.camel@snotra.buserror.net>
-	 <20140312083410.GF4706@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	id S1753732AbaCNWxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 18:53:12 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+Thread-Topic: Trusted kernel patchset for Secure Boot lockdown
+Thread-Index: AQHPP9UxgdFEpLbAD0ahQ2OJgthmsZrhMJwA
+Date: Fri, 14 Mar 2014 22:52:56 +0000
+Message-ID: <1394837576.1286.27.camel@x230>
+References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
+	 <CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
+	 <alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
+	 <1394686919.25122.2.camel@x230>
+	 <CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
+	 <alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
+	 <1394726363.25122.16.camel@x230>
+	 <20140313212450.67f1de8e@alan.etchedpixels.co.uk>
+	 <1394746248.27846.3.camel@x230>
+	 <20140313232140.03bdaac3@alan.etchedpixels.co.uk>
+	 <1394762250.6416.24.camel@x230.lan>
+	 <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
+	 <1394801518.6416.38.camel@x230.lan>
+	 <20140314170655.0ce398a3@alan.etchedpixels.co.uk>
+	 <1394820664.26846.18.camel@x230.mview.int.nebula.com>
+	 <20140314214806.54a3d031@alan.etchedpixels.co.uk>
+	 <1394834193.1286.11.camel@x230>
+	 <20140314220840.29a12171@alan.etchedpixels.co.uk>
+	 <1394835345.1286.22.camel@x230>
+	 <20140314223150.0b49723e@alan.etchedpixels.co.uk>
+In-Reply-To: <20140314223150.0b49723e@alan.etchedpixels.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
+x-forefront-prvs: 0150F3F97D
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(189002)(199002)(51704005)(377424004)(33716001)(97186001)(47446002)(74662001)(63696002)(59766001)(92726001)(33646001)(79102001)(74366001)(20776003)(74502001)(95666003)(94316002)(80022001)(81542001)(81342001)(92566001)(31966008)(85306002)(69226001)(85852003)(83072002)(95416001)(90146001)(56816005)(94946001)(74876001)(74706001)(76796001)(81816001)(83322001)(19580405001)(49866001)(54316002)(50986001)(65816001)(19580395003)(77096001)(46102001)(53806001)(54356001)(76482001)(86362001)(56776001)(93516002)(87936001)(80976001)(76786001)(51856001)(47736001)(81686001)(47976001)(87266001)(2656002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB123;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:FC84F0E6.AD964421.A1F495A8.84E4F165.20234;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <1DF9F6D16805D64C93E6BA337D63745B@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: DM2PR04CA019.namprd04.prod.outlook.com (10.141.154.147)
- To BLUPR03MB389.namprd03.prod.outlook.com (10.141.78.11)
-X-Forefront-PRVS: 0150F3F97D
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(189002)(199002)(51704005)(377424004)(50466002)(77096001)(74876001)(77156001)(76786001)(87266001)(76796001)(56816005)(74706001)(74366001)(87976001)(97186001)(92566001)(90146001)(81342001)(81542001)(92726001)(50986001)(85306002)(47976001)(83072002)(85852003)(49866001)(47736001)(50226001)(89996001)(19580395003)(62966002)(80976001)(83322001)(19580405001)(95666003)(79102001)(59766001)(88136002)(74662001)(81686001)(74502001)(47446002)(23676002)(31966008)(63696002)(47776003)(20776003)(93516002)(51856001)(81816001)(46102001)(69226001)(93916002)(95416001)(86362001)(33646001)(53806001)(575784001)(42186004)(94316002)(94946001)(65816001)(80022001)(56776001)(76482001)(54316002)(3826001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB389;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:BC9FF276.A826966D.4FE7557A.4E4A22D.203E0;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2EMrK6T020122
 
-On Wed, 2014-03-12 at 16:34 +0800, Chenhui Zhao wrote:
-> On Tue, Mar 11, 2014 at 07:08:43PM -0500, Scott Wood wrote:
-> > On Fri, 2014-03-07 at 12:58 +0800, Chenhui Zhao wrote:
-> > > From: Hongbo Zhang <hongbo.zhang@freescale.com>
-> > > 
-> > > In the last stage of deep sleep, software will trigger a Finite
-> > > State Machine (FSM) to control the hardware precedure, such as
-> > > board isolation, killing PLLs, removing power, and so on.
-> > > 
-> > > When the system is waked up by an interrupt, the FSM controls the
-> > > hardware to complete the early resume precedure.
-> > > 
-> > > This patch configure the EPU FSM preparing for deep sleep.
-> > > 
-> > > Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-> > > Signed-off-by: Chenhui Zhao <chenhui.zhao@freescale.com>
-> > 
-> > Couldn't this be part of qoriq_pm.c?
+On Fri, 2014-03-14 at 22:31 +0000, One Thousand Gnomes wrote:
+> On Fri, 14 Mar 2014 22:15:45 +0000
+> Matthew Garrett <matthew.garrett@nebula.com> wrote:
+> > The general problem includes having to support this even without an
+> > selinux policy.
 > 
-> Put the code in drivers/platform/fsl/ so that LS1 can share these code.
+> Yes. No dispute about that. But equally the general solution should allow
+> for it.
 
-How can LS1 share it if it's got hardcoded T1040 values?
+Well, sure. The current implementation doesn't conflict with selinux in
+any way.
 
-> > > diff --git a/drivers/platform/Kconfig b/drivers/platform/Kconfig
-> > > index 09fde58..6539e6d 100644
-> > > --- a/drivers/platform/Kconfig
-> > > +++ b/drivers/platform/Kconfig
-> > > @@ -6,3 +6,7 @@ source "drivers/platform/goldfish/Kconfig"
-> > >  endif
-> > >  
-> > >  source "drivers/platform/chrome/Kconfig"
-> > > +
-> > > +if FSL_SOC
-> > > +source "drivers/platform/fsl/Kconfig"
-> > > +endif
-> > 
-> > Chrome doesn't need an ifdef -- why does this?
+> > some other way. ChromeOS will load unmeasured kernel modules provided it
+> > can attest to the trustworthyness of the filesystem containing them.
 > 
-> Don't wish other platform see these options, and the X86 and GOLDFISH have
-> ifdefs.
-
-The point is you can implement the dependency inside
-drivers/platform/fsl/Kconfig.
-
-> > > diff --git a/drivers/platform/fsl/Makefile b/drivers/platform/fsl/Makefile
-> > > new file mode 100644
-> > > index 0000000..d99ca0e
-> > > --- /dev/null
-> > > +++ b/drivers/platform/fsl/Makefile
-> > > @@ -0,0 +1,5 @@
-> > > +#
-> > > +# Makefile for linux/drivers/platform/fsl
-> > > +# Freescale Specific Power Management Drivers
-> > > +#
-> > > +obj-$(CONFIG_FSL_SLEEP_FSM)	+= sleep_fsm.o
-> > 
-> > Why is this here while the other stuff is in arch/powerpc/sysdev?
-> > 
-> > > +/* Block offsets */
-> > > +#define	RCPM_BLOCK_OFFSET	0x00022000
-> > > +#define	EPU_BLOCK_OFFSET	0x00000000
-> > > +#define	NPC_BLOCK_OFFSET	0x00001000
-> > 
-> > Why don't these block offsets come from the device tree?
+> See "How to Bypass Verified Boot Security in Chromium OS" 8)
 > 
-> Have maped DCSR registers. Don't wish to remap them.
+> And it attests the trustworthiness of the filesystem by measuring it. If
+> you have a measurement of object X that states it is unchanged then you
+> have a valid measurement of any subset of object X for which the same
+> assertion is proven. In this case since you know all the bits in the root
+> fs are as before, so you know all the bits in the module are as before
 
-We don't wish to have hardcoded CCSR/DCSR offsets in the kernel source.
-Sorry.
- 
-> > > +	/* Configure the EPU Counters */
-> > > +	epu_write(EPCCR15, 0x92840000);
-> > > +	epu_write(EPCCR14, 0x92840000);
-> > > +	epu_write(EPCCR12, 0x92840000);
-> > > +	epu_write(EPCCR11, 0x92840000);
-> > > +	epu_write(EPCCR10, 0x92840000);
-> > > +	epu_write(EPCCR9, 0x92840000);
-> > > +	epu_write(EPCCR8, 0x92840000);
-> > > +	epu_write(EPCCR5, 0x92840000);
-> > > +	epu_write(EPCCR4, 0x92840000);
-> > > +	epu_write(EPCCR2, 0x92840000);
-> > > +
-> > > +	/* Configure the SCUs Inputs */
-> > > +	epu_write(EPSMCR15, 0x76000000);
-> > > +	epu_write(EPSMCR14, 0x00000031);
-> > > +	epu_write(EPSMCR13, 0x00003100);
-> > > +	epu_write(EPSMCR12, 0x7F000000);
-> > > +	epu_write(EPSMCR11, 0x31740000);
-> > > +	epu_write(EPSMCR10, 0x65000030);
-> > > +	epu_write(EPSMCR9, 0x00003000);
-> > > +	epu_write(EPSMCR8, 0x64300000);
-> > > +	epu_write(EPSMCR7, 0x30000000);
-> > > +	epu_write(EPSMCR6, 0x7C000000);
-> > > +	epu_write(EPSMCR5, 0x00002E00);
-> > > +	epu_write(EPSMCR4, 0x002F0000);
-> > > +	epu_write(EPSMCR3, 0x2F000000);
-> > > +	epu_write(EPSMCR2, 0x6C700000);
-> > 
-> > Where do these magic numbers come from?  Which chips are they valid for?
-> 
-> They are for T1040. Can be found in the RCPM chapter of T1040RM.
+You may attest to the trustworthiness of a filesystem by measuring it,
+but you may also attest to it via some other means - for instance, it's
+read-only and stored on media that requires physical presence to
+modify. 
 
-Then put in a comment to that effect, including what part of the RCPM
-chapter.
-
-How do you plan to handle the addition of another SoC with different
-values?
-
--Scott
-
-
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
