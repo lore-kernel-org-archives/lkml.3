@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099AbaCNU04 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 16:26:56 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:40737 "EHLO
+	id S1756141AbaCNU1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 16:27:25 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:41074 "EHLO
 	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596AbaCNU0z (ORCPT
+	with ESMTP id S1755738AbaCNU1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 16:26:55 -0400
-Message-ID: <1394828801.2931.7.camel@j-VirtualBox>
-Subject: Re: [locking/mutexes] WARNING: CPU: 1 PID: 77 at
- kernel/locking/mutex-debug.c:82 debug_mutex_unlock()
-From: Jason Low <jason.low2@hp.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 14 Mar 2014 13:26:41 -0700
-In-Reply-To: <532358F7.4090705@gmail.com>
-References: <20140313012744.GA7714@localhost>
-	 <1394675197.2107.3.camel@j-VirtualBox> <532358F7.4090705@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 14 Mar 2014 16:27:24 -0400
+Date: Fri, 14 Mar 2014 14:27:06 -0600
+From: Linn Crosetto <linn@hp.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Dave Young <dyoung@redhat.com>, WANG Chao <chaowang@redhat.com>,
+        kexec@lists.infradead.org, horms@verge.net.au, ebiederm@xmission.com,
+        hpa@zytor.com, trenn@suse.de, vgoyal@redhat.com, bp@alien8.de,
+        toshi.kani@hp.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] x86: Pass memory range via E820 for kdump
+Message-ID: <20140314202706.GX7672@oranje.fc.hp.com>
+References: <1394464149-30384-1-git-send-email-chaowang@redhat.com>
+ <1394464149-30384-5-git-send-email-chaowang@redhat.com>
+ <20140313222428.GW7672@oranje.fc.hp.com>
+ <20140314024726.GA2245@dhcp-16-126.nay.redhat.com>
+ <20140314082615.GE5834@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140314082615.GE5834@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-14 at 15:31 -0400, Sasha Levin wrote:
-> On 03/12/2014 09:46 PM, Jason Low wrote:
-> > Hi Fengguang,
-> >
-> > Can you try out this patch?
-> >
-> > https://lkml.org/lkml/2014/3/12/243
+On Fri, Mar 14, 2014 at 08:26:15AM +0000, Matt Fleming wrote:
+> On Fri, 14 Mar, at 10:47:26AM, Dave Young wrote:
+> > 
+> > Can you test with matt's tree to see if it works?
+> > If it still happens please post the full log.
 > 
-> Hi Jason,
+> So that'd be the 'next' branch at,
 > 
-> It fixes the problem for me.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
+> 
+> which contains Borislav's fixes for the EFI memmap code.
 
-Hi Sasha,
+I believe I included those fixes when testing with 3.14 rc6, adding:
 
-Great, thanks for letting us know.
+https://lkml.org/lkml/2014/3/8/209
+92b71d8
+52d201e
+a52f515
+b660133
+e91925d
 
+Since this testing was done on a prototype, I will send you the log in a
+separate email. I tried efi.git/next (with the addition of 4ce7a86), and hit the
+same panic.
 
