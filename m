@@ -1,70 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478AbaCNXIA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 19:08:00 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:63768 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756127AbaCNXHN (ORCPT
+	id S1756535AbaCNXKw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 19:10:52 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:26531 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755198AbaCNXKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 19:07:13 -0400
-Date: Fri, 14 Mar 2014 16:07:10 -0700
-From: Venkatesh Srinivas <venkateshs@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        mingo@elte.hu, zheng.z.yan@intel.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] perf/x86/intel: Use rdmsrl_safe when initializing RAPL
- PMU.
-Message-ID: <20140314230710.GA5487@google.com>
-References: <1394739386-22260-1-git-send-email-venkateshs@google.com>
- <20140314084429.GO27965@twins.programming.kicks-ass.net>
- <20140314135652.GE3793@tassilo.jf.intel.com>
- <CAHdzE--apBc_AQKiMUxubiX=pacUqebTfnQ+i0Kho1K2=Om1bw@mail.gmail.com>
- <20140314161745.GH3793@tassilo.jf.intel.com>
- <53233516.10005@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <53233516.10005@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Mar 2014 19:10:51 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: willy@linux.intel.com, kirill.shutemov@linux.intel.com,
+        david@fromorbit.com, linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [RFC PATCH] Support map_pages() for DAX
+Date: Fri, 14 Mar 2014 17:03:19 -0600
+Message-Id: <1394838199-29102-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 10:57:58AM -0600, David Ahern wrote:
->On 3/14/14, 10:17 AM, Andi Kleen wrote:
->>>The Intel ISR section for RDMSR seems to say: "Specifying a reserved
->>>or unimplemented
->>>MSR address in ECX will also cause a general protection exception".
->>>
->>> From a guest's perspective, MSR_RAPL_POWER_UNIT is unimplemented; kvm matches
->>>this behavior.
->>
->>MSRs are model specific and defined per model number. If you report a model
->>number you're expected to implement the MSRs defined for that model number.
->>
->>AFAIK Xen just reports 0 for unknown MSRs (and I'm surprised KVM doesn't too)
->>
->>I would suggest to fix KVM.
->
->I believe ignore_msrs parameter to kvm handles that.
->
->David
+DAX provides direct access to NVDIMM and bypasses the page caches.
+Newly introduced map_pages() callback reduces page faults by adding
+mappings around a faulted page, which is not supported for DAX.
 
-Hi,
+This patch implements map_pages() callback for DAX.  It reduces a
+number of page faults and increases read performance of DAX as shown
+below.  The values in parenthesis are relative to the base DAX results.
 
-cc-ing the virtualization mailing list for more detail on the kvm
-default for ignore_msrs (it defaults off).
+iozone results of mmap read/re-read tests [KB/sec]
+ 64KB:  read: 3,560,777 (x1.6) re-read: 9,086,412 (x1.8) pfault:   121 (-20%)
+ 128MB: read: 4,374,906 (x1.7) re-read: 6,137,189 (x2.4) pfault: 8,312 (-87%)
 
-1) Just returning 0 for unsupported MSRs is not workable -- 0 may be a
-    meaningful value for an MSR. RDMSR/WRMSR already have a mechanism
-    for out-of-band errors, #GP.
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+----
+Applies on top of DAX patchset [1] and fault-around patchset [2].
 
-2) #GP has been KVM's default behavior for quite some time. Even if we
-    believe changing KVM's default is appropriate, Linux w/ the RAPL PMU
-    code enabled will fail to boot on existing KVM versions. W/ this
-    change, Linux will boot on prior KVM versions.
+[1] https://lkml.org/lkml/2014/2/25/460
+[2] https://lkml.org/lkml/2014/2/27/546
+---
+ fs/dax.c           |   68 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/ext4/file.c     |    6 +++++
+ include/linux/fs.h |    5 ++++
+ 3 files changed, 79 insertions(+)
 
-Thanks,
--- vs;
+diff --git a/fs/dax.c b/fs/dax.c
+index c8dfab0..bc54705 100644
+--- a/fs/dax.c
++++ b/fs/dax.c
+@@ -476,3 +476,71 @@ int dax_zero_page_range(struct inode *inode, loff_t from, unsigned length,
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(dax_zero_page_range);
++
++static void dax_set_pte(struct vm_area_struct *vma, unsigned long addr,
++			unsigned long pfn, pte_t *pte)
++{
++	pte_t entry;
++
++	if (addr < vma->vm_start || addr >= vma->vm_end)
++		return;
++
++	if (!pte_none(*pte))
++		return;
++
++	entry = pte_mkspecial(pfn_pte(pfn, vma->vm_page_prot));
++	set_pte_at(vma->vm_mm, addr, pte, entry);
++	update_mmu_cache(vma, addr, pte);
++}
++
++void dax_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf,
++		get_block_t get_block)
++{
++	struct file *file = vma->vm_file;
++	struct inode *inode = file_inode(file);
++	struct buffer_head bh;
++	struct address_space *mapping = file->f_mapping;
++	unsigned long vaddr = (unsigned long)vmf->virtual_address;
++	pgoff_t pgoff = vmf->pgoff;
++	sector_t block;
++	pgoff_t size;
++	unsigned long pfn;
++	pte_t *pte = vmf->pte;
++	int error;
++
++	while (pgoff < vmf->max_pgoff) {
++		size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		if (pgoff >= size)
++			return;
++
++		memset(&bh, 0, sizeof(bh));
++		block = (sector_t)pgoff << (PAGE_SHIFT - inode->i_blkbits);
++		bh.b_size = PAGE_SIZE;
++		error = get_block(inode, block, &bh, 0);
++		if (error || bh.b_size < PAGE_SIZE)
++			goto next;
++
++		if (!buffer_mapped(&bh) || buffer_unwritten(&bh) ||
++		    buffer_new(&bh))
++			goto next;
++
++		/* Recheck i_size under i_mmap_mutex */
++		mutex_lock(&mapping->i_mmap_mutex);
++		size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		if (unlikely(pgoff >= size)) {
++			mutex_unlock(&mapping->i_mmap_mutex);
++			return;
++		}
++
++		error = dax_get_pfn(inode, &bh, &pfn);
++		if (error > 0)
++			dax_set_pte(vma, vaddr, pfn, pte);
++
++		mutex_unlock(&mapping->i_mmap_mutex);
++next:
++		vaddr += PAGE_SIZE;
++		pgoff++;
++		pte++;
++	}
++}
++EXPORT_SYMBOL_GPL(dax_map_pages);
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index eb19383..15965ea 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -205,6 +205,11 @@ static int ext4_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 					/* Is this the right get_block? */
+ }
+ 
++static void ext4_dax_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	return dax_map_pages(vma, vmf, ext4_get_block);
++}
++
+ static int ext4_dax_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	return dax_mkwrite(vma, vmf, ext4_get_block);
+@@ -212,6 +217,7 @@ static int ext4_dax_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 
+ static const struct vm_operations_struct ext4_dax_vm_ops = {
+ 	.fault		= ext4_dax_fault,
++	.map_pages	= ext4_dax_map_pages,
+ 	.page_mkwrite	= ext4_dax_mkwrite,
+ 	.remap_pages	= generic_file_remap_pages,
+ };
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index d0381ab..3bd1042 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2527,6 +2527,7 @@ ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, const struct iovec *,
+ 		loff_t, unsigned segs, get_block_t, dio_iodone_t, int flags);
+ int dax_fault(struct vm_area_struct *, struct vm_fault *, get_block_t);
+ int dax_mkwrite(struct vm_area_struct *, struct vm_fault *, get_block_t);
++void dax_map_pages(struct vm_area_struct *, struct vm_fault *, get_block_t);
+ #else
+ static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
+ {
+@@ -2545,6 +2546,10 @@ static inline ssize_t dax_do_io(int rw, struct kiocb *iocb, struct inode *inode,
+ {
+ 	return -ENOTTY;
+ }
++static inline void dax_map_pages(struct vm_area_struct *vma,
++		struct vm_fault *vmf, get_block_t get_block)
++{
++}
+ #endif
+ 
+ /* Can't be a function because PAGE_CACHE_SIZE is defined in pagemap.h */
