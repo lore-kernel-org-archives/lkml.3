@@ -1,111 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427AbaCNLtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 07:49:24 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:24048 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754199AbaCNLtV (ORCPT
+	id S1754343AbaCNLzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 07:55:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:60640 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847AbaCNLzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 07:49:21 -0400
-X-AuditID: cbfee68e-b7f566d000002344-80-5322ecbf4d25
-From: Cho KyongHo <pullip.cho@samsung.com>
-To: "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux DeviceTree'" <devicetree@vger.kernel.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Varun Sethi'" <Varun.Sethi@freescale.com>,
-        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
-        "'Tomasz Figa'" <t.figa@samsung.com>
-References: <20140314140129.68a41cc1bd9e0a48a198ca13@samsung.com>
- <CAK9yfHzRasE3jroDUZgAa=DN5N=2ZDAxgNiHDCip+f2868BAVQ@mail.gmail.com>
-In-reply-to: <CAK9yfHzRasE3jroDUZgAa=DN5N=2ZDAxgNiHDCip+f2868BAVQ@mail.gmail.com>
-Subject: RE: [PATCH v11 01/27] iommu/exynos: do not include removed header
-Date: Fri, 14 Mar 2014 20:49:18 +0900
-Message-id: <000e01cf3f7b$6edcdfd0$4c969f70$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQH38nvn9YEu8kZACW43ysqVfjw4YwJJQYvFmnzHSUA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t8zI939b5SCDSb2ClrcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S2mLDrManH4TTurxck/
-	vYwW62e8ZrGYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
-	5DyuHD3DFMAZxWWTkpqTWZZapG+XwJUxY+5kxoLvnBV7twY0MLZxdDFyckgImEjsPbmUBcIW
-	k7hwbz1bFyMXh5DAMkaJBT/Ws8AU3d3/mAkisYhR4umNRhYI5x+jRM/nqawgVWwCWhKr5x5n
-	BLFFBHQkVuxaC9bBLDCdVeJXx1uojg5GiQ8PjzKDVHEKBEtsPdrIDmILC3hJ3PswhwnEZhFQ
-	lbjxbwZYnFfAUmJe63QmCFtQ4sfke2A3MQNtW7/zOBOELS+xec1bZohbFSR2nH0NdYWVxKX9
-	39ghakQk9r14xwhyhITAAQ6Ji8tOsEAsE5D4NvkQkM0BlJCV2HQAao6kxMEVN1gmMErMQrJ6
-	FpLVs5CsnoVkxQJGllWMoqkFyQXFSelFRnrFibnFpXnpesn5uZsYIWmjbwfjzQPWhxiTgdZP
-	ZJYSTc4Hpp28knhDYzMjC1MTU2Mjc0sz0oSVxHkXPUwKEhJITyxJzU5NLUgtii8qzUktPsTI
-	xMEp1cBYW3pnQ3xho+2jLw8dcpkN99WVmwitnHjtzZHvt99c/N1vV61Xd7ZCO9+J75Zy+I8t
-	6Yk7zRfHH96vyVh7Y/vlexXFXlPnXGeJElrEci9c+ZLhpLmVldLrf0kEZ91j6J+1TmP/Bzcn
-	zmUz7y+eZsZTJ+Pauif/7/b8edoM//abS9+TkjDJfPpQiaU4I9FQi7moOBEAixF2pDEDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNKsWRmVeSWpSXmKPExsVy+t9jAd39b5SCDTqPcFvcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S2mLDrManH4TTurxck/
-	vYwW62e8ZrGYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
-	5DyuHD3DFMAZ1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
-	oOuWmQP0gZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xY8bcyYwF3zkr
-	9m4NaGBs4+hi5OSQEDCRuLv/MROELSZx4d56ti5GLg4hgUWMEk9vNLJAOP8YJXo+T2UFqWIT
-	0JJYPfc4I4gtIqAjsWLXWiaQImaB6awSvzreQnV0MEp8eHiUGaSKUyBYYuvRRnYQW1jAS+Le
-	hzlg+1gEVCVu/JsBFucVsJSY1zqdCcIWlPgx+R4LiM0MtG39zuNMELa8xOY1b5khblWQ2HH2
-	NdQVVhKX9n9jh6gRkdj34h3jBEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6RXnJhb
-	XJqXrpecn7uJEZyUnknvYFzVYHGIUYCDUYmHd8ZRxWAh1sSy4srcQ4wSHMxKIrwnHysFC/Gm
-	JFZWpRblxxeV5qQWH2JMBvp0IrOUaHI+MGHmlcQbGpuYGVkamVkYmZibkyasJM57sNU6UEgg
-	PbEkNTs1tSC1CGYLEwenVANjpRXDj63tHx2kZWd/81vp23BW/bjB5MhoiX2S0UdmsQjpOJzR
-	7J2xatHcGbEXz6tMEl61XLB/U+WqFAHzP3a9XJPXvlNf/mSafED0ltT2rUqC87K5GGdG1T3c
-	zPuI6+6Oo6t7ujWbVRlnO0qtUA70+ldx9bTNBLkY/uk5Oe8SP+vxbuF7+f+OEktxRqKhFnNR
-	cSIA94je8o4DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 14 Mar 2014 07:55:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH v6 1/3] Fix ioport_map() for !CONFIG_GENERIC_IOMAP cases.
+Date: Fri, 14 Mar 2014 12:54:17 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, "linux-pci" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linaro-kernel" <linaro-kernel@lists.linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tanmay Inamdar <tinamdar@apm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+References: <1394020150-1875-1-git-send-email-Liviu.Dudau@arm.com> <201403070137.38621.arnd@arndb.de> <20140307010950.GE21483@n2100.arm.linux.org.uk>
+In-Reply-To: <20140307010950.GE21483@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201403141254.17572.arnd@arndb.de>
+X-Provags-ID: V02:K0:XQoR4YE0VONG+xZdO1NDT5cIyLlEEd26rM9X5K/IBau
+ K5DHuFbQlUdPQ3WBXB0TTQ/fpoUBzOylJzaAQbzF32B9MS9Kzm
+ P/Qzc4DOPqxxEg5YT4vh+s2+QHT0b9b2UC7YuIODYyS2wgyQDA
+ JNWL1EimMiE7rqlNzadOf1G+r1WGey1dxKU3FMDzPd+f/PA9HM
+ RwuDl21LazM2IguckyDHBWjxWwOUOZd7E/YMkT8CHt1n7+eRV8
+ wVIjcGu6uOLjHKFzDKosm+ARF1beN+/bIlnXttnp8j8Ieg/c6T
+ U4jEgdh+5UkutY6/EvQmM0EgtB+hbiYkqkupIIMUtS1o3KTeJV
+ 76QfEFoNf0wEd8LoptDwaL/rraGFLU1OLkEBz/STM
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Sachin Kamat [mailto:sachin.kamat@linaro.org]
-> Sent: Friday, March 14, 2014 7:00 PM
-> 
-> On 14 March 2014 10:31, Cho KyongHo <pullip.cho@samsung.com> wrote:
-> > Commit 25e9d28d92 (ARM: EXYNOS: remove system mmu initialization from
-> > exynos tree) removed arch/arm/mach-exynos/mach/sysmmu.h header without
-> > removing remaining use of it from exynos-iommu driver, thus causing a
-> > compilation error.
-> >
-> > This patch fixes the error by removing respective include line
-> > from exynos-iommu.c.
-> >
-> > CC: Tomasz Figa <t.figa@samsung.com>
-> > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> > ---
-> >  drivers/iommu/exynos-iommu.c |    3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> > index 0740189..4876d35 100644
-> > --- a/drivers/iommu/exynos-iommu.c
-> > +++ b/drivers/iommu/exynos-iommu.c
-> > @@ -12,6 +12,7 @@
-> >  #define DEBUG
-> >  #endif
-> >
-> > +#include <linux/kernel.h>
-> 
-> This change doesn't look related to the patch subject/description.
-> 
-Yes. But it is simply added without any side-effect.
-Do you think it should be in a separate patch?.
-Actually, the added line is a redundant.
+On Friday 07 March 2014, Russell King - ARM Linux wrote:
+> On Fri, Mar 07, 2014 at 01:37:38AM +0100, Arnd Bergmann wrote:
+> > On Thursday 06 March 2014, Russell King - ARM Linux wrote:
 
-Regards,
+> > > arch/microblaze/include/asm/io.h:/* from asm-generic/io.h */
+> > 
+> > PCI_IOBASE=0, IO_SPACE_LIMIT=0xffffffff, so no change.
+> 
+> Seems to define _IO_BASE not PCI_IOBASE.
 
-KyongHo.
+It gets the implicit PCI_IOBASE from asm-generic/io.h at the moment.
 
+> > 
+> > PCI_IOBASE=0, IO_SPACE_LIMIT=0xffffffff, so no change.
+> 
+> Doesn't appear to define PCI_IOBASE.
+
+Same here.
+
+> > For most of these, I assume we actually want to remove support
+> > for inb/outb as they don't support I/O space accesses. The other
+> > ones look correct to me.
+> 
+> Right, so:
+> 
+> #ifdef CONFIG_HAS_IOPORT
+> #ifndef CONFIG_GENERIC_IOMAP
+> static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
+> {
+>         return (void __iomem *) port;
+> }
+> 
+> changing that to include PCI_IOBASE in there will result in a build
+> failure if the C compiler sees that.  In other words, when HAS_IOPORT=y
+> and GENERIC_IOMAP=n.
+> 
+> HAS_IOPORT is set when HAS_IOMEM is also set and NO_IOPORT unset.
+> 
+> It looks to me like blackfin doesn't set NO_IOPORT nor NO_IOMEM, so
+> this would have HAS_IOPORT set, and from what I can see doesn't set
+> GENERIC_IOMAP.  So, this change probably breaks blackfin.
+
+I also see the same thing that Liviu mentioned, that PCI_IOBASE=0
+is always provided by asm-generic/io.h if not set otherwise.
+
+On a related topic, Uwe Kleine-König has submitted a patch to
+rename CONFIG_HAS_IOPORT to CONFIG_HAS_IOPORT_MAP to clarify what
+it does, and to allow us to add a new CONFIG_HAS_IOPORT option
+that will let us remove all the I/O port handling code for
+architectures that don't have any I/O access method.
+
+	Arnd
