@@ -1,163 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024AbaCNPkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:40:25 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50909 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755309AbaCNPfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:35:06 -0400
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v7 4/6] pci: Introduce a domain number for pci_host_bridge.
-Date: Fri, 14 Mar 2014 15:34:30 +0000
-Message-Id: <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+	id S1756043AbaCNPkg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:40:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:47102 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754113AbaCNPka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 11:40:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,655,1389772800"; 
+   d="scan'208";a="498609252"
+Message-ID: <532322E8.9050602@intel.com>
+Date: Fri, 14 Mar 2014 17:40:24 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/5] perf tools: Factor machine__find_thread to take tid
+ argument
+References: <1394805606-25883-1-git-send-email-jolsa@redhat.com> <1394805606-25883-3-git-send-email-jolsa@redhat.com> <20140314141509.GD2396@ghostprotocols.net>
+In-Reply-To: <20140314141509.GD2396@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make it easier to discover the domain number of a bus by storing
-the number in pci_host_bridge for the root bus. Several architectures
-have their own way of storing this information, so it makes sense
-to try to unify the code. While at this, add a new function that
-creates a root bus in a given domain and make pci_create_root_bus()
-a wrapper around this function.
+On 14/03/2014 4:15 p.m., Arnaldo Carvalho de Melo wrote:
+> Em Fri, Mar 14, 2014 at 03:00:03PM +0100, Jiri Olsa escreveu:
+>> Forcing the code to always search thread by pid/tid pair.
+>>
+>> The PID value will be needed in future to determine
+>> the process thread leader for map groups sharing.
+>
+> This one looks OK, Adrian?
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-Tested-by: Tanmay Inamdar <tinamdar@apm.com>
----
- drivers/pci/probe.c | 41 +++++++++++++++++++++++++++++++++--------
- include/linux/pci.h |  4 ++++
- 2 files changed, 37 insertions(+), 8 deletions(-)
+Yes it is OK
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index fd11c12..172c615 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1714,8 +1714,9 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
- {
- }
- 
--struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
--		struct pci_ops *ops, void *sysdata, struct list_head *resources)
-+struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
-+		int domain, int bus, struct pci_ops *ops, void *sysdata,
-+		struct list_head *resources)
- {
- 	int error;
- 	struct pci_host_bridge *bridge;
-@@ -1728,30 +1729,34 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 
- 	bridge = pci_alloc_host_bridge();
- 	if (!bridge)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	bridge->dev.parent = parent;
- 	bridge->dev.release = pci_release_host_bridge_dev;
-+	bridge->domain_nr = domain;
- 	error = pcibios_root_bridge_prepare(bridge);
- 	if (error)
- 		goto err_out;
- 
- 	b = pci_alloc_bus();
--	if (!b)
-+	if (!b) {
-+		error = -ENOMEM;
- 		goto err_out;
-+	}
- 
- 	b->sysdata = sysdata;
- 	b->ops = ops;
- 	b->number = b->busn_res.start = bus;
--	b2 = pci_find_bus(pci_domain_nr(b), bus);
-+	b2 = pci_find_bus(bridge->domain_nr, bus);
- 	if (b2) {
- 		/* If we already got to this bus through a different bridge, ignore it */
- 		dev_dbg(&b2->dev, "bus already known\n");
-+		error = -EEXIST;
- 		goto err_bus_out;
- 	}
- 
- 	bridge->bus = b;
--	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
-+	dev_set_name(&bridge->dev, "pci%04x:%02x", bridge->domain_nr, bus);
- 	error = device_register(&bridge->dev);
- 	if (error) {
- 		put_device(&bridge->dev);
-@@ -1766,7 +1771,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 
- 	b->dev.class = &pcibus_class;
- 	b->dev.parent = b->bridge;
--	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
-+	dev_set_name(&b->dev, "%04x:%02x", bridge->domain_nr, bus);
- 	error = device_register(&b->dev);
- 	if (error)
- 		goto class_dev_reg_err;
-@@ -1816,7 +1821,27 @@ err_bus_out:
- 	kfree(b);
- err_out:
- 	kfree(bridge);
--	return NULL;
-+	return ERR_PTR(error);
-+}
-+
-+struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-+		struct pci_ops *ops, void *sysdata, struct list_head *resources)
-+{
-+	int domain_nr;
-+	struct pci_bus *b = pci_alloc_bus();
-+	if (!b)
-+		return NULL;
-+
-+	b->sysdata = sysdata;
-+	domain_nr = pci_domain_nr(b);
-+	kfree(b);
-+
-+	b = pci_create_root_bus_in_domain(parent, domain_nr, bus,
-+				ops, sysdata, resources);
-+	if (IS_ERR(b))
-+		return NULL;
-+
-+	return b;
- }
- 
- int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 33aa2ca..1eed009 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -394,6 +394,7 @@ struct pci_host_bridge_window {
- struct pci_host_bridge {
- 	struct device dev;
- 	struct pci_bus *bus;		/* root bus */
-+	int domain_nr;
- 	struct list_head windows;	/* pci_host_bridge_windows */
- 	void (*release_fn)(struct pci_host_bridge *);
- 	void *release_data;
-@@ -747,6 +748,9 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
- struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 				    struct pci_ops *ops, void *sysdata,
- 				    struct list_head *resources);
-+struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
-+			int domain, int bus, struct pci_ops *ops,
-+			void *sysdata, struct list_head *resources);
- int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
- int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
- void pci_bus_release_busn_res(struct pci_bus *b);
--- 
-1.9.0
-
+>
+> - Arnaldo
+>
+>> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Don Zickus <dzickus@redhat.com>
+>> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+>> Cc: David Ahern <dsahern@gmail.com>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Namhyung Kim <namhyung@kernel.org>
+>> Cc: Paul Mackerras <paulus@samba.org>
+>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+>> ---
+>>   tools/perf/tests/dwarf-unwind.c |  2 +-
+>>   tools/perf/util/machine.c       | 13 +++++++++----
+>>   tools/perf/util/machine.h       |  3 ++-
+>>   3 files changed, 12 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
+>> index f16ea28..c059ee8 100644
+>> --- a/tools/perf/tests/dwarf-unwind.c
+>> +++ b/tools/perf/tests/dwarf-unwind.c
+>> @@ -128,7 +128,7 @@ int test__dwarf_unwind(void)
+>>   	if (verbose > 1)
+>>   		machine__fprintf(machine, stderr);
+>>
+>> -	thread = machine__find_thread(machine, getpid());
+>> +	thread = machine__find_thread(machine, getpid(), getpid());
+>>   	if (!thread) {
+>>   		pr_err("Could not get thread\n");
+>>   		goto out;
+>> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+>> index eb26544..a189faf 100644
+>> --- a/tools/perf/util/machine.c
+>> +++ b/tools/perf/util/machine.c
+>> @@ -327,9 +327,10 @@ struct thread *machine__findnew_thread(struct machine *machine, pid_t pid,
+>>   	return __machine__findnew_thread(machine, pid, tid, true);
+>>   }
+>>
+>> -struct thread *machine__find_thread(struct machine *machine, pid_t tid)
+>> +struct thread *machine__find_thread(struct machine *machine, pid_t pid,
+>> +				    pid_t tid)
+>>   {
+>> -	return __machine__findnew_thread(machine, 0, tid, false);
+>> +	return __machine__findnew_thread(machine, pid, tid, false);
+>>   }
+>>
+>>   int machine__process_comm_event(struct machine *machine, union perf_event *event,
+>> @@ -1114,7 +1115,9 @@ static void machine__remove_thread(struct machine *machine, struct thread *th)
+>>   int machine__process_fork_event(struct machine *machine, union perf_event *event,
+>>   				struct perf_sample *sample)
+>>   {
+>> -	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+>> +	struct thread *thread = machine__find_thread(machine,
+>> +						     event->fork.pid,
+>> +						     event->fork.tid);
+>>   	struct thread *parent = machine__findnew_thread(machine,
+>>   							event->fork.ppid,
+>>   							event->fork.ptid);
+>> @@ -1140,7 +1143,9 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
+>>   int machine__process_exit_event(struct machine *machine, union perf_event *event,
+>>   				struct perf_sample *sample __maybe_unused)
+>>   {
+>> -	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+>> +	struct thread *thread = machine__find_thread(machine,
+>> +						     event->fork.pid,
+>> +						     event->fork.tid);
+>>
+>>   	if (dump_trace)
+>>   		perf_event__fprintf_task(event, stdout);
+>> diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+>> index 2e6c248..c8c74a1 100644
+>> --- a/tools/perf/util/machine.h
+>> +++ b/tools/perf/util/machine.h
+>> @@ -41,7 +41,8 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
+>>   	return machine->vmlinux_maps[type];
+>>   }
+>>
+>> -struct thread *machine__find_thread(struct machine *machine, pid_t tid);
+>> +struct thread *machine__find_thread(struct machine *machine, pid_t pid,
+>> +				    pid_t tid);
+>>
+>>   int machine__process_comm_event(struct machine *machine, union perf_event *event,
+>>   				struct perf_sample *sample);
+>> --
+>> 1.8.3.1
