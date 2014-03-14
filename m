@@ -1,84 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895AbaCNTLC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 15:11:02 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:61085 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755085AbaCNTK6 (ORCPT
+	id S1755855AbaCNTLA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 15:11:00 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:54006 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944AbaCNTK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 15:10:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
-Date: Fri, 14 Mar 2014 20:10:39 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-pci" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linaro-kernel" <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com> <201403141838.08900.arnd@arndb.de> <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
-In-Reply-To: <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
+	Fri, 14 Mar 2014 15:10:57 -0400
+Date: Fri, 14 Mar 2014 12:10:55 -0700
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: paulus@samba.org, oleg@redhat.com, mingo@kernel.org, rjw@rjwysocki.net,
+        rusty@rustcorp.com.au, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
+        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-pm@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Gleb Natapov <gleb@kernel.org>, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Paolo Bonzini <pbonzini@redhat.com>, marc.zyngier@arm.com
+Subject: Re: [PATCH v3 10/52] arm, kvm: Fix CPU hotplug callback registration
+Message-ID: <20140314191055.GF28661@cbox>
+References: <20140310203312.10746.310.stgit@srivatsabhat.in.ibm.com>
+ <20140310203538.10746.25364.stgit@srivatsabhat.in.ibm.com>
+ <20140312232127.GC24808@cbox>
+ <53229701.8050405@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403142010.39886.arnd@arndb.de>
-X-Provags-ID: V02:K0:ysy7IQqfkAj4vMut+DNAevOiNIGx4DLDYw5d++iD34j
- tn/YpClw+D6LQXKp3VMBJev1+DZYtL/3wFRPeS17he7DsM1qML
- A6CEwSomZ6jGuoakig2bVfDP1dwxelYs8ZNoWCfx3vw313nNCQ
- vJU1bq23aifWtjsCoid7kDpp+GSlrTBzxs5JK5Tq3+LBYdaQPj
- T8KkIIa4uizwNUk26htl9BZ3zEVZ7bAigYhfbT0g0QePHgj+B/
- CEuSedi20MRHxYCyjijyaQSERbmLEMIksyFLWItA9gH/IMgpyB
- asIdjC8J8vv5ZLfPdrjOVJGKE7448cTK9EG6jPLAXEO99+BNs3
- K8sdsjUd235o1+ZUeKcEtt613MS51QGR5za2ySh4a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53229701.8050405@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 March 2014, Liviu Dudau wrote:
+On Fri, Mar 14, 2014 at 11:13:29AM +0530, Srivatsa S. Bhat wrote:
+> On 03/13/2014 04:51 AM, Christoffer Dall wrote:
+> > On Tue, Mar 11, 2014 at 02:05:38AM +0530, Srivatsa S. Bhat wrote:
+> >> Subsystems that want to register CPU hotplug callbacks, as well as perform
+> >> initialization for the CPUs that are already online, often do it as shown
+> >> below:
+> >>
+> >> 	get_online_cpus();
+> >>
+> >> 	for_each_online_cpu(cpu)
+> >> 		init_cpu(cpu);
+> >>
+> >> 	register_cpu_notifier(&foobar_cpu_notifier);
+> >>
+> >> 	put_online_cpus();
+> >>
+> >> This is wrong, since it is prone to ABBA deadlocks involving the
+> >> cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
+> >> with CPU hotplug operations).
+> >>
+> >> Instead, the correct and race-free way of performing the callback
+> >> registration is:
+> >>
+> >> 	cpu_notifier_register_begin();
+> >>
+> >> 	for_each_online_cpu(cpu)
+> >> 		init_cpu(cpu);
+> >>
+> >> 	/* Note the use of the double underscored version of the API */
+> >> 	__register_cpu_notifier(&foobar_cpu_notifier);
+> >>
+> >> 	cpu_notifier_register_done();
+> >>
+> >>
+> >> Fix the kvm code in arm by using this latter form of callback registration.
+> >>
+> >> Cc: Christoffer Dall <christoffer.dall@linaro.org>
+> >> Cc: Gleb Natapov <gleb@kernel.org>
+> >> Cc: Russell King <linux@arm.linux.org.uk>
+> >> Cc: Ingo Molnar <mingo@kernel.org>
+> >> Cc: kvmarm@lists.cs.columbia.edu
+> >> Cc: kvm@vger.kernel.org
+> >> Cc: linux-arm-kernel@lists.infradead.org
+> >> Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >> ---
+> >>
+> >>  arch/arm/kvm/arm.c |    7 ++++++-
+> >>  1 file changed, 6 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+> >> index bd18bb8..f0e50a0 100644
+> >> --- a/arch/arm/kvm/arm.c
+> >> +++ b/arch/arm/kvm/arm.c
+> >> @@ -1051,21 +1051,26 @@ int kvm_arch_init(void *opaque)
+> >>  		}
+> >>  	}
+> >>  
+> >> +	cpu_notifier_register_begin();
+> >> +
+> >>  	err = init_hyp_mode();
+> >>  	if (err)
+> >>  		goto out_err;
+> >>  
+> >> -	err = register_cpu_notifier(&hyp_init_cpu_nb);
+> >> +	err = __register_cpu_notifier(&hyp_init_cpu_nb);
+> >>  	if (err) {
+> >>  		kvm_err("Cannot register HYP init CPU notifier (%d)\n", err);
+> >>  		goto out_err;
+> >>  	}
+> >>  
+> >> +	cpu_notifier_register_done();
+> >> +
+> >>  	hyp_cpu_pm_init();
+> >>  
+> >>  	kvm_coproc_table_init();
+> >>  	return 0;
+> >>  out_err:
+> >> +	cpu_notifier_register_done();
+> >>  	return err;
+> >>  }
+> >>  
+> >>
+> > 
+> > Just so we're clear, the existing code was simply racy as not prone to
+> > deadlocks, right?
+> > 
+> > This makes it clear that the test above for compatible CPUs can be quite
+> > easily evaded by using CPU hotplug, but we don't really have a good
+> > solution for handling that yet...  Hmmm, grumble grumble, I guess if you
+> > hotplug unsupported CPUs on a KVM/ARM system for now, stuff will break.
 > > 
 > 
-> I haven't seen any reaction from Bjorn on this, so I threaded carefully on that
-> subject. I'm new to this so I don't know how to handle this.
+> In this particular case, there was no deadlock possibility, rather the
+> existing code had insufficient synchronization against CPU hotplug.
 > 
-> To my mind, and looking at the way every architecture has been setup, the pcibios_*
-> function are intended to be provided by the architecture.
+> init_hyp_mode() would invoke cpu_init_hyp_mode() on currently online CPUs
+> using on_each_cpu(). If a CPU came online after this point and before calling
+> register_cpu_notifier(), that CPU would remain uninitialized because this
+> subsystem would miss the hot-online event. This patch fixes this bug and
+> also uses the new synchronization method (instead of get/put_online_cpus())
+> to ensure that we don't deadlock with CPU hotplug.
+> 
 
-That is definitely correct.
+Yes, that was my conclusion as well.  Thanks for clarifying.  (It could
+be noted in the commit message as well if you should feel so inclined).
 
-> No matter how much wishful
-> thinking we are going to put in here, it will not change the fact that the non-arm64
-> specific version of pcibios_fixup_bus() that I wrote is not shared by anyone else
-> and it will remain "for arm64 use only" regardless to where it is placed until the
-> next architecture comes into the kernel. And even then its adoption is questionable.
-
-Agreed as well.
-
-> If we are looking for simple and common implementations of this function, maybe we
-> should look at why microblaze and powerpc versions, that are identical, are not being
-> made the default __weak implementation.
-
-Microblaze could most likely just be moved over to your version. The only
-reason it is shared with the powerpc implementation is that they were
-anticipating the code to become shared again and that it was known to
-be working with flattened device tree.
-
-> As for the other two functions, I've no special attachment to where they are present
-> and I'm happy to move them into drivers/pci on the condition that the patchset doesn't
-> double in size. The reason why I'm weary of touching other architectures in a significant
-> way is the current lack of engineering bandwidth and way of testing all the architectures.
-> My low friction approach has been to introduce them in arm64 and then slowly move them
-> into core (and yes, I know about good intentions and the road to hell.)
-
-I think everyone working on PCI is fed up with having arch-specific implementations
-of all these, and Bjorn has been very supportive of generic infrastructure in the
-past. Even just adding a generic infrastructure in a common place that is used
-only by one architecture in my mind would be a significant improvement.
-
-	Arnd
+> > In any case:
+> > Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
+> > 
+> 
+> Thanks a lot!
+> 
+Thanks,
+-Christoffer
