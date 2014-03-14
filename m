@@ -1,137 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaCNKgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 06:36:03 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47218 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753606AbaCNKfz (ORCPT
+	id S1754051AbaCNKgn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 06:36:43 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:54593 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693AbaCNKgl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 06:35:55 -0400
-Date: Fri, 14 Mar 2014 10:35:52 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "nm@ti.com" <nm@ti.com>,
-        "b.zolnierkie@samsaung.com" <b.zolnierkie@samsaung.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCHv2 8/8] devfreq: exynos4: Add busfreq driver for
- exynos4210/exynos4x12
-Message-ID: <20140314103552.GK25870@e106331-lin.cambridge.arm.com>
-References: <1394698649-20996-1-git-send-email-cw00.choi@samsung.com>
- <1394698649-20996-9-git-send-email-cw00.choi@samsung.com>
- <20140313175308.GE25870@e106331-lin.cambridge.arm.com>
- <5322AC5D.9070200@samsung.com>
+	Fri, 14 Mar 2014 06:36:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5322AC5D.9070200@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140313091234.GC9494@amd.pavel.ucw.cz>
+References: <1392875640-29230-1-git-send-email-jenny.tc@intel.com>
+	<1392875640-29230-3-git-send-email-jenny.tc@intel.com>
+	<CACRpkdaU44iinj2iDNdYm62J+4jQbg+XJ=Zq4GmJryPeu7GfTQ@mail.gmail.com>
+	<20140228100114.GA13189@amd.pavel.ucw.cz>
+	<CACRpkdaZ2moqGWx2BpfEeKoW6doXg67TkJKY+mbg4hrFHDr16Q@mail.gmail.com>
+	<20140307201039.GB27645@amd.pavel.ucw.cz>
+	<CACRpkda_9UG70G-b3eGTccr22WC4eoAbj0g2QgX0DRSYVgvrxA@mail.gmail.com>
+	<20140313091234.GC9494@amd.pavel.ucw.cz>
+Date: Fri, 14 Mar 2014 11:36:40 +0100
+Message-ID: <CACRpkda6VOStrazzMXXUFOQZsr1P0amVdyzLQ_wTHXmshsV2=A@mail.gmail.com>
+Subject: Re: [PATCH 2/4] power_supply: Introduce generic psy charging driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Pavel Machek <pavel@ucw.cz>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Cc: Jenny TC <jenny.tc@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        =?windows-1251?B?yOLg6evuIMTo7Ojy8O7i?= <freemangordon@abv.bg>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 07:14:37AM +0000, Chanwoo Choi wrote:
-> Hi Mark,
-> 
-> On 03/14/2014 02:53 AM, Mark Rutland wrote:
-> > On Thu, Mar 13, 2014 at 08:17:29AM +0000, Chanwoo Choi wrote:
-> >> This patch add busfreq driver for Exynos4210/Exynos4x12 memory interface
-> >> and bus to support DVFS(Dynamic Voltage Frequency Scaling) according to PPMU
-> >> counters. PPMU (Performance Profiling Monitorings Units) of Exynos4 SoC provides
-> >> PPMU counters for DMC(Dynamic Memory Controller) to check memory bus utilization
-> >> and then busfreq driver adjusts dynamically the operating frequency/voltage
-> >> by using DEVFREQ Subsystem.
-> >>
-> >> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> >> ---
-> >>  .../devicetree/bindings/devfreq/exynos4_bus.txt    | 49 ++++++++++++++++++++++
-> >>  1 file changed, 49 insertions(+)
-> >>  create mode 100644 Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt b/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
-> >> new file mode 100644
-> >> index 0000000..2a83fcc
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
-> >> @@ -0,0 +1,49 @@
-> >> +
-> >> +Exynos4210/4x12 busfreq driver
-> >> +-----------------------------
-> >> +
-> >> +Exynos4210/4x12 Soc busfreq driver with devfreq for Memory bus frequency/voltage
-> >> +scaling according to PPMU counters of memory controllers
-> >> +
-> >> +Required properties:
-> >> +- compatible	: should contain Exynos4 SoC type as follwoing:
-> >> +		  - "samsung,exynos4x12-busfreq" for Exynos4x12
-> >> +		  - "samsung,exynos4210-busfreq" for Exynos4210
-> > 
-> > Is there a device called "busfreq"? What device does this binding
-> > describe?
-> 
-> I'll add detailed description of busfreq as following:
-> 
-> "busfreq(bus frequendcy)" driver means that busfreq driver control dynamically
-> memory bus frequency/voltage by checking memory bus utilization to optimize
-> power-consumption. When checking memeory bus utilization, exynos4_busfreq driver
-> would use PPMU(Performance Profiling Monitoring Units).
+On Thu, Mar 13, 2014 at 10:12 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> > 30*HZ means 30 seconds in the kernel... what is hard to understand
+>> > about it?
+>>
+>> Well I might be picky, but since it is a charging algorithm dealing with
+>> ampères, volts, constant-current/constant-voltage, watchdogs and
+>> timeouts, all stated in SI units, it would be nice if all such constants
+>> were specified in simple units instead of kernel-specific terms.
+>
+> I agree HZ is badly named, but hopefully anyone working on kernel is
+> already familiar with it.
+>
+> But... what would actually help: I believe we should introduce
+> milivolt_t, miliamp_t, milisec_t etc... types. Storing milivolts in
+> int, then having comment saying "milivolts" is just wrong.
 
-This still sounds like a description of the _driver_, not the _device_.
-The binding should describe the hardware, now the high level abstraction
-that software is going to build atop of it.
+Hm! I bet the regulator subsystem maintainers have opinions
+on that.
 
-It sounds like this is a binding for the DMC PPMU?
-
-Is the PPMU a component of the DMC, or is it bolted on the side?
-
-> 
-> 
-> > 
-> >> +- reg		: offset and length of the ppmudmc0/1
-> >> +		  - PPMU (Performance Profiling Monitoring Units)
-> > 
-> > You seem to require a particular order here. It would be good to be
-> > explicit about it.
-> 
-> OK, I'll modify it as following:
-> the offset and length of the PPMU_DMC0 / PPMU_DMC1
-> PPMU_DMC0/PPMU_DMC1 show memory buy utilization to exynos4_bus driver.
-> 
-> > 
-> >> +		  : It is to profile performance event of DMC(Dynamic Memory
-> >> +		  Controller) So, exynos4_bus.c can check memory bus utilization
-> >> +		  by using PPMU of Exynos4 SoC.
-> > 
-> > This is superfluous, and Linux-specific. The binding document shouldn't
-> > need to refer to drivers.
-> 
-> I'll remove this description.
-> 
-> > 
-> >> +- clocks	: clock number of ppmudmc0/1
-> >> +- clock-names	: clock name of ppmudmc0/1
-> > 
-> > Are these two clocks, or one clock with a slash in the name?
-> > 
-> > Please list each name separately.
-> 
-> I'll expalin clocks as following:
-> 	"ppmudmc0", "ppmudmc1"
-> 
-> > 
-> >> +- vdd_int-supply: regulator for interface block of Exynos4
-
-How does the interface block relate to the DMC / PPMU?
-
-Cheers,
-Mark.
+Yours,
+Linus Walleij
