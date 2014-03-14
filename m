@@ -1,79 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114AbaCNL7i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 07:59:38 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:47145 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672AbaCNL7g (ORCPT
+	id S1754173AbaCNME3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 08:04:29 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36309 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014AbaCNME1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 07:59:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <000e01cf3f7b$6edcdfd0$4c969f70$@samsung.com>
-References: <20140314140129.68a41cc1bd9e0a48a198ca13@samsung.com>
-	<CAK9yfHzRasE3jroDUZgAa=DN5N=2ZDAxgNiHDCip+f2868BAVQ@mail.gmail.com>
-	<000e01cf3f7b$6edcdfd0$4c969f70$@samsung.com>
-Date: Fri, 14 Mar 2014 17:29:36 +0530
-Message-ID: <CAK9yfHyGfdP+0RKtdSCdU4tO=PX8GbQRQ7ar=ST5B2RenZMMsg@mail.gmail.com>
-Subject: Re: [PATCH v11 01/27] iommu/exynos: do not include removed header
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 14 Mar 2014 08:04:27 -0400
+Date: Fri, 14 Mar 2014 12:04:00 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@nvidia.com>, Jingoo Han <jg1.han@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH V3] serial/uart/8250: Add tunable RX interrupt trigger
+ I/F of FIFO buffers
+Message-ID: <20140314120400.4e17c47a@alan.etchedpixels.co.uk>
+In-Reply-To: <20140314022154.4345.23024.stgit@yunodevel>
+References: <20140314022154.4345.23024.stgit@yunodevel>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 March 2014 17:19, Cho KyongHo <pullip.cho@samsung.com> wrote:
->> From: Sachin Kamat [mailto:sachin.kamat@linaro.org]
->> Sent: Friday, March 14, 2014 7:00 PM
->>
->> On 14 March 2014 10:31, Cho KyongHo <pullip.cho@samsung.com> wrote:
->> > Commit 25e9d28d92 (ARM: EXYNOS: remove system mmu initialization from
->> > exynos tree) removed arch/arm/mach-exynos/mach/sysmmu.h header without
->> > removing remaining use of it from exynos-iommu driver, thus causing a
->> > compilation error.
->> >
->> > This patch fixes the error by removing respective include line
->> > from exynos-iommu.c.
->> >
->> > CC: Tomasz Figa <t.figa@samsung.com>
->> > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
->> > ---
->> >  drivers/iommu/exynos-iommu.c |    3 +--
->> >  1 file changed, 1 insertion(+), 2 deletions(-)
->> >
->> > diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
->> > index 0740189..4876d35 100644
->> > --- a/drivers/iommu/exynos-iommu.c
->> > +++ b/drivers/iommu/exynos-iommu.c
->> > @@ -12,6 +12,7 @@
->> >  #define DEBUG
->> >  #endif
->> >
->> > +#include <linux/kernel.h>
->>
->> This change doesn't look related to the patch subject/description.
->>
-> Yes. But it is simply added without any side-effect.
-> Do you think it should be in a separate patch?.
-> Actually, the added line is a redundant.
+> @@ -2325,10 +2323,19 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+>  		if ((baud < 2400 && !up->dma) || fifo_bug) {
+>  			fcr &= ~UART_FCR_TRIGGER_MASK;
+>  			fcr |= UART_FCR_TRIGGER_1;
+> +			/* Don't use user setting RX trigger */
+> +			up->fcr = 0;
 
-If it is redundant, then you shouldn't be adding it. If it is
-required, then please
-mention about the need in the commit description if not a separate patch.
+This breaks
 
--- 
-With warm regards,
-Sachin
+	set fcr via sysfs
+	set baud rate below 2400
+	set baud rate higher
+
+If baud < 2400 and the user has set a value then probably we should honour
+it. If fifo_bug is set then we should never honour it (and should perhaps
+eventually error it in the sysfs set).
+
+
+> +static unsigned char convert_fcr2val(struct uart_8250_port *up,
+> +				     unsigned char fcr)
+> +{
+> +	unsigned char val = 0, trig_raw = fcr & UART_FCR_TRIGGER_MASK;
+> +
+> +	switch (up->port.type) {
+> +	case PORT_16550A:
+> +		if (trig_raw == UART_FCR_R_TRIG_00)
+> +			val = 1;
+> +		else if (trig_raw == UART_FCR_R_TRIG_01)
+> +			val = 4;
+> +		else if (trig_raw == UART_FCR_R_TRIG_10)
+> +			val = 8;
+> +		else if (trig_raw == UART_FCR_R_TRIG_11)
+> +			val = 14;
+> +		break;
+
+Surely the default case should be returning 1 not 0 ?
+
+
+> +static int convert_val2rxtrig(struct uart_8250_port *up, unsigned char val)
+> +{
+> +	switch (up->port.type) {
+> +	case PORT_16550A:
+> +		if (val == 1)
+> +			return UART_FCR_R_TRIG_00;
+> +		else if (val == 4)
+> +			return UART_FCR_R_TRIG_01;
+> +		else if (val == 8)
+> +			return UART_FCR_R_TRIG_10;
+> +		else if (val == 14)
+> +			return UART_FCR_R_TRIG_11;
+
+What happens if you specify a meaningless value. Doing exact matching
+means that you have to know the hardware exactly. How about
+
+	if (val < 4)
+		return UART_FCR_R_TRIG_00;
+	else if (val < 8)
+		return UART_FCR_R_TRIG_01;
+	else if (val < 14)
+		return UART_FCR_R_TRIG_10;
+	else
+		return UART_FCR_R_TRIG_11;
+
+so you get the nearest lower value that the hardware can provide ?
+
+> +		break;
+> +	default:
+> +		pr_info("Not support RX-trigger setting for this serial %u\n",
+> +			up->port.type);
+
+That lets users spew into the logs. I think actually you just want
+
+	default:
+		return -EOPNOTSUPP;
+
+or similar
+
+
+
+Otherwise this looks good to me. The interface is sensible, it can be
+expanded easily to other devices and device types, and the logic looks
+right.
+
+Alan
