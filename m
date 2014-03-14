@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113AbaCNRHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 13:07:33 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:41891 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756076AbaCNRH2 (ORCPT
+	id S1756143AbaCNRHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 13:07:53 -0400
+Received: from sabertooth02.qualcomm.com ([65.197.215.38]:24880 "EHLO
+	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497AbaCNRHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 13:07:28 -0400
+	Fri, 14 Mar 2014 13:07:51 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,7376"; a="60657259"
+X-IronPort-AV: E=Sophos;i="4.97,655,1389772800"; 
+   d="scan'208";a="609191139"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        <ath10k@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ath10k: add firmware files
+References: <20140314084501.23100.13103.stgit@x230>
+	<20140314084514.23100.72654.stgit@x230>
+	<CAB=NE6WW8yX4kdy02j2fT4g0JvYj4a_XkiqYtXKZSMB7FHuwNg@mail.gmail.com>
+Date: Fri, 14 Mar 2014 19:07:29 +0200
+In-Reply-To: <CAB=NE6WW8yX4kdy02j2fT4g0JvYj4a_XkiqYtXKZSMB7FHuwNg@mail.gmail.com>
+	(Luis R. Rodriguez's message of "Fri, 14 Mar 2014 05:36:53 -0700")
+Message-ID: <87ob18ogj2.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <53231BF4.2000308@intel.com>
-References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com>
-	<CAOh2x==at2PtHRpa=-_V6O5Z9aSog4r9BDb7ixJgBZk_+vfPtg@mail.gmail.com>
-	<53231BF4.2000308@intel.com>
-Date: Fri, 14 Mar 2014 22:37:27 +0530
-Message-ID: <CAKohponGN4JNwLKLjvFOPkru0=6JajOKKH=oJneDkKp=PyAmRA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Patrick Marlier <patrick.marlier@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 March 2014 20:40, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
-> Are you proposing adding cpufreq_generic_suspend() to the core I can not
-> find
-> it in the mainline code.
+"Luis R. Rodriguez" <mcgrof@do-not-panic.com> writes:
 
-Its already there in linux-next. I am suggesting to reuse that
-infrastructure with
-some necessary modification to support both suspend and hotplug.
-
->> Over that I don't think Dirk's solution is going to work if we twist
->> the systems a bit.
+> On Fri, Mar 14, 2014 at 1:45 AM, Kalle Valo <kvalo@qca.qualcomm.com> wrote:
 >
-> Could you explain what "twist the systems a bit" means?
-
-The one I explained in the below paragraph.
-
->> For example, Dirk probably wanted to set P-STATE of every core to MIN
->> when it goes down. But his solution probably doesn't do that right now.
->>
+>> + NO LICENSES OR OTHER RIGHTS,
+>> +WHETHER EXPRESS, IMPLIED, BASED ON ESTOPPEL OR OTHERWISE, ARE GRANTED
+>> +TO ANY PARTY'S PATENTS, PATENT APPLICATIONS, OR PATENTABLE INVENTIONS
+>> +BY VIRTUE OF THIS LICENSE OR THE DELIVERY OR PROVISION BY QUALCOMM
+>> +ATHEROS, INC. OF THE SOFTWARE.
 >
-> No, I wanted to set the core that was being off-lined to min P state.
+> This -- however is new to linux-firmware -- and I hereby raise a big
+> red fucking flag. All other licenses on linux-firmware provide at the
+> very least a limited patent grant. What makes Qualcomm special ?
 
-Sorry, probably my words were a bit confusing. I meant exactly what
-you just wrote. Core going down will set its freq to min.
+Well, I was just told to use this license with our firmware, I didn't
+write this.
 
->> As exit() is called only when the policy expires or all the CPUs of that
->> policy
->> are down. Suppose only one CPU out of 4 goes down from a policy, then
->> pstate driver would never know that happened. And that core wouldn't go
->> to min state.
->
-> My patch does not change the semantics of exit() or when it is called.  For
-> intel_pstate their is one cpu per policy so I moved all the cleanup to
-
-I didn't knew that its guaranteed by pstate driver. I thought it would still be
-hardware dependent as some cores might share clock line.
-
-> exit_prepare() if there were work I needed to do at CPU_POST_DEAD I would
-> have
-> continued to export the *optional* exit callback.
->
-> The callback name exit_prepare() was probably unfortunate and might be
-> causing
-> some confusion.  I will be changing the name per Rafael's feedback.
-
-Don't know.. There is another problem here that exit_prepare() would be called
-for each CPU whereas exit() would be called for each policy.
-
-And I strongly feel that we shouldn't give another callback here but instead
-just set core to a specific freq as mentioned by driver with some other field.
-
->> I think we have two solutions here:
->> - If its just about setting core a particular freq when it goes down, I
->> think it
->> looks a generic enough problem and so better fix core for that. Probably
->> with
->> help of flags field/suspend-freq (maybe renamed) and without calling
->> drivers
->> exit() at all..
->
->
-> ATM the only thing that needs to be done in this case is to allow
-> intel_pstate
-> to set the P state on the core when it is going done.  My solution from the
-> cores point of view is more generic, it allows any driver that needs to do
-> work
-> during CPU_DOWN_PREPARE to do it without adding any new logic to the core.
-
-Yeah, do we really need to give that freedom right now? Would be better
-to get this into core as that would be more generic and people looking to set
-core to some freq at shutdown wouldn't be replicating that code.
+-- 
+Kalle Valo
