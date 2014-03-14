@@ -1,132 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656AbaCNIzo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 04:55:44 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51518 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516AbaCNIzk (ORCPT
+	id S1755818AbaCNI7Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 04:59:16 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:33318 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678AbaCNI7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 04:55:40 -0400
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Mark Brown <broonie@kernel.org>, Rob Landley <rob@landley.net>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Subject: [PATCH] spi: dw-mmio: add oftree support
-Date: Fri, 14 Mar 2014 09:55:26 +0100
-Message-Id: <1394787326-14520-1-git-send-email-s.trumtrar@pengutronix.de>
-X-Mailer: git-send-email 1.9.0
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:a236:9fff:fe00:814
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 14 Mar 2014 04:59:07 -0400
+MIME-Version: 1.0
+X-Originating-IP: [85.250.70.16]
+In-Reply-To: <53160F8F.9060405@ti.com>
+References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
+ <1389658764-39199-5-git-send-email-s-anna@ti.com> <CAJAp7Oi7wD+VsMAd37gT04yZ4TH4ygXFmheDhvmWuanUjpBmVQ@mail.gmail.com>
+ <52F92524.3080402@ti.com> <CAK=WgbY0wDtGCm71E8VXi2g5+VcGogHEy8jdekTRg8xtp6-3rQ@mail.gmail.com>
+ <CAJAp7Ohf43hbKatCwS5Y1+OfEkJYWOkuhZhW-E_=t_9mfM+UaA@mail.gmail.com> <53160F8F.9060405@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 14 Mar 2014 10:58:45 +0200
+Message-ID: <CAK=WgbbaF+=3euYNBd6FbKW62mCBs_fbDnRxkSNR9QknGZnwSw@mail.gmail.com>
+Subject: Re: [PATCHv4 4/7] hwspinlock/core: add common OF helpers
+To: Suman Anna <s-anna@ti.com>
+Cc: Bjorn Andersson <bjorn@kryo.se>, Mark Rutland <mark.rutland@arm.com>,
+        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow probing the dw-mmio from devicetree.
+Hi Suman,
 
-Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
----
-This was tested on Socfpga and v3.14-rc6
+On Tue, Mar 4, 2014 at 7:38 PM, Suman Anna <s-anna@ti.com> wrote:
+>>>> Do you have any objections to the return code convention change?
+>>>
+>>> Unless strictly needed, I prefer we don't switch to the ERR_PTR code
+>>> convention, as it reduces code readability and increases chances of
+>>> user bugs.
+>>>
+>>> In our case, switching to ERR_PTR and friends seems only to optimize a
+>>> few error paths, and I'm not sure it's a big win over simplicity.
+>>
+>>
+>> When introducing the ability to reference a hwspin lock via a phandle
+>> in device tree it makes a big difference to be able to differ between
+>> the case of "initialization failed" or "device not yet probed"; so
+>> that the client knows if it should fail or retry later.
+>>
+>
+> Can you confirm the changes you want me to make, so that I can refresh and
+> post a v5 for 3.15?
 
- .../devicetree/bindings/spi/spi-dw-mmio.txt        | 25 ++++++++++++++++++++++
- drivers/spi/spi-dw-mmio.c                          | 19 +++++++++++++++-
- 2 files changed, 43 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-dw-mmio.txt
+Sorry, I missed your replies for some reason.
 
-diff --git a/Documentation/devicetree/bindings/spi/spi-dw-mmio.txt b/Documentation/devicetree/bindings/spi/spi-dw-mmio.txt
-new file mode 100644
-index 0000000..2b9bb90
---- /dev/null
-+++ b/Documentation/devicetree/bindings/spi/spi-dw-mmio.txt
-@@ -0,0 +1,25 @@
-+Synopsys DesignWare SPI master controller.
-+
-+Required properties:
-+- compatible : "snps,dw-spi-mmio"
-+- reg : The register base for the controller.
-+- interrupts : One interrupt, used by the controller.
-+- #address-cells : <1>, as required by generic SPI binding.
-+- #size-cells : <0>, also as required by generic SPI binding.
-+
-+Optional properties:
-+- num-chipselects : The number of chipselects.
-+
-+Child nodes as per the generic SPI binding.
-+
-+Example:
-+
-+	spi@fff00000 {
-+		compatible = "snps,dw-spi-mmio";
-+		reg = <0xfff00000 0x1000>;
-+		interrupts = <0 154 4>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		num-chipselects = <4>;
-+	};
-+
-diff --git a/drivers/spi/spi-dw-mmio.c b/drivers/spi/spi-dw-mmio.c
-index 9af56cd..71345e4 100644
---- a/drivers/spi/spi-dw-mmio.c
-+++ b/drivers/spi/spi-dw-mmio.c
-@@ -16,6 +16,8 @@
- #include <linux/spi/spi.h>
- #include <linux/scatterlist.h>
- #include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
- 
- #include "spi-dw.h"
- 
-@@ -32,6 +34,7 @@ static int dw_spi_mmio_probe(struct platform_device *pdev)
- 	struct dw_spi *dws;
- 	struct resource *mem;
- 	int ret;
-+	int val;
- 
- 	dwsmmio = devm_kzalloc(&pdev->dev, sizeof(struct dw_spi_mmio),
- 			GFP_KERNEL);
-@@ -66,8 +69,15 @@ static int dw_spi_mmio_probe(struct platform_device *pdev)
- 	if (ret)
- 		return ret;
- 
--	dws->bus_num = 0;
-+	dws->bus_num = pdev->id;
- 	dws->num_cs = 4;
-+
-+	if (pdev->dev.of_node) {
-+		if (of_property_read_u32(pdev->dev.of_node, "num-chipselects",
-+					 &val))
-+			dws->num_cs = val;
-+	}
-+
- 	dws->max_freq = clk_get_rate(dwsmmio->clk);
- 
- 	ret = dw_spi_add_host(&pdev->dev, dws);
-@@ -92,12 +102,19 @@ static int dw_spi_mmio_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id dw_spi_mmio_of_match[] = {
-+	{ .compatible = "snps,dw-spi-mmio", },
-+	{ /* end of table */}
-+};
-+MODULE_DEVICE_TABLE(of, dw_spi_mmio_of_match);
-+
- static struct platform_driver dw_spi_mmio_driver = {
- 	.probe		= dw_spi_mmio_probe,
- 	.remove		= dw_spi_mmio_remove,
- 	.driver		= {
- 		.name	= DRIVER_NAME,
- 		.owner	= THIS_MODULE,
-+		.of_match_table = dw_spi_mmio_of_match,
- 	},
- };
- module_platform_driver(dw_spi_mmio_driver);
--- 
-1.9.0
+I prefer we stick with the current error handling code because I find
+the alternative inferior (as long as it's not strictly needed).
 
+Thanks,
+Ohad.
