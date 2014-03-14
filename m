@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944AbaCNOaD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:30:03 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:41946 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754378AbaCNOaB (ORCPT
+	id S1754406AbaCNOhW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:37:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42031 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814AbaCNOhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:30:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140314142036.GI12613@htj.dyndns.org>
-References: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
-	<20140218155945.ee2e22e07fa3b4f242b16a7f@linux-foundation.org>
-	<CACZ9PQV8RsaefFAOt5b-aL33G3CiD+3+fTuW15io6u1DH3XJ6Q@mail.gmail.com>
-	<CACZ9PQUKzsP4mwJSO3c=Z3W2pYr2AME-9j+1Cqg9t8a4T+uQQg@mail.gmail.com>
-	<20140313200119.GB504@quack.suse.cz>
-	<20140313143456.157404fd7f208638ca70e317@linux-foundation.org>
-	<20140314130712.GC12613@htj.dyndns.org>
-	<CACZ9PQUQX-sSNo+z0LB0Tefq9pSHFr6GjKg2tWzdAtw3OYYDsg@mail.gmail.com>
-	<20140314141143.GH12613@htj.dyndns.org>
-	<CACZ9PQWtHJh6j_bKwB-HF4h3rU3813AN2qUibkCs7tmXUrLJoQ@mail.gmail.com>
-	<20140314142036.GI12613@htj.dyndns.org>
-Date: Fri, 14 Mar 2014 23:29:59 +0900
-Message-ID: <CACZ9PQWGwhYK6PTQ6wJ2tumzxcy4n3ws_VPLjAFBA5OM2ce6-g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data
- integrity write
-From: Roman Peniaev <r.peniaev@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 14 Mar 2014 10:37:20 -0400
+Message-ID: <1394807833.3710.57.camel@paszta.hi.pengutronix.de>
+Subject: Re: [RFC V2] mfd: da9063: Add support for production silicon
+ variant code
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 14 Mar 2014 15:37:13 +0100
+In-Reply-To: <20140214164319.GB30687@lee--X1>
+References: <201402141506.s1EF6iYr002690@swsrvapps-01.diasemi.com>
+	 <20140214164319.GB30687@lee--X1>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 11:20 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Fri, Mar 14, 2014 at 11:17:56PM +0900, Roman Peniaev wrote:
->> No, no. Not device does not support flush, filesystem does not care about flush.
->> (take any old school, e.g. ext2)
->>
->> We did some write, and then we did fsync.
->> But filesystem does not support REQ_FLUSH/FUA so block device will never
->> get the checkpoint where it should really flush everything.
->>
->> So, fsync will not guarantee any integrity in that case.
->
-> Oh, no idea.  Fix the filesystem to support REQ_FLUSH?  :)
+Hi,
 
-Yep, best variant. But I was thinking that there should be some guarantees
-from fsync (and friends) calls, which will issue flush after completion of every
-writeback request. But no way
+Am Freitag, den 14.02.2014, 16:43 +0000 schrieb Lee Jones:
+> > From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+> > 
+> > Add the correct silicon variant code ID (0x5) to the driver. This
+> > new code is the 'production' variant code ID for DA9063.
+> > 
+> > This patch will remove the older variant code ID which matches the
+> > pre-production silicon ID (0x3) for the DA9063 chip.
+> > 
+> > There is also some small amount of correction done in this patch:
+> > it splits the revision code and correctly names it according to
+> > the hardware specification and moves the dev_info() call before
+> > the variant ID test.
+> > 
+> > Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+> 
+> Applied, thanks.
 
->
-> --
-> tejun
+we have a few i.MX6 Modules (imx6q-phytec-pfla02) with DA9063 PMICs that
+all report the model/revision ID as 0x61/0x03. Those are marked as
+follows:
+    dialog DA9063 44 1240EHDA
+    dialog DA9063 44 1312ECAF
+We now have received a report from Phytec that those PMICs were not
+marketed as preproduction in any way, but as a normal mask revision.
+Their Dialog Semiconductor contact talked about AD, BA, and BB silicon
+variants. How do those relate to the variant register value and to the
+markings on the chips?
+There seems to be a serious miscommunication somewhere.
+
+regards
+Philipp
+
