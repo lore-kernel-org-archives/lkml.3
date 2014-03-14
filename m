@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275AbaCNVRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:17:46 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:34935 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732AbaCNVRo (ORCPT
+	id S1756386AbaCNVSF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:18:05 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:12580 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756309AbaCNVSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:17:44 -0400
-Message-ID: <532371F4.9050509@gmail.com>
-Date: Fri, 14 Mar 2014 22:17:40 +0100
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Fri, 14 Mar 2014 17:18:00 -0400
+Date: Fri, 14 Mar 2014 14:19:53 -0700
+From: Courtney Cavin <courtney.cavin@sonymobile.com>
+To: Zhang Rui <rui.zhang@intel.com>
+CC: "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] thermal: add generic IIO channel thermal sensor driver
+Message-ID: <20140314211952.GJ18578@sonymobile.com>
+References: <1391651007-29813-1-git-send-email-courtney.cavin@sonymobile.com>
+ <1393484014.2637.14.camel@rzhang1-mobl4>
 MIME-Version: 1.0
-To: Josh Wu <josh.wu@atmel.com>
-CC: g.liakhovetski@gmx.de, m.chehab@samsung.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [media] ov2640: add support for async device registration
-References: <1394791952-12941-1-git-send-email-josh.wu@atmel.com>
-In-Reply-To: <1394791952-12941-1-git-send-email-josh.wu@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1393484014.2637.14.camel@rzhang1-mobl4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josh,
+On Thu, Feb 27, 2014 at 07:53:34AM +0100, Zhang Rui wrote:
+> On Wed, 2014-02-05 at 17:43 -0800, Courtney Cavin wrote:
+> > This driver is a generic method for using IIO ADC channels as thermal
+> > sensors.
+> > 
+> > Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+> 
+> Eduardo,
+> 
+> what do you think of this patch?
 
-On 03/14/2014 11:12 AM, Josh Wu wrote:
-> +	clk = v4l2_clk_get(&client->dev, "mclk");
-> +	if (IS_ERR(clk))
-> +		return -EPROBE_DEFER;
+Apparently not very much.  Oh well.
 
-You should instead make it:
+Sans further input, I will submit a new series with the following
+changes:
+	- Fix some return values in probe().
+	- Change DT binding
+		- Submit as seperate patch in series
+		- Reword/rename to represent a thermistor
+		- Remove specific references to IIO, where appropriate
 
-		return PTR_ERR(clk);
-
-But you will need this patch for that to work:
-http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/clk/clk.c?id=a34cd4666f3da84228a82f70c94b8d9b692034ea
-
-With this patch there is no need to overwrite any returned error
-value with EPROBE_DEFER.
-
-> @@ -1097,23 +1106,26 @@ static int ov2640_probe(struct i2c_client *client,
->   	v4l2_ctrl_new_std(&priv->hdl,&ov2640_ctrl_ops,
->   			V4L2_CID_HFLIP, 0, 1, 1, 0);
->   	priv->subdev.ctrl_handler =&priv->hdl;
-> -	if (priv->hdl.error)
-> -		return priv->hdl.error;
-> -
-> -	priv->clk = v4l2_clk_get(&client->dev, "mclk");
-> -	if (IS_ERR(priv->clk)) {
-> -		ret = PTR_ERR(priv->clk);
-> -		goto eclkget;
-
---
-Regards,
-Sylwester
+-Courtney
