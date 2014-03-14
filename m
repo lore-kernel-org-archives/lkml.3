@@ -1,127 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbaCNOQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:16:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16835 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786AbaCNOQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:16:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,655,1389772800"; 
-   d="scan'208";a="498552570"
-Date: Fri, 14 Mar 2014 16:16:02 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan <gnomes@lxorguk.ukuu.org.uk>, Stephen Warren <swarren@nvidia.com>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH V3] serial/uart/8250: Add tunable RX interrupt trigger
- I/F of FIFO buffers
-Message-ID: <20140314141602.GA11603@xps8300>
-References: <20140314022154.4345.23024.stgit@yunodevel>
+	id S1755508AbaCNOQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:16:26 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:34942 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754786AbaCNOQS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 10:16:18 -0400
+Date: Fri, 14 Mar 2014 11:16:12 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 4/5] perf tools: Add machine pointer into thread struct
+Message-ID: <20140314141612.GE2396@ghostprotocols.net>
+References: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
+ <1394805606-25883-5-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140314022154.4345.23024.stgit@yunodevel>
+In-Reply-To: <1394805606-25883-5-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em Fri, Mar 14, 2014 at 03:00:05PM +0100, Jiri Olsa escreveu:
+> Need machine pointer in thread object, so we could
+> lookup the process thread in following patch.
 
-On Fri, Mar 14, 2014 at 11:21:54AM +0900, Yoshihiro YUNOMAE wrote:
->  void serial8250_clear_and_reinit_fifos(struct uart_8250_port *p)
+Can't we use the already existing thread->mg.machine for that?
+
+- Arnaldo
+ 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Don Zickus <dzickus@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> ---
+>  tools/perf/util/machine.c | 2 +-
+>  tools/perf/util/thread.c  | 4 +++-
+>  tools/perf/util/thread.h  | 5 ++++-
+>  3 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index 009dfb4..6196bb9 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -311,7 +311,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+>  	if (!create)
+>  		return NULL;
+>  
+> -	th = thread__new(pid, tid);
+> +	th = thread__new(pid, tid, machine);
+>  	if (th != NULL) {
+>  		rb_link_node(&th->rb_node, parent, p);
+>  		rb_insert_color(&th->rb_node, &machine->threads);
+> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+> index ac77b6c..7c1aad0 100644
+> --- a/tools/perf/util/thread.c
+> +++ b/tools/perf/util/thread.c
+> @@ -8,13 +8,15 @@
+>  #include "debug.h"
+>  #include "comm.h"
+>  
+> -struct thread *thread__new(pid_t pid, pid_t tid)
+> +struct thread *thread__new(pid_t pid, pid_t tid,
+> +			   struct machine *machine)
 >  {
-> -	unsigned char fcr;
-> -
->  	serial8250_clear_fifos(p);
-> -	fcr = uart_config[p->port.type].fcr;
-> -	serial_out(p, UART_FCR, fcr);
-> +	p->fcr = uart_config[p->port.type].fcr;
-> +	serial_out(p, UART_FCR, p->fcr);
-
-You should allow also the probe drivers to set this..
-
-        if (!p->fcr)
-                p->fcr = uart_config[p->port.type].fcr;
-
->  }
->  EXPORT_SYMBOL_GPL(serial8250_clear_and_reinit_fifos);
+>  	char *comm_str;
+>  	struct comm *comm;
+>  	struct thread *thread = zalloc(sizeof(*thread));
 >  
-> @@ -2325,10 +2323,19 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
->  		if ((baud < 2400 && !up->dma) || fifo_bug) {
->  			fcr &= ~UART_FCR_TRIGGER_MASK;
->  			fcr |= UART_FCR_TRIGGER_1;
-> +			/* Don't use user setting RX trigger */
-> +			up->fcr = 0;
-
-I don't know about this but..
-
->  		}
->  	}
+>  	if (thread != NULL) {
+> +		thread->machine = machine;
+>  		thread->pid_ = pid;
+>  		thread->tid = tid;
+>  		thread->ppid = -1;
+> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+> index 77d0be2..2200557 100644
+> --- a/tools/perf/util/thread.h
+> +++ b/tools/perf/util/thread.h
+> @@ -7,12 +7,14 @@
+>  #include <sys/types.h>
+>  #include "symbol.h"
+>  #include <strlist.h>
+> +#include "machine.h"
 >  
->  	/*
-> +	 * If up->fcr exists, a user has opened this port, changed RX trigger,
-> +	 * or read RX trigger before. So, we don't need to change up->fcr here.
-> +	 */
-> +	if (!up->fcr)
-> +		up->fcr = fcr;
-
-Why not just set fcr = up->fcr in the beginning of the function?
-
-<snip>
-
-> +static int do_set_rx_int_trig(struct tty_port *port, unsigned char val)
-> +{
-> +	struct uart_state *state = container_of(port, struct uart_state, port);
-> +	struct uart_port *uport = state->uart_port;
-> +	struct uart_8250_port *up =
-> +		container_of(uport, struct uart_8250_port, port);
-> +	unsigned char fcr;
-> +	int rx_trig;
-> +
-> +	if (!(up->capabilities & UART_CAP_FIFO) || uport->fifosize <= 1)
-> +		return -EINVAL;
-> +
-> +	rx_trig = convert_val2rxtrig(up, val);
-> +	if (rx_trig < 0)
-> +		return rx_trig;
-> +
-> +	serial8250_clear_fifos(up);
-> +	if (!up->fcr)
-> +		/* termios is not set yet */
-> +		fcr = uart_config[up->port.type].fcr;
-> +	else
-> +		fcr = up->fcr;
-> +	fcr &= ~UART_FCR_TRIGGER_MASK;
-> +	fcr |= (unsigned char)rx_trig;
-> +	up->fcr = fcr;
-> +	serial_out(up, UART_FCR, up->fcr);
-> +	return 0;
-> +}
-
-Where are you setting UART_FCR_ENABLE_FIFO bit? Am I missing
-something?
-
-> diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
-> index af47a8a..2ce1152 100644
-> --- a/include/linux/serial_8250.h
-> +++ b/include/linux/serial_8250.h
-> @@ -76,6 +76,7 @@ struct uart_8250_port {
->  	unsigned short		bugs;		/* port bugs */
->  	unsigned int		tx_loadsz;	/* transmit fifo load size */
->  	unsigned char		acr;
-> +	unsigned char		fcr;
-
-I do like to see fcr being added here, but because of a different
-reason. I want to be able to set it from the probe drivers.
-
-Br,
-
--- 
-heikki
+>  struct thread {
+>  	union {
+>  		struct rb_node	 rb_node;
+>  		struct list_head node;
+>  	};
+> +	struct machine		*machine;
+>  	struct map_groups	*mg;
+>  	pid_t			pid_; /* Not all tools update this */
+>  	pid_t			tid;
+> @@ -29,7 +31,8 @@ struct thread {
+>  struct machine;
+>  struct comm;
+>  
+> -struct thread *thread__new(pid_t pid, pid_t tid);
+> +struct thread *thread__new(pid_t pid, pid_t tid,
+> +			   struct machine *machine);
+>  void thread__delete(struct thread *thread);
+>  static inline void thread__exited(struct thread *thread)
+>  {
+> -- 
+> 1.8.3.1
