@@ -1,107 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395AbaCNCPM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 22:15:12 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:37843 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563AbaCNCPK (ORCPT
+	id S1755226AbaCNCSn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 22:18:43 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:36996 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547AbaCNCSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 22:15:10 -0400
+	Thu, 13 Mar 2014 22:18:42 -0400
+Message-ID: <5322661A.9090004@linux.vnet.ibm.com>
+Date: Fri, 14 Mar 2014 07:44:50 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <11925125.x6prlrSt00@vostro.rjw.lan>
-References: <1394653598-17143-1-git-send-email-kandoiruchi@google.com>
-	<1559784.2mnpODc5zV@vostro.rjw.lan>
-	<CAL8qYTMKM-DrkxED-51YPRczWJpeEfZy25PORtUasi=7e58i6Q@mail.gmail.com>
-	<11925125.x6prlrSt00@vostro.rjw.lan>
-Date: Thu, 13 Mar 2014 19:15:09 -0700
-Message-ID: <CAL8qYTNGxhzH=-pLC8OC3-e25a15vEvorBQFXxcW8zS8H+wToQ@mail.gmail.com>
-Subject: Re: [PATCH v3] power: add an API to log wakeup reasons
-From: Ruchi Kandoi <kandoiruchi@google.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Greg Hackmann <ghackmann@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Todd Poynor <toddpoynor@google.com>
-Content-Type: text/plain; charset=UTF-8
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC 4/6] sched: powerpc: create a dedicated topology table
+References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org> <1394003906-11630-5-git-send-email-vincent.guittot@linaro.org> <531EE087.7050707@linux.vnet.ibm.com> <CAKfTPtCJEX7qknTb85FqJfuT03oNFN3rTOncy5Df37w65+GX8Q@mail.gmail.com> <531FE5B4.6090502@linux.vnet.ibm.com> <CAKfTPtDLzOMpVGUqBpMFiN_cwKERFDCqH1zLKsRbrqeD11DzWw@mail.gmail.com>
+In-Reply-To: <CAKfTPtDLzOMpVGUqBpMFiN_cwKERFDCqH1zLKsRbrqeD11DzWw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031402-6688-0000-0000-00000059F74B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-True, we could create new wakeup sources specifically to
-track this information, perhaps as needed once an IRQ is first
-observed to trigger a wakeup.
-
-We would want to know which wakeup sources were responsible for the
-most recent wakeup, since we keep a timeline of suspend/resume events
-with wakeup reasons and durations.  It may require some extra work to
-keep track of this information.
-
-Apart from Google, other vendors like Qualcomm and Nvidia have already
-introduced similar kinds of logging in their respective interrupt
-controller drivers. We would really like to make this a standardized
-logging for debugging purposes.
-
-
-
-On Thu, Mar 13, 2014 at 6:06 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Thursday, March 13, 2014 05:43:20 PM Ruchi Kandoi wrote:
->> This should be true most of the times.
+On 03/12/2014 01:14 PM, Vincent Guittot wrote:
+> On 12 March 2014 05:42, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+>> On 03/11/2014 06:48 PM, Vincent Guittot wrote:
+>>> On 11 March 2014 11:08, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+>>>> Hi Vincent,
+>>>>
+>>>> On 03/05/2014 12:48 PM, Vincent Guittot wrote:
+>>>>> Create a dedicated topology table for handling asymetric feature.
+>>>>> The current proposal creates a new level which describes which groups of CPUs
+>>>>> take adavantge of SD_ASYM_PACKING. The useless level will be removed during the
+>>>>> build of the sched_domain topology.
+>>>>>
+>>>>> Another solution would be to set SD_ASYM_PACKING in the sd_flags of SMT level
+>>>>> during the boot sequence and before the build of the sched_domain topology.
+>>>>
+>>>> Is the below what you mean as the other solution? If it is so, I would
+>>>> strongly recommend this approach rather than adding another level to the
+>>>> topology level to represent the asymmetric behaviour.
+>>>>
+>>>> +static struct sched_domain_topology_level powerpc_topology[] = {
+>>>> +#ifdef CONFIG_SCHED_SMT
+>>>> +       { cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES,
+>>>> SD_INIT_NAME(SMT) | arch_sd_sibling_asym_packing() },
+>>>> +#endif
+>>>> +       { cpu_cpu_mask, SD_INIT_NAME(DIE) },
+>>>> +       { NULL, },
+>>>> +};
+>>>
+>>> Not exactly like that but something like below
+>>>
+>>> +static struct sched_domain_topology_level powerpc_topology[] = {
+>>> +#ifdef CONFIG_SCHED_SMT
+>>> + { cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES,
+>>> SD_INIT_NAME(SMT) },
+>>> +#endif
+>>> + { cpu_cpu_mask, SD_INIT_NAME(DIE) },
+>>> + { NULL, },
+>>> +};
+>>> +
+>>> +static void __init set_sched_topology(void)
+>>> +{
+>>> +#ifdef CONFIG_SCHED_SMT
+>>> + powerpc_topology[0].sd_flags |= arch_sd_sibling_asym_packing();
+>>> +#endif
+>>> + sched_domain_topology = powerpc_topology;
+>>> +}
 >>
->> But there might be cases otherwise too.
+>> I think we can set it in powerpc_topology[] and not bother about setting
+>> additional flags outside of this array. It is clearer this way.
+> 
+> IIRC, the arch_sd_sibling_asym_packing of powerpc can be set at
+> runtime which prevents it from being put directly in the table. Or it
+> means that we should use a function pointer in the table for setting
+> flags instead of a static value like the current proposal.
+
+Oh yes you are right. Then the above looks good to me. So we define the
+table as usual and set the asymmetric flag in set_sched_topology().
+> 
 >>
->> For instance, there was a bug earlier with wi-fi which would cause the
->> system to wake up but not get hold of a wakeup source because there
->> wasn't any work for it to do. In that case, the wakeup sources would
->> not log such an event.
+>> On an additional note, on powerpc we would want to clear the
+>> SD_SHARE_POWERDOMAIN flag at the CPU domain. On Power8, considering we
+>> have 8 threads per core, we would want to consolidate tasks atleast upto
+>> 4 threads without significant performance impact before spilling over to
+>> the other cores. By doing so, besides making use of the higher power of
+>> the core we could do cpuidle management at the core level for the
+>> remaining idle cores as a result of this consolidation.
+> 
+> OK. i will add the SD_SHARE_POWERDOMAIN like below
+
+Thanks!
+
+Regards
+Preeti U Murthy
+> 
+> Thanks
+> Vincent
+> 
 >>
->> Additionally, there could be a situation where an IRQ caused the
->> system to resume from suspend. And since the system was up, a driver
->> could take a wakeup source. In this case we would assume that the
->> driver would have woken the system, but in reality the driver held the
->> wakeup source only because the system was up and did not cause the
->> wake up to happen.
->
-> But you can create special wakeup sources associated with interrupts (in
-> addition to the existing ones) and use the statistics for those.
->
-> It is possible to define wakeup sources that don't correspond to any
-> devices.
->
-> Rafael
->
->
->> On Thu, Mar 13, 2014 at 3:18 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> > Hi,
->> >
->> > I saw the v4, but I don't have it handy, so replying here.
->> >
->> > On Wednesday, March 12, 2014 12:46:38 PM Ruchi Kandoi wrote:
->> >> For power management diagnostic purposes, it is often useful to know
->> >> what interrupts are frequently waking the system from low power
->> >> suspend mode, especially on battery-powered consumer electronics
->> >> devices that are expected to spend much of their time in low-power
->> >> suspend while not in active use.  For example, reduced battery life on
->> >> a mobile phone may be caused in part by frequent wakeups by broadcast
->> >> traffic on a busy wireless LAN even while the screen is off and the
->> >> phone not in active use.
->> >>
->> >> Add API log_wakeup_reason() exposes it to userspace via the sysfs path
->> >> /sys/kernel/wakeup_reasons/last_resume_reason. This API would be called
->> >> from the paltform specific, or from the driver for the interrupt controller,
->> >> when the system resumes because of an IRQ. It logs the reasons which caused
->> >> the system to wakeup from the low-power mode.
->> >
->> > So what exactly is wrong with using wakeup sources for this purpose?
->> >
->> > --
->> > I speak only for myself.
->> > Rafael J. Wysocki, Intel Open Source Technology Center.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+>> So the powerpc_topology[] would be something like the below:
+>>
+>> +static struct sched_domain_topology_level powerpc_topology[] = {
+>> +#ifdef CONFIG_SCHED_SMT
+>> +       { cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES,
+>> SD_INIT_NAME(SMT) | arch_sd_sibling_asym_packing() | SD_SHARE_POWERDOMAIN },
+>> +#endif
+>> +       { cpu_cpu_mask, SD_INIT_NAME(DIE) },
+>> +       { NULL, },
+>> +};
+>>
+>> The amount of consolidation to the threads in a core, we will probably
+>> take care of it in cpu capacity or a similar parameter, but the above
+>> topology level would be required to request the scheduler to try
+>> consolidating tasks to cores till the cpu capacity(3/4/5 threads) has
+>> exceeded.
+>>
+>> Regards
+>> Preeti U Murthy
+>>
+>>
+> 
+
