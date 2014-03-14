@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603AbaCNJ5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 05:57:55 -0400
-Received: from numascale.com ([213.162.240.84]:50715 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753426AbaCNJ5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 05:57:52 -0400
-Message-ID: <5322D295.5080905@numascale.com>
-Date: Fri, 14 Mar 2014 17:57:41 +0800
-From: Daniel J Blueman <daniel@numascale.com>
-Organization: Numascale AS
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753707AbaCNJ7p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 05:59:45 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:57911 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847AbaCNJ7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 05:59:43 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Borislav Petkov <bp@suse.de>, linux-kernel@vger.kernel.org,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH] Fix northbridge quirk to assign correct NUMA node
-References: <1394710981-3596-1-git-send-email-daniel@numascale.com> <20140314090617.GA4697@pd.tnic>
-In-Reply-To: <20140314090617.GA4697@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OutGoing-Spam-Status: No, score=-2.9
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <20140314140129.68a41cc1bd9e0a48a198ca13@samsung.com>
+References: <20140314140129.68a41cc1bd9e0a48a198ca13@samsung.com>
+Date: Fri, 14 Mar 2014 15:29:42 +0530
+Message-ID: <CAK9yfHzRasE3jroDUZgAa=DN5N=2ZDAxgNiHDCip+f2868BAVQ@mail.gmail.com>
+Subject: Re: [PATCH v11 01/27] iommu/exynos: do not include removed header
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+On 14 March 2014 10:31, Cho KyongHo <pullip.cho@samsung.com> wrote:
+> Commit 25e9d28d92 (ARM: EXYNOS: remove system mmu initialization from
+> exynos tree) removed arch/arm/mach-exynos/mach/sysmmu.h header without
+> removing remaining use of it from exynos-iommu driver, thus causing a
+> compilation error.
+>
+> This patch fixes the error by removing respective include line
+> from exynos-iommu.c.
+>
+> CC: Tomasz Figa <t.figa@samsung.com>
+> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+> ---
+>  drivers/iommu/exynos-iommu.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+> index 0740189..4876d35 100644
+> --- a/drivers/iommu/exynos-iommu.c
+> +++ b/drivers/iommu/exynos-iommu.c
+> @@ -12,6 +12,7 @@
+>  #define DEBUG
+>  #endif
+>
+> +#include <linux/kernel.h>
 
-On 14/03/2014 17:06, Borislav Petkov wrote:
-> On Thu, Mar 13, 2014 at 07:43:01PM +0800, Daniel J Blueman wrote:
->> For systems with multiple servers and routed fabric, all northbridges get
->> assigned to the first server. Fix this by also using the node reported from
->> the PCI bus. For single-fabric systems, the northbriges are on PCI bus 0
->> by definition, which are on NUMA node 0 by definition, so this is invarient
->> on most systems.
->
-> Yeah, I think this is of very low risk for !Numascale setups. :-) So
->
-> Acked-by: Borislav Petkov <bp@suse.de>
->
->> Tested on fam10h and fam15h single and multi-fabric systems and candidate
->> for stable.
->
-> I'm not sure about it - this is only reporting the wrong node, right?
-> Does anything depend on that node setting being correct and breaks due
-> to this?
+This change doesn't look related to the patch subject/description.
 
-It's only reporting the wrong node, yes. The irqbalance daemon uses 
-/sys/devices/.../numa_node, and we found we have to disable it to 
-prevent hangs on certain systems after a while, but I didn't establish a 
-link just yet, though found this to be incorrect.
-
-Thanks,
-   Daniel
 -- 
-Daniel J Blueman
-Principal Software Engineer, Numascale
+With warm regards,
+Sachin
