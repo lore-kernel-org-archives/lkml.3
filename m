@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135AbaCNJc3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 05:32:29 -0400
+	id S1756117AbaCNJcZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 05:32:25 -0400
 Received: from mailout3.samsung.com ([203.254.224.33]:59049 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755968AbaCNJaX (ORCPT
+	with ESMTP id S1755974AbaCNJaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 05:30:23 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-4e-5322cc26c4dc
+	Fri, 14 Mar 2014 05:30:24 -0400
+X-AuditID: cbfee690-b7f266d00000287c-c8-5322cc27a1a2
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com, kyungmin.park@samsung.com
 Cc: rafael.j.wysocki@intel.com, nm@ti.com, b.zolnierkie@samsaung.com,
@@ -16,39 +16,38 @@ Cc: rafael.j.wysocki@intel.com, nm@ti.com, b.zolnierkie@samsaung.com,
         linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv3 4/8] devfreq: exynos4: Add ppmu's clock control and code
- clean about regulator control
-Date: Fri, 14 Mar 2014 18:30:04 +0900
-Message-id: <1394789408-14648-5-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv3 5/8] devfreq: exynos4: Use SET_SYSTEM_SLEEP_PM_OPS macro
+Date: Fri, 14 Mar 2014 18:30:05 +0900
+Message-id: <1394789408-14648-6-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1394789408-14648-1-git-send-email-cw00.choi@samsung.com>
 References: <1394789408-14648-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsWyRsSkSFf9jFKwwftnzBYdPb9ZLK5/ec5q
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsWyRsSkUFf9jFKwwYV3UhYdPb9ZLK5/ec5q
 	Mf/IOVaLc69WMlqcbXrDbrGwbQmLxeVdc9gsPvceYbSYcX4fk8XS6xeZLG43rmCzePPjLJPF
 	hOlrWSwer3jLbvHqYBuLA7/HmnlrGD1WLv/C5rF4z0smj5/Lt7N79G1Zxehx/MZ2Jo/Pm+Q8
-	Ns4NDeCI4rJJSc3JLEst0rdL4MpY8OkJS8E1rYql6y+wNTDuUepi5OSQEDCRmHB7NjuELSZx
-	4d56NhBbSGApo8TLjcowNYsP7GbsYuQCii9ilDi95T+U08gkcfJiKyNIFZuAlsT+FzfAukUE
-	zCV2Lf3JBlLELPCMSeJWfx9TFyMHh7BAlsTLzfwgNSwCqhKzN+xmBrF5BVwlWq7tZoXYJifx
-	Yc8jsIs4Bdwk3jZPY4S4yFWir/sAE8hMCYGP7BJ9U2+zQwwSkPg2+RALyHwJAVmJTQeYIeZI
-	ShxccYNlAqPwAkaGVYyiqQXJBcVJ6UWmesWJucWleel6yfm5mxiBMXX637OJOxjvH7A+xJgM
-	NG4is5Rocj4wJvNK4g2NzYwsTE1MjY3MLc1IE1YS501/lBQkJJCeWJKanZpakFoUX1Sak1p8
-	iJGJg1OqgfH4C9GsKVvvTut8LBP7Kef5PqHtOx9x/HZ0U87TVRF45mq5Zc5/qWUS/9NUoqVX
-	dk23M2VROMWw3LltTsDr1P2Z37i+FdXFL5lTtdg1ac42+e7pP9qTS/7MXLbFRLiowsm5h++F
-	3KwyTfF9nq+enRI5IKUdcorDxXoX04WZ5keb1zbw//B/dkOJpTgj0VCLuag4EQAdHVg0vwIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgK7aGaVgg9uN5hYdPb9ZLK5/ec5q
+	Ns4NDeCI4rJJSc3JLEst0rdL4Mro/7qLsWARR8XS1jlMDYxN7F2MHBwSAiYS+5ZJdzFyApli
+	EhfurWfrYuTiEBJYyijx7fchZoiEicTv61MYIRKLGCWmrfvDCuE0MklsW7yfCaSKTUBLYv+L
+	G2wgtoiAucSupT/BRjELPGOSuNXfB1YkLOAlsfbEA3YQm0VAVWLV80OMIDavgKtEy66/UOvk
+	JD7seQRWwyngJvG2eRpYjRBQTV/3ASaQoRICb9kldmztZ4EYJCDxbfIhFoh/ZCU2HYCaIylx
+	cMUNlgmMwgsYGVYxiqYWJBcUJ6UXmegVJ+YWl+al6yXn525iBEbV6X/PJuxgvHfA+hBjMtC4
+	icxSosn5wKjMK4k3NDYzsjA1MTU2Mrc0I01YSZxX7VFSkJBAemJJanZqakFqUXxRaU5q8SFG
+	Jg5OqQbGaXICL3Jn2TyUb4trbQ/8sD5l8dq2WeEPpyhsUF75MdB1raT+rZV8LNcaX8ZN3zfn
+	VUxH2L4QE598Jh2F5iUnZpexVsywr35S9+HChW0p5mx6RZO71nyx9g2cd9PasTlRQS3SMZLx
+	Sr/POZndjxN+BmdlTHFi+fjIRkV6u4H2pA2H1gQGPj6hxFKckWioxVxUnAgAh8IwzcACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgK76GaVgg64LwhYdPb9ZLK5/ec5q
 	Mf/IOVaLc69WMlqcbXrDbrGwbQmLxeVdc9gsPvceYbSYcX4fk8XS6xeZLG43rmCzePPjLJPF
 	hOlrWSwer3jLbvHqYBuLA7/HmnlrGD1WLv/C5rF4z0smj5/Lt7N79G1Zxehx/MZ2Jo/Pm+Q8
 	Ns4NDeCIamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXL
-	zAG6XkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOYseDTE5aCa1oVS9df
-	YGtg3KPUxcjJISFgIrH4wG5GCFtM4sK99WxdjFwcQgKLGCVOb/nPCOE0MkmcvNgKVsUmoCWx
-	/8UNNhBbRMBcYtfSn2AdzALPmCRu9fcxdTFycAgLZEm83MwPUsMioCoxe8NuZhCbV8BVouXa
-	blaIbXISH/Y8YgexOQXcJN42TwObLwRU09d9gGkCI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV5
-	6XrJ+bmbGMEx+0xqB+PKBotDjAIcjEo8vA6HFYOFWBPLiitzDzFKcDArifAyzFMKFuJNSays
-	Si3Kjy8qzUktPsSYDHTVRGYp0eR8YDrJK4k3NDYxM7I0Mje0MDI2J01YSZz3QKt1oJBAemJJ
-	anZqakFqEcwWJg5OqQbGs4uzrn24fbG3arJL5AXWJs11/NU2i05LKyxzvWNwZTrb23DmlLNh
-	D7VeP1Ow3Gd01PSP4AdJM5ZnLy3ui2bL3ona5FCZpKKS9/7hhQ0v3hmI/I7Pq/S0+BfW0n/+
-	yCeTK4b3P8d/7+nofullHmcjd95R5/oK328/AurfnPAybN5mbh48y2eCEktxRqKhFnNRcSIA
-	DwQOix0DAAA=
+	zAG6XkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOY0f91F2PBIo6Kpa1z
+	mBoYm9i7GDk5JARMJH5fn8IIYYtJXLi3nq2LkYtDSGARo8S0dX9YIZxGJolti/czgVSxCWhJ
+	7H9xgw3EFhEwl9i19CdYB7PAMyaJW/19YEXCAl4Sa088AFvBIqAqser5IbAVvAKuEi27/jJD
+	rJOT+LDnEVgNp4CbxNvmaWA1QkA1fd0HmCYw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpec
+	n7uJERy1z6R2MK5ssDjEKMDBqMTD63BYMViINbGsuDL3EKMEB7OSCC/DPKVgId6UxMqq1KL8
+	+KLSnNTiQ4zJQFdNZJYSTc4HJpS8knhDYxMzI0sjc0MLI2Nz0oSVxHkPtFoHCgmkJ5akZqem
+	FqQWwWxh4uCUamBc65h+IXWqxi1j8WmCgSVsMZouMRwKfP2RR7dv2d/px3zL/JpJcPRCJWkt
+	22/r9azc/mzzfGj7JOHcr1sOXguP3NxxwFHsp/r5mBTDRSedF3bEGjPau27hvmOuVD9Ncdfk
+	nYW/eNUf39x066Nm1y57Dr3pbPKqF9v+yhQ1PV6zlifu453XF12UWIozEg21mIuKEwGGgN2V
+	HgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,189 +55,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are not the clock controller of ppmudmc0/1. This patch control the clock
-of ppmudmc0/1 which is used for monitoring memory bus utilization.
-
-Also, this patch code clean about regulator control and free resource
-when calling exit/remove function.
-
-For example,
-busfreq@106A0000 {
-	compatible = "samsung,exynos4x12-busfreq";
-
-	/* Clock for PPMUDMC0/1 */
-	clocks = <&clock CLK_PPMUDMC0>, <&clock CLK_PPMUDMC1>;
-	clock-names = "ppmudmc0", "ppmudmc1";
-
-	/* Regulator for MIF/INT block */
-	vdd_mif-supply = <&buck1_reg>;
-	vdd_int-supply = <&buck3_reg>;
-};
+This patch use SET_SYSTEM_SLEEP_PM_OPS macro instead of legacy method.
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- drivers/devfreq/exynos/exynos4_bus.c | 104 ++++++++++++++++++++++++++++++-----
- 1 file changed, 91 insertions(+), 13 deletions(-)
+ drivers/devfreq/exynos/exynos4_bus.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
-index 8ccbb31..60539e8 100644
+index 60539e8..e5d2c5a 100644
 --- a/drivers/devfreq/exynos/exynos4_bus.c
 +++ b/drivers/devfreq/exynos/exynos4_bus.c
-@@ -62,6 +62,11 @@ enum exynos_ppmu_idx {
- 	PPMU_END,
+@@ -1247,6 +1247,7 @@ static int exynos4_busfreq_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int exynos4_busfreq_resume(struct device *dev)
+ {
+ 	struct busfreq_data *data = dev_get_drvdata(dev);
+@@ -1254,9 +1255,10 @@ static int exynos4_busfreq_resume(struct device *dev)
+ 	busfreq_mon_reset(data);
+ 	return 0;
+ }
++#endif
+ 
+ static const struct dev_pm_ops exynos4_busfreq_pm = {
+-	.resume	= exynos4_busfreq_resume,
++	SET_SYSTEM_SLEEP_PM_OPS(NULL, exynos4_busfreq_resume)
  };
  
-+static const char *exynos_ppmu_clk_name[] = {
-+	[PPMU_DMC0]	= "ppmudmc0",
-+	[PPMU_DMC1]	= "ppmudmc1",
-+};
-+
- #define EX4210_LV_MAX	LV_2
- #define EX4x12_LV_MAX	LV_4
- #define EX4210_LV_NUM	(LV_2 + 1)
-@@ -86,6 +91,7 @@ struct busfreq_data {
- 	struct regulator *vdd_mif; /* Exynos4412/4212 only */
- 	struct busfreq_opp_info curr_oppinfo;
- 	struct exynos_ppmu ppmu[PPMU_END];
-+	struct clk *clk_ppmu[PPMU_END];
- 
- 	struct notifier_block pm_notifier;
- 	struct mutex lock;
-@@ -724,6 +730,19 @@ static void exynos4_bus_exit(struct device *dev)
- 	struct busfreq_data *data = dev_get_drvdata(dev);
- 	int i;
- 
-+	/*
-+	 * Un-map memory map and disable regulator/clocks
-+	 * to prevent power leakage.
-+	 */
-+	regulator_disable(data->vdd_int);
-+	if (data->type == TYPE_BUSF_EXYNOS4x12)
-+		regulator_disable(data->vdd_mif);
-+
-+	for (i = 0; i < PPMU_END; i++) {
-+		if (data->clk_ppmu[i])
-+			clk_disable_unprepare(data->clk_ppmu[i]);
-+	}
-+
- 	for (i = 0; i < PPMU_END; i++) {
- 		if (data->ppmu[i].hw_base)
- 			iounmap(data->ppmu[i].hw_base);
-@@ -991,6 +1010,7 @@ static int exynos4_busfreq_parse_dt(struct busfreq_data *data)
- {
- 	struct device *dev = data->dev;
- 	struct device_node *np = dev->of_node;
-+	const char **clk_name = exynos_ppmu_clk_name;
- 	int i, ret;
- 
- 	if (!np) {
-@@ -1009,8 +1029,70 @@ static int exynos4_busfreq_parse_dt(struct busfreq_data *data)
- 		}
- 	}
- 
-+	/*
-+	 * Get PPMU's clocks to control them. But, if PPMU's clocks
-+	 * is default 'pass' state, this driver don't need control
-+	 * PPMU's clock.
-+	 */
-+	for (i = 0; i < PPMU_END; i++) {
-+		data->clk_ppmu[i] = devm_clk_get(dev, clk_name[i]);
-+		if (IS_ERR_OR_NULL(data->clk_ppmu[i])) {
-+			dev_warn(dev, "Cannot get %s clock\n", clk_name[i]);
-+			data->clk_ppmu[i] = NULL;
-+		}
-+
-+		ret = clk_prepare_enable(data->clk_ppmu[i]);
-+		if (ret < 0) {
-+			dev_warn(dev, "Cannot enable %s clock\n", clk_name[i]);
-+			data->clk_ppmu[i] = NULL;
-+			goto err_clocks;
-+		}
-+	}
-+
-+	/* Get regulator to control voltage of int block */
-+	data->vdd_int = devm_regulator_get(dev, "vdd_int");
-+	if (IS_ERR(data->vdd_int)) {
-+		dev_err(dev, "Failed to get the regulator of vdd_int\n");
-+		ret = PTR_ERR(data->vdd_int);
-+		goto err_clocks;
-+	}
-+	ret = regulator_enable(data->vdd_int);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to enable regulator of vdd_int\n");
-+		goto err_clocks;
-+	}
-+
-+	switch (data->type) {
-+	case TYPE_BUSF_EXYNOS4210:
-+		break;
-+	case TYPE_BUSF_EXYNOS4x12:
-+		/* Get regulator to control voltage of mif blk if Exynos4x12 */
-+		data->vdd_mif = devm_regulator_get(dev, "vdd_mif");
-+		if (IS_ERR(data->vdd_mif)) {
-+			dev_err(dev, "Failed to get the regulator vdd_mif\n");
-+			ret = PTR_ERR(data->vdd_mif);
-+			goto err_regulator;
-+		}
-+		ret = regulator_enable(data->vdd_mif);
-+		if (ret < 0) {
-+			dev_err(dev, "Failed to enable regulator of vdd_mif\n");
-+			goto err_regulator;
-+		}
-+		break;
-+	default:
-+		dev_err(dev, "Unknown device type : %d\n", data->type);
-+		return -EINVAL;
-+	};
-+
- 	return 0;
- 
-+err_regulator:
-+	regulator_disable(data->vdd_int);
-+err_clocks:
-+	for (i = 0; i < PPMU_END; i++) {
-+		if (data->clk_ppmu[i])
-+			clk_disable_unprepare(data->clk_ppmu[i]);
-+	}
- err_iomap:
- 	for (i = 0; i < PPMU_END; i++) {
- 		if (data->ppmu[i].hw_base)
-@@ -1075,19 +1157,6 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
- 		return err;
- 	}
- 
--	data->vdd_int = devm_regulator_get(dev, "vdd_int");
--	if (IS_ERR(data->vdd_int)) {
--		dev_err(dev, "Cannot get the regulator \"vdd_int\"\n");
--		return PTR_ERR(data->vdd_int);
--	}
--	if (data->type == TYPE_BUSF_EXYNOS4x12) {
--		data->vdd_mif = devm_regulator_get(dev, "vdd_mif");
--		if (IS_ERR(data->vdd_mif)) {
--			dev_err(dev, "Cannot get the regulator \"vdd_mif\"\n");
--			return PTR_ERR(data->vdd_mif);
--		}
--	}
--
- 	rcu_read_lock();
- 	opp = dev_pm_opp_find_freq_floor(dev,
- 					 &exynos4_devfreq_profile.initial_freq);
-@@ -1147,6 +1216,15 @@ err_notifier_opp:
- 	return err;
- 
- err_devfreq:
-+	regulator_disable(data->vdd_int);
-+	if (data->type == TYPE_BUSF_EXYNOS4x12)
-+		regulator_disable(data->vdd_mif);
-+
-+	for (i = 0; i < PPMU_END; i++) {
-+		if (data->clk_ppmu[i])
-+			clk_disable_unprepare(data->clk_ppmu[i]);
-+	}
-+
- 	for (i = 0; i < PPMU_END; i++) {
- 		if (data->ppmu[i].hw_base)
- 			iounmap(data->ppmu[i].hw_base);
+ static const struct platform_device_id exynos4_busfreq_id[] = {
 -- 
 1.8.0
 
