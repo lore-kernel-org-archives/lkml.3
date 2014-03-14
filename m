@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaCNKMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 06:12:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46416 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752091AbaCNKML (ORCPT
+	id S1754038AbaCNKNl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 06:13:41 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:15980 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794AbaCNKNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 06:12:11 -0400
-Date: Fri, 14 Mar 2014 10:09:14 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 6/7] arm64: ftrace: Add CALLER_ADDRx macros
-Message-ID: <20140314100914.GD13541@arm.com>
-References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
- <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
- <1394705630-12384-7-git-send-email-takahiro.akashi@linaro.org>
- <20140313155415.GB25472@mudshark.cambridge.arm.com>
- <532270BE.6000409@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532270BE.6000409@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Mar 2014 06:13:39 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-36-5322d65216da
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: ben-linux@fluff.org, kgene.kim@samsung.com
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        t.figa@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH] ARM: dts: exynos4210-trats: add max8997 IRQ
+Date: Fri, 14 Mar 2014 11:13:21 +0100
+Message-id: <1394792001-7837-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jAd2ga0rBBp8fc1hMWneAyWL+kXOs
+	Fv1vFrJanHu1ktGid8FVNotNj6+xWlzeNYfNYsb5fUwWty/zWqw9cpfdYun1i0wWE6avZbF4
+	cHgnu0Xr3iPsFutnvGZx4PdYM28No0dLcw+bx+W+XiaPv6teMHusXP6FzWPTqk42j81L6j36
+	tqxi9Pi8SS6AM4rLJiU1J7MstUjfLoEr4+W8SawFn9grph35yNLAuISti5GTQ0LAROL2l3ns
+	ELaYxIV764HiXBxCAosYJY5/vcQC4bQzSex9egOsg01AR2LL9wmMILaIgJ7ExQ+HwYqYBT4w
+	SVw7u4oJJCEsYCOxav0/oAQHB4uAqsSeX5IgYV4BF4lFk34wgoQlBBQk5kyymcDIvYCRYRWj
+	aGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcGA+k9rBuLLB4hCjAAejEg+vw2HFYCHWxLLiytxD
+	jBIczEoivK5nlIKFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5otQ4UEkhPLEnNTk0tSC2CyTJx
+	cEo1MEoxckxN/nSz9sBqETP+mR4rFSPrvscU6fXPXerf9pxpx4qavhlH5q8w/HBQyHS2kqRx
+	hkDKDeHnJZHGUzxS4q+pcz9InPI99/H9hMUVMvn+GpZOAv/U+jrfphuY14uZTE5ntVSoDz4l
+	ms4fwbH7/Y6Z23qnpYYUT5veMvGJe1z3xG8PLVbuUmIpzkg01GIuKk4EALw9zulIAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 03:00:14AM +0000, AKASHI Takahiro wrote:
-> On 03/14/2014 12:54 AM, Will Deacon wrote:
-> > On Thu, Mar 13, 2014 at 10:13:49AM +0000, AKASHI Takahiro wrote:
-> >> CALLER_ADDRx returns caller's address at specified level in call stacks.
-> >> They are used for several tracers like irqsoff and preemptoff.
-> >> Strange to say, however, they are refered even without FTRACE.
-> >>
-> >> Please note that this implementation assumes that we have frame pointers.
-> >> (which means kernel should be compiled with -fno-omit-frame-pointer.)
-> >
-> > How do you ensure that -fno-omit-frame-pointer is passed?
-> 
-> arm64 selects ARCH_WANT_FRAME_POINTERS, then FRAME_POINTER is on (lib/Kconfig.debug)
-> and so -fno-omit-frame-pointer is appended (${TOP}/Makefile).
-> (stacktrace.c also assumes FRAME_POINTER.)
-> 
-> Do you think I should remove the comment above?
+This patch adds device tree node for IRQ used by max8997.
 
-Yes please, it sounds like everything is taken care of automatically, so
-there's no need to scare people in the commit message!
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ arch/arm/boot/dts/exynos4210-trats.dts |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-> >> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
-> >> index ed5c448..c44c4b1 100644
-> >> --- a/arch/arm64/include/asm/ftrace.h
-> >> +++ b/arch/arm64/include/asm/ftrace.h
-> >> @@ -18,6 +18,7 @@
-> >>
-> >>   #ifndef __ASSEMBLY__
-> >>   extern void _mcount(unsigned long);
-> >> +extern void *return_address(unsigned int);
-> >>
-> >>   struct dyn_arch_ftrace {
-> >>   	/* No extra data needed for arm64 */
-> >> @@ -33,6 +34,16 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
-> >>   	 */
-> >>   	return addr;
-> >>   }
-> >> -#endif /* __ASSEMBLY__ */
-> >> +
-> >> +#define HAVE_ARCH_CALLER_ADDR
-> >> +
-> >> +#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
-> >> +#define CALLER_ADDR1 ((unsigned long)return_address(1))
-> >> +#define CALLER_ADDR2 ((unsigned long)return_address(2))
-> >> +#define CALLER_ADDR3 ((unsigned long)return_address(3))
-> >> +#define CALLER_ADDR4 ((unsigned long)return_address(4))
-> >> +#define CALLER_ADDR5 ((unsigned long)return_address(5))
-> >> +#define CALLER_ADDR6 ((unsigned long)return_address(6))
-> >
-> > Could we change the core definitions of these macros (in linux/ftrace.h) to
-> > use return_address, then provide an overridable version of return_address
-> > that defaults to __builtin_return_address, instead of copy-pasting this
-> > sequence?
-> 
-> I think I understand what you mean, and will try to post a separate RFC,
-> but I also want to hold off this change on this patch since such a change
-> may raise a small controversy from other archs' maintainers.
+diff --git a/arch/arm/boot/dts/exynos4210-trats.dts b/arch/arm/boot/dts/exynos4210-trats.dts
+index 1d18428..0e1fc19 100644
+--- a/arch/arm/boot/dts/exynos4210-trats.dts
++++ b/arch/arm/boot/dts/exynos4210-trats.dts
+@@ -148,6 +148,14 @@
+ 		};
+ 	};
+ 
++	pinctrl@11000000 {
++		max8997_irq: max8997-irq {
++			samsung,pins = "gpx0-7";
++			samsung,pin-pud = <3>;
++			samsung,pin-drv = <0>;
++		};
++	};
++
+ 	i2c@13890000 {
+ 		samsung,i2c-sda-delay = <100>;
+ 		samsung,i2c-slave-addr = <0x10>;
+@@ -179,6 +187,11 @@
+ 		max8997_pmic@66 {
+ 			compatible = "maxim,max8997-pmic";
+ 
++			pinctrl-0 = <&max8997_irq>;
++			pinctrl-names = "default";
++
++			interrupt-parent = <&gpx0>;
++			interrupts = <7 0>;
+ 			reg = <0x66>;
+ 
+ 			max8997,pmic-buck1-uses-gpio-dvs;
+-- 
+1.7.9.5
 
-I don't see anything controversial here, but ok. Steve already posted
-something you can get started with.
-
-Will
