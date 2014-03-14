@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144AbaCNVMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:12:33 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:34491 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755180AbaCNVMc (ORCPT
+	id S1756201AbaCNVPB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:15:01 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45317 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755422AbaCNVO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:12:32 -0400
-Date: Fri, 14 Mar 2014 22:12:30 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, eranian@google.com,
-        namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 8/8] perf, tools, test: Add test case for alias and
- JSON parsing
-Message-ID: <20140314211230.GA22728@two.firstfloor.org>
-References: <1394048978-15909-1-git-send-email-andi@firstfloor.org>
- <1394048978-15909-9-git-send-email-andi@firstfloor.org>
- <20140311143149.GA31431@krava.redhat.com>
+	Fri, 14 Mar 2014 17:14:59 -0400
+Date: Fri, 14 Mar 2014 22:14:57 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: 3.14-rc: /proc/acpi/battery gone?
+Message-ID: <20140314211456.GA23213@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140311143149.GA31431@krava.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think the problem is in parse_events_fixup, which assumes
-> the 'cpu' pmu globaly for all events
+Hi!
 
-I investigated this now. The problem is that the event is listed,
-but cannot be set up. I saw it also with 'data_writes' on another
-system. 
+It seems /proc/acpi/battery interface is gone, and I don't see any
+option to reintroduce it... what is going on?
 
-That's a generic problem, the test just exposes it. It's a side effect
-of the fragile kernel->user interface in perf and likely hard to fix.
+(I got into habit of archiving content of /proc/acpi/battery to
+monitor, how battery ages..)
 
-The only thing I can do is to ignore failures here and only
-print messages.
-
--Andi
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
