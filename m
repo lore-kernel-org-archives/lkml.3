@@ -1,205 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320AbaCNK4T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 06:56:19 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:48062 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166AbaCNK4P (ORCPT
+	id S1754400AbaCNK4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 06:56:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42409 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754350AbaCNK4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 06:56:15 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-f7-5322e04dfe3d
-Message-id: <5322E04D.2060801@samsung.com>
-Date: Fri, 14 Mar 2014 19:56:13 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "nm@ti.com" <nm@ti.com>,
-        "b.zolnierkie@samsaung.com" <b.zolnierkie@samsaung.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCHv2 8/8] devfreq: exynos4: Add busfreq driver for
- exynos4210/exynos4x12
-References: <1394698649-20996-1-git-send-email-cw00.choi@samsung.com>
- <1394698649-20996-9-git-send-email-cw00.choi@samsung.com>
- <20140313175308.GE25870@e106331-lin.cambridge.arm.com>
- <5322AC5D.9070200@samsung.com>
- <20140314103552.GK25870@e106331-lin.cambridge.arm.com>
-In-reply-to: <20140314103552.GK25870@e106331-lin.cambridge.arm.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsWyRsSkWNf3gVKwwfzXhhYdPb9ZLOYfOcdq
-	ce7VSkaLs01v2C0Wti1hsbi8aw6bxefeI4wWM87vY7JYev0ik8XtxhVsFm9+nGWymDB9LYvF
-	4xVv2S1eHWxjceDzWDNvDaPHyuVf2DwW73nJ5PFz+XZ2j74tqxg9jt/YzuTxeZOcx8a5oQEc
-	UVw2Kak5mWWpRfp2CVwZTzaqFsxVqfi+yriB8ZpsFyMnh4SAicTrSd/ZIGwxiQv31gPZXBxC
-	AksZJc7cO8IEU/Tu93l2iMQiRonzndcYIZxXjBK3F3YDORwcvAJaElMu8IE0sAioSvQ3nWIE
-	sdmAwvtf3ADbICoQJrFy+hUWEJtXQFDix+R7YLaIgLpEz64vLCAzmQXuskosnrMGLCEsEC1x
-	afJtqJOmMEnsvv0QbBKngLPE1barYOcxC+hI7G+dxgZhy0tsXvOWGeLsmRwSGz6lQFwkIPFt
-	8iEWkEMlBGQlNh2AKpGUOLjiBssERrFZSG6ahWTqLCRTFzAyr2IUTS1ILihOSi8y1StOzC0u
-	zUvXS87P3cQIjOvT/55N3MF4/4D1IcZkoJUTmaVEk/OBaSGvJN7Q2MzIwtTE1NjI3NKMNGEl
-	cd70R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhg3Op/x7Z8+XT6iJbSdsdpz7+Xr9htP
-	6zjs+LVpNfM045btSYnecmvS9+xfe3T3h32quhFXZnLu2rL849YqAxkphRWNwtaTIi/rp0us
-	z9jTa/rh+qZ9H10lxY7HJr51nTn1wNSzobI76xjOS816PPmptlFr+xH2ZZMOB3PWNb/W03ot
-	xiL520xXiaU4I9FQi7moOBEABagRIAEDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDKsWRmVeSWpSXmKPExsVy+t9jAV3fB0rBBhv2qlt09PxmsZh/5Byr
-	xblXKxktzja9YbdY2LaExeLyrjlsFp97jzBazDi/j8li6fWLTBa3G1ewWbz5cZbJYsL0tSwW
-	j1e8Zbd4dbCNxYHPY828NYweK5d/YfNYvOclk8fP5dvZPfq2rGL0OH5jO5PH501yHhvnhgZw
-	RDUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHa6k
-	UJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzHiyUbVgrkrF91XGDYzXZLsY
-	OTkkBEwk3v0+zw5hi0lcuLeerYuRi0NIYBGjxPnOa4wQzitGidsLu4EcDg5eAS2JKRf4QBpY
-	BFQl+ptOMYLYbEDh/S9usIHYogJhEiunX2EBsXkFBCV+TL4HZosIqEv07PrCAjKTWeAuq8Ti
-	OWvAEsIC0RKXJt+G2jyFSWL37YdgkzgFnCWutl1lArGZBXQk9rdOY4Ow5SU2r3nLPIFRYBaS
-	JbOQlM1CUraAkXkVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnDaeCa9g3FVg8UhRgEORiUe
-	3hlHFYOFWBPLiitzDzFKcDArifCuuqoULMSbklhZlVqUH19UmpNafIgxGRgGE5mlRJPzgSkt
-	ryTe0NjEzMjSyNzQwsjYnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYEx2fLPDxXVcl
-	bJhpwS/u/uS3xNLzrAyXv/bXzVt5WkDyYlOQqlvYQeHzu/6lsQptfsayXl7Abc49o6jSlW+a
-	jr1Ztoef4cHJ5b8eFums41u7y7JhmkimUxGrU18q4yq/QtbEj6aNR+V/MHxneMdldTmz0zHt
-	tqP5N99YwVUNjmH++jNbp4YosRRnJBpqMRcVJwIAJahfQV8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 14 Mar 2014 06:56:33 -0400
+Date: Fri, 14 Mar 2014 10:56:28 +0000
+From: =?iso-8859-1?Q?Lu=EDs?= Henriques <luis.henriques@canonical.com>
+To: Christian Borntraeger <christian@borntraeger.net>
+Cc: stable@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>
+Subject: Re: 3.10.33 stable lockdep warning
+Message-ID: <20140314105628.GA3117@hercules>
+References: <5321B378.9000603@borntraeger.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5321B378.9000603@borntraeger.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On 03/14/2014 07:35 PM, Mark Rutland wrote:
-> On Fri, Mar 14, 2014 at 07:14:37AM +0000, Chanwoo Choi wrote:
->> Hi Mark,
->>
->> On 03/14/2014 02:53 AM, Mark Rutland wrote:
->>> On Thu, Mar 13, 2014 at 08:17:29AM +0000, Chanwoo Choi wrote:
->>>> This patch add busfreq driver for Exynos4210/Exynos4x12 memory interface
->>>> and bus to support DVFS(Dynamic Voltage Frequency Scaling) according to PPMU
->>>> counters. PPMU (Performance Profiling Monitorings Units) of Exynos4 SoC provides
->>>> PPMU counters for DMC(Dynamic Memory Controller) to check memory bus utilization
->>>> and then busfreq driver adjusts dynamically the operating frequency/voltage
->>>> by using DEVFREQ Subsystem.
->>>>
->>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>> ---
->>>>  .../devicetree/bindings/devfreq/exynos4_bus.txt    | 49 ++++++++++++++++++++++
->>>>  1 file changed, 49 insertions(+)
->>>>  create mode 100644 Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt b/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
->>>> new file mode 100644
->>>> index 0000000..2a83fcc
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
->>>> @@ -0,0 +1,49 @@
->>>> +
->>>> +Exynos4210/4x12 busfreq driver
->>>> +-----------------------------
->>>> +
->>>> +Exynos4210/4x12 Soc busfreq driver with devfreq for Memory bus frequency/voltage
->>>> +scaling according to PPMU counters of memory controllers
->>>> +
->>>> +Required properties:
->>>> +- compatible	: should contain Exynos4 SoC type as follwoing:
->>>> +		  - "samsung,exynos4x12-busfreq" for Exynos4x12
->>>> +		  - "samsung,exynos4210-busfreq" for Exynos4210
->>>
->>> Is there a device called "busfreq"? What device does this binding
->>> describe?
->>
->> I'll add detailed description of busfreq as following:
->>
->> "busfreq(bus frequendcy)" driver means that busfreq driver control dynamically
->> memory bus frequency/voltage by checking memory bus utilization to optimize
->> power-consumption. When checking memeory bus utilization, exynos4_busfreq driver
->> would use PPMU(Performance Profiling Monitoring Units).
+On Thu, Mar 13, 2014 at 02:32:40PM +0100, Christian Borntraeger wrote:
+> 3.10.33 spits the following warning:
 > 
-> This still sounds like a description of the _driver_, not the _device_.
-> The binding should describe the hardware, now the high level abstraction
-> that software is going to build atop of it.
+> [   14.463408] ------------[ cut here ]------------
+> [   14.463411] WARNING: at block/elevator.c:193
+> [   14.463413] Modules linked in: vhost_net macvtap macvlan kvm dasd_eckd_mod dasd_mod zfcp scsi_transport_fc scsi_tgt qeth qdio ccwgroup dm_multipath sunrpc
+> [   14.463430] CPU: 10 PID: 18762 Comm: dasdconf.sh Tainted: G        W    3.10.33+ #344
+> [   14.463433] task: 00000004a4020000 ti: 00000004cfca8000 task.ti: 00000004cfca8000
+> [   14.463435] Krnl PSW : 0704c00180000000 00000000003c6d56 (elevator_init+0xfe/0x144)
+> [   14.463441]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:0 PM:0 EA:3
+> Krnl GPRS: 0000000000000000 00000004a4020000 0000000000000000 00000004d199f028
+> [   14.463446]            000000000019b4ae 0000000000000f13 0000000000000000 00000004ddcbb038
+> [   14.463449]            00000004ddcbb000 ffffffff00000000 00000004bfcfd850 00000004b820c800
+> [   14.463451]            000003ff801bcd2a 00000004d199e440 00000000003c6d4c 00000004cfcabb10
+> [   14.463460] Krnl Code: 00000000003c6d46: c0e5ffeea38f	brasl	%r14,19b464
+>            00000000003c6d4c: ec26ff9f007e	cij	%r2,0,6,3c6c8a
+>           #00000000003c6d52: a7f40001		brc	15,3c6d54
+>           >00000000003c6d56: a7f4ff9a		brc	15,3c6c8a
+>            00000000003c6d5a: c020008b0327	larl	%r2,15273a8
+>            00000000003c6d60: a7390000		lghi	%r3,0
+>            00000000003c6d64: c0e5fffffb58	brasl	%r14,3c6414
+>            00000000003c6d6a: b9040012		lgr	%r1,%r2
+> [   14.463481] Call Trace:
+> [   14.463482] ([<00000000003c6d4c>] elevator_init+0xf4/0x144)
+> [   14.463486]  [<000003ff801b4daa>] dasd_change_state+0x36a/0xbe0 [dasd_mod]
+> [   14.463492]  [<000003ff801b56b6>] dasd_set_target_state+0x96/0x110 [dasd_mod]
+> [   14.463498]  [<000003ff801b5bc8>] dasd_generic_set_online+0xc4/0x2e4 [dasd_mod]
+> [   14.463503]  [<00000000004d2ecc>] ccw_device_set_online+0xcc/0x4e0
+> [   14.463507]  [<00000000004d3336>] online_store_recog_and_online+0x56/0x12c
+> [   14.463510]  [<00000000004d58fa>] online_store+0x1b2/0x248
+> [   14.463514]  [<00000000002f1b38>] sysfs_write_file+0xe4/0x188
+> [   14.463517]  [<0000000000270a26>] vfs_write+0xa6/0x1cc
+> [   14.463520]  [<0000000000270f68>] SyS_write+0x60/0xac
+> [   14.463523]  [<0000000000636a9c>] sysc_nr_ok+0x22/0x28
+> [   14.463526]  [<000003fffd6a8984>] 0x3fffd6a8984
+> [   14.463529] 4 locks held by dasdconf.sh/18762:
+> [   14.463531]  #0:  (sb_writers#3){.+.+.+}, at: [<0000000000270b3e>] vfs_write+0x1be/0x1cc
+> [   14.463539]  #1:  (&buffer->mutex){+.+.+.}, at: [<00000000002f1a9a>] sysfs_write_file+0x46/0x188
+> [   14.463546]  #2:  (s_active#28){.+.+.+}, at: [<00000000002f1b16>] sysfs_write_file+0xc2/0x188
+> [   14.463554]  #3:  (&device->state_mutex){+.+.+.}, at: [<000003ff801b566c>] dasd_set_target_state+0x4c/0x110 [dasd_mod]
+> [   14.463563] Last Breaking-Event-Address:
+> [   14.463565]  [<00000000003c6d52>] elevator_init+0xfa/0x144
+> [   14.463568] ---[ end trace 3ec4802a2d4e0d3e ]---
 > 
-> It sounds like this is a binding for the DMC PPMU?
+> So I guess we should pull in
+> commit ef0899410ff630b2e75306da49996dbbfa318165
+> Author:     Heiko Carstens <heiko.carstens@de.ibm.com>
+> AuthorDate: Thu Oct 31 13:24:28 2013 +0100
+> Commit:     Jens Axboe <axboe@kernel.dk>
+> CommitDate: Fri Nov 8 09:10:29 2013 -0700
 > 
-> Is the PPMU a component of the DMC, or is it bolted on the side?
-
-PPMU(Performance Profiling Monitoring Unit) is to profile performance event of
-various IP on Exynos4. Each PPMU provide perforamnce event for each IP.
-We can check various PPMU as following:
-
-PPMU_3D
-PPMU_ACP
-PPMU_CAMIF
-PPMU_CPU
-PPMU_DMC0
-PPMU_DMC1
-PPMU_FSYS
-PPMU_IMAGE
-PPMU_LCD0
-PPMU_LCD1
-PPMU_MFC_L
-PPMU_MFC_R
-PPMU_TV
-PPMU_LEFT_BUS
-PPMU_RIGHT_BUS
-
-DMC (Dynamic Memory Controller) control the operation of DRAM in Exynos4 SoC.
-If we need to get memory bust utilization of DMC, we can get memory bus utilization
-from PPMU_DMC0/PPMU_DMC1.
-
-So, Exynos4's busfreq used two(PPMU_DMC0/PPMU_DMC1) among upper various PPMU list.
-
+>     s390/dasd: hold request queue sysfs lock when calling elevator_init()
 > 
->>
->>
->>>
->>>> +- reg		: offset and length of the ppmudmc0/1
->>>> +		  - PPMU (Performance Profiling Monitoring Units)
->>>
->>> You seem to require a particular order here. It would be good to be
->>> explicit about it.
->>
->> OK, I'll modify it as following:
->> the offset and length of the PPMU_DMC0 / PPMU_DMC1
->> PPMU_DMC0/PPMU_DMC1 show memory buy utilization to exynos4_bus driver.
->>
->>>
->>>> +		  : It is to profile performance event of DMC(Dynamic Memory
->>>> +		  Controller) So, exynos4_bus.c can check memory bus utilization
->>>> +		  by using PPMU of Exynos4 SoC.
->>>
->>> This is superfluous, and Linux-specific. The binding document shouldn't
->>> need to refer to drivers.
->>
->> I'll remove this description.
->>
->>>
->>>> +- clocks	: clock number of ppmudmc0/1
->>>> +- clock-names	: clock name of ppmudmc0/1
->>>
->>> Are these two clocks, or one clock with a slash in the name?
->>>
->>> Please list each name separately.
->>
->> I'll expalin clocks as following:
->> 	"ppmudmc0", "ppmudmc1"
->>
->>>
->>>> +- vdd_int-supply: regulator for interface block of Exynos4
+> for 3.10.34 or later.
+> I can confirm that this patch fixes the issue.
+> Thanks
 > 
-> How does the interface block relate to the DMC / PPMU?
+> Christian
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-If vdd_int is connected to buck3 of PMIC(Power Management IC),
+Thanks Christian, I will queue this patch for the 3.11 kernel.
 
-We can see the flow of provided power as following:
-: external power --> buck3 pin of PMIC --> vdd_int pin of Exynos4 SoC --> DMC IP and PPMU IP of Exynos4 SoC
-
-Thanks,
-Chanwoo Choi
+Cheers,
+--
+Luís
