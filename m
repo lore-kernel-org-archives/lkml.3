@@ -1,44 +1,427 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633AbaCNHsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 03:48:09 -0400
-Received: from smtprelay0117.hostedemail.com ([216.40.44.117]:40162 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755409AbaCNHsH (ORCPT
+	id S1755682AbaCNHsi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 03:48:38 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49855 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755409AbaCNHsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 03:48:07 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:560:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2731:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3867:3868:3870:3871:3872:4250:4321:5007:7652:8603:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ring64_297e442563d23
-X-Filterd-Recvd-Size: 1330
-Message-ID: <1394783283.2970.2.camel@joe-AO722>
-Subject: Re: [PATCH] mtip32xx: switch to vmalloc() to mitigate high order
- allocation failures
-From: Joe Perches <joe@perches.com>
-To: Sam Bradshaw <sbradshaw@micron.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, asamymuthupa@micron.com
-Date: Fri, 14 Mar 2014 00:48:03 -0700
-In-Reply-To: <532237F4.3010309@micron.com>
-References: <532237F4.3010309@micron.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Mar 2014 03:48:37 -0400
+X-AuditID: 9c93016f-b7b09ae000000557-ad-5322b451949c
+Date: Fri, 14 Mar 2014 16:49:00 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Jason Evans <je@fb.com>
+Subject: Re: [RFC 3/6] mm: support madvise(MADV_FREE)
+Message-ID: <20140314074900.GE20556@bbox>
+References: <1394779070-8545-1-git-send-email-minchan@kernel.org>
+ <1394779070-8545-4-git-send-email-minchan@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394779070-8545-4-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-13 at 15:57 -0700, Sam Bradshaw wrote:
-> The mtip_port kmalloc() allocation is relatively high order, in
-> particular since the recent doubling of the size of the scatterlist
-> container.  The allocation has been shown to fail during SRSI under
-> fragmented or low memory conditions.  Switching to vmalloc() mitigates
-> the problem.  Converted both mtip_port and driver_data allocations for
-> consistency.
+On Fri, Mar 14, 2014 at 03:37:47PM +0900, Minchan Kim wrote:
+> Linux doesn't have an ability to free pages lazy while other OS
+> already have been supported that named by madvise(MADV_FREE).
+> 
+> The gain is clear that kernel can evict freed pages rather than
+> swapping out or OOM if memory pressure happens.
+> 
+> Without memory pressure, freed pages would be reused by userspace
+> without another additional overhead(ex, page fault + + page allocation
+> + page zeroing).
+> 
+> Firstly, heavy users would be general allocators(ex, jemalloc,
+> I hope ptmalloc support it) and jemalloc already have supported
+> the feature for other OS(ex, FreeBSD)
+> 
+> At the moment, this patch would break build other ARCHs which have
+> own TLB flush scheme other than that x86 but if there is no objection
+> in this direction, I will add patches for handling other ARCHs
+> in next iteration.
+> 
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  include/asm-generic/tlb.h              |  9 ++++++++
+>  include/linux/mm.h                     | 35 ++++++++++++++++++++++++++++++-
+>  include/linux/rmap.h                   |  1 +
+>  include/linux/swap.h                   | 15 ++++++++++++++
+>  include/uapi/asm-generic/mman-common.h |  1 +
+>  mm/madvise.c                           | 17 +++++++++++++--
+>  mm/memory.c                            | 12 ++++++++++-
+>  mm/rmap.c                              | 21 +++++++++++++++++--
+>  mm/swap_state.c                        | 38 +++++++++++++++++++++++++++++++++-
+>  mm/vmscan.c                            | 22 +++++++++++++++++++-
+>  10 files changed, 163 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+> index 5672d7ea1fa0..b82ee729a065 100644
+> --- a/include/asm-generic/tlb.h
+> +++ b/include/asm-generic/tlb.h
+> @@ -116,8 +116,17 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long
+>  void tlb_flush_mmu(struct mmu_gather *tlb);
+>  void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start,
+>  							unsigned long end);
+> +int __tlb_madvfree_page(struct mmu_gather *tlb, struct page *page);
+>  int __tlb_remove_page(struct mmu_gather *tlb, struct page *page);
+>  
+> +static inline void tlb_madvfree_page(struct mmu_gather *tlb, struct page *page)
+> +{
+> +	/* Prevent page free */
+> +	get_page(page);
+> +	if (!__tlb_remove_page(tlb, MarkLazyFree(page)))
+> +		tlb_flush_mmu(tlb);
+> +}
+> +
+>  /* tlb_remove_page
+>   *	Similar to __tlb_remove_page but will call tlb_flush_mmu() itself when
+>   *	required.
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index c1b7414c7bef..9b048cabce27 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -933,10 +933,16 @@ void page_address_init(void);
+>   * Please note that, confusingly, "page_mapping" refers to the inode
+>   * address_space which maps the page from disk; whereas "page_mapped"
+>   * refers to user virtual address space into which the page is mapped.
+> + *
+> + * PAGE_MAPPING_LZFREE bit is set along with PAGE_MAPPING_ANON bit
+> + * and then page->mapping points to an anon_vma. This flag is used
+> + * for lazy freeing the page instead of swap.
+>   */
+>  #define PAGE_MAPPING_ANON	1
+>  #define PAGE_MAPPING_KSM	2
+> -#define PAGE_MAPPING_FLAGS	(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM)
+> +#define PAGE_MAPPING_LZFREE	4
+> +#define PAGE_MAPPING_FLAGS	(PAGE_MAPPING_ANON | PAGE_MAPPING_KSM | \
+> +				 PAGE_MAPPING_LZFREE)
+>  
+>  extern struct address_space *page_mapping(struct page *page);
+>  
+> @@ -962,6 +968,32 @@ static inline int PageAnon(struct page *page)
+>  	return ((unsigned long)page->mapping & PAGE_MAPPING_ANON) != 0;
+>  }
+>  
+> +static inline void SetPageLazyFree(struct page *page)
+> +{
+> +	BUG_ON(!PageAnon(page));
+> +	BUG_ON(!PageLocked(page));
+> +
+> +	page->mapping = (void *)((unsigned long)page->mapping |
+> +			PAGE_MAPPING_LZFREE);
+> +}
+> +
+> +static inline void ClearPageLazyFree(struct page *page)
+> +{
+> +	BUG_ON(!PageAnon(page));
+> +	BUG_ON(!PageLocked(page));
+> +
+> +	page->mapping = (void *)((unsigned long)page->mapping &
+> +				~PAGE_MAPPING_LZFREE);
+> +}
+> +
+> +static inline int PageLazyFree(struct page *page)
+> +{
+> +	if (((unsigned long)page->mapping & PAGE_MAPPING_FLAGS) ==
+> +			(PAGE_MAPPING_ANON|PAGE_MAPPING_LZFREE))
+> +		return 1;
+> +	return 0;
+> +}
+> +
+>  /*
+>   * Return the pagecache index of the passed page.  Regular pagecache pages
+>   * use ->index whereas swapcache pages use ->private
+> @@ -1054,6 +1086,7 @@ struct zap_details {
+>  	struct address_space *check_mapping;	/* Check page->mapping if set */
+>  	pgoff_t	first_index;			/* Lowest page->index to unmap */
+>  	pgoff_t last_index;			/* Highest page->index to unmap */
+> +	int lazy_free;				/* do lazy free */
+>  };
+>  
+>  struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
+> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> index 1da693d51255..19e74aebb3d5 100644
+> --- a/include/linux/rmap.h
+> +++ b/include/linux/rmap.h
+> @@ -75,6 +75,7 @@ enum ttu_flags {
+>  	TTU_UNMAP = 0,			/* unmap mode */
+>  	TTU_MIGRATION = 1,		/* migration mode */
+>  	TTU_MUNLOCK = 2,		/* munlock mode */
+> +	TTU_LAZYFREE  = 3,		/* free lazyfree page */
+>  	TTU_ACTION_MASK = 0xff,
+>  
+>  	TTU_IGNORE_MLOCK = (1 << 8),	/* ignore mlock */
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index 46ba0c6c219f..223909c14703 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -13,6 +13,21 @@
+>  #include <linux/page-flags.h>
+>  #include <asm/page.h>
+>  
+> +static inline struct page *MarkLazyFree(struct page *p)
+> +{
+> +	return (struct page *)((unsigned long)p | 0x1UL);
+> +}
+> +
+> +static inline struct page *ClearLazyFree(struct page *p)
+> +{
+> +	return (struct page *)((unsigned long)p & ~0x1UL);
+> +}
+> +
+> +static inline bool LazyFree(struct page *p)
+> +{
+> +	return ((unsigned long)p & 0x1UL) ? true : false;
+> +}
+> +
+>  struct notifier_block;
+>  
+>  struct bio;
+> diff --git a/include/uapi/asm-generic/mman-common.h b/include/uapi/asm-generic/mman-common.h
+> index 4164529a94f9..7e257e49be2e 100644
+> --- a/include/uapi/asm-generic/mman-common.h
+> +++ b/include/uapi/asm-generic/mman-common.h
+> @@ -34,6 +34,7 @@
+>  #define MADV_SEQUENTIAL	2		/* expect sequential page references */
+>  #define MADV_WILLNEED	3		/* will need these pages */
+>  #define MADV_DONTNEED	4		/* don't need these pages */
+> +#define MADV_FREE	5		/* do lazy free */
+>  
+>  /* common parameters: try to keep these consistent across architectures */
+>  #define MADV_REMOVE	9		/* remove these pages & resources */
+> diff --git a/mm/madvise.c b/mm/madvise.c
+> index 539eeb96b323..2e904289a2bb 100644
+> --- a/mm/madvise.c
+> +++ b/mm/madvise.c
+> @@ -31,6 +31,7 @@ static int madvise_need_mmap_write(int behavior)
+>  	case MADV_REMOVE:
+>  	case MADV_WILLNEED:
+>  	case MADV_DONTNEED:
+> +	case MADV_FREE:
+>  		return 0;
+>  	default:
+>  		/* be safe, default to 1. list exceptions explicitly */
+> @@ -272,7 +273,8 @@ static long madvise_willneed(struct vm_area_struct *vma,
+>   */
+>  static long madvise_dontneed(struct vm_area_struct *vma,
+>  			     struct vm_area_struct **prev,
+> -			     unsigned long start, unsigned long end)
+> +			     unsigned long start, unsigned long end,
+> +			     int behavior)
+>  {
+>  	*prev = vma;
+>  	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
+> @@ -284,8 +286,17 @@ static long madvise_dontneed(struct vm_area_struct *vma,
+>  			.last_index = ULONG_MAX,
+>  		};
+>  		zap_page_range(vma, start, end - start, &details);
+> +	} else if (behavior == MADV_FREE) {
+> +		struct zap_details details = {
+> +			.lazy_free = 1,
+> +		};
+> +
+> +		if (vma->vm_file)
+> +			return -EINVAL;
+> +		zap_page_range(vma, start, end - start, &details);
+>  	} else
+>  		zap_page_range(vma, start, end - start, NULL);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -384,8 +395,9 @@ madvise_vma(struct vm_area_struct *vma, struct vm_area_struct **prev,
+>  		return madvise_remove(vma, prev, start, end);
+>  	case MADV_WILLNEED:
+>  		return madvise_willneed(vma, prev, start, end);
+> +	case MADV_FREE:
+>  	case MADV_DONTNEED:
+> -		return madvise_dontneed(vma, prev, start, end);
+> +		return madvise_dontneed(vma, prev, start, end, behavior);
+>  	default:
+>  		return madvise_behavior(vma, prev, start, end, behavior);
+>  	}
+> @@ -403,6 +415,7 @@ madvise_behavior_valid(int behavior)
+>  	case MADV_REMOVE:
+>  	case MADV_WILLNEED:
+>  	case MADV_DONTNEED:
+> +	case MADV_FREE:
+>  #ifdef CONFIG_KSM
+>  	case MADV_MERGEABLE:
+>  	case MADV_UNMERGEABLE:
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 22dfa617bddb..f1f0dc13e8d1 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -1093,6 +1093,15 @@ again:
+>  
+>  			page = vm_normal_page(vma, addr, ptent);
+>  			if (unlikely(details) && page) {
+> +				if (details->lazy_free && PageAnon(page)) {
+> +					ptent = pte_mkold(ptent);
+> +					ptent = pte_mkclean(ptent);
+> +					set_pte_at(mm, addr, pte, ptent);
+> +					tlb_remove_tlb_entry(tlb, pte, addr);
+> +					tlb_madvfree_page(tlb, page);
+> +					continue;
+> +				}
+> +
+>  				/*
+>  				 * unmap_shared_mapping_pages() wants to
+>  				 * invalidate cache without truncating:
+> @@ -1276,7 +1285,8 @@ static void unmap_page_range(struct mmu_gather *tlb,
+>  	pgd_t *pgd;
+>  	unsigned long next;
+>  
+> -	if (details && !details->check_mapping && !details->nonlinear_vma)
+> +	if (details && !details->check_mapping && !details->nonlinear_vma &&
+> +		!details->lazy_free)
+>  		details = NULL;
+>  
+>  	BUG_ON(addr >= end);
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 76069afa6b81..7712f39acfee 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -377,6 +377,15 @@ void __init anon_vma_init(void)
+>  	anon_vma_chain_cachep = KMEM_CACHE(anon_vma_chain, SLAB_PANIC);
+>  }
+>  
+> +static inline bool is_anon_vma(unsigned long mapping)
+> +{
+> +	unsigned long anon_mapping = mapping & PAGE_MAPPING_FLAGS;
+> +	if ((anon_mapping != PAGE_MAPPING_ANON) &&
+> +	    (anon_mapping != (PAGE_MAPPING_ANON|PAGE_MAPPING_LZFREE)))
+> +		return false;
+> +	return true;
+> +}
+> +
+>  /*
+>   * Getting a lock on a stable anon_vma from a page off the LRU is tricky!
+>   *
+> @@ -407,7 +416,7 @@ struct anon_vma *page_get_anon_vma(struct page *page)
+>  
+>  	rcu_read_lock();
+>  	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
+> -	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
+> +	if (!is_anon_vma(anon_mapping))
+>  		goto out;
+>  	if (!page_mapped(page))
+>  		goto out;
+> @@ -450,7 +459,7 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page)
+>  
+>  	rcu_read_lock();
+>  	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
+> -	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
+> +	if (!is_anon_vma(anon_mapping))
+>  		goto out;
+>  	if (!page_mapped(page))
+>  		goto out;
+> @@ -1165,6 +1174,14 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+>  		}
+>  		set_pte_at(mm, address, pte,
+>  			   swp_entry_to_pte(make_hwpoison_entry(page)));
+> +	} else if ((flags & TTU_LAZYFREE) && PageLazyFree(page)) {
+> +		BUG_ON(!PageAnon(page));
+> +		if (unlikely(pte_dirty(pteval))) {
+> +			set_pte_at(mm, address, pte, pteval);
+> +			ret = SWAP_FAIL;
+> +			goto out_unmap;
+> +		}
+> +		dec_mm_counter(mm, MM_ANONPAGES);
+>  	} else if (PageAnon(page)) {
+>  		swp_entry_t entry = { .val = page_private(page) };
+>  		pte_t swp_pte;
+> diff --git a/mm/swap_state.c b/mm/swap_state.c
+> index e76ace30d436..0718ecd166dc 100644
+> --- a/mm/swap_state.c
+> +++ b/mm/swap_state.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/pagevec.h>
+>  #include <linux/migrate.h>
+>  #include <linux/page_cgroup.h>
+> +#include <linux/ksm.h>
+>  
+>  #include <asm/pgtable.h>
+>  
+> @@ -256,8 +257,36 @@ void free_page_and_swap_cache(struct page *page)
+>  }
+>  
+>  /*
+> + * move @page to inactive LRU's tail so that VM can discard it
+> + * rather than swapping hot pages out when memory pressure happens.
+> + */
+> +static bool move_lazyfree(struct page *page)
+> +{
+> +	if (!trylock_page(page))
+> +		return false;
+> +
+> +	if (PageKsm(page)) {
+> +		unlock_page(page);
+> +		return false;
+> +	}
+> +
+> +	if (PageSwapCache(page) &&
+> +			try_to_free_swap(page))
+> +		ClearPageDirty(page);
+> +
+> +	if (!PageLazyFree(page)) {
+> +		SetPageLazyFree(page);
+> +		deactivate_page(page);
+> +	}
+> +
+> +	unlock_page(page);
+> +	return true;
+> +}
+> +
+> +/*
+>   * Passed an array of pages, drop them all from swapcache and then release
+>   * them.  They are removed from the LRU and freed if this is their last use.
+> + * If page passed are lazyfree, deactivate them intead of freeing.
+>   */
+>  void free_pages_and_swap_cache(struct page **pages, int nr)
+>  {
+> @@ -269,7 +298,14 @@ void free_pages_and_swap_cache(struct page **pages, int nr)
+>  		int i;
+>  
+>  		for (i = 0; i < todo; i++)
+> -			free_swap_cache(pagep[i]);
+> +			if (LazyFree(pagep[i])) {
+> +				pagep[i] = ClearLazyFree(pagep[i]);
+> +				/* If we failed, just free */
+> +				if (!move_lazyfree(pagep[i]))
+> +					free_swap_cache(pagep[i]);
 
-It'd probably be better to use kmalloc and then
-only if it fails use vmalloc.
-
-See examples like net/sched/sch_hhf.c
+Oops, patchset was confused by older version in my git tree.
+Fix goes.
 
 
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index 0718ecd166dc..882f1c8e5bd2 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -300,9 +300,7 @@ void free_pages_and_swap_cache(struct page **pages, int nr)
+ 		for (i = 0; i < todo; i++)
+ 			if (LazyFree(pagep[i])) {
+ 				pagep[i] = ClearLazyFree(pagep[i]);
+-				/* If we failed, just free */
+-				if (!move_lazyfree(pagep[i]))
+-					free_swap_cache(pagep[i]);
++				move_lazyfree(pagep[i]);
+ 			} else {
+ 				free_swap_cache(pagep[i]);
+ 			}
+
+-- 
+Kind regards,
+Minchan Kim
