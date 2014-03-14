@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552AbaCNVao (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:30:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54002 "EHLO
+	id S1756535AbaCNVam (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:30:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54003 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756210AbaCNVaY (ORCPT
+	with ESMTP id S1756213AbaCNVaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 Mar 2014 17:30:24 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Joe Mario <jmario@redhat.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/16] perf probe: Clarify x86 register naming for perf probe
-Date: Fri, 14 Mar 2014 18:29:59 -0300
-Message-Id: <1394832610-17818-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 15/16] perf tools: Speed up thread map generation
+Date: Fri, 14 Mar 2014 18:30:09 -0300
+Message-Id: <1394832610-17818-16-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1394832610-17818-1-git-send-email-acme@infradead.org>
 References: <1394832610-17818-1-git-send-email-acme@infradead.org>
@@ -24,33 +24,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Don Zickus <dzickus@redhat.com>
 
-Clarify how to specify x86 registers in perf probe. I recently ran into
-this problem and had to figure it out from the source.
+When trying to capture perf data on a system running spejbb2013, perf
+hung for about 15 minutes.  This is because it took that long to gather
+about 10,000 thread maps and process them.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/1393596135-4227-3-git-send-email-andi@firstfloor.org
+I don't think a user wants to wait that long.
+
+Instead, recognize that thread maps are roughly equivalent to pid maps
+and just quickly copy those instead.
+
+To do this, I synthesize 'fork' events, this eventually calls
+thread__fork() and copies the maps over.
+
+The overhead goes from 15 minutes down to about a few seconds.
+
+--
+V2: based on Jiri's comments, moved malloc up a level
+    and made sure the memory was freed
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Joe Mario <jmario@redhat.com>
+Link: http://lkml.kernel.org/r/1394808224-113774-1-git-send-email-dzickus@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-probe.txt | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/util/event.c | 59 ++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 51 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index b715cb71592b..1513935c399b 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -136,6 +136,8 @@ Each probe argument follows below syntax.
- 'NAME' specifies the name of this argument (optional). You can use the name of local variable, local data structure member (e.g. var->field, var.field2), local array with fixed index (e.g. array[1], var->array[0], var->pointer[2]), or kprobe-tracer argument format (e.g. $retval, %ax, etc). Note that the name of this argument will be set as the last member name if you specify a local data structure member (e.g. field2 for 'var->field1.field2'.)
- 'TYPE' casts the type of this argument (optional). If omitted, perf probe automatically set the type based on debuginfo. You can specify 'string' type only for the local variable or structure member which is an array of or a pointer to 'char' or 'unsigned char' type.
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 55eebe936513..3e580be0f6fb 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -129,6 +129,28 @@ out:
+ 	return tgid;
+ }
  
-+On x86 systems %REG is always the short form of the register: for example %AX. %RAX or %EAX is not valid.
++static int perf_event__synthesize_fork(struct perf_tool *tool,
++				       union perf_event *event, pid_t pid,
++				       pid_t tgid, perf_event__handler_t process,
++				       struct machine *machine)
++{
++	memset(&event->fork, 0, sizeof(event->fork) + machine->id_hdr_size);
 +
- LINE SYNTAX
- -----------
- Line range is described by following syntax.
++	/* this is really a clone event but we use fork to synthesize it */
++	event->fork.ppid = tgid;
++	event->fork.ptid = tgid;
++	event->fork.pid  = tgid;
++	event->fork.tid  = pid;
++	event->fork.header.type = PERF_RECORD_FORK;
++
++	event->fork.header.size = (sizeof(event->fork) + machine->id_hdr_size);
++
++	if (process(tool, event, &synth_sample, machine) != 0)
++		return -1;
++
++	return 0;
++}
++
+ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 				       union perf_event *event,
+ 				       pid_t pid, pid_t tgid,
+@@ -278,6 +300,7 @@ int perf_event__synthesize_modules(struct perf_tool *tool,
+ 
+ static int __event__synthesize_thread(union perf_event *comm_event,
+ 				      union perf_event *mmap_event,
++				      union perf_event *fork_event,
+ 				      pid_t pid, int full,
+ 					  perf_event__handler_t process,
+ 				      struct perf_tool *tool,
+@@ -326,9 +349,15 @@ static int __event__synthesize_thread(union perf_event *comm_event,
+ 		if (tgid == -1)
+ 			return -1;
+ 
+-		/* process the thread's maps too */
+-		rc = perf_event__synthesize_mmap_events(tool, mmap_event, _pid, tgid,
+-							process, machine, mmap_data);
++		if (_pid == pid) {
++			/* process the parent's maps too */
++			rc = perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
++						process, machine, mmap_data);
++		} else {
++			/* only fork the tid's map, to save time */
++			rc = perf_event__synthesize_fork(tool, fork_event, _pid, tgid,
++						 process, machine);
++		}
+ 
+ 		if (rc)
+ 			return rc;
+@@ -344,7 +373,7 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 				      struct machine *machine,
+ 				      bool mmap_data)
+ {
+-	union perf_event *comm_event, *mmap_event;
++	union perf_event *comm_event, *mmap_event, *fork_event;
+ 	int err = -1, thread, j;
+ 
+ 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
+@@ -355,9 +384,14 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 	if (mmap_event == NULL)
+ 		goto out_free_comm;
+ 
++	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
++	if (fork_event == NULL)
++		goto out_free_mmap;
++
+ 	err = 0;
+ 	for (thread = 0; thread < threads->nr; ++thread) {
+ 		if (__event__synthesize_thread(comm_event, mmap_event,
++					       fork_event,
+ 					       threads->map[thread], 0,
+ 					       process, tool, machine,
+ 					       mmap_data)) {
+@@ -383,6 +417,7 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 			/* if not, generate events for it */
+ 			if (need_leader &&
+ 			    __event__synthesize_thread(comm_event, mmap_event,
++						       fork_event,
+ 						       comm_event->comm.pid, 0,
+ 						       process, tool, machine,
+ 						       mmap_data)) {
+@@ -391,6 +426,8 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 			}
+ 		}
+ 	}
++	free(fork_event);
++out_free_mmap:
+ 	free(mmap_event);
+ out_free_comm:
+ 	free(comm_event);
+@@ -405,7 +442,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 	DIR *proc;
+ 	char proc_path[PATH_MAX];
+ 	struct dirent dirent, *next;
+-	union perf_event *comm_event, *mmap_event;
++	union perf_event *comm_event, *mmap_event, *fork_event;
+ 	int err = -1;
+ 
+ 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
+@@ -416,6 +453,10 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 	if (mmap_event == NULL)
+ 		goto out_free_comm;
+ 
++	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
++	if (fork_event == NULL)
++		goto out_free_mmap;
++
+ 	if (machine__is_default_guest(machine))
+ 		return 0;
+ 
+@@ -423,7 +464,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 	proc = opendir(proc_path);
+ 
+ 	if (proc == NULL)
+-		goto out_free_mmap;
++		goto out_free_fork;
+ 
+ 	while (!readdir_r(proc, &dirent, &next) && next) {
+ 		char *end;
+@@ -435,12 +476,14 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+  		 * We may race with exiting thread, so don't stop just because
+  		 * one thread couldn't be synthesized.
+  		 */
+-		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
+-					   process, tool, machine, mmap_data);
++		__event__synthesize_thread(comm_event, mmap_event, fork_event, pid,
++					   1, process, tool, machine, mmap_data);
+ 	}
+ 
+ 	err = 0;
+ 	closedir(proc);
++out_free_fork:
++	free(fork_event);
+ out_free_mmap:
+ 	free(mmap_event);
+ out_free_comm:
 -- 
 1.8.1.4
 
