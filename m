@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462AbaCNRYQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 13:24:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48282 "EHLO
+	id S1756482AbaCNRYY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 13:24:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48293 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756365AbaCNRYL (ORCPT
+	with ESMTP id S1756441AbaCNRYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 13:24:11 -0400
+	Fri, 14 Mar 2014 13:24:22 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Patrick Palka <patrick@parcs.ath.cx>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/2] perf bench: Fix NULL pointer dereference in "perf bench all"
-Date: Fri, 14 Mar 2014 14:23:59 -0300
-Message-Id: <1394817839-26310-3-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Patrick Palka <patrick@parcs.ath.cx>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [GIT PULL 0/2] perf/urgent 'perf bench' fixes
+Date: Fri, 14 Mar 2014 14:23:57 -0300
+Message-Id: <1394817839-26310-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1394817839-26310-1-git-send-email-acme@infradead.org>
-References: <1394817839-26310-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrick Palka <patrick@parcs.ath.cx>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The for_each_bench() macro must check that the "benchmarks" field of a
-collection is not NULL before dereferencing it because the "all"
-collection in particular has a NULL "benchmarks" field (signifying that
-it has no benchmarks to iterate over).
+Hi Ingo,
 
-This fixes this NULL pointer dereference when running "perf bench all":
+	Please consider pulling,
 
-  [root@ssdandy ~]# perf bench all
-  <SNIP>
+- Arnaldo
 
-  # Running mem/memset benchmark...
-  # Copying 1MB Bytes ...
+The following changes since commit b7b4839d93e50adccef29eccb694807cdcb8bee3:
 
-         2.453675 GB/Sec
-        12.056327 GB/Sec (with prefault)
+  perf/x86: Fix leak in uncore_type_init failure paths (2014-03-11 11:59:34 +0100)
 
-  Segmentation fault (core dumped)
-  [root@ssdandy ~]#
+are available in the git repository at:
 
-Signed-off-by: Patrick Palka <patrick@parcs.ath.cx>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1394664051-6037-1-git-send-email-patrick@parcs.ath.cx
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+
+for you to fetch changes up to 6eeefccdcfc2cc9697562e740bfe6c35fddd4e1c:
+
+  perf bench: Fix NULL pointer dereference in "perf bench all" (2014-03-14 13:45:54 -0300)
+
+----------------------------------------------------------------
+perf/urgent 'bench' fixes:
+
+. Make 'perf bench mem' (i.e. no args) mean 'run all tests' so that we can run
+  all tests, not stopping at the numa ones.  (Arnaldo Carvalho de Melo)
+
+. Fix NULL pointer dereference after last test in in "perf bench all" (Patrick Palka)
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
+
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (1):
+      perf bench numa: Make no args mean 'run all tests'
+
+Patrick Palka (1):
+      perf bench: Fix NULL pointer dereference in "perf bench all"
+
+ tools/perf/bench/numa.c    | 1 +
  tools/perf/builtin-bench.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index e47f90cc7b98..8a987d252780 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -76,7 +76,7 @@ static struct collection collections[] = {
- 
- /* Iterate over all benchmarks within a collection: */
- #define for_each_bench(coll, bench) \
--	for (bench = coll->benchmarks; bench->name; bench++)
-+	for (bench = coll->benchmarks; bench && bench->name; bench++)
- 
- static void dump_benchmarks(struct collection *coll)
- {
--- 
-1.8.1.4
-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
