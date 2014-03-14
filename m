@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920AbaCNJZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 05:25:29 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40219 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896AbaCNJZ1 (ORCPT
+	id S1755845AbaCNJ2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 05:28:36 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:51596 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497AbaCNJ2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 05:25:27 -0400
-Date: Fri, 14 Mar 2014 02:25:19 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Hannes Reinecke <hare@suse.de>,
-        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Shaohua Li <shli@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] block: rework flush sequencing for blk-mq
-Message-ID: <20140314092519.GA10139@infradead.org>
-References: <20140130132620.GA6031@infradead.org>
- <20140130132630.GB6031@infradead.org>
- <x49iorp3fhm.fsf@segfault.boston.devel.redhat.com>
- <20140308155240.GA32297@infradead.org>
- <CAMM=eLewbtK7LiNZCXo=hm-sjVU2+MN+xTFuxb89mDA1iS3r0w@mail.gmail.com>
- <531B74B6.4070004@suse.de>
- <20140312102849.GA26509@infradead.org>
- <20140313161347.GA6598@redhat.com>
+	Fri, 14 Mar 2014 05:28:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140313161347.GA6598@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <alpine.DEB.2.02.1403121555140.18573@ionos.tec.linutronix.de>
+References: <1393345719-3707-1-git-send-email-jjhiblot@traphandler.com>
+	<alpine.DEB.2.02.1402262119560.4174@ionos.tec.linutronix.de>
+	<CACRpkdZ6D1XfDBdJEcR8G2HWkNcZSfz08Yvx8f0s+CqTUmybkg@mail.gmail.com>
+	<alpine.DEB.2.02.1403080857160.18573@ionos.tec.linutronix.de>
+	<CACRpkdb=51_D6kxWcmSSRdr3kROXiwJbRzQDS-1VxEJpBjVyUA@mail.gmail.com>
+	<alpine.DEB.2.02.1403121555140.18573@ionos.tec.linutronix.de>
+Date: Fri, 14 Mar 2014 10:28:34 +0100
+Message-ID: <CACRpkdaDo5uQVWQ-BxLbGJcjQVYc7+oBczH3tUD1-syFi1oQfQ@mail.gmail.com>
+Subject: Re: [PATCH] irq: Consider a negative return value of irq_startup() as
+ an error
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 12:13:47PM -0400, Mike Snitzer wrote:
-> Pretty ironic that in the same email that you ask someone to "Let's make
-> this a little less personal." you start by asserting upstream
-> dm-multipath sees very little testing -- and use your commit that
-> recently broke dm-multipath as the basis.  Anyway, please exapnd on what
-> you feel is broken with upstream dm-multipath.
+On Wed, Mar 12, 2014 at 4:10 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Getting a little upset, eh?  I didn't say it's broken, I said it gets
-very little testing.  The regression from me was found like so many
-before only after it was backported o some enterprise kernel.
+> I pushed out the patch to a separate branch
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip irq/for-gpio
+>
+> and merged that branch back into irq/core.
+>
+> So you can just pull irq/for-gpio into the gpio work and base the gpio
+> related changes on top of that. Just mention it in the pull request to
+> the other Linus that it contains an irq/core change which avoids merge
+> dependencies.
 
-I think the problem here is two-fold:
- a) the hardware you use with dm-multipath isn't widely available.
- b) it uses a very special code path in the block layer no one else uses
+OK I first merged in the v3.14-rc6 as base and then pulled this in,
+so I will proceed to switch the calls over to request/release
+resources.
 
-a) might be fixable by having some RDAC or similar emulation in qemu if
-someone wants to spend the effort.
-b) is a bit harder, but we should think hard about it when rewriting the
-multipath code to support blk-mq.  Talking about which I think trying to
-use dm-multipath on any blk-mq device will go horribly crash and boom at
-the moment.
+Yours,
+Linus Walleij
