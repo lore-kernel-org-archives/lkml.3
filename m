@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936AbaCNUKY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 16:10:24 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:44726 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158AbaCNUKV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 16:10:21 -0400
+	id S1755999AbaCNULV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 16:11:21 -0400
+Received: from www.meduna.org ([92.240.244.38]:35018 "EHLO meduna.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755158AbaCNULU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 16:11:20 -0400
+Message-ID: <5323625B.4010203@meduna.org>
+Date: Fri, 14 Mar 2014 21:11:07 +0100
+From: Stanislav Meduna <stano@meduna.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-X-Originating-IP: [85.250.70.16]
-In-Reply-To: <530B8C00.8020001@ti.com>
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
- <52F9282B.5000702@ti.com> <530B8C00.8020001@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 14 Mar 2014 22:10:00 +0200
-Message-ID: <CAK=WgbZp_RQPCeZJyMRkNTQxaJsnGZ3DnjhSkYYR_-PAE_Kp4g@mail.gmail.com>
-Subject: Re: [PATCHv4 0/7] omap hwspinlock dt support
-To: Suman Anna <s-anna@ti.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Tony Lindgren <tony@atomide.com>,
-        Kumar Gala <galak@codeaurora.org>,
+To: linux-serial@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: mxs-auart gives data from previous run after close and reopen
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: stano@meduna.org
+X-Authenticator: dovecot_plain
+X-Spam-Score: -6.9
+X-Spam-Score-Int: -68
+X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
+X-Date: 2014-03-14 21:11:15
+X-Connected-IP: 95.105.163.217:6849
+X-Message-Linecount: 59
+X-Body-Linecount: 45
+X-Message-Size: 2393
+X-Body-Size: 1793
+X-Received-Count: 1
+X-Recipient-Count: 4
+X-Local-Recipient-Count: 4
+X-Local-Recipient-Defer-Count: 0
+X-Local-Recipient-Fail-Count: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suman, Mark,
+Hi,
 
-On Mon, Feb 24, 2014 at 8:14 PM, Suman Anna <s-anna@ti.com> wrote:
-> Mark, Ohad,
-...
-> Gentle reminder, can you provide your acks/comments?
+following scenario:
 
-Sorry for the late jump in.
+- a Freescale i.MX28 machine
+- RS232 AUART looped back Rx - Tx or two different ports cross-connected
+- a test program sending data in one thread and receiving in the other:
+  thread A periodically sends "Quick brown fox jumps over the lazy dog",
+  thread B receives
+- stop the program using ctrl-C
+- restart
 
-I have a few comments:
+=> sometimes the receiving thread gets "dogQuick", receiving
+   characters from the previous transmission
 
-- Hardware spinlocks must have global and system-wide id numbers;
-these numbers cannot be maintained internally by the Linux Kernel.
-Think of an SoC with several asynchronous heterogeneous processors,
-each of which is running a different OS, and they all need to use a
-specific hardware spinlock in order to share some resource. For that
-to happen, every hwlock must have a predefined and deterministic id
-number which is global in the system. We can't have those id numbers
-be relative to an hwlock "controller", and we can't have two hwlock
-"controllers" share the same id numbers.
+The extra characters definitely come from the receiver - the transmission
+is OK. This was verified by a scope.
 
-- I suspect the simplest and most straight forward way to achieve this
-is by (a) bringing back the concept of the base_id property, and (b)
-letting the global hwlock id be the DT identifier (plus the base_id)
-and then providing it directly to the drivers when needed. The latter
-is required in order to support dynamically allocation of hwlocks, in
-which case Linux must know the global system-wide id number, and then
-share it with the other asynchronous OSes via some IPC.
+My theory is that this behaviour is caused by mxs_auart_shutdown
+function gating and mxs_auart_startup reenabling the clock instead
+of doing a soft reset. If the clock is gated while the AUART already
+has something in the FIFO, but did not generate the interrupt yet,
+the internal state machine is frozen in this state. As soon as it
+is reenabled, the characters are delivered to a new user.
 
-- If we feel there's no way any system is going to have more than a
-single hwlock controller, then we can live without a base_id property,
-but then this needs to be clearly documented and prohibited. Today
-both the hwlock DT representation, and the coupled kernel code,
-implicitly allow this anomaly to exist.
+I am using a 3.4.77 kernel, but the relevant code looks the same in
+the recent kernels (when not using DMA). I also backported patches
+waiting for the transmission FIFO to clear at mxs_auart_shutdown.
 
-- Hwlock controller nodes should have a list of reserved locks (those
-locks for which other nodes have a phandle+identifier pointing at) to
-prevent those locks from being dynamically allocated by eager drivers.
+I did not find any possibility to fully clear the receiver - even
+if one disables the AUART and reads everything from the FIFO,
+the character currently in transmit might be still somewhere (the
+reference manual states that disabling is effective after the
+current character is received). Which might be 1 ms at 9600 and one
+has no clue whether it is the case.
 
-Most of these issues were discussed Arnd, Benoit and myself back then,
-please see below:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2011-September/064265.html
+Also note that the function mxs_auart_reset is in fact not doing
+a reset - it just makes sure that the AUART comes out of one after
+the initialization. Maybe a full reset at startup is the solution...
 
-Let's discuss,
+Pleas Cc: me when answering.
 
-Thanks,
-Ohad.
+Regards
+-- 
+                                Stano
