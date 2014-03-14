@@ -1,91 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912AbaCNJq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 05:46:26 -0400
-Received: from mx08-00178001.pphosted.com ([62.209.51.94]:60031 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755593AbaCNJqY (ORCPT
+	id S1756039AbaCNJtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 05:49:12 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46615 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755869AbaCNJtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 05:46:24 -0400
-Message-ID: <5322CF87.5000301@st.com>
-Date: Fri, 14 Mar 2014 10:44:39 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
+	Fri, 14 Mar 2014 05:49:09 -0400
+Message-ID: <5322D089.7010605@free-electrons.com>
+Date: Fri, 14 Mar 2014 10:48:57 +0100
+From: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>, Joe Perches <joe@perches.com>
-Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <kernel@stlinux.com>, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH v4 4/6] pinctrl: st: Use ARRAY_SIZE instead of raw value
- for number of delays
-References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>	<1394614210-15698-5-git-send-email-maxime.coquelin@st.com>	<1394634313.28839.57.camel@joe-AO722> <CACRpkda0Z15zC=d8xe+KyHqgmTCHbnUjL14fBmtscpR-2kHtFQ@mail.gmail.com>
-In-Reply-To: <CACRpkda0Z15zC=d8xe+KyHqgmTCHbnUjL14fBmtscpR-2kHtFQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-14_04:2014-03-14,2014-03-14,1970-01-01 signatures=0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] ARM: dts: berlin2q: add the Marvell Armada 1500
+ pro
+References: <1394719607-25018-1-git-send-email-antoine.tenart@free-electrons.com> <1394719607-25018-2-git-send-email-antoine.tenart@free-electrons.com> <5322CC8B.6010905@gmail.com>
+In-Reply-To: <5322CC8B.6010905@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sebastian,
 
-
-On 03/14/2014 10:20 AM, Linus Walleij wrote:
-> On Wed, Mar 12, 2014 at 3:25 PM, Joe Perches <joe@perches.com> wrote:
->> On Wed, 2014-03-12 at 09:50 +0100, Maxime COQUELIN wrote:
->>> This patch replaces the raw values with ARRAY_SIZE for assigning the
->>> ninput_delays and noutput_delays fields of STiH416's st_pctl_data struct.
->>
->> trivial note:
->>
->>> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
->> []
->>> @@ -384,9 +384,9 @@ static unsigned int stih416_delays[] = {0, 300, 500, 750, 1000, 1250, 1500,
->>>   static const struct st_pctl_data  stih416_data = {
->>>        .rt_style       = st_retime_style_dedicated,
->>>        .input_delays   = stih416_delays,
->>> -     .ninput_delays  = 14,
->>> +     .ninput_delays  = ARRAY_SIZE(stih416_delays),
->>>        .output_delays  = stih416_delays,
->>> -     .noutput_delays = 14,
->>> +     .noutput_delays = ARRAY_SIZE(stih416_delays),
->>>        .alt = 0, .oe = 40, .pu = 50, .od = 60, .rt = 100,
->>>   };
->>>
->>
->> drivers/pinctrl/pinctrl-st.c-   unsigned int    *input_delays;
->> drivers/pinctrl/pinctrl-st.c-   unsigned int    *output_delays;
->>
->> It may be better to change these to const unsigned int *
->> and change
->>
->> static unsigned int stih416_delays[] = {
->>
->> to static const
+On 14/03/2014 10:31, Sebastian Hesselbarth wrote:
+> On 03/13/2014 03:06 PM, Antoine Ténart wrote:
+>> +    clocks {
+>> +        #address-cells = <0>;
+>> +        #size-cells = <0>;
+>> +
+>> +        smclk: sysmgr-clock {
+>> +            compatible = "fixed-clock";
+>> +            #clock-cells = <0>;
+>> +            clock-frequency = <25000000>;
+>> +        };
+>> +
+>> +        sysclk: system-clock {
+>> +            compatible = "fixed-clock";
+>> +            #clock-cells = <0>;
+>> +            clock-frequency = <400000000>;
+>> +        };
+>> +    };
+>> +
+>> +    soc {
+> [...]
+>> +        local-timer@ad0600 {
+>> +            compatible = "arm,cortex-a9-twd-timer";
+>> +            reg = <0xad0600 0x20>;
+>> +            clocks = <&sysclk>;
 >
-> Good point. Patches accepted :-)
-
-Sorry Joe, I forgot to reply.
-
-I added this to my todo list.
-I will provide the change before end of next week.
-
-Thanks,
-Maxime
-
+> If I understand Jisheng correctly, this should be cpuclk/3. When
+> removing the clocks {} container above, please also take care of
+> it.
 >
-> Yours,
-> Linus Walleij
+> You can do
 >
+> cpuclk: cpu-clock {
+>      compatible = "fixed-clock";
+>      #clock-cells = <0>;
+>      clock-frequency = <1200000000>; /* <- put correct freq here */
+> };
+>
+> sysclk: system-clock {
+>      compatible = "fixed-factor-clock";
+>      #clock-cells = <0>;
+>      clocks = <&cpuclk>;
+>      clock-multi = <1>;
+>      clock-div = <3>;
+> };
+>
+> Hopefully, we'll have proper clock drivers soon so we can just replace
+> referenced "fixed-*" clocks.
+
+Sure, this is why I only kept one fixed clock in this patch.
+
+I'll add the cpuclk here then.
+
+>> +            timer0: timer@2c00 {
+>> +                compatible = "snps,dw-apb-timer";
+>> +                reg = <0x2c00 0x14>;
+>> +                interrupts = <8>;
+>> +                clock-freq = <100000000>;
+>> +                status = "okay";
+>> +            };
+>> +
+>> +            timer1: timer@2c14 {
+>> +                compatible = "snps,dw-apb-timer";
+>> +                reg = <0x2c14 0x14>;
+>> +                clock-freq = <100000000>;
+>> +                status = "disabled";
+>> +            };
+>
+> Please also add the remaining 6 apb timers.
+
+I don't have any information about the remaining 6 apb timers. I'll ask 
+Jisheng.
+
+
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
