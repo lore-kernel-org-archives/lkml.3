@@ -1,191 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887AbaCNOnw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:43:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41936 "EHLO mx1.redhat.com"
+	id S1755177AbaCNOoq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:44:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33463 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754723AbaCNOnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:43:51 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: acme@redhat.com
-Cc: jolsa@redhat.com, jmario@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH V2] perf: Speed up thread map generation
-Date: Fri, 14 Mar 2014 10:43:44 -0400
-Message-Id: <1394808224-113774-1-git-send-email-dzickus@redhat.com>
+	id S1754219AbaCNOoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 10:44:44 -0400
+Date: Fri, 14 Mar 2014 15:44:42 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Simon Wood <simon@mungewell.org>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ivan Baldo <ibaldo@adinet.com.uy>, evilcow <evilcow93@yahoo.com>
+Subject: Re: [PATCH] HID: hid-lg4ff: Support new version of G27
+In-Reply-To: <1394736123-2102-1-git-send-email-simon@mungewell.org>
+Message-ID: <alpine.LNX.2.00.1403141544350.3690@pobox.suse.cz>
+References: <1394736123-2102-1-git-send-email-simon@mungewell.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When trying to capture perf data on a system running spejbb2013,
-perf hung for about 15 minutes.  This is because it took that
-long to gather about 10,000 thread maps and process them.
+On Thu, 13 Mar 2014, Simon Wood wrote:
 
-I don't think a user wants to wait that long.
+> It has been reported that there is a new hardware version of the G27
+> in the 'wild'. This patch add's this new revision so that it can be
+> sent the command to switch to native mode.
+> 
+> Reported-by: "Ivan Baldo" <ibaldo@adinet.com.uy>
+> Tested-by: "evilcow" <evilcow93@yahoo.com>
+> Signed-off-by: Simon Wood <simon@mungewell.org>
+> ---
+>  drivers/hid/hid-lg4ff.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
+> index befe0e3..24883b4 100644
+> --- a/drivers/hid/hid-lg4ff.c
+> +++ b/drivers/hid/hid-lg4ff.c
+> @@ -43,6 +43,7 @@
+>  #define G25_REV_MIN 0x22
+>  #define G27_REV_MAJ 0x12
+>  #define G27_REV_MIN 0x38
+> +#define G27_2_REV_MIN 0x39
+>  
+>  #define to_hid_device(pdev) container_of(pdev, struct hid_device, dev)
+>  
+> @@ -130,6 +131,7 @@ static const struct lg4ff_usb_revision lg4ff_revs[] = {
+>  	{DFP_REV_MAJ,  DFP_REV_MIN,  &native_dfp},	/* Driving Force Pro */
+>  	{G25_REV_MAJ,  G25_REV_MIN,  &native_g25},	/* G25 */
+>  	{G27_REV_MAJ,  G27_REV_MIN,  &native_g27},	/* G27 */
+> +	{G27_REV_MAJ,  G27_2_REV_MIN,  &native_g27},	/* G27 v2 */
+>  };
 
-Instead, recognize that thread maps are roughly equivalent to
-pid maps and just quickly copy those instead.
+Applied, thanks.
 
-To do this, I synthesize 'fork' events, this eventually calls
-thread__fork() and copies the maps over.
-
-The overhead goes from 15 minutes down to about a few seconds.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
---
-V2: based on Jiri's comments, moved malloc up a level
-    and made sure the memory was freed
----
- tools/perf/util/event.c |   59 ++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 51 insertions(+), 8 deletions(-)
-
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 55eebe9..3e580be 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -129,6 +129,28 @@ out:
- 	return tgid;
- }
- 
-+static int perf_event__synthesize_fork(struct perf_tool *tool,
-+				       union perf_event *event, pid_t pid,
-+				       pid_t tgid, perf_event__handler_t process,
-+				       struct machine *machine)
-+{
-+	memset(&event->fork, 0, sizeof(event->fork) + machine->id_hdr_size);
-+
-+	/* this is really a clone event but we use fork to synthesize it */
-+	event->fork.ppid = tgid;
-+	event->fork.ptid = tgid;
-+	event->fork.pid  = tgid;
-+	event->fork.tid  = pid;
-+	event->fork.header.type = PERF_RECORD_FORK;
-+
-+	event->fork.header.size = (sizeof(event->fork) + machine->id_hdr_size);
-+
-+	if (process(tool, event, &synth_sample, machine) != 0)
-+		return -1;
-+
-+	return 0;
-+}
-+
- int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 				       union perf_event *event,
- 				       pid_t pid, pid_t tgid,
-@@ -278,6 +300,7 @@ int perf_event__synthesize_modules(struct perf_tool *tool,
- 
- static int __event__synthesize_thread(union perf_event *comm_event,
- 				      union perf_event *mmap_event,
-+				      union perf_event *fork_event,
- 				      pid_t pid, int full,
- 					  perf_event__handler_t process,
- 				      struct perf_tool *tool,
-@@ -326,9 +349,15 @@ static int __event__synthesize_thread(union perf_event *comm_event,
- 		if (tgid == -1)
- 			return -1;
- 
--		/* process the thread's maps too */
--		rc = perf_event__synthesize_mmap_events(tool, mmap_event, _pid, tgid,
--							process, machine, mmap_data);
-+		if (_pid == pid) {
-+			/* process the parent's maps too */
-+			rc = perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
-+						process, machine, mmap_data);
-+		} else {
-+			/* only fork the tid's map, to save time */
-+			rc = perf_event__synthesize_fork(tool, fork_event, _pid, tgid,
-+						 process, machine);
-+		}
- 
- 		if (rc)
- 			return rc;
-@@ -344,7 +373,7 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
- 				      struct machine *machine,
- 				      bool mmap_data)
- {
--	union perf_event *comm_event, *mmap_event;
-+	union perf_event *comm_event, *mmap_event, *fork_event;
- 	int err = -1, thread, j;
- 
- 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
-@@ -355,9 +384,14 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
- 	if (mmap_event == NULL)
- 		goto out_free_comm;
- 
-+	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
-+	if (fork_event == NULL)
-+		goto out_free_mmap;
-+
- 	err = 0;
- 	for (thread = 0; thread < threads->nr; ++thread) {
- 		if (__event__synthesize_thread(comm_event, mmap_event,
-+					       fork_event,
- 					       threads->map[thread], 0,
- 					       process, tool, machine,
- 					       mmap_data)) {
-@@ -383,6 +417,7 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
- 			/* if not, generate events for it */
- 			if (need_leader &&
- 			    __event__synthesize_thread(comm_event, mmap_event,
-+						       fork_event,
- 						       comm_event->comm.pid, 0,
- 						       process, tool, machine,
- 						       mmap_data)) {
-@@ -391,6 +426,8 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
- 			}
- 		}
- 	}
-+	free(fork_event);
-+out_free_mmap:
- 	free(mmap_event);
- out_free_comm:
- 	free(comm_event);
-@@ -405,7 +442,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
- 	DIR *proc;
- 	char proc_path[PATH_MAX];
- 	struct dirent dirent, *next;
--	union perf_event *comm_event, *mmap_event;
-+	union perf_event *comm_event, *mmap_event, *fork_event;
- 	int err = -1;
- 
- 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
-@@ -416,6 +453,10 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
- 	if (mmap_event == NULL)
- 		goto out_free_comm;
- 
-+	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
-+	if (fork_event == NULL)
-+		goto out_free_mmap;
-+
- 	if (machine__is_default_guest(machine))
- 		return 0;
- 
-@@ -423,7 +464,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
- 	proc = opendir(proc_path);
- 
- 	if (proc == NULL)
--		goto out_free_mmap;
-+		goto out_free_fork;
- 
- 	while (!readdir_r(proc, &dirent, &next) && next) {
- 		char *end;
-@@ -435,12 +476,14 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
-  		 * We may race with exiting thread, so don't stop just because
-  		 * one thread couldn't be synthesized.
-  		 */
--		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
--					   process, tool, machine, mmap_data);
-+		__event__synthesize_thread(comm_event, mmap_event, fork_event, pid,
-+					   1, process, tool, machine, mmap_data);
- 	}
- 
- 	err = 0;
- 	closedir(proc);
-+out_free_fork:
-+	free(fork_event);
- out_free_mmap:
- 	free(mmap_event);
- out_free_comm:
 -- 
-1.7.1
-
+Jiri Kosina
+SUSE Labs
