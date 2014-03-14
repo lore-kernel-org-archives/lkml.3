@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863AbaCNQ3F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 12:29:05 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36627 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754767AbaCNQ3B (ORCPT
+	id S1755932AbaCNQaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 12:30:22 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50484 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754767AbaCNQaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 12:29:01 -0400
-Date: Fri, 14 Mar 2014 16:28:31 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+	Fri, 14 Mar 2014 12:30:15 -0400
+Date: Fri, 14 Mar 2014 16:30:10 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: Trusted kernel patchset for Secure Boot lockdown
-Message-ID: <20140314162831.1caf342c@alan.etchedpixels.co.uk>
-In-Reply-To: <CAGXu5jLZcWh5WD0L8s3Q-GXdXCMnA57qtjfdFfQbv0fxYcuCTQ@mail.gmail.com>
-References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
-	<CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
-	<alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
-	<1394686919.25122.2.camel@x230>
-	<CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
-	<alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
-	<1394726363.25122.16.camel@x230>
-	<20140313212450.67f1de8e@alan.etchedpixels.co.uk>
-	<1394746248.27846.3.camel@x230>
-	<20140313232140.03bdaac3@alan.etchedpixels.co.uk>
-	<1394762250.6416.24.camel@x230.lan>
-	<20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
-	<1394801518.6416.38.camel@x230.lan>
-	<CAGXu5jLZcWh5WD0L8s3Q-GXdXCMnA57qtjfdFfQbv0fxYcuCTQ@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Message-ID: <20140314163010.GX366@sirena.org.uk>
+References: <1394787326-14520-1-git-send-email-s.trumtrar@pengutronix.de>
+ <20140314161403.GN25870@e106331-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AG41CdL1ZWVzkk/P"
+Content-Disposition: inline
+In-Reply-To: <20140314161403.GN25870@e106331-lin.cambridge.arm.com>
+X-Cookie: Some assembly required.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: dw-mmio: add oftree support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The command line problem here is a total red herring. If you've got a
-> measured kernel, you have a measured command line. (If not, you don't
 
-That would be the sensible approach, but it has some quite drastic
-ramifications.
+--AG41CdL1ZWVzkk/P
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> have a measured kernel.) Dealing with the command line has nothing to
-> do with enforcing the ring0/uid0 boundary which is what this patch
-> series does.
+On Fri, Mar 14, 2014 at 04:14:03PM +0000, Mark Rutland wrote:
+> On Fri, Mar 14, 2014 at 08:55:26AM +0000, Steffen Trumtrar wrote:
 
-It has a huge relevance. You are signing blocks of code and loading them
-into your kernel. In case it's escaped your notice those blocks of code
-have behaviour which is considerably customisable by passing module
-arguments to them. In many cases they don't actually check those
-arguments. If I can set module paramters I already 0wn your box so many
-different ways its not even funny.
+> > +Optional properties:
+> > +- num-chipselects : The number of chipselects.
 
-> Right. As mentioned, we've been over all of this before. We cannot
-> change the meaning of capabilities (nor expand their coverage to
-> existing interfaces) without breaking userspace. Since we cannot break
-> userspace, we must create a different policy system that covers this
-> new thing we want to do and keeps the new policy distinctly separate.
+> If this is optional, when wuold I need to set this? What's the default
+> assumption?
 
-So you have everything checked twice all over the kernel and you
-guarantee that people will get it wrong. I don't see the point of putting
-a broken implementation in the kernel. If you want to do security do it
-*right* and do it once. You think every single person who adds a driver
-is going to muddle through two interfaces (and in future no doubt more if
-we don't fix it properly) and get it right each time ?
+> Mark: I see some bindings have "num-chipselects", and some have
+> "num-cs". Do you have a preferred form that people could align on?
 
-The 'breaking userspace' argument is bullshit already. The whole *point*
-of the measured kernel is to break userspace. You are deliberately
-breaking a pile of functionality, much of it undersirable in order to
-achieve your measured system.
+Probably -cs but the whole thing needs reviewing anyway for handling of
+GPIO based chipselects.
 
-The only "don't break" case that matters is if the measured stuff isn't
-in use. In those cases we don't need to break anything.
+--AG41CdL1ZWVzkk/P
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Alan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTIy6PAAoJELSic+t+oim93OAP/jK08OBIZnIXbqS2KH/Aoer6
+OvJq0y2nGCVE7YxCdr9EQ/oWB2y2TTLD9A0KGyFrcit4+Ebyt8TXt3S+VUUOB2xP
+pUc6H6KKt+ul5mWmsgh+p5R9yORV8caZg4UXtRJ6a+EsGDcLASjlXIhNj23VIYrS
+G32jOtsxguSRl/FM+BpGWubMobj17AgLNC6iFWKaUP8E7ctwDZIO/BEmR8Lf2GJo
+YeSIuFNUcCSXlI/fiKZSVzQLGtil+3PrgnKh1WbdxsB6tIktBHTF+KU3R+gUPlVp
+ZeShi+eiMF0xhMlOIRlLJ1U8eG57VsHTHKzFtSpkfsbPBu/9DTyuf24OxsQqU6SC
+OIuCFlZ59KyNWqChwau8LxVGwtTE2P41tbuQGl1UDOn2vDoDIytep0TGviX027lm
+dB/07+LIiLOtQ+98EERjxWwpd4HLSowGPH7S+HkJNIT9B1Q9ODV91Lif+qgOtwG1
+C6mfUEse9Y044A35tISWy77Y5h5huPQWDhzmIcpl58t5Q2oWRA3u+1s7NaaxnY8R
+UPrncktgllCbc5X/qm7WX8Dxo2GwFZZ7Ts8uWoR02QmVhhQxqZbxDVUUL2qlWztx
+UIP+RjVuNwdlvs3w9ODA3620peoO684jQ8mCNu4n7uh/I8pVJHymAGPk1yqCHi9j
+yCO0AivHOkE0F8Ne1kMW
+=SmBh
+-----END PGP SIGNATURE-----
+
+--AG41CdL1ZWVzkk/P--
