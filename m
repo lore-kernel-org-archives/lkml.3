@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888AbaCNFLt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 01:11:49 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:57710 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752759AbaCNFLn (ORCPT
+	id S1755414AbaCNFM3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 01:12:29 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:52427 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152AbaCNFM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 01:11:43 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-eb-53228f8db11c
-Date: Fri, 14 Mar 2014 14:11:40 +0900
+	Fri, 14 Mar 2014 01:12:26 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-2b-53228fa9138f
+Date: Fri, 14 Mar 2014 14:12:09 +0900
 From: Cho KyongHo <pullip.cho@samsung.com>
 To: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
         Linux DeviceTree <devicetree@vger.kernel.org>,
@@ -24,39 +24,40 @@ Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
         Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH v11 21/27] iommu/exynos: change rwlock to spinlock
-Message-id: <20140314141140.8c05452abfa2375b739845d6@samsung.com>
+Subject: [PATCH v11 22/27] iommu/exynos: add devices attached to the System MMU
+ to an IOMMU group
+Message-id: <20140314141209.f48ffd3314ee743deae3e2cb@samsung.com>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t8zY93efqVgg0n9+hZ37p5jtZh/BEi8
-	OvKDyWLBfmuLztkb2C16F1xls9j0+BqrxeVdc9gsZpzfx2RxYcVGdospiw6zWhx+085qcfJP
-	L6PF+hmvWSxm3lrD4sDv8eTgPCaP2Q0XWTz+He5n8rhzbQ+bx+Yl9R6Tbyxn9OjbsorR4/Mm
-	OY8rR88wBXBGcdmkpOZklqUW6dslcGXs+byKseCXTsW6znNsDYzzVbsYOTkkBEwkJh97wARh
-	i0lcuLeeDcQWEljGKPFgQQxMzefDz1gg4tMZJdoOAMW5gOzJTBLbpzWCNbMIqEq0nesAs9kE
-	tCRWzz3OCFIkItDGJPG18RALiMMsMJdZ4uO3OWArhAWcJI59WccIYvMKOEpc/rqYGWKdhcSF
-	pg52iLigxI/J98BWMwNN3bytiRXClpfYvOYtM8hQCYFODokpt4+zQJwhIPFtMsg2DqCErMSm
-	A1AzJSUOrrjBMoFRZBaSsbOQjJ2FZOwCRuZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGCHR
-	27+D8e4B60OMyUArJzJLiSbnA6M/ryTe0NjMyMLUxNTYyNzSjDRhJXHe+w+TgoQE0hNLUrNT
-	UwtSi+KLSnNSiw8xMnFwSjUwLthTNe/rVR4btu2CqokPTpf93nzg8bQp057KZjVWFNme0Fyc
-	7MgkzX7qcYLF9kdCtts160zMxB58nzB7k/OGORUVE7YsZbq2pWX3zVeOnkIR35V3/nZ9KvC7
-	cefk9IWhX9xO/dQ/XSpbU73CfXW2gf9yp5aezKifsd85HXw4Xq1hm5rKNfWdqhJLcUaioRZz
-	UXEiAPo2OQP0AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jQd3efqVggylNmhZ37p5jtZh/BEi8
-	OvKDyWLBfmuLztkb2C16F1xls9j0+BqrxeVdc9gsZpzfx2RxYcVGdospiw6zWhx+085qcfJP
-	L6PF+hmvWSxm3lrD4sDv8eTgPCaP2Q0XWTz+He5n8rhzbQ+bx+Yl9R6Tbyxn9OjbsorR4/Mm
-	OY8rR88wBXBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gB9oKRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM2PN5FWPBL52K
-	dZ3n2BoY56t2MXJySAiYSHw+/IwFwhaTuHBvPRuILSQwnVGi7UBMFyMXkD2ZSWL7tEYmkASL
-	gKpE27kOMJtNQEti9dzjjCBFIgJtTBJfGw+xgDjMAnOZJT5+mwM2SljASeLYl3WMIDavgKPE
-	5a+LmSHWWUhcaOpgh4gLSvyYfA/sDGagqZu3NbFC2PISm9e8ZZ7AyDcLSdksJGWzkJQtYGRe
-	xSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRGcHJ5J7WBc2WBxiFGAg1GJh9fhsGKwEGtiWXFl
-	7iFGCQ5mJRHeqgilYCHelMTKqtSi/Pii0pzU4kOMyUB/T2SWEk3OByauvJJ4Q2MTMyNLIzML
-	IxNzc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpgXOSR0R/e5anSsUlrmpXOUrWbPC/W
-	cFzr4c90Y9SwfquiZsoWJ6+l4Wyl5z+5L3Fejesx+3MVf1/rTInaffc3a8KS6nkZ9levTX4k
-	4WfUe3k39/fTzx1OLSl92mD6OmqX8P+/H2zO3RTabOdacJMvSI9p1iu2W+ELblT9ZTQSCLK4
-	WMzkce2zEktxRqKhFnNRcSIAHFzLalIDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zA92V/UrBBltn6lvcuXuO1WL+ESDx
+	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S2mLDrManH4TTurxck/
+	vYwW62e8ZrGYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
+	5DyuHD3DFMAZxWWTkpqTWZZapG+XwJXR1jWPueAXb8W7h8tYGxgvc3cxcnJICJhITL/0jhXC
+	FpO4cG89WxcjF4eQwDJGiX89O5hhii5+2QyVWMQo8bP3AZQzmUmid8pOpi5GDg4WAVWJk9ed
+	QRrYBLQkVs89zghSIyLQxiTxtfEQC4jDLDCXWeLjtzlsIFXCAskSn/7OYgGxeQUcJdY23oFa
+	ZyFxoamDHSIuKPFj8j2wGmagqZu3NbFC2PISm9e8ZQYZKiHQySGx8l8fWBGLgIDEt8kg2ziA
+	ErISmw5AzZSUOLjiBssERpFZSMbOQjJ2FpKxCxiZVzGKphYkFxQnpReZ6hUn5haX5qXrJefn
+	bmKExO/EHYz3D1gfYkwGWjmRWUo0OR8Y/3kl8YbGZkYWpiamxkbmlmakCSuJ86Y/SgoSEkhP
+	LEnNTk0tSC2KLyrNSS0+xMjEwSnVwGi+dl3owzTxhfs5LAK5K7a9sV/4O/r+bseNRlHub7+d
+	jrD4sXtGidDrtVd0d0V6hgnab/XvtJx8vfRlQEyG3efU7j/ld/XPuBoGLZ31sKf9gYTdCcdw
+	za2TZ+9ddFRE+2rBoy2xWnPO/5e4O6/v+qynj/V335dLNlF531Yw70mib+Z2fvNbX7YqsRRn
+	JBpqMRcVJwIABa9Of/UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd2V/UrBBhe3alrcuXuO1WL+ESDx
+	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S2mLDrManH4TTurxck/
+	vYwW62e8ZrGYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
+	5DyuHD3DFMAZ1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
+	oOuWmQP0gZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xo61rHnPBL96K
+	dw+XsTYwXubuYuTkkBAwkbj4ZTMbhC0mceHeeiCbi0NIYBGjxM/eB1DOZCaJ3ik7mboYOThY
+	BFQlTl53BmlgE9CSWD33OCNIjYhAG5PE18ZDLCAOs8BcZomP3+aAjRUWSJb49HcWC4jNK+Ao
+	sbbxDjPEOguJC00d7BBxQYkfk++B1TADTd28rYkVwpaX2LzmLfMERr5ZSMpmISmbhaRsASPz
+	KkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg5PBMagfjygaLQ4wCHIxKPLwOhxWDhVgTy4or
+	cw8xSnAwK4nwVkUoBQvxpiRWVqUW5ccXleakFh9iTAZ6eyKzlGhyPjBx5ZXEGxqbmBlZGplZ
+	GJmYm5MmrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QDo+9fMdn0V6sPOxl/lpR+4mS0dJn9
+	9xQZ+QzeSSv3Rr85kLe++afCqc1KmuJOcg28WUtnxbnN3DJJKuHW4pMqfT+VprjciPQVZl6m
+	GebOcExpd0IDR/CaOWsPMe1+mO0horVUxMq+95Js+eL3ridETp1mEpJzWMK5yzEy7F+z7e6z
+	67rDtkz8rsRSnJFoqMVcVJwIAOPYq55SAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -64,178 +65,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since acquiring read_lock is not more frequent than write_lock, it is
-not beneficial to use rwlock, this commit changes rwlock to spinlock.
+Patch written by Antonios Motakis <a.motakis@virtualopensystems.com>:
 
-Reviewed-by: Grant Grundler <grundler@chromium.org>
-Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+IOMMU groups are expected by certain users of the IOMMU API,
+e.g. VFIO. Since each device is behind its own System MMU, we
+can allocate a new IOMMU group for each device.
+
+Reviewd-by: Cho KyongHo <pullip.cho@samsung.com>
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/iommu/exynos-iommu.c |   39 ++++++++++++++++++++-------------------
- 1 file changed, 20 insertions(+), 19 deletions(-)
+ drivers/iommu/exynos-iommu.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 7489343..543ea2e0 100644
+index 543ea2e0..2beb197 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -211,7 +211,7 @@ struct sysmmu_drvdata {
- 	struct clk *clk;
- 	struct clk *clk_master;
- 	int activations;
--	rwlock_t lock;
-+	spinlock_t lock;
- 	struct iommu_domain *domain;
- 	bool runtime_active;
- 	bool suspended;
-@@ -334,11 +334,12 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
- 	unsigned long addr = -1;
- 	int ret = -ENOSYS;
+@@ -1213,6 +1213,32 @@ static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
+ 	return phys;
+ }
  
--	read_lock(&data->lock);
--
- 	WARN_ON(!is_sysmmu_active(data));
- 
-+	spin_lock(&data->lock);
++static int exynos_iommu_add_device(struct device *dev)
++{
++	struct iommu_group *group;
++	int ret;
 +
- 	__master_clk_enable(data);
++	group = iommu_group_get(dev);
 +
- 	itype = (enum exynos_sysmmu_inttype)
- 		__ffs(__raw_readl(data->sfrbase + REG_INT_STATUS));
- 	if (WARN_ON(!((itype >= 0) && (itype < SYSMMU_FAULT_UNKNOWN))))
-@@ -371,7 +372,7 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
++	if (!group) {
++		group = iommu_group_alloc();
++		if (IS_ERR(group)) {
++			dev_err(dev, "Failed to allocate IOMMU group\n");
++			return PTR_ERR(group);
++		}
++	}
++
++	ret = iommu_group_add_device(group, dev);
++	iommu_group_put(group);
++
++	return ret;
++}
++
++static void exynos_iommu_remove_device(struct device *dev)
++{
++	iommu_group_remove_device(dev);
++}
++
+ static struct iommu_ops exynos_iommu_ops = {
+ 	.domain_init = &exynos_iommu_domain_init,
+ 	.domain_destroy = &exynos_iommu_domain_destroy,
+@@ -1221,6 +1247,8 @@ static struct iommu_ops exynos_iommu_ops = {
+ 	.map = &exynos_iommu_map,
+ 	.unmap = &exynos_iommu_unmap,
+ 	.iova_to_phys = &exynos_iommu_iova_to_phys,
++	.add_device = &exynos_iommu_add_device,
++	.remove_device = &exynos_iommu_remove_device,
+ 	.pgsize_bitmap = SECT_SIZE | LPAGE_SIZE | SPAGE_SIZE,
+ };
  
- 	__master_clk_disable(data);
- 
--	read_unlock(&data->lock);
-+	spin_unlock(&data->lock);
- 
- 	return IRQ_HANDLED;
- }
-@@ -392,7 +393,7 @@ static bool __sysmmu_disable(struct sysmmu_drvdata *data)
- 	bool disabled;
- 	unsigned long flags;
- 
--	write_lock_irqsave(&data->lock, flags);
-+	spin_lock_irqsave(&data->lock, flags);
- 
- 	disabled = set_sysmmu_inactive(data);
- 
-@@ -409,7 +410,7 @@ static bool __sysmmu_disable(struct sysmmu_drvdata *data)
- 					data->activations);
- 	}
- 
--	write_unlock_irqrestore(&data->lock, flags);
-+	spin_unlock_irqrestore(&data->lock, flags);
- 
- 	return disabled;
- }
-@@ -457,7 +458,7 @@ static int __sysmmu_enable(struct sysmmu_drvdata *data,
- 	int ret = 0;
- 	unsigned long flags;
- 
--	write_lock_irqsave(&data->lock, flags);
-+	spin_lock_irqsave(&data->lock, flags);
- 	if (set_sysmmu_active(data)) {
- 		data->pgtable = pgtable;
- 		data->domain = domain;
-@@ -475,7 +476,7 @@ static int __sysmmu_enable(struct sysmmu_drvdata *data,
- 	if (WARN_ON(ret < 0))
- 		set_sysmmu_inactive(data); /* decrement count */
- 
--	write_unlock_irqrestore(&data->lock, flags);
-+	spin_unlock_irqrestore(&data->lock, flags);
- 
- 	return ret;
- }
-@@ -562,7 +563,7 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
- 
- 	for_each_sysmmu_list(dev, list) {
- 		struct sysmmu_drvdata *data = dev_get_drvdata(list->sysmmu);
--		read_lock(&data->lock);
-+		spin_lock(&data->lock);
- 		if (is_sysmmu_active(data) && data->runtime_active) {
- 			unsigned int num_inv = 1;
- 
-@@ -594,7 +595,7 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
- 				iova);
- 		}
- 
--		read_unlock(&data->lock);
-+		spin_unlock(&data->lock);
- 	}
- 
- 	spin_unlock_irqrestore(&owner->lock, flags);
-@@ -610,7 +611,7 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 
- 	for_each_sysmmu_list(dev, list) {
- 		struct sysmmu_drvdata *data = dev_get_drvdata(list->sysmmu);
--		read_lock(&data->lock);
-+		spin_lock(&data->lock);
- 		if (is_sysmmu_active(data) && data->runtime_active) {
- 			__master_clk_enable(data);
- 			if (sysmmu_block(data->sfrbase)) {
-@@ -621,7 +622,7 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 		} else {
- 			dev_dbg(dev, "disabled. Skipping TLB invalidation\n");
- 		}
--		read_unlock(&data->lock);
-+		spin_unlock(&data->lock);
- 	}
- 
- 	spin_unlock_irqrestore(&owner->lock, flags);
-@@ -819,7 +820,7 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
- 	if (!ret) {
- 		data->runtime_active = !pm_runtime_enabled(dev);
- 		data->sysmmu = dev;
--		rwlock_init(&data->lock);
-+		spin_lock_init(&data->lock);
- 
- 		platform_set_drvdata(pdev, data);
- 	}
-@@ -1269,12 +1270,12 @@ static int sysmmu_pm_genpd_suspend(struct device *dev)
- 	for_each_sysmmu_list(dev, list) {
- 		struct sysmmu_drvdata *data = dev_get_drvdata(list->sysmmu);
- 		unsigned long flags;
--		write_lock_irqsave(&data->lock, flags);
-+		spin_lock_irqsave(&data->lock, flags);
- 		if (!data->suspended && is_sysmmu_active(data) &&
- 			(!pm_runtime_enabled(dev) || data->runtime_active))
- 			__sysmmu_disable_nocount(data);
- 		data->suspended = true;
--		write_unlock_irqrestore(&data->lock, flags);
-+		spin_unlock_irqrestore(&data->lock, flags);
- 	}
- 
- 	return 0;
-@@ -1288,12 +1289,12 @@ static int sysmmu_pm_genpd_resume(struct device *dev)
- 	for_each_sysmmu_list(dev, list) {
- 		struct sysmmu_drvdata *data = dev_get_drvdata(list->sysmmu);
- 		unsigned long flags;
--		write_lock_irqsave(&data->lock, flags);
-+		spin_lock_irqsave(&data->lock, flags);
- 		if (data->suspended && is_sysmmu_active(data) &&
- 			(!pm_runtime_enabled(dev) || data->runtime_active))
- 			__sysmmu_enable_nocount(data);
- 		data->suspended = false;
--		write_unlock_irqrestore(&data->lock, flags);
-+		spin_unlock_irqrestore(&data->lock, flags);
- 	}
- 
- 	return pm_generic_resume(dev);
-@@ -1448,12 +1449,12 @@ static int sysmmu_hook_driver_register(struct notifier_block *nb,
- 					dev_get_drvdata(list->sysmmu);
- 			unsigned long flags;
- 
--			write_lock_irqsave(&data->lock, flags);
-+			spin_lock_irqsave(&data->lock, flags);
- 			if (is_sysmmu_active(data) && !data->runtime_active)
- 				__sysmmu_enable_nocount(data);
- 			data->runtime_active = true;
- 			pm_runtime_disable(data->sysmmu);
--			write_unlock_irqrestore(&data->lock, flags);
-+			spin_unlock_irqrestore(&data->lock, flags);
- 		}
- 
- 		break;
 -- 
 1.7.9.5
 
