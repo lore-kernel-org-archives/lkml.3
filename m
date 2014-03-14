@@ -1,77 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000AbaCNPjr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:39:47 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:37435
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755967AbaCNPjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:39:44 -0400
-Date: Fri, 14 Mar 2014 21:05:16 +0530
-From: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>
-To: <jejb@kernel.org>, <JBottomley@Parallels.com>
-CC: <linux-scsi@vger.kernel.org>, <Sathya.Prakash@lsi.com>,
-        <Nagalakshmi.Nandigama@lsi.com>, <sreekanth.reddy@lsi.com>,
-        <linux-kernel@vger.kernel.org>, <sreekanthreddy0547@gmail.com>
-Subject: [PATCH 01/11][SCSI]mpt2sas: Added driver module parameter
- max_msix_vectors
-Message-ID: <20140314153516.GA7932@lsi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(189002)(199002)(83072002)(85852003)(46102001)(92726001)(92566001)(47976001)(4396001)(50986001)(49866001)(87266001)(47736001)(76796001)(76786001)(77096001)(87936001)(57986002)(85306002)(76176001)(81816001)(81686001)(23726002)(93136001)(86362001)(93516002)(74502001)(74662001)(47446002)(83506001)(16796002)(31966008)(59766001)(77982001)(65816001)(80022001)(6806004)(47776003)(20776003)(63696002)(97336001)(79102001)(97756001)(97186001)(50466002)(74706001)(80976001)(74366001)(44976005)(83322001)(19580405001)(19580395003)(74876001)(56776001)(54316002)(81342001)(69226001)(51856001)(95416001)(95666003)(36756003)(90146001)(76482001)(56816005)(53806001)(54356001)(94946001)(94316002)(46406003)(33656001)(81542001)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR07MB655;H:COSEXCH10.lsi.com;FPR:A49FE962.2CD0E3CE.A5F193EF.90F6E6D1.201E6;PTR:cosexch10.lsi.com;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0150F3F97D
-X-OriginatorOrg: lsi.com
+	id S1756024AbaCNPkZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:40:25 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50909 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755309AbaCNPfG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 11:35:06 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH v7 4/6] pci: Introduce a domain number for pci_host_bridge.
+Date: Fri, 14 Mar 2014 15:34:30 +0000
+Message-Id: <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added driver module parameter max_msix_vectors. Using this
-module parameter the maximum number of MSI-X vectors could be set.
+Make it easier to discover the domain number of a bus by storing
+the number in pci_host_bridge for the root bus. Several architectures
+have their own way of storing this information, so it makes sense
+to try to unify the code. While at this, add a new function that
+creates a root bus in a given domain and make pci_create_root_bus()
+a wrapper around this function.
 
-The number of MSI-X vectors used would be the minimum of MSI-X vectors
-supported by the HBA, the number of CPU cores and the value set to
-max_msix_vectors module parameters.
-
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Tested-by: Tanmay Inamdar <tinamdar@apm.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ drivers/pci/probe.c | 41 +++++++++++++++++++++++++++++++++--------
+ include/linux/pci.h |  4 ++++
+ 2 files changed, 37 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index bde63f7..ed810fb 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -80,6 +80,10 @@ static int msix_disable = -1;
- module_param(msix_disable, int, 0);
- MODULE_PARM_DESC(msix_disable, " disable msix routed interrupts (default=0)");
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index fd11c12..172c615 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1714,8 +1714,9 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
+ {
+ }
  
-+static int max_msix_vectors = -1;
-+module_param(max_msix_vectors, int, 0);
-+MODULE_PARM_DESC(max_msix_vectors, " max msix vectors ");
-+
- static int mpt2sas_fwfault_debug;
- MODULE_PARM_DESC(mpt2sas_fwfault_debug, " enable detection of firmware fault "
- 	"and halt firmware - (default=0)");
-@@ -1420,6 +1424,16 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
- 	ioc->reply_queue_count = min_t(int, ioc->cpu_count,
- 	    ioc->msix_vector_count);
+-struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+-		struct pci_ops *ops, void *sysdata, struct list_head *resources)
++struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
++		int domain, int bus, struct pci_ops *ops, void *sysdata,
++		struct list_head *resources)
+ {
+ 	int error;
+ 	struct pci_host_bridge *bridge;
+@@ -1728,30 +1729,34 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
  
-+	if (max_msix_vectors > 0) {
-+		ioc->reply_queue_count = min_t(int, max_msix_vectors,
-+		    ioc->reply_queue_count);
-+		ioc->msix_vector_count = ioc->reply_queue_count;
+ 	bridge = pci_alloc_host_bridge();
+ 	if (!bridge)
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	bridge->dev.parent = parent;
+ 	bridge->dev.release = pci_release_host_bridge_dev;
++	bridge->domain_nr = domain;
+ 	error = pcibios_root_bridge_prepare(bridge);
+ 	if (error)
+ 		goto err_out;
+ 
+ 	b = pci_alloc_bus();
+-	if (!b)
++	if (!b) {
++		error = -ENOMEM;
+ 		goto err_out;
 +	}
+ 
+ 	b->sysdata = sysdata;
+ 	b->ops = ops;
+ 	b->number = b->busn_res.start = bus;
+-	b2 = pci_find_bus(pci_domain_nr(b), bus);
++	b2 = pci_find_bus(bridge->domain_nr, bus);
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
+ 		dev_dbg(&b2->dev, "bus already known\n");
++		error = -EEXIST;
+ 		goto err_bus_out;
+ 	}
+ 
+ 	bridge->bus = b;
+-	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
++	dev_set_name(&bridge->dev, "pci%04x:%02x", bridge->domain_nr, bus);
+ 	error = device_register(&bridge->dev);
+ 	if (error) {
+ 		put_device(&bridge->dev);
+@@ -1766,7 +1771,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 
+ 	b->dev.class = &pcibus_class;
+ 	b->dev.parent = b->bridge;
+-	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
++	dev_set_name(&b->dev, "%04x:%02x", bridge->domain_nr, bus);
+ 	error = device_register(&b->dev);
+ 	if (error)
+ 		goto class_dev_reg_err;
+@@ -1816,7 +1821,27 @@ err_bus_out:
+ 	kfree(b);
+ err_out:
+ 	kfree(bridge);
+-	return NULL;
++	return ERR_PTR(error);
++}
 +
-+	printk(MPT2SAS_INFO_FMT
-+	"MSI-X vectors supported: %d, no of cores: %d, max_msix_vectors: %d\n",
-+	 ioc->name, ioc->msix_vector_count, ioc->cpu_count, max_msix_vectors);
++struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
++		struct pci_ops *ops, void *sysdata, struct list_head *resources)
++{
++	int domain_nr;
++	struct pci_bus *b = pci_alloc_bus();
++	if (!b)
++		return NULL;
 +
- 	entries = kcalloc(ioc->reply_queue_count, sizeof(struct msix_entry),
- 	    GFP_KERNEL);
- 	if (!entries) {
++	b->sysdata = sysdata;
++	domain_nr = pci_domain_nr(b);
++	kfree(b);
++
++	b = pci_create_root_bus_in_domain(parent, domain_nr, bus,
++				ops, sysdata, resources);
++	if (IS_ERR(b))
++		return NULL;
++
++	return b;
+ }
+ 
+ int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 33aa2ca..1eed009 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -394,6 +394,7 @@ struct pci_host_bridge_window {
+ struct pci_host_bridge {
+ 	struct device dev;
+ 	struct pci_bus *bus;		/* root bus */
++	int domain_nr;
+ 	struct list_head windows;	/* pci_host_bridge_windows */
+ 	void (*release_fn)(struct pci_host_bridge *);
+ 	void *release_data;
+@@ -747,6 +748,9 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
+ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 				    struct pci_ops *ops, void *sysdata,
+ 				    struct list_head *resources);
++struct pci_bus *pci_create_root_bus_in_domain(struct device *parent,
++			int domain, int bus, struct pci_ops *ops,
++			void *sysdata, struct list_head *resources);
+ int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
+ int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
+ void pci_bus_release_busn_res(struct pci_bus *b);
 -- 
-1.7.1
+1.9.0
 
