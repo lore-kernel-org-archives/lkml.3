@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaCNTFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 15:05:44 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50215 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751946AbaCNTFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 15:05:42 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Bo Shen <voice.shen@atmel.com>, linux-pwm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH] PWM: atmel: fix incorrect CDTY value after enabling or disabling
-Date: Fri, 14 Mar 2014 20:05:31 +0100
-Message-Id: <1394823931-2815-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1755643AbaCNTIi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 15:08:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35122 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754523AbaCNTIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 15:08:36 -0400
+Date: Fri, 14 Mar 2014 15:08:24 -0400
+From: Dave Jones <davej@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] improve_stack: make stack dump output useful again
+Message-ID: <20140314190824.GA6426@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Kees Cook <keescook@chromium.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
+ <CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
+ <5321CBDA.1060705@oracle.com>
+ <CA+55aFwDKSKyxC4rTBiFMRVr6xYtL96ZYCQqNSVLJV0-=FLTUg@mail.gmail.com>
+ <20140313231227.GA32178@redhat.com>
+ <CAGXu5jLE6WHCwZVcMSUwQAa3=DW1LsxGd_1aGo8SzLpk8jC-xA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jLE6WHCwZVcMSUwQAa3=DW1LsxGd_1aGo8SzLpk8jC-xA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pwm-leds calls .config() and .disable() in a row. This exhibits that it may
-happen that the channel gets disabled before CDTY has been updated with CUPD.
-The issue gets quite worse with long periods.
-So, ensure by reading ISR that at least one period has past before disabling the
-channel.
+On Fri, Mar 14, 2014 at 11:31:11AM -0700, Kees Cook wrote:
+ > On Thu, Mar 13, 2014 at 4:12 PM, Dave Jones <davej@redhat.com> wrote:
+ > > On Thu, Mar 13, 2014 at 03:03:41PM -0700, Linus Torvalds wrote:
+ > >
+ > >  > You need to look at the *symbol* number. In this output:
+ > >  >
+ > >  >      [<ffffffff810020c2>] do_one_initcall+0xc2/0x1e0
+ > >  >
+ > >  > that "ffffffff810020c2" is crap, and is going away. The address that
+ > >  > is meaningful and valid is the "do_one_initcall+0xc2" part.
+ > >  >
+ > >  > *That* is the part you'd use to parse in user space.
+ > >  >
+ > >  > Try it today with the CONFIG_RANDOMIZE_BASE option to see. Using the
+ > >  > hex number doesn't *work*.
+ > >
+ > > That reminds me, perf top is still busted when this option is enabled.
+ > 
+ > Hrm, works for me. I'm not very familiar with what to expect, but
+ > comparing output between kaslr boot and nokaslr boot, it looks the
+ > same to me.
 
-The other issue is that it may happen that CUPD is not flushed before enabling
-the channel so it will update CDTY/CPRD just after one period. So we always set
-CUPD, even when the channel is not enabled.
+ok, nokalsr makes it work too.
+Booting with that and using the perf binary from 3.14rc6 , I just see..
 
-Tested on at91sam9g45 and sama5d31ek.
+  9.30%  [kernel]                      [k] 0xffffffffaf18e887
+  7.98%  [kernel]                      [k] 0xffffffffaf3276c7
+  6.10%  [kernel]                      [k] 0xffffffffaf18dd3a
+  4.39%  [kernel]                      [k] 0xffffffffaf327717
+  1.71%  [kernel]                      [k] 0xffffffffaf18e89c
+  1.52%  [kernel]                      [k] 0xffffffffaf3276cc
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/pwm/pwm-atmel.c | 46 +++++++++++++++++++++++++++++-----------------
- 1 file changed, 29 insertions(+), 17 deletions(-)
+Curiously, if I use the perf binary from 3.13, I see everything lumped together as..
 
-diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-index 0adc952cc4ef..0e589594b1cb 100644
---- a/drivers/pwm/pwm-atmel.c
-+++ b/drivers/pwm/pwm-atmel.c
-@@ -16,11 +16,13 @@
- #include <linux/platform_device.h>
- #include <linux/pwm.h>
- #include <linux/slab.h>
-+#include <linux/delay.h>
- 
- /* The following is global registers for PWM controller */
- #define PWM_ENA			0x04
- #define PWM_DIS			0x08
- #define PWM_SR			0x0C
-+#define PWM_ISR			0x1C
- /* Bit field in SR */
- #define PWM_SR_ALL_CH_ON	0x0F
- 
-@@ -157,24 +159,25 @@ static void atmel_pwm_config_v1(struct pwm_chip *chip, struct pwm_device *pwm,
- 	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
- 	unsigned int val;
- 
--	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
--		/*
--		 * If the PWM channel is enabled, using the update register,
--		 * it needs to set bit 10 of CMR to 0
--		 */
--		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CUPD, dty);
- 
--		val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
--		val &= ~PWM_CMR_UPD_CDTY;
--		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
--	} else {
--		/*
--		 * If the PWM channel is disabled, write value to duty and
--		 * period registers directly.
--		 */
--		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CDTY, dty);
--		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CPRD, prd);
--	}
-+	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CUPD, dty);
-+
-+	val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
-+	val &= ~PWM_CMR_UPD_CDTY;
-+	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
-+
-+	/*
-+	 * If the PWM channel is enabled, only update CDTY by using the update
-+	 * register, it needs to set bit 10 of CMR to 0
-+	 */
-+	if (test_bit(PWMF_ENABLED, &pwm->flags))
-+		return;
-+	/*
-+	 * If the PWM channel is disabled, write value to duty and period
-+	 * registers directly.
-+	 */
-+	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CDTY, dty);
-+	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV1_CPRD, prd);
- }
- 
- static void atmel_pwm_config_v2(struct pwm_chip *chip, struct pwm_device *pwm,
-@@ -245,6 +248,15 @@ static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
- {
- 	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
- 
-+	/*
-+	 * Wait for at least a complete period to have passed before disabling a
-+	 * channel to be sure that CDTY has been updated
-+	 */
-+	atmel_pwm_readl(atmel_pwm, PWM_ISR);
-+
-+	while (!(atmel_pwm_readl(atmel_pwm, PWM_ISR) & (1 << pwm->hwpwm)))
-+		usleep_range(10, 100);
-+
- 	atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
- 
- 	clk_disable(atmel_pwm->clk);
--- 
-1.8.3.2
+ 95.89%  [kernel].exit.text            [k] 0x000000002e586c26
+
+(When kaslr is disabled both binaries work fine)
+
+Also maybe related: The rc6 binary claims it can't read symbols from vmlinux
+when kaslr is enabled.
+
+	Dave
 
