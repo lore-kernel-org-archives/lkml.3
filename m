@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbaCNTcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 15:32:54 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44114 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415AbaCNTcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 15:32:52 -0400
-Date: Fri, 14 Mar 2014 19:32:48 +0000
-From: Mark Brown <broonie@kernel.org>
-To: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140314193248.GF366@sirena.org.uk>
+	id S1756087AbaCNTdX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 15:33:23 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43532 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754591AbaCNTdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 15:33:21 -0400
+Message-ID: <53235963.4080503@ti.com>
+Date: Fri, 14 Mar 2014 14:32:51 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AkcDN4P/vcry3ns+"
-Content-Disposition: inline
-X-Cookie: Some assembly required.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: linux-next: Tree for Mar 14
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Tony Lindgren <tony@atomide.com>
+CC: Rob Herring <robh@kernel.org>, Tero Kristo <t-kristo@ti.com>,
+        Nishanth Menon <nm@ti.com>, Suman Anna <s-anna@ti.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC 4/5] clocksource: omap-timer: Introduce clocksource driver
+ for OMAP SoCs
+References: <1394742919-32163-1-git-send-email-joelf@ti.com> <1394742919-32163-5-git-send-email-joelf@ti.com> <20140313204851.GB23432@atomide.com> <532243F5.4040609@ti.com> <20140314155202.GA27560@atomide.com>
+In-Reply-To: <20140314155202.GA27560@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/14/2014 10:52 AM, Tony Lindgren wrote:
+> * Joel Fernandes <joelf@ti.com> [140313 16:52]:
+>> On 03/13/2014 03:48 PM, Tony Lindgren wrote:
+>>> * Joel Fernandes <joelf@TI.com> [140313 13:43]:
+>>>> We introduce functions to initialize clocksource and clockevent, use
+>>>> CLOCKSOURCE_OF_DECLARE to declare the clocksource, and handle the clocksource
+>>>> selection on a per-SoC basis (Currently only AM335x is supported). Powering up
+>>>> of the timer will be done with the help of the mach-omap layer function that's
+>>>> introduced earlier in the series.
+>>>>
+>>>> We make a local copy of dmtimer API for use by clocksource, the original
+>>>> dmtimer API in plat-omap is kept as-is till the migration of all SoCs is
+>>>> completed after which it can't be deleted.
+>>>>
+>>>> Signed-off-by: Joel Fernandes <joelf@ti.com>
+>>>> ---
+>>>>  drivers/clocksource/Makefile     |    1 +
+>>>>  drivers/clocksource/omap-timer.c | 1157 ++++++++++++++++++++++++++++++++++++++
+>>>>  drivers/clocksource/omap-timer.h |  422 ++++++++++++++
+>>>>  3 files changed, 1580 insertions(+)
+>>>>  create mode 100644 drivers/clocksource/omap-timer.c
+>>>>  create mode 100644 drivers/clocksource/omap-timer.h
+>>>
+>>> Hmm this leaves duplicate arch/arm/plat-omap/dmtimer.c code, please
+>>
+>> Sure, ofcourse- but how else can we make sure everything works while we do
+>> the migration in steps. We can get rid of the duplicate once everything is
+>> migrated.
+> 
+> That's not doing incremental changes then. You're not even modifying
+> the existing omap_dm_timer functions, so please do the changes in incremental
+> steps where things keep working throughout the series.
 
---AkcDN4P/vcry3ns+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That is much more work than appears- it is much easier to remove what you
+don't want after everything is moved, than to pick things up part by part
+and move it.. That way we also don't accidentally remove something we
+shouldn't be and introduced more regressions.. right?
 
-Hi all,
+Plus this is an RFC that I whipped up in 2 days so I didn't this
+expectations should be too high ;-)
 
-I've uploaded -next for today.  There were a couple of small issues
-today, mainly due to the addition of the new compat tree, and no trees
-needed reverting.  This build has been tested with ARM
-multi_v7_defconfig and x86 allmodconfig between each merge.
+>>> And not the that drivers/clocksource/omap-timer.h won't be needed at
+>>> all, those defines can stay private to the drivers/clocksource/omap-timer.c.
+>>
+>> Actually- I wanted it separate because omap-timer.c is already huge at 1157
+>> lines. Infact the largest among the clocksource drivers. Is that fair?
+> 
+> No need for it. We want to keep these functions private to the driver.
 
-Stephen should be back on Monday and normal service resumed.
+Ok, I can do that. I don't mind either way.
 
 Thanks,
-Mark
-
---AkcDN4P/vcry3ns+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTI1ldAAoJELSic+t+oim96DAP/RXaUmkAn99NaOkRBzOMbEgc
-hw7pR7Rr/SKDhK2rG03szDaUEcWuPueaLxqlcrK+CRNg6uvOrkLi5NzT45eONpzu
-iabr8+slR8DkMah0FkhYBcJIUCASlLCnpgsurfLMqPqVRWzFK7U7tEQX01Cu853i
-QoFKfcJwdizcYNt8TRN2PP0AMt+n0jtn6lYuO+Ou6Yra/q8u7064u8KA0EbM8A4f
-PckH0uxJ7FC9lHy9HO+51cKchaj0YLqXFJzscB4bXOxtJSI1P5PZtTtnElkXGZhU
-2LIpKSuX1JKlzEfM8ZU8Lk1uJEf29JZN/vMTM1bWhGUG2//XbhXRY41cL8Kdzbsx
-91vh2B/sPNYQN6P9GxULvbH3umx7KoiQ2Y5giNykBzXEcZChemVAm1xl5qzwqoA2
-h/kYDPn1VKGns5ZS14moQEvZW7PdRbRh8xCiETJabeuKvNZ5IXazm0bqTUukccNv
-GDtVL5L7qGCGL3zJM2SW9qJQ2k+jmsQyENeFiru+GM4PsaQ8EdVKZBnrK9ogFp8R
-FjoHFsZHFOr+QYRI02IypCjA5AxI1IPA43+VGeAWn101nj8+XsfGgh8XrcpDb+b3
-vioBFfkNF3ziH5bUoFOv5imdJfplkDPtLMUw5BNq3lzs3d7Sh/lS5aqCKUFzFlke
-d+yfuvoV1FGmPU7RjPxP
-=cpfV
------END PGP SIGNATURE-----
-
---AkcDN4P/vcry3ns+--
+-Joel
