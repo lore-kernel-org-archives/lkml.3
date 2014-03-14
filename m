@@ -1,120 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755738AbaCNTvV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 15:51:21 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:40534 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596AbaCNTvT (ORCPT
+	id S1755947AbaCNTwQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 15:52:16 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:63769 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451AbaCNTwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 15:51:19 -0400
+	Fri, 14 Mar 2014 15:52:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzqzAHf64DHBao3xKzHdhrp77JEZhe-_c5oC3Vr63QxNA@mail.gmail.com>
-References: <1394660614-4436-1-git-send-email-ast@plumgrid.com>
-	<1394660614-4436-2-git-send-email-ast@plumgrid.com>
-	<20140314125822.GA16457@localhost>
-	<CAMEtUuzqzAHf64DHBao3xKzHdhrp77JEZhe-_c5oC3Vr63QxNA@mail.gmail.com>
-Date: Fri, 14 Mar 2014 12:51:17 -0700
-Message-ID: <CAMEtUuxd0yd81p7KPxyotMOcOxm3MS4Cj9oguS5QAzfXYChLXQ@mail.gmail.com>
-Subject: Re: [PATCH v10 net-next 1/3] filter: add Extended BPF interpreter and converter
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Jesse Gross <jesse@nicira.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Pekka Enberg <penberg@iki.fi>, Arjan van de Ven <arjan@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
+In-Reply-To: <53234B68.5090300@ahsoftware.de>
+References: <5316FFCE.1060603@ti.com>
+	<1394018461-757-1-git-send-email-holler@ahsoftware.de>
+	<CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>
+	<5322D529.4070904@ahsoftware.de>
+	<CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>
+	<5322F82A.9000507@ahsoftware.de>
+	<CACRpkdZscprsy7kyqHPUMEMYJ_TKgG2bYR7mdrG4hTDp1w1nDg@mail.gmail.com>
+	<53234B68.5090300@ahsoftware.de>
+Date: Fri, 14 Mar 2014 20:52:13 +0100
+Message-ID: <CACRpkdZ2+kfOim1OEWbYR_Tj36i+8HmYXh+nqO9h1Em8gqy=3Q@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 8:37 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Fri, Mar 14, 2014 at 5:58 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
->> On Wed, Mar 12, 2014 at 02:43:32PM -0700, Alexei Starovoitov wrote:
->>> diff --git a/include/linux/filter.h b/include/linux/filter.h
->>> index e568c8ef896b..6e6aab5e062b 100644
->>> --- a/include/linux/filter.h
->>> +++ b/include/linux/filter.h
->>> @@ -25,20 +25,45 @@ struct sock;
->>>  struct sk_filter
->>>  {
->>>       atomic_t                refcnt;
->>> -     unsigned int            len;    /* Number of filter blocks */
->>> +     /* len - number of insns in sock_filter program
->>> +      * len_ext - number of insns in socket_filter_ext program
->>> +      * jited - true if either original or extended program was JITed
->>> +      * orig_prog - original sock_filter program if not NULL
->>> +      */
->>> +     unsigned int            len;
->>> +     unsigned int            len_ext;
->>> +     unsigned int            jited:1;
->>
->> This is consuming 4 bytes just to store the jited bit. I think you can
->> scratch that bit from len, given the maximum filter length for bpf. I
->> think the the jited bit change that David suggested have to come in
->> first place as a separated patch in the series.
+On Fri, Mar 14, 2014 at 7:33 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+> Am 14.03.2014 14:54, schrieb Linus Walleij:
 >
-> It was reviewed so many times that I would prefer not to break it
-> apart just to split it for single 'jited' bitfield, though I agree with taking
-> one bit from len.
-> I actually proposed it in 'bool vs bitfield' thread few days ago.
-> I think it can be done as a separate commit after this one goes in.
->
->>> +     struct sock_filter      *orig_prog;
+>> On Fri, Mar 14, 2014 at 1:38 PM, Alexander Holler <holler@ahsoftware.de>
+>> wrote:
 >>
->> If your new extended filtering is not used, this consumes 8 extra
->> bytes + len_ext (bytes) in x86_64. I think a more generic way to make
->> this is that you can move the original bpf filter and its length at
->> the bottom of this structure after insns to store something like:
+>>>> In that case it is hardly a fix that we need to rush out to the entire
+>>>> world.
+>>>
+>>>
+>>> And I thought the reason for -rc is actually to fix bugs. But I never
+>>> understood the magical ways and timings patches make their way into
+>>> mainline. ;)
 >>
->> struct sk_bpf_compat {
->>         struct sock_filter      *prog;
->>         unsigned int            len;
->> };
 >>
->> This would be only allocated when you filtering approach is used. For
->> that you'll need some enum in sk_filter to indicate the filtering
->> approach, but we'll save 8 bytes per filter in the end with regards to
->> this current patch.
+>> OK so it works like this: early in the -rc cycle we fix any bugs,
+>> documentation
+>> or whatever. At this point it's *regressions* so the fix need to fix
+>> something
+>> that broke in the merge window (or an earlier merge window).
 >
-> this is also can be done as separate commit after this one.
-> Though I don't like the idea, because access to 'prog' and 'len'
-> becomes very complicated. In every place we need a helper
-> function to calculate an offset to this 'sk_bpf_compat',
-> then typecast that memory location, etc.
-> Imo single pointer is much cleaner.
 >
-> Thanks
-> Alexei
+> Sorry, but I don't believe that. It's always time to fix regressions and
+> bugs.
 
-Hi David,
+This thing is not binary. Please consult
+Documentation/development-process/2.Process
 
-can you please explain why the status of these
-patches is 'deferred' in patchwork ?
-Is it because of bpf vs nft thread?
-I think that's orthogonal.
-First of all, ebpf and nft are not really comparable.
-ebpf is a low level assembler
-whereas nft is a high level state machine.
-As I was saying nft can be accelerated by ebpf.
-Even without accelerated nft, ebpf makes faster seccomp,
-tracing filters, ovs, etc.
-nft state machine is not applicable for such tasks.
-It feels odd even trying to compare them.
-They're serving different purpose.
-general purpose assembler vs packet classifier? Just different.
-I'm not sure what is the concern here.
+In this case we are very late in the release cycle, the patch is not
+a simple oneliner and I need some more backing proof to know it
+is a reasonable fix to push at this time and will not cause new
+problems.
 
-Thanks
-Alexei
+So a few Tested-by's from the people using this driver would for
+example convince me that it is solving a real problem for them
+and it needs to go into fixes.
+
+Yours,
+Linus Walleij
