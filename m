@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869AbaCNJjg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 05:39:36 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44547 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755724AbaCNJjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 05:39:33 -0400
-Message-ID: <5322CE32.2000102@ti.com>
-Date: Fri, 14 Mar 2014 11:38:58 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+	id S1755912AbaCNJq0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 05:46:26 -0400
+Received: from mx08-00178001.pphosted.com ([62.209.51.94]:60031 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1755593AbaCNJqY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 05:46:24 -0400
+Message-ID: <5322CF87.5000301@st.com>
+Date: Fri, 14 Mar 2014 10:44:39 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <dmaengine@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <joelf@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        <nsekhar@ti.com>, Jyri Sarha <jsarha@ti.com>, <mporter@linaro.org>,
-        <vinod.koul@intel.com>, <dan.j.williams@intel.com>
-Subject: Re: [PATCH 00/18] edma/ASoC: dmaengine PCM for AM335x and AM447x
-References: <1394702320-21743-1-git-send-email-peter.ujfalusi@ti.com> <20140313134601.GU366@sirena.org.uk>
-In-Reply-To: <20140313134601.GU366@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+To: Linus Walleij <linus.walleij@linaro.org>, Joe Perches <joe@perches.com>
+Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        <kernel@stlinux.com>, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH v4 4/6] pinctrl: st: Use ARRAY_SIZE instead of raw value
+ for number of delays
+References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>	<1394614210-15698-5-git-send-email-maxime.coquelin@st.com>	<1394634313.28839.57.camel@joe-AO722> <CACRpkda0Z15zC=d8xe+KyHqgmTCHbnUjL14fBmtscpR-2kHtFQ@mail.gmail.com>
+In-Reply-To: <CACRpkda0Z15zC=d8xe+KyHqgmTCHbnUjL14fBmtscpR-2kHtFQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-14_04:2014-03-14,2014-03-14,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2014 03:46 PM, Mark Brown wrote:
-> On Thu, Mar 13, 2014 at 11:18:22AM +0200, Peter Ujfalusi wrote:
-> 
->> With this series AM335x and AM447x will use the dmaengine PCM for audio. The
->> daVinci devices will keep using the davinci-pcm for now since I do not have
->> means to test them but the code is written in a way that they can be switched
->> to use the edma-pcm easily (DA850/OMAP-L138 has been tested and audio was
->> working fine).
-> 
-> Can you please not resend the ASoC portions of this series until the
-> EDMA portion is stable (and ideally committed)?  I'm not quite sure why
-> but every EDMA patch series seems to go through lots of iterations which
-> gets rather noisy - my initial reaction to seeing EDMA in a subject is
-> to just delete the thread.
 
-Sure, I'm not planning to spam alsa-devel however the switch to dmaengine PCM
-for AM335x/AM447x needs the edma patches, otherwise it is not going to work.
-AFAIK I have not sent patch to edma as of now so I have no idea how long it
-takes to get stuff in (the good thing is that the edma part does not touch DT,
-which is alone can reduce the number of iterations).
-Anyway, what I can - and already did is:
-Reorder the ASoC patches and I can leave out the switch to dmaengine PCM patch
-for davinci-mcasp for now. The edma-pcm and the other patches for McASP can go
-in right away (I will not add the edma-pcm to the Makefile/Kconfig to avoid
-issues).
 
-I will detach the edma stuff and follow it up outside of alsa-devel.
+On 03/14/2014 10:20 AM, Linus Walleij wrote:
+> On Wed, Mar 12, 2014 at 3:25 PM, Joe Perches <joe@perches.com> wrote:
+>> On Wed, 2014-03-12 at 09:50 +0100, Maxime COQUELIN wrote:
+>>> This patch replaces the raw values with ARRAY_SIZE for assigning the
+>>> ninput_delays and noutput_delays fields of STiH416's st_pctl_data struct.
+>>
+>> trivial note:
+>>
+>>> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+>> []
+>>> @@ -384,9 +384,9 @@ static unsigned int stih416_delays[] = {0, 300, 500, 750, 1000, 1250, 1500,
+>>>   static const struct st_pctl_data  stih416_data = {
+>>>        .rt_style       = st_retime_style_dedicated,
+>>>        .input_delays   = stih416_delays,
+>>> -     .ninput_delays  = 14,
+>>> +     .ninput_delays  = ARRAY_SIZE(stih416_delays),
+>>>        .output_delays  = stih416_delays,
+>>> -     .noutput_delays = 14,
+>>> +     .noutput_delays = ARRAY_SIZE(stih416_delays),
+>>>        .alt = 0, .oe = 40, .pu = 50, .od = 60, .rt = 100,
+>>>   };
+>>>
+>>
+>> drivers/pinctrl/pinctrl-st.c-   unsigned int    *input_delays;
+>> drivers/pinctrl/pinctrl-st.c-   unsigned int    *output_delays;
+>>
+>> It may be better to change these to const unsigned int *
+>> and change
+>>
+>> static unsigned int stih416_delays[] = {
+>>
+>> to static const
+>
+> Good point. Patches accepted :-)
 
-The only thing I'm afraid off is that it is going to take two release cycle to
-get this in: first cycle edma part, next cycle for the ASoC to switch to use
-the edma-pcm.
+Sorry Joe, I forgot to reply.
 
--- 
-Péter
+I added this to my todo list.
+I will provide the change before end of next week.
+
+Thanks,
+Maxime
+
+>
+> Yours,
+> Linus Walleij
+>
