@@ -1,112 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575AbaCNSFe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 14:05:34 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:49283 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754622AbaCNSFc convert rfc822-to-8bit (ORCPT
+	id S1755708AbaCNSGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 14:06:11 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:59886 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754617AbaCNSGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 14:05:32 -0400
-Date: Fri, 14 Mar 2014 18:05:27 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
-Message-ID: <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Grant Likely <grant.likely@secretlab.ca>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
- <1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com>
- <20140314171457.GK18126@arm.com>
- <201403141838.08900.arnd@arndb.de>
+	Fri, 14 Mar 2014 14:06:09 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [RFC PATCH 0/3] workqueue: Control cpu affinity of !WQ_SYSFS unbound workqueues
+References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
+Date: Fri, 14 Mar 2014 11:06:06 -0700
+In-Reply-To: <1394815131-17271-1-git-send-email-fweisbec@gmail.com> (Frederic
+	Weisbecker's message of "Fri, 14 Mar 2014 17:38:48 +0100")
+Message-ID: <7h4n30k641.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <201403141838.08900.arnd@arndb.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 14 Mar 2014 18:05:38.0987 (UTC) FILETIME=[018D5FB0:01CF3FB0]
-X-MC-Unique: 114031418053005501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 05:38:08PM +0000, Arnd Bergmann wrote:
-> On Friday 14 March 2014, Catalin Marinas wrote:
-> > On Fri, Mar 14, 2014 at 03:34:18PM +0000, Liviu Dudau wrote:
-> > > --- /dev/null
-> > > +++ b/arch/arm64/kernel/pci.c
-> > [...]
-> > > +int pci_register_io_range(phys_addr_t address, resource_size_t size)
-> > [...]
-> > > +unsigned long pci_address_to_pio(phys_addr_t address)
-> > [...]
-> > > +void pcibios_fixup_bus(struct pci_bus *bus)
-> > [ actually most of this file ]
-> > 
-> > Maybe it was raised before already but can we have __weak generic
-> > definitions of these functions? They don't seem to be arm64 specific in
-> > any way.
-> > 
-> 
-> I would definitely prefer that.
-> 
-> 	Arnd
-> 
+Frederic Weisbecker <fweisbec@gmail.com> writes:
 
-I haven't seen any reaction from Bjorn on this, so I threaded carefully on that
-subject. I'm new to this so I don't know how to handle this.
+> There are several types of workqueues. Some of them are bound to specific
+> CPUs, some others are unbound and can be executed on any CPU.
+>
+> A tiny subset of the unbound workqueues have a sysfs representation
+> in /sys/devices/virtual/workqueue/ and have a cpumask file than can
+> be used to tweak their CPU affinity.
+>
+> But the vast majority of unbound workqueues aren't visible in sysfs.
+>
+> They are a problem nowaday because people who work on CPU isolation
+> (HPC, Real time, etc...) want to be able to migrate all the unbound
+> workqueues away from specific CPUs.
+>
+> There are several possible solutions to solve this:
+>
+> 1) Affine the !WQ_SYSFS unbound workqueues to the CPUs outside the
+> full dynticks mask. Full dynticks is expected to be a component in
+> many CPU isolation configurations and its CPU mapping can be a good
+> way to retrieve the desired set of isolated CPUs.
+>
+> On the drawbacks though we can notice the lack of consistency with
+> WQ_SYSFS workqueue affinity interface, issues with ordering between
+> workqueue and dynticks subsystem initialization, intrusion from
+> the workqueue subsystem on dynticks internals.
+>
+> 2) Implement a sysfs directory for each unbound !WQ_SYSFS. That sounds
+> like a very nice solution as it uses existing and known interface.
+> But workqueues appearing in the sysfs hierarchy are subject to become
+> stable ABIs. And this is definetly not what we want.
+>
+> This could be worked around with a specific Kconfig to make sure that
+> these workqueues won't be considered as a stable ABI. But we all know
+> that all distros will enable this Kconfig symbol and that nobody
+> reads, nor care about, warnings in Kconfig help text which thereby won't
+> protect us against anything.
+>
+> 3) Implement a single sysfs directory to map properties of all !WQ_SYSFS
+> unbound workqueues. It would contain only the cpumask file to control
+> the affinity of all these workqueues. But more can be added later.
+>
+> This complexifies the code a bit although not that much compared to
+> solution 2 which requires some plumbling to cope with workqueues created
+> before sysfs, as reported by Mike (I played with that a bit as well, as I
+> took that direction initially). But it deals with all issues previously
+> described.
 
-To my mind, and looking at the way every architecture has been setup, the pcibios_*
-function are intended to be provided by the architecture. No matter how much wishful
-thinking we are going to put in here, it will not change the fact that the non-arm64
-specific version of pcibios_fixup_bus() that I wrote is not shared by anyone else
-and it will remain "for arm64 use only" regardless to where it is placed until the
-next architecture comes into the kernel. And even then its adoption is questionable.
-If we are looking for simple and common implementations of this function, maybe we
-should look at why microblaze and powerpc versions, that are identical, are not being
-made the default __weak implementation.
+Since I also tinkered with (1) and (2) and ran into some of the same
+issues, I think (3) is a good way.  It also doesn't tie the affinity to
+full_nohz, and leaves it up to userspace which addresses a concern of
+Mike's in earlier proposals as well.
 
-As for the other two functions, I've no special attachment to where they are present
-and I'm happy to move them into drivers/pci on the condition that the patchset doesn't
-double in size. The reason why I'm weary of touching other architectures in a significant
-way is the current lack of engineering bandwidth and way of testing all the architectures.
-My low friction approach has been to introduce them in arm64 and then slowly move them
-into core (and yes, I know about good intentions and the road to hell.)
-
-Catalin, if you are happy to ask for ACKs from all arch maintainers that might get
-affected by our custom version of pci_address_to_pio() before you can pull PCI support
-for arm64 then I can propose a new patchset.
-
-Best regards,
-Liviu 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Kevin
