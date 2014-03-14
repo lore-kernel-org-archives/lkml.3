@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685AbaCNUI7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 16:08:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12675 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755523AbaCNUI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755537AbaCNUI5 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 14 Mar 2014 16:08:57 -0400
-Date: Fri, 14 Mar 2014 16:08:46 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kees Cook <keescook@chromium.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] improve_stack: make stack dump output useful again
-Message-ID: <20140314200846.GA6633@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Kees Cook <keescook@chromium.org>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
- <CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
- <5321CBDA.1060705@oracle.com>
- <CA+55aFwDKSKyxC4rTBiFMRVr6xYtL96ZYCQqNSVLJV0-=FLTUg@mail.gmail.com>
- <20140313231227.GA32178@redhat.com>
- <CAGXu5jLE6WHCwZVcMSUwQAa3=DW1LsxGd_1aGo8SzLpk8jC-xA@mail.gmail.com>
- <20140314190824.GA6426@redhat.com>
- <CA+55aFznCT20giHq8JxCRduky-dQtVLqpUYrcrK_3XeXN+Wyow@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFznCT20giHq8JxCRduky-dQtVLqpUYrcrK_3XeXN+Wyow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Received: from shards.monkeyblade.net ([149.20.54.216]:39255 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755135AbaCNUI4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 16:08:56 -0400
+Date: Fri, 14 Mar 2014 16:08:51 -0400 (EDT)
+Message-Id: <20140314.160851.1134730495663127657.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: pablo@netfilter.org, dborkman@redhat.com, mingo@kernel.org,
+        wad@chromium.org, rostedt@goodmis.org, a.p.zijlstra@chello.nl,
+        hpa@zytor.com, hagen@jauu.net, jesse@nicira.com, tglx@linutronix.de,
+        edumazet@google.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, fweisbec@gmail.com, acme@infradead.org,
+        penberg@iki.fi, arjan@infradead.org, hch@infradead.org,
+        xemul@parallels.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v10 net-next 1/3] filter: add Extended BPF interpreter
+ and converter
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAMEtUuxd0yd81p7KPxyotMOcOxm3MS4Cj9oguS5QAzfXYChLXQ@mail.gmail.com>
+References: <20140314125822.GA16457@localhost>
+	<CAMEtUuzqzAHf64DHBao3xKzHdhrp77JEZhe-_c5oC3Vr63QxNA@mail.gmail.com>
+	<CAMEtUuxd0yd81p7KPxyotMOcOxm3MS4Cj9oguS5QAzfXYChLXQ@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 14 Mar 2014 13:08:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 12:32:23PM -0700, Linus Torvalds wrote:
- > On Fri, Mar 14, 2014 at 12:08 PM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > ok, nokalsr makes it work too.
- > > Booting with that and using the perf binary from 3.14rc6 , I just see..
- > >
- > >   9.30%  [kernel]                      [k] 0xffffffffaf18e887
- > 
- > Hmm. Do you have CONFIG_KALLSYMS enabled?
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Fri, 14 Mar 2014 12:51:17 -0700
 
-$ grep KALLSYMS .config
-CONFIG_KALLSYMS=y
-CONFIG_KALLSYMS_ALL=y
+> can you please explain why the status of these
+> patches is 'deferred' in patchwork ?
+> Is it because of bpf vs nft thread?
+> I think that's orthogonal.
 
-mine looks like this.. http://codemonkey.org.uk/junk/kallsyms
+I do not find it orthogonal, Pablo brings up some very valid points
+which I agree with.
 
- > I have CONFIG_RANDOMIZE_BASE=y and perf (both report and top) seems to
- > work fine for me (current git, not v3.14-rc6, but still)
+EBPF has a lot of the same user side interface limitations that the
+existing BPF has, and you refuse to accept this core point Pablo is
+making.
 
-yeah, on current now too.
+That is, that it lacks extensibility, and is too strongly tied to the
+implementation.
 
-CONFIG_RANDOMIZE_BASE=y
-CONFIG_RANDOMIZE_BASE_MAX_OFFSET=0x40000000
+This is exactly how we run into problems in the future, and you'll be
+proposing EBPF_2.0 to address such problems.
 
-
-	Dave
-
+I refuse to setup such a situation, and there is absolutely not rush
+whatsoever to apply your patches.  We can take our time with this
+stuff.
