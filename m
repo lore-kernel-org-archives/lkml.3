@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165AbaCNU20 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 16:28:26 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:50417 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754667AbaCNU2Z (ORCPT
+	id S1755537AbaCNUhp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 16:37:45 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22853 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105AbaCNUho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 16:28:25 -0400
-Message-ID: <53236662.3020707@hurleysoftware.com>
-Date: Fri, 14 Mar 2014 16:28:18 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 14 Mar 2014 16:37:44 -0400
+To: "Reddy\, Sreekanth" <Sreekanth.Reddy@lsi.com>
+Cc: <jejb@kernel.org>, <JBottomley@Parallels.com>,
+        <linux-scsi@vger.kernel.org>, <Sathya.Prakash@lsi.com>,
+        <Nagalakshmi.Nandigama@lsi.com>, <linux-kernel@vger.kernel.org>,
+        <sreekanthreddy0547@gmail.com>
+Subject: Re: [PATCH 02/11][SCSI]mpt2sas: Added new driver module Parameter disable_eedp to Disable EEDP Support
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140314153622.GA7947@lsi.com>
+Date: Fri, 14 Mar 2014 16:37:27 -0400
+In-Reply-To: <20140314153622.GA7947@lsi.com> (Sreekanth Reddy's message of
+	"Fri, 14 Mar 2014 21:06:22 +0530")
+Message-ID: <yq1r464wm7s.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Sree Harsha Totakura <sreeharsha@totakura.in>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: pppd service crash in linux-3.13.6
-References: <531A37FF.4000509@totakura.in> <531DEEA6.4090808@totakura.in> <531E111A.8040207@hurleysoftware.com> <20140313170622.GA31206@redhat.com> <5321F113.7090000@hurleysoftware.com> <53230FE5.9020204@hurleysoftware.com> <20140314192346.GA14823@redhat.com>
-In-Reply-To: <20140314192346.GA14823@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2014 03:23 PM, Oleg Nesterov wrote:
-> On 03/14, Peter Hurley wrote:
->>
->>> On 03/13/2014 01:06 PM, Oleg Nesterov wrote:
->>>>
->>>> OTOH, why we should delay disassociate_ctty? IOW, do you see any
->>>> potential problem with the trivial patch below?
->>
->> Won't work.
->>
->> cgroup_exit() can exec a userspace process (the notify_on_exit() facility)
->                                                    ^^^^^^^^^^^^^^^^
->
-> can't find anything named notify_on_exit, perhap you meant
-> cgroup_release_agent? Although I guess this should not matter.
+>>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@lsi.com> writes:
 
-Sorry, I meant the notify_on_release() facility as discussed in the
-function header comments of cgroup_exit().
+Sreekanth> A new mpt2sas driver module parameter 'disable_eedp' is added
+Sreekanth> to Disable EEDP support. By default DIF support is enabled in
+Sreekanth> the driver and this module parameter would allow users to
+Sreekanth> turn it off.
 
-Yes, cgroup_release_agent() is the work function that is scheduled.
+Why don't you just set the prot_mask module parameter to 0?
 
->> which requires both namespace and tty facilities.
->
-> Hmm... why?
->
-> The exiting task obviously can't exec. The only way to spawn a userspace
-> process is call_usermodehelper(), it should work just fine, no?
-
-You're correct, in the immediate sense that the user command exec'd will
-not inherit open file descriptors.
-
-But what if it expects to be able to find the intact children of
-the foreground process group, and can't because the controlling tty
-has already been torn down and all the children already sent SIGHUP.
-
-I know that's not what the user command is intended for, but
-userspace can be enterprising for establishing dependencies on
-kernel constructs.
-
-Or what if the user command expects to find and join the user namespace
-of the dying process but now it's already been freed?
-
-Regards,
-Peter Hurley
+-- 
+Martin K. Petersen	Oracle Linux Engineering
