@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302AbaCQGy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 02:54:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60704 "EHLO mx2.suse.de"
+	id S1756381AbaCQGy6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 02:54:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60708 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359AbaCQGyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756113AbaCQGyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Mar 2014 02:54:54 -0400
 From: Jan Kara <jack@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 0/8 v3] printk: Cleanups and softlockup avoidance
-Date: Fri, 14 Mar 2014 17:21:44 +0100
-Message-Id: <1394814112-20200-1-git-send-email-jack@suse.cz>
+Subject: [PATCH 1/8] printk: Remove outdated comment
+Date: Fri, 14 Mar 2014 17:21:45 +0100
+Message-Id: <1394814112-20200-2-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1394814112-20200-1-git-send-email-jack@suse.cz>
+References: <1394814112-20200-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+Comment about interesting interlocking between lockbuf_lock and
+console_sem is outdated. It was added in 2002 by commit
+a880f45a48be2956d2c78a839c472287d54435c1 during conversion of
+console_lock to console_sem + lockbuf_lock. At that time
+release_console_sem() (today's equivalent is console_unlock()) was
+indeed using lockbuf_lock to avoid races between trylock on console_sem
+in printk() and unlock of console_sem. However these days the
+interlocking is gone and the races are avoided by rechecking logbuf
+state after releasing console_sem.
 
-  this is another revision of the printk softlockup series. Since previous
-version I have fixed up some small problems pointed out by Andrew, added
-possibility to configure out the printk offloading logic (for small systems),
-and offload kthreads are now started only once printk.offload_chars is set
-to value > 0.
-
-Intro for the newcomers to the series below.
-
+Signed-off-by: Jan Kara <jack@suse.cz>
 ---
+ kernel/printk/printk.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Currently, console_unlock() prints messages from kernel printk buffer to
-console while the buffer is non-empty. When serial console is attached,
-printing is slow and thus other CPUs in the system have plenty of time
-to append new messages to the buffer while one CPU is printing. Thus the
-CPU can spend unbounded amount of time doing printing in console_unlock().
-This is especially serious since vprintk_emit() calls console_unlock()
-with interrupts disabled.
-    
-In practice users have observed a CPU can spend tens of seconds printing
-in console_unlock() (usually during boot when hundreds of SCSI devices
-are discovered) resulting in RCU stalls (CPU doing printing doesn't
-reach quiescent state for a long time), softlockup reports (IPIs for the
-printing CPU don't get served and thus other CPUs are spinning waiting
-for the printing CPU to process IPIs), and eventually a machine death
-(as messages from stalls and lockups append to printk buffer faster than
-we are able to print). So these machines are unable to boot with serial
-console attached. Also during artificial stress testing SATA disk
-disappears from the system because its interrupts aren't served for too
-long.
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 4dae9cbe9259..bd7ee2a9f960 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -206,8 +206,7 @@ struct printk_log {
+ };
+ 
+ /*
+- * The logbuf_lock protects kmsg buffer, indices, counters. It is also
+- * used in interesting ways to provide interlocking in console_unlock();
++ * The logbuf_lock protects kmsg buffer, indices, counters.
+  */
+ static DEFINE_RAW_SPINLOCK(logbuf_lock);
+ 
+-- 
+1.8.1.4
 
-This is a revised series using my new approach to the problem which doesn't
-let CPU out of console_unlock() until there's someone else to take over the
-printing. The main difference since the last version is that instead of
-passing printing duty to different CPUs via IPIs we use dedicated kthreads.
-This method is somewhat less reliable (in a sense that there are more
-situations in which handover needn't work at all - e.g. when the currently
-printing CPU holds a spinlock and the CPU where kthread is scheduled to run is
-spinning on this spinlock) but the code is much simpler and in my practical
-testing kthread approach was good enough to avoid any problems (with one
-exception - see patch 8/8).
-
-								Honza
