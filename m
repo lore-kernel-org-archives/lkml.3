@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386AbaCNVSF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:18:05 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:12580 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756309AbaCNVSA (ORCPT
+	id S1756445AbaCNVUI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:20:08 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45529 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747AbaCNVUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:18:00 -0400
-Date: Fri, 14 Mar 2014 14:19:53 -0700
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Zhang Rui <rui.zhang@intel.com>
-CC: "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] thermal: add generic IIO channel thermal sensor driver
-Message-ID: <20140314211952.GJ18578@sonymobile.com>
-References: <1391651007-29813-1-git-send-email-courtney.cavin@sonymobile.com>
- <1393484014.2637.14.camel@rzhang1-mobl4>
+	Fri, 14 Mar 2014 17:20:06 -0400
+Date: Fri, 14 Mar 2014 22:20:04 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Subject: Re: 3.14-rc: /proc/acpi/battery gone?
+Message-ID: <20140314212004.GA23731@amd.pavel.ucw.cz>
+References: <20140314211456.GA23213@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1393484014.2637.14.camel@rzhang1-mobl4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140314211456.GA23213@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 07:53:34AM +0100, Zhang Rui wrote:
-> On Wed, 2014-02-05 at 17:43 -0800, Courtney Cavin wrote:
-> > This driver is a generic method for using IIO ADC channels as thermal
-> > sensors.
-> > 
-> > Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+Hi!
+
+> It seems /proc/acpi/battery interface is gone, and I don't see any
+> option to reintroduce it... what is going on?
 > 
-> Eduardo,
-> 
-> what do you think of this patch?
+> (I got into habit of archiving content of /proc/acpi/battery to
+> monitor, how battery ages..)
 
-Apparently not very much.  Oh well.
+And this is ungood:
 
-Sans further input, I will submit a new series with the following
-changes:
-	- Fix some return values in probe().
-	- Change DT binding
-		- Submit as seperate patch in series
-		- Reword/rename to represent a thermistor
-		- Remove specific references to IIO, where appropriate
+pavel@duo:~/denx/active$ cat /sys/class/power_supply/BAT0/alarm 
+2403000
 
--Courtney
+What is it? Not exactly easy to guess, and not documented. 
+
+pavel@duo:~$ grep alarm /data/l/linux-good/Documentation/ABI/*/*
+/data/l/linux-good/Documentation/ABI/testing/sysfs-ptp:What:
+/sys/class/ptp/ptpN/n_alarms
+/data/l/linux-good/Documentation/ABI/testing/sysfs-ptp:		alarms
+offer by the PTP hardware clock.
+pavel@duo:~$ 
+
+I wish files with physical values included units. alarm is probably in
+uA, but it might be uW as well, and ... :-(.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
