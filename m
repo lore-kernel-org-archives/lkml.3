@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbaCNUZw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 16:25:52 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:39418 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350AbaCNUZv (ORCPT
+	id S1756066AbaCNU0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 16:26:22 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:16966 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755144AbaCNU0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 16:25:51 -0400
-Date: Fri, 14 Mar 2014 17:24:21 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/5] perf tests: Add tip/pid mmap automated tests
-Message-ID: <20140314202421.GA14945@ghostprotocols.net>
-References: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
- <1394805606-25883-2-git-send-email-jolsa@redhat.com>
+	Fri, 14 Mar 2014 16:26:20 -0400
+To: Frank Mayhar <fmayhar@google.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Theodore Tso <tytso@google.com>
+Subject: Re: [PATCH] block:  Force sector and nr_sects to device alignment and granularity.
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1394474492.31499.177.camel@bobble.lax.corp.google.com>
+	<x49wqg0bwb4.fsf@segfault.boston.devel.redhat.com>
+	<1394553778.31499.180.camel@bobble.lax.corp.google.com>
+	<x491ty71dox.fsf@segfault.boston.devel.redhat.com>
+	<yq1d2hq27jk.fsf@sermon.lab.mkp.net>
+	<1394817430.31499.216.camel@bobble.lax.corp.google.com>
+Date: Fri, 14 Mar 2014 16:26:08 -0400
+In-Reply-To: <1394817430.31499.216.camel@bobble.lax.corp.google.com> (Frank
+	Mayhar's message of "Fri, 14 Mar 2014 10:17:10 -0700")
+Message-ID: <yq1vbvgwmqn.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394805606-25883-2-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Mar 14, 2014 at 03:00:02PM +0100, Jiri Olsa escreveu:
-> Adding automated test for memory maps lookup within
-> multiple machines threads.
+>>>>> "Frank" == Frank Mayhar <fmayhar@google.com> writes:
 
-  CC       /tmp/build/perf/arch/x86/util/tsc.o
-tests/mmap-events.c: In function ‘mmap_events’:
-tests/mmap-events.c:157:18: error: declaration of ‘thread’ shadows a global declaration [-Werror=shadow]
-tests/mmap-events.c:46:14: error: shadowed declaration is here [-Werror=shadow]
-tests/mmap-events.c: In function ‘thread’:
-tests/mmap-events.c:54:7: error: ignoring return value of ‘write’, declared with attribute warn_unused_result [-Werror=unused-result]
-cc1: all warnings being treated as errors
-make[1]: *** [/tmp/build/perf/tests/mmap-events.o] Error 1
-make[1]: *** Waiting for unfinished jobs....
-make: *** [install-bin] Error 2
-make: Leaving directory `/home/acme/git/linux/tools/perf'
+Frank,
 
-real	0m10.024s
-user	0m45.900s
-sys	0m4.932s
-[acme@ssdandy linux]$ 
+Frank> Well, in this particular case the driver is filling in the
+Frank> relevant information (alignment and granularity) and then
+Frank> complaining later that that information has been ignored.  As I
+Frank> intimated earlier, it seems a little odd to allow the driver to
+Frank> specify the information, only to ignore it completely when it's
+Frank> time to actually use it.
 
-[acme@ssdandy linux]$ cat /etc/fedora-release 
-Fedora release 18 (Spherical Cow)
-[acme@ssdandy linux]$ gcc -v
-Using built-in specs.
-COLLECT_GCC=/usr/bin/gcc
-COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/4.7.2/lto-wrapper
-Target: x86_64-redhat-linux
-Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
---infodir=/usr/share/info
---with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap
---enable-shared --enable-threads=posix --enable-checking=release
---disable-build-with-cxx --disable-build-poststage1-with-cxx
---with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions
---enable-gnu-unique-object --enable-linker-build-id
---with-linker-hash-style=gnu
---enable-languages=c,c++,objc,obj-c++,java,fortran,ada,go,lto
---enable-plugin --enable-initfini-array --enable-java-awt=gtk
---disable-dssi --with-java-home=/usr/lib/jvm/java-1.5.0-gcj-1.5.0.0/jre
---enable-libgcj-multifile --enable-java-maintainer-mode
---with-ecj-jar=/usr/share/java/eclipse-ecj.jar
---disable-libjava-multilib --with-ppl --with-cloog --with-tune=generic
---with-arch_32=i686 --build=x86_64-redhat-linux
-Thread model: posix
-gcc version 4.7.2 20121109 (Red Hat 4.7.2-8) (GCC) 
-[acme@ssdandy linux]$
+Which driver is this?
+
+In T10 SBC these values are performance hints, not hard
+requirements. They were never intended as such.
+
+Frank> Further, in my opinion this is less "dropping information" than
+Frank> it is keeping information that would be dropped by the driver
+Frank> itself; were it not for this adjustment, the driver would get the
+Frank> request, complain, and drop it completely.  This way, as much of
+Frank> the request as possible is preserved while still honoring the
+Frank> constraints given by the driver.
+
+The problem arises if you combine devices with different
+granularity. The I/O topology code is then forced to scale the
+granularity up.
+
+If you enforce the granularity at the top of the stack it means the
+device(s) with lesser granularity will lose information which would
+otherwise be valuable to them.
+
+We have previously entertained enforcing the granularity at the bottom
+of the stack on a per-device basis. However, I stand by my opinion that
+the device behavior is broken. I'd never let a device like that pass
+qualification here...
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
