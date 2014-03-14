@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707AbaCNJ7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 05:59:45 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:57911 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847AbaCNJ7n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 05:59:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140314140129.68a41cc1bd9e0a48a198ca13@samsung.com>
-References: <20140314140129.68a41cc1bd9e0a48a198ca13@samsung.com>
-Date: Fri, 14 Mar 2014 15:29:42 +0530
-Message-ID: <CAK9yfHzRasE3jroDUZgAa=DN5N=2ZDAxgNiHDCip+f2868BAVQ@mail.gmail.com>
-Subject: Re: [PATCH v11 01/27] iommu/exynos: do not include removed header
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753945AbaCNKAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 06:00:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28334 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751011AbaCNKAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 06:00:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,653,1389772800"; 
+   d="scan'208";a="491842100"
+From: Chew Chiau Ee <chiau.ee.chew@intel.com>
+To: Viresh Kumar <viresh.linux@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Lim Lee Booi <lee.booi.lim@intel.com>
+Subject: [PATCH v2] dma: dw: Add suspend and resume handling for PCI mode DW_DMAC.
+Date: Sat, 15 Mar 2014 02:02:39 +0800
+Message-Id: <1394820159-562-1-git-send-email-chiau.ee.chew@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 March 2014 10:31, Cho KyongHo <pullip.cho@samsung.com> wrote:
-> Commit 25e9d28d92 (ARM: EXYNOS: remove system mmu initialization from
-> exynos tree) removed arch/arm/mach-exynos/mach/sysmmu.h header without
-> removing remaining use of it from exynos-iommu driver, thus causing a
-> compilation error.
->
-> This patch fixes the error by removing respective include line
-> from exynos-iommu.c.
->
-> CC: Tomasz Figa <t.figa@samsung.com>
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> ---
->  drivers/iommu/exynos-iommu.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> index 0740189..4876d35 100644
-> --- a/drivers/iommu/exynos-iommu.c
-> +++ b/drivers/iommu/exynos-iommu.c
-> @@ -12,6 +12,7 @@
->  #define DEBUG
->  #endif
->
-> +#include <linux/kernel.h>
+From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-This change doesn't look related to the patch subject/description.
+This is to disable/enable DW_DMAC hw during late suspend/early resume.
+Since DMA is providing service to other clients (eg: SPI, HSUART),
+we need to ensure DMA suspends after the clients and resume
+before the clients are active.
 
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+---
+ v2 changelog:
+ * Change suspend_noirq and resume_noirq callback to suspend_late
+   and resume_early.
+
+ drivers/dma/dw/pci.c |   33 +++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/dma/dw/pci.c b/drivers/dma/dw/pci.c
+index 755cc6b..fec59f1 100644
+--- a/drivers/dma/dw/pci.c
++++ b/drivers/dma/dw/pci.c
+@@ -75,6 +75,36 @@ static void dw_pci_remove(struct pci_dev *pdev)
+ 		dev_warn(&pdev->dev, "can't remove device properly: %d\n", ret);
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
++
++static int dw_pci_suspend_late(struct device *dev)
++{
++	struct pci_dev *pci = to_pci_dev(dev);
++	struct dw_dma_chip *chip = pci_get_drvdata(pci);
++
++	return dw_dma_suspend(chip);
++};
++
++static int dw_pci_resume_early(struct device *dev)
++{
++	struct pci_dev *pci = to_pci_dev(dev);
++	struct dw_dma_chip *chip = pci_get_drvdata(pci);
++
++	return dw_dma_resume(chip);
++};
++
++#else /* !CONFIG_PM_SLEEP */
++
++#define dw_pci_suspend_late	NULL
++#define dw_pci_resume_early	NULL
++
++#endif /* !CONFIG_PM_SLEEP */
++
++static const struct dev_pm_ops dw_pci_dev_pm_ops = {
++	.suspend_late = dw_pci_suspend_late,
++	.resume_early = dw_pci_resume_early,
++};
++
+ static DEFINE_PCI_DEVICE_TABLE(dw_pci_id_table) = {
+ 	/* Medfield */
+ 	{ PCI_VDEVICE(INTEL, 0x0827), (kernel_ulong_t)&dw_pci_pdata },
+@@ -95,6 +125,9 @@ static struct pci_driver dw_pci_driver = {
+ 	.id_table	= dw_pci_id_table,
+ 	.probe		= dw_pci_probe,
+ 	.remove		= dw_pci_remove,
++	.driver	= {
++		.pm	= &dw_pci_dev_pm_ops,
++	},
+ };
+ 
+ module_pci_driver(dw_pci_driver);
 -- 
-With warm regards,
-Sachin
+1.7.4.4
+
