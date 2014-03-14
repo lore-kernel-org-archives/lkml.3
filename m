@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601AbaCNGmw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 02:42:52 -0400
-Received: from atl4mhob05.myregisteredsite.com ([209.17.115.43]:42050 "EHLO
-	atl4mhob05.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755156AbaCNGmu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 02:42:50 -0400
-X-TCPREMOTEIP: 88.159.208.100
-X-Authenticated-UID: mike@milosoftware.com
+	id S1755791AbaCNGnc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 02:43:32 -0400
+Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:34421 "EHLO
+	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755256AbaCNGna convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 02:43:30 -0400
+X-Spam-scanned: scanned by InterNLnet Mail Scan System
+X-Spam-Flag: NO
+X-Spam-Score: -4.4
+X-Spam-Languages: en
+Message-ID: <5322A50D.4040702@topic.nl>
+Date: Fri, 14 Mar 2014 07:43:25 +0100
 From: Mike Looijmans <mike.looijmans@topic.nl>
-To: wsa@the-dreams.de, linux-i2c@vger.kernel.org
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org, Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH] i2c-davinci: Handle signals gracefully
-Date: Fri, 14 Mar 2014 07:42:28 +0100
-Message-Id: <1394779348-4084-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389265885-26777-1-git-send-email-mike.looijmans@topic.nl>
-References: <1389265885-26777-1-git-send-email-mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nsekhar@ti.com>, <khilman@deeprootsystems.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [PATCH] i2c-davinci: Handle signals gracefully
+References: <1389265885-26777-1-git-send-email-mike.looijmans@topic.nl> <20140309202107.GA2835@katana> <531D92F7.7080509@topic.nl> <20140310105952.GA7227@katana> <20140310152406.GD11592@katana>
+In-Reply-To: <20140310152406.GD11592@katana>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a signal is caught while the i2c-davinci bus driver is transferring,
-the drive just "abandons" the transfer and leaves the controller to fend
-for itself. The next I2C transaction will find the controller in an
-undefined state and often results in a stream of "initiating i2c bus recovery"
-messages until the controller arrives in a defined state. This behaviour
-also sends out "half" or possibly even mixed messages to I2C client
-devices which may put them in an undesired state as well.
+﻿On 03/10/2014 04:24 PM, Wolfram Sang wrote:
+>
+>>>> Even more, you should complete the whole transfer. There are devices
+>>>> where things can really go wrong if you send a half-complete command and
+>>>> then start with the next one. So, not checking signals at all is the way
+>>>> to go for I2C drivers. There is some cruft left, so I am happy about
+>>>> patches fixing that, with testing on real HW. Like yours here.
+>>>
+>>> I agree.
+>>>
+>>> I know the Zynq (using a cadence controller) also lets signals
+>>> interrupt I2C transfers, so I'll propose a patch to Xilinx and CC to
+>>> you and linux-i2c to completely remove signal handling from that
+>>> driver as well.
+>>
+>> Cool, thanks!
+>
+> Are you going to update the davinci patch as well?
 
-This patch fixes this issue by always attempting to finish the current
-transaction, and only abort on bus errors. This keeps the controller in a
-defined state, and is also much friendlier towards client devices, because
-it will only send complete messages.
+An amended patch is on its way now. I forgot to set the subject to "PATCHv2" 
+though.
 
-Before this patch, reading an I2C device in a loop and interrupting it
-often resulted in a "initiating i2c bus recovery" storm and not being
-able to communicate via I2C for several seconds. With this patch, I2C
-transactions will not be interrupted or otherwise halfway completed.
+Mike.
 
-v2: Completely ignore signals.
 
-Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
----
- drivers/i2c/busses/i2c-davinci.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index af0b583..254d897 100644
---- a/drivers/i2c/busses/i2c-davinci.c
-+++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -372,9 +372,9 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
- 		flag |= DAVINCI_I2C_MDR_STP;
- 	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, flag);
- 
--	r = wait_for_completion_interruptible_timeout(&dev->cmd_complete,
-+	r = wait_for_completion_timeout(&dev->cmd_complete,
- 						      dev->adapter.timeout);
--	if (r == 0) {
-+	if (unlikely(r == 0)) {
- 		dev_err(dev->dev, "controller timed out\n");
- 		davinci_i2c_recover_bus(dev);
- 		i2c_davinci_init(dev);
-@@ -384,7 +384,6 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
- 	if (dev->buf_len) {
- 		/* This should be 0 if all bytes were transferred
- 		 * or dev->cmd_err denotes an error.
--		 * A signal may have aborted the transfer.
- 		 */
- 		if (r >= 0) {
- 			dev_err(dev->dev, "abnormal termination buf_len=%i\n",
-@@ -436,22 +435,24 @@ i2c_davinci_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	ret = i2c_davinci_wait_bus_not_busy(dev, 1);
- 	if (ret < 0) {
- 		dev_warn(dev->dev, "timeout waiting for bus ready\n");
--		return ret;
-+		goto error;
- 	}
- 
- 	for (i = 0; i < num; i++) {
- 		ret = i2c_davinci_xfer_msg(adap, &msgs[i], (i == (num - 1)));
--		dev_dbg(dev->dev, "%s [%d/%d] ret: %d\n", __func__, i + 1, num,
--			ret);
-+		dev_dbg(dev->dev, "%s [%d/%d] %#x ret: %d\n", __func__, i + 1,
-+				num, msgs[i].addr, ret);
- 		if (ret < 0)
--			return ret;
-+			goto error;
- 	}
-+	ret = num;
- 
-+error:
- #ifdef CONFIG_CPU_FREQ
- 	complete(&dev->xfr_complete);
- #endif
- 
--	return num;
-+	return ret;
- }
- 
- static u32 i2c_davinci_func(struct i2c_adapter *adap)
--- 
-1.7.9.5
+Met vriendelijke groet / kind regards,
+
+Mike Looijmans
+
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
+
+Please consider the environment before printing this e-mail
 
