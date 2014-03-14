@@ -1,76 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381AbaCNRW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 13:22:28 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:51105 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432AbaCNRW1 (ORCPT
+	id S1756358AbaCNRXK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 13:23:10 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:46942 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341AbaCNRXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 13:22:27 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-cf-53233ad15d1a
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Hans de Goede <hdegoede@redhat.com>, linux-ide@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ata: ahci_platform: fix devm_ioremap_resource() return value
- checking
-Date: Fri, 14 Mar 2014 18:22:09 +0100
-Message-id: <2139783.QvectlX5nq@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+	Fri, 14 Mar 2014 13:23:08 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-8d-53233af96e63
+Message-id: <53233AF8.9020501@samsung.com>
+Date: Fri, 14 Mar 2014 18:23:04 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
 MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jAd2LVsrBBqv+qlm8OT6dyWLT42us
-	Fsd2PGKyuLxrDpvFr+VHGR1YPTat6mTz2Lyk3uP9vqtsHp83yQWwRHHZpKTmZJalFunbJXBl
-	/N3eylzwnqvi+JNLbA2MEzm7GDk5JARMJDb072KBsMUkLtxbz9bFyMUhJLCIUWLT/IvMEE4L
-	k8Sl+TsYQarYBKwkJravArNFBGQlrkx7yAhSxCzQwSjRPb+THSQhLBAh8evnX7CxLAKqEsuW
-	bgdr4BXQlJh0eCsbiC0q4CmxY/tKNoi4oMSPyffA6pkF5CX27Z/KCmFrSazfeZxpAiPfLCRl
-	s5CUzUJStoCReRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcGA+k9rBuLLB4hCjAAejEg/v
-	BSXlYCHWxLLiytxDjBIczEoivPuNgUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeW
-	pGanphakFsFkmTg4pRoYrapqeKUSkjq3K4f/m/KVT/89m/jNkhpxlV3GpzTuxtsn7ZAN7SoW
-	/709/Ou9Dfc09iu0mesfa/wobdL7TfyA78Ns1/2rHrM47/974XJZ4PIo10Y13y9s0zccU3n+
-	5+ctlsbFKtozVS5O+P32yTSrdwu6z216ZlRQ4rddUf7Kh7Wbr0yq4M0zUmIpzkg01GIuKk4E
-	AOQbcNxIAgAA
+To: Robert Baldyga <r.baldyga@samsung.com>, ben-linux@fluff.org,
+        kgene.kim@samsung.com
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com
+Subject: Re: [PATCH] ARM: dts: exynos4210-trats: add max8997 IRQ
+References: <1394792001-7837-1-git-send-email-r.baldyga@samsung.com>
+In-reply-to: <1394792001-7837-1-git-send-email-r.baldyga@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t/xq7o/rZSDDX5vsLCYtO4Ak8X8I+dY
+	LfrfLGS1OPdqJaNF74KrbBabHl9jtbi8aw6bxYzz+5gsbl/mtVh75C67xdLrF5ksJkxfy2Lx
+	4PBOdovWvUfYHfg81sxbw+jR0tzD5nG5r5fJ4++qF8weK5d/YfPYtKqTzWPzknqPvi2rGD0+
+	b5IL4IzisklJzcksSy3St0vgyrj8xaBgEk/F5B9bGRsYd3N2MXJySAiYSNw5voUVwhaTuHBv
+	PVsXIxeHkMBSRokzp+ayQzifGSWublvACFLFK6Al8fXgS7AOFgFViZXv77CD2GwCahKfGx6x
+	gdj8QDVrmq6zgNiiAhEScyduZoPoFZT4MfkeWFwEKP50bTMLyAJmgU1MEvvmTgIq4uAQFnCQ
+	mHVIE6RGSMBF4t6tv8wgNqeAq0Tb516wOcwC1hIrJ21jhLDlJTavecs8gVFwFpIVs5CUzUJS
+	toCReRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSJx92cG4+JjVIUYBDkYlHt4LSsrBQqyJ
+	ZcWVuYcYJTiYlUR49xsDhXhTEiurUovy44tKc1KLDzEycXBKNTB2ygq1Wr6q1V+2m/NY7WdD
+	wVyZ3qJKa9abF9N2mnYE9uQIfVBNaa8PSwxPXSU0b+bEj4ETijikHVwTdgSquETVikpN2b5/
+	PXtq+iEd8dPG6tpKt7iOrM++k/+D98ctmyWC/X8MNM+ff11n66F+JnPPlCUzWDI3ZopYKC56
+	K7fnFb+i5JOpfEosxRmJhlrMRcWJAAHMa7CRAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_ioremap_resource() returns a pointer to the remapped memory or
-an ERR_PTR() encoded error code on failure.  Fix the check inside
-ahci_platform_get_resources() accordingly.
+Hi Robert,
 
-Also while at it remove a needless line break.
+On 14.03.2014 11:13, Robert Baldyga wrote:
+> This patch adds device tree node for IRQ used by max8997.
+>
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
----
-Compile tested only.
+Generally, this patch does not add just a node, but rather "IRQ line 
+specification for the MAX8997 PMIC chip and necessary pinctrl group to 
+configure pull-up and driver strength of the pin".
 
- drivers/ata/ahci_platform.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Also it would be nice to mention a reason for this change, e.g. what can 
+be achieved after applying this patch.
 
-Index: b/drivers/ata/ahci_platform.c
-===================================================================
---- a/drivers/ata/ahci_platform.c	2014-03-14 16:45:04.056724383 +0100
-+++ b/drivers/ata/ahci_platform.c	2014-03-14 17:54:12.504653647 +0100
-@@ -199,8 +199,7 @@ static void ahci_platform_put_resources(
-  * RETURNS:
-  * The allocated ahci_host_priv on success, otherwise an ERR_PTR value
-  */
--struct ahci_host_priv *ahci_platform_get_resources(
--	struct platform_device *pdev)
-+struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct ahci_host_priv *hpriv;
-@@ -219,8 +218,9 @@ struct ahci_host_priv *ahci_platform_get
- 
- 	hpriv->mmio = devm_ioremap_resource(dev,
- 			      platform_get_resource(pdev, IORESOURCE_MEM, 0));
--	if (!hpriv->mmio) {
-+	if (IS_ERR(hpriv->mmio)) {
- 		dev_err(dev, "no mmio space\n");
-+		rc = PTR_ERR(hpriv->mmio);
- 		goto err_out;
- 	}
- 
+Otherwise looks good.
 
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+
+--
+Best regards,
+Tomasz
+
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> ---
+>   arch/arm/boot/dts/exynos4210-trats.dts |   13 +++++++++++++
+>   1 file changed, 13 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos4210-trats.dts b/arch/arm/boot/dts/exynos4210-trats.dts
+> index 1d18428..0e1fc19 100644
+> --- a/arch/arm/boot/dts/exynos4210-trats.dts
+> +++ b/arch/arm/boot/dts/exynos4210-trats.dts
+> @@ -148,6 +148,14 @@
+>   		};
+>   	};
+>
+> +	pinctrl@11000000 {
+> +		max8997_irq: max8997-irq {
+> +			samsung,pins = "gpx0-7";
+> +			samsung,pin-pud = <3>;
+> +			samsung,pin-drv = <0>;
+> +		};
+> +	};
+> +
+>   	i2c@13890000 {
+>   		samsung,i2c-sda-delay = <100>;
+>   		samsung,i2c-slave-addr = <0x10>;
+> @@ -179,6 +187,11 @@
+>   		max8997_pmic@66 {
+>   			compatible = "maxim,max8997-pmic";
+>
+> +			pinctrl-0 = <&max8997_irq>;
+> +			pinctrl-names = "default";
+> +
+> +			interrupt-parent = <&gpx0>;
+> +			interrupts = <7 0>;
+>   			reg = <0x66>;
+>
+>   			max8997,pmic-buck1-uses-gpio-dvs;
+>
