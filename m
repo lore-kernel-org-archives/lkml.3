@@ -1,177 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378AbaCNLRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 07:17:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38834 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618AbaCNLRN (ORCPT
+	id S1754216AbaCNLWD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 07:22:03 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:36254 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618AbaCNLWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 07:17:13 -0400
-Date: Fri, 14 Mar 2014 12:17:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: eranian@google.com, jmario@redhat.com, jolsa@redhat.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, lwoodman@redhat.com
-Subject: Re: perf MMAP2 interface and COW faults
-Message-ID: <20140314111705.GU27965@twins.programming.kicks-ass.net>
-References: <20140313200352.GU25953@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140313200352.GU25953@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 14 Mar 2014 07:22:00 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-f5-5322e65458ef
+Message-id: <5322E653.90107@samsung.com>
+Date: Fri, 14 Mar 2014 12:21:55 +0100
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, sameo@linux.intel.com,
+        myungjoo.ham@samsung.com, dmitry.torokhov@gmail.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, lgirdwood@gmail.com, a.zummo@towertech.it,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-leds@vger.kernel.org,
+        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
+        k.kozlowski@samsung.com
+Subject: Re: [PATCH v3 4/4] mfd: max8997: move regmap handling to function
+ drivers
+References: <1394703532-494-1-git-send-email-r.baldyga@samsung.com>
+ <1394703532-494-5-git-send-email-r.baldyga@samsung.com>
+ <532191E6.6080108@samsung.com> <20140313125504.GA10356@lee--X1>
+ <20140313140901.GW366@sirena.org.uk>
+In-reply-to: <20140313140901.GW366@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t/xa7ohz5SCDd4e1LVYcvEqu8XUh0/Y
+	LI7unMhkcf3Lc1aLSU/eM1scXvSC0WLiysnMFq9fGFrc/3qU0eLblQ4mi5ufvrFaXN41h81i
+	65t1jBZrj9xlt7jduILN4tre48wWu3c9ZbXY39nBaHG6m9VB2GPnrLvsHnsmnmTz2LxCy2PT
+	qk42jzvX9rB5zDsZ6LFn/g9Wj74tqxg9ps/7yeTxeZOcx/otW5kCuKO4bFJSczLLUov07RK4
+	Mub//sde8IW9YsXlh8wNjPPZuhg5OSQETCSaN3SxQ9hiEhfurQeKc3EICSxllPh44xYrSEJI
+	4COjxOV2LhCbV0BD4vqmX2ANLAKqEvMur2ABsdkEdCS2fJ/ACGKLCkRIzJ24mQ2iXlDix+R7
+	YDUiAq4St04eZwFZwCxwkFniV88CsCJhgRCJTWsWsUNsfsYoseLDNLDNnAKGEm8fvAIrYhZQ
+	l5g0bxEzhC0vsXnNW+YJjAKzkCyZhaRsFpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNz
+	NzFCovLrDsalx6wOMQpwMCrx8M44qhgsxJpYVlyZe4hRgoNZSYT35GOlYCHelMTKqtSi/Pii
+	0pzU4kOMTBycUg2MgX+D38rvWGEiJCgk9Ta2+Puv5VZ3dmx7mVxYu+jh9wyRtD2Wm87vO+gQ
+	o3agSH/DjLq75p2VZ/dyZj990+rFxeSQxFTYdyH5mlpl8oYl3pNmfi0Sf+xmcneO1ZEp7scZ
+	/r09+WcV38ld12UvnFhzS/vEqfuTtp1MZA9aumGRLofskW0vVDsWzlJiKc5INNRiLipOBAB8
+	VqTzqAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 04:03:52PM -0400, Don Zickus wrote:
-> Hi Peter,
-> 
-> So we found another corner case with MMAP2 interface.  I don't think it is
-> a big hurdle to overcome, just wanted a suggestion.
-> 
-> Joe ran specjbb2013 (which creates about 10,000 java threads across 9
-> processes) and our c2c tool turned up some cacheline collision data on
-> libjvm.so.  This didn't make sense because you shouldn't be able to write
-> to a shared library.
-> 
-> Even worse, our tool said it affected all the java process and a majority
-> of the threads.  Which again didn't make sense because this shared library
-> should be local to each pid's memory.
-> 
-> Anyway, what we determined is that the shared library had mmap data that
-> was non-zero (because it was backed by a file, libjvm.so).  So the
-> assumption was if the major, minor, inode and inode generation numbers
-> were non-zero, this memory segment was shared across processes.
-> 
-> So perf setup its map files for the mmap area and then started sampling data
-> addresses.  A few hundred HITMs were to a virtual address that fell into
-> the libjvm.so memory segment (which was assumed to be mmap'd across
-> processes).
-> 
-> Coalescing all the data suggested that multiple pids/tids were contending
-> for a cacheline in a shared library.
-> 
-> After talking with Larry Woodman, we realized when you write to a 'data' or
-> 'bss' segment of a shared library, you incur a COW fault that maps to an
-> anonymous page in the pid's memory.  However, perf doesn't see this.
-> 
-> So when all the tids start writing to this 'data' or 'bss' segment they
-> generate HITMs within their pid (which is fine).  However the tool thinks
-> it affects other pids (which is not fine).
-> 
-> My question is, how can our tool determine if a virtual address is private
-> to a pid or not?  Originally it had to have a zero for maj, min, ino, and
-> ino gen.  But for file map'd libraries this doesn't always work because we
-> don't see COW faults in perf (and we may not want too :-) ).
-> 
-> Is there another technique we can use?  Perhaps during the reading of
-> /proc/<pid>/maps, if the protection is marked 'p' for private, we just tell
-> the sort algorithm to sort locally to the process but a 's' for shared can
-> be sorted globally based on data addresses?
-> 
-> Or something else that tells us that a virtual address has changed its
-> mapping?  Thoughts?
+Hi,
 
-Very good indeed; we're missing the protection and flags bits.
+On 03/13/2014 03:09 PM, Mark Brown wrote:
+> On Thu, Mar 13, 2014 at 12:55:04PM +0000, Lee Jones wrote:
+>>> Is it necessary? If previous mfd driver has various i2c line, previous mfd driver
+>>> initialize regmap/i2c setting on mfd driver.
+>>> I'm not sure that regmap/i2c setting code move from mfd driver to each driver.
+>>>
+>>> Dear Lee Jones,
+>>> I need your opinion about moving regmap/i2c code from mfd driver to each driver.
+> 
+>> I'd rather take advice from Mark on this one.
+> 
+> I don't really case that much; I'm having a hard time seeing it as
+> particularly useful to do the refactoring but if it makes people
+> happy...  Keeping things in the core would help promote reusability I
+> guess but I'm not sure that's likely to actually happen with this sort
+> of driver/device.
+> 
 
-How about something like the below; with that you can solve your problem
-by looking at mmap2.flags & MAP_PRIVATE.
+If you think it's not needed, you can ignore this patch. I prepared it
+due to Dmitry Torokhov suggestion. If you think it's useless it doesn't
+make me unhappy :)
 
----
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 853bc1ccb395..2ed502f5679f 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -699,6 +699,7 @@ enum perf_event_type {
- 	 *	u32				min;
- 	 *	u64				ino;
- 	 *	u64				ino_generation;
-+	 *	u32				prot, flags;
- 	 *	char				filename[];
- 	 * 	struct sample_id		sample_id;
- 	 * };
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 661951ab8ae7..6d50791d3d96 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5100,6 +5107,7 @@ struct perf_mmap_event {
- 	int			maj, min;
- 	u64			ino;
- 	u64			ino_generation;
-+	u32			prot, flags;
- 
- 	struct {
- 		struct perf_event_header	header;
-@@ -5141,6 +5149,8 @@ static void perf_event_mmap_output(struct perf_event *event,
- 		mmap_event->event_id.header.size += sizeof(mmap_event->min);
- 		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
- 		mmap_event->event_id.header.size += sizeof(mmap_event->ino_generation);
-+		mmap_event->event_id.header.size += sizeof(mmap_event->prot);
-+		mmap_event->event_id.header.size += sizeof(mmap_event->flags);
- 	}
- 
- 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
-@@ -5159,6 +5169,8 @@ static void perf_event_mmap_output(struct perf_event *event,
- 		perf_output_put(&handle, mmap_event->min);
- 		perf_output_put(&handle, mmap_event->ino);
- 		perf_output_put(&handle, mmap_event->ino_generation);
-+		perf_output_put(&handle, mmap_event->prot);
-+		perf_output_put(&handle, mmap_event->flags);
- 	}
- 
- 	__output_copy(&handle, mmap_event->file_name,
-@@ -5177,11 +5189,35 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 	struct file *file = vma->vm_file;
- 	int maj = 0, min = 0;
- 	u64 ino = 0, gen = 0;
-+	u32 prot = 0, flags = 0;
- 	unsigned int size;
- 	char tmp[16];
- 	char *buf = NULL;
- 	char *name;
- 
-+	if (event->attr.mmap2) {
-+		if (vma->vm_flags & VM_READ)
-+			prot |= PROT_READ;
-+		if (vma->vm_flags & VM_WRITE)
-+			prot |= PROT_WRITE;
-+		if (vma->vm_flags & VM_EXEC)
-+			prot |= PROT_EXEC;
-+
-+		if (vma->vm_flags & VM_MAYSHARE)
-+			flags = MAP_SHARED;
-+		else
-+			flags = MAP_PRIVATE;
-+
-+		if (vma->vm_flags & VM_DENYWRITE)
-+			flags |= MAP_DENYWRITE;
-+		if (vma->vm_flags & VM_MAYEXEC)
-+			flags |= MAP_EXECUTABLE;
-+		if (vma->vm_flags & VM_LOCKED)
-+			flags |= MAP_LOCKED;
-+		if (vma->vm_flags & VM_HUGETLB)
-+			flags |= MAP_HUGETLB;
-+	}
-+
- 	if (file) {
- 		struct inode *inode;
- 		dev_t dev;
-@@ -5247,6 +5283,8 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 	mmap_event->min = min;
- 	mmap_event->ino = ino;
- 	mmap_event->ino_generation = gen;
-+	mmap_event->prot = prot;
-+	mmap_event->flags = flags;
- 
- 	if (!(vma->vm_flags & VM_EXEC))
- 		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
-@@ -5287,6 +5325,8 @@ void perf_event_mmap(struct vm_area_struct *vma)
- 		/* .min (attr_mmap2 only) */
- 		/* .ino (attr_mmap2 only) */
- 		/* .ino_generation (attr_mmap2 only) */
-+		/* .prot (attr_mmap2 only) */
-+		/* .flags (attr_mmap2 only) */
- 	};
- 
- 	perf_event_mmap_event(&mmap_event);
+Best regards
+Robert Baldyga
