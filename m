@@ -1,162 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130AbaCNUro (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 16:47:44 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:39498 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755727AbaCNUrm (ORCPT
+	id S1756005AbaCNVDA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:03:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3989 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753732AbaCNVC7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 16:47:42 -0400
-Date: Fri, 14 Mar 2014 13:47:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] [RFC] perf: Fix a race between ring_buffer_detach() and
- ring_buffer_wakeup()
-Message-ID: <20140314204736.GG21124@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1394199526-6400-1-git-send-email-alexander.shishkin@linux.intel.com>
- <20140313195816.GJ21124@linux.vnet.ibm.com>
- <20140314095033.GP27965@twins.programming.kicks-ass.net>
+	Fri, 14 Mar 2014 17:02:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,657,1389772800"; 
+   d="scan'208";a="498885059"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "Zheng, Lv" <lv.zheng@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Len Brown" <lenb@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: RE: ACPICA 20140214 auto-serialize weirds my machine...
+Thread-Topic: ACPICA 20140214 auto-serialize weirds my machine...
+Thread-Index: AQHPP58qJGgIn67g10eWtMCYXVeqCZrhEhOQ
+Date: Fri, 14 Mar 2014 21:02:56 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E37C7F9918@ORSMSX103.amr.corp.intel.com>
+References: <14866.1394813101@turing-police.cc.vt.edu>
+In-Reply-To: <14866.1394813101@turing-police.cc.vt.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140314095033.GP27965@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031420-0928-0000-0000-000000798F3B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 10:50:33AM +0100, Peter Zijlstra wrote:
-> On Thu, Mar 13, 2014 at 12:58:16PM -0700, Paul E. McKenney wrote:
-> > On Fri, Mar 07, 2014 at 03:38:46PM +0200, Alexander Shishkin wrote:
-> > > This is more of a problem description than an actual bugfix, but currently
-> > > ring_buffer_detach() can kick in while ring_buffer_wakeup() is traversing
-> > > the ring buffer's event list, leading to cpu stalls.
-> > > 
-> > > What this patch does is crude, but fixes the problem, which is: one rcu
-> > > grace period has to elapse between ring_buffer_detach() and subsequent
-> > > ring_buffer_attach(), otherwise either the attach will fail or the wakeup
-> > > will misbehave. Also, making it a call_rcu() callback will make it race
-> > > with attach().
-> > > 
-> > > Another solution that I see is to check for list_empty(&event->rb_entry)
-> > > before wake_up_all() in ring_buffer_wakeup() and restart the list
-> > > traversal if it is indeed empty, but that is ugly too as there will be
-> > > extra wakeups on some events.
-> > > 
-> > > Anything that I'm missing here? Any better ideas?
-> > 
-> > Not sure it qualifies as "better", but git call to ring_buffer_detach()
-> > is going to free the event anyway, so the synchronize_rcu() and the
-> > INIT_LIST_HEAD() should not be needed in that case.  I am guessing that
-> > the same is true for perf_mmap_close().
-> > 
-> > So that leaves the call in perf_event_set_output(), which detaches from an
-> > old rb before attaching that same event to a new one.  So maybe have the
-> > synchronize_rcu() and INIT_LIST_HEAD() instead be in the "if (old_rb)",
-> > which might be a reasonably uncommon case?
+
+
+> -----Original Message-----
+> From: Valdis Kletnieks [mailto:Valdis.Kletnieks@vt.edu]
+> Sent: Friday, March 14, 2014 9:05 AM
+> To: Zheng, Lv; Wysocki, Rafael J; Moore, Robert; Len Brown
+> Cc: linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org
+> Subject: ACPICA 20140214 auto-serialize weirds my machine...
 > 
-> How about something like so that only does the sync_rcu() if really
-> needed.
+> Surprisingly enough, this hasn't seemed to have bitten many Linux people
+> yet, Google only finds a BSD thread (where the same ACPICA code is in
+> use):
 
-This general idea can be made to work, but it will need some
-internal-to-RCU help.  One vulnerability of the patch below is the
-following sequence of steps:
 
-1.	RCU has just finished a grace period, and is doing the
-	end-of-grace-period accounting.
+Yes, and the reason that it is rare to see this error is because the problem is related to the use of the ASL Sync Level mechanism, which is rarely used.
 
-2.	The code below invokes rcu_batches_completed().  Let's assume
-	the result returned is 42.
+Bob
 
-3.	RCU completes the end-of-grace-period accounting, and increments
-	rcu_sched_state.completed.
 
-4.	The code below checks ->rcu_batches against the result from
-	another invocation of rcu_batches_completed() and sees that
-	the 43 is not equal to 42, so skips the synchronize_rcu().
 
-Except that a grace period has not actually completed.  Boom!!!
 
-The problem is that rcu_batches_completed() is only intended to give
-progress information on RCU.
 
-What I can do is give you a pair of functions, one to take a snapshot of
-the current grace-period state (returning an unsigned long) and another
-to evaluate a previous snapshot, invoking synchronize_rcu() if there has
-not been a full grace period in the meantime.
-
-The most straightforward approach would invoke acquiring the global
-rcu_state ->lock on each call, which I am guessing just might be
-considered to be excessive overhead.  ;-)  I should be able to decrease
-the overhead to a memory barrier on each call, and perhaps even down
-to an smp_load_acquire().  Accessing the RCU state probably costs you
-a cache miss both times.
-
-Thoughts?
-
-							Thanx, Paul
-
-> ---
->  kernel/events/core.c     | 11 +++++++++--
->  kernel/events/internal.h |  1 +
->  2 files changed, 10 insertions(+), 2 deletions(-)
 > 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 661951ab8ae7..88c8c810e081 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -3856,12 +3856,17 @@ static void ring_buffer_attach(struct perf_event *event,
->  {
->  	unsigned long flags;
+> http://comments.gmane.org/gmane.os.dragonfly-bsd.user/1817
 > 
-> +	if (rb->rcu_batches == rcu_batches_completed()) {
-> +		synchronize_rcu();
-> +		INIT_LIST_HEAD(&event->rb_entry);
-> +	}
-> +
->  	if (!list_empty(&event->rb_entry))
->  		return;
+> I found this, but haven't tried it yet:
 > 
->  	spin_lock_irqsave(&rb->event_lock, flags);
->  	if (list_empty(&event->rb_entry))
-> -		list_add(&event->rb_entry, &rb->event_list);
-> +		list_add_rcu(&event->rb_entry, &rb->event_list);
->  	spin_unlock_irqrestore(&rb->event_lock, flags);
->  }
+> commit 5f1cb4a92e4c4aabd139ff9ca1e11c0e2db2ac59
+> Author: Lv Zheng <lv.zheng@intel.com>
+> Date:   Wed Feb 26 10:32:01 2014 +0800
 > 
-> @@ -3873,9 +3878,11 @@ static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
->  		return;
+>     ACPICA: Remove global option to serialize all control methods.
 > 
->  	spin_lock_irqsave(&rb->event_lock, flags);
-> -	list_del_init(&event->rb_entry);
-> +	list_del_rcu(&event->rb_entry);
->  	wake_up_all(&event->waitq);
->  	spin_unlock_irqrestore(&rb->event_lock, flags);
-> +
-> +	rb->rcu_batches = rcu_batches_completed();
->  }
+>     With the addition of the auto-serialization feature, this option
+>     is obsolete and is completely removed. Lv Zheng.
 > 
->  static void ring_buffer_wakeup(struct perf_event *event)
-> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-> index 569b218782ad..698b5881b2a4 100644
-> --- a/kernel/events/internal.h
-> +++ b/kernel/events/internal.h
-> @@ -30,6 +30,7 @@ struct ring_buffer {
->  	/* poll crap */
->  	spinlock_t			event_lock;
->  	struct list_head		event_list;
-> +	unsigned long			rcu_batches;
+>     This patch also updates acpi_serialize kernel parameter using the
+>     new auto-serialization feature - acpi_gbl_auto_serialize_methods.
 > 
->  	atomic_t			mmap_count;
->  	unsigned long			mmap_locked;
+> This looks like a user nightmare waiting to happen, because:
 > 
-
+> -   	acpi_serialize	[HW,ACPI] force serialization of AML methods
+> +	acpi_serialize=	[HW,ACPI] configure auto-serialization of AML
+> methods
+> 
+> Re-using a kernel parameter name with different semantics is just asking
+> for trouble.
+> 
+> I get this in my dmesg, and then I end up with all sorts of ACPI-related
+> weirdness - everything from 4 or 5 temperature sensors evaporating to it
+> claiming that my laptop doesn't have a battery bay (it may also be related
+> to an issue I'm seeing with multiple graphics monitors as well, but I
+> haven't verified that yet).
+> 
+> We're going to need a better way to deal with this before it gets to
+> mainline....
+> 
+> [    0.119344] ACPI: Executed 1 blocks of module-level executable AML code
+> [    0.135282] ACPI Error: Cannot acquire Mutex for method [SNVC], current
+> SyncLevel is too large (1) (20140214/dsmethod-362)
+> [    0.135288] ACPI Error: Method parse/execution failed [\SMBF] (Node
+> ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.135298] ACPI Error: Method parse/execution failed [\GENS] (Node
+> ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.135307] ACPI Error: Method parse/execution failed [\EISC] (Node
+> ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.135320] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.135328] ACPI Error: Method parse/execution failed [\ECRB] (Node
+> ffff88012d02d5d8), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.135336] ACPI Error: Method parse/execution failed [\ECG5] (Node
+> ffff88012d02d740), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.135343] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0.LPCB.EINI] (Node ffff88012d02db00), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.135351] ACPI Error: Method parse/execution failed [\EV3_] (Node
+> ffff88012d0314c0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.135359] ACPI Error: Method parse/execution failed [\_SB_.PCI0._INI]
+> (Node ffff88012d026920), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.135574] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
+> [    0.136283] ACPI: SSDT 0x00000000CE789598 000523 (v01 PmRef  Cpu0Cst
+> 00003001 INTL 20051117)
+> [    0.138312] ACPI: Dynamic OEM Table Load:
+> [    0.138316] ACPI: SSDT 0x0000000000000000 000523 (v01 PmRef  Cpu0Cst
+> 00003001 INTL 20051117)
+> [    0.141483] ACPI: SSDT 0x00000000CE78AA98 000303 (v01 PmRef  ApIst
+> 00003000 INTL 20051117)
+> [    0.143683] ACPI: Dynamic OEM Table Load:
+> [    0.143687] ACPI: SSDT 0x0000000000000000 000303 (v01 PmRef  ApIst
+> 00003000 INTL 20051117)
+> [    0.146215] ACPI: SSDT 0x00000000CE790C18 000119 (v01 PmRef  ApCst
+> 00003000 INTL 20051117)
+> [    0.148279] ACPI: Dynamic OEM Table Load:
+> [    0.148282] ACPI: SSDT 0x0000000000000000 000119 (v01 PmRef  ApCst
+> 00003000 INTL 20051117)
+> [    0.152678] ACPI Error: Cannot acquire Mutex for method [SNVC], current
+> SyncLevel is too large (1) (20140214/dsmethod-362)
+> [    0.152684] ACPI Error: Method parse/execution failed [\SMBF] (Node
+> ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.152693] ACPI Error: Method parse/execution failed [\GENS] (Node
+> ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.152702] ACPI Error: Method parse/execution failed [\EISC] (Node
+> ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.152714] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.152722] ACPI Error: Method parse/execution failed [\ECBT] (Node
+> ffff88012d02d588), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.152730] ACPI Error: Method parse/execution failed [\ECG3] (Node
+> ffff88012d02d6c8), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.152737] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0.LPCB.ECDV.ECIN] (Node ffff88012d02d3d0), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.152745] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0.LPCB.ECDV._REG] (Node ffff88012d02d3f8), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.152818] ACPI: Interpreter enabled
+> [    0.152828] ACPI: (supports S0)
+> [    0.152830] ACPI: Using IOAPIC for interrupt routing
+> [    0.152883] PCI: Using host bridge windows from ACPI; if necessary, use
+> "pci=nocrs" and report a bug
+> [    0.156479] ACPI Error: Cannot acquire Mutex for method [SNVC], current
+> SyncLevel is too large (1) (20140214/dsmethod-362)
+> [    0.156485] ACPI Error: Method parse/execution failed [\SMBF] (Node
+> ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.156494] ACPI Error: Method parse/execution failed [\GENS] (Node
+> ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.156504] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0.LPCB.UAR1._STA] (Node ffff88012d02fb28), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.156666] ACPI Error: Cannot acquire Mutex for method [SNVC], current
+> SyncLevel is too large (1) (20140214/dsmethod-362)
+> [    0.156671] ACPI Error: Method parse/execution failed [\SMBF] (Node
+> ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.156680] ACPI Error: Method parse/execution failed [\GENS] (Node
+> ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.156689] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0.LPCB.LPTE.CLPS] (Node ffff88012d02fcb8), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.156702] ACPI Error: Method parse/execution failed
+> [\_SB_.PCI0.LPCB.LPTE._STA] (Node ffff88012d02fce0), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.162229] ACPI Error: Cannot acquire Mutex for method [SNVC], current
+> SyncLevel is too large (1) (20140214/dsmethod-362)
+> [    0.162234] ACPI Error: Method parse/execution failed [\SMBF] (Node
+> ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.162244] ACPI Error: Method parse/execution failed [\GENS] (Node
+> ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.162254] ACPI Error: Method parse/execution failed [\EISC] (Node
+> ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> 
+> (you get the idea.  I get a total of 172 'ACPI Error:' messages before I
+> get to a single-user prompt)
