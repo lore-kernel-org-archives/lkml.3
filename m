@@ -1,69 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250AbaCNSde (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 14:33:34 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:59573 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755111AbaCNSdc (ORCPT
+	id S1756283AbaCNSdr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 14:33:47 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:40518 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820AbaCNSdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 14:33:32 -0400
-Message-ID: <53234B68.5090300@ahsoftware.de>
-Date: Fri, 14 Mar 2014 19:33:12 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
-References: <5316FFCE.1060603@ti.com>	<1394018461-757-1-git-send-email-holler@ahsoftware.de>	<CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>	<5322D529.4070904@ahsoftware.de>	<CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>	<5322F82A.9000507@ahsoftware.de> <CACRpkdZscprsy7kyqHPUMEMYJ_TKgG2bYR7mdrG4hTDp1w1nDg@mail.gmail.com>
-In-Reply-To: <CACRpkdZscprsy7kyqHPUMEMYJ_TKgG2bYR7mdrG4hTDp1w1nDg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Mar 2014 14:33:44 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: [PATCH 0/3] Volatile Ranges (v11)
+Date: Fri, 14 Mar 2014 11:33:30 -0700
+Message-Id: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.03.2014 14:54, schrieb Linus Walleij:
-> On Fri, Mar 14, 2014 at 1:38 PM, Alexander Holler <holler@ahsoftware.de> wrote:
->
->>> In that case it is hardly a fix that we need to rush out to the entire
->>> world.
->>
->> And I thought the reason for -rc is actually to fix bugs. But I never
->> understood the magical ways and timings patches make their way into
->> mainline. ;)
->
-> OK so it works like this: early in the -rc cycle we fix any bugs, documentation
-> or whatever. At this point it's *regressions* so the fix need to fix something
-> that broke in the merge window (or an earlier merge window).
+I recently got a chance to try to implement Johannes' suggested approach
+so I wanted to send it out for comments. It looks like Minchan has also
+done the same, but from a different direction, focusing on the MADV_FREE
+use cases. I think both approaches are valid, so I wouldn't consider
+these patches to be in conflict. Its just that earlier iterations of the
+volatile range patches had tried to handle numerous different use cases,
+and the resulting complexity was apparently making it difficult to review
+and get interest in the patch set. So basically we're splitting the use
+cases up and trying to find simpler solutions for each.
 
-Sorry, but I don't believe that. It's always time to fix regressions and 
-bugs.
+I'd greatly appreciate any feedback or thoughts!
 
-> If it is a new feature that never worked in the first place I would
-> not call that
-> a regression. There are no existing users out there that can experience
-> regressions from a previously working system.
+thanks
+-john
 
-I believe that no (stable) kernel should introduce new known bugs (if 
-fixes are available) and I wouldn't make a difference if it's a new 
-feature or not. Usually people don't care if something is new or not if 
-it has bugs
 
-Anyway, I'm just curious and try to understand, I have a fix. ;)
+Volatile ranges provides a method for userland to inform the kernel that
+a range of memory is safe to discard (ie: can be regenerated) but
+userspace may want to try access it in the future.  It can be thought of
+as similar to MADV_DONTNEED, but that the actual freeing of the memory
+is delayed and only done under memory pressure, and the user can try to
+cancel the action and be able to quickly access any unpurged pages. The
+idea originated from Android's ashmem, but I've since learned that other
+OSes provide similar functionality.
 
-Regards,
+This functionality allows for a number of interesting uses:
+* Userland caches that have kernel triggered eviction under memory
+pressure. This allows for the kernel to "rightsize" userspace caches for
+current system-wide workload. Things like image bitmap caches, or
+rendered HTML in a hidden browser tab, where the data is not visible and
+can be regenerated if needed, are good examples.
 
-Alexander Holler
+* Opportunistic freeing of memory that may be quickly reused. Minchan
+has done a malloc implementation where free() marks the pages as
+volatile, allowing the kernel to reclaim under pressure. This avoids the
+unmapping and remapping of anonymous pages on free/malloc. So if
+userland wants to malloc memory quickly after the free, it just needs to
+mark the pages as non-volatile, and only purged pages will have to be
+faulted back in.
+
+There are two basic ways this can be used:
+
+Explicit marking method:
+1) Userland marks a range of memory that can be regenerated if necessary
+as volatile
+2) Before accessing the memory again, userland marks the memory as
+nonvolatile, and the kernel will provide notification if any pages in the
+range has been purged.
+
+Optimistic method:
+1) Userland marks a large range of data as volatile
+2) Userland continues to access the data as it needs.
+3) If userland accesses a page that has been purged, the kernel will
+send a SIGBUS
+4) Userspace can trap the SIGBUS, mark the affected pages as
+non-volatile, and refill the data as needed before continuing on
+
+You can read more about the history of volatile ranges here:
+http://permalink.gmane.org/gmane.linux.kernel.mm/98848
+http://permalink.gmane.org/gmane.linux.kernel.mm/98676
+https://lwn.net/Articles/522135/
+https://lwn.net/Kernel/Index/#Volatile_ranges
+
+
+This version of the patchset, at Johannes Weiner's suggestion, is much
+reduced in scope compared to earlier attempts. I've only handled
+volatility on anonymous memory, and we're storing the volatility in
+the VMA.  This may have performance implications compared with the earlier
+approach, but it does simplify the approach.
+
+Further, the page discarding happens via normal vmscanning, which due to
+anonymous pages not being aged on swapless systems, means we'll only purge
+pages when swap is enabled. I'll be looking at enabling anonymous aging
+when swap is disabled to resolve this, but I wanted to get this out for
+initial comment.
+
+Additionally, since we don't handle volatility on tmpfs files with this
+version of the patch, it is not able to be used to implement semantics
+similar to Android's ashmem. But since shared volatiltiy on files is
+more complex, my hope is to start small and hopefully grow from there.
+
+Also, much of the logic in this patchset is based on Minchan's earlier
+efforts. On this iteration, I've not been in close collaboration with him,
+so I don't want to mis-attribute my rework of the code as his design,
+but I do want to make sure the credit goes to him for his major contribution.
+
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Robert Love <rlove@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Cc: Neil Brown <neilb@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mike Hommey <mh@glandium.org>
+Cc: Taras Glek <tglek@mozilla.com>
+Cc: Dhaval Giani <dgiani@mozilla.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+
+
+John Stultz (3):
+  vrange: Add vrange syscall and handle splitting/merging and marking
+    vmas
+  vrange: Add purged page detection on setting memory non-volatile
+  vrange: Add page purging logic & SIGBUS trap
+
+ arch/x86/syscalls/syscall_64.tbl |   1 +
+ include/linux/mm.h               |   1 +
+ include/linux/swap.h             |  15 +-
+ include/linux/vrange.h           |  22 +++
+ mm/Makefile                      |   2 +-
+ mm/internal.h                    |   2 -
+ mm/memory.c                      |  21 +++
+ mm/rmap.c                        |   5 +
+ mm/vmscan.c                      |  12 ++
+ mm/vrange.c                      | 306 +++++++++++++++++++++++++++++++++++++++
+ 10 files changed, 382 insertions(+), 5 deletions(-)
+ create mode 100644 include/linux/vrange.h
+ create mode 100644 mm/vrange.c
+
+-- 
+1.8.3.2
+
