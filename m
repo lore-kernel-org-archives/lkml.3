@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547AbaCNAtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 20:49:11 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:51901 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753581AbaCNAtJ (ORCPT
+	id S1754773AbaCNAte (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 20:49:34 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:45078 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620AbaCNAtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 20:49:09 -0400
-Date: Fri, 14 Mar 2014 01:49:01 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1679354302.20140314014901@eikelenboom.it>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Marcel Holtmann <marcel@holtmann.org>
-CC: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
-	<linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RC6 Bell Chime] [PATCH 00/24] rfcomm fixes
-In-Reply-To: <EE67811F-FA2E-4773-8852-CB79BD7CDF1C@holtmann.org>
-References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com> <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org> <1259174563.20140212120644@eikelenboom.it> <1335661753.20140303203853@eikelenboom.it> <1295963563.20140310093843@eikelenboom.it> <20140310150858.GA25703@tuxdriver.com> <EE67811F-FA2E-4773-8852-CB79BD7CDF1C@holtmann.org>
+	Thu, 13 Mar 2014 20:49:33 -0400
+Message-ID: <53225217.3070205@gmail.com>
+Date: Fri, 14 Mar 2014 08:49:27 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+To: gxt@mprc.pku.edu.cn
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch/unicore32/kernel/module.c: use __vmalloc_node_range()
+ instead of __vmalloc_area()
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+__vmalloc_area() has already been removed from upstream kernel, need
+use __vmalloc_node_range() instead of.
 
-Tuesday, March 11, 2014, 4:14:38 PM, you wrote:
+The related commit: "d0a2126 mm: unify module_alloc code for vmalloc".
 
-> Hi John,
+The related error (allmodconfig for unicore32):
 
->>> Since:
->>> - 3.14-RC6 has been cut
->>> - this regression is known and reported since the merge window
->>> - the fix (revert of 3 patches) is known for over a month now
->>> - but it's still not in mainline
->>> - my polite ping request from last week seems to have provoked exactly 0 (zero) response.
->>> 
->>> IT'S TIME TO CHIME SOME BELLS :-)
->>> 
->>> Hope that WILL be heard somewhere ...
->>> 
->>> --
->>> Sander
->>> 
->>> PS. on the informative side the 3 commits to be reverted are:
->>> 
->>> f86772af6a0f643d3e13eb3f4f9213ae0c333ee4 Bluetooth: Remove rfcomm_carrier_raised()
->>> 4a2fb3ecc7467c775b154813861f25a0ddc11aa0 Bluetooth: Always wait for a connection on RFCOMM open()
->>> e228b63390536f5b737056059a9a04ea016b1abf Bluetooth: Move rfcomm_get_device() before rfcomm_dev_activate()
->> 
->> Gustavo, should I be expecting a pull request?
-
-> you have all 3 reverts already in wireless-next as part of a larger RFCOMM change from Peter that we had to do to get this bug fixed. The whole series ended up as 24 patches and was way to late in the -rc stage. In addition we did not have enough exposure from people running that patch set. I did not wanted to end up in a ping-pong situation with apply + revert over and over again until we gave this some test exposure.
-
-> I think it is pretty safe to revert these 3 patches from 3.14-rc6 since they broke more than they actually fixed. However everybody has to be aware of that the real fix only comes in 3.15 since the change unfortunately is large. As far as we can tell, only users of RFCOMM TTY are affected. All RFCOMM socket users are fine.
-
-> So I do not know what the best way of getting these reverts merged. Gustavo has a tree ready for you to pull from. Or would it be better if they get cherry picked from wireless-next tree.
-
-> Regards
-
-> Marcel
+    CC      arch/unicore32/kernel/module.o
+  arch/unicore32/kernel/module.c: In function ‘module_alloc’:
+  arch/unicore32/kernel/module.c:34: error: implicit declaration of function ‘__vmalloc_area’
+  arch/unicore32/kernel/module.c:34: warning: return makes pointer from integer without a cast
+  make[1]: *** [arch/unicore32/kernel/module.o] Error 1
+  make: *** [arch/unicore32/kernel] Error 2
 
 
-<sarcasm on>
-Is it just me .. or is this going at the speed of about a bluetooth connection ..
-and probably missing the boot for 3.14 ? (for no good reason IMHO)
-<sarcasm off>
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/unicore32/kernel/module.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-(it was not in John's nor Dave's last pull request, although it seems to be reverted in the bluetooth tree now .. i didn't
-see any formal pull request from that .. to get it even *starting* to traverse all the trees up to Linus ... )
-
---
-Sander
-
+diff --git a/arch/unicore32/kernel/module.c b/arch/unicore32/kernel/module.c
+index 16bd149..dc41f6d 100644
+--- a/arch/unicore32/kernel/module.c
++++ b/arch/unicore32/kernel/module.c
+@@ -24,14 +24,9 @@
+ 
+ void *module_alloc(unsigned long size)
+ {
+-	struct vm_struct *area;
+-
+-	size = PAGE_ALIGN(size);
+-	area = __get_vm_area(size, VM_ALLOC, MODULES_VADDR, MODULES_END);
+-	if (!area)
+-		return NULL;
+-
+-	return __vmalloc_area(area, GFP_KERNEL, PAGE_KERNEL_EXEC);
++	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
++				GFP_KERNEL, PAGE_KERNEL_EXEC, NUMA_NO_NODE,
++				__builtin_return_address(0));
+ }
+ 
+ int
+-- 
+1.7.9.5
