@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919AbaCNQjj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 12:39:39 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:42791 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447AbaCNQjH (ORCPT
+	id S1756005AbaCNQj5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 12:39:57 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58840 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755091AbaCNQjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 12:39:07 -0400
+	Fri, 14 Mar 2014 12:39:04 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
@@ -14,9 +14,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
         Mike Galbraith <bitbucket@online.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 3/3] workqueue: Add anon workqueue sysfs hierarchy
-Date: Fri, 14 Mar 2014 17:38:51 +0100
-Message-Id: <1394815131-17271-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/3] workqueue: Move workqueue bus attr to device attribute
+Date: Fri, 14 Mar 2014 17:38:49 +0100
+Message-Id: <1394815131-17271-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
 References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
@@ -24,41 +24,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We call "anon workqueues" the set of unbound workqueues that don't
-carry the WQ_SYSFS flag.
+A workqueue directory implements at least two files: max_active and
+per_cpu. Since thse are constant over WQ_SYSFS workqueues, they are
+implemented as bus attributes.
 
-They are a problem nowaday because people who work on CPU isolation
-(HPC, Real time, etc...) want to be able to migrate all the unbound
-workqueues away to a single CPU. This control is possible through sysfs
-but only with WQ_SYSFS workqueues.
+Then come the attributes that only come along unbound workqueues. Those
+are implemented as device attribute.
 
-Now we need to deal with the other unbound workqueues. There is two
-possible solutions:
+Now we are planning to implement a specific workqueue directory in order
+to control the cpu affinity of all non-ABI unbound workqueues at once.
+So far we are only interested in the cpumask file on this virtual
+workqueue directory: we can't have a single file max_active and per_cpu
+for all non ABI unbound workqueues for example. And for now it's not
+desirable to share more all-in-one property like cpu affinity.
 
-1) Implement a sysfs directory for each unbound !WQ_SYSFS. This could
-be done with a specific Kconfig to make sure that these workqueue
-won't be considered as a stable ABI. But we all know that all distros
-will enable this Kconfig symbol and that a warning in the Kconfig help
-text won't protect against anything.
-
-2) Implement a single sysfs directory containing only the cpumask file
-to the control the affinity of all the !WQ_SYSFS workqueues.
-
-This patch implements the second solution.
-
-Two issues I have seen though:
-
-* This triggers the following warning in apply_workqueue_attrs():
-
-	/* creating multiple pwqs breaks ordering guarantee */
-	if (WARN_ON((wq->flags & __WQ_ORDERED) && !list_empty(&wq->pwqs)))
-		return -EINVAL;
-
-  I haven't yet checked into the details.
-
-* wq_calc_node_cpumask() tells that if NUMA affinity is not enabled,
-  cpumask is always used. Which suggest that if NUMA affinity is enabled
-  the cpumask may be ignored?
+So we want to be able to create a directory containing only cpumask.
+Lets move the constant workqueue attrs as device attribute so that
+we can consider skipping them when we want.
 
 Cc: Christoph Lameter <cl@linux.com>
 Cc: Kevin Hilman <khilman@linaro.org>
@@ -68,147 +50,74 @@ Cc: Tejun Heo <tj@kernel.org>
 Cc: Viresh Kumar <viresh.kumar@linaro.org>
 Not-Yet-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/workqueue.c | 114 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 112 insertions(+), 2 deletions(-)
+ kernel/workqueue.c | 23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index ad8f727..aabee1f 100644
+index 193e977..4d230e3 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -289,7 +289,8 @@ static bool wq_numa_enabled;		/* unbound NUMA affinity enabled */
- static struct workqueue_attrs *wq_update_unbound_numa_attrs_buf;
+@@ -3133,7 +3133,6 @@ static ssize_t per_cpu_show(struct device *dev, struct device_attribute *attr,
  
- static DEFINE_MUTEX(wq_pool_mutex);	/* protects pools and workqueues list */
--static DEFINE_MUTEX(wq_unbound_mutex);	/* protects list of unbound workqueues */
-+/* protects list of unbound workqueues and wq_anon_cpumask*/
-+static DEFINE_MUTEX(wq_unbound_mutex);
- static DEFINE_SPINLOCK(wq_mayday_lock);	/* protects wq->maydays list */
+ 	return scnprintf(buf, PAGE_SIZE, "%d\n", (bool)!(wq->flags & WQ_UNBOUND));
+ }
+-static DEVICE_ATTR_RO(per_cpu);
  
- static LIST_HEAD(workqueues);		/* PL: list of all workqueues */
-@@ -3311,13 +3312,122 @@ static struct device_attribute wq_sysfs_unbound_attrs[] = {
- 	__ATTR_NULL,
+ static ssize_t max_active_show(struct device *dev,
+ 			       struct device_attribute *attr, char *buf)
+@@ -3156,14 +3155,12 @@ static ssize_t max_active_store(struct device *dev,
+ 	workqueue_set_max_active(wq, val);
+ 	return count;
+ }
+-static DEVICE_ATTR_RW(max_active);
+ 
+-static struct attribute *wq_sysfs_attrs[] = {
+-	&dev_attr_per_cpu.attr,
+-	&dev_attr_max_active.attr,
+-	NULL,
++static struct device_attribute wq_sysfs_default_attrs[] = {
++	__ATTR(per_cpu, 0444, per_cpu_show, NULL),
++	__ATTR(max_active, 0644, max_active_show, max_active_store),
++	__ATTR_NULL,
  };
+-ATTRIBUTE_GROUPS(wq_sysfs);
  
-+/* Protected by wq_unbound_mutex */
-+static cpumask_t wq_anon_cpumask;
-+static ssize_t wq_anon_cpumask_show(struct device *dev,
-+				    struct device_attribute *attr, char *buf)
-+{
-+	int written;
-+
-+	mutex_lock(&wq_unbound_mutex);
-+	written = cpumask_scnprintf(buf, PAGE_SIZE, &wq_anon_cpumask);
-+	mutex_unlock(&wq_unbound_mutex);
-+
-+	written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
-+
-+	return written;
-+}
-+
-+/* Must be called with wq_unbound_mutex held */
-+static int wq_anon_cpumask_set(cpumask_var_t cpumask)
-+{
-+	struct workqueue_attrs *attrs;
-+	struct workqueue_struct *wq;
-+	int ret;
-+
-+	list_for_each_entry(wq, &workqueues_unbound, unbound_list) {
-+		if (wq->flags & WQ_SYSFS)
-+			continue;
-+		attrs = wq_sysfs_prep_attrs(wq);
-+		if (!attrs)
-+			return -ENOMEM;
-+
-+		cpumask_copy(attrs->cpumask, cpumask);
-+		ret = apply_workqueue_attrs(wq, attrs);
-+		free_workqueue_attrs(attrs);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+static ssize_t wq_anon_cpumask_store(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	cpumask_var_t cpumask;
-+	int ret = -EINVAL;
-+
-+	if (!zalloc_cpumask_var(&cpumask, GFP_KERNEL))
-+		return -ENOMEM;
-+
-+	ret = cpumask_parse(buf, cpumask);
-+	if (ret)
-+		goto out;
-+
-+	get_online_cpus();
-+	if (cpumask_intersects(cpumask, cpu_online_mask)) {
-+		mutex_lock(&wq_unbound_mutex);
-+		ret = wq_anon_cpumask_set(cpumask);
-+		if (!ret)
-+			cpumask_copy(&wq_anon_cpumask, cpumask);
-+		mutex_unlock(&wq_unbound_mutex);
-+	}
-+	put_online_cpus();
-+out:
-+	free_cpumask_var(cpumask);
-+	return ret ? ret : count;
-+}
-+
-+static void device_release(struct device *dev)
-+{
-+	kfree(dev);
-+}
-+
-+static struct device_attribute wq_sysfs_anon_attr =
-+	__ATTR(cpumask, 0644, wq_anon_cpumask_show, wq_anon_cpumask_store);
-+
+ static ssize_t wq_pool_ids_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+@@ -3313,7 +3310,6 @@ static struct device_attribute wq_sysfs_unbound_attrs[] = {
+ 
  static struct bus_type wq_subsys = {
  	.name				= "workqueue",
+-	.dev_groups			= wq_sysfs_groups,
  };
  
  static int __init wq_sysfs_init(void)
+@@ -3346,6 +3342,7 @@ static void wq_device_release(struct device *dev)
+  */
+ int workqueue_sysfs_register(struct workqueue_struct *wq)
  {
--	return subsys_virtual_register(&wq_subsys, NULL);
-+	struct device *anon_dev;
-+	int ret;
-+
-+	ret = subsys_virtual_register(&wq_subsys, NULL);
-+	if (ret < 0)
-+		return ret;
-+
-+	mutex_lock(&wq_unbound_mutex);
-+	cpumask_copy(&wq_anon_cpumask, cpu_possible_mask);
-+	mutex_unlock(&wq_unbound_mutex);
-+
-+	anon_dev = kzalloc(sizeof(*anon_dev), GFP_KERNEL);
-+	if (!anon_dev)
-+		return -ENOMEM;
-+
-+	anon_dev->bus = &wq_subsys;
-+	anon_dev->init_name = "anon_wqs";
-+	anon_dev->release = device_release;
-+
-+	ret = device_register(anon_dev);
-+	if (ret) {
-+		kfree(anon_dev);
-+		return ret;
-+	}
-+
-+	ret = device_create_file(anon_dev, &wq_sysfs_anon_attr);
-+	if (ret) {
-+		device_unregister(anon_dev);
-+		return ret;
-+	}
-+
-+	kobject_uevent(&anon_dev->kobj, KOBJ_ADD);
-+
-+	return 0;
- }
- core_initcall(wq_sysfs_init);
++	struct device_attribute *attr;
+ 	struct wq_device *wq_dev;
+ 	int ret;
  
+@@ -3379,8 +3376,16 @@ int workqueue_sysfs_register(struct workqueue_struct *wq)
+ 		return ret;
+ 	}
+ 
++	for (attr = wq_sysfs_default_attrs; attr->attr.name; attr++) {
++		ret = device_create_file(&wq_dev->dev, attr);
++		if (ret) {
++			device_unregister(&wq_dev->dev);
++			wq->wq_dev = NULL;
++			return ret;
++		}
++	}
++
+ 	if (wq->flags & WQ_UNBOUND) {
+-		struct device_attribute *attr;
+ 
+ 		for (attr = wq_sysfs_unbound_attrs; attr->attr.name; attr++) {
+ 			ret = device_create_file(&wq_dev->dev, attr);
 -- 
 1.8.3.1
 
