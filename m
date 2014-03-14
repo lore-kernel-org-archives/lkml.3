@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085AbaCNVEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:04:10 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:48921 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904AbaCNVEH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:04:07 -0400
-From: dirk.brandewie@gmail.com
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, rjw@rjwysocki.net, patrick.marlier@gmail.com,
-        dirk.brandewie@gmail.com, Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: [PATCH v2 0/2] Add exit_prepare callback to the cpufreq_driver interface.
-Date: Fri, 14 Mar 2014 14:03:55 -0700
-Message-Id: <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <16035918.jZXKnQ3yiq@vostro.rjw.lan>
-References: <16035918.jZXKnQ3yiq@vostro.rjw.lan>
+	id S1756237AbaCNVFY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:05:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30705 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755472AbaCNVFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 17:05:22 -0400
+Date: Fri, 14 Mar 2014 22:04:56 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Sree Harsha Totakura <sreeharsha@totakura.in>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: pppd service crash in linux-3.13.6
+Message-ID: <20140314210456.GA19032@redhat.com>
+References: <531A37FF.4000509@totakura.in> <531DEEA6.4090808@totakura.in> <531E111A.8040207@hurleysoftware.com> <20140313170622.GA31206@redhat.com> <5321F113.7090000@hurleysoftware.com> <53230FE5.9020204@hurleysoftware.com> <20140314192346.GA14823@redhat.com> <53236662.3020707@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53236662.3020707@hurleysoftware.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+On 03/14, Peter Hurley wrote:
+>
+> On 03/14/2014 03:23 PM, Oleg Nesterov wrote:
+>> On 03/14, Peter Hurley wrote:
+>>>
+> Yes, cgroup_release_agent() is the work function that is scheduled.
+>
+>>> which requires both namespace and tty facilities.
+>>
+>> Hmm... why?
+>>
+>> The exiting task obviously can't exec. The only way to spawn a userspace
+>> process is call_usermodehelper(), it should work just fine, no?
+>
+> You're correct, in the immediate sense that the user command exec'd will
+> not inherit open file descriptors.
+>
+> But what if it expects to be able to find the intact children of
+> the foreground process group, and can't because the controlling tty
+> has already been torn down and all the children already sent SIGHUP.
 
-Some drivers (intel_pstate) need to modify state on a core before it
-is completely offline.  The ->exit() callback is executed during the
-CPU_POST_DEAD phase of the cpu offline process which is too late to
-change the state of the core.
+Which group/tty ? call_usermodehelper() asks the workqueue thread
+to kthread_create/exec. See also below...
 
-Patch 1 adds an optional callback function to the cpufreq_driver
-interface which is called by the core during the CPU_DOWN_PREPARE
-phase of cpu offline in __cpufreq_remove_dev_prepare().
+> Or what if the user command expects to find and join the user namespace
+> of the dying process but now it's already been freed?
 
-Patch 2 changes intel_pstate to use the ->stop callback to do
-its cleanup during cpu offline. 
+But it can't even know who called call_usermodehelper(). Besides,
+cgroup_release_agent() uses UMH_WAIT_EXEC, so the caller can continue
+and disappear completely before the usermode process has any chance
+to do something.
 
-Dirk Brandewie (2):
-  cpufreq: Add exit_prepare callback to cpufreq_driver interface
-  intel_pstate: Set core to min P state during core offline
-
- Documentation/cpu-freq/cpu-drivers.txt |  8 +++++++-
- drivers/cpufreq/cpufreq.c              |  3 +++
- drivers/cpufreq/intel_pstate.c         | 20 +++++++++++++-------
- include/linux/cpufreq.h                |  1 +
- 4 files changed, 24 insertions(+), 8 deletions(-)
-
--- 
-1.8.3.1
+Oleg.
 
