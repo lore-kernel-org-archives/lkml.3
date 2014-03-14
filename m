@@ -1,140 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521AbaCNSLX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 14:11:23 -0400
-Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:48489
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754461AbaCNSLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 14:11:21 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: Trusted kernel patchset for Secure Boot lockdown
-Thread-Topic: Trusted kernel patchset for Secure Boot lockdown
-Thread-Index: AQHPP6fNgdFEpLbAD0ahQ2OJgthmsZrg4jYA
-Date: Fri, 14 Mar 2014 18:11:06 +0000
-Message-ID: <1394820664.26846.18.camel@x230.mview.int.nebula.com>
-References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
-	 <CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
-	 <alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
-	 <1394686919.25122.2.camel@x230>
-	 <CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
-	 <alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
-	 <1394726363.25122.16.camel@x230>
-	 <20140313212450.67f1de8e@alan.etchedpixels.co.uk>
-	 <1394746248.27846.3.camel@x230>
-	 <20140313232140.03bdaac3@alan.etchedpixels.co.uk>
-	 <1394762250.6416.24.camel@x230.lan>
-	 <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
-	 <1394801518.6416.38.camel@x230.lan>
-	 <20140314170655.0ce398a3@alan.etchedpixels.co.uk>
-In-Reply-To: <20140314170655.0ce398a3@alan.etchedpixels.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-forefront-prvs: 0150F3F97D
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(377424004)(51704005)(199002)(189002)(76786001)(83072002)(56816005)(97186001)(85852003)(76796001)(47736001)(95666003)(77096001)(97336001)(74502001)(74662001)(47446002)(31966008)(87266001)(47976001)(74366001)(50986001)(33646001)(2656002)(90146001)(94946001)(63696002)(74706001)(4396001)(80022001)(87936001)(53806001)(81342001)(54356001)(51856001)(81686001)(46102001)(80976001)(81816001)(76482001)(19580405001)(81542001)(83322001)(92726001)(86362001)(95416001)(69226001)(93516002)(19580395003)(54316002)(65816001)(56776001)(94316002)(79102001)(92566001)(49866001)(74876001)(77982001)(93136001)(85306002)(59766001)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB455;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;FPR:EECCF026.AC3611D9.F0E1A0BB.4EE63861.20526;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <A919B6F982A5CB44A308225F22BBB281@namprd05.prod.outlook.com>
+	id S1755658AbaCNSQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 14:16:13 -0400
+Received: from mail.us.es ([193.147.175.20]:44053 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754306AbaCNSQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 14:16:11 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus6 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.1/18599. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-92.7/7.5):. 
+ Processed in 2.485113 secs); 14 Mar 2014 18:16:07 -0000
+X-Spam-ASN: AS12715 188.78.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Fri, 14 Mar 2014 19:16:00 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>, netfilter-devel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 0/9] socket filtering using nf_tables
+Message-ID: <20140314181600.GA2809@localhost>
+References: <1394529560-3490-1-git-send-email-pablo@netfilter.org>
+ <531EE5A2.7090501@redhat.com>
+ <CAMEtUuyJne-8uNtOAK7EcFFQNXz9m7J2DDLGH_GbYe6oWZx1pQ@mail.gmail.com>
+ <20140312091500.GA4638@localhost>
+ <CAMEtUuztfWniTr+3u6ttuygvG=xYdp0ANn_w9MGqacQvHrXtWA@mail.gmail.com>
+ <20140313122913.GA4898@localhost>
+ <CAMEtUuwV2=8sVdmfKSOytC8LKsw2RX+fgfxvucSVV0=L0XEkOg@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMEtUuwV2=8sVdmfKSOytC8LKsw2RX+fgfxvucSVV0=L0XEkOg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2EIBWlH018516
 
-On Fri, 2014-03-14 at 17:06 +0000, One Thousand Gnomes wrote:
-> > But you keep talking about MSRs despite there being a patch that limits
-> > access to MSRs. If you have specific examples of privilege escalations
-> > that are possible even with these patches then please, mention them.
+On Fri, Mar 14, 2014 at 08:28:05AM -0700, Alexei Starovoitov wrote:
+> On Thu, Mar 13, 2014 at 5:29 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> > On Wed, Mar 12, 2014 at 08:29:07PM -0700, Alexei Starovoitov wrote:
+> >> On Wed, Mar 12, 2014 at 2:15 AM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> > [...]
 > 
-> I mentioned MSRs once, and then you kept going on about it. 
+> It seems you're assuming that ebpf inherited all the shortcomings
+> of bpf and making conclusion based on that. Not your fault.
+> I didn't explain it well enough.
 
-You've twice mentioned MSRs as a case where CAP_SYS_RAWIO allows you to
-elevate privileges, despite that being a case that's explicitly covered
-by this patchset. Now, do you have an actual example of CAP_SYS_RAWIO
-allowing you to elevate privileges even with this patchset applied (and
-without requiring the presence of obsolete hardware, which is a separate
-conversation)?
+Frankly, from the *interface point of view* it is indeed inheriting
+all of its shortcomings...
 
-> Your patches are all over the tree, for what should be one piece of
-> policy. They rely on not missing a single case, which is also bad
-> security engineering. We know that, as an industry we've spent fifty
-> years repeatedly sticking our fingers in our ears, refusing to listen and
-> then learning it again and again the hard way.
+> Technically ebpf is a small evolution of bpf, but applicability made a
+> giant leap. I cannot compile C into bpf, but I can do that with ebpf.
 
-I have a set of patches that appear acceptable to the security
-maintainer. I've rewritten them multiple times in response to various
-levels of bikeshedding. They solve a real problem and are being shipped
-by multiple distributions.
+Good that we can get better userspace tools, but still the layout of
+your instructions is exposed to userspace so it cannot be changed
+*ever*. The kernel interface is still an array of binary structures of
+fixed size just like BPF does.
 
-What the rest of your mail is asking me to do is to rewrite capabilities
-support entirely. Now, yes, I agree that capabilities are an awful
-interface that's approximately impossible to use correctly and which
-adds little security even if you do. But I reject the idea that
-rewriting fundamental security infrastructure should be a prerequisite
-for adding this functionality.
+Why do we have to have a 32 bits immediate that may be zero most of
+the time? Just because:
 
-> > It needs to be possible for this policy to be imposed without userspace
-> > being involved, so using selinux would mean baking it into the kernel
-> > (along with an additional implementation for apparmor, and presumably
-> > one for tomoyo as well).
+1) You needed to align your new instruction layout to 64 bits / two 32
+bits words.
+2) You noticed you get better performance with those changes,
+including the new "if" statement that works better with branch
+prediction.
+3) It's easier for you to make the jit translation.
+
+That means your interface is exposing *all of your internal
+implementation decisions* and that's a very bad since we will always
+have to come up with smart tricks not to break backward compatibility
+if we want to improve the internal implementation.
+
+> I cannot do table lookups in bpf, but I can do that in ebpf.
+> I cannot rewrite packet headers in bpf, but I can do that in ebpf, etc.
+
+Sorry, I don't buy this "we get more features" if in the long run we
+have restricted extensibility.
+
+> >> The patches don't explain the reasons to do nft socket filtering.
+> >
+> > OK, some reasons from the interface point of view:
+> >
+> > 1) It provides an extensible interface to userspace. We didn't
+> >    invented a new wheel in that regard, we just reused the
+> >    extensibility of TLVs used in netlink as intermediate format
+> >    between user and kernelspace, also used many other applications
+> >    outthere. The TLV parsing and building is not new code, most that of
+> >    that code has been exposed to userspace already through netlink.
+> >
+> > 2) It shows that, with little generalisation, we can open the door to
+> >    one single *classification interface* for the users. Just make some
+> >    little googling, you'll find *lots of people* barfing on the fact that
+> >    we have that many interfaces to classify packets in Linux. And I'm
+> >    *not* talking about the packet classification approach itself, that's a
+> >    different debate of course.
+> >
+> > [...]
+> >> Simplicity and performance should be the deciding factor.
+> >> imo nft+sock_filter example is not simple.
+> >
+> > OK, some comments in that regard:
+> >
+> > 1) Simplicity: With the nft approach you can just use a filter
+> > expressed in json, eg.
+> >
+> > {"rule":
+> >  {"expr":[
+> >   {"type":"meta","dreg":1,"key":"protocol"},
+> >   {"type":"cmp","sreg":1,"op":"eq","cmpdata":{"data_reg":{"type":"value","len":2,"data0":"0x00000008"}}},
+> >   {"type":"payload","dreg":1,"offset":9,"len":1,"base":"network"},
+> >   {"type":"cmp","sreg":1,"op":"eq","cmpdata":{"data_reg":{"type":"value","len":1,"data0":"0x00000006"}}},
+> >   {"type":"immediate","dreg":0,"immediatedata":{"data_reg":{"type":"verdict","verdict":"0xffffffff"}}}]
+> >  }
+> > }
 > 
-> That's clearly false. You can load signed modules so you can load signed
-> policies. Assuming you don't have an initial measured file system you
-> need a kernel policy initially that protects you. If you have a measured
-> file system you don't even need that, nor do you need to revoke RAWIO in
-> kernel, you can do it before you switch into "measured and running
-> un-measured code" mode - ie about the point you pivot root out of the
-> initrd that loaded the measured policy.
+> sorry. It surely looks simple to you, but I cannot figure out what
+> the above snippet suppose to do. Could you please explain.
 
-We can't rely on userspace choosing to load that policy. We don't have a
-measured filesystem. The initrd is not signed (and nor can it be). The
-kernel itself *must* impose policy.
+1) Fetch skb->protocol put it into a register.
+2) Compare it to ETHERPROTO_IP. If not matching, break.
+3) Fetch payload byte offset 9, only 1 byte.
+4) Compare it with IPPROTO_TCP. If not matching, break.
+5) If matching, pass the packet to userspace.
 
-> > ...thus breaking userspace outside this use case. I mean, sure, I'm
-> > absolutely fine with deleting /dev/mem entirely. I don't see Linus
-> > agreeing.
+> > Which is still more readable and easier to maintain that a BPF
+> > snippet. So you just pass it to the json parser in the libnftnl
+> > library (or whatever other better minimalistic library we would ever
+> > have) which transforms this to TLV format that you can pass to the
+> > kernel.  The kernel will do the job to translate this.
+> >
+> > How are users going to integrate the restricted C's eBPF code
+> > infrastructure into their projects? I don't think that will be simple.
+> > They will likely include the BPF snippet to avoid all the integration
+> > burden, as it already happens in many projects with BPF filters.
 > 
-> That's not what I meant. We have a lot of interfaces where we use
-> CAP_SYS_RAWIO rather than having a structured interface as opposed to a
-> 'yeah whatever, poke the registers' interface.
+> what you're seeing is the counter argument to your 'bpf not-simple'
+> statement :) If bpf snippets were hard to understand, people
+> wouldn't be including them as-is in their programs.
+
+No, we had no other choice, it was the best thing that we had so far.
+People have been just including that "magic code", BPF is quite
+unreadable, your extension doesn't make any better.
+
+> One can always do 'tcpdump expression -d' to generate bpf snippet
+> or use libpcap in their programs to dynamically generate them.
+> libseccomp dynamically generates bpf too.
+
+Autogeneration tools are of course good to have, that can be achieved
+with *any* framework. I don't think this is the main point of this
+discussion.
+
+> > 2) Performance. Patrick has been doing many progress with the generic
+> >    set infrastructure for nft. In that regard, we aim to achieve
+> >    performance by arranging data using performance data structures,
+> >    *jit is not the only way to boost performance* (although we also
+> >    want to have it).
+> >
+> > Some example:
+> >
+> >    set type IPv4 address = { N thousands of IPv4 addresses }
+> >
+> >    reg1 <- payload(network header, offsetof(struct iphdr, daddr), 4)
+> >    lookup(reg1, set)
+> >    reg0 <- immediate(0xffffffff)
+> >
+> > Or even better, using dictionaries:
+> >
+> >    set type IPv4 address = { 1.1.1.1 : accept, 2.2.2.2 : accept, 3.3.3.3 : drop ...}
+> >
+> >    reg1 <- payload(network header, offsetof(struct iphdr, daddr), 4)
+> >    reg0 <- lookup(reg1, set)
+> >
+> > Where "accept" is an alias of 0xffffffff and "drop" is 0 in the
+> > nft-sock case. The verdict part has been generalised so we can adapt
+> > nft to the corresponding packet classification engine.
 > 
-> For a lot of environments btw you don't actually need /dev/mem. It's not
-> really got a lot of uses any more and plenty of people really restrict or
-> remove it from systems. I don't think very many people would be sad
-> if /dev/mem became a legacy interface most people left turned off.
+> that example is actually illustrates that nft needs to be continuously
+> tweaked to add features like 'set'. We can do better.
 
-Sure! Except then A Large Vendor's custom IPMI userspace stops working,
-even on systems without Secure Boot, and then said Large Vendor wants to
-have conference calls at times that are convenient for Japan and then
-this is an issue that's going to cause $1 billion in lost sales and come
-on, you've been there. You know that this isn't going to work. 
+No, it just proofs that our framework is extensible and that we can
+improve easily.
 
-> If we are going to do a measured kernel then it needs to be done right,
-> it needs to be properly abstracted so we don't add another one for
-> Android, another one for Chrome, another one for ARM trustzone, another
-> one for Intel SGX, and so on.
+> Here is the example from V2 series that shows how hash tables can be
+> used in C that translates to ebpf, without changing ebpf itself:
+> void dropmon(struct kprobe_args *ctx)
+> {
+>         void *loc;
+>         uint64_t *drop_cnt;
+>         /* skb:kfree_skb is defined as:
+>          * TRACE_EVENT(kfree_skb,
+>          *         TP_PROTO(struct sk_buff *skb, void *location),
+>          * so ctx->arg2 is 'location'
+>          */
+>         loc = (void *)ctx->arg2;
+> 
+>         drop_cnt = bpf_table_lookup(ctx, 0, &loc);
 
-The fact that you keep saying measured really does make me suspect that
-you misunderstand the problem. There's no measurement involved, there's
-simply an assertion that the firmware (which you're forced to trust)
-chose, via some policy you may be unaware of, to trust the booted
-kernel.
+Is there room to extend your framework with any other data structure
+which is *not* a hashtable? What are you plans for that?
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>         if (drop_cnt) {
+>                 __sync_fetch_and_add(drop_cnt, 1);
+>         } else {
+>                 uint64_t init = 0;
+>                 bpf_table_update(ctx, 0, &loc, &init);
+>         }
+> }
+>
+> the above C program compiles into ebpf, attaches to kfree_skb() tracepoint
+> and counts packet drops at different locations.
+> userspace can read the table and print it in user friendly way while
+> the tracing filter is running or when it's stopped.
+> That's an example of fast drop monitor that is safe to insert into live kernel.
+>
+> Actually I think it's wrong to even compare nft with ebpf.
+> ebpf doesn't dictate a new user interface. At all.
+> There is old bpf to write socket filters. It's good enough.
+> I'm not planning to hack libpcap just to generate ebpf.
+> User interface is orthogonal to kernel implementation.
+> We can argue whether C representation of filter is better than json,
+> but what kernel runs at the lowest level is independent of that.
+> 
+> Insisting that user interface and kernel representation must be
+> one-to-one is unnecessary restrictive. User interface can and
+> should evolve independently of what kernel is doing underneath.
+> 
+> In case of socket filters tcpdump/libpcap syntax is the user interface.
+
+No, that's not the real interface. That's a wrapper / abstraction over
+the kernel interface is exposing.
+
+> old bpf is a kernel-user api. I don't think there is a strong need
+> to change either. ebpf is not touching them, but helping to execute
+> tcpdump filters faster.
+> In case of tracing filters I propose C-like user interface.
+> Kernel API for translated C programs is a different matter.
+> ebpf in the kernel is just the engine to execute it.
+> 1st and 2nd may look completely different after community feedback,
+> but in kernel ebpf engine can stay unmodified.
+
+The only different that I see with ebpf is that you provide nice end
+user tools, but the design from the kernel interface has exactly the
+same problems.
+
+> > Right, you can extend interfaces forever with lots of patchwork and
+> > "smart tricks" but that doesn't mean that will look nice...
+> 
+> I'm not sure what you mean here.
+
+For example, this:
+
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index cf9cd13509a7..e1b979312588 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -273,6 +273,13 @@  static struct ctl_table net_core_table[] = {
+        },
+ #endif
+        {
++               .procname       = "bpf_ext_enable",
++               .data           = &bpf_ext_enable,
++               .maxlen         = sizeof(int),
++               .mode           = 0644,
++               .proc_handler   = proc_dointvec
++       },
+
+This /proc thing seems to me like the last resource we have to avoid
+breaking backward compatibility. I have used it as well myself, but
+it's like the *pull alarm* when we did a wrong design decision.
+
+What if we need a new ABI breakage for BPF again? Will we need to add
+a new /proc interface for that? As far as I can tell from your
+patches, the answer is yes.
+
+> > As I said, I believe that having a nice extensible interface is
+> > extremely important to make it easier for development. If we have to
+> > rearrange the internal representation for some reason, we can do it
+> > indeed without bothering about making translations to avoid breaking
+> > userspace and having to use ugly tricks (just see sk_decode_filter()
+> > or any other translation to support any new way to express a
+> > filter...).
+> 
+> nice that your brought this up :)
+> As I mentioned in v4 thread sk_decode_filter() can be removed.
+> It was introduced to improve old interpreter performance and now
+> this part is obsolete.
+
+What are your plans then? Will you implement that converter in
+userspace? You mention that you don't want to enhance libpcap, which
+seems to me like the natural way to extend things.
+
+> > [...]
+> >> Say you want to translate nft-cmp instruction into sequence of native
+> >> comparisons. You'd need to use load from memory, compare and
+> >> branch operations. That's ebpf!
+> >
+> > Nope sorry, that's not ebpf. That's assembler code.
+> 
+> Well, in my previous email I tried to explain that assembler == ebpf :)
+
+I see, so I was right. You want to expose a pseudo-assembler
+interface just because that makes it easier to you to provide the jit
+translation.
+
+> Please post x86_64 assembler code that future nft-jit suppose to
+> generate and I can post equivalent ebpf code that will be jited
+> exactly to your x86_64...
+
+That's possible of course. There are many ways to implement the same
+thing, they can provide the same features, but not the same degree of
+extensibility.
+
+> > [...]
+> >> You can view ebpf as a tool to achieve jiting of nft.
+> >> It will save you a lot of time.
+> >
+> > nft interface is already well-abstracted from the representation, so I
+> > don't find a good reason to make a step backward that will force us to
+> > represent the instructions using a fixed layout structure that is
+> > exposed to userspace, that we won't be able to change once if this
+> > gets into mainstream.
+> 
+> I don't think we're on the same page still.
+> To make this more productive, please say what feature you would
+> want to see supported and I can show how it is done without
+> changing ebpf insn set.
+>
+> > Probably the nft is not the easiest path, I agree, it's been not so
+> > far if you look at the record. But with time and development hours
+> > from everyone, I believe we'll enjoy a nice framework.
+> 
+> No doubt that nftables is a nice framework. Let's keep it going
+> and let's make it faster.
+
+We want to make it faster, but I don't like the idea of converting
+it to bpf just to get the jit fast.
+
+We are spending quite a lot of time to provide good performance
+through arraging data in performance data structures, the jit
+microoptimization will be just the cherry on the top of the cake.
