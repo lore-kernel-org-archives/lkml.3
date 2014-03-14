@@ -1,129 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997AbaCNSRi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 14:17:38 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:55252 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaCNSRh (ORCPT
+	id S1755557AbaCNSVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 14:21:17 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:49455 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672AbaCNSVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 14:17:37 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 2/3] workqueues: Account unbound workqueue in a seperate list
-References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
-	<1394815131-17271-3-git-send-email-fweisbec@gmail.com>
-Date: Fri, 14 Mar 2014 11:17:35 -0700
-In-Reply-To: <1394815131-17271-3-git-send-email-fweisbec@gmail.com> (Frederic
-	Weisbecker's message of "Fri, 14 Mar 2014 17:38:50 +0100")
-Message-ID: <7hob18ir0g.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 14 Mar 2014 14:21:14 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-e5-5323489805b0
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-ide@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ata: ahci_st: build fixes
+Date: Fri, 14 Mar 2014 19:20:58 +0100
+Message-id: <1848075.ERJNt1KrUa@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jAd2ZHsrBBq/eMlnc/3qU0WLT42us
+	Fsd2PGKyuLxrDpvFr+VHGR1YPTat6mTzuHNtD5vH5iX1Hp83yQWwRHHZpKTmZJalFunbJXBl
+	zL5yhbHgkUhFz8qbjA2M2wW7GDk4JARMJP7Nt+pi5AQyxSQu3FvP1sXIxSEksIhR4u/d+VBO
+	C5NE27J9bCBVbAJWEhPbVzGC2CICshJXpj1kBCliFmhllJi9Yio7SEJYQE+i+dUVFhCbRUBV
+	Yl7zbbA4r4CmxPRDv8AGiQp4SuzYvpINIi4o8WPyPbB6ZgF5iX37p7JC2FoS63ceZ5rAyDcL
+	SdksJGWzkJQtYGRexSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcls+kdzCuarA4xCjAwajE
+	w3tBSTlYiDWxrLgy9xCjBAezkgjvfmOgEG9KYmVValF+fFFpTmrxIUZpDhYlcd6DrdaBQgLp
+	iSWp2ampBalFMFkmDk6pBsbqxBta945FL1m6bnZYm/vdIpZD1737775j+bQ9gfVOPe+EqKvT
+	vt7c9Onl0QDXMI69EnWCVar7Q2ZNDpKb8HzDxAX2853mPSy13pV0dFXqI0PxNwdz1CMttvw2
+	WTFxQ153ZIVH6/con3ThSfrXjy7Yn3xoZuyOGRZv41ZW6IQWTn978Uror/qlSizFGYmGWsxF
+	xYkAExAuOkcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec@gmail.com> writes:
+* The config option for ahci_st driver was renamed from
+  CONFIG_SATA_AHCI_ST to CONFIG_AHCI_ST but Makefile was
+  not updated.  Fix it (also while at it move the ahci_st
+  driver entry below ahci_imx and ahci_sunxi ones).
 
-> The workqueues are all listed in a global list protected by a big mutex.
-> And this big mutex is used in apply_workqueue_attrs() as well.
->
-> Now as we plan to implement a directory to control the cpumask of
-> all non-ABI unbound workqueues, we want to be able to iterate over all
-> unbound workqueues and call apply_workqueue_attrs() for each of
-> them with the new cpumask.
->
-> But the risk for a deadlock is on the way: we need to iterate the list
-> of workqueues under wq_pool_mutex. But then apply_workqueue_attrs()
-> itself calls wq_pool_mutex.
->
-> The easiest solution to work around this is to keep track of unbound
-> workqueues in a separate list with a separate mutex.
->
-> It's not very pretty unfortunately.
->
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Mike Galbraith <bitbucket@online.de>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Not-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  kernel/workqueue.c | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
->
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 4d230e3..ad8f727 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -232,6 +232,7 @@ struct wq_device;
->  struct workqueue_struct {
->  	struct list_head	pwqs;		/* WR: all pwqs of this wq */
->  	struct list_head	list;		/* PL: list of all workqueues */
-> +	struct list_head	unbound_list;	/* PL: list of unbound workqueues */
->  
->  	struct mutex		mutex;		/* protects this wq */
->  	int			work_color;	/* WQ: current work color */
-> @@ -288,9 +289,11 @@ static bool wq_numa_enabled;		/* unbound NUMA affinity enabled */
->  static struct workqueue_attrs *wq_update_unbound_numa_attrs_buf;
->  
->  static DEFINE_MUTEX(wq_pool_mutex);	/* protects pools and workqueues list */
-> +static DEFINE_MUTEX(wq_unbound_mutex);	/* protects list of unbound workqueues */
->  static DEFINE_SPINLOCK(wq_mayday_lock);	/* protects wq->maydays list */
->  
->  static LIST_HEAD(workqueues);		/* PL: list of all workqueues */
-> +static LIST_HEAD(workqueues_unbound);	/* PL: list of unbound workqueues */
->  static bool workqueue_freezing;		/* PL: have wqs started freezing? */
->  
->  /* the per-cpu worker pools */
-> @@ -4263,6 +4266,12 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
->  
->  	mutex_unlock(&wq_pool_mutex);
->  
-> +	if (wq->flags & WQ_UNBOUND) {
-> +		mutex_lock(&wq_unbound_mutex);
-> +		list_add(&wq->unbound_list, &workqueues_unbound);
-> +		mutex_unlock(&wq_unbound_mutex);
-> +	}
-> +
->  	return wq;
->  
->  err_free_wq:
-> @@ -4318,6 +4327,12 @@ void destroy_workqueue(struct workqueue_struct *wq)
->  	list_del_init(&wq->list);
->  	mutex_unlock(&wq_pool_mutex);
->  
-> +	if (wq->flags & WQ_UNBOUND) {
-> +		mutex_lock(&wq_unbound_mutex);
-> +		list_del(&wq->unbound_list);
-> +		mutex_unlock(&wq_unbound_mutex);
-> +	}
-> +
->  	workqueue_sysfs_unregister(wq);
->  
->  	if (wq->rescuer) {
+* Fix a few build issues in the ahci_st driver itself.
 
-Looks good, except for minor nit: I think you're missing an init of the
-new list:
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+---
+ drivers/ata/Makefile  |    2 +-
+ drivers/ata/ahci_st.c |   12 +++++-------
+ 2 files changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index cc708f23d801..a01592f08321 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4309,6 +4309,7 @@ struct workqueue_struct
-*__alloc_workqueue_key(const char *fmt,
+Index: b/drivers/ata/Makefile
+===================================================================
+--- a/drivers/ata/Makefile	2014-03-14 16:45:04.036724382 +0100
++++ b/drivers/ata/Makefile	2014-03-14 19:07:02.304579137 +0100
+@@ -5,7 +5,6 @@ obj-$(CONFIG_ATA)		+= libata.o
+ obj-$(CONFIG_SATA_AHCI)		+= ahci.o libahci.o
+ obj-$(CONFIG_SATA_ACARD_AHCI)	+= acard-ahci.o libahci.o
+ obj-$(CONFIG_SATA_AHCI_PLATFORM) += ahci_platform.o libahci.o
+-obj-$(CONFIG_SATA_AHCI_ST)      += ahci_st.o
+ obj-$(CONFIG_SATA_FSL)		+= sata_fsl.o
+ obj-$(CONFIG_SATA_INIC162X)	+= sata_inic162x.o
+ obj-$(CONFIG_SATA_SIL24)	+= sata_sil24.o
+@@ -13,6 +12,7 @@ obj-$(CONFIG_SATA_DWC)		+= sata_dwc_460e
+ obj-$(CONFIG_SATA_HIGHBANK)	+= sata_highbank.o libahci.o
+ obj-$(CONFIG_AHCI_IMX)		+= ahci_imx.o
+ obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o
++obj-$(CONFIG_AHCI_ST)		+= ahci_st.o
+ 
+ # SFF w/ custom DMA
+ obj-$(CONFIG_PDC_ADMA)		+= pdc_adma.o
+Index: b/drivers/ata/ahci_st.c
+===================================================================
+--- a/drivers/ata/ahci_st.c	2014-03-14 19:03:11.368583073 +0100
++++ b/drivers/ata/ahci_st.c	2014-03-14 19:13:53.900572116 +0100
+@@ -87,7 +87,7 @@ static int st_ahci_deassert_resets(struc
+ 	return 0;
+ }
+ 
+-static int st_ahci_exit(struct device *dev)
++static void st_ahci_exit(struct device *dev)
+ {
+ 	struct st_ahci_drv_data *drv_data = dev_get_drvdata(dev);
+ 	struct ahci_host_priv *hpriv = drv_data->hpriv;
+@@ -96,12 +96,10 @@ static int st_ahci_exit(struct device *d
+ 	if (drv_data->pwr) {
+ 		err = reset_control_assert(drv_data->pwr);
+ 		if (err)
+-			dev_err(&pdev->dev, "unable to pwrdwn\n");
++			dev_err(dev, "unable to pwrdwn\n");
+ 	}
+ 
+ 	ahci_platform_disable_resources(hpriv);
+-
+-	return 0;
+ }
+ 
+ static int st_ahci_probe_resets(struct platform_device *pdev)
+@@ -186,9 +184,9 @@ static int st_ahci_suspend(struct device
+ 	struct ahci_host_priv *hpriv = drv_data->hpriv;
+ 	int err;
+ 
+-	ret = ahci_platform_suspend_host(dev);
+-	if (ret)
+-		return ret;
++	err = ahci_platform_suspend_host(dev);
++	if (err)
++		return err;
+ 
+ 	if (drv_data->pwr) {
+ 		err = reset_control_assert(drv_data->pwr);
 
-        lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
-        INIT_LIST_HEAD(&wq->list);
-+       INIT_LIST_HEAD(&wq->unbound_list);
-
-        if (alloc_and_link_pwqs(wq) < 0)
-                goto err_free_wq;
-
-
-Kevin
