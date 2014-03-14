@@ -1,179 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaCNDuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 23:50:50 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:41431 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808AbaCNDus (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 23:50:48 -0400
-Message-ID: <53227C90.8070708@linaro.org>
-Date: Fri, 14 Mar 2014 12:50:40 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754901AbaCND5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 23:57:34 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59471 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753786AbaCND5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Mar 2014 23:57:33 -0400
+Date: Fri, 14 Mar 2014 03:57:31 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1403140356090.7219@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 7/7] arm64: ftrace: Add system call tracepoint
-References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org> <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org> <1394705630-12384-8-git-send-email-takahiro.akashi@linaro.org> <20140313162548.GD25472@mudshark.cambridge.arm.com>
-In-Reply-To: <20140313162548.GD25472@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2014 01:25 AM, Will Deacon wrote:
-> On Thu, Mar 13, 2014 at 10:13:50AM +0000, AKASHI Takahiro wrote:
->> This patch allows system call entry or exit to be traced as ftrace events,
->> ie. sys_enter_*/sys_exit_*, if CONFIG_FTRACE_SYSCALLS is enabled.
->> Those events appear and can be controlled under
->>      ${sysfs}/tracing/events/syscalls/
->>
->> Please note that we can't trace compat system calls here because
->> AArch32 mode does not share the same syscall table with AArch64.
->> Just define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS in order to avoid unexpected
->> results (bogus syscalls reported or even hang-up).
->>
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> ---
->>   arch/arm64/Kconfig               |    1 +
->>   arch/arm64/include/asm/ftrace.h  |   20 ++++++++++++++++
->>   arch/arm64/include/asm/syscall.h |    1 +
->>   arch/arm64/include/asm/unistd.h  |    2 ++
->>   arch/arm64/kernel/ptrace.c       |   48 ++++++++++++++++++++++----------------
->>   5 files changed, 52 insertions(+), 20 deletions(-)
->>
->> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
->> index 6954959..b1dcdb4 100644
->> --- a/arch/arm64/Kconfig
->> +++ b/arch/arm64/Kconfig
->> @@ -43,6 +43,7 @@ config ARM64
->>   	select HAVE_MEMBLOCK
->>   	select HAVE_PATA_PLATFORM
->>   	select HAVE_PERF_EVENTS
->> +	select HAVE_SYSCALL_TRACEPOINTS
->>   	select IRQ_DOMAIN
->>   	select MODULES_USE_ELF_RELA
->>   	select NO_BOOTMEM
->> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
->> index c44c4b1..4ef06f1 100644
->> --- a/arch/arm64/include/asm/ftrace.h
->> +++ b/arch/arm64/include/asm/ftrace.h
->> @@ -44,6 +44,26 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
->>   #define CALLER_ADDR4 ((unsigned long)return_address(4))
->>   #define CALLER_ADDR5 ((unsigned long)return_address(5))
->>   #define CALLER_ADDR6 ((unsigned long)return_address(6))
->> +
->> +#include <asm/compat.h>
->> +
->> +/*
->> + * Because AArch32 mode does not share the same syscall table with AArch64,
->> + * tracing compat syscalls may result in reporting bogus syscalls or even
->> + * hang-up, so just do not trace them.
->> + * See kernel/trace/trace_syscalls.c
->> + *
->> + * x86 code says:
->> + * If the user realy wants these, then they should use the
->> + * raw syscall tracepoints with filtering.
->
-> Fair enough.
->
->> + */
->> +#define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS 1
->
-> You don't need the '1' here.
 
-OK.
+Hi Linus,
 
->> +static inline bool arch_trace_is_compat_syscall(struct pt_regs *regs)
->> +{
->> +        if (is_compat_task())
->> +                return true;
->> +        return false;
->> +}
->
-> return is_compat_task();
+pretty minor set of fixes for radeon, ttm and vmwgfx,
+ttm ones are a regression and an oops seen on server chipsets.
 
-Fix it.
+Dave.
 
->>   #endif /* ifndef __ASSEMBLY__ */
->>
->>   #endif /* __ASM_FTRACE_H */
->> diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
->> index 70ba9d4..383771e 100644
->> --- a/arch/arm64/include/asm/syscall.h
->> +++ b/arch/arm64/include/asm/syscall.h
->> @@ -18,6 +18,7 @@
->>
->>   #include <linux/err.h>
->>
->> +extern const void *sys_call_table[];
->>
->>   static inline int syscall_get_nr(struct task_struct *task,
->>   				 struct pt_regs *regs)
->> diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
->> index 82ce217..c335479 100644
->> --- a/arch/arm64/include/asm/unistd.h
->> +++ b/arch/arm64/include/asm/unistd.h
->> @@ -28,3 +28,5 @@
->>   #endif
->>   #define __ARCH_WANT_SYS_CLONE
->>   #include <uapi/asm/unistd.h>
->> +
->> +#define NR_syscalls (__NR_syscalls)
->> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
->> index 9993a8f..9c52b3e 100644
->> --- a/arch/arm64/kernel/ptrace.c
->> +++ b/arch/arm64/kernel/ptrace.c
->> @@ -41,6 +41,9 @@
->>   #include <asm/traps.h>
->>   #include <asm/system_misc.h>
->>
->> +#define CREATE_TRACE_POINTS
->> +#include <trace/events/syscalls.h>
->> +
->>   /*
->>    * TODO: does not yet catch signals sent when the child dies.
->>    * in exit.c or in signal.c.
->> @@ -1062,29 +1065,31 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
->>   {
->>   	unsigned long saved_reg;
->>
->> -	if (!test_thread_flag(TIF_SYSCALL_TRACE))
->> -		return regs->syscallno;
->> +	if (test_thread_flag(TIF_SYSCALL_TRACE)) {
->> +		/*
->> +		 * A scrach register (ip(r12) on AArch32, x7 on AArch64) is
->> +		 * used to denote syscall entry/exit:
->> +		 *   0 -> entry
->> +		 */
->> +		if (is_compat_task()) {
->
-> if (arch_trace_is_compat_syscall())
+The following changes since commit fa389e220254c69ffae0d403eac4146171062d08:
 
-I don't mind either way, but this part of code comes from the original
-syscall_trace() (ie. ptrace stuff), and has nothing to do with ftrace events.
-(You know, arch_trace_is_compat_syscall() is currently defined in asm/ftrace.h.)
-So I'd like to keep it unchanged unless you really want.
+  Linux 3.14-rc6 (2014-03-09 19:41:57 -0700)
 
-> With those changes:
->
->    Acked-by: Will Deacon <will.deacon@arm.com>
+are available in the git repository at:
 
-Thank you,
--Takahiro AKASHI
+  git://people.freedesktop.org/~airlied/linux drm-fixes
 
-> Will
->
+for you to fetch changes up to f042cc4a607d675452134884c26e8d0d395dd979:
+
+  Merge tag 'ttm-fixes-3.14-2014-03-12' of git://people.freedesktop.org/~thomash/linux into drm-fixes (2014-03-13 17:31:24 +1000)
+
+----------------------------------------------------------------
+
+Alex Deucher (4):
+      drm/radeon: fix runpm disabling on non-PX harder
+      drm/radeon/cik: properly set sdma ring status on disable
+      drm/radeon/cik: stop the sdma engines in the enable() function
+      drm/radeon/cik: properly set compute ring status on disable
+
+Dave Airlie (3):
+      Merge tag 'vmwgfx-fixes-3.14-2014-03-13' of git://people.freedesktop.org/~thomash/linux into drm-fixes
+      Merge branch 'drm-fixes-3.14' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+      Merge tag 'ttm-fixes-3.14-2014-03-12' of git://people.freedesktop.org/~thomash/linux into drm-fixes
+
+Rob Clark (1):
+      drm/ttm: don't oops if no invalidate_caches()
+
+Thomas Hellstrom (2):
+      drm/ttm: Work around performance regression with VM_PFNMAP
+      drm/vmwgfx: Fix a surface reference corner-case in legacy emulation mode
+
+ drivers/gpu/drm/radeon/cik.c            |  5 ++++-
+ drivers/gpu/drm/radeon/cik_sdma.c       | 14 +++++++-------
+ drivers/gpu/drm/radeon/radeon_kms.c     | 10 +++++++++-
+ drivers/gpu/drm/ttm/ttm_bo.c            |  8 +++++---
+ drivers/gpu/drm/ttm/ttm_bo_vm.c         | 12 +++++++-----
+ drivers/gpu/drm/vmwgfx/vmwgfx_surface.c | 18 ++++++++++++++++++
+ 6 files changed, 50 insertions(+), 17 deletions(-)
