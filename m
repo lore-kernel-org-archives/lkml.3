@@ -1,132 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbaCNOzF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:55:05 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55708 "EHLO comal.ext.ti.com"
+	id S1754767AbaCNO6O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:58:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4955 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754680AbaCNOzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:55:01 -0400
-Message-ID: <53231829.3060602@ti.com>
-Date: Fri, 14 Mar 2014 20:24:33 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, <balbi@ti.com>, <tony@atomide.com>
-CC: <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 7/8] ARM: dts: dra7: Add USB related nodes
-References: <1394197751-28984-1-git-send-email-rogerq@ti.com> <1394197751-28984-8-git-send-email-rogerq@ti.com> <5322DC0E.1020600@ti.com> <5322F20C.50600@ti.com>
-In-Reply-To: <5322F20C.50600@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754167AbaCNO6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 10:58:13 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [RFC 0/5] perf tools: Share map groups within process
+Date: Fri, 14 Mar 2014 15:00:01 +0100
+Message-Id: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+hi,
+this patchset moves thread's map_groups to be dynamically
+allocated and shared within process threads.
 
+The main benefit would be to be able to look up memory
+map from any thread that belongs to the process.
 
-On Friday 14 March 2014 05:41 PM, Roger Quadros wrote:
-> On 03/14/2014 12:38 PM, Kishon Vijay Abraham I wrote:
->> Hi Roger,
->>
->> On Friday 07 March 2014 06:39 PM, Roger Quadros wrote:
->>> Add nodes for the Super Speed USB controllers, omap-control-usb,
->>> USB2 PHY and USB3 PHY devices.
->>>
->>> Remove ocp2scp1 address space from hwmod data as it is
->>> now provided via device tree.
->>>
->>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>> ---
->>>    arch/arm/boot/dts/dra7.dtsi               | 110 ++++++++++++++++++++++++++++++
->>>    arch/arm/mach-omap2/omap_hwmod_7xx_data.c |  10 ---
->>>    2 files changed, 110 insertions(+), 10 deletions(-)
->>>
->>> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
->>> index 597979b..1e73900 100644
->>> --- a/arch/arm/boot/dts/dra7.dtsi
->>> +++ b/arch/arm/boot/dts/dra7.dtsi
->>> @@ -811,6 +811,116 @@
->>>                clocks = <&sata_ref_clk>;
->>>                ti,hwmods = "sata";
->>>            };
->>> +
->>> +        omap_control_usb2phy1: control-phy@4a002300 {
->>> +            compatible = "ti,control-phy-usb2";
->>> +            reg = <0x4a002300 0x4>;
->>> +            reg-names = "power";
->>> +        };
->>> +
->>> +        omap_control_usb3phy1: control-phy@4a002370 {
->>> +            compatible = "ti,control-phy-pipe3";
->>> +            reg = <0x4a002370 0x4>;
->>> +            reg-names = "power";
->>> +        };
->>> +
->>> +        omap_control_usb2phy2: control-phy@0x4a002e74 {
->>> +            compatible = "ti,control-phy-usb2-dra7";
->>> +            reg = <0x4a002e74 0x4>;
->>> +            reg-names = "power";
->>> +        };
->>> +
->>> +        /* OCP2SCP1 */
->>> +        ocp2scp@4a080000 {
->>> +            compatible = "ti,omap-ocp2scp";
->>> +            #address-cells = <1>;
->>> +            #size-cells = <1>;
->>> +            ranges;
->>> +            reg = <0x4a080000 0x20>;
->>> +            ti,hwmods = "ocp2scp1";
->>> +
->>> +            usb2_phy1: phy@4a084000 {
->>> +                compatible = "ti,omap-usb2";
->>> +                reg = <0x4a084000 0x400>;
->>> +                ctrl-module = <&omap_control_usb2phy1>;
->>> +                clocks = <&usb_phy1_always_on_clk32k>,
->>> +                     <&usb_otg_ss1_refclk960m>;
->>> +                clock-names =    "wkupclk",
->>> +                        "refclk";
->>> +                #phy-cells = <0>;
->>> +            };
->>> +
->>> +            usb2_phy2: phy@4a085000 {
->>> +                compatible = "ti,omap-usb2";
->>> +                reg = <0x4a085000 0x400>;
->>> +                ctrl-module = <&omap_control_usb2phy2>;
->>> +                clocks = <&usb_phy2_always_on_clk32k>,
->>> +                     <&usb_otg_ss2_refclk960m>;
->>> +                clock-names =    "wkupclk",
->>> +                        "refclk";
->>> +                #phy-cells = <0>;
->>> +            };
->>> +
->>> +            usb3_phy1: phy@4a084400 {
->>> +                compatible = "ti,omap-usb3";
->>> +                reg = <0x4a084400 0x80>,
->>> +                      <0x4a084800 0x64>,
->>> +                      <0x4a084c00 0x40>;
->>> +                reg-names = "phy_rx", "phy_tx", "pll_ctrl";
->>> +                ctrl-module = <&omap_control_usb3phy1>;
->>> +                clocks = <&usb_phy3_always_on_clk32k>,
->>> +                     <&sys_clkin1>,
->>> +                     <&usb_otg_ss1_refclk960m>,
->>> +                     <&dpll_core_h13x2_ck>;
->>> +                clock-names =    "wkupclk",
->>> +                        "sysclk",
->>> +                        "refclk",
->>> +                        "optclk";
->>
->> Do we use this 'optclk' in driver?
->
-> No we don't. Still the device seems to work without it.
-> This is supposed to be USB_LFPS_TX_GFCLK or USB3PHY_REF_CLK.
+This implementes one of the solution ideas for issue
+described by Don in following thread:
+http://marc.info/?l=linux-kernel&m=139403876017159&w=2
 
-I think it should be enabled. Did you check the status of this clock in 
-CM_L3INIT_CLKSTCTRL? Moreover USB_LFPS_TX_GFCLK is an interface clock, 
-so IIUC setting the module mode will enable it.
+This patches still has some loose ends, just wanted to hear
+opinions for this concept.
 
-Btw how did you tell dpll_core_h13x2_ck enables USB_LFPS_TX_GFCLK?
+thanks,
+jirka
 
-Cheers
-Kishon
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+---
+Jiri Olsa (5):
+      perf tests: Add tip/pid mmap automated tests
+      perf tools: Factor machine__find_thread to take tid argument
+      perf tools: Allocate thread map_groups dynamicaly
+      perf tools: Add machine pointer into thread struct
+      perf tools: Share process map groups within process threads
+
+ tools/perf/Makefile.perf                 |   1 +
+ tools/perf/arch/x86/tests/dwarf-unwind.c |   2 +-
+ tools/perf/perf.h                        |   6 ++
+ tools/perf/tests/builtin-test.c          |   4 ++
+ tools/perf/tests/dwarf-unwind.c          |   2 +-
+ tools/perf/tests/mmap-events.c           | 188 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h                 |   1 +
+ tools/perf/ui/stdio/hist.c               |   8 ++-
+ tools/perf/util/event.c                  |   4 +-
+ tools/perf/util/machine.c                |  21 ++++---
+ tools/perf/util/machine.h                |   3 +-
+ tools/perf/util/map.h                    |   3 +-
+ tools/perf/util/thread.c                 |  87 ++++++++++++++++++++++++++---
+ tools/perf/util/thread.h                 |  15 +++--
+ 14 files changed, 317 insertions(+), 28 deletions(-)
+ create mode 100644 tools/perf/tests/mmap-events.c
