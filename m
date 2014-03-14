@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333AbaCNCwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 22:52:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47152 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754466AbaCNCwS (ORCPT
+	id S1755200AbaCNC4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 22:56:22 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:62831 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844AbaCNC4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 22:52:18 -0400
-Date: Thu, 13 Mar 2014 19:51:44 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-1f2cbcf648962cdcf511d234cb39745baa9f5d07@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        luto@amacapital.net, david.vrabel@citrix.com, tglx@linutronix.de,
-        hpa@linux.intel.com, fengguang.wu@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        luto@amacapital.net, david.vrabel@citrix.com, tglx@linutronix.de,
-        fengguang.wu@intel.com, hpa@linux.intel.com
-In-Reply-To: <4bb4690899106eb11430b1186d5cc66ca9d1660c.1394751608.git.luto@amacapital.net>
-References: <4bb4690899106eb11430b1186d5cc66ca9d1660c.1394751608.git.luto@amacapital.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86, vdso, xen: Remove stray reference to FIX_VDSO
-Git-Commit-ID: 1f2cbcf648962cdcf511d234cb39745baa9f5d07
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Thu, 13 Mar 2014 22:56:20 -0400
+From: Chema Gonzalez <chema@google.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Eric Dumazet <edumazet@google.com>
+Cc: linux-kernel@vger.kernel.org, Chema Gonzalez <chema@google.com>
+Subject: [PATCH] procfs: make smp_affinity values go+r
+Date: Thu, 13 Mar 2014 19:50:55 -0700
+Message-Id: <1394765455-1217-1-git-send-email-chema@google.com>
+X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1f2cbcf648962cdcf511d234cb39745baa9f5d07
-Gitweb:     http://git.kernel.org/tip/1f2cbcf648962cdcf511d234cb39745baa9f5d07
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 13 Mar 2014 19:44:47 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 13 Mar 2014 19:44:47 -0700
+Includes:
+- /proc/irq/default_smp_affinity
+- /proc/irq/*/affinity_hint
+- /proc/irq/*/smp_affinity
+- /proc/irq/*/smp_affinity_list
 
-x86, vdso, xen: Remove stray reference to FIX_VDSO
+Users can distill the same information by reading /proc/interrupts.
 
-Checkin
-
-    b0b49f2673f0 x86, vdso: Remove compat vdso support
-
-... removed the VDSO from the fixmap, and thus FIX_VDSO; remove a
-stray reference in Xen.
-
-Found by Fengguang Wu's test robot.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Link: http://lkml.kernel.org/r/4bb4690899106eb11430b1186d5cc66ca9d1660c.1394751608.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Chema Gonzalez <chema@google.com>
 ---
- arch/x86/xen/mmu.c | 1 -
- 1 file changed, 1 deletion(-)
+ kernel/irq/proc.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 256282e..21c6a42 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2058,7 +2058,6 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
- 	case FIX_RO_IDT:
- #ifdef CONFIG_X86_32
- 	case FIX_WP_TEST:
--	case FIX_VDSO:
- # ifdef CONFIG_HIGHMEM
- 	case FIX_KMAP_BEGIN ... FIX_KMAP_END:
- # endif
+diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
+index 36f6ee1..ac1ba2f 100644
+--- a/kernel/irq/proc.c
++++ b/kernel/irq/proc.c
+@@ -324,15 +324,15 @@ void register_irq_proc(unsigned int irq, struct irq_desc *desc)
+ 
+ #ifdef CONFIG_SMP
+ 	/* create /proc/irq/<irq>/smp_affinity */
+-	proc_create_data("smp_affinity", 0600, desc->dir,
++	proc_create_data("smp_affinity", 0644, desc->dir,
+ 			 &irq_affinity_proc_fops, (void *)(long)irq);
+ 
+ 	/* create /proc/irq/<irq>/affinity_hint */
+-	proc_create_data("affinity_hint", 0400, desc->dir,
++	proc_create_data("affinity_hint", 0444, desc->dir,
+ 			 &irq_affinity_hint_proc_fops, (void *)(long)irq);
+ 
+ 	/* create /proc/irq/<irq>/smp_affinity_list */
+-	proc_create_data("smp_affinity_list", 0600, desc->dir,
++	proc_create_data("smp_affinity_list", 0644, desc->dir,
+ 			 &irq_affinity_list_proc_fops, (void *)(long)irq);
+ 
+ 	proc_create_data("node", 0444, desc->dir,
+@@ -372,7 +372,7 @@ void unregister_handler_proc(unsigned int irq, struct irqaction *action)
+ static void register_default_affinity_proc(void)
+ {
+ #ifdef CONFIG_SMP
+-	proc_create("irq/default_smp_affinity", 0600, NULL,
++	proc_create("irq/default_smp_affinity", 0644, NULL,
+ 		    &default_affinity_proc_fops);
+ #endif
+ }
+-- 
+1.9.0.279.gdc9e3eb
+
