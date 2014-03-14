@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549AbaCNXy1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 19:54:27 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:44059 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756475AbaCNXyZ (ORCPT
+	id S1756562AbaCNXzj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 19:55:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54984 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754765AbaCNXzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 19:54:25 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Simo Sorce <ssorce@redhat.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        jkaluza@redhat.com, lpoetter@redhat.com, kay@redhat.com
-References: <1394657163-7472-1-git-send-email-vgoyal@redhat.com>
-	<1394657163-7472-3-git-send-email-vgoyal@redhat.com>
-	<5320CAEC.6030008@amacapital.net>
-	<CALCETrUTjN=XKwnO62P9roZtLLuk7_9Oi17Mj_Aa2ZFtZc1gVA@mail.gmail.com>
-	<1394658983.32465.203.camel@willson.li.ssimo.org>
-	<CALCETrU29CpcK4dVRD45BGOD7AVEudADiFxOgFgKWkpFzw07eg@mail.gmail.com>
-	<1394673476.32465.215.camel@willson.li.ssimo.org>
-	<CALCETrWbCuKfV4zMkZajDOGhGkKduW0C2L7uHv=vtvqhVeAc6w@mail.gmail.com>
-	<1394675038.32465.223.camel@willson.li.ssimo.org>
-	<CALCETrV7GE0YL1sDDqTUV81rWL9zk2vTR1-VLkR7CfTA-FSrgw@mail.gmail.com>
-	<20140313142755.GC18914@redhat.com>
-Date: Fri, 14 Mar 2014 16:54:18 -0700
-In-Reply-To: <20140313142755.GC18914@redhat.com> (Vivek Goyal's message of
-	"Thu, 13 Mar 2014 10:27:55 -0400")
-Message-ID: <87k3bw1glx.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 14 Mar 2014 19:55:37 -0400
+Date: Fri, 14 Mar 2014 23:56:37 +0000
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Julien Grall <julien.grall@linaro.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, xen-devel@lists.xenproject.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 2/2] arm/xen: Don't use xen DMA ops when the device is
+ protected by an IOMMU
+Message-ID: <20140314235637.GA5687@kroah.com>
+References: <1392913301-25524-1-git-send-email-julien.grall@linaro.org>
+ <1392914159.32657.18.camel@kazak.uk.xensource.com>
+ <alpine.DEB.2.02.1402241214570.4471@kaball.uk.xensource.com>
+ <20140224151636.GA13489@kroah.com>
+ <alpine.DEB.2.02.1402242036490.31489@kaball.uk.xensource.com>
+ <5323334F.90700@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/dvoxfTxBXlVv1zTvVPlkWcU7QetHuokk=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4865]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Vivek Goyal <vgoyal@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 2/2] net: Implement SO_PEERCGROUP
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5323334F.90700@linaro.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On Fri, Mar 14, 2014 at 04:50:23PM +0000, Julien Grall wrote:
+> On 02/24/2014 08:49 PM, Stefano Stabellini wrote:
+> > On Mon, 24 Feb 2014, gregkh@linuxfoundation.org wrote: 
+> > Julien is proposing to store the list of "safe" devices on an hash table
+> > in the Xen specific code (in arch/arm/xen/enlighten.c, see
+> > http://marc.info/?l=linux-kernel&m=139291370526082&w=2).
+> > Whenever Linux is about to do DMA, we would check in the hashtable to
+> > figure out whether we need to go through the swiotlb or we can simply
+> > use the native dma_ops.
+> > 
+> > Ian and I were thinking that it would be much easier and faster to have
+> > a "xen_safe_device" parameter in struct device and just check for that.
+> > It doesn't actually need to be in struct device, it could simply be a
+> > flag in struct device_dma_parameters as Ian was suggesting.
+> > 
+> > Julien, could you please come up with a simple patch to demonstrate the
+> > concept?
+> 
+> Hello Stefano and Greg,
+> 
+> Sorry for the late answer. I wrote a simple patch which depend on patch #1.
+> Let me know if it's the right direction.
 
-> On Wed, Mar 12, 2014 at 07:12:25PM -0700, Andy Lutomirski wrote:
->
->> I can think of at least three other ways to do this.
->> 
->> 1. Fix Docker to use user namespaces and use the uid of the requesting
->> process via SCM_CREDENTIALS.
->
-> Using user namespaces sounds like the right way to do it (atleast
-> conceptually). But I think hurdle here is that people are not convinced
-> yet that user namespaces are secure and work well. IOW, some people
-> don't seem to think that user namespaces are ready yet.
+I have no context here, care to start the patch series over?
 
-If the problem is user namespace immaturity patches or bug reports need
-to be sent for user namespaces.
+thanks,
 
-Containers with user namespaces (however immature they are) are much
-more secure than running container with processes with uid == 0 inside
-of them.  User namespaces do considerably reduce the attack surface of
-what uid == 0 can do.
-
-> I guess that's the reason people are looking for other ways to
-> achieve their goal.
-
-It seems strange to work around a feature that is 99% of the way to
-solving their problem with more kernel patches.
-
-Eric
+greg k-h
