@@ -1,135 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510AbaCNOSL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:18:11 -0400
-Received: from mail-yk0-f178.google.com ([209.85.160.178]:38726 "EHLO
-	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041AbaCNOSJ (ORCPT
+	id S1755542AbaCNOSW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:18:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39906 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754818AbaCNOSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:18:09 -0400
-Date: Fri, 14 Mar 2014 11:18:03 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 5/5] perf tools: Share process map groups within process
- threads
-Message-ID: <20140314141803.GF2396@ghostprotocols.net>
-References: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
- <1394805606-25883-6-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394805606-25883-6-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Mar 2014 10:18:18 -0400
+Message-ID: <1394806686.20857.31.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] net: phy: fix uninitalized ethtool_wolinfo in
+ phy_suspend
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 14 Mar 2014 14:18:06 +0000
+In-Reply-To: <1394788064-6832-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <20140313.153832.967564223480298567.davem@davemloft.net>
+	 <1394788064-6832-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-HdbWYWZmkJYw3LtGMkZ9"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:882:98de:919:dfab
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Mar 14, 2014 at 03:00:06PM +0100, Jiri Olsa escreveu:
-> Sharing map groups within all process threads. This way
-> there's only one copy of mmap info and it's reachale
-> from any thread within the process.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Don Zickus <dzickus@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+
+--=-HdbWYWZmkJYw3LtGMkZ9
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, 2014-03-14 at 10:07 +0100, Sebastian Hesselbarth wrote:
+> Callers of phy_ethtool_get_wol are supposed to provide a properly
+> cleared struct ethtool_wolinfo. Therefore, fix phy_suspend to clear
+> it before passing it to phy_ethtool_get_wol.
+>=20
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+
 > ---
->  tools/perf/util/map.h    |  2 ++
->  tools/perf/util/thread.c | 37 ++++++++++++++++++++++++++++++++++---
->  2 files changed, 36 insertions(+), 3 deletions(-)
-> 
-> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-> index 99a6488..d4c8df2 100644
-> --- a/tools/perf/util/map.h
-> +++ b/tools/perf/util/map.h
-> @@ -59,6 +59,8 @@ struct map_groups {
->  	struct rb_root	 maps[MAP__NR_TYPES];
->  	struct list_head removed_maps[MAP__NR_TYPES];
->  	struct machine	 *machine;
-> +	/* Used for thread sharing */
-> +	int		  refcnt;
-
-So in the end you use those get/put ops for ref counting, cool. We need
-some more of those for other stuff like those pointers in hist_entries
-to dead_threads, etc.
-
-- Arnaldo
-
->  };
->  
->  static inline struct kmap *map__kmap(struct map *map)
-> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-> index 7c1aad0..2599754 100644
-> --- a/tools/perf/util/thread.c
-> +++ b/tools/perf/util/thread.c
-> @@ -156,6 +156,16 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
->  	return 0;
->  }
->  
-> +static struct thread* thread__get_leader(struct thread *thread)
-> +{
-> +	pid_t pid = thread->pid_;
-> +
-> +	if (pid == thread->tid)
-> +		return thread;
-> +
-> +	return machine__findnew_thread(thread->machine, pid, pid);
-> +}
-> +
->  static struct map_groups* thread__map_groups_alloc(struct thread *thread)
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Florian Fainelli <f.fainelli@gmail.com>
+> Cc: Ben Hutchings <ben@decadent.org.uk>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/net/phy/phy_device.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+> index 4b03e63639b7..7512e28866f1 100644
+> --- a/drivers/net/phy/phy_device.c
+> +++ b/drivers/net/phy/phy_device.c
+> @@ -683,10 +683,9 @@ EXPORT_SYMBOL(phy_detach);
+>  int phy_suspend(struct phy_device *phydev)
 >  {
->  	struct map_groups* mg = zalloc(sizeof(*mg));
-> @@ -172,13 +182,34 @@ struct map_groups* thread__map_groups_get(struct thread *thread)
->  {
->  	struct map_groups* mg = thread->mg;
->  
-> -	if (!mg)
-> -		mg = thread__map_groups_alloc(thread);
-> +	if (!mg) {
-> +		struct thread *leader = thread__get_leader(thread);
-> +
-> +		if (!leader)
-> +			return NULL;
-> +
-> +		if (leader->mg)
-> +			mg = leader->mg;
-> +		else
-> +			mg = thread__map_groups_alloc(leader);
-> +
-> +		if (leader != thread)
-> +			thread->mg = mg;
-> +
-> +		mg->refcnt++;
-> +	}
->  
->  	return mg;
->  }
->  
->  void thread__map_groups_put(struct thread *thread)
->  {
-> -	zfree(&thread->mg);
-> +	struct map_groups* mg = thread->mg;
-> +
-> +	if (mg) {
-> +		BUG_ON(!mg->refcnt);
-> +
-> +		if (!--mg->refcnt)
-> +			zfree(&thread->mg);
-> +	}
->  }
-> -- 
-> 1.8.3.1
+>  	struct phy_driver *phydrv =3D to_phy_driver(phydev->dev.driver);
+> -	struct ethtool_wolinfo wol;
+> +	struct ethtool_wolinfo wol =3D { .cmd =3D ETHTOOL_GWOL };
+> =20
+>  	/* If the device has WOL enabled, we cannot suspend the PHY */
+> -	wol.cmd =3D ETHTOOL_GWOL;
+>  	phy_ethtool_get_wol(phydev, &wol);
+>  	if (wol.wolopts)
+>  		return -EBUSY;
+
+--=20
+Ben Hutchings
+Experience is directly proportional to the value of equipment destroyed.
+                                                         - Carolyn Scheppne=
+r
+
+--=-HdbWYWZmkJYw3LtGMkZ9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAUyMPnue/yOyVhhEJAQod7A//ZSCIu4vNPz+Qw7EsK7DiuTJA6BNZwRTa
+Ojf5s3lVq73VV8gvkLMLCdijbkCwdg+KY4oOHFfX0w97cv9OvGQaebaXrOjsu9I0
+bSWxioD/HTIPJa7wySHxkgVsfeqbtTYZSXYQaYG1959oUh/wJPDEBtLMhaNMngna
+hsYblLtq8/NwmgZiGBuyqwGTz8MupudSh1XavDGUxpeLOHCSUi+/T6MhlqXx1OhG
+fn+jOGO/GbPJPzW6tVabeCWrF0M44Jyy9HDj2c6dsno4lPRk9zZUcGl4+JtVkVud
+htn+E3Webgu2/A48Utwvb/4WxGk5mZ6TRpJoFzZT0XXzivHORwPp9/PJd4f3+svx
+Zo2Tde76PbIIY+XlVwUcu83tO8veUCskJYo/R1ozZbd1OdTpPzTObDL/rSqr7f+4
+RO0zn6Yx52ZkV+R1/g0BMTlJBH8ztR2VvHhN4i08iWEs4CQV+t25iPhm7F8m/GAN
+C//kb1dYdMfaaXebrbmvU7R5xmVOsnkSmC0ArUvRenhoCEVO4qcMREmga7fHL12k
+k+yt9jA6FouPRR9vhOaaRiXRW+BgcQIATTr+5vQxa8IQLl+0A/jISiO+fAbGonOn
+v3KJVQhh8K3ZaD4otVqarKpQS49zZyzlFLVwVsxKSB4SLdaCTCtOqtbRepzZ29wa
+x/iAFcCNI9g=
+=Kml+
+-----END PGP SIGNATURE-----
+
+--=-HdbWYWZmkJYw3LtGMkZ9--
