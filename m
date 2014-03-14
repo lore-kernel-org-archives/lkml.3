@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610AbaCNKKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 06:10:38 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46358 "EHLO
+	id S1753923AbaCNKMM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 06:12:12 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46416 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752548AbaCNKKh (ORCPT
+	by vger.kernel.org with ESMTP id S1752091AbaCNKML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 06:10:37 -0400
-Date: Fri, 14 Mar 2014 10:07:35 +0000
+	Fri, 14 Mar 2014 06:12:11 -0400
+Date: Fri, 14 Mar 2014 10:09:14 +0000
 From: Will Deacon <will.deacon@arm.com>
 To: AKASHI Takahiro <takahiro.akashi@linaro.org>
 Cc: "rostedt@goodmis.org" <rostedt@goodmis.org>,
@@ -22,66 +22,81 @@ Cc: "rostedt@goodmis.org" <rostedt@goodmis.org>,
 	<linux-arm-kernel@lists.infradead.org>,
         "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 4/7] arm64: Add ftrace support
-Message-ID: <20140314100735.GC13541@arm.com>
+Subject: Re: [PATCH v6 6/7] arm64: ftrace: Add CALLER_ADDRx macros
+Message-ID: <20140314100914.GD13541@arm.com>
 References: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
  <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
- <1394705630-12384-5-git-send-email-takahiro.akashi@linaro.org>
- <20140313170834.GE25472@mudshark.cambridge.arm.com>
- <53228959.3040000@linaro.org>
+ <1394705630-12384-7-git-send-email-takahiro.akashi@linaro.org>
+ <20140313155415.GB25472@mudshark.cambridge.arm.com>
+ <532270BE.6000409@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53228959.3040000@linaro.org>
+In-Reply-To: <532270BE.6000409@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 04:45:13AM +0000, AKASHI Takahiro wrote:
-> On 03/14/2014 02:08 AM, Will Deacon wrote:
-> > On Thu, Mar 13, 2014 at 10:13:47AM +0000, AKASHI Takahiro wrote:
-> >> This patch implements arm64 specific part to support function tracers,
-> >> such as function (CONFIG_FUNCTION_TRACER), function_graph
-> >> (CONFIG_FUNCTION_GRAPH_TRACER) and function profiler
-> >> (CONFIG_FUNCTION_PROFILER).
+On Fri, Mar 14, 2014 at 03:00:14AM +0000, AKASHI Takahiro wrote:
+> On 03/14/2014 12:54 AM, Will Deacon wrote:
+> > On Thu, Mar 13, 2014 at 10:13:49AM +0000, AKASHI Takahiro wrote:
+> >> CALLER_ADDRx returns caller's address at specified level in call stacks.
+> >> They are used for several tracers like irqsoff and preemptoff.
+> >> Strange to say, however, they are refered even without FTRACE.
 > >>
-> >> With 'function' tracer, all the functions in the kernel are traced with
-> >> timestamps in ${sysfs}/tracing/trace. If function_graph tracer is
-> >> specified, call graph is generated.
-> >>
-> >> The kernel must be compiled with -pg option so that _mcount() is inserted
-> >> at the beginning of functions. This function is called on every function's
-> >> entry as long as tracing is enabled.
-> >> In addition, function_graph tracer also needs to be able to probe function's
-> >> exit. ftrace_graph_caller() & return_to_handler do this by faking link
-> >> register's value to intercept function's return path.
-> >>
-> >> More details on architecture specific requirements are described in
-> >> Documentation/trace/ftrace-design.txt.
+> >> Please note that this implementation assumes that we have frame pointers.
+> >> (which means kernel should be compiled with -fno-omit-frame-pointer.)
 > >
-> > [...]
+> > How do you ensure that -fno-omit-frame-pointer is passed?
 > 
-> You seem not to like this statement :-)
+> arm64 selects ARCH_WANT_FRAME_POINTERS, then FRAME_POINTER is on (lib/Kconfig.debug)
+> and so -fno-omit-frame-pointer is appended (${TOP}/Makefile).
+> (stacktrace.c also assumes FRAME_POINTER.)
+> 
+> Do you think I should remove the comment above?
 
-Huh? I was just using '[...]' to signify that I'd removed a lot of context
-(since the code all looked fine there). Otherwise, review emails can get
-really long.
+Yes please, it sounds like everything is taken care of automatically, so
+there's no need to scare people in the commit message!
 
-> >> +       str     x0, [sp, #-16]!
-> >> +       mov     x0, x29                 //     parent's fp
-> >> +       bl      ftrace_return_to_handler// addr = ftrace_return_to_hander(fp);
-> >> +       mov     x30, x0                 // restore the original return address
-> >> +       ldr     x0, [sp], #16
-> >> +       ret
+> >> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
+> >> index ed5c448..c44c4b1 100644
+> >> --- a/arch/arm64/include/asm/ftrace.h
+> >> +++ b/arch/arm64/include/asm/ftrace.h
+> >> @@ -18,6 +18,7 @@
+> >>
+> >>   #ifndef __ASSEMBLY__
+> >>   extern void _mcount(unsigned long);
+> >> +extern void *return_address(unsigned int);
+> >>
+> >>   struct dyn_arch_ftrace {
+> >>   	/* No extra data needed for arm64 */
+> >> @@ -33,6 +34,16 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+> >>   	 */
+> >>   	return addr;
+> >>   }
+> >> -#endif /* __ASSEMBLY__ */
+> >> +
+> >> +#define HAVE_ARCH_CALLER_ADDR
+> >> +
+> >> +#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
+> >> +#define CALLER_ADDR1 ((unsigned long)return_address(1))
+> >> +#define CALLER_ADDR2 ((unsigned long)return_address(2))
+> >> +#define CALLER_ADDR3 ((unsigned long)return_address(3))
+> >> +#define CALLER_ADDR4 ((unsigned long)return_address(4))
+> >> +#define CALLER_ADDR5 ((unsigned long)return_address(5))
+> >> +#define CALLER_ADDR6 ((unsigned long)return_address(6))
 > >
-> > and an ENDPROC here.
+> > Could we change the core definitions of these macros (in linux/ftrace.h) to
+> > use return_address, then provide an overridable version of return_address
+> > that defaults to __builtin_return_address, instead of copy-pasting this
+> > sequence?
 > 
-> Fix it.
-> But please note that this (return_to_handler) is not a real function.
-> Declaring it as ENDPROC is not very useful.
+> I think I understand what you mean, and will try to post a separate RFC,
+> but I also want to hold off this change on this patch since such a change
+> may raise a small controversy from other archs' maintainers.
 
-Then use END(...). The opening macro was the main point, since that avoid
-the need for an explicit .globl.
+I don't see anything controversial here, but ok. Steve already posted
+something you can get started with.
 
 Will
