@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137AbaCNNRj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 09:17:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55150 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753109AbaCNNRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 09:17:38 -0400
-Date: Fri, 14 Mar 2014 14:17:35 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@redhat.com, jmario@redhat.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: Speed up thread map generation
-Message-ID: <20140314131734.GB5276@krava.redhat.com>
-References: <1394745397-96149-1-git-send-email-dzickus@redhat.com>
+	id S1754081AbaCNNXa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 09:23:30 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42572 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432AbaCNNX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 09:23:29 -0400
+Date: Fri, 14 Mar 2014 06:23:23 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Hannes Reinecke <hare@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <shli@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dm-devel@redhat.com
+Subject: Re: [PATCH 1/1] block: rework flush sequencing for blk-mq
+Message-ID: <20140314132323.GA14606@infradead.org>
+References: <20140130132620.GA6031@infradead.org>
+ <20140130132630.GB6031@infradead.org>
+ <x49iorp3fhm.fsf@segfault.boston.devel.redhat.com>
+ <20140308155240.GA32297@infradead.org>
+ <CAMM=eLewbtK7LiNZCXo=hm-sjVU2+MN+xTFuxb89mDA1iS3r0w@mail.gmail.com>
+ <531B74B6.4070004@suse.de>
+ <20140312102849.GA26509@infradead.org>
+ <20140313161347.GA6598@redhat.com>
+ <20140314092519.GA10139@infradead.org>
+ <20140314130021.GA12589@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394745397-96149-1-git-send-email-dzickus@redhat.com>
+In-Reply-To: <20140314130021.GA12589@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 05:16:37PM -0400, Don Zickus wrote:
+On Fri, Mar 14, 2014 at 09:00:21AM -0400, Mike Snitzer wrote:
+> > Getting a little upset, eh?  I didn't say it's broken, I said it gets
+> > very little testing.  The regression from me was found like so many
+> > before only after it was backported o some enterprise kernel.
+> 
+> Even _really_ basic dm-multipath testing would've uncovered this bug.
 
-SNIP
+But major testing using dm, md and various low-level drivers didn't.  Do
+you really expect everyone to remember to specificly test dm-multipath
+for a core block change?  Without a nicely documented way to do it?
 
-> +	event->fork.ptid = tgid;
-> +	event->fork.pid  = tgid;
-> +	event->fork.tid  = pid;
-> +	event->fork.header.type = PERF_RECORD_FORK;
-> +
-> +	event->fork.header.size = (sizeof(event->fork) + machine->id_hdr_size);
-> +
-> +	if (process(tool, event, &synth_sample, machine) != 0)
-> +		return -1;
-> +
-> +	return 0;
-> +}
-> +
->  int perf_event__synthesize_mmap_events(struct perf_tool *tool,
->  				       union perf_event *event,
->  				       pid_t pid, pid_t tgid,
-> @@ -287,6 +309,11 @@ static int __event__synthesize_thread(union perf_event *comm_event,
->  	DIR *tasks;
->  	struct dirent dirent, *next;
->  	pid_t tgid;
-> +	union perf_event *fork_event;
-> +
-> +	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
-> +	if (fork_event == NULL)
-> +		return -1;
+That being said I should have remembered that it's special, but even I
+didn't and I'm sorry about that.
 
-need to be freed
+> > I think the problem here is two-fold:
+> >  a) the hardware you use with dm-multipath isn't widely available.
+> >  b) it uses a very special code path in the block layer no one else uses
+> > 
+> > a) might be fixable by having some RDAC or similar emulation in qemu if
+> > someone wants to spend the effort.
+> 
+> The regression from the commit in question was easily reproduced/tested
+> using scsi_debug.  Just start the multipathd service and any scsi_debug
+> device in the system will get multipath'd.
 
-maybe we could move the allocation one level up,
-same as for mmap_event and comm_event
+Really?  That sounds a like a bug in the INQUIRY information returned by
+scsi_debug.  Either way please write up these things in Documentation so
+you can point people at it easily.
 
-otherwise I think the logic with FORK event is correct
-
-jirka
