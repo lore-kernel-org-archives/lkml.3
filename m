@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962AbaCNPwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:52:13 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48067 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754094AbaCNPwL (ORCPT
+	id S1755177AbaCNPy1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:54:27 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:63372 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754640AbaCNPyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:52:11 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+PQYV0slG35ZbxMivrUwms
-Date: Fri, 14 Mar 2014 08:52:03 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Rob Herring <robh@kernel.org>, Tero Kristo <t-kristo@ti.com>,
-        Nishanth Menon <nm@ti.com>, Suman Anna <s-anna@ti.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC 4/5] clocksource: omap-timer: Introduce clocksource driver
- for OMAP SoCs
-Message-ID: <20140314155202.GA27560@atomide.com>
-References: <1394742919-32163-1-git-send-email-joelf@ti.com>
- <1394742919-32163-5-git-send-email-joelf@ti.com>
- <20140313204851.GB23432@atomide.com>
- <532243F5.4040609@ti.com>
+	Fri, 14 Mar 2014 11:54:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532243F5.4040609@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1394811997.26846.2.camel@x230.mview.int.nebula.com>
+References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
+	<CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
+	<alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
+	<1394686919.25122.2.camel@x230>
+	<CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
+	<alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
+	<1394726363.25122.16.camel@x230>
+	<20140313212450.67f1de8e@alan.etchedpixels.co.uk>
+	<1394746248.27846.3.camel@x230>
+	<20140313232140.03bdaac3@alan.etchedpixels.co.uk>
+	<1394762250.6416.24.camel@x230.lan>
+	<20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
+	<1394801518.6416.38.camel@x230.lan>
+	<CAGXu5jLZcWh5WD0L8s3Q-GXdXCMnA57qtjfdFfQbv0fxYcuCTQ@mail.gmail.com>
+	<1394811997.26846.2.camel@x230.mview.int.nebula.com>
+Date: Fri, 14 Mar 2014 08:54:23 -0700
+X-Google-Sender-Auth: ozZtNinFGRz7imW_kAEd90Ow-Dk
+Message-ID: <CAGXu5j+3vVKhFPOsArYddA+QqhvVUunj8eYOF799rDv=3MGtyg@mail.gmail.com>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+From: Kees Cook <keescook@chromium.org>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joel Fernandes <joelf@ti.com> [140313 16:52]:
-> On 03/13/2014 03:48 PM, Tony Lindgren wrote:
-> > * Joel Fernandes <joelf@TI.com> [140313 13:43]:
-> >> We introduce functions to initialize clocksource and clockevent, use
-> >> CLOCKSOURCE_OF_DECLARE to declare the clocksource, and handle the clocksource
-> >> selection on a per-SoC basis (Currently only AM335x is supported). Powering up
-> >> of the timer will be done with the help of the mach-omap layer function that's
-> >> introduced earlier in the series.
-> >>
-> >> We make a local copy of dmtimer API for use by clocksource, the original
-> >> dmtimer API in plat-omap is kept as-is till the migration of all SoCs is
-> >> completed after which it can't be deleted.
-> >>
-> >> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> >> ---
-> >>  drivers/clocksource/Makefile     |    1 +
-> >>  drivers/clocksource/omap-timer.c | 1157 ++++++++++++++++++++++++++++++++++++++
-> >>  drivers/clocksource/omap-timer.h |  422 ++++++++++++++
-> >>  3 files changed, 1580 insertions(+)
-> >>  create mode 100644 drivers/clocksource/omap-timer.c
-> >>  create mode 100644 drivers/clocksource/omap-timer.h
-> > 
-> > Hmm this leaves duplicate arch/arm/plat-omap/dmtimer.c code, please
-> 
-> Sure, ofcourse- but how else can we make sure everything works while we do
-> the migration in steps. We can get rid of the duplicate once everything is
-> migrated.
+On Fri, Mar 14, 2014 at 8:46 AM, Matthew Garrett
+<matthew.garrett@nebula.com> wrote:
+> On Fri, 2014-03-14 at 08:23 -0700, Kees Cook wrote:
+>
+>> The command line problem here is a total red herring. If you've got a
+>> measured kernel, you have a measured command line. (If not, you don't
+>> have a measured kernel.) Dealing with the command line has nothing to
+>> do with enforcing the ring0/uid0 boundary which is what this patch
+>> series does.
+>
+> That's why I used trusted rather than measured. The Secure Boot trust
+> model assumes that the user is able to modify the command line (it's
+> basically impossible to deploy generically otherwise), so we need to
+> filter out command line options that allow a user to elevate themselves
+> into the kernel at boot time.
 
-That's not doing incremental changes then. You're not even modifying
-the existing omap_dm_timer functions, so please do the changes in incremental
-steps where things keep working throughout the series.
- 
-> > sort out that issue too by allowing omap1 and omap3 still to use
-> > the legacy timer init functions but with timer code under
-> > drivers/clocksource/omap-timer.c.
-> 
-> Sorry, I didn't follow. I didn't see OMAP3 using legacy timer stuff. To me
-> it looks like OMAP3 migration should be straight forward along the same
-> lines as this RFC patchset. Could you elaborate a bit more what the legacy
-> functions you mentioned for OMAP1 are? I will just like to keep everything
-> in drivers/clocksource/ private for now till we're done migrating most
-> platforms. IMO once we get system timers working for omap2+, then we can
-> look into omap1 :)
+All the more reason to ignore command line at this point. For Chrome
+OS, it's part of our boot state, so we don't care about it. For
+generic Secure Boot, we can add checks for dangerous stuff as we go
+forward. That's why I like this interface -- we can add to it as we
+identify bad stuff, and it stay separate from other semantics.
 
-Well omap3 is still also booting in legacy mode too.
- 
-> > And not the that drivers/clocksource/omap-timer.h won't be needed at
-> > all, those defines can stay private to the drivers/clocksource/omap-timer.c.
-> 
-> Actually- I wanted it separate because omap-timer.c is already huge at 1157
-> lines. Infact the largest among the clocksource drivers. Is that fair?
+-Kees
 
-No need for it. We want to keep these functions private to the driver.
- 
-> > So this patch really should just be moving of the code to the new
-> > location.
-> 
-> To be honest, its not just a simple moving of code, there are new things
-> such as selecting correct timer, new functions for clockevent and
-> clocksource init, different handling of clocks etc.
-
-Those changes should then be separate patches to prepare things so
-people can see what changes in arch/arm/plat-omap/dmtimer.c code.
-
-Regards,
-
-Tony
+-- 
+Kees Cook
+Chrome OS Security
