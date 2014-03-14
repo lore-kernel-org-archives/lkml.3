@@ -1,52 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118AbaCNOyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:54:36 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37049 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502AbaCNOye (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:54:34 -0400
-Date: Fri, 14 Mar 2014 10:54:30 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Roman Peniaev <r.peniaev@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data
- integrity write
-Message-ID: <20140314145430.GL12613@htj.dyndns.org>
-References: <CACZ9PQV8RsaefFAOt5b-aL33G3CiD+3+fTuW15io6u1DH3XJ6Q@mail.gmail.com>
- <CACZ9PQUKzsP4mwJSO3c=Z3W2pYr2AME-9j+1Cqg9t8a4T+uQQg@mail.gmail.com>
- <20140313200119.GB504@quack.suse.cz>
- <20140313143456.157404fd7f208638ca70e317@linux-foundation.org>
- <20140314130712.GC12613@htj.dyndns.org>
- <CACZ9PQUQX-sSNo+z0LB0Tefq9pSHFr6GjKg2tWzdAtw3OYYDsg@mail.gmail.com>
- <20140314141143.GH12613@htj.dyndns.org>
- <20140314141511.GF18583@quack.suse.cz>
- <CACZ9PQXNK=z-bk8BJ8rmU9dJiEAcoHBFBoGDK_QoJ0NQFweufQ@mail.gmail.com>
- <20140314145215.GG18583@quack.suse.cz>
+	id S1755182AbaCNOzF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:55:05 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55708 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754680AbaCNOzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 10:55:01 -0400
+Message-ID: <53231829.3060602@ti.com>
+Date: Fri, 14 Mar 2014 20:24:33 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140314145215.GG18583@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roger Quadros <rogerq@ti.com>, <balbi@ti.com>, <tony@atomide.com>
+CC: <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 7/8] ARM: dts: dra7: Add USB related nodes
+References: <1394197751-28984-1-git-send-email-rogerq@ti.com> <1394197751-28984-8-git-send-email-rogerq@ti.com> <5322DC0E.1020600@ti.com> <5322F20C.50600@ti.com>
+In-Reply-To: <5322F20C.50600@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 03:52:15PM +0100, Jan Kara wrote:
->   Well, for ext2, you can use ext4 kernel driver which takes care of
-> REQ_FLUSH properly. For fat, you'll need to fix the fs...
 
-This is a bit surprising tho.  Were we always like this?  We never had
-even stupid "flush down everything and sync"?  Or is this something we
-broke while morphing flush implementation several times in the past
-years?
 
-Thanks.
+On Friday 14 March 2014 05:41 PM, Roger Quadros wrote:
+> On 03/14/2014 12:38 PM, Kishon Vijay Abraham I wrote:
+>> Hi Roger,
+>>
+>> On Friday 07 March 2014 06:39 PM, Roger Quadros wrote:
+>>> Add nodes for the Super Speed USB controllers, omap-control-usb,
+>>> USB2 PHY and USB3 PHY devices.
+>>>
+>>> Remove ocp2scp1 address space from hwmod data as it is
+>>> now provided via device tree.
+>>>
+>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>> ---
+>>>    arch/arm/boot/dts/dra7.dtsi               | 110 ++++++++++++++++++++++++++++++
+>>>    arch/arm/mach-omap2/omap_hwmod_7xx_data.c |  10 ---
+>>>    2 files changed, 110 insertions(+), 10 deletions(-)
+>>>
+>>> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+>>> index 597979b..1e73900 100644
+>>> --- a/arch/arm/boot/dts/dra7.dtsi
+>>> +++ b/arch/arm/boot/dts/dra7.dtsi
+>>> @@ -811,6 +811,116 @@
+>>>                clocks = <&sata_ref_clk>;
+>>>                ti,hwmods = "sata";
+>>>            };
+>>> +
+>>> +        omap_control_usb2phy1: control-phy@4a002300 {
+>>> +            compatible = "ti,control-phy-usb2";
+>>> +            reg = <0x4a002300 0x4>;
+>>> +            reg-names = "power";
+>>> +        };
+>>> +
+>>> +        omap_control_usb3phy1: control-phy@4a002370 {
+>>> +            compatible = "ti,control-phy-pipe3";
+>>> +            reg = <0x4a002370 0x4>;
+>>> +            reg-names = "power";
+>>> +        };
+>>> +
+>>> +        omap_control_usb2phy2: control-phy@0x4a002e74 {
+>>> +            compatible = "ti,control-phy-usb2-dra7";
+>>> +            reg = <0x4a002e74 0x4>;
+>>> +            reg-names = "power";
+>>> +        };
+>>> +
+>>> +        /* OCP2SCP1 */
+>>> +        ocp2scp@4a080000 {
+>>> +            compatible = "ti,omap-ocp2scp";
+>>> +            #address-cells = <1>;
+>>> +            #size-cells = <1>;
+>>> +            ranges;
+>>> +            reg = <0x4a080000 0x20>;
+>>> +            ti,hwmods = "ocp2scp1";
+>>> +
+>>> +            usb2_phy1: phy@4a084000 {
+>>> +                compatible = "ti,omap-usb2";
+>>> +                reg = <0x4a084000 0x400>;
+>>> +                ctrl-module = <&omap_control_usb2phy1>;
+>>> +                clocks = <&usb_phy1_always_on_clk32k>,
+>>> +                     <&usb_otg_ss1_refclk960m>;
+>>> +                clock-names =    "wkupclk",
+>>> +                        "refclk";
+>>> +                #phy-cells = <0>;
+>>> +            };
+>>> +
+>>> +            usb2_phy2: phy@4a085000 {
+>>> +                compatible = "ti,omap-usb2";
+>>> +                reg = <0x4a085000 0x400>;
+>>> +                ctrl-module = <&omap_control_usb2phy2>;
+>>> +                clocks = <&usb_phy2_always_on_clk32k>,
+>>> +                     <&usb_otg_ss2_refclk960m>;
+>>> +                clock-names =    "wkupclk",
+>>> +                        "refclk";
+>>> +                #phy-cells = <0>;
+>>> +            };
+>>> +
+>>> +            usb3_phy1: phy@4a084400 {
+>>> +                compatible = "ti,omap-usb3";
+>>> +                reg = <0x4a084400 0x80>,
+>>> +                      <0x4a084800 0x64>,
+>>> +                      <0x4a084c00 0x40>;
+>>> +                reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+>>> +                ctrl-module = <&omap_control_usb3phy1>;
+>>> +                clocks = <&usb_phy3_always_on_clk32k>,
+>>> +                     <&sys_clkin1>,
+>>> +                     <&usb_otg_ss1_refclk960m>,
+>>> +                     <&dpll_core_h13x2_ck>;
+>>> +                clock-names =    "wkupclk",
+>>> +                        "sysclk",
+>>> +                        "refclk",
+>>> +                        "optclk";
+>>
+>> Do we use this 'optclk' in driver?
+>
+> No we don't. Still the device seems to work without it.
+> This is supposed to be USB_LFPS_TX_GFCLK or USB3PHY_REF_CLK.
 
--- 
-tejun
+I think it should be enabled. Did you check the status of this clock in 
+CM_L3INIT_CLKSTCTRL? Moreover USB_LFPS_TX_GFCLK is an interface clock, 
+so IIUC setting the module mode will enable it.
+
+Btw how did you tell dpll_core_h13x2_ck enables USB_LFPS_TX_GFCLK?
+
+Cheers
+Kishon
