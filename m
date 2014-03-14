@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177AbaCNOoq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:44:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33463 "EHLO mx2.suse.de"
+	id S1754835AbaCNOwW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:52:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33569 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754219AbaCNOoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:44:44 -0400
-Date: Fri, 14 Mar 2014 15:44:42 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Simon Wood <simon@mungewell.org>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ivan Baldo <ibaldo@adinet.com.uy>, evilcow <evilcow93@yahoo.com>
-Subject: Re: [PATCH] HID: hid-lg4ff: Support new version of G27
-In-Reply-To: <1394736123-2102-1-git-send-email-simon@mungewell.org>
-Message-ID: <alpine.LNX.2.00.1403141544350.3690@pobox.suse.cz>
-References: <1394736123-2102-1-git-send-email-simon@mungewell.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754319AbaCNOwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 10:52:18 -0400
+Date: Fri, 14 Mar 2014 15:52:15 +0100
+From: Jan Kara <jack@suse.cz>
+To: Roman Peniaev <r.peniaev@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data
+ integrity write
+Message-ID: <20140314145215.GG18583@quack.suse.cz>
+References: <20140218155945.ee2e22e07fa3b4f242b16a7f@linux-foundation.org>
+ <CACZ9PQV8RsaefFAOt5b-aL33G3CiD+3+fTuW15io6u1DH3XJ6Q@mail.gmail.com>
+ <CACZ9PQUKzsP4mwJSO3c=Z3W2pYr2AME-9j+1Cqg9t8a4T+uQQg@mail.gmail.com>
+ <20140313200119.GB504@quack.suse.cz>
+ <20140313143456.157404fd7f208638ca70e317@linux-foundation.org>
+ <20140314130712.GC12613@htj.dyndns.org>
+ <CACZ9PQUQX-sSNo+z0LB0Tefq9pSHFr6GjKg2tWzdAtw3OYYDsg@mail.gmail.com>
+ <20140314141143.GH12613@htj.dyndns.org>
+ <20140314141511.GF18583@quack.suse.cz>
+ <CACZ9PQXNK=z-bk8BJ8rmU9dJiEAcoHBFBoGDK_QoJ0NQFweufQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACZ9PQXNK=z-bk8BJ8rmU9dJiEAcoHBFBoGDK_QoJ0NQFweufQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Mar 2014, Simon Wood wrote:
-
-> It has been reported that there is a new hardware version of the G27
-> in the 'wild'. This patch add's this new revision so that it can be
-> sent the command to switch to native mode.
+On Fri 14-03-14 23:23:45, Roman Peniaev wrote:
+> On Fri, Mar 14, 2014 at 11:15 PM, Jan Kara <jack@suse.cz> wrote:
+> > On Fri 14-03-14 10:11:43, Tejun Heo wrote:
+> >> > Also, could you please help me do understand how can I guarantee
+> >> > integrity in case of block device with big volatile
+> >> > cache and filesystem, which does not support REQ_FLUSH/FUA?
+> >>
+> >> If a device has a volatile cache but doesn't support flush, it can't
+> >> guarantee integrity.  There's no way for its user to determine or
+> >> force whether certain data is on non-volatile media.  It's an
+> >> inherently broken device.
+> >   I think his problem was that the device does support REQ_FLUSH/FUA but
+> > the filesystem on top of it doesn't issue it properly. That's a filesystem
+> > problem so fix the filesystem... :) Which one is it?
 > 
-> Reported-by: "Ivan Baldo" <ibaldo@adinet.com.uy>
-> Tested-by: "evilcow" <evilcow93@yahoo.com>
-> Signed-off-by: Simon Wood <simon@mungewell.org>
-> ---
->  drivers/hid/hid-lg4ff.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
-> index befe0e3..24883b4 100644
-> --- a/drivers/hid/hid-lg4ff.c
-> +++ b/drivers/hid/hid-lg4ff.c
-> @@ -43,6 +43,7 @@
->  #define G25_REV_MIN 0x22
->  #define G27_REV_MAJ 0x12
->  #define G27_REV_MIN 0x38
-> +#define G27_2_REV_MIN 0x39
->  
->  #define to_hid_device(pdev) container_of(pdev, struct hid_device, dev)
->  
-> @@ -130,6 +131,7 @@ static const struct lg4ff_usb_revision lg4ff_revs[] = {
->  	{DFP_REV_MAJ,  DFP_REV_MIN,  &native_dfp},	/* Driving Force Pro */
->  	{G25_REV_MAJ,  G25_REV_MIN,  &native_g25},	/* G25 */
->  	{G27_REV_MAJ,  G27_REV_MIN,  &native_g27},	/* G27 */
-> +	{G27_REV_MAJ,  G27_2_REV_MIN,  &native_g27},	/* G27 v2 */
->  };
+> take any old school, e.g. ext2 or even better: fat :)
+  Well, for ext2, you can use ext4 kernel driver which takes care of
+REQ_FLUSH properly. For fat, you'll need to fix the fs...
 
-Applied, thanks.
-
+								Honza
 -- 
-Jiri Kosina
-SUSE Labs
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
