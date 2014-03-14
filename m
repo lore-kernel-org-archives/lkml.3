@@ -1,192 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005AbaCNVDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:03:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3989 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753732AbaCNVC7 convert rfc822-to-8bit (ORCPT
+	id S1756157AbaCNVEM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:04:12 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:60340 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756016AbaCNVEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:02:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,657,1389772800"; 
-   d="scan'208";a="498885059"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "Zheng, Lv" <lv.zheng@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Len Brown" <lenb@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: ACPICA 20140214 auto-serialize weirds my machine...
-Thread-Topic: ACPICA 20140214 auto-serialize weirds my machine...
-Thread-Index: AQHPP58qJGgIn67g10eWtMCYXVeqCZrhEhOQ
-Date: Fri, 14 Mar 2014 21:02:56 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E37C7F9918@ORSMSX103.amr.corp.intel.com>
-References: <14866.1394813101@turing-police.cc.vt.edu>
-In-Reply-To: <14866.1394813101@turing-police.cc.vt.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 14 Mar 2014 17:04:09 -0400
+From: dirk.brandewie@gmail.com
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, rjw@rjwysocki.net, patrick.marlier@gmail.com,
+        dirk.brandewie@gmail.com, Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: [PATCH v2 1/2] cpufreq: Add exit_prepare callback to cpufreq_driver interface
+Date: Fri, 14 Mar 2014 14:03:56 -0700
+Message-Id: <1394831037-15553-2-git-send-email-dirk.j.brandewie@intel.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com>
+References: <16035918.jZXKnQ3yiq@vostro.rjw.lan>
+ <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
+This callback allows the driver to do clean up before the CPU is
+completely down and its state cannot be modified.  This is used
+by the intel_pstate driver to reduce the requested P state prior to
+the core going away.  This is required because the requested P state
+of the offline core is used to select the package P state. This
+effectively sets the floor package P state to the requested P state on
+the offline core.
 
-> -----Original Message-----
-> From: Valdis Kletnieks [mailto:Valdis.Kletnieks@vt.edu]
-> Sent: Friday, March 14, 2014 9:05 AM
-> To: Zheng, Lv; Wysocki, Rafael J; Moore, Robert; Len Brown
-> Cc: linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org
-> Subject: ACPICA 20140214 auto-serialize weirds my machine...
-> 
-> Surprisingly enough, this hasn't seemed to have bitten many Linux people
-> yet, Google only finds a BSD thread (where the same ACPICA code is in
-> use):
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+---
+ Documentation/cpu-freq/cpu-drivers.txt | 8 +++++++-
+ drivers/cpufreq/cpufreq.c              | 3 +++
+ include/linux/cpufreq.h                | 1 +
+ 3 files changed, 11 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
+index 8b1a445..79def80 100644
+--- a/Documentation/cpu-freq/cpu-drivers.txt
++++ b/Documentation/cpu-freq/cpu-drivers.txt
+@@ -61,7 +61,13 @@ target_index		-	See below on the differences.
+ 
+ And optionally
+ 
+-cpufreq_driver.exit -		A pointer to a per-CPU cleanup function.
++cpufreq_driver.exit -		A pointer to a per-CPU cleanup
++		    		function called during CPU_POST_DEAD
++		    		phase of cpu hotplug process.
++
++cpufreq_driver.stop -		A pointer to a per-CPU stop function
++			    	called during CPU_DOWN_PREPARE phase of
++				cpu hotplug process.
+ 
+ cpufreq_driver.resume -		A pointer to a per-CPU resume function
+ 				which is called with interrupts disabled
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index cf485d9..0d430d7 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1338,6 +1338,9 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+ 		}
+ 	}
+ 
++	if (cpufreq_driver->stop)
++		cpufreq_driver->stop(policy);
++
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 4d89e0e..ff8db19 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -224,6 +224,7 @@ struct cpufreq_driver {
+ 	int	(*bios_limit)	(int cpu, unsigned int *limit);
+ 
+ 	int	(*exit)		(struct cpufreq_policy *policy);
++	int	(*stop)		(struct cpufreq_policy *policy);
+ 	int	(*suspend)	(struct cpufreq_policy *policy);
+ 	int	(*resume)	(struct cpufreq_policy *policy);
+ 	struct freq_attr	**attr;
+-- 
+1.8.3.1
 
-Yes, and the reason that it is rare to see this error is because the problem is related to the use of the ASL Sync Level mechanism, which is rarely used.
-
-Bob
-
-
-
-
-
-> 
-> http://comments.gmane.org/gmane.os.dragonfly-bsd.user/1817
-> 
-> I found this, but haven't tried it yet:
-> 
-> commit 5f1cb4a92e4c4aabd139ff9ca1e11c0e2db2ac59
-> Author: Lv Zheng <lv.zheng@intel.com>
-> Date:   Wed Feb 26 10:32:01 2014 +0800
-> 
->     ACPICA: Remove global option to serialize all control methods.
-> 
->     With the addition of the auto-serialization feature, this option
->     is obsolete and is completely removed. Lv Zheng.
-> 
->     This patch also updates acpi_serialize kernel parameter using the
->     new auto-serialization feature - acpi_gbl_auto_serialize_methods.
-> 
-> This looks like a user nightmare waiting to happen, because:
-> 
-> -   	acpi_serialize	[HW,ACPI] force serialization of AML methods
-> +	acpi_serialize=	[HW,ACPI] configure auto-serialization of AML
-> methods
-> 
-> Re-using a kernel parameter name with different semantics is just asking
-> for trouble.
-> 
-> I get this in my dmesg, and then I end up with all sorts of ACPI-related
-> weirdness - everything from 4 or 5 temperature sensors evaporating to it
-> claiming that my laptop doesn't have a battery bay (it may also be related
-> to an issue I'm seeing with multiple graphics monitors as well, but I
-> haven't verified that yet).
-> 
-> We're going to need a better way to deal with this before it gets to
-> mainline....
-> 
-> [    0.119344] ACPI: Executed 1 blocks of module-level executable AML code
-> [    0.135282] ACPI Error: Cannot acquire Mutex for method [SNVC], current
-> SyncLevel is too large (1) (20140214/dsmethod-362)
-> [    0.135288] ACPI Error: Method parse/execution failed [\SMBF] (Node
-> ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.135298] ACPI Error: Method parse/execution failed [\GENS] (Node
-> ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.135307] ACPI Error: Method parse/execution failed [\EISC] (Node
-> ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.135320] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.135328] ACPI Error: Method parse/execution failed [\ECRB] (Node
-> ffff88012d02d5d8), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.135336] ACPI Error: Method parse/execution failed [\ECG5] (Node
-> ffff88012d02d740), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.135343] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0.LPCB.EINI] (Node ffff88012d02db00), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.135351] ACPI Error: Method parse/execution failed [\EV3_] (Node
-> ffff88012d0314c0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.135359] ACPI Error: Method parse/execution failed [\_SB_.PCI0._INI]
-> (Node ffff88012d026920), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.135574] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
-> [    0.136283] ACPI: SSDT 0x00000000CE789598 000523 (v01 PmRef  Cpu0Cst
-> 00003001 INTL 20051117)
-> [    0.138312] ACPI: Dynamic OEM Table Load:
-> [    0.138316] ACPI: SSDT 0x0000000000000000 000523 (v01 PmRef  Cpu0Cst
-> 00003001 INTL 20051117)
-> [    0.141483] ACPI: SSDT 0x00000000CE78AA98 000303 (v01 PmRef  ApIst
-> 00003000 INTL 20051117)
-> [    0.143683] ACPI: Dynamic OEM Table Load:
-> [    0.143687] ACPI: SSDT 0x0000000000000000 000303 (v01 PmRef  ApIst
-> 00003000 INTL 20051117)
-> [    0.146215] ACPI: SSDT 0x00000000CE790C18 000119 (v01 PmRef  ApCst
-> 00003000 INTL 20051117)
-> [    0.148279] ACPI: Dynamic OEM Table Load:
-> [    0.148282] ACPI: SSDT 0x0000000000000000 000119 (v01 PmRef  ApCst
-> 00003000 INTL 20051117)
-> [    0.152678] ACPI Error: Cannot acquire Mutex for method [SNVC], current
-> SyncLevel is too large (1) (20140214/dsmethod-362)
-> [    0.152684] ACPI Error: Method parse/execution failed [\SMBF] (Node
-> ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.152693] ACPI Error: Method parse/execution failed [\GENS] (Node
-> ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.152702] ACPI Error: Method parse/execution failed [\EISC] (Node
-> ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.152714] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.152722] ACPI Error: Method parse/execution failed [\ECBT] (Node
-> ffff88012d02d588), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.152730] ACPI Error: Method parse/execution failed [\ECG3] (Node
-> ffff88012d02d6c8), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.152737] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0.LPCB.ECDV.ECIN] (Node ffff88012d02d3d0), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.152745] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0.LPCB.ECDV._REG] (Node ffff88012d02d3f8), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.152818] ACPI: Interpreter enabled
-> [    0.152828] ACPI: (supports S0)
-> [    0.152830] ACPI: Using IOAPIC for interrupt routing
-> [    0.152883] PCI: Using host bridge windows from ACPI; if necessary, use
-> "pci=nocrs" and report a bug
-> [    0.156479] ACPI Error: Cannot acquire Mutex for method [SNVC], current
-> SyncLevel is too large (1) (20140214/dsmethod-362)
-> [    0.156485] ACPI Error: Method parse/execution failed [\SMBF] (Node
-> ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.156494] ACPI Error: Method parse/execution failed [\GENS] (Node
-> ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.156504] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0.LPCB.UAR1._STA] (Node ffff88012d02fb28), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.156666] ACPI Error: Cannot acquire Mutex for method [SNVC], current
-> SyncLevel is too large (1) (20140214/dsmethod-362)
-> [    0.156671] ACPI Error: Method parse/execution failed [\SMBF] (Node
-> ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.156680] ACPI Error: Method parse/execution failed [\GENS] (Node
-> ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.156689] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0.LPCB.LPTE.CLPS] (Node ffff88012d02fcb8), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.156702] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0.LPCB.LPTE._STA] (Node ffff88012d02fce0), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.162229] ACPI Error: Cannot acquire Mutex for method [SNVC], current
-> SyncLevel is too large (1) (20140214/dsmethod-362)
-> [    0.162234] ACPI Error: Method parse/execution failed [\SMBF] (Node
-> ffff88012d026ec0), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.162244] ACPI Error: Method parse/execution failed [\GENS] (Node
-> ffff88012d026e70), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.162254] ACPI Error: Method parse/execution failed [\EISC] (Node
-> ffff88012d02d560), AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> 
-> (you get the idea.  I get a total of 172 'ACPI Error:' messages before I
-> get to a single-user prompt)
