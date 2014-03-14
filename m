@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627AbaCNVaw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:30:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54049 "EHLO
+	id S1756608AbaCNVav (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:30:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54017 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756315AbaCNVac (ORCPT
+	with ESMTP id S1756218AbaCNVa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:30:32 -0400
+	Fri, 14 Mar 2014 17:30:26 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 12/16] perf symbols: Introduce thread__find_cpumode_addr_location
-Date: Fri, 14 Mar 2014 18:30:06 -0300
-Message-Id: <1394832610-17818-13-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Jason Low <jason.low2@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Waiman Long <Waiman.Long@hp.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 02/16] perf bench: Add futex-wake microbenchmark
+Date: Fri, 14 Mar 2014 18:29:56 -0300
+Message-Id: <1394832610-17818-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1394832610-17818-1-git-send-email-acme@infradead.org>
 References: <1394832610-17818-1-git-send-email-acme@infradead.org>
@@ -29,128 +28,309 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-Its one level up thread__find_addr_location, where it will look in
-different domains for a sample: user, kernel, hypervisor, etc.
+Block a bunch of threads on a futex and wake them up, N at a time.
 
-Will soon be used by a patchkit by Andi Kleen.
+This program is particularly useful to measure the latency of nthread
+wakeups in non-error situations:  all waiters are queued and all wake
+calls wakeup one or more tasks.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
+An example run:
+
+  $ perf bench futex wake -t 512 -r 100
+  Run summary [PID 27823]: blocking on 512 threads (at futex 0x7e10d4), waking up 1 at a time.
+
+  [Run 1]: Wokeup 512 of 512 threads in 6.0080 ms
+  [Run 2]: Wokeup 512 of 512 threads in 5.2280 ms
+  [Run 3]: Wokeup 512 of 512 threads in 4.8300 ms
+  ...
+  [Run 100]: Wokeup 512 of 512 threads in 5.0100 ms
+  Wokeup 512 of 512 threads in 5.0109 ms (+-2.25%)
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Acked-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jason Low <jason.low2@hp.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-so6nxkh7xj48bc5kq4jpj991@git.kernel.org
+Cc: Scott J Norton <scott.norton@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Link: http://lkml.kernel.org/r/1387081917-9102-3-git-send-email-davidlohr@hp.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/machine.c | 33 ++++++++-------------------------
- tools/perf/util/thread.c  | 21 +++++++++++++++++++++
- tools/perf/util/thread.h  |  5 +++++
- 3 files changed, 34 insertions(+), 25 deletions(-)
+ tools/perf/Makefile.perf      |   1 +
+ tools/perf/bench/bench.h      |   1 +
+ tools/perf/bench/futex-wake.c | 201 ++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/bench/futex.h      |  10 +++
+ tools/perf/builtin-bench.c    |   1 +
+ 5 files changed, 214 insertions(+)
+ create mode 100644 tools/perf/bench/futex-wake.c
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 813e94e7cf29..a6799538069c 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1184,39 +1184,22 @@ static bool symbol__match_regex(struct symbol *sym, regex_t *regex)
- 	return 0;
- }
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 54ae547b4bc4..6fa5d8b74635 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -427,6 +427,7 @@ endif
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
+ BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
++BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
  
--static const u8 cpumodes[] = {
--	PERF_RECORD_MISC_USER,
--	PERF_RECORD_MISC_KERNEL,
--	PERF_RECORD_MISC_GUEST_USER,
--	PERF_RECORD_MISC_GUEST_KERNEL
--};
--#define NCPUMODES (sizeof(cpumodes)/sizeof(u8))
--
- static void ip__resolve_ams(struct machine *machine, struct thread *thread,
- 			    struct addr_map_symbol *ams,
- 			    u64 ip)
- {
- 	struct addr_location al;
--	size_t i;
--	u8 m;
+ BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
+diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
+index 34edb5c34db3..6ac3f1d083cc 100644
+--- a/tools/perf/bench/bench.h
++++ b/tools/perf/bench/bench.h
+@@ -32,6 +32,7 @@ extern int bench_mem_memcpy(int argc, const char **argv,
+ 			    const char *prefix __maybe_unused);
+ extern int bench_mem_memset(int argc, const char **argv, const char *prefix);
+ extern int bench_futex_hash(int argc, const char **argv, const char *prefix);
++extern int bench_futex_wake(int argc, const char **argv, const char *prefix);
  
- 	memset(&al, 0, sizeof(al));
-+	/*
-+	 * We cannot use the header.misc hint to determine whether a
-+	 * branch stack address is user, kernel, guest, hypervisor.
-+	 * Branches may straddle the kernel/user/hypervisor boundaries.
-+	 * Thus, we have to try consecutively until we find a match
-+	 * or else, the symbol is unknown
-+	 */
-+	thread__find_cpumode_addr_location(thread, machine, MAP__FUNCTION, ip, &al);
- 
--	for (i = 0; i < NCPUMODES; i++) {
--		m = cpumodes[i];
--		/*
--		 * We cannot use the header.misc hint to determine whether a
--		 * branch stack address is user, kernel, guest, hypervisor.
--		 * Branches may straddle the kernel/user/hypervisor boundaries.
--		 * Thus, we have to try consecutively until we find a match
--		 * or else, the symbol is unknown
--		 */
--		thread__find_addr_location(thread, machine, m, MAP__FUNCTION,
--				ip, &al);
--		if (al.map)
--			goto found;
--	}
--found:
- 	ams->addr = ip;
- 	ams->al_addr = al.addr;
- 	ams->sym = al.sym;
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 0358882c8910..3ce0498bdae6 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -142,3 +142,24 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
- 
- 	return 0;
- }
+ #define BENCH_FORMAT_DEFAULT_STR	"default"
+ #define BENCH_FORMAT_DEFAULT		0
+diff --git a/tools/perf/bench/futex-wake.c b/tools/perf/bench/futex-wake.c
+new file mode 100644
+index 000000000000..d096169b161e
+--- /dev/null
++++ b/tools/perf/bench/futex-wake.c
+@@ -0,0 +1,201 @@
++/*
++ * Copyright (C) 2013  Davidlohr Bueso <davidlohr@hp.com>
++ *
++ * futex-wake: Block a bunch of threads on a futex and wake'em up, N at a time.
++ *
++ * This program is particularly useful to measure the latency of nthread wakeups
++ * in non-error situations:  all waiters are queued and all wake calls wakeup
++ * one or more tasks, and thus the waitqueue is never empty.
++ */
 +
-+void thread__find_cpumode_addr_location(struct thread *thread,
-+					struct machine *machine,
-+					enum map_type type, u64 addr,
-+					struct addr_location *al)
++#include "../perf.h"
++#include "../util/util.h"
++#include "../util/stat.h"
++#include "../util/parse-options.h"
++#include "../util/header.h"
++#include "bench.h"
++#include "futex.h"
++
++#include <err.h>
++#include <stdlib.h>
++#include <sys/time.h>
++#include <pthread.h>
++
++/* all threads will block on the same futex */
++static u_int32_t futex1 = 0;
++
++/*
++ * How many wakeups to do at a time.
++ * Default to 1 in order to make the kernel work more.
++ */
++static unsigned int nwakes = 1;
++
++/*
++ * There can be significant variance from run to run,
++ * the more repeats, the more exact the overall avg and
++ * the better idea of the futex latency.
++ */
++static unsigned int repeat = 10;
++
++pthread_t *worker;
++static bool done = 0, silent = 0;
++static pthread_mutex_t thread_lock;
++static pthread_cond_t thread_parent, thread_worker;
++static struct stats waketime_stats, wakeup_stats;
++static unsigned int ncpus, threads_starting, nthreads = 0;
++
++static const struct option options[] = {
++	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
++	OPT_UINTEGER('w', "nwakes",  &nwakes,   "Specify amount of threads to wake at once"),
++	OPT_UINTEGER('r', "repeat",  &repeat,   "Specify amount of times to repeat the run"),
++	OPT_BOOLEAN( 's', "silent",  &silent,   "Silent mode: do not display data/details"),
++	OPT_END()
++};
++
++static const char * const bench_futex_wake_usage[] = {
++	"perf bench futex wake <options>",
++	NULL
++};
++
++static void *workerfn(void *arg __maybe_unused)
 +{
-+	size_t i;
-+	const u8 const cpumodes[] = {
-+		PERF_RECORD_MISC_USER,
-+		PERF_RECORD_MISC_KERNEL,
-+		PERF_RECORD_MISC_GUEST_USER,
-+		PERF_RECORD_MISC_GUEST_KERNEL
-+	};
++	pthread_mutex_lock(&thread_lock);
++	threads_starting--;
++	if (!threads_starting)
++		pthread_cond_signal(&thread_parent);
++	pthread_cond_wait(&thread_worker, &thread_lock);
++	pthread_mutex_unlock(&thread_lock);
 +
-+	for (i = 0; i < ARRAY_SIZE(cpumodes); i++) {
-+		thread__find_addr_location(thread, machine, cpumodes[i], type,
-+					   addr, al);
-+		if (al->map)
-+			break;
++	futex_wait(&futex1, 0, NULL, FUTEX_PRIVATE_FLAG);
++	return NULL;
++}
++
++static void print_summary(void)
++{
++	double waketime_avg = avg_stats(&waketime_stats);
++	double waketime_stddev = stddev_stats(&waketime_stats);
++	unsigned int wakeup_avg = avg_stats(&wakeup_stats);
++
++	printf("Wokeup %d of %d threads in %.4f ms (+-%.2f%%)\n",
++	       wakeup_avg,
++	       nthreads,
++	       waketime_avg/1e3,
++	       rel_stddev_stats(waketime_stddev, waketime_avg));
++}
++
++static void block_threads(pthread_t *w,
++			  pthread_attr_t thread_attr)
++{
++	cpu_set_t cpu;
++	unsigned int i;
++
++	threads_starting = nthreads;
++
++	/* create and block all threads */
++	for (i = 0; i < nthreads; i++) {
++		CPU_ZERO(&cpu);
++		CPU_SET(i % ncpus, &cpu);
++
++		if (pthread_attr_setaffinity_np(&thread_attr, sizeof(cpu_set_t), &cpu))
++			err(EXIT_FAILURE, "pthread_attr_setaffinity_np");
++
++		if (pthread_create(&w[i], &thread_attr, workerfn, NULL))
++			err(EXIT_FAILURE, "pthread_create");
 +	}
 +}
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 5b856bf942e1..9a070743270c 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -58,6 +58,11 @@ void thread__find_addr_location(struct thread *thread, struct machine *machine,
- 				u8 cpumode, enum map_type type, u64 addr,
- 				struct addr_location *al);
- 
-+void thread__find_cpumode_addr_location(struct thread *thread,
-+					struct machine *machine,
-+					enum map_type type, u64 addr,
-+					struct addr_location *al);
 +
- static inline void *thread__priv(struct thread *thread)
- {
- 	return thread->priv;
++static void toggle_done(int sig __maybe_unused,
++			siginfo_t *info __maybe_unused,
++			void *uc __maybe_unused)
++{
++	done = true;
++}
++
++int bench_futex_wake(int argc, const char **argv,
++		     const char *prefix __maybe_unused)
++{
++	int ret = 0;
++	unsigned int i, j;
++	struct sigaction act;
++	pthread_attr_t thread_attr;
++
++	argc = parse_options(argc, argv, options, bench_futex_wake_usage, 0);
++	if (argc) {
++		usage_with_options(bench_futex_wake_usage, options);
++		exit(EXIT_FAILURE);
++	}
++
++	ncpus = sysconf(_SC_NPROCESSORS_ONLN);
++
++	sigfillset(&act.sa_mask);
++	act.sa_sigaction = toggle_done;
++	sigaction(SIGINT, &act, NULL);
++
++	if (!nthreads)
++		nthreads = ncpus;
++
++	worker = calloc(nthreads, sizeof(*worker));
++	if (!worker)
++		err(EXIT_FAILURE, "calloc");
++
++	printf("Run summary [PID %d]: blocking on %d threads (at futex %p), "
++	       "waking up %d at a time.\n\n",
++	       getpid(), nthreads, &futex1, nwakes);
++
++	init_stats(&wakeup_stats);
++	init_stats(&waketime_stats);
++	pthread_attr_init(&thread_attr);
++	pthread_mutex_init(&thread_lock, NULL);
++	pthread_cond_init(&thread_parent, NULL);
++	pthread_cond_init(&thread_worker, NULL);
++
++	for (j = 0; j < repeat && !done; j++) {
++		unsigned int nwoken = 0;
++		struct timeval start, end, runtime;
++
++		/* create, launch & block all threads */
++		block_threads(worker, thread_attr);
++
++		/* make sure all threads are already blocked */
++		pthread_mutex_lock(&thread_lock);
++		while (threads_starting)
++			pthread_cond_wait(&thread_parent, &thread_lock);
++		pthread_cond_broadcast(&thread_worker);
++		pthread_mutex_unlock(&thread_lock);
++
++		usleep(100000);
++
++		/* Ok, all threads are patiently blocked, start waking folks up */
++		gettimeofday(&start, NULL);
++		while (nwoken != nthreads)
++			nwoken += futex_wake(&futex1, nwakes, FUTEX_PRIVATE_FLAG);
++		gettimeofday(&end, NULL);
++		timersub(&end, &start, &runtime);
++
++		update_stats(&wakeup_stats, nwoken);
++		update_stats(&waketime_stats, runtime.tv_usec);
++
++		if (!silent) {
++			printf("[Run %d]: Wokeup %d of %d threads in %.4f ms\n",
++			       j + 1, nwoken, nthreads, runtime.tv_usec/1e3);
++		}
++
++		for (i = 0; i < nthreads; i++) {
++			ret = pthread_join(worker[i], NULL);
++			if (ret)
++				err(EXIT_FAILURE, "pthread_join");
++		}
++
++	}
++
++	/* cleanup & report results */
++	pthread_cond_destroy(&thread_parent);
++	pthread_cond_destroy(&thread_worker);
++	pthread_mutex_destroy(&thread_lock);
++	pthread_attr_destroy(&thread_attr);
++
++	print_summary();
++
++	free(worker);
++	return ret;
++}
+diff --git a/tools/perf/bench/futex.h b/tools/perf/bench/futex.h
+index 7d0bda543e3d..6ac45093fac4 100644
+--- a/tools/perf/bench/futex.h
++++ b/tools/perf/bench/futex.h
+@@ -45,4 +45,14 @@ futex_wait(u_int32_t *uaddr, u_int32_t val, struct timespec *timeout, int opflag
+ 	return futex(uaddr, FUTEX_WAIT, val, timeout, NULL, 0, opflags);
+ }
+ 
++/**
++ * futex_wake() - wake one or more tasks blocked on uaddr
++ * @nr_wake:	wake up to this many tasks
++ */
++static inline int
++futex_wake(u_int32_t *uaddr, int nr_wake, int opflags)
++{
++	return futex(uaddr, FUTEX_WAKE, nr_wake, NULL, NULL, 0, opflags);
++}
++
+ #endif /* _FUTEX_H */
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index a8b0138fc6a0..743a30a8baa0 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -57,6 +57,7 @@ static struct bench mem_benchmarks[] = {
+ 
+ static struct bench futex_benchmarks[] = {
+ 	{ "hash",	"Benchmark for futex hash table",               bench_futex_hash	},
++	{ "wake",	"Benchmark for futex wake calls",               bench_futex_wake	},
+ 	{ "all",	"Test all futex benchmarks",			NULL			},
+ 	{ NULL,		NULL,						NULL			}
+ };
 -- 
 1.8.1.4
 
