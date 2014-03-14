@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303AbaCNRPU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 13:15:20 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:28287 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756272AbaCNRPP (ORCPT
+	id S1756322AbaCNRRP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 13:17:15 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:40277 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755975AbaCNRRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 13:15:15 -0400
-Date: Fri, 14 Mar 2014 17:14:57 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
-Message-ID: <20140314171457.GK18126@arm.com>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
- <1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 14 Mar 2014 13:17:13 -0400
+Message-ID: <1394817430.31499.216.camel@bobble.lax.corp.google.com>
+Subject: Re: [PATCH] block:  Force sector and nr_sects to device alignment
+ and granularity.
+From: Frank Mayhar <fmayhar@google.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Theodore Tso <tytso@google.com>
+Date: Fri, 14 Mar 2014 10:17:10 -0700
+In-Reply-To: <yq1d2hq27jk.fsf@sermon.lab.mkp.net>
+References: <1394474492.31499.177.camel@bobble.lax.corp.google.com>
+	 <x49wqg0bwb4.fsf@segfault.boston.devel.redhat.com>
+	 <1394553778.31499.180.camel@bobble.lax.corp.google.com>
+	 <x491ty71dox.fsf@segfault.boston.devel.redhat.com>
+	 <yq1d2hq27jk.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 03:34:18PM +0000, Liviu Dudau wrote:
-> --- /dev/null
-> +++ b/arch/arm64/kernel/pci.c
-[...]
-> +int pci_register_io_range(phys_addr_t address, resource_size_t size)
-[...]
-> +unsigned long pci_address_to_pio(phys_addr_t address)
-[...]
-> +void pcibios_fixup_bus(struct pci_bus *bus)
-[ actually most of this file ]
+On Wed, 2014-03-12 at 21:47 -0400, Martin K. Petersen wrote:
+> I'm no big fan of dropping information.
+> 
+> My original intent with the discard granularity and alignment was to
+> allow filesystems to use them to influence block allocation and layout.
+> Not to affect how we issue commands at runtime.
+> 
+> Since a storage device is free to ignore all or parts of any discard
+> request I'd consider it somewhat broken if it actually complained.
+> Especially so since the relevant knobs in the standard that we key off
+> of are performance recommendations and not requirements that commands
+> must adhere to.
 
-Maybe it was raised before already but can we have __weak generic
-definitions of these functions? They don't seem to be arm64 specific in
-any way.
+Well, in this particular case the driver is filling in the relevant
+information (alignment and granularity) and then complaining later that
+that information has been ignored.  As I intimated earlier, it seems a
+little odd to allow the driver to specify the information, only to
+ignore it completely when it's time to actually use it.
 
+Further, in my opinion this is less "dropping information" than it is
+keeping information that would be dropped by the driver itself; were it
+not for this adjustment, the driver would get the request, complain, and
+drop it completely.  This way, as much of the request as possible is
+preserved while still honoring the constraints given by the driver.
 -- 
-Catalin
+Frank Mayhar
+310-460-4042
+
