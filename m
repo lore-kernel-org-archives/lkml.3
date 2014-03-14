@@ -1,64 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428AbaCNSeI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 14:34:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756384AbaCNSeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 14:34:03 -0400
-Date: Fri, 14 Mar 2014 14:33:49 -0400
-From: Dave Jones <davej@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] improve_stack: make stack dump output useful again
-Message-ID: <20140314183349.GA3889@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Kees Cook <keescook@chromium.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
- <CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
- <5321CBDA.1060705@oracle.com>
- <CA+55aFwDKSKyxC4rTBiFMRVr6xYtL96ZYCQqNSVLJV0-=FLTUg@mail.gmail.com>
- <20140313231227.GA32178@redhat.com>
- <CAGXu5jLE6WHCwZVcMSUwQAa3=DW1LsxGd_1aGo8SzLpk8jC-xA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jLE6WHCwZVcMSUwQAa3=DW1LsxGd_1aGo8SzLpk8jC-xA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756369AbaCNSdz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 14:33:55 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:62944 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756308AbaCNSdu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 14:33:50 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: [PATCH 3/3] vrange: Add page purging logic & SIGBUS trap
+Date: Fri, 14 Mar 2014 11:33:33 -0700
+Message-Id: <1394822013-23804-4-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
+References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 11:31:11AM -0700, Kees Cook wrote:
- > On Thu, Mar 13, 2014 at 4:12 PM, Dave Jones <davej@redhat.com> wrote:
- > > On Thu, Mar 13, 2014 at 03:03:41PM -0700, Linus Torvalds wrote:
- > >
- > >  > You need to look at the *symbol* number. In this output:
- > >  >
- > >  >      [<ffffffff810020c2>] do_one_initcall+0xc2/0x1e0
- > >  >
- > >  > that "ffffffff810020c2" is crap, and is going away. The address that
- > >  > is meaningful and valid is the "do_one_initcall+0xc2" part.
- > >  >
- > >  > *That* is the part you'd use to parse in user space.
- > >  >
- > >  > Try it today with the CONFIG_RANDOMIZE_BASE option to see. Using the
- > >  > hex number doesn't *work*.
- > >
- > > That reminds me, perf top is still busted when this option is enabled.
- > 
- > Hrm, works for me. I'm not very familiar with what to expect, but
- > comparing output between kaslr boot and nokaslr boot, it looks the
- > same to me.
+Finally, this patch adds the hooks in the vmscan logic to discard volatile
+pages and mark their pte as purged. With this, volatile pages will be
+purged under pressure, and their ptes swap entry's marked. If the
+purged pages are accessed before being marked non-volatile, we catch this
+and send a SIGBUS.
 
-I don't get kernel symbols resolved at all when it's enabled
-Disabling the config option makes them come back again.
-I didn't try nokaslr.
+This is a simplified implementation that uses logic from Minchan's earlier
+efforts, so credit to Minchan for his work.
 
-	Dave
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Robert Love <rlove@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Cc: Neil Brown <neilb@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mike Hommey <mh@glandium.org>
+Cc: Taras Glek <tglek@mozilla.com>
+Cc: Dhaval Giani <dgiani@mozilla.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/vrange.h |  2 ++
+ mm/internal.h          |  2 --
+ mm/memory.c            | 21 +++++++++++
+ mm/rmap.c              |  5 +++
+ mm/vmscan.c            | 12 +++++++
+ mm/vrange.c            | 97 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 137 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/vrange.h b/include/linux/vrange.h
+index c4a1616..b18551f 100644
+--- a/include/linux/vrange.h
++++ b/include/linux/vrange.h
+@@ -7,6 +7,8 @@
+ #define VRANGE_NONVOLATILE 0
+ #define VRANGE_VOLATILE 1
+ 
++extern int discard_vpage(struct page *page);
++
+ static inline swp_entry_t swp_entry_mk_vrange_purged(void)
+ {
+ 	return swp_entry(SWP_VRANGE_PURGED, 0);
+diff --git a/mm/internal.h b/mm/internal.h
+index 29e1e76..ea66bf9 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -225,10 +225,8 @@ static inline void mlock_migrate_page(struct page *newpage, struct page *page)
+ 
+ extern pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma);
+ 
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ extern unsigned long vma_address(struct page *page,
+ 				 struct vm_area_struct *vma);
+-#endif
+ #else /* !CONFIG_MMU */
+ static inline int mlocked_vma_newpage(struct vm_area_struct *v, struct page *p)
+ {
+diff --git a/mm/memory.c b/mm/memory.c
+index 22dfa61..7ea9712 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -60,6 +60,7 @@
+ #include <linux/migrate.h>
+ #include <linux/string.h>
+ #include <linux/dma-debug.h>
++#include <linux/vrange.h>
+ 
+ #include <asm/io.h>
+ #include <asm/pgalloc.h>
+@@ -3643,6 +3644,8 @@ static int handle_pte_fault(struct mm_struct *mm,
+ 
+ 	entry = *pte;
+ 	if (!pte_present(entry)) {
++		swp_entry_t vrange_entry;
++retry:
+ 		if (pte_none(entry)) {
+ 			if (vma->vm_ops) {
+ 				if (likely(vma->vm_ops->fault))
+@@ -3652,6 +3655,24 @@ static int handle_pte_fault(struct mm_struct *mm,
+ 			return do_anonymous_page(mm, vma, address,
+ 						 pte, pmd, flags);
+ 		}
++
++		vrange_entry = pte_to_swp_entry(entry);
++		if (unlikely(entry_is_vrange_purged(vrange_entry))) {
++			if (vma->vm_flags & VM_VOLATILE)
++				return VM_FAULT_SIGBUS;
++
++			/* zap pte */
++			ptl = pte_lockptr(mm, pmd);
++			spin_lock(ptl);
++			if (unlikely(!pte_same(*pte, entry)))
++				goto unlock;
++			flush_cache_page(vma, address, pte_pfn(*pte));
++			ptep_clear_flush(vma, address, pte);
++			pte_unmap_unlock(pte, ptl);
++			goto retry;
++		}
++
++
+ 		if (pte_file(entry))
+ 			return do_nonlinear_fault(mm, vma, address,
+ 					pte, pmd, flags, entry);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index d9d4231..2b6f079 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -728,6 +728,11 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 				referenced++;
+ 		}
+ 		pte_unmap_unlock(pte, ptl);
++		if (vma->vm_flags & VM_VOLATILE) {
++			pra->mapcount = 0;
++			pra->vm_flags |= VM_VOLATILE;
++			return SWAP_FAIL;
++		}
+ 	}
+ 
+ 	if (referenced) {
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a9c74b4..c5c0ee0 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -43,6 +43,7 @@
+ #include <linux/sysctl.h>
+ #include <linux/oom.h>
+ #include <linux/prefetch.h>
++#include <linux/vrange.h>
+ 
+ #include <asm/tlbflush.h>
+ #include <asm/div64.h>
+@@ -683,6 +684,7 @@ enum page_references {
+ 	PAGEREF_RECLAIM,
+ 	PAGEREF_RECLAIM_CLEAN,
+ 	PAGEREF_KEEP,
++	PAGEREF_DISCARD,
+ 	PAGEREF_ACTIVATE,
+ };
+ 
+@@ -703,6 +705,13 @@ static enum page_references page_check_references(struct page *page,
+ 	if (vm_flags & VM_LOCKED)
+ 		return PAGEREF_RECLAIM;
+ 
++	/*
++	 * If volatile page is reached on LRU's tail, we discard the
++	 * page without considering recycle the page.
++	 */
++	if (vm_flags & VM_VOLATILE)
++		return PAGEREF_DISCARD;
++
+ 	if (referenced_ptes) {
+ 		if (PageSwapBacked(page))
+ 			return PAGEREF_ACTIVATE;
+@@ -930,6 +939,9 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		switch (references) {
+ 		case PAGEREF_ACTIVATE:
+ 			goto activate_locked;
++		case PAGEREF_DISCARD:
++			if (may_enter_fs && discard_vpage(page) == 0)
++				goto free_it;
+ 		case PAGEREF_KEEP:
+ 			goto keep_locked;
+ 		case PAGEREF_RECLAIM:
+diff --git a/mm/vrange.c b/mm/vrange.c
+index 844571b..fc9906f 100644
+--- a/mm/vrange.c
++++ b/mm/vrange.c
+@@ -205,3 +205,100 @@ SYSCALL_DEFINE4(vrange, unsigned long, start,
+ out:
+ 	return ret;
+ }
++
++static void try_to_discard_one(struct page *page, struct vm_area_struct *vma)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	pte_t *pte;
++	pte_t pteval;
++	spinlock_t *ptl;
++	unsigned long addr;
++
++	VM_BUG_ON(!PageLocked(page));
++
++	addr = vma_address(page, vma);
++	pte = page_check_address(page, mm, addr, &ptl, 0);
++	if (!pte)
++		return;
++
++	BUG_ON(vma->vm_flags & (VM_SPECIAL|VM_LOCKED|VM_MIXEDMAP|VM_HUGETLB));
++
++	flush_cache_page(vma, addr, page_to_pfn(page));
++	pteval = ptep_clear_flush(vma, addr, pte);
++
++	update_hiwater_rss(mm);
++	if (PageAnon(page))
++		dec_mm_counter(mm, MM_ANONPAGES);
++	else
++		dec_mm_counter(mm, MM_FILEPAGES);
++
++	page_remove_rmap(page);
++	page_cache_release(page);
++
++	set_pte_at(mm, addr, pte,
++				swp_entry_to_pte(swp_entry_mk_vrange_purged()));
++
++	pte_unmap_unlock(pte, ptl);
++	mmu_notifier_invalidate_page(mm, addr);
++
++}
++
++
++static int try_to_discard_anon_vpage(struct page *page)
++{
++	struct anon_vma *anon_vma;
++	struct anon_vma_chain *avc;
++	pgoff_t pgoff;
++
++	anon_vma = page_lock_anon_vma_read(page);
++	if (!anon_vma)
++		return -1;
++
++	pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++	/*
++	 * During interating the loop, some processes could see a page as
++	 * purged while others could see a page as not-purged because we have
++	 * no global lock between parent and child for protecting vrange system
++	 * call during this loop. But it's not a problem because the page is
++	 * not *SHARED* page but *COW* page so parent and child can see other
++	 * data anytime. The worst case by this race is a page was purged
++	 * but couldn't be discarded so it makes unnecessary page fault but
++	 * it wouldn't be severe.
++	 */
++	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
++		struct vm_area_struct *vma = avc->vma;
++
++		if (!(vma->vm_flags & VM_VOLATILE))
++			continue;
++		try_to_discard_one(page, vma);
++	}
++	page_unlock_anon_vma_read(anon_vma);
++	return 0;
++}
++
++
++static int try_to_discard_vpage(struct page *page)
++{
++	if (PageAnon(page))
++		return try_to_discard_anon_vpage(page);
++	return -1;
++}
++
++
++int discard_vpage(struct page *page)
++{
++	VM_BUG_ON(!PageLocked(page));
++	VM_BUG_ON(PageLRU(page));
++
++	if (!try_to_discard_vpage(page)) {
++		if (PageSwapCache(page))
++			try_to_free_swap(page);
++
++		if (page_freeze_refs(page, 1)) {
++			unlock_page(page);
++			return 0;
++		}
++	}
++
++	return 1;
++}
+-- 
+1.8.3.2
 
