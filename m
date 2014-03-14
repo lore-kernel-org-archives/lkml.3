@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769AbaCNViW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:38:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54045 "EHLO
+	id S1756754AbaCNViT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:38:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54057 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756269AbaCNVac (ORCPT
+	with ESMTP id S1756320AbaCNVae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:30:32 -0400
+	Fri, 14 Mar 2014 17:30:34 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/16] perf ui/stdio: Fix invalid output on event group report
-Date: Fri, 14 Mar 2014 18:30:01 -0300
-Message-Id: <1394832610-17818-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 13/16] perf ui hists: Pass evsel to hpp->header/width functions explicitly
+Date: Fri, 14 Mar 2014 18:30:07 -0300
+Message-Id: <1394832610-17818-14-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1394832610-17818-1-git-send-email-acme@infradead.org>
 References: <1394832610-17818-1-git-send-email-acme@infradead.org>
@@ -29,35 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-When some of group member has 0 overhead, it printed previous percentage
-instead of 0.00%.  It's because passing integer 0 as a percent rather
-than double 0.0 so the remaining bits came from garbage.  The TUI and
-GTK don't have this problem since they pass 0.0.
-
-Before:
-
-  # Samples: 845  of event 'anon group { cycles, cache-references, cache-misses }'
-  # Event count (approx.): 174775051
-  #
-  #                 Overhead                               Samples
-  # ........................  ....................................
-  #
-      20.32%   8.58%  73.51%            45          30         138
-       6.87%   6.87%   6.87%            21           0           0
-       5.29%   0.31%   0.31%            10           1           0
-       1.89%   1.89%   1.89%             6           0           0
-       1.76%   1.76%   1.76%             2           0           0
-
-After:
-
-  #                 Overhead                               Samples
-  # ........................  ....................................
-  #
-      20.32%   8.58%  73.51%            45          30         138
-       6.87%   0.00%   0.00%            21           0           0
-       5.29%   0.31%   0.00%            10           1           0
-       1.89%   0.00%   0.00%             6           0           0
-       1.76%   0.00%   0.00%             2           0           0
+Those functions need evsel to investigate event group and it's passed
+via hpp->ptr.  However as it can be missed easily so it's better to
+pass it via an argument IMHO.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>
@@ -67,50 +41,169 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1393809254-4480-2-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1394437440-11609-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/hist.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ tools/perf/builtin-diff.c  |  7 ++++---
+ tools/perf/ui/gtk/hists.c  |  3 +--
+ tools/perf/ui/hist.c       | 24 ++++++++++--------------
+ tools/perf/ui/stdio/hist.c |  5 ++---
+ tools/perf/util/hist.h     |  6 ++++--
+ 5 files changed, 21 insertions(+), 24 deletions(-)
 
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index a77e31246c00..204fffe22532 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -952,8 +952,8 @@ static int hpp__entry_global(struct perf_hpp_fmt *_fmt, struct perf_hpp *hpp,
+ 				 dfmt->header_width, buf);
+ }
+ 
+-static int hpp__header(struct perf_hpp_fmt *fmt,
+-		       struct perf_hpp *hpp)
++static int hpp__header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
++		       struct perf_evsel *evsel __maybe_unused)
+ {
+ 	struct diff_hpp_fmt *dfmt =
+ 		container_of(fmt, struct diff_hpp_fmt, fmt);
+@@ -963,7 +963,8 @@ static int hpp__header(struct perf_hpp_fmt *fmt,
+ }
+ 
+ static int hpp__width(struct perf_hpp_fmt *fmt,
+-		      struct perf_hpp *hpp __maybe_unused)
++		      struct perf_hpp *hpp __maybe_unused,
++		      struct perf_evsel *evsel __maybe_unused)
+ {
+ 	struct diff_hpp_fmt *dfmt =
+ 		container_of(fmt, struct diff_hpp_fmt, fmt);
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 7912dab6e5fb..e395ef9b0ae0 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -165,7 +165,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	struct perf_hpp hpp = {
+ 		.buf		= s,
+ 		.size		= sizeof(s),
+-		.ptr		= hists_to_evsel(hists),
+ 	};
+ 
+ 	nr_cols = 0;
+@@ -192,7 +191,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	col_idx = 0;
+ 
+ 	perf_hpp__for_each_format(fmt) {
+-		fmt->header(fmt, &hpp);
++		fmt->header(fmt, &hpp, hists_to_evsel(hists));
+ 
+ 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
+ 							    -1, ltrim(s),
 diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 78f4c92e9b73..6094562c9523 100644
+index ac39313a3f0c..0f403b83e9d1 100644
 --- a/tools/perf/ui/hist.c
 +++ b/tools/perf/ui/hist.c
-@@ -52,8 +52,15 @@ static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 				 * zero-fill group members in the middle which
- 				 * have no sample
- 				 */
--				ret += print_fn(hpp->buf + ret, hpp->size - ret,
--						fmt, 0);
-+				if (fmt_percent) {
-+					ret += print_fn(hpp->buf + ret,
-+							hpp->size - ret,
-+							fmt, 0.0);
-+				} else {
-+					ret += print_fn(hpp->buf + ret,
-+							hpp->size - ret,
-+							fmt, 0ULL);
-+				}
- 			}
+@@ -118,29 +118,27 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
  
- 			if (fmt_percent)
-@@ -72,8 +79,13 @@ static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 			/*
- 			 * zero-fill group members at last which have no sample
- 			 */
--			ret += print_fn(hpp->buf + ret, hpp->size - ret,
--					fmt, 0);
-+			if (fmt_percent) {
-+				ret += print_fn(hpp->buf + ret, hpp->size - ret,
-+						fmt, 0.0);
-+			} else {
-+				ret += print_fn(hpp->buf + ret, hpp->size - ret,
-+						fmt, 0ULL);
-+			}
- 		}
+ #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
+ static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
+-			       struct perf_hpp *hpp)			\
++			       struct perf_hpp *hpp,			\
++			       struct perf_evsel *evsel)		\
+ {									\
+ 	int len = _min_width;						\
+ 									\
+-	if (symbol_conf.event_group) {					\
+-		struct perf_evsel *evsel = hpp->ptr;			\
+-									\
++	if (symbol_conf.event_group)					\
+ 		len = max(len, evsel->nr_members * _unit_width);	\
+-	}								\
++									\
+ 	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);	\
+ }
+ 
+ #define __HPP_WIDTH_FN(_type, _min_width, _unit_width) 			\
+ static int hpp__width_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
+-			      struct perf_hpp *hpp __maybe_unused)	\
++			      struct perf_hpp *hpp __maybe_unused,	\
++			      struct perf_evsel *evsel)			\
+ {									\
+ 	int len = _min_width;						\
+ 									\
+-	if (symbol_conf.event_group) {					\
+-		struct perf_evsel *evsel = hpp->ptr;			\
+-									\
++	if (symbol_conf.event_group)					\
+ 		len = max(len, evsel->nr_members * _unit_width);	\
+-	}								\
++									\
+ 	return len;							\
+ }
+ 
+@@ -329,15 +327,13 @@ unsigned int hists__sort_list_width(struct hists *hists)
+ 	struct perf_hpp_fmt *fmt;
+ 	struct sort_entry *se;
+ 	int i = 0, ret = 0;
+-	struct perf_hpp dummy_hpp = {
+-		.ptr	= hists_to_evsel(hists),
+-	};
++	struct perf_hpp dummy_hpp;
+ 
+ 	perf_hpp__for_each_format(fmt) {
+ 		if (i)
+ 			ret += 2;
+ 
+-		ret += fmt->width(fmt, &dummy_hpp);
++		ret += fmt->width(fmt, &dummy_hpp, hists_to_evsel(hists));
  	}
- 	return ret;
+ 
+ 	list_for_each_entry(se, &hist_entry__sort_list, list)
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 9bad89228472..d59893edf031 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -379,7 +379,6 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 	struct perf_hpp dummy_hpp = {
+ 		.buf	= bf,
+ 		.size	= sizeof(bf),
+-		.ptr	= hists_to_evsel(hists),
+ 	};
+ 	bool first = true;
+ 	size_t linesz;
+@@ -398,7 +397,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		else
+ 			first = false;
+ 
+-		fmt->header(fmt, &dummy_hpp);
++		fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
+ 		fprintf(fp, "%s", bf);
+ 	}
+ 
+@@ -443,7 +442,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 		else
+ 			first = false;
+ 
+-		width = fmt->width(fmt, &dummy_hpp);
++		width = fmt->width(fmt, &dummy_hpp, hists_to_evsel(hists));
+ 		for (i = 0; i < width; i++)
+ 			fprintf(fp, ".");
+ 	}
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 9e1cada45bb8..0c76bf972736 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -132,8 +132,10 @@ struct perf_hpp {
+ };
+ 
+ struct perf_hpp_fmt {
+-	int (*header)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp);
+-	int (*width)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp);
++	int (*header)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
++		      struct perf_evsel *evsel);
++	int (*width)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
++		     struct perf_evsel *evsel);
+ 	int (*color)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+ 		     struct hist_entry *he);
+ 	int (*entry)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
 -- 
 1.8.1.4
 
