@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218AbaCNKmb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 06:42:31 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:59549 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175AbaCNKm2 (ORCPT
+	id S1754263AbaCNKo3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 06:44:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38279 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753499AbaCNKo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 06:42:28 -0400
-Date: Fri, 14 Mar 2014 10:42:22 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Gabriel Fernandez <gabriel.fernandez@st.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        kernel@stlinux.com, Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: Re: [PATCH 1/5] drivers: input: keyboard: st-keyscan: add keyscan
- driver
-Message-ID: <20140314104222.GB3432@lee--X1>
-References: <1393990772-9567-1-git-send-email-gabriel.fernandez@st.com>
- <1393990772-9567-2-git-send-email-gabriel.fernandez@st.com>
- <20140310114819.GO14976@lee--X1>
- <5322D63D.5030403@st.com>
+	Fri, 14 Mar 2014 06:44:26 -0400
+Date: Fri, 14 Mar 2014 11:44:15 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v1 03/11] perf: Allow for multiple ring buffers per event
+Message-ID: <20140314104415.GS27965@twins.programming.kicks-ass.net>
+References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1391683834-29868-4-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140217143340.GR27965@twins.programming.kicks-ass.net>
+ <530529FC.6080704@intel.com>
+ <87siqqtlv6.fsf@ashishki-desk.ger.corp.intel.com>
+ <20140310172440.GG13302@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5322D63D.5030403@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140310172440.GG13302@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >Sorry for the delay. It was a hectic week last week.
-> >
-> >As promised:
-> >
-> >>This patch adds ST Keyscan driver to use the keypad hw a subset
-> >>of ST boards provide. Specific board setup will be put in the
-> >>given dt.
-> >>
-> >>Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-> >>Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
-> >Are you sure these are in the correct order?
-> ok i change the order
-
-I'm not saying they are in the wrong order, I'm just asking. Who wrote
-the patch? Has it changed since?
-
-> >>+- linux,keymap: The keymap for keys as described in the binding document
-> >>+  devicetree/bindings/input/matrix-keymap.txt.
-> >>+
-> >>+- keypad,num-rows: Number of row lines connected to the keypad controller.
-> >>+
-> >>+- keypad,num-columns: Number of column lines connected to the keypad
-> >>+  controller.
-> >>+
-> >>+- st,debounce_us: Debouncing interval time in microseconds
-> >I'm sure there will be a shared binding for de-bounce.
-> >
-> >If not, there certainly should be.
+On Mon, Mar 10, 2014 at 10:24:40AM -0700, Andi Kleen wrote:
+> > > Wouldn't we have to teach a ton of code how to be IRQ safe for this to
+> > > work?  Just step one: how do we go modifying page tables safely from an
+> > > interrupt?  mm->page_table_lock is a plain non-irq spinlock.
+> > 
+> > Yes, this does look more than just tricky even if we move the bulk of
+> > interrupt code to an irq_work. Peter, are you quite sure this is what we
+> > want to do just for exporting trace buffers to userspace?
 > 
-> you want to refer to "debounce-interval" ?
+> The other big problem is scalability. Even if it was somehow possible
+> to make this scheme work the IPIs for flushing would kill performance 
+> on any multi threaded client.  Given perf is not multi-threaded today, but
+> it doesn't seem a good idea to design the interface assuming no client ever
+> will be.
 
-That sounds more generic, but if it's not documented as such, then
-please consider doing so.
+Well any mmap()ed interface that wants to swap buffers will have this
+same problem.
 
-> >+Example:
-> >+
-> >+keyscan: keyscan@fe4b0000 {
-> >+	compatible = "st,keypad";
-> >Is there any way we can make this more specific to _this_ IP?
-> for my knowledge this IP is the same for stixxxx platform.
-
-So st,stix-keypad, or st,sti4x-keypad?
-
-I'm just thinking about future proofing the architecture. What if ST
-released stj which has a different keypad IP?
-
-> >>+struct keyscan_priv {
-> >>+	void __iomem *base;
-> >>+	int irq;
-> >>+	struct clk *clk;
-> >>+	struct input_dev *input_dev;
-> >>+	struct keypad_platform_data *config;
-> >>+	unsigned int last_state;
-> >>+	u32 keycodes[ST_KEYSCAN_MAXKEYS];
-> >Seems odd to limit this. Can't the information come from DT
-> >i.e. keypad,num-rows and keypad,num-columns?
-> >
-> i 'll rename 'num_out_pads' into 'n_rows' and 'num_in_pads' into
-> 'n_cols'
-
-That's not quite what I meant, I mean can't ST_KEY_MAXKEYS be more
-dynamic and be obtained from (keypad,num-rows * keypad,num-columns)?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+You can restrict the TLB flushing to the threads that poll() on the
+relevant events. This just means other threads will see old/partial
+data, but that shouldn't be a problem as they shouldn't be looking in
+the first place.
