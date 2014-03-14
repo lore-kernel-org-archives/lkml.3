@@ -1,51 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaCNEvQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 00:51:16 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49875 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaCNEvP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 00:51:15 -0400
-Date: Fri, 14 Mar 2014 04:51:05 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: NeilBrown <neilb@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] fs: fix i_writecount on shmem and friends
-Message-ID: <20140314045105.GN18016@ZenIV.linux.org.uk>
-References: <1393859798-1407-1-git-send-email-dh.herrmann@gmail.com>
- <CA+55aFwzBoTc+09jZTGjfTQTfkgZwrN5m09snb+F9inLaDn0OA@mail.gmail.com>
- <20140312181925.GK18016@ZenIV.linux.org.uk>
- <20140313150800.07878c80@notabene.brown>
- <20140313042934.GM18016@ZenIV.linux.org.uk>
- <20140313165541.2b23dc96@notabene.brown>
+	id S1752620AbaCNExA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 00:53:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18481 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751641AbaCNEw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 00:52:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,652,1389772800"; 
+   d="scan'208";a="472098354"
+Date: Fri, 14 Mar 2014 12:54:33 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: performance regression due to commit e82e0561("mm: vmscan: obey
+ proportional scanning requirements for kswapd")
+Message-ID: <20140314045433.GN29270@yliu-dev.sh.intel.com>
+References: <20140218080122.GO26593@yliu-dev.sh.intel.com>
+ <20140312165447.GO10663@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140313165541.2b23dc96@notabene.brown>
+In-Reply-To: <20140312165447.GO10663@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 04:55:41PM +1100, NeilBrown wrote:
-
-> Can we do direct writes from kernel space yet?  If so I'll change the code to
-> do that so that it will work with any filesystem (which supports direct
-> writes).
-
-You can - see __swap_writepage() (mm/page_io.c).  However, that area is
-about to get a lot of massage, so it would make sense to wait a bit...
-
-> (The documentation says we that bitmap files should only be used on ext2 or
-> ext3.  Most people use bitmaps on the raw devices so hopefully the few who
-> have a need for files will read the documentation :-)
+On Wed, Mar 12, 2014 at 04:54:47PM +0000, Mel Gorman wrote:
+> On Tue, Feb 18, 2014 at 04:01:22PM +0800, Yuanhan Liu wrote:
+> > Hi,
+> > 
+> > Commit e82e0561("mm: vmscan: obey proportional scanning requirements for
+> > kswapd") caused a big performance regression(73%) for vm-scalability/
+> > lru-file-readonce testcase on a system with 256G memory without swap.
+> > 
+> > That testcase simply looks like this:
+> >      truncate -s 1T /tmp/vm-scalability.img
+> >      mkfs.xfs -q /tmp/vm-scalability.img
+> >      mount -o loop /tmp/vm-scalability.img /tmp/vm-scalability
+> > 
+> >      SPARESE_FILE="/tmp/vm-scalability/sparse-lru-file-readonce"
+> >      for i in `seq 1 120`; do
+> >          truncate $SPARESE_FILE-$i -s 36G
+> >          timeout --foreground -s INT 300 dd bs=4k if=$SPARESE_FILE-$i of=/dev/null
+> >      done
+> > 
+> >      wait
+> > 
 > 
-> (and yes, I check for FMODE_WRITE)
+> The filename implies that it's a sparse file with no IO but does not say
+> what the truncate function/program/whatever actually does.
 
-Umm...  Where?
+It's actually the /usr/bin/truncate file from coreutils.
+
+> If it's really a
+> sparse file then the dd process should be reading zeros and writing them to
+> NULL without IO. Where are pages being dirtied?
+
+Sorry, my bad. I was wrong and I meant to "the speed of getting new
+pages", but not "the speed of dirtying pages".
+
+> Does the truncate command
+> really create a sparse file or is it something else?
+> 
+> > Actually, it's not the newlly added code(obey proportional scanning)
+> > in that commit caused the regression. But instead, it's the following
+> > change:
+> > +
+> > +               if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
+> > +                       continue;
+> > +
+> > 
+> > 
+> > -               if (nr_reclaimed >= nr_to_reclaim &&
+> > -                   sc->priority < DEF_PRIORITY)
+> > +               if (global_reclaim(sc) && !current_is_kswapd())
+> >                         break;
+> > 
+> > The difference is that we might reclaim more than requested before
+> > in the first round reclaimming(sc->priority == DEF_PRIORITY).
+> > 
+> > So, for a testcase like lru-file-readonce, the dirty rate is fast, and
+> > reclaimming SWAP_CLUSTER_MAX(32 pages) each time is not enough for catching
+> > up the dirty rate. And thus page allocation stalls, and performance drops:
+> > 
+> >    O for e82e0561
+> >    * for parent commit
+> > 
+> >                                 proc-vmstat.allocstall
+> > 
+> >      2e+06 ++---------------------------------------------------------------+
+> >    1.8e+06 O+              O                O               O               |
+> >            |                                                                |
+> >    1.6e+06 ++                                                               |
+> >    1.4e+06 ++                                                               |
+> >            |                                                                |
+> >    1.2e+06 ++                                                               |
+> >      1e+06 ++                                                               |
+> >     800000 ++                                                               |
+> >            |                                                                |
+> >     600000 ++                                                               |
+> >     400000 ++                                                               |
+> >            |                                                                |
+> >     200000 *+..............*................*...............*...............*
+> >          0 ++---------------------------------------------------------------+
+> > 
+> >                                vm-scalability.throughput
+> > 
+> >    2.2e+07 ++---------------------------------------------------------------+
+> >            |                                                                |
+> >      2e+07 *+..............*................*...............*...............*
+> >    1.8e+07 ++                                                               |
+> >            |                                                                |
+> >    1.6e+07 ++                                                               |
+> >            |                                                                |
+> >    1.4e+07 ++                                                               |
+> >            |                                                                |
+> >    1.2e+07 ++                                                               |
+> >      1e+07 ++                                                               |
+> >            |                                                                |
+> >      8e+06 ++              O                O               O               |
+> >            O                                                                |
+> >      6e+06 ++---------------------------------------------------------------+
+> > 
+> > I made a patch which simply keeps reclaimming more if sc->priority == DEF_PRIORITY.
+> > I'm not sure it's the right way to go or not. Anyway, I pasted it here for comments.
+> > 
+> 
+> The impact of the patch is that a direct reclaimer will now scan and
+> reclaim more pages than requested so the unlucky reclaiming process will
+> stall for longer than it should while others make forward progress.
+> 
+> That would explain the difference in allocstall figure as each stall is
+> now doing more work than it did previously. The throughput figure is
+> harder to explain. What is it measuring?
+
+It's just a sum of all dd's output like following:
+
+	18267619328 bytes (18 GB) copied, 299.999 s, 60.9 MB/s
+	4532509+0 records in
+	4532508+0 records out
+	18565152768 bytes (19 GB) copied, 299.999 s, 61.9 MB/s
+	4487453+0 records in
+	...
+
+And as you noticed, the average dd's throughput is about 60 MB/s,
+however, it's about 170 MB/s without this bad commit.
+
+> 
+> Any idea why kswapd is failing to keep up?
+
+I don't know. But, isn't it normal for case like this?
+
+> 
+> I'm not saying the patch is wrong but there appears to be more going on
+> that is explained in the changelog. Is the full source of the benchmark
+> suite available? If so, can you point me to it and the exact commands
+> you use to run the testcase please?
+
+https://github.com/aristeu/vm-scalability/blob/master/case-lru-file-readonce
+
+Where nr_cpu is 120 as I showed in early email.
+
+Thanks.
+
+	--yliu
