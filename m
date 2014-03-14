@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773AbaCNAte (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 20:49:34 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:45078 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620AbaCNAtd (ORCPT
+	id S1754819AbaCNAvA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 20:51:00 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:58432 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254AbaCNAu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 20:49:33 -0400
-Message-ID: <53225217.3070205@gmail.com>
-Date: Fri, 14 Mar 2014 08:49:27 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 13 Mar 2014 20:50:59 -0400
 MIME-Version: 1.0
-To: gxt@mprc.pku.edu.cn
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch/unicore32/kernel/module.c: use __vmalloc_node_range()
- instead of __vmalloc_area()
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <53223A4A.7070408@oracle.com>
+References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
+	<CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
+	<5321CBDA.1060705@oracle.com>
+	<CA+55aFwDKSKyxC4rTBiFMRVr6xYtL96ZYCQqNSVLJV0-=FLTUg@mail.gmail.com>
+	<53222F1A.8090205@oracle.com>
+	<CA+55aFxi5VQFu6_MVaVWhwj+bo-orQUmsKRakr_1Txfu1bEcpg@mail.gmail.com>
+	<53223A4A.7070408@oracle.com>
+Date: Thu, 13 Mar 2014 17:50:58 -0700
+X-Google-Sender-Auth: Z_JKFM2upy6RodEWXmr4FhqqV74
+Message-ID: <CA+55aFwo=eMtS-HQE_WF1M5qHaNAk5co=xPPWwMbaF+ZRCtghA@mail.gmail.com>
+Subject: Re: [RFC] improve_stack: make stack dump output useful again
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__vmalloc_area() has already been removed from upstream kernel, need
-use __vmalloc_node_range() instead of.
+On Thu, Mar 13, 2014 at 4:07 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>
+> I figured that I'll just read it from System.map (and do the math when
+> adding the offset). That should work, right?
 
-The related commit: "d0a2126 mm: unify module_alloc code for vmalloc".
+Yes, although just reading the symbols from the vmlinux file would be
+*much* more convenient, since I know that not everybody saves the
+System.map file (cough cough me). But the vmlinux file you need
+anyway.
 
-The related error (allmodconfig for unicore32):
+So it would actually be much better to use "nm vmlinux" as the source
+of the base information instead, and have just one file you depend on.
 
-    CC      arch/unicore32/kernel/module.o
-  arch/unicore32/kernel/module.c: In function ‘module_alloc’:
-  arch/unicore32/kernel/module.c:34: error: implicit declaration of function ‘__vmalloc_area’
-  arch/unicore32/kernel/module.c:34: warning: return makes pointer from integer without a cast
-  make[1]: *** [arch/unicore32/kernel/module.o] Error 1
-  make: *** [arch/unicore32/kernel] Error 2
-
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- arch/unicore32/kernel/module.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
-
-diff --git a/arch/unicore32/kernel/module.c b/arch/unicore32/kernel/module.c
-index 16bd149..dc41f6d 100644
---- a/arch/unicore32/kernel/module.c
-+++ b/arch/unicore32/kernel/module.c
-@@ -24,14 +24,9 @@
- 
- void *module_alloc(unsigned long size)
- {
--	struct vm_struct *area;
--
--	size = PAGE_ALIGN(size);
--	area = __get_vm_area(size, VM_ALLOC, MODULES_VADDR, MODULES_END);
--	if (!area)
--		return NULL;
--
--	return __vmalloc_area(area, GFP_KERNEL, PAGE_KERNEL_EXEC);
-+	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
-+				GFP_KERNEL, PAGE_KERNEL_EXEC, NUMA_NO_NODE,
-+				__builtin_return_address(0));
- }
- 
- int
--- 
-1.7.9.5
+              Linus
