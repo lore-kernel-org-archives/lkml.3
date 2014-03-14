@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491AbaCNSkY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 14:40:24 -0400
-Received: from smtp.tjrn.jus.br ([186.209.102.80]:32872 "EHLO
-	z-cairo.tjrn.jus.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754585AbaCNSkX convert rfc822-to-8bit (ORCPT
+	id S1755910AbaCNSkp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 14:40:45 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:58339 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755037AbaCNSkn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 14:40:23 -0400
-X-Greylist: delayed 8228 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Mar 2014 14:40:22 EDT
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 14 Mar 2014 14:40:43 -0400
+Date: Fri, 14 Mar 2014 19:40:37 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Jyri Sarha <jsarha@ti.com>
+Cc: Mark Brown <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>, <linux-kernel@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: Re: [alsa-devel] [PATCH v2 3/4] ASoC: simple-card: accept many DAI
+ links
+Message-ID: <20140314194037.7da888cd@armhf>
+In-Reply-To: <5322E4FC.7060605@ti.com>
+References: <cover.1394533640.git.moinejf@free.fr>
+	<d71a2b62b331302772d35b3cd35c6dc5da1e9e5d.1394533640.git.moinejf@free.fr>
+	<5322E4FC.7060605@ti.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: 2014 ACCOUNT UPGRADE
-To: Recipients <admin@webmail.net>
-From: WEBMASTER <admin@webmail.net>
-Date: Fri, 14 Mar 2014 14:23:45 +0100
-Reply-To: 1648463859@qq.com
-X-Antivirus: avast! (VPS 140313-1, 03/13/2014), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20140314132311.32F2E1439B51@z-saopaulo.tjrn.jus.br>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear user
+On Fri, 14 Mar 2014 13:16:12 +0200
+Jyri Sarha <jsarha@ti.com> wrote:
 
-An error was detected in our database administration due to the number of
-Spam which can affect your email account 2014 account upgrade and damage
-your filed email. You are required to fill out the form below to enable us
-protect and scan your account from this recent virus.
+> On 03/11/2014 11:36 AM, Jean-Francois Moine wrote:
+> > Some simple audio cards may have many DAI links.
+> > This patch extends the simple-card driver for handling such cards.
+> >
+> > Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> > ---
+> [...]
+> 
+> Why can't you just use two simple-card instances in your setup?
 
-Complete the form below to confirm your e-mail for 2014 account upgrade
-and maintenance:
+My machine has only one audio device (kirkwood). This one has two
+outputs. The first one (I2S) is connected to the HDMI transmitter, and
+the other one (S/PDIF) is connected to both the HDMI transmitter and the
+S/PDIF connector. There can be only one playback stream, either via
+I2S, or S/PDIF, or both, with the final output either to HDMI or S/PDIF
+or both:
 
-(1) E-mail:
-(2) Name:
-(3) Password:
+           /--> I2S -----+-> HDMI
+platform -+             /
+           \-> S/PDIF -+
+                        \--> S/PDIF
 
+DPCM permits to activate both I2S and S/PDIF, but it does not handle
+the format and rate constraints (both outputs are always activated with
+the platform constraints).
 
-Thanks
-SYSTEM ADMINISTRATOR
+So, the actual solution I use is 3 DAI links (= 3 PCMs):
+- HDMI via I2S
+- HDMI via S/PDIF (no S/PDIF output)
+- S/PDIF via S/PDIF (no HDMI output)
+
+> You need to update the DT-binding document too when you are changing the 
+> binding. That way it would also be easier to follow what you are trying 
+> to accomplish here.
+
+Some people want to have 2 different patchs: one for the code and the
+other one for the DT change. Some other people like you want only one
+patch. Which is the right way?
+
+> The sysclk and tdm properties appear to only work in the dais of the 
+> first dai-link and __asoc_simple_card_dai_init() will not be called for 
+> other dais at all. The DT-binding of this implementation would look 
+> pretty hairy to me.
+
+I will add an other dynamic structure for these properties.
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
