@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163AbaCNRIQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 13:08:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36017 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755497AbaCNRIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 13:08:12 -0400
-Date: Fri, 14 Mar 2014 17:08:08 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz
-Subject: Re: [patch] mm: vmscan: do not swap anon pages just because
- free+file is low
-Message-ID: <20140314170807.GW10663@suse.de>
-References: <1394811302-30468-1-git-send-email-hannes@cmpxchg.org>
- <53232901.5030307@redhat.com>
+	id S1756190AbaCNRIr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 13:08:47 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:14672 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756011AbaCNRIp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 13:08:45 -0400
+Date: Fri, 14 Mar 2014 17:08:15 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "wad@chromium.org" <wad@chromium.org>, Will Deacon <Will.Deacon@arm.com>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: Re: [PATCH v3 1/3] asm-generic: Add generic seccomp.h for secure
+ computing mode 1
+Message-ID: <20140314170814.GJ18126@arm.com>
+References: <1394705823-12465-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394705823-12465-2-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53232901.5030307@redhat.com>
+In-Reply-To: <1394705823-12465-2-git-send-email-takahiro.akashi@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 12:06:25PM -0400, Rik van Riel wrote:
-> On 03/14/2014 11:35 AM, Johannes Weiner wrote:
-> > Page reclaim force-scans / swaps anonymous pages when file cache drops
-> > below the high watermark of a zone in order to prevent what little
-> > cache remains from thrashing.
-> > 
-> > However, on bigger machines the high watermark value can be quite
-> > large and when the workload is dominated by a static anonymous/shmem
-> > set, the file set might just be a small window of used-once cache.  In
-> > such situations, the VM starts swapping heavily when instead it should
-> > be recycling the no longer used cache.
-> > 
-> > This is a longer-standing problem, but it's more likely to trigger
-> > after 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy")
-> > because file pages can no longer accumulate in a single zone and are
-> > dispersed into smaller fractions among the available zones.
-> > 
-> > To resolve this, do not force scan anon when file pages are low but
-> > instead rely on the scan/rotation ratios to make the right prediction.
+On Thu, Mar 13, 2014 at 10:17:01AM +0000, AKASHI Takahiro wrote:
+> Those values (__NR_seccomp_*) are used solely in secure_computing()
+> to identify mode 1 system calls. If compat system calls have different
+> syscall numbers, asm/seccomp.h may override them.
 > 
-> I am not entirely sure that the scan/rotation ratio will be
-> meaningful when the page cache has been essentially depleted,
-> but on larger systems the distance between the low and high
-> watermark is gigantic, and I have no better idea on how to
-> fix the bug you encountered, so ...
-> 
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  include/asm-generic/seccomp.h |   28 ++++++++++++++++++++++++++++
+>  1 file changed, 28 insertions(+)
+>  create mode 100644 include/asm-generic/seccomp.h
 
-I still agree with the direction in general even though I've not put
-thought into this specific patch yet. We've observed a problem whereby force
-reclaim was causing one or other LRU list to be trashed.  In one specific
-case, the inactive file is low logic was causing problems because while
-the relative size of inactive/active was taken into account, the absolute
-size vs anon was not. It was not a mainline kernel and we do not have a
-test configuration that properly illustrates the problem on mainline it's
-on our radar that it's a potential problem. The scan/rotation ratio at the
-moment does not take absolute sizes into account but we almost certainly
-want to go in that direction at some stage. Hugh's patch on altering how
-proportional shrinking works is also relevant.
+I think you need an Ack from Arnd on this patch. The other patches in
+this series look ok but they depend on the ftrace patches, so we'll have
+to sort those out first.
 
 -- 
-Mel Gorman
-SUSE Labs
+Catalin
