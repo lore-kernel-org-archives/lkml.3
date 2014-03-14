@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218AbaCNMil (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 08:38:41 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:44755 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536AbaCNMij (ORCPT
+	id S1753822AbaCNMor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 08:44:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54393 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847AbaCNMop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 08:38:39 -0400
-Message-ID: <5322F82A.9000507@ahsoftware.de>
-Date: Fri, 14 Mar 2014 13:38:02 +0100
-From: Alexander Holler <holler@ahsoftware.de>
+	Fri, 14 Mar 2014 08:44:45 -0400
+Message-ID: <5322F99D.5010009@ti.com>
+Date: Fri, 14 Mar 2014 14:44:13 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Grant Likely <grant.likely@linaro.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Rob Herring <robh+dt@kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
-References: <5316FFCE.1060603@ti.com>	<1394018461-757-1-git-send-email-holler@ahsoftware.de>	<CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>	<5322D529.4070904@ahsoftware.de> <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>
-In-Reply-To: <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [GIT PULL] Move device tree graph parsing helpers to drivers/of
+References: <1394126000.3622.66.camel@paszta.hi.pengutronix.de>	 <20140310143758.3734FC405FA@trevor.secretlab.ca>	 <1394708896.3577.21.camel@paszta.hi.pengutronix.de>	 <6341585.ZqkoDDr3Wb@avalon> <1394799579.3710.24.camel@paszta.hi.pengutronix.de>
+In-Reply-To: <1394799579.3710.24.camel@paszta.hi.pengutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="KA24mhi9K0IRDKWUGcnpMUbHsRpxoAKV0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.03.2014 12:02, schrieb Linus Walleij:
-> On Fri, Mar 14, 2014 at 11:08 AM, Alexander Holler <holler@ahsoftware.de> wrote:
->> Am 11.03.2014 11:15, schrieb Linus Walleij:
->>> On Wed, Mar 5, 2014 at 12:21 PM, Alexander Holler <holler@ahsoftware.de> wrote:
->>>
->>>> The driver missed an of_xlate function to translate gpio numbers
->>>> as found in the DT to the correct chip and number.
->>>>
->>>> While there I've set #gpio_cells to a fixed value of 2.
->>>>
->>>> I've used gpio-pxa.c as template for those changes and tested my changes
->>>> successfully on a da850 board using entries for gpio-leds in a DT. So I didn't
->>>> reinvent the wheel but just copied and tested stuff.
->>>>
->>>> Thanks to Grygorii Strashko for the hint to the existing code in gpio-pxa.
->>>>
->>>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
->>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>>
->>> This v2 version applied, thanks!
+--KA24mhi9K0IRDKWUGcnpMUbHsRpxoAKV0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Hi Philipp, Grant,
+
+On 14/03/14 14:19, Philipp Zabel wrote:
+
+>>> People completely disagree about the direction the phandle links shou=
+ld
+>>> point in. I am still of the opinion that the generic binding should d=
+escribe
+>>> just the topology, that the endpoint links in the kernel should repre=
+sent an
+>>> undirected graph and the direction of links should not matter at all =
+for the
+>>> generic graph bindings.
 >>
->> Thanks, but actually that should have been a fix for 3.14 with which the
->> OF functionality for davinci gpio gets introduced. I assum with the
->> patch in for-next, 3.14 will appear with that functionality broken and
->> it will become a candidate for -stable.
->
-> I just get the impression that DT support for DaVinci in v3.14 is so risky
-> and unstable that noone except those implementing it (i.e. you) is really
-> using it, is that correct?
+>> I would also not mandate a specific direction at the of-graph level an=
+d leave=20
+>> it to subsystems (or possibly drivers) to specify the direction.
+>=20
+> Thank you. Can everybody live with this?
 
-Yes. DT support for DaVinci is still incomplete and I don't think there 
-are much people out there which already try to use it. Nevertheless is 
-using DT a much easier way (and more future-proof) than patching 
-board-files, if a board isn't one of those few supported dev-boards and 
-needs different configurations.
+Yes, I'd like to reserve the possibility for double-linking. If the
+endpoint links are used to tell the dataflow direction, then
+double-linking could be used for bi-directional dataflows.
 
-> In that case it is hardly a fix that we need to rush out to the entire world.
+But this doesn't help much for the video drivers under work, which I
+think we are all most interested in at the moment. We still need to
+decide how we link the endpoint for those.
 
-Hmm, I think it's better to send something working and tested to world, 
-than something untested and non-working.
+I'd like to go forward with the mainline v4l2 style double-linking, as
+that is already in use. It would allow us to proceed _now_, and maybe
+even get display support to 3.15. Otherwise this all gets delayed for
+who knows how long, and the displays in question cannot be used by the
+users.
 
-And especially things like pinctrl and gpio are fundamental to even try 
-to use DT. E.g. in my case I didn't even try to use DT for DaVinci 
-because it doesn't make sense without support for DT in gpio. And now 
-people will get promised but broken support for gpio in 3.14, which 
-might cost a lot of time, if someone tries to use it.
+Deprecating the other link later from the existing video bindings would
+be trivial, as there would basically be nothing to do except remove the
+other link.
 
-And I thought the reason for -rc is actually to fix bugs. But I never 
-understood the magical ways and timings patches make their way into 
-mainline. ;)
+ Tomi
 
-Regards,
 
-Alexander Holler
+
+--KA24mhi9K0IRDKWUGcnpMUbHsRpxoAKV0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTIvmdAAoJEPo9qoy8lh71zWwP/iIP05q2MrbNWZeC0cHIHgp+
+Ows7K5m5RmKr0EufBbj/NeXmIco0pUUWRvy6iKl5xeWrfI2cA1AgYvzN+BUTLuFF
+EeWg/X/YlegM7onOCMyCYarrHeOaHDD1v/gJ4tL0sID4eAmT4vxK+tn8d8pdcH+A
+JmjbaFBwlP71YN0hqCTa1zL990O+8370bZCS8m8P07Y6Owkj1iaKQVjMUnSxczRw
+sDYsjRvzB2hfadG2/Z7N+scDSggZHjSuD3JxV2En8OgNe+N2SNHnZe7UttzA6/d6
+DLSkYBo4Q+6Mv3p+n+E0Q5lgWwrA2t6593Z7FIZHgNi5F8DbgHAnBnvb2yd6zQx2
+tGVw8EPzpdtBoanRVCyfrtZyQTl/EBaGGNgznKWWEcgPbiI/hmJN6PRboAjZFsRg
+FM5DI5xXtqdZjcJoiEY0cMDyi2KjNobCWrJjZoJ5jmqBACyHp382nUqhIYJpO7mG
+fkDEDXb6MWRhBZ16zGIkEbWL/kshVvehjMtjfzBBGGaZNyaOb0ls0vzxiKx8C/gI
+518GjnaqQC4TC/zEMLaP56rZD0GjUGVq1XaT0w7rN3J+Ycfvh5fDwmTAC/zWuquq
+CoS8Xp09GLjTWTUxgF0w4Cr0A2Q1BaL/vlC/mFVz9/hm2zBgmmWRpK93voNyxhJx
+koBq8Un5MwXWcfWYH98O
+=EJ8A
+-----END PGP SIGNATURE-----
+
+--KA24mhi9K0IRDKWUGcnpMUbHsRpxoAKV0--
