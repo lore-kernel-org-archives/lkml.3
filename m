@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512AbaCNHZN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 03:25:13 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:53356 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133AbaCNHZL (ORCPT
+	id S1755569AbaCNHbb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 03:31:31 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:33089 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755133AbaCNHb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 03:25:11 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2E7OoZY009826, This message is accepted by code: ctloc85258
-From: hayeswang <hayeswang@realtek.com>
-To: "'David Miller'" <davem@davemloft.net>
-CC: <David.Laight@ACULAB.COM>, <netdev@vger.kernel.org>,
-        <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-References: <063D6719AE5E284EB5DD2968C1650D6D0F6DCB6E@AcuExch.aculab.com><20140313.132222.536931544768069240.davem@davemloft.net><A56A13416A724183888BB62CEFD2B817@realtek.com.tw> <20140314.000741.1829674011496195593.davem@davemloft.net>
-Subject: RE: [PATCH net-next v3 1/2] r8152:addRTL8152_EARLY_AGG_TIMEOUT_SUPER
-Date: Fri, 14 Mar 2014 15:24:50 +0800
-Message-ID: <CE95F5CF3B924F0A921DDC3493A67365@realtek.com.tw>
+	Fri, 14 Mar 2014 03:31:29 -0400
+Message-ID: <5322B049.1040301@linaro.org>
+Date: Fri, 14 Mar 2014 15:31:21 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [sched/balance] INFO: possible recursive locking detected
+References: <20140303142526.GA8517@localhost> <5321618F.3090801@linaro.org> <20140313085341.GC27627@localhost> <5321739B.1000506@linaro.org> <20140314061643.GA28194@localhost> <5322A110.5030405@linaro.org> <20140314064853.GB29349@localhost>
+In-Reply-To: <20140314064853.GB29349@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac8/OvUcm1JKJoEyS0OVubcXnN557gAEsI/Q
-In-Reply-To: <20140314.000741.1829674011496195593.davem@davemloft.net>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
-X-Originating-IP: [172.21.71.143]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- From: David Miller [mailto:davem@davemloft.net] 
- Sent: Friday, March 14, 2014 12:08 PM
-[...]
-> >> And I fundamentally disagree with this being a Kconfig parameter.
-> >> 
-> >> Make it run-time calculated _or_ settable via ethtool.
-> > 
-> > Excuse me. How should I make it run-time calculated without a
-> > Kconfig parameter? Should I use module_param? 
+On 03/14/2014 02:48 PM, Fengguang Wu wrote:
+> On Fri, Mar 14, 2014 at 02:26:24PM +0800, Alex Shi wrote:
+>> On 03/14/2014 02:16 PM, Fengguang Wu wrote:
+>>> Alex,
+>>>
+>>> Here are the test results for branch alexshi/single-balance
+>>
+>>
+>> Thanks a lot! Fengguang.
+>> Is the nex04 machine 4P*8 core * HT? and are a04/a06 atom box?
 > 
-> You run-time determine the setting based upon the negotiated link
-> speed and traffic patterns.
+> nex04 is Nehalem-EX. a04/06 are Atom servers.
+> 
+>> Would you like to share the machine info for nhm8, nhm-white and xps2?
+> 
+> They are all 1S Nehalem PC.
 
-It is difficult to design a algorithm which considers the hardware
-of the platform, network traffic, and even the USB behavior to
-dynamically modify the setting. I don't think I have the capability
-to do it.
+thanks for explanation! Are these all the machine launched in testing?
 
-Besides, I don't wish to modify the setting by ethtool when re-loading
-the driver or rebooting every time.
+> 
+> Thanks,
+> Fengguang
+> 
 
-Excuse me. Why is it not accepted for being a Kconfig parameter.
-It let the manufactuers of some platforms, especially the embedded
-system, could tune their performance. Should I give up this patch?
 
+-- 
+Thanks
+    Alex
