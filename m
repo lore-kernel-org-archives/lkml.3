@@ -1,100 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881AbaCNRGt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 13:06:49 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53432 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755609AbaCNRGr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 13:06:47 -0400
-Date: Fri, 14 Mar 2014 17:06:37 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Jeff Layton <jlayton@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-Id: <20140314170637.6370787172f6b7a78a5c2812@kernel.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__14_Mar_2014_17_06_37_+0000_F0NUV4c0Re.Mjfyy"
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@kernel.org
-Subject: linux-next: manual merge of the compat tree with the
- file-private-locks tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1756002AbaCNRHL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 13:07:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33009 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755505AbaCNRHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 13:07:09 -0400
+Date: Fri, 14 Mar 2014 14:06:55 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: vmscan: do not swap anon pages just because
+ free+file is low
+Message-ID: <20140314170654.GA13596@localhost.localdomain>
+References: <1394811302-30468-1-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394811302-30468-1-git-send-email-hannes@cmpxchg.org>
+X-PGP-Key: http://people.redhat.com/~raquini/gpg-pubkey.asc
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Mar_2014_17_06_37_+0000_F0NUV4c0Re.Mjfyy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Mar 14, 2014 at 11:35:02AM -0400, Johannes Weiner wrote:
+> Page reclaim force-scans / swaps anonymous pages when file cache drops
+> below the high watermark of a zone in order to prevent what little
+> cache remains from thrashing.
+> 
+> However, on bigger machines the high watermark value can be quite
+> large and when the workload is dominated by a static anonymous/shmem
+> set, the file set might just be a small window of used-once cache.  In
+> such situations, the VM starts swapping heavily when instead it should
+> be recycling the no longer used cache.
+> 
+> This is a longer-standing problem, but it's more likely to trigger
+> after 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy")
+> because file pages can no longer accumulate in a single zone and are
+> dispersed into smaller fractions among the available zones.
+> 
+> To resolve this, do not force scan anon when file pages are low but
+> instead rely on the scan/rotation ratios to make the right prediction.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: <stable@kernel.org> [3.12+]
+> ---
 
-Hi Heiko,
+Acked-by: Rafael Aquini <aquini@redhat.com>
 
-Today's linux-next merge of the compat tree got a conflict in fs/compat.c b=
-etween commit 1ed1950c412f1b ("locks: add new fcntl cmd values for handling=
- file private locks") from the file-private-locks tree and commit 932602e23=
-8329 ("fs/compat: convert to COMPAT_SYSCALL_DEFINE with changing parameter =
-types") from the compat tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
-diff --cc fs/compat.c
-index 800914a1092a,19252b97f0cc..000000000000
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@@ -399,23 -399,8 +399,23 @@@ static int put_compat_flock64(struct fl
-  }
-  #endif
- =20
- +static unsigned int
- +convert_fcntl_cmd(unsigned int cmd)
- +{
- +      switch (cmd) {
- +      case F_GETLK64:
- +              return F_GETLK;
- +      case F_SETLK64:
- +              return F_SETLK;
- +      case F_SETLKW64:
- +              return F_SETLKW;
- +      }
- +
- +      return cmd;
- +}
- +
-- asmlinkage long compat_sys_fcntl64(unsigned int fd, unsigned int cmd,
--               unsigned long arg)
-+ COMPAT_SYSCALL_DEFINE3(fcntl64, unsigned int, fd, unsigned int, cmd,
-+                      compat_ulong_t, arg)
-  {
-        mm_segment_t old_fs;
-        struct flock f;
-
-
---Signature=_Fri__14_Mar_2014_17_06_37_+0000_F0NUV4c0Re.Mjfyy
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTIzceAAoJELSic+t+oim9OTsP/28a7Q3x6cbg/lahfUftUXeD
-isd0o5aPRZYFzPACDj2Ye8OTJRuTcPfEcN5wXzokWMZQUlANpmDBhK/7HS4zh/Tm
-1iHEpZYForriKkhAzLy/QX1X1WX0rO7L3NTploGsRLI9L5rNiUCmOoL/H2f4GUcD
-BHpaCw4lm1pBMBYCXakOn24TbgBvWlPoopSghDiNdLLaV2JpNLzELNMWMG7uNTNv
-JxRVAk+BljQNUXIA/wwHiNZGd10JX2OymSMEaJa3fO7GKpUaUfWTwFl/wBkvwnej
-KrfAKa8I5HfHXbNSLQ7Nu3r+Aypxpah+ZD1YAdd0dB1j0yX9MOBDX0HVIbK7bap8
-l09PzxtNeo52nuCGP2Gv6/6l09R6oEBBHMbDtIEdGfWNJIw5SVwlzz7tVoN/S2AO
-7deqCQyzC0KENp/M2d8mmWRDLXS7j4nXhX2AYT/0G5T8hbsQe1R2jPudzg9ZzUG9
-q5BiURoCQXvUrpJ7o2W7X48owztKvfwhcw/oqfqJUnQhJAGEwU9bebaTP8I+sZCd
-/Lm6j/eetKzeh2MFdX+ryRcipT3geiHSXceN3jh6tNM7mbu/QJQFkEjfHbx/+ZIx
-b2uklta7D26AktV4ztiR0s1ZVQdO3BXkA2ZaYmJGzz1jmBH6e/GQ58voq+3otZ0/
-1pMWz0N/31in1emkRALQ
-=CyIz
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_Mar_2014_17_06_37_+0000_F0NUV4c0Re.Mjfyy--
+>  mm/vmscan.c | 16 +---------------
+>  1 file changed, 1 insertion(+), 15 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a9c74b409681..e58e9ad5b5d1 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1848,7 +1848,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+>  	struct zone *zone = lruvec_zone(lruvec);
+>  	unsigned long anon_prio, file_prio;
+>  	enum scan_balance scan_balance;
+> -	unsigned long anon, file, free;
+> +	unsigned long anon, file;
+>  	bool force_scan = false;
+>  	unsigned long ap, fp;
+>  	enum lru_list lru;
+> @@ -1902,20 +1902,6 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+>  		get_lru_size(lruvec, LRU_INACTIVE_FILE);
+>  
+>  	/*
+> -	 * If it's foreseeable that reclaiming the file cache won't be
+> -	 * enough to get the zone back into a desirable shape, we have
+> -	 * to swap.  Better start now and leave the - probably heavily
+> -	 * thrashing - remaining file pages alone.
+> -	 */
+> -	if (global_reclaim(sc)) {
+> -		free = zone_page_state(zone, NR_FREE_PAGES);
+> -		if (unlikely(file + free <= high_wmark_pages(zone))) {
+> -			scan_balance = SCAN_ANON;
+> -			goto out;
+> -		}
+> -	}
+> -
+> -	/*
+>  	 * There is enough inactive page cache, do not reclaim
+>  	 * anything from the anonymous working set right now.
+>  	 */
+> -- 
+> 1.9.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
