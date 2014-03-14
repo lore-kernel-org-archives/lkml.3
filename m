@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482AbaCNRYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 13:24:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48293 "EHLO
+	id S1756516AbaCNRYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 13:24:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48295 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756441AbaCNRYW (ORCPT
+	with ESMTP id S1756465AbaCNRYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 Mar 2014 13:24:22 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -18,10 +18,12 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [GIT PULL 0/2] perf/urgent 'perf bench' fixes
-Date: Fri, 14 Mar 2014 14:23:57 -0300
-Message-Id: <1394817839-26310-1-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/2] perf bench numa: Make no args mean 'run all tests'
+Date: Fri, 14 Mar 2014 14:23:58 -0300
+Message-Id: <1394817839-26310-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1394817839-26310-1-git-send-email-acme@infradead.org>
+References: <1394817839-26310-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,41 +32,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Hi Ingo,
+If we call just:
 
-	Please consider pulling,
+  perf bench numa mem
 
-- Arnaldo
+it will present the same output as:
 
-The following changes since commit b7b4839d93e50adccef29eccb694807cdcb8bee3:
+  perf bench numa mem -h
 
-  perf/x86: Fix leak in uncore_type_init failure paths (2014-03-11 11:59:34 +0100)
+i.e. ask for instructions about what to run.
 
-are available in the git repository at:
+While that is kinda ok, using 'run all tests' as the default, i.e.
+making 'no parms' be equivalent to:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+  perf bench numa mem -a
 
-for you to fetch changes up to 6eeefccdcfc2cc9697562e740bfe6c35fddd4e1c:
+Will allow:
 
-  perf bench: Fix NULL pointer dereference in "perf bench all" (2014-03-14 13:45:54 -0300)
+  perf bench numa all
 
-----------------------------------------------------------------
-perf/urgent 'bench' fixes:
+to actually do what is asked: i.e. run all the 'bench' tests, instead of
+responding to that by asking what to do.
 
-. Make 'perf bench mem' (i.e. no args) mean 'run all tests' so that we can run
-  all tests, not stopping at the numa ones.  (Arnaldo Carvalho de Melo)
+That, in turn, allows:
 
-. Fix NULL pointer dereference after last test in in "perf bench all" (Patrick Palka)
+  perf bench all
 
+to actually complete, for the same reasons.
+
+And after that, the tests that come after that, and that at some point
+hit a NULL deref, will run, allowing me to reproduce a recently reported
+problem.
+
+That when you have the needed numa libraries, which wasn't the case for
+the reporter, making me a bit confused after trying to reproduce his
+report.
+
+So make no parms mean -a.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Patrick Palka <patrick@parcs.ath.cx>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-x7h0ghx4pef4n0brywg21krk@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/bench/numa.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (1):
-      perf bench numa: Make no args mean 'run all tests'
+diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
+index d4c83c60b9b2..97d86d828190 100644
+--- a/tools/perf/bench/numa.c
++++ b/tools/perf/bench/numa.c
+@@ -1593,6 +1593,7 @@ static void init_params(struct params *p, const char *name, int argc, const char
+ 	p->data_rand_walk		= true;
+ 	p->nr_loops			= -1;
+ 	p->init_random			= true;
++	p->run_all			= argc == 1;
+ }
+ 
+ static int run_bench_numa(const char *name, const char **argv)
+-- 
+1.8.1.4
 
-Patrick Palka (1):
-      perf bench: Fix NULL pointer dereference in "perf bench all"
-
- tools/perf/bench/numa.c    | 1 +
- tools/perf/builtin-bench.c | 2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
