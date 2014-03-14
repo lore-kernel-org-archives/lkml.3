@@ -1,95 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578AbaCNWxO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 18:53:14 -0400
-Received: from mail-bl2lp0204.outbound.protection.outlook.com ([207.46.163.204]:8541
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753732AbaCNWxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 18:53:12 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: Trusted kernel patchset for Secure Boot lockdown
-Thread-Topic: Trusted kernel patchset for Secure Boot lockdown
-Thread-Index: AQHPP9UxgdFEpLbAD0ahQ2OJgthmsZrhMJwA
-Date: Fri, 14 Mar 2014 22:52:56 +0000
-Message-ID: <1394837576.1286.27.camel@x230>
-References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
-	 <CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
-	 <alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
-	 <1394686919.25122.2.camel@x230>
-	 <CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
-	 <alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
-	 <1394726363.25122.16.camel@x230>
-	 <20140313212450.67f1de8e@alan.etchedpixels.co.uk>
-	 <1394746248.27846.3.camel@x230>
-	 <20140313232140.03bdaac3@alan.etchedpixels.co.uk>
-	 <1394762250.6416.24.camel@x230.lan>
-	 <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
-	 <1394801518.6416.38.camel@x230.lan>
-	 <20140314170655.0ce398a3@alan.etchedpixels.co.uk>
-	 <1394820664.26846.18.camel@x230.mview.int.nebula.com>
-	 <20140314214806.54a3d031@alan.etchedpixels.co.uk>
-	 <1394834193.1286.11.camel@x230>
-	 <20140314220840.29a12171@alan.etchedpixels.co.uk>
-	 <1394835345.1286.22.camel@x230>
-	 <20140314223150.0b49723e@alan.etchedpixels.co.uk>
-In-Reply-To: <20140314223150.0b49723e@alan.etchedpixels.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-forefront-prvs: 0150F3F97D
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(189002)(199002)(51704005)(377424004)(33716001)(97186001)(47446002)(74662001)(63696002)(59766001)(92726001)(33646001)(79102001)(74366001)(20776003)(74502001)(95666003)(94316002)(80022001)(81542001)(81342001)(92566001)(31966008)(85306002)(69226001)(85852003)(83072002)(95416001)(90146001)(56816005)(94946001)(74876001)(74706001)(76796001)(81816001)(83322001)(19580405001)(49866001)(54316002)(50986001)(65816001)(19580395003)(77096001)(46102001)(53806001)(54356001)(76482001)(86362001)(56776001)(93516002)(87936001)(80976001)(76786001)(51856001)(47736001)(81686001)(47976001)(87266001)(2656002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB123;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:FC84F0E6.AD964421.A1F495A8.84E4F165.20234;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <1DF9F6D16805D64C93E6BA337D63745B@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	id S1755686AbaCNW7B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 18:59:01 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38695 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945AbaCNW65 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 18:58:57 -0400
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Laura Abbott <lauraa@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux390@de.ibm.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/2] lib/scatterlist: Make ARCH_HAS_SG_CHAIN an actual Kconfig
+Date: Fri, 14 Mar 2014 15:58:49 -0700
+Message-Id: <1394837930-27731-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2EMrK6T020122
 
-On Fri, 2014-03-14 at 22:31 +0000, One Thousand Gnomes wrote:
-> On Fri, 14 Mar 2014 22:15:45 +0000
-> Matthew Garrett <matthew.garrett@nebula.com> wrote:
-> > The general problem includes having to support this even without an
-> > selinux policy.
-> 
-> Yes. No dispute about that. But equally the general solution should allow
-> for it.
+Rather than have architectures #define ARCH_HAS_SG_CHAIN in an architecture
+specific scatterlist.h, make it a proper Kconfig option and use that
+instead. At same time, remove the header files are are now mostly
+useless and just include asm-generic/scatterlist.h.
 
-Well, sure. The current implementation doesn't conflict with selinux in
-any way.
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Paul Mackerras <paulus@samba.org>
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ arch/arm/Kconfig                       |  1 +
+ arch/arm/include/asm/Kbuild            |  1 +
+ arch/arm/include/asm/scatterlist.h     | 12 ------------
+ arch/arm64/Kconfig                     |  1 +
+ arch/ia64/Kconfig                      |  1 +
+ arch/ia64/include/asm/Kbuild           |  1 +
+ arch/ia64/include/asm/scatterlist.h    |  7 -------
+ arch/powerpc/Kconfig                   |  1 +
+ arch/powerpc/include/asm/Kbuild        |  1 +
+ arch/powerpc/include/asm/scatterlist.h | 17 -----------------
+ arch/s390/Kconfig                      |  1 +
+ arch/s390/include/asm/Kbuild           |  1 +
+ arch/s390/include/asm/scatterlist.h    |  3 ---
+ arch/sparc/Kconfig                     |  1 +
+ arch/sparc/include/asm/Kbuild          |  1 +
+ arch/sparc/include/asm/scatterlist.h   |  8 --------
+ arch/x86/Kconfig                       |  1 +
+ arch/x86/include/asm/Kbuild            |  1 +
+ arch/x86/include/asm/scatterlist.h     |  8 --------
+ include/linux/scatterlist.h            |  2 +-
+ include/scsi/scsi.h                    |  2 +-
+ lib/Kconfig                            |  7 +++++++
+ lib/scatterlist.c                      |  4 ++--
+ 23 files changed, 24 insertions(+), 59 deletions(-)
+ delete mode 100644 arch/arm/include/asm/scatterlist.h
+ delete mode 100644 arch/ia64/include/asm/scatterlist.h
+ delete mode 100644 arch/powerpc/include/asm/scatterlist.h
+ delete mode 100644 arch/s390/include/asm/scatterlist.h
+ delete mode 100644 arch/sparc/include/asm/scatterlist.h
+ delete mode 100644 arch/x86/include/asm/scatterlist.h
 
-> > some other way. ChromeOS will load unmeasured kernel modules provided it
-> > can attest to the trustworthyness of the filesystem containing them.
-> 
-> See "How to Bypass Verified Boot Security in Chromium OS" 8)
-> 
-> And it attests the trustworthiness of the filesystem by measuring it. If
-> you have a measurement of object X that states it is unchanged then you
-> have a valid measurement of any subset of object X for which the same
-> assertion is proven. In this case since you know all the bits in the root
-> fs are as before, so you know all the bits in the module are as before
-
-You may attest to the trustworthiness of a filesystem by measuring it,
-but you may also attest to it via some other means - for instance, it's
-read-only and stored on media that requires physical presence to
-modify. 
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 1594945..8122294 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -82,6 +82,7 @@ config ARM
+ 	  <http://www.arm.linux.org.uk/>.
+ 
+ config ARM_HAS_SG_CHAIN
++	select ARCH_HAS_SG_CHAIN
+ 	bool
+ 
+ config NEED_SG_DMA_LENGTH
+diff --git a/arch/arm/include/asm/Kbuild b/arch/arm/include/asm/Kbuild
+index 3278afe..2357ed6 100644
+--- a/arch/arm/include/asm/Kbuild
++++ b/arch/arm/include/asm/Kbuild
+@@ -18,6 +18,7 @@ generic-y += param.h
+ generic-y += parport.h
+ generic-y += poll.h
+ generic-y += resource.h
++generic-y += scatterlist.h
+ generic-y += sections.h
+ generic-y += segment.h
+ generic-y += sembuf.h
+diff --git a/arch/arm/include/asm/scatterlist.h b/arch/arm/include/asm/scatterlist.h
+deleted file mode 100644
+index cefdb8f..0000000
+--- a/arch/arm/include/asm/scatterlist.h
++++ /dev/null
+@@ -1,12 +0,0 @@
+-#ifndef _ASMARM_SCATTERLIST_H
+-#define _ASMARM_SCATTERLIST_H
+-
+-#ifdef CONFIG_ARM_HAS_SG_CHAIN
+-#define ARCH_HAS_SG_CHAIN
+-#endif
+-
+-#include <asm/memory.h>
+-#include <asm/types.h>
+-#include <asm-generic/scatterlist.h>
+-
+-#endif /* _ASMARM_SCATTERLIST_H */
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 27bbcfc..f2f95f4 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -2,6 +2,7 @@ config ARM64
+ 	def_bool y
+ 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+ 	select ARCH_USE_CMPXCHG_LOCKREF
++	select ARCH_HAS_SG_CHAIN
+ 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 0c8e553..13e2e8b 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -44,6 +44,7 @@ config IA64
+ 	select HAVE_MOD_ARCH_SPECIFIC
+ 	select MODULES_USE_ELF_RELA
+ 	select ARCH_USE_CMPXCHG_LOCKREF
++	select ARCH_HAS_SG_CHAIN
+ 	default y
+ 	help
+ 	  The Itanium Processor Family is Intel's 64-bit successor to
+diff --git a/arch/ia64/include/asm/Kbuild b/arch/ia64/include/asm/Kbuild
+index 283a831..3906865 100644
+--- a/arch/ia64/include/asm/Kbuild
++++ b/arch/ia64/include/asm/Kbuild
+@@ -2,6 +2,7 @@
+ generic-y += clkdev.h
+ generic-y += exec.h
+ generic-y += kvm_para.h
++generic-y += scatterlist.h
+ generic-y += trace_clock.h
+ generic-y += preempt.h
+ generic-y += vtime.h
+diff --git a/arch/ia64/include/asm/scatterlist.h b/arch/ia64/include/asm/scatterlist.h
+deleted file mode 100644
+index 08fd93b..0000000
+--- a/arch/ia64/include/asm/scatterlist.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#ifndef _ASM_IA64_SCATTERLIST_H
+-#define _ASM_IA64_SCATTERLIST_H
+-
+-#include <asm-generic/scatterlist.h>
+-#define ARCH_HAS_SG_CHAIN
+-
+-#endif /* _ASM_IA64_SCATTERLIST_H */
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 957bf34..659aee2 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -141,6 +141,7 @@ config PPC
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK
+ 	select ARCH_USE_CMPXCHG_LOCKREF if PPC64
++	select ARCH_HAS_SG_CHAIN
+ 
+ config GENERIC_CSUM
+ 	def_bool CPU_LITTLE_ENDIAN
+diff --git a/arch/powerpc/include/asm/Kbuild b/arch/powerpc/include/asm/Kbuild
+index 6c0a955..ca596ec 100644
+--- a/arch/powerpc/include/asm/Kbuild
++++ b/arch/powerpc/include/asm/Kbuild
+@@ -1,6 +1,7 @@
+ 
+ generic-y += clkdev.h
+ generic-y += rwsem.h
++generic-y += scatterlist.h
+ generic-y += trace_clock.h
+ generic-y += preempt.h
+ generic-y += vtime.h
+diff --git a/arch/powerpc/include/asm/scatterlist.h b/arch/powerpc/include/asm/scatterlist.h
+deleted file mode 100644
+index de1f620..0000000
+--- a/arch/powerpc/include/asm/scatterlist.h
++++ /dev/null
+@@ -1,17 +0,0 @@
+-#ifndef _ASM_POWERPC_SCATTERLIST_H
+-#define _ASM_POWERPC_SCATTERLIST_H
+-/*
+- * Copyright (C) 2001 PPC64 Team, IBM Corp
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; either version
+- * 2 of the License, or (at your option) any later version.
+- */
+-
+-#include <asm/dma.h>
+-#include <asm-generic/scatterlist.h>
+-
+-#define ARCH_HAS_SG_CHAIN
+-
+-#endif /* _ASM_POWERPC_SCATTERLIST_H */
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 65a0775..d6c2059 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -142,6 +142,7 @@ config S390
+ 	select SYSCTL_EXCEPTION_TRACE
+ 	select VIRT_CPU_ACCOUNTING
+ 	select VIRT_TO_BUS
++	select ARCH_HAS_SG_CHAIN
+ 
+ config SCHED_OMIT_FRAME_POINTER
+ 	def_bool y
+diff --git a/arch/s390/include/asm/Kbuild b/arch/s390/include/asm/Kbuild
+index 8386a4a..14be6d0 100644
+--- a/arch/s390/include/asm/Kbuild
++++ b/arch/s390/include/asm/Kbuild
+@@ -4,3 +4,4 @@ generic-y += clkdev.h
+ generic-y += trace_clock.h
+ generic-y += preempt.h
+ generic-y += hash.h
++generic-y += scatterlist.h
+diff --git a/arch/s390/include/asm/scatterlist.h b/arch/s390/include/asm/scatterlist.h
+deleted file mode 100644
+index 6d45ef6..0000000
+--- a/arch/s390/include/asm/scatterlist.h
++++ /dev/null
+@@ -1,3 +0,0 @@
+-#include <asm-generic/scatterlist.h>
+-
+-#define ARCH_HAS_SG_CHAIN
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 7d8b7e9..7a179fe 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -42,6 +42,7 @@ config SPARC
+ 	select MODULES_USE_ELF_RELA
+ 	select ODD_RT_SIGACTION
+ 	select OLD_SIGSUSPEND
++	select ARCH_HAS_SG_CHAIN
+ 
+ config SPARC32
+ 	def_bool !64BIT
+diff --git a/arch/sparc/include/asm/Kbuild b/arch/sparc/include/asm/Kbuild
+index 4b60a0c..437f0c6 100644
+--- a/arch/sparc/include/asm/Kbuild
++++ b/arch/sparc/include/asm/Kbuild
+@@ -18,3 +18,4 @@ generic-y += types.h
+ generic-y += word-at-a-time.h
+ generic-y += preempt.h
+ generic-y += hash.h
++generic-y += scatterlist.h
+diff --git a/arch/sparc/include/asm/scatterlist.h b/arch/sparc/include/asm/scatterlist.h
+deleted file mode 100644
+index 92bb638..0000000
+--- a/arch/sparc/include/asm/scatterlist.h
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#ifndef _SPARC_SCATTERLIST_H
+-#define _SPARC_SCATTERLIST_H
+-
+-#include <asm-generic/scatterlist.h>
+-
+-#define ARCH_HAS_SG_CHAIN
+-
+-#endif /* !(_SPARC_SCATTERLIST_H) */
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0af5250..76997dc 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -127,6 +127,7 @@ config X86
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
+ 	select HAVE_CC_STACKPROTECTOR
++	select ARCH_HAS_SG_CHAIN
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool y
+diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
+index 7f66985..9b3d749 100644
+--- a/arch/x86/include/asm/Kbuild
++++ b/arch/x86/include/asm/Kbuild
+@@ -5,3 +5,4 @@ genhdr-y += unistd_64.h
+ genhdr-y += unistd_x32.h
+ 
+ generic-y += clkdev.h
++generic-y += scatterlist.h
+diff --git a/arch/x86/include/asm/scatterlist.h b/arch/x86/include/asm/scatterlist.h
+deleted file mode 100644
+index 4240878..0000000
+--- a/arch/x86/include/asm/scatterlist.h
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#ifndef _ASM_X86_SCATTERLIST_H
+-#define _ASM_X86_SCATTERLIST_H
+-
+-#include <asm-generic/scatterlist.h>
+-
+-#define ARCH_HAS_SG_CHAIN
+-
+-#endif /* _ASM_X86_SCATTERLIST_H */
+diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
+index a964f72..4b152c8 100644
+--- a/include/linux/scatterlist.h
++++ b/include/linux/scatterlist.h
+@@ -136,7 +136,7 @@ static inline void sg_set_buf(struct scatterlist *sg, const void *buf,
+ static inline void sg_chain(struct scatterlist *prv, unsigned int prv_nents,
+ 			    struct scatterlist *sgl)
+ {
+-#ifndef ARCH_HAS_SG_CHAIN
++#ifndef CONFIG_ARCH_HAS_SG_CHAIN
+ 	BUG();
+ #endif
+ 
+diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
+index 0a4edfe..d34cf2d 100644
+--- a/include/scsi/scsi.h
++++ b/include/scsi/scsi.h
+@@ -31,7 +31,7 @@ enum scsi_timeouts {
+  * Like SCSI_MAX_SG_SEGMENTS, but for archs that have sg chaining. This limit
+  * is totally arbitrary, a setting of 2048 will get you at least 8mb ios.
+  */
+-#ifdef ARCH_HAS_SG_CHAIN
++#ifdef CONFIG_ARCH_HAS_SG_CHAIN
+ #define SCSI_MAX_SG_CHAIN_SEGMENTS	2048
+ #else
+ #define SCSI_MAX_SG_CHAIN_SEGMENTS	SCSI_MAX_SG_SEGMENTS
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 991c98b..32c68d3 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -451,4 +451,11 @@ config UCS2_STRING
+ 
+ source "lib/fonts/Kconfig"
+ 
++#
++# sg chaining option
++#
++
++config ARCH_HAS_SG_CHAIN
++	def_bool n
++
+ endmenu
+diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+index 3a8e8e8..4251cbd 100644
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -73,7 +73,7 @@ EXPORT_SYMBOL(sg_nents);
+  **/
+ struct scatterlist *sg_last(struct scatterlist *sgl, unsigned int nents)
+ {
+-#ifndef ARCH_HAS_SG_CHAIN
++#ifndef CONFIG_ARCH_HAS_SG_CHAIN
+ 	struct scatterlist *ret = &sgl[nents - 1];
+ #else
+ 	struct scatterlist *sg, *ret = NULL;
+@@ -251,7 +251,7 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
+ 
+ 	if (nents == 0)
+ 		return -EINVAL;
+-#ifndef ARCH_HAS_SG_CHAIN
++#ifndef CONFIG_ARCH_HAS_SG_CHAIN
+ 	if (WARN_ON_ONCE(nents > max_ents))
+ 		return -EINVAL;
+ #endif
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
