@@ -1,152 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaCNMwD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 08:52:03 -0400
-Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:3707
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753109AbaCNMwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 08:52:00 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: Trusted kernel patchset for Secure Boot lockdown
-Thread-Topic: Trusted kernel patchset for Secure Boot lockdown
-Thread-Index: AQHPP4ASgdFEpLbAD0ahQ2OJgthmsZrgiV4A
-Date: Fri, 14 Mar 2014 12:51:58 +0000
-Message-ID: <1394801518.6416.38.camel@x230.lan>
-References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
-	 <CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
-	 <alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
-	 <1394686919.25122.2.camel@x230>
-	 <CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
-	 <alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
-	 <1394726363.25122.16.camel@x230>
-	 <20140313212450.67f1de8e@alan.etchedpixels.co.uk>
-	 <1394746248.27846.3.camel@x230>
-	 <20140313232140.03bdaac3@alan.etchedpixels.co.uk>
-	 <1394762250.6416.24.camel@x230.lan>
-	 <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
-In-Reply-To: <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-forefront-prvs: 0150F3F97D
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(57704003)(199002)(189002)(51704005)(377424004)(97186001)(63696002)(92726001)(33646001)(77982001)(97336001)(59766001)(79102001)(20776003)(74502001)(47446002)(94316002)(95666003)(31966008)(80022001)(81342001)(65816001)(92566001)(81542001)(74366001)(85306002)(69226001)(85852003)(95416001)(90146001)(56816005)(74876001)(74706001)(93136001)(76796001)(76786001)(51856001)(49866001)(47736001)(81686001)(19580405001)(50986001)(46102001)(19580395003)(54316002)(83322001)(81816001)(77096001)(93516002)(87936001)(56776001)(53806001)(54356001)(4396001)(86362001)(76482001)(80976001)(36756003)(2656002)(47976001)(87266001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB123;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:FA0FF426.AFF6D121.F1F5F578.8EE4FA71.204EA;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <0966C34F581DC0419EC29CD8CD81008B@namprd05.prod.outlook.com>
+	id S1754242AbaCNMzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 08:55:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52793 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847AbaCNMza (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 08:55:30 -0400
+Date: Fri, 14 Mar 2014 05:55:12 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-328a4978df833249b099c9875738d7b72042ffe1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        hdegoede@redhat.com, tglx@linutronix.de,
+        maxime.ripard@free-electrons.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        hdegoede@redhat.com, tglx@linutronix.de,
+        maxime.ripard@free-electrons.com
+In-Reply-To: <1394733834-26839-2-git-send-email-hdegoede@redhat.com>
+References: <1394733834-26839-2-git-send-email-hdegoede@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Add a new IRQCHIP_EOI_THREADED flag
+Git-Commit-ID: 328a4978df833249b099c9875738d7b72042ffe1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2ECqDX4016375
 
-On Fri, 2014-03-14 at 12:22 +0000, One Thousand Gnomes wrote:
-> > Have you actually looked at these patches? I've looked at every case of
-> > RAWIO in the kernel. For cases that are hardware specific and tied to
-> > fairly old hardware, I've ignored them. For cases which provide an
-> 
-> Yes I have - and it's not exactly localised: it modifies stuff all over
-> the tree when it shouldn't need to. It's a security policy. If it leaks
-> policy all over the kernel then the implementation model is *wrong*.
+Commit-ID:  328a4978df833249b099c9875738d7b72042ffe1
+Gitweb:     http://git.kernel.org/tip/328a4978df833249b099c9875738d7b72042ffe1
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 13 Mar 2014 19:03:51 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 14 Mar 2014 13:43:33 +0100
 
-But you keep talking about MSRs despite there being a patch that limits
-access to MSRs. If you have specific examples of privilege escalations
-that are possible even with these patches then please, mention them.
+genirq: Add a new IRQCHIP_EOI_THREADED flag
 
-> > >default behaviour for capable(x) in fact be
-> > >
-> > >        capable(x & ~secure_forbidden)
-> > >
-> > >for a measured kernel and add a 
-> > >
-> > >        capable_always()
-> > >
-> > >for the cases you want to not break.
-> > 
-> > We could do that, but now the behaviour of the patchset is far less
-> > obvious. capable(CAP_SYS_RAWIO) now means something different to every
-> > other use of capable(), and we still need get_trusted_kernel() calls for
-> > cases where the checks have nothing to do with processes and so
-> > capabilities can't be used. 
-> 
-> You don't need get_measured_kernel() calls because thats hidden within
-> capable/capable_always. And if the interaction is a complicated as you
-> imply that again says to me the model is wrong. Complicated multi-way
-> security interactions lead to complicated exploits leveraging the
-> disconnects.
+The flag is necessary for interrupt chips which require an ACK/EOI
+after the handler has run. In case of threaded handlers this needs to
+happen after the threaded handler has completed before the unmask of
+the interrupt.
 
-How is capable() going to be any use when deciding whether or not to
-interpret some kernel command line options?
+The flag is only unseful in combination with the handle_fasteoi_irq
+flow control handler.
 
-> > We can do this without unnecessarily breaking any userspace. We just
-> > can't do it by fiddling with capabilities.
-> 
-> It should still be a security model nto spreading measured_kernel()
-> checks about. Now if that means
-> 
-> 	capable(CAP_SYS_RAWIO)
-> 
-> should become security-> interface hooks that pass something meaningful
-> to the security layer then I'd rather we did the job properly in the first
-> place and put the policy in one spot not all over the kernel.
+It can be combined with the flag IRQCHIP_EOI_IF_HANDLED, so the EOI is
+not issued when the interrupt is disabled or in progress.
 
-We still need a mechanism to differentiate between cases where
-CAP_SYS_RAWIO should be forbidden and cases where it should be
-permitted, which means that we need to add additional policy. We can
-modify capable(), but that means that capable() no longer does what you
-expect it to - it's not a transparent interface, and that's likely to
-result in people accidentally misusing it.
+Tested-by: Hans de Goede <hdegoede@redhat.com>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-sunxi@googlegroups.com
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+Link: http://lkml.kernel.org/r/1394733834-26839-2-git-send-email-hdegoede@redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/irq.h    |  2 ++
+ kernel/irq/chip.c      | 48 ++++++++++++++++++++++++++++++++++++++++--------
+ kernel/irq/internals.h |  1 +
+ kernel/irq/manage.c    |  2 +-
+ 4 files changed, 44 insertions(+), 9 deletions(-)
 
-> The question then becomes what do we need to pass beyond "CAP_SYS_RAWIO"
-> so the policy can be in the right place - even for example imposed by
-> SELinux rules.
-
-It needs to be possible for this policy to be imposed without userspace
-being involved, so using selinux would mean baking it into the kernel
-(along with an additional implementation for apparmor, and presumably
-one for tomoyo as well).
-
-> 
-> > > I don't think we need to break any userspace for "normal" mode to do
-> > > this. Userspace in measured mode is going to change anyway. It already
-> > > has just for things like module signing.
-> > 
-> > This has been discussed at length. Nobody who's actually spent time
-> > working on the problem wants to use capabilities. CAP_SYS_RAWIO is not
-> > semantically identical to the trusted kernel bit. Trying to make them
-> > semantically identical will break existing userspace.
-> 
-> I never said it was. I said that getting rid of CAP_SYS_RAWIO and then
-> dealing with *just* the exceptions to this is a lot cleaner, and likely
-> to be more secure.
-
-And will give us the choice between complicating a simple interface or
-breaking userspace. If the maintainer believes that's a better approach
-then I can rewrite all of this again, but so far you seem to be in a
-minority on this front. 
-
-> In addition several of the cases that you point out could be fixed by
-> replacing the CAP_SYS_RAWIO using stuff with a proper interface should
-> probably just be *fixed* to provide that.
-
-...thus breaking userspace outside this use case. I mean, sure, I'm
-absolutely fine with deleting /dev/mem entirely. I don't see Linus
-agreeing.
-
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 67ace7a..d278838 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -356,6 +356,7 @@ struct irq_chip {
+  *				when irq enabled
+  * IRQCHIP_SKIP_SET_WAKE:	Skip chip.irq_set_wake(), for this irq chip
+  * IRQCHIP_ONESHOT_SAFE:	One shot does not require mask/unmask
++ * IRQCHIP_EOI_THREADED:	Chip requires eoi() on unmask in threaded mode
+  */
+ enum {
+ 	IRQCHIP_SET_TYPE_MASKED		= (1 <<  0),
+@@ -364,6 +365,7 @@ enum {
+ 	IRQCHIP_ONOFFLINE_ENABLED	= (1 <<  3),
+ 	IRQCHIP_SKIP_SET_WAKE		= (1 <<  4),
+ 	IRQCHIP_ONESHOT_SAFE		= (1 <<  5),
++	IRQCHIP_EOI_THREADED		= (1 <<  6),
+ };
+ 
+ /* This include will go away once we isolated irq_desc usage to core code */
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index dc04c16..6397df2 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -281,6 +281,19 @@ void unmask_irq(struct irq_desc *desc)
+ 	}
+ }
+ 
++void unmask_threaded_irq(struct irq_desc *desc)
++{
++	struct irq_chip *chip = desc->irq_data.chip;
++
++	if (chip->flags & IRQCHIP_EOI_THREADED)
++		chip->irq_eoi(&desc->irq_data);
++
++	if (chip->irq_unmask) {
++		chip->irq_unmask(&desc->irq_data);
++		irq_state_clr_masked(desc);
++	}
++}
++
+ /*
+  *	handle_nested_irq - Handle a nested irq from a irq thread
+  *	@irq:	the interrupt number
+@@ -435,6 +448,27 @@ static inline void preflow_handler(struct irq_desc *desc)
+ static inline void preflow_handler(struct irq_desc *desc) { }
+ #endif
+ 
++static void cond_unmask_eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
++{
++	if (!(desc->istate & IRQS_ONESHOT)) {
++		chip->irq_eoi(&desc->irq_data);
++		return;
++	}
++	/*
++	 * We need to unmask in the following cases:
++	 * - Oneshot irq which did not wake the thread (caused by a
++	 *   spurious interrupt or a primary handler handling it
++	 *   completely).
++	 */
++	if (!irqd_irq_disabled(&desc->irq_data) &&
++	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot) {
++		chip->irq_eoi(&desc->irq_data);
++		unmask_irq(desc);
++	} else if (!(chip->flags & IRQCHIP_EOI_THREADED)) {
++		chip->irq_eoi(&desc->irq_data);
++	}
++}
++
+ /**
+  *	handle_fasteoi_irq - irq handler for transparent controllers
+  *	@irq:	the interrupt number
+@@ -448,6 +482,8 @@ static inline void preflow_handler(struct irq_desc *desc) { }
+ void
+ handle_fasteoi_irq(unsigned int irq, struct irq_desc *desc)
+ {
++	struct irq_chip *chip = desc->irq_data.chip;
++
+ 	raw_spin_lock(&desc->lock);
+ 
+ 	if (unlikely(irqd_irq_inprogress(&desc->irq_data)))
+@@ -473,18 +509,14 @@ handle_fasteoi_irq(unsigned int irq, struct irq_desc *desc)
+ 	preflow_handler(desc);
+ 	handle_irq_event(desc);
+ 
+-	if (desc->istate & IRQS_ONESHOT)
+-		cond_unmask_irq(desc);
++	cond_unmask_eoi_irq(desc, chip);
+ 
+-out_eoi:
+-	desc->irq_data.chip->irq_eoi(&desc->irq_data);
+-out_unlock:
+ 	raw_spin_unlock(&desc->lock);
+ 	return;
+ out:
+-	if (!(desc->irq_data.chip->flags & IRQCHIP_EOI_IF_HANDLED))
+-		goto out_eoi;
+-	goto out_unlock;
++	if (!(chip->flags & IRQCHIP_EOI_IF_HANDLED))
++		chip->irq_eoi(&desc->irq_data);
++	raw_spin_unlock(&desc->lock);
+ }
+ 
+ /**
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index 17b6717..ddf1ffe 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -74,6 +74,7 @@ extern void irq_percpu_enable(struct irq_desc *desc, unsigned int cpu);
+ extern void irq_percpu_disable(struct irq_desc *desc, unsigned int cpu);
+ extern void mask_irq(struct irq_desc *desc);
+ extern void unmask_irq(struct irq_desc *desc);
++extern void unmask_threaded_irq(struct irq_desc *desc);
+ 
+ extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
+ 
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index de1a8ed..2486a4c 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -748,7 +748,7 @@ again:
+ 
+ 	if (!desc->threads_oneshot && !irqd_irq_disabled(&desc->irq_data) &&
+ 	    irqd_irq_masked(&desc->irq_data))
+-		unmask_irq(desc);
++		unmask_threaded_irq(desc);
+ 
+ out_unlock:
+ 	raw_spin_unlock_irq(&desc->lock);
