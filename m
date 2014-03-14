@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202AbaCNOLt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:11:49 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:37849 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754536AbaCNOLr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:11:47 -0400
-Date: Fri, 14 Mar 2014 10:11:43 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Roman Peniaev <r.peniaev@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 1/1] fs/mpage.c: forgotten WRITE_SYNC in case of data
- integrity write
-Message-ID: <20140314141143.GH12613@htj.dyndns.org>
-References: <1392519268-29991-1-git-send-email-r.peniaev@gmail.com>
- <20140218155945.ee2e22e07fa3b4f242b16a7f@linux-foundation.org>
- <CACZ9PQV8RsaefFAOt5b-aL33G3CiD+3+fTuW15io6u1DH3XJ6Q@mail.gmail.com>
- <CACZ9PQUKzsP4mwJSO3c=Z3W2pYr2AME-9j+1Cqg9t8a4T+uQQg@mail.gmail.com>
- <20140313200119.GB504@quack.suse.cz>
- <20140313143456.157404fd7f208638ca70e317@linux-foundation.org>
- <20140314130712.GC12613@htj.dyndns.org>
- <CACZ9PQUQX-sSNo+z0LB0Tefq9pSHFr6GjKg2tWzdAtw3OYYDsg@mail.gmail.com>
+	id S1754914AbaCNONa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:13:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10672 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754579AbaCNON2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 10:13:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,655,1389772800"; 
+   d="scan'208";a="472360835"
+Date: Fri, 14 Mar 2014 07:13:00 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v1 03/11] perf: Allow for multiple ring buffers per event
+Message-ID: <20140314141300.GG3793@tassilo.jf.intel.com>
+References: <1391683834-29868-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1391683834-29868-4-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140217143340.GR27965@twins.programming.kicks-ass.net>
+ <530529FC.6080704@intel.com>
+ <87siqqtlv6.fsf@ashishki-desk.ger.corp.intel.com>
+ <20140310172440.GG13302@tassilo.jf.intel.com>
+ <20140314104415.GS27965@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACZ9PQUQX-sSNo+z0LB0Tefq9pSHFr6GjKg2tWzdAtw3OYYDsg@mail.gmail.com>
+In-Reply-To: <20140314104415.GS27965@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Mar 14, 2014 at 11:07:04PM +0900, Roman Peniaev wrote:
-> Seems the following message should be better:
-> When data inegrity operation (sync, fsync, fdatasync calls) happens
-> writeback control is set to WB_SYNC_ALL.
-> In that case all write requests are marked with WRITE_SYNC, but on
-> mpage writeback path
-> WRITE_SYNC is missed. This patch fixes this.
+> > The other big problem is scalability. Even if it was somehow possible
+> > to make this scheme work the IPIs for flushing would kill performance 
+> > on any multi threaded client.  Given perf is not multi-threaded today, but
+> > it doesn't seem a good idea to design the interface assuming no client ever
+> > will be.
 > 
-> Is it ok, what do you think?
+> Well any mmap()ed interface that wants to swap buffers will have this
+> same problem.
 
-I think the description should make it clear that WRITE_SYNC is about
-latency, not about integrity and we probably should add comments
-explaining why we're using WRITE_SYNC for WB_SYNC_ALL (because there
-probably is someone waiting).
+There's no need to swap buffers in a sane design. The perf ring buffer
+or the ftrace buffer don't need this. There's no need for a PT buffer
+to do so either. 
 
-> Also, could you please help me do understand how can I guarantee
-> integrity in case of block device with big volatile
-> cache and filesystem, which does not support REQ_FLUSH/FUA?
+> 
+> You can restrict the TLB flushing to the threads that poll() on the
+> relevant events. This just means other threads will see old/partial
+> data, but that shouldn't be a problem as they shouldn't be looking in
+> the first place.
 
-If a device has a volatile cache but doesn't support flush, it can't
-guarantee integrity.  There's no way for its user to determine or
-force whether certain data is on non-volatile media.  It's an
-inherently broken device.
+Then we get incoherent processes. You're not serious about that are you?
 
-Thanks.
+-Andi
 
 -- 
-tejun
+ak@linux.intel.com -- Speaking for myself only
