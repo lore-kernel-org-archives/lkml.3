@@ -1,76 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414AbaCNGYw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 02:24:52 -0400
-Received: from www84.your-server.de ([213.133.104.84]:53406 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503AbaCNGYv (ORCPT
+	id S1755428AbaCNG0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 02:26:37 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:34702 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828AbaCNG0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 02:24:51 -0400
-Message-ID: <1394778270.1005.2.camel@wall-e.seibold.net>
-Subject: Re: [PATCH 0/3] Improve 32 bit vDSO time
-From: Stefani Seibold <stefani@seibold.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
-Date: Fri, 14 Mar 2014 07:24:30 +0100
-In-Reply-To: <53222C78.3020408@zytor.com>
-References: <1394664680-17799-1-git-send-email-stefani@seibold.net>
-	 <CALCETrViaEdPsZO_xKaoihkNzayB+vhwpAO0YvNbfXZH2tOLUg@mail.gmail.com>
-	 <20140313001143.Horde.HpQnD8JBClJFZRY7b8BtnQ1@webmail.your-server.de>
-	 <53212A96.8020005@zytor.com> <1394698270.1008.19.camel@wall-e.seibold.net>
-	 <53222C78.3020408@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
+	Fri, 14 Mar 2014 02:26:35 -0400
+Message-ID: <5322A110.5030405@linaro.org>
+Date: Fri, 14 Mar 2014 14:26:24 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [sched/balance] INFO: possible recursive locking detected
+References: <20140303142526.GA8517@localhost> <5321618F.3090801@linaro.org> <20140313085341.GC27627@localhost> <5321739B.1000506@linaro.org> <20140314061643.GA28194@localhost>
+In-Reply-To: <20140314061643.GA28194@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 13.03.2014, 15:08 -0700 schrieb H. Peter Anvin:
-> On 03/13/2014 01:11 AM, Stefani Seibold wrote:
-> > Am Mittwoch, den 12.03.2014, 20:48 -0700 schrieb H. Peter Anvin:
-> >> On 03/12/2014 04:11 PM, stefani@seibold.net wrote:
-> >>>
-> >>> I will do this when your patch is pulled into tip. For now we have the
-> >>> choice, but i preferer our solution removing the compat vdso.
-> >>>
-> >>
-> >> Sorry, that didn't parse from me.
-> > 
-> > I thought it is a good idea to wait until the "remove compat vdso
-> > support" is settled and pulled into tip.
-> > 
-> > If there is no objections against this patch i am happy to do the
-> > job ;-)
-> > 
-> > BTW: Thanks to Andy for doing this job to git rid off this ugly compat
-> > vDSO layer.
-> > 
-> >> Also, if you state a preference, could you please motivate it?
-> > 
-> > For the next three days i am very busy with a important project, so i
-> > will rebase the vdso 32 bit time patch on Monday or Tuesday. 
-> > 
+On 03/14/2014 02:16 PM, Fengguang Wu wrote:
+> Alex,
 > 
-> So when I get the updated patch from Andy I will pull it into tip,
-> resetting the x86/vdso branch.  I'll then expect an upgraded and
-> simplified patchset from you to put on top.
-> 
-> Sounds like a plan.
-> 
-
-I love it when a plan comes together.
+> Here are the test results for branch alexshi/single-balance
 
 
+Thanks a lot! Fengguang.
+Is the nex04 machine 4P*8 core * HT? and are a04/a06 atom box?
+Would you like to share the machine info for nhm8, nhm-white and xps2?
+
+-- 
+Thanks
+    Alex
