@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161026AbaCNVcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 17:32:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20225 "EHLO mga09.intel.com"
+	id S1161062AbaCNVcZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 17:32:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40580 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756648AbaCNVcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 17:32:06 -0400
+	id S1161033AbaCNVcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 17:32:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,657,1389772800"; 
-   d="scan'208";a="472797957"
+   d="scan'208";a="472798147"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@infradead.org
 Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
         eranian@google.com, namhyung@kernel.org, jolsa@redhat.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 05/10] perf, tools: Automatically look for event file name for cpu v2
-Date: Fri, 14 Mar 2014 14:31:33 -0700
-Message-Id: <1394832698-322-6-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>, fweisbec@gmail.com
+Subject: [PATCH 10/10] perf, tools, record: Always allow to overide default period v2
+Date: Fri, 14 Mar 2014 14:31:38 -0700
+Message-Id: <1394832698-322-11-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1394832698-322-1-git-send-email-andi@firstfloor.org>
 References: <1394832698-322-1-git-send-email-andi@firstfloor.org>
@@ -26,157 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-When no JSON event file is specified automatically look
-for a suitable file in ~/.cache/pmu-events. A "perf download" can
-automatically add files there for the current CPUs.
+Fix the logic to allow overriding event default periods with -c or -F
+on the command line.  I'm not sure I understand this if() fully, but
+this change makes all cases I tested work (tracepoint with default, default,
+,-c, -F)
 
-This does not include the actual event files with perf,
-but they can be automatically downloaded instead
-(implemented in the next patch)
+This fixed specifying -c / -F with json event list events,
+which have a default period. It should do the same
+for trace point events.
 
-This has the advantage that the events can be always uptodate,
-because they are freshly downloaded. In oprofile we always
-had problems with out of date or incomplete events files.
-
-The event file format is per architecture, but can be
-extended for other architectures.
-
-v2: Supports XDG_CACHE_HOME and defaults to ~/.cache/pmu-events
+Cc: fweisbec@gmail.com
+v2: Simplify, just change || to &&
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/arch/x86/Makefile      |  1 +
- tools/perf/arch/x86/util/cpustr.c | 34 ++++++++++++++++++++++++++++++++++
- tools/perf/util/jevents.c         | 31 +++++++++++++++++++++++++++++++
- tools/perf/util/jevents.h         |  1 +
- tools/perf/util/pmu.c             |  2 +-
- 5 files changed, 68 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/arch/x86/util/cpustr.c
+ tools/perf/util/evsel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
-index 1641542..0efeb14 100644
---- a/tools/perf/arch/x86/Makefile
-+++ b/tools/perf/arch/x86/Makefile
-@@ -14,4 +14,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
- endif
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/cpustr.o
- LIB_H += arch/$(ARCH)/util/tsc.h
-diff --git a/tools/perf/arch/x86/util/cpustr.c b/tools/perf/arch/x86/util/cpustr.c
-new file mode 100644
-index 0000000..e1cd76c
---- /dev/null
-+++ b/tools/perf/arch/x86/util/cpustr.c
-@@ -0,0 +1,34 @@
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include "../../util/jevents.h"
-+
-+char *get_cpu_str(void)
-+{
-+	char *line = NULL;
-+	size_t llen = 0;
-+	int found = 0, n;
-+	char vendor[30];
-+	int model, fam;
-+	char *res = NULL;
-+	FILE *f = fopen("/proc/cpuinfo", "r");
-+
-+	if (!f)
-+		return NULL;
-+	while (getline(&line, &llen, f) > 0) {
-+		if (sscanf(line, "vendor_id : %30s", vendor) == 1)
-+			found++;
-+		else if (sscanf(line, "model : %d", &model) == 1)
-+			found++;
-+		else if (sscanf(line, "cpu family : %d", &fam) == 1)
-+			found++;
-+		if (found == 3) {
-+			n = asprintf(&res, "%s-%d-%X-core", vendor, fam, model);
-+			if (n < 0)
-+				res = NULL;
-+			break;
-+		}
-+	}
-+	free(line);
-+	fclose(f);
-+	return res;
-+}
-diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
-index 0173b68..89dada6 100644
---- a/tools/perf/util/jevents.c
-+++ b/tools/perf/util/jevents.c
-@@ -33,10 +33,39 @@
- #include <errno.h>
- #include <string.h>
- #include <ctype.h>
-+#include "cache.h"
- #include "jsmn.h"
- #include "json.h"
- #include "jevents.h"
- 
-+__attribute__((weak)) char *get_cpu_str(void)
-+{
-+	return NULL;
-+}
-+
-+static const char *json_default_name(void)
-+{
-+	char *cache = getenv("XDG_CACHE_HOME");
-+	char *idstr = get_cpu_str();
-+	char *res = NULL;
-+	char *home = NULL;
-+
-+	if (!cache) {
-+		home = getenv("HOME");
-+		if (!home || asprintf(&cache, "%s/.cache", home) < 0)
-+			goto out;
-+	}
-+	if (cache && idstr)
-+		res = mkpath("%s/pmu-events/%s.json",
-+			     cache,
-+			     idstr);
-+	if (home)
-+		free(cache);
-+out:
-+	free(idstr);
-+	return res;
-+}
-+
- static void addfield(char *map, char **dst, const char *sep,
- 		     const char *a, jsmntok_t *bt)
- {
-@@ -171,6 +200,8 @@ int json_events(const char *fn,
- 	int i, j, len;
- 	char *map;
- 
-+	if (!fn)
-+		fn = json_default_name();
- 	tokens = parse_json(fn, &map, &size, &len);
- 	if (!tokens)
- 		return -EIO;
-diff --git a/tools/perf/util/jevents.h b/tools/perf/util/jevents.h
-index 4c2b879..6a377a8 100644
---- a/tools/perf/util/jevents.h
-+++ b/tools/perf/util/jevents.h
-@@ -1,3 +1,4 @@
- int json_events(const char *fn,
- 		int (*func)(void *data, char *name, char *event, char *desc),
- 		void *data);
-+char *get_cpu_str(void);
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 831f525..5d69c29 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -433,7 +433,7 @@ static struct perf_pmu *pmu_lookup(const char *name)
- 	if (pmu_aliases(name, &aliases))
- 		return NULL;
- 
--	if (!strcmp(name, "cpu") && json_file)
-+	if (!strcmp(name, "cpu"))
- 		json_events(json_file, add_alias, &aliases);
- 
- 	if (pmu_type(name, &type))
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index adc94dd..417b182 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -564,7 +564,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 	 * We default some events to a 1 default interval. But keep
+ 	 * it a weak assumption overridable by the user.
+ 	 */
+-	if (!attr->sample_period || (opts->user_freq != UINT_MAX &&
++	if (!attr->sample_period && (opts->user_freq != UINT_MAX &&
+ 				     opts->user_interval != ULLONG_MAX)) {
+ 		if (opts->freq) {
+ 			perf_evsel__set_sample_bit(evsel, PERIOD);
 -- 
 1.8.5.3
 
