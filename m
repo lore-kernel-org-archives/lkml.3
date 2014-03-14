@@ -1,133 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043AbaCNPkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:40:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47102 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754113AbaCNPka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:40:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,655,1389772800"; 
-   d="scan'208";a="498609252"
-Message-ID: <532322E8.9050602@intel.com>
-Date: Fri, 14 Mar 2014 17:40:24 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756071AbaCNPks (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:40:48 -0400
+Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:5408
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754113AbaCNPko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 11:40:44 -0400
+Date: Fri, 14 Mar 2014 21:06:22 +0530
+From: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>
+To: <jejb@kernel.org>, <JBottomley@Parallels.com>
+CC: <linux-scsi@vger.kernel.org>, <Sathya.Prakash@lsi.com>,
+        <Nagalakshmi.Nandigama@lsi.com>, <sreekanth.reddy@lsi.com>,
+        <linux-kernel@vger.kernel.org>, <sreekanthreddy0547@gmail.com>
+Subject: [PATCH 02/11][SCSI]mpt2sas: Added new driver module Parameter
+ disable_eedp to Disable EEDP Support
+Message-ID: <20140314153622.GA7947@lsi.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Don Zickus <dzickus@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/5] perf tools: Factor machine__find_thread to take tid
- argument
-References: <1394805606-25883-1-git-send-email-jolsa@redhat.com> <1394805606-25883-3-git-send-email-jolsa@redhat.com> <20140314141509.GD2396@ghostprotocols.net>
-In-Reply-To: <20140314141509.GD2396@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.19.220.100;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(59766001)(80022001)(575784001)(93136001)(77982001)(65816001)(93516002)(86362001)(97186001)(83072002)(81816001)(95416001)(54316002)(95666003)(85852003)(83322001)(19580395003)(6806004)(94316002)(44976005)(46406003)(23726002)(76796001)(56776001)(63696002)(20776003)(36756003)(47776003)(81686001)(19580405001)(80976001)(97756001)(94946001)(76176001)(49866001)(50986001)(47736001)(4396001)(57986002)(90146001)(83506001)(74662001)(79102001)(47976001)(97336001)(47446002)(77096001)(56816005)(16796002)(74502001)(46102001)(76786001)(76482001)(92566001)(87936001)(81542001)(74706001)(87266001)(85306002)(74876001)(69226001)(81342001)(54356001)(53806001)(51856001)(74366001)(31966008)(92726001)(50466002)(33656001)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR07MB068;H:COSEXCH10.lsi.com;FPR:AED1F569.2C07F40D.E6EDD1FF.1C168242.203B6;PTR:cosexch10.lsi.com;A:1;MX:1;LANG:en;
+X-Forefront-PRVS: 0150F3F97D
+X-OriginatorOrg: lsi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/03/2014 4:15 p.m., Arnaldo Carvalho de Melo wrote:
-> Em Fri, Mar 14, 2014 at 03:00:03PM +0100, Jiri Olsa escreveu:
->> Forcing the code to always search thread by pid/tid pair.
->>
->> The PID value will be needed in future to determine
->> the process thread leader for map groups sharing.
->
-> This one looks OK, Adrian?
+A new mpt2sas driver module parameter 'disable_eedp' is added to Disable
+EEDP support. By default DIF support is enabled in the driver and
+this module parameter would allow users to turn it off.
 
-Yes it is OK
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+---
+ drivers/scsi/mpt2sas/mpt2sas_base.c  |    9 ++++--
+ drivers/scsi/mpt2sas/mpt2sas_base.h  |    1 +
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |   47 +++++++++++++++++++++++-----------
+ 3 files changed, 39 insertions(+), 18 deletions(-)
 
->
-> - Arnaldo
->
->> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
->> Cc: Don Zickus <dzickus@redhat.com>
->> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
->> Cc: David Ahern <dsahern@gmail.com>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Namhyung Kim <namhyung@kernel.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
->> ---
->>   tools/perf/tests/dwarf-unwind.c |  2 +-
->>   tools/perf/util/machine.c       | 13 +++++++++----
->>   tools/perf/util/machine.h       |  3 ++-
->>   3 files changed, 12 insertions(+), 6 deletions(-)
->>
->> diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
->> index f16ea28..c059ee8 100644
->> --- a/tools/perf/tests/dwarf-unwind.c
->> +++ b/tools/perf/tests/dwarf-unwind.c
->> @@ -128,7 +128,7 @@ int test__dwarf_unwind(void)
->>   	if (verbose > 1)
->>   		machine__fprintf(machine, stderr);
->>
->> -	thread = machine__find_thread(machine, getpid());
->> +	thread = machine__find_thread(machine, getpid(), getpid());
->>   	if (!thread) {
->>   		pr_err("Could not get thread\n");
->>   		goto out;
->> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
->> index eb26544..a189faf 100644
->> --- a/tools/perf/util/machine.c
->> +++ b/tools/perf/util/machine.c
->> @@ -327,9 +327,10 @@ struct thread *machine__findnew_thread(struct machine *machine, pid_t pid,
->>   	return __machine__findnew_thread(machine, pid, tid, true);
->>   }
->>
->> -struct thread *machine__find_thread(struct machine *machine, pid_t tid)
->> +struct thread *machine__find_thread(struct machine *machine, pid_t pid,
->> +				    pid_t tid)
->>   {
->> -	return __machine__findnew_thread(machine, 0, tid, false);
->> +	return __machine__findnew_thread(machine, pid, tid, false);
->>   }
->>
->>   int machine__process_comm_event(struct machine *machine, union perf_event *event,
->> @@ -1114,7 +1115,9 @@ static void machine__remove_thread(struct machine *machine, struct thread *th)
->>   int machine__process_fork_event(struct machine *machine, union perf_event *event,
->>   				struct perf_sample *sample)
->>   {
->> -	struct thread *thread = machine__find_thread(machine, event->fork.tid);
->> +	struct thread *thread = machine__find_thread(machine,
->> +						     event->fork.pid,
->> +						     event->fork.tid);
->>   	struct thread *parent = machine__findnew_thread(machine,
->>   							event->fork.ppid,
->>   							event->fork.ptid);
->> @@ -1140,7 +1143,9 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
->>   int machine__process_exit_event(struct machine *machine, union perf_event *event,
->>   				struct perf_sample *sample __maybe_unused)
->>   {
->> -	struct thread *thread = machine__find_thread(machine, event->fork.tid);
->> +	struct thread *thread = machine__find_thread(machine,
->> +						     event->fork.pid,
->> +						     event->fork.tid);
->>
->>   	if (dump_trace)
->>   		perf_event__fprintf_task(event, stdout);
->> diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
->> index 2e6c248..c8c74a1 100644
->> --- a/tools/perf/util/machine.h
->> +++ b/tools/perf/util/machine.h
->> @@ -41,7 +41,8 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
->>   	return machine->vmlinux_maps[type];
->>   }
->>
->> -struct thread *machine__find_thread(struct machine *machine, pid_t tid);
->> +struct thread *machine__find_thread(struct machine *machine, pid_t pid,
->> +				    pid_t tid);
->>
->>   int machine__process_comm_event(struct machine *machine, union perf_event *event,
->>   				struct perf_sample *sample);
->> --
->> 1.8.3.1
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index ed810fb..7355b28 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -440,13 +440,16 @@ _base_sas_ioc_info(struct MPT2SAS_ADAPTER *ioc, MPI2DefaultReply_t *mpi_reply,
+ ****************************************************************************/
+ 
+ 	case MPI2_IOCSTATUS_EEDP_GUARD_ERROR:
+-		desc = "eedp guard error";
++		if (!ioc->disable_eedp_support)
++			desc = "eedp guard error";
+ 		break;
+ 	case MPI2_IOCSTATUS_EEDP_REF_TAG_ERROR:
+-		desc = "eedp ref tag error";
++		if (!ioc->disable_eedp_support)
++			desc = "eedp ref tag error";
+ 		break;
+ 	case MPI2_IOCSTATUS_EEDP_APP_TAG_ERROR:
+-		desc = "eedp app tag error";
++		if (!ioc->disable_eedp_support)
++			desc = "eedp app tag error";
+ 		break;
+ 
+ /****************************************************************************
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
+index 1f2ac3a..61b02ee 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.h
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
+@@ -842,6 +842,7 @@ struct MPT2SAS_ADAPTER {
+ 	u32		ioc_reset_count;
+ 	MPT2SAS_FLUSH_RUNNING_CMDS schedule_dead_ioc_flush_running_cmds;
+ 	u32             non_operational_loop;
++	u8      disable_eedp_support;
+ 
+ 	/* internal commands, callback index */
+ 	u8		scsi_io_cb_idx;
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index 7f0af4f..d502728 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -127,6 +127,11 @@ static int disable_discovery = -1;
+ module_param(disable_discovery, int, 0);
+ MODULE_PARM_DESC(disable_discovery, " disable discovery ");
+ 
++/* Enable or disable EEDP support */
++static int disable_eedp;
++module_param(disable_eedp, uint, 0);
++MODULE_PARM_DESC(disable_eedp, " disable EEDP support: (default=0)");
++
+ /* permit overriding the host protection capabilities mask (EEDP/T10 PI) */
+ static int prot_mask = 0;
+ module_param(prot_mask, int, 0);
+@@ -4031,7 +4036,8 @@ _scsih_qcmd_lck(struct scsi_cmnd *scmd, void (*done)(struct scsi_cmnd *))
+ 	}
+ 	mpi_request = mpt2sas_base_get_msg_frame(ioc, smid);
+ 	memset(mpi_request, 0, sizeof(Mpi2SCSIIORequest_t));
+-	_scsih_setup_eedp(scmd, mpi_request);
++	if (!ioc->disable_eedp_support)
++		_scsih_setup_eedp(scmd, mpi_request);
+ 	if (scmd->cmd_len == 32)
+ 		mpi_control |= 4 << MPI2_SCSIIO_CONTROL_ADDCDBLEN_SHIFT;
+ 	mpi_request->Function = MPI2_FUNCTION_SCSI_IO_REQUEST;
+@@ -4196,14 +4202,20 @@ _scsih_scsi_ioc_info(struct MPT2SAS_ADAPTER *ioc, struct scsi_cmnd *scmd,
+ 		desc_ioc_state = "scsi ext terminated";
+ 		break;
+ 	case MPI2_IOCSTATUS_EEDP_GUARD_ERROR:
+-		desc_ioc_state = "eedp guard error";
+-		break;
++		if (!ioc->disable_eedp_support) {
++			desc_ioc_state = "eedp guard error";
++			break;
++		}
+ 	case MPI2_IOCSTATUS_EEDP_REF_TAG_ERROR:
+-		desc_ioc_state = "eedp ref tag error";
+-		break;
++		if (!ioc->disable_eedp_support) {
++			desc_ioc_state = "eedp ref tag error";
++			break;
++		}
+ 	case MPI2_IOCSTATUS_EEDP_APP_TAG_ERROR:
+-		desc_ioc_state = "eedp app tag error";
+-		break;
++		if (!ioc->disable_eedp_support) {
++			desc_ioc_state = "eedp app tag error";
++			break;
++		}
+ 	default:
+ 		desc_ioc_state = "unknown";
+ 		break;
+@@ -4625,8 +4637,10 @@ _scsih_io_done(struct MPT2SAS_ADAPTER *ioc, u16 smid, u8 msix_index, u32 reply)
+ 	case MPI2_IOCSTATUS_EEDP_GUARD_ERROR:
+ 	case MPI2_IOCSTATUS_EEDP_REF_TAG_ERROR:
+ 	case MPI2_IOCSTATUS_EEDP_APP_TAG_ERROR:
+-		_scsih_eedp_error_handling(scmd, ioc_status);
+-		break;
++		if (!ioc->disable_eedp_support) {
++			_scsih_eedp_error_handling(scmd, ioc_status);
++			break;
++		}
+ 	case MPI2_IOCSTATUS_SCSI_PROTOCOL_ERROR:
+ 	case MPI2_IOCSTATUS_INVALID_FUNCTION:
+ 	case MPI2_IOCSTATUS_INVALID_SGL:
+@@ -8213,15 +8227,18 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 		goto out_add_shost_fail;
+ 	}
+ 
+-	/* register EEDP capabilities with SCSI layer */
+-	if (prot_mask)
+-		scsi_host_set_prot(shost, prot_mask);
+-	else
+-		scsi_host_set_prot(shost, SHOST_DIF_TYPE1_PROTECTION
++	ioc->disable_eedp_support = disable_eedp;
++	if (!ioc->disable_eedp_support) {
++		/* register EEDP capabilities with SCSI layer */
++		if (prot_mask)
++			scsi_host_set_prot(shost, prot_mask);
++		else
++			scsi_host_set_prot(shost, SHOST_DIF_TYPE1_PROTECTION
+ 				   | SHOST_DIF_TYPE2_PROTECTION
+ 				   | SHOST_DIF_TYPE3_PROTECTION);
+ 
+-	scsi_host_set_guard(shost, SHOST_DIX_GUARD_CRC);
++		scsi_host_set_guard(shost, SHOST_DIX_GUARD_CRC);
++	}
+ 
+ 	/* event thread */
+ 	snprintf(ioc->firmware_event_name, sizeof(ioc->firmware_event_name),
+-- 
+1.7.1
+
