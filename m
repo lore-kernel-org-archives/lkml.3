@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113AbaCNKOh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 06:14:37 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:53405 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316AbaCNKOe (ORCPT
+	id S1754170AbaCNKPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 06:15:47 -0400
+Received: from mx08-00178001.pphosted.com ([62.209.51.94]:48457 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752730AbaCNKPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 06:14:34 -0400
+	Fri, 14 Mar 2014 06:15:45 -0400
+X-Greylist: delayed 1300 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Mar 2014 06:15:45 EDT
+Message-ID: <5322D009.3090000@st.com>
+Date: Fri, 14 Mar 2014 09:46:49 +0000
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <53207CA2.4090309@st.com>
-References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>
-	<CACRpkdboBkzcJC35-BNvVYmS_t9Cd204AVz4rZasKtNJp0yE4g@mail.gmail.com>
-	<53207CA2.4090309@st.com>
-Date: Fri, 14 Mar 2014 11:14:34 +0100
-Message-ID: <CACRpkdZ7NpQBnpKLWSMST6fW9ST_tHi6L66jTQ4kh=+ONfjMgg@mail.gmail.com>
-Subject: Re: [PATCH v4 0/6] Add STiH407 SoC and reference board support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Maxime Coquelin <maxime.coquelin@st.com>
+To: Maxime Coquelin <maxime.coquelin@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Joe Perches <joe@perches.com>
 Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
         Stuart Menefy <stuart.menefy@st.com>,
         Giuseppe Cavallaro <peppe.cavallaro@st.com>,
         "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
@@ -30,25 +28,42 @@ Cc: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        <kernel@stlinux.com>, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH v4 4/6] pinctrl: st: Use ARRAY_SIZE instead of raw value
+ for number of delays
+References: <1394614210-15698-1-git-send-email-maxime.coquelin@st.com>	<1394614210-15698-5-git-send-email-maxime.coquelin@st.com>	<1394634313.28839.57.camel@joe-AO722> <CACRpkda0Z15zC=d8xe+KyHqgmTCHbnUjL14fBmtscpR-2kHtFQ@mail.gmail.com> <5322CF87.5000301@st.com>
+In-Reply-To: <5322CF87.5000301@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.147]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-14_04:2014-03-14,2014-03-14,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 4:26 PM, Maxime Coquelin <maxime.coquelin@st.com> wrote:
-> On 03/12/2014 03:20 PM, Linus Walleij wrote:
+On 14/03/14 09:44, Maxime Coquelin wrote:
+>>>
+>>> drivers/pinctrl/pinctrl-st.c-   unsigned int    *input_delays;
+>>> drivers/pinctrl/pinctrl-st.c-   unsigned int    *output_delays;
+>>>
+>>> It may be better to change these to const unsigned int *
+>>> and change
+>>>
+>>> static unsigned int stih416_delays[] = {
+>>>
+>>> to static const
+>>
+>> Good point. Patches accepted :-)
+> 
+> Sorry Joe, I forgot to reply.
+> 
+> I added this to my todo list.
+> I will provide the change before end of next week.
+> 
+Thanks Maxime for taking care of this...
 
->> I've applied the pinctrl changes to the pinctrl tree, please push all the
->> DTS[i] changes through ARM SoC.
->
-> As mentioned in the cover-letter, the DTS changes are based on arm_soc's
-> for-next branch.
->
-> Do you mean I should send a pull request for these three patches?
+--srini
+> Thanks,
+> Maxime
 
-You'd have to ask the ARM SoC maintainers, but if it's a few patches
-they can also apply them directly on the target branch.
-
-Yours,
-Linus Walleij
