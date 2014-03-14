@@ -1,65 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608AbaCNB3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Mar 2014 21:29:49 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35268 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752808AbaCNB3s (ORCPT
+	id S1754705AbaCNBdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Mar 2014 21:33:53 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:13857 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350AbaCNBdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Mar 2014 21:29:48 -0400
-Message-ID: <53225B87.1030904@hurleysoftware.com>
-Date: Thu, 13 Mar 2014 21:29:43 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 13 Mar 2014 21:33:52 -0400
+Message-ID: <53225C69.3010202@huawei.com>
+Date: Fri, 14 Mar 2014 09:33:29 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Sander Eikelenboom <linux@eikelenboom.it>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
-	<linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RC6 Bell Chime] [PATCH 00/24] rfcomm fixes
-References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com> <3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org> <1259174563.20140212120644@eikelenboom.it> <1335661753.20140303203853@eikelenboom.it> <1295963563.20140310093843@eikelenboom.it> <20140310150858.GA25703@tuxdriver.com> <EE67811F-FA2E-4773-8852-CB79BD7CDF1C@holtmann.org> <1679354302.20140314014901@eikelenboom.it>
-In-Reply-To: <1679354302.20140314014901@eikelenboom.it>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Glyn Normington <gnormington@gopivotal.com>
+CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Steve Powell <spowell@gopivotal.com>
+Subject: Re: [PATCH] control groups: documentation improvements
+References: <20140310113928.GC18700@gnimac.gopivotal.com> <20140310140724.GA25290@htj.dyndns.org> <531DC971.6020208@gopivotal.com> <20140310142014.GC25290@htj.dyndns.org> <5321D6FA.4040500@gopivotal.com>
+In-Reply-To: <5321D6FA.4040500@gopivotal.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sander,
+On 2014/3/14 0:04, Glyn Normington wrote:
+> Hi Tejun
+> 
+> Stepping back from the patch for a while, we'd like to explore the issues you raise. Please bear with us as we try to capture the ideas precisely.
+> 
+> Continued inline...
+> 
+> Regards,
+> Glyn (& Steve Powell, copied)
+> 
+> On 10/03/2014 14:20, Tejun Heo wrote:
+>> Hey,
+>>
+>> On Mon, Mar 10, 2014 at 02:17:21PM +0000, Glyn Normington wrote:
+>>> Then we missed how to create a hierarchy with no associated
+>>> subsystems. The only way I can think of is to use mount, specify no
+>>> subsystems on -o (which defaults to all the subsystems defined in
+>>> the kernel), and run it in a kernel with no subsystems defined
+>>> (which seems unlikely these days).
+>>>
+>>> Is that what you had in mind or is there some other way of creating
+>>> a hierarchy with no subsystems attached?
+>> Hierarchy name should be specified "-o name=" for hierarchies w/o any
+>> controllers.
+> 
+> According to cgroups.txt:
+> 
+>  When passing a name=<x> option for a new hierarchy, you need to
+>  specify subsystems manually; the legacy behaviour of mounting all
+>  subsystems when none are explicitly specified is not supported when
+>  you give a subsystem a name.
+> 
+> So the documentation certainly does not make it clear that it is valid to specify no subsystems.
+> 
+> We tried this (on a 3.11 kernel) and can't get it to work:
+> 
+> # mount -t cgroup -o name=th none /home/glyn/h1
 
-On 03/13/2014 08:49 PM, Sander Eikelenboom wrote:
-> <sarcasm on>
-> Is it just me .. or is this going at the speed of about a bluetooth connection ..
-> and probably missing the boot for 3.14 ? (for no good reason IMHO)
-> <sarcasm off>
->
-> (it was not in John's nor Dave's last pull request, although it seems to be reverted in the bluetooth tree now .. i didn't
-> see any formal pull request from that .. to get it even *starting* to traverse all the trees up to Linus ... )
+# mount -t cgroup -o name=th,none none /home/glyn/h1
 
-Known bugs sometimes roll out into mainline release because the
-alternative can be worse.
+and then
 
-As I explained in the follow-up to my patch series, I would
-not have expected Marcel to pick up any of the fixes for 3.14.
-There are a lot of moving parts in usb + bluetooth + rfcomm + tty,
-and the unfortunate reality is that -next doesn't get as much
-testing as it should.
+# mount -t cgroup -o name=th none /home/glyn/h2
 
-The fault is mine because Gianluca let me know about the
-problems with the conversion to tty_port, but the holidays really
-interfered with my ability to put this work first, and I'm sorry
-for that.
+> 
+> mount: wrong fs type, bad option, bad superblock on none,
+>     missing codepage or helper program, or other error
+>     (for several filesystems (e.g. nfs, cifs) you might
+>     need a /sbin/mount.<type> helper program) In some
+>     cases useful info is found in syslog - try dmesg |
+>     tail or so
+> 
+> Please could you supply an example which works?
+> 
+>>>>> Clarify that subsystems may be attached to multiple hierarchies,
+>>>>> although this isn't very useful, and explain what happens.
+>>>> And a subsystem may only be attached to a single hierarchy.
+>>> Perhaps that's what should happen, but the following experiment
+>>> demonstrates a subsystem being attached to two hierarchies:
+>>>
+>>> $ pwd
+>>> /home/vagrant
+>>> $ mkdir mem1
+>>> $ mkdir mem2
+>>> $ sudo su
+>>> # mount -t cgroup -o memory none /home/vagrant/mem1
+>>> # mount -t cgroup -o memory none /home/vagrant/mem2
+>>> # cd mem1
+>>> # mkdir inst1
+>>> # ls inst1
+>>> cgroup.clone_children  memory.failcnt ...
+>>> # ls ../mem2
+>>> cgroup.clone_children  inst1 memory.limit_in_bytes ...
+>>> # cd inst1
+>>> # echo 1000000 > memory.limit_in_bytes
+>>> # cat memory.limit_in_bytes
+>>> 1003520
+>>> # cat ../../mem2/inst1/memory.limit_in_bytes
+>>> 1003520
+>>> # echo $$ > tasks
+>>> # cat tasks
+>>> 1365
+>>> 1409
+>>> # cat ../../mem2/inst1/tasks
+>>> 1365
+>>> 1411
+>> You're mounting the same hierarchy twice.  Those are two views into
+>> the same hierarchy.
+>>
+>> Thanks.
+>>
+> Yes, it does appear that this is what is going on, but to explain it this way turns out to be more complicated than one might expect. Here's an attempt...
+> 
 
-I know the breakage around RFCOMM is frustrating but I think the
-worst is behind us. After 3.15 gets some -rc testing, I will
-be happy to cherry-pick the critical fixes for -stable inclusion.
+Yeah, this can only confuse people.
 
-Regards,
-Peter Hurley
+I don't think we need extra explanation, because we all know the same
+filesystem can have more than one mount point, and cgroupfs is no
+different.
+
+> ---
+>  A*hierarchy*  is a non-empty set of cgroups arranged in a tree and a
+>  non-empty set of subsystems such that the cgroups in the hierarchy
+>  partition all the tasks in the system (in other words, every task in the
+>  system is in exactly one of the cgroups in the hierarchy) and each
+>  subsystem attaches its own state to each cgroup in the hierarchy.
+> 
+>  There may be zero or more active hierarchies. Each hierarchy has one
+>  or more views associated with it. A *view* is an instance of the cgroup
+>  virtual filesystem. The tree of cgroups of a hierarchy is represented
+>  by the directory tree in the cgroup virtual filesystem of each view of
+>  the hierarchy. All the directory trees in the cgroup virtual filesystem
+>  of the views of a given hierarchy have identical content.
+> 
+>  No subsystem may participate in more than one hierarchy.
+> ---
+> 
+> We'd also need to explain the behaviour of mount and umount with respect to views. The first time a cgroup mount is performed with a given set of subsystems, a hierarchy is created and a view of the hierarchy is created and associated with a cgroup filesystem at the mount point. Subsequently, if another cgroup mount is performed with the same set of subsystems, no new hierarchy is created but a new view of the existing hierarchy is created and associated with the cgroup filesystem at the new mount point.
+> 
+> Unmounting a cgroup mount point destroys a particular view and destroys the hierarchy associated with the view if and only if the view is the only (remaining) view of the hierarchy.
+> 
+> So does introducing the concept of a view really help? The wording in the patch does without the concept by allowing two "hierarchies" to have identical content (so they are indistinguishable).
+> 
+> "views" don't seem to have any practical benefit. If we can avoid explaining concepts which have no use, we probably should. ;-)
+> 
+> 
+> .
+> 
+
