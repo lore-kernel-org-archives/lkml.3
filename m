@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaCNK3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 06:29:41 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:54113 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaCNK3j (ORCPT
+	id S1753536AbaCNKfP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 06:35:15 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:40953 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316AbaCNKfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 06:29:39 -0400
-Date: Fri, 14 Mar 2014 10:29:34 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 1/8] mfd: lpc_ich: Fix ACPI enable bitmask
-Message-ID: <20140314102934.GA3432@lee--X1>
-References: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com>
- <20140313151601.GA4479@roeck-us.net>
- <20140313152534.GC10356@lee--X1>
- <20140313225040.GK28504@lee--X1>
- <53223964.2080408@roeck-us.net>
+	Fri, 14 Mar 2014 06:35:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53223964.2080408@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <531F49C3.2020506@atmel.com>
+References: <1393984400-14687-1-git-send-email-wenyou.yang@atmel.com>
+	<531F49C3.2020506@atmel.com>
+Date: Fri, 14 Mar 2014 11:35:12 +0100
+Message-ID: <CACRpkdYTq0UmJ0JwzwHLjK8Qa=svoLtqxmm6+ntRnnD_NstCrw@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: at91: add the config GPIO_OUTPUT_x
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Wenyou Yang <wenyou.yang@atmel.com>,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>,
+        boris brezillon <b.brezillon@overkiz.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>>The original bitmask of 0x10 was incorrect and would result in a write
-> >>>>to a reserved read-only bit instead of enabling the ACPI I/O
-> >>>>region.  Update it to the proper value of 0x80.
-> >>>>
-> >>>>Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
-> >>>>Tested-by: Rajat Jain <rajatjain@juniper.net>
-> >>>>Cc: Guenter Roeck <linux@roeck-us.net>
-> >>>>Cc: James Ralston <james.d.ralston@intel.com>
-> >>>>Cc: Samuel Ortiz <sameo@linux.intel.com>
-> >>>>Cc: Lee Jones <lee.jones@linaro.org>
-> >>>
-> >>>Who is going to pick up this series ?
-> >>
-> >>I will, once I've completed the review.
-> >
-> >Okay review complete, phew!
-> >
-> >Guenter, How do you want to play this? Do you want me to create an
-> >immutable branch for you to pull from?
-> >
-> 
-> I'll be happy if I can pull it from -next. Is it going to be there
-> anytime soon ?
+On Tue, Mar 11, 2014 at 6:37 PM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
 
-Well I pushed an updated version of the MFD today, so it should appear
-in -next this evening.
+> Linus,
+>
+> For the nature of this feature, I would like to have your clear advice
+> as this is needed and has been proposed twice (at least). This feature
+> is needed for power management states of GPIOs.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+It seems that this is aligned with what other pin control drivers do
+to move pins to low power states. As long as the same pins are
+never used for "ordinary" GPIO through gpiolib I think doing this is
+just some electric aspect of the pin and controlled by the device using
+it as part of its normal low-power operation. No different from e.g.
+setting a different biasing or decoupling or grounding the pin or whatever.
+
+The fact that the register or bit(s) are named ...gpio-something... is
+irrelevant if they cannot be accessed as such.
+
+If you want to be *really* picky you can start go about to edit
+your gpio-ranges so that it is impossible to cross-reference one of
+these GPIOs to a pin, and thus impossible to use them from the
+GPIO subsystem. (Right now the at91 driver is using
+pinctrl_add_gpio_range() so switch this to using ranges defined
+from the device tree if you are fully migrated to DT.)
+
+Basically this is a system issue, how you guys want to handle the
+AT91 low-power modes.
+
+I think you are three maintainers of AT91:
+
+M:      Andrew Victor <linux@maxim.org.za>
+M:      Nicolas Ferre <nicolas.ferre@atmel.com>
+M:      Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+
+Can you get a majority vote on how you want this to work on AT91?
+If two out of three AT91 maintainers ACK the patch I will apply it, and
+then you three can fight amongst yourselves ;-)
+
+Yours,
+Linus Walleij
