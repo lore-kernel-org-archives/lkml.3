@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108AbaCNPqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 11:46:45 -0400
-Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:44046
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755954AbaCNPqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 11:46:42 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "keescook@chromium.org" <keescook@chromium.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: Trusted kernel patchset for Secure Boot lockdown
-Thread-Topic: Trusted kernel patchset for Secure Boot lockdown
-Thread-Index: AQHPP5llgdFEpLbAD0ahQ2OJgthmsZrgufeA
-Date: Fri, 14 Mar 2014 15:46:37 +0000
-Message-ID: <1394811997.26846.2.camel@x230.mview.int.nebula.com>
-References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
-	 <CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
-	 <alpine.LRH.2.02.1402281402090.26521@tundra.namei.org>
-	 <1394686919.25122.2.camel@x230>
-	 <CAGXu5jJ_8w7PscwTQG5iVRJ4k4nzvN8oqzAPgV+NExAr9v17EQ@mail.gmail.com>
-	 <alpine.LRH.2.02.1403132031460.11638@tundra.namei.org>
-	 <1394726363.25122.16.camel@x230>
-	 <20140313212450.67f1de8e@alan.etchedpixels.co.uk>
-	 <1394746248.27846.3.camel@x230>
-	 <20140313232140.03bdaac3@alan.etchedpixels.co.uk>
-	 <1394762250.6416.24.camel@x230.lan>
-	 <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
-	 <1394801518.6416.38.camel@x230.lan>
-	 <CAGXu5jLZcWh5WD0L8s3Q-GXdXCMnA57qtjfdFfQbv0fxYcuCTQ@mail.gmail.com>
-In-Reply-To: <CAGXu5jLZcWh5WD0L8s3Q-GXdXCMnA57qtjfdFfQbv0fxYcuCTQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.56.23.115]
-x-forefront-prvs: 0150F3F97D
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(24454002)(377424004)(81342001)(77982001)(59766001)(80022001)(63696002)(66066001)(74502001)(85306002)(74876001)(94316002)(69226001)(74706001)(74366001)(47446002)(86362001)(33646001)(93516002)(79102001)(20776003)(2656002)(65816001)(87266001)(87936001)(95666003)(81542001)(97336001)(51856001)(47976001)(50986001)(47736001)(94946001)(97186001)(95416001)(90146001)(19580405001)(81816001)(80976001)(81686001)(83322001)(19580395003)(85852003)(92726001)(4396001)(76482001)(46102001)(54316002)(76786001)(56776001)(31966008)(93136001)(49866001)(74662001)(83072002)(92566001)(54356001)(76796001)(77096001)(56816005)(53806001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB124;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:EC664627.91F6FD19.B1D193B3.44EEFAAE.2015E;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <42DA14E159C96B438BD6BCE7F536ACD6@namprd05.prod.outlook.com>
+	id S1756127AbaCNPrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 11:47:08 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:49072
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755389AbaCNPrE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 11:47:04 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(z569dhzbb2dI98dI9371Ic89bh936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz8275bh1de097h186068hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h906i1155h)
+Date: Fri, 14 Mar 2014 08:46:49 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <monstr@monstr.eu>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: Zynq macb
+References: <c6344e9b-fa32-4313-8950-59030c4bffb8@AM1EHSMHS003.ehs.local>
+ <73734ba5-00d3-445d-8c6f-a1a868cdd537@CH1EHSMHS024.ehs.local>
+ <53229584.7000100@monstr.eu>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <53229584.7000100@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <d1a10044-b85c-4664-8fc3-2fb3c7e1a274@CO9EHSMHS026.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2EFktuP017486
 
-On Fri, 2014-03-14 at 08:23 -0700, Kees Cook wrote:
+On Fri, 2014-03-14 at 06:37AM +0100, Michal Simek wrote:
+> On 03/13/2014 11:33 PM, S√∂ren Brinkmann wrote:
+> > On Thu, 2014-03-13 at 03:16PM -0700, S√∂ren Brinkmann wrote:
+> >> Hi Nicolas,
+> >>
+> >> I did some testing on the current linux-next tree and ran iperf on Zynq.
+> >> It seems that network and even the whole system can collapse when doing
+> >> that.
+> >> I don't really know what's going on, but once I saw the message:
+> >> 	"inconsistent Rx descriptor chain"
+> >> printed twice (system frozen afterwards).
+> >>
+> >> I don't know what exactly is going wrong, but suspect something around
+> >> memory/DMA. I have no clue whether it makes any sense or not, but I
+> >> tried using the macb_* functions instead of the gem_* ones (see diff below).
+> >> That seems to result in a stable system and working Ethernet.
+> > 
+> > That was a little too early. After roughly 25 minutest the system runs
+> > into a deadlock:
+> >   BUG: spinlock lockup suspected on CPU#1, iperf/774
+> >    lock: 0xeda0366c, .magic: dead4ead, .owner: swapper/0/0, .owner_cpu: 0
+> >   CPU: 1 PID: 774 Comm: iperf Tainted: G        W    3.14.0-rc6-next-20140312-xilinx-dirty #41
+> >   [<c00153c0>] (unwind_backtrace) from [<c0011e70>] (show_stack+0x10/0x14)
+> >   [<c0011e70>] (show_stack) from [<c03d6b50>] (dump_stack+0x80/0xcc)
+> >   [<c03d6b50>] (dump_stack) from [<c00670ac>] (do_raw_spin_lock+0xd4/0x190)
+> >   [<c00670ac>] (do_raw_spin_lock) from [<c03dc79c>] (_raw_spin_lock_irqsave+0x58/0x64)
+> >   [<c03dc79c>] (_raw_spin_lock_irqsave) from [<c02b0810>] (macb_start_xmit+0x24/0x2d0)
+> >   [<c02b0810>] (macb_start_xmit) from [<c0321b10>] (dev_hard_start_xmit+0x334/0x470)
+> >   [<c0321b10>] (dev_hard_start_xmit) from [<c0339aa8>] (sch_direct_xmit+0x78/0x2f8)
+> >   [<c0339aa8>] (sch_direct_xmit) from [<c0321f60>] (__dev_queue_xmit+0x314/0x704)
+> >   [<c0321f60>] (__dev_queue_xmit) from [<c034cb3c>] (ip_finish_output+0x6c4/0x894)
+> >   [<c034cb3c>] (ip_finish_output) from [<c034cf24>] (ip_local_out+0x74/0x90)
+> >   [<c034cf24>] (ip_local_out) from [<c034d340>] (ip_queue_xmit+0x400/0x5c4)
+> >   [<c034d340>] (ip_queue_xmit) from [<c03634b8>] (tcp_transmit_skb+0xa18/0xab0)
+> >   [<c03634b8>] (tcp_transmit_skb) from [<c035856c>] (tcp_recvmsg+0x92c/0xae4)
+> >   [<c035856c>] (tcp_recvmsg) from [<c03806f0>] (inet_recvmsg+0x1c0/0x1fc)
+> >   [<c03806f0>] (inet_recvmsg) from [<c030769c>] (sock_recvmsg+0x7c/0x98)
+> >   [<c030769c>] (sock_recvmsg) from [<c0309988>] (SyS_recvfrom+0x9c/0x108)
+> >   [<c0309988>] (SyS_recvfrom) from [<c0309a08>] (sys_recv+0x14/0x18)
+> >   [<c0309a08>] (sys_recv) from [<c000ea60>] (ret_fast_syscall+0x0/0x48)
+> 
+> Do you have this change in your tree?
+> https://github.com/Xilinx/linux-xlnx/commit/1a85939af40acca2bf963407b497cc31c303ff3e
+> 
+> I don't think we have sent this to mainline yet.
 
-> The command line problem here is a total red herring. If you've got a
-> measured kernel, you have a measured command line. (If not, you don't
-> have a measured kernel.) Dealing with the command line has nothing to
-> do with enforcing the ring0/uid0 boundary which is what this patch
-> series does.
+If it's not in next, it wasn't in my kernel.
 
-That's why I used trusted rather than measured. The Secure Boot trust
-model assumes that the user is able to modify the command line (it's
-basically impossible to deploy generically otherwise), so we need to
-filter out command line options that allow a user to elevate themselves
-into the kernel at boot time.
+	S√∂ren
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
