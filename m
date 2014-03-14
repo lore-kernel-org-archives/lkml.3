@@ -1,116 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447AbaCNOQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 10:16:01 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:58634 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754944AbaCNOP6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 10:15:58 -0400
+	id S1755487AbaCNOQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 10:16:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16835 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754786AbaCNOQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 10:16:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,655,1389772800"; 
+   d="scan'208";a="498552570"
+Date: Fri, 14 Mar 2014 16:16:02 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan <gnomes@lxorguk.ukuu.org.uk>, Stephen Warren <swarren@nvidia.com>,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH V3] serial/uart/8250: Add tunable RX interrupt trigger
+ I/F of FIFO buffers
+Message-ID: <20140314141602.GA11603@xps8300>
+References: <20140314022154.4345.23024.stgit@yunodevel>
 MIME-Version: 1.0
-In-Reply-To: <1394762863-12154-2-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1394762863-12154-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<1394762863-12154-2-git-send-email-bjorn.andersson@sonymobile.com>
-Date: Fri, 14 Mar 2014 09:15:57 -0500
-Message-ID: <CAL_JsqJNp2XZ_EkTFqcsG5RZK0Nm7iquVTb=QX59pa1Z-ODAAQ@mail.gmail.com>
-Subject: Re: [PATCH v5 1/2] i2c: qup: Add device tree bindings information
-From: Rob Herring <robherring2@gmail.com>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140314022154.4345.23024.stgit@yunodevel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On March 13, 2014 9:07:42 PM CDT, Bjorn Andersson
-<bjorn.andersson@sonymobile.com> wrote:
->From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->
->The Qualcomm Universal Peripherial (QUP) wraps I2C mini-core and
->provide input and output FIFO's for it. I2C controller can operate
->as master with supported bus speeds of 100Kbps and 400Kbps.
->
->Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
->[bjorn: reformulated part of binding description
->        added version to compatible
->        cleaned up example]
->Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Hi,
 
-Acked-by: Rob Herring <robh@kernel.org>
+On Fri, Mar 14, 2014 at 11:21:54AM +0900, Yoshihiro YUNOMAE wrote:
+>  void serial8250_clear_and_reinit_fifos(struct uart_8250_port *p)
+>  {
+> -	unsigned char fcr;
+> -
+>  	serial8250_clear_fifos(p);
+> -	fcr = uart_config[p->port.type].fcr;
+> -	serial_out(p, UART_FCR, fcr);
+> +	p->fcr = uart_config[p->port.type].fcr;
+> +	serial_out(p, UART_FCR, p->fcr);
 
->---
->.../devicetree/bindings/i2c/qcom,i2c-qup.txt       |   46
->++++++++++++++++++++
-> 1 file changed, 46 insertions(+)
->create mode 100644
->Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
->
->diff --git a/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
->b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
->new file mode 100644
->index 0000000..32ef64e
->--- /dev/null
->+++ b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
->@@ -0,0 +1,46 @@
->+Qualcomm Universal Peripheral (QUP) I2C controller
->+
->+Required properties:
->+ - compatible: Should be:
->+   * "qcom,i2c-qup-v1.1.1" for 8660, 8960 and 8064.
->+   * "qcom,i2c-qup-v2.1.1" for 8974 v1.
->+   * "qcom,i2c-qup-v2.2.1" for 8974 v2 and later.
->+ - reg: Should contain QUP register address and length.
->+ - interrupts: Should contain I2C interrupt.
->+
->+ - clocks: A list of phandles + clock-specifiers, one for each entry
->in
->+   clock-names.
->+ - clock-names: Should contain:
->+   * "core" for the core clock
->+   * "iface" for the AHB clock
->+
->+ - #address-cells: Should be <1> Address cells for i2c device address
->+ - #size-cells: Should be <0> as i2c addresses have no size component
->+
->+Optional properties:
->+ - clock-frequency: Should specify the desired i2c bus clock frequency
->in Hz,
->+                    defaults to 100kHz if omitted.
->+
->+Child nodes should conform to i2c bus binding.
->+
->+Example:
->+
->+ i2c@f9924000 {
->+ compatible = "qcom,i2c-qup-v2.2.1";
->+ reg = <0xf9924000 0x1000>;
->+ interrupts = <0 96 0>;
->+
->+ clocks = <&gcc GCC_BLSP1_QUP2_I2C_APPS_CLK>, <&gcc
->GCC_BLSP1_AHB_CLK>;
->+ clock-names = "core", "iface";
->+
->+ clock-frequency = <355000>;
->+
->+ #address-cells = <1>;
->+ #size-cells = <0>;
->+
->+ dummy@60 {
->+ compatible = "dummy";
->+ reg = <0x60>;
->+ };
->+ };
->+
+You should allow also the probe drivers to set this..
+
+        if (!p->fcr)
+                p->fcr = uart_config[p->port.type].fcr;
+
+>  }
+>  EXPORT_SYMBOL_GPL(serial8250_clear_and_reinit_fifos);
+>  
+> @@ -2325,10 +2323,19 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+>  		if ((baud < 2400 && !up->dma) || fifo_bug) {
+>  			fcr &= ~UART_FCR_TRIGGER_MASK;
+>  			fcr |= UART_FCR_TRIGGER_1;
+> +			/* Don't use user setting RX trigger */
+> +			up->fcr = 0;
+
+I don't know about this but..
+
+>  		}
+>  	}
+>  
+>  	/*
+> +	 * If up->fcr exists, a user has opened this port, changed RX trigger,
+> +	 * or read RX trigger before. So, we don't need to change up->fcr here.
+> +	 */
+> +	if (!up->fcr)
+> +		up->fcr = fcr;
+
+Why not just set fcr = up->fcr in the beginning of the function?
+
+<snip>
+
+> +static int do_set_rx_int_trig(struct tty_port *port, unsigned char val)
+> +{
+> +	struct uart_state *state = container_of(port, struct uart_state, port);
+> +	struct uart_port *uport = state->uart_port;
+> +	struct uart_8250_port *up =
+> +		container_of(uport, struct uart_8250_port, port);
+> +	unsigned char fcr;
+> +	int rx_trig;
+> +
+> +	if (!(up->capabilities & UART_CAP_FIFO) || uport->fifosize <= 1)
+> +		return -EINVAL;
+> +
+> +	rx_trig = convert_val2rxtrig(up, val);
+> +	if (rx_trig < 0)
+> +		return rx_trig;
+> +
+> +	serial8250_clear_fifos(up);
+> +	if (!up->fcr)
+> +		/* termios is not set yet */
+> +		fcr = uart_config[up->port.type].fcr;
+> +	else
+> +		fcr = up->fcr;
+> +	fcr &= ~UART_FCR_TRIGGER_MASK;
+> +	fcr |= (unsigned char)rx_trig;
+> +	up->fcr = fcr;
+> +	serial_out(up, UART_FCR, up->fcr);
+> +	return 0;
+> +}
+
+Where are you setting UART_FCR_ENABLE_FIFO bit? Am I missing
+something?
+
+> diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
+> index af47a8a..2ce1152 100644
+> --- a/include/linux/serial_8250.h
+> +++ b/include/linux/serial_8250.h
+> @@ -76,6 +76,7 @@ struct uart_8250_port {
+>  	unsigned short		bugs;		/* port bugs */
+>  	unsigned int		tx_loadsz;	/* transmit fifo load size */
+>  	unsigned char		acr;
+> +	unsigned char		fcr;
+
+I do like to see fcr being added here, but because of a different
+reason. I want to be able to set it from the probe drivers.
+
+Br,
+
+-- 
+heikki
