@@ -1,41 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858AbaCNKT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 06:19:56 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:60477 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995AbaCNKTx (ORCPT
+	id S1753822AbaCNKWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 06:22:47 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.245]:31691 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752788AbaCNKWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 06:19:53 -0400
+	Fri, 14 Mar 2014 06:22:45 -0400
+X-Greylist: delayed 309 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Mar 2014 06:22:45 EDT
+From: Josh Wu <josh.wu@atmel.com>
+To: <g.liakhovetski@gmx.de>
+CC: <m.chehab@samsung.com>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Josh Wu <josh.wu@atmel.com>
+Subject: [PATCH] [media] ov2640: add support for async device registration
+Date: Fri, 14 Mar 2014 18:12:31 +0800
+Message-ID: <1394791952-12941-1-git-send-email-josh.wu@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20140312201606.GN3327@book.gsilab.sittig.org>
-References: <1394148326-21556-1-git-send-email-garyservin@gmail.com>
-	<CACRpkdbjbjeePQipX7nbLXJKnYWFUXhbDLEXPGX5z+EE8R-q3Q@mail.gmail.com>
-	<20140312201606.GN3327@book.gsilab.sittig.org>
-Date: Fri, 14 Mar 2014 11:19:53 +0100
-Message-ID: <CACRpkdbmXvnwO-da85TreVWC2PEdXUG9M0b_cBgr_CyZtTjs3g@mail.gmail.com>
-Subject: Re: [PATCH] gpio: mcp23s08: Trivial: Fixed coding style issues
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Gerhard Sittig <gsi@denx.de>
-Cc: Gary Servin <garyservin@gmail.com>, Alexandre Courbot <gnurou@gmail.com>,
-        Jiri Kosina <trivial@kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 9:16 PM, Gerhard Sittig <gsi@denx.de> wrote:
+Move the clock detection code to the beginning of the probe().
+If we meet any error in the clock detecting, then defer the probe.
 
->  'sizeof' is an operator, very much like a unary minus or
-> unary ampersand which neither require parentheses.  So either of
-> "sizeof(x)" as well as "sizeof x" are legal with regard to the C
-> language.  It's just that the community prefers "sizeof(x)" for
-> the improved readability.
+Signed-off-by: Josh Wu <josh.wu@atmel.com>
+---
+ drivers/media/i2c/soc_camera/ov2640.c |   43 +++++++++++++++++++++------------
+ 1 file changed, 28 insertions(+), 15 deletions(-)
 
-You're right, amazingly. Thanks for teaching me something new
-today!
+diff --git a/drivers/media/i2c/soc_camera/ov2640.c b/drivers/media/i2c/soc_camera/ov2640.c
+index 6c6b1c3..fb9b6e9 100644
+--- a/drivers/media/i2c/soc_camera/ov2640.c
++++ b/drivers/media/i2c/soc_camera/ov2640.c
+@@ -22,6 +22,7 @@
+ #include <linux/videodev2.h>
+ 
+ #include <media/soc_camera.h>
++#include <media/v4l2-async.h>
+ #include <media/v4l2-clk.h>
+ #include <media/v4l2-subdev.h>
+ #include <media/v4l2-ctrls.h>
+@@ -1069,6 +1070,7 @@ static int ov2640_probe(struct i2c_client *client,
+ 	struct ov2640_priv	*priv;
+ 	struct soc_camera_subdev_desc *ssdd = soc_camera_i2c_to_desc(client);
+ 	struct i2c_adapter	*adapter = to_i2c_adapter(client->dev.parent);
++	struct v4l2_clk		*clk;
+ 	int			ret;
+ 
+ 	if (!ssdd) {
+@@ -1083,13 +1085,20 @@ static int ov2640_probe(struct i2c_client *client,
+ 		return -EIO;
+ 	}
+ 
++	clk = v4l2_clk_get(&client->dev, "mclk");
++	if (IS_ERR(clk))
++		return -EPROBE_DEFER;
++
+ 	priv = devm_kzalloc(&client->dev, sizeof(struct ov2640_priv), GFP_KERNEL);
+ 	if (!priv) {
+ 		dev_err(&adapter->dev,
+ 			"Failed to allocate memory for private data!\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto err_kzalloc;
+ 	}
+ 
++	priv->clk = clk;
++
+ 	v4l2_i2c_subdev_init(&priv->subdev, client, &ov2640_subdev_ops);
+ 	v4l2_ctrl_handler_init(&priv->hdl, 2);
+ 	v4l2_ctrl_new_std(&priv->hdl, &ov2640_ctrl_ops,
+@@ -1097,23 +1106,26 @@ static int ov2640_probe(struct i2c_client *client,
+ 	v4l2_ctrl_new_std(&priv->hdl, &ov2640_ctrl_ops,
+ 			V4L2_CID_HFLIP, 0, 1, 1, 0);
+ 	priv->subdev.ctrl_handler = &priv->hdl;
+-	if (priv->hdl.error)
+-		return priv->hdl.error;
+-
+-	priv->clk = v4l2_clk_get(&client->dev, "mclk");
+-	if (IS_ERR(priv->clk)) {
+-		ret = PTR_ERR(priv->clk);
+-		goto eclkget;
++	if (priv->hdl.error) {
++		ret = priv->hdl.error;
++		goto err_kzalloc;
+ 	}
+ 
+ 	ret = ov2640_video_probe(client);
+-	if (ret) {
+-		v4l2_clk_put(priv->clk);
+-eclkget:
+-		v4l2_ctrl_handler_free(&priv->hdl);
+-	} else {
+-		dev_info(&adapter->dev, "OV2640 Probed\n");
+-	}
++	if (ret)
++		goto err_probe;
++
++	ret = v4l2_async_register_subdev(&priv->subdev);
++	if (ret)
++		goto err_probe;
++
++	dev_info(&adapter->dev, "OV2640 Probed\n");
++	return 0;
++
++err_probe:
++	v4l2_ctrl_handler_free(&priv->hdl);
++err_kzalloc:
++	v4l2_clk_put(clk);
+ 
+ 	return ret;
+ }
+@@ -1122,6 +1134,7 @@ static int ov2640_remove(struct i2c_client *client)
+ {
+ 	struct ov2640_priv       *priv = to_ov2640(client);
+ 
++	v4l2_async_unregister_subdev(&priv->subdev);
+ 	v4l2_clk_put(priv->clk);
+ 	v4l2_device_unregister_subdev(&priv->subdev);
+ 	v4l2_ctrl_handler_free(&priv->hdl);
+-- 
+1.7.9.5
 
-Yours,
-Linus Walleij
