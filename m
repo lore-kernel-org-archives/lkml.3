@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447AbaCNFDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 01:03:11 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:55877 "EHLO
+	id S1755464AbaCNFEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 01:04:20 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:56085 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaCNFDI (ORCPT
+	with ESMTP id S1751860AbaCNFES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 01:03:08 -0400
-X-AuditID: cbfee68e-b7f566d000002344-93-53228d8ae2e6
-Date: Fri, 14 Mar 2014 14:03:05 +0900
+	Fri, 14 Mar 2014 01:04:18 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-23-53228dd0c7fa
+Date: Fri, 14 Mar 2014 14:04:16 +0900
 From: Cho KyongHo <pullip.cho@samsung.com>
 To: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
         Linux DeviceTree <devicetree@vger.kernel.org>,
@@ -21,42 +21,42 @@ Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
         Prathyush <prathyush.k@samsung.com>,
         Rahul Sharma <rahul.sharma@samsung.com>,
         Sachin Kamat <sachin.kamat@linaro.org>,
-        Varun Sethi <Varun.Sethi@freescale.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v11 05/27] iommu/exynos: remove prefetch buffer setting
-Message-id: <20140314140305.f95a18dbef5fbccaa3f97b94@samsung.com>
+        Tomasz Figa <t.figa@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [PATCH v11 06/27] iommu/exynos: allocate lv2 page table from own slab
+Message-id: <20140314140416.215fb91cdfeacc322c607308@samsung.com>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t8zY92uXqVgg78LlSzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
-	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4Mr4duonU8E2vorZOzrZGhifc3cxcnJICJhItJ+/zQhh
-	i0lcuLeerYuRi0NIYBmjxNI1p1hhipad/cICkZjOKPF363EmCGcyk8SW1U/AqlgEVCX+7NvO
-	DmKzCWhJrJ57nBGkSESgjUnia+MhsHZmgbnMEs/WPgXrEBZwl5i69B+YzSvgKPHk6DeoQywk
-	LjR1sEPEBSV+TL7HAmIzA03dvK2JFcKWl9i85i0zyFAJgV4OiX2fVkOdISDxbTLINg6ghKzE
-	pgPMEDMlJQ6uuMEygVFkFpKxs5CMnYVk7AJG5lWMoqkFyQXFSelFRnrFibnFpXnpesn5uZsY
-	IRHct4Px5gHrQ4zJQCsnMkuJJucDE0BeSbyhsZmRhamJqbGRuaUZacJK4ryLHiYFCQmkJ5ak
-	ZqemFqQWxReV5qQWH2Jk4uCUamBUSlx71Kmh3vlDVqPjKfNwycyg5C8C709slfCYMjWwoLX1
-	j2G0u5THP8nw/wGs3+XWqxSd0XqzTIUvY+GmTYohS35NvxQ/aYLXu61cEXcV33WkHZK4Zper
-	unDO9s6dt/dsvXNl4eo1F9SD5kxgM+CL7l114ZqmyAqnwgk+FXc+6U0X0jTMPzpJiaU4I9FQ
-	i7moOBEAmNmQl/YCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t9jQd2uXqVgg4WvZSzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
-	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAH6QEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8e3UT6aCbXwV
-	s3d0sjUwPufuYuTkkBAwkVh29gsLhC0mceHeerYuRi4OIYHpjBJ/tx5ngnAmM0lsWf2EFaSK
-	RUBV4s++7ewgNpuAlsTquccZQYpEBNqYJL42HmIBcZgF5jJLPFv7FKxDWMBdYurSf2A2r4Cj
-	xJOj3xgh9llIXGjqYIeIC0r8mHwP7A5moKmbtzWxQtjyEpvXvGWewMg3C0nZLCRls5CULWBk
-	XsUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRnB6eSe1gXNlgcYhRgINRiYfX4bBisBBrYllx
-	Ze4hRgkOZiUR3qoIpWAh3pTEyqrUovz4otKc1OJDjMlAf09klhJNzgemrrySeENjEzMjSyMz
-	CyMTc3PShJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYMxMXVkXGrSuY8qsV1xWTk6Nezcu
-	1hB/IfnngcfhdR3/7+3LkvsUJf6RXeZWodWqu9JTji92br1wYHHxo6n/lr7uNc/RFlr8IvCp
-	55LNvkLJLKp1b1efuN1/u/m885RjnNMU/nXeeqaxX+pPr7Ld+a+7XslYVnZcSGT9zsj/ieXE
-	YcVJ/6s2hX9XYinOSDTUYi4qTgQAtb7PM1MDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zQ90LvUrBBrN+G1jcuXuO1WL+ESDx
+	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S2mLDrManH4TTurxck/
+	vYwW62e8ZrGYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
+	5DyuHD3DFMAZxWWTkpqTWZZapG+XwJXx+cl35oJ3ohVXdr9la2BsE+pi5OSQEDCR2N/0hBXC
+	FpO4cG89WxcjF4eQwDJGiUvfVjDCFP0+3AJmCwksYpRYMNMUomgyk8Syi+uZQRIsAqoS729N
+	AZvEJqAlsXrucUaQIhGBNiaJr42HWEAcZoG5zBIfv81hA6kSFvCT2HXuGROIzSvgKHGyYSET
+	xDoLiQtNHewQcUGJH5PvsYDYzEBTN29rYoWw5SU2r3nLDDJUQqCXQ+LCEYhbWQQEJL5NBtnG
+	AZSQldh0gBlipqTEwRU3WCYwisxCMnYWkrGzkIxdwMi8ilE0tSC5oDgpvchUrzgxt7g0L10v
+	OT93EyMkfifuYLx/wPoQYzLQyonMUqLJ+cD4zyuJNzQ2M7IwNTE1NjK3NCNNWEmcN/1RUpCQ
+	QHpiSWp2ampBalF8UWlOavEhRiYOTqkGxpq8IzOKo6wiN0xy8ZGdu/ra8sYVist+z627Yi77
+	8HzO097cuJURr3dv3D91b4tjW9nB05uuLGTw+Gx1bWbNjp0f9/CUmq/JlD1a8m65n2D4k5Oz
+	5mzmNtkgw7drxczlqyRjonY3XHQ4HnClwqFeRXfDwQ6TuFm+RYYC6UeUHwd4lhQdX3zZxFGJ
+	pTgj0VCLuag4EQAjOkEI9QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd0LvUrBBovPalncuXuO1WL+ESDx
+	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S2mLDrManH4TTurxck/
+	vYwW62e8ZrGYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
+	5DyuHD3DFMAZ1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
+	oOuWmQP0gZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4/OT78wF70Qr
+	rux+y9bA2CbUxcjJISFgIvH7cAsjhC0mceHeejYQW0hgEaPEgpmmXYxcQPZkJollF9czgyRY
+	BFQl3t+awgpiswloSayee5wRpEhEoI1J4mvjIRYQh1lgLrPEx29zwEYJC/hJ7Dr3jAnE5hVw
+	lDjZsJAJYp2FxIWmDnaIuKDEj8n3WEBsZqCpm7c1sULY8hKb17xlnsDINwtJ2SwkZbOQlC1g
+	ZF7FKJpakFxQnJSea6RXnJhbXJqXrpecn7uJEZwcnknvYFzVYHGIUYCDUYmHd8ZRxWAh1sSy
+	4srcQ4wSHMxKIrxVEUrBQrwpiZVVqUX58UWlOanFhxiTgf6eyCwlmpwPTFx5JfGGxiZmRpZG
+	ZhZGJubmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cCY99REsTM/yNah9uWDbrfnvaVH
+	rRv+sMVVu21OWdqqGi/Y4L1n73TehkSbH55qhxnP5K5P6C84HL7iyOpvLYfqkhRClYoapu1k
+	3DJtqc6LnNZFaV/Tvx4yvV39yk7uWcOTSl+5bervf0z1W6/7UvaS3PeZwncfNAX9ma22L4hR
+	501Pf63Pgn4lluKMREMt5qLiRADPauNwUgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -64,55 +64,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prefetch buffer is a cache of System MMU 3.x and caches a block of
-page table entries to make effect of larger page with small pages.
-However, how to control prefetch buffers and the specifications of
-prefetch buffers different from minor versions of System MMU v3.
-Prefetch buffers must be controled with care because there are some
-restrictions in H/W design.
-
-The interface and implementation to initiate prefetch buffers will
-be prepared later.
+Since kmalloc() does not guarantee that the allignment of 1KiB when it
+allocates 1KiB, it is required to allocate lv2 page table from own
+slab that guarantees alignment of 1KiB
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |   16 ----------------
- 1 file changed, 16 deletions(-)
+ drivers/iommu/exynos-iommu.c |   34 ++++++++++++++++++++++++++++------
+ 1 file changed, 28 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 0d26aeb..647fc46 100644
+index 647fc46..bee1bb1 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -244,13 +244,6 @@ static void __sysmmu_set_ptbase(void __iomem *sfrbase,
- 	__sysmmu_tlb_invalidate(sfrbase);
- }
+@@ -100,6 +100,8 @@
+ #define REG_PB1_SADDR		0x054
+ #define REG_PB1_EADDR		0x058
  
--static void __sysmmu_set_prefbuf(void __iomem *sfrbase, unsigned long base,
--						unsigned long size, int idx)
--{
--	__raw_writel(base, sfrbase + REG_PB0_SADDR + idx * 8);
--	__raw_writel(size - 1 + base,  sfrbase + REG_PB0_EADDR + idx * 8);
--}
--
- static void __set_fault_handler(struct sysmmu_drvdata *data,
- 					sysmmu_fault_handler_t handler)
++static struct kmem_cache *lv2table_kmem_cache;
++
+ static unsigned long *section_entry(unsigned long *pgtable, unsigned long iova)
  {
-@@ -424,15 +417,6 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
+ 	return pgtable + lv1ent_offset(iova);
+@@ -726,7 +728,8 @@ static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
  
- 	for (i = 0; i < data->nsfrs; i++) {
- 		__sysmmu_set_ptbase(data->sfrbases[i], pgtable);
+ 	for (i = 0; i < NUM_LV1ENTRIES; i++)
+ 		if (lv1ent_page(priv->pgtable + i))
+-			kfree(__va(lv2table_base(priv->pgtable + i)));
++			kmem_cache_free(lv2table_kmem_cache,
++					__va(lv2table_base(priv->pgtable + i)));
+ 
+ 	free_pages((unsigned long)priv->pgtable, 2);
+ 	free_pages((unsigned long)priv->lv2entcnt, 1);
+@@ -825,7 +828,7 @@ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
+ 	if (lv1ent_fault(sent)) {
+ 		unsigned long *pent;
+ 
+-		pent = kzalloc(LV2TABLE_SIZE, GFP_ATOMIC);
++		pent = kmem_cache_zalloc(lv2table_kmem_cache, GFP_ATOMIC);
+ 		BUG_ON((unsigned long)pent & (LV2TABLE_SIZE - 1));
+ 		if (!pent)
+ 			return ERR_PTR(-ENOMEM);
+@@ -855,8 +858,7 @@ static int lv1set_section(unsigned long *sent, unsigned long iova,
+ 			return -EADDRINUSE;
+ 		}
+ 
+-		kfree(page_entry(sent, 0));
 -
--		if ((readl(data->sfrbases[i] + REG_MMU_VERSION) >> 28) == 3) {
--			/* System MMU version is 3.x */
--			__raw_writel((1 << 12) | (2 << 28),
--					data->sfrbases[i] + REG_MMU_CFG);
--			__sysmmu_set_prefbuf(data->sfrbases[i], 0, -1, 0);
--			__sysmmu_set_prefbuf(data->sfrbases[i], 0, -1, 1);
--		}
--
- 		__raw_writel(CTRL_ENABLE, data->sfrbases[i] + REG_MMU_CTRL);
++		kmem_cache_free(lv2table_kmem_cache, page_entry(sent, 0));
+ 		*pgcnt = 0;
  	}
  
+@@ -1061,11 +1063,31 @@ static int __init exynos_iommu_init(void)
+ {
+ 	int ret;
+ 
++	lv2table_kmem_cache = kmem_cache_create("exynos-iommu-lv2table",
++				LV2TABLE_SIZE, LV2TABLE_SIZE, 0, NULL);
++	if (!lv2table_kmem_cache) {
++		pr_err("%s: Failed to create kmem cache\n", __func__);
++		return -ENOMEM;
++	}
++
+ 	ret = platform_driver_register(&exynos_sysmmu_driver);
++	if (ret) {
++		pr_err("%s: Failed to register driver\n", __func__);
++		goto err_reg_driver;
++	}
+ 
+-	if (ret == 0)
+-		bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
++	ret = bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
++	if (ret) {
++		pr_err("%s: Failed to register exynos-iommu driver.\n",
++								__func__);
++		goto err_set_iommu;
++	}
+ 
++	return 0;
++err_set_iommu:
++	platform_driver_unregister(&exynos_sysmmu_driver);
++err_reg_driver:
++	kmem_cache_destroy(lv2table_kmem_cache);
+ 	return ret;
+ }
+ subsys_initcall(exynos_iommu_init);
 -- 
 1.7.9.5
 
