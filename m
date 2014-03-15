@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877AbaCOCIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 22:08:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41263 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754936AbaCOCI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 22:08:28 -0400
-Date: Sat, 15 Mar 2014 03:08:26 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        xen-devel@lists.xenproject.org, bridge@lists.linux-foundation.org
-Subject: Re: [PATCH 3/3] bridge: fix bridge root block on designated port
-Message-ID: <20140315020826.GB28801@wotan.suse.de>
-References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com> <1394680527-28970-4-git-send-email-mcgrof@do-not-panic.com> <20140313151623.03e0484d@nehalam.linuxnetplumber.net>
+	id S1754696AbaCOCR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 22:17:56 -0400
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.183]:59711 "EHLO
+	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289AbaCOCRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 22:17:55 -0400
+X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTyOPSIUj7WA==
+X-RZG-CLASS-ID: mo05
+From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: 3.14-rc: /proc/acpi/battery gone?
+Date: Sat, 15 Mar 2014 02:17:47 +0000
+User-Agent: KMail/1.13.7 (Linux/3.13-6.slh.1-aptosid-686; KDE/4.8.4; i686; ; )
+Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Lan Tianyu <tianyu.lan@intel.com>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+References: <20140314211456.GA23213@amd.pavel.ucw.cz> <CAKb7Uvh1TaNLmi0YVBPmCD571ZU_sM1DpbYUSA8xQZnS5xUbCA@mail.gmail.com> <1677000.FsvVVRjEvo@vostro.rjw.lan>
+In-Reply-To: <1677000.FsvVVRjEvo@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rS8CxjVDS/+yyDmU"
-Content-Disposition: inline
-In-Reply-To: <20140313151623.03e0484d@nehalam.linuxnetplumber.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403150217.50526.s.L-H@gmx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
---rS8CxjVDS/+yyDmU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Saturday 15 March 2014, Rafael J. Wysocki wrote:
+> On Friday, March 14, 2014 06:14:12 PM Ilia Mirkin wrote:
+> > On Fri, Mar 14, 2014 at 6:11 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> > > On Fri 2014-03-14 17:29:41, Ilia Mirkin wrote:
+> > >> On Fri, Mar 14, 2014 at 5:14 PM, Pavel Machek <pavel@ucw.cz> wrote:
+[...]
+> > wmbattery
+> > 
+> > They have attempted to use the sysfs api, but apparently that
+> > integration was done with an older version of that API. There's also
+> > some attempt to get it to work with upower, but I couldn't figure out
+> > how to make that work either on my (up-to-date gentoo) box. (TBH I
+> > didn't spend more than an hour or two on it, so it may not be
+> > impossible.)
+> 
+> Tianyu, can you please have a look at this?
 
-On Thu, Mar 13, 2014 at 03:16:23PM -0700, Stephen Hemminger wrote:
-> On Wed, 12 Mar 2014 20:15:27 -0700
-> "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
->=20
-> > --- a/net/bridge/br_private.h
-> > +++ b/net/bridge/br_private.h
-> > @@ -150,6 +150,7 @@ struct net_bridge_port
-> >  	u8				priority;
-> >  	u8				state;
-> >  	u16				port_no;
-> > +	bool				root_block_enabled;
-> >  	unsigned char			topology_change_ack;
->=20
-> It seems a bit confusing to have both a ROOT_BLOCK flag in the
-> data structure and and additional root_block_enabled flag.
-> If nothing else it is a waste of space.
+Disclaimer, I've never used wmbattery so far.
 
-Indeed, however there is a use for it. Consider the case where we loop
-over each port and check to see if its root blocked and need to tickle it
-or the bridge. In the case that root port block was enabled before and
-someone is lifting it the flag would be removed and therefore not on
-but it was root blocked though and we need a way to keep track of that.
+The current upstream version (2.42, released in early december 2013) 
+of wmbattery[1] no longer reads from /proc/acpi/ at all. Apparently
+it changed to using upower by default, with non-default fall-backs for
+reading from sysfs. 
 
-The flag then is a toggle for userspace, while the bool tells us about
-the current state.
+The only change required for building upower with wmbattery 2.42 
+appears to be a new build-dependency on libupower-glib-dev (at least 
+on Debian, built from the upower source package). Given that this 
+version is present in Debian testing and unstable, I'd assume that it's
+supposed to work using upower, although I haven't confirmed that myself.
 
-> Looks like you are changing the meaning slightly.=20
+Judging from the Gentoo ebuild, you probably just have to add 
+"sys-power/upower" to the RDEPEND variable and make sure to build
+wmbattery 2.42; this is untested.
 
-Let me know in what way. I can't see it.
+Regards
+	Stefan Lippers-Hollmann
 
-> is possible to have BR_ROOT_BLOCK set but !root_block_enabled?=20
-
-Yeah in the case a new request to set it to root block then
-BR_ROOT_BLOCK would be set but root_block_enabled would not be set.
-
-> and what about the inverse?
-
-BR_ROOT_BLOCK would not be set when userspace wants to disable root
-port block and root_block_enabled would be enabled in this case if
-it used to be enabled. So yes, both are possible.
-
-  Luis
-
---rS8CxjVDS/+yyDmU
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.9 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTI7YaAAoJEPep4JnvMe6ztNIP/RZehJge9AcubruD2vcmbM/w
-d+LJiCu0kKCqvpyeFSN6uXlcdvCr0wCJkTspqBKLtNCmBXgrHX9E3OOUOKMHz3EL
-6oXnf40NfMz4+yWrQ6dnnbUKsjzrtQ14sMz3T1iheVK9MvpHSDjoFi3XraC8NJoD
-SUN+/TvgZ/7wGfDVhvOyrLrpDhnuSQm0YXGXahV/1aK1jZnbc1Fg/AT+ZLTZ7WWT
-96y4G97VZagnBCqe4AQUptziGllAPeaBko7xKZL7gOiw1Kmp7cjfP62j/A2J3l1t
-iwLTmHazeviqmhK3a1V1LK5KV4BPItkTv99zwXr7dmgRNuTf30UGfs+1fSjYwRy+
-aXxfC+MCLLqvOUlWxLbRCnWkwi06jZPquvG8cjXsl4h8+WqurEY8u/+hvHHb2LhW
-STqJCv9q/xQ3jVp6lQUvySujUZNazw+qGkgeuaff8j+DcyI3epsQ3ZS1XpBlFJXY
-dCs2T3rBS45hsRrqtWKpDwcR2lpaXmw2eIU4ArQqo+OZZZq6qfe25s0wjz8dSZza
-n2RhCrzwLutfRfbn3KDSf7jwVAj8MrhYfphneD7kDrMzVeKS0J95rSgSmn/yaPFu
-A87BE4D2Rg5xAR/7TgghNkjXDFWm3b1+96B3L3SH6cYjnv+F1eOYbRwoKzPNtJ2i
-FDGu3k5NtcQfxk6sfklJ
-=BNbf
------END PGP SIGNATURE-----
-
---rS8CxjVDS/+yyDmU--
+[1]	Homepage: http://kitenet.net/~joey/code/wmbattery/
+	Vcs-Git: git://git.kitenet.net/wmbattery
