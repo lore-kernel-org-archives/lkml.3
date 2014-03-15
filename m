@@ -1,113 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104AbaCOFls (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 01:41:48 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:48807 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822AbaCOFlo (ORCPT
+	id S1752617AbaCOFkY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 01:40:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55474 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181AbaCOFjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 01:41:44 -0400
+	Sat, 15 Mar 2014 01:39:46 -0400
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        catalin.marinas@arm.com, will.deacon@arm.com, tim.bird@sonymobile.com
-Cc: gkulkarni@caviumnetworks.com, dsaxena@linaro.org, arndb@arndb.de,
+To: will.deacon@arm.com
+Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
+        catalin.marinas@arm.com, dsaxena@linaro.org, arndb@arndb.de,
         linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
         AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v7 3/7] ftrace: Add arm64 support to recordmcount
-Date: Sat, 15 Mar 2014 14:40:44 +0900
-Message-Id: <1394862048-28758-4-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH v5 1/4] arm64: make a single hook to syscall_trace() for all syscall features
+Date: Sat, 15 Mar 2014 14:39:05 +0900
+Message-Id: <1394861948-28712-2-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
- <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
+In-Reply-To: <1394861948-28712-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394861948-28712-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recordmcount utility under scripts is run, after compiling each object,
-to find out all the locations of calling _mcount() and put them into
-specific seciton named __mcount_loc.
-Then linker collects all such information into a table in the kernel image
-(between __start_mcount_loc and __stop_mcount_loc) for later use by ftrace.
+Currently syscall_trace() is called only for ptrace.
+With additional TIF_xx flags defined, it is now called in all the cases
+of audit, ftrace and seccomp in addition to ptrace.
 
-This patch adds arm64 specific definitions to identify such locations.
-There are two types of implementation, C and Perl. On arm64, only C version
-is used to build the kernel now that CONFIG_HAVE_C_RECORDMCOUNT is on.
-But Perl version is also maintained.
-
-This patch also contains a workaround just in case where a header file,
-elf.h, on host machine doesn't have definitions of EM_AARCH64 nor
-R_AARCH64_ABS64. Without them, compiling C version of recordmcount will
-fail.
-
+Acked-by: Richard Guy Briggs <rgb@redhat.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 ---
- arch/arm64/Kconfig      | 2 ++
- scripts/recordmcount.c  | 7 +++++++
- scripts/recordmcount.pl | 5 +++++
- 3 files changed, 14 insertions(+)
+ arch/arm64/include/asm/thread_info.h | 13 +++++++++++++
+ arch/arm64/kernel/entry.S            |  5 +++--
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 27bbcfc..340e344 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -27,12 +27,14 @@ config ARM64
- 	select HARDIRQS_SW_RESEND
- 	select HAVE_ARCH_JUMP_LABEL
- 	select HAVE_ARCH_TRACEHOOK
-+	select HAVE_C_RECORDMCOUNT
- 	select HAVE_DEBUG_BUGVERBOSE
- 	select HAVE_DEBUG_KMEMLEAK
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_CONTIGUOUS
- 	select HAVE_EFFICIENT_UNALIGNED_ACCESS
-+	select HAVE_FTRACE_MCOUNT_RECORD
- 	select HAVE_GENERIC_DMA_COHERENT
- 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
- 	select HAVE_MEMBLOCK
-diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
-index 9c22317..e11aa4a 100644
---- a/scripts/recordmcount.c
-+++ b/scripts/recordmcount.c
-@@ -40,6 +40,11 @@
- #define R_METAG_NONE                     3
- #endif
+diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+index 720e70b..0a8b2a9 100644
+--- a/arch/arm64/include/asm/thread_info.h
++++ b/arch/arm64/include/asm/thread_info.h
+@@ -91,6 +91,9 @@ static inline struct thread_info *current_thread_info(void)
+ /*
+  * thread information flags:
+  *  TIF_SYSCALL_TRACE	- syscall trace active
++ *  TIF_SYSCALL_TRACEPOINT - syscall tracepoint for ftrace
++ *  TIF_SYSCALL_AUDIT	- syscall auditing
++ *  TIF_SECOMP		- syscall secure computing
+  *  TIF_SIGPENDING	- signal pending
+  *  TIF_NEED_RESCHED	- rescheduling necessary
+  *  TIF_NOTIFY_RESUME	- callback before returning to user
+@@ -101,6 +104,9 @@ static inline struct thread_info *current_thread_info(void)
+ #define TIF_NEED_RESCHED	1
+ #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
+ #define TIF_SYSCALL_TRACE	8
++#define TIF_SYSCALL_AUDIT	9
++#define TIF_SYSCALL_TRACEPOINT	10
++#define TIF_SECCOMP		11
+ #define TIF_POLLING_NRFLAG	16
+ #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
+ #define TIF_FREEZE		19
+@@ -112,10 +118,17 @@ static inline struct thread_info *current_thread_info(void)
+ #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
+ #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
+ #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
++#define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
++#define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
++#define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
++#define _TIF_SECCOMP		(1 << TIF_SECCOMP)
+ #define _TIF_32BIT		(1 << TIF_32BIT)
  
-+#ifndef EM_AARCH64
-+#define EM_AARCH64	183
-+#define R_AARCH64_ABS64	257
-+#endif
+ #define _TIF_WORK_MASK		(_TIF_NEED_RESCHED | _TIF_SIGPENDING | \
+ 				 _TIF_NOTIFY_RESUME)
+ 
++#define _TIF_SYSCALL_WORK	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
++				 _TIF_SYSCALL_TRACEPOINT | _TIF_SECCOMP)
 +
- static int fd_map;	/* File descriptor for file being modified. */
- static int mmap_failed; /* Boolean flag. */
- static void *ehdr_curr; /* current ElfXX_Ehdr *  for resource cleanup */
-@@ -347,6 +352,8 @@ do_file(char const *const fname)
- 	case EM_ARM:	 reltype = R_ARM_ABS32;
- 			 altmcount = "__gnu_mcount_nc";
- 			 break;
-+	case EM_AARCH64:
-+			 reltype = R_AARCH64_ABS64; gpfx = '_'; break;
- 	case EM_IA_64:	 reltype = R_IA64_IMM64;   gpfx = '_'; break;
- 	case EM_METAG:	 reltype = R_METAG_ADDR32;
- 			 altmcount = "_mcount_wrapper";
-diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
-index 91280b8..397b6b8 100755
---- a/scripts/recordmcount.pl
-+++ b/scripts/recordmcount.pl
-@@ -279,6 +279,11 @@ if ($arch eq "x86_64") {
-     $mcount_regex = "^\\s*([0-9a-fA-F]+):\\s*R_ARM_(CALL|PC24|THM_CALL)" .
- 			"\\s+(__gnu_mcount_nc|mcount)\$";
+ #endif /* __KERNEL__ */
+ #endif /* __ASM_THREAD_INFO_H */
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index 39ac630..f9f2cae 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -631,8 +631,9 @@ el0_svc_naked:					// compat entry point
+ 	enable_irq
  
-+} elsif ($arch eq "arm64") {
-+    $alignment = 3;
-+    $section_type = '%progbits';
-+    $mcount_regex = "^\\s*([0-9a-fA-F]+):\\s*R_AARCH64_CALL26\\s+_mcount\$";
-+    $type = ".quad";
- } elsif ($arch eq "ia64") {
-     $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s_mcount\$";
-     $type = "data8";
+ 	get_thread_info tsk
+-	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall tracing
+-	tbnz	x16, #TIF_SYSCALL_TRACE, __sys_trace // are we tracing syscalls?
++	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall hooks
++	tst	x16, #_TIF_SYSCALL_WORK
++	b.ne	__sys_trace
+ 	adr	lr, ret_fast_syscall		// return address
+ 	cmp     scno, sc_nr                     // check upper syscall limit
+ 	b.hs	ni_sys
 -- 
 1.8.3.2
 
