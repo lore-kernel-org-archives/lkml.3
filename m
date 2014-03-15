@@ -1,137 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603AbaCNX6d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 19:58:33 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53425 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755770AbaCNX6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 19:58:31 -0400
-Message-ID: <53239789.40600@ti.com>
-Date: Fri, 14 Mar 2014 18:58:01 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756518AbaCOAAZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 20:00:25 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:44904 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754765AbaCOAAY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 20:00:24 -0400
+Date: Fri, 14 Mar 2014 17:00:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] [RFC] perf: Fix a race between ring_buffer_detach() and
+ ring_buffer_wakeup()
+Message-ID: <20140315000009.GA28008@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1394199526-6400-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140313195816.GJ21124@linux.vnet.ibm.com>
+ <20140314095033.GP27965@twins.programming.kicks-ass.net>
+ <20140314204736.GG21124@linux.vnet.ibm.com>
+ <20140314224317.GQ30956@twins.programming.kicks-ass.net>
+ <20140314230231.GM21124@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Mark Rutland <mark.rutland@arm.com>, Tony Lindgren <tony@atomide.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv4 0/7] omap hwspinlock dt support
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com> <52F9282B.5000702@ti.com> <530B8C00.8020001@ti.com> <CAK=WgbZp_RQPCeZJyMRkNTQxaJsnGZ3DnjhSkYYR_-PAE_Kp4g@mail.gmail.com>
-In-Reply-To: <CAK=WgbZp_RQPCeZJyMRkNTQxaJsnGZ3DnjhSkYYR_-PAE_Kp4g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140314230231.GM21124@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031500-1542-0000-0000-0000006169A2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
+On Fri, Mar 14, 2014 at 04:02:31PM -0700, Paul E. McKenney wrote:
+> On Fri, Mar 14, 2014 at 11:43:17PM +0100, Peter Zijlstra wrote:
+> > On Fri, Mar 14, 2014 at 01:47:37PM -0700, Paul E. McKenney wrote:
+> > > This general idea can be made to work, but it will need some
+> > > internal-to-RCU help.  One vulnerability of the patch below is the
+> > > following sequence of steps:
+> > > 
+> > > 1.	RCU has just finished a grace period, and is doing the
+> > > 	end-of-grace-period accounting.
+> > > 
+> > > 2.	The code below invokes rcu_batches_completed().  Let's assume
+> > > 	the result returned is 42.
+> > > 
+> > > 3.	RCU completes the end-of-grace-period accounting, and increments
+> > > 	rcu_sched_state.completed.
+> > > 
+> > > 4.	The code below checks ->rcu_batches against the result from
+> > > 	another invocation of rcu_batches_completed() and sees that
+> > > 	the 43 is not equal to 42, so skips the synchronize_rcu().
+> > > 
+> > > Except that a grace period has not actually completed.  Boom!!!
+> > > 
+> > > The problem is that rcu_batches_completed() is only intended to give
+> > > progress information on RCU.
+> > 
+> > Ah, I thought I was missing something when I was looking through the rcu
+> > code in a hurry :-)
+> 
+> Well, given that I sometimes miss things when looking through RCU code
+> carefuly, I guess I cannot give you too much trouble about it.
+> 
+> > I knew there'd be some subtlety between completed and gpnum and such :-)
+> 
+> Some of which I have learned about one RCU bug at a time.  ;-)
+> 
+> > > What I can do is give you a pair of functions, one to take a snapshot of
+> > > the current grace-period state (returning an unsigned long) and another
+> > > to evaluate a previous snapshot, invoking synchronize_rcu() if there has
+> > > not been a full grace period in the meantime.
+> > > 
+> > > The most straightforward approach would invoke acquiring the global
+> > > rcu_state ->lock on each call, which I am guessing just might be
+> > > considered to be excessive overhead.  ;-)  I should be able to decrease
+> > > the overhead to a memory barrier on each call, and perhaps even down
+> > > to an smp_load_acquire().  Accessing the RCU state probably costs you
+> > > a cache miss both times.
+> > > 
+> > > Thoughts?
+> > 
+> > Sounds fine, the attach isn't a hotpath, so even the locked version
+> > should be fine, but I won't keep you from making it all fancy and such
+> > :-)
+> 
+> Fair enough, let me see what I can come up with.
 
-On 03/14/2014 03:10 PM, Ohad Ben-Cohen wrote:
-> Hi Suman, Mark,
->
-> On Mon, Feb 24, 2014 at 8:14 PM, Suman Anna <s-anna@ti.com> wrote:
->> Mark, Ohad,
-> ...
->> Gentle reminder, can you provide your acks/comments?
->
-> Sorry for the late jump in.
->
-> I have a few comments:
+And here is an untested patch.  Thoughts?
 
-Thanks for the comments. It probably covers few topics that are slightly 
-beyond the scope of the series, but nevertheless are good discussion 
-points for finalizing the series.
+(And yes, I need to update documentation and torture tests accordingly.)
 
-> - Hardware spinlocks must have global and system-wide id numbers;
-> these numbers cannot be maintained internally by the Linux Kernel.
-> Think of an SoC with several asynchronous heterogeneous processors,
-> each of which is running a different OS, and they all need to use a
-> specific hardware spinlock in order to share some resource. For that
-> to happen, every hwlock must have a predefined and deterministic id
-> number which is global in the system. We can't have those id numbers
-> be relative to an hwlock "controller", and we can't have two hwlock
-> "controllers" share the same id numbers.
+							Thanx, Paul
 
-The series doesn't change the semantics of hwspinlock registration or 
-adds a new OF controller registration function. Implementations would 
-still need to register a controller using a base_id and number of locks. 
-The series rather adds a DT-friendly function _ONLY_ for requesting a 
-specific hwlock, and there are no restrictions on the args specifier 
-being relative id numbers. Though this is what the simple default xlate 
-helper does (most common usage), the added xlate ops and #hwlock-cells 
-should allow individual implementation drivers to adjust any variations, 
-and return a relative lock w.r.t its registered base_id, as this is how 
-a lock gets registered in the first place.
+------------------------------------------------------------------------
 
->
-> - I suspect the simplest and most straight forward way to achieve this
-> is by (a) bringing back the concept of the base_id property, and
+rcu: Provide grace-period piggybacking API
+    
+The following pattern is currently not well supported by RCU:
+    
+1.	Make data element inaccessible to RCU readers.
+    
+2.	Do work that probably lasts for more than one grace period.
+    
+3.	Do something to make sure RCU readers in flight before #1 above
+    	have completed.
+    
+Here are some things that could currently be done:
+    
+a.	Do a synchronize_rcu() unconditionally at either #1 or #3 above.
+    	This works, but imposes needless work and latency.
+    
+b.	Post an RCU callback at #1 above that does a wakeup, then
+    	wait for the wakeup at #3.  This works well, but likely results
+    	in an extra unneeded grace period.  Open-coding this is also
+    	a bit more semi-tricky code than would be good.
 
-I actually started out this series with the base_id property, and 
-dropped it in v3 based on comments looking at it from the 
-request-specific-lock semantics with DT. That said, the drivers still 
-need to manage a 'base_id' needed for registration when they get probed 
-for multiple controllers. Getting the base_id from DT _may_ be useful 
-just for registration purposes, but for requesting a hwlock, a 
-controller phandle and an implementation defined args-specifier should 
-suffice IMHO.
+This commit therefore adds get_state_synchronize_rcu() and
+cond_synchronize_rcu() APIs.  Call get_state_synchronize_rcu() at #1
+above and pass its return value to cond_synchronize_rcu() at #3 above.
+This results in a call to synchronize_rcu() if no grace period has
+elapsed between #1 and #3, but requires only a load, comparison, and
+memory barrier if a full grace period did elapse.
 
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-(b)
-> letting the global hwlock id be the DT identifier (plus the base_id)
-> and then providing it directly to the drivers when needed.The latter
-> is required in order to support dynamically allocation of hwlocks, in
-> which case Linux must know the global system-wide id number, and then
-> share it with the other asynchronous OSes via some IPC.
-
-Each lock still retains a global lock id value, and you can retrieve it 
-using the existing hwspin_lock_get_id(). Why is the latter required for 
-dynamic allocation, isn't it the other way around, allocate a lock, and 
-you will be able to get the lock id. If wanting to request a specific 
-lock received across, the regular hwspin_lock_request_specific should be 
-used.
-
->
-> - If we feel there's no way any system is going to have more than a
-> single hwlock controller, then we can live without a base_id property,
-> but then this needs to be clearly documented and prohibited. Today
-> both the hwlock DT representation, and the coupled kernel code,
-> implicitly allow this anomaly to exist.
-
-I haven't removed the concept of base_id, it is just not defined in the 
-DT-bindings, and am currently expecting the drivers to manage it and use 
-it for registration.
-
->
-> - Hwlock controller nodes should have a list of reserved locks (those
-> locks for which other nodes have a phandle+identifier pointing at) to
-> prevent those locks from being dynamically allocated by eager drivers.
-
-The exact notion of informing the hwspinlock core about a list of 
-reserved locks is missing at the moment (even in the non-DT case). I am 
-not sure if this got lost during the conversion of the registration from 
-per lock to registering a bank of locks together, or if it is implied by 
-the base_id + num_locks combination. The core today supports requesting 
-only those locks that were actually registered, whether allocating a 
-free one dynamically or giving a specific one.
-
-There were some slightly similar comments from Kumar earlier on the v2 
-series, please see the thread in [1].
-
->
-> Most of these issues were discussed Arnd, Benoit and myself back then,
-> please see below:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-September/064265.html
-
-Thanks for the pointer to the previous discussion, I wasn't aware of an 
-earlier attempt. The primary approach on requesting locks is actually no 
-different from what Arnd suggested originally.
-
-regards
-Suman
-
-[1] http://marc.info/?l=linux-omap&m=138031002012191&w=2
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index c9be2235712c..dbf0f225bca0 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1503,13 +1503,14 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 
+ 	/* Advance to a new grace period and initialize state. */
+ 	record_gp_stall_check_time(rsp);
+-	smp_wmb(); /* Record GP times before starting GP. */
+-	rsp->gpnum++;
++	/* Record GP times before starting GP, hence smp_store_release(). */
++	smp_store_release(&rsp->gpnum, rsp->gpnum + 1);
+ 	trace_rcu_grace_period(rsp->name, rsp->gpnum, TPS("start"));
+ 	raw_spin_unlock_irq(&rnp->lock);
+ 
+ 	/* Exclude any concurrent CPU-hotplug operations. */
+ 	mutex_lock(&rsp->onoff_mutex);
++	smp_mb__after_unlock_lock(); /* ->gpnum increment before GP! */
+ 
+ 	/*
+ 	 * Set the quiescent-state-needed bits in all the rcu_node
+@@ -1638,10 +1639,11 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+ 	}
+ 	rnp = rcu_get_root(rsp);
+ 	raw_spin_lock_irq(&rnp->lock);
+-	smp_mb__after_unlock_lock();
++	smp_mb__after_unlock_lock(); /* Order GP before ->completed update. */
+ 	rcu_nocb_gp_set(rnp, nocb);
+ 
+-	rsp->completed = rsp->gpnum; /* Declare grace period done. */
++	/* Declare grace period done. */
++	ACCESS_ONCE(rsp->completed) = rsp->gpnum;
+ 	trace_rcu_grace_period(rsp->name, rsp->completed, TPS("end"));
+ 	rsp->fqs_state = RCU_GP_IDLE;
+ 	rdp = this_cpu_ptr(rsp->rda);
+@@ -2728,6 +2730,37 @@ void synchronize_rcu_bh(void)
+ }
+ EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
+ 
++/**
++ * get_state_synchronize_rcu - Snapshot current RCU state
++ *
++ * Returns a cookie that is used by a later call to cond_synchronize_rcu()
++ * to determine whether or not a full grace period has elapsed in the
++ * meantime.
++ */
++unsigned long get_state_synchronize_rcu(void)
++{
++	return smp_load_acquire(&rcu_state->gpnum);
++}
++EXPORT_SYMBOL_GPL(get_state_synchronize_rcu);
++
++/**
++ * cond_synchronize_rcu - Conditionally wait for an RCU grace period
++ *
++ * @oldstate: return value from earlier call to get_state_synchronize_rcu()
++ *
++ * If a full RCU grace period has elapsed since the earlier call to
++ * get_state_synchronize_rcu(), just return.  Otherwise, invoke
++ * synchronize_rcu() to wait for a full grace period.
++ */
++void cond_synchronize_rcu(unsigned long oldstate)
++{
++	unsigned long newstate = smp_load_acquire(&rcu_state->completed);
++
++	if (ULONG_CMP_GE(oldstate, newstate))
++		synchronize_rcu();
++}
++EXPORT_SYMBOL_GPL(cond_synchronize_rcu);
++
+ static int synchronize_sched_expedited_cpu_stop(void *data)
+ {
+ 	/*
 
