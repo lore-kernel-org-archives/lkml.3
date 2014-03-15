@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161AbaCOSWV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 14:22:21 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:61250 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608AbaCOSWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 14:22:19 -0400
+	id S1756421AbaCOTDT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 15:03:19 -0400
+Received: from mail.us.es ([193.147.175.20]:58507 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755967AbaCOTDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 15:03:17 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.1/18604. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-97.6/7.5):. 
+ Processed in 12.184384 secs); 15 Mar 2014 19:03:14 -0000
+X-Spam-ASN: AS12715 188.78.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Sat, 15 Mar 2014 20:03:01 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>, netfilter-devel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH RFC 0/9] socket filtering using nf_tables
+Message-ID: <20140315190301.GA4458@localhost>
+References: <1394529560-3490-1-git-send-email-pablo@netfilter.org>
+ <531EE5A2.7090501@redhat.com>
+ <CAMEtUuyJne-8uNtOAK7EcFFQNXz9m7J2DDLGH_GbYe6oWZx1pQ@mail.gmail.com>
+ <20140312091500.GA4638@localhost>
+ <CAMEtUuztfWniTr+3u6ttuygvG=xYdp0ANn_w9MGqacQvHrXtWA@mail.gmail.com>
+ <20140313122913.GA4898@localhost>
+ <CAMEtUuwV2=8sVdmfKSOytC8LKsw2RX+fgfxvucSVV0=L0XEkOg@mail.gmail.com>
+ <20140314181600.GA2809@localhost>
+ <CAMEtUuzFkCgpvMy-V5iZycfpLQmebc_Jq-MedD=FJn-EEDkdcg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140224192734.GA15573@bender.morinfr.org>
-References: <20140224192734.GA15573@bender.morinfr.org>
-Date: Sat, 15 Mar 2014 11:22:18 -0700
-X-Google-Sender-Auth: tGVGPHJtNaWMvw2PbFMUP5Q9W90
-Message-ID: <CA+55aFyXCh8ETJH2XODzWM_Hj8_eTe4fjHt6v630YJB8OzS-Ew@mail.gmail.com>
-Subject: Re: [PATCH] exit.c: call proc_exit_connector() after exit_state is set
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: matt.helsley@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Evgeniy Polyakov <zbr@ioremap.net>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMEtUuzFkCgpvMy-V5iZycfpLQmebc_Jq-MedD=FJn-EEDkdcg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Going through old emails, adding relevant people, ie Oleg for
-kernel/exit.c and David because he seems to be the go-to person for
-connector issues judging by commits ]
+On Fri, Mar 14, 2014 at 09:04:50PM -0700, Alexei Starovoitov wrote:
+[...]
+> In the patches I sent, ebpf is _not_ exposed to the user.
 
-Patch looks sane to me, and logically that exit_connector thing would
-pair with exit_notify(), but I'd like some comments on it. That
-usability issue/race has been there since forever afaik. We probably
-should never have added that process events connector thing, but since
-we did and people apparently use it..
+>From your last patch: http://patchwork.ozlabs.org/patch/329713/
 
-Comments?
+diff --git a/include/uapi/linux/filter.h b/include/uapi/linux/filter.h
+index 8eb9ccaa5b48..4e98fe16ba88 100644
+--- a/include/uapi/linux/filter.h
++++ b/include/uapi/linux/filter.h
+@@ -1,5 +1,6 @@ 
+ /*
+  * Linux Socket Filter Data Structures
++ * Extended BPF is Copyright (c) 2011-2014, PLUMgrid, http://plumgrid.com
+  */
+ 
+ #ifndef _UAPI__LINUX_FILTER_H__
+@@ -19,7 +20,7 @@ 
+  *     Try and keep these values and structures similar to BSD,
+  *     especially
+  *     the BPF code definitions which need to match so you can share
+  *     filters
+  */
+- 
++
+ struct sock_filter {   /* Filter block */
+        __u16   code;   /* Actual filter code */
+        __u8    jt;     /* Jump true */
+@@ -27,6 +28,14 @@  struct sock_filter {        /* Filter block */
+        __u32   k;      /* Generic multiuse field */
+ };
+ 
++struct sock_filter_ext {
++       __u8    code;    /* opcode */
++       __u8    a_reg:4; /* dest register */
++       __u8    x_reg:4; /* source register */
++       __s16   off;     /* signed offset */
++       __s32   imm;     /* signed immediate constant */
++};
++
+ struct sock_fprog {    /* Required for SO_ATTACH_FILTER. */
+        unsigned short          len;    /* Number of filter blocks */
+        struct sock_filter __user *filter;
 
-             Linus
-
-On Mon, Feb 24, 2014 at 11:27 AM, Guillaume Morin <guillaume@morinfr.org> wrote:
-> From: Guillaume Morin <guillaume@morinfr.org>
->
-> The process events connector delivers a notification when a process
-> exits.  This is really convenient for a process that spawns and wants
-> to monitor its children through an epoll-able() interface.
->
-> Unfortunately, there is a small window between when the event is
-> delivered and the child become wait()-able.
->
-> This is creates a race if the parent wants to make sure that it knows
-> about the exit, e.g
->
-> pid_t pid = fork();
-> if (pid > 0) {
->         register_interest_for_pid(pid);
->         if (waitpid(pid, NULL, WNOHANG) > 0)
->         {
->           /* We might have raced with exit() */
->         }
->         return;
-> }
->
-> /* Child */
-> execve(...)
->
-> register_interest_for_pid() would be telling the the connector socket
-> reader to pay attention to events related to pid.
->
-> Though this is not a bug, I think it would make the connector a bit
-> more usable if this race was closed by simply moving the call to
-> proc_exit_connector() from just before exit_notify() to right after.
->
-> Signed-off-by: Guillaume Morin <guillaume@morinfr.org>
-> Cc: matt.helsley@gmail.com
-> ---
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index 1e77fc6..9b0ac8c 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -804,7 +804,6 @@ void do_exit(long code)
->
->         module_put(task_thread_info(tsk)->exec_domain->module);
->
-> -       proc_exit_connector(tsk);
->
->         /*
->          * FIXME: do that only when needed, using sched_exit tracepoint
-> @@ -812,6 +811,7 @@ void do_exit(long code)
->         flush_ptrace_hw_breakpoint(tsk);
->
->         exit_notify(tsk, group_dead);
-> +       proc_exit_connector(tsk);
->  #ifdef CONFIG_NUMA
->         task_lock(tsk);
->         mpol_put(tsk->mempolicy);
->
->
->
-> --
-> Guillaume Morin <guillaume@morinfr.org>
+That sock_filter_ext structure is exposed to userspace as well as many
+other new BPF_* macros that you have defined.
