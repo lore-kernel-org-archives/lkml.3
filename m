@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984AbaCOOot (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 10:44:49 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60011 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754209AbaCOOor (ORCPT
+	id S1755262AbaCOOtF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 10:49:05 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:48454 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753464AbaCOOtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 10:44:47 -0400
-Message-ID: <53246799.8080600@kernel.org>
-Date: Sat, 15 Mar 2014 14:45:45 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Sat, 15 Mar 2014 10:49:04 -0400
+Date: Sat, 15 Mar 2014 14:48:55 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linn Crosetto <linn@hp.com>, Dave Young <dyoung@redhat.com>,
+        WANG Chao <chaowang@redhat.com>, kexec@lists.infradead.org,
+        horms@verge.net.au, ebiederm@xmission.com, hpa@zytor.com,
+        trenn@suse.de, vgoyal@redhat.com, toshi.kani@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] x86: Pass memory range via E820 for kdump
+Message-ID: <20140315144855.GG5834@console-pimps.org>
+References: <1394464149-30384-1-git-send-email-chaowang@redhat.com>
+ <1394464149-30384-5-git-send-email-chaowang@redhat.com>
+ <20140313222428.GW7672@oranje.fc.hp.com>
+ <20140314024726.GA2245@dhcp-16-126.nay.redhat.com>
+ <20140314082615.GE5834@console-pimps.org>
+ <20140314202706.GX7672@oranje.fc.hp.com>
+ <20140315142625.GA8735@nazgul.tnic>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-CC: linux-iio@vger.kernel.org
-Subject: Re: [PATCH] iio: force snprintf for PAGE_SIZE bufs
-References: <20140313164643.GA19171@www.outflux.net>
-In-Reply-To: <20140313164643.GA19171@www.outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140315142625.GA8735@nazgul.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/03/14 16:46, Kees Cook wrote:
-> This is a tiny preventative measure to make sure we can't write beyond
-> PAGE_SIZE on the buffers being used in sysfs for iio. There is currently
-> no way for this to happen, but the change makes this code more robust
-> for the future.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-A sensible enough change I guess.
+On Sat, 15 Mar, at 03:26:25PM, Borislav Petkov wrote:
+> 
+> Btw, Matt, your whole efi/next stuff is already in tip, right? Because
+> if so, Linn could simply test latest tip/master.
 
-Applied to the togreg branch of iio.git
+Yep, everything is in tip/master.
 
-Jonathan
-> ---
->   drivers/iio/industrialio-core.c |    4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-> index acc911a836ca..64bb64f35af8 100644
-> --- a/drivers/iio/industrialio-core.c
-> +++ b/drivers/iio/industrialio-core.c
-> @@ -340,7 +340,7 @@ ssize_t iio_enum_read(struct iio_dev *indio_dev,
->   	else if (i >= e->num_items)
->   		return -EINVAL;
->
-> -	return sprintf(buf, "%s\n", e->items[i]);
-> +	return snprintf(buf, PAGE_SIZE, "%s\n", e->items[i]);
->   }
->   EXPORT_SYMBOL_GPL(iio_enum_read);
->
-> @@ -836,7 +836,7 @@ static ssize_t iio_show_dev_name(struct device *dev,
->   				 char *buf)
->   {
->   	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
-> -	return sprintf(buf, "%s\n", indio_dev->name);
-> +	return snprintf(buf, PAGE_SIZE, "%s\n", indio_dev->name);
->   }
->
->   static DEVICE_ATTR(name, S_IRUGO, iio_show_dev_name, NULL);
->
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
