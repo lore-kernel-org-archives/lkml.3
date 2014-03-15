@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964AbaCOTk4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 15:40:56 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:33982 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752163AbaCOTky (ORCPT
+	id S1756240AbaCOToH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 15:44:07 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:34595 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbaCOToE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 15:40:54 -0400
-Date: Sat, 15 Mar 2014 20:40:52 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Marc van der Wal <x0r+kernel@x0r.fr>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] it87_wdt: Work around non-working CIR interrupts
-Message-ID: <20140315194052.GA14327@spo001.leaseweb.com>
-References: <20140306093659.GA24854@freyja>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140306093659.GA24854@freyja>
-User-Agent: Mutt/1.4.1i
+	Sat, 15 Mar 2014 15:44:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140315123331.7351DC40A1B@trevor.secretlab.ca>
+References: <1394817109-26199-1-git-send-email-grant.likely@linaro.org>
+	<CAL_JsqLtYFiLnLgdN_GMG33JD53wFdyfhCwLHek3tLBbQB7maQ@mail.gmail.com>
+	<20140315123331.7351DC40A1B@trevor.secretlab.ca>
+Date: Sat, 15 Mar 2014 14:44:02 -0500
+Message-ID: <CAL_JsqLxexGWALTVb4BEzqpxj_iOnrHA3XtRNxbP1HRSOJeByg@mail.gmail.com>
+Subject: Re: [RFC v3 3/3] of: Make of_find_node_by_path() handle /aliases
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        David Daney <david.daney@cavium.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
+On Sat, Mar 15, 2014 at 7:33 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> On Fri, 14 Mar 2014 16:39:38 -0500, Rob Herring <robherring2@gmail.com> wrote:
+>> On Fri, Mar 14, 2014 at 12:11 PM, Grant Likely <grant.likely@linaro.org> wrote:
+>> > Make of_find_node_by_path() handle aliases as prefixes. To make this
+>> > work the name search is refactored to search by path component instead
+>> > of by full string. This should be a more efficient search, and it makes
+>> > it possible to start a search at a subnode of a tree.
+>> >
+>> > Signed-off-by: David Daney <david.daney@cavium.com>
+>> > Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+>> > [grant.likely: Rework to not require allocating at runtime]
+>> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
+>>
+>> I should have read the comments before trying to figure out why you
+>> had that "pointless" recursion...
+>
+> Hi Rob,
+>
+> Thanks for the review. However, I'm a little slow this morning and I
+> don't understand what you mean. Did I miss an early comment?
 
-> From: Marc van der Wal <x0r+kernel@x0r.fr>
-> 
-> On some hardware platforms, the it87_wdt watchdog resets the machine
-> despite the watchdog daemon running and writing to /dev/watchdog.
-> 
-> This is due to Consumer IR buffer underrun interrupts being used as
-> triggers to reset the timer.  On some buggy hardware implementations
-> such as the iEi AFL-12A-N270 single-board computer, this method does 
-> not work.
-> 
-> However, resetting the timer by writing its original timeout value in
-> its configuration register over and over again suppresses the unwanted
-> reboots.
-> 
-> Add a module option (nocir), 0 by default in order not to break existing
-> setups.  Setting it to 1 enables the workaround.
-> 
-> Fixes bug #42801 <https://bugzilla.kernel.org/show_bug.cgi?id=42801>.
-> Tested primarily on Linux 3.5.7, applies cleanly on Linux 3.13.5.
-> 
-> Signed-off-by: Marc van der Wal <x0r+kernel@x0r.fr>
-> ---
+No, it's me that was being slow. At first glance I was thinking the
+recursion was pointless until I saw the alias + path case.
 
-Patch has been added to linux-watchdog-next.
-
-Kind regards,
-Wim.
-
+Rob
