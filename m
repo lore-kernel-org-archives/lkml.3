@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216AbaCODaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 23:30:19 -0400
-Received: from nm27-vm3.bullet.mail.gq1.yahoo.com ([98.136.216.146]:20506 "EHLO
-	nm27-vm3.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754680AbaCODaR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 23:30:17 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 243564.51175.bm@omp1095.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=kMDJ40IETT3TnGiEWRdV7HF5YXY/a76GdBhVF8cU4RBVp2wkQsf8WnEfAyEwtH5h3CKxwesAjnxbu+2NI7E/IZX87FavDKXYAlPWD1AaGDt0XdjYY//veNMaA0/MMQpMOaygePXFEvtABMZ4+T8JYk3xlJnrRsUtDBMinH5gCz4=;
-X-YMail-OSG: Ruo.ylMVM1meDUuFBWJSvzqsO3L5MRCiNqUk7GZS_HHJq5f
- pYYK2q1.72B.tk7VlJwyDpYdGdsht6Cugv5HWWN4ZMLMU1woXER32P9ftJJV
- ika4wWQzqfFxSFX0k1lWwEqrWr0I5Bt2HUY0EVCG91VlIfplXGB.Vh1PERJC
- G9hnMY0AhC.fh4rlGJmCUOrFJBiWA8oEvholdEKlUnVNouE1X.yvkw1jKfTD
- rigObyhOIr7fy0mJq4WsWt4_vfa7xokcfTJkw8rbW50p1AUOazAuqG.SISLy
- 3At0ls.aW3bTOM8KyjKNdOKXAH8zs8MS9hvGrIMU._UnAtF4BSAMW6G6VgDi
- xULVA.YePvn0OwOtg5sN9NrIgc5QK1GCcgiiDpl3fSiYBlwQ2dt7PzbX8EVk
- TAk2vFkPuqL5AJx.8eEWszUuCEFRBrSjyA2KduABvLdcRoLapteI_uHKl3Xj
- y_dz_J.cv7vVi60V26KfhLDfA1MlaGkbQa694ONI2I259UP9Uz53rYSzIfmX
- dMOHyq3g9dA0EX38-
-X-Rocket-MIMEInfo: 002.001,Pk9uIEZyaWRheSwgTWFyY2ggMTQsIDIwMTQgMTE6NDcgQU0sIExldmVudGUgS3VydXNhIDxsZXZleEBsaW51eC5jb20.IHdyb3RlOgoKPkNhbGwga2ZyZWUoKSBvbiBiZGV2LiBUaGUgdmFyaWFibGUgaXMgb3RoZXJ3aXNlIGxlYWtlZC4KPgo.U2lnbmVkLW9mZi1ieTogTGV2ZW50ZSBLdXJ1c2EgPGxldmV4QGxpbnV4LmNvbT4KPi0tLQo.ZHJpdmVycy9zdGFnaW5nL2NvbWVkaS9kcml2ZXJzL2NvbWVkaV9ib25kLmMgfCAxICsKPjEgZmlsZSBjaGFuZ2VkLCAxIGluc2VydGlvbigrKQo.Cj5kaWZmIC0tZ2l0IGEBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.178.641
-References: <1394813775-12363-1-git-send-email-levex@linux.com>
-Message-ID: <1394854216.83246.YahooMailNeo@web164002.mail.gq1.yahoo.com>
-Date: Fri, 14 Mar 2014 20:30:16 -0700 (PDT)
-From: Chase Southwood <chase.southwood@yahoo.com>
-Reply-To: Chase Southwood <chase.southwood@yahoo.com>
-Subject: Re: [PATCH] staging: comedi: fix memory leak
-To: Levente Kurusa <levex@linux.com>, Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        OSUOSL Drivers <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1394813775-12363-1-git-send-email-levex@linux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755992AbaCODe4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 23:34:56 -0400
+Received: from imap.thunk.org ([74.207.234.97]:41614 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754391AbaCODez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 23:34:55 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Venkatesh Srinivas <venkateshs@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org,
+        Frank Swiderski <fes@google.com>
+Subject: [PATCH] virtio-blk: make the queue depth the max supportable by the hypervisor
+Date: Fri, 14 Mar 2014 23:34:31 -0400
+Message-Id: <1394854471-25700-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394841445-16142-1-git-send-email-venkateshs@google.com>
+References: <1394841445-16142-1-git-send-email-venkateshs@google.com>
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Friday, March 14, 2014 11:47 AM, Levente Kurusa <levex@linux.com> wrote:
+The current virtio block sets a queue depth of 64, which is
+insufficient for very fast devices.  It has been demonstrated that
+with a high IOPS device, using a queue depth of 256 can double the
+IOPS which can be sustained.
 
->Call kfree() on bdev. The variable is otherwise leaked.
->
->Signed-off-by: Levente Kurusa <levex@linux.com>
->---
->drivers/staging/comedi/drivers/comedi_bond.c | 1 +
->1 file changed, 1 insertion(+)
->
->diff --git a/drivers/staging/comedi/drivers/comedi_bond.c >b/drivers/staging/comedi/drivers/comedi_bond.c
->index 51a59e5..406aedb 100644
->--- a/drivers/staging/comedi/drivers/comedi_bond.c
->+++ b/drivers/staging/comedi/drivers/comedi_bond.c
->@@ -254,6 +254,7 @@ static int do_dev_config(struct comedi_device *dev, struct comedi_devconfig *it)
->            if (!devs) {
->                dev_err(dev->class_dev,
->                    "Could not allocate memory. Out of memory?\n");
->+                kfree(bdev);
->                return -ENOMEM;
->            }
->            devpriv->devs = devs;
->-- 
->1.8.3.1
->
+As suggested by Venkatash Srinivas, set the queue depth by default to
+be one half the the device's virtqueue, which is the maximum queue
+depth that can be supported by the channel to the host OS (each I/O
+request requires at least two VQ entries).
 
+Also allow the queue depth to be something which can be set at module
+load time or via a kernel boot-time parameter, for
+testing/benchmarking purposes.
 
-Levente,
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: virtio-dev@lists.oasis-open.org
+Cc: virtualization@lists.linux-foundation.org
+Cc: Frank Swiderski <fes@google.com>
+---
 
-This change has already been made in staging-next (by me, actually :) ).  In
-order to avoid re-doing work which has already been done, please make sure to base
-all of your patches off of linux-next (or for staging, staging-next).
+This is a combination of my patch and Vekatash's patch.  I agree that
+setting the default automatically is better than requiring the user to
+set the value by hand.
 
-Thanks,
-Chase
+ drivers/block/virtio_blk.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 6a680d4..0f70c01 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -481,6 +481,9 @@ static struct blk_mq_ops virtio_mq_ops = {
+ 	.free_hctx	= blk_mq_free_single_hw_queue,
+ };
+ 
++static int queue_depth = -1;
++module_param(queue_depth, int, 0444);
++
+ static struct blk_mq_reg virtio_mq_reg = {
+ 	.ops		= &virtio_mq_ops,
+ 	.nr_hw_queues	= 1,
+@@ -551,9 +554,14 @@ static int virtblk_probe(struct virtio_device *vdev)
+ 		goto out_free_vq;
+ 	}
+ 
++	virtio_mq_reg.queue_depth = queue_depth > 0 ? queue_depth :
++		(vblk->vq->num_free / 2);
+ 	virtio_mq_reg.cmd_size =
+ 		sizeof(struct virtblk_req) +
+ 		sizeof(struct scatterlist) * sg_elems;
++	virtblk_name_format("vd", index, vblk->disk->disk_name, DISK_NAME_LEN);
++	pr_info("%s: using queue depth %d\n", vblk->disk->disk_name,
++		virtio_mq_reg.queue_depth);
+ 
+ 	q = vblk->disk->queue = blk_mq_init_queue(&virtio_mq_reg, vblk);
+ 	if (!q) {
+@@ -565,8 +573,6 @@ static int virtblk_probe(struct virtio_device *vdev)
+ 
+ 	q->queuedata = vblk;
+ 
+-	virtblk_name_format("vd", index, vblk->disk->disk_name, DISK_NAME_LEN);
+-
+ 	vblk->disk->major = major;
+ 	vblk->disk->first_minor = index_to_minor(index);
+ 	vblk->disk->private_data = vblk;
+-- 
+1.9.0
+
