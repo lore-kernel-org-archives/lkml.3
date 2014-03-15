@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270AbaCODSE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 23:18:04 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:35309 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755618AbaCODSB (ORCPT
+	id S1756359AbaCODSc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 23:18:32 -0400
+Received: from mail-yk0-f178.google.com ([209.85.160.178]:34015 "EHLO
+	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755741AbaCODRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 23:18:01 -0400
-Date: Sat, 15 Mar 2014 04:17:59 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 2/6] mm/memory-failure.c: report and recovery for
- memory error on dirty pagecache
-Message-ID: <20140315031759.GC22728@two.firstfloor.org>
-References: <1394746786-6397-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1394746786-6397-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394746786-6397-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 14 Mar 2014 23:17:17 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/4] perf kmem: introduce --list-cmds for use by scripts
+Date: Fri, 14 Mar 2014 23:17:51 -0400
+Message-Id: <1394853474-31019-2-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.9.rc0.1.g9d22d25
+In-Reply-To: <1394853474-31019-1-git-send-email-artagnon@gmail.com>
+References: <1394853474-31019-1-git-send-email-artagnon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 05:39:42PM -0400, Naoya Horiguchi wrote:
-> Unifying error reporting between memory error and normal IO errors is ideal
-> in a long run, but at first let's solve it separately. I hope that some code
-> in this patch will be helpful when thinking of the unification.
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ tools/perf/builtin-kmem.c     | 8 +++++---
+ tools/perf/perf-completion.sh | 4 ++--
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-The mechanisms should be very similar, right? 
-
-It may be better to do both at the same time.
-
-> index 60829565e552..1e8966919044 100644
-> --- v3.14-rc6.orig/include/linux/fs.h
-> +++ v3.14-rc6/include/linux/fs.h
-> @@ -475,6 +475,9 @@ struct block_device {
->  #define PAGECACHE_TAG_DIRTY	0
->  #define PAGECACHE_TAG_WRITEBACK	1
->  #define PAGECACHE_TAG_TOWRITE	2
-> +#ifdef CONFIG_MEMORY_FAILURE
-> +#define PAGECACHE_TAG_HWPOISON	3
-> +#endif
-
-No need to ifdef defines
-
-> @@ -1133,6 +1139,10 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
->  			if (unlikely(page == NULL))
->  				goto no_cached_page;
->  		}
-> +		if (unlikely(PageHWPoison(page))) {
-> +			error = -EHWPOISON;
-> +			goto readpage_error;
-> +		}
-
-Didn't we need this check before independent of the rest of the patch?
-
->  		if (PageReadahead(page)) {
->  			page_cache_async_readahead(mapping,
->  					ra, filp, page,
-> @@ -2100,6 +2110,10 @@ inline int generic_write_checks(struct file *file, loff_t *pos, size_t *count, i
->          if (unlikely(*pos < 0))
->                  return -EINVAL;
->  
-> +	if (unlikely(mapping_hwpoisoned_range(file->f_mapping, *pos,
-> +					      *pos + *count)))
-> +		return -EHWPOISON;
-
-How expensive is that check? This will happen on every write.
-Can it be somehow combined with the normal page cache lookup?
-
->   * Dirty pagecache page
-> + *
-> + * Memory error reporting (important especially on dirty pagecache error
-> + * because dirty data is lost) with AS_EIO flag has some problems:
-
-It doesn't make sense to have changelogs in comments. That is what
-git is for.  At some point noone will care about the previous code.
-
-> + * To solve these, we handle dirty pagecache errors by replacing the error
-
-This part of the comment is good.
-
-> +	pgoff_t index;
-> +	struct inode *inode = NULL;
-> +	struct page *new;
->  
->  	SetPageError(p);
-> -	/* TBD: print more information about the file. */
->  	if (mapping) {
-> +		index = page_index(p);
-> +		/*
-> +		 * we take inode refcount to keep it's pagecache or mapping
-> +		 * on the memory until the error is resolved.
-
-How does that work? Who "resolves" the error? 
-
-> +		 */
-> +		inode = igrab(mapping->host);
-> +		pr_info("MCE %#lx: memory error on dirty pagecache (page offset:%lu, inode:%lu, dev:%s)\n",
-
-Add the word file somewhere, you need to explain this in terms normal
-sysadmins and not only kernel hackers can understand.
-
--Andi
-
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index 929462a..bd91de0 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -756,11 +756,13 @@ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "raw-ip", &raw_ip, "show raw ip instead of symbol"),
+ 	OPT_END()
+ 	};
+-	const char * const kmem_usage[] = {
+-		"perf kmem [<options>] {record|stat}",
++	const char *const kmem_subcommands[] = { "record", "stat", NULL };
++	const char *kmem_usage[] = {
++		NULL,
+ 		NULL
+ 	};
+-	argc = parse_options(argc, argv, kmem_options, kmem_usage, 0);
++	argc = parse_options_subcommand(argc, argv, kmem_options,
++					kmem_subcommands, kmem_usage, 0);
+ 
+ 	if (!argc)
+ 		usage_with_options(kmem_usage, kmem_options);
+diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
+index ae3a576..0ef59dd 100644
+--- a/tools/perf/perf-completion.sh
++++ b/tools/perf/perf-completion.sh
+@@ -121,8 +121,8 @@ __perf_main ()
+ 	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
+ 		evts=$($cmd list --raw-dump)
+ 		__perfcomp_colon "$evts" "$cur"
+-	# List subcommands for 'perf kvm'
+-	elif [[ $prev == "kvm" ]]; then
++	# List subcommands for perf commands
++	elif [[ $prev == @(kvm|kmem) ]]; then
+ 		subcmds=$($cmd $prev --list-cmds)
+ 		__perfcomp_colon "$subcmds" "$cur"
+ 	# List long option names
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.9.rc0.1.g9d22d25
+
