@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727AbaCOSN2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 14:13:28 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:39700 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331AbaCOSN1 (ORCPT
+	id S1756339AbaCOSTU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 14:19:20 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:55169 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755571AbaCOSTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 14:13:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140224114725.GA31065@spaans-e6500>
-References: <20140224114725.GA31065@spaans-e6500>
-Date: Sat, 15 Mar 2014 11:13:26 -0700
-X-Google-Sender-Auth: QJihm6B7eOMQh3SJc5MThp-Fcsk
-Message-ID: <CA+55aFwC4i2_Rf-bFqpyA6q1XL6KFdvPqFALavB8WoaXGgm_dg@mail.gmail.com>
-Subject: Re: kernel panic 3.11.7 in kmem_cache_alloc+0x66/0x150
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jasper Spaans <spaans@fox-it.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 15 Mar 2014 14:19:18 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: jcliburn@gmail.com, chris.snook@gmail.com, davem@davemloft.net,
+        johannes@sipsolutions.net, jg1.han@samsung.com, wangyijing@huawei.com,
+        linux@hahnjo.de, sd@queasysnail.net, hahnjo@hahnjo.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH] ATHEROS-ALX: Use dma_set_mask_and_coherent and fix a bug
+Date: Sat, 15 Mar 2014 19:19:08 +0100
+Message-Id: <1394907548-10084-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Going through old emails, this is probably stale by now since you
-already figured out it was fixed in 3.13 ]
+ 1. For the 64 bits dma mask use dma_set_mask_and_coherent instead of
+ dma_set_mask and dma_set_coherent_mask.
 
-On Mon, Feb 24, 2014 at 3:47 AM, Jasper Spaans <spaans@fox-it.com> wrote:
->
-> Last weekend one of our machines showed some interesting behaviour, where
-> processes seemed to be crashing randomly. Further inspection showed that
-> all the oopses in syslog were on core #12, and had
-> kmem_cache_alloc+0x66/0x150 as the RIP, except for the second one, which had
-> kmem_cache_alloc_trace+0x6a/0x140 .
+ 2. For the 32 bits dma mask dma_set_coherent_mask is only called if
+ dma_set_mask fails, which is unusual. Assuming this as a bug, fixes
+ it by replacing calls to dma_set_mask and dma_set_coherent_mask by a
+ call to dma_set_coherent_mask.
+ 
+ Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
 
-This indeed looks very much like the pipe use-after-free that was
-fixed by commit b0d8d2292160 ("vfs: fix subtle use-after-free of
-pipe_inode_info"), and afffects 3.10-3.12. It should be in stable
-kernels, but you probably have a 3.11 that predates that stable
-backport.
+ Tested by compilation only.
 
-For 3.11, you need 3.11.10.2 or newer, but 3.12 or 3.13 stable sounds
-like a better idea from a maintenance standpoint.
+ drivers/net/ethernet/atheros/alx/main.c | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
-            Linus
+diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
+index 2e45f6e..380d249 100644
+--- a/drivers/net/ethernet/atheros/alx/main.c
++++ b/drivers/net/ethernet/atheros/alx/main.c
+@@ -1248,19 +1248,13 @@ static int alx_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	 * shared register for the high 32 bits, so only a single, aligned,
+ 	 * 4 GB physical address range can be used for descriptors.
+ 	 */
+-	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
+-	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
++	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
+ 		dev_dbg(&pdev->dev, "DMA to 64-BIT addresses\n");
+ 	} else {
+-		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
++		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+ 		if (err) {
+-			err = dma_set_coherent_mask(&pdev->dev,
+-						    DMA_BIT_MASK(32));
+-			if (err) {
+-				dev_err(&pdev->dev,
+-					"No usable DMA config, aborting\n");
+-				goto out_pci_disable;
+-			}
++			dev_err(&pdev->dev, "No usable DMA config, aborting\n");
++			goto out_pci_disable;
+ 		}
+ 	}
+ 
+-- 
+1.8.3.1
+
