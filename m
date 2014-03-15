@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644AbaCOTNB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 15:13:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22784 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754887AbaCOTNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 15:13:00 -0400
-Date: Sat, 15 Mar 2014 20:12:22 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: matt.helsley@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Evgeniy Polyakov <zbr@ioremap.net>, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] exit.c: call proc_exit_connector() after exit_state is
-	set
-Message-ID: <20140315191222.GA32499@redhat.com>
-References: <20140224192734.GA15573@bender.morinfr.org> <CA+55aFyXCh8ETJH2XODzWM_Hj8_eTe4fjHt6v630YJB8OzS-Ew@mail.gmail.com>
+	id S1756088AbaCOTSr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 15:18:47 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:50355 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755178AbaCOTSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 15:18:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyXCh8ETJH2XODzWM_Hj8_eTe4fjHt6v630YJB8OzS-Ew@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140315190301.GA4458@localhost>
+References: <1394529560-3490-1-git-send-email-pablo@netfilter.org>
+	<531EE5A2.7090501@redhat.com>
+	<CAMEtUuyJne-8uNtOAK7EcFFQNXz9m7J2DDLGH_GbYe6oWZx1pQ@mail.gmail.com>
+	<20140312091500.GA4638@localhost>
+	<CAMEtUuztfWniTr+3u6ttuygvG=xYdp0ANn_w9MGqacQvHrXtWA@mail.gmail.com>
+	<20140313122913.GA4898@localhost>
+	<CAMEtUuwV2=8sVdmfKSOytC8LKsw2RX+fgfxvucSVV0=L0XEkOg@mail.gmail.com>
+	<20140314181600.GA2809@localhost>
+	<CAMEtUuzFkCgpvMy-V5iZycfpLQmebc_Jq-MedD=FJn-EEDkdcg@mail.gmail.com>
+	<20140315190301.GA4458@localhost>
+Date: Sat, 15 Mar 2014 12:18:44 -0700
+Message-ID: <CAMEtUuzF8CG6BSRyU0eUajAaiqAENNO2Za=XRz1=xqgxG8aggA@mail.gmail.com>
+Subject: Re: [PATCH RFC 0/9] socket filtering using nf_tables
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Daniel Borkmann <dborkman@redhat.com>, netfilter-devel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15, Linus Torvalds wrote:
+On Sat, Mar 15, 2014 at 12:03 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> On Fri, Mar 14, 2014 at 09:04:50PM -0700, Alexei Starovoitov wrote:
+> [...]
+>> In the patches I sent, ebpf is _not_ exposed to the user.
 >
-> [ Going through old emails, adding relevant people, ie Oleg for
-> kernel/exit.c and David because he seems to be the go-to person for
-> connector issues judging by commits ]
+> From your last patch: http://patchwork.ozlabs.org/patch/329713/
 >
-> Patch looks sane to me, and logically that exit_connector thing would
-> pair with exit_notify(), but I'd like some comments on it.
+> diff --git a/include/uapi/linux/filter.h b/include/uapi/linux/filter.h
+> index 8eb9ccaa5b48..4e98fe16ba88 100644
+> --- a/include/uapi/linux/filter.h
+> +++ b/include/uapi/linux/filter.h
+> @@ -1,5 +1,6 @@
+>  /*
+>   * Linux Socket Filter Data Structures
+> + * Extended BPF is Copyright (c) 2011-2014, PLUMgrid, http://plumgrid.com
+>   */
+>
+>  #ifndef _UAPI__LINUX_FILTER_H__
+> @@ -19,7 +20,7 @@
+>   *     Try and keep these values and structures similar to BSD,
+>   *     especially
+>   *     the BPF code definitions which need to match so you can share
+>   *     filters
+>   */
+> -
+> +
+>  struct sock_filter {   /* Filter block */
+>         __u16   code;   /* Actual filter code */
+>         __u8    jt;     /* Jump true */
+> @@ -27,6 +28,14 @@  struct sock_filter {        /* Filter block */
+>         __u32   k;      /* Generic multiuse field */
+>  };
+>
+> +struct sock_filter_ext {
+> +       __u8    code;    /* opcode */
+> +       __u8    a_reg:4; /* dest register */
+> +       __u8    x_reg:4; /* source register */
+> +       __s16   off;     /* signed offset */
+> +       __s32   imm;     /* signed immediate constant */
+> +};
+> +
+>  struct sock_fprog {    /* Required for SO_ATTACH_FILTER. */
+>         unsigned short          len;    /* Number of filter blocks */
+>         struct sock_filter __user *filter;
+>
+> That sock_filter_ext structure is exposed to userspace as well as many
+> other new BPF_* macros that you have defined.
 
-Please see the (confusing, my fault) discussion
+For the first few versions of the patchset they were in linux/bpf.h,
+but then it was suggested to put them into uapi/linux/filter.h
+to make the whole thing consistent with existing sock_filter structure.
+So yes, uapi header is changed as:
+ include/uapi/linux/filter.h |   33 ++++++++++++++++++++++++++-------
+ 1 file changed, 26 insertions(+), 7 deletions(-)
 
-	http://marc.info/?t=139327886600003
+but there is no way to use these #define from user space at present.
 
-But in short, personally I agree with this change too. Just it was not
-clear from the changelog (to me ;) which problem this change actually
-tries to solve, because in general the task is not waitable after it
-reports PROC_EVENT_EXIT.
+As I said I think it's safe to expose it, because these defines won't change,
+but if there is a concern I can move it back into linux/bpf.h
 
-So I think the patch is fine, but let me repeat:
-
-	I hope that someone
-	can confirm that netlink_broadcast() is safe even if release_task(current)
-	was already called, so that the caller has no pids, sighand, is not visible
-	via /proc/, etc.
-
-not that I expect this should not work, but still.
-
-> That
-> usability issue/race has been there since forever afaik. We probably
-> should never have added that process events connector thing, but since
-> we did and people apparently use it..
-
-Yes... BTW, Guillaume, I forgot to mention that perhaps you can use
-signalfd(SIGCHLD) instead of connector, this is epoll-able too. SIGCHLD
-doesn't queue, so it can't tell you which child has exited, but WNOHANG
-should work.
-
-Oleg.
-
+Thanks
+Alexei
