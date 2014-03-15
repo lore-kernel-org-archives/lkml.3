@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580AbaCOVMM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 17:12:12 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:36503 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756190AbaCOVML convert rfc822-to-8bit (ORCPT
+	id S1756593AbaCOVST (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 17:18:19 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38130 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190AbaCOVSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 17:12:11 -0400
-X-Originating-IP: 2.13.152.53
-From: =?iso-8859-1?Q?F=E9lix?= <xcodexif@xif.fr>
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Subject: Re : [PATCH 1/1] remove cpqarray from mainline kernel
-Date: Sat, 15 Mar 2014 22:12:06 +0100
-Message-Id: <531DBFA6-87F9-437B-866F-1EC129E3A185@xif.fr>
-To: Mike Miller <mike.miller@hp.com>, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk
-Mime-Version: 1.0 (Apple Message framework v1085)
-X-Mailer: Apple Mail (2.1085)
+	Sat, 15 Mar 2014 17:18:18 -0400
+Message-ID: <5324C3B2.1000802@gmail.com>
+Date: Sun, 16 Mar 2014 05:18:42 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+CC: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch/avr32/mm/cache.c: export symbol flush_icache_range()
+ for module using
+References: <531B8D32.6000000@gmail.com> <531B8FD8.6040704@gmail.com> <20140308221721.GA30934@samfundet.no> <531C8683.2010908@gmail.com>
+In-Reply-To: <531C8683.2010908@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 17 2013, Jens Axboe wrote:
-> On Thu, Oct 17 2013, Andrew Morton wrote:
-> > On Thu, 17 Oct 2013 12:52:26 -0500 Mike Miller <mike.miller@hp.com>
-> wrote:
-> >
-> > > cpqarray hasn't been used in over 12 years. It's doubtful that
-> > > anyone still uses the board. It's time the driver was removed from the
-> mainline kernel.
-> > > The only updates these days are minor and mostly done by people
-> outside of HP.
-> >
-> > It's amazing the weird stuff people get up to.  Perhaps we should
-> > disable it in config for a cycle or two, see if that flushes anyone out?
+On 03/09/2014 11:19 PM, Chen Gang wrote:
+> On 03/09/2014 06:17 AM, Hans-Christian Egtvedt wrote:
+>> Around Sun 09 Mar 2014 05:47:04 +0800 or thereabout, Chen Gang wrote:
+>>>
+>>> After this patch, our linux kernel can pass "avr32-linux-" allmodconfig
+>>> (it contents quite a few of warnings, but after check, I guess they are
+>>> not kernel's issue).
+>>
+>> That sounds great, I am a bit surprised however that the lkdtm module need
+>> flush_icache_range. Would have been interesting to look into what causes this
+>> dependency.
+>>
+
+After read a little more details for lkdtm, I guess "after overwrite an
+executable area by do_nothing(), it needs flush_icache_range() to be
+sure the new instructions/data must have effect with all cpu".
+
+Welcome any additional information for it.
+
+Thanks.
+
 > 
-> I think that would be prudent, you never know what people run...
+> "driver/misc/lkdtm.c" will use this flush_icache_range().
+> 
+> And some architectures export it to modules.
+> 
+>   [root@gchen arch]# grep -rn flush_icache_range * | grep EXPORT
+>   arm64/mm/flush.c:105:EXPORT_SYMBOL(flush_icache_range);
+>   avr32/mm/cache.c:114:EXPORT_SYMBOL(flush_icache_range);
+>   m68k/mm/cache.c:106:EXPORT_SYMBOL(flush_icache_range);
+>   mn10300/mm/cache-inv-icache.c:129:EXPORT_SYMBOL(flush_icache_range);
+>   mn10300/mm/cache-flush-icache.c:155:EXPORT_SYMBOL(flush_icache_range);
+>   sparc/mm/init_64.c:435:EXPORT_SYMBOL(flush_icache_range);
+> 
+> 
+> Welcome any more details information by any other members, thanks.
+> 
+> 
 
-Yes, I am still using a 16 years old Compaq server, and I need the 'cpqarray' module.
-So please, don't delete it...
-
+Thanks.
 -- 
-Félix Faisant
+Chen Gang
 
+Open, share and attitude like air, water and life which God blessed
