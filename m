@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479AbaCOPjq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 11:39:46 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60423 "EHLO
+	id S1756614AbaCOPl3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 11:41:29 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60443 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392AbaCOPjo (ORCPT
+	with ESMTP id S1755978AbaCOPl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 11:39:44 -0400
-Message-ID: <5324747A.8030507@kernel.org>
-Date: Sat, 15 Mar 2014 15:40:42 +0000
+	Sat, 15 Mar 2014 11:41:27 -0400
+Message-ID: <532474E1.1090904@kernel.org>
+Date: Sat, 15 Mar 2014 15:42:25 +0000
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
@@ -21,9 +21,9 @@ CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
         Kumar Gala <galak@codeaurora.org>,
         Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCHv3 8/9] iio: documentation: Add ABI documentation for *_mean_raw
-References: <1394472329-15485-1-git-send-email-sre@debian.org> <1394472329-15485-9-git-send-email-sre@debian.org>
-In-Reply-To: <1394472329-15485-9-git-send-email-sre@debian.org>
+Subject: Re: [PATCHv3 9/9] iio: inkern: add iio_read_channel_average_raw
+References: <1394472329-15485-1-git-send-email-sre@debian.org> <1394472329-15485-10-git-send-email-sre@debian.org>
+In-Reply-To: <1394472329-15485-10-git-send-email-sre@debian.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,37 +31,73 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 10/03/14 17:25, Sebastian Reichel wrote:
-> Add ABI documentation for in_*_mean_raw files, which are
-> already supported and used in the kernel for some time.
+> Add iio_read_channel_average_raw to support reading
+> averaged raw values in consumer drivers.
 >
 > Signed-off-by: Sebastian Reichel <sre@debian.org>
-As this one stands fine on it's own...
+As this one also stands fine on it's own and isn't actually used
+by the rest of the patch set - applied to the togreg branch of iio.git
+This will get pushed out initially as 'testing' for the autobuilders
+to play.
 
-Applied to the togreg branch of iio.git
-
-Thanks
+Jonathan
 > ---
->   Documentation/ABI/testing/sysfs-bus-iio | 8 ++++++++
->   1 file changed, 8 insertions(+)
+>   drivers/iio/inkern.c         | 18 ++++++++++++++++++
+>   include/linux/iio/consumer.h | 13 +++++++++++++
+>   2 files changed, 31 insertions(+)
 >
-> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-> index 6e02c50..58ba333 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-iio
-> +++ b/Documentation/ABI/testing/sysfs-bus-iio
-> @@ -210,6 +210,14 @@ Contact:	linux-iio@vger.kernel.org
->   Description:
->   		Scaled humidity measurement in milli percent.
+> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+> index 0cf5f8e..adeba5a 100644
+> --- a/drivers/iio/inkern.c
+> +++ b/drivers/iio/inkern.c
+> @@ -443,6 +443,24 @@ err_unlock:
+>   }
+>   EXPORT_SYMBOL_GPL(iio_read_channel_raw);
 >
-> +What:		/sys/bus/iio/devices/iio:deviceX/in_X_mean_raw
-> +KernelVersion:	3.5
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Averaged raw measurement from channel X. The number of values
-> +		used for averaging is device specific. The converting rules for
-> +		normal raw values also applies to the averaged raw values.
+> +int iio_read_channel_average_raw(struct iio_channel *chan, int *val)
+> +{
+> +	int ret;
 > +
->   What:		/sys/bus/iio/devices/iio:deviceX/in_accel_offset
->   What:		/sys/bus/iio/devices/iio:deviceX/in_accel_x_offset
->   What:		/sys/bus/iio/devices/iio:deviceX/in_accel_y_offset
+> +	mutex_lock(&chan->indio_dev->info_exist_lock);
+> +	if (chan->indio_dev->info == NULL) {
+> +		ret = -ENODEV;
+> +		goto err_unlock;
+> +	}
+> +
+> +	ret = iio_channel_read(chan, val, NULL, IIO_CHAN_INFO_AVERAGE_RAW);
+> +err_unlock:
+> +	mutex_unlock(&chan->indio_dev->info_exist_lock);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(iio_read_channel_average_raw);
+> +
+>   static int iio_convert_raw_to_processed_unlocked(struct iio_channel *chan,
+>   	int raw, int *processed, unsigned int scale)
+>   {
+> diff --git a/include/linux/iio/consumer.h b/include/linux/iio/consumer.h
+> index 2752b1f..651f9a0 100644
+> --- a/include/linux/iio/consumer.h
+> +++ b/include/linux/iio/consumer.h
+> @@ -123,6 +123,19 @@ int iio_read_channel_raw(struct iio_channel *chan,
+>   			 int *val);
+>
+>   /**
+> + * iio_read_channel_average_raw() - read from a given channel
+> + * @chan:		The channel being queried.
+> + * @val:		Value read back.
+> + *
+> + * Note raw reads from iio channels are in adc counts and hence
+> + * scale will need to be applied if standard units required.
+> + *
+> + * In opposit to the normal iio_read_channel_raw this function
+> + * returns the average of multiple reads.
+> + */
+> +int iio_read_channel_average_raw(struct iio_channel *chan, int *val);
+> +
+> +/**
+>    * iio_read_channel_processed() - read processed value from a given channel
+>    * @chan:		The channel being queried.
+>    * @val:		Value read back.
 >
 
