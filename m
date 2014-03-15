@@ -1,102 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879AbaCOHJL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 03:09:11 -0400
-Received: from fallback4.mail.ru ([94.100.176.42]:44723 "EHLO
-	fallback4.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaCOHJJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 03:09:09 -0400
-From: Alexander Shiyan <shc_work@mail.ru>
-To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH] mfd: mc13xxx: Move definitions out of structures
-Date: Sat, 15 Mar 2014 11:08:07 +0400
-Message-Id: <1394867287-14074-1-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.8.3.2
-X-Mras: Ok
+	id S1752887AbaCOHOu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 03:14:50 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51057 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750756AbaCOHOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 03:14:49 -0400
+Message-ID: <1394867674.15098.99.camel@pasglop>
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Greg KH <greg@kroah.com>
+Cc: Tejun Heo <tj@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 15 Mar 2014 18:14:34 +1100
+In-Reply-To: <20140315052942.GA30262@kroah.com>
+References: <1394596541.4840.70.camel@pasglop>
+	 <20140312113742.GM28112@sirena.org.uk> <1394654396.4840.94.camel@pasglop>
+	 <20140312200232.GA22332@htj.dyndns.org> <1394655292.4840.97.camel@pasglop>
+	 <20140312202102.GB22332@htj.dyndns.org> <1394671056.4840.103.camel@pasglop>
+	 <1394748895.15098.16.camel@pasglop> <20140315000343.GD5687@kroah.com>
+	 <1394852249.15098.75.camel@pasglop> <20140315052942.GA30262@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
----
- include/linux/mfd/mc13xxx.h | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+On Sat, 2014-03-15 at 05:29 +0000, Greg KH wrote:
+> Just take my tree, it's not a big deal, I'll merge first with Linus if
+> you want and then everything is simple.
 
-diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
-index a326c85..d63b1d3 100644
---- a/include/linux/mfd/mc13xxx.h
-+++ b/include/linux/mfd/mc13xxx.h
-@@ -117,10 +117,6 @@ struct mc13xxx_led_platform_data {
- 
- #define MAX_LED_CONTROL_REGS	6
- 
--struct mc13xxx_leds_platform_data {
--	struct mc13xxx_led_platform_data *led;
--	int num_leds;
--
- /* MC13783 LED Control 0 */
- #define MC13783_LED_C0_ENABLE		(1 << 0)
- #define MC13783_LED_C0_TRIODE_MD	(1 << 7)
-@@ -169,10 +165,13 @@ struct mc13xxx_leds_platform_data {
- /* MC34708 LED Control 0 */
- #define MC34708_LED_C0_CURRENT_R(x)	(((x) & 0x3) << 9)
- #define MC34708_LED_C0_CURRENT_G(x)	(((x) & 0x3) << 21)
-+
-+struct mc13xxx_leds_platform_data {
-+	struct mc13xxx_led_platform_data *led;
-+	int num_leds;
- 	u32 led_control[MAX_LED_CONTROL_REGS];
- };
- 
--struct mc13xxx_buttons_platform_data {
- #define MC13783_BUTTON_DBNC_0MS		0
- #define MC13783_BUTTON_DBNC_30MS	1
- #define MC13783_BUTTON_DBNC_150MS	2
-@@ -180,6 +179,8 @@ struct mc13xxx_buttons_platform_data {
- #define MC13783_BUTTON_ENABLE		(1 << 2)
- #define MC13783_BUTTON_POL_INVERT	(1 << 3)
- #define MC13783_BUTTON_RESET_EN		(1 << 4)
-+
-+struct mc13xxx_buttons_platform_data {
- 	int b1on_flags;
- 	unsigned short b1on_key;
- 	int b2on_flags;
-@@ -188,14 +189,14 @@ struct mc13xxx_buttons_platform_data {
- 	unsigned short b3on_key;
- };
- 
-+#define MC13783_TS_ATO_FIRST	false
-+#define MC13783_TS_ATO_EACH	true
-+
- struct mc13xxx_ts_platform_data {
- 	/* Delay between Touchscreen polarization and ADC Conversion.
- 	 * Given in clock ticks of a 32 kHz clock which gives a granularity of
- 	 * about 30.5ms */
- 	u8 ato;
--
--#define MC13783_TS_ATO_FIRST false
--#define MC13783_TS_ATO_EACH  true
- 	/* Use the ATO delay only for the first conversion or for each one */
- 	bool atox;
- };
-@@ -210,11 +211,12 @@ struct mc13xxx_codec_platform_data {
- 	enum mc13783_ssi_port dac_ssi_port;
- };
- 
--struct mc13xxx_platform_data {
--#define MC13XXX_USE_TOUCHSCREEN (1 << 0)
-+#define MC13XXX_USE_TOUCHSCREEN	(1 << 0)
- #define MC13XXX_USE_CODEC	(1 << 1)
- #define MC13XXX_USE_ADC		(1 << 2)
- #define MC13XXX_USE_RTC		(1 << 3)
-+
-+struct mc13xxx_platform_data {
- 	unsigned int flags;
- 
- 	struct mc13xxx_regulator_platform_data regulators;
--- 
-1.8.3.2
+Yup, I'll do that. Thanks.
+
+Cheers,
+Ben.
+
 
