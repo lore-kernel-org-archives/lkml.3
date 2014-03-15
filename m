@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaCOF2o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 01:28:44 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58490 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751738AbaCOF2m (ORCPT
+	id S1751784AbaCOFji (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 01:39:38 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:34013 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaCOFjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 01:28:42 -0400
-X-Sasl-enc: 6wXZqWflqJIcGuiJGuolwr8tNRVHlJ2DF9yxdH2/kw1L 1394861321
-Date: Sat, 15 Mar 2014 05:29:42 +0000
-From: Greg KH <greg@kroah.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Tejun Heo <tj@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20140315052942.GA30262@kroah.com>
-References: <1394596541.4840.70.camel@pasglop>
- <20140312113742.GM28112@sirena.org.uk>
- <1394654396.4840.94.camel@pasglop>
- <20140312200232.GA22332@htj.dyndns.org>
- <1394655292.4840.97.camel@pasglop>
- <20140312202102.GB22332@htj.dyndns.org>
- <1394671056.4840.103.camel@pasglop>
- <1394748895.15098.16.camel@pasglop>
- <20140315000343.GD5687@kroah.com>
- <1394852249.15098.75.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394852249.15098.75.camel@pasglop>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sat, 15 Mar 2014 01:39:37 -0400
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: will.deacon@arm.com
+Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
+        catalin.marinas@arm.com, dsaxena@linaro.org, arndb@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v5 0/4] arm64: prerequisites for audit and ftrace
+Date: Sat, 15 Mar 2014 14:39:04 +0900
+Message-Id: <1394861948-28712-1-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 15, 2014 at 01:57:29PM +1100, Benjamin Herrenschmidt wrote:
-> On Sat, 2014-03-15 at 00:03 +0000, Greg KH wrote:
-> > On Fri, Mar 14, 2014 at 09:14:55AM +1100, Benjamin Herrenschmidt wrote:
-> > > On Thu, 2014-03-13 at 11:37 +1100, Benjamin Herrenschmidt wrote:
-> > > > On Wed, 2014-03-12 at 16:21 -0400, Tejun Heo wrote:
-> > > > > It's a series of rather complex patches.  I really don't think
-> > > > > duplicating them is a good idea.  We can either resurrect the old API
-> > > > > to kill it again or set up a merge branch which I don't think is too
-> > > > > unusual in situations like this.
-> > > > 
-> > > > Right, a topic branch that gets merged in both driver-core-next and
-> > > > powerpc-next.
-> > > 
-> > > Just want to make sure we agree ... ie, the offending commit is already
-> > > in powerpc-next on my side and I can't really back it out (I could
-> > > revert it though).
-> > 
-> > You can pull in driver-core-next into your tree if you want, it's not
-> > going to be reverted, and will be sent to Linus for 3.15-rc1, so you can
-> > base your work on it and fix up the api usage in your tree that way.
-> 
-> It's messy. Stephen really doesn't like if we pull each other trees like
-> that unless they are topic branches. He also doesn't like when we keep
-> pulling Linus in.
+This patchset contains some patches commonly applied for audit and ftrace.
 
-I only pull Linus in after a -rc in which I have merged patches with him
-for that "topic".  Otherwise I end up with merge issues, and for testing
-reasons, I want those fixes from Linus and from me, in order to keep
-people from hitting the same already-fixes issues.
+Patch [1/4] defines syscall trace related TIF_* flags in order to add hooks,
+including ftrace, audit and seccomp, later on.  Those features will be
+implemented in separate patchsets, but it's safe to check for all TIF_*
+now because they can not be turned on anyway.
 
-> For example I purposefully kept powerpc -next on top of rc2. You seem to
-> regularly merge subsequent rc's into driver-core-next. So by pulling
-> your tree I would bring a whole lot of stuff on top of mine, which is
-> fine by git but makes histories more complicated and annoys Stephen.
-> 
-> I might still do it this time around, because the other solution for me
-> is revert + re-apply with fixups on top of a separate branch itself
-> derived from driver-core-next and send multiple pull requests to Linus,
-> and that's messy too. The question is which one is more :-)
+Patch [2/4] doesn't change a behavior but make it easy and manageable to
+confirm we invoke those hooks in correct order by splitting syscall_trace().
 
-Just take my tree, it's not a big deal, I'll merge first with Linus if
-you want and then everything is simple.
+Patch [3/4] adds a commonly used function, which returns a return value of
+system call.
 
-thanks,
+Patch [4/4] removes is_compat_task from asm/compat.h to avoid conflicted
+definitions.
 
-greg k-h-
+Changes v4 -> v5:
+* added the following patch from my seccomp patch since it is required for
+  audit and ftrace in case of !COMPAT, too. [4/4]
+  "arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h"
+
+Changes v3 -> v4:
+* added "arm64: split syscall_trace() into separate functions for enter/
+  exit", which is just a preparation for adding syscall trace hooks later.
+
+Changes v2 -> v3:
+* reverted a change in syscall_trace() in v1 [1/2]
+* added "arm64: Add regs_return_value() in syscall.h" patch which was
+  previously included in audit patch [2/2]
+
+Changes v1 -> v2:
+* added a guard against TIF_SYSCALL_TRACE at tracehook_report_syscall_*()
+* renamed _TIF_WORK_SYSCALL to _TIF_SYSCALL_WORK
+
+AKASHI Takahiro (4):
+  arm64: make a single hook to syscall_trace() for all syscall features
+  arm64: split syscall_trace() into separate functions for enter/exit
+  arm64: Add regs_return_value() in syscall.h
+  arm64: is_compat_task is defined both in asm/compat.h and
+    linux/compat.h
+
+ arch/arm64/include/asm/compat.h      |  5 ----
+ arch/arm64/include/asm/ptrace.h      |  5 ++++
+ arch/arm64/include/asm/thread_info.h | 13 +++++++++
+ arch/arm64/kernel/entry.S            | 15 +++++------
+ arch/arm64/kernel/hw_breakpoint.c    |  2 +-
+ arch/arm64/kernel/process.c          |  1 +
+ arch/arm64/kernel/ptrace.c           | 51 +++++++++++++++++++++---------------
+ arch/arm64/kernel/signal.c           |  2 +-
+ 8 files changed, 58 insertions(+), 36 deletions(-)
+
+-- 
+1.8.3.2
+
