@@ -1,169 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030205AbaCOFur (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 01:50:47 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:50996 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030187AbaCOFuo (ORCPT
+	id S1752227AbaCOGXX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 02:23:23 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50309 "EHLO
+	lgeamrelo05.lge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750775AbaCOGXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 01:50:44 -0400
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: wad@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        arndb@arndb.de
-Cc: dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH_v4 2/2] arm64: Add seccomp support
-Date: Sat, 15 Mar 2014 14:50:04 +0900
-Message-Id: <1394862604-29105-3-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394862604-29105-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1394705823-12465-1-git-send-email-takahiro.akashi@linaro.org>
- <1394862604-29105-1-git-send-email-takahiro.akashi@linaro.org>
+	Sat, 15 Mar 2014 02:23:21 -0400
+X-Original-SENDERIP: 10.178.36.63
+X-Original-MAILFROM: chanho.min@lge.com
+From: Chanho Min <chanho.min@lge.com>
+To: Chris Ball <cjb@laptop.org>, Chris Ball <chris@printf.net>
+Cc: Hankyung Yu <hankyung.yu@lge.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Dong Aisheng <b29396@freescale.com>, Kevin Liu <kliu5@marvell.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        HyoJun Im <hyojun.im@lge.com>, Gunho Lee <gunho.lee@lge.com>,
+        Youssef TRIKI <youssef.triki@st.com>, Chanho Min <chanho.min@lge.com>
+Subject: [PATCH RESEND] mmc:sdhci: handle busy-end interrupt during command
+Date: Sat, 15 Mar 2014 15:22:52 +0900
+Message-Id: <1394864572-27885-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-secure_computing() should always be called first in syscall_trace_enter().
-If it returns non-zero, we should stop further handling. Then that system
-call may eventually fail, be trapped or the process itself be killed
-depending on loaded rules.
-In this case, syscall_trace_enter() returns a dedicated value in order to
-skip a normal syscall table lookup because a seccomp rule may have already
-overridden errno.
+It is fully legal for a controller to start handling busy-end interrupt
+before it has signaled that the command has completed. So make sure
+we do things in the proper order, Or it results that command interrupt
+is ignored so it can cause unexpected operations. This is founded at some
+toshiba emmc with the bellow warning.
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+"mmc0: Got command interrupt 0x00000001 even though
+no command operation was in progress."
+
+Can anyone ACK/NACK of this patch? Any comment will be appreciated.
+
+Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+Tested-by: Youssef TRIKI <youssef.triki@st.com>
 ---
- arch/arm64/Kconfig               | 14 ++++++++++++++
- arch/arm64/include/asm/seccomp.h | 25 +++++++++++++++++++++++++
- arch/arm64/include/asm/unistd.h  |  3 +++
- arch/arm64/kernel/entry.S        |  4 ++++
- arch/arm64/kernel/ptrace.c       |  6 ++++++
- 5 files changed, 52 insertions(+)
- create mode 100644 arch/arm64/include/asm/seccomp.h
+ drivers/mmc/host/sdhci.c  |   17 +++++++++++++++--
+ include/linux/mmc/sdhci.h |    1 +
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 7c1f8c7..d5167d6 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -28,6 +28,7 @@ config ARM64
- 	select HARDIRQS_SW_RESEND
- 	select HAVE_ARCH_AUDITSYSCALL
- 	select HAVE_ARCH_JUMP_LABEL
-+	select HAVE_ARCH_SECCOMP_FILTER
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_C_RECORDMCOUNT
- 	select HAVE_DEBUG_BUGVERBOSE
-@@ -230,6 +231,19 @@ config HAVE_ARCH_TRANSPARENT_HUGEPAGE
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index bd8a098..21f98e7 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1016,6 +1016,7 @@ void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+ 	mod_timer(&host->timer, jiffies + 10 * HZ);
  
- source "mm/Kconfig"
+ 	host->cmd = cmd;
++	host->busy_handle = 0;
  
-+config SECCOMP
-+	bool "Enable seccomp to safely compute untrusted bytecode"
-+	---help---
-+	  This kernel feature is useful for number crunching applications
-+	  that may need to compute untrusted bytecode during their
-+	  execution. By using pipes or other transports made available to
-+	  the process as file descriptors supporting the read/write
-+	  syscalls, it's possible to isolate those applications in
-+	  their own address space using seccomp. Once seccomp is
-+	  enabled via prctl(PR_SET_SECCOMP), it cannot be disabled
-+	  and the task is only allowed to execute a few safe syscalls
-+	  defined by each seccomp mode.
-+
- config XEN_DOM0
- 	def_bool y
- 	depends on XEN
-diff --git a/arch/arm64/include/asm/seccomp.h b/arch/arm64/include/asm/seccomp.h
-new file mode 100644
-index 0000000..c76fac9
---- /dev/null
-+++ b/arch/arm64/include/asm/seccomp.h
-@@ -0,0 +1,25 @@
-+/*
-+ * arch/arm64/include/asm/seccomp.h
-+ *
-+ * Copyright (C) 2014 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_SECCOMP_H
-+#define _ASM_SECCOMP_H
-+
-+#include <asm/unistd.h>
-+
-+#ifdef CONFIG_COMPAT
-+#define __NR_seccomp_read_32		__NR_compat_read
-+#define __NR_seccomp_write_32		__NR_compat_write
-+#define __NR_seccomp_exit_32		__NR_compat_exit
-+#define __NR_seccomp_sigreturn_32	__NR_compat_rt_sigreturn
-+#endif /* CONFIG_COMPAT */
-+
-+#include <asm-generic/seccomp.h>
-+
-+#endif /* _ASM_SECCOMP_H */
-diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
-index 04f5d22..28bf882 100644
---- a/arch/arm64/include/asm/unistd.h
-+++ b/arch/arm64/include/asm/unistd.h
-@@ -30,6 +30,9 @@
-  * Compat syscall numbers used by the AArch64 kernel.
-  */
- #define __NR_compat_restart_syscall	0
-+#define __NR_compat_exit		1
-+#define __NR_compat_read		3
-+#define __NR_compat_write		4
- #define __NR_compat_sigreturn		119
- #define __NR_compat_rt_sigreturn	173
+ 	sdhci_prepare_data(host, cmd);
  
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index f06ee35..6ef266a 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -650,6 +650,10 @@ ENDPROC(el0_svc)
- __sys_trace:
- 	mov	x0, sp
- 	bl	syscall_trace_enter
-+#ifdef CONFIG_SECCOMP
-+	cmp	w0, #-EPERM			// check seccomp result
-+	b.eq	ret_to_user			// -EPERM means 'rejected'
-+#endif
- 	adr	lr, __sys_trace_return		// return address
- 	uxtw	scno, w0			// syscall number (possibly new)
- 	mov	x1, sp				// pointer to regs
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index f9e1339..bb89fa3 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -21,12 +21,14 @@
+@@ -2271,8 +2272,12 @@ static void sdhci_cmd_irq(struct sdhci_host *host, u32 intmask)
+ 		if (host->cmd->data)
+ 			DBG("Cannot wait for busy signal when also "
+ 				"doing a data transfer");
+-		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ))
++		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ)
++				&& !host->busy_handle) {
++			/* Mark that command complete before busy is ended */
++			host->busy_handle = 1;
+ 			return;
++		}
  
- #include <linux/audit.h>
- #include <linux/compat.h>
-+#include <linux/errno.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
- #include <linux/mm.h>
- #include <linux/smp.h>
- #include <linux/ptrace.h>
- #include <linux/user.h>
-+#include <linux/seccomp.h>
- #include <linux/security.h>
- #include <linux/init.h>
- #include <linux/signal.h>
-@@ -1093,6 +1095,10 @@ static void tracehook_report_syscall(struct pt_regs *regs,
+ 		/* The controller does not support the end-of-busy IRQ,
+ 		 * fall through and take the SDHCI_INT_RESPONSE */
+@@ -2335,7 +2340,15 @@ static void sdhci_data_irq(struct sdhci_host *host, u32 intmask)
+ 		 */
+ 		if (host->cmd && (host->cmd->flags & MMC_RSP_BUSY)) {
+ 			if (intmask & SDHCI_INT_DATA_END) {
+-				sdhci_finish_command(host);
++				/*
++				 * Some cards handle busy-end interrupt
++				 * before the command completed, so make
++				 * sure we do things in the proper order.
++				 */
++				if (host->busy_handle)
++					sdhci_finish_command(host);
++				else
++					host->busy_handle = 1;
+ 				return;
+ 			}
+ 		}
+diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+index 3e781b8..0118020 100644
+--- a/include/linux/mmc/sdhci.h
++++ b/include/linux/mmc/sdhci.h
+@@ -148,6 +148,7 @@ struct sdhci_host {
+ 	struct mmc_command *cmd;	/* Current command */
+ 	struct mmc_data *data;	/* Current data request */
+ 	unsigned int data_early:1;	/* Data finished before cmd */
++	unsigned int busy_handle:1;	/* Handling the order of Busy-end */
  
- asmlinkage int syscall_trace_enter(struct pt_regs *regs)
- {
-+	if (secure_computing(regs->syscallno) == -1)
-+		/* seccomp failures shouldn't expose any additional code. */
-+		return -EPERM;
-+
- 	if (test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
- 
+ 	struct sg_mapping_iter sg_miter;	/* SG state for PIO */
+ 	unsigned int blocks;	/* remaining PIO blocks */
 -- 
-1.8.3.2
+1.7.9.5
 
