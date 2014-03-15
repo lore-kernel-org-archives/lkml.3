@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095AbaCOQRD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 12:17:03 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:39071 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbaCOQRA (ORCPT
+	id S1755716AbaCOQXo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 12:23:44 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60696 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262AbaCOQXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 12:17:00 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf sched latency: prettify printed table
-Date: Sat, 15 Mar 2014 12:17:38 -0400
-Message-Id: <1394900258-6896-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.9.rc0.1.g9d22d25
+	Sat, 15 Mar 2014 12:23:43 -0400
+Message-ID: <53247EC9.6090505@kernel.org>
+Date: Sat, 15 Mar 2014 16:24:41 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: Beomho Seo <beomho.seo@samsung.com>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH] iio: cm36651: Fix i2c client leak and possible NULL pointer
+ dereference
+References: <1394098390-11213-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1394098390-11213-1-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- tools/perf/builtin-sched.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+On 06/03/14 09:33, Krzysztof Kozlowski wrote:
+> During probe the driver allocates dummy I2C devices (i2c_new_dummy())
+> but they aren't unregistered during driver remove or probe failure.
+>
+> Additionally driver does not check the return value of i2c_new_dummy().
+> In case of error (i2c_new_device(): memory allocation failure or I2C
+> address cannot be used) this function returns NULL which is later
+> dereferenced by i2c_smbus_{read,write}_data() functions.
+>
+> Fix issues by properly checking for i2c_new_dummy() return value and
+> unregistering I2C devices on driver remove or probe failure.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Good catch, but the error path needs more care.
+> ---
+>   drivers/iio/light/cm36651.c |   12 ++++++++++++
+>   1 file changed, 12 insertions(+)
+>
+> diff --git a/drivers/iio/light/cm36651.c b/drivers/iio/light/cm36651.c
+> index a45e07492db3..e7e9a597159f 100644
+> --- a/drivers/iio/light/cm36651.c
+> +++ b/drivers/iio/light/cm36651.c
+> @@ -653,6 +653,11 @@ static int cm36651_probe(struct i2c_client *client,
+>   	cm36651->ps_client = i2c_new_dummy(client->adapter,
+>   						     CM36651_I2C_ADDR_PS);
+>   	cm36651->ara_client = i2c_new_dummy(client->adapter, CM36651_ARA);
+> +	if (!cm36651->ps_client || !cm36651->ara_client) {
+> +		dev_err(&client->dev, "%s: new i2c device failed\n", __func__);
+> +		ret = -ENODEV;
+> +		goto error_i2c_unregister;
+> +	}
+The two failures need to be handled independently as we only want to unregister
+those that succeeded.  i2c_new_dummy will not return an error and leave a device
+registered.  This is particularly true given the first thing that i2c_unregister_device
+does is to derefence the client pointer.  That will cause a segfault if you do it
+for NULL as here.
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 6a76a07..0c41a2b 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1124,7 +1124,7 @@ static void output_lat_thread(struct perf_sched *sched, struct work_atoms *work_
- 
- 	avg = work_list->total_lat / work_list->nb_atoms;
- 
--	printf("|%11.3f ms |%9" PRIu64 " | avg:%9.3f ms | max:%9.3f ms | max at: %9.6f s\n",
-+	printf("|%11.3f ms |%9" PRIu64 " | avg:%9.3f ms | max:%9.3f ms | max at: %12.6f s\n",
- 	      (double)work_list->total_runtime / 1e6,
- 		 work_list->nb_atoms, (double)avg / 1e6,
- 		 (double)work_list->max_lat / 1e6,
-@@ -1527,9 +1527,9 @@ static int perf_sched__lat(struct perf_sched *sched)
- 
- 	perf_sched__sort_lat(sched);
- 
--	printf("\n ---------------------------------------------------------------------------------------------------------------\n");
--	printf("  Task                  |   Runtime ms  | Switches | Average delay ms | Maximum delay ms | Maximum delay at     |\n");
--	printf(" ---------------------------------------------------------------------------------------------------------------\n");
-+	printf("\n -----------------------------------------------------------------------------------------------------------------\n");
-+	printf("  Task                  |   Runtime ms  | Switches | Average delay ms | Maximum delay ms | Maximum delay at       |\n");
-+	printf(" -----------------------------------------------------------------------------------------------------------------\n");
- 
- 	next = rb_first(&sched->sorted_atom_root);
- 
-@@ -1541,7 +1541,7 @@ static int perf_sched__lat(struct perf_sched *sched)
- 		next = rb_next(next);
- 	}
- 
--	printf(" -----------------------------------------------------------------------------------------\n");
-+	printf(" -----------------------------------------------------------------------------------------------------------------\n");
- 	printf("  TOTAL:                |%11.3f ms |%9" PRIu64 " |\n",
- 		(double)sched->all_runtime / 1e6, sched->all_count);
- 
--- 
-1.9.rc0.1.g9d22d25
+>   	mutex_init(&cm36651->lock);
+>   	indio_dev->dev.parent = &client->dev;
+>   	indio_dev->channels = cm36651_channels;
+> @@ -687,6 +692,11 @@ error_free_irq:
+>   	free_irq(client->irq, indio_dev);
+>   error_disable_reg:
+>   	regulator_disable(cm36651->vled_reg);
+> +error_i2c_unregister:
+> +	if (cm36651->ps_client)
+> +		i2c_unregister_device(cm36651->ps_client);
+> +	if (cm36651->ara_client)
+> +		i2c_unregister_device(cm36651->ara_client);
+>   	return ret;
+>   }
+>
+> @@ -698,6 +708,8 @@ static int cm36651_remove(struct i2c_client *client)
+>   	iio_device_unregister(indio_dev);
+>   	regulator_disable(cm36651->vled_reg);
+>   	free_irq(client->irq, indio_dev);
+> +	i2c_unregister_device(cm36651->ps_client);
+> +	i2c_unregister_device(cm36651->ara_client);
+Good catch.
+>
+>   	return 0;
+>   }
+>
 
