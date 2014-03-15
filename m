@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756338AbaCOJmY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 05:42:24 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:50382 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756267AbaCOJmX (ORCPT
+	id S1756227AbaCOKBS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 06:01:18 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:43167 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755894AbaCOKBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 05:42:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: xen-devel@lists.xenproject.org
-Subject: [PATCH] Xen: include asm/page.h in xen-ops.h
-Date: Sat, 15 Mar 2014 10:42:15 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Sat, 15 Mar 2014 06:01:16 -0400
+Message-ID: <532424E6.3000706@gmail.com>
+Date: Sat, 15 Mar 2014 11:01:10 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+To: David Miller <davem@davemloft.net>
+CC: f.fainelli@gmail.com, ben@decadent.org.uk, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] net: phy: fix uninitalized WOL parameters in phy_ethtool_get_wol
+References: <1394484661-4554-2-git-send-email-sebastian.hesselbarth@gmail.com> <1394578975-12588-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140313.153832.967564223480298567.davem@davemloft.net>
+In-Reply-To: <20140313.153832.967564223480298567.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201403151042.15932.arnd@arndb.de>
-X-Provags-ID: V02:K0:waxqAu9fdim9qpI+NkwiEgcahY/5terzMNChyBO58Bw
- 2EW1J1SHTquDc0e8Q0NSJhycXIa7GMr8ZDyqFUlUf5GA/bGB8p
- Azj9goDITq5RQg6n4wj2A/5ICH9ebeIMWumLrPJfESbBV0EZH2
- 28P5E1eIJ+ffYSyfFVud8IipTRJWrNKRqVtqmVBFr9RHy2bSrZ
- xBhBLNdbFJ/avwBBNffuJFlhVQNP9SHh2pigH7sGbf/d79n7sw
- CYOpk5vdAiLlxG84ueIie+yAenQmmTI6CAslVkS7sxJQZWymAn
- ONm3zZXTy2K00IVgF1zX6LKZHKYaBPKYSRswq/3DsebSF8FgUu
- BPmoZ9a9tYoWoi0poZhyY1ozQtXTcdOwQV77V9ivl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The declaration of xen_remap_domain_mfn_range relies on the
-pgprot_t typedef to be visible. In some configurations, that
-may not already have been seen, and I have encountered a
-bug during randconfig testing on ARM.
+On 03/13/2014 08:38 PM, David Miller wrote:
+> From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Date: Wed, 12 Mar 2014 00:02:55 +0100
+[...]
+>> To fix this, always zero relevant fields of struct ethtool_wolinfo
+>> regardless of .get_wol callback availability.
+[...]
+> I'm starting to see this situation more clearly now, especially with
+> Ben's most recent commentary.
+>
+> The basic notion is that one must do ethtool ops are designed such that
+> the top-level execution context in net/core/ethtool.c takes care of
+> initializing the structure.
+>
+> In this case, we're referring specifically to ethtool_get_wol(), which
+> runs any time ETHTOOL_GWOL is requested.
+>
+> Therefore no ethtool_ops->get_wol() implementation should duplicate
+> this work, that goes for all of such cases which invoke the function
+> we are talking about here, phy_ethtool_get_wol().
+>
+> So the first change is definitely to remove:
+>
+> 	wol->supported = 0;
+> 	wol->wolopts = 0;
+>
+> from:
+>
+> drivers/net/ethernet/marvell/mv643xx_eth.c:mv643xx_eth_get_wol()
+> drivers/net/ethernet/ti/cpsw.c:cpsw_get_wol()
+>
+[...]
+>
+> Finally, purge the spurious clears in phydev_ops->get_wol(), namely
+> in at803x_get_wol() and m88e1318_get_wol().
 
-Adding an explicit #include for asm/page.h fixes the problem.
+David,
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+I was preparing cleanups for mv643xx_eth, cpsw, at803x, and mv88e1318.
 
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index 6d8c042..b8ad234 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/percpu.h>
- #include <asm/xen/interface.h>
-+#include <asm/page.h>
- 
- DECLARE_PER_CPU(struct vcpu_info *, xen_vcpu);
- 
+Out of curiosity, I did a
+
+git grep "wol->" drivers/net/ | grep "= 0" | wc -l
+29
+
+and found some other "spurious clears" ;)
+
+I can go that road and remove/rework all those clears. Some are really
+easy, some would require some more rework (e.g. e1000).
+
+Of course, a lot of those drivers then will need a Tested-by, as I
+don't have the HW available.
+
+> So, to reiterate, OPS never have to be mindful of initializing the
+> ethtool result with zeros.  However, anyone who calls into OPS
+> directly must provide said expected state.
+
+Sebastian
