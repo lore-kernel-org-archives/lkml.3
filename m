@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556AbaCOFu3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 01:50:29 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:42541 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbaCOFu1 (ORCPT
+	id S1030182AbaCOFuj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 01:50:39 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:64604 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756559AbaCOFud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 01:50:27 -0400
+	Sat, 15 Mar 2014 01:50:33 -0400
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 To: wad@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com,
         arndb@arndb.de
 Cc: dsaxena@linaro.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         patches@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH_v4 0/2] arm64: Add seccomp support
-Date: Sat, 15 Mar 2014 14:50:02 +0900
-Message-Id: <1394862604-29105-1-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH_v4 1/2] asm-generic: Add generic seccomp.h for secure computing mode 1
+Date: Sat, 15 Mar 2014 14:50:03 +0900
+Message-Id: <1394862604-29105-2-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1394705823-12465-1-git-send-email-takahiro.akashi@linaro.org>
+In-Reply-To: <1394862604-29105-1-git-send-email-takahiro.akashi@linaro.org>
 References: <1394705823-12465-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394862604-29105-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Please apply this patch after my ftrace patch and audit patch in order
-to avoid some conflict on arm64/Kconfig.)
+Those values (__NR_seccomp_*) are used solely in secure_computing()
+to identify mode 1 system calls. If compat system calls have different
+syscall numbers, asm/seccomp.h may override them.
 
-This patch enables secure computing (system call filtering) on arm64.
-System calls can be allowed or denied by loaded bpf-style rules.
-Architecture specific part is to run secure_computing() on syscall entry
-and check the result. See [2/2]
-
-Prerequisites are:
- * "arm64: make a single hook to syscall_trace() for all syscall features" patch
- * "arm64: split syscall_trace() into separate functions for enter/exit" patch
- * "arm64: Add audit support" patch
- * "arm64: is_compat_task is defined both in asm/compat.h and 
-    linux/compat.h" patch
-
-This code is tested on ARMv8 fast model using libseccomp v2.1.1 with
-modifications for arm64 and verified by its "live" tests, 20, 21 and 24.
-
-Changes v3 -> v4:
-* removed the following patch and moved it to "arm64: prerequisites for
-  audit and ftrace" patchset since it is required for audit and ftrace in
-  case of !COMPAT, too.
-  "arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h"
-
-Changes v2 -> v3:
-* removed unnecessary 'type cast' operations [2/3]
-* check for a return value (-1) of secure_computing() explicitly [2/3]
-* aligned with the patch, "arm64: split syscall_trace() into separate
-  functions for enter/exit" [2/3]
-* changed default of CONFIG_SECCOMP to n [2/3]
-
-Changes v1 -> v2:
-* added generic seccomp.h for arm64 to utilize it [1,2/3] 
-* changed syscall_trace() to return more meaningful value (-EPERM)
-  on seccomp failure case [2/3]
-* aligned with the change in "arm64: make a single hook to syscall_trace()
-  for all syscall features" v2 [2/3]
-* removed is_compat_task() definition from compat.h [3/3]
-
-AKASHI Takahiro (2):
-  asm-generic: Add generic seccomp.h for secure computing mode 1
-  arm64: Add seccomp support
-
- arch/arm64/Kconfig               | 14 ++++++++++++++
- arch/arm64/include/asm/seccomp.h | 25 +++++++++++++++++++++++++
- arch/arm64/include/asm/unistd.h  |  3 +++
- arch/arm64/kernel/entry.S        |  4 ++++
- arch/arm64/kernel/ptrace.c       |  6 ++++++
- include/asm-generic/seccomp.h    | 28 ++++++++++++++++++++++++++++
- 6 files changed, 80 insertions(+)
- create mode 100644 arch/arm64/include/asm/seccomp.h
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+---
+ include/asm-generic/seccomp.h | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
  create mode 100644 include/asm-generic/seccomp.h
 
+diff --git a/include/asm-generic/seccomp.h b/include/asm-generic/seccomp.h
+new file mode 100644
+index 0000000..5e97022
+--- /dev/null
++++ b/include/asm-generic/seccomp.h
+@@ -0,0 +1,28 @@
++/*
++ * include/asm-generic/seccomp.h
++ *
++ * Copyright (C) 2014 Linaro Limited
++ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef _ASM_GENERIC_SECCOMP_H
++#define _ASM_GENERIC_SECCOMP_H
++
++#include <asm-generic/unistd.h>
++
++#if defined(CONFIG_COMPAT) && !defined(__NR_seccomp_read_32)
++#define __NR_seccomp_read_32		__NR_read
++#define __NR_seccomp_write_32		__NR_write
++#define __NR_seccomp_exit_32		__NR_exit
++#define __NR_seccomp_sigreturn_32	__NR_rt_sigreturn
++#endif /* CONFIG_COMPAT && ! already defined */
++
++#define __NR_seccomp_read		__NR_read
++#define __NR_seccomp_write		__NR_write
++#define __NR_seccomp_exit		__NR_exit
++#define __NR_seccomp_sigreturn		__NR_rt_sigreturn
++
++#endif /* _ASM_GENERIC_SECCOMP_H */
 -- 
 1.8.3.2
 
