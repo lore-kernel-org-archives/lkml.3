@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240AbaCOToH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 15:44:07 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:34595 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520AbaCOToE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 15:44:04 -0400
+	id S1756201AbaCOTzR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 15:55:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22752 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755030AbaCOTzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 15:55:15 -0400
+Message-ID: <5324AFD3.8040804@redhat.com>
+Date: Sat, 15 Mar 2014 20:53:55 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20140315123331.7351DC40A1B@trevor.secretlab.ca>
-References: <1394817109-26199-1-git-send-email-grant.likely@linaro.org>
-	<CAL_JsqLtYFiLnLgdN_GMG33JD53wFdyfhCwLHek3tLBbQB7maQ@mail.gmail.com>
-	<20140315123331.7351DC40A1B@trevor.secretlab.ca>
-Date: Sat, 15 Mar 2014 14:44:02 -0500
-Message-ID: <CAL_JsqLxexGWALTVb4BEzqpxj_iOnrHA3XtRNxbP1HRSOJeByg@mail.gmail.com>
-Subject: Re: [RFC v3 3/3] of: Make of_find_node_by_path() handle /aliases
-From: Rob Herring <robherring2@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        David Daney <david.daney@cavium.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Miller <davem@davemloft.net>
+CC: ast@plumgrid.com, pablo@netfilter.org, mingo@kernel.org, wad@chromium.org,
+        rostedt@goodmis.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
+        hagen@jauu.net, jesse@nicira.com, tglx@linutronix.de,
+        edumazet@google.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, fweisbec@gmail.com, acme@infradead.org,
+        penberg@iki.fi, arjan@infradead.org, hch@infradead.org,
+        xemul@parallels.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v10 net-next 1/3] filter: add Extended BPF interpreter
+ and converter
+References: <20140314125822.GA16457@localhost> <CAMEtUuzqzAHf64DHBao3xKzHdhrp77JEZhe-_c5oC3Vr63QxNA@mail.gmail.com> <CAMEtUuxd0yd81p7KPxyotMOcOxm3MS4Cj9oguS5QAzfXYChLXQ@mail.gmail.com> <20140314.160851.1134730495663127657.davem@davemloft.net>
+In-Reply-To: <20140314.160851.1134730495663127657.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 15, 2014 at 7:33 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Fri, 14 Mar 2014 16:39:38 -0500, Rob Herring <robherring2@gmail.com> wrote:
->> On Fri, Mar 14, 2014 at 12:11 PM, Grant Likely <grant.likely@linaro.org> wrote:
->> > Make of_find_node_by_path() handle aliases as prefixes. To make this
->> > work the name search is refactored to search by path component instead
->> > of by full string. This should be a more efficient search, and it makes
->> > it possible to start a search at a subnode of a tree.
->> >
->> > Signed-off-by: David Daney <david.daney@cavium.com>
->> > Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
->> > [grant.likely: Rework to not require allocating at runtime]
->> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
->>
->> I should have read the comments before trying to figure out why you
->> had that "pointless" recursion...
+On 03/14/2014 09:08 PM, David Miller wrote:
+> From: Alexei Starovoitov <ast@plumgrid.com>
+> Date: Fri, 14 Mar 2014 12:51:17 -0700
 >
-> Hi Rob,
+>> can you please explain why the status of these
+>> patches is 'deferred' in patchwork ?
+>> Is it because of bpf vs nft thread?
+>> I think that's orthogonal.
 >
-> Thanks for the review. However, I'm a little slow this morning and I
-> don't understand what you mean. Did I miss an early comment?
+> I do not find it orthogonal, Pablo brings up some very valid points
+> which I agree with.
+>
+> EBPF has a lot of the same user side interface limitations that the
+> existing BPF has, and you refuse to accept this core point Pablo is
+> making.
+>
+> That is, that it lacks extensibility, and is too strongly tied to the
+> implementation.
+>
+> This is exactly how we run into problems in the future, and you'll be
+> proposing EBPF_2.0 to address such problems.
 
-No, it's me that was being slow. At first glance I was thinking the
-recursion was pointless until I saw the alias + path case.
+Hm, so currently there's no interface where this is exposed to uapi,
+and we surely can and should put the definitions back to the non-uapi
+include to keep it inside the kernel, you're right.
 
-Rob
+I think, at least for me, the take-away of Alexei's work is, that
+even (if we assume) without any further functionality, the new design
+would greatly improve the interpreter (and presumably later on as
+well JIT) performance based on Alexei's benchmarks, which would already
+be a win for seccomp and socket filters and where ever they are being
+used across the networking subsystem, and therefore out-of-the-box
+without any changes for user space applications such as libpcap.
+
+I was thinking that it could be an option to make this transparently
+available to everyone, by just dropping the bpf_ext_enable knob, and
+perhaps just replace the old BPF interpreter entirely in this set?
+So the process would be: 1) test if normal BPF filter can be JIT'ed,
+go for it, if it's not supported by JIT (or if it is disabled), run
+it transparently in the new (non-exposed) BPF representation to have
+a better overall performance.
+
+Would that perhaps address the above concern? So on the big picture,
+it provides a BPF performance improvement. I think if there's a wish
+to extend the socket filtering api to run alternative interpreters,
+such as nft, then that could still happen, of course.
