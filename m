@@ -1,89 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030182AbaCOBnj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 21:43:39 -0400
-Received: from nm3.bullet.mail.gq1.yahoo.com ([98.136.218.68]:34696 "EHLO
-	nm3.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754936AbaCOBni convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 21:43:38 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 849103.57125.bm@omp1018.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=rkzGKHuftEwAu/NIjWyHlAb/YS3fFT8d5d1Gd/3Sb7/7IjYbLTzDsROumJTalHzkTN2kDrRLMt5muWbzJLqXsDGtDKSlgav+blWxA/9gQXeKCZ8inuUszlC//L5AnQuyOraxa7ZzonNTPw0ix72NXi0N3+yKm+uZhk2mpCegedY=;
-X-YMail-OSG: KXFhn8IVM1nZtUjLhRDsR5bKzEetmgmUmItl.GaVWIXhiAJ
- DCtUm8G6PgfrpvEUxhApvitVOb_8vujIVY.fjkEbx5zsM_d9W62McZqB_tVa
- ohc34eLLpSlyfay.WYRhE9RQCl68GNeLo7z2M_faiImtFN8HND3htuIZkQ6.
- lPXPpvCn.HgeEk4d_Au.D.lXsJgFn7M_jR8YuKq3lmYYFPJo09UjoDr.n6tN
- viaYAZXVvQzg4dB0zN59CPw6TvHKepxeWryA_qVMXjTZ7qCPdrekPxIyCwk9
- l2sYAAlRBs7O4as1mzWSjEBo9n0Rmpfj2kXc9RlwP9cs3VeihHuZwrK.2p9Q
- vmdZ2_f0hyvjFg.TeADWrW.EJkQfguq81xoPKjr._NqwQszkgwabCylzCXCG
- 0pABHSLLvytrU1WPt5FR2I8qu_2KR6KjaEixfb1Mz6_gX0rW0ZKH91fjZ4JH
- 0a0XtJoIE3Gqt7a6GgP.Gh2jLefKJDUxEYQiwb35mXz4tbun_3S7a_2MgOd.
- 6nzbyszLO05U0lNoU0YPKR31s0w--
-X-Rocket-MIMEInfo: 002.001,Pk9uIFR1ZXNkYXksIE1hcmNoIDExLCAyMDE0IDk6MjYgQU0sIElhbiBBYmJvdHQgPGFiYm90dGlAbWV2LmNvLnVrPiB3cm90ZToKCj4.T24gMjAxNC0wMy0wOSAwNDowMCwgQ2hhc2UgU291dGh3b29kIHdyb3RlOgo.PiBUaGlzIHBhdGNoIGNoYW5nZXMgYSBoYW5kZnVsIG9mIHdoaWxlIGxvb3BzIHRvIHRpbWVvdXRzIHRvIHByZXZlbnQKPj4gaW5maW5pdGUgbG9vcGluZyBvbiBoYXJkd2FyZSBmYWlsdXJlLiBBIGNvdXBsZSBzdWNoIGxvb3BzIGFyZSBpbiBhCj4.IGZ1bmN0aW9uIChzNjI2X2RlYmlfdHJhbnMBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.178.641
-References: <20140309030056.GA10867@kroah.com> <1394337654-27379-1-git-send-email-chase.southwood@yahoo.com> <531F1D18.4060109@mev.co.uk>
-Message-ID: <1394847817.37014.YahooMailNeo@web164005.mail.gq1.yahoo.com>
-Date: Fri, 14 Mar 2014 18:43:37 -0700 (PDT)
-From: Chase Southwood <chase.southwood@yahoo.com>
-Reply-To: Chase Southwood <chase.southwood@yahoo.com>
-Subject: Re: [PATCH v3 1/2] Staging: comedi: convert while loops to timeouts in s626.c
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Cc: "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+	id S1756273AbaCOBoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 21:44:16 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53801 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754921AbaCOBoP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Mar 2014 21:44:15 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Abbott <abbotti@mev.co.uk>
-In-Reply-To: <531F1D18.4060109@mev.co.uk>
+        Patrick Marlier <patrick.marlier@gmail.com>
+Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
+Date: Sat, 15 Mar 2014 02:59:39 +0100
+Message-ID: <53656551.Rzgh2mDLCG@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53234A70.70506@gmail.com>
+References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com> <CAKohponGN4JNwLKLjvFOPkru0=6JajOKKH=oJneDkKp=PyAmRA@mail.gmail.com> <53234A70.70506@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Tuesday, March 11, 2014 9:26 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
+On Friday, March 14, 2014 11:29:04 AM Dirk Brandewie wrote:
+> On 03/14/2014 10:07 AM, Viresh Kumar wrote:
+> > On 14 March 2014 20:40, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
+> >> Are you proposing adding cpufreq_generic_suspend() to the core I can not
+> >> find
+> >> it in the mainline code.
+> >
+> > Its already there in linux-next. I am suggesting to reuse that
+> > infrastructure with
+> > some necessary modification to support both suspend and hotplug.
+> 
+> Suspend and hotplug are two very different things and if we start
+> crossing those wires bad things are going to happen IMHO.
+> 
+> In "normal" operation using the suspend path to do this work could
+> work in principal but doesn't handle the case where the user does
+>     echo 0 | sudo tee /sys/devices/system/cpu/cpuX/online
+> 
+> Trying force hotplug and suspend into a common mechanism would
+> lead to a bunch of special case code or a significant rework of the
+> core code IMHO.
+> 
+> 
+> >
+> >>> Over that I don't think Dirk's solution is going to work if we twist
+> >>> the systems a bit.
+> >>
+> >> Could you explain what "twist the systems a bit" means?
+> >
+> > The one I explained in the below paragraph.
+> >
+> >>> For example, Dirk probably wanted to set P-STATE of every core to MIN
+> >>> when it goes down. But his solution probably doesn't do that right now.
+> >>>
+> >>
+> >> No, I wanted to set the core that was being off-lined to min P state.
+> >
+> > Sorry, probably my words were a bit confusing. I meant exactly what
+> > you just wrote. Core going down will set its freq to min.
+> >
+> >>> As exit() is called only when the policy expires or all the CPUs of that
+> >>> policy
+> >>> are down. Suppose only one CPU out of 4 goes down from a policy, then
+> >>> pstate driver would never know that happened. And that core wouldn't go
+> >>> to min state.
+> >>
+> >> My patch does not change the semantics of exit() or when it is called.  For
+> >> intel_pstate their is one cpu per policy so I moved all the cleanup to
+> >
+> > I didn't knew that its guaranteed by pstate driver. I thought it would still be
+> > hardware dependent as some cores might share clock line.
+> 
+> This is guaranteed by the hardware.  Each core has its own MSR for P state
+> request.  Any coordination that is required between cores to select the
+> package P state is handled by the hardware.
+> 
+> >
+> >> exit_prepare() if there were work I needed to do at CPU_POST_DEAD I would
+> >> have
+> >> continued to export the *optional* exit callback.
+> >>
+> >> The callback name exit_prepare() was probably unfortunate and might be
+> >> causing
+> >> some confusion.  I will be changing the name per Rafael's feedback.
+> >
+> > Don't know.. There is another problem here that exit_prepare() would be called
+> > for each CPU whereas exit() would be called for each policy.
+> 
+> Granted but I don't see this as a problem in this case there is a 1:1
+> relationship.  If a driver chooses to use the *optional* exit_prepare() callback
+> and knows that there is a many:1 relationship between the policy and CPUs
+> then it would have to deal with it.
 
->>On 2014-03-09 04:00, Chase Southwood wrote:
->> This patch changes a handful of while loops to timeouts to prevent
->> infinite looping on hardware failure. A couple such loops are in a
->> function (s626_debi_transfer()) which is called from critical sections,
->> so comedi_timeout() is unusable for them, and an iterative timeout is
->> used instead. For the while loops in a context where comedi_timeout() is
->> allowed, a new callback function, s626_send_dac_eoc(), has been defined
->> to evaluate the conditions that the while loops are testing.  The new
->> callback employs a switch statement based on a simple new enum so that
->> it is usable for all of the different conditions tested in while loops
->> in s626_send_dac().  The proper comedi_timeout() calls are then used.
->>
->> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
->> ---
->> Ian, here is a version of this patchset employing the enum you recommended.
->> The second patch has been rebased on top of this one.
->>
->> 2: Used comedi_timeout() where appropriate, introduce callback function
->>
->> 3: Updated callback to switch on new enum.>
->
->Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
->
->For future reference, for patches affecting a single comedi driver, we 
->usually title the patches like this:
->
->staging: comedi: name_of_driver: summary of patch
->
+Actually, I think we should make it clear that the new callback is for
+->setpolicy drivers only, which will make things a bit clearer.
 
+We seem to get caught by the difference between ->setpolicy and ->target
+drivers on a regular basis, so it might be a good idea to make the distinction
+more clear in the code.  I have an idea how to do that, but need some time
+to prototype it.
 
-Hi Greg!
+> > And I strongly feel that we shouldn't give another callback here but instead
+> > just set core to a specific freq as mentioned by driver with some other field.
+> >
+> >>> I think we have two solutions here:
+> >>> - If its just about setting core a particular freq when it goes down, I
+> >>> think it
+> >>> looks a generic enough problem and so better fix core for that. Probably
+> >>> with
+> >>> help of flags field/suspend-freq (maybe renamed) and without calling
+> >>> drivers
+> >>> exit() at all..
+> >>
+> >>
+> >> ATM the only thing that needs to be done in this case is to allow
+> >> intel_pstate
+> >> to set the P state on the core when it is going done.  My solution from the
+> >> cores point of view is more generic, it allows any driver that needs to do
+> >> work
+> >> during CPU_DOWN_PREPARE to do it without adding any new logic to the core.
+> >
+> > Yeah, do we really need to give that freedom right now? Would be better
+> > to get this into core as that would be more generic and people looking to set
+> > core to some freq at shutdown wouldn't be replicating that code.
 
-I was just writing to inquire whether you were able to add this patch as well as
-PATCH 2/2 Propagate timeout errors in s626.c, to your queue in their current state.
-I had to resend this patch to you about a week ago because the subject line got
-a little messed up, which might have lead to a bit of confusion regarding the 2
-patch series, and I wanted to check in to see whether you need me to do anything
-further.
+Question is if it needs to be more generic.
 
-Thanks,
-Chase
+I honestly don't think that ->target drivers will ever do anything like it,
+because they need the governor to "exit" before.  So we are talking about the
+only two ->setpolicy drivers in the tree here.
+
+> IMHO yes and it would be hard to be more generic, if your platform needs to
+> do architecture specific during the PREPARE phase of cpu hotplug use this
+> callback or not.
+> 
+> BTW now that you have added a path where the cpufreq_suspend() could fail
+> it return a value and be checked in dpm_suspend() instead of printing an
+> error and just continuing.
+
+I'm not sure what you mean?  Are you saying that it might be a good idea
+to allow cpufreq_suspend() to return error codes on failure?
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
