@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722AbaCOXaS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 19:30:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56053 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756565AbaCOXaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 19:30:15 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH] audit: copy comm to avoid race in string printing
-Date: Sat, 15 Mar 2014 19:29:16 -0400
-Message-Id: <25427494a51f7e364cf2922175a6dd03238a7d1d.1394923956.git.rgb@redhat.com>
-In-Reply-To: <20140315232846.GE27244@madcap2.tricolour.ca>
-References: <20140315232846.GE27244@madcap2.tricolour.ca>
+	id S1756743AbaCOXb0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 19:31:26 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:63425 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756565AbaCOXbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 19:31:24 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: jcliburn@gmail.com, chris.snook@gmail.com, davem@davemloft.net,
+        johannes@sipsolutions.net, jg1.han@samsung.com, wangyijing@huawei.com,
+        linux@hahnjo.de, sd@queasysnail.net, hahnjo@hahnjo.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH V2] ATHEROS-ALX: Use dma_set_mask_and_coherent and fix a bug
+Date: Sun, 16 Mar 2014 00:30:52 +0100
+Message-Id: <1394926252-2269-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- kernel/audit.c   |    5 ++---
- kernel/auditsc.c |    3 ++-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ 1. For the 64 bits dma mask use dma_set_mask_and_coherent instead of
+ dma_set_mask and dma_set_coherent_mask.
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 9239e5e..ecb08a5 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1883,7 +1883,7 @@ EXPORT_SYMBOL(audit_log_task_context);
- void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
- {
- 	const struct cred *cred;
--	char name[sizeof(tsk->comm)];
-+	char comm[sizeof(tsk->comm)];
- 	struct mm_struct *mm = tsk->mm;
- 	char *tty;
+ 2. For the 32 bits dma mask dma_set_coherent_mask is only called if
+ dma_set_mask fails, which is unusual. Assuming this as a bug, fixes
+ it by replacing calls to dma_set_mask and dma_set_coherent_mask by a
+ call to dma_set_mask_and_coherent.
  
-@@ -1917,9 +1917,8 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
- 			 from_kgid(&init_user_ns, cred->fsgid),
- 			 tty, audit_get_sessionid(tsk));
+ Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+
+ Tested by compilation only.
+
+ Change from V1: Updated commit message.
+
+ drivers/net/ethernet/atheros/alx/main.c | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
+index 2e45f6e..380d249 100644
+--- a/drivers/net/ethernet/atheros/alx/main.c
++++ b/drivers/net/ethernet/atheros/alx/main.c
+@@ -1248,19 +1248,13 @@ static int alx_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	 * shared register for the high 32 bits, so only a single, aligned,
+ 	 * 4 GB physical address range can be used for descriptors.
+ 	 */
+-	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
+-	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
++	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
+ 		dev_dbg(&pdev->dev, "DMA to 64-BIT addresses\n");
+ 	} else {
+-		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
++		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+ 		if (err) {
+-			err = dma_set_coherent_mask(&pdev->dev,
+-						    DMA_BIT_MASK(32));
+-			if (err) {
+-				dev_err(&pdev->dev,
+-					"No usable DMA config, aborting\n");
+-				goto out_pci_disable;
+-			}
++			dev_err(&pdev->dev, "No usable DMA config, aborting\n");
++			goto out_pci_disable;
+ 		}
+ 	}
  
--	get_task_comm(name, tsk);
- 	audit_log_format(ab, " comm=");
--	audit_log_untrustedstring(ab, name);
-+	audit_log_untrustedstring(ab, memcpy(comm, tsk->comm, sizeof(comm));
- 
- 	if (mm) {
- 		down_read(&mm->mmap_sem);
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 8fffca8..dcddadd 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -2434,6 +2434,7 @@ static void audit_log_task(struct audit_buffer *ab)
- 	kuid_t auid, uid;
- 	kgid_t gid;
- 	unsigned int sessionid;
-+	char comm[sizeof(current->comm)];
- 	struct mm_struct *mm = current->mm;
- 
- 	auid = audit_get_loginuid(current);
-@@ -2447,7 +2448,7 @@ static void audit_log_task(struct audit_buffer *ab)
- 			 sessionid);
- 	audit_log_task_context(ab);
- 	audit_log_format(ab, " pid=%d comm=", task_pid_nr(current));
--	audit_log_untrustedstring(ab, current->comm);
-+	audit_log_untrustedstring(ab, memcpy(comm, current->comm, sizeof(comm));
- 	if (mm) {
- 		down_read(&mm->mmap_sem);
- 		if (mm->exe_file)
 -- 
-1.7.1
+1.8.3.1
 
