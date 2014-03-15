@@ -1,145 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894AbaCOMdi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 08:33:38 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:45532 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932AbaCOMdg (ORCPT
+	id S1756191AbaCOMkZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 08:40:25 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:43424 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835AbaCOMkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 08:33:36 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC v3 3/3] of: Make of_find_node_by_path() handle /aliases
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        David Daney <david.daney@cavium.com>
-In-Reply-To: <CAL_JsqLtYFiLnLgdN_GMG33JD53wFdyfhCwLHek3tLBbQB7maQ@mail.gmail.com>
-References: <1394817109-26199-1-git-send-email-grant.likely@linaro.org> < 1394817109-26199-4-git-send-email-grant.likely@linaro.org> < CAL_JsqLtYFiLnLgdN_GMG33JD53wFdyfhCwLHek3tLBbQB7maQ@mail.gmail.com>
-Date: Sat, 15 Mar 2014 12:33:31 +0000
-Message-Id: <20140315123331.7351DC40A1B@trevor.secretlab.ca>
+	Sat, 15 Mar 2014 08:40:23 -0400
+Date: Sat, 15 Mar 2014 13:40:19 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 2/3] workqueues: Account unbound workqueue in a seperate
+ list
+Message-ID: <20140315124015.GA24574@localhost.localdomain>
+References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
+ <1394815131-17271-3-git-send-email-fweisbec@gmail.com>
+ <7hob18ir0g.fsf@paris.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7hob18ir0g.fsf@paris.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Mar 2014 16:39:38 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> On Fri, Mar 14, 2014 at 12:11 PM, Grant Likely <grant.likely@linaro.org> wrote:
-> > Make of_find_node_by_path() handle aliases as prefixes. To make this
-> > work the name search is refactored to search by path component instead
-> > of by full string. This should be a more efficient search, and it makes
-> > it possible to start a search at a subnode of a tree.
+On Fri, Mar 14, 2014 at 11:17:35AM -0700, Kevin Hilman wrote:
+> Frederic Weisbecker <fweisbec@gmail.com> writes:
+> 
+> > The workqueues are all listed in a global list protected by a big mutex.
+> > And this big mutex is used in apply_workqueue_attrs() as well.
 > >
-> > Signed-off-by: David Daney <david.daney@cavium.com>
-> > Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> > [grant.likely: Rework to not require allocating at runtime]
-> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> 
-> I should have read the comments before trying to figure out why you
-> had that "pointless" recursion...
-
-Hi Rob,
-
-Thanks for the review. However, I'm a little slow this morning and I
-don't understand what you mean. Did I miss an early comment?
-
-g.
-
-> 
-> Acked-by: Rob Herring <robh@kernel.org>
-> 
+> > Now as we plan to implement a directory to control the cpumask of
+> > all non-ABI unbound workqueues, we want to be able to iterate over all
+> > unbound workqueues and call apply_workqueue_attrs() for each of
+> > them with the new cpumask.
+> >
+> > But the risk for a deadlock is on the way: we need to iterate the list
+> > of workqueues under wq_pool_mutex. But then apply_workqueue_attrs()
+> > itself calls wq_pool_mutex.
+> >
+> > The easiest solution to work around this is to keep track of unbound
+> > workqueues in a separate list with a separate mutex.
+> >
+> > It's not very pretty unfortunately.
+> >
+> > Cc: Christoph Lameter <cl@linux.com>
+> > Cc: Kevin Hilman <khilman@linaro.org>
+> > Cc: Mike Galbraith <bitbucket@online.de>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Tejun Heo <tj@kernel.org>
+> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> > Not-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > > ---
-> >  drivers/of/base.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++++++----
-> >  1 file changed, 56 insertions(+), 4 deletions(-)
+> >  kernel/workqueue.c | 15 +++++++++++++++
+> >  1 file changed, 15 insertions(+)
 > >
-> > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> > index 7083fad079a6..b8b673526dbd 100644
-> > --- a/drivers/of/base.c
-> > +++ b/drivers/of/base.c
-> > @@ -770,9 +770,38 @@ struct device_node *of_get_child_by_name(const struct device_node *node,
-> >  }
-> >  EXPORT_SYMBOL(of_get_child_by_name);
-> >
-> > +static struct device_node *__of_find_node_by_path(struct device_node *parent,
-> > +                                               const char *path)
-> > +{
-> > +       struct device_node *child;
-> > +       int len = strchrnul(path, '/') - path;
+> > diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> > index 4d230e3..ad8f727 100644
+> > --- a/kernel/workqueue.c
+> > +++ b/kernel/workqueue.c
+> > @@ -232,6 +232,7 @@ struct wq_device;
+> >  struct workqueue_struct {
+> >  	struct list_head	pwqs;		/* WR: all pwqs of this wq */
+> >  	struct list_head	list;		/* PL: list of all workqueues */
+> > +	struct list_head	unbound_list;	/* PL: list of unbound workqueues */
+> >  
+> >  	struct mutex		mutex;		/* protects this wq */
+> >  	int			work_color;	/* WQ: current work color */
+> > @@ -288,9 +289,11 @@ static bool wq_numa_enabled;		/* unbound NUMA affinity enabled */
+> >  static struct workqueue_attrs *wq_update_unbound_numa_attrs_buf;
+> >  
+> >  static DEFINE_MUTEX(wq_pool_mutex);	/* protects pools and workqueues list */
+> > +static DEFINE_MUTEX(wq_unbound_mutex);	/* protects list of unbound workqueues */
+> >  static DEFINE_SPINLOCK(wq_mayday_lock);	/* protects wq->maydays list */
+> >  
+> >  static LIST_HEAD(workqueues);		/* PL: list of all workqueues */
+> > +static LIST_HEAD(workqueues_unbound);	/* PL: list of unbound workqueues */
+> >  static bool workqueue_freezing;		/* PL: have wqs started freezing? */
+> >  
+> >  /* the per-cpu worker pools */
+> > @@ -4263,6 +4266,12 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
+> >  
+> >  	mutex_unlock(&wq_pool_mutex);
+> >  
+> > +	if (wq->flags & WQ_UNBOUND) {
+> > +		mutex_lock(&wq_unbound_mutex);
+> > +		list_add(&wq->unbound_list, &workqueues_unbound);
+> > +		mutex_unlock(&wq_unbound_mutex);
+> > +	}
 > > +
-> > +       if (!len)
-> > +               return parent;
+> >  	return wq;
+> >  
+> >  err_free_wq:
+> > @@ -4318,6 +4327,12 @@ void destroy_workqueue(struct workqueue_struct *wq)
+> >  	list_del_init(&wq->list);
+> >  	mutex_unlock(&wq_pool_mutex);
+> >  
+> > +	if (wq->flags & WQ_UNBOUND) {
+> > +		mutex_lock(&wq_unbound_mutex);
+> > +		list_del(&wq->unbound_list);
+> > +		mutex_unlock(&wq_unbound_mutex);
+> > +	}
 > > +
-> > +       for_each_child_of_node(parent, child) {
-> > +               const char *name = strrchr(child->full_name, '/');
-> > +               if (WARN(!name, "malformed device_node %s\n", child->full_name))
-> > +                       continue;
-> > +               name++;
-> > +               if (strncmp(path, name, len) == 0 && (strlen(name) == len))
-> > +                       return child;
-> > +       }
-> > +       return NULL;
-> > +}
-> > +
-> >  /**
-> >   *     of_find_node_by_path - Find a node matching a full OF path
-> >   *     @path:  The full path to match
-> > + *     @path: Either the full path to match, or if the path does not
-> > + *            start with '/', the name of a property of the /aliases
-> > + *            node (an alias).  In the case of an alias, the node
-> > + *            matching the alias' value will be returned.
-> > + *
-> > + *     Valid paths:
-> > + *             /foo/bar        Full path
-> > + *             foo             Valid alias
-> > + *             foo/bar         Valid alias + relative path
-> >   *
-> >   *     Returns a node pointer with refcount incremented, use
-> >   *     of_node_put() on it when done.
-> > @@ -780,13 +809,36 @@ EXPORT_SYMBOL(of_get_child_by_name);
-> >  struct device_node *of_find_node_by_path(const char *path)
-> >  {
-> >         struct device_node *np = of_allnodes;
-> > +       struct property *pp;
-> >         unsigned long flags;
-> >
-> > +       /* The path could begin with an alias */
-> > +       if (*path != '/') {
-> > +               char *p = strchrnul(path, '/');
-> > +               int len = p - path;
-> > +
-> > +               /* of_aliases must not be NULL */
-> > +               if (!of_aliases)
-> > +                       return NULL;
-> > +
-> > +               np = NULL;
-> > +               for_each_property_of_node(of_aliases, pp) {
-> > +                       if (strlen(pp->name) == len && !strncmp(pp->name, path, len)) {
-> > +                               np = of_find_node_by_path(pp->value);
-> > +                               break;
-> > +                       }
-> > +               }
-> > +               if (!np)
-> > +                       return NULL;
-> > +               path = p;
-> > +       }
-> > +
-> > +       /* Step down the tree matching path components */
-> >         raw_spin_lock_irqsave(&devtree_lock, flags);
-> > -       for (; np; np = np->allnext) {
-> > -               if (np->full_name && (of_node_cmp(np->full_name, path) == 0)
-> > -                   && of_node_get(np))
-> > -                       break;
-> > +       while (np && *path == '/') {
-> > +               path++; /* Increment past '/' delimiter */
-> > +               np = __of_find_node_by_path(np, path);
-> > +               path = strchrnul(path, '/');
-> >         }
-> >         raw_spin_unlock_irqrestore(&devtree_lock, flags);
-> >         return np;
-> > --
-> > 1.8.3.2
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >  	workqueue_sysfs_unregister(wq);
+> >  
+> >  	if (wq->rescuer) {
+> 
+> Looks good, except for minor nit: I think you're missing an init of the
+> new list:
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index cc708f23d801..a01592f08321 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -4309,6 +4309,7 @@ struct workqueue_struct
+> *__alloc_workqueue_key(const char *fmt,
+> 
+>         lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
+>         INIT_LIST_HEAD(&wq->list);
+> +       INIT_LIST_HEAD(&wq->unbound_list);
 
+Actually that's only for the head of a list. Nodes don't need such initialization.
+
+Thanks.
+
+> 
+>         if (alloc_and_link_pwqs(wq) < 0)
+>                 goto err_free_wq;
+> 
+> 
+> Kevin
