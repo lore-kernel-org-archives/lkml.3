@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580AbaCOAQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 20:16:08 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37132 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754765AbaCOAQF (ORCPT
+	id S1756326AbaCOAae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 20:30:34 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:34095 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755967AbaCOAac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 20:16:05 -0400
-Date: Sat, 15 Mar 2014 00:15:42 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: Trusted kernel patchset for Secure Boot lockdown
-Message-ID: <20140315001542.769cff6c@alan.etchedpixels.co.uk>
-In-Reply-To: <20140314231832.GA653@thunk.org>
-References: <1394746248.27846.3.camel@x230>
-	<20140313232140.03bdaac3@alan.etchedpixels.co.uk>
-	<1394762250.6416.24.camel@x230.lan>
-	<20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
-	<1394801518.6416.38.camel@x230.lan>
-	<20140314170655.0ce398a3@alan.etchedpixels.co.uk>
-	<1394820664.26846.18.camel@x230.mview.int.nebula.com>
-	<20140314214806.54a3d031@alan.etchedpixels.co.uk>
-	<1394834193.1286.11.camel@x230>
-	<20140314220840.29a12171@alan.etchedpixels.co.uk>
-	<20140314231832.GA653@thunk.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Mar 2014 20:30:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140311174809.23257.77363.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140311174555.23257.66798.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	<20140311174809.23257.77363.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Fri, 14 Mar 2014 17:30:31 -0700
+X-Google-Sender-Auth: hTA0E6ykfRWOzLz7XXjnUxNKRZk
+Message-ID: <CAE9FiQUFoKrhKfHqE6cq=R54Uo5GyL1u=GZnBZAGZ+JJ-fR+fg@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Do not enable INTx in pci_reenable_device()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Cheng <chris.cheng@atrustcorp.com>,
+        Jamie Chen <jamie.chen@intel.com>,
+        Andreas Noever <andreas.noever@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So as far as the narrow question of whether we should accept these
-> patches, I think it's a good thing.  Personally, I'm always going to
-> be disabling UEFI secure boot (even if it doesn't brick my laptop),
-> because for me, the security guarantees it provides isn't worth it.
-> But there will be people who want to be able to install Linux on
-> Windows 8 certified PC's without tweaking BIOS settings, so merging
-> the UEFI secure boot is a good thing, so long as those of use who
-> don't want to have anything to do with UEFI secure boot can disable
-> it.
+On Tue, Mar 11, 2014 at 10:48 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> Andreas reported that after 1f42db786b14 ("PCI: Enable INTx if BIOS left
+> them disabled"), pciehp surprise removal stopped working.
+>
+> This happens because pci_reenable_device() on the hotplug bridge (used in
+> the pciehp_configure_device() path) clears the Interrupt Disable bit, which
+> apparently breaks the bridge's MSI hotplug event reporting.
+>
+> Previously we cleared the Interrupt Disable bit in do_pci_enable_device(),
+> which is used by both pci_enable_device() and pci_reenable_device().  But
+> we use pci_reenable_device() after the driver may have enabled MSI or
+> MSI-X, and we *set* Interrupt Disable as part of enabling MSI/MSI-X.
+>
+> This patch clears Interrupt Disable only when MSI/MSI-X has not been
+> enabled.
+>
+> Fixes: 1f42db786b14 PCI: Enable INTx if BIOS left them disabled
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=71691
+> Reported-and-tested-by: Andreas Noever <andreas.noever@gmail.com>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> CC: stable@vger.kernel.org
+> CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> ---
+>  drivers/pci/pci.c |    3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 8dc3e701ec57..79fc89c6c3f3 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1192,6 +1192,9 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>                 return err;
+>         pci_fixup_device(pci_fixup_enable, dev);
+>
+> +       if (dev->msi_enabled || dev->msix_enabled)
+> +               return 0;
+> +
+>         pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+>         if (pin) {
+>                 pci_read_config_word(dev, PCI_COMMAND, &cmd);
 
-I definitely think we want the feature and there are a lot of non UEFI
-reasons for this (eg running trusted_kernel() virtual namespaces). I have
-three specific issues
+looks ugly.
 
-1. The implementation is a mess in part because it propogates more policy
-all over the place that should be separated. Root cause capable() mixes
-policy and activity. Fix suggested in my previous emails (and offer to do
-the work)
+We really should move out those irq handling out of pci_enable_device.
 
-2. It's likely to lead to more bugs and errors because of the way it has
-been done and it doesn't break old code that gets added without
-considering the issue. It fails insecure which is bad. Fixed by doing
-what I suggested (and offered to do)
-
-3. For things like module options we should be white not blacklisting
-'bad' ones.
-
-I've offered to go and fix up the capability stuff - I'm just waiting for
-Matthew to actually confirm the question I specifically asked him - does
-this solve that bit of his problem. If it does great, I'll go and sort
-the capability bits out so we can keep the policy in the right place and
-we don't have the kernel festooned with && !trusted_kernel() everywhere.
-
-There is a question of completeness but its very clear we get there with
-a combination of two things - whitelisting so we catch stuff we missed
-rather than leave holes, and just accepting the reality that it'll take a
-few kernels once its upstream until we get them all.
-
-I care about security, we should do the job properly. We have a
-further magnitude shift in security needs coming that's going to be at
-least equivalent to the scale of shift between the old 'university,
-everyone is nice' internet and today.
-
-Alan
+Yinghai
