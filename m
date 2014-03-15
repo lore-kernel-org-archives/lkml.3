@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161019AbaCOUFA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 16:05:00 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:34020 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1161001AbaCOUE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 16:04:58 -0400
-Date: Sat, 15 Mar 2014 21:04:56 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        James Ralston <james.d.ralston@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 6/8] mfd: lpc_ich: Change Avoton to iTCO v3
-Message-ID: <20140315200456.GE14815@spo001.leaseweb.com>
-References: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com> <1394487298-14459-6-git-send-email-ptyser@xes-inc.com>
-Mime-Version: 1.0
+	id S1756315AbaCOULc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 16:11:32 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:51299 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753778AbaCOULa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 16:11:30 -0400
+Date: Sat, 15 Mar 2014 13:11:18 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH] ia64: keep format strings from leaking into printk
+Message-ID: <20140315201118.GA29753@www.outflux.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394487298-14459-6-git-send-email-ptyser@xes-inc.com>
-User-Agent: Mutt/1.4.1i
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+The buffer being sent to printk has already had format strings
+resolved. The string should not be reinterpreted again to avoid any
+unintended format strings from leaking into printk.
 
-> The register layout of the Avoton is compatible with the iTCO v3
-> register layout.
-> 
-> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
-> Tested-by: Rajat Jain <rajatjain@juniper.net>
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> Cc: James Ralston <james.d.ralston@intel.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: Wim Van Sebroeck <wim@iguana.be>
-> Cc: linux-watchdog@vger.kernel.org
-> ---
->  drivers/mfd/lpc_ich.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/ia64/kernel/mca.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Acked-by: Wim Van Sebroeck <wim@iguana.be>
+diff --git a/arch/ia64/kernel/mca.c b/arch/ia64/kernel/mca.c
+index b8edfa75a83f..601502ab7141 100644
+--- a/arch/ia64/kernel/mca.c
++++ b/arch/ia64/kernel/mca.c
+@@ -217,7 +217,7 @@ void ia64_mca_printk(const char *fmt, ...)
+ 	/* Copy the output into mlogbuf */
+ 	if (oops_in_progress) {
+ 		/* mlogbuf was abandoned, use printk directly instead. */
+-		printk(temp_buf);
++		printk("%s", temp_buf);
+ 	} else {
+ 		spin_lock(&mlogbuf_wlock);
+ 		for (p = temp_buf; *p; p++) {
+@@ -268,7 +268,7 @@ void ia64_mlogbuf_dump(void)
+ 		}
+ 		*p = '\0';
+ 		if (temp_buf[0])
+-			printk(temp_buf);
++			printk("%s", temp_buf);
+ 		mlogbuf_start = index;
+ 
+ 		mlogbuf_timestamp = 0;
+-- 
+1.7.9.5
 
-Kind regards,
-Wim.
 
+-- 
+Kees Cook
+Chrome OS Security
