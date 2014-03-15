@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756315AbaCOULc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 16:11:32 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:51299 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753778AbaCOULa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 16:11:30 -0400
-Date: Sat, 15 Mar 2014 13:11:18 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-ia64@vger.kernel.org
-Subject: [PATCH] ia64: keep format strings from leaking into printk
-Message-ID: <20140315201118.GA29753@www.outflux.net>
+	id S1756522AbaCOUW4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 16:22:56 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:62370 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317AbaCOUWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 16:22:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <20140219190139.GQ10134@htj.dyndns.org>
+References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
+	<20140218225548.GI31892@mtj.dyndns.org>
+	<20140219092731.GA4849@quack.suse.cz>
+	<20140219190139.GQ10134@htj.dyndns.org>
+Date: Sat, 15 Mar 2014 13:22:53 -0700
+X-Google-Sender-Auth: Y0tRNEBirR1GXoJEym4m_Q9dX6E
+Message-ID: <CAGAzgspTZnUh_qi=FeQ4hS4LRiexPccTyALMg3Gt1K0ZZq_MuQ@mail.gmail.com>
+Subject: Re: [PATCH] backing_dev: Fix hung task on sync
+From: "dbasehore ." <dbasehore@chromium.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zento.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        bleung@chromium.org, sonnyrao@chromium.org,
+        Luigi Semenzato <semenzato@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The buffer being sent to printk has already had format strings
-resolved. The string should not be reinterpreted again to avoid any
-unintended format strings from leaking into printk.
+Resurrecting this for further discussion about the root of the problem.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- arch/ia64/kernel/mca.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+mod_delayed_work_if_later addresses the problem one way, but the
+problem is still there for mod_delayed_work. I think we could take
+another approach that doesn't modify the API, but still addresses
+(most of) the problem.
 
-diff --git a/arch/ia64/kernel/mca.c b/arch/ia64/kernel/mca.c
-index b8edfa75a83f..601502ab7141 100644
---- a/arch/ia64/kernel/mca.c
-+++ b/arch/ia64/kernel/mca.c
-@@ -217,7 +217,7 @@ void ia64_mca_printk(const char *fmt, ...)
- 	/* Copy the output into mlogbuf */
- 	if (oops_in_progress) {
- 		/* mlogbuf was abandoned, use printk directly instead. */
--		printk(temp_buf);
-+		printk("%s", temp_buf);
- 	} else {
- 		spin_lock(&mlogbuf_wlock);
- 		for (p = temp_buf; *p; p++) {
-@@ -268,7 +268,7 @@ void ia64_mlogbuf_dump(void)
- 		}
- 		*p = '\0';
- 		if (temp_buf[0])
--			printk(temp_buf);
-+			printk("%s", temp_buf);
- 		mlogbuf_start = index;
- 
- 		mlogbuf_timestamp = 0;
--- 
-1.7.9.5
+mod_delayed_work currently removes a work item from a workqueue if it
+is on it. Correct me if I'm wrong, but I don't think that this is
+necessarily required for mod_delayed_work to have the current
+behavior. We should be able to set the timer while a delayed_work is
+currently on a workqueue. If the delayed_work is still on the
+workqueue when the timer goes off, everything is fine. If it has left
+the workqueue, we can queue it again.
 
-
--- 
-Kees Cook
-Chrome OS Security
+On Wed, Feb 19, 2014 at 11:01 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Jan.
+>
+> On Wed, Feb 19, 2014 at 10:27:31AM +0100, Jan Kara wrote:
+>>   You are the workqueue expert so you may know better ;) But the way I
+>> understand it is that queue_delayed_work() does nothing if the timer is
+>> already running. Since we queue flusher work to run either immediately or
+>> after dirty_writeback_interval we are safe to run queue_delayed_work()
+>> whenever we want it to run after dirty_writeback_interval and
+>> mod_delayed_work() whenever we want to run it immediately.
+>
+> Ah, okay, so it's always mod on immediate and queue on delayed.  Yeah,
+> that should work.
+>
+>> But it's subtle and some interface where we could say queue delayed work
+>> after no later than X would be easier to grasp.
+>
+> Yeah, I think it'd be better if we had something like
+> mod_delayed_work_if_later().  Hmm...
+>
+> Thanks.
+>
+> --
+> tejun
