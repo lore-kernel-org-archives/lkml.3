@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575AbaCOPGJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 11:06:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28716 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753333AbaCOPFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 11:05:30 -0400
-From: Hans de Goede <hdegoede@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com, Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH v2 2/2] irqchip: sun4i: simplify sun4i_irq_ack
-Date: Sat, 15 Mar 2014 16:04:54 +0100
-Message-Id: <1394895894-8891-3-git-send-email-hdegoede@redhat.com>
-In-Reply-To: <1394895894-8891-1-git-send-email-hdegoede@redhat.com>
-References: <1394895894-8891-1-git-send-email-hdegoede@redhat.com>
+	id S1755797AbaCOPJl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 11:09:41 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:42340 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732AbaCOPJj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 11:09:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGXD9OcJZGPaqy+=p7_gio_vRXVxrK73LjSjteto6iiqo2a=nA@mail.gmail.com>
+References: <CAGXD9OcJZGPaqy+=p7_gio_vRXVxrK73LjSjteto6iiqo2a=nA@mail.gmail.com>
+Date: Sat, 15 Mar 2014 08:09:38 -0700
+Message-ID: <CAGXD9OeHfSNER1zny2FhXqsa=Ep0gi81OXD9uPPGNk5G0eTB4A@mail.gmail.com>
+Subject: Fwd: vmcore-dmesg ends with "No program header covering vaddr"
+From: Prasad Koya <prasad.koya@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we only ack irq 0 the code can be simplified a lot.
+Forwarding to lkml. If there is any other relevant mailing list, pl let me know.
 
-Also switch from read / modify / write to a simple write clear:
-1) This is what the android code does (it has a hack for acking irq 0
-  in its unmask code doing this)
-2) read / modify / write simply does not make sense for an irq status
-  register like this, if the other bits are writeable (and the data sheet says
-  they are not) they should be write 1 to clear, since otherwise a read /
-  modify / write can race with a device raising an interrupt and then clear
-  the pending bit unintentionally
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
----
- drivers/irqchip/irq-sun4i.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+---------- Forwarded message ----------
+From: Prasad Koya <prasad.koya@gmail.com>
+Date: Fri, Mar 14, 2014 at 10:39 PM
+Subject: vmcore-dmesg ends with "No program header covering vaddr"
+To: kexec@lists.infradead.org
 
-diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
-index 6a8c88d..75615b5 100644
---- a/drivers/irqchip/irq-sun4i.c
-+++ b/drivers/irqchip/irq-sun4i.c
-@@ -41,16 +41,11 @@ static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *re
- static void sun4i_irq_ack(struct irq_data *irqd)
- {
- 	unsigned int irq = irqd_to_hwirq(irqd);
--	unsigned int irq_off = irq % 32;
--	int reg = irq / 32;
--	u32 val;
- 
- 	if (irq != 0)
- 		return; /* Only IRQ 0 / the ENMI needs to be acked */
- 
--	val = readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
--	writel(val | (1 << irq_off),
--	       sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
-+	writel(BIT(0), sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0));
- }
- 
- static void sun4i_irq_mask(struct irq_data *irqd)
--- 
-1.9.0
 
+Hi
+
+I'm increasing dmesg buffer size at runtime by passing log_buf_len=1M
+(or 512K) at command line. At compile time, I have LOG_BUF_LEN as
+256K. However, when this kernel crashes (crashkernel set at 64M),
+vmcore-dmesg fails with below error.
+
+No program header covering vaddr 0xffff88013ff00000found kexec bug?
+
+Am I missing something here?
+
+Thank you.
+
+Here are some debugs I added to kernel. This is with 3.4 kernel and
+I've tried with kexec-tools-2.0.4.
+
+[    0.000000] log_buf_len_setup: log_buf_len 262144 new 1048576
+ffffffff8170b140
+[    0.000000] setup_log_buf: early 1 262144 new_log_buf_len 1048576
+[    0.000000] log_buf_len: 1048576 ffff880037d58000
+[    0.000000] early log buf free: 258671(98%)
+[    0.000000] setup_log_buf: early 0 1048576 new_log_buf_len 0
+[    0.503752] log_buf_kexec_setup: lbl 1048576 new 0 ffffffff816198c4
+logbuf ffff880037d58000
+In kdump, running vmcore_dmesg /proc/vmcore
+No program header covering vaddr 0xffff88013ff00000found kexec bug?
