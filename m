@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143AbaCOQFt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 12:05:49 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33329 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011AbaCOQFr (ORCPT
+	id S1756190AbaCOQJm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 12:09:42 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:62502 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688AbaCOQJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 12:05:47 -0400
-Date: Sat, 15 Mar 2014 17:05:45 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Stefan Lippers-Hollmann <s.L-H@gmx.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ilia Mirkin <imirkin@alum.mit.edu>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: 3.14-rc: /proc/acpi/battery gone?
-Message-ID: <20140315160545.GA6689@amd.pavel.ucw.cz>
-References: <20140314211456.GA23213@amd.pavel.ucw.cz>
- <CAKb7Uvh1TaNLmi0YVBPmCD571ZU_sM1DpbYUSA8xQZnS5xUbCA@mail.gmail.com>
- <1677000.FsvVVRjEvo@vostro.rjw.lan>
- <201403150217.50526.s.L-H@gmx.de>
- <532471EC.1070107@intel.com>
+	Sat, 15 Mar 2014 12:09:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532471EC.1070107@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1394898081.30941.5.camel@jlt4.sipsolutions.net>
+References: <20140305125703.GA7193@localhost> <20140305132317.GB10880@localhost>
+ <20140308121138.GA8359@localhost> <20140312173446.GD2983@piware.de>
+ <CABPxzYLJA-gQjw2CwmL63dYEQ35h073k_vsp1uEM0B-sAmEwKQ@mail.gmail.com>
+ <1394896841.30941.4.camel@jlt4.sipsolutions.net> <CABPxzYJXQR=t6u33uFT5dU2y6sKK1QhCbBn+t4TmmNfVhNk5gw@mail.gmail.com>
+ <1394898081.30941.5.camel@jlt4.sipsolutions.net>
+From: Krishna Chaitanya <chaitanya.mgit@gmail.com>
+Date: Sat, 15 Mar 2014 21:39:18 +0530
+Message-ID: <CABPxzYKGoCDwosqZ12f0godkgT=qy_QQyDuBLmR=_5s03y6V5g@mail.gmail.com>
+Subject: Re: [mac80211_hwsim] BUG: unable to handle kernel paging request at ce1db404
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Martin Pitt <martin.pitt@ubuntu.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sat, Mar 15, 2014 at 9:11 PM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Sat, 2014-03-15 at 21:03 +0530, Krishna Chaitanya wrote:
+>
+>> > > what RC are u using? Default should be minstrel, i dont see
+>> > > a reason for rc alloc to fail (remote reason kmalloc failure),
+>> > > so did you disable RC completely? No prints either w.r.t RC either in
+>> > > dmesg?
+>> >
+>> > Pay attention to the .config.
+>> >
+>> Missed the attachment, thanks for pointing.
+>> As guessed the rate control is empty causing the registration fail.
+>
+> It still shouldn't crash though. Looks like there's a fix in this
+> thread, can somebody verify & post it?
+>
+Yes, it should not crash. The change suggested by martin is not correct
+there is no double free as the the list he mentioned will be empty.
+(Only after successful registration we will add the radio to the list)
 
-> >>>They have attempted to use the sysfs api, but apparently that
-> >>>integration was done with an older version of that API. There's also
-> >>>some attempt to get it to work with upower, but I couldn't figure out
-> >>>how to make that work either on my (up-to-date gentoo) box. (TBH I
-> >>>didn't spend more than an hour or two on it, so it may not be
-> >>>impossible.)
-> >>
-> >>Tianyu, can you please have a look at this?
-> >
-> >Disclaimer, I've never used wmbattery so far.
-> >
-> >The current upstream version (2.42, released in early december 2013)
-> >of wmbattery[1] no longer reads from /proc/acpi/ at all. Apparently
-> >it changed to using upower by default, with non-default fall-backs for
-> >reading from sysfs.
-> >
-> >The only change required for building upower with wmbattery 2.42
-> >appears to be a new build-dependency on libupower-glib-dev (at least
-> >on Debian, built from the upower source package). Given that this
-> >version is present in Debian testing and unstable, I'd assume that it's
-> >supposed to work using upower, although I haven't confirmed that myself.
-> >
-> >Judging from the Gentoo ebuild, you probably just have to add
-> >"sys-power/upower" to the RDEPEND variable and make sure to build
-> >wmbattery 2.42; this is untested.
-> >
-> 
-> Hi Stefan:
-> 	I just glance wmbattery code. I find the code in the acpi.c is
-> already using the new sysfs battery interfaces, right?
-> 
-> ...
-> 
-> #define SYSFS_PATH "/sys/class/power_supply"
-> 
-> ...
-> char *acpi_labels[] = {
-> 	"uevent",
-> 	"status",
-> 	"BAT",
-> 	"AC",
-> 	"POWER_SUPPLY_CAPACITY=",
-> 	"POWER_SUPPLY_??????_FULL_DESIGN=", /* CHARGE or ENERGY */
-> 	"POWER_SUPPLY_PRESENT=",
-> 	"POWER_SUPPLY_??????_NOW=",
-> 	"POWER_SUPPLY_CURRENT_NOW=",
-> 	"POWER_SUPPLY_STATUS=",
-> #if ACPI_THERMAL
-> 	"thermal_zone",
-> #endif
-> 	"POWER_SUPPLY_ONLINE=",
-> 	"POWER_SUPPLY_??????_FULL=",
-> 	NULL
-> };
+the problem here is platform_driver_unregister internally calls the
+driver_unregister
+which tries to get the kobject through get_device, but we have already
+freed the kobject using
+device_unregister (which calls device_del which frees the kobject).
 
-New kernel should work with old userspace... and clearly it does not.
-
-Do you have test patch for a revert?
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+In other failures cases we use mac80211_hwsim_free() and return, so the call to
+platform_driver_unregister is not there, hence no crash.
