@@ -1,110 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998AbaCOP32 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 11:29:28 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60331 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754929AbaCOP30 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 11:29:26 -0400
-Message-ID: <53247210.3070307@kernel.org>
-Date: Sat, 15 Mar 2014 15:30:24 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756231AbaCOP3r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 11:29:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34226 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756181AbaCOP3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 11:29:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,660,1389772800"; 
+   d="scan'208";a="500592011"
+Message-ID: <532471EC.1070107@intel.com>
+Date: Sat, 15 Mar 2014 11:29:48 -0400
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        Marek Belisko <marek@goldelico.com>
-CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCHv2 9/9] iio: inkern: add iio_read_channel_average_raw
-References: <1393702365-26429-1-git-send-email-sre@debian.org> <1393970751-18157-1-git-send-email-sre@debian.org> <1393970751-18157-10-git-send-email-sre@debian.org>
-In-Reply-To: <1393970751-18157-10-git-send-email-sre@debian.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stefan Lippers-Hollmann <s.L-H@gmx.de>, Pavel Machek <pavel@ucw.cz>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ilia Mirkin <imirkin@alum.mit.edu>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.14-rc: /proc/acpi/battery gone?
+References: <20140314211456.GA23213@amd.pavel.ucw.cz> <CAKb7Uvh1TaNLmi0YVBPmCD571ZU_sM1DpbYUSA8xQZnS5xUbCA@mail.gmail.com> <1677000.FsvVVRjEvo@vostro.rjw.lan> <201403150217.50526.s.L-H@gmx.de>
+In-Reply-To: <201403150217.50526.s.L-H@gmx.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/14 22:05, Sebastian Reichel wrote:
-> Add iio_read_channel_average_raw to support reading
-> averaged raw values in consumer drivers.
+On 03/14/2014 10:17 PM, Stefan Lippers-Hollmann wrote:
+> Hi
 >
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
+> On Saturday 15 March 2014, Rafael J. Wysocki wrote:
+>> On Friday, March 14, 2014 06:14:12 PM Ilia Mirkin wrote:
+>>> On Fri, Mar 14, 2014 at 6:11 PM, Pavel Machek <pavel@ucw.cz> wrote:
+>>>> On Fri 2014-03-14 17:29:41, Ilia Mirkin wrote:
+>>>>> On Fri, Mar 14, 2014 at 5:14 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> [...]
+>>> wmbattery
+>>>
+>>> They have attempted to use the sysfs api, but apparently that
+>>> integration was done with an older version of that API. There's also
+>>> some attempt to get it to work with upower, but I couldn't figure out
+>>> how to make that work either on my (up-to-date gentoo) box. (TBH I
+>>> didn't spend more than an hour or two on it, so it may not be
+>>> impossible.)
+>>
+>> Tianyu, can you please have a look at this?
+>
+> Disclaimer, I've never used wmbattery so far.
+>
+> The current upstream version (2.42, released in early december 2013)
+> of wmbattery[1] no longer reads from /proc/acpi/ at all. Apparently
+> it changed to using upower by default, with non-default fall-backs for
+> reading from sysfs.
+>
+> The only change required for building upower with wmbattery 2.42
+> appears to be a new build-dependency on libupower-glib-dev (at least
+> on Debian, built from the upower source package). Given that this
+> version is present in Debian testing and unstable, I'd assume that it's
+> supposed to work using upower, although I haven't confirmed that myself.
+>
+> Judging from the Gentoo ebuild, you probably just have to add
+> "sys-power/upower" to the RDEPEND variable and make sure to build
+> wmbattery 2.42; this is untested.
+>
 
-Sometimes these wrappers seem a little bit silly. There
-might be a case for automating them somewhat via some
-macros, but for now this is fine.
+Hi Stefan:
+	I just glance wmbattery code. I find the code in the acpi.c is already 
+using the new sysfs battery interfaces, right?
 
-Docs should in theory probably be with the implementation,
-but that's wrong throughout consumer.h so this isn't the time
-to change it!
+...
 
-Jonathan
-> ---
->   drivers/iio/inkern.c         | 18 ++++++++++++++++++
->   include/linux/iio/consumer.h | 13 +++++++++++++
->   2 files changed, 31 insertions(+)
+#define SYSFS_PATH "/sys/class/power_supply"
+
+...
+char *acpi_labels[] = {
+	"uevent",
+	"status",
+	"BAT",
+	"AC",
+	"POWER_SUPPLY_CAPACITY=",
+	"POWER_SUPPLY_??????_FULL_DESIGN=", /* CHARGE or ENERGY */
+	"POWER_SUPPLY_PRESENT=",
+	"POWER_SUPPLY_??????_NOW=",
+	"POWER_SUPPLY_CURRENT_NOW=",
+	"POWER_SUPPLY_STATUS=",
+#if ACPI_THERMAL
+	"thermal_zone",
+#endif
+	"POWER_SUPPLY_ONLINE=",
+	"POWER_SUPPLY_??????_FULL=",
+	NULL
+};
+
+
+> Regards
+> 	Stefan Lippers-Hollmann
 >
-> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-> index 0cf5f8e..adeba5a 100644
-> --- a/drivers/iio/inkern.c
-> +++ b/drivers/iio/inkern.c
-> @@ -443,6 +443,24 @@ err_unlock:
->   }
->   EXPORT_SYMBOL_GPL(iio_read_channel_raw);
->
-> +int iio_read_channel_average_raw(struct iio_channel *chan, int *val)
-> +{
-> +	int ret;
-> +
-> +	mutex_lock(&chan->indio_dev->info_exist_lock);
-> +	if (chan->indio_dev->info == NULL) {
-> +		ret = -ENODEV;
-> +		goto err_unlock;
-> +	}
-> +
-> +	ret = iio_channel_read(chan, val, NULL, IIO_CHAN_INFO_AVERAGE_RAW);
-> +err_unlock:
-> +	mutex_unlock(&chan->indio_dev->info_exist_lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(iio_read_channel_average_raw);
-> +
->   static int iio_convert_raw_to_processed_unlocked(struct iio_channel *chan,
->   	int raw, int *processed, unsigned int scale)
->   {
-> diff --git a/include/linux/iio/consumer.h b/include/linux/iio/consumer.h
-> index 2752b1f..651f9a0 100644
-> --- a/include/linux/iio/consumer.h
-> +++ b/include/linux/iio/consumer.h
-> @@ -123,6 +123,19 @@ int iio_read_channel_raw(struct iio_channel *chan,
->   			 int *val);
->
-Ah, my bad habits propogate onwards.  The docs should be with the implementation.
-Oh well, at somepoint I'll clean all remaining cases of this up.
->   /**
-> + * iio_read_channel_average_raw() - read from a given channel
-> + * @chan:		The channel being queried.
-> + * @val:		Value read back.
-> + *
-> + * Note raw reads from iio channels are in adc counts and hence
-> + * scale will need to be applied if standard units required.
-> + *
-> + * In opposit to the normal iio_read_channel_raw this function
-> + * returns the average of multiple reads.
-> + */
-> +int iio_read_channel_average_raw(struct iio_channel *chan, int *val);
-> +
-> +/**
->    * iio_read_channel_processed() - read processed value from a given channel
->    * @chan:		The channel being queried.
->    * @val:		Value read back.
+> [1]	Homepage: http://kitenet.net/~joey/code/wmbattery/
+> 	Vcs-Git: git://git.kitenet.net/wmbattery
 >
 
