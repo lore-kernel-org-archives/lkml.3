@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659AbaCOW4b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 18:56:31 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:62773 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756568AbaCOW43 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 18:56:29 -0400
-Message-ID: <5324E8AD.6000206@cogentembedded.com>
-Date: Sun, 16 Mar 2014 02:56:29 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756653AbaCOX2v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 19:28:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31240 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756565AbaCOX2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 19:28:50 -0400
+Date: Sat, 15 Mar 2014 19:28:46 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, LKML <linux-kernel@vger.kernel.org>
+Cc: Steve Grubb <sgrubb@redhat.com>, Eric Paris <eparis@redhat.com>
+Subject: race in audit_log_untrusted_string for task_struct::comm
+Message-ID: <20140315232846.GE27244@madcap2.tricolour.ca>
 MIME-Version: 1.0
-To: Peter Senna Tschudin <peter.senna@gmail.com>, jcliburn@gmail.com,
-        chris.snook@gmail.com, davem@davemloft.net, johannes@sipsolutions.net,
-        jg1.han@samsung.com, wangyijing@huawei.com, linux@hahnjo.de,
-        sd@queasysnail.net, hahnjo@hahnjo.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] ATHEROS-ALX: Use dma_set_mask_and_coherent and fix a
- bug
-References: <1394907548-10084-1-git-send-email-peter.senna@gmail.com>
-In-Reply-To: <1394907548-10084-1-git-send-email-peter.senna@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi,
 
-On 03/15/2014 09:19 PM, Peter Senna Tschudin wrote:
+I'm investigating a race in audit_log_untrusted_string() in the case of
+task_struct::comm.
 
->   1. For the 64 bits dma mask use dma_set_mask_and_coherent instead of
->   dma_set_mask and dma_set_coherent_mask.
+Originally from commit 0a4ff8c2 audit_log_task() currently hands
+task_struct::comm directly to audit_log_untrusted_string() which can
+race if another task/thread on another CPU modifies it between the time
+strlen() is called on it and the time it is processed in
+audit_log_n_untrustedstring().  I originally thought it was just a
+matter of the value being truncated or mixed between old and new values,
+but it appears it is worse than that in that it causes following labels
+to be dropped.  If it just affected the value of comm that was printed,
+I am guessing this wouldn't be a big deal since the user can modify this
+value anyway and we never did trust it.  however, since it affects the
+rest of the line, it has to be addressed.
 
->   2. For the 32 bits dma mask dma_set_coherent_mask is only called if
->   dma_set_mask fails, which is unusual. Assuming this as a bug, fixes
->   it by replacing calls to dma_set_mask and dma_set_coherent_mask by a
->   call to dma_set_coherent_mask.
+In commit 219f0817 from 2005, Stephen Smalley used get_task_comm() to
+get the value of comm to log to audit_log_untrusted_string() which calls
+the task_lock.  This is quite safe, but incurs overhead that may not be
+found acceptable by some.
 
-    You meant to say dma_set_mask_and_coherent() here?
+Eric subsequently used memcpy() in c2a7780e in 2008 in another area of the
+code that stores the value for later rather than use it immediately, so
+the race issue was not present there, but there is still the danger of
+incomplete or mixed text in that field.
 
->   Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> ---
+Both are safe in terms of avoiding losing other fields.  One might have
+half-inconsistent information in it, the other incurs locking costs.         
 
->   Tested by compilation only.
+I'm inclined to go get_task_comm() in all 5 locations, but if we care
+more about locking overhead, I'll switch to memcpy().
 
->   drivers/net/ethernet/atheros/alx/main.c | 14 ++++----------
->   1 file changed, 4 insertions(+), 10 deletions(-)
+Steve, do we care about the integrity of the comm field?
+Eric, is the overhead of task_lock unacceptable?
 
-> diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
-> index 2e45f6e..380d249 100644
-> --- a/drivers/net/ethernet/atheros/alx/main.c
-> +++ b/drivers/net/ethernet/atheros/alx/main.c
-> @@ -1248,19 +1248,13 @@ static int alx_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
->   	 * shared register for the high 32 bits, so only a single, aligned,
->   	 * 4 GB physical address range can be used for descriptors.
->   	 */
-> -	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
-> -	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-> +	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
->   		dev_dbg(&pdev->dev, "DMA to 64-BIT addresses\n");
->   	} else {
-> -		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-> +		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
->   		if (err) {
-> -			err = dma_set_coherent_mask(&pdev->dev,
-> -						    DMA_BIT_MASK(32));
-> -			if (err) {
-> -				dev_err(&pdev->dev,
-> -					"No usable DMA config, aborting\n");
-> -				goto out_pci_disable;
-> -			}
-> +			dev_err(&pdev->dev, "No usable DMA config, aborting\n");
-> +			goto out_pci_disable;
->   		}
->   	}
-
-WBR, Sergei
+Linked in this thread (should I be able to convince git send-email to
+work with me) please find the get_task_comm() patch and the alternate
+memcpy() patch.
 
 
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
