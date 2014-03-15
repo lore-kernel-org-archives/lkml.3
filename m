@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058AbaCOBY5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 21:24:57 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:62889 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753732AbaCOBY4 (ORCPT
+	id S1755347AbaCOBa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 21:30:56 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58765 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752107AbaCOBaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 21:24:56 -0400
-Message-ID: <1394846690.8939.1.camel@phoenix>
-Subject: [PATCH] mfd: bcm590xx: Fix type argument for module device table
-From: Axel Lin <axel.lin@ingics.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: Matt Porter <mporter@linaro.org>, Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>, linux-kernel@vger.kernel.org
-Date: Sat, 15 Mar 2014 09:24:50 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Mar 2014 21:30:55 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Ilia Mirkin <imirkin@alum.mit.edu>, Lan Tianyu <tianyu.lan@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.14-rc: /proc/acpi/battery gone?
+Date: Sat, 15 Mar 2014 02:46:19 +0100
+Message-ID: <1677000.FsvVVRjEvo@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAKb7Uvh1TaNLmi0YVBPmCD571ZU_sM1DpbYUSA8xQZnS5xUbCA@mail.gmail.com>
+References: <20140314211456.GA23213@amd.pavel.ucw.cz> <20140314221143.GA26621@amd.pavel.ucw.cz> <CAKb7Uvh1TaNLmi0YVBPmCD571ZU_sM1DpbYUSA8xQZnS5xUbCA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes below build error.
+On Friday, March 14, 2014 06:14:12 PM Ilia Mirkin wrote:
+> On Fri, Mar 14, 2014 at 6:11 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> > On Fri 2014-03-14 17:29:41, Ilia Mirkin wrote:
+> >> On Fri, Mar 14, 2014 at 5:14 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> >> > Hi!
+> >> >
+> >> > It seems /proc/acpi/battery interface is gone, and I don't see any
+> >> > option to reintroduce it... what is going on?
+> >>
+> >> The interface went away in a semi-recent kernel release (3.13 or
+> >> 3.12), breaking pretty much every battery app. (Admittedly the
+> >> interface was marked as deprecated for quite some time, but that
+> >> didn't stop everyone from using it and not caring about the new
+> >> thing.) I've yet to find a windowmaker dock app that works with the
+> >> current sysfs API :(
+> >
+> > Name one application it broke, and we'll get it reverted. It broke my
+> > by-hand journalling, at the very least.
+> 
+> wmbattery
+> 
+> They have attempted to use the sysfs api, but apparently that
+> integration was done with an older version of that API. There's also
+> some attempt to get it to work with upower, but I couldn't figure out
+> how to make that work either on my (up-to-date gentoo) box. (TBH I
+> didn't spend more than an hour or two on it, so it may not be
+> impossible.)
 
-FATAL: drivers/mfd/bcm590xx: sizeof(struct i2c_device_id)=24 is not a modulo of the size of section __mod_i2c_device_table=392.
-Fix definition of struct i2c_device_id in mod_devicetable.h
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
+Tianyu, can you please have a look at this?
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/mfd/bcm590xx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/mfd/bcm590xx.c b/drivers/mfd/bcm590xx.c
-index 926a57e..e9a33c7 100644
---- a/drivers/mfd/bcm590xx.c
-+++ b/drivers/mfd/bcm590xx.c
-@@ -68,7 +68,7 @@ static const struct of_device_id bcm590xx_of_match[] = {
- 	{ .compatible = "brcm,bcm59056" },
- 	{ }
- };
--MODULE_DEVICE_TABLE(i2c, bcm590xx_of_match);
-+MODULE_DEVICE_TABLE(of, bcm590xx_of_match);
- 
- static const struct i2c_device_id bcm590xx_i2c_id[] = {
- 	{ "bcm59056" },
 -- 
-1.8.1.2
-
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
