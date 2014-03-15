@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402AbaCOF0A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 01:26:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56702 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715AbaCOFZ7 (ORCPT
+	id S1752490AbaCOF2o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 01:28:44 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58490 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751738AbaCOF2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 01:25:59 -0400
-Date: Sat, 15 Mar 2014 05:26:56 +0000
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Chase Southwood <chase.southwood@yahoo.com>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] Staging: comedi: convert while loops to timeouts
- in s626.c
-Message-ID: <20140315052656.GA29821@kroah.com>
-References: <20140309030056.GA10867@kroah.com>
- <1394337654-27379-1-git-send-email-chase.southwood@yahoo.com>
- <531F1D18.4060109@mev.co.uk>
- <1394847817.37014.YahooMailNeo@web164005.mail.gq1.yahoo.com>
+	Sat, 15 Mar 2014 01:28:42 -0400
+X-Sasl-enc: 6wXZqWflqJIcGuiJGuolwr8tNRVHlJ2DF9yxdH2/kw1L 1394861321
+Date: Sat, 15 Mar 2014 05:29:42 +0000
+From: Greg KH <greg@kroah.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Tejun Heo <tj@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20140315052942.GA30262@kroah.com>
+References: <1394596541.4840.70.camel@pasglop>
+ <20140312113742.GM28112@sirena.org.uk>
+ <1394654396.4840.94.camel@pasglop>
+ <20140312200232.GA22332@htj.dyndns.org>
+ <1394655292.4840.97.camel@pasglop>
+ <20140312202102.GB22332@htj.dyndns.org>
+ <1394671056.4840.103.camel@pasglop>
+ <1394748895.15098.16.camel@pasglop>
+ <20140315000343.GD5687@kroah.com>
+ <1394852249.15098.75.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394847817.37014.YahooMailNeo@web164005.mail.gq1.yahoo.com>
+In-Reply-To: <1394852249.15098.75.camel@pasglop>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 06:43:37PM -0700, Chase Southwood wrote:
-> >On Tuesday, March 11, 2014 9:26 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
+On Sat, Mar 15, 2014 at 01:57:29PM +1100, Benjamin Herrenschmidt wrote:
+> On Sat, 2014-03-15 at 00:03 +0000, Greg KH wrote:
+> > On Fri, Mar 14, 2014 at 09:14:55AM +1100, Benjamin Herrenschmidt wrote:
+> > > On Thu, 2014-03-13 at 11:37 +1100, Benjamin Herrenschmidt wrote:
+> > > > On Wed, 2014-03-12 at 16:21 -0400, Tejun Heo wrote:
+> > > > > It's a series of rather complex patches.  I really don't think
+> > > > > duplicating them is a good idea.  We can either resurrect the old API
+> > > > > to kill it again or set up a merge branch which I don't think is too
+> > > > > unusual in situations like this.
+> > > > 
+> > > > Right, a topic branch that gets merged in both driver-core-next and
+> > > > powerpc-next.
+> > > 
+> > > Just want to make sure we agree ... ie, the offending commit is already
+> > > in powerpc-next on my side and I can't really back it out (I could
+> > > revert it though).
+> > 
+> > You can pull in driver-core-next into your tree if you want, it's not
+> > going to be reverted, and will be sent to Linus for 3.15-rc1, so you can
+> > base your work on it and fix up the api usage in your tree that way.
 > 
-> >>On 2014-03-09 04:00, Chase Southwood wrote:
-> >> This patch changes a handful of while loops to timeouts to prevent
-> >> infinite looping on hardware failure. A couple such loops are in a
-> >> function (s626_debi_transfer()) which is called from critical sections,
-> >> so comedi_timeout() is unusable for them, and an iterative timeout is
-> >> used instead. For the while loops in a context where comedi_timeout() is
-> >> allowed, a new callback function, s626_send_dac_eoc(), has been defined
-> >> to evaluate the conditions that the while loops are testing.  The new
-> >> callback employs a switch statement based on a simple new enum so that
-> >> it is usable for all of the different conditions tested in while loops
-> >> in s626_send_dac().  The proper comedi_timeout() calls are then used.
-> >>
-> >> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> >> ---
-> >> Ian, here is a version of this patchset employing the enum you recommended.
-> >> The second patch has been rebased on top of this one.
-> >>
-> >> 2: Used comedi_timeout() where appropriate, introduce callback function
-> >>
-> >> 3: Updated callback to switch on new enum.>
-> >
-> >Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
-> >
-> >For future reference, for patches affecting a single comedi driver, we 
-> >usually title the patches like this:
-> >
-> >staging: comedi: name_of_driver: summary of patch
-> >
-> 
-> 
-> Hi Greg!
-> 
-> I was just writing to inquire whether you were able to add this patch as well as
-> PATCH 2/2 Propagate timeout errors in s626.c, to your queue in their current state.
-> I had to resend this patch to you about a week ago because the subject line got
-> a little messed up, which might have lead to a bit of confusion regarding the 2
-> patch series, and I wanted to check in to see whether you need me to do anything
-> further.
+> It's messy. Stephen really doesn't like if we pull each other trees like
+> that unless they are topic branches. He also doesn't like when we keep
+> pulling Linus in.
 
-I've been on vacation this week and will dig through my huge patch queue
-next week.  Then I will need another vacation...
+I only pull Linus in after a -rc in which I have merged patches with him
+for that "topic".  Otherwise I end up with merge issues, and for testing
+reasons, I want those fixes from Linus and from me, in order to keep
+people from hitting the same already-fixes issues.
 
-Give me a chance to catch up, I'll let you know if I have problems with
-them.
+> For example I purposefully kept powerpc -next on top of rc2. You seem to
+> regularly merge subsequent rc's into driver-core-next. So by pulling
+> your tree I would bring a whole lot of stuff on top of mine, which is
+> fine by git but makes histories more complicated and annoys Stephen.
+> 
+> I might still do it this time around, because the other solution for me
+> is revert + re-apply with fixups on top of a separate branch itself
+> derived from driver-core-next and send multiple pull requests to Linus,
+> and that's messy too. The question is which one is more :-)
+
+Just take my tree, it's not a big deal, I'll merge first with Linus if
+you want and then everything is simple.
 
 thanks,
 
-greg k-h
+greg k-h-
