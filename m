@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593AbaCOVST (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 17:18:19 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:38130 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756190AbaCOVSS (ORCPT
+	id S1756628AbaCOVVV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 17:21:21 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53295 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756190AbaCOVVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 17:18:18 -0400
-Message-ID: <5324C3B2.1000802@gmail.com>
-Date: Sun, 16 Mar 2014 05:18:42 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sat, 15 Mar 2014 17:21:19 -0400
+Date: Sat, 15 Mar 2014 22:21:17 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Josh Wu <josh.wu@atmel.com>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [PATCH] iio: adc: at91_adc: correct default shtim value
+Message-ID: <20140315212116.GI3106@piout.net>
+References: <1393870024-20704-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <531704DA.5000200@atmel.com>
+ <532480FA.4010604@kernel.org>
 MIME-Version: 1.0
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-CC: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/avr32/mm/cache.c: export symbol flush_icache_range()
- for module using
-References: <531B8D32.6000000@gmail.com> <531B8FD8.6040704@gmail.com> <20140308221721.GA30934@samfundet.no> <531C8683.2010908@gmail.com>
-In-Reply-To: <531C8683.2010908@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532480FA.4010604@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2014 11:19 PM, Chen Gang wrote:
-> On 03/09/2014 06:17 AM, Hans-Christian Egtvedt wrote:
->> Around Sun 09 Mar 2014 05:47:04 +0800 or thereabout, Chen Gang wrote:
->>>
->>> After this patch, our linux kernel can pass "avr32-linux-" allmodconfig
->>> (it contents quite a few of warnings, but after check, I guess they are
->>> not kernel's issue).
->>
->> That sounds great, I am a bit surprised however that the lkdtm module need
->> flush_icache_range. Would have been interesting to look into what causes this
->> dependency.
->>
+Hi,
 
-After read a little more details for lkdtm, I guess "after overwrite an
-executable area by do_nothing(), it needs flush_icache_range() to be
-sure the new instructions/data must have effect with all cpu".
-
-Welcome any additional information for it.
-
-Thanks.
-
-> 
-> "driver/misc/lkdtm.c" will use this flush_icache_range().
-> 
-> And some architectures export it to modules.
-> 
->   [root@gchen arch]# grep -rn flush_icache_range * | grep EXPORT
->   arm64/mm/flush.c:105:EXPORT_SYMBOL(flush_icache_range);
->   avr32/mm/cache.c:114:EXPORT_SYMBOL(flush_icache_range);
->   m68k/mm/cache.c:106:EXPORT_SYMBOL(flush_icache_range);
->   mn10300/mm/cache-inv-icache.c:129:EXPORT_SYMBOL(flush_icache_range);
->   mn10300/mm/cache-flush-icache.c:155:EXPORT_SYMBOL(flush_icache_range);
->   sparc/mm/init_64.c:435:EXPORT_SYMBOL(flush_icache_range);
-> 
-> 
-> Welcome any more details information by any other members, thanks.
-> 
+On 15/03/2014 at 16:34:02 +0000, Jonathan Cameron wrote :
+> Applied to the fixes-togreg branch of iio.git.
+> Note that is likely that this will go upstream after the merge window now.
 > 
 
-Thanks.
+I was aiming at 3.15 anyway.
+
+Thanks for you help !
+
 -- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
