@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255AbaCOCVg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Mar 2014 22:21:36 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41326 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866AbaCOCVf (ORCPT
+	id S1755596AbaCOC1L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Mar 2014 22:27:11 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:35214 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107AbaCOC1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Mar 2014 22:21:35 -0400
-Date: Fri, 14 Mar 2014 22:21:33 -0400 (EDT)
-Message-Id: <20140314.222133.1978976674383447094.davem@davemloft.net>
-To: vfalico@redhat.com
-Cc: netdev@vger.kernel.org, fubar@us.ibm.com, andy@greyhouse.net,
-        stefanr@s5r6.in-berlin.de, sw@simonwunderlich.de,
-        Neil.Jerram@metaswitch.com, horms@verge.net.au, Arvid.Brodin@xdin.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 0/2] bonding: use correct ether type for alb
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394710918-29540-1-git-send-email-vfalico@redhat.com>
-References: <1394710918-29540-1-git-send-email-vfalico@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 14 Mar 2014 19:21:35 -0700 (PDT)
+	Fri, 14 Mar 2014 22:27:09 -0400
+Date: Sat, 15 Mar 2014 03:27:07 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, eranian@google.com,
+        namhyung@kernel.org, jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 01/10] perf, tools: Add jsmn `jasmine' JSON parser
+Message-ID: <20140315022707.GB22728@two.firstfloor.org>
+References: <1394832698-322-1-git-send-email-andi@firstfloor.org>
+ <1394832698-322-2-git-send-email-andi@firstfloor.org>
+ <5323859B.70201@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5323859B.70201@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Veaceslav Falico <vfalico@redhat.com>
-Date: Thu, 13 Mar 2014 12:41:56 +0100
-
-> There have been reports that, while using the ETH_P_LOOP ether type
-> (0x0060), the ether type is treated as its packet length.
+On Fri, Mar 14, 2014 at 04:41:31PM -0600, David Ahern wrote:
+> On 3/14/14, 3:31 PM, Andi Kleen wrote:
+> >@@ -374,6 +376,8 @@ LIB_OBJS += $(OUTPUT)util/stat.o
+> >  LIB_OBJS += $(OUTPUT)util/record.o
+> >  LIB_OBJS += $(OUTPUT)util/srcline.o
+> >  LIB_OBJS += $(OUTPUT)util/data.o
+> >+LIB_OBJS += $(OUTPUT)util/jsmn.o
+> >+LIB_OBJS += $(OUTPUT)util/json.o
+> >
+> >  LIB_OBJS += $(OUTPUT)ui/setup.o
+> >  LIB_OBJS += $(OUTPUT)ui/helpline.o
+> >
 > 
-> To avoid that and to not break already existing apps - add new ether type
-> ETH_P_LOOPBACK that contains the correct id - 0x9000.
+> CONFIG driven? Allow a user to omit this.
 
-Series applied, thanks Veaceslav.
+Why? It has no external dependencies. AFAIK that's the only reason for configs.
+
+(unless you count the commands used by the shell script, but the basic parser
+works fine even without the script)
+
+-Andi
