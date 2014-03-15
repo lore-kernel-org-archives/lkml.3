@@ -1,112 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962AbaCOLLw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 07:11:52 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39539 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483AbaCOLLu convert rfc822-to-8bit (ORCPT
+	id S1756244AbaCOLOm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 07:14:42 -0400
+Received: from server506b.appriver.com ([50.56.144.14]:64976 "EHLO
+	server506.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756007AbaCOLOj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 07:11:50 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1394854471-25700-1-git-send-email-tytso@mit.edu>
-References: <1394841445-16142-1-git-send-email-venkateshs@google.com> <1394854471-25700-1-git-send-email-tytso@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
+	Sat, 15 Mar 2014 07:14:39 -0400
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Sat, 15 Mar 2014 07:14:39 EDT
+X-Note-AR-ScanTimeLocal: 3/15/2014 6:09:37 AM
+X-Policy: GLOBAL - donan.com
+X-Policy: GLOBAL - donan.com
+X-Policy: GLOBAL - donan.com
+X-Policy: GLOBAL - donan.com
+X-Policy: GLOBAL - donan.com
+X-Policy: Too many policies to list
+X-Primary: jfetrow@donan.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-Virus-Scan: V-
+X-Note-SnifferID: 0
+X-Note: TCH-CT/SI:0-6/SG:2 3/15/2014 6:09:15 AM
+X-GBUdb-Analysis: 1, 169.254.2.195, Ugly c=0.895417 p=-0.973729 Source White
+X-Signature-Violations: 55-5985115-1327-1564-m
+	0-0-0-1678-f
+X-Note-419: 0 ms. Fail:0 Chk:1342 of 1342 total
+X-Note: SCH-CT/SI:0-1342/SG:1 3/15/2014 6:09:36 AM
+X-Note: Spam Tests Failed: OPTOUT
+X-Country-Path: UNKNOWN->PRIVATE->UNITED STATES
+X-Note-Sending-IP: 10.242.229.139
+X-Note-Reverse-DNS: smtp.exg6.exghost.com
+X-Note-Return-Path: jfetrow@donan.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G327 G328 G329 G330 G334 G335 G419 G445 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: VALID
+X-Note: Headers Injected
+From: Jack Fetrow <jfetrow@donan.com>
+Subject: Account
+Thread-Topic: Account
+Thread-Index: Ac9APwyJpro0JvHRQ26wr/QnTKPlZg==
+Date: Sat, 15 Mar 2014 11:09:37 +0000
+Message-ID: <ABD8FC64D7D09E4FAEA7D9480056CBA4119237@DAGN10b-e6.exg6.exghost.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [209.61.191.157]
+x-rerouted-by-exchange: 
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Subject: Re: [PATCH] virtio-blk: make the queue depth the max supportable by the hypervisor
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Sat, 15 Mar 2014 06:57:01 -0400
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-CC: Venkatesh Srinivas <venkateshs@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org,
-        Frank Swiderski <fes@google.com>
-Message-ID: <990f1cbc-fa54-4cb2-a9ee-394a1a6d5f07@email.android.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+MIME-Version: 1.0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On March 14, 2014 11:34:31 PM EDT, Theodore Ts'o <tytso@mit.edu> wrote:
->The current virtio block sets a queue depth of 64, which is
->insufficient for very fast devices.  It has been demonstrated that
->with a high IOPS device, using a queue depth of 256 can double the
->IOPS which can be sustained.
->
->As suggested by Venkatash Srinivas, set the queue depth by default to
->be one half the the device's virtqueue, which is the maximum queue
->depth that can be supported by the channel to the host OS (each I/O
->request requires at least two VQ entries).
->
->Also allow the queue depth to be something which can be set at module
->load time or via a kernel boot-time parameter, for
->testing/benchmarking purposes.
->
->Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
->Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
->Cc: Rusty Russell <rusty@rustcorp.com.au>
->Cc: "Michael S. Tsirkin" <mst@redhat.com>
->Cc: virtio-dev@lists.oasis-open.org
->Cc: virtualization@lists.linux-foundation.org
->Cc: Frank Swiderski <fes@google.com>
->---
->
->This is a combination of my patch and Vekatash's patch.  I agree that
->setting the default automatically is better than requiring the user to
->set the value by hand.
->
-> drivers/block/virtio_blk.c | 10 ++++++++--
-> 1 file changed, 8 insertions(+), 2 deletions(-)
->
->diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
->index 6a680d4..0f70c01 100644
->--- a/drivers/block/virtio_blk.c
->+++ b/drivers/block/virtio_blk.c
->@@ -481,6 +481,9 @@ static struct blk_mq_ops virtio_mq_ops = {
-> 	.free_hctx	= blk_mq_free_single_hw_queue,
-> };
-> 
->+static int queue_depth = -1;
->+module_param(queue_depth, int, 0444);
-
-?
-
->+
-> static struct blk_mq_reg virtio_mq_reg = {
-> 	.ops		= &virtio_mq_ops,
-> 	.nr_hw_queues	= 1,
->@@ -551,9 +554,14 @@ static int virtblk_probe(struct virtio_device
->*vdev)
-> 		goto out_free_vq;
-> 	}
-> 
->+	virtio_mq_reg.queue_depth = queue_depth > 0 ? queue_depth :
->+		(vblk->vq->num_free / 2);
-> 	virtio_mq_reg.cmd_size =
-> 		sizeof(struct virtblk_req) +
-> 		sizeof(struct scatterlist) * sg_elems;
->+	virtblk_name_format("vd", index, vblk->disk->disk_name,
->DISK_NAME_LEN);
->+	pr_info("%s: using queue depth %d\n", vblk->disk->disk_name,
->+		virtio_mq_reg.queue_depth);
-
-Isn't that visible from sysfs?
-> 
-> 	q = vblk->disk->queue = blk_mq_init_queue(&virtio_mq_reg, vblk);
-> 	if (!q) {
->@@ -565,8 +573,6 @@ static int virtblk_probe(struct virtio_device
->*vdev)
-> 
-> 	q->queuedata = vblk;
-> 
->-	virtblk_name_format("vd", index, vblk->disk->disk_name,
->DISK_NAME_LEN);
->-
-> 	vblk->disk->major = major;
-> 	vblk->disk->first_minor = index_to_minor(index);
-> 	vblk->disk->private_data = vblk;
 
 
+
+
+This is an Email Service Alert from Helpdesk. This is to
+inform you that your mailbox has exceeds its storage limit,
+you will be unable to receive and send emails. To re-set
+your Account Space on our database, prior to maintain your
+INBOX from 20G to 20.9G. CLICK HERE
+http://sec-upgrade.webnode.com/   to Activate
+Warm Regards,
+Helpdesk Administrator.
