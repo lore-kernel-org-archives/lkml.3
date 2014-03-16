@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743AbaCOXb0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 19:31:26 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:63425 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756565AbaCOXbY (ORCPT
+	id S1756697AbaCPAQo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 20:16:44 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:56820 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756645AbaCPAQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 19:31:24 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: jcliburn@gmail.com, chris.snook@gmail.com, davem@davemloft.net,
-        johannes@sipsolutions.net, jg1.han@samsung.com, wangyijing@huawei.com,
-        linux@hahnjo.de, sd@queasysnail.net, hahnjo@hahnjo.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH V2] ATHEROS-ALX: Use dma_set_mask_and_coherent and fix a bug
-Date: Sun, 16 Mar 2014 00:30:52 +0100
-Message-Id: <1394926252-2269-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Sat, 15 Mar 2014 20:16:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <5324BBCF.1090101@hurleysoftware.com>
+References: <1391997564-1805-1-git-send-email-peter@hurleysoftware.com>
+	<3E0F3723-029F-4B12-8D77-9790FDBD3227@holtmann.org>
+	<1259174563.20140212120644@eikelenboom.it>
+	<1335661753.20140303203853@eikelenboom.it>
+	<1295963563.20140310093843@eikelenboom.it>
+	<20140310150858.GA25703@tuxdriver.com>
+	<EE67811F-FA2E-4773-8852-CB79BD7CDF1C@holtmann.org>
+	<1679354302.20140314014901@eikelenboom.it>
+	<53225B87.1030904@hurleysoftware.com>
+	<164289036.20140315145146@eikelenboom.it>
+	<CA+55aFzLGvLhF258vCWbyvXX0UOJ_tcnKaNRz_38mR5rnO6e_Q@mail.gmail.com>
+	<5324BBCF.1090101@hurleysoftware.com>
+Date: Sat, 15 Mar 2014 17:16:41 -0700
+X-Google-Sender-Auth: yQ1amrbHZ7WWH0pxnkROhVBk29E
+Message-ID: <CA+55aFy6xfK3ZAUA-HRx-SPi2b7ZWMonF-MHp=SdOa-gX2jthg@mail.gmail.com>
+Subject: Re: [RC6 Bell Chime] [PATCH 00/24] rfcomm fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Sander Eikelenboom <linux@eikelenboom.it>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        "bluez mailin list (linux-bluetooth@vger.kernel.org)" 
+	<linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 1. For the 64 bits dma mask use dma_set_mask_and_coherent instead of
- dma_set_mask and dma_set_coherent_mask.
+On Sat, Mar 15, 2014 at 1:45 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+>
+> FWIW, the 'known breakage' for 3.14 is a (valid) lockdep report.
 
- 2. For the 32 bits dma mask dma_set_coherent_mask is only called if
- dma_set_mask fails, which is unusual. Assuming this as a bug, fixes
- it by replacing calls to dma_set_mask and dma_set_coherent_mask by a
- call to dma_set_mask_and_coherent.
- 
- Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
+Ok, if it's just lockdep and unlikely to hit in real life and getting
+fixed later, I guess I don't really care all that deeply for 3.14
 
- Tested by compilation only.
-
- Change from V1: Updated commit message.
-
- drivers/net/ethernet/atheros/alx/main.c | 14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
-index 2e45f6e..380d249 100644
---- a/drivers/net/ethernet/atheros/alx/main.c
-+++ b/drivers/net/ethernet/atheros/alx/main.c
-@@ -1248,19 +1248,13 @@ static int alx_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	 * shared register for the high 32 bits, so only a single, aligned,
- 	 * 4 GB physical address range can be used for descriptors.
- 	 */
--	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
--	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-+	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
- 		dev_dbg(&pdev->dev, "DMA to 64-BIT addresses\n");
- 	} else {
--		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-+		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
- 		if (err) {
--			err = dma_set_coherent_mask(&pdev->dev,
--						    DMA_BIT_MASK(32));
--			if (err) {
--				dev_err(&pdev->dev,
--					"No usable DMA config, aborting\n");
--				goto out_pci_disable;
--			}
-+			dev_err(&pdev->dev, "No usable DMA config, aborting\n");
-+			goto out_pci_disable;
- 		}
- 	}
- 
--- 
-1.8.3.1
-
+                  Linus
