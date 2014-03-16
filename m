@@ -1,80 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaCPQZx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 12:25:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16519 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753062AbaCPQZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 12:25:52 -0400
-Date: Sun, 16 Mar 2014 17:25:12 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: rientjes@google.com, akpm@linux-foundation.org,
-        joseph.salisbury@canonical.com, torvalds@linux-foundation.org,
-        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: Re: [v3.13][v3.14][Regression] kthread: make kthread_create()
-	killable
-Message-ID: <20140316162512.GA9467@redhat.com>
-References: <53236AA2.7030105@canonical.com> <201403150943.BIH30251.FOQLOOtFJHSMVF@I-love.SAKURA.ne.jp> <201403170013.GJF86930.FtVOOQOHLFFMSJ@I-love.SAKURA.ne.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201403170013.GJF86930.FtVOOQOHLFFMSJ@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754352AbaCPQ1f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 12:27:35 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:38678 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232AbaCPQ1e convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 12:27:34 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH 1/1] NTFS: Logging clean-up
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Content-Type: text/plain; charset=US-ASCII
+From: Anton Altaparmakov <anton@tuxera.com>
+In-Reply-To: <1394986370.5689.17.camel@joe-AO722>
+Date: Sun, 16 Mar 2014 16:27:28 +0000
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <DB070619-215B-407E-827E-B9F383465DE2@tuxera.com>
+References: <20140316132743.9e869dd95f2022572edc1745@skynet.be> <3BC5D985-1160-4685-8656-A01350DECEBB@tuxera.com> <1394986370.5689.17.camel@joe-AO722>
+To: Joe Perches <joe@perches.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17, Tetsuo Handa wrote:
->
-> Therefore, I'd like to propose this patch for 3.14-final
-> and 3.13-stable.
+Hi,
 
-Well, I disagree. To me, the patch tries to fix the problem in the wrong
-place,
+On 16 Mar 2014, at 16:12, Joe Perches <joe@perches.com> wrote:
 
-> Commit 786235ee "kthread: make kthread_create() killable" changed to
-> leave kthread_create() as soon as receiving SIGKILL. But this change
-> caused boot failures if systemd-udevd received SIGKILL (probably due
-> to timeout) while loading SCSI controller drivers using
-> finit_module() [1].
+> On Sun, 2014-03-16 at 15:53 +0000, Anton Altaparmakov wrote:
+>> Hi,
+>> 
+>> Looks good, thanks.  You can add my Acked-by if you like.  Can I assume you have test it builds?
+>> 
+>> Andrew, can you please merge this via your patch series?  Thanks!
+> 
+> I think a few things need fixing first
 
-Shouldn't we fix the caller instead? It should handle the error from
-kthread_create() correctly.
+Yes, quite right - I had assume that had been tested!
 
-And could you tell who is the caller which doesn't do this? If it can't
-be fixed, then, say, it can use workqueue to create a kernel thread.
+> On 16 Mar 2014, at 12:27, Fabian Frederick <fabf@skynet.be> wrote:
+>> 
+>>> -All printk(KERN_foo converted to pr_foo().
+>>> -Add pr_fmt and remove redundant prefixes.
+> 
+> I'm not sure there are "redundant prefixes"
+> 
+> This changes prefixes from "NTFS-fs" to "ntfs"
+> and should be at a minimum mentioned in the
+> changelog.
 
-> @@ -292,6 +292,17 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
->  	 * new kernel thread.
->  	 */
->  	if (unlikely(wait_for_completion_killable(&done))) {
-> +		int i = 0;
-> +
-> +		/*
-> +		 * I got SIGKILL, but wait for 10 more seconds for completion
-> +		 * unless chosen by the OOM killer. This delay is there as a
-> +		 * workaround for boot failure caused by SIGKILL upon device
-> +		 * driver initialization timeout.
-> +		 */
-> +		while (i++ < 10 && !test_tsk_thread_flag(current, TIF_MEMDIE))
-> +			if (wait_for_completion_timeout(&done, HZ))
-> +				goto ready;
+As long as it says ntfs in the string so dmesg output can be "grep -i ntfs"-ed I am not fussed.
 
-Personally I really dislike this hack. And btw, why we return -ENOMEM if
-SIGKILL'ed? Why not EINTR ?
+> The va_end location needs moving.
 
-If nothing else we can change the caller to do
+Yes, well spotted, thanks.
 
-	for (;;) {
-		kthread = kthread_create(...);
-		if (!IS_ERR(kthread) || PTR_ERR(kthread) != -EINTR)
-			break;
-		// FIXME, I am stupid and can't handle SIGKILL properly
-		clear_thread_flag(TIF_SIGPENDING);
-	}
-	recalc_sigpending();
+> Converting printk(KERN_DEBUG -> pr_debug will
+> not always emit that message now.  Now, only if
+> DEBUG is #defined or dynamic_debugging is enabled
+> for the build _and_ the message is specifically
+> enabled will the message be output.
+> 
+> So, the debugging output has been silenced by default.
+> 
+> That's not necessarily good.
 
-Oleg.
+No that is not good at all.  I didn't know about those pr_debug semantics so thank you for pointing them out.  That needs fixing otherwise we might as well not have the messages at all...  Being able to enable all ntfs debug messages using a insmod option or via /proc as is at the moment is a very valuable debugging too and I have scripts that use this so am not keen on this being changed at all.
+
+Fabian, can you please fix the issues pointed out by Joe and also please make sure you actually test it!
+
+Thanks a lot in advance!
+
+Best regards,
+
+	Anton
+
+> diff --git a/fs/ntfs/debug.c b/fs/ntfs/debug.c
+> []
+>>> @@ -59,17 +53,15 @@ void __ntfs_warning(const char *function, const struct super_block *sb,
+>>> #endif
+>>> 	if (function)
+>>> 		flen = strlen(function);
+>>> -	spin_lock(&err_buf_lock);
+>>> 	va_start(args, fmt);
+>>> -	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
+>>> +	vaf.fmt = fmt;
+>>> +	vaf.va = &args;
+> 
+>>> 	va_end(args);
+> 
+> This va_end should be moved after the pr_warns.
+> 
+>>> 	if (sb)
+>>> -		printk(KERN_ERR "NTFS-fs warning (device %s): %s(): %s\n",
+>>> -				sb->s_id, flen ? function : "", err_buf);
+>>> +		pr_warn("(device %s): %s(): %pV\n",
+>>> +			sb->s_id, flen ? function : "", &vaf);
+>>> 	else
+>>> -		printk(KERN_ERR "NTFS-fs warning: %s(): %s\n",
+>>> -				flen ? function : "", err_buf);
+>>> -	spin_unlock(&err_buf_lock);
+>>> +		pr_warn("%s(): %pV\n", flen ? function : "", &vaf);
+>>> }
+>>> 
+>>> /**
+>>> @@ -94,6 +86,7 @@ void __ntfs_warning(const char *function, const struct super_block *sb,
+>>> void __ntfs_error(const char *function, const struct super_block *sb,
+>>> 		const char *fmt, ...)
+>>> {
+>>> +	struct va_format vaf;
+>>> 	va_list args;
+>>> 	int flen = 0;
+>>> 
+>>> @@ -103,17 +96,15 @@ void __ntfs_error(const char *function, const struct super_block *sb,
+>>> #endif
+>>> 	if (function)
+>>> 		flen = strlen(function);
+>>> -	spin_lock(&err_buf_lock);
+>>> 	va_start(args, fmt);
+>>> -	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
+>>> +	vaf.fmt = fmt;
+>>> +	vaf.va = &args;
+>>> 	va_end(args);
+> 
+> Here too
+> 
+>>> 	if (sb)
+>>> -		printk(KERN_ERR "NTFS-fs error (device %s): %s(): %s\n",
+>>> -				sb->s_id, flen ? function : "", err_buf);
+>>> +		pr_err("(device %s): %s(): %pV\n",
+>>> +		       sb->s_id, flen ? function : "", &vaf);
+>>> 	else
+>>> -		printk(KERN_ERR "NTFS-fs error: %s(): %s\n",
+>>> -				flen ? function : "", err_buf);
+>>> -	spin_unlock(&err_buf_lock);
+>>> +		pr_err("%s(): %pV\n", flen ? function : "", &vaf);
+
+
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge
+J.J. Thomson Avenue, Cambridge, CB3 0RB, UK
 
