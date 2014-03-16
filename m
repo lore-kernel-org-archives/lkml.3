@@ -1,148 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352AbaCPQ1f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 12:27:35 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:38678 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232AbaCPQ1e convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 12:27:34 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: [PATCH 1/1] NTFS: Logging clean-up
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Content-Type: text/plain; charset=US-ASCII
-From: Anton Altaparmakov <anton@tuxera.com>
-In-Reply-To: <1394986370.5689.17.camel@joe-AO722>
-Date: Sun, 16 Mar 2014 16:27:28 +0000
-Cc: Fabian Frederick <fabf@skynet.be>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <DB070619-215B-407E-827E-B9F383465DE2@tuxera.com>
-References: <20140316132743.9e869dd95f2022572edc1745@skynet.be> <3BC5D985-1160-4685-8656-A01350DECEBB@tuxera.com> <1394986370.5689.17.camel@joe-AO722>
-To: Joe Perches <joe@perches.com>
-X-Mailer: Apple Mail (2.1874)
+	id S1754527AbaCPQc6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 12:32:58 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:9323 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753062AbaCPQc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 12:32:56 -0400
+X-IronPort-AV: E=Sophos;i="4.97,664,1389744000"; 
+   d="scan'208";a="110495464"
+Date: Sun, 16 Mar 2014 16:32:34 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Matt Wilson <msw@linux.com>,
+        Anthony Liguori <aliguori@amazon.com>,
+        =?UTF-8?Q?Roger_Pau_Monn=C3=A9?= <roger.pau@citrix.com>,
+        <x86@kernel.org>, <xen-devel@lists.xenproject.org>,
+        <virtualization@lists.linux-foundation.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/grant-table: Refactor gnttab_[un]map_refs to avoid
+ m2p_override
+In-Reply-To: <531DF7FE.1000708@citrix.com>
+Message-ID: <alpine.DEB.2.02.1403161631580.30819@kaball.uk.xensource.com>
+References: <1393516530-9145-1-git-send-email-zoltan.kiss@citrix.com> <531DF7FE.1000708@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 16 Mar 2014, at 16:12, Joe Perches <joe@perches.com> wrote:
-
-> On Sun, 2014-03-16 at 15:53 +0000, Anton Altaparmakov wrote:
->> Hi,
->> 
->> Looks good, thanks.  You can add my Acked-by if you like.  Can I assume you have test it builds?
->> 
->> Andrew, can you please merge this via your patch series?  Thanks!
+On Mon, 10 Mar 2014, David Vrabel wrote:
+> On 27/02/14 15:55, Zoltan Kiss wrote:
+> > (This is a continuation of "[PATCH v9] xen/grant-table: Avoid m2p_override
+> > during mapping")
+> > 
+> > The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
+> > for blkback and future netback patches it just cause a lock contention, as
+> > those pages never go to userspace. Therefore this series does the following:
+> > - the bulk of the original function (everything after the mapping hypercall)
+> >   is moved to arch-dependent set/clear_foreign_p2m_mapping
+> > - the "if (xen_feature(XENFEAT_auto_translated_physmap))" brach goes to ARM
+> > - therefore the ARM function could be much smaller, the m2p_override stubs
+> >   could be also removed
+> > - on x86 the set_phys_to_machine calls were moved up to this new funcion
+> >   from m2p_override functions
+> > - and m2p_override functions are only called when there is a kmap_ops param
+> > 
+> > It also removes a stray space from arch/x86/include/asm/xen/page.h.
 > 
-> I think a few things need fixing first
+> Applied to devel/for-linus-3.15.
 
-Yes, quite right - I had assume that had been tested!
+The patch breaks the ARM build:
 
-> On 16 Mar 2014, at 12:27, Fabian Frederick <fabf@skynet.be> wrote:
->> 
->>> -All printk(KERN_foo converted to pr_foo().
->>> -Add pr_fmt and remove redundant prefixes.
-> 
-> I'm not sure there are "redundant prefixes"
-> 
-> This changes prefixes from "NTFS-fs" to "ntfs"
-> and should be at a minimum mentioned in the
-> changelog.
-
-As long as it says ntfs in the string so dmesg output can be "grep -i ntfs"-ed I am not fussed.
-
-> The va_end location needs moving.
-
-Yes, well spotted, thanks.
-
-> Converting printk(KERN_DEBUG -> pr_debug will
-> not always emit that message now.  Now, only if
-> DEBUG is #defined or dynamic_debugging is enabled
-> for the build _and_ the message is specifically
-> enabled will the message be output.
-> 
-> So, the debugging output has been silenced by default.
-> 
-> That's not necessarily good.
-
-No that is not good at all.  I didn't know about those pr_debug semantics so thank you for pointing them out.  That needs fixing otherwise we might as well not have the messages at all...  Being able to enable all ntfs debug messages using a insmod option or via /proc as is at the moment is a very valuable debugging too and I have scripts that use this so am not keen on this being changed at all.
-
-Fabian, can you please fix the issues pointed out by Joe and also please make sure you actually test it!
-
-Thanks a lot in advance!
-
-Best regards,
-
-	Anton
-
-> diff --git a/fs/ntfs/debug.c b/fs/ntfs/debug.c
-> []
->>> @@ -59,17 +53,15 @@ void __ntfs_warning(const char *function, const struct super_block *sb,
->>> #endif
->>> 	if (function)
->>> 		flen = strlen(function);
->>> -	spin_lock(&err_buf_lock);
->>> 	va_start(args, fmt);
->>> -	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
->>> +	vaf.fmt = fmt;
->>> +	vaf.va = &args;
-> 
->>> 	va_end(args);
-> 
-> This va_end should be moved after the pr_warns.
-> 
->>> 	if (sb)
->>> -		printk(KERN_ERR "NTFS-fs warning (device %s): %s(): %s\n",
->>> -				sb->s_id, flen ? function : "", err_buf);
->>> +		pr_warn("(device %s): %s(): %pV\n",
->>> +			sb->s_id, flen ? function : "", &vaf);
->>> 	else
->>> -		printk(KERN_ERR "NTFS-fs warning: %s(): %s\n",
->>> -				flen ? function : "", err_buf);
->>> -	spin_unlock(&err_buf_lock);
->>> +		pr_warn("%s(): %pV\n", flen ? function : "", &vaf);
->>> }
->>> 
->>> /**
->>> @@ -94,6 +86,7 @@ void __ntfs_warning(const char *function, const struct super_block *sb,
->>> void __ntfs_error(const char *function, const struct super_block *sb,
->>> 		const char *fmt, ...)
->>> {
->>> +	struct va_format vaf;
->>> 	va_list args;
->>> 	int flen = 0;
->>> 
->>> @@ -103,17 +96,15 @@ void __ntfs_error(const char *function, const struct super_block *sb,
->>> #endif
->>> 	if (function)
->>> 		flen = strlen(function);
->>> -	spin_lock(&err_buf_lock);
->>> 	va_start(args, fmt);
->>> -	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
->>> +	vaf.fmt = fmt;
->>> +	vaf.va = &args;
->>> 	va_end(args);
-> 
-> Here too
-> 
->>> 	if (sb)
->>> -		printk(KERN_ERR "NTFS-fs error (device %s): %s(): %s\n",
->>> -				sb->s_id, flen ? function : "", err_buf);
->>> +		pr_err("(device %s): %s(): %pV\n",
->>> +		       sb->s_id, flen ? function : "", &vaf);
->>> 	else
->>> -		printk(KERN_ERR "NTFS-fs error: %s(): %s\n",
->>> -				flen ? function : "", err_buf);
->>> -	spin_unlock(&err_buf_lock);
->>> +		pr_err("%s(): %pV\n", flen ? function : "", &vaf);
-
-
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge
-J.J. Thomson Avenue, Cambridge, CB3 0RB, UK
+arch/arm/xen/p2m.c:152:1: error: expected identifier or '(' before '{' token
+ {
+ ^
+arch/arm/xen/p2m.c:169:1: error: expected identifier or '(' before '{' token
+ {
+ ^
 
