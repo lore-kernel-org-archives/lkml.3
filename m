@@ -1,192 +1,476 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127AbaCPSTK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 14:19:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28939 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753281AbaCPSTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 14:19:08 -0400
-Date: Sun, 16 Mar 2014 14:19:03 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Paris <eparis@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] audit: Send replies in the proper network namespace.
-Message-ID: <20140316181903.GI27244@madcap2.tricolour.ca>
-References: <8738j3vzry.fsf@xmission.com>
- <20140301011142.GK16640@madcap2.tricolour.ca>
- <87fvn2r0yb.fsf@xmission.com>
- <874n3ir0uw.fsf_-_@xmission.com>
+	id S932077AbaCPSZs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 14:25:48 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39497 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281AbaCPSZp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 14:25:45 -0400
+Message-ID: <5325ECE3.5090800@kernel.org>
+Date: Sun, 16 Mar 2014 18:26:43 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874n3ir0uw.fsf_-_@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 14/15] Input: atmel_tsadcc: remove driver
+References: <1394040940-18246-1-git-send-email-alexandre.belloni@free-electrons.com> <1394040940-18246-15-git-send-email-alexandre.belloni@free-electrons.com> <20140305184611.GA5453@core.coreip.homeip.net>
+In-Reply-To: <20140305184611.GA5453@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/02/28, Eric W. Biederman wrote:
-> 
-> In perverse cases of file descriptor passing the current network
-> namespace of a process and the network namespace of a socket used by
-> that socket may differ.  Therefore use the network namespace of the
-> appropiate socket to ensure replies always go to the appropiate
-> socket.
-> 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+On 05/03/14 18:46, Dmitry Torokhov wrote:
+> On Wed, Mar 05, 2014 at 06:35:39PM +0100, Alexandre Belloni wrote:
+>> The atmel_tsadcc driver is not used anymore, it has been replaced by at91_adc so
+>> remove it.
+>>
+>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>
+> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+All the rest of this series looks fine to me.
 
-Signed-off-by: Richard Guy Briggs <rgb@tricolour.ca>
+Dmitry, are you happy for me to take this whole series through IIO once
+the last few bits are pinned down?  If the atmel guys want to take the whole
+thing through their tree I'm also happy with that.
 
-> ---
-> 
-> This is an incremental change on top of my previous patch to guarantee
-> that replies always happen in the appropriate network namespace.
-> 
->  include/linux/audit.h |    3 ++-
->  kernel/audit.c        |   21 ++++++++++-----------
->  kernel/auditfilter.c  |    7 +++++--
->  3 files changed, 17 insertions(+), 14 deletions(-)
-> 
-> diff --git a/include/linux/audit.h b/include/linux/audit.h
-> index aa865a9a4c4f..ec1464df4c60 100644
-> --- a/include/linux/audit.h
-> +++ b/include/linux/audit.h
-> @@ -43,6 +43,7 @@ struct mq_attr;
->  struct mqstat;
->  struct audit_watch;
->  struct audit_tree;
-> +struct sk_buff;
->  
->  struct audit_krule {
->  	int			vers_ops;
-> @@ -463,7 +464,7 @@ extern int audit_filter_user(int type);
->  extern int audit_filter_type(int type);
->  extern int audit_rule_change(int type, __u32 portid, int seq,
->  				void *data, size_t datasz);
-> -extern int audit_list_rules_send(__u32 portid, int seq);
-> +extern int audit_list_rules_send(struct sk_buff *request_skb, int seq);
->  
->  extern u32 audit_enabled;
->  #else /* CONFIG_AUDIT */
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 1e5756f16f6f..32086bff5564 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -570,9 +570,11 @@ static int audit_send_reply_thread(void *arg)
->   * Allocates an skb, builds the netlink message, and sends it to the port id.
->   * No failure notifications.
->   */
-> -static void audit_send_reply(__u32 portid, int seq, int type, int done,
-> +static void audit_send_reply(struct sk_buff *request_skb, int seq, int type, int done,
->  			     int multi, const void *payload, int size)
->  {
-> +	u32 portid = NETLINK_CB(request_skb).portid;
-> +	struct net *net = sock_net(NETLINK_CB(request_skb).sk);
->  	struct sk_buff *skb;
->  	struct task_struct *tsk;
->  	struct audit_reply *reply = kmalloc(sizeof(struct audit_reply),
-> @@ -585,7 +587,7 @@ static void audit_send_reply(__u32 portid, int seq, int type, int done,
->  	if (!skb)
->  		goto out;
->  
-> -	reply->net = get_net(current->nsproxy->net_ns);
-> +	reply->net = get_net(net);
->  	reply->portid = portid;
->  	reply->skb = skb;
->  
-> @@ -675,8 +677,7 @@ static int audit_get_feature(struct sk_buff *skb)
->  
->  	seq = nlmsg_hdr(skb)->nlmsg_seq;
->  
-> -	audit_send_reply(NETLINK_CB(skb).portid, seq, AUDIT_GET, 0, 0,
-> -			 &af, sizeof(af));
-> +	audit_send_reply(skb, seq, AUDIT_GET, 0, 0, &af, sizeof(af));
->  
->  	return 0;
->  }
-> @@ -796,8 +797,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  		s.backlog		= skb_queue_len(&audit_skb_queue);
->  		s.version		= AUDIT_VERSION_LATEST;
->  		s.backlog_wait_time	= audit_backlog_wait_time;
-> -		audit_send_reply(NETLINK_CB(skb).portid, seq, AUDIT_GET, 0, 0,
-> -				 &s, sizeof(s));
-> +		audit_send_reply(skb, seq, AUDIT_GET, 0, 0, &s, sizeof(s));
->  		break;
->  	}
->  	case AUDIT_SET: {
-> @@ -907,7 +907,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  					   seq, data, nlmsg_len(nlh));
->  		break;
->  	case AUDIT_LIST_RULES:
-> -		err = audit_list_rules_send(NETLINK_CB(skb).portid, seq);
-> +		err = audit_list_rules_send(skb, seq);
->  		break;
->  	case AUDIT_TRIM:
->  		audit_trim_trees();
-> @@ -972,8 +972,8 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  			memcpy(sig_data->ctx, ctx, len);
->  			security_release_secctx(ctx, len);
->  		}
-> -		audit_send_reply(NETLINK_CB(skb).portid, seq, AUDIT_SIGNAL_INFO,
-> -				0, 0, sig_data, sizeof(*sig_data) + len);
-> +		audit_send_reply(skb, seq, AUDIT_SIGNAL_INFO, 0, 0,
-> +				 sig_data, sizeof(*sig_data) + len);
->  		kfree(sig_data);
->  		break;
->  	case AUDIT_TTY_GET: {
-> @@ -985,8 +985,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  		s.log_passwd = tsk->signal->audit_tty_log_passwd;
->  		spin_unlock(&tsk->sighand->siglock);
->  
-> -		audit_send_reply(NETLINK_CB(skb).portid, seq,
-> -				 AUDIT_TTY_GET, 0, 0, &s, sizeof(s));
-> +		audit_send_reply(skb, seq, AUDIT_TTY_GET, 0, 0, &s, sizeof(s));
->  		break;
->  	}
->  	case AUDIT_TTY_SET: {
-> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-> index a5e3d73d73e4..e8d1c7c515d7 100644
-> --- a/kernel/auditfilter.c
-> +++ b/kernel/auditfilter.c
-> @@ -30,6 +30,7 @@
->  #include <linux/slab.h>
->  #include <linux/security.h>
->  #include <net/net_namespace.h>
-> +#include <net/sock.h>
->  #include "audit.h"
->  
->  /*
-> @@ -1069,8 +1070,10 @@ int audit_rule_change(int type, __u32 portid, int seq, void *data,
->   * @portid: target portid for netlink audit messages
->   * @seq: netlink audit message sequence (serial) number
->   */
-> -int audit_list_rules_send(__u32 portid, int seq)
-> +int audit_list_rules_send(struct sk_buff *request_skb, int seq)
->  {
-> +	u32 portid = NETLINK_CB(request_skb).portid;
-> +	struct net *net = sock_net(NETLINK_CB(request_skb).sk);
->  	struct task_struct *tsk;
->  	struct audit_netlink_list *dest;
->  	int err = 0;
-> @@ -1084,7 +1087,7 @@ int audit_list_rules_send(__u32 portid, int seq)
->  	dest = kmalloc(sizeof(struct audit_netlink_list), GFP_KERNEL);
->  	if (!dest)
->  		return -ENOMEM;
-> -	dest->net = get_net(current->nsproxy->net_ns);
-> +	dest->net = get_net(net);
->  	dest->portid = portid;
->  	skb_queue_head_init(&dest->q);
->  
-> -- 
-> 1.7.5.4
-> 
+Not sure what the lowest pain route will be...
+>
+>> ---
+>>   MAINTAINERS                              |   6 -
+>>   drivers/input/touchscreen/Kconfig        |  12 --
+>>   drivers/input/touchscreen/Makefile       |   1 -
+>>   drivers/input/touchscreen/atmel_tsadcc.c | 358 -------------------------------
+>>   4 files changed, 377 deletions(-)
+>>   delete mode 100644 drivers/input/touchscreen/atmel_tsadcc.c
+>>
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index c6d0e93eff62..134dd63dfa17 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -1591,12 +1591,6 @@ S:	Supported
+>>   F:	drivers/misc/atmel_tclib.c
+>>   F:	drivers/clocksource/tcb_clksrc.c
+>>
+>> -ATMEL TSADCC DRIVER
+>> -M:	Josh Wu <josh.wu@atmel.com>
+>> -L:	linux-input@vger.kernel.org
+>> -S:	Supported
+>> -F:	drivers/input/touchscreen/atmel_tsadcc.c
+>> -
+>>   ATMEL USBA UDC DRIVER
+>>   M:	Nicolas Ferre <nicolas.ferre@atmel.com>
+>>   L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>> diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+>> index 07e9e82029d1..4090f69e78af 100644
+>> --- a/drivers/input/touchscreen/Kconfig
+>> +++ b/drivers/input/touchscreen/Kconfig
+>> @@ -559,18 +559,6 @@ config TOUCHSCREEN_TI_AM335X_TSC
+>>   	  To compile this driver as a module, choose M here: the
+>>   	  module will be called ti_am335x_tsc.
+>>
+>> -config TOUCHSCREEN_ATMEL_TSADCC
+>> -	tristate "Atmel Touchscreen Interface"
+>> -	depends on ARCH_AT91
+>> -	help
+>> -	  Say Y here if you have a 4-wire touchscreen connected to the
+>> -          ADC Controller on your Atmel SoC.
+>> -
+>> -	  If unsure, say N.
+>> -
+>> -	  To compile this driver as a module, choose M here: the
+>> -	  module will be called atmel_tsadcc.
+>> -
+>>   config TOUCHSCREEN_UCB1400
+>>   	tristate "Philips UCB1400 touchscreen"
+>>   	depends on AC97_BUS
+>> diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+>> index 62801f213346..f326a8290593 100644
+>> --- a/drivers/input/touchscreen/Makefile
+>> +++ b/drivers/input/touchscreen/Makefile
+>> @@ -13,7 +13,6 @@ obj-$(CONFIG_TOUCHSCREEN_AD7879_I2C)	+= ad7879-i2c.o
+>>   obj-$(CONFIG_TOUCHSCREEN_AD7879_SPI)	+= ad7879-spi.o
+>>   obj-$(CONFIG_TOUCHSCREEN_ADS7846)	+= ads7846.o
+>>   obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXT)	+= atmel_mxt_ts.o
+>> -obj-$(CONFIG_TOUCHSCREEN_ATMEL_TSADCC)	+= atmel_tsadcc.o
+>>   obj-$(CONFIG_TOUCHSCREEN_AUO_PIXCIR)	+= auo-pixcir-ts.o
+>>   obj-$(CONFIG_TOUCHSCREEN_BU21013)	+= bu21013_ts.o
+>>   obj-$(CONFIG_TOUCHSCREEN_CY8CTMG110)	+= cy8ctmg110_ts.o
+>> diff --git a/drivers/input/touchscreen/atmel_tsadcc.c b/drivers/input/touchscreen/atmel_tsadcc.c
+>> deleted file mode 100644
+>> index a7c9d6967d1e..000000000000
+>> --- a/drivers/input/touchscreen/atmel_tsadcc.c
+>> +++ /dev/null
+>> @@ -1,358 +0,0 @@
+>> -/*
+>> - *  Atmel Touch Screen Driver
+>> - *
+>> - *  Copyright (c) 2008 ATMEL
+>> - *  Copyright (c) 2008 Dan Liang
+>> - *  Copyright (c) 2008 TimeSys Corporation
+>> - *  Copyright (c) 2008 Justin Waters
+>> - *
+>> - *  Based on touchscreen code from Atmel Corporation.
+>> - *
+>> - *  This program is free software; you can redistribute it and/or modify
+>> - *  it under the terms of the GNU General Public License version 2 as
+>> - *  published by the Free Software Foundation.
+>> - */
+>> -#include <linux/err.h>
+>> -#include <linux/kernel.h>
+>> -#include <linux/module.h>
+>> -#include <linux/input.h>
+>> -#include <linux/slab.h>
+>> -#include <linux/interrupt.h>
+>> -#include <linux/clk.h>
+>> -#include <linux/platform_device.h>
+>> -#include <linux/io.h>
+>> -#include <linux/platform_data/atmel.h>
+>> -#include <mach/cpu.h>
+>> -
+>> -/* Register definitions based on AT91SAM9RL64 preliminary draft datasheet */
+>> -
+>> -#define ATMEL_TSADCC_CR		0x00	/* Control register */
+>> -#define   ATMEL_TSADCC_SWRST	(1 << 0)	/* Software Reset*/
+>> -#define	  ATMEL_TSADCC_START	(1 << 1)	/* Start conversion */
+>> -
+>> -#define ATMEL_TSADCC_MR		0x04	/* Mode register */
+>> -#define	  ATMEL_TSADCC_TSAMOD	(3    <<  0)	/* ADC mode */
+>> -#define	    ATMEL_TSADCC_TSAMOD_ADC_ONLY_MODE	(0x0)	/* ADC Mode */
+>> -#define	    ATMEL_TSADCC_TSAMOD_TS_ONLY_MODE	(0x1)	/* Touch Screen Only Mode */
+>> -#define	  ATMEL_TSADCC_LOWRES	(1    <<  4)	/* Resolution selection */
+>> -#define	  ATMEL_TSADCC_SLEEP	(1    <<  5)	/* Sleep mode */
+>> -#define	  ATMEL_TSADCC_PENDET	(1    <<  6)	/* Pen Detect selection */
+>> -#define	  ATMEL_TSADCC_PRES	(1    <<  7)	/* Pressure Measurement Selection */
+>> -#define	  ATMEL_TSADCC_PRESCAL	(0x3f <<  8)	/* Prescalar Rate Selection */
+>> -#define	  ATMEL_TSADCC_EPRESCAL	(0xff <<  8)	/* Prescalar Rate Selection (Extended) */
+>> -#define	  ATMEL_TSADCC_STARTUP	(0x7f << 16)	/* Start Up time */
+>> -#define	  ATMEL_TSADCC_SHTIM	(0xf  << 24)	/* Sample & Hold time */
+>> -#define	  ATMEL_TSADCC_PENDBC	(0xf  << 28)	/* Pen Detect debouncing time */
+>> -
+>> -#define ATMEL_TSADCC_TRGR	0x08	/* Trigger register */
+>> -#define	  ATMEL_TSADCC_TRGMOD	(7      <<  0)	/* Trigger mode */
+>> -#define	    ATMEL_TSADCC_TRGMOD_NONE		(0 << 0)
+>> -#define     ATMEL_TSADCC_TRGMOD_EXT_RISING	(1 << 0)
+>> -#define     ATMEL_TSADCC_TRGMOD_EXT_FALLING	(2 << 0)
+>> -#define     ATMEL_TSADCC_TRGMOD_EXT_ANY		(3 << 0)
+>> -#define     ATMEL_TSADCC_TRGMOD_PENDET		(4 << 0)
+>> -#define     ATMEL_TSADCC_TRGMOD_PERIOD		(5 << 0)
+>> -#define     ATMEL_TSADCC_TRGMOD_CONTINUOUS	(6 << 0)
+>> -#define   ATMEL_TSADCC_TRGPER	(0xffff << 16)	/* Trigger period */
+>> -
+>> -#define ATMEL_TSADCC_TSR	0x0C	/* Touch Screen register */
+>> -#define	  ATMEL_TSADCC_TSFREQ	(0xf <<  0)	/* TS Frequency in Interleaved mode */
+>> -#define	  ATMEL_TSADCC_TSSHTIM	(0xf << 24)	/* Sample & Hold time */
+>> -
+>> -#define ATMEL_TSADCC_CHER	0x10	/* Channel Enable register */
+>> -#define ATMEL_TSADCC_CHDR	0x14	/* Channel Disable register */
+>> -#define ATMEL_TSADCC_CHSR	0x18	/* Channel Status register */
+>> -#define	  ATMEL_TSADCC_CH(n)	(1 << (n))	/* Channel number */
+>> -
+>> -#define ATMEL_TSADCC_SR		0x1C	/* Status register */
+>> -#define	  ATMEL_TSADCC_EOC(n)	(1 << ((n)+0))	/* End of conversion for channel N */
+>> -#define	  ATMEL_TSADCC_OVRE(n)	(1 << ((n)+8))	/* Overrun error for channel N */
+>> -#define	  ATMEL_TSADCC_DRDY	(1 << 16)	/* Data Ready */
+>> -#define	  ATMEL_TSADCC_GOVRE	(1 << 17)	/* General Overrun Error */
+>> -#define	  ATMEL_TSADCC_ENDRX	(1 << 18)	/* End of RX Buffer */
+>> -#define	  ATMEL_TSADCC_RXBUFF	(1 << 19)	/* TX Buffer full */
+>> -#define	  ATMEL_TSADCC_PENCNT	(1 << 20)	/* Pen contact */
+>> -#define	  ATMEL_TSADCC_NOCNT	(1 << 21)	/* No contact */
+>> -
+>> -#define ATMEL_TSADCC_LCDR	0x20	/* Last Converted Data register */
+>> -#define	  ATMEL_TSADCC_DATA	(0x3ff << 0)	/* Channel data */
+>> -
+>> -#define ATMEL_TSADCC_IER	0x24	/* Interrupt Enable register */
+>> -#define ATMEL_TSADCC_IDR	0x28	/* Interrupt Disable register */
+>> -#define ATMEL_TSADCC_IMR	0x2C	/* Interrupt Mask register */
+>> -#define ATMEL_TSADCC_CDR0	0x30	/* Channel Data 0 */
+>> -#define ATMEL_TSADCC_CDR1	0x34	/* Channel Data 1 */
+>> -#define ATMEL_TSADCC_CDR2	0x38	/* Channel Data 2 */
+>> -#define ATMEL_TSADCC_CDR3	0x3C	/* Channel Data 3 */
+>> -#define ATMEL_TSADCC_CDR4	0x40	/* Channel Data 4 */
+>> -#define ATMEL_TSADCC_CDR5	0x44	/* Channel Data 5 */
+>> -
+>> -#define ATMEL_TSADCC_XPOS	0x50
+>> -#define ATMEL_TSADCC_Z1DAT	0x54
+>> -#define ATMEL_TSADCC_Z2DAT	0x58
+>> -
+>> -#define PRESCALER_VAL(x)	((x) >> 8)
+>> -
+>> -#define ADC_DEFAULT_CLOCK	100000
+>> -
+>> -struct atmel_tsadcc {
+>> -	struct input_dev	*input;
+>> -	char			phys[32];
+>> -	struct clk		*clk;
+>> -	int			irq;
+>> -	unsigned int		prev_absx;
+>> -	unsigned int		prev_absy;
+>> -	unsigned char		bufferedmeasure;
+>> -};
+>> -
+>> -static void __iomem		*tsc_base;
+>> -
+>> -#define atmel_tsadcc_read(reg)		__raw_readl(tsc_base + (reg))
+>> -#define atmel_tsadcc_write(reg, val)	__raw_writel((val), tsc_base + (reg))
+>> -
+>> -static irqreturn_t atmel_tsadcc_interrupt(int irq, void *dev)
+>> -{
+>> -	struct atmel_tsadcc	*ts_dev = (struct atmel_tsadcc *)dev;
+>> -	struct input_dev	*input_dev = ts_dev->input;
+>> -
+>> -	unsigned int status;
+>> -	unsigned int reg;
+>> -
+>> -	status = atmel_tsadcc_read(ATMEL_TSADCC_SR);
+>> -	status &= atmel_tsadcc_read(ATMEL_TSADCC_IMR);
+>> -
+>> -	if (status & ATMEL_TSADCC_NOCNT) {
+>> -		/* Contact lost */
+>> -		reg = atmel_tsadcc_read(ATMEL_TSADCC_MR) | ATMEL_TSADCC_PENDBC;
+>> -
+>> -		atmel_tsadcc_write(ATMEL_TSADCC_MR, reg);
+>> -		atmel_tsadcc_write(ATMEL_TSADCC_TRGR, ATMEL_TSADCC_TRGMOD_NONE);
+>> -		atmel_tsadcc_write(ATMEL_TSADCC_IDR,
+>> -				   ATMEL_TSADCC_EOC(3) | ATMEL_TSADCC_NOCNT);
+>> -		atmel_tsadcc_write(ATMEL_TSADCC_IER, ATMEL_TSADCC_PENCNT);
+>> -
+>> -		input_report_key(input_dev, BTN_TOUCH, 0);
+>> -		ts_dev->bufferedmeasure = 0;
+>> -		input_sync(input_dev);
+>> -
+>> -	} else if (status & ATMEL_TSADCC_PENCNT) {
+>> -		/* Pen detected */
+>> -		reg = atmel_tsadcc_read(ATMEL_TSADCC_MR);
+>> -		reg &= ~ATMEL_TSADCC_PENDBC;
+>> -
+>> -		atmel_tsadcc_write(ATMEL_TSADCC_IDR, ATMEL_TSADCC_PENCNT);
+>> -		atmel_tsadcc_write(ATMEL_TSADCC_MR, reg);
+>> -		atmel_tsadcc_write(ATMEL_TSADCC_IER,
+>> -				   ATMEL_TSADCC_EOC(3) | ATMEL_TSADCC_NOCNT);
+>> -		atmel_tsadcc_write(ATMEL_TSADCC_TRGR,
+>> -				   ATMEL_TSADCC_TRGMOD_PERIOD | (0x0FFF << 16));
+>> -
+>> -	} else if (status & ATMEL_TSADCC_EOC(3)) {
+>> -		/* Conversion finished */
+>> -
+>> -		if (ts_dev->bufferedmeasure) {
+>> -			/* Last measurement is always discarded, since it can
+>> -			 * be erroneous.
+>> -			 * Always report previous measurement */
+>> -			input_report_abs(input_dev, ABS_X, ts_dev->prev_absx);
+>> -			input_report_abs(input_dev, ABS_Y, ts_dev->prev_absy);
+>> -			input_report_key(input_dev, BTN_TOUCH, 1);
+>> -			input_sync(input_dev);
+>> -		} else
+>> -			ts_dev->bufferedmeasure = 1;
+>> -
+>> -		/* Now make new measurement */
+>> -		ts_dev->prev_absx = atmel_tsadcc_read(ATMEL_TSADCC_CDR3) << 10;
+>> -		ts_dev->prev_absx /= atmel_tsadcc_read(ATMEL_TSADCC_CDR2);
+>> -
+>> -		ts_dev->prev_absy = atmel_tsadcc_read(ATMEL_TSADCC_CDR1) << 10;
+>> -		ts_dev->prev_absy /= atmel_tsadcc_read(ATMEL_TSADCC_CDR0);
+>> -	}
+>> -
+>> -	return IRQ_HANDLED;
+>> -}
+>> -
+>> -/*
+>> - * The functions for inserting/removing us as a module.
+>> - */
+>> -
+>> -static int atmel_tsadcc_probe(struct platform_device *pdev)
+>> -{
+>> -	struct atmel_tsadcc	*ts_dev;
+>> -	struct input_dev	*input_dev;
+>> -	struct resource		*res;
+>> -	struct at91_tsadcc_data *pdata = dev_get_platdata(&pdev->dev);
+>> -	int		err;
+>> -	unsigned int	prsc;
+>> -	unsigned int	reg;
+>> -
+>> -	if (!pdata)
+>> -		return -EINVAL;
+>> -
+>> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> -	if (!res) {
+>> -		dev_err(&pdev->dev, "no mmio resource defined.\n");
+>> -		return -ENXIO;
+>> -	}
+>> -
+>> -	/* Allocate memory for device */
+>> -	ts_dev = kzalloc(sizeof(struct atmel_tsadcc), GFP_KERNEL);
+>> -	if (!ts_dev) {
+>> -		dev_err(&pdev->dev, "failed to allocate memory.\n");
+>> -		return -ENOMEM;
+>> -	}
+>> -	platform_set_drvdata(pdev, ts_dev);
+>> -
+>> -	input_dev = input_allocate_device();
+>> -	if (!input_dev) {
+>> -		dev_err(&pdev->dev, "failed to allocate input device.\n");
+>> -		err = -EBUSY;
+>> -		goto err_free_mem;
+>> -	}
+>> -
+>> -	ts_dev->irq = platform_get_irq(pdev, 0);
+>> -	if (ts_dev->irq < 0) {
+>> -		dev_err(&pdev->dev, "no irq ID is designated.\n");
+>> -		err = -ENODEV;
+>> -		goto err_free_dev;
+>> -	}
+>> -
+>> -	if (!request_mem_region(res->start, resource_size(res),
+>> -				"atmel tsadcc regs")) {
+>> -		dev_err(&pdev->dev, "resources is unavailable.\n");
+>> -		err = -EBUSY;
+>> -		goto err_free_dev;
+>> -	}
+>> -
+>> -	tsc_base = ioremap(res->start, resource_size(res));
+>> -	if (!tsc_base) {
+>> -		dev_err(&pdev->dev, "failed to map registers.\n");
+>> -		err = -ENOMEM;
+>> -		goto err_release_mem;
+>> -	}
+>> -
+>> -	err = request_irq(ts_dev->irq, atmel_tsadcc_interrupt, 0,
+>> -			pdev->dev.driver->name, ts_dev);
+>> -	if (err) {
+>> -		dev_err(&pdev->dev, "failed to allocate irq.\n");
+>> -		goto err_unmap_regs;
+>> -	}
+>> -
+>> -	ts_dev->clk = clk_get(&pdev->dev, "tsc_clk");
+>> -	if (IS_ERR(ts_dev->clk)) {
+>> -		dev_err(&pdev->dev, "failed to get ts_clk\n");
+>> -		err = PTR_ERR(ts_dev->clk);
+>> -		goto err_free_irq;
+>> -	}
+>> -
+>> -	ts_dev->input = input_dev;
+>> -	ts_dev->bufferedmeasure = 0;
+>> -
+>> -	snprintf(ts_dev->phys, sizeof(ts_dev->phys),
+>> -		 "%s/input0", dev_name(&pdev->dev));
+>> -
+>> -	input_dev->name = "atmel touch screen controller";
+>> -	input_dev->phys = ts_dev->phys;
+>> -	input_dev->dev.parent = &pdev->dev;
+>> -
+>> -	__set_bit(EV_ABS, input_dev->evbit);
+>> -	input_set_abs_params(input_dev, ABS_X, 0, 0x3FF, 0, 0);
+>> -	input_set_abs_params(input_dev, ABS_Y, 0, 0x3FF, 0, 0);
+>> -
+>> -	input_set_capability(input_dev, EV_KEY, BTN_TOUCH);
+>> -
+>> -	/* clk_enable() always returns 0, no need to check it */
+>> -	clk_enable(ts_dev->clk);
+>> -
+>> -	prsc = clk_get_rate(ts_dev->clk);
+>> -	dev_info(&pdev->dev, "Master clock is set at: %d Hz\n", prsc);
+>> -
+>> -	if (!pdata->adc_clock)
+>> -		pdata->adc_clock = ADC_DEFAULT_CLOCK;
+>> -
+>> -	prsc = (prsc / (2 * pdata->adc_clock)) - 1;
+>> -
+>> -	/* saturate if this value is too high */
+>> -	if (cpu_is_at91sam9rl()) {
+>> -		if (prsc > PRESCALER_VAL(ATMEL_TSADCC_PRESCAL))
+>> -			prsc = PRESCALER_VAL(ATMEL_TSADCC_PRESCAL);
+>> -	} else {
+>> -		if (prsc > PRESCALER_VAL(ATMEL_TSADCC_EPRESCAL))
+>> -			prsc = PRESCALER_VAL(ATMEL_TSADCC_EPRESCAL);
+>> -	}
+>> -
+>> -	dev_info(&pdev->dev, "Prescaler is set at: %d\n", prsc);
+>> -
+>> -	reg = ATMEL_TSADCC_TSAMOD_TS_ONLY_MODE		|
+>> -		((0x00 << 5) & ATMEL_TSADCC_SLEEP)	|	/* Normal Mode */
+>> -		((0x01 << 6) & ATMEL_TSADCC_PENDET)	|	/* Enable Pen Detect */
+>> -		(prsc << 8)				|
+>> -		((0x26 << 16) & ATMEL_TSADCC_STARTUP)	|
+>> -		((pdata->pendet_debounce << 28) & ATMEL_TSADCC_PENDBC);
+>> -
+>> -	atmel_tsadcc_write(ATMEL_TSADCC_CR, ATMEL_TSADCC_SWRST);
+>> -	atmel_tsadcc_write(ATMEL_TSADCC_MR, reg);
+>> -	atmel_tsadcc_write(ATMEL_TSADCC_TRGR, ATMEL_TSADCC_TRGMOD_NONE);
+>> -	atmel_tsadcc_write(ATMEL_TSADCC_TSR,
+>> -		(pdata->ts_sample_hold_time << 24) & ATMEL_TSADCC_TSSHTIM);
+>> -
+>> -	atmel_tsadcc_read(ATMEL_TSADCC_SR);
+>> -	atmel_tsadcc_write(ATMEL_TSADCC_IER, ATMEL_TSADCC_PENCNT);
+>> -
+>> -	/* All went ok, so register to the input system */
+>> -	err = input_register_device(input_dev);
+>> -	if (err)
+>> -		goto err_fail;
+>> -
+>> -	return 0;
+>> -
+>> -err_fail:
+>> -	clk_disable(ts_dev->clk);
+>> -	clk_put(ts_dev->clk);
+>> -err_free_irq:
+>> -	free_irq(ts_dev->irq, ts_dev);
+>> -err_unmap_regs:
+>> -	iounmap(tsc_base);
+>> -err_release_mem:
+>> -	release_mem_region(res->start, resource_size(res));
+>> -err_free_dev:
+>> -	input_free_device(input_dev);
+>> -err_free_mem:
+>> -	kfree(ts_dev);
+>> -	return err;
+>> -}
+>> -
+>> -static int atmel_tsadcc_remove(struct platform_device *pdev)
+>> -{
+>> -	struct atmel_tsadcc *ts_dev = platform_get_drvdata(pdev);
+>> -	struct resource *res;
+>> -
+>> -	free_irq(ts_dev->irq, ts_dev);
+>> -
+>> -	input_unregister_device(ts_dev->input);
+>> -
+>> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> -	iounmap(tsc_base);
+>> -	release_mem_region(res->start, resource_size(res));
+>> -
+>> -	clk_disable(ts_dev->clk);
+>> -	clk_put(ts_dev->clk);
+>> -
+>> -	kfree(ts_dev);
+>> -
+>> -	return 0;
+>> -}
+>> -
+>> -static struct platform_driver atmel_tsadcc_driver = {
+>> -	.probe		= atmel_tsadcc_probe,
+>> -	.remove		= atmel_tsadcc_remove,
+>> -	.driver		= {
+>> -		.name	= "atmel_tsadcc",
+>> -	},
+>> -};
+>> -module_platform_driver(atmel_tsadcc_driver);
+>> -
+>> -MODULE_LICENSE("GPL");
+>> -MODULE_DESCRIPTION("Atmel TouchScreen Driver");
+>> -MODULE_AUTHOR("Dan Liang <dan.liang@atmel.com>");
+>> -
+>> --
+>> 1.8.3.2
+>>
+>
 
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
