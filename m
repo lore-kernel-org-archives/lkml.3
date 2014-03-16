@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaCPPIt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 11:08:49 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:53514 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaCPPIr (ORCPT
+	id S1753680AbaCPPNo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 11:13:44 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:53923 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333AbaCPPNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 11:08:47 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>, NeilBrown <neilb@suse.de>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Bruce Fields <bfields@fieldses.org>, linux-man@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>
-Subject: Re: name_to_handle_at() and persistent filesystem IDs
-In-Reply-To: <CAHO5Pa0Y8r1DxHTc0YN-4geoLJ3JYwHT99EcuaGL6k++ek+aEQ@mail.gmail.com>
-References: <CAHO5Pa0Y8r1DxHTc0YN-4geoLJ3JYwHT99EcuaGL6k++ek+aEQ@mail.gmail.com>
-User-Agent: Notmuch/0.17+7~gc734dd75344e (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Sun, 16 Mar 2014 20:38:32 +0530
-Message-ID: <8761netc3z.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031615-9264-0000-0000-000005A5640C
+	Sun, 16 Mar 2014 11:13:42 -0400
+X-Nat-Received: from [202.181.97.72]:58555 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1394982821.27850
+To: oleg@redhat.com, rientjes@google.com, akpm@linux-foundation.org
+Cc: joseph.salisbury@canonical.com, torvalds@linux-foundation.org,
+        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: Re: [v3.13][v3.14][Regression] kthread: make kthread_create() killable
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <53236AA2.7030105@canonical.com>
+	<201403150943.BIH30251.FOQLOOtFJHSMVF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201403150943.BIH30251.FOQLOOtFJHSMVF@I-love.SAKURA.ne.jp>
+Message-Id: <201403170013.GJF86930.FtVOOQOHLFFMSJ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 17 Mar 2014 00:13:41 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 16032014 #7529779, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Kerrisk <mtk.manpages@gmail.com> writes:
+Hello.
 
-> Hello Aneesh,
->
-> I'm currently working on a man page for name_to_handle_at() and
-> open_by_handle_at(), and I have a question relating to a point that
-> probably needs to be covered in the man page.
->
-> Back in July 2010, in this thread:
-> http://thread.gmane.org/gmane.linux.file-systems/41782/focus=43131
-> you said:
->
-> [[
-> mount id should not be looked at as a persistent identifier. It should
-> be used to derive a persistent identifier from /proc/self/mountinfo. The
-> persistent identifier could be the combination of device properties,
-> file system properties or the uuid which is going to be an optional
-> tag in /proc/self/mountinfo.
-> ]]
->
-> In the man page, I'd like to briefly describe how one derives such a
-> persistent ID from mountinfo. AFAICS, the optional UUID tag in
-> /proc/self/mountinfo has not come to pass. So, what then is the
-> recommended practice for deriving the persistent ID?
->
+Although the process who is sending SIGKILL to systemd-udevd is not
+identified yet, adding wait_for_completion_timeout() can solve this
+regression. Therefore, I'd like to propose this patch for 3.14-final
+and 3.13-stable.
 
-Anything that work for the application. mount_id will indicate which
-mount it is ie. from /proc/self/mountinfo
+Regards.
+----------
+>From c6562e5d774dd1f36724197dbcb8976cccfaab53 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Sun, 16 Mar 2014 22:44:23 +0900
+Subject: [PATCH] kthread: Do not leave kthread_create() immediately upon SIGKILL.
 
-30 20 8:1 / /boot rw,relatime - ext4 /dev/sda1 rw,data=ordered
+Commit 786235ee "kthread: make kthread_create() killable" changed to
+leave kthread_create() as soon as receiving SIGKILL. But this change
+caused boot failures if systemd-udevd received SIGKILL (probably due
+to timeout) while loading SCSI controller drivers using
+finit_module() [1].
 
-The value 30 helps us to figure out that we are looking at device
-/dev/sda1. With that we can derive the uuid using libblkid.  I am not sure we
-concluded anything really about how to identify an nfs mount. May be we
-can do that based on server and mount point details ?.But from the
-syscall point, what we return is mount_id, which gives a hint regarding
-which mount point we are talking about in /proc/self/mountinfo. From
-that information applications can use any method that work for them
-to derivce an unique identifier.
+Therefore, this patch changes kthread_create() to wait for 10 more
+seconds after receiving SIGKILL, unless chosen by the OOM killer,
+in order to give the kthreadd a chance to complete the request.
 
-I know that NFS ganesha use these syscall. May we can check with them
-what worked for them ? (Added to CC:)
- 
--aneesh
+  [1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
 
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: <stable@vger.kernel.org> [3.13+]
+---
+ kernel/kthread.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index b5ae3ee..52ae7dc 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -292,6 +292,17 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+ 	 * new kernel thread.
+ 	 */
+ 	if (unlikely(wait_for_completion_killable(&done))) {
++		int i = 0;
++
++		/*
++		 * I got SIGKILL, but wait for 10 more seconds for completion
++		 * unless chosen by the OOM killer. This delay is there as a
++		 * workaround for boot failure caused by SIGKILL upon device
++		 * driver initialization timeout.
++		 */
++		while (i++ < 10 && !test_tsk_thread_flag(current, TIF_MEMDIE))
++			if (wait_for_completion_timeout(&done, HZ))
++				goto ready;
+ 		/*
+ 		 * If I was SIGKILLed before kthreadd (or new kernel thread)
+ 		 * calls complete(), leave the cleanup of this structure to
+@@ -305,6 +316,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+ 		 */
+ 		wait_for_completion(&done);
+ 	}
++ready:
+ 	task = create->result;
+ 	if (!IS_ERR(task)) {
+ 		static const struct sched_param param = { .sched_priority = 0 };
+-- 
+1.7.1
