@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487AbaCPJty (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 05:49:54 -0400
-Received: from ms-10.1blu.de ([178.254.4.101]:49903 "EHLO ms-10.1blu.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751593AbaCPJtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 05:49:52 -0400
-X-Greylist: delayed 4201 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Mar 2014 05:49:52 EDT
-Message-ID: <1394959174.5764.4.camel@archlinux-laptop.fritz.box>
-Subject: Re: [PATCH V2] ATHEROS-ALX: Use dma_set_mask_and_coherent and fix a
- bug
-From: hahnjo <hahnjo@hahnjo.de>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: jcliburn@gmail.com, chris.snook@gmail.com, davem@davemloft.net,
-        johannes@sipsolutions.net, jg1.han@samsung.com, wangyijing@huawei.com,
-        sd@queasysnail.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Sun, 16 Mar 2014 09:39:34 +0100
-In-Reply-To: <1394926252-2269-1-git-send-email-peter.senna@gmail.com>
-References: <1394926252-2269-1-git-send-email-peter.senna@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Con-Id: 154395
-X-Con-U: 0-hahnjo
-X-Originating-IP: 93.201.36.185
+	id S1752042AbaCPKRJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 06:17:09 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:55298 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaCPKRH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 06:17:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130715091230.GA8786@amd.pavel.ucw.cz>
+References: <20110102103210.GA25662@core.coreip.homeip.net>
+ <20110102225741.GX5480@const.famille.thibault.fr> <20110112182702.GA9168@core.coreip.homeip.net>
+ <20111114040613.GA4992@type.famille.thibault.fr> <20121221003449.GA6999@type.youpi.perso.aquilenet.fr>
+ <20130713093552.GU8252@type> <20130715091230.GA8786@amd.pavel.ucw.cz>
+From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Date: Sun, 16 Mar 2014 11:16:25 +0100
+Message-ID: <CAHYPw2H94ej=FdqHAxXpyZt+34TwK1Qj7LWP_bMro-v3JREisg@mail.gmail.com>
+Subject: Re: [PATCH] Route kbd LEDs through the generic LEDs layer
+To: Pavel Machek <pavel@ucw.cz>,
+        Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, jslaby@suse.cz,
+        Richard Purdie <rpurdie@rpsys.net>,
+        LKML <linux-kernel@vger.kernel.org>, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 16.03.2014, 00:30 +0100 schrieb Peter Senna Tschudin:
->  1. For the 64 bits dma mask use dma_set_mask_and_coherent instead of
->  dma_set_mask and dma_set_coherent_mask.
-> 
->  2. For the 32 bits dma mask dma_set_coherent_mask is only called if
->  dma_set_mask fails, which is unusual. Assuming this as a bug, fixes
->  it by replacing calls to dma_set_mask and dma_set_coherent_mask by a
->  call to dma_set_mask_and_coherent.
->  
-Tested-by: Jonas Hahnfeld <hahnjo@hahnjo.de>
->  Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> ---
-> 
->  Tested by compilation only.
-> 
->  Change from V1: Updated commit message.
-> 
->  drivers/net/ethernet/atheros/alx/main.c | 14 ++++----------
->  1 file changed, 4 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
-> index 2e45f6e..380d249 100644
-> --- a/drivers/net/ethernet/atheros/alx/main.c
-> +++ b/drivers/net/ethernet/atheros/alx/main.c
-> @@ -1248,19 +1248,13 @@ static int alx_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
->  	 * shared register for the high 32 bits, so only a single, aligned,
->  	 * 4 GB physical address range can be used for descriptors.
->  	 */
-> -	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
-> -	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-> +	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
->  		dev_dbg(&pdev->dev, "DMA to 64-BIT addresses\n");
->  	} else {
-> -		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-> +		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
->  		if (err) {
-> -			err = dma_set_coherent_mask(&pdev->dev,
-> -						    DMA_BIT_MASK(32));
-> -			if (err) {
-> -				dev_err(&pdev->dev,
-> -					"No usable DMA config, aborting\n");
-> -				goto out_pci_disable;
-> -			}
-> +			dev_err(&pdev->dev, "No usable DMA config, aborting\n");
-> +			goto out_pci_disable;
->  		}
->  	}
->  
+2013-07-15 11:12 GMT+02:00 Pavel Machek <pavel@ucw.cz>:
+> Hi!
+>
+>> > > > > This permits to reassign keyboard LEDs to something else than keyboard "leds"
+>> > > > > state, by adding keyboard led and modifier triggers connected to a series
+>> > > > > of VT input LEDs, themselves connected to VT input triggers, which
+>> > > > > per-input device LEDs use by default.  Userland can thus easily change the LED
+>> > > > > behavior of (a priori) all input devices, or of particular input devices.
+>> > > >
+>> > > > Nice! Leds now have proper /sys interface.
+>> > > >
+>> > > > But... I boot up, switch from X to console, press capslock, and no
+>> > > > reaction anywhere.
+>> > >
+>> > > Is it working without the patch?  Console-setup for instance is known to
+>> > > have broken the capslock LED, which is precisely one of the reasons for
+>> > > this patch, which will provide console-setup with a way to bring back
+>> > > caps lock working properly.
+>> >
+>> > You are right, it was broken before.
+>>
+>> Ok. You then may want fix your setup by configuring your caps lock led
+>> the way console-setup will be supposed to do in the future:
+>>
+>> echo ctrlllock > /sys/class/leds/vt::capsl/trigger
+>
+> And this indeed makes capslock led work on console, again. Nice!
+>
+> Richard, could we get this applied for 3.12 or something? It makes
+> keyboard LEDs sane...
+>
+> Thanks,
+>                                                                         Pavel
+>
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
 
-No obvious problems noticed on my ASUS N56VZ.
+Hello, what happened with this patch? Is there any problem with accepting it?
 
+-- 
+Pali Rohár
+pali.rohar@gmail.com
