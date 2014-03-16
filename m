@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964769AbaCPBoW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 21:44:22 -0400
-Received: from ring0.de ([5.45.105.125]:43692 "EHLO ring0.de"
+	id S1161001AbaCPBo3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 21:44:29 -0400
+Received: from ring0.de ([5.45.105.125]:43717 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755901AbaCPBoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 21:44:19 -0400
+	id S1756424AbaCPBoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 21:44:25 -0400
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
@@ -21,9 +21,9 @@ Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
         Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
         Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv4 6/7] Documentation: DT: Document twl4030-madc binding
-Date: Sun, 16 Mar 2014 02:43:30 +0100
-Message-Id: <1394934211-21605-7-git-send-email-sre@debian.org>
+Subject: [PATCHv4 7/7] mfd: twl4030-madc: Move driver to drivers/iio/adc
+Date: Sun, 16 Mar 2014 02:43:31 +0100
+Message-Id: <1394934211-21605-8-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1394934211-21605-1-git-send-email-sre@debian.org>
 References: <1394934211-21605-1-git-send-email-sre@debian.org>
@@ -31,46 +31,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add devicetree binding documentation for twl4030-madc
-analog digital converter.
+This is a driver for an A/D converter, which belongs into
+drivers/iio/adc.
 
 Signed-off-by: Sebastian Reichel <sre@debian.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 Acked-by: Jonathan Cameron <jic23@kernel.org>
 ---
- .../devicetree/bindings/iio/adc/twl4030-madc.txt   | 24 ++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
+ drivers/iio/adc/Kconfig                 | 10 ++++++++++
+ drivers/iio/adc/Makefile                |  1 +
+ drivers/{mfd => iio/adc}/twl4030-madc.c |  0
+ drivers/mfd/Kconfig                     | 10 ----------
+ drivers/mfd/Makefile                    |  1 -
+ 5 files changed, 11 insertions(+), 11 deletions(-)
+ rename drivers/{mfd => iio/adc}/twl4030-madc.c (100%)
 
-diff --git a/Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt b/Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
-new file mode 100644
-index 0000000..6bdd214
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
-@@ -0,0 +1,24 @@
-+* TWL4030 Monitoring Analog to Digital Converter (MADC)
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index 2209f28..427f75c 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -183,6 +183,16 @@ config TI_AM335X_ADC
+ 	  Say yes here to build support for Texas Instruments ADC
+ 	  driver which is also a MFD client.
+ 
++config TWL4030_MADC
++	tristate "TWL4030 MADC (Monitoring A/D Converter)"
++	depends on TWL4030_CORE
++	help
++	This driver provides support for Triton TWL4030-MADC. The
++	driver supports both RT and SW conversion methods.
 +
-+The MADC subsystem in the TWL4030 consists of a 10-bit ADC
-+combined with a 16-input analog multiplexer.
++	This driver can also be built as a module. If so, the module will be
++	called twl4030-madc.
 +
-+Required properties:
-+  - compatible: Should contain "ti,twl4030-madc".
-+  - interrupts: IRQ line for the MADC submodule.
-+  - #io-channel-cells: Should be set to <1>.
-+
-+Optional properties:
-+  - ti,system-uses-second-madc-irq: boolean, set if the second madc irq register
-+				    should be used, which is intended to be used
-+				    by Co-Processors (e.g. a modem).
-+
-+Example:
-+
-+&twl {
-+	madc {
-+		compatible = "ti,twl4030-madc";
-+		interrupts = <3>;
-+		#io-channel-cells = <1>;
-+	};
-+};
+ config TWL6030_GPADC
+ 	tristate "TWL6030 GPADC (General Purpose A/D Converter) Support"
+ 	depends on TWL4030_CORE
+diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+index ba9a10a..9acf2df 100644
+--- a/drivers/iio/adc/Makefile
++++ b/drivers/iio/adc/Makefile
+@@ -20,5 +20,6 @@ obj-$(CONFIG_MCP3422) += mcp3422.o
+ obj-$(CONFIG_NAU7802) += nau7802.o
+ obj-$(CONFIG_TI_ADC081C) += ti-adc081c.o
+ obj-$(CONFIG_TI_AM335X_ADC) += ti_am335x_adc.o
++obj-$(CONFIG_TWL4030_MADC) += twl4030-madc.o
+ obj-$(CONFIG_TWL6030_GPADC) += twl6030-gpadc.o
+ obj-$(CONFIG_VIPERBOARD_ADC) += viperboard_adc.o
+diff --git a/drivers/mfd/twl4030-madc.c b/drivers/iio/adc/twl4030-madc.c
+similarity index 100%
+rename from drivers/mfd/twl4030-madc.c
+rename to drivers/iio/adc/twl4030-madc.c
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 49bb445..23a8a51 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -935,16 +935,6 @@ config TWL4030_CORE
+ 	  high speed USB OTG transceiver, an audio codec (on most
+ 	  versions) and many other features.
+ 
+-config TWL4030_MADC
+-	tristate "TI TWL4030 MADC"
+-	depends on TWL4030_CORE
+-	help
+-	This driver provides support for triton TWL4030-MADC. The
+-	driver supports both RT and SW conversion methods.
+-
+-	This driver can be built as a module. If so it will be
+-	named twl4030-madc
+-
+ config TWL4030_POWER
+ 	bool "TI TWL4030 power resources"
+ 	depends on TWL4030_CORE && ARM
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 5aea5ef..c8eb0bc 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -71,7 +71,6 @@ obj-$(CONFIG_MFD_TPS80031)	+= tps80031.o
+ obj-$(CONFIG_MENELAUS)		+= menelaus.o
+ 
+ obj-$(CONFIG_TWL4030_CORE)	+= twl-core.o twl4030-irq.o twl6030-irq.o
+-obj-$(CONFIG_TWL4030_MADC)      += twl4030-madc.o
+ obj-$(CONFIG_TWL4030_POWER)    += twl4030-power.o
+ obj-$(CONFIG_MFD_TWL4030_AUDIO)	+= twl4030-audio.o
+ obj-$(CONFIG_TWL6040_CORE)	+= twl6040.o
 -- 
 1.9.0
 
