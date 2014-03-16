@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175AbaCPVxv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 17:53:51 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:44346 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090AbaCPVxt (ORCPT
+	id S1755917AbaCPWTo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 18:19:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23682 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755053AbaCPWTn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 17:53:49 -0400
+	Sun, 16 Mar 2014 18:19:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,666,1389772800"; 
+   d="scan'208";a="493234912"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Joe Perches <joe@perches.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc-next 2/5] mei: use cl_dbg where appropriate
+Thread-Topic: [char-misc-next 2/5] mei: use cl_dbg where appropriate
+Thread-Index: AQHPQTXgCJryxSXUv0uyuYOpihQ3QZrkNFgw
+Date: Sun, 16 Mar 2014 22:19:39 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AFA02E5@HASMSX106.ger.corp.intel.com>
+References: <1394973358-21690-1-git-send-email-tomas.winkler@intel.com>
+	 <1394973358-21690-3-git-send-email-tomas.winkler@intel.com>
+ <1394987781.5689.23.camel@joe-AO722>
+In-Reply-To: <1394987781.5689.23.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1394997429.15764.116.camel@deadeye.wl.decadent.org.uk>
-References: <1394990490-1076-1-git-send-email-dh.herrmann@gmail.com>
-	<1394990490-1076-2-git-send-email-dh.herrmann@gmail.com>
-	<1394997429.15764.116.camel@deadeye.wl.decadent.org.uk>
-Date: Sun, 16 Mar 2014 22:53:48 +0100
-Message-ID: <CANq1E4R8WAWu5_V+_D_8e+u0hmhayi4Ueh7pDwcbvGwp=KTRBw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] net: add name_assign_type netdev attribute
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: netdev <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Tom Gundersen <teg@jklm.no>, Johannes berg <johannes@sipsolutions.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+> 
+> On Sun, 2014-03-16 at 14:35 +0200, Tomas Winkler wrote:
+> > use cl_dbg for debug log messages in cl context
+> 
+> I think all the uses of cl_dbg and cl_err are odd.
+> 
+> from: client.h
+> 
+> #define cl_dbg(dev, cl, format, arg...) \
+> 	dev_dbg(&(dev)->pdev->dev, MEI_CL_FMT format, MEI_CL_PRM(cl),
+> ##arg)
+> 
+> #define cl_err(dev, cl, format, arg...) \
+> 	dev_err(&(dev)->pdev->dev, MEI_CL_FMT format, MEI_CL_PRM(cl), ##arg)
+> 
+> dev is always passed separately from cl but
+> dev is set like:
+> 
+> 	struct mei_device *dev;
+> []
+> 	dev = cl->dev;
+> 
+> So I think these should be converted to:
+> 
+> #define cl_dbg(cl, format, ...) \
+> 	dev_dbg(&(cl)->dev)->pdev->dev, MEI_CL_FMT format, MEI_CL_PRM(cl),
+> ##__VA_ARGS__)
+> 
+> and the uses from (as an example):
+> 
+> client.c:942:			cl_dbg(dev, cl, "Waking up reading client!\n");
+> 
+> to
+> 
+> client.c:942:			cl_dbg(cl, "Waking up reading client!\n");
+> 
+> This can also remove some used once declarations of dev
 
-On Sun, Mar 16, 2014 at 8:17 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Sun, 2014-03-16 at 18:21 +0100, David Herrmann wrote:
-> [...]
->> --- a/include/linux/netdevice.h
->> +++ b/include/linux/netdevice.h
->> @@ -74,6 +74,11 @@ void netdev_set_default_ethtool_ops(struct net_device *dev,
->>  #define NET_RX_SUCCESS               0       /* keep 'em coming, baby */
->>  #define NET_RX_DROP          1       /* packet dropped */
->>
->> +/* interface name assignment types */
->> +#define NET_NAME_ENUM                0       /* enumerated by kernel (default) */
->> +#define NET_NAME_USER                1       /* provided by user-space */
->> +#define NET_NAME_RENAMED     2       /* renamed by user-space */
-> [...]
->
-> I think these definitions should be put in a UAPI header.  Even if the
-> names don't end up being used by userland, that would make it clear that
-> the numbers are a stable ABI.
+Yes, I'm aware of this, at the time I've preferred consistently passing dev as a first argument. 
+It can be changed I just  personally  don't feel some big gain.
 
-I tried to follow addr_assign_type as closely as possible. The
-NET_ADDR_* constants are only defined internally either. I am fine
-with exporting the constants, just want to make sure there's no reason
-to hide them that I'm not aware of.
+Tomas
 
-Thanks
-David
+
+
