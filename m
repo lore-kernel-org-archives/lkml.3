@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651AbaCPMh2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 08:37:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60465 "EHLO mga01.intel.com"
+	id S1753429AbaCPMh1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 08:37:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47134 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753119AbaCPMhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 08:37:20 -0400
+	id S1753108AbaCPMhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 08:37:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,664,1389772800"; 
-   d="scan'208";a="493061450"
+   d="scan'208";a="493061461"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 3/5] mei: client.h fix checkpetch errors
-Date: Sun, 16 Mar 2014 14:35:56 +0200
-Message-Id: <1394973358-21690-4-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 4/5] mei: amthif: fix checkpatch error
+Date: Sun, 16 Mar 2014 14:35:57 +0200
+Message-Id: <1394973358-21690-5-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1394973358-21690-1-git-send-email-tomas.winkler@intel.com>
 References: <1394973358-21690-1-git-send-email-tomas.winkler@intel.com>
@@ -23,38 +23,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch error
-return is not a function, parentheses are not required
+ERROR: else should follow close brace '}'
++	}
++	else {
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/client.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/misc/mei/amthif.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
-index 8139393..96d5de0 100644
---- a/drivers/misc/mei/client.h
-+++ b/drivers/misc/mei/client.h
-@@ -68,15 +68,15 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl);
-  */
- static inline bool mei_cl_is_connected(struct mei_cl *cl)
- {
--	return (cl->dev &&
-+	return  cl->dev &&
- 		cl->dev->dev_state == MEI_DEV_ENABLED &&
--		cl->state == MEI_FILE_CONNECTED);
-+		cl->state == MEI_FILE_CONNECTED;
- }
- static inline bool mei_cl_is_transitioning(struct mei_cl *cl)
- {
--	return (MEI_FILE_INITIALIZING == cl->state ||
-+	return  MEI_FILE_INITIALIZING == cl->state ||
- 		MEI_FILE_DISCONNECTED == cl->state ||
--		MEI_FILE_DISCONNECTING == cl->state);
-+		MEI_FILE_DISCONNECTING == cl->state;
- }
- 
- bool mei_cl_is_other_connecting(struct mei_cl *cl);
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index 2052609..b8deb34 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -247,8 +247,7 @@ int mei_amthif_read(struct mei_device *dev, struct file *file,
+ 	if (copy_to_user(ubuf, cb->response_buffer.data + *offset, length)) {
+ 		dev_dbg(&dev->pdev->dev, "failed to copy data to userland\n");
+ 		rets = -EFAULT;
+-	}
+-	else {
++	} else {
+ 		rets = length;
+ 		if ((*offset + length) < cb->buf_idx) {
+ 			*offset += length;
 -- 
 1.8.5.3
 
