@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601AbaCPHaX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 03:30:23 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:49580 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbaCPHaW (ORCPT
+	id S1751948AbaCPHoV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 03:44:21 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:32910 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaCPHoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 03:30:22 -0400
-Message-ID: <1394955020.19079.3.camel@marge.simpson.net>
-Subject: Re: cond_resched() and RCU CPU stall warnings
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: peterz@infradead.org, mingo@elte.hu, josh@joshtriplett.org,
-        laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Date: Sun, 16 Mar 2014 08:30:20 +0100
-In-Reply-To: <20140316062501.GX21124@linux.vnet.ibm.com>
-References: <20140316015914.GA22102@linux.vnet.ibm.com>
-	 <1394950182.5470.15.camel@marge.simpson.net>
-	 <20140316062501.GX21124@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 16 Mar 2014 03:44:19 -0400
+MIME-Version: 1.0
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Sun, 16 Mar 2014 08:43:58 +0100
+X-Google-Sender-Auth: p3R_V00yMCa73ZNemDeHjc3jQAg
+Message-ID: <CAHO5Pa0Y8r1DxHTc0YN-4geoLJ3JYwHT99EcuaGL6k++ek+aEQ@mail.gmail.com>
+Subject: name_to_handle_at() and persistent filesystem IDs
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger@dilger.ca>, NeilBrown <neilb@suse.de>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Bruce Fields <bfields@fieldses.org>, linux-man@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-15 at 23:25 -0700, Paul E. McKenney wrote: 
-> On Sun, Mar 16, 2014 at 07:09:42AM +0100, Mike Galbraith wrote:
+Hello Aneesh,
 
-> > Hm.  Since you only care about the case where your task is solo, how
-> > about do racy checks, 100% accuracy isn't required is it?  Seems you
-> > wouldn't want to unconditionally do that in tight loops.
-> 
-> And indeed, my current workaround unconditionally does schedule() one
-> out of 256 loops.  I would do something similar here, perhaps based
-> on per-CPU counters, perhaps even with racy accesses to avoid always
-> doing preempt_disable()/preempt_enable().
-> 
-> Or did you have something else in mind?
+I'm currently working on a man page for name_to_handle_at() and
+open_by_handle_at(), and I have a question relating to a point that
+probably needs to be covered in the man page.
 
-Exactly what I meant, take a racy peek or two first.
+Back in July 2010, in this thread:
+http://thread.gmane.org/gmane.linux.file-systems/41782/focus=43131
+you said:
 
--Mike
+[[
+mount id should not be looked at as a persistent identifier. It should
+be used to derive a persistent identifier from /proc/self/mountinfo. The
+persistent identifier could be the combination of device properties,
+file system properties or the uuid which is going to be an optional
+tag in /proc/self/mountinfo.
+]]
 
+In the man page, I'd like to briefly describe how one derives such a
+persistent ID from mountinfo. AFAICS, the optional UUID tag in
+/proc/self/mountinfo has not come to pass. So, what then is the
+recommended practice for deriving the persistent ID?
+
+Cheers,
+
+Michael
+
+-- 
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
