@@ -1,167 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818AbaCPTMi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 15:12:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11166 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754624AbaCPTMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 15:12:37 -0400
-Date: Sun, 16 Mar 2014 15:12:25 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Paris <eparis@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] audit: Use struct net not pid_t to remember the network
- namespce to reply in
-Message-ID: <20140316191225.GA20753@madcap2.tricolour.ca>
-References: <8738j3vzry.fsf@xmission.com>
- <20140316181512.GH27244@madcap2.tricolour.ca>
+	id S932099AbaCPTMo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 15:12:44 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:35299 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754624AbaCPTMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 15:12:40 -0400
+Date: Mon, 17 Mar 2014 08:12:32 +1300
+From: Daniel Ngu <daniel.dy.ngu@gmail.com>
+To: Jonathan Kim <jonathankim@gctsemi.com>
+Cc: Dean ahn <deanahn@gctsemi.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: gdm724x: netlink_k.c: fixed coding style
+Message-ID: <20140316191232.GA3478@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140316181512.GH27244@madcap2.tricolour.ca>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/03/16, Richard Guy Briggs wrote:
-> On 14/02/28, Eric W. Biederman wrote:
-> > 
-> > While reading through 3.14-rc1 I found a pretty siginficant mishandling
-> > of network namespaces in the recent audit changes.
-> > 
-> > In struct audit_netlink_list and audit_reply add a reference to the
-> > network namespace of the caller and remove the userspace pid of the
-> > caller.  This cleanly remembers the callers network namespace, and
-> > removes a huge class of races and nasty failure modes that can occur
-> > when attempting to relook up the callers network namespace from a pid_t
-> > (including the caller's network namespace changing, pid wraparound, and
-> > the pid simply not being present).
-> > 
-> > Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@tricolour.ca>
+Line over 80 characters
 
-Sorry for the noise, please change that sig to:
+Signed-off-by: Daniel Ngu <daniel.dy.ngu@gmail.com>
+---
+ drivers/staging/gdm724x/netlink_k.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+diff --git a/drivers/staging/gdm724x/netlink_k.c b/drivers/staging/gdm724x/netlink_k.c
+index 77fc64e..5ddd369 100644
+--- a/drivers/staging/gdm724x/netlink_k.c
++++ b/drivers/staging/gdm724x/netlink_k.c
+@@ -32,7 +32,8 @@ static struct semaphore netlink_mutex;
+ #define ND_MAX_GROUP		30
+ #define ND_IFINDEX_LEN		sizeof(int)
+ #define ND_NLMSG_SPACE(len)	(NLMSG_SPACE(len) + ND_IFINDEX_LEN)
+-#define ND_NLMSG_DATA(nlh)	((void *)((char *)NLMSG_DATA(nlh) + ND_IFINDEX_LEN))
++#define ND_NLMSG_DATA(nlh)	((void *)((char *)NLMSG_DATA(nlh) + \
++						  ND_IFINDEX_LEN))
+ #define ND_NLMSG_S_LEN(len)	(len+ND_IFINDEX_LEN)
+ #define ND_NLMSG_R_LEN(nlh)	(nlh->nlmsg_len-ND_IFINDEX_LEN)
+ #define ND_NLMSG_IFIDX(nlh)	NLMSG_DATA(nlh)
+-- 
+1.7.9.5
 
-> > ---
-> >  kernel/audit.c       |   10 ++++++----
-> >  kernel/audit.h       |    2 +-
-> >  kernel/auditfilter.c |    3 ++-
-> >  3 files changed, 9 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/kernel/audit.c b/kernel/audit.c
-> > index 34c5a2310fbf..1e5756f16f6f 100644
-> > --- a/kernel/audit.c
-> > +++ b/kernel/audit.c
-> > @@ -182,7 +182,7 @@ struct audit_buffer {
-> >  
-> >  struct audit_reply {
-> >  	__u32 portid;
-> > -	pid_t pid;
-> > +	struct net *net;	
-> >  	struct sk_buff *skb;
-> >  };
-> >  
-> > @@ -500,7 +500,7 @@ int audit_send_list(void *_dest)
-> >  {
-> >  	struct audit_netlink_list *dest = _dest;
-> >  	struct sk_buff *skb;
-> > -	struct net *net = get_net_ns_by_pid(dest->pid);
-> > +	struct net *net = dest->net;
-> >  	struct audit_net *aunet = net_generic(net, audit_net_id);
-> >  
-> >  	/* wait for parent to finish and send an ACK */
-> > @@ -510,6 +510,7 @@ int audit_send_list(void *_dest)
-> >  	while ((skb = __skb_dequeue(&dest->q)) != NULL)
-> >  		netlink_unicast(aunet->nlsk, skb, dest->portid, 0);
-> >  
-> > +	put_net(net);
-> >  	kfree(dest);
-> >  
-> >  	return 0;
-> > @@ -543,7 +544,7 @@ out_kfree_skb:
-> >  static int audit_send_reply_thread(void *arg)
-> >  {
-> >  	struct audit_reply *reply = (struct audit_reply *)arg;
-> > -	struct net *net = get_net_ns_by_pid(reply->pid);
-> > +	struct net *net = reply->net;
-> >  	struct audit_net *aunet = net_generic(net, audit_net_id);
-> >  
-> >  	mutex_lock(&audit_cmd_mutex);
-> > @@ -552,6 +553,7 @@ static int audit_send_reply_thread(void *arg)
-> >  	/* Ignore failure. It'll only happen if the sender goes away,
-> >  	   because our timeout is set to infinite. */
-> >  	netlink_unicast(aunet->nlsk , reply->skb, reply->portid, 0);
-> > +	put_net(net);
-> >  	kfree(reply);
-> >  	return 0;
-> >  }
-> > @@ -583,8 +585,8 @@ static void audit_send_reply(__u32 portid, int seq, int type, int done,
-> >  	if (!skb)
-> >  		goto out;
-> >  
-> > +	reply->net = get_net(current->nsproxy->net_ns);
-> >  	reply->portid = portid;
-> > -	reply->pid = task_pid_vnr(current);
-> >  	reply->skb = skb;
-> >  
-> >  	tsk = kthread_run(audit_send_reply_thread, reply, "audit_send_reply");
-> > diff --git a/kernel/audit.h b/kernel/audit.h
-> > index 57cc64d67718..8df132214606 100644
-> > --- a/kernel/audit.h
-> > +++ b/kernel/audit.h
-> > @@ -247,7 +247,7 @@ extern void		    audit_panic(const char *message);
-> >  
-> >  struct audit_netlink_list {
-> >  	__u32 portid;
-> > -	pid_t pid;
-> > +	struct net *net;
-> >  	struct sk_buff_head q;
-> >  };
-> >  
-> > diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-> > index 14a78cca384e..a5e3d73d73e4 100644
-> > --- a/kernel/auditfilter.c
-> > +++ b/kernel/auditfilter.c
-> > @@ -29,6 +29,7 @@
-> >  #include <linux/sched.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/security.h>
-> > +#include <net/net_namespace.h>
-> >  #include "audit.h"
-> >  
-> >  /*
-> > @@ -1083,8 +1084,8 @@ int audit_list_rules_send(__u32 portid, int seq)
-> >  	dest = kmalloc(sizeof(struct audit_netlink_list), GFP_KERNEL);
-> >  	if (!dest)
-> >  		return -ENOMEM;
-> > +	dest->net = get_net(current->nsproxy->net_ns);
-> >  	dest->portid = portid;
-> > -	dest->pid = task_pid_vnr(current);
-> >  	skb_queue_head_init(&dest->q);
-> >  
-> >  	mutex_lock(&audit_filter_mutex);
-> > -- 
-> > 1.7.5.4
-> > 
-> 
-> - RGB
-> 
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
