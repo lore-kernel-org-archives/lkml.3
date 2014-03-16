@@ -1,166 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542AbaCPNbA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 09:31:00 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:50827 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572AbaCPN3x (ORCPT
+	id S1752658AbaCPNnk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 09:43:40 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:64888 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaCPNni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 09:29:53 -0400
-From: Richard Cochran <richardcochran@gmail.com>
-To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
-        Christian Riesch <christian.riesch@omicron.at>,
-        David Miller <davem@davemloft.net>,
-        =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
-	<stefan.sorensen@spectralink.com>
-Subject: [PATCH net-next v2 2/9] ptp: add the pin GET/SETFUNC ioctls to the testptp program.
-Date: Sun, 16 Mar 2014 14:29:23 +0100
-Message-Id: <692fb4c8eb29aa7229fc92c7e431e3b9e45244d5.1394975663.git.richardcochran@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1394975663.git.richardcochran@gmail.com>
-References: <cover.1394975663.git.richardcochran@gmail.com>
+	Sun, 16 Mar 2014 09:43:38 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: dri-devel@lists.freedesktop.org
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@gmail.com>,
+        linux-kernel@vger.kernel.org, David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH] drm: enable render-nodes by default
+Date: Sun, 16 Mar 2014 14:43:20 +0100
+Message-Id: <1394977400-10465-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a option to the test program that lists the
-programmable pins on a PTP Hardware Clock device, assuming there
-are any such pins. A second option lets the user reprogram the
-auxiliary function of a single pin.
+We introduced render-nodes about 1/2 year ago and no problems showed up.
+Remove the drm_rnodes argument and enable them by default now.
 
-Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 ---
- Documentation/ptp/testptp.c |   58 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 55 insertions(+), 3 deletions(-)
+Hi Dave
 
-diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
-index 4aba043..e9eaee6 100644
---- a/Documentation/ptp/testptp.c
-+++ b/Documentation/ptp/testptp.c
-@@ -120,6 +120,13 @@ static void usage(char *progname)
- 		" -i val     index for event/trigger\n"
- 		" -k val     measure the time offset between system and phc clock\n"
- 		"            for 'val' times (Maximum 25)\n"
-+		" -l         list the current pin configuration\n"
-+		" -L pin,val configure pin index 'pin' with function 'val'\n"
-+		"            the channel index is taken from the '-i' option\n"
-+		"            'val' specifies the auxiliary function:\n"
-+		"            0 - none\n"
-+		"            1 - external time stamp\n"
-+		"            2 - periodic output\n"
- 		" -p val     enable output with a period of 'val' nanoseconds\n"
- 		" -P val     enable or disable (val=1|0) the system clock PPS\n"
- 		" -s         set the ptp clock time from the system time\n"
-@@ -134,6 +141,7 @@ int main(int argc, char *argv[])
- 	struct ptp_extts_event event;
- 	struct ptp_extts_request extts_request;
- 	struct ptp_perout_request perout_request;
-+	struct ptp_pin_desc desc;
- 	struct timespec ts;
- 	struct timex tx;
+This does _not_ depend on the "drm-minor" branch. We decided to not provide
+reliable minor-numbers. User-space should just properly enumerate devices
+instead of relying on some minor-math-magic. Furthermore, so far no-one
+complained about any render-node issues, so I don't think there's any reason to
+keep them experimential.
+
+Thanks
+David
+
+ drivers/gpu/drm/drm_stub.c | 7 +------
+ include/drm/drmP.h         | 1 -
+ 2 files changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_stub.c b/drivers/gpu/drm/drm_stub.c
+index 98a33c580..be3ad89 100644
+--- a/drivers/gpu/drm/drm_stub.c
++++ b/drivers/gpu/drm/drm_stub.c
+@@ -40,9 +40,6 @@
+ unsigned int drm_debug = 0;	/* 1 to enable debug output */
+ EXPORT_SYMBOL(drm_debug);
  
-@@ -156,11 +164,13 @@ int main(int argc, char *argv[])
- 	int extts = 0;
- 	int gettime = 0;
- 	int index = 0;
-+	int list_pins = 0;
- 	int oneshot = 0;
- 	int pct_offset = 0;
- 	int n_samples = 0;
- 	int periodic = 0;
- 	int perout = -1;
-+	int pin_index = -1, pin_func;
- 	int pps = -1;
- 	int settime = 0;
+-unsigned int drm_rnodes = 0;	/* 1 to enable experimental render nodes API */
+-EXPORT_SYMBOL(drm_rnodes);
+-
+ unsigned int drm_vblank_offdelay = 5000;    /* Default to 5000 msecs. */
+ EXPORT_SYMBOL(drm_vblank_offdelay);
  
-@@ -169,7 +179,7 @@ int main(int argc, char *argv[])
+@@ -59,13 +56,11 @@ MODULE_AUTHOR(CORE_AUTHOR);
+ MODULE_DESCRIPTION(CORE_DESC);
+ MODULE_LICENSE("GPL and additional rights");
+ MODULE_PARM_DESC(debug, "Enable debug output");
+-MODULE_PARM_DESC(rnodes, "Enable experimental render nodes API");
+ MODULE_PARM_DESC(vblankoffdelay, "Delay until vblank irq auto-disable [msecs]");
+ MODULE_PARM_DESC(timestamp_precision_usec, "Max. error on timestamps [usecs]");
+ MODULE_PARM_DESC(timestamp_monotonic, "Use monotonic timestamps");
  
- 	progname = strrchr(argv[0], '/');
- 	progname = progname ? 1+progname : argv[0];
--	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghi:k:p:P:sSt:v"))) {
-+	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghi:k:lL:p:P:sSt:v"))) {
- 		switch (c) {
- 		case 'a':
- 			oneshot = atoi(optarg);
-@@ -199,6 +209,16 @@ int main(int argc, char *argv[])
- 			pct_offset = 1;
- 			n_samples = atoi(optarg);
- 			break;
-+		case 'l':
-+			list_pins = 1;
-+			break;
-+		case 'L':
-+			cnt = sscanf(optarg, "%d,%d", &pin_index, &pin_func);
-+			if (cnt != 2) {
-+				usage(progname);
-+				return -1;
-+			}
-+			break;
- 		case 'p':
- 			perout = atoi(optarg);
- 			break;
-@@ -245,12 +265,14 @@ int main(int argc, char *argv[])
- 			       "  %d programmable alarms\n"
- 			       "  %d external time stamp channels\n"
- 			       "  %d programmable periodic signals\n"
--			       "  %d pulse per second\n",
-+			       "  %d pulse per second\n"
-+			       "  %d programmable pins\n",
- 			       caps.max_adj,
- 			       caps.n_alarm,
- 			       caps.n_ext_ts,
- 			       caps.n_per_out,
--			       caps.pps);
-+			       caps.pps,
-+			       caps.n_pins);
- 		}
+ module_param_named(debug, drm_debug, int, 0600);
+-module_param_named(rnodes, drm_rnodes, int, 0600);
+ module_param_named(vblankoffdelay, drm_vblank_offdelay, int, 0600);
+ module_param_named(timestamp_precision_usec, drm_timestamp_precision, int, 0600);
+ module_param_named(timestamp_monotonic, drm_timestamp_monotonic, int, 0600);
+@@ -533,7 +528,7 @@ int drm_dev_register(struct drm_device *dev, unsigned long flags)
+ 			goto out_unlock;
  	}
  
-@@ -331,6 +353,24 @@ int main(int argc, char *argv[])
- 		}
- 	}
+-	if (drm_core_check_feature(dev, DRIVER_RENDER) && drm_rnodes) {
++	if (drm_core_check_feature(dev, DRIVER_RENDER)) {
+ 		ret = drm_get_minor(dev, &dev->render, DRM_MINOR_RENDER);
+ 		if (ret)
+ 			goto err_control_node;
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 04a7f31..5c91f1f 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1448,7 +1448,6 @@ extern void drm_master_put(struct drm_master **master);
+ extern void drm_put_dev(struct drm_device *dev);
+ extern void drm_unplug_dev(struct drm_device *dev);
+ extern unsigned int drm_debug;
+-extern unsigned int drm_rnodes;
  
-+	if (list_pins) {
-+		int n_pins = 0;
-+		if (ioctl(fd, PTP_CLOCK_GETCAPS, &caps)) {
-+			perror("PTP_CLOCK_GETCAPS");
-+		} else {
-+			n_pins = caps.n_pins;
-+		}
-+		for (i = 0; i < n_pins; i++) {
-+			desc.index = i;
-+			if (ioctl(fd, PTP_PIN_GETFUNC, &desc)) {
-+				perror("PTP_PIN_GETFUNC");
-+				break;
-+			}
-+			printf("name %s index %u func %u chan %u\n",
-+			       desc.name, desc.index, desc.func, desc.chan);
-+		}
-+	}
-+
- 	if (oneshot) {
- 		install_handler(SIGALRM, handle_alarm);
- 		/* Create a timer. */
-@@ -392,6 +432,18 @@ int main(int argc, char *argv[])
- 		}
- 	}
- 
-+	if (pin_index >= 0) {
-+		memset(&desc, 0, sizeof(desc));
-+		desc.index = pin_index;
-+		desc.func = pin_func;
-+		desc.chan = index;
-+		if (ioctl(fd, PTP_PIN_SETFUNC, &desc)) {
-+			perror("PTP_PIN_SETFUNC");
-+		} else {
-+			puts("set pin function okay");
-+		}
-+	}
-+
- 	if (pps != -1) {
- 		int enable = pps ? 1 : 0;
- 		if (ioctl(fd, PTP_ENABLE_PPS, enable)) {
+ extern unsigned int drm_vblank_offdelay;
+ extern unsigned int drm_timestamp_precision;
 -- 
-1.7.10.4
+1.9.0
 
