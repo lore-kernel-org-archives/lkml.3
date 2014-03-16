@@ -1,104 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045AbaCPTb0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 15:31:26 -0400
-Received: from smtprelay0150.hostedemail.com ([216.40.44.150]:52477 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754624AbaCPTbY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 15:31:24 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1605:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2828:2902:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4321:4559:4605:5007:6117:6248:6996:6997:7652:7903:10004:10400:10848:11026:11232:11233:11473:11596:11657:11658:11914:12296:12517:12519:12740:13618:14093:14097:21064,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: boats80_291d3ba88dd60
-X-Filterd-Recvd-Size: 4031
-Message-ID: <1394998281.5689.63.camel@joe-AO722>
-Subject: Re: [PATCH] Staging: gdm724x: gdm_lte.c: fixed coding style
-From: Joe Perches <joe@perches.com>
-To: Daniel Ngu <daniel.dy.ngu@gmail.com>
-Cc: Jonathan Kim <jonathankim@gctsemi.com>, Dean ahn <deanahn@gctsemi.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Date: Sun, 16 Mar 2014 12:31:21 -0700
-In-Reply-To: <1394997876.5689.60.camel@joe-AO722>
-References: <20140316192025.GE3478@quad>
-	 <1394997876.5689.60.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932091AbaCPTrY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 15:47:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31528 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753431AbaCPTrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 15:47:23 -0400
+Date: Sun, 16 Mar 2014 15:46:35 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: will.deacon@arm.com, viro@zeniv.linux.org.uk, eparis@redhat.com,
+        catalin.marinas@arm.com, dsaxena@linaro.org, arndb@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Subject: Re: [PATCH v5 2/4] arm64: split syscall_trace() into separate
+ functions for enter/exit
+Message-ID: <20140316194635.GO27244@madcap2.tricolour.ca>
+References: <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394861948-28712-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394861948-28712-3-git-send-email-takahiro.akashi@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394861948-28712-3-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-03-16 at 12:24 -0700, Joe Perches wrote:
-
-> > @@ -551,28 +583,41 @@ static void gdm_lte_netif_rx(struct net_device *dev, char *buf, int len, int fla
-> []
-> >  			struct dhcp_packet {
+On 14/03/15, AKASHI Takahiro wrote:
+> As done in arm, this change makes it easy to confirm we invoke syscall
+> related hooks, including syscall tracepoint, audit and seccomp which would
+> be implemented later, in correct order. That is, undoing operations in the
+> opposite order on exit that they were done on entry.
 > 
-> This one would be better fixed by moving the struct definition
-> out of this function altogether.
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+
+Minor variable mis-spelling of "scratch" noted below, but other than
+that:
+
+Acked-by: Richard Guy Briggs <rgb@redhat.com>
+
+> ---
+>  arch/arm64/kernel/entry.S  | 10 ++++------
+>  arch/arm64/kernel/ptrace.c | 50 +++++++++++++++++++++++++++-------------------
+>  2 files changed, 33 insertions(+), 27 deletions(-)
 > 
-> >  				u8 op;      /* BOOTREQUEST or BOOTREPLY */
-> > -				u8 htype;   /* hardware address type. 1 = 10mb ethernet */
-> > +				u8 htype;   /* hardware address type.
-> > +					       1 = 10mb ethernet */
-> >  				u8 hlen;    /* hardware address length */
-> >  				u8 hops;    /* used by relay agents only */
-> >  				u32 xid;    /* unique id */
-> > -				u16 secs;   /* elapsed since client began acquisition/renewal */
-> > +				u16 secs;   /* elapsed since client began
-> > +					       acquisition/renewal */
-> >  				u16 flags;  /* only one flag so far: */
-> > -				#define BROADCAST_FLAG 0x8000 /* "I need broadcast replies" */
-> > -				u32 ciaddr; /* client IP (if client is in BOUND, RENEW or REBINDING state) */
-> > +				#define BROADCAST_FLAG 0x8000 /* "I need
-> > +								 broadcast
-> > +								 replies" */
-> > +				u32 ciaddr; /* client IP (if client is in
-> > +					       BOUND, RENEW or REBINDING
-> > +					       state) */
-> >  				u32 yiaddr; /* 'your' (client) IP address */
-> > -				/* IP address of next server to use in bootstrap, returned in DHCPOFFER, DHCPACK by server */
-> > +				/* IP address of next server to use in
-> > +				 * bootstrap, returned in DHCPOFFER, DHCPACK by
-> > +				 * server */
-> >  				u32 siaddr_nip;
-> >  				u32 gateway_nip; /* relay agent IP address */
-> > -				u8 chaddr[16];   /* link-layer client hardware address (MAC) */
-> > +				u8 chaddr[16];   /* link-layer client hardware
-> > +						    address (MAC) */
-> >  				u8 sname[64];    /* server host name (ASCIZ) */
-> >  				u8 file[128];    /* boot file name (ASCIZ) */
-> > -				u32 cookie;      /* fixed first four option bytes (99,130,83,99 dec) */
-> > +				u32 cookie;      /* fixed first four option
-> > +						    bytes (99,130,83,99 dec) */
-> >  			} __packed;
+> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> index f9f2cae..00d6eb9 100644
+> --- a/arch/arm64/kernel/entry.S
+> +++ b/arch/arm64/kernel/entry.S
+> @@ -649,9 +649,8 @@ ENDPROC(el0_svc)
+>  	 * switches, and waiting for our parent to respond.
+>  	 */
+>  __sys_trace:
+> -	mov	x1, sp
+> -	mov	w0, #0				// trace entry
+> -	bl	syscall_trace
+> +	mov	x0, sp
+> +	bl	syscall_trace_enter
+>  	adr	lr, __sys_trace_return		// return address
+>  	uxtw	scno, w0			// syscall number (possibly new)
+>  	mov	x1, sp				// pointer to regs
+> @@ -666,9 +665,8 @@ __sys_trace:
+>  
+>  __sys_trace_return:
+>  	str	x0, [sp]			// save returned x0
+> -	mov	x1, sp
+> -	mov	w0, #1				// trace exit
+> -	bl	syscall_trace
+> +	mov	x0, sp
+> +	bl	syscall_trace_exit
+>  	b	ret_to_user
+>  
+>  /*
+> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+> index 6a8928b..f606276 100644
+> --- a/arch/arm64/kernel/ptrace.c
+> +++ b/arch/arm64/kernel/ptrace.c
+> @@ -1058,35 +1058,43 @@ long arch_ptrace(struct task_struct *child, long request,
+>  	return ptrace_request(child, request, addr, data);
+>  }
+>  
+> -asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
+> +enum ptrace_syscall_dir {
+> +	PTRACE_SYSCALL_ENTER = 0,
+> +	PTRACE_SYSCALL_EXIT,
+> +};
+> +
+> +static void tracehook_report_syscall(struct pt_regs *regs,
+> +				     enum ptrace_syscall_dir dir)
+>  {
+> +	int scrach;
 
-Also, the net/ipv4/ipconfig.c definition
-seems a lot more sensible as it uses endian
-specific types
+"scratch"
 
-struct bootp_pkt {		/* BOOTP packet format */
-	struct iphdr iph;	/* IP header */
-	struct udphdr udph;	/* UDP header */
-	u8 op;			/* 1=request, 2=reply */
-	u8 htype;		/* HW address type */
-	u8 hlen;		/* HW address length */
-	u8 hops;		/* Used only by gateways */
-	__be32 xid;		/* Transaction ID */
-	__be16 secs;		/* Seconds since we started */
-	__be16 flags;		/* Just what it says */
-	__be32 client_ip;		/* Client's IP address if known */
-	__be32 your_ip;		/* Assigned IP address */
-	__be32 server_ip;		/* (Next, e.g. NFS) Server's IP address */
-	__be32 relay_ip;		/* IP address of BOOTP relay */
-	u8 hw_addr[16];		/* Client's HW address */
-	u8 serv_name[64];	/* Server host name */
-	u8 boot_file[128];	/* Name of boot file */
-	u8 exten[312];		/* DHCP options / BOOTP vendor extensions */
-};
+>  	unsigned long saved_reg;
+>  
+> -	if (!test_thread_flag(TIF_SYSCALL_TRACE))
+> -		return regs->syscallno;
+> -
+> -	if (is_compat_task()) {
+> -		/* AArch32 uses ip (r12) for scratch */
+> -		saved_reg = regs->regs[12];
+> -		regs->regs[12] = dir;
+> -	} else {
+> -		/*
+> -		 * Save X7. X7 is used to denote syscall entry/exit:
+> -		 *   X7 = 0 -> entry, = 1 -> exit
+> -		 */
+> -		saved_reg = regs->regs[7];
+> -		regs->regs[7] = dir;
+> -	}
+> +	/*
+> +	 * A scrach register (ip(r12) on AArch32, x7 on AArch64) is
+> +	 * used to denote syscall entry/exit:
+> +	 */
+> +	scrach = (is_compat_task() ? 12 : 7);
+> +	saved_reg = regs->regs[scrach];
+> +	regs->regs[scrach] = dir;
+>  
+> -	if (dir)
+> +	if (dir == PTRACE_SYSCALL_EXIT)
+>  		tracehook_report_syscall_exit(regs, 0);
+>  	else if (tracehook_report_syscall_entry(regs))
+>  		regs->syscallno = ~0UL;
+>  
+> -	if (is_compat_task())
+> -		regs->regs[12] = saved_reg;
+> -	else
+> -		regs->regs[7] = saved_reg;
+> +	regs->regs[scrach] = saved_reg;
+> +}
+> +
+> +asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+> +{
+> +	if (test_thread_flag(TIF_SYSCALL_TRACE))
+> +		tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
+>  
+>  	return regs->syscallno;
+>  }
+> +
+> +asmlinkage void syscall_trace_exit(struct pt_regs *regs)
+> +{
+> +	if (test_thread_flag(TIF_SYSCALL_TRACE))
+> +		tracehook_report_syscall(regs, PTRACE_SYSCALL_EXIT);
+> +}
+> -- 
+> 1.8.3.2
 
-It'd probably be better to make that struct definition public
-and use it instead.
+- RGB
 
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
