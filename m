@@ -1,69 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527AbaCPQc6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 12:32:58 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:9323 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753062AbaCPQc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 12:32:56 -0400
-X-IronPort-AV: E=Sophos;i="4.97,664,1389744000"; 
-   d="scan'208";a="110495464"
-Date: Sun, 16 Mar 2014 16:32:34 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Matt Wilson <msw@linux.com>,
-        Anthony Liguori <aliguori@amazon.com>,
-        =?UTF-8?Q?Roger_Pau_Monn=C3=A9?= <roger.pau@citrix.com>,
-        <x86@kernel.org>, <xen-devel@lists.xenproject.org>,
-        <virtualization@lists.linux-foundation.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/grant-table: Refactor gnttab_[un]map_refs to avoid
- m2p_override
-In-Reply-To: <531DF7FE.1000708@citrix.com>
-Message-ID: <alpine.DEB.2.02.1403161631580.30819@kaball.uk.xensource.com>
-References: <1393516530-9145-1-git-send-email-zoltan.kiss@citrix.com> <531DF7FE.1000708@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754877AbaCPQeW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 12:34:22 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:60919 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568AbaCPQeU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 12:34:20 -0400
+Date: Sun, 16 Mar 2014 17:34:14 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20140316163414.GA8476@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Mar 2014, David Vrabel wrote:
-> On 27/02/14 15:55, Zoltan Kiss wrote:
-> > (This is a continuation of "[PATCH v9] xen/grant-table: Avoid m2p_override
-> > during mapping")
-> > 
-> > The grant mapping API does m2p_override unnecessarily: only gntdev needs it,
-> > for blkback and future netback patches it just cause a lock contention, as
-> > those pages never go to userspace. Therefore this series does the following:
-> > - the bulk of the original function (everything after the mapping hypercall)
-> >   is moved to arch-dependent set/clear_foreign_p2m_mapping
-> > - the "if (xen_feature(XENFEAT_auto_translated_physmap))" brach goes to ARM
-> > - therefore the ARM function could be much smaller, the m2p_override stubs
-> >   could be also removed
-> > - on x86 the set_phys_to_machine calls were moved up to this new funcion
-> >   from m2p_override functions
-> > - and m2p_override functions are only called when there is a kmap_ops param
-> > 
-> > It also removes a stray space from arch/x86/include/asm/xen/page.h.
-> 
-> Applied to devel/for-linus-3.15.
+Linus,
 
-The patch breaks the ARM build:
+Please pull the latest perf-urgent-for-linus git tree from:
 
-arch/arm/xen/p2m.c:152:1: error: expected identifier or '(' before '{' token
- {
- ^
-arch/arm/xen/p2m.c:169:1: error: expected identifier or '(' before '{' token
- {
- ^
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
+   # HEAD: b7b4839d93e50adccef29eccb694807cdcb8bee3 perf/x86: Fix leak in uncore_type_init failure paths
+
+Misc smaller fixes.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Ben Hutchings (1):
+      perf trace: Decode architecture-specific signal numbers
+
+Dave Jones (1):
+      perf/x86: Fix leak in uncore_type_init failure paths
+
+Don Zickus (1):
+      perf machine: Use map as success in ip__resolve_ams
+
+Jiri Olsa (1):
+      perf symbols: Fix crash in elf_section_by_name
+
+
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |  3 ++-
+ tools/perf/builtin-trace.c                    | 10 +++++++++-
+ tools/perf/util/machine.c                     |  2 +-
+ tools/perf/util/symbol-elf.c                  |  6 +++---
+ 4 files changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index c88f7f4..047f540 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -3334,6 +3334,8 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+ 	if (!pmus)
+ 		return -ENOMEM;
+ 
++	type->pmus = pmus;
++
+ 	type->unconstrainted = (struct event_constraint)
+ 		__EVENT_CONSTRAINT(0, (1ULL << type->num_counters) - 1,
+ 				0, type->num_counters, 0, 0);
+@@ -3369,7 +3371,6 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+ 	}
+ 
+ 	type->pmu_group = &uncore_pmu_attr_group;
+-	type->pmus = pmus;
+ 	return 0;
+ fail:
+ 	uncore_type_exit(type);
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 6aa6fb6..f954c26 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -825,7 +825,6 @@ static size_t syscall_arg__scnprintf_signum(char *bf, size_t size, struct syscal
+ 	P_SIGNUM(PIPE);
+ 	P_SIGNUM(ALRM);
+ 	P_SIGNUM(TERM);
+-	P_SIGNUM(STKFLT);
+ 	P_SIGNUM(CHLD);
+ 	P_SIGNUM(CONT);
+ 	P_SIGNUM(STOP);
+@@ -841,6 +840,15 @@ static size_t syscall_arg__scnprintf_signum(char *bf, size_t size, struct syscal
+ 	P_SIGNUM(IO);
+ 	P_SIGNUM(PWR);
+ 	P_SIGNUM(SYS);
++#ifdef SIGEMT
++	P_SIGNUM(EMT);
++#endif
++#ifdef SIGSTKFLT
++	P_SIGNUM(STKFLT);
++#endif
++#ifdef SIGSWI
++	P_SIGNUM(SWI);
++#endif
+ 	default: break;
+ 	}
+ 
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index c872991..620a198 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1213,7 +1213,7 @@ static void ip__resolve_ams(struct machine *machine, struct thread *thread,
+ 		 */
+ 		thread__find_addr_location(thread, machine, m, MAP__FUNCTION,
+ 				ip, &al);
+-		if (al.sym)
++		if (al.map)
+ 			goto found;
+ 	}
+ found:
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 3e9f336..516d19f 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -151,15 +151,15 @@ Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
+ 
+ 		gelf_getshdr(sec, shp);
+ 		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
+-		if (!strcmp(name, str)) {
++		if (str && !strcmp(name, str)) {
+ 			if (idx)
+ 				*idx = cnt;
+-			break;
++			return sec;
+ 		}
+ 		++cnt;
+ 	}
+ 
+-	return sec;
++	return NULL;
+ }
+ 
+ #define elf_section__for_each_rel(reldata, pos, pos_mem, idx, nr_entries) \
