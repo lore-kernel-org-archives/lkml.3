@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917AbaCPTQo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 15:16:44 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54602 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752603AbaCPTQm (ORCPT
+	id S932212AbaCPTRY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 15:17:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46548 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754624AbaCPTRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 15:16:42 -0400
-Date: Sun, 16 Mar 2014 20:16:39 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH 04/15] iio: adc: at91_adc: Add support for touchscreens
- without TSMR
-Message-ID: <20140316191639.GJ3106@piout.net>
-References: <1394040940-18246-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1394040940-18246-5-git-send-email-alexandre.belloni@free-electrons.com>
- <5325EA96.9000907@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5325EA96.9000907@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 16 Mar 2014 15:17:22 -0400
+Message-ID: <1394997429.15764.116.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH v2 1/4] net: add name_assign_type netdev attribute
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Tom Gundersen <teg@jklm.no>, Johannes berg <johannes@sipsolutions.net>,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Date: Sun, 16 Mar 2014 19:17:09 +0000
+In-Reply-To: <1394990490-1076-2-git-send-email-dh.herrmann@gmail.com>
+References: <1394990490-1076-1-git-send-email-dh.herrmann@gmail.com>
+	 <1394990490-1076-2-git-send-email-dh.herrmann@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-t6iSqRIB9XFun5VjX3F7"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:2147:ecc:c25a:bcb5
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/03/2014 at 18:16:54 +0000, Jonathan Cameron wrote :
-> On 05/03/14 17:35, Alexandre Belloni wrote:
-> >Old ADCs, as present on the sam9rl and the sam9g45 don't have a TSMR register
-> >and the touchscreen support should be handled differently.
-> >
-> >Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> One comment inline about handling of devices where the platform data doesn't
-> include the touchscreen type.  I'd expect zero to be the current default
-> rather than NONE...
-> >diff --git a/include/linux/platform_data/at91_adc.h b/include/linux/platform_data/at91_adc.h
-> >index fcf73879dbfe..7819fc787731 100644
-> >--- a/include/linux/platform_data/at91_adc.h
-> >+++ b/include/linux/platform_data/at91_adc.h
-> >@@ -7,6 +7,12 @@
-> >  #ifndef _AT91_ADC_H_
-> >  #define _AT91_ADC_H_
-> >
-> >+enum atmel_adc_ts_type {
-> This means that the default for existing touch screens (where the platform
-> data won't include setting this value) will be none.  Is that correct?
-> >+	ATMEL_ADC_TOUCHSCREEN_NONE = 0,
-> >+	ATMEL_ADC_TOUCHSCREEN_4WIRE = 4,
-> >+	ATMEL_ADC_TOUCHSCREEN_5WIRE = 5,
-> >+};
-> >+
 
-This is actually just a snippet that I moved from at91_adc.c to
-at91_adc.h. I followed the current behavior.  Until now, using the
-touchscreen was only supported through device tree and touchscreen
-handling was not activated unless the atmel,adc-ts-wires property is
-present.  I guess this is the sane way to go because when you use the
-touchscreen, you lose the triggers.
+--=-t6iSqRIB9XFun5VjX3F7
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+On Sun, 2014-03-16 at 18:21 +0100, David Herrmann wrote:
+[...]
+> --- a/include/linux/netdevice.h
+> +++ b/include/linux/netdevice.h
+> @@ -74,6 +74,11 @@ void netdev_set_default_ethtool_ops(struct net_device =
+*dev,
+>  #define NET_RX_SUCCESS		0	/* keep 'em coming, baby */
+>  #define NET_RX_DROP		1	/* packet dropped */
+> =20
+> +/* interface name assignment types */
+> +#define NET_NAME_ENUM		0	/* enumerated by kernel (default) */
+> +#define NET_NAME_USER		1	/* provided by user-space */
+> +#define NET_NAME_RENAMED	2	/* renamed by user-space */
+[...]
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+I think these definitions should be put in a UAPI header.  Even if the
+names don't end up being used by userland, that would make it clear that
+the numbers are a stable ABI.
+
+Ben.
+
+--=20
+Ben Hutchings
+Computers are not intelligent.	They only think they are.
+
+--=-t6iSqRIB9XFun5VjX3F7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAUyX4tee/yOyVhhEJAQrgGw//WphR8tzozaVHMuvgPNNscsBZQ+kw3c1S
+wBUVbTbfYmylS4oSI48yxJpPZOB8tu5K6dxWR806oUJYda0v37sZwaBhYtb666/W
+TdjTY9614FGxL1/gU9UfPQwEjHCXNujdq7Ylj/68u+CzSjnHMSfXryOV6IvGNmJD
+9ejfclWRJC3eUZ4dVFbeN8X7/dLvQ6EOgaF03jbhqH9dXd/xMtHlP3RDZ7hK7xfK
+KUrIXPJhDh8avjO5CmzVODVl/SHNFBvZtWd+yOJNFK6uZfNJHP+4uF7x4m+c0DGq
+pQoj+rkxmT16eo9NaSd//R4c+Iqgzp+oVMZT8r9xI8BAxHZ7gU1XDzT8/N6ez3qj
+Xb4wEFwgw7OCpSCZzVyDvKvDVZiP5PVfRP0PcmUBMgB7CxnboTw3DKbQP/YcfZJs
+6I4Qx4Exdr3CxMRm3StVD2uG5D0MjmMPucfDs1E07837knpqrJVKuYw0s7SntSud
+M8oXr0E7BZkTzGvjlxZIMj5jrmAegIhjzTAeeIauhpp3dYhYtxWFRRFgCgF5zLnO
+Rl8HXYzWH02HN2EMnuqy2R7i/8noQQMTcYeMozyddXduV+NyvkprA4fmW+D6jerv
+BnKemsl0C0mw3lRUcGM3yThtb9+RTbCjdU9EDAqq3s0E3VbfCDaCuOh7bL9Ut1o3
+t1BVW0DIHlQ=
+=uFI+
+-----END PGP SIGNATURE-----
+
+--=-t6iSqRIB9XFun5VjX3F7--
