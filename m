@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149AbaCPVWG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 17:22:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46794 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932079AbaCPVWD (ORCPT
+	id S1755926AbaCPV1U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 17:27:20 -0400
+Received: from smtprelay0240.hostedemail.com ([216.40.44.240]:40276 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754829AbaCPV1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 17:22:03 -0400
-Message-ID: <1395004897.15764.119.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [RESEND v2 PATCH 0/2] Bug fix in aio ring page migration
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: stable@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        viro@zeniv.linux.org.uk, bcrl@kvack.org, jmoyer@redhat.com,
-        kosaki.motohiro@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        miaox@cn.fujitsu.com, tangchen <tangchen@cn.fujitsu.com>
-Date: Sun, 16 Mar 2014 21:21:37 +0000
-In-Reply-To: <53217E46.3060100@cn.fujitsu.com>
-References: <1394439334-28523-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <53217E46.3060100@cn.fujitsu.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-uxM/xPLsEYMwZhm7us0K"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Sun, 16 Mar 2014 17:27:19 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:3870:3872:3874:4321:5007:6117:7652:7903:10004:10400:10848:11026:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wave58_229433ebfd205
+X-Filterd-Recvd-Size: 1608
+Message-ID: <1395005236.31843.1.camel@joe-AO722>
+Subject: Re: [PATCH V2] NTFS: Logging clean-up
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, anton <anton@tuxera.com>
+Date: Sun, 16 Mar 2014 14:27:16 -0700
+In-Reply-To: <20140316215238.ba9af67aa774882cc96f4161@skynet.be>
+References: <20140316215238.ba9af67aa774882cc96f4161@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:2147:ecc:c25a:bcb5
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2014-03-16 at 21:52 +0100, Fabian Frederick wrote:
+> -Convert spinlock/stat array to va_format (inspired by Joe Perches help
+> on previous logging patches).
+> -Convert printk(KERN_ERR to pr_warn in __ntfs_warning.
+> -Convert printk(KERN_ERR to pr_err in __ntfs_error.
+> -Convert printk(KERN_DEBUG to pr_debug in __ntfs_debug.
+[]
+> diff --git a/fs/ntfs/super.c b/fs/ntfs/super.c
+[]
+> @@ -3093,7 +3094,7 @@ static int __init init_ntfs_fs(void)
+>  	int err = 0;
+>  
+>  	/* This may be ugly but it results in pretty output so who cares. (-8 */
+> -	printk(KERN_INFO "NTFS driver " NTFS_VERSION " [Flags: R/"
+> +	pr_info(NTFS_VERSION " [Flags: R/"
 
---=-uxM/xPLsEYMwZhm7us0K
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Be nice to have this say pr_info("driver " NTFS_VERSION " etc...
 
-On Thu, 2014-03-13 at 17:45 +0800, Gu Zheng wrote:
-> This patchset has been applied to linux-next, and these problems also exi=
-st
-> in 3.12.y and 3.13.y stable tree.
-> So please merge this patchset to 3.12.y and 3.13.y stable tree.
+Other than that, seems like a nice cleanup, thanks.
 
-They must be in Linus's tree before they are acceptable for stable.
-
-Ben.
-
-> commit 692c9b8c5ee8d263bb8348171f0bebd3d84eb2c1
-> Author: Tang Chen <tangchen@cn.fujitsu.com>
-> Date:   Mon Mar 10 16:15:33 2014 +0800
->=20
->     aio, memory-hotplug: Fix confliction when migrating and accessing rin=
-g pages.
->=20
-> commit e0f5e0add36d2e3c456cf2f4283673ed834b3c24
-> Author: Tang Chen <tangchen@cn.fujitsu.com>
-> Date:   Mon Mar 10 16:15:34 2014 +0800
->=20
->     aio, mem-hotplug: Add memory barrier to aio ring page migration.
-[...]
-
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
-
---=-uxM/xPLsEYMwZhm7us0K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUyYV4ee/yOyVhhEJAQqUNhAAsEUWT91QFyShrH10io3NWmaA8xmq+0Nu
-/3+SbzrBGhIlovUKhQV+rM1oRNu4kOGuubCB9+TmNko2dR22tyH/AOOdtPgagRso
-kHpuUWn5D/oKVKo1AiGjI6wVKoDMn6IC4q8Xtcy4RVsl97tp2+6A5hIcOAgU1Gng
-x4NAUPwX7FgA0PsPOoXNMXXF2n2m4MKu6Nzit3ZM/Q/VAWMCcT2TxsPKBnB4LqAw
-qqzEOGP5gUeeDpdfPztgUXkQ+bD3TSvWxUzg3crPbvvzq62lBDHMhFmi+hFYwmZm
-Q9u291+qrEmabAo3IbD3O+7roeYqVhQTMbpQLxMGUZLvh8eFmBOcDqbt9/nj1IOc
-uDyABzw5QEI8okwJJO0vGXqBINKnuTDB2+SeVu55RyoqbRnaxP3sEm9aT+Oa23G0
-Z5kT/0c025nlKi98znlfTfj7y2/WW6qI0brGZMf+q5Go7RE/0OdvejGgd90uAQVJ
-w+z8JJjHzJgMy3mt+qcJGbJ8wt1lIhg01ADkjZJ3B5Xcc5HaC5ZOvXXLEx1xuhxi
-Kv68ej64lJkGcPBEJuVdAR1dRxD1TIgzKNmq7PAyW7RssferZGrM69R6be/57eXe
-MDaY5a02rRwExLRViYNrOM0RiginCY+YokYETj8mSyHKXSuadyN5beBTCeCbQhCQ
-F4P/wrLC+vw=
-=7O0r
------END PGP SIGNATURE-----
-
---=-uxM/xPLsEYMwZhm7us0K--
