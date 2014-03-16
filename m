@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132AbaCPRER (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 13:04:17 -0400
+	id S932149AbaCPREh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 13:04:37 -0400
 Received: from mga09.intel.com ([134.134.136.24]:54181 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755270AbaCPREO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 13:04:14 -0400
+	id S1755275AbaCPREP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 13:04:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,665,1389772800"; 
-   d="scan'208";a="501094254"
+   d="scan'208";a="501094272"
 From: Zhang Rui <rui.zhang@intel.com>
 To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
         rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
         Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH V3 10/11] ACPI: introduce dummy container scan handler
-Date: Mon, 17 Mar 2014 01:03:16 +0800
-Message-Id: <1394989397-2733-11-git-send-email-rui.zhang@intel.com>
+Subject: [PATCH V3 11/11] ACPI: introduce dummy memory hotplug scan handler
+Date: Mon, 17 Mar 2014 01:03:17 +0800
+Message-Id: <1394989397-2733-12-git-send-email-rui.zhang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394989397-2733-1-git-send-email-rui.zhang@intel.com>
 References: <1394989397-2733-1-git-send-email-rui.zhang@intel.com>
@@ -24,83 +24,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_ACPI_CONTAINER is cleared, platform devices would be
-created for ACPI container objects.
+If CONFIG_ACPI_HOTPLUG_MEMORY is cleared, platform devices would be
+created for ACPI hotplug memory device objects.
 
-Introduce a dummy container scan handler in this patch to prevent
-these platform devices from being created.
+Introduce a dummy memory hotplug scan handler in this patch,
+to prevent those platform devices from being created.
 
 Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 ---
- drivers/acpi/Makefile    |    2 +-
- drivers/acpi/container.c |   21 +++++++++++++++++++++
- drivers/acpi/internal.h  |    4 ----
- 3 files changed, 22 insertions(+), 5 deletions(-)
+ drivers/acpi/Makefile          |    2 +-
+ drivers/acpi/acpi_memhotplug.c |   45 ++++++++++++++++++++++++++++------------
+ drivers/acpi/internal.h        |    6 +-----
+ 3 files changed, 34 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index 2173e30..871d70d 100644
+index 871d70d..605eff7 100644
 --- a/drivers/acpi/Makefile
 +++ b/drivers/acpi/Makefile
-@@ -63,7 +63,7 @@ obj-$(CONFIG_ACPI_FAN)		+= fan.o
- obj-$(CONFIG_ACPI_VIDEO)	+= video.o
- obj-$(CONFIG_ACPI_PCI_SLOT)	+= pci_slot.o
+@@ -65,7 +65,7 @@ obj-$(CONFIG_ACPI_PCI_SLOT)	+= pci_slot.o
  obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
--obj-$(CONFIG_ACPI_CONTAINER)	+= container.o
-+obj-y				+= container.o
+ obj-y				+= container.o
  obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
- obj-$(CONFIG_ACPI_HOTPLUG_MEMORY) += acpi_memhotplug.o
+-obj-$(CONFIG_ACPI_HOTPLUG_MEMORY) += acpi_memhotplug.o
++obj-y				+= acpi_memhotplug.o
  obj-$(CONFIG_ACPI_BATTERY)	+= battery.o
-diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-index 368f9dd..c2ec401 100644
---- a/drivers/acpi/container.c
-+++ b/drivers/acpi/container.c
-@@ -43,6 +43,8 @@ static const struct acpi_device_id container_device_ids[] = {
- 	{"", 0},
- };
+ obj-$(CONFIG_ACPI_SBS)		+= sbshc.o
+ obj-$(CONFIG_ACPI_SBS)		+= sbs.o
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index b67be85..427e32b 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -44,6 +44,13 @@
  
-+#ifdef CONFIG_ACPI_CONTAINER
+ ACPI_MODULE_NAME("acpi_memhotplug");
+ 
++static const struct acpi_device_id memory_device_ids[] = {
++	{ACPI_MEMORY_DEVICE_HID, 0},
++	{"", 0},
++};
 +
- static int acpi_container_offline(struct container_dev *cdev)
++#ifdef CONFIG_ACPI_HOTPLUG_MEMORY
++
+ /* Memory Device States */
+ #define MEMORY_INVALID_STATE	0
+ #define MEMORY_POWER_ON_STATE	1
+@@ -53,11 +60,6 @@ static int acpi_memory_device_add(struct acpi_device *device,
+ 				  const struct acpi_device_id *not_used);
+ static void acpi_memory_device_remove(struct acpi_device *device);
+ 
+-static const struct acpi_device_id memory_device_ids[] = {
+-	{ACPI_MEMORY_DEVICE_HID, 0},
+-	{"", 0},
+-};
+-
+ static struct acpi_scan_handler memory_device_handler = {
+ 	.ids = memory_device_ids,
+ 	.attach = acpi_memory_device_add,
+@@ -362,17 +364,34 @@ static void acpi_memory_device_remove(struct acpi_device *device)
+ 
+ static bool __initdata acpi_no_memhotplug;
+ 
+-void __init acpi_memory_hotplug_init(void)
+-{
+-	if (acpi_no_memhotplug)
+-		return;
+-
+-	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
+-}
+-
+ static int __init disable_acpi_memory_hotplug(char *str)
  {
- 	struct acpi_device *adev = ACPI_COMPANION(&cdev->dev);
-@@ -110,3 +112,22 @@ void __init acpi_container_init(void)
- {
- 	acpi_scan_add_handler_with_hotplug(&container_handler, "container");
+ 	acpi_no_memhotplug = true;
+ 	return 1;
  }
+ __setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
 +
-+#else
++#endif
 +
-+static inline int container_device_attach(struct acpi_device *adev,
-+			const struct acpi_device_id *not_used)
++static int acpi_memory_dummy_add(struct acpi_device *device,
++                                  const struct acpi_device_id *not_used)
 +{
 +	return 1;
 +}
 +
-+static struct acpi_scan_handler container_handler = {
-+	.ids = container_device_ids,
-+	.attach = container_device_attach,
++static struct acpi_scan_handler memory_dummy_handler = {
++	.ids = memory_device_ids,
++	.attach = acpi_memory_dummy_add,
 +};
 +
-+void __init acpi_container_init(void)
++void __init acpi_memory_hotplug_init(void)
 +{
-+	acpi_scan_add_handler(&container_handler);
++#ifdef CONFIG_ACPI_HOTPLUG_MEMORY
++	if (!acpi_no_memhotplug) {
++		acpi_scan_add_handler_with_hotplug(&memory_device_handler,
++						"memory");
++		return ;
++	}
++#endif
++	acpi_scan_add_handler(&memory_dummy_handler);
 +}
-+#endif /* CONFIG_ACPI_CONTAINER */
 diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index a0c9368..253758a 100644
+index 253758a..4e96e84 100644
 --- a/drivers/acpi/internal.h
 +++ b/drivers/acpi/internal.h
-@@ -32,11 +32,7 @@ void acpi_processor_init(void);
- void acpi_platform_init(void);
+@@ -33,16 +33,12 @@ void acpi_platform_init(void);
  void acpi_pnp_init(void);
  int acpi_sysfs_init(void);
--#ifdef CONFIG_ACPI_CONTAINER
  void acpi_container_init(void);
--#else
--static inline void acpi_container_init(void) {}
--#endif
++void acpi_memory_hotplug_init(void);
  #ifdef CONFIG_ACPI_DOCK
  void acpi_dock_init(void);
+ #else
+ static inline void acpi_dock_init(void) {}
+ #endif
+-#ifdef CONFIG_ACPI_HOTPLUG_MEMORY
+-void acpi_memory_hotplug_init(void);
+-#else
+-static inline void acpi_memory_hotplug_init(void) {}
+-#endif
+ #ifdef CONFIG_X86
+ void acpi_cmos_rtc_init(void);
  #else
 -- 
 1.7.9.5
