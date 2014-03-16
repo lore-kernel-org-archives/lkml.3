@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191AbaCPRGv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 13:06:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56398 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755356AbaCPREF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 13:04:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,665,1389772800"; 
-   d="scan'208";a="501094175"
-From: Zhang Rui <rui.zhang@intel.com>
-To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH V3 05/11] ACPI: check and enumerate CMOS RTC devices explicitly
-Date: Mon, 17 Mar 2014 01:03:11 +0800
-Message-Id: <1394989397-2733-6-git-send-email-rui.zhang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1394989397-2733-1-git-send-email-rui.zhang@intel.com>
-References: <1394989397-2733-1-git-send-email-rui.zhang@intel.com>
+	id S1754517AbaCPRVx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 13:21:53 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:35632 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281AbaCPRVu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 13:21:50 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, Tom Gundersen <teg@jklm.no>,
+        Johannes berg <johannes@sipsolutions.net>,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH v2 0/4] Provide netdev naming-policy via sysfs
+Date: Sun, 16 Mar 2014 18:21:26 +0100
+Message-Id: <1394990490-1076-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For CMOS RTC devices, the acpi pnp scan handler does not work because
-there is already a cmos rtc scan handler installed, thus we need to
-check those devices and enumerate them to PNP bus explicitly.
-Plus, the cmos rtc scan handler needs to return 1 so that it will not
-be enumerated to platform bus.
+Hi
 
-Note: the CMOS RTC device id is not removed from ACPI pnp scan handler
-      id list, thus, if cmos rtc scan handler is compiled out, the ACPI
-      pnp scan handler will be attached to the CMOS RTC devices instead,
-      to prevent these devices from being created to platform bus.
+This is v2 of the netdev naming-policy series. You can find v1 here:
+  http://thread.gmane.org/gmane.linux.kernel/1657015
+Changes in v2:
+  - fix mac80211 core to set NET_NAME_ENUM for wlan%d kernel-provided names
+  - acked-by udev developers
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
----
- drivers/acpi/acpi_cmos_rtc.c |    2 +-
- drivers/acpi/acpi_pnp.c      |   22 +++++++++++++++++++++-
- 2 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/acpi_cmos_rtc.c b/drivers/acpi/acpi_cmos_rtc.c
-index 84190ed..a19b0b3 100644
---- a/drivers/acpi/acpi_cmos_rtc.c
-+++ b/drivers/acpi/acpi_cmos_rtc.c
-@@ -70,7 +70,7 @@ static int acpi_install_cmos_rtc_space_handler(struct acpi_device *adev,
- 		return -ENODEV;
- 	}
- 
--	return 0;
-+	return 1;
- }
- 
- static void acpi_remove_cmos_rtc_space_handler(struct acpi_device *adev)
-diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
-index 2a7f86f..6fa482a 100644
---- a/drivers/acpi/acpi_pnp.c
-+++ b/drivers/acpi/acpi_pnp.c
-@@ -349,9 +349,29 @@ static struct acpi_scan_handler acpi_pnp_handler = {
- 	.attach = acpi_pnp_scan_handler_attach,
- };
- 
-+/*
-+ * For CMOS RTC devices, the acpi pnp spcan handler does not work because
-+ * there is already a cmos rtc scan handler installed, thus we need to
-+ * check those devices and enumerate them to PNP bus explicitly.
-+ */
-+static int is_cmos_rtc_device(struct acpi_device *adev)
-+{
-+	struct acpi_device_id ids[] = {
-+		{ "PNP0B00" },
-+		{ "PNP0B01" },
-+		{ "PNP0B02" },
-+		{""},
-+	};
-+	return !acpi_match_device_ids(adev, ids);
-+}
-+
- bool acpi_is_pnp_device(struct acpi_device *device)
- {
--	return !!(device->handler == &acpi_pnp_handler);
-+	if (device->handler == &acpi_pnp_handler)
-+		return true;
-+	if (is_cmos_rtc_device(device))
-+		return true;
-+	return false;
- }
- EXPORT_SYMBOL_GPL(acpi_is_pnp_device);
- 
+This series implements a new sysfs attribute for netdevs called
+"name_assign_type". It provides an integer that describes where an interface
+name comes from. See Patch #1 for a description of this attribute. It is
+modelled after the existing "addr_assign_type" attribute.
+
+The main use-case is to allow udev to skip applying reliable ifnames to virtual
+devices. For instance, if wifi-P2P devices are created, wpas already provides a
+suitable naming-policy and udev shouldn't touch these devices. Same is true for
+other virtual devices.
+The idea is that if a device-name was provided by user-space, we should always
+prefer fixing this naming-policy instead of making udev rename the device. For
+kernel provided names that's hardly possible, though. Providing the
+naming-policy source via sysfs is thus a simple way to see whether renames are
+needed.
+
+Additionally, this field allows to detect whether a netdev has been manually
+renamed, which is quite useful for debugging and during crash-recovery.
+Furthermore, it fixes real udev bugs if a netdev is already renamed in the
+initrd and udev only runs in the real root. Detecting renames avoids overwriting
+custom user provided names.
+
+Thanks
+David
+
+David Herrmann (4):
+  net: add name_assign_type netdev attribute
+  mac80211: set NET_NAME_USER for user-space created ifs
+  ath6kl: set NET_NAME_USER for P2P ifs
+  brcmfmac: set NET_NAME_USER for P2P ifs
+
+ drivers/net/wireless/ath/ath6kl/cfg80211.c    | 5 ++++-
+ drivers/net/wireless/ath/ath6kl/cfg80211.h    | 1 +
+ drivers/net/wireless/ath/ath6kl/core.c        | 4 ++--
+ drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 1 +
+ include/linux/netdevice.h                     | 6 ++++++
+ net/core/dev.c                                | 7 +++++++
+ net/core/net-sysfs.c                          | 2 ++
+ net/core/rtnetlink.c                          | 2 ++
+ net/mac80211/cfg.c                            | 2 +-
+ net/mac80211/ieee80211_i.h                    | 1 +
+ net/mac80211/iface.c                          | 2 ++
+ net/mac80211/main.c                           | 2 +-
+ 12 files changed, 30 insertions(+), 5 deletions(-)
+
 -- 
-1.7.9.5
+1.9.0
 
