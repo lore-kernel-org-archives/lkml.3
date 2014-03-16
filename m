@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaCPO74 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 10:59:56 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:38898 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809AbaCPO7z (ORCPT
+	id S1753435AbaCPPIt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 11:08:49 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:53514 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaCPPIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 10:59:55 -0400
-Date: Sun, 16 Mar 2014 10:59:51 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "dbasehore ." <dbasehore@chromium.org>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zento.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        bleung@chromium.org, sonnyrao@chromium.org,
-        Luigi Semenzato <semenzato@chromium.org>
-Subject: Re: [PATCH] backing_dev: Fix hung task on sync
-Message-ID: <20140316145951.GB26026@htj.dyndns.org>
-References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
- <20140218225548.GI31892@mtj.dyndns.org>
- <20140219092731.GA4849@quack.suse.cz>
- <20140219190139.GQ10134@htj.dyndns.org>
- <CAGAzgspTZnUh_qi=FeQ4hS4LRiexPccTyALMg3Gt1K0ZZq_MuQ@mail.gmail.com>
+	Sun, 16 Mar 2014 11:08:47 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger@dilger.ca>, NeilBrown <neilb@suse.de>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Bruce Fields <bfields@fieldses.org>, linux-man@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>
+Subject: Re: name_to_handle_at() and persistent filesystem IDs
+In-Reply-To: <CAHO5Pa0Y8r1DxHTc0YN-4geoLJ3JYwHT99EcuaGL6k++ek+aEQ@mail.gmail.com>
+References: <CAHO5Pa0Y8r1DxHTc0YN-4geoLJ3JYwHT99EcuaGL6k++ek+aEQ@mail.gmail.com>
+User-Agent: Notmuch/0.17+7~gc734dd75344e (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Sun, 16 Mar 2014 20:38:32 +0530
+Message-ID: <8761netc3z.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGAzgspTZnUh_qi=FeQ4hS4LRiexPccTyALMg3Gt1K0ZZq_MuQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031615-9264-0000-0000-000005A5640C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 15, 2014 at 01:22:53PM -0700, dbasehore . wrote:
-> mod_delayed_work currently removes a work item from a workqueue if it
-> is on it. Correct me if I'm wrong, but I don't think that this is
-> necessarily required for mod_delayed_work to have the current
-> behavior. We should be able to set the timer while a delayed_work is
-> currently on a workqueue. If the delayed_work is still on the
-> workqueue when the timer goes off, everything is fine. If it has left
-> the workqueue, we can queue it again.
+Michael Kerrisk <mtk.manpages@gmail.com> writes:
 
-What different would that make w.r.t. this issue?  Plus, please note
-that a work item may wait non-insignificant amount of time pending if
-the workqueue is saturated to max_active.  Doing the above would make
-mod_delayed_work()'s behavior quite fuzzy - the work item is modified
-or queued to the specified time but if the timer has already expired,
-the work item may execute after unspecified amount of time which may
-be shorter than the new timeout.  What kind of interface would that
-be?
+> Hello Aneesh,
+>
+> I'm currently working on a man page for name_to_handle_at() and
+> open_by_handle_at(), and I have a question relating to a point that
+> probably needs to be covered in the man page.
+>
+> Back in July 2010, in this thread:
+> http://thread.gmane.org/gmane.linux.file-systems/41782/focus=43131
+> you said:
+>
+> [[
+> mount id should not be looked at as a persistent identifier. It should
+> be used to derive a persistent identifier from /proc/self/mountinfo. The
+> persistent identifier could be the combination of device properties,
+> file system properties or the uuid which is going to be an optional
+> tag in /proc/self/mountinfo.
+> ]]
+>
+> In the man page, I'd like to briefly describe how one derives such a
+> persistent ID from mountinfo. AFAICS, the optional UUID tag in
+> /proc/self/mountinfo has not come to pass. So, what then is the
+> recommended practice for deriving the persistent ID?
+>
 
-Thanks.
+Anything that work for the application. mount_id will indicate which
+mount it is ie. from /proc/self/mountinfo
 
--- 
-tejun
+30 20 8:1 / /boot rw,relatime - ext4 /dev/sda1 rw,data=ordered
+
+The value 30 helps us to figure out that we are looking at device
+/dev/sda1. With that we can derive the uuid using libblkid.  I am not sure we
+concluded anything really about how to identify an nfs mount. May be we
+can do that based on server and mount point details ?.But from the
+syscall point, what we return is mount_id, which gives a hint regarding
+which mount point we are talking about in /proc/self/mountinfo. From
+that information applications can use any method that work for them
+to derivce an unique identifier.
+
+I know that NFS ganesha use these syscall. May we can check with them
+what worked for them ? (Added to CC:)
+ 
+-aneesh
+
