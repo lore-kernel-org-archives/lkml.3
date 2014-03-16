@@ -1,95 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680AbaCPPNo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 11:13:44 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:53923 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaCPPNm (ORCPT
+	id S1753353AbaCPPxp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 11:53:45 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:54747 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbaCPPxo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 11:13:42 -0400
-X-Nat-Received: from [202.181.97.72]:58555 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1394982821.27850
-To: oleg@redhat.com, rientjes@google.com, akpm@linux-foundation.org
-Cc: joseph.salisbury@canonical.com, torvalds@linux-foundation.org,
-        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: Re: [v3.13][v3.14][Regression] kthread: make kthread_create() killable
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <53236AA2.7030105@canonical.com>
-	<201403150943.BIH30251.FOQLOOtFJHSMVF@I-love.SAKURA.ne.jp>
-In-Reply-To: <201403150943.BIH30251.FOQLOOtFJHSMVF@I-love.SAKURA.ne.jp>
-Message-Id: <201403170013.GJF86930.FtVOOQOHLFFMSJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 17 Mar 2014 00:13:41 +0900
-Mime-Version: 1.0
+	Sun, 16 Mar 2014 11:53:44 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH 1/1] NTFS: Logging clean-up
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 16032014 #7529779, status: clean
+From: Anton Altaparmakov <anton@tuxera.com>
+In-Reply-To: <20140316132743.9e869dd95f2022572edc1745@skynet.be>
+Date: Sun, 16 Mar 2014 15:53:30 +0000
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3BC5D985-1160-4685-8656-A01350DECEBB@tuxera.com>
+References: <20140316132743.9e869dd95f2022572edc1745@skynet.be>
+To: Fabian Frederick <fabf@skynet.be>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi,
 
-Although the process who is sending SIGKILL to systemd-udevd is not
-identified yet, adding wait_for_completion_timeout() can solve this
-regression. Therefore, I'd like to propose this patch for 3.14-final
-and 3.13-stable.
+Looks good, thanks.  You can add my Acked-by if you like.  Can I assume you have test it builds?
 
-Regards.
-----------
->From c6562e5d774dd1f36724197dbcb8976cccfaab53 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Sun, 16 Mar 2014 22:44:23 +0900
-Subject: [PATCH] kthread: Do not leave kthread_create() immediately upon SIGKILL.
+Andrew, can you please merge this via your patch series?  Thanks!
 
-Commit 786235ee "kthread: make kthread_create() killable" changed to
-leave kthread_create() as soon as receiving SIGKILL. But this change
-caused boot failures if systemd-udevd received SIGKILL (probably due
-to timeout) while loading SCSI controller drivers using
-finit_module() [1].
+Best regards,
 
-Therefore, this patch changes kthread_create() to wait for 10 more
-seconds after receiving SIGKILL, unless chosen by the OOM killer,
-in order to give the kthreadd a chance to complete the request.
+	Anton
 
-  [1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
+On 16 Mar 2014, at 12:27, Fabian Frederick <fabf@skynet.be> wrote:
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: <stable@vger.kernel.org> [3.13+]
----
- kernel/kthread.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index b5ae3ee..52ae7dc 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -292,6 +292,17 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 	 * new kernel thread.
- 	 */
- 	if (unlikely(wait_for_completion_killable(&done))) {
-+		int i = 0;
-+
-+		/*
-+		 * I got SIGKILL, but wait for 10 more seconds for completion
-+		 * unless chosen by the OOM killer. This delay is there as a
-+		 * workaround for boot failure caused by SIGKILL upon device
-+		 * driver initialization timeout.
-+		 */
-+		while (i++ < 10 && !test_tsk_thread_flag(current, TIF_MEMDIE))
-+			if (wait_for_completion_timeout(&done, HZ))
-+				goto ready;
- 		/*
- 		 * If I was SIGKILLed before kthreadd (or new kernel thread)
- 		 * calls complete(), leave the cleanup of this structure to
-@@ -305,6 +316,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 		 */
- 		wait_for_completion(&done);
- 	}
-+ready:
- 	task = create->result;
- 	if (!IS_ERR(task)) {
- 		static const struct sched_param param = { .sched_priority = 0 };
+> -All printk(KERN_foo converted to pr_foo().
+> -Add pr_fmt and remove redundant prefixes.
+> -Convert spinlock/static array to va_format (inspired by Joe Perches help 
+> on previous logging patches).
+> 
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+> fs/ntfs/debug.c | 54 ++++++++++++++++++++++--------------------------------
+> fs/ntfs/super.c | 28 ++++++++++++----------------
+> 2 files changed, 34 insertions(+), 48 deletions(-)
+> 
+> diff --git a/fs/ntfs/debug.c b/fs/ntfs/debug.c
+> index 807150e..607ff92 100644
+> --- a/fs/ntfs/debug.c
+> +++ b/fs/ntfs/debug.c
+> @@ -18,16 +18,9 @@
+>  * distribution in the file COPYING); if not, write to the Free Software
+>  * Foundation,Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+>  */
+> -
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> #include "debug.h"
+> 
+> -/*
+> - * A static buffer to hold the error string being displayed and a spinlock
+> - * to protect concurrent accesses to it.
+> - */
+> -static char err_buf[1024];
+> -static DEFINE_SPINLOCK(err_buf_lock);
+> -
+> /**
+>  * __ntfs_warning - output a warning to the syslog
+>  * @function:	name of function outputting the warning
+> @@ -50,6 +43,7 @@ static DEFINE_SPINLOCK(err_buf_lock);
+> void __ntfs_warning(const char *function, const struct super_block *sb,
+> 		const char *fmt, ...)
+> {
+> +	struct va_format vaf;
+> 	va_list args;
+> 	int flen = 0;
+> 
+> @@ -59,17 +53,15 @@ void __ntfs_warning(const char *function, const struct super_block *sb,
+> #endif
+> 	if (function)
+> 		flen = strlen(function);
+> -	spin_lock(&err_buf_lock);
+> 	va_start(args, fmt);
+> -	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
+> +	vaf.fmt = fmt;
+> +	vaf.va = &args;
+> 	va_end(args);
+> 	if (sb)
+> -		printk(KERN_ERR "NTFS-fs warning (device %s): %s(): %s\n",
+> -				sb->s_id, flen ? function : "", err_buf);
+> +		pr_warn("(device %s): %s(): %pV\n",
+> +			sb->s_id, flen ? function : "", &vaf);
+> 	else
+> -		printk(KERN_ERR "NTFS-fs warning: %s(): %s\n",
+> -				flen ? function : "", err_buf);
+> -	spin_unlock(&err_buf_lock);
+> +		pr_warn("%s(): %pV\n", flen ? function : "", &vaf);
+> }
+> 
+> /**
+> @@ -94,6 +86,7 @@ void __ntfs_warning(const char *function, const struct super_block *sb,
+> void __ntfs_error(const char *function, const struct super_block *sb,
+> 		const char *fmt, ...)
+> {
+> +	struct va_format vaf;
+> 	va_list args;
+> 	int flen = 0;
+> 
+> @@ -103,17 +96,15 @@ void __ntfs_error(const char *function, const struct super_block *sb,
+> #endif
+> 	if (function)
+> 		flen = strlen(function);
+> -	spin_lock(&err_buf_lock);
+> 	va_start(args, fmt);
+> -	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
+> +	vaf.fmt = fmt;
+> +	vaf.va = &args;
+> 	va_end(args);
+> 	if (sb)
+> -		printk(KERN_ERR "NTFS-fs error (device %s): %s(): %s\n",
+> -				sb->s_id, flen ? function : "", err_buf);
+> +		pr_err("(device %s): %s(): %pV\n",
+> +		       sb->s_id, flen ? function : "", &vaf);
+> 	else
+> -		printk(KERN_ERR "NTFS-fs error: %s(): %s\n",
+> -				flen ? function : "", err_buf);
+> -	spin_unlock(&err_buf_lock);
+> +		pr_err("%s(): %pV\n", flen ? function : "", &vaf);
+> }
+> 
+> #ifdef DEBUG
+> @@ -124,6 +115,7 @@ int debug_msgs = 0;
+> void __ntfs_debug (const char *file, int line, const char *function,
+> 		const char *fmt, ...)
+> {
+> +	struct va_format vaf;
+> 	va_list args;
+> 	int flen = 0;
+> 
+> @@ -131,13 +123,11 @@ void __ntfs_debug (const char *file, int line, const char *function,
+> 		return;
+> 	if (function)
+> 		flen = strlen(function);
+> -	spin_lock(&err_buf_lock);
+> 	va_start(args, fmt);
+> -	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
+> +	vaf.fmt = fmt;
+> +	vaf.va = &args;
+> 	va_end(args);
+> -	printk(KERN_DEBUG "NTFS-fs DEBUG (%s, %d): %s(): %s\n", file, line,
+> -			flen ? function : "", err_buf);
+> -	spin_unlock(&err_buf_lock);
+> +	pr_debug("(%s, %d): %s(): %pV", file, line, flen ? function : "", &vaf);
+> }
+> 
+> /* Dump a runlist. Caller has to provide synchronisation for @rl. */
+> @@ -149,12 +139,12 @@ void ntfs_debug_dump_runlist(const runlist_element *rl)
+> 
+> 	if (!debug_msgs)
+> 		return;
+> -	printk(KERN_DEBUG "NTFS-fs DEBUG: Dumping runlist (values in hex):\n");
+> +	pr_debug("Dumping runlist (values in hex):\n");
+> 	if (!rl) {
+> -		printk(KERN_DEBUG "Run list not present.\n");
+> +		pr_debug("Run list not present.\n");
+> 		return;
+> 	}
+> -	printk(KERN_DEBUG "VCN              LCN               Run length\n");
+> +	pr_debug("VCN              LCN               Run length\n");
+> 	for (i = 0; ; i++) {
+> 		LCN lcn = (rl + i)->lcn;
+> 
+> @@ -163,13 +153,13 @@ void ntfs_debug_dump_runlist(const runlist_element *rl)
+> 
+> 			if (index > -LCN_ENOENT - 1)
+> 				index = 3;
+> -			printk(KERN_DEBUG "%-16Lx %s %-16Lx%s\n",
+> +			pr_debug("%-16Lx %s %-16Lx%s\n",
+> 					(long long)(rl + i)->vcn, lcn_str[index],
+> 					(long long)(rl + i)->length,
+> 					(rl + i)->length ? "" :
+> 						" (runlist end)");
+> 		} else
+> -			printk(KERN_DEBUG "%-16Lx %-16Lx  %-16Lx%s\n",
+> +			pr_debug("%-16Lx %-16Lx  %-16Lx%s\n",
+> 					(long long)(rl + i)->vcn,
+> 					(long long)(rl + i)->lcn,
+> 					(long long)(rl + i)->length,
+> diff --git a/fs/ntfs/super.c b/fs/ntfs/super.c
+> index 82650d5..7a3c732 100644
+> --- a/fs/ntfs/super.c
+> +++ b/fs/ntfs/super.c
+> @@ -19,6 +19,7 @@
+>  * distribution in the file COPYING); if not, write to the Free Software
+>  * Foundation,Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+>  */
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> 
+> #include <linux/stddef.h>
+> #include <linux/init.h>
+> @@ -1894,7 +1895,7 @@ get_ctx_vol_failed:
+> 	vol->minor_ver = vi->minor_ver;
+> 	ntfs_attr_put_search_ctx(ctx);
+> 	unmap_mft_record(NTFS_I(vol->vol_ino));
+> -	printk(KERN_INFO "NTFS volume version %i.%i.\n", vol->major_ver,
+> +	pr_info("volume version %i.%i.\n", vol->major_ver,
+> 			vol->minor_ver);
+> 	if (vol->major_ver < 3 && NVolSparseEnabled(vol)) {
+> 		ntfs_warning(vol->sb, "Disabling sparse support due to NTFS "
+> @@ -3093,7 +3094,7 @@ static int __init init_ntfs_fs(void)
+> 	int err = 0;
+> 
+> 	/* This may be ugly but it results in pretty output so who cares. (-8 */
+> -	printk(KERN_INFO "NTFS driver " NTFS_VERSION " [Flags: R/"
+> +	pr_info(NTFS_VERSION " [Flags: R/"
+> #ifdef NTFS_RW
+> 			"W"
+> #else
+> @@ -3113,16 +3114,15 @@ static int __init init_ntfs_fs(void)
+> 			sizeof(ntfs_index_context), 0 /* offset */,
+> 			SLAB_HWCACHE_ALIGN, NULL /* ctor */);
+> 	if (!ntfs_index_ctx_cache) {
+> -		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+> -				ntfs_index_ctx_cache_name);
+> +		pr_crit("Failed to create %s!\n", ntfs_index_ctx_cache_name);
+> 		goto ictx_err_out;
+> 	}
+> 	ntfs_attr_ctx_cache = kmem_cache_create(ntfs_attr_ctx_cache_name,
+> 			sizeof(ntfs_attr_search_ctx), 0 /* offset */,
+> 			SLAB_HWCACHE_ALIGN, NULL /* ctor */);
+> 	if (!ntfs_attr_ctx_cache) {
+> -		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+> -				ntfs_attr_ctx_cache_name);
+> +		pr_crit("NTFS: Failed to create %s!\n",
+> +			ntfs_attr_ctx_cache_name);
+> 		goto actx_err_out;
+> 	}
+> 
+> @@ -3130,8 +3130,7 @@ static int __init init_ntfs_fs(void)
+> 			(NTFS_MAX_NAME_LEN+1) * sizeof(ntfschar), 0,
+> 			SLAB_HWCACHE_ALIGN, NULL);
+> 	if (!ntfs_name_cache) {
+> -		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+> -				ntfs_name_cache_name);
+> +		pr_crit("Failed to create %s!\n", ntfs_name_cache_name);
+> 		goto name_err_out;
+> 	}
+> 
+> @@ -3139,8 +3138,7 @@ static int __init init_ntfs_fs(void)
+> 			sizeof(ntfs_inode), 0,
+> 			SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD, NULL);
+> 	if (!ntfs_inode_cache) {
+> -		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+> -				ntfs_inode_cache_name);
+> +		pr_crit("Failed to create %s!\n", ntfs_inode_cache_name);
+> 		goto inode_err_out;
+> 	}
+> 
+> @@ -3149,15 +3147,14 @@ static int __init init_ntfs_fs(void)
+> 			SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD,
+> 			ntfs_big_inode_init_once);
+> 	if (!ntfs_big_inode_cache) {
+> -		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+> -				ntfs_big_inode_cache_name);
+> +		pr_crit("Failed to create %s!\n", ntfs_big_inode_cache_name);
+> 		goto big_inode_err_out;
+> 	}
+> 
+> 	/* Register the ntfs sysctls. */
+> 	err = ntfs_sysctl(1);
+> 	if (err) {
+> -		printk(KERN_CRIT "NTFS: Failed to register NTFS sysctls!\n");
+> +		pr_crit("Failed to register NTFS sysctls!\n");
+> 		goto sysctl_err_out;
+> 	}
+> 
+> @@ -3166,7 +3163,7 @@ static int __init init_ntfs_fs(void)
+> 		ntfs_debug("NTFS driver registered successfully.");
+> 		return 0; /* Success! */
+> 	}
+> -	printk(KERN_CRIT "NTFS: Failed to register NTFS filesystem driver!\n");
+> +	pr_crit("Failed to register NTFS filesystem driver!\n");
+> 
+> 	/* Unregister the ntfs sysctls. */
+> 	ntfs_sysctl(0);
+> @@ -3182,8 +3179,7 @@ actx_err_out:
+> 	kmem_cache_destroy(ntfs_index_ctx_cache);
+> ictx_err_out:
+> 	if (!err) {
+> -		printk(KERN_CRIT "NTFS: Aborting NTFS filesystem driver "
+> -				"registration...\n");
+> +		pr_crit("Aborting NTFS filesystem driver registration...\n");
+> 		err = -ENOMEM;
+> 	}
+> 	return err;
 -- 
-1.7.1
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge
+J.J. Thomson Avenue, Cambridge, CB3 0RB, UK
+
