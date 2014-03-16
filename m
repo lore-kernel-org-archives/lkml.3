@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167AbaCPBoM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 21:44:12 -0400
-Received: from ring0.de ([5.45.105.125]:43646 "EHLO ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756062AbaCPBoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 21:44:10 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv4 4/7] mfd: twl-core: Add twl_i2c_read/write_u16
-Date: Sun, 16 Mar 2014 02:43:28 +0100
-Message-Id: <1394934211-21605-5-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1394934211-21605-1-git-send-email-sre@debian.org>
-References: <1394934211-21605-1-git-send-email-sre@debian.org>
+	id S1754505AbaCPB7U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 21:59:20 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:45968 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928AbaCPB7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 21:59:19 -0400
+Date: Sat, 15 Mar 2014 18:59:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: peterz@infradead.org, mingo@elte.hu, josh@joshtriplett.org,
+        laijs@cn.fujitsu.com
+Cc: linux-kernel@vger.kernel.org
+Subject: cond_resched() and RCU CPU stall warnings
+Message-ID: <20140316015914.GA22102@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031601-7164-0000-0000-00000056B127
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a simple twl_i2c_read/write_u16 wrapper over
-the twl_i2c_read/write, which is similar to the
-twl_i2c_read/write_u8 wrapper.
+So I have been tightening up rcutorture a bit over the past year.
+The other day, I came across what looked like a great opportunity for
+further tightening, namely the schedule() in rcu_torture_reader().
+Why not turn this into a cond_resched(), speeding up the readers a bit
+and placing more stress on RCU?
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
-Tested-by: Marek Belisko <marek@goldelico.com>
----
- include/linux/i2c/twl.h | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+And boy does it increase stress!
 
-diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
-index ade1c06..d2b1670 100644
---- a/include/linux/i2c/twl.h
-+++ b/include/linux/i2c/twl.h
-@@ -195,6 +195,18 @@ static inline int twl_i2c_read_u8(u8 mod_no, u8 *val, u8 reg) {
- 	return twl_i2c_read(mod_no, val, reg, 1);
+Unfortunately, this increased stress sometimes shows up in the form of
+lots of RCU CPU stall warnings.  These can appear when an instance of
+rcu_torture_reader() gets a CPU to itself, in which case it won't ever
+enter the scheduler, and RCU will never see a quiescent state from that
+CPU, which means the grace period never ends.
+
+So I am taking a more measured approach to cond_resched() in
+rcu_torture_reader() for the moment.
+
+But longer term, should cond_resched() imply a set of RCU
+quiescent states?  One way to do this would be to add calls to
+rcu_note_context_switch() in each of the various cond_resched() functions.
+Easy change, but of course adds some overhead.  On the other hand,
+there might be more than a few of the 500+ calls to cond_resched() that
+expect that RCU CPU stalls will be prevented (to say nothing of
+might_sleep() and cond_resched_lock()).
+
+Thoughts?
+
+(Untested patch below, FWIW.)
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b46131ef6aab..994d2b0fd0b2 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4075,6 +4075,9 @@ int __sched _cond_resched(void)
+ 		__cond_resched();
+ 		return 1;
+ 	}
++	preempt_disable();
++	rcu_note_context_switch(smp_processor_id());
++	preempt_enable();
+ 	return 0;
  }
- 
-+static inline int twl_i2c_write_u16(u8 mod_no, u16 val, u8 reg) {
-+	val = cpu_to_le16(val);
-+	return twl_i2c_write(mod_no, (u8*) &val, reg, 2);
-+}
-+
-+static inline int twl_i2c_read_u16(u8 mod_no, u16 *val, u8 reg) {
-+	int ret;
-+	ret = twl_i2c_read(mod_no, (u8*) val, reg, 2);
-+	*val = le16_to_cpu(*val);
-+	return ret;
-+}
-+
- int twl_get_type(void);
- int twl_get_version(void);
- int twl_get_hfclk_rate(void);
--- 
-1.9.0
+ EXPORT_SYMBOL(_cond_resched);
 
