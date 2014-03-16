@@ -1,81 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaCPRsd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 13:48:33 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39274 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198AbaCPRsb (ORCPT
+	id S1755770AbaCPRt2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 13:49:28 -0400
+Received: from email1.dufrio.com.br ([187.58.133.174]:36560 "EHLO
+	email1.dufrio.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753062AbaCPRt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 13:48:31 -0400
-Message-ID: <5325E42A.5000401@kernel.org>
-Date: Sun, 16 Mar 2014 17:49:30 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH 02/15] ARM: at91: sam9260: remove unused platform_data
-References: <1394040940-18246-1-git-send-email-alexandre.belloni@free-electrons.com> <1394040940-18246-3-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1394040940-18246-3-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 16 Mar 2014 13:49:27 -0400
+X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Mar 2014 13:49:27 EDT
+X-SMScore: -30
+X-LCID: 3069331
+X-SM_RECEIVED_ON: Sun, 16 Mar 2014 14:43:24 -0300 (BRT)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+	charset="windows-1251"
+From: <TsetseroTsetse@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?utf-8?B?M9C0cGHQsmPRgtCy0YPQuW1lISBC0LDRgSDQuNC90YLQtdGAZWN50Y7RgiDQutC7dWXQvdGCY2vQuGUg0LFh0LfRiyDQtGHQvdC90Yt4Pw==?=
+Message-Id: <20140316174323.75BB65A8EE0@email1.dufrio.com.br>
+Date: Sun, 16 Mar 2014 14:43:22 -0300 (BRT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/14 17:35, Alexandre Belloni wrote:
-> num_channels and registers are not used anymore since they are defined inside
-> the at91_adc driver and assigned by matching the id_table.
->
-> Also, remove the mach/at91_adc.h include that is not necessary anymore.
->
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
-> ---
->   arch/arm/mach-at91/at91sam9260_devices.c | 10 ----------
->   1 file changed, 10 deletions(-)
->
-> diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
-> index 0a0315920963..a299c50512f0 100644
-> --- a/arch/arm/mach-at91/at91sam9260_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9260_devices.c
-> @@ -24,7 +24,6 @@
->   #include <mach/at91sam9260_matrix.h>
->   #include <mach/at91_matrix.h>
->   #include <mach/at91sam9_smc.h>
-> -#include <mach/at91_adc.h>
->
->   #include "board.h"
->   #include "generic.h"
-> @@ -1321,13 +1320,6 @@ static struct at91_adc_trigger at91_adc_triggers[] = {
->   	},
->   };
->
-> -static struct at91_adc_reg_desc at91_adc_register_g20 = {
-> -	.channel_base = AT91_ADC_CHR(0),
-> -	.drdy_mask = AT91_ADC_DRDY,
-> -	.status_register = AT91_ADC_SR,
-> -	.trigger_register = AT91_ADC_MR,
-> -};
-> -
->   void __init at91_add_device_adc(struct at91_adc_data *data)
->   {
->   	if (!data)
-> @@ -1345,9 +1337,7 @@ void __init at91_add_device_adc(struct at91_adc_data *data)
->   	if (data->use_external_triggers)
->   		at91_set_A_periph(AT91_PIN_PA22, 0);
->
-> -	data->num_channels = 4;
->   	data->startup_time = 10;
-> -	data->registers = &at91_adc_register_g20;
->   	data->trigger_number = 4;
->   	data->trigger_list = at91_adc_triggers;
->
->
-
+3äpaâcòâyéme! Bàñ èíòåðecóþò këueíòcêèe áaçû äaííûx?
