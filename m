@@ -1,87 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112AbaCPUVC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 16:21:02 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:37495 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517AbaCPUU7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 16:20:59 -0400
+	id S1754517AbaCPUVO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 16:21:14 -0400
+Received: from colibri.dagami.org ([82.226.230.20]:34511 "EHLO dagami.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932118AbaCPUVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 16:21:12 -0400
+X-Greylist: delayed 652 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Mar 2014 16:21:11 EDT
+User-Agent: SOGoMail 2.1.1b
+X-Forward: 192.168.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAGAzgsqD0aRnDMMyDCUVii6Rv22f97G0irpzFBz4c_ukKsn2hg@mail.gmail.com>
-References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
-	<20140218225548.GI31892@mtj.dyndns.org>
-	<20140219092731.GA4849@quack.suse.cz>
-	<20140219190139.GQ10134@htj.dyndns.org>
-	<CAGAzgspTZnUh_qi=FeQ4hS4LRiexPccTyALMg3Gt1K0ZZq_MuQ@mail.gmail.com>
-	<20140316145951.GB26026@htj.dyndns.org>
-	<CAGAzgsqD0aRnDMMyDCUVii6Rv22f97G0irpzFBz4c_ukKsn2hg@mail.gmail.com>
-Date: Sun, 16 Mar 2014 13:20:58 -0700
-X-Google-Sender-Auth: Rq4yAv7vcgzH5Fn4Y2P8crILNOs
-Message-ID: <CAGAzgsomQqKMy+1Be5p_HivbMM1poV8vQbG4WxN1h5e-JYLGyA@mail.gmail.com>
-Subject: Re: [PATCH] backing_dev: Fix hung task on sync
-From: "dbasehore ." <dbasehore@chromium.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        bleung@chromium.org, sonnyrao@chromium.org,
-        Luigi Semenzato <semenzato@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+from: "nb" <nb@dagami.org>
+subject: Initio Corporation INIC-1618L SATA chip too slow (seem to use usb1 not usb2)
+message-id: <3ff9-53260500-13-661db300@237317515>
+to: linux-kernel@vger.kernel.org
+content-type: text/plain; charset="utf-8"
+date: Sun, 16 Mar 2014 21:10:17 +0100
+content-transfer-encoding: 7bit
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also, the difference it would make is fix the issue for when a
-delayed_work is used for both immediate work (mod_delayed_work(0)) and
-delayed work.
+Hi,
 
-On Sun, Mar 16, 2014 at 12:13 PM, dbasehore . <dbasehore@chromium.org> wrote:
-> There's already behavior that is somewhat like that with the current
-> implementation. If there's an item on a workqueue, it could run at any
-> time. From the perspective of the driver/etc. that is using the
-> workqueue, there should be no difference between work being on the
-> workqueue and the kernel triggering a schedule right after the work is
-> removed from the workqueue, but before the work function has done
-> anything.
->
-> So to reiterate, calling mod_delayed_work on something that is already
-> in the workqueue has two behaviors. One, the work is dispatched before
-> mod_delayed_work can remove it from the workqueue. Two,
-> mod_delayed_work removes it from the workqueue and sets the timer (or
-> not in the case of 0). The behavior of the proposed change should be
-> no different than the first behavior.
->
-> This should not introduce new behavior from the perspective of the
-> code using delayed_work. It is true that there is a larger window of
-> time between when you call mod_delayed_work and when an already queued
-> work item will run, but I don't believe that matters.
->
-> The API will still make sense since we will only ever mod delayed work
-> but not work that is no longer delayed (on the workqueue).
->
-> On Sun, Mar 16, 2014 at 7:59 AM, Tejun Heo <tj@kernel.org> wrote:
->> On Sat, Mar 15, 2014 at 01:22:53PM -0700, dbasehore . wrote:
->>> mod_delayed_work currently removes a work item from a workqueue if it
->>> is on it. Correct me if I'm wrong, but I don't think that this is
->>> necessarily required for mod_delayed_work to have the current
->>> behavior. We should be able to set the timer while a delayed_work is
->>> currently on a workqueue. If the delayed_work is still on the
->>> workqueue when the timer goes off, everything is fine. If it has left
->>> the workqueue, we can queue it again.
->>
->> What different would that make w.r.t. this issue?  Plus, please note
->> that a work item may wait non-insignificant amount of time pending if
->> the workqueue is saturated to max_active.  Doing the above would make
->> mod_delayed_work()'s behavior quite fuzzy - the work item is modified
->> or queued to the specified time but if the timer has already expired,
->> the work item may execute after unspecified amount of time which may
->> be shorter than the new timeout.  What kind of interface would that
->> be?
->>
->> Thanks.
->>
->> --
->> tejun
+My external disk uses a Initio Corporation INIC-1618L SATA chip.
+vendor/product are : 0x13fd/0x0840 and bcdDevice is 1.14 making the disk work very slowly 12Mb in spite of 10 times faster. bcdUSB seem to be ok : 2.00
+Tried this on 3.13 and 3.14-rc6
+
+Is there a module to load specifically. In my case usb-storage is loaded.
+
+Not really sure it's the right place to post this.
+Please cc me, I have not subscribed to the list.
+
+lsusb shows:
+
+Bus 002 Device 011: ID 13fd:0840 Initio Corporation INIC-1618L SATA
+Device Descriptor:
+bLength 18
+bDescriptorType 1
+bcdUSB 2.00
+bDeviceClass 0 (Defined at Interface level)
+bDeviceSubClass 0
+bDeviceProtocol 0
+bMaxPacketSize0 64
+idVendor 0x13fd Initio Corporation
+idProduct 0x0840 INIC-1618L SATA
+bcdDevice 1.14
+iManufacturer 1
+iProduct 2
+iSerial 3
+bNumConfigurations 1
+Configuration Descriptor:
+bLength 9
+bDescriptorType 2
+wTotalLength 32
+bNumInterfaces 1
+bConfigurationValue 1
+iConfiguration 0
+bmAttributes 0xc0
+Self Powered
+MaxPower 2mA
+Interface Descriptor:
+bLength 9
+bDescriptorType 4
+bInterfaceNumber 0
+bAlternateSetting 0
+bNumEndpoints 2
+bInterfaceClass 8 Mass Storage
+bInterfaceSubClass 6 SCSI
+bInterfaceProtocol 80 Bulk-Only
+iInterface 0
+Endpoint Descriptor:
+bLength 7
+bDescriptorType 5
+bEndpointAddress 0x81 EP 1 IN
+bmAttributes 2
+Transfer Type Bulk
+Synch Type None
+Usage Type Data
+wMaxPacketSize 0x0040 1x 64 bytes
+bInterval 0
+Endpoint Descriptor:
+bLength 7
+bDescriptorType 5
+bEndpointAddress 0x02 EP 2 OUT
+bmAttributes 2
+Transfer Type Bulk
+Synch Type None
+Usage Type Data
+wMaxPacketSize 0x0040 1x 64 bytes
+bInterval 0
+
+dmesg shows:
+
+[ 9295.428122] usb 2-1: new full-speed USB device number 6 using uhci_hcd
+[ 9295.572067] usb 2-1: not running at top speed; connect to a high speed hub
+[ 9295.600069] usb 2-1: New USB device found, idVendor=13fd, idProduct=0840
+[ 9295.600081] usb 2-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+[ 9295.600086] usb 2-1: Product: External
+[ 9295.600090] usb 2-1: Manufacturer: Generic
+[ 9295.600094] usb 2-1: SerialNumber: 533134504A44305132353239
+[ 9295.603150] usb-storage 2-1:1.0: USB Mass Storage device detected
+[ 9295.608156] scsi6 : usb-storage 2-1:1.0
+[ 9296.613036] scsi 6:0:0:0: Direct-Access Generic External 1.14 PQ: 0 ANSI: 4
+[ 9296.614845] sd 6:0:0:0: Attached scsi generic sg2 type 0
+[ 9296.619005] sd 6:0:0:0: [sdb] 234441647 512-byte logical blocks: (120 GB/111 GiB)
+[ 9296.622005] sd 6:0:0:0: [sdb] Write Protect is off
+[ 9296.622013] sd 6:0:0:0: [sdb] Mode Sense: 23 00 00 00
+[ 9296.624986] sd 6:0:0:0: [sdb] No Caching mode page found
+[ 9296.624994] sd 6:0:0:0: [sdb] Assuming drive cache: write through
+[ 9296.636002] sd 6:0:0:0: [sdb] No Caching mode page found
+[ 9296.636074] sd 6:0:0:0: [sdb] Assuming drive cache: write through
+[ 9296.732999] sdb: sdb1 sdb2
+[ 9296.747997] sd 6:0:0:0: [sdb] No Caching mode page found
+[ 9296.748052] sd 6:0:0:0: [sdb] Assuming drive cache: write through
+[ 9296.748061] sd 6:0:0:0: [sdb] Attached SCSI disk
+[ 9300.207477] EXT4-fs (sdb1): recovery complete
+[ 9300.207495] EXT4-fs (sdb1): mounted filesystem with ordered data mode. Opts: (null)
+
