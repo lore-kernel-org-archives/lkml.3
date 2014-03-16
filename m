@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154AbaCPVlj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 17:41:39 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:64014 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932084AbaCPVli (ORCPT
+	id S932175AbaCPVxv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 17:53:51 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:44346 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932090AbaCPVxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 17:41:38 -0400
-Message-ID: <1395006095.2002.8.camel@x41>
-Subject: v3.14-rc1+: new error: "nsc-ircc, Wrong chip version ff"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 16 Mar 2014 22:41:35 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Mar 2014 21:41:36.0648 (UTC) FILETIME=[81BF0880:01CF4160]
-X-RcptDomain: vger.kernel.org
+	Sun, 16 Mar 2014 17:53:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394997429.15764.116.camel@deadeye.wl.decadent.org.uk>
+References: <1394990490-1076-1-git-send-email-dh.herrmann@gmail.com>
+	<1394990490-1076-2-git-send-email-dh.herrmann@gmail.com>
+	<1394997429.15764.116.camel@deadeye.wl.decadent.org.uk>
+Date: Sun, 16 Mar 2014 22:53:48 +0100
+Message-ID: <CANq1E4R8WAWu5_V+_D_8e+u0hmhayi4Ueh7pDwcbvGwp=KTRBw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] net: add name_assign_type netdev attribute
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: netdev <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Tom Gundersen <teg@jklm.no>, Johannes berg <johannes@sipsolutions.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael,
+Hi
 
-0) Ever since v3.14-rc1 I've noticed two new boot messages on an,
-outdated, ThinkPad X41:
-    nsc-ircc, Found chip at base=0x164e
-    nsc-ircc, Wrong chip version ff
+On Sun, Mar 16, 2014 at 8:17 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Sun, 2014-03-16 at 18:21 +0100, David Herrmann wrote:
+> [...]
+>> --- a/include/linux/netdevice.h
+>> +++ b/include/linux/netdevice.h
+>> @@ -74,6 +74,11 @@ void netdev_set_default_ethtool_ops(struct net_device *dev,
+>>  #define NET_RX_SUCCESS               0       /* keep 'em coming, baby */
+>>  #define NET_RX_DROP          1       /* packet dropped */
+>>
+>> +/* interface name assignment types */
+>> +#define NET_NAME_ENUM                0       /* enumerated by kernel (default) */
+>> +#define NET_NAME_USER                1       /* provided by user-space */
+>> +#define NET_NAME_RENAMED     2       /* renamed by user-space */
+> [...]
+>
+> I think these definitions should be put in a UAPI header.  Even if the
+> names don't end up being used by userland, that would make it clear that
+> the numbers are a stable ABI.
 
-The first is printed at info level, so I would have ignored it, but the
-second is printed at error level.
+I tried to follow addr_assign_type as closely as possible. The
+NET_ADDR_* constants are only defined internally either. I am fine
+with exporting the constants, just want to make sure there's no reason
+to hide them that I'm not aware of.
 
-1) I've finally managed to bisect these messages to commit 202317a573b2
-("ACPI / scan: Add acpi_device objects for all device nodes in the
-namespace"). That's a rather big commit, so I've not even bothered to
-try to revert it on top on v3.14-rc6.
-
-2) What should I do to make that error go away?
-
-
-Paul Bolle
-
+Thanks
+David
