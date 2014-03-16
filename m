@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682AbaCPUSQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 16:18:16 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:43835 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754250AbaCPUSN (ORCPT
+	id S932112AbaCPUVC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 16:21:02 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:37495 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754517AbaCPUU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 16:18:13 -0400
+	Sun, 16 Mar 2014 16:20:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <1394996230.15764.113.camel@deadeye.wl.decadent.org.uk>
-References: <20140314084501.23100.13103.stgit@x230> <20140314084514.23100.72654.stgit@x230>
- <CAB=NE6WW8yX4kdy02j2fT4g0JvYj4a_XkiqYtXKZSMB7FHuwNg@mail.gmail.com> <1394996230.15764.113.camel@deadeye.wl.decadent.org.uk>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Sun, 16 Mar 2014 13:17:52 -0700
-X-Google-Sender-Auth: npzR0N-0Fas_5St7zMo3lMjafZs
-Message-ID: <CAB=NE6UP7dAwBHWUvtqAWksbrrdJ=vBRmT2PfcJPdeNhHfb7Kw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ath10k: add firmware files
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Kalle Valo <kvalo@qca.qualcomm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        ath10k@lists.infradead.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+In-Reply-To: <CAGAzgsqD0aRnDMMyDCUVii6Rv22f97G0irpzFBz4c_ukKsn2hg@mail.gmail.com>
+References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
+	<20140218225548.GI31892@mtj.dyndns.org>
+	<20140219092731.GA4849@quack.suse.cz>
+	<20140219190139.GQ10134@htj.dyndns.org>
+	<CAGAzgspTZnUh_qi=FeQ4hS4LRiexPccTyALMg3Gt1K0ZZq_MuQ@mail.gmail.com>
+	<20140316145951.GB26026@htj.dyndns.org>
+	<CAGAzgsqD0aRnDMMyDCUVii6Rv22f97G0irpzFBz4c_ukKsn2hg@mail.gmail.com>
+Date: Sun, 16 Mar 2014 13:20:58 -0700
+X-Google-Sender-Auth: Rq4yAv7vcgzH5Fn4Y2P8crILNOs
+Message-ID: <CAGAzgsomQqKMy+1Be5p_HivbMM1poV8vQbG4WxN1h5e-JYLGyA@mail.gmail.com>
+Subject: Re: [PATCH] backing_dev: Fix hung task on sync
+From: "dbasehore ." <dbasehore@chromium.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        bleung@chromium.org, sonnyrao@chromium.org,
+        Luigi Semenzato <semenzato@chromium.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 16, 2014 at 11:57 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Fri, 2014-03-14 at 05:36 -0700, Luis R. Rodriguez wrote:
->> On Fri, Mar 14, 2014 at 1:45 AM, Kalle Valo <kvalo@qca.qualcomm.com> wrote:
-> [...]
->> > + NO LICENSES OR OTHER RIGHTS,
->> > +WHETHER EXPRESS, IMPLIED, BASED ON ESTOPPEL OR OTHERWISE, ARE GRANTED
->> > +TO ANY PARTY'S PATENTS, PATENT APPLICATIONS, OR PATENTABLE INVENTIONS
->> > +BY VIRTUE OF THIS LICENSE OR THE DELIVERY OR PROVISION BY QUALCOMM
->> > +ATHEROS, INC. OF THE SOFTWARE.
+Also, the difference it would make is fix the issue for when a
+delayed_work is used for both immediate work (mod_delayed_work(0)) and
+delayed work.
+
+On Sun, Mar 16, 2014 at 12:13 PM, dbasehore . <dbasehore@chromium.org> wrote:
+> There's already behavior that is somewhat like that with the current
+> implementation. If there's an item on a workqueue, it could run at any
+> time. From the perspective of the driver/etc. that is using the
+> workqueue, there should be no difference between work being on the
+> workqueue and the kernel triggering a schedule right after the work is
+> removed from the workqueue, but before the work function has done
+> anything.
+>
+> So to reiterate, calling mod_delayed_work on something that is already
+> in the workqueue has two behaviors. One, the work is dispatched before
+> mod_delayed_work can remove it from the workqueue. Two,
+> mod_delayed_work removes it from the workqueue and sets the timer (or
+> not in the case of 0). The behavior of the proposed change should be
+> no different than the first behavior.
+>
+> This should not introduce new behavior from the perspective of the
+> code using delayed_work. It is true that there is a larger window of
+> time between when you call mod_delayed_work and when an already queued
+> work item will run, but I don't believe that matters.
+>
+> The API will still make sense since we will only ever mod delayed work
+> but not work that is no longer delayed (on the workqueue).
+>
+> On Sun, Mar 16, 2014 at 7:59 AM, Tejun Heo <tj@kernel.org> wrote:
+>> On Sat, Mar 15, 2014 at 01:22:53PM -0700, dbasehore . wrote:
+>>> mod_delayed_work currently removes a work item from a workqueue if it
+>>> is on it. Correct me if I'm wrong, but I don't think that this is
+>>> necessarily required for mod_delayed_work to have the current
+>>> behavior. We should be able to set the timer while a delayed_work is
+>>> currently on a workqueue. If the delayed_work is still on the
+>>> workqueue when the timer goes off, everything is fine. If it has left
+>>> the workqueue, we can queue it again.
 >>
->> This -- however is new to linux-firmware -- and I hereby raise a big
->> red fucking flag. All other licenses on linux-firmware provide at the
->> very least a limited patent grant. What makes Qualcomm special ?
-> [...]
->
-> There are several licence texts that don't mention patents at all.  I'm
-> assuming that the companies submitting firmware for inclusion in Linux
-> or linux-firmware do intend to grant whatever licences are required to
-> distribute it to end users.
-
-Agreed, this would be the only fair thing.
-
-> Several licence texts explicitly exclude patent licences relating to any
-> *other* products of the same company, but that's quite redundant.
-
-Sure.
-
-> However this language seems to explicitly exclude *any* patent licence.
-
-Yeap, they are making it crystal clear.
-
-> You're right to raise a red flag because, assuming Qualcomm does have
-> patents that cover the firmware alone, this seems to disallow
-> redistribution in whatever jurisdictions those patents apply.
-
-I'm also fearful of this setting a precedent for other vendors. I'll
-highlight, as it was discussed in our last Linux wireless summit, with
-the way things are going forward for all companies with 802.11 doing
-Single Chip designs combining more and more technologies together
-(first it was Bluetooth) and moving move towards a big fat firmware
-model (worst case Ethernet like 802.11 drivers) the blending will push
-a fine line even further as technologies used to the archaic patent
-licensing model get combined with technologies that were free of this
-crazy ludicrous archaic business model practice. Apart from firmware
-architecture in consideration for the technology combinations this
-also has implications for open firmware. The division of where
-companies are willing to push out open firmware is on the line here.
-I'm not only concerned with the removal of open firmware as an option
-but also seriously concerned over the quality and *security* of such
-firmware, just as I've always been with the quality and security of
-proprietary drivers. In the good 'ol Atheros days were able to
-innovate with the community on open firmware first with ar9170 which
-lead to carl9170.fw, that proved as great proof of concept to open
-firmware further up, even with the support of Tensilca on ath9k_htc,
-albeit under the Clear BSD License which also explicitly removes any
-patent grants. The upstream linux-firmware for ath9k_htc however is
-under the old Atheros firmware license which does provide a limited
-patent grant. The line was drawn on ath10k...
-
-To avoid patches as this one should we define some basic guidelines
-for linux-firmware acceptable licenses?
-
-> Ben.
->
-> --
-> Ben Hutchings
-> Computers are not intelligent.  They only think they are.
-
-For now.
-
-  Luis
+>> What different would that make w.r.t. this issue?  Plus, please note
+>> that a work item may wait non-insignificant amount of time pending if
+>> the workqueue is saturated to max_active.  Doing the above would make
+>> mod_delayed_work()'s behavior quite fuzzy - the work item is modified
+>> or queued to the specified time but if the timer has already expired,
+>> the work item may execute after unspecified amount of time which may
+>> be shorter than the new timeout.  What kind of interface would that
+>> be?
+>>
+>> Thanks.
+>>
+>> --
+>> tejun
