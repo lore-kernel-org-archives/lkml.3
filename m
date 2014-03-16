@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011AbaCPD6A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 23:58:00 -0400
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.183]:45282 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753253AbaCPD56 (ORCPT
+	id S1750891AbaCPEVM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 00:21:12 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:49681 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708AbaCPEVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 23:57:58 -0400
-X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTy+fSIS82hQ==
-X-RZG-CLASS-ID: mo05
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Subject: Re: 3.14-rc: /proc/acpi/battery gone?
-Date: Sun, 16 Mar 2014 03:57:48 +0000
-User-Agent: KMail/1.13.7 (Linux/3.13-6.slh.1-aptosid-686; KDE/4.8.4; i686; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ilia Mirkin <imirkin@alum.mit.edu>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-References: <20140314211456.GA23213@amd.pavel.ucw.cz> <201403150217.50526.s.L-H@gmx.de> <532471EC.1070107@intel.com>
-In-Reply-To: <532471EC.1070107@intel.com>
+	Sun, 16 Mar 2014 00:21:10 -0400
+Date: Sat, 15 Mar 2014 21:20:16 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Rafael Aquini <aquini@redhat.com>,
+        Suleiman Souhlal <suleiman@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: vmscan: do not swap anon pages just because free+file
+ is low
+In-Reply-To: <20140314170807.GW10663@suse.de>
+Message-ID: <alpine.LSU.2.11.1403152056430.21540@eggly.anvils>
+References: <1394811302-30468-1-git-send-email-hannes@cmpxchg.org> <53232901.5030307@redhat.com> <20140314170807.GW10663@suse.de>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403160357.53858.s.L-H@gmx.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Fri, 14 Mar 2014, Mel Gorman wrote:
+> On Fri, Mar 14, 2014 at 12:06:25PM -0400, Rik van Riel wrote:
+> > On 03/14/2014 11:35 AM, Johannes Weiner wrote:
+> > > Page reclaim force-scans / swaps anonymous pages when file cache drops
+> > > below the high watermark of a zone in order to prevent what little
+> > > cache remains from thrashing.
+> > > 
+> > > However, on bigger machines the high watermark value can be quite
+> > > large and when the workload is dominated by a static anonymous/shmem
+> > > set, the file set might just be a small window of used-once cache.  In
+> > > such situations, the VM starts swapping heavily when instead it should
+> > > be recycling the no longer used cache.
+> > > 
+> > > This is a longer-standing problem, but it's more likely to trigger
+> > > after 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy")
+> > > because file pages can no longer accumulate in a single zone and are
+> > > dispersed into smaller fractions among the available zones.
+> > > 
+> > > To resolve this, do not force scan anon when file pages are low but
+> > > instead rely on the scan/rotation ratios to make the right prediction.
+> > 
+> > I am not entirely sure that the scan/rotation ratio will be
+> > meaningful when the page cache has been essentially depleted,
+> > but on larger systems the distance between the low and high
+> > watermark is gigantic, and I have no better idea on how to
+> > fix the bug you encountered, so ...
+> > 
+> 
+> I still agree with the direction in general even though I've not put
+> thought into this specific patch yet. We've observed a problem whereby force
+> reclaim was causing one or other LRU list to be trashed.  In one specific
+> case, the inactive file is low logic was causing problems because while
+> the relative size of inactive/active was taken into account, the absolute
+> size vs anon was not. It was not a mainline kernel and we do not have a
+> test configuration that properly illustrates the problem on mainline it's
+> on our radar that it's a potential problem. The scan/rotation ratio at the
+> moment does not take absolute sizes into account but we almost certainly
+> want to go in that direction at some stage. Hugh's patch on altering how
+> proportional shrinking works is also relevant.
 
-On Saturday 15 March 2014, Lan Tianyu wrote:
-> On 03/14/2014 10:17 PM, Stefan Lippers-Hollmann wrote:
-> > Hi
-> >
-> > On Saturday 15 March 2014, Rafael J. Wysocki wrote:
-> >> On Friday, March 14, 2014 06:14:12 PM Ilia Mirkin wrote:
-> >>> On Fri, Mar 14, 2014 at 6:11 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> >>>> On Fri 2014-03-14 17:29:41, Ilia Mirkin wrote:
-> >>>>> On Fri, Mar 14, 2014 at 5:14 PM, Pavel Machek <pavel@ucw.cz> wrote:
-[...]
-> Hi Stefan:
-> 	I just glance wmbattery code. I find the code in the acpi.c is already 
-> using the new sysfs battery interfaces, right?
+That https://lkml.org/lkml/2014/3/13/217
+is relevant, yes, but I think rather more so is
+Suleiman's in https://lkml.org/lkml/2014/3/15/168
 
-By default, wmbattery appears to default to using upower as abstraction
-level, instead of querying sysfs itself directly.
+Hannes, your patch looks reasonable to me, and as I read it would
+be well complemented by Suleiman's and mine; but I do worry that
+the "scan_balance = SCAN_ANON" block you're removing was inserted
+for good reason, and its removal bring complaint from some direction.
 
-http://git.kitenet.net/?p=wmbattery.git;a=blob;f=autoconf/makeinfo.in;hb=HEAD
+By the way, I notice you marked yours for stable [3.12+]:
+if it's for stable at all, shouldn't it be for 3.9+?
+(well, maybe nobody's doing a 3.9.N.M but 3.10.N is still alive).
 
-which sets USE_UPOWER=1 by default.
-
-If USE_UPOWER=0 is set explicitly for the build, it reverts back to 
-direct sysfs parsing - and yes, it does appear to adhere to the current
-sysfs API properly.
-
-The last remains, and the ability to parse procfs (which hasn't been 
-default for quite some time already, in favour of using hal as 
-abstraction layer) has finally been removed in
-
-http://git.kitenet.net/?p=wmbattery.git;a=commitdiff;h=833eb63a5ce4f2fb712a201b1db4f2db1700fddb
-
-The switch from procfs parsing to hal (by default at least) in turn 
-happened with
-
-http://git.kitenet.net/?p=wmbattery.git;a=commitdiff;h=63c3d1a0b11e8ade1a5612bb5baa3d92e153bbbe
-
-in 2008 (before Debian squeeze/ oldstable). I have not investigated if 
-hal then read from procfs or sysfs, but wmbattery at least didn't read
-from procfs itself, unless explicitly told to do so (USE_HAL=0) during 
-the build since mid 2008.
-
-The current version of wmbattery however will never try to access 
-/proc/acpi, the current version no longer knows of its existence.
-
-[Again, I'm not familiar with wmbattery myself and have never run it]
-
-Regards
-	Stefan Lippers-Hollmann
+Hugh
