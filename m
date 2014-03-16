@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656AbaCPBnn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Mar 2014 21:43:43 -0400
-Received: from ring0.de ([5.45.105.125]:43487 "EHLO ring0.de"
+	id S1755876AbaCPBnu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Mar 2014 21:43:50 -0400
+Received: from ring0.de ([5.45.105.125]:43533 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750729AbaCPBnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Mar 2014 21:43:41 -0400
+	id S1755697AbaCPBnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Mar 2014 21:43:46 -0400
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
@@ -21,63 +21,88 @@ Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
         Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
         Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv4 0/7] Convert twl4030-madc to IIO API and add DT support
-Date: Sun, 16 Mar 2014 02:43:24 +0100
-Message-Id: <1394934211-21605-1-git-send-email-sre@debian.org>
+Subject: [PATCHv4 1/7] mfd: twl4030-madc: Use managed resources
+Date: Sun, 16 Mar 2014 02:43:25 +0100
+Message-Id: <1394934211-21605-2-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1394934211-21605-1-git-send-email-sre@debian.org>
+References: <1394934211-21605-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Update twl4030-madc driver to use managed resources.
 
-This is PATCHv4 for converting twl4030-madc to the IIO API and
-adding DT support. The plan is to remove the private twl4030-madc
-API once all users have been removed or converted to the IIO API.
-The patchset compiles and has been tested on my Nokia N900.
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+Tested-by: Marek Belisko <marek@goldelico.com>
+---
+ drivers/mfd/twl4030-madc.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-Changes since PATCHv3 [0]:
- * Dropped the following patches (applied in iio tree)
-  - iio: documentation: Add ABI documentation for *_mean_raw
-  - iio: inkern: add iio_read_channel_average_raw
- * Added some more Acked-by from Jonathan Cameron
-  - one of them on the basis of "Reorder that and I'm happy".
- * Changed some minor stuff requested by Jonathan
-  - reorder cleanup calls in driver's remove function
-  - convert another comment to kerneldoc
-
-Status:
- * Only feedback from DT binding maintainers is missing.
-   side note: The binding & the corresponding binding documentation
-   patch has not changed since 2014-02-13. So depending on when the
-   time frame starts the three weeks are over already ;)
- * It would be nice to see this patchset in 3.15.
-
-[0] https://lkml.org/lkml/2014/3/10/727
-
--- Sebastian
-
-Sebastian Reichel (7):
-  mfd: twl4030-madc: Use managed resources
-  mfd: twl4030-madc: Add DT support and convert to IIO framework
-  mfd: twl4030-madc: Cleanup driver
-  mfd: twl-core: Add twl_i2c_read/write_u16
-  mfd: twl4030-madc: Use twl_i2c_read/write_u16 for 16 bit registers
-  Documentation: DT: Document twl4030-madc binding
-  mfd: twl4030-madc: Move driver to drivers/iio/adc
-
- .../devicetree/bindings/iio/adc/twl4030-madc.txt   |  24 ++
- drivers/iio/adc/Kconfig                            |  10 +
- drivers/iio/adc/Makefile                           |   1 +
- drivers/{mfd => iio/adc}/twl4030-madc.c            | 320 +++++++++++++--------
- drivers/mfd/Kconfig                                |  10 -
- drivers/mfd/Makefile                               |   1 -
- include/linux/i2c/twl.h                            |  12 +
- include/linux/i2c/twl4030-madc.h                   |   2 +-
- 8 files changed, 247 insertions(+), 133 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
- rename drivers/{mfd => iio/adc}/twl4030-madc.c (74%)
-
+diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
+index 4c583e4..5458561 100644
+--- a/drivers/mfd/twl4030-madc.c
++++ b/drivers/mfd/twl4030-madc.c
+@@ -702,14 +702,14 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+ {
+ 	struct twl4030_madc_data *madc;
+ 	struct twl4030_madc_platform_data *pdata = dev_get_platdata(&pdev->dev);
+-	int ret;
++	int irq, ret;
+ 	u8 regval;
+ 
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "platform_data not available\n");
+ 		return -EINVAL;
+ 	}
+-	madc = kzalloc(sizeof(*madc), GFP_KERNEL);
++	madc = devm_kzalloc(&pdev->dev, sizeof(*madc), GFP_KERNEL);
+ 	if (!madc)
+ 		return -ENOMEM;
+ 
+@@ -726,7 +726,7 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+ 	    TWL4030_MADC_ISR1 : TWL4030_MADC_ISR2;
+ 	ret = twl4030_madc_set_power(madc, 1);
+ 	if (ret < 0)
+-		goto err_power;
++		return ret;
+ 	ret = twl4030_madc_set_current_generator(madc, 0, 1);
+ 	if (ret < 0)
+ 		goto err_current_generator;
+@@ -770,7 +770,9 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, madc);
+ 	mutex_init(&madc->lock);
+-	ret = request_threaded_irq(platform_get_irq(pdev, 0), NULL,
++
++	irq = platform_get_irq(pdev, 0);
++	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+ 				   twl4030_madc_threaded_irq_handler,
+ 				   IRQF_TRIGGER_RISING, "twl4030_madc", madc);
+ 	if (ret) {
+@@ -783,9 +785,6 @@ err_i2c:
+ 	twl4030_madc_set_current_generator(madc, 0, 0);
+ err_current_generator:
+ 	twl4030_madc_set_power(madc, 0);
+-err_power:
+-	kfree(madc);
+-
+ 	return ret;
+ }
+ 
+@@ -793,10 +792,8 @@ static int twl4030_madc_remove(struct platform_device *pdev)
+ {
+ 	struct twl4030_madc_data *madc = platform_get_drvdata(pdev);
+ 
+-	free_irq(platform_get_irq(pdev, 0), madc);
+ 	twl4030_madc_set_current_generator(madc, 0, 0);
+ 	twl4030_madc_set_power(madc, 0);
+-	kfree(madc);
+ 
+ 	return 0;
+ }
 -- 
 1.9.0
 
