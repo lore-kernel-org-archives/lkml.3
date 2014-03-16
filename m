@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994AbaCPJrW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 05:47:22 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:54037 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751080AbaCPJrU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 05:47:20 -0400
-Date: Sun, 16 Mar 2014 09:46:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Len Brown <len.brown@intel.com>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Laura Abbott <lauraa@codeaurora.org>, Sricharan R <r.sricharan@ti.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Russ Dill <Russ.Dill@ti.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
-Message-ID: <20140316094650.GV21483@n2100.arm.linux.org.uk>
-References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org> <1394016605-24120-3-git-send-email-sebastian.capella@linaro.org> <20140307044251.GD9985@codeaurora.org> <CADHgK6s4K+K+OZuUZVbHKNzbFiHzm82Ss0WpSfkUdQgP+E3j=w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADHgK6s4K+K+OZuUZVbHKNzbFiHzm82Ss0WpSfkUdQgP+E3j=w@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752487AbaCPJty (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 05:49:54 -0400
+Received: from ms-10.1blu.de ([178.254.4.101]:49903 "EHLO ms-10.1blu.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751593AbaCPJtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 05:49:52 -0400
+X-Greylist: delayed 4201 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Mar 2014 05:49:52 EDT
+Message-ID: <1394959174.5764.4.camel@archlinux-laptop.fritz.box>
+Subject: Re: [PATCH V2] ATHEROS-ALX: Use dma_set_mask_and_coherent and fix a
+ bug
+From: hahnjo <hahnjo@hahnjo.de>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: jcliburn@gmail.com, chris.snook@gmail.com, davem@davemloft.net,
+        johannes@sipsolutions.net, jg1.han@samsung.com, wangyijing@huawei.com,
+        sd@queasysnail.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Date: Sun, 16 Mar 2014 09:39:34 +0100
+In-Reply-To: <1394926252-2269-1-git-send-email-peter.senna@gmail.com>
+References: <1394926252-2269-1-git-send-email-peter.senna@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Con-Id: 154395
+X-Con-U: 0-hahnjo
+X-Originating-IP: 93.201.36.185
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 11:32:17AM -0700, Sebastian Capella wrote:
-> I've moved to this second implementation.  I don't think I understand
-> the ramifications enough to add the virt_to_pfn call for arm.
+Am Sonntag, den 16.03.2014, 00:30 +0100 schrieb Peter Senna Tschudin:
+>  1. For the 64 bits dma mask use dma_set_mask_and_coherent instead of
+>  dma_set_mask and dma_set_coherent_mask.
+> 
+>  2. For the 32 bits dma mask dma_set_coherent_mask is only called if
+>  dma_set_mask fails, which is unusual. Assuming this as a bug, fixes
+>  it by replacing calls to dma_set_mask and dma_set_coherent_mask by a
+>  call to dma_set_mask_and_coherent.
+>  
+Tested-by: Jonas Hahnfeld <hahnjo@hahnjo.de>
+>  Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> ---
+> 
+>  Tested by compilation only.
+> 
+>  Change from V1: Updated commit message.
+> 
+>  drivers/net/ethernet/atheros/alx/main.c | 14 ++++----------
+>  1 file changed, 4 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
+> index 2e45f6e..380d249 100644
+> --- a/drivers/net/ethernet/atheros/alx/main.c
+> +++ b/drivers/net/ethernet/atheros/alx/main.c
+> @@ -1248,19 +1248,13 @@ static int alx_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+>  	 * shared register for the high 32 bits, so only a single, aligned,
+>  	 * 4 GB physical address range can be used for descriptors.
+>  	 */
+> -	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
+> -	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
+> +	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
+>  		dev_dbg(&pdev->dev, "DMA to 64-BIT addresses\n");
+>  	} else {
+> -		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
+> +		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+>  		if (err) {
+> -			err = dma_set_coherent_mask(&pdev->dev,
+> -						    DMA_BIT_MASK(32));
+> -			if (err) {
+> -				dev_err(&pdev->dev,
+> -					"No usable DMA config, aborting\n");
+> -				goto out_pci_disable;
+> -			}
+> +			dev_err(&pdev->dev, "No usable DMA config, aborting\n");
+> +			goto out_pci_disable;
+>  		}
+>  	}
+>  
 
-Let's look at the implementations...
+No obvious problems noticed on my ASUS N56VZ.
 
-#define __pa(x)                 __virt_to_phys((unsigned long)(x))
-static inline phys_addr_t __virt_to_phys(unsigned long x)
-{
-        return (phys_addr_t)x - PAGE_OFFSET + PHYS_OFFSET;
-}
-
-So, __pa() returns a phys_addr_t (which may be either 32-bit or 64-bit).
-
-#define virt_to_pfn(kaddr)  (__pa(kaddr) >> PAGE_SHIFT)
-
-And that will do an appropriate shift to convert the phys_addr_t to a PFN,
-which will be fine to assign to an unsigned long variable.
-
-#define __phys_to_pfn(paddr)    ((unsigned long)((paddr) >> PAGE_SHIFT))
-
-This does the same thing, but has an explicit cast.
-
-So, the only difference between the two suggestions is that additional
-cast, which has no effect here.
-
-> I've changed one thing.  __nosave_end is pointing at the first byte
-> not included in the nosave region.  I subtracted one from it so that
-> we make sure we're referring to the last pfn, and left the pfn
-> comparison as you'd suggested.
-
-Yes, that should be safer.
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
