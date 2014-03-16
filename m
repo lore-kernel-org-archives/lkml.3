@@ -1,148 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202AbaCPTPo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 15:15:44 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:39039 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877AbaCPTPm (ORCPT
+	id S1755917AbaCPTQo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 15:16:44 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54602 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752603AbaCPTQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 15:15:42 -0400
-Date: Mon, 17 Mar 2014 08:15:36 +1300
-From: Daniel Ngu <daniel.dy.ngu@gmail.com>
-To: Jonathan Kim <jonathankim@gctsemi.com>
-Cc: Dean ahn <deanahn@gctsemi.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: gdm724x: gdm_usb.c: fixed coding style
-Message-ID: <20140316191536.GB3478@quad>
+	Sun, 16 Mar 2014 15:16:42 -0400
+Date: Sun, 16 Mar 2014 20:16:39 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 04/15] iio: adc: at91_adc: Add support for touchscreens
+ without TSMR
+Message-ID: <20140316191639.GJ3106@piout.net>
+References: <1394040940-18246-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1394040940-18246-5-git-send-email-alexandre.belloni@free-electrons.com>
+ <5325EA96.9000907@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <5325EA96.9000907@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Line over 80 characters
+On 16/03/2014 at 18:16:54 +0000, Jonathan Cameron wrote :
+> On 05/03/14 17:35, Alexandre Belloni wrote:
+> >Old ADCs, as present on the sam9rl and the sam9g45 don't have a TSMR register
+> >and the touchscreen support should be handled differently.
+> >
+> >Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> One comment inline about handling of devices where the platform data doesn't
+> include the touchscreen type.  I'd expect zero to be the current default
+> rather than NONE...
+> >diff --git a/include/linux/platform_data/at91_adc.h b/include/linux/platform_data/at91_adc.h
+> >index fcf73879dbfe..7819fc787731 100644
+> >--- a/include/linux/platform_data/at91_adc.h
+> >+++ b/include/linux/platform_data/at91_adc.h
+> >@@ -7,6 +7,12 @@
+> >  #ifndef _AT91_ADC_H_
+> >  #define _AT91_ADC_H_
+> >
+> >+enum atmel_adc_ts_type {
+> This means that the default for existing touch screens (where the platform
+> data won't include setting this value) will be none.  Is that correct?
+> >+	ATMEL_ADC_TOUCHSCREEN_NONE = 0,
+> >+	ATMEL_ADC_TOUCHSCREEN_4WIRE = 4,
+> >+	ATMEL_ADC_TOUCHSCREEN_5WIRE = 5,
+> >+};
+> >+
 
-Signed-off-by: Daniel Ngu <daniel.dy.ngu@gmail.com>
----
- drivers/staging/gdm724x/gdm_usb.c |   34 +++++++++++++++++++++++-----------
- 1 file changed, 23 insertions(+), 11 deletions(-)
+This is actually just a snippet that I moved from at91_adc.c to
+at91_adc.h. I followed the current behavior.  Until now, using the
+touchscreen was only supported through device tree and touchscreen
+handling was not activated unless the atmel,adc-ts-wires property is
+present.  I guess this is the sane way to go because when you use the
+touchscreen, you lose the triggers.
 
-diff --git a/drivers/staging/gdm724x/gdm_usb.c b/drivers/staging/gdm724x/gdm_usb.c
-index 03b4305..3d6774b 100644
---- a/drivers/staging/gdm724x/gdm_usb.c
-+++ b/drivers/staging/gdm724x/gdm_usb.c
-@@ -30,14 +30,17 @@
- #include "gdm_endian.h"
- 
- #define USB_DEVICE_CDC_DATA(vid, pid) \
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_CLASS | USB_DEVICE_ID_MATCH_INT_SUBCLASS,\
-+	.match_flags = USB_DEVICE_ID_MATCH_DEVICE | \
-+		       USB_DEVICE_ID_MATCH_INT_CLASS | \
-+		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,\
- 	.idVendor = vid,\
- 	.idProduct = pid,\
- 	.bInterfaceClass = USB_CLASS_COMM,\
- 	.bInterfaceSubClass = USB_CDC_SUBCLASS_ETHERNET
- 
- #define USB_DEVICE_MASS_DATA(vid, pid) \
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,\
-+	.match_flags = USB_DEVICE_ID_MATCH_DEVICE | \
-+		       USB_DEVICE_ID_MATCH_INT_INFO,\
- 	.idVendor = vid,\
- 	.idProduct = pid,\
- 	.bInterfaceSubClass = USB_SC_SCSI, \
-@@ -59,7 +62,8 @@ static void do_tx(struct work_struct *work);
- static void do_rx(struct work_struct *work);
- 
- static int gdm_usb_recv(void *priv_dev,
--			int (*cb)(void *cb_data, void *data, int len, int context),
-+			int (*cb)(void *cb_data, void *data, int len,
-+				  int context),
- 			void *cb_data,
- 			int context);
- 
-@@ -375,7 +379,8 @@ static int set_mac_address(u8 *data, void *arg)
- 	if (tlv->type == MAC_ADDRESS && udev->request_mac_addr) {
- 		memcpy(mac_address, tlv->data, tlv->len);
- 
--		if (register_lte_device(phy_dev, &udev->intf->dev, mac_address) < 0)
-+		if (register_lte_device(phy_dev, &udev->intf->dev,
-+					mac_address) < 0)
- 			pr_err("register lte device failed\n");
- 
- 		udev->request_mac_addr = 0;
-@@ -388,7 +393,8 @@ static int set_mac_address(u8 *data, void *arg)
- 
- static void do_rx(struct work_struct *work)
- {
--	struct lte_udev *udev = container_of(work, struct lte_udev, work_rx.work);
-+	struct lte_udev *udev = container_of(work, struct lte_udev,
-+					     work_rx.work);
- 	struct rx_cxt *rx = &udev->rx;
- 	struct usb_rx *r;
- 	struct hci_packet *hci;
-@@ -403,7 +409,8 @@ static void do_rx(struct work_struct *work)
- 			spin_unlock_irqrestore(&rx->to_host_lock, flags);
- 			break;
- 		}
--		r = list_entry(rx->to_host_list.next, struct usb_rx, to_host_list);
-+		r = list_entry(rx->to_host_list.next, struct usb_rx,
-+				to_host_list);
- 		list_del(&r->to_host_list);
- 		spin_unlock_irqrestore(&rx->to_host_lock, flags);
- 
-@@ -450,7 +457,8 @@ static void remove_rx_submit_list(struct usb_rx *r, struct rx_cxt *rx)
- 	struct usb_rx	*r_remove, *r_remove_next;
- 
- 	spin_lock_irqsave(&rx->submit_lock, flags);
--	list_for_each_entry_safe(r_remove, r_remove_next, &rx->rx_submit_list, rx_submit_list)
-+	list_for_each_entry_safe(r_remove, r_remove_next, &rx->rx_submit_list,
-+				 rx_submit_list)
- 	{
- 		if (r == r_remove) {
- 			list_del(&r->rx_submit_list);
-@@ -487,7 +495,8 @@ static void gdm_usb_rcv_complete(struct urb *urb)
- }
- 
- static int gdm_usb_recv(void *priv_dev,
--			int (*cb)(void *cb_data, void *data, int len, int context),
-+			int (*cb)(void *cb_data, void *data, int len,
-+				  int context),
- 			void *cb_data,
- 			int context)
- {
-@@ -641,7 +650,8 @@ static u32 packet_aggregation(struct lte_udev *udev, u8 *send_buf)
- 
- static void do_tx(struct work_struct *work)
- {
--	struct lte_udev *udev = container_of(work, struct lte_udev, work_tx.work);
-+	struct lte_udev *udev = container_of(work, struct lte_udev,
-+					     work_tx.work);
- 	struct usb_device *usbdev = udev->usbdev;
- 	struct tx_cxt *tx = &udev->tx;
- 	struct usb_tx *t = NULL;
-@@ -800,7 +810,8 @@ static struct gdm_endian *gdm_usb_get_endian(void *priv_dev)
- 	return &udev->gdm_ed;
- }
- 
--static int gdm_usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
-+static int gdm_usb_probe(struct usb_interface *intf,
-+			 const struct usb_device_id *id)
- {
- 	int ret = 0;
- 	struct phy_dev *phy_dev = NULL;
-@@ -848,7 +859,8 @@ static int gdm_usb_probe(struct usb_interface *intf, const struct usb_device_id
- 	usb_enable_autosuspend(usbdev);
- 	pm_runtime_set_autosuspend_delay(&usbdev->dev, AUTO_SUSPEND_TIMER);
- 
--	/* List up hosts with big endians, otherwise, defaults to little endian */
-+	/* List up hosts with big endians, otherwise, defaults to little
-+	 * endian */
- 	if (idProduct == PID_GDM7243)
- 		gdm_set_endian(&udev->gdm_ed, ENDIANNESS_BIG);
- 	else
+
 -- 
-1.7.9.5
-
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
