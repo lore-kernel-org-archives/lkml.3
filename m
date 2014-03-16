@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751171AbaCPGXi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 02:23:38 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42483 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801AbaCPGXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 02:23:36 -0400
-Message-ID: <1394950946.15098.111.camel@pasglop>
-Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 16 Mar 2014 17:22:26 +1100
-In-Reply-To: <201403142010.39886.arnd@arndb.de>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
-	 <201403141838.08900.arnd@arndb.de>
-	 <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
-	 <201403142010.39886.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751418AbaCPGZK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 02:25:10 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:37693 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732AbaCPGZI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 02:25:08 -0400
+Date: Sat, 15 Mar 2014 23:25:01 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: peterz@infradead.org, mingo@elte.hu, josh@joshtriplett.org,
+        laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: cond_resched() and RCU CPU stall warnings
+Message-ID: <20140316062501.GX21124@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140316015914.GA22102@linux.vnet.ibm.com>
+ <1394950182.5470.15.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394950182.5470.15.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031606-1542-0000-0000-0000006765A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-14 at 20:10 +0100, Arnd Bergmann wrote:
-> > As for the other two functions, I've no special attachment to where they are present
-> > and I'm happy to move them into drivers/pci on the condition that the patchset doesn't
-> > double in size. The reason why I'm weary of touching other architectures in a significant
-> > way is the current lack of engineering bandwidth and way of testing all the architectures.
-> > My low friction approach has been to introduce them in arm64 and then slowly move them
-> > into core (and yes, I know about good intentions and the road to hell.)
+On Sun, Mar 16, 2014 at 07:09:42AM +0100, Mike Galbraith wrote:
+> On Sat, 2014-03-15 at 18:59 -0700, Paul E. McKenney wrote: 
+> > So I have been tightening up rcutorture a bit over the past year.
+> > The other day, I came across what looked like a great opportunity for
+> > further tightening, namely the schedule() in rcu_torture_reader().
+> > Why not turn this into a cond_resched(), speeding up the readers a bit
+> > and placing more stress on RCU?
+> > 
+> > And boy does it increase stress!
+> > 
+> > Unfortunately, this increased stress sometimes shows up in the form of
+> > lots of RCU CPU stall warnings.  These can appear when an instance of
+> > rcu_torture_reader() gets a CPU to itself, in which case it won't ever
+> > enter the scheduler, and RCU will never see a quiescent state from that
+> > CPU, which means the grace period never ends.
+> > 
+> > So I am taking a more measured approach to cond_resched() in
+> > rcu_torture_reader() for the moment.
+> > 
+> > But longer term, should cond_resched() imply a set of RCU
+> > quiescent states?  One way to do this would be to add calls to
+> > rcu_note_context_switch() in each of the various cond_resched() functions.
+> > Easy change, but of course adds some overhead.  On the other hand,
+> > there might be more than a few of the 500+ calls to cond_resched() that
+> > expect that RCU CPU stalls will be prevented (to say nothing of
+> > might_sleep() and cond_resched_lock()).
+> > 
+> > Thoughts?
+> > 
+> > (Untested patch below, FWIW.)
+> > 
+> > 							Thanx, Paul
+> > 
+> > ------------------------------------------------------------------------
+> > 
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index b46131ef6aab..994d2b0fd0b2 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -4075,6 +4075,9 @@ int __sched _cond_resched(void)
+> >  		__cond_resched();
+> >  		return 1;
+> >  	}
+> > +	preempt_disable();
+> > +	rcu_note_context_switch(smp_processor_id());
+> > +	preempt_enable();
+> >  	return 0;
+> >  }
+> >  EXPORT_SYMBOL(_cond_resched);
 > 
-> I think everyone working on PCI is fed up with having arch-specific implementations
-> of all these, and Bjorn has been very supportive of generic infrastructure in the
-> past. Even just adding a generic infrastructure in a common place that is used
-> only by one architecture in my mind would be a significant improvement.
+> Hm.  Since you only care about the case where your task is solo, how
+> about do racy checks, 100% accuracy isn't required is it?  Seems you
+> wouldn't want to unconditionally do that in tight loops.
 
-I agree, it's a reasonable approach and microblaze which is simple and just "copied"
-powerpc originally would be a good one to move over as well.
+And indeed, my current workaround unconditionally does schedule() one
+out of 256 loops.  I would do something similar here, perhaps based
+on per-CPU counters, perhaps even with racy accesses to avoid always
+doing preempt_disable()/preempt_enable().
 
-powerpc itself has many historical quirks and while I'm interested in a common
-implementation, it will take me a bit of spare time to get through things and
-figure out what can be done there and what "hooks" might still be necessary.
+Or did you have something else in mind?
 
-At this point, it's mostly a matter of:
-
- - I'm the one who knows the most about the powerpc PCI code as I wrote large
-chunks of it
-
- - I'm very very very busy with some other things at the moment
-
-So don't take my silence on these matters as a lack of interest, I think it's
-definitely all going in the right direction, I just don't have much bandwidth
-to consider the move of powerpc over just yet.
-
-Cheers,
-Ben.
-
+							Thanx, Paul
 
