@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751248AbaCPG4N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 02:56:13 -0400
-Received: from mail-yk0-f202.google.com ([209.85.160.202]:41778 "EHLO
-	mail-yk0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732AbaCPG4M (ORCPT
+	id S1751439AbaCPHJi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 03:09:38 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53667 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751024AbaCPHJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 02:56:12 -0400
-X-Greylist: delayed 420 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Mar 2014 02:56:12 EDT
-From: Ben Chan <benchan@chromium.org>
-To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Suarez <gsuarez@smithmicro.com>
-Subject: [PATCH 1/2] USB: cdc: add MBIM extended functional descriptor structure
-Date: Sat, 15 Mar 2014 23:49:09 -0700
-Message-Id: <1394952550-9308-1-git-send-email-benchan@chromium.org>
-X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
+	Sun, 16 Mar 2014 03:09:37 -0400
+Date: Sun, 16 Mar 2014 04:09:17 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Laura Abbott <lauraa@codeaurora.org>, Sricharan R <r.sricharan@ti.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Russ Dill <Russ.Dill@ti.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
+Message-ID: <20140316070917.GA3094@arch.cereza>
+References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
+ <1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the MBIM extended functional descriptor structure
-defined in "Universal Serial Bus Communications Class Subclass
-Specification for Mobile Broadband Interface Model, Revision 1.0,
-Errata-1" published by USB-IF.
+On Mar 05, Sebastian Capella wrote:
+[..]
+> diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+> index 1f8fed9..83707702 100644
+> --- a/arch/arm/mm/Kconfig
+> +++ b/arch/arm/mm/Kconfig
+> @@ -611,6 +611,11 @@ config CPU_USE_DOMAINS
+>  config IO_36
+>  	bool
+>  
+> +config ARCH_HIBERNATION_POSSIBLE
+> +	bool
+> +	depends on MMU
+> +	default y if CPU_ARM920T || CPU_ARM926T || CPU_SA1100 || CPU_XSCALE || CPU_XSC3 || CPU_V6 || CPU_V6K || CPU_V7
+> +
+>  comment "Processor Features"
+>  
 
-Signed-off-by: Ben Chan <benchan@chromium.org>
----
- include/uapi/linux/usb/cdc.h | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Is there any reason why CPU_FEROCEON is not listed here? FWIW, I've just built
+(but not really tested) a Kirkwood kernel with CONFIG_HIBERNATION=y.
 
-diff --git a/include/uapi/linux/usb/cdc.h b/include/uapi/linux/usb/cdc.h
-index f35aa0a..b6a9cdd 100644
---- a/include/uapi/linux/usb/cdc.h
-+++ b/include/uapi/linux/usb/cdc.h
-@@ -56,6 +56,7 @@
- #define USB_CDC_OBEX_TYPE		0x15
- #define USB_CDC_NCM_TYPE		0x1a
- #define USB_CDC_MBIM_TYPE		0x1b
-+#define USB_CDC_MBIM_EXTENDED_TYPE	0x1c
- 
- /* "Header Functional Descriptor" from CDC spec  5.2.3.1 */
- struct usb_cdc_header_desc {
-@@ -205,6 +206,17 @@ struct usb_cdc_mbim_desc {
- 	__u8    bmNetworkCapabilities;
- } __attribute__ ((packed));
- 
-+/* "MBIM Extended Functional Descriptor" from CDC MBIM spec 1.0 errata-1 */
-+struct usb_cdc_mbim_extended_desc {
-+	__u8	bLength;
-+	__u8	bDescriptorType;
-+	__u8	bDescriptorSubType;
-+
-+	__le16	bcdMBIMExtendedVersion;
-+	__u8	bMaxOutstandingCommandMessages;
-+	__le16	wMTU;
-+} __attribute__ ((packed));
-+
- /*-------------------------------------------------------------------------*/
- 
- /*
+And is there any reason to put this config in arch/arm/mm/Kconfig, instead of
+in arch/arm/Kconfig, below ARCH_SUSPEND_POSSIBLE? 
+
+I'm also puzzled about having two separate options for suspend and hibernate,
+maybe someone can explain me why a given CPU would support the former but not
+the latter?
+
+Thanks!
 -- 
-1.9.0.279.gdc9e3eb
-
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
