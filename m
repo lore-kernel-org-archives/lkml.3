@@ -1,181 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957AbaCPUK3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 16:10:29 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:30613 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980AbaCPUK2 (ORCPT
+	id S1755682AbaCPUSQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 16:18:16 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:43835 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754250AbaCPUSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 16:10:28 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v2] improve_stack: make stack dump output useful again
-Date: Sun, 16 Mar 2014 16:10:18 -0400
-Message-Id: <1395000618-2957-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.3.2
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sun, 16 Mar 2014 16:18:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394996230.15764.113.camel@deadeye.wl.decadent.org.uk>
+References: <20140314084501.23100.13103.stgit@x230> <20140314084514.23100.72654.stgit@x230>
+ <CAB=NE6WW8yX4kdy02j2fT4g0JvYj4a_XkiqYtXKZSMB7FHuwNg@mail.gmail.com> <1394996230.15764.113.camel@deadeye.wl.decadent.org.uk>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Sun, 16 Mar 2014 13:17:52 -0700
+X-Google-Sender-Auth: npzR0N-0Fas_5St7zMo3lMjafZs
+Message-ID: <CAB=NE6UP7dAwBHWUvtqAWksbrrdJ=vBRmT2PfcJPdeNhHfb7Kw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ath10k: add firmware files
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Kalle Valo <kvalo@qca.qualcomm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        ath10k@lists.infradead.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now when people try to report issues in the kernel they send stack
-dumps to eachother, which looks something like this:
+On Sun, Mar 16, 2014 at 11:57 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Fri, 2014-03-14 at 05:36 -0700, Luis R. Rodriguez wrote:
+>> On Fri, Mar 14, 2014 at 1:45 AM, Kalle Valo <kvalo@qca.qualcomm.com> wrote:
+> [...]
+>> > + NO LICENSES OR OTHER RIGHTS,
+>> > +WHETHER EXPRESS, IMPLIED, BASED ON ESTOPPEL OR OTHERWISE, ARE GRANTED
+>> > +TO ANY PARTY'S PATENTS, PATENT APPLICATIONS, OR PATENTABLE INVENTIONS
+>> > +BY VIRTUE OF THIS LICENSE OR THE DELIVERY OR PROVISION BY QUALCOMM
+>> > +ATHEROS, INC. OF THE SOFTWARE.
+>>
+>> This -- however is new to linux-firmware -- and I hereby raise a big
+>> red fucking flag. All other licenses on linux-firmware provide at the
+>> very least a limited patent grant. What makes Qualcomm special ?
+> [...]
+>
+> There are several licence texts that don't mention patents at all.  I'm
+> assuming that the companies submitting firmware for inclusion in Linux
+> or linux-firmware do intend to grant whatever licences are required to
+> distribute it to end users.
 
-[    6.906437]  [<ffffffff811f0e90>] ? backtrace_test_irq_callback+0x20/0x20
-[    6.907121]  [<ffffffff84388ce8>] dump_stack+0x52/0x7f
-[    6.907640]  [<ffffffff811f0ec8>] backtrace_regression_test+0x38/0x110
-[    6.908281]  [<ffffffff813596a0>] ? proc_create_data+0xa0/0xd0
-[    6.908870]  [<ffffffff870a8040>] ? proc_modules_init+0x22/0x22
-[    6.909480]  [<ffffffff810020c2>] do_one_initcall+0xc2/0x1e0
-[...]
+Agreed, this would be the only fair thing.
 
-However, most of the text you get is pure garbage.
+> Several licence texts explicitly exclude patent licences relating to any
+> *other* products of the same company, but that's quite redundant.
 
-The only useful thing above is the function name. Due to the amount of
-different kernel code versions and various configurations being used, the
-kernel address and the offset into the function are not really helpful if
-we can translate them into filename and line number.
+Sure.
 
-Too often the result of someone looking at a stack dump is asking the person
-who sent it for a translation for one or more 'addr2line' translations. Which
-slows down the entire process of debugging the issue (and really annoying).
+> However this language seems to explicitly exclude *any* patent licence.
 
-The "improve_stack" script (wanted: better name) is an attempt to make the
-output more useful and easy to work with by translating all kernel addresses
-in the stack dump into line numbers. Which means that the stack dump
-would look like this:
+Yeap, they are making it crystal clear.
 
-[  635.148361]  dump_stack (lib/dump_stack.c:52)
-[  635.149127]  warn_slowpath_common (kernel/panic.c:418)
-[  635.150214]  warn_slowpath_null (kernel/panic.c:453)
-[  635.151031]  _oalloc_pages_slowpath+0x6a/0x7d0
-[  635.152171]  ? zone_watermark_ok (mm/page_alloc.c:1728)
-[  635.152988]  ? get_page_from_freelist (mm/page_alloc.c:1939)
-[  635.154766]  __alloc_pages_nodemask (mm/page_alloc.c:2766)
+> You're right to raise a red flag because, assuming Qualcomm does have
+> patents that cover the firmware alone, this seems to disallow
+> redistribution in whatever jurisdictions those patents apply.
 
-It's pretty obvious why this is better than the previous stack dump before.
+I'm also fearful of this setting a precedent for other vendors. I'll
+highlight, as it was discussed in our last Linux wireless summit, with
+the way things are going forward for all companies with 802.11 doing
+Single Chip designs combining more and more technologies together
+(first it was Bluetooth) and moving move towards a big fat firmware
+model (worst case Ethernet like 802.11 drivers) the blending will push
+a fine line even further as technologies used to the archaic patent
+licensing model get combined with technologies that were free of this
+crazy ludicrous archaic business model practice. Apart from firmware
+architecture in consideration for the technology combinations this
+also has implications for open firmware. The division of where
+companies are willing to push out open firmware is on the line here.
+I'm not only concerned with the removal of open firmware as an option
+but also seriously concerned over the quality and *security* of such
+firmware, just as I've always been with the quality and security of
+proprietary drivers. In the good 'ol Atheros days were able to
+innovate with the community on open firmware first with ar9170 which
+lead to carl9170.fw, that proved as great proof of concept to open
+firmware further up, even with the support of Tensilca on ath9k_htc,
+albeit under the Clear BSD License which also explicitly removes any
+patent grants. The upstream linux-firmware for ath9k_htc however is
+under the old Atheros firmware license which does provide a limited
+patent grant. The line was drawn on ath10k...
 
-Usage is pretty simple:
+To avoid patches as this one should we define some basic guidelines
+for linux-firmware acceptable licenses?
 
-        ./improve_stack.sh [vmlinux] [base path]
+> Ben.
+>
+> --
+> Ben Hutchings
+> Computers are not intelligent.  They only think they are.
 
-Where vmlinux is the vmlinux to extract line numbers from and base path is
-the path that points to the root of the build tree, for example:
+For now.
 
-        ./improve_stack.sh vmlinux /home/sasha/linux/ < input.log > output.log
-
-The stack trace should be piped through it (I, for example, just pipe
-the output of the serial console of my KVM test box through it).
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
-
-Changes since v1:
- - Remove offset/size if addr2line translates to file/line successfully.
- - Improved description.
-
- scripts/improve_stack.sh |   91 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 91 insertions(+), 0 deletions(-)
- create mode 100755 scripts/improve_stack.sh
-
-diff --git a/scripts/improve_stack.sh b/scripts/improve_stack.sh
-new file mode 100755
-index 0000000..7919011
---- /dev/null
-+++ b/scripts/improve_stack.sh
-@@ -0,0 +1,91 @@
-+#!/bin/bash
-+
-+if [ $# != "2" ]; then
-+	echo "Usage:"
-+	echo "	$0 [vmlinux] [base path]"
-+	exit 1
-+fi
-+
-+vmlinux=$1
-+basepath=$2
-+
-+function parse_symbol() {
-+	# The structure of symbol at this point is:
-+	#   [name]+[offset]/[total length]
-+	#
-+	# For example:
-+	#   do_basic_setup+0x9c/0xbf
-+
-+
-+	# Strip the symbol name so that we could look it up
-+	name=${symbol%+*}
-+
-+	# Use 'nm vmlinux' to figure out the base address of said symbol.
-+	# It's actually faster to call it every time than to load it
-+	# all into bash.
-+	base_addr=$(nm $vmlinux | grep " $name\$" | awk {'print $1'})
-+
-+	# Let's start doing the math to get the exact address into the
-+	# symbol. First, strip out the symbol total length.
-+	expr=${symbol%/*}
-+
-+	# Now, replace the symbol name with the base address we found
-+	# before.
-+	expr=${expr/$name/0x$base_addr}
-+
-+	# Evaluate it to find the actual address
-+	expr=$((expr))
-+
-+	# Pass it to addr2line to get filename and line number
-+	code=`addr2line -i -e $vmlinux $(printf "%x\n" $expr)`
-+
-+	# addr2line doesn't return a proper error code if it fails, so
-+	# we detect it using the value it prints so that we could preserve
-+	# the offset/size into the function and bail out
-+	if [ "$code" == "??:0" ]; then
-+		return
-+	fi
-+
-+	# Strip out the base of the path
-+	code=${code//$basepath/""}
-+
-+	# In the case of inlines, move everything to same line
-+	code=${code//$'\n'/' '}
-+
-+	# Replace old address with pretty line numbers
-+	symbol=$(echo $name "("$code")")
-+}
-+
-+function handle_line() {
-+	line="$1"
-+
-+	# Tokenize
-+	words=$(echo $line | tr "\r " "\n")
-+
-+	# Remove hex numbers. Do it ourselves until it happens in the
-+	# kernel
-+	for i in $words; do
-+		if [[ $i =~ \[\<([^]]+)\>\] ]]; then
-+			line=${line/" $i"/""}
-+		fi
-+	done
-+
-+	# The symbol is the last element, process it
-+	symbol="$i"
-+	parse_symbol
-+
-+	# Add up the line number to the symbol
-+	line=${line/$i/$symbol}
-+	echo "$line"
-+}
-+
-+while read line; do
-+	# Let's see if we have an address in the line
-+	if [[ $line =~ \[\<([^]]+)\>\]  ]]; then
-+		# Translate address to line numbers
-+		handle_line "$line"
-+	else
-+		# Nothing special in this line, show it as is
-+		echo "$line"
-+	fi
-+done
--- 
-1.7.2.5
-
+  Luis
