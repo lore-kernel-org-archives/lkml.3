@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629AbaCPRGc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 13:06:32 -0400
+	id S932191AbaCPRGv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 13:06:51 -0400
 Received: from mga09.intel.com ([134.134.136.24]:56398 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932072AbaCPREG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 13:04:06 -0400
+	id S1755356AbaCPREF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 13:04:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,665,1389772800"; 
-   d="scan'208";a="501094194"
+   d="scan'208";a="501094175"
 From: Zhang Rui <rui.zhang@intel.com>
 To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
         rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
         Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH V3 06/11] ACPI: introduce platform_id flag
-Date: Mon, 17 Mar 2014 01:03:12 +0800
-Message-Id: <1394989397-2733-7-git-send-email-rui.zhang@intel.com>
+Subject: [PATCH V3 05/11] ACPI: check and enumerate CMOS RTC devices explicitly
+Date: Mon, 17 Mar 2014 01:03:11 +0800
+Message-Id: <1394989397-2733-6-git-send-email-rui.zhang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1394989397-2733-1-git-send-email-rui.zhang@intel.com>
 References: <1394989397-2733-1-git-send-email-rui.zhang@intel.com>
@@ -24,66 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only certain kind of ACPI device objects can be enumerated to platform bus.
-These ACPI device objects include
-1. ACPI device objects that have _HID control method.
-2. some ACPI device objects that have Linux specified HID strings.
+For CMOS RTC devices, the acpi pnp scan handler does not work because
+there is already a cmos rtc scan handler installed, thus we need to
+check those devices and enumerate them to PNP bus explicitly.
+Plus, the cmos rtc scan handler needs to return 1 so that it will not
+be enumerated to platform bus.
 
-In order to distinguish those device objects from the others, a new flag
-platform_id and a new function acpi_add_platform_id() are introduced
-in this patch.
-
-Currently, only devices with _HID method have this flag set.
-If you want platform devices to be created for device objects without _HID,
-use acpi_add_platform_id() when adding artificial Linux-specific ID strings
-to them.
+Note: the CMOS RTC device id is not removed from ACPI pnp scan handler
+      id list, thus, if cmos rtc scan handler is compiled out, the ACPI
+      pnp scan handler will be attached to the CMOS RTC devices instead,
+      to prevent these devices from being created to platform bus.
 
 Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 ---
- drivers/acpi/scan.c     |    8 +++++++-
- include/acpi/acpi_bus.h |    3 ++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/acpi/acpi_cmos_rtc.c |    2 +-
+ drivers/acpi/acpi_pnp.c      |   22 +++++++++++++++++++++-
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 399257e..58bdc03 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -1679,6 +1679,12 @@ static void acpi_add_id(struct acpi_device_pnp *pnp, const char *dev_id)
- 	pnp->type.hardware_id = 1;
+diff --git a/drivers/acpi/acpi_cmos_rtc.c b/drivers/acpi/acpi_cmos_rtc.c
+index 84190ed..a19b0b3 100644
+--- a/drivers/acpi/acpi_cmos_rtc.c
++++ b/drivers/acpi/acpi_cmos_rtc.c
+@@ -70,7 +70,7 @@ static int acpi_install_cmos_rtc_space_handler(struct acpi_device *adev,
+ 		return -ENODEV;
+ 	}
+ 
+-	return 0;
++	return 1;
  }
  
-+static void acpi_add_platform_id(struct acpi_device_pnp *pnp, const char *dev_id)
-+{
-+	acpi_add_id(pnp, dev_id);
-+	pnp->type.platform_id = 1;
-+}
-+
- /*
-  * Old IBM workstations have a DSDT bug wherein the SMBus object
-  * lacks the SMBUS01 HID and the methods do not have the necessary "_"
-@@ -1729,7 +1735,7 @@ static void acpi_set_pnp_ids(acpi_handle handle, struct acpi_device_pnp *pnp,
- 		}
- 
- 		if (info->valid & ACPI_VALID_HID)
--			acpi_add_id(pnp, info->hardware_id.string);
-+			acpi_add_platform_id(pnp, info->hardware_id.string);
- 		if (info->valid & ACPI_VALID_CID) {
- 			cid_list = &info->compatible_id_list;
- 			for (i = 0; i < cid_list->count; i++)
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 8c5e235..f998746 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -217,7 +217,8 @@ struct acpi_hardware_id {
- struct acpi_pnp_type {
- 	u32 hardware_id:1;
- 	u32 bus_address:1;
--	u32 reserved:30;
-+	u32 platform_id:1;
-+	u32 reserved:29;
+ static void acpi_remove_cmos_rtc_space_handler(struct acpi_device *adev)
+diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+index 2a7f86f..6fa482a 100644
+--- a/drivers/acpi/acpi_pnp.c
++++ b/drivers/acpi/acpi_pnp.c
+@@ -349,9 +349,29 @@ static struct acpi_scan_handler acpi_pnp_handler = {
+ 	.attach = acpi_pnp_scan_handler_attach,
  };
  
- struct acpi_device_pnp {
++/*
++ * For CMOS RTC devices, the acpi pnp spcan handler does not work because
++ * there is already a cmos rtc scan handler installed, thus we need to
++ * check those devices and enumerate them to PNP bus explicitly.
++ */
++static int is_cmos_rtc_device(struct acpi_device *adev)
++{
++	struct acpi_device_id ids[] = {
++		{ "PNP0B00" },
++		{ "PNP0B01" },
++		{ "PNP0B02" },
++		{""},
++	};
++	return !acpi_match_device_ids(adev, ids);
++}
++
+ bool acpi_is_pnp_device(struct acpi_device *device)
+ {
+-	return !!(device->handler == &acpi_pnp_handler);
++	if (device->handler == &acpi_pnp_handler)
++		return true;
++	if (is_cmos_rtc_device(device))
++		return true;
++	return false;
+ }
+ EXPORT_SYMBOL_GPL(acpi_is_pnp_device);
+ 
 -- 
 1.7.9.5
 
