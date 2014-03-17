@@ -1,260 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699AbaCQPHV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 11:07:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58937 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933411AbaCQPGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 11:06:33 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+	id S933402AbaCQPQG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 11:16:06 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:57169 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932954AbaCQPQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 11:16:03 -0400
+Date: Mon, 17 Mar 2014 11:15:53 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Rafael Aquini <aquini@redhat.com>,
+        Suleiman Souhlal <suleiman@google.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/3] ARM: dts: berlin2q: add the Marvell Armada 1500 pro
-Date: Mon, 17 Mar 2014 16:06:26 +0100
-Message-Id: <1395068788-19786-2-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395068788-19786-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1395068788-19786-1-git-send-email-antoine.tenart@free-electrons.com>
+Subject: Re: [patch] mm: vmscan: do not swap anon pages just because
+ free+file is low
+Message-ID: <20140317151553.GG14688@cmpxchg.org>
+References: <1394811302-30468-1-git-send-email-hannes@cmpxchg.org>
+ <53232901.5030307@redhat.com>
+ <20140314170807.GW10663@suse.de>
+ <alpine.LSU.2.11.1403152056430.21540@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1403152056430.21540@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds initial support for the Marvell Armada 1500 pro (BG2Q) SoC (Berlin family).
-The SoC has nodes for cpu, l2 cache controller, interrupt controllers, local
-timer, apb timers and uarts for now.
+On Sat, Mar 15, 2014 at 09:20:16PM -0700, Hugh Dickins wrote:
+> On Fri, 14 Mar 2014, Mel Gorman wrote:
+> > On Fri, Mar 14, 2014 at 12:06:25PM -0400, Rik van Riel wrote:
+> > > On 03/14/2014 11:35 AM, Johannes Weiner wrote:
+> > > > Page reclaim force-scans / swaps anonymous pages when file cache drops
+> > > > below the high watermark of a zone in order to prevent what little
+> > > > cache remains from thrashing.
+> > > > 
+> > > > However, on bigger machines the high watermark value can be quite
+> > > > large and when the workload is dominated by a static anonymous/shmem
+> > > > set, the file set might just be a small window of used-once cache.  In
+> > > > such situations, the VM starts swapping heavily when instead it should
+> > > > be recycling the no longer used cache.
+> > > > 
+> > > > This is a longer-standing problem, but it's more likely to trigger
+> > > > after 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy")
+> > > > because file pages can no longer accumulate in a single zone and are
+> > > > dispersed into smaller fractions among the available zones.
+> > > > 
+> > > > To resolve this, do not force scan anon when file pages are low but
+> > > > instead rely on the scan/rotation ratios to make the right prediction.
+> > > 
+> > > I am not entirely sure that the scan/rotation ratio will be
+> > > meaningful when the page cache has been essentially depleted,
+> > > but on larger systems the distance between the low and high
+> > > watermark is gigantic, and I have no better idea on how to
+> > > fix the bug you encountered, so ...
+> > > 
+> > 
+> > I still agree with the direction in general even though I've not put
+> > thought into this specific patch yet. We've observed a problem whereby force
+> > reclaim was causing one or other LRU list to be trashed.  In one specific
+> > case, the inactive file is low logic was causing problems because while
+> > the relative size of inactive/active was taken into account, the absolute
+> > size vs anon was not. It was not a mainline kernel and we do not have a
+> > test configuration that properly illustrates the problem on mainline it's
+> > on our radar that it's a potential problem. The scan/rotation ratio at the
+> > moment does not take absolute sizes into account but we almost certainly
+> > want to go in that direction at some stage. Hugh's patch on altering how
+> > proportional shrinking works is also relevant.
+> 
+> That https://lkml.org/lkml/2014/3/13/217
+> is relevant, yes, but I think rather more so is
+> Suleiman's in https://lkml.org/lkml/2014/3/15/168
+> 
+> Hannes, your patch looks reasonable to me, and as I read it would
+> be well complemented by Suleiman's and mine; but I do worry that
+> the "scan_balance = SCAN_ANON" block you're removing was inserted
+> for good reason, and its removal bring complaint from some direction.
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/boot/dts/berlin2q.dtsi | 210 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 210 insertions(+)
- create mode 100644 arch/arm/boot/dts/berlin2q.dtsi
+It's been introduced with the original LRU split patch but there is no
+explanation why.  Rik's concern now was that the scan/rotate numbers
+might not be too meaningful with very little cache.
 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-new file mode 100644
-index 000000000000..7a50267b1044
---- /dev/null
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -0,0 +1,210 @@
-+/*
-+ * Copyright (C) 2014 Antoine Ténart <antoine.tenart@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
-+
-+#include "skeleton.dtsi"
-+
-+/ {
-+	model = "Marvell Armada 1500 pro (BG2-Q) SoC";
-+	compatible = "marvell,berlin2q", "marvell,berlin";
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			compatible = "arm,cortex-a9";
-+			device_type = "cpu";
-+			next-level-cache = <&l2>;
-+			reg = <0>;
-+		};
-+
-+		cpu@1 {
-+			compatible = "arm,cortex-a9";
-+			device_type = "cpu";
-+			next-level-cache = <&l2>;
-+			reg = <1>;
-+		};
-+
-+		cpu@2 {
-+			compatible = "arm,cortex-a9";
-+			device_type = "cpu";
-+			next-level-cache = <&l2>;
-+			reg = <2>;
-+		};
-+
-+		cpu@3 {
-+			compatible = "arm,cortex-a9";
-+			device_type = "cpu";
-+			next-level-cache = <&l2>;
-+			reg = <3>;
-+		};
-+	};
-+
-+	smclk: sysmgr-clock {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <25000000>;
-+	};
-+
-+	cpuclk: cpu-clock {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <1200000000>;
-+	};
-+
-+	sysclk: system-clock {
-+		compatible = "fixed-factor-clock";
-+		#clock-cells = <0>;
-+		clocks = <&cpuclk>;
-+		clock-multi = <1>;
-+		clock-div = <3>;
-+	};
-+
-+	soc {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		ranges = <0 0xf7000000 0x1000000>;
-+		interrupt-parent = <&gic>;
-+
-+		l2: l2-cache-controller@ac0000 {
-+			compatible = "arm,pl310-cache";
-+			reg = <0xac0000 0x1000>;
-+			cache-level = <2>;
-+		};
-+
-+		local-timer@ad0600 {
-+			compatible = "arm,cortex-a9-twd-timer";
-+			reg = <0xad0600 0x20>;
-+			clocks = <&sysclk>;
-+			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
-+		};
-+
-+		gic: interrupt-controller@ad1000 {
-+			compatible = "arm,cortex-a9-gic";
-+			reg = <0xad1000 0x1000>, <0xad0100 0x100>;
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+		};
-+
-+		apb@e80000 {
-+			compatible = "simple-bus";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+
-+			ranges = <0 0xe80000 0x10000>;
-+			interrupt-parent = <&aic>;
-+
-+			timer0: timer@2c00 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c00 0x14>;
-+				interrupts = <8>;
-+				clock-freq = <100000000>;
-+			};
-+
-+			timer1: timer@2c14 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c14 0x14>;
-+				clock-freq = <100000000>;
-+				status = "disabled";
-+			};
-+
-+			timer2: timer@2c28 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c28 0x14>;
-+				clock-freq = <100000000>;
-+				status = "disabled";
-+			};
-+
-+			timer3: timer@2c3c {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c3c 0x14>;
-+				clock-freq = <100000000>;
-+				status = "disabled";
-+			};
-+
-+			timer4: timer@2c50 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c50 0x14>;
-+				clock-freq = <100000000>;
-+				status = "disabled";
-+			};
-+
-+			timer5: timer@2c64 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c64 0x14>;
-+				clock-freq = <100000000>;
-+				status = "disabled";
-+			};
-+
-+			timer6: timer@2c78 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c78 0x14>;
-+				clock-freq = <100000000>;
-+				status = "disabled";
-+			};
-+
-+			timer7: timer@2c8c {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c8c 0x14>;
-+				clock-freq = <100000000>;
-+				status = "disabled";
-+			};
-+
-+			aic: interrupt-controller@3800 {
-+				compatible = "snps,dw-apb-ictl";
-+				reg = <0x3800 0x30>;
-+				interrupt-controller;
-+				#interrupt-cells = <1>;
-+				interrupt-parent = <&gic>;
-+				interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
-+			};
-+		};
-+
-+		apb@fc0000 {
-+			compatible = "simple-bus";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+
-+			ranges = <0 0xfc0000 0x10000>;
-+			interrupt-parent = <&sic>;
-+
-+			uart0: uart@9000 {
-+				compatible = "snps,dw-apb-uart";
-+				reg = <0x9000 0x100>;
-+				interrupt-parent = <&sic>;
-+				interrupts = <8>;
-+				clock-frequency = <25000000>;
-+				reg-shift = <2>;
-+				status = "disabled";
-+			};
-+
-+			uart1: uart@a000 {
-+				compatible = "snps,dw-apb-uart";
-+				reg = <0xa000 0x100>;
-+				interrupt-parent = <&sic>;
-+				interrupts = <9>;
-+				clock-frequency = <25000000>;
-+				reg-shift = <2>;
-+				status = "disabled";
-+			};
-+
-+			sic: interrupt-controller@e000 {
-+				compatible = "snps,dw-apb-ictl";
-+				reg = <0xe000 0x30>;
-+				interrupt-controller;
-+				#interrupt-cells = <1>;
-+				interrupt-parent = <&gic>;
-+				interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
-+			};
-+		};
-+	};
-+};
--- 
-1.8.3.2
+> By the way, I notice you marked yours for stable [3.12+]:
+> if it's for stable at all, shouldn't it be for 3.9+?
+> (well, maybe nobody's doing a 3.9.N.M but 3.10.N is still alive).
 
+The code I'm removing is fairly old and it's only been reported to
+create problems starting with the fair zone allocator in 3.12.
