@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460AbaCQIIv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 04:08:51 -0400
-Received: from ozlabs.org ([203.10.76.45]:36356 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932175AbaCQIIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 04:08:49 -0400
-Date: Mon, 17 Mar 2014 19:08:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Zhao, Gang" <gamerh2o@gmail.com>
-Subject: linux-next: manual merge of the staging tree with the net-next tree
-Message-Id: <20140317190842.795b9d29db9a131a9cff91a9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Mar_2014_19_08_42_+1100_NpNP02eTe_x=Xyjw"
+	id S932404AbaCQIRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 04:17:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37359 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251AbaCQIRO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 04:17:14 -0400
+Date: Mon, 17 Mar 2014 09:17:07 +0100
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH] spi: dw-mmio: add oftree support
+Message-ID: <20140317081707.GQ27506@pengutronix.de>
+References: <1394787326-14520-1-git-send-email-s.trumtrar@pengutronix.de>
+ <20140314161403.GN25870@e106331-lin.cambridge.arm.com>
+ <20140314162614.GW366@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140314162614.GW366@sirena.org.uk>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:12:03 up 204 days, 17:42, 41 users,  load average: 0,49, 0,40,
+ 0,32
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Mar_2014_19_08_42_+1100_NpNP02eTe_x=Xyjw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi!
 
-Hi Greg,
+On Fri, Mar 14, 2014 at 04:26:14PM +0000, Mark Brown wrote:
+> On Fri, Mar 14, 2014 at 04:14:03PM +0000, Mark Rutland wrote:
+> 
+> > > +Synopsys DesignWare SPI master controller.
+> > > +
+> > > +Required properties:
+> > > +- compatible : "snps,dw-spi-mmio"
+> 
+> > Is there not a better name than "dw-spi-mmio"?
+> 
+> > What's the full name of the device, as on a datasheet? Is there no model
+> > number?
+> 
+> It's a Synopsis Designware IP block rather than a part - Google suggests
+> DW_apb_ssi.
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/wlan-ng/cfg80211.c between commit 3ead0d2e220e ("wlan-ng:
-fixup staging driver for removal of ieee80211_dsss_chan_to_freq") from
-the net-next tree and commit 4e5e9d7c66f0 ("staging: wlan-ng: replace
-function ieee80211_dsss_chan_to_freq()") from the staging tree.
+That seems to be the correct IP block, so I will change the compatible to
+"snps,dw-apb-ssi".
 
-I fixed it up (I used the staging tree version) and can carry the fix as
-necessary (no action is required).
+Thanks,
+Steffen
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__17_Mar_2014_19_08_42_+1100_NpNP02eTe_x=Xyjw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTJq2OAAoJEMDTa8Ir7ZwVe+MP/RAPisWxnpi7eERRukWgyrzC
-cuVENomgiHi44G8DfgpChCjjBQ1j9jc/34xNDhFm4usS4U2tY5PhImSIESebN9Eq
-A15JcbCtofiaS729/6IZxmGC+2rmi0ZGZzRnFQ8x3H+GEkKMLEM05ejT1DIwITsj
-wHErJWRB4A5qDf0UXpt4DhxH+Y22yP85LI3EPbuiprsS8NLoms4QUI76NKLam7/c
-jJl9Dh80OQNyE6v2OIH3tVPYC299AtfX+4rvuRzpI6EdTXy1vBGrgUOrF4rxS7Vs
-i2x0apeuWC0IqR43NkOIOt/RWvZ0NlaNRV97C2tlklse3ZKou6lwCS8NG5m8rsdP
-TYhi56f6P0BDjIi5nHojb78O1ZYWxPtWHWMgZwysUbZRR4yb/V5aMF3V19Sjv76s
-laC0myqgIavzLc11Ku6mX5ZDUR9z+U6lvvel2G9t36iorsmlnLZV4iYBBqn/GWVD
-d8//UfI1vNxxhB+0DP7OVMWrLoIGdkO2g5I5WqTUIEJlFydyW+9Lm+3yZRFMtwDF
-C4hQD44J0qTi28IsX2fGSnsG6WZaVrBqaE4bs1nyUUBXZXf3ImKoHDXAkFDbGM3f
-JTPiVLndzJQDa9EuCu/swoF4Ce3LqflT/XSNLMEqsPVIoobBOAJvmzPpVbN7ifkU
-X/038DAVB9N+50r+mZjP
-=1e0s
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Mar_2014_19_08_42_+1100_NpNP02eTe_x=Xyjw--
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
