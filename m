@@ -1,141 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246AbaCQBor (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 21:44:47 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57345 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932070AbaCQBoo (ORCPT
+	id S932267AbaCQBpz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 21:45:55 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61604 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070AbaCQBpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 21:44:44 -0400
-X-AuditID: cbfee690-b7f266d00000287c-8a-5326538bd0c3
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Chanwoo Choi'" <cw00.choi@samsung.com>,
-        "'Tomasz Figa'" <t.figa@samsung.com>
-Cc: mark.rutland@arm.com, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
-        pawel.moll@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, linux-arm-kernel@lists.infradead.org
-References: <1394605156-7768-1-git-send-email-cw00.choi@samsung.com>
- <53204328.7070607@samsung.com> <53211071.4040408@samsung.com>
- <532651E5.6040903@samsung.com>
-In-reply-to: <532651E5.6040903@samsung.com>
-Subject: RE: [PATCHv2 0/5] ARM: dts: exynos: Add missing dt data to bring
- kernel of Exynos4x12
-Date: Mon, 17 Mar 2014 10:44:36 +0900
-Message-id: <006201cf4182$77b665f0$672331d0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIBnLjoYSL6/JtAE0ldF9u/TwtVzQEJ65JNAiCNaK8DPY6U0JpMiodQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+ZoW53sFqwwYVd3BbXvzxntZh/5Byr
-	xblXKxktzja9YbfY9Pgaq8XlXXPYLGac38dkcfsyr8XS6xeZLCZMX8ti8epgG4vF+hmvWRx4
-	PNbMW8Po0dLcw+axcvkXNo/NS+o9+rasYvT4vEnOY+Pc0AD2KC6blNSczLLUIn27BK6MdQuW
-	MRV0Clf8mWzdwPiTr4uRk0NCwERi79QzrBC2mMSFe+vZuhi5OIQEljFKdN+dyApT9GlSMyNE
-	YhGjRM+7Z+wQzl9GiUc7FjOBVLEJaEgcfg+S4OQQEfCTWHtvEQtIEbPAAiaJf0uaWSE6ljJK
-	zPv2hgWkilNAW+L5s6dgHcICCRKz5l9nBLFZBFQl+t63sIHYvAKWEi+3N7BC2IISPybfA+tl
-	FtCS2LytiRXClpfYvOYtM8StChI7zr5mhLjCTWJ64w0miBoRiX0v3oH9ICEwl0NiY1MbM8Qy
-	AYlvkw8BDeUASshKbDoANUdS4uCKGywTGCVmIVk9C8nqWUhWz0KyYgEjyypG0dSC5ILipPQi
-	E73ixNzi0rx0veT83E2MkBQwYQfjvQPWhxiTgdZPZJYSTc4HppC8knhDYzMjC1MTU2Mjc0sz
-	0oSVxHnVHiUFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBUrN6scu5GfzB7336Os9rllWoB
-	kQKVK2ZkdnGKNVU1/z32Iu6ywaFV2ulLp0xhWd1yfO627V85G8pFlrGqrVr11p1ZXW1KwN/w
-	JTcPrd0idvCEm9eluK9+Nyozu5rmqB6czPGoqmHi6XuOk6+kzlD8Vsy4sKVbdULA9HSVvRon
-	GZtSvjx6dMZPiaU4I9FQi7moOBEAGMiaWBcDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jAd3uYLVgg8nz2Syuf3nOajH/yDlW
-	i3OvVjJanG16w26x6fE1VovLu+awWcw4v4/J4vZlXoul1y8yWUyYvpbF4tXBNhaL9TNeszjw
-	eKyZt4bRo6W5h81j5fIvbB6bl9R79G1ZxejxeZOcx8a5oQHsUQ2MNhmpiSmpRQqpecn5KZl5
-	6bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAdyoplCXmlAKFAhKLi5X07TBNCA1x
-	07WAaYzQ9Q0JgusxMkADCesYM9YtWMZU0Clc8WeydQPjT74uRk4OCQETiU+TmhkhbDGJC/fW
-	s3UxcnEICSxilOh594wdwvnLKPFox2ImkCo2AQ2Jw+9BEpwcIgJ+EmvvLWIBKWIWWMAk8W9J
-	MytEx1JGiXnf3rCAVHEKaEs8f/YUrENYIEFi1vzrYPtYBFQl+t63sIHYvAKWEi+3N7BC2IIS
-	PybfA+tlFtCS2LytiRXClpfYvOYtM8StChI7zr5mhLjCTWJ64w0miBoRiX0v3jFOYBSahWTU
-	LCSjZiEZNQtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwQnmmfQOxlUNFocYBTgY
-	lXh4JyirBQuxJpYVV+YeYpTgYFYS4U0wBwrxpiRWVqUW5ccXleakFh9iTAb6dCKzlGhyPjD5
-	5ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDY+7Rcz3Zm3vn
-	7uI74BZvbr86KDhy8+uzeke5vr04/V6iYeItM6ao+rBDZcKn5zzS+ml8XyH2yjzun1YfFa9r
-	9/xf3Tb1+Kbz81/XFq026s++E1/3bRff3XOiHGbHGZfeXWnUrzGTMfTSr7UJGsdTO+29nqgu
-	27L843X9vBe9p//rXZjx48jzaVxKLMUZiYZazEXFiQDy/JZBdAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 16 Mar 2014 21:45:52 -0400
+X-AuditID: 9c93016f-b7b09ae000000557-10-532653ce82c2
+From: Namhyung Kim <namhyung@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@redhat.com, jolsa@redhat.com, jmario@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] perf: Speed up thread map generation
+In-Reply-To: <1394808224-113774-1-git-send-email-dzickus@redhat.com> (Don
+	Zickus's message of "Fri, 14 Mar 2014 10:43:44 -0400")
+References: <1394808224-113774-1-git-send-email-dzickus@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+Date: Mon, 17 Mar 2014 10:45:49 +0900
+Message-ID: <87ob15tx6a.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chanwoo Choi wrote:
-> 
-> Dear Kukjin,
-> 
-> Ping.
-> 
-> Please review this patchset.
-> 
-Looks good to me, will apply tonight.
+Hi Don,
 
-Thanks,
-Kukjin
+On Fri, 14 Mar 2014 10:43:44 -0400, Don Zickus wrote:
+> When trying to capture perf data on a system running spejbb2013,
+> perf hung for about 15 minutes.  This is because it took that
+> long to gather about 10,000 thread maps and process them.
+>
+> I don't think a user wants to wait that long.
+>
+> Instead, recognize that thread maps are roughly equivalent to
+> pid maps and just quickly copy those instead.
+>
+> To do this, I synthesize 'fork' events, this eventually calls
+> thread__fork() and copies the maps over.
+>
+> The overhead goes from 15 minutes down to about a few seconds.
 
-> Best Regards,
-> Chanwoo Choi
-> 
-> On 03/13/2014 10:57 AM, Chanwoo Choi wrote:
-> > Dear Kukjin,
-> >
-> > On 03/12/2014 08:21 PM, Tomasz Figa wrote:
-> >> Hi Chanwoo,
-> >>
-> >> On 12.03.2014 07:19, Chanwoo Choi wrote:
-> >>> This patch add missing dt data of Exynos4x12 to bring up kernel
-> feature and
-> >>> code clean. This patchset is based on 'v3.15-next/dt-clk-exynos'
-> branch.
-> >>> - git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-
-> samsung.git
-> >>>
-> >>> exynos4x12/exynos4412/exynos4212.dtsi
-> >>> - Add ADC (Analog and Digital Converter) to get raw data
-> >>> - Add PMU (Performance Monitoring Unit) for perf event
-> >>> - Add gps_alive power domain to remove power leakage when gps-alive
-> isn't used
-> >>> - Remove duplicate dt data of interrput combiner controller
-> >>>
-> >>> exynos4412-trats.dts
-> >>> - Add ADC dt data with ntc thermistor child to read temperature
-> >>>
-> >>> Changes from v1:
-> >>> - Use clock macro name for Exynos4 instead of constant for ADC
-> >>> - Remove unnecessary description about patch content
-> >>> - Move gps-alive power domain's dt data from exynos4x12.dts to
-> exynos4.dts
-> >>> - Move thermistor dt node outside of ADC dt node and modify node name
-> of thermistor
-> >>>
-> >>> Chanwoo Choi (5):
-> >>>    ARM: dts: exynos4x12: Add ADC's dt data to read raw data
-> >>>    ARM: dts: exynos4x12: Add PMU dt data to support PMU(Perforamnce
-> Monitoring Unit)
-> >>>    ARM: dts: exynos4x12: Add GPS_ALIVE power domain
-> >>>    ARM: dts: exynos: Move common dt data for interrupt combiner
-> controller
-> >>>    ARM: dts: exynos4412-trats2: Add ADC/themistor dt data to get
-> temperature of SoC/battery
-> >>>
-> >>>   arch/arm/boot/dts/exynos4.dtsi          |  5 +++++
-> >>>   arch/arm/boot/dts/exynos4212.dtsi       | 13 ++++---------
-> >>>   arch/arm/boot/dts/exynos4412-trats2.dts | 21 +++++++++++++++++++++
-> >>>   arch/arm/boot/dts/exynos4412.dtsi       | 14 ++++----------
-> >>>   arch/arm/boot/dts/exynos4x12.dtsi       | 26
-> ++++++++++++++++++++++++++
-> >>>   5 files changed, 60 insertions(+), 19 deletions(-)
-> >>>
-> >>
-> >> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> >>
-> >
-> > Please review or comment this patchset.
-> >
-> > Best Regards,
-> > Chanwoo Choi
+[SNIP]
+> @@ -416,6 +453,10 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+>  	if (mmap_event == NULL)
+>  		goto out_free_comm;
+>  
+> +	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
+> +	if (fork_event == NULL)
+> +		goto out_free_mmap;
+> +
+>  	if (machine__is_default_guest(machine))
+>  		return 0;
+
+Not related to this patch, but this will causes a memory leak..
+So I think below patch is needed on top (not sure it's also needed for
+perf_event__synthesize_thread_map() too).
+
+
+>From 3c4b49b4f540c7d49ee78364b02faa0bfce59c67 Mon Sep 17 00:00:00 2001
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Mon, 17 Mar 2014 10:23:06 +0900
+Subject: [PATCH] perf tools: Fix a possible memory leak
+
+Checking default guest machine should be done before allocating event
+structures otherwise it'll leak memory.
+
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/event.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 3e580be0f6fb..eab930d28159 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -445,6 +445,9 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 	union perf_event *comm_event, *mmap_event, *fork_event;
+ 	int err = -1;
+ 
++	if (machine__is_default_guest(machine))
++		return 0;
++
+ 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
+ 	if (comm_event == NULL)
+ 		goto out;
+@@ -457,9 +460,6 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 	if (fork_event == NULL)
+ 		goto out_free_mmap;
+ 
+-	if (machine__is_default_guest(machine))
+-		return 0;
+-
+ 	snprintf(proc_path, sizeof(proc_path), "%s/proc", machine->root_dir);
+ 	proc = opendir(proc_path);
+ 
+-- 
+1.7.11.7
 
