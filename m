@@ -1,73 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521AbaCQVgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 17:36:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48453 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757AbaCQVgv (ORCPT
+	id S1752696AbaCQViP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 17:38:15 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:62510 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567AbaCQViO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 17:36:51 -0400
-Date: Mon, 17 Mar 2014 14:38:52 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-Cc: valentina.manea.m@gmail.com, dan.carpenter@oracle.com,
-        standby24x7@gmail.com, devel@driverdev.osuosl.org,
-        chuansheng.liu@intel.com, dongxing.zhang@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [staging][r8188eu]: memory leak in rtw_free_cmd_obj if
- command is (_Set_Drv_Extra)
-Message-ID: <20140317213852.GA29071@kroah.com>
-References: <1394465864.27962.2.camel@wxm-ubuntu>
+	Mon, 17 Mar 2014 17:38:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394465864.27962.2.camel@wxm-ubuntu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Mon, 17 Mar 2014 22:38:13 +0100
+Message-ID: <CAAfyv37OPxJkcyYi0ZZe9MSQZ3TMeCuxa8rmWh8ahNF6Bs01Mg@mail.gmail.com>
+Subject: w1: 3.14-rc7 - possible recursive locking detected
+From: Belisko Marek <marek.belisko@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, zbr@ioremap.net
+Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 11:37:44AM -0400, Wang, Xiaoming wrote:
-> pcmd->parmbuf->pbuf has been allocated if command is GEN_CMD_CODE(_Set_Drv_Extra),
-> and it enqueued by rtw_enqueue_cmd. rtw_cmd_thread dequeue pcmd by rtw_dequeue_cmd.
-> The memory leak happened on this branch "if( _FAIL == rtw_cmd_filter(pcmdpriv, pcmd) )"
-> which goto post_process directly against freeing pcmd->parmbuf->pbuf in
-> rtw_drvextra_cmd_hdl which is the cmd_hdl if command is (_Set_Drv_Extra).
-> This patch free pcmd->parmbuf->pbuf on the forgotten branch to avoid memory leak.
-> 
-> Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-> Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
-> Reviewed-by: Chuansheng Liu <chuansheng.liu@intel.com>
-> 
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-> index c0a0a52..1c7f505 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-> @@ -288,7 +288,7 @@ int rtw_cmd_thread(void *context)
->         void (*pcmd_callback)(struct adapter *dev, struct cmd_obj *pcmd);
->         struct adapter *padapter = (struct adapter *)context;
->         struct cmd_priv *pcmdpriv = &(padapter->cmdpriv);
-> -
-> +       struct drvextra_cmd_parm *extra_parm = NULL;
-> 
->         thread_enter("RTW_CMD_THREAD");
-> 
-> @@ -323,6 +323,11 @@ _next:
-> 
->                 if (_FAIL == rtw_cmd_filter(pcmdpriv, pcmd)) {
->                         pcmd->res = H2C_DROPPED;
-> +                       if (pcmd->cmdcode == GEN_CMD_CODE(_Set_Drv_Extra)) {
-> +                               extra_parm = (struct drvextra_cmd_parm *)pcmd->parmbuf;
-> +                               if (extra_parm && extra_parm->pbuf && extra_parm->size > 0)
-> +                                       rtw_mfree(extra_parm->pbuf, extra_parm->size);
-> +                       }
->                         goto post_process;
->                 }
-> 
+Hi,
 
-This patch has all the tabs converted to spaces and can not be applied
-:(
+booting latest 3.14-rc7 on gta04 board gives following warning:
 
-Please fix your email client and try again.
+[    3.101409] Driver for 1-wire Dallas network protocol.
+[    3.109649] omap_hdq omap_hdq: OMAP HDQ Hardware Rev 0.5. Driver in
+Interrupt mode
+[    3.330810]
+[    3.332397] =============================================
+[    3.338073] [ INFO: possible recursive locking detected ]
+[    3.343749] 3.14.0-rc7-gta04 #520 Not tainted
+[    3.348327] ---------------------------------------------
+[    3.353973] w1_bus_master1/805 is trying to acquire lock:
+[    3.359649]  (&(&priv->bus_notifier)->rwsem){.+.+.+}, at:
+[<c005977c>] __blocking_notifier_call_chain+0x28/0x58
+[    3.370300]
+[    3.370300] but task is already holding lock:
+[    3.376434]  (&(&priv->bus_notifier)->rwsem){.+.+.+}, at:
+[<c005977c>] __blocking_notifier_call_chain+0x28/0x58
+[    3.387084]
+[    3.387084] other info that might help us debug this:
+[    3.393920]  Possible unsafe locking scenario:
+[    3.393920]
+[    3.400146]        CPU0
+[    3.402709]        ----
+[    3.405273]   lock(&(&priv->bus_notifier)->rwsem);
+[    3.410308]   lock(&(&priv->bus_notifier)->rwsem);
+[    3.415374]
+[    3.415374]  *** DEADLOCK ***
+[    3.415374]
+[    3.421569]  May be due to missing lock nesting notation
+[    3.421569]
+[    3.428710] 2 locks held by w1_bus_master1/805:
+[    3.433471]  #0:  (&dev->mutex#2){+.+.+.}, at: [<c03bc5d4>]
+w1_attach_slave_device+0xb8/0x1c4
+[    3.442504]  #1:  (&(&priv->bus_notifier)->rwsem){.+.+.+}, at:
+[<c005977c>] __blocking_notifier_call_chain+0x28/0x58
+[    3.453582]
+[    3.453582] stack backtrace:
+[    3.458190] CPU: 0 PID: 805 Comm: w1_bus_master1 Not tainted
+3.14.0-rc7-gta04 #520
+[    3.466156] [<c0014418>] (unwind_backtrace) from [<c0011788>]
+(show_stack+0x10/0x14)
+[    3.474304] [<c0011788>] (show_stack) from [<c04ee204>]
+(dump_stack+0x68/0x84)
+[    3.481933] [<c04ee204>] (dump_stack) from [<c007616c>]
+(print_deadlock_bug+0xc0/0xf0)
+[    3.490264] [<c007616c>] (print_deadlock_bug) from [<c0077a34>]
+(validate_chain.isra.27+0x4e0/0x538)
+[    3.499847] [<c0077a34>] (validate_chain.isra.27) from [<c0078864>]
+(__lock_acquire+0x72c/0x838)
+[    3.509094] [<c0078864>] (__lock_acquire) from [<c0078f84>]
+(lock_acquire+0xf4/0x118)
+[    3.517333] [<c0078f84>] (lock_acquire) from [<c04f69b0>]
+(down_read+0x28/0x38)
+[    3.525024] [<c04f69b0>] (down_read) from [<c005977c>]
+(__blocking_notifier_call_chain+0x28/0x58)
+[    3.534362] [<c005977c>] (__blocking_notifier_call_chain) from
+[<c00597c0>] (blocking_notifier_call_chain+0x14/0x18)
+[    3.545440] [<c00597c0>] (blocking_notifier_call_chain) from
+[<c0306940>] (device_add+0x1f4/0x368)
+[    3.554870] [<c0306940>] (device_add) from [<c030a158>]
+(platform_device_add+0x138/0x1c8)
+[    3.563476] [<c030a158>] (platform_device_add) from [<c03bf31c>]
+(w1_bq27000_add_slave+0x44/0x74)
+[    3.572784] [<c03bf31c>] (w1_bq27000_add_slave) from [<c03bca78>]
+(w1_bus_notify.part.0+0x48/0xc8)
+[    3.582214] [<c03bca78>] (w1_bus_notify.part.0) from [<c04f996c>]
+(notifier_call_chain+0x38/0x68)
+[    3.591522] [<c04f996c>] (notifier_call_chain) from [<c0059798>]
+(__blocking_notifier_call_chain+0x44/0x58)
+[    3.601776] [<c0059798>] (__blocking_notifier_call_chain) from
+[<c00597c0>] (blocking_notifier_call_chain+0x14/0x18)
+[    3.612823] [<c00597c0>] (blocking_notifier_call_chain) from
+[<c0306940>] (device_add+0x1f4/0x368)
+[    3.622253] [<c0306940>] (device_add) from [<c03bc4a0>]
+(__w1_attach_slave_device+0x9c/0x118)
+[    3.631225] [<c03bc4a0>] (__w1_attach_slave_device) from
+[<c03bc644>] (w1_attach_slave_device+0x128/0x1c4)
+[    3.641357] [<c03bc644>] (w1_attach_slave_device) from [<c03bc75c>]
+(w1_slave_found+0x7c/0x98)
+[    3.650421] [<c03bc75c>] (w1_slave_found) from [<c03bea10>]
+(omap_w1_search_bus+0x54/0x5c)
+[    3.659118] [<c03bea10>] (omap_w1_search_bus) from [<c03be950>]
+(w1_search_devices+0x3c/0x48)
+[    3.668090] [<c03be950>] (w1_search_devices) from [<c03bd210>]
+(w1_search_process_cb+0x4c/0xc4)
+[    3.677215] [<c03bd210>] (w1_search_process_cb) from [<c03bd2e0>]
+(w1_process+0x58/0x10c)
+[    3.685821] [<c03bd2e0>] (w1_process) from [<c0055850>] (kthread+0xc8/0xdc)
+[    3.693145] [<c0055850>] (kthread) from [<c000dc68>]
+(ret_from_fork+0x14/0x2c)
+[    3.751068] omap_wdt: OMAP Watchdog Timer Rev 0x31: initial timeout 60 sec
 
-greg k-h
+AFAIK we didn't see that on (at least 3/14-rc2).
+
+BR,
+
+marek
+
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
+
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
