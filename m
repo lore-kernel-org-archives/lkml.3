@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918AbaCQWhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 18:37:04 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:35016 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084AbaCQWhB (ORCPT
+	id S1753135AbaCQWjm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 18:39:42 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:33588 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972AbaCQWjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 18:37:01 -0400
-Message-ID: <532778FD.5080509@samsung.com>
-Date: Tue, 18 Mar 2014 07:36:45 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Mon, 17 Mar 2014 18:39:40 -0400
 MIME-Version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-CC: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, davem@davemloft.net,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH 6/9 v7] ARM: dts: exynos5250/5420: add dt node for sss
- module
-References: <1392630275-8667-1-git-send-email-ch.naveen@samsung.com> <1392630275-8667-7-git-send-email-ch.naveen@samsung.com>
-In-Reply-To: <1392630275-8667-7-git-send-email-ch.naveen@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140317204410.GA1118@arch.cereza>
+References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
+	<1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
+	<20140316070917.GA3094@arch.cereza>
+	<CADHgK6s58EJyJxB-47K8w26H8ZCBFQ2zu7PGAQU9O+2g7=fPwA@mail.gmail.com>
+	<20140317204410.GA1118@arch.cereza>
+Date: Mon, 17 Mar 2014 15:39:39 -0700
+Message-ID: <CADHgK6tHngKVZS=jo=VYt3Nt3dhiEmiWr28iDy7q_uR9goBj=Q@mail.gmail.com>
+Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
+From: Sebastian Capella <sebastian.capella@linaro.org>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Laura Abbott <lauraa@codeaurora.org>, Sricharan R <r.sricharan@ti.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Russ Dill <Russ.Dill@ti.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/14 18:44, Naveen Krishna Chatradhi wrote:
-> This patch adds the device tree node for SSS module
-> found on Exynos5420 and Exynos5250
+On 17 March 2014 13:44, Ezequiel Garcia
+<ezequiel.garcia@free-electrons.com> wrote:
+> On Mar 17, Sebastian Capella wrote:
+>> On 16 March 2014 00:09, Ezequiel Garcia
+>> <ezequiel.garcia@free-electrons.com> wrote:
+>> > On Mar 05, Sebastian Capella wrote:
+>> > [..]
+>> >> diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+>> >> index 1f8fed9..83707702 100644
+>> >> --- a/arch/arm/mm/Kconfig
+>> >> +++ b/arch/arm/mm/Kconfig
+>> >> @@ -611,6 +611,11 @@ config CPU_USE_DOMAINS
+>> >>  config IO_36
+>> >>       bool
+>> >>
+>> >> +config ARCH_HIBERNATION_POSSIBLE
+...
+>> > Is there any reason why CPU_FEROCEON is not listed here? FWIW, I've just built
+>> > (but not really tested) a Kirkwood kernel with CONFIG_HIBERNATION=y.
+...
+> Sure, no problem. If you consider that build-test is enough, feel free to put
+> CPU_FEROCEON on that list. We added suspend/resume to feroceon not long ago.
+>> > And is there any reason to put this config in arch/arm/mm/Kconfig, instead of
+>> > in arch/arm/Kconfig, below ARCH_SUSPEND_POSSIBLE?
+...
+> I guess my question wasn't clear. I mean to ask: Are there any other
+> requirements on an ARM platform to support hibernation, other than
+> suspend/resume support?
 >
-> Signed-off-by: Naveen Krishna Chatradhi<ch.naveen@samsung.com>
-> Reviewed-by: Tomasz Figa<t.figa@samsung.com>
-> TO:<linux-samsung-soc@vger.kernel.org>
-> CC: David S. Miller<davem@davemloft.net>
-> CC: Kukjin Kim<kgene.kim@samsung.com>
-> CC:<linux-crypto@vger.kernel.org>
-> ---
-> Changes since v6:
-> None
->
->   arch/arm/boot/dts/exynos5250.dtsi |    8 ++++++++
->   arch/arm/boot/dts/exynos5420.dtsi |    9 +++++++++
->   2 files changed, 17 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-> index a76a189..13b748f 100644
-> --- a/arch/arm/boot/dts/exynos5250.dtsi
-> +++ b/arch/arm/boot/dts/exynos5250.dtsi
-> @@ -715,4 +715,12 @@
->   		io-channel-ranges;
->   		status = "disabled";
->   	};
-> +
-> +	sss@10830000 {
-> +		compatible = "samsung,exynos4210-secss";
-> +		reg =<0x10830000 0x10000>;
-> +		interrupts =<0 112 0>;
-> +		clocks =<&clock 348>;
-> +		clock-names = "secss";
-> +	};
->   };
-> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-> index 9c834cc..b4ce625 100644
-> --- a/arch/arm/boot/dts/exynos5420.dtsi
-> +++ b/arch/arm/boot/dts/exynos5420.dtsi
-> @@ -666,4 +666,13 @@
->   		clock-names = "watchdog";
->   		samsung,syscon-phandle =<&pmu_system_controller>;
->           };
-> +
-> +	sss@10830000 {
-> +		compatible = "samsung,exynos4210-secss";
-> +		reg =<0x10830000 0x10000>;
-> +		interrupts =<0 112 0>;
-> +		clocks =<&clock 471>;
-> +		clock-names = "secss";
-> +		samsung,power-domain =<&g2d_pd>;
-> +	};
->   };
+> If this is the *only* requirement, it seems to me we could make our
+> ARCH_SUSPEND_POSSIBLE also select ARCH_HIBERNATION_POSSIBLE.
 
-Applied, thanks.
+Thanks, I've added it like this in arch/arm/Kconfig.  I'm sure you
+know, but this way also takes care of the CPU_FEROCEON in the default
+list since SUSPEND_POSSIBLE already contains it.
 
-- Kukjin
+config ARCH_HIBERNATION_POSSIBLE
+        bool
+        depends on MMU
+        default y if ARCH_SUSPEND_POSSIBLE
+
+Does this look ok?
+
+Thanks!
+
+Sebastian
