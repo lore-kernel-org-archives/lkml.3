@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932794AbaCQL2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 07:28:09 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48258 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932526AbaCQL2H (ORCPT
+	id S932847AbaCQLan (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 07:30:43 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38667 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932754AbaCQLal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 07:28:07 -0400
-Date: Mon, 17 Mar 2014 11:27:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Axel Lin <axel.lin@ingics.com>, linux-spi@vger.kernel.org,
+	Mon, 17 Mar 2014 07:30:41 -0400
+Date: Mon, 17 Mar 2014 11:30:39 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Boris BREZILLON <b.brezillon.dev@gmail.com>
+Cc: boris brezillon <b.brezillon@overkiz.com>, Bo Shen <voice.shen@atmel.com>,
+        Mark Brown <broonie@kernel.org>,
+        "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Mark Brown <broonie@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140317112757.GB11706@sirena.org.uk>
-References: <1395020870-18107-1-git-send-email-linux@roeck-us.net>
- <CAFRkauDEBe+XStLJSiMzvNOxpFZ2iBGD36-Brq9oHN2RRa+rog@mail.gmail.com>
- <532671A5.5070302@roeck-us.net>
+Subject: Re: [PATCH 7/8] ASoC: atmel: document clock properties of the
+ wm8904 driver
+Message-ID: <20140317113039.GG8070@e106331-lin.cambridge.arm.com>
+References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com>
+ <1395049541-28128-8-git-send-email-voice.shen@atmel.com>
+ <20140317100219.GB8070@e106331-lin.cambridge.arm.com>
+ <5326CBE0.1000309@overkiz.com>
+ <20140317104804.GE8070@e106331-lin.cambridge.arm.com>
+ <5326DB79.50501@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dTy3Mrz/UPE2dbVg"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <532671A5.5070302@roeck-us.net>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: sc18is602: Don't be that restrictive with the
- maximum transfer speed
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5326DB79.50501@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 17, 2014 at 11:24:41AM +0000, Boris BREZILLON wrote:
+> Le 17/03/2014 11:48, Mark Rutland a écrit :
+> > On Mon, Mar 17, 2014 at 10:18:08AM +0000, boris brezillon wrote:
+> >> Hello Mark,
+> >>
+> >> Le 17/03/2014 11:02, Mark Rutland a écrit :
+> >>> On Mon, Mar 17, 2014 at 09:45:40AM +0000, Bo Shen wrote:
+> >>>> From: Boris BREZILLON <b.brezillon@overkiz.com>
+> >>>>
+> >>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> >>>> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> >>>> ---
+> >>>>
+> >>>>    Documentation/devicetree/bindings/sound/atmel-wm8904.txt | 2 ++
+> >>>>    1 file changed, 2 insertions(+)
+> >>>>
+> >>>> diff --git a/Documentation/devicetree/bindings/sound/atmel-wm8904.txt b/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
+> >>>> index 8bbe50c..aca341c 100644
+> >>>> --- a/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
+> >>>> +++ b/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
+> >>>> @@ -3,6 +3,8 @@ Atmel ASoC driver with wm8904 audio codec complex
+> >>>>    Required properties:
+> >>>>      - compatible: "atmel,asoc-wm8904"
+> >>>>      - atmel,model: The user-visible name of this sound complex.
+> >>>> +  - clocks: A list of clocks needed by the wm8904 chip.
+> >>>> +  - clock-output-names: Driver related clock names. Shall contain "pck0".
+> >>> The word "driver"  doesn't need to appear in biding documents, and this
+> >>> fails to describe what it sets out to. How about the following:
+> >>>
+> >>> - clocks: a list of phandle + clock-specifier pairs, one for each entry
+> >>>     in clock-names.
+> >> Agreed.
+> >>> - clock-names: Should contain "pck0"
+> >> After thinking a bit more about it, this can be any programmable clk (pckX).
+> > Huh?
+> >
+> > The clock-names property describes the names of the inputs to the
+> > device, from the view of the device, not the names of the clocks fed
+> > into those inputs.
+> >
+> > What are the names of the clock input lines on the wm8904?
+> 
+> mclk, and you're right, this is how we should name the clk (I just got
+> influenced by the existing driver, which was requesting pck0).
+> 
+> This gives the following:
+> 
+> - clock-names: Should contain "mclk"
+> 
+> Do you agree ?
 
---dTy3Mrz/UPE2dbVg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That sounds right to me.
 
-On Sun, Mar 16, 2014 at 08:53:09PM -0700, Guenter Roeck wrote:
-> On 03/16/2014 07:07 PM, Axel Lin wrote:
-
-> >Now I'm thinking if it is ok to use master->max_speed_hz as transfer speed when
-> >xfer->speed_hz > master->max_speed_hz. And it should be handled in spi core.
-> >I'm sending a RFC patch now.
-
-> That is an acceptable alternate solution for me.
-
-That's what I'd expect, take the maximum possible given the available
-constraints.
-
---dTy3Mrz/UPE2dbVg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTJtw6AAoJELSic+t+oim9XlIP/2rl4+5ctY01zoEasGVQFCf9
-4aLLt9Jq+dQTThwuFhba1ZIwriNtgJ+NNK7gvpSQBjK9kzLJ5pucHNN1dEdRRVg9
-js813yzMJDYCDzcnAkYLFoOmCHJpZJxwr5VHG86dTzNEBXNZRJQW4x0f/RNISY03
-FzbEIK7l0EdvrvYVPOg/aISL/a01e/eHwJ+F4ef7B8sj2hOacg7k6a33WWkks3jv
-efIGsPLxsL/Kxc3evf8hUMCATqfBaS7azVMzr4ErEwgyZgVQ9fxSeYD55Mle0VmZ
-JmmWqBEYZOmQO9j/lO0RYqmiRvBmmvh4l9nNIpnU03FKCTyzmVtkhm/RIj6QDjlH
-nfiQ5bEnzZl94gGD6d9bFcVlOVKJ/pZKy8jsnYPegHfAfrCidoQOIf4eeuYhF0nt
-+XzxYg5qnDb86QqXTLzgmwk3tLJN7XCS0H52kFRfQ1asOUcRt7rOXKHd0pjins+T
-NgphI2AuvCe0uqDl00CmPoysPC6Q2sP3UFfx1dLcQqGjHStgUBBhovG6OkLPEjTf
-7hevn6HFiwvTzq5Y2DNoG3uPcJ2/l9H3KRIxuJHbYfwBqfTmfasFClucrC+FPLW3
-WxkduTuNeLRbR+ezotMuYkcHC+Wp025QWD8GmQtElysv357ETVoCKhYqef7hDBa5
-TjnJ3q5DFA7XUmw9uzil
-=OEms
------END PGP SIGNATURE-----
-
---dTy3Mrz/UPE2dbVg--
+Cheers,
+Mark.
