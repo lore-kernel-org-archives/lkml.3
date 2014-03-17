@@ -1,142 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751109AbaCQTTO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 15:19:14 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:34661 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaCQTTK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 15:19:10 -0400
-Message-ID: <1395083909.28843.33.camel@haakon3.risingtidesystems.com>
-Subject: Re: [RFCv2 5/7] vhost/scsi: Enable T10 PI IOV -> SGL memory mapping
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        kvm-devel <kvm@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Sagi Grimberg <sagig@dev.mellanox.co.il>
-Date: Mon, 17 Mar 2014 12:18:29 -0700
-In-Reply-To: <5326D65E.6060205@redhat.com>
-References: <1395034381-656-1-git-send-email-nab@daterainc.com>
-	 <1395034381-656-6-git-send-email-nab@daterainc.com>
-	 <5326D65E.6060205@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	id S1751233AbaCQTT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 15:19:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44007 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751144AbaCQTTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 15:19:23 -0400
+Message-ID: <53274A91.8020809@redhat.com>
+Date: Mon, 17 Mar 2014 20:18:41 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tejun Heo <tj@kernel.org>
+CC: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@deeprootsystems.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, linux-ide@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davinci-@jasper.es
+Subject: Re: [PATCH 0/4] ata: add remaining new-style AHCI platform drivers
+References: <1395081118-15248-1-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1395081118-15248-1-git-send-email-b.zolnierkie@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-17 at 12:02 +0100, Paolo Bonzini wrote:
-> Il 17/03/2014 06:32, Nicholas A. Bellinger ha scritto:
-> > +		if (vq->iov[0].iov_len == sizeof(v_req_pi)) {
-> > +			req = (unsigned char *)&v_req_pi;
-> > +			target = &v_req_pi.lun[1];
-> > +			req_size = sizeof(v_req_pi);
-> > +			hdr_pi = true;
-> > +		} else if (vq->iov[0].iov_len == sizeof(v_req)) {
-> > +			req = (unsigned char *)&v_req;
-> > +			target = &v_req.lun[1];
-> > +			req_size = sizeof(v_req);
-> > +			hdr_pi = false;
+Hi,
+
+On 03/17/2014 07:31 PM, Bartlomiej Zolnierkiewicz wrote:
+> Hi,
 > 
-> The right check here is on the negotiated features.
+> This patch series adds new-style AHCI platform drivers for DaVinci DA850
+> AHCI controller and ST SPEAr1340 AHCI controller.  As a preparation for
+> adding these drivers it also fixes ahci_platform_data->suspend() handling
+> (patch #1) and moves library AHCI platform code to its own file (patch #2).
+> The new AHCI platform drivers are only compile tested (they are marked as
+> experimental because of this) and I would ask somebody with the hardware
+> to verify them (thanks!).
+
+Thanks for working on this.
+
+Patches 1/2 seem sensible to me, and 3/4 are obviously a good idea. Also
+all patches look good to me, so this series is:
+
+Acked-by: Hans de Goede <hdegoede@redhat.com>
+
+Regards,
+
+Hans
+
 > 
-
-Mmmm, so this had been making the assumption that the PI enabled header
-would only be used when the CDB itself had an associated PI SGL.
-
-I agree it's cleaner to always use the PI enabled header when the
-feature bit has been negotiated.  Fixing this up for -v3.
-
-> You need a matching QEMU patch to enable the protection information
-> feature, like this (untested):
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
 > 
-
-<nod>
-
-Thanks Paolo!
-
---nab
-
-> diff --git a/hw/scsi/vhost-scsi.c b/hw/scsi/vhost-scsi.c
-> index 3983a5b..4c8d5cd 100644
-> --- a/hw/scsi/vhost-scsi.c
-> +++ b/hw/scsi/vhost-scsi.c
-> @@ -154,6 +154,9 @@ static uint32_t vhost_scsi_get_features(VirtIODevice *vdev,
->      if (!(s->dev.features & (1 << VIRTIO_SCSI_F_HOTPLUG))) {
->          features &= ~(1 << VIRTIO_SCSI_F_HOTPLUG);
->      }
-> +    if (!(s->dev.features & (1 << VIRTIO_SCSI_F_T10_PI))) {
-> +        features &= ~(1 << VIRTIO_SCSI_F_T10_PI);
-> +    }
->  
->      return features;
->  }
-> diff --git a/hw/scsi/virtio-scsi.c b/hw/scsi/virtio-scsi.c
-> index 6610b3a..4a551e9 100644
-> --- a/hw/scsi/virtio-scsi.c
-> +++ b/hw/scsi/virtio-scsi.c
-> @@ -629,6 +629,9 @@ static void virtio_scsi_device_realize(DeviceState *dev, Error **errp)
->          return;
->      }
->  
-> +    /* Protection information is not supported yet.  */
-> +    dev->guest_features &= ~VIRTIO_SCSI_F_T10_PI;
-> +
->      scsi_bus_new(&s->bus, sizeof(s->bus), dev,
->                   &virtio_scsi_scsi_info, vdev->bus_name);
->  
-> diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
-> index 9010246..8621fbf 100644
-> --- a/include/hw/i386/pc.h
-> +++ b/include/hw/i386/pc.h
-> @@ -267,6 +267,16 @@ int e820_add_entry(uint64_t, uint64_t, uint32_t);
->              .value    = "no",\
->          },\
->          {\
-> +            .driver   = "virtio-scsi-pci",\
-> +            .property = "prot_info",\
-> +            .value    = "off",\
-> +        },\
-> +        {\
-> +            .driver   = "vhost-scsi-pci",\
-> +            .property = "prot_info",\
-> +            .value    = "off",\
-> +        },\
-> +        {\
->              .driver   = "PIIX4_PM",\
->              .property = "acpi-pci-hotplug-with-bridge-support",\
->              .value    = "off",\
-> diff --git a/include/hw/virtio/virtio-scsi.h b/include/hw/virtio/virtio-scsi.h
-> index 42b1024..a555f49 100644
-> --- a/include/hw/virtio/virtio-scsi.h
-> +++ b/include/hw/virtio/virtio-scsi.h
-> @@ -34,6 +34,7 @@
->  #define VIRTIO_SCSI_F_INOUT                    0
->  #define VIRTIO_SCSI_F_HOTPLUG                  1
->  #define VIRTIO_SCSI_F_CHANGE                   2
-> +#define VIRTIO_SCSI_F_T10_PI                   3
->  
->  #define VIRTIO_SCSI_VQ_SIZE     128
->  #define VIRTIO_SCSI_CDB_SIZE    32
-> @@ -184,7 +185,9 @@ typedef struct {
->      DEFINE_PROP_BIT("hotplug", _state, _feature_field, VIRTIO_SCSI_F_HOTPLUG,  \
->                                                         true),                  \
->      DEFINE_PROP_BIT("param_change", _state, _feature_field,                    \
-> -                                            VIRTIO_SCSI_F_CHANGE, true)
-> +                                            VIRTIO_SCSI_F_CHANGE, true)        \
-> +    DEFINE_PROP_BIT("prot_info", _state, _feature_field,                       \
-> +                                            VIRTIO_SCSI_F_T10_PI, true)
->  
->  void virtio_scsi_common_realize(DeviceState *dev, Error **errp);
->  void virtio_scsi_common_unrealize(DeviceState *dev, Error **errp);
 > 
-
-
+> Bartlomiej Zolnierkiewicz (4):
+>   ata: ahci_platform: fix ahci_platform_data->suspend method handling
+>   ata: move library code from ahci_platform.c to libahci_platform.c
+>   ata: add new-style AHCI platform driver for DaVinci DA850 AHCI
+>     controller
+>   ata: add new-style AHCI platform driver for ST SPEAr1340 AHCI
+>     controller
+> 
+>  drivers/ata/Kconfig            |  23 +-
+>  drivers/ata/Makefile           |  10 +-
+>  drivers/ata/ahci_da850.c       | 178 ++++++++++++++
+>  drivers/ata/ahci_platform.c    | 508 --------------------------------------
+>  drivers/ata/ahci_spear1340.c   | 222 +++++++++++++++++
+>  drivers/ata/libahci_platform.c | 541 +++++++++++++++++++++++++++++++++++++++++
+>  6 files changed, 967 insertions(+), 515 deletions(-)
+>  create mode 100644 drivers/ata/ahci_da850.c
+>  create mode 100644 drivers/ata/ahci_spear1340.c
+>  create mode 100644 drivers/ata/libahci_platform.c
+> 
