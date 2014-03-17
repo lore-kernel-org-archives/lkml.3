@@ -1,83 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136AbaCQC6K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 22:58:10 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:18221 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818AbaCQC6H (ORCPT
+	id S932261AbaCQDDR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 23:03:17 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:38372 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932188AbaCQDDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 22:58:07 -0400
-X-AuditID: cbfee68e-b7f566d000002344-24-532664bc16dc
-Message-id: <532664BD.5020308@samsung.com>
-Date: Mon, 17 Mar 2014 11:58:05 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        rafael.j.wysocki@intel.com, nm@ti.com, b.zolnierkie@samsaung.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCHv2 6/8] devfreq: exynos4: Fix power-leakage of clock on
- suspend state
-References: <1394698649-20996-1-git-send-email-cw00.choi@samsung.com>
- <1394698649-20996-7-git-send-email-cw00.choi@samsung.com>
- <532341C7.8070407@samsung.com>
-In-reply-to: <532341C7.8070407@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsWyRsSkWHdPilqwwbeFyhYdPb9ZLOYfOcdq
-	ce7VSkaLs01v2C0Wti1hsbi8aw6bxefeI4wWM87vY7JYev0ik8XtxhVsFm9+nGWymDB9LYvF
-	4xVv2S1eHWxjsVg/4zWLA7/HmnlrGD1WLv/C5rF4z0smj5/Lt7N79G1Zxehx/MZ2Jo/Pm+Q8
-	Ns4NDeCI4rJJSc3JLEst0rdL4MqYucKs4CBzxelDE9kbGO8ydTFyckgImEjMuXWXBcIWk7hw
-	bz1bFyMXh5DAUkaJ3Zv+MnYxcoAV3ZzDAxGfzijRcOYSVNErRoltTy4xg3TzCmhJ/OhbygLS
-	wCKgKvHtphtImA0ovP/FDTYQW1QgTGLl9CssEOWCEj8m3wOzRQRUJC6fms4IYjMLfGWSuDkP
-	7DhhgSiJ99f+sULsWsQocXLiBjaQ+ZwC2hIrf+lD1OtI7G+dxgZhy0tsXvOWGaReQmAuh8SM
-	U+/BhrIICEh8m3yIBeIZWYlNB5ghHpaUOLjiBssERrFZSE6ahWTsLCRjFzAyr2IUTS1ILihO
-	Si8y0itOzC0uzUvXS87P3cQIjO/T/5717WC8ecD6EGMy0MqJzFKiyfnA9JBXEm9obGZkYWpi
-	amxkbmlGmrCSOO+ih0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhhjf18p5nnz6u2UwGsf
-	n3J5+V8KcWc9ffyG3OfOuoMPE/x9rvn2zXfefWr39i/uwS6W865/27jEj2d599RPFRfsL8sI
-	7z2s9yfsWVTY+4z/L3qCvMQ7pu7juflOpNNkyntH2VCVbbN4rlYt0NgvJX/nyBWb2wtyb224
-	NXl6/tSpYZ+7gqadFonbqsRSnJFoqMVcVJwIAO6JBOgFAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPKsWRmVeSWpSXmKPExsVy+t9jQd09KWrBBjPuS1l09PxmsZh/5Byr
-	xblXKxktzja9YbdY2LaExeLyrjlsFp97jzBazDi/j8li6fWLTBa3G1ewWbz5cZbJYsL0tSwW
-	j1e8Zbd4dbCNxWL9jNcsDvwea+atYfRYufwLm8fiPS+ZPH4u387u0bdlFaPH8RvbmTw+b5Lz
-	2Dg3NIAjqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNct
-	MwfoeiWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxswVZgUHmStOH5rI
-	3sB4l6mLkYNDQsBE4uYcni5GTiBTTOLCvfVsXYxcHEIC0xklGs5cgnJeMUpse3KJGaSKV0BL
-	4kffUhaQZhYBVYlvN91AwmxA4f0vbrCB2KICYRIrp19hgSgXlPgx+R6YLSKgInH51HRGEJtZ
-	4CuTxM15TCC2sECUxPtr/1ghdi1ilDg5cQMbyHxOAW2Jlb/0Iep1JPa3TmODsOUlNq95yzyB
-	UWAWkhWzkJTNQlK2gJF5FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZw8ngmtYNxZYPFIUYB
-	DkYlHt4JymrBQqyJZcWVuYcYJTiYlUR49WKBQrwpiZVVqUX58UWlOanFhxiTgQEwkVlKNDkf
-	mNjySuINjU3MjCyNzA0tjIzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoHRc6+Uevc+
-	f9dCxamLt3I0T/gV86zTMvey7tzJb9VL13x/fOja88NXAy4GZzufSN+5ItOz4dYezYnCP5vu
-	mnq8dRfafz9/35l7wq03pyqrirhE2eyKZfFiXKEbukNuspNIa/GHUzM3JgfrxP7LPtTz4O2r
-	8kcBE06surtIYFP6PoMby39PSNDUVmIpzkg01GIuKk4EABjcl7FiAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 16 Mar 2014 23:03:13 -0400
+X-AuditID: 85900ec0-d1328b9000001514-76-532665edac95
+Message-ID: <532665ED.7090401@hitachi.com>
+Date: Mon, 17 Mar 2014 12:03:09 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+MIME-Version: 1.0
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan <gnomes@lxorguk.ukuu.org.uk>, Stephen Warren <swarren@nvidia.com>,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Re: [PATCH V3] serial/uart/8250: Add tunable RX interrupt
+ trigger I/F of FIFO buffers
+References: <20140314022154.4345.23024.stgit@yunodevel> <20140314141602.GA11603@xps8300>
+In-Reply-To: <20140314141602.GA11603@xps8300>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+Hi Heikki,
 
-On 03/15/2014 02:52 AM, Tomasz Figa wrote:
-> Hi Chanwoo,
-> 
-> On 13.03.2014 09:17, Chanwoo Choi wrote:
->> This patch disable ppmu clocks before entering suspend state to remove
->> power-leakage and enable ppmu clocks on resume function.
-> 
-> I don't think there is any need for this, because all the clocks are stopped anyway in SLEEP mode.
+Thank you for your reply.
 
-OK, I'll discard this patch on next patchset.
+(2014/03/14 23:16), Heikki Krogerus wrote:
+> Hi,
+>
+> On Fri, Mar 14, 2014 at 11:21:54AM +0900, Yoshihiro YUNOMAE wrote:
+>>   void serial8250_clear_and_reinit_fifos(struct uart_8250_port *p)
+>>   {
+>> -	unsigned char fcr;
+>> -
+>>   	serial8250_clear_fifos(p);
+>> -	fcr = uart_config[p->port.type].fcr;
+>> -	serial_out(p, UART_FCR, fcr);
+>> +	p->fcr = uart_config[p->port.type].fcr;
+>> +	serial_out(p, UART_FCR, p->fcr);
+>
+> You should allow also the probe drivers to set this..
+>
+>          if (!p->fcr)
+>                  p->fcr = uart_config[p->port.type].fcr;
 
-Best Regards,
-Chanwoo Choi
+Oh, I'll fix it.
 
+>>   }
+>>   EXPORT_SYMBOL_GPL(serial8250_clear_and_reinit_fifos);
+>>
+>> @@ -2325,10 +2323,19 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+>>   		if ((baud < 2400 && !up->dma) || fifo_bug) {
+>>   			fcr &= ~UART_FCR_TRIGGER_MASK;
+>>   			fcr |= UART_FCR_TRIGGER_1;
+>> +			/* Don't use user setting RX trigger */
+>> +			up->fcr = 0;
+>
+> I don't know about this but..
+>
+>>   		}
+>>   	}
+>>
+>>   	/*
+>> +	 * If up->fcr exists, a user has opened this port, changed RX trigger,
+>> +	 * or read RX trigger before. So, we don't need to change up->fcr here.
+>> +	 */
+>> +	if (!up->fcr)
+>> +		up->fcr = fcr;
+>
+> Why not just set fcr = up->fcr in the beginning of the function?
+
+Ah, we don't need to set up->fcr = 0 in the previous flow when we
+implement as follows:
+
+unsigned char fcr = up->fcr;
+
+  ... <snip> ...
+
+     /*
+      * If fcr exists, a user has opened this port, changed RX
+      * trigger, or read RX trigger before. If so, we do not change
+      * fcr.
+      */
+     if (!fcr)
+         fcr = uart_config[port_type].fcr;
+     if ((baud < 2400 && !up->dma) || fifo_bug) {
+         fcr &= ~UART_FCR_TRIGGER_MASK;
+         fcr |= UART_FCR_TRIGGER_1;
+     }
+
+up->fcr = fcr;
+
+> <snip>
+>
+>> +static int do_set_rx_int_trig(struct tty_port *port, unsigned char val)
+>> +{
+>> +	struct uart_state *state = container_of(port, struct uart_state, port);
+>> +	struct uart_port *uport = state->uart_port;
+>> +	struct uart_8250_port *up =
+>> +		container_of(uport, struct uart_8250_port, port);
+>> +	unsigned char fcr;
+>> +	int rx_trig;
+>> +
+>> +	if (!(up->capabilities & UART_CAP_FIFO) || uport->fifosize <= 1)
+>> +		return -EINVAL;
+>> +
+>> +	rx_trig = convert_val2rxtrig(up, val);
+>> +	if (rx_trig < 0)
+>> +		return rx_trig;
+>> +
+>> +	serial8250_clear_fifos(up);
+>> +	if (!up->fcr)
+>> +		/* termios is not set yet */
+>> +		fcr = uart_config[up->port.type].fcr;
+>> +	else
+>> +		fcr = up->fcr;
+>> +	fcr &= ~UART_FCR_TRIGGER_MASK;
+>> +	fcr |= (unsigned char)rx_trig;
+>> +	up->fcr = fcr;
+>> +	serial_out(up, UART_FCR, up->fcr);
+>> +	return 0;
+>> +}
+>
+> Where are you setting UART_FCR_ENABLE_FIFO bit? Am I missing
+> something?
+
+In these implementation, the driver sets up->fcr as
+uart_config[up->port.type].fcr first and changes only RX trigger. So,
+we don't need to set the bit in a direct way.
+
+Thank you,
+Yoshihiro YUNOMAE
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
 
 
