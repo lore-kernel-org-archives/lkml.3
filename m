@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200AbaCQF5b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 01:57:31 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:58342 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168AbaCQFzj (ORCPT
+	id S1753144AbaCQFzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 01:55:33 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:57400 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaCQFz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 01:55:39 -0400
+	Mon, 17 Mar 2014 01:55:29 -0400
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -16,121 +16,72 @@ Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         "Martin K. Petersen" <martin.petersen@oracle.com>,
         Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
         Sagi Grimberg <sagig@mellanox.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Sagi Grimberg <sagig@dev.mellanox.co.il>
-Subject: [RFCv2 4/7] vhost/scsi: Add T10 PI IOV -> SGL memory mapping logic
-Date: Mon, 17 Mar 2014 05:32:58 +0000
-Message-Id: <1395034381-656-5-git-send-email-nab@daterainc.com>
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [RFCv2 0/7] vhost/scsi: Add T10 PI SGL passthrough support
+Date: Mon, 17 Mar 2014 05:32:54 +0000
+Message-Id: <1395034381-656-1-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1395034381-656-1-git-send-email-nab@daterainc.com>
-References: <1395034381-656-1-git-send-email-nab@daterainc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds vhost_scsi_map_iov_to_prot() to perform the mapping of
-T10 data integrity memory between virtio iov + struct scatterlist using
-get_user_pages_fast() following existing code.
+Hi MST, MKP, Paolo & Co,
 
-As with vhost_scsi_map_iov_to_sgl(), this does sanity checks against the
-total prot_sgl_count vs. pre-allocated SGLs, and loops across protection
-iovs using vhost_scsi_map_to_sgl() to perform the actual memory mapping.
+This is an updated -v2 series for adding T1O protection information (PI)
+SGL passthrough support between virtio-scsi LLD + vhost-scsi fabric
+endpoints.
 
-Also update tcm_vhost_release_cmd() to release associated tvc_prot_sgl[]
-struct page.
+The patch series is available at:
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/vhost/scsi.c |   48 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 47 insertions(+), 1 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git vhost-dif
 
-diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-index a2cb289..f720709 100644
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -80,6 +80,7 @@ struct tcm_vhost_cmd {
- 	u64 tvc_tag;
- 	/* The number of scatterlists associated with this cmd */
- 	u32 tvc_sgl_count;
-+	u32 tvc_prot_sgl_count;
- 	/* Saved unpacked SCSI LUN for tcm_vhost_submission_work() */
- 	u32 tvc_lun;
- 	/* Pointer to the SGL formatted memory from virtio-scsi */
-@@ -458,12 +459,16 @@ static void tcm_vhost_release_cmd(struct se_cmd *se_cmd)
- 	struct tcm_vhost_cmd *tv_cmd = container_of(se_cmd,
- 				struct tcm_vhost_cmd, tvc_se_cmd);
- 	struct se_session *se_sess = se_cmd->se_sess;
-+	int i;
- 
- 	if (tv_cmd->tvc_sgl_count) {
--		u32 i;
- 		for (i = 0; i < tv_cmd->tvc_sgl_count; i++)
- 			put_page(sg_page(&tv_cmd->tvc_sgl[i]));
- 	}
-+	if (tv_cmd->tvc_prot_sgl_count) {
-+		for (i = 0; i < tv_cmd->tvc_prot_sgl_count; i++)
-+			put_page(sg_page(&tv_cmd->tvc_prot_sgl[i]));
-+	}
- 
- 	tcm_vhost_put_inflight(tv_cmd->inflight);
- 	percpu_ida_free(&se_sess->sess_tag_pool, se_cmd->map_tag);
-@@ -856,6 +861,47 @@ vhost_scsi_map_iov_to_sgl(struct tcm_vhost_cmd *cmd,
- 	return 0;
- }
- 
-+static int
-+vhost_scsi_map_iov_to_prot(struct tcm_vhost_cmd *cmd,
-+			   struct iovec *iov,
-+			   int niov,
-+			   bool write)
-+{
-+	struct scatterlist *prot_sg = cmd->tvc_prot_sgl;
-+	unsigned int prot_sgl_count = 0;
-+	int ret, i;
-+
-+	for (i = 0; i < niov; i++)
-+		prot_sgl_count += iov_num_pages(&iov[i]);
-+
-+	if (prot_sgl_count > TCM_VHOST_PREALLOC_PROT_SGLS) {
-+		pr_err("vhost_scsi_map_iov_to_prot() sgl_count: %u greater than"
-+			" preallocated TCM_VHOST_PREALLOC_PROT_SGLS: %u\n",
-+			prot_sgl_count, TCM_VHOST_PREALLOC_PROT_SGLS);
-+		return -ENOBUFS;
-+	}
-+
-+	pr_debug("%s prot_sg %p prot_sgl_count %u\n", __func__,
-+		 prot_sg, prot_sgl_count);
-+	sg_init_table(prot_sg, prot_sgl_count);
-+	cmd->tvc_prot_sgl_count = prot_sgl_count;
-+
-+	for (i = 0; i < niov; i++) {
-+		ret = vhost_scsi_map_to_sgl(cmd, prot_sg, prot_sgl_count, &iov[i],
-+					    cmd->tvc_upages, write);
-+		if (ret < 0) {
-+			for (i = 0; i < cmd->tvc_prot_sgl_count; i++)
-+				put_page(sg_page(&cmd->tvc_prot_sgl[i]));
-+
-+			cmd->tvc_prot_sgl_count = 0;
-+			return ret;
-+		}
-+		prot_sg += ret;
-+		prot_sgl_count -= ret;
-+	}
-+	return 0;
-+}
-+
- static void tcm_vhost_submission_work(struct work_struct *work)
- {
- 	struct tcm_vhost_cmd *cmd =
+Following Paolo's recommendations, this patch adds a new virtio_scsi command
+header (virtio_scsi_cmd_req_pi) with the following elements to signal the
+existence of protection information:
+
+     ->do_pi_niov (DataOUT PI number of iovecs)
+     ->di_pi_noiv (DataIN PI number of iovecs)
+
+Also included is the change to attach protection information preceeding the
+actual DataOUT + DataIN data payload, thus making a future improvement of
+processing virtio buffers inline a possibility.
+
+vhost-scsi code has also been updated to determine virtio_scsi_cmd_req or
+virtio_scsi_cmd_req_pi usage based upon the first iovec's (header) length,
+and then continues to process in either mode accordingly.
+
+As with the original RFC, the virtio-scsi patch still contains a hack
+to force DIX/DIF to be enabled, regardless of host provided feature bits.
+This regression bug still needs to be tracked down.
+
+v2 changes:
+  - Add virtio_scsi_cmd_req_pi header (Paolo + nab)
+  - Use virtio_scsi_cmd_req_pi instead of existing ->prio (Paolo + nab)
+  - Make protection buffer come before data buffer (Paolo + nab)
+  - Update vhost_scsi_get_tag() parameter usage (nab)
+
+Please review.
+
+Thanks!
+
+--nab
+
+Nicholas Bellinger (7):
+  virtio-scsi.h: Add virtio_scsi_cmd_req_pi header definition
+  vhost/scsi: Move sanity check into vhost_scsi_map_iov_to_sgl
+  vhost/scsi: Add preallocation of protection SGLs
+  vhost/scsi: Add T10 PI IOV -> SGL memory mapping logic
+  vhost/scsi: Enable T10 PI IOV -> SGL memory mapping
+  vhost/scsi: Add new VIRTIO_SCSI_F_T10_PI feature bit
+  virtio-scsi: Enable DIF/DIX modes in SCSI host LLD
+
+ drivers/scsi/virtio_scsi.c  |   79 +++++++++---
+ drivers/vhost/scsi.c        |  289 +++++++++++++++++++++++++++++--------------
+ include/linux/virtio_scsi.h |   15 ++-
+ 3 files changed, 273 insertions(+), 110 deletions(-)
+
 -- 
 1.7.2.5
 
