@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849AbaCQRiI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 13:38:08 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:18656 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754738AbaCQRd2 (ORCPT
+	id S1755599AbaCQRr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 13:47:58 -0400
+Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:30285 "EHLO
+	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668AbaCQRr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 13:33:28 -0400
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 03/22] Input: atmel_mxt_ts - return IRQ_NONE when interrupt handler fails
-Date: Mon, 17 Mar 2014 17:26:36 +0000
-Message-Id: <1395077215-10922-4-git-send-email-nick.dyer@itdev.co.uk>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395077215-10922-1-git-send-email-nick.dyer@itdev.co.uk>
-References: <1395077215-10922-1-git-send-email-nick.dyer@itdev.co.uk>
+	Mon, 17 Mar 2014 13:47:57 -0400
+Message-ID: <53273532.1010003@hp.com>
+Date: Mon, 17 Mar 2014 13:47:30 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        kvm@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        virtualization@lists.linux-foundation.org,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Michel Lespinasse <walken@google.com>,
+        Alok Kataria <akataria@vmware.com>, linux-arch@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, x86@kernel.org,
+        Ingo Molnar <mingo@redhat.com>, xen-devel@lists.xenproject.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Scott J Norton <scott.norton@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC v6 10/11] pvqspinlock, x86: Enable qspinlock PV support
+ for KVM
+References: <1394650498-30118-1-git-send-email-Waiman.Long@hp.com>	<1394650498-30118-11-git-send-email-Waiman.Long@hp.com>	<5321B9BE.7050209@redhat.com> <5322035B.5000205@hp.com> <5322C0F7.2090604@redhat.com>
+In-Reply-To: <5322C0F7.2090604@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-Acked-by: Benson Leung <bleung@chromium.org>
-Acked-by: Yufeng Shen <miletus@chromium.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/touchscreen/atmel_mxt_ts.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+On 03/14/2014 04:42 AM, Paolo Bonzini wrote:
+> Il 13/03/2014 20:13, Waiman Long ha scritto:
+>>>>
+>>>
+>>> This should also disable the unfair path.
+>>>
+>>> Paolo
+>>>
+>>
+>> The unfair lock uses a different jump label and does not require any
+>> special PV ops. There is a separate init function for that.
+>
+> Yeah, what I mean is that the patches that enable paravirtualization 
+> should also take care of decreasing the unfair-lock jump label when 
+> paravirtualization is enabled.
+>
+> Paolo
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 65df362..0cff8bb 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -590,7 +590,7 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
- 	do {
- 		if (mxt_read_message(data, &message)) {
- 			dev_err(dev, "Failed to read message\n");
--			goto end;
-+			return IRQ_NONE;
- 		}
- 
- 		reportid = message.reportid;
-@@ -617,7 +617,6 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
- 		input_sync(data->input_dev);
- 	}
- 
--end:
- 	return IRQ_HANDLED;
- }
- 
--- 
-1.8.3.2
+As there are people who don't like unfair lock at all, I prefer to give 
+them the option to turn this on or off instead of forcing them to always 
+use unfair lock in a PV guest.
 
+-Longman
