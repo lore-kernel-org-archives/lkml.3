@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135AbaCQWjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 18:39:42 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:33588 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972AbaCQWjk (ORCPT
+	id S1751616AbaCQWus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 18:50:48 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:65461 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaCQWup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 18:39:40 -0400
+	Mon, 17 Mar 2014 18:50:45 -0400
+Message-ID: <53277C32.4050003@samsung.com>
+Date: Tue, 18 Mar 2014 07:50:26 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <20140317204410.GA1118@arch.cereza>
-References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
-	<1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
-	<20140316070917.GA3094@arch.cereza>
-	<CADHgK6s58EJyJxB-47K8w26H8ZCBFQ2zu7PGAQU9O+2g7=fPwA@mail.gmail.com>
-	<20140317204410.GA1118@arch.cereza>
-Date: Mon, 17 Mar 2014 15:39:39 -0700
-Message-ID: <CADHgK6tHngKVZS=jo=VYt3Nt3dhiEmiWr28iDy7q_uR9goBj=Q@mail.gmail.com>
-Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Laura Abbott <lauraa@codeaurora.org>, Sricharan R <r.sricharan@ti.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Russ Dill <Russ.Dill@ti.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Jiang Liu <liuj97@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>, kgene.kim@samsung.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        mark.rutland@arm.com, Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
+        sander@humilis.net, swarren@wwwdotorg.org, b.zolnierkie@samsung.com,
+        ks.giri@samsung.com, t.figa@samsung.com, jg1.han@samsung.com,
+        joshi@samsung.com, grant.likely@linaro.org,
+        christoffer.dall@linaro.com
+Subject: Re: [PATCH V9 2/2] ARM: dts: Enable ahci sata and sata phy
+References: <1393824160-27040-1-git-send-email-yuvaraj.cd@samsung.com> <1393824160-27040-3-git-send-email-yuvaraj.cd@samsung.com> <53146E84.7060508@ti.com>
+In-Reply-To: <53146E84.7060508@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 March 2014 13:44, Ezequiel Garcia
-<ezequiel.garcia@free-electrons.com> wrote:
-> On Mar 17, Sebastian Capella wrote:
->> On 16 March 2014 00:09, Ezequiel Garcia
->> <ezequiel.garcia@free-electrons.com> wrote:
->> > On Mar 05, Sebastian Capella wrote:
->> > [..]
->> >> diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
->> >> index 1f8fed9..83707702 100644
->> >> --- a/arch/arm/mm/Kconfig
->> >> +++ b/arch/arm/mm/Kconfig
->> >> @@ -611,6 +611,11 @@ config CPU_USE_DOMAINS
->> >>  config IO_36
->> >>       bool
->> >>
->> >> +config ARCH_HIBERNATION_POSSIBLE
-...
->> > Is there any reason why CPU_FEROCEON is not listed here? FWIW, I've just built
->> > (but not really tested) a Kirkwood kernel with CONFIG_HIBERNATION=y.
-...
-> Sure, no problem. If you consider that build-test is enough, feel free to put
-> CPU_FEROCEON on that list. We added suspend/resume to feroceon not long ago.
->> > And is there any reason to put this config in arch/arm/mm/Kconfig, instead of
->> > in arch/arm/Kconfig, below ARCH_SUSPEND_POSSIBLE?
-...
-> I guess my question wasn't clear. I mean to ask: Are there any other
-> requirements on an ARM platform to support hibernation, other than
-> suspend/resume support?
+On 03/03/14 20:59, Kishon Vijay Abraham I wrote:
 >
-> If this is the *only* requirement, it seems to me we could make our
-> ARCH_SUSPEND_POSSIBLE also select ARCH_HIBERNATION_POSSIBLE.
+>
+> On Monday 03 March 2014 10:52 AM, Yuvaraj Kumar C D wrote:
+>> This patch adds dt entry for ahci sata controller and its
+>> corresponding phy controller.phy node has been added w.r.t
+>> new generic phy framework.
+>>
+>> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+>
+> This should go via exynos dt tree.
+>
+Applied, thanks.
 
-Thanks, I've added it like this in arch/arm/Kconfig.  I'm sure you
-know, but this way also takes care of the CPU_FEROCEON in the default
-list since SUSPEND_POSSIBLE already contains it.
+- Kukjin
 
-config ARCH_HIBERNATION_POSSIBLE
-        bool
-        depends on MMU
-        default y if ARCH_SUSPEND_POSSIBLE
-
-Does this look ok?
-
-Thanks!
-
-Sebastian
+> FWIW
+> Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>> Changes since V8:
+>> 1.sata@122f0000 and sata_phy@12170000 disabled by default in
+>> SOC specific dts file and enabled the same in board dts file.
+>>
+>> Changes since V7:
+>> 1.syscon-phandle name updated.
+>>
+>> Changes since V6:none
+>>
+>> Changes since V5:none
+>>
+>> Changes since V4:
+>> 1.Used the new phandle "sata_phy_i2c" in the DT entry.
+>> 2.Updated binding document.
+>>
+>> Changes since V3:
+>> 1.Moved the binding info to the /bindings/phy/
+>>
+>> Changes since V2:
+>> 1.Used syscon interface to PMU handling.
+>> 2.Changed "sata-phy-i2c" to "exynos-sataphy-i2c".
+>>
+>> Changes since V1:
+>> 1.Minor changes to node name convention.
+>> 2.Updated binding document.
+>>
+>>
+>> .../devicetree/bindings/ata/exynos-sata-phy.txt | 14 --------
+>> .../devicetree/bindings/ata/exynos-sata.txt | 25 +++++++++-----
+>> .../devicetree/bindings/phy/samsung-phy.txt | 36 ++++++++++++++++++++
+>> arch/arm/boot/dts/exynos5250-arndale.dts | 21 ++++++++++++
+>> arch/arm/boot/dts/exynos5250-smdk5250.dts | 17 +++++----
+>> arch/arm/boot/dts/exynos5250.dtsi | 18 +++++++---
+>> 6 files changed, 98 insertions(+), 33 deletions(-)
+>> delete mode 100644
+>> Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
