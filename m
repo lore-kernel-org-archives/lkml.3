@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200AbaCQEKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 00:10:19 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:46480 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaCQEJk (ORCPT
+	id S1751617AbaCQEMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 00:12:16 -0400
+Received: from mail.xen.prgmr.com ([71.19.149.6]:57140 "EHLO
+	mail.xen.prgmr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaCQEMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 00:09:40 -0400
-Message-ID: <53267520.4030503@huawei.com>
-Date: Mon, 17 Mar 2014 12:08:00 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 17 Mar 2014 00:12:15 -0400
+Message-ID: <5326761D.5000905@prgmr.com>
+Date: Sun, 16 Mar 2014 21:12:13 -0700
+From: Sarah Newman <srn@prgmr.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH v2 2/3] kmemleak: remove redundant code
-References: <5326750E.1000004@huawei.com>
-In-Reply-To: <5326750E.1000004@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: "H. Peter Anvin" <hpa@zytor.com>, David Vrabel <david.vrabel@citrix.com>
+CC: Suresh Siddha <sbsiddha@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org
+Subject: Re: [Xen-devel] [PATCHv1] x86: don't schedule when handling #NM exception
+References: <1394468273-13676-1-git-send-email-david.vrabel@citrix.com>	<531DEB11.2070709@zytor.com>	<531DF319.6010800@citrix.com>	<53266841.6090308@prgmr.com>	<1ebfa80c-4a68-4602-bc98-e5d5f0893998@email.android.com>	<53266D94.70902@prgmr.com> <53266F56.9030909@zytor.com>
+In-Reply-To: <53266F56.9030909@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- remove kmemleak_padding().
-- remove kmemleak_release().
+On 03/16/2014 08:43 PM, H. Peter Anvin wrote:
+> On 03/16/2014 08:35 PM, Sarah Newman wrote:
+>> Can you please review my patch first?  It's only enabled when absolutely required.
+> 
+> It doesn't help.  It means you're running on Xen, and you will have
+> processes subjected to random SIGKILL because they happen to touch the
+> FPU when the atomic pool is low.
+> 
+> However, there is probably a happy medium: you don't actually need eager
+> FPU restore, you just need eager FPU *allocation*.  We have been
+> intending to allocate the FPU state at task creation time for eagerfpu,
+> and Suresh Siddha has already produced such a patch; it just needs some
+> minor fixups due to an __init failure.
+> 
+> http://lkml.kernel.org/r/1391325599.6481.5.camel@europa
+> 
+> In the Xen case we could turn on eager allocation but not eager fpu.  In
+> fact, it might be justified to *always* do eager allocation...
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- include/linux/kmemleak.h | 2 --
- mm/kmemleak.c            | 7 +------
- 2 files changed, 1 insertion(+), 8 deletions(-)
+Unconditional eager allocation works. Can xen users count on this being included and applied to the
+stable kernels?
 
-diff --git a/include/linux/kmemleak.h b/include/linux/kmemleak.h
-index 2a5e554..5bb4246 100644
---- a/include/linux/kmemleak.h
-+++ b/include/linux/kmemleak.h
-@@ -30,8 +30,6 @@ extern void kmemleak_alloc_percpu(const void __percpu *ptr, size_t size) __ref;
- extern void kmemleak_free(const void *ptr) __ref;
- extern void kmemleak_free_part(const void *ptr, size_t size) __ref;
- extern void kmemleak_free_percpu(const void __percpu *ptr) __ref;
--extern void kmemleak_padding(const void *ptr, unsigned long offset,
--			     size_t size) __ref;
- extern void kmemleak_not_leak(const void *ptr) __ref;
- extern void kmemleak_ignore(const void *ptr) __ref;
- extern void kmemleak_scan_area(const void *ptr, size_t size, gfp_t gfp) __ref;
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index 7fc030e..54270f2 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -1545,11 +1545,6 @@ static int kmemleak_open(struct inode *inode, struct file *file)
- 	return seq_open(file, &kmemleak_seq_ops);
- }
- 
--static int kmemleak_release(struct inode *inode, struct file *file)
--{
--	return seq_release(inode, file);
--}
--
- static int dump_str_object_info(const char *str)
- {
- 	unsigned long flags;
-@@ -1680,7 +1675,7 @@ static const struct file_operations kmemleak_fops = {
- 	.read		= seq_read,
- 	.write		= kmemleak_write,
- 	.llseek		= seq_lseek,
--	.release	= kmemleak_release,
-+	.release	= seq_release,
- };
- 
- /*
--- 
-1.8.0.2
-
+Thanks, Sarah
