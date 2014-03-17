@@ -1,58 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaCQWVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 18:21:14 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:43900 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880AbaCQWVM (ORCPT
+	id S1752996AbaCQWWn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 18:22:43 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:36983 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084AbaCQWWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 18:21:12 -0400
-Date: Mon, 17 Mar 2014 18:21:07 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Greg KH <greg@kroah.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@kernel.org>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20140317222107.GH17373@mtj.dyndns.org>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
- <20140312015021.GC10106@kroah.com>
- <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au>
- <20140317183333.GE10565@kroah.com>
- <1395088410.15098.175.camel@pasglop>
- <20140317215619.GA25228@kroah.com>
- <20140317220554.GG17373@mtj.dyndns.org>
+	Mon, 17 Mar 2014 18:22:42 -0400
+Message-ID: <532775AD.90007@linaro.org>
+Date: Mon, 17 Mar 2014 15:22:37 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140317220554.GG17373@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kara <jack@suse.cz>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dgiani@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/3] vrange: Add purged page detection on setting memory
+ non-volatile
+References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org> <1394822013-23804-3-git-send-email-john.stultz@linaro.org> <20140317093937.GB2210@quack.suse.cz>
+In-Reply-To: <20140317093937.GB2210@quack.suse.cz>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 06:05:54PM -0400, Tejun Heo wrote:
-> I think this is being blown out of proportion.  It was a rarely used
-> API and converting to the new one is mostly trivial which can be
+On 03/17/2014 02:39 AM, Jan Kara wrote:
+> On Fri 14-03-14 11:33:32, John Stultz wrote:
+>> Users of volatile ranges will need to know if memory was discarded.
+>> This patch adds the purged state tracking required to inform userland
+>> when it marks memory as non-volatile that some memory in that range
+>> was purged and needs to be regenerated.
+>>
+>> This simplified implementation which uses some of the logic from
+>> Minchan's earlier efforts, so credit to Minchan for his work.
+>   Some minor comments below...
+>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Android Kernel Team <kernel-team@android.com>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Robert Love <rlove@google.com>
+>> Cc: Mel Gorman <mel@csn.ul.ie>
+>> Cc: Hugh Dickins <hughd@google.com>
+>> Cc: Dave Hansen <dave@sr71.net>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+>> Cc: Neil Brown <neilb@suse.de>
+>> Cc: Andrea Arcangeli <aarcange@redhat.com>
+>> Cc: Mike Hommey <mh@glandium.org>
+>> Cc: Taras Glek <tglek@mozilla.com>
+>> Cc: Dhaval Giani <dgiani@mozilla.com>
+>> Cc: Jan Kara <jack@suse.cz>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+>> Cc: Michel Lespinasse <walken@google.com>
+>> Cc: Minchan Kim <minchan@kernel.org>
+>> Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+>> Signed-off-by: John Stultz <john.stultz@linaro.org>
+>> ---
+>>  include/linux/swap.h   | 15 +++++++++++--
+>>  include/linux/vrange.h | 13 ++++++++++++
+>>  mm/vrange.c            | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 83 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/linux/swap.h b/include/linux/swap.h
+>> index 46ba0c6..18c12f9 100644
+>> --- a/include/linux/swap.h
+>> +++ b/include/linux/swap.h
+>> @@ -70,8 +70,19 @@ static inline int current_is_kswapd(void)
+>>  #define SWP_HWPOISON_NUM 0
+>>  #endif
+>>  
+>> -#define MAX_SWAPFILES \
+>> -	((1 << MAX_SWAPFILES_SHIFT) - SWP_MIGRATION_NUM - SWP_HWPOISON_NUM)
+>> +
+>> +/*
+>> + * Purged volatile range pages
+>> + */
+>> +#define SWP_VRANGE_PURGED_NUM 1
+>> +#define SWP_VRANGE_PURGED (MAX_SWAPFILES + SWP_HWPOISON_NUM + SWP_MIGRATION_NUM)
+>> +
+>> +
+>> +#define MAX_SWAPFILES ((1 << MAX_SWAPFILES_SHIFT)	\
+>> +				- SWP_MIGRATION_NUM	\
+>> +				- SWP_HWPOISON_NUM	\
+>> +				- SWP_VRANGE_PURGED_NUM	\
+>> +			)
+>>  
+>>  /*
+>>   * Magic header for a swap area. The first part of the union is
+>> diff --git a/include/linux/vrange.h b/include/linux/vrange.h
+>> index 652396b..c4a1616 100644
+>> --- a/include/linux/vrange.h
+>> +++ b/include/linux/vrange.h
+>> @@ -1,7 +1,20 @@
+>>  #ifndef _LINUX_VRANGE_H
+>>  #define _LINUX_VRANGE_H
+>>  
+>> +#include <linux/swap.h>
+>> +#include <linux/swapops.h>
+>> +
+>>  #define VRANGE_NONVOLATILE 0
+>>  #define VRANGE_VOLATILE 1
+>>  
+>> +static inline swp_entry_t swp_entry_mk_vrange_purged(void)
+>> +{
+>> +	return swp_entry(SWP_VRANGE_PURGED, 0);
+>> +}
+>> +
+>> +static inline int entry_is_vrange_purged(swp_entry_t entry)
+>> +{
+>> +	return swp_type(entry) == SWP_VRANGE_PURGED;
+>> +}
+>> +
+>>  #endif /* _LINUX_VRANGE_H */
+>> diff --git a/mm/vrange.c b/mm/vrange.c
+>> index acb4356..844571b 100644
+>> --- a/mm/vrange.c
+>> +++ b/mm/vrange.c
+>> @@ -8,6 +8,60 @@
+>>  #include <linux/mm_inline.h>
+>>  #include "internal.h"
+>>  
+>> +struct vrange_walker {
+>> +	struct vm_area_struct *vma;
+>> +	int pages_purged;
+>   Maybe call this 'was_page_purged'? To better suggest the value is bool
+> and not a number of pages... Or make that 'bool' instead of 'int'?
 
-So, looked at the failed code.  The only necessary change seems to be
-calling device_remove_file_self() in dump_ack_store() and then doing
-kobject_put() directly afterwards, which would have been completely
-fine as a merge fix patch.
+Yea, page_was_purged sounds good to me. Thanks for pointing out the
+ambiguity.  Similarly the
 
-Just to be clear, I'm not necessarily against reverting the removal of
-the API.  The removal was based on the speculation that this isn't
-likely to cause trouble.  The speculation was perfectly reasonable but
-being a speculation it failed, so we take actions to remedy that and
-we *do* want to do things that way.  Reverting the removal can sure be
-one choice but the way that choice is being made here seems completely
-wrong to me.  There's no technical evaluation whatsoever.  I'd really
-hate to work in an environment where taking active trade off is
-discouraged replaced with blind policy enforcement.
+entry_is_vrange_purged/swp_entry_mk_vrange_purged functions are a little inconsistently named.
 
-Thanks.
 
--- 
-tejun
+
+>
+>> +};
+>> +
+>> +static int vrange_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>> +				struct mm_walk *walk)
+>> +{
+>> +	struct vrange_walker *vw = walk->private;
+>> +	pte_t *pte;
+>> +	spinlock_t *ptl;
+>> +
+>> +	if (pmd_trans_huge(*pmd))
+>> +		return 0;
+>> +	if (pmd_trans_unstable(pmd))
+>> +		return 0;
+>> +
+>> +	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+>> +	for (; addr != end; pte++, addr += PAGE_SIZE) {
+>> +		if (!pte_present(*pte)) {
+>> +			swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
+>> +
+>> +			if (unlikely(entry_is_vrange_purged(vrange_entry))) {
+>> +				vw->pages_purged = 1;
+>> +				break;
+>> +			}
+>> +		}
+>> +	}
+>> +	pte_unmap_unlock(pte - 1, ptl);
+>> +	cond_resched();
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static unsigned long vrange_check_purged(struct mm_struct *mm,
+>   What's the point of this function returning ulong when everything else
+> expects 'int'?
+
+Thanks, I'll fix that.
+
+>> +					 struct vm_area_struct *vma,
+>> +					 unsigned long start,
+>> +					 unsigned long end)
+>> +{
+>> +	struct vrange_walker vw;
+>> +	struct mm_walk vrange_walk = {
+>> +		.pmd_entry = vrange_pte_range,
+>> +		.mm = vma->vm_mm,
+>> +		.private = &vw,
+>> +	};
+>> +	vw.pages_purged = 0;
+>> +	vw.vma = vma;
+>> +
+>> +	walk_page_range(start, end, &vrange_walk);
+>> +
+>> +	return vw.pages_purged;
+>> +
+>> +}
+>> +
+>>  static ssize_t do_vrange(struct mm_struct *mm, unsigned long start,
+>>  				unsigned long end, int mode, int *purged)
+>>  {
+>> @@ -57,6 +111,9 @@ static ssize_t do_vrange(struct mm_struct *mm, unsigned long start,
+>>  			break;
+>>  		case VRANGE_NONVOLATILE:
+>>  			new_flags &= ~VM_VOLATILE;
+>> +			lpurged |= vrange_check_purged(mm, vma,
+>> +							vma->vm_start,
+>> +							vma->vm_end);
+>   Hum, why don't you actually just call vrange_check_purge() once for the
+> whole syscall range? walk_page_range() seems to handle multiple vmas just
+> fine...
+>
+
+Another good suggestion!
+
+Thanks!
+-john
+
