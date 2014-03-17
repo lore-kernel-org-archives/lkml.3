@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182AbaCQART (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 20:17:19 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:15325 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964AbaCQARP (ORCPT
+	id S932197AbaCQA0v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 20:26:51 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:52597 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754964AbaCQA0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 20:17:15 -0400
-X-AuditID: cbfee68e-b7f566d000002344-29-53263f069c84
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Chanwoo Choi'" <cw00.choi@samsung.com>
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        rafael.j.wysocki@intel.com, nm@ti.com, b.zolnierkie@samsaung.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1394789408-14648-1-git-send-email-cw00.choi@samsung.com>
- <1394789408-14648-6-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1394789408-14648-6-git-send-email-cw00.choi@samsung.com>
-Subject: Re: [PATCHv3 5/8] devfreq: exynos4: Use SET_SYSTEM_SLEEP_PM_OPS macro
-Date: Mon, 17 Mar 2014 09:17:10 +0900
-Message-id: <001501cf4176$3d23daa0$b76b8fe0$%han@samsung.com>
+	Sun, 16 Mar 2014 20:26:48 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-7a-53264146dced
+Date: Mon, 17 Mar 2014 09:26:46 +0900
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH v11 01/27] iommu/exynos: do not include removed header
+Message-id: <20140317092646.b696d2245fb95ea8835cbd2e@samsung.com>
+In-reply-to: <CAK9yfHyGfdP+0RKtdSCdU4tO=PX8GbQRQ7ar=ST5B2RenZMMsg@mail.gmail.com>
+References: <20140314140129.68a41cc1bd9e0a48a198ca13@samsung.com>
+ <CAK9yfHzRasE3jroDUZgAa=DN5N=2ZDAxgNiHDCip+f2868BAVQ@mail.gmail.com>
+ <000e01cf3f7b$6edcdfd0$4c969f70$@samsung.com>
+ <CAK9yfHyGfdP+0RKtdSCdU4tO=PX8GbQRQ7ar=ST5B2RenZMMsg@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
+Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8/aMdOM1H1q499RS+OmxkbEdH9/wCDM9cA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsVy+t8zQ102e7Vgg76zChYdPb9ZLK5/ec5q
-	Mf/IOVaLc69WMlpcXniJ1eJs0xt2i4VtS1gsLu+aw2bxufcIo8WM8/uYLJZev8hkcbtxBZvF
-	mx9nmSwmTF/LYvF4xVt2i1cH21gcBDzWzFvD6LFy+Rc2j8V7XjJ5/Fy+nd2jb8sqRo/jN7Yz
-	eXzeJOexcW5oAEcUl01Kak5mWWqRvl0CV8byRbtZC95yV9zdeJutgfEVZxcjJ4eEgInErjtv
-	GCFsMYkL99azdTFycQgJLGOUmHLoOTtM0aRHL5kgEtMZJTqug3SAOL8ZJaau3sAMUsUmoCbx
-	5cthsA4RAS2JiZ0zwTqYBWYzS/w+MQ9qbiOjxIRNu8A6OAXcJL7uWssCYgsL+Ek8/fMELM4i
-	oCpxqPETWJxXwFbi2YGNULagxI/J98BsZqAN63ceZ4Kw5SU2r3kL1MsBdKu6xKO/uhBHGEns
-	+9DMDlEiIrHvxTuwqyUEDnBIrDn2gAVil4DEt8mHWCB6ZSU2HWCGeFlS4uCKGywTGCVmIdk8
-	C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiI73ixNzi0rx0veT83E2MkMTRt4Px5gHrQ4zJQOsn
-	MkuJJucDE09eSbyhsZmRhamJqbGRuaUZacJK4ryLHiYFCQmkJ5akZqemFqQWxReV5qQWH2Jk
-	4uCUamAMFllu3/r77UOt5FPWbjXvdM9MVGBfsEDirIfWSXHxh/MDXay48ksO79LS6NuZwNa4
-	fpdQdHbZ0Tbjdk9vr5NLPnev+3ydae+W8xWv96+R+3lympH5d3WGhSIHAjy3rTM5feFG3ezL
-	ndOND+ndF203fRi/3vqQVsKpC2pTv5koSQhI64jzVoYqsRRnJBpqMRcVJwIA837D3zIDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDKsWRmVeSWpSXmKPExsVy+t9jQV02e7Vgg50vpSw6en6zWFz/8pzV
-	Yv6Rc6wW516tZLS4vPASq8XZpjfsFgvblrBYXN41h83ic+8RRosZ5/cxWSy9fpHJ4nbjCjaL
-	Nz/OMllMmL6WxeLxirfsFq8OtrE4CHismbeG0WPl8i9sHov3vGTy+Ll8O7tH35ZVjB7Hb2xn
-	8vi8Sc5j49zQAI6oBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFsl
-	F58AXbfMHKAXlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZyxftZi14
-	y11xd+NttgbGV5xdjJwcEgImEpMevWSCsMUkLtxbz9bFyMUhJDCdUaLj+htGCOc3o8TU1RuY
-	QarYBNQkvnw5zA5iiwhoSUzsnMkEUsQsMJtZ4veJeVDtjYwSEzbtAuvgFHCT+LprLQuILSzg
-	J/H0zxOwOIuAqsShxk9gcV4BW4lnBzZC2YISPybfA7OZgTas33mcCcKWl9i85i1QLwfQreoS
-	j/7qQhxhJLHvQzM7RImIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73i
-	xNzi0rx0veT83E2M4LT0TGoH48oGi0OMAhyMSjy8E5TVgoVYE8uKK3MPMUpwMCuJ8CaYA4V4
-	UxIrq1KL8uOLSnNSiw8xJgM9OpFZSjQ5H5gy80riDY1NzIwsjcwsjEzMzUkTVhLnPdBqHSgk
-	kJ5YkpqdmlqQWgSzhYmDU6qBUexW2lyn++oKL7omP2NvuGG+4qe8U4ZVRO/Rt0x3a4895MrK
-	va6Zk2n/q2Pu9GybVxd+HS9cuHrV/4pKC5b9zyZdcNaN4UvwvcjiN6OW+0n0/qfRJYHyHy9p
-	RJ9eu1F0Tl/ts3uLPodWTHhzr/l7+cFNzZ9F1Q54fjkQtLt9av7O417h6zVkzZVYijMSDbWY
-	i4oTASbk+d2PAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t8zA103R7Vgg/NPzCzu3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
+	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
+	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4Mp4dGE9S8Fs3oq9+xayNTAe5epi5OSQEDCR+Hb3HCOE
+	LSZx4d56ti5GLg4hgWWMEp8b21lgij7+v8UEkVjEKLFv/xooZzKTxN6lfUwgVSwCqhKTf/4B
+	s9kEtCRWzz0ONlYEyH7ZvRysgVngJ4vEpbfPWEESwgJeElNf3mMGsXkFHCUWHe4HszkFgiV2
+	dp9nhNjwn1Fi+7EmNog7LCQuNHWwQzQISvyYfA/sPmagDZu3NbFC2PISm9e8ZQZplhCYyyFx
+	6ekqFojzBCS+TT4EZHMAJWQlNh1ghpgpKXFwxQ2WCYxis5CMnYVk7CwkYxcwMq9iFE0tSC4o
+	TkovMtUrTswtLs1L10vOz93ECIn4iTsY7x+wPsSYDLRyIrOUaHI+MGHklcQbGpsZWZiamBob
+	mVuakSasJM6b/igpSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANj+/LNZx6ENigXbOhKLZ+Z
+	ukd59v+6atPdzmWvv8/YxyJxMkM8p/qWyHRBF17OJONtEtGinxkz3VQfbbeP2H064JfM1jsz
+	RMs67CJiPaf/+3Mo0XmBusYUSaWad0J/k5Rmcit++xvdrnJo/e80724bK5nGZH+BVKkfnFXJ
+	qyPjzj07InJKNFuJpTgj0VCLuag4EQBedw03DgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBKsWRmVeSWpSXmKPExsVy+t9jAV03R7VggzdLDC3u3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
+	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
+	ch5Xjp5hCuCMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAH6QEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8ejCepaC2bwV
+	e/ctZGtgPMrVxcjJISFgIvHx/y0mCFtM4sK99WxdjFwcQgKLGCX27V/DBOFMZpLYu7QPrIpF
+	QFVi8s8/YDabgJbE6rnHGUFsESD7ZfdysAZmgZ8sEpfePmMFSQgLeElMfXmPGcTmFXCUWHS4
+	H8zmFAiW2Nl9nhFiw39Gie3Hmtgg7rCQuNDUwQ7RICjxY/I9FhCbGWjD5m1NrBC2vMTmNW+Z
+	JzAKzEJSNgtJ2SwkZQsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKeTZ1I7GFc2WBxi
+	FOBgVOLhnaCsFizEmlhWXJl7iFGCg1lJhDfBHCjEm5JYWZValB9fVJqTWnyIMRkYHhOZpUST
+	84GpLq8k3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGLXqxI/5
+	Se81e9JfsOTxvL0n2drMSz0CRJKEQ9bPvJS3iO1Lzrp5Ghsuibi4yDzVWFS08WNUXHX5VHFu
+	93qPFU1Vs5bVhQsbSXDXdbjbyPMw8opuWntwneksfc38tdypDWfrKzJbnU5+usAorjXjWOif
+	he5n5ijxXnRbFFr98aP0+47j6TfZlViKMxINtZiLihMB+QD2zGsDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -64,53 +69,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 14, 2014 6:30 PM, Chanwoo Choi wrote:
+On Fri, 14 Mar 2014 17:29:36 +0530, Sachin Kamat wrote:
+> On 14 March 2014 17:19, Cho KyongHo <pullip.cho@samsung.com> wrote:
+> >> From: Sachin Kamat [mailto:sachin.kamat@linaro.org]
+> >> Sent: Friday, March 14, 2014 7:00 PM
+> >>
+> >> On 14 March 2014 10:31, Cho KyongHo <pullip.cho@samsung.com> wrote:
+> >> > Commit 25e9d28d92 (ARM: EXYNOS: remove system mmu initialization from
+> >> > exynos tree) removed arch/arm/mach-exynos/mach/sysmmu.h header without
+> >> > removing remaining use of it from exynos-iommu driver, thus causing a
+> >> > compilation error.
+> >> >
+> >> > This patch fixes the error by removing respective include line
+> >> > from exynos-iommu.c.
+> >> >
+> >> > CC: Tomasz Figa <t.figa@samsung.com>
+> >> > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+> >> > ---
+> >> >  drivers/iommu/exynos-iommu.c |    3 +--
+> >> >  1 file changed, 1 insertion(+), 2 deletions(-)
+> >> >
+> >> > diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+> >> > index 0740189..4876d35 100644
+> >> > --- a/drivers/iommu/exynos-iommu.c
+> >> > +++ b/drivers/iommu/exynos-iommu.c
+> >> > @@ -12,6 +12,7 @@
+> >> >  #define DEBUG
+> >> >  #endif
+> >> >
+> >> > +#include <linux/kernel.h>
+> >>
+> >> This change doesn't look related to the patch subject/description.
+> >>
+> > Yes. But it is simply added without any side-effect.
+> > Do you think it should be in a separate patch?.
+> > Actually, the added line is a redundant.
 > 
-> This patch use SET_SYSTEM_SLEEP_PM_OPS macro instead of legacy method.
+> If it is redundant, then you shouldn't be adding it. If it is
+> required, then please
+> mention about the need in the commit description if not a separate patch.
 > 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> ---
->  drivers/devfreq/exynos/exynos4_bus.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
-> index 60539e8..e5d2c5a 100644
-> --- a/drivers/devfreq/exynos/exynos4_bus.c
-> +++ b/drivers/devfreq/exynos/exynos4_bus.c
-> @@ -1247,6 +1247,7 @@ static int exynos4_busfreq_remove(struct platform_device *pdev)
->  	return 0;
->  }
-> 
-> +#ifdef CONFIG_PM_SLEEP
->  static int exynos4_busfreq_resume(struct device *dev)
->  {
->  	struct busfreq_data *data = dev_get_drvdata(dev);
-> @@ -1254,9 +1255,10 @@ static int exynos4_busfreq_resume(struct device *dev)
->  	busfreq_mon_reset(data);
->  	return 0;
->  }
-> +#endif
-> 
->  static const struct dev_pm_ops exynos4_busfreq_pm = {
-> -	.resume	= exynos4_busfreq_resume,
-> +	SET_SYSTEM_SLEEP_PM_OPS(NULL, exynos4_busfreq_resume)
 
-Hi Chanwoo Choi,
+Ok.
 
-How about using SIMPLE_DEV_PM_OPS instead of SET_SYSTEM_SLEEP_PM_OPS?
-SIMPLE_DEV_PM_OPS is simpler as below.
+Thanks for the advice.
 
-static SIMPLE_DEV_PM_OPS(exynos4_busfreq_pm, NULL, exynos4_busfreq_resume);
-
-However, if runtime pm functions will be added later,
-SIMPLE_DEV_PM_OPS is not necessary.
-
-Best regards,
-Jingoo Han
-
->  };
-> 
->  static const struct platform_device_id exynos4_busfreq_id[] = {
-> --
-> 1.8.0
-
+KyongHo
