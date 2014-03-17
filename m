@@ -1,160 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299AbaCQTMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 15:12:16 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:62519 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaCQTMN convert rfc822-to-8bit (ORCPT
+	id S1751109AbaCQTTO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 15:19:14 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:34661 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaCQTTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 15:12:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <87ob15maa6.fsf@nemi.mork.no>
-References: <1394952550-9308-1-git-send-email-benchan@chromium.org>
- <1394952550-9308-2-git-send-email-benchan@chromium.org> <87ob15maa6.fsf@nemi.mork.no>
-From: Ben Chan <benchan@chromium.org>
-Date: Mon, 17 Mar 2014 12:11:52 -0700
-X-Google-Sender-Auth: fsqgwYmJ1kxCJ4Nb3DwFyvja48g
-Message-ID: <CAC5Y2nN_w46FczgitbPjmXtk7q3rHpTxLddx0_GtStfzNXerXQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: cdc_ncm: respect operator preferred MTU reported
- by MBIM
-To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Greg Suarez <gsuarez@smithmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Mar 2014 15:19:10 -0400
+Message-ID: <1395083909.28843.33.camel@haakon3.risingtidesystems.com>
+Subject: Re: [RFCv2 5/7] vhost/scsi: Enable T10 PI IOV -> SGL memory mapping
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        kvm-devel <kvm@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Sagi Grimberg <sagig@dev.mellanox.co.il>
+Date: Mon, 17 Mar 2014 12:18:29 -0700
+In-Reply-To: <5326D65E.6060205@redhat.com>
+References: <1395034381-656-1-git-send-email-nab@daterainc.com>
+	 <1395034381-656-6-git-send-email-nab@daterainc.com>
+	 <5326D65E.6060205@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 2:42 AM, Bjørn Mork <bjorn@mork.no> wrote:
-> Is this *really* driver material, or should we just leave the IP MTU
-> hint handling up to the userspace management application?
->
-> There are no less than 3(!) different ways for a device to specify the
-> MBIM MTU:
->
->  1) wMaxSegmentSize field of the "MBIM Control Model Functional
->       Descriptor"
->       (mandatory, pre-errata1, per-device, both IP and DSS)
->
->  2) IPv4Mtu/IPv6Mtu fields of the MBIM_IP_CONFIGURATION_INFO response to
->       MBIM_CID_IP_CONFIGURATION
->       (mandatory, pre-errata1, per-session, IP only)
->
->  3) wMTU field of the "MBIM Extended Functional Descriptor"
->       (optional, errata1, per-operator, IP only)
->
-> I see the optional extended MBIM descriptor as no more than a hint, and
-> given that MBIM_CID_IP_CONFIGURATION is mandatory I see no real use case
-> at all.
->
-> If the extended decriptor is there, and the application supports it,
-> then fine - let the application base the default IP MTU on this
-> value. But I cannot see anything possibly break for an application and
-> driver which does not support it.  The fact that the USB-IF didn't
-> bother to update the MBIM version number when they added this descriptor
-> supports that claim IMHO.  It tells us that it is perfectly OK for any
-> MBIM v1.0 compliant application/driver to not even parse this
-> descriptor, because the application/driver can predate Errata1.  The
-> descriptor was added out of the blue in something called an "Errata",
-> and is IMHO best ignored until a proper new version of the standard is
-> published.
->
-> The driver currently set the MTU based on the wMaxSegmentSize from the
-> mandatory MBIM descriptor.  AFAICS this is the only field the driver
-> *can* use.  The MBIM management application may make use of the extended
-> descriptor, because it will know about "operator" and the relation to
-> "IP data streams".  The driver does not have this knowledge, and it must
-> be capable of supporting non-IP streams (DSS) multiplexed over the same
-> network device.
->
-> AFAICS, the MTU information provided by the extended descriptor is
-> completely redundant for all cases where it has a meaning (the mandatory
-> MBIM_CID_IP_CONFIGURATION will provde the IPv4 and IPv6 per-session
-> MTUs), and possily completely wrong for any other case (wMaxSegmentSize
-> sets the maximum size for non-IP sessions)
->
-> My advice is to leave parsing of this descriptor to userspace.  That is
-> also the only place where we can make use of the
-> bMaxOutstandingCommandMessages, which actually is useful information. I
-> just don't understand why they had to make that part of a descriptor
-> when they have defined a new dedicated and extensible management
-> protocol....
->
-> In case you disagree with the above (and do feel free to do so... I am
-> often wrong), some minor nits regarding the actual implementation:
->
+On Mon, 2014-03-17 at 12:02 +0100, Paolo Bonzini wrote:
+> Il 17/03/2014 06:32, Nicholas A. Bellinger ha scritto:
+> > +		if (vq->iov[0].iov_len == sizeof(v_req_pi)) {
+> > +			req = (unsigned char *)&v_req_pi;
+> > +			target = &v_req_pi.lun[1];
+> > +			req_size = sizeof(v_req_pi);
+> > +			hdr_pi = true;
+> > +		} else if (vq->iov[0].iov_len == sizeof(v_req)) {
+> > +			req = (unsigned char *)&v_req;
+> > +			target = &v_req.lun[1];
+> > +			req_size = sizeof(v_req);
+> > +			hdr_pi = false;
+> 
+> The right check here is on the negotiated features.
+> 
 
-It's a bit messy how MTU is currently handled in MBIM. While wMTU may
-seem optional and redundant, it addresses some issues with
-wMaxSegmentSize and MBIM_CID_IP_CONFIGURATION, and hence why I suggest
-using wMTU when available:
+Mmmm, so this had been making the assumption that the PI enabled header
+would only be used when the CDB itself had an associated PI SGL.
 
-(1) wMaxSegmentSize
+I agree it's cleaner to always use the PI enabled header when the
+feature bit has been negotiated.  Fixing this up for -v3.
 
-The MBIM 1.0 errata-1 spec does suggest that wMaxSegmentSize must be
-at least 2048 and should not be used for determining IP MTU. However,
-some MBIM devices follow Microsoft's guideline, which suggests using
-wMaxSegmentSize to determine link MTU and its value should be between
-1280 and 1500. The guideline may have been made before MBIM 1.0, but
-it clearly contradicts and violates the current spec. Unfortunately,
-it's followed by device vendors in practice. We could modify cdc_ncm
-not to have the lower bound (i.e. CDC_MBIM_MIN_DATAGRAM_SIZE = 2048)
-that it currently enforces. I don't feel like we should violate the
-spec in the driver if there are alternative solutions.
+> You need a matching QEMU patch to enable the protection information
+> feature, like this (untested):
+> 
 
-(2) MBIM_CID_IP_CONFIGURATION
+<nod>
 
-MBIM_CID_IP_CONFIGURATION doesn't necessarily contain MTU information
-according to the spec. Bit 3 of IPv4ConfigurationAvailable /
-IPv6ConfigurationAvailable of MBIM_IP_CONFIGURATION_INFO indicates
-whether MTU information is available. As the Microsoft guideline also
-suggests that MBIM_CID_IP_CONFIGURATION wouldn't be used for MTU
-purpose, I wouldn't be too surprised that devices just don't bother to
-notify MTU via MBIM_CID_IP_CONFIGURATION.
+Thanks Paolo!
 
-(3) wMTU
+--nab
 
-The MBIM extended functional descriptor is optional, but device
-vendors do use it to indicate the MTU (mostly due to aforementioned
-confusion around wMaxSegmentSize). Using the wMTU field wouldn't add
-too much code or runtime overhead in kernel, so why don't we use it to
-set up the initial MTU when available? We could handle it in
-userspace, but I see the cdc_ncm driver is a better fit as it (like
-other net drivers) already sets up mtu and leaving the wMTU case would
-seem incomplete to me.
+> diff --git a/hw/scsi/vhost-scsi.c b/hw/scsi/vhost-scsi.c
+> index 3983a5b..4c8d5cd 100644
+> --- a/hw/scsi/vhost-scsi.c
+> +++ b/hw/scsi/vhost-scsi.c
+> @@ -154,6 +154,9 @@ static uint32_t vhost_scsi_get_features(VirtIODevice *vdev,
+>      if (!(s->dev.features & (1 << VIRTIO_SCSI_F_HOTPLUG))) {
+>          features &= ~(1 << VIRTIO_SCSI_F_HOTPLUG);
+>      }
+> +    if (!(s->dev.features & (1 << VIRTIO_SCSI_F_T10_PI))) {
+> +        features &= ~(1 << VIRTIO_SCSI_F_T10_PI);
+> +    }
+>  
+>      return features;
+>  }
+> diff --git a/hw/scsi/virtio-scsi.c b/hw/scsi/virtio-scsi.c
+> index 6610b3a..4a551e9 100644
+> --- a/hw/scsi/virtio-scsi.c
+> +++ b/hw/scsi/virtio-scsi.c
+> @@ -629,6 +629,9 @@ static void virtio_scsi_device_realize(DeviceState *dev, Error **errp)
+>          return;
+>      }
+>  
+> +    /* Protection information is not supported yet.  */
+> +    dev->guest_features &= ~VIRTIO_SCSI_F_T10_PI;
+> +
+>      scsi_bus_new(&s->bus, sizeof(s->bus), dev,
+>                   &virtio_scsi_scsi_info, vdev->bus_name);
+>  
+> diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
+> index 9010246..8621fbf 100644
+> --- a/include/hw/i386/pc.h
+> +++ b/include/hw/i386/pc.h
+> @@ -267,6 +267,16 @@ int e820_add_entry(uint64_t, uint64_t, uint32_t);
+>              .value    = "no",\
+>          },\
+>          {\
+> +            .driver   = "virtio-scsi-pci",\
+> +            .property = "prot_info",\
+> +            .value    = "off",\
+> +        },\
+> +        {\
+> +            .driver   = "vhost-scsi-pci",\
+> +            .property = "prot_info",\
+> +            .value    = "off",\
+> +        },\
+> +        {\
+>              .driver   = "PIIX4_PM",\
+>              .property = "acpi-pci-hotplug-with-bridge-support",\
+>              .value    = "off",\
+> diff --git a/include/hw/virtio/virtio-scsi.h b/include/hw/virtio/virtio-scsi.h
+> index 42b1024..a555f49 100644
+> --- a/include/hw/virtio/virtio-scsi.h
+> +++ b/include/hw/virtio/virtio-scsi.h
+> @@ -34,6 +34,7 @@
+>  #define VIRTIO_SCSI_F_INOUT                    0
+>  #define VIRTIO_SCSI_F_HOTPLUG                  1
+>  #define VIRTIO_SCSI_F_CHANGE                   2
+> +#define VIRTIO_SCSI_F_T10_PI                   3
+>  
+>  #define VIRTIO_SCSI_VQ_SIZE     128
+>  #define VIRTIO_SCSI_CDB_SIZE    32
+> @@ -184,7 +185,9 @@ typedef struct {
+>      DEFINE_PROP_BIT("hotplug", _state, _feature_field, VIRTIO_SCSI_F_HOTPLUG,  \
+>                                                         true),                  \
+>      DEFINE_PROP_BIT("param_change", _state, _feature_field,                    \
+> -                                            VIRTIO_SCSI_F_CHANGE, true)
+> +                                            VIRTIO_SCSI_F_CHANGE, true)        \
+> +    DEFINE_PROP_BIT("prot_info", _state, _feature_field,                       \
+> +                                            VIRTIO_SCSI_F_T10_PI, true)
+>  
+>  void virtio_scsi_common_realize(DeviceState *dev, Error **errp);
+>  void virtio_scsi_common_unrealize(DeviceState *dev, Error **errp);
+> 
 
-While (1) and (2) are fixable, it's hard to convince device vendors to
-update their firmware just for that as carrier certifications impose a
-heavy cost of firmware changes.
 
-
-> wMTU access needs le16_to_cpu.
-
-Good catch. I will fix it in patch v2.
-
->
-> Could we move this final MTU correction from cdc_ncm_setup to
-> cdc_ncm_bind_common to avoid bloating the device struct with another
-> descriptor pointer we donæt really need to keep around?
->
-> I know we look into descriptors in cdc_ncm_setup, because we have to,
-> but ideally I would have loved to see cdc_ncm_setup dealing with *just*
-> the NCM/MBIM specific control setup messages and cdc_ncm_bind_common
-> dealing with all the functional descriptors.  That seems most logic to
-> me (but is of course only my personal opinion and nothing else - I do
-> not know what the original cdc_ncm author intended)
->
-
-I understand the argument against the extra descriptor pointer. But I
-think it's better to keep the mtu related code together so that one
-can easily see how MTU is determined when trying to change or refactor
-the code. I haven't looked into what cdc_ncm_setup was originally
-intended for. If we'd like to avoid adding an extra pointer in
-cdc_ncm_ctx, we could have cdc_ncm_bind passing a locally scoped
-context to cdc_ncm_setup.
-
-Thanks,
-Ben
