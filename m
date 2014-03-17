@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaCQUUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 16:20:00 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42537 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaCQUT6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 16:19:58 -0400
-Date: Mon, 17 Mar 2014 16:19:55 -0400 (EDT)
-Message-Id: <20140317.161955.776021754942208577.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: Re: [PATCH net-next,v2,1/1] hyperv: Add support for virtual
- Receive Side Scaling (vRSS)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394903887-30421-2-git-send-email-haiyangz@microsoft.com>
-References: <1394903887-30421-1-git-send-email-haiyangz@microsoft.com>
-	<1394903887-30421-2-git-send-email-haiyangz@microsoft.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 17 Mar 2014 13:19:58 -0700 (PDT)
+	id S1751935AbaCQUUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 16:20:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64160 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751723AbaCQUUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 16:20:02 -0400
+Date: Mon, 17 Mar 2014 21:19:19 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        penguin-kernel@I-love.SAKURA.ne.jp, rientjes@google.com,
+        Linus Torvalds <torvalds@linux-foundation.org>, tj@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kernel Team <kernel-team@lists.ubuntu.com>
+Subject: Re: [v3.13][v3.14][Regression] kthread: make kthread_create()
+	killable
+Message-ID: <20140317201919.GA28997@redhat.com>
+References: <53236AA2.7030105@canonical.com> <20140317130241.7e4fde86d75d417628da6f1a@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140317130241.7e4fde86d75d417628da6f1a@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Sat, 15 Mar 2014 10:18:07 -0700
+On 03/17, Andrew Morton wrote:
+>
+> On Fri, 14 Mar 2014 16:46:26 -0400 Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
+>
+> > Hi Tetsuo,
+> >
+> > A kernel bug report was opened against Ubuntu[0].  We performed a kernel
+> > bisect, and found that reverting the following commit resolved this bug:
+> >
+> >
+> > commit 786235eeba0e1e85e5cbbb9f97d1087ad03dfa21
+> > Author: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> > Date:   Tue Nov 12 15:06:45 2013 -0800
+> >
+> >     kthread: make kthread_create() killable
+> >
+> > The regression was introduced as of v3.13-rc1.
+> >
+> > The bug indicates an issue with the SAS controller during
+> > initialization, which prevents the system from booting.  Additional
+> > details are available in the bug report or on request.
+> >
+> > I was hoping to get your feedback, since you are the patch author.  Do
+> > you think gathering any additional data will help diagnose this issue,
+> > or would it be best to submit a revert request?
+> >
+> > [0] http://pad.lv/1276705
+>
+> What process is running here?  Presumably modprobe.
+>
+> A possible explanation is that modprobe has genuinely received a
+> SIGKILL.  Can you identify anything in this setup which might send a
+> SIGKILL to the modprobe process?
 
-> -		if (netif_queue_stopped(ndev) && !net_device->start_remove &&
-> -			(hv_ringbuf_avail_percent(&device->channel->outbound)
-> -			> RING_AVAIL_PERCENT_HIWATER ||
-> -			num_outstanding_sends < 1))
-> -				netif_wake_queue(ndev);
-> +		if (netif_tx_queue_stopped(netdev_get_tx_queue(ndev, q_idx))
-> +			&& !net_device->start_remove &&
-> +			(hv_ringbuf_avail_percent(&channel->outbound)
-> +			> RING_AVAIL_PERCENT_HIWATER || queue_sends < 1))
-> +				netif_tx_wake_queue(netdev_get_tx_queue(
-> +						    ndev, q_idx));
+See also other discussion in this thread, I thinks the code in drivers/
+is buggy anyway.
 
-This is not indented properly, make it:
+> kthread_create_on_node() thinks that SIGKILL came from the oom-killer
+> and it cheerfully returns -ENOMEM, which is incorrect if that signal
+> came from userspace.
 
-	if (A && B &&
-	    (C >
-             D || E < 1))
+Yes, I think it should return -EINTR.
 
-Never put operators at the beginning of a conditional line, always at
-the end.
+> And I don't _think_ we prevent
+> userspace-originated signals from unblocking
+> wait_for_completion_killable()?
+
+And we should not.
+
+> Root cause time: it's wrong for the oom-killer to use SIGKILL.
+
+Not sure... what else?
+
+> In fact
+> it's basically always wrong to send signals from in-kernel.
+
+Well, SIGSEGV, SIGIO...
+
+> Signals
+> are a userspace IPC mechanism and using them in-kernel a) makes it hard
+> (or impossible) to distinguish them from userspace-originated signals
+> and b) permits userspace to produce surprising results in the kernel,
+> which I suspect is what we're seeing here.
+
+Well, I think in this case it doesn't matter who/why sends a signal.
+The task is killed, it should react and exit asap. And kthread_create()
+can fail in any case, at least the kernel should not crash.
+
+Oleg.
+
