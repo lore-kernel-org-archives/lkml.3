@@ -1,34 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933428AbaCQNdG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:33:06 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51830 "EHLO
+	id S933332AbaCQNbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:31:38 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51773 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933410AbaCQNdD (ORCPT
+	with ESMTP id S933129AbaCQNbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:33:03 -0400
-Date: Mon, 17 Mar 2014 06:33:03 -0700
+	Mon, 17 Mar 2014 09:31:32 -0400
+Message-Id: <20140317133131.797576672@bombadil.infradead.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 17 Mar 2014 06:27:36 -0700
 From: Christoph Hellwig <hch@infradead.org>
 To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/39] [WIP] scsi multiqueue
-Message-ID: <20140317133303.GA17290@infradead.org>
+Subject: [PATCH 03/39] blk-mq: fix blk_mq_end_io_partial
 References: <20140317132733.789623766@bombadil.infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140317132733.789623766@bombadil.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Disposition: inline; filename=0003-blk-mq-fix-blk_mq_end_io_partial.patch
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, this is also available from
+We need to pass the actual nr_bytes instead of all bytes in the request.
 
-    git://git.infradead.org/users/hch/scsi.git#scsi-mq-wip.3
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ block/blk-mq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-for those who prefer a git tree.
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 883f720..d81dc8b 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -285,7 +285,7 @@ void blk_mq_free_request(struct request *rq)
+ 
+ bool blk_mq_end_io_partial(struct request *rq, int error, unsigned int nr_bytes)
+ {
+-	if (blk_update_request(rq, error, blk_rq_bytes(rq)))
++	if (blk_update_request(rq, error, nr_bytes))
+ 		return true;
+ 
+ 	blk_account_io_done(rq);
+-- 
+1.7.10.4
 
-This work was sponsored by the ION division of Fusion IO.
 
