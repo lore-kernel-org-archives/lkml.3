@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaCQXhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 19:37:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48988 "EHLO mga11.intel.com"
+	id S1752663AbaCQXhg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 19:37:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64364 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750890AbaCQXgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 19:36:48 -0400
+	id S1751860AbaCQXgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 19:36:50 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,673,1389772800"; 
-   d="scan'208";a="500757070"
+   d="scan'208";a="500757084"
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 To: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
@@ -17,9 +17,9 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Michael Ellerman <michael@ellerman.id.au>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH v2 2/4] random: Use arch_get_random_seed*() at init time and once a second
-Date: Mon, 17 Mar 2014 16:36:28 -0700
-Message-Id: <1395099390-807-3-git-send-email-hpa@linux.intel.com>
+Subject: [PATCH v2 4/4] random: Add arch_has_random[_seed]()
+Date: Mon, 17 Mar 2014 16:36:30 -0700
+Message-Id: <1395099390-807-5-git-send-email-hpa@linux.intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1395099390-807-1-git-send-email-hpa@linux.intel.com>
 References: <1395099390-807-1-git-send-email-hpa@linux.intel.com>
@@ -27,87 +27,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use arch_get_random_seed*() in two places in the Linux random
-driver (drivers/char/random.c):
+Add predicate functions for having arch_get_random[_seed]*().  The
+only current use is to avoid the loop in arch_random_refill() when
+arch_get_random_seed_long() is unavailable.
 
-1. During entropy pool initialization, use RDSEED in favor of RDRAND,
-   with a fallback to the latter.  Entropy exhaustion is unlikely to
-   happen there on physical hardware as the machine is single-threaded
-   at that point, but could happen in a virtual machine.  In that
-   case, the fallback to RDRAND will still provide more than adequate
-   entropy pool initialization.
-
-2. Once a second, issue RDSEED and, if successful, feed it to the
-   entropy pool.  To ensure an extra layer of security, only credit
-   half the entropy just in case.
-
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Michael Ellerman <michael@ellerman.id.au>
 ---
- drivers/char/random.c | 24 ++++++++++++++++++++----
- 1 file changed, 20 insertions(+), 4 deletions(-)
+ arch/powerpc/include/asm/archrandom.h | 9 +++++++++
+ arch/x86/include/asm/archrandom.h     | 3 +++
+ drivers/char/random.c                 | 3 +++
+ include/linux/random.h                | 8 ++++++++
+ 4 files changed, 23 insertions(+)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index d07575c..a4bea77 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -844,6 +844,8 @@ void add_interrupt_randomness(int irq, int irq_flags)
- 	cycles_t		cycles = random_get_entropy();
- 	__u32			input[4], c_high, j_high;
- 	__u64			ip;
-+	unsigned long		seed;
-+	int			credit;
- 
- 	c_high = (sizeof(cycles) > 4) ? cycles >> 32 : 0;
- 	j_high = (sizeof(now) > 4) ? now >> 32 : 0;
-@@ -862,20 +864,33 @@ void add_interrupt_randomness(int irq, int irq_flags)
- 
- 	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
- 	__mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool), NULL);
-+
- 	/*
- 	 * If we don't have a valid cycle counter, and we see
- 	 * back-to-back timer interrupts, then skip giving credit for
--	 * any entropy.
-+	 * any entropy, otherwise credit 1 bit.
- 	 */
-+	credit = 1;
- 	if (cycles == 0) {
- 		if (irq_flags & __IRQF_TIMER) {
- 			if (fast_pool->last_timer_intr)
--				return;
-+				credit = 0;
- 			fast_pool->last_timer_intr = 1;
- 		} else
- 			fast_pool->last_timer_intr = 0;
- 	}
--	credit_entropy_bits(r, 1);
-+
-+	/*
-+	 * If we have architectural seed generator, produce a seed and
-+	 * add it to the pool.  For the sake of paranoia count it as
-+	 * 50% entropic.
-+	 */
-+	if (arch_get_random_seed_long(&seed)) {
-+		__mix_pool_bytes(r, &seed, sizeof(seed), NULL);
-+		credit += sizeof(seed) * 4;
-+	}
-+
-+	credit_entropy_bits(r, credit);
+diff --git a/arch/powerpc/include/asm/archrandom.h b/arch/powerpc/include/asm/archrandom.h
+index 801beba..bde5311 100644
+--- a/arch/powerpc/include/asm/archrandom.h
++++ b/arch/powerpc/include/asm/archrandom.h
+@@ -25,6 +25,11 @@ static inline int arch_get_random_int(unsigned int *v)
+ 	return rc;
  }
  
- #ifdef CONFIG_BLOCK
-@@ -1235,7 +1250,8 @@ static void init_std_data(struct entropy_store *r)
- 	r->last_pulled = jiffies;
- 	mix_pool_bytes(r, &now, sizeof(now), NULL);
- 	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
--		if (!arch_get_random_long(&rv))
-+		if (!arch_get_random_seed_long(&rv) &&
-+		    !arch_get_random_long(&rv))
- 			rv = random_get_entropy();
- 		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
- 	}
++static inline int arch_has_random(void)
++{
++	return !!ppc_md.get_random_long;
++}
++
+ int powernv_get_random_long(unsigned long *v);
+ 
+ static inline int arch_get_random_seed_long(unsigned long *v)
+@@ -35,6 +40,10 @@ static inline int arch_get_random_seed_int(unsigned int *v)
+ {
+ 	return 0;
+ }
++static inline int arch_has_random_seed(void)
++{
++	return 0;
++}
+ 
+ #endif /* CONFIG_ARCH_RANDOM */
+ 
+diff --git a/arch/x86/include/asm/archrandom.h b/arch/x86/include/asm/archrandom.h
+index ba064d5..c7ed4a6 100644
+--- a/arch/x86/include/asm/archrandom.h
++++ b/arch/x86/include/asm/archrandom.h
+@@ -100,6 +100,9 @@ GET_SEED(arch_get_random_seed_int, unsigned int, RDSEED_INT, ASM_NOP4);
+ 
+ #endif /* CONFIG_X86_64 */
+ 
++#define arch_has_random()	static_cpu_has(X86_FEATURE_RDRAND)
++#define arch_has_random_seed()	static_cpu_has(X86_FEATURE_RDSEED)
++
+ #endif  /* CONFIG_ARCH_RANDOM */
+ 
+ extern void x86_init_rdrand(struct cpuinfo_x86 *c);
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index c35cee2..6b75713 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1307,6 +1307,9 @@ static int arch_random_refill(void)
+ 	unsigned int i;
+ 	unsigned long buf[nlongs];
+ 
++	if (!arch_has_random_seed())
++		return 0;
++
+ 	for (i = 0; i < nlongs; i++) {
+ 		if (arch_get_random_seed_long(&buf[n]))
+ 			n++;
+diff --git a/include/linux/random.h b/include/linux/random.h
+index ddaddec..e7a221a 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -72,6 +72,10 @@ static inline int arch_get_random_int(unsigned int *v)
+ {
+ 	return 0;
+ }
++static inline int arch_has_random(void)
++{
++	return 0;
++}
+ static inline int arch_get_random_seed_long(unsigned long *v)
+ {
+ 	return 0;
+@@ -80,6 +84,10 @@ static inline int arch_get_random_seed_int(unsigned int *v)
+ {
+ 	return 0;
+ }
++static inline int arch_has_random_seed(void)
++{
++	return 0;
++}
+ #endif
+ 
+ /* Pseudo random number generator from numerical recipes. */
 -- 
 1.8.5.3
 
