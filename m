@@ -1,133 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407AbaCQIF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 04:05:29 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:63787 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175AbaCQIF0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 04:05:26 -0400
-X-AuditID: 9c93017d-b7c89ae000006ae1-08-5326acc49965
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCHSET 0/9] perf tools: Update on filtered entries' percentage output (v7)
-In-Reply-To: <1394437440-11609-1-git-send-email-namhyung@kernel.org> (Namhyung
-	Kim's message of "Mon, 10 Mar 2014 16:43:51 +0900")
-References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-Date: Mon, 17 Mar 2014 17:05:24 +0900
-Message-ID: <87r461s117.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S932460AbaCQIIv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 04:08:51 -0400
+Received: from ozlabs.org ([203.10.76.45]:36356 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932175AbaCQIIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 04:08:49 -0400
+Date: Mon, 17 Mar 2014 19:08:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Zhao, Gang" <gamerh2o@gmail.com>
+Subject: linux-next: manual merge of the staging tree with the net-next tree
+Message-Id: <20140317190842.795b9d29db9a131a9cff91a9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Mar_2014_19_08_42_+1100_NpNP02eTe_x=Xyjw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping!
+--Signature=_Mon__17_Mar_2014_19_08_42_+1100_NpNP02eTe_x=Xyjw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, 10 Mar 2014 16:43:51 +0900, Namhyung Kim wrote:
-> Hello,
->
-> I added --percentage option to perf report to control display of
-> percentage of filtered entries.
->
->  usage: perf report [<options>]
->
->         --percentage <relative|absolute>
->                           how to display percentage of filtered entries
->
-> "relative" means it's relative to filtered entries only so that the
-> sum of shown entries will be always 100%.  "absolute" means it retains
-> original value before and after the filter applied.  In patch 9/9, I
-> made the "absolute" as default since it makes more sense IMHO.
->     
->       $ perf report -s comm
->       # Overhead       Command
->       # ........  ............
->       #
->           74.19%           cc1
->            7.61%           gcc
->            6.11%            as
->            4.35%            sh
->            4.14%          make
->            1.13%        fixdep
->       ...
->     
->       $ perf report -s comm -c cc1,gcc --percentage absolute
->       # Overhead       Command
->       # ........  ............
->       #
->           74.19%           cc1
->            7.61%           gcc
->     
->       $ perf report -s comm -c cc1,gcc --percentage relative
->       # Overhead       Command
->       # ........  ............
->       #
->           90.69%           cc1
->            9.31%           gcc
->     
-> Note that it has zero effect if no filter was applied.
->
->  * changes in v7:
->   - rename ->nr_filtered_* to ->nr_non_filtered_* (Arnaldo)
->   - remove an unneeded alignment change (Arnaldo)
->
->  * changes in v6:
->   - fix a bug in --stdio group report
->   - reuse __hpp__fmt() function in TUI/GTK
->   - add Acked-by from Jiri
->
->  * changes in v5:
->   - fix 0 samples in relative percent output (Jiri)
->   - factor hists__total_period function (Jiri)
->   - share config parsing code with option parser (Jiri)
->
->  * changes in v4:
->   - support perf top and perf diff also  (Jiri)
->   - add HIST_FILTER__HOST/GUEST  (Jiri)
->   - retain both of filtered and total stats  (Arnaldo)
->   - add 'F' hotkey on TUI  (Jiri)
->   - rename config variable to have "hist." prefix
->
->
-> You can get this on the 'perf/percentage-v7' branch in my tree
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
->
-> Any comments are welcome, thanks
-> Namhyung
->
->
-> Namhyung Kim (9):
->   perf tools: Pass evsel to hpp->header/width functions explicitly
->   perf tools: Count periods of filtered entries separately
->   perf hists: Add support for showing relative percentage
->   perf report: Add --percentage option
->   perf top: Add --percentage option
->   perf diff: Add --percentage option
->   perf tools: Add hist.percentage config option
->   perf ui/tui: Add 'F' hotkey to toggle percentage output
->   perf tools: Show absolute percentage by default
->
->  tools/perf/Documentation/perf-diff.txt   | 21 ++++++++--
->  tools/perf/Documentation/perf-report.txt | 24 ++++++++---
->  tools/perf/Documentation/perf-top.txt    | 18 +++++++--
->  tools/perf/builtin-diff.c                | 39 ++++++++++++------
->  tools/perf/builtin-report.c              | 24 +++++++++--
->  tools/perf/builtin-top.c                 |  2 +
->  tools/perf/ui/browsers/hists.c           | 39 ++++++++++++++----
->  tools/perf/ui/gtk/hists.c                | 14 +++----
->  tools/perf/ui/hist.c                     | 32 +++++++--------
->  tools/perf/ui/stdio/hist.c               |  5 +--
->  tools/perf/util/config.c                 |  4 ++
->  tools/perf/util/event.c                  | 22 +++++------
->  tools/perf/util/hist.c                   | 68 ++++++++++++++++++++++----------
->  tools/perf/util/hist.h                   | 25 +++++++++++-
->  tools/perf/util/symbol.h                 |  5 ++-
->  15 files changed, 242 insertions(+), 100 deletions(-)
+Hi Greg,
+
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/wlan-ng/cfg80211.c between commit 3ead0d2e220e ("wlan-ng:
+fixup staging driver for removal of ieee80211_dsss_chan_to_freq") from
+the net-next tree and commit 4e5e9d7c66f0 ("staging: wlan-ng: replace
+function ieee80211_dsss_chan_to_freq()") from the staging tree.
+
+I fixed it up (I used the staging tree version) and can carry the fix as
+necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__17_Mar_2014_19_08_42_+1100_NpNP02eTe_x=Xyjw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTJq2OAAoJEMDTa8Ir7ZwVe+MP/RAPisWxnpi7eERRukWgyrzC
+cuVENomgiHi44G8DfgpChCjjBQ1j9jc/34xNDhFm4usS4U2tY5PhImSIESebN9Eq
+A15JcbCtofiaS729/6IZxmGC+2rmi0ZGZzRnFQ8x3H+GEkKMLEM05ejT1DIwITsj
+wHErJWRB4A5qDf0UXpt4DhxH+Y22yP85LI3EPbuiprsS8NLoms4QUI76NKLam7/c
+jJl9Dh80OQNyE6v2OIH3tVPYC299AtfX+4rvuRzpI6EdTXy1vBGrgUOrF4rxS7Vs
+i2x0apeuWC0IqR43NkOIOt/RWvZ0NlaNRV97C2tlklse3ZKou6lwCS8NG5m8rsdP
+TYhi56f6P0BDjIi5nHojb78O1ZYWxPtWHWMgZwysUbZRR4yb/V5aMF3V19Sjv76s
+laC0myqgIavzLc11Ku6mX5ZDUR9z+U6lvvel2G9t36iorsmlnLZV4iYBBqn/GWVD
+d8//UfI1vNxxhB+0DP7OVMWrLoIGdkO2g5I5WqTUIEJlFydyW+9Lm+3yZRFMtwDF
+C4hQD44J0qTi28IsX2fGSnsG6WZaVrBqaE4bs1nyUUBXZXf3ImKoHDXAkFDbGM3f
+JTPiVLndzJQDa9EuCu/swoF4Ce3LqflT/XSNLMEqsPVIoobBOAJvmzPpVbN7ifkU
+X/038DAVB9N+50r+mZjP
+=1e0s
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__17_Mar_2014_19_08_42_+1100_NpNP02eTe_x=Xyjw--
