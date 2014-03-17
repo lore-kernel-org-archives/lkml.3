@@ -1,148 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857AbaCQGni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 02:43:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5966 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127AbaCQGnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 02:43:35 -0400
-Message-ID: <5326998A.6060003@redhat.com>
-Date: Mon, 17 Mar 2014 08:43:22 +0200
-From: Ronen Hod <rhod@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754106AbaCQGsA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 02:48:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62041 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751382AbaCQGr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 02:47:59 -0400
+X-IronPort-AV: E=Sophos;i="4.97,668,1389715200"; 
+   d="scan'208";a="9710116"
+Message-ID: <53269B3A.4040900@cn.fujitsu.com>
+Date: Mon, 17 Mar 2014 14:50:34 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Yan Vugenfirer <yvugenfi@redhat.com>,
-        Dmitry Fleytman <dfleytma@redhat.com>
-CC: kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Qin Chuanyu <qinchuanyu@huawei.com>
-Subject: Re: [PATCH net V2] vhost: net: switch to use data copy if pending
- DMAs exceed the limit
-References: <1394170107-12018-1-git-send-email-jasowang@redhat.com> <20140310080310.GA754@redhat.com> <53215E22.8020207@redhat.com>
-In-Reply-To: <53215E22.8020207@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Benjamin LaHaise <bcrl@kvack.org>
+CC: Gu Zheng <guz.fnst@cn.fujitsu.com>, viro@zeniv.linux.org.uk,
+        jmoyer@redhat.com, kosaki.motohiro@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org, miaox@cn.fujitsu.com
+Subject: Re: [RESEND v2 PATCH 1/2] aio, memory-hotplug: Fix confliction when
+ migrating and accessing ring pages.
+References: <1394439334-28523-1-git-send-email-tangchen@cn.fujitsu.com> <1394439334-28523-2-git-send-email-tangchen@cn.fujitsu.com> <20140311184656.GD16433@kvack.org> <531FEFC6.50709@cn.fujitsu.com> <20140312221735.GF32444@kvack.org> <5322D90C.5050207@cn.fujitsu.com> <20140314151446.GE29206@kvack.org>
+In-Reply-To: <20140314151446.GE29206@kvack.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/17 14:44:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/17 14:45:00,
+	Serialize complete at 2014/03/17 14:45:00
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2014 09:28 AM, Jason Wang wrote:
-> On 03/10/2014 04:03 PM, Michael S. Tsirkin wrote:
->> On Fri, Mar 07, 2014 at 01:28:27PM +0800, Jason Wang wrote:
->>>> We used to stop the handling of tx when the number of pending DMAs
->>>> exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
->>>> of both host and guest. But it was too aggressive in some cases, since
->>>> any delay or blocking of a single packet may delay or block the guest
->>>> transmission. Consider the following setup:
->>>>
->>>>      +-----+        +-----+
->>>>      | VM1 |        | VM2 |
->>>>      +--+--+        +--+--+
->>>>         |              |
->>>>      +--+--+        +--+--+
->>>>      | tap0|        | tap1|
->>>>      +--+--+        +--+--+
->>>>         |              |
->>>>      pfifo_fast   htb(10Mbit/s)
->>>>         |              |
->>>>      +--+--------------+---+
->>>>      |     bridge          |
->>>>      +--+------------------+
->>>>         |
->>>>      pfifo_fast
->>>>         |
->>>>      +-----+
->>>>      | eth0|(100Mbit/s)
->>>>      +-----+
->>>>
->>>> - start two VMs and connect them to a bridge
->>>> - add an physical card (100Mbit/s) to that bridge
->>>> - setup htb on tap1 and limit its throughput to 10Mbit/s
->>>> - run two netperfs in the same time, one is from VM1 to VM2. Another is
->>>>    from VM1 to an external host through eth0.
->>>> - result shows that not only the VM1 to VM2 traffic were throttled but
->>>>    also the VM1 to external host through eth0 is also throttled somehow.
->>>>
->>>> This is because the delay added by htb may lead the delay the finish
->>>> of DMAs and cause the pending DMAs for tap0 exceeds the limit
->>>> (VHOST_MAX_PEND). In this case vhost stop handling tx request until
->>>> htb send some packets. The problem here is all of the packets
->>>> transmission were blocked even if it does not go to VM2.
->>>>
->>>> We can solve this issue by relaxing it a little bit: switching to use
->>>> data copy instead of stopping tx when the number of pending DMAs
->>>> exceed half of the vq size. This is safe because:
->>>>
->>>> - The number of pending DMAs were still limited (half of the vq size)
->>>> - The out of order completion during mode switch can make sure that
->>>>    most of the tx buffers were freed in time in guest.
->>>>
->>>> So even if about 50% packets were delayed in zero-copy case, vhost
->>>> could continue to do the transmission through data copy in this case.
->>>>
->>>> Test result:
->>>>
->>>> Before this patch:
->>>> VM1 to VM2 throughput is 9.3Mbit/s
->>>> VM1 to External throughput is 40Mbit/s
->>>> CPU utilization is 7%
->>>>
->>>> After this patch:
->>>> VM1 to VM2 throughput is 9.3Mbit/s
->>>> Vm1 to External throughput is 93Mbit/s
->>>> CPU utilization is 16%
->>>>
->>>> Completed performance test on 40gbe shows no obvious changes in both
->>>> throughput and cpu utilization with this patch.
->>>>
->>>> The patch only solve this issue when unlimited sndbuf. We still need a
->>>> solution for limited sndbuf.
->>>>
->>>> Cc: Michael S. Tsirkin <mst@redhat.com>
->>>> Cc: Qin Chuanyu <qinchuanyu@huawei.com>
->>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> I thought hard about this.
->> Here's what worries me: if there are still head of line
->> blocking issues lurking in the stack, they will still
->> hurt guests such as windows which rely on timely
->> completion of buffers, but it makes it
->> that much harder to reproduce the problems with
->> linux guests which don't.
->> And this will make even it harder to figure out
->> whether zero copy is actually active to diagnose
->> high cpu utilization cases.
-> Yes.
->>
->> So I think this is a good trick, but let's make
->> this path conditional on a new debugging module parameter:
->> how about head_of_line_blocking with default off?
-> Sure. But the head of line blocking was only partially solved in the
-> patch since we only support in-order completion of zerocopy packets.
-> Maybe we need consider switching to out of order completion even for
-> zerocopy skbs?
+On 03/14/2014 11:14 PM, Benjamin LaHaise wrote:
+......
+>> What about the following patch? It adds additional reference to protect the page
+>> avoid being freed when we reading it.
+>> ps.It is applied on linux-next(3-13).
+>
+> I think that's even worse than the spinlock approach since we'll end up
+> bouncing around the struct page's cacheline in addition to spinlock we're
+> going to end up taking anyways.
+>
 
-Yan, Dima,
+Hi Benjamin,
 
-I remember that there is an issue with out-of-order packets and WHQL.
+I'm sorry, I don't quite understand the cacheline problem you mentioned 
+above.
+Would you please explain more ?
 
-Ronen.
-
->> This way if we suspect packets are delayed forever
->> somewhere, we can enable that and see guest networking block.
->>
->> Additionally, I think we should add a way to count zero copy
->> and non zero copy packets.
->> I see two ways to implement this: add tracepoints in vhost-net
->> or add counters in tun accessible with ethtool.
->> This can be a patch on top and does not have to block
->> this one though.
->>
-> Yes, I post a RFC about 2 years ago, see
-> https://lkml.org/lkml/2012/4/9/478 which only traces generic vhost
-> behaviours. I can refresh this and add some -net specific tracepoints.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks.
 
