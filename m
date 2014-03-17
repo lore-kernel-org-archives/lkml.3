@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140AbaCQQ3a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 12:29:30 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55969 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754483AbaCQQ32 (ORCPT
+	id S1754709AbaCQQcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 12:32:46 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:57246 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752818AbaCQQcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 12:29:28 -0400
-Date: Mon, 17 Mar 2014 16:29:22 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: alsa-devel@alsa-project.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel@vger.kernel.org, Xiubo Li <Li.Xiubo@freescale.com>
-Message-ID: <20140317162922.GQ11706@sirena.org.uk>
-References: <cover.1394883134.git.moinejf@free.fr>
- <0d648a81b7dd3fbd3ec769cb77bce0af5b39d699.1394883134.git.moinejf@free.fr>
+	Mon, 17 Mar 2014 12:32:45 -0400
+Date: Mon, 17 Mar 2014 10:32:41 -0600
+From: Jens Axboe <axboe@fb.com>
+To: <torvalds@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Final (final) block IO fixes for 3.14
+Message-ID: <20140317163241.GA23606@kernel.dk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z87VqPJ/HsYrR2WM"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <0d648a81b7dd3fbd3ec769cb77bce0af5b39d699.1394883134.git.moinejf@free.fr>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 3/4] ASoC: simple-card: Handle many DAI links
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-17_02:2014-03-14,2014-03-17,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=5.55111512312578e-17 kscore.compositescore=0
+ circleOfTrustscore=6.94282017626843 compositescore=0.998049563855454
+ urlsuspect_oldscore=0.998049563855454 suspectscore=3
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.998049563855454 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=12
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1403170084
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---z87VqPJ/HsYrR2WM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, the last round was final. This one is final final. The mtip32xx fix
+could have waited, but it's so simple and gets rid of two warning
+spewages on load. The two block flush fixes are critical for blk-mq, and
+are the primary reason for this late pull request.
 
-On Sat, Mar 15, 2014 at 12:26:54PM +0100, Jean-Francois Moine wrote:
-> Some simple audio cards may have many DAI links.
-> This patch extends the simple-card driver for handling such cards.
+Please pull!
 
-This appears to be updating the device tree binding but there is no
-documentation update to go with it.  Given that there are exactly two
-DAI subnodes specified explicitly by name in the binding it's not at all
-clear how this is intended to work.
+  git://git.kernel.dk/linux-block.git for-linus
 
---z87VqPJ/HsYrR2WM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+for you to fetch changes up to 7f328908f9cb69a72ce1c9279508c786cf85f1f5:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+  mtip32xx: fix bad use of smp_processor_id() (2014-03-10 14:32:47 -0600)
 
-iQIcBAEBAgAGBQJTJyLeAAoJELSic+t+oim9Q4AP/0w8t2XWKgZ2tw4CUVcVgnZg
-S8og4I6W8IuSsJcDpxTdtGxKnjeSuldH9SJFFc4L8RJ1VpKeuSBJDePOkpHnNo/h
-Ck6+uN9C7/55UhWTkbUE0CIdLVozaYCgsykUAz6g05rxhQ/h0bEb/RoqtX1oDFuw
-XJPd7IUYCxvTasJE+IDUgZOOnNMgTQYzrKnl7XjXMgeQHfTUbwldnRL5HUUzJvKl
-BhJbjMBUK5QF6qhuihiPBtSdd08f+P+t4nx76w/WOCbmt0H4Ozw0X/QQWrmUjJ6b
-KOtZJL77KHuq/zYr/+mSmwojCz+PA5XgNW35XG482a5TEV55QpwnCzPqamqEwswK
-2A20nZ7L+/11BDntxDzRWUsIAr79V5c+LkzclnzXQp31pJPegfkdduxkzU1nVnTb
-q7oV2swW8ibtyaQmvxJk8HL4qb9ojsdeiAQgL4ffq8Hu41c0edBzOx461+fhkix0
-FGRNdpvKDCXh8/GUYJPSPC/g9bmHXCNZs1FBN59ewGpCz1HZmzILT3r4SUtMh+Jr
-eYcOi2PzMAlVG9B6yiW7q0EDrjicXlLxXQqbUWh0ILt3Midg14C8tU0sUPfOheir
-mm9fGMqQQflqQie6v7R69AHn9PUbM5HZ1iBY8/T7vG8WtA6O9ejjmWO2HT/RYx6o
-Ld4yY8mqvmjlWAcRC3cU
-=Tpvn
------END PGP SIGNATURE-----
+----------------------------------------------------------------
+Jens Axboe (1):
+      mtip32xx: fix bad use of smp_processor_id()
 
---z87VqPJ/HsYrR2WM--
+Mike Snitzer (2):
+      block: fix q->flush_rq NULL pointer crash on dm-mpath flush
+      block: change flush sequence list addition back to front add
+
+ block/blk-core.c                  | 17 ++++++-----------
+ block/blk-flush.c                 | 11 +++++++----
+ drivers/block/mtip32xx/mtip32xx.c |  2 +-
+ 3 files changed, 14 insertions(+), 16 deletions(-)
+
+-- 
+Jens Axboe
+
