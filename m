@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675AbaCQKA5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 06:00:57 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41367 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932318AbaCQKA4 (ORCPT
+	id S932701AbaCQKCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 06:02:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36203 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932318AbaCQKCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 06:00:56 -0400
-Message-ID: <5326C690.4090107@oracle.com>
-Date: Mon, 17 Mar 2014 10:55:28 +0100
-From: Vegard Nossum <vegard.nossum@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 17 Mar 2014 06:02:32 -0400
+Date: Mon, 17 Mar 2014 10:02:19 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Bo Shen <voice.shen@atmel.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Mark Brown <broonie@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/8] ASoC: atmel: document clock properties of the
+ wm8904 driver
+Message-ID: <20140317100219.GB8070@e106331-lin.cambridge.arm.com>
+References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com>
+ <1395049541-28128-8-git-send-email-voice.shen@atmel.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>, Xishi Qiu <qiuxishi@huawei.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Vegard Nossum <vegard.nossum@gmail.com>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: kmemcheck: OS boot failed because NMI handlers access the memory
- tracked by kmemcheck
-References: <5326BE25.9090201@huawei.com> <20140317095141.GA4777@dhcp22.suse.cz>
-In-Reply-To: <20140317095141.GA4777@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395049541-28128-8-git-send-email-voice.shen@atmel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2014 10:51 AM, Michal Hocko wrote:
-> On Mon 17-03-14 17:19:33, Xishi Qiu wrote:
->> OS boot failed when set cmdline kmemcheck=1. The reason is that
->> NMI handlers will access the memory from kmalloc(), this will cause
->> page fault, because memory from kmalloc() is tracked by kmemcheck.
->>
->> watchdog_nmi_enable()
->> 	perf_event_create_kernel_counter()
->> 		perf_event_alloc()
->> 			event = kzalloc(sizeof(*event), GFP_KERNEL);
->
-> Where is this path called from an NMI context?
->
-> Your trace bellow points at something else and it doesn't seem to
-> allocate any memory either. It looks more like x86_perf_event_update
-> sees an invalid perf_event or something like that...
->
+On Mon, Mar 17, 2014 at 09:45:40AM +0000, Bo Shen wrote:
+> From: Boris BREZILLON <b.brezillon@overkiz.com>
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> ---
+> 
+>  Documentation/devicetree/bindings/sound/atmel-wm8904.txt | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/sound/atmel-wm8904.txt b/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
+> index 8bbe50c..aca341c 100644
+> --- a/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
+> +++ b/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
+> @@ -3,6 +3,8 @@ Atmel ASoC driver with wm8904 audio codec complex
+>  Required properties:
+>    - compatible: "atmel,asoc-wm8904"
+>    - atmel,model: The user-visible name of this sound complex.
+> +  - clocks: A list of clocks needed by the wm8904 chip.
+> +  - clock-output-names: Driver related clock names. Shall contain "pck0".
 
-It's not important that the kzalloc() is called from NMI context, it's 
-important that the memory that was allocated is touched (read/written) 
-from NMI context.
+The word "driver"  doesn't need to appear in biding documents, and this
+fails to describe what it sets out to. How about the following:
 
-I'm currently looking into the possibility of handling recursive faults 
-in kmemcheck (using the approach outlined by peterz; see 
-https://lkml.org/lkml/2014/2/26/141).
+- clocks: a list of phandle + clock-specifier pairs, one for each entry
+  in clock-names.
+- clock-names: Should contain "pck0"
 
-
-Vegard
+Thanks,
+Mark.
