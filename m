@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196AbaCQRMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 13:12:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36920 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448AbaCQRMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 13:12:36 -0400
-Message-ID: <53272CED.4010901@zytor.com>
-Date: Mon, 17 Mar 2014 10:12:13 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S932398AbaCQROJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 13:14:09 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:57754 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754891AbaCQROG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 13:14:06 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'David Herrmann'" <dh.herrmann@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "David S. Miller" <davem@davemloft.net>, Tom Gundersen <teg@jklm.no>,
+        Johannes berg <johannes@sipsolutions.net>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: RE: [PATCH v3 1/4] net: add name_assign_type netdev attribute
+Thread-Topic: [PATCH v3 1/4] net: add name_assign_type netdev attribute
+Thread-Index: AQHPQgLHooclFzgDYkaruvDiuB9ar5rlg6Eg
+Date: Mon, 17 Mar 2014 17:12:52 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6DF74F@AcuExch.aculab.com>
+References: <1394990490-1076-2-git-send-email-dh.herrmann@gmail.com>
+ <1395075825-5824-1-git-send-email-dh.herrmann@gmail.com>
+In-Reply-To: <1395075825-5824-1-git-send-email-dh.herrmann@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        George Dunlap <George.Dunlap@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Sarah Newman <srn@prgmr.com>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCHv1] x86: don't schedule when handling #NM exception
-References: <1394468273-13676-1-git-send-email-david.vrabel@citrix.com> <531DEB11.2070709@zytor.com> <531DF319.6010800@citrix.com> <53266841.6090308@prgmr.com> <1ebfa80c-4a68-4602-bc98-e5d5f0893998@email.android.com> <CAFLBxZZz4Ot0CgWRHNRaM5zVkpf+QdXveFz_m3aVYnKUd9cAdQ@mail.gmail.com> <5327291D.60009@zytor.com> <532739810200007800124E85@nat28.tlf.novell.com>
-In-Reply-To: <532739810200007800124E85@nat28.tlf.novell.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2014 10:05 AM, Jan Beulich wrote:
+From: David Herrmann
+> The name_assign_type attribute gives hints where the interface name of a
+> given net-device comes from. Three different values are currently defined:
+>   NET_NAME_ENUM:
+>     This is the default. The ifname is provided by the kernel with an
+>     enumerated suffix. Names may be reused and unstable.
+>   NET_NAME_USER:
+>     The ifname was provided by user-space during net-device setup.
+>   NET_NAME_RENAMED:
+>     The net-device has been renamed via RTNL. Once this type is set, it
+>     cannot change again.
+...
+> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> index b8d8c80..6698e87 100644
+> --- a/include/linux/netdevice.h
+> +++ b/include/linux/netdevice.h
+> @@ -1248,6 +1248,7 @@ struct net_device {
+>  	 * of the interface.
+>  	 */
+>  	char			name[IFNAMSIZ];
+> +	unsigned char		name_assign_type; /* name assignment type */
 > 
-> I don't think so - while it (as we now see) disallows certain things
-> inside the guest, back at the time when this was designed there was
-> no sign of any sort of allocation/scheduling being done inside the
-> #NM handler. And furthermore, a PV specification is by its nature
-> allowed to define deviations from real hardware behavior, or else it
-> wouldn't be needed in the first place.
-> 
+>  	/* device name hash chain, please keep it close to name[] */
+>  	struct hlist_node	name_hlist;
 
-And this is exactly the sort of thing about Xen that make me want to go
-on murderous rampage.  You think you can just take the current Linux
-implementation at whatever time you implement the code and later come
-back and say "don't change that, we hard-coded it in Xen."
+Do you really need to add 7 byte of padding here?
+There seems to be some padding lurking elsewhere that really ought
+to be mergable.
 
-Calling that "active negligence and incompetence" is probably on the
-mild side.
+	David
 
-	-hpa
 
 
