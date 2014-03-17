@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050AbaCQQRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 12:17:14 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:34636 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446AbaCQQRK (ORCPT
+	id S1756677AbaCQQTg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 12:19:36 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54758 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844AbaCQQTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 12:17:10 -0400
+	Mon, 17 Mar 2014 12:19:34 -0400
+Date: Mon, 17 Mar 2014 16:19:16 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jyri Sarha <jsarha@ti.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>, Xiubo Li <Li.Xiubo@freescale.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Message-ID: <20140317161916.GL11706@sirena.org.uk>
+References: <cover.1394533640.git.moinejf@free.fr>
+ <d71a2b62b331302772d35b3cd35c6dc5da1e9e5d.1394533640.git.moinejf@free.fr>
+ <5322E4FC.7060605@ti.com>
+ <20140314194037.7da888cd@armhf>
+ <cbc30d6fcafead46267347269cbabfb7@kapsi.fi>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <8761netc3z.fsf@linux.vnet.ibm.com>
-References: <CAHO5Pa0Y8r1DxHTc0YN-4geoLJ3JYwHT99EcuaGL6k++ek+aEQ@mail.gmail.com>
- <8761netc3z.fsf@linux.vnet.ibm.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Mon, 17 Mar 2014 17:16:48 +0100
-Message-ID: <CAKgNAkhBxCZuvyofdXwRD2TWrXEO47O_873pO8WqUBkqY1zG1w@mail.gmail.com>
-Subject: Re: name_to_handle_at() and persistent filesystem IDs
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>, NeilBrown <neilb@suse.de>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Bruce Fields <bfields@fieldses.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qo7zVO9a9OQ5oQtr"
+Content-Disposition: inline
+In-Reply-To: <cbc30d6fcafead46267347269cbabfb7@kapsi.fi>
+X-Cookie: Turn the other cheek.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH v2 3/4] ASoC: simple-card: accept many DAI
+ links
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Aneesh,
 
-On Sun, Mar 16, 2014 at 4:08 PM, Aneesh Kumar K.V
-<aneesh.kumar@linux.vnet.ibm.com> wrote:
-> Michael Kerrisk <mtk.manpages@gmail.com> writes:
->
->> Hello Aneesh,
->>
->> I'm currently working on a man page for name_to_handle_at() and
->> open_by_handle_at(), and I have a question relating to a point that
->> probably needs to be covered in the man page.
->>
->> Back in July 2010, in this thread:
->> http://thread.gmane.org/gmane.linux.file-systems/41782/focus=43131
->> you said:
->>
->> [[
->> mount id should not be looked at as a persistent identifier. It should
->> be used to derive a persistent identifier from /proc/self/mountinfo. The
->> persistent identifier could be the combination of device properties,
->> file system properties or the uuid which is going to be an optional
->> tag in /proc/self/mountinfo.
->> ]]
->>
->> In the man page, I'd like to briefly describe how one derives such a
->> persistent ID from mountinfo. AFAICS, the optional UUID tag in
->> /proc/self/mountinfo has not come to pass. So, what then is the
->> recommended practice for deriving the persistent ID?
->>
->
-> Anything that work for the application. mount_id will indicate which
-> mount it is ie. from /proc/self/mountinfo
->
-> 30 20 8:1 / /boot rw,relatime - ext4 /dev/sda1 rw,data=ordered
->
-> The value 30 helps us to figure out that we are looking at device
-> /dev/sda1. With that we can derive the uuid using libblkid.  I am not sure we
-> concluded anything really about how to identify an nfs mount. May be we
-> can do that based on server and mount point details ?.But from the
-> syscall point, what we return is mount_id, which gives a hint regarding
-> which mount point we are talking about in /proc/self/mountinfo. From
-> that information applications can use any method that work for them
-> to derivce an unique identifier.
->
-> I know that NFS ganesha use these syscall. May we can check with them
-> what worked for them ? (Added to CC:)
+--qo7zVO9a9OQ5oQtr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks, that helped, as as I hope is evident from the page I just sent.
+On Sat, Mar 15, 2014 at 11:14:13AM +0200, Jyri Sarha wrote:
+> On 2014-03-14 20:40, Jean-Francois Moine wrote:
 
-Cheers,
+> >So, the actual solution I use is 3 DAI links (= 3 PCMs):
+> >- HDMI via I2S
+> >- HDMI via S/PDIF (no S/PDIF output)
+> >- S/PDIF via S/PDIF (no HDMI output)
 
-Michael
+> Maybe a HW specific machine-driver would serve your case better. Of course
+> it would be great to have a generic implementation that can handle this case
+> too, but I am not sure if it should be called a simple-card anymore :).
 
+I am a bit concerned about that I have to say.
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+> >>You need to update the DT-binding document too when you are changing the
+> >>binding. That way it would also be easier to follow what you are trying
+> >>to accomplish here.
+
+> >Some people want to have 2 different patchs: one for the code and the
+> >other one for the DT change. Some other people like you want only one
+> >patch. Which is the right way?
+
+> I did not mean it should be in the same patch. Part of the same series is
+> fine with me. It is up to maintainer to decide these things anyway. I would
+> just like to compare the document with the implementation.
+
+If the binding is being changed in the code the documentation absolutely
+must be updated as part of the same patch series if it's not already
+been changed previously.  You can have documentation without code but
+not code without documentation.
+
+--qo7zVO9a9OQ5oQtr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTJyCBAAoJELSic+t+oim94SgP/3tG55DrJ+yCCxM06NeXkpCq
+UmLoYKzwdLEeH26Pfb8Q4X/ddn9A30uWeKWThSKsXt5LKWRFAu+sea+VzMqKd8Ey
+r4EOYXnrVStMhkJEhVpkb+xIfGuxwtJEMhbVraWpqus3kBXrZr8RocU4914GiE5j
+fu9GZlmTbySlsxbqusywSgdOVqtnZNsuVO85xSeovXLyZsv1I6mrdv9e8XwlrD8u
+2K7/hgbmxLAsw9hw+dVmbtMehusL/bx7ms2av971+nBSfadTgqu+suS7Km7r0UOd
+b1d6EVWUOJYVhoLtjKk3UtqWpOTsZ7bWW6jXGM9ZLhBUhwTumh9sodQGNGUdalu2
+eqpU9lBdwcK4GWvjf3f1S9xlwwGB8WrSNXHOSsHug4tg58CJMHgawO14GedUeOSm
+UxsLtLarpFCzHFMCIsux/kLwKbafaLF1gURJO1F5C5EYGCA+nOjgITwr0Ih13TZ9
+wcToJGs3xMJVH6wUVCym9+YZftYO8CEsWS3gDKGLpQ9utzESIYiKO+LRev2yTTnU
+vYOHdd/4b/672iZSsNBIectxoFSo67JrYGtN8184jFCuEJTMYnuPbPrRzzFILP4P
+rOuBOqP/ic/tACYKjG+QlX0b6rCeVkRn2oNjKtehHBipIFmvnQ9wzJFNkTseFGQl
+sI/Gir9VO271fk7EarRK
+=NakR
+-----END PGP SIGNATURE-----
+
+--qo7zVO9a9OQ5oQtr--
