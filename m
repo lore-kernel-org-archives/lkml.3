@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933452AbaCQNsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:48:14 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51784 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933158AbaCQNbc (ORCPT
+	id S933534AbaCQNtA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:49:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.24]:57679 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932640AbaCQNs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:31:32 -0400
-Message-Id: <20140317133132.655867077@bombadil.infradead.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 17 Mar 2014 06:27:41 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 08/39] scsi: avoid taking host_lock in scsi_run_queue unless nessecary
-References: <20140317132733.789623766@bombadil.infradead.org>
-Content-Disposition: inline; filename=0008-scsi-avoid-taking-host_lock-in-scsi_run_queue-unless.patch
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 17 Mar 2014 09:48:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: srinivas.kandagatla@st.com
+Subject: Re: [PATCH] MAINTAINERS: Update ARM STi maintainers
+Date: Mon, 17 Mar 2014 14:48:49 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, lee.jones@linaro.com,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>, kernel@stlinux.com,
+        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@gmail.com, Russell King <linux@arm.linux.org.uk>,
+        Stuart Menefy <stuart.menefy@st.com>
+References: <1393846139-18088-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1393846139-18088-1-git-send-email-srinivas.kandagatla@st.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403171448.49907.arnd@arndb.de>
+X-Provags-ID: V02:K0:6/CtrFoZQP5iNhhndXY29eXJy49N7gZCm3jKzRI8UUc
+ Idu2KZ6GZGTrkLpGcerQ7WUJVXohVtpRDfvqsbe/xs0jbbH+rQ
+ xhOjU2+4UFqArFE24435D00+D23VF+DlKY8ZbInnKK14i6HHmQ
+ Ua3wJQEAmymih9a5M2IKtIs1ZDtSSLCKTnrsBwRmJdV4cfJs1A
+ /y5YnrMDNoiV5nXTS+PLhTls5kSrsxWcCz1IRi+trXMySAiyqj
+ J9COhB4ppql4NNMybiFgOXf8FLsHijMaMYxu1s219w+PzvU74P
+ 0eB4UfFqQs8O4YA6FX/oC9vjTxkArnpuQcXsrx3wPO7FgQg/SR
+ F4p9c3eZS22M8y3G3FggwZ4X1f3e36ONWdhtm4MzQ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we don't have starved devices we don't need to take the host lock
-to iterate over them.  Also split the function up to be more clear.
+On Monday 03 March 2014, srinivas.kandagatla@st.com wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> 
+> This patch adds Maxime and Patrice to ARM/STi maintainers list.
+> As Stuart Menefy opted to be removed from the list, this patch removes
+> his email from maintainers. Updated my email with private email address.
+> 
+> This patch also adds few more drivers to the list so that get_maintainer
+> script can pick the right people to send patch to and avoid email
+> bounces.
+> 
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> CC: Stuart Menefy <stuart.menefy@st.com>
+> CC: Maxime Coquelin <maxime.coquelin@st.com>
+> CC: Patrice Chotard <patrice.chotard@st.com>
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/scsi_lib.c |   43 ++++++++++++++++++++++++-------------------
- 1 file changed, 24 insertions(+), 19 deletions(-)
+Applied on arm-soc next/soc branch, thanks!
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 62ec84b..aa6a581 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -385,29 +385,12 @@ static inline int scsi_host_is_busy(struct Scsi_Host *shost)
- 	return 0;
- }
- 
--/*
-- * Function:	scsi_run_queue()
-- *
-- * Purpose:	Select a proper request queue to serve next
-- *
-- * Arguments:	q	- last request's queue
-- *
-- * Returns:     Nothing
-- *
-- * Notes:	The previous command was completely finished, start
-- *		a new one if possible.
-- */
--static void scsi_run_queue(struct request_queue *q)
-+static void scsi_starved_list_run(struct Scsi_Host *shost)
- {
--	struct scsi_device *sdev = q->queuedata;
--	struct Scsi_Host *shost;
- 	LIST_HEAD(starved_list);
-+	struct scsi_device *sdev;
- 	unsigned long flags;
- 
--	shost = sdev->host;
--	if (scsi_target(sdev)->single_lun)
--		scsi_single_lun_run(sdev);
--
- 	spin_lock_irqsave(shost->host_lock, flags);
- 	list_splice_init(&shost->starved_list, &starved_list);
- 
-@@ -459,6 +442,28 @@ static void scsi_run_queue(struct request_queue *q)
- 	/* put any unprocessed entries back */
- 	list_splice(&starved_list, &shost->starved_list);
- 	spin_unlock_irqrestore(shost->host_lock, flags);
-+}
-+
-+/*
-+ * Function:   scsi_run_queue()
-+ *
-+ * Purpose:    Select a proper request queue to serve next
-+ *
-+ * Arguments:  q       - last request's queue
-+ *
-+ * Returns:     Nothing
-+ *
-+ * Notes:      The previous command was completely finished, start
-+ *             a new one if possible.
-+ */
-+static void scsi_run_queue(struct request_queue *q)
-+{
-+	struct scsi_device *sdev = q->queuedata;
-+
-+	if (scsi_target(sdev)->single_lun)
-+		scsi_single_lun_run(sdev);
-+	if (!list_empty(&sdev->host->starved_list))
-+		scsi_starved_list_run(sdev->host);
- 
- 	blk_run_queue(q);
- }
--- 
-1.7.10.4
-
+	Arnd
 
