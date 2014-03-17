@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512AbaCQGCL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 02:02:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46546 "EHLO mga09.intel.com"
+	id S1756509AbaCQF6k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 01:58:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62763 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756529AbaCQF6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 01:58:42 -0400
+	id S932353AbaCQF6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 01:58:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,667,1389772800"; 
-   d="scan'208";a="473898366"
+   d="scan'208";a="473898316"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v4 09/16] perf, x86: Save/resotre LBR stack during context switch
-Date: Mon, 17 Mar 2014 13:57:29 +0800
-Message-Id: <1395035856-15411-10-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v4 05/16] perf, core: pmu specific data for perf task context
+Date: Mon, 17 Mar 2014 13:57:25 +0800
+Message-Id: <1395035856-15411-6-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
 References: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
@@ -24,129 +24,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the LBR call stack is enabled, it is necessary to save/restore
-the LBR stack on context switch. The solution is saving/restoring
-the LBR stack to/from task's perf event context.
-
-The LBR stack is saved/restored only when there are events that use
-the LBR call stack. If no event uses LBR call stack, the LBR stack
-is reset when task is scheduled in.
+Introduce a new field to 'struct pmu' to specify the size of PMU
+specific data. If the size is not zero, also allocate memory for
+the PMU specific data when allocating perf task context. The PMU
+specific data are initialized to zeros. Later patches will use
+PMU specific data to save LBR stack.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Reviewed-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 81 ++++++++++++++++++++++++------
- 1 file changed, 65 insertions(+), 16 deletions(-)
+ include/linux/perf_event.h |  5 +++++
+ kernel/events/core.c       | 19 ++++++++++++++++++-
+ 2 files changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 34b121b..d8ab484 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -180,21 +180,82 @@ void intel_pmu_lbr_reset(void)
- 		intel_pmu_lbr_reset_64();
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 80ddc0c..3da433d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -252,6 +252,10 @@ struct pmu {
+ 	 */
+ 	void (*sched_task)		(struct perf_event_context *ctx,
+ 					 bool sched_in);
++	/*
++	 * PMU specific data size
++	 */
++	size_t				task_ctx_size;
+ };
+ 
+ /**
+@@ -493,6 +497,7 @@ struct perf_event_context {
+ 	u64				generation;
+ 	int				pin_count;
+ 	int				nr_cgroups;	 /* cgroup evts */
++	void				*task_ctx_data; /* pmu specific data */
+ 	struct rcu_head			rcu_head;
+ };
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d07700a..f262c57 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -903,6 +903,15 @@ static void get_ctx(struct perf_event_context *ctx)
+ 	WARN_ON(!atomic_inc_not_zero(&ctx->refcount));
  }
  
-+/*
-+ * TOS = most recently recorded branch
-+ */
-+static inline u64 intel_pmu_lbr_tos(void)
++static void free_ctx(struct rcu_head *head)
 +{
-+	u64 tos;
-+	rdmsrl(x86_pmu.lbr_tos, tos);
-+	return tos;
++	struct perf_event_context *ctx;
++
++	ctx = container_of(head, struct perf_event_context, rcu_head);
++	kfree(ctx->task_ctx_data);
++	kfree(ctx);
 +}
 +
-+enum {
-+	LBR_NONE,
-+	LBR_VALID,
-+};
-+
-+static void __intel_pmu_lbr_restore(struct x86_perf_task_context *task_ctx)
-+{
-+	int i;
-+	unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
-+	u64 tos = intel_pmu_lbr_tos();
-+
-+	for (i = 0; i < x86_pmu.lbr_nr; i++) {
-+		lbr_idx = (tos - i) & mask;
-+		wrmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
-+		wrmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
-+	}
-+	task_ctx->lbr_stack_state = LBR_NONE;
-+}
-+
-+static void __intel_pmu_lbr_save(struct x86_perf_task_context *task_ctx)
-+{
-+	int i;
-+	unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
-+	u64 tos = intel_pmu_lbr_tos();
-+
-+	for (i = 0; i < x86_pmu.lbr_nr; i++) {
-+		lbr_idx = (tos - i) & mask;
-+		rdmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
-+		rdmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
-+	}
-+	task_ctx->lbr_stack_state = LBR_VALID;
-+}
-+
-+
- void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
+ static void put_ctx(struct perf_event_context *ctx)
  {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct x86_perf_task_context *task_ctx;
- 
- 	if (!x86_pmu.lbr_nr)
- 		return;
- 
- 	/*
--	 * It is necessary to flush the stack on context switch. This happens
--	 * when the branch stack does not tag its entries with the pid of the
--	 * current task.
-+	 * If LBR callstack feature is enabled and the stack was saved when
-+	 * the task was scheduled out, restore the stack. Otherwise flush
-+	 * the LBR stack.
- 	 */
-+	task_ctx = ctx ? ctx->task_ctx_data : NULL;
- 	if (sched_in) {
--		intel_pmu_lbr_reset();
-+		if (task_ctx &&
-+		    task_ctx->lbr_callstack_users > 0 &&
-+		    task_ctx->lbr_stack_state == LBR_VALID)
-+			__intel_pmu_lbr_restore(task_ctx);
-+		else
-+			intel_pmu_lbr_reset();
-+
- 		cpuc->lbr_context = ctx;
-+		return;
-+	}
-+
-+	/* schedule out */
-+	if (task_ctx) {
-+		if (task_ctx->lbr_callstack_users)
-+			__intel_pmu_lbr_save(task_ctx);
-+		else
-+			task_ctx->lbr_stack_state = LBR_NONE;
+ 	if (atomic_dec_and_test(&ctx->refcount)) {
+@@ -910,7 +919,7 @@ static void put_ctx(struct perf_event_context *ctx)
+ 			put_ctx(ctx->parent_ctx);
+ 		if (ctx->task)
+ 			put_task_struct(ctx->task);
+-		kfree_rcu(ctx, rcu_head);
++		call_rcu(&ctx->rcu_head, free_ctx);
  	}
  }
  
-@@ -270,18 +331,6 @@ void intel_pmu_lbr_disable_all(void)
- 		__intel_pmu_lbr_disable();
- }
+@@ -3048,6 +3057,14 @@ alloc_perf_context(struct pmu *pmu, struct task_struct *task)
+ 	if (!ctx)
+ 		return NULL;
  
--/*
-- * TOS = most recently recorded branch
-- */
--static inline u64 intel_pmu_lbr_tos(void)
--{
--	u64 tos;
--
--	rdmsrl(x86_pmu.lbr_tos, tos);
--
--	return tos;
--}
--
- static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
- {
- 	unsigned long mask = x86_pmu.lbr_nr - 1;
++	if (task && pmu->task_ctx_size > 0) {
++		ctx->task_ctx_data = kzalloc(pmu->task_ctx_size, GFP_KERNEL);
++		if (!ctx->task_ctx_data) {
++			kfree(ctx);
++			return NULL;
++		}
++	}
++
+ 	__perf_event_init_context(ctx);
+ 	if (task) {
+ 		ctx->task = task;
 -- 
 1.8.5.3
 
