@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933743AbaCQODG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 10:03:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58258 "EHLO
+	id S933761AbaCQODr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 10:03:47 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58251 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932973AbaCQN5W (ORCPT
+	with ESMTP id S932870AbaCQN5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:57:22 -0400
+	Mon, 17 Mar 2014 09:57:21 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jonathan Cameron <jic23@kernel.org>,
@@ -17,9 +17,9 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Gregory Clement <gregory.clement@free-electrons.com>,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH v2 03/15] iio: adc: at91: cleanup platform_data
-Date: Mon, 17 Mar 2014 14:56:56 +0100
-Message-Id: <1395064628-644-4-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH v2 02/15] ARM: at91: sam9260: remove unused platform_data
+Date: Mon, 17 Mar 2014 14:56:55 +0100
+Message-Id: <1395064628-644-3-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -28,95 +28,52 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 num_channels and registers are not used anymore since they are defined inside
-the driver and assigned by matching the id_table.
+the at91_adc driver and assigned by matching the id_table.
 
-Also, struct at91_adc_reg_desc is now only used inside the driver.
+Also, remove the mach/at91_adc.h include that is not necessary anymore.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Acked-by: Jonathan Cameron <jic23@kernel.org>
 ---
- drivers/iio/adc/at91_adc.c             | 19 +++++++++++++++++++
- include/linux/platform_data/at91_adc.h | 23 -----------------------
- 2 files changed, 19 insertions(+), 23 deletions(-)
+ arch/arm/mach-at91/at91sam9260_devices.c | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
-index 89777ed9abd8..1beae65aef2c 100644
---- a/drivers/iio/adc/at91_adc.c
-+++ b/drivers/iio/adc/at91_adc.c
-@@ -46,6 +46,25 @@
- #define TOUCH_SAMPLE_PERIOD_US		2000	/* 2ms */
- #define TOUCH_PEN_DETECT_DEBOUNCE_US	200
+diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+index 0a0315920963..a299c50512f0 100644
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -24,7 +24,6 @@
+ #include <mach/at91sam9260_matrix.h>
+ #include <mach/at91_matrix.h>
+ #include <mach/at91sam9_smc.h>
+-#include <mach/at91_adc.h>
  
-+/**
-+ * struct at91_adc_reg_desc - Various informations relative to registers
-+ * @channel_base:	Base offset for the channel data registers
-+ * @drdy_mask:		Mask of the DRDY field in the relevant registers
-+			(Interruptions registers mostly)
-+ * @status_register:	Offset of the Interrupt Status Register
-+ * @trigger_register:	Offset of the Trigger setup register
-+ * @mr_prescal_mask:	Mask of the PRESCAL field in the adc MR register
-+ * @mr_startup_mask:	Mask of the STARTUP field in the adc MR register
-+ */
-+struct at91_adc_reg_desc {
-+	u8	channel_base;
-+	u32	drdy_mask;
-+	u8	status_register;
-+	u8	trigger_register;
-+	u32	mr_prescal_mask;
-+	u32	mr_startup_mask;
-+};
-+
- struct at91_adc_caps {
- 	bool	has_ts;		/* Support touch screen */
- 	bool	has_tsmr;	/* only at91sam9x5, sama5d3 have TSMR reg */
-diff --git a/include/linux/platform_data/at91_adc.h b/include/linux/platform_data/at91_adc.h
-index b3ca1e94e0c8..fcf73879dbfe 100644
---- a/include/linux/platform_data/at91_adc.h
-+++ b/include/linux/platform_data/at91_adc.h
-@@ -8,25 +8,6 @@
- #define _AT91_ADC_H_
+ #include "board.h"
+ #include "generic.h"
+@@ -1321,13 +1320,6 @@ static struct at91_adc_trigger at91_adc_triggers[] = {
+ 	},
+ };
  
- /**
-- * struct at91_adc_reg_desc - Various informations relative to registers
-- * @channel_base:	Base offset for the channel data registers
-- * @drdy_mask:		Mask of the DRDY field in the relevant registers
--			(Interruptions registers mostly)
-- * @status_register:	Offset of the Interrupt Status Register
-- * @trigger_register:	Offset of the Trigger setup register
-- * @mr_prescal_mask:	Mask of the PRESCAL field in the adc MR register
-- * @mr_startup_mask:	Mask of the STARTUP field in the adc MR register
-- */
--struct at91_adc_reg_desc {
--	u8	channel_base;
--	u32	drdy_mask;
--	u8	status_register;
--	u8	trigger_register;
--	u32	mr_prescal_mask;
--	u32	mr_startup_mask;
+-static struct at91_adc_reg_desc at91_adc_register_g20 = {
+-	.channel_base = AT91_ADC_CHR(0),
+-	.drdy_mask = AT91_ADC_DRDY,
+-	.status_register = AT91_ADC_SR,
+-	.trigger_register = AT91_ADC_MR,
 -};
 -
--/**
-  * struct at91_adc_trigger - description of triggers
-  * @name:		name of the trigger advertised to the user
-  * @value:		value to set in the ADC's trigger setup register
-@@ -42,8 +23,6 @@ struct at91_adc_trigger {
- /**
-  * struct at91_adc_data - platform data for ADC driver
-  * @channels_used:		channels in use on the board as a bitmask
-- * @num_channels:		global number of channels available on the board
-- * @registers:			Registers definition on the board
-  * @startup_time:		startup time of the ADC in microseconds
-  * @trigger_list:		Triggers available in the ADC
-  * @trigger_number:		Number of triggers available in the ADC
-@@ -52,8 +31,6 @@ struct at91_adc_trigger {
-  */
- struct at91_adc_data {
- 	unsigned long			channels_used;
--	u8				num_channels;
--	struct at91_adc_reg_desc	*registers;
- 	u8				startup_time;
- 	struct at91_adc_trigger		*trigger_list;
- 	u8				trigger_number;
+ void __init at91_add_device_adc(struct at91_adc_data *data)
+ {
+ 	if (!data)
+@@ -1345,9 +1337,7 @@ void __init at91_add_device_adc(struct at91_adc_data *data)
+ 	if (data->use_external_triggers)
+ 		at91_set_A_periph(AT91_PIN_PA22, 0);
+ 
+-	data->num_channels = 4;
+ 	data->startup_time = 10;
+-	data->registers = &at91_adc_register_g20;
+ 	data->trigger_number = 4;
+ 	data->trigger_list = at91_adc_triggers;
+ 
 -- 
 1.8.3.2
 
