@@ -1,36 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509AbaCQJf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 05:35:29 -0400
-Received: from AShevkov.infinet.ru ([91.191.225.92]:58705 "EHLO
-	ashevkov.infinet.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaCQJf2 (ORCPT
+	id S932506AbaCQJgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 05:36:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55144 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311AbaCQJgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 05:35:28 -0400
-X-Greylist: delayed 2088 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Mar 2014 05:35:27 EDT
-Date: Mon, 17 Mar 2014 14:45:00 +0600
-From: Alex Hacker <hacker@epn.ru>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Kalle Valo <kvalo@qca.qualcomm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Ben Hutchings <ben@decadent.org.uk>, ath10k@lists.infradead.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 3/3] ath10k: add firmware files
-Message-ID: <20140317084500.GA28450@infinet.ru>
-References: <20140314084501.23100.13103.stgit@x230> <20140314084514.23100.72654.stgit@x230> <CAB=NE6WW8yX4kdy02j2fT4g0JvYj4a_XkiqYtXKZSMB7FHuwNg@mail.gmail.com>
-Mime-Version: 1.0
+	Mon, 17 Mar 2014 05:36:33 -0400
+Date: Mon, 17 Mar 2014 10:36:02 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
+Subject: Re: linux-next: manual merge of the akpm-current tree with the tip
+ tree
+Message-ID: <20140317093602.GY27965@twins.programming.kicks-ass.net>
+References: <20140317203124.3b947e0799cc8142df5e4a2e@canb.auug.org.au>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAB=NE6WW8yX4kdy02j2fT4g0JvYj4a_XkiqYtXKZSMB7FHuwNg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <20140317203124.3b947e0799cc8142df5e4a2e@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +* No Reverse engineering, decompiling, decrypting, or disassembling of
-> > +  this software is permitted.
+On Mon, Mar 17, 2014 at 08:31:24PM +1100, Stephen Rothwell wrote:
+> Hi Andrew,
+> 
+> Today's linux-next merge of the akpm-current tree got a conflict in
+> kernel/locking/Makefile between commit fb0527bd5ea9 ("locking/mutexes:
+> Introduce cancelable MCS lock for adaptive spinning") from the  tree and
+> commit 4dc0fe493027 ("lglock: map to spinlock when !CONFIG_SMP") from the
+> akpm-current tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-Ups, I did it already... once. So sorry about my offending behaviour.
-I never do it again, I promise.
+I'm a bit sad of not having seen that lglock patch at all.
