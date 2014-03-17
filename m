@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385AbaCQF6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 01:58:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19846 "EHLO mga02.intel.com"
+	id S932452AbaCQGAA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 02:00:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25426 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932363AbaCQF6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 01:58:52 -0400
+	id S932382AbaCQF6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 01:58:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,667,1389772800"; 
-   d="scan'208";a="473898417"
+   d="scan'208";a="473898428"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v4 13/16] perf, x86: re-organize code that implicitly enables LBR/PEBS
-Date: Mon, 17 Mar 2014 13:57:33 +0800
-Message-Id: <1395035856-15411-14-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v4 15/16] perf, x86: disable FREEZE_LBRS_ON_PMI when LBR operates in callstack mode
+Date: Mon, 17 Mar 2014 13:57:35 +0800
+Message-Id: <1395035856-15411-16-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
 References: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
@@ -24,82 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-make later patch more readable, no logic change.
+Due to a hardware bug of Haswell, LBR callstack does not work well with
+FREEZE_LBRS_ON_PMI. If FREEZE_LBRS_ON_PMI is set, PMIs near call/return
+instructions may cause superfluous increase/decrease of LBR_TOS.
+
+This patch modifies __intel_pmu_lbr_enable() to not enable
+FREEZE_LBRS_ON_PMI when LBR operates in callstack mode. We currently
+don't use LBR callstack to capture kernel space callchain, so disabling
+FREEZE_LBRS_ON_PMI should not be a problem.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 59 ++++++++++++++++++++--------------------
- 1 file changed, 29 insertions(+), 30 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index d520576..ec972ea 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -399,36 +399,35 @@ int x86_pmu_hw_config(struct perf_event *event)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index bf8bdf9..5a6ea1c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -138,7 +138,14 @@ static void __intel_pmu_lbr_enable(void)
+ 		wrmsrl(MSR_LBR_SELECT, cpuc->lbr_sel->config);
  
- 		if (event->attr.precise_ip > precise)
- 			return -EOPNOTSUPP;
--		/*
--		 * check that PEBS LBR correction does not conflict with
--		 * whatever the user is asking with attr->branch_sample_type
--		 */
--		if (event->attr.precise_ip > 1 &&
--		    x86_pmu.intel_cap.pebs_format < 2) {
--			u64 *br_type = &event->attr.branch_sample_type;
--
--			if (has_branch_stack(event)) {
--				if (!precise_br_compat(event))
--					return -EOPNOTSUPP;
--
--				/* branch_sample_type is compatible */
--
--			} else {
--				/*
--				 * user did not specify  branch_sample_type
--				 *
--				 * For PEBS fixups, we capture all
--				 * the branches at the priv level of the
--				 * event.
--				 */
--				*br_type = PERF_SAMPLE_BRANCH_ANY;
--
--				if (!event->attr.exclude_user)
--					*br_type |= PERF_SAMPLE_BRANCH_USER;
--
--				if (!event->attr.exclude_kernel)
--					*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
--			}
-+	}
+ 	rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+-	debugctl |= (DEBUGCTLMSR_LBR | DEBUGCTLMSR_FREEZE_LBRS_ON_PMI);
++	debugctl |= DEBUGCTLMSR_LBR;
 +	/*
-+	 * check that PEBS LBR correction does not conflict with
-+	 * whatever the user is asking with attr->branch_sample_type
++	 * LBR callstack does not work well with FREEZE_LBRS_ON_PMI.
++	 * If FREEZE_LBRS_ON_PMI is set, PMI near call/return instructions
++	 * may cause superfluous increase/decrease of LBR_TOS.
 +	 */
-+	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
-+		u64 *br_type = &event->attr.branch_sample_type;
-+
-+		if (has_branch_stack(event)) {
-+			if (!precise_br_compat(event))
-+				return -EOPNOTSUPP;
-+
-+			/* branch_sample_type is compatible */
-+
-+		} else {
-+			/*
-+			 * user did not specify  branch_sample_type
-+			 *
-+			 * For PEBS fixups, we capture all
-+			 * the branches at the priv level of the
-+			 * event.
-+			 */
-+			*br_type = PERF_SAMPLE_BRANCH_ANY;
-+
-+			if (!event->attr.exclude_user)
-+				*br_type |= PERF_SAMPLE_BRANCH_USER;
-+
-+			if (!event->attr.exclude_kernel)
-+				*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
- 		}
- 	}
++	if (!cpuc->lbr_sel || !(cpuc->lbr_sel->config & LBR_CALL_STACK))
++		debugctl |= DEBUGCTLMSR_FREEZE_LBRS_ON_PMI;
+ 	wrmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+ }
  
 -- 
 1.8.5.3
