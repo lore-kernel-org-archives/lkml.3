@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933392AbaCQOYG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 10:24:06 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:58104 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933272AbaCQOXz (ORCPT
+	id S933483AbaCQOYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 10:24:52 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:56275 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932838AbaCQOYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 10:23:55 -0400
-MIME-Version: 1.0
-X-Originating-IP: [85.250.70.16]
-In-Reply-To: <53239789.40600@ti.com>
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
- <52F9282B.5000702@ti.com> <530B8C00.8020001@ti.com> <CAK=WgbZp_RQPCeZJyMRkNTQxaJsnGZ3DnjhSkYYR_-PAE_Kp4g@mail.gmail.com>
- <53239789.40600@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 17 Mar 2014 16:23:34 +0200
-Message-ID: <CAK=WgbZCzA7JovSxnysHCQRZZWc3Z2j3AS8ekpM9fOZ160rmCA@mail.gmail.com>
-Subject: Re: [PATCHv4 0/7] omap hwspinlock dt support
-To: Suman Anna <s-anna@ti.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Tony Lindgren <tony@atomide.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Mar 2014 10:24:50 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2] dt: platform driver: Fill the resources before probe and defer if needed
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: devicetree <devicetree@vger.kernel.org>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        gregkh <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        robh+dt <robh+dt@kernel.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CACh+v5P=tcc-h_9r7Btwyu+jWjwH2ocmW4VCgDYqY7VMWsHuOA@mail.gmail.com>
+References: <20140220153042.DF053C4050F@trevor.secretlab.ca> < 1392988720-20976-1-git-send-email-jjhiblot@traphandler.com> <20140308073758 .DA63FC408EC@trevor.secretlab.ca> < CACh+v5P=tcc-h_9r7Btwyu+jWjwH2ocmW4VCgDYqY7VMWsHuOA@mail.gmail.com>
+Date: Mon, 17 Mar 2014 14:24:43 +0000
+Message-Id: <20140317142443.A2447C40A85@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suman,
+On Mon, 17 Mar 2014 12:07:37 +0100, Jean-Jacques Hiblot <jjhiblot@traphandler.com> wrote:
+> Hi Grant,
+> 
+> Sorry for the delay, I was having nice vacations.
+> 
+> 2014-03-08 8:37 GMT+01:00 Grant Likely <grant.likely@linaro.org>:
+> > On Fri, 21 Feb 2014 14:18:40 +0100, Jean-Jacques Hiblot <jjhiblot@traphandler.com> wrote:
+> >> The goal of this patch is to allow drivers to be probed even if at the time of
+> >> the DT parsing some of their ressources are not available yet.
+> >
+> > Hi Jean-Jacques
+> >
+> > [...]
+> >> +int of_platform_device_prepare(struct platform_device *dev)
+> >> +{
+> >> +     struct device_node *np;
+> >> +     int i, irq_index;
+> >> +     struct resource *res;
+> >> +
+> >> +     /*
+> >> +      * This function applies only devices described in the DT.
+> >> +      * Other platform devices have their ressources already populated.
+> >> +      */
+> >> +     np = dev->dev.of_node;
+> >> +     if (!np)
+> >> +             return 0;
+> >
+> > I believe we already talked about the above test. This function must
+> > only process devices created by of_platform_populate(). Merely checking
+> > the of_node pointer is not a sufficient test because there are other
+> > paths in the kernel for creating platform_devices that might get a node
+> > pointer attached to it.
+> Yes we talked about this, but only to move it into of_platform_device_prepare().
+> Is there an existing way to know for sure that the device has been
+> created by of_platform_populate() ? I could not find one.
 
-On Sat, Mar 15, 2014 at 1:58 AM, Suman Anna <s-anna@ti.com> wrote:
-> The series doesn't change the semantics of hwspinlock registration or adds a
-> new OF controller registration function. Implementations would still need to
-> register a controller using a base_id and number of locks. The series rather
-> adds a DT-friendly function _ONLY_ for requesting a specific hwlock, and
-> there are no restrictions on the args specifier being relative id numbers.
-> Though this is what the simple default xlate helper does (most common
-> usage), the added xlate ops and #hwlock-cells should allow individual
-> implementation drivers to adjust any variations, and return a relative lock
-> w.r.t its registered base_id, as this is how a lock gets registered in the
-> first place.
+No there isn't. That information is used at population time and then
+discarded. We'd need to add a flag or registry to mark those devices.
 
-I might be missing something, but why can't we have the
-specifier+base_id be the hwlock id and then we can entirely drop most
-of the core changes in this patch-set? I realize we couldn't easily
-support sparse id numbers, but not sure this is relevant to
-hwspinlocks? do we have a use case that couldn't be supported in this
-case?
+g.
 
-> I actually started out this series with the base_id property, and dropped it
-> in v3 based on comments looking at it from the request-specific-lock
-> semantics with DT. That said, the drivers still need to manage a 'base_id'
-> needed for registration when they get probed for multiple controllers.
-> Getting the base_id from DT _may_ be useful just for registration purposes,
-> but for requesting a hwlock, a controller phandle and an implementation
-> defined args-specifier should suffice IMHO.
+> 
+> Jean-Jacques
+> >
+> > g.
+> >
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-How could drivers know what the base_id is if DT doesn't provide it?
-please note that we can't depend on order of controller probing; the
-hwlock id numbers cannot depend on implementation details.
-
-> The exact notion of informing the hwspinlock core about a list of reserved
-> locks is missing at the moment (even in the non-DT case). I am not sure if
-> this got lost during the conversion of the registration from per lock to
-> registering a bank of locks together, or if it is implied by the base_id +
-> num_locks combination. The core today supports requesting only those locks
-> that were actually registered, whether allocating a free one dynamically or
-> giving a specific one.
-
-Before DT came along, early board code could have reserved specific
-hwspinlocks if needed. Now with DT, we should add the list of reserved
-locks to the controller node, in order to prevent them from being
-dynamically allocated by others.
-
-Thanks,
-Ohad.
