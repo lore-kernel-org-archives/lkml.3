@@ -1,184 +1,910 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009AbaCQMDn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 08:03:43 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:28205 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932792AbaCQMDC (ORCPT
+	id S933025AbaCQMFv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 08:05:51 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:56516 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932792AbaCQMFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 08:03:02 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-0e-5326e475973b
-From: Girish K S <ks.giri@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: jassisinghbrar@gmail.com, s-anna@ti.com, ilho215.lee@samsung.com,
-        Girish K S <ks.giri@samsung.com>
-Subject: [PATCH 2/2] arm64: dts: exynos: added mailbox node
-Date: Mon, 17 Mar 2014 17:33:59 +0530
-Message-id: <1395057839-23871-3-git-send-email-ks.giri@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1395057839-23871-1-git-send-email-ks.giri@samsung.com>
-References: <1395057839-23871-1-git-send-email-ks.giri@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMLMWRmVeSWpSXmKPExsWyRsSkWrf0iVqwwdRFYhbzj5xjtTj6byGj
-	xbUVc9kt5h/dwWSx6fE1VovLu+awWez9tY/Vgd1j56y77B6bl9R79G1Zxehx/MZ2Jo/Pm+QC
-	WKO4bFJSczLLUov07RK4Mv7OXcxcsEi+4uJe1gbGaZJdjJwcEgImErNWPGaEsMUkLtxbz9bF
-	yMUhJLCUUaJ702w2mKLOub/ZIRKLGCW+7XkAlhAS6GCSmDA7FsRmE1CT2LjuPjuILSKQIjHr
-	/SIWEJtZIEPi/6FlYBuEBawlFl5YxgRiswioShzfsRKsnlfAWaLn7AFmiGWKEt3PJoDN5xRw
-	kZh3YidQnANol7PEgpUaIDdICMxjl1gxbzoLxBwBiW+TD7GA1EgIyEpsghkjKXFwxQ2WCYzC
-	CxgZVjGKphYkFxQnpRcZ6hUn5haX5qXrJefnbmIEBvjpf896dzDePmB9iDEZaNxEZinR5Hxg
-	hOSVxBsamxlZmJqYGhuZW5qRJqwkzpv0MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUAyNv
-	n1CfFuMazgcCUUtuvDtVnC34P1GaJ+bkjrNRNzlOJ9o75z+R5Y1RaeRbPS/O/cHexpef+U6W
-	LH9ScXgig8yka/M0BHe1/3p31fTa+vfH9t+20Ij7GBD2J2UeU8v9RIPSyX3ZDncPODDnv+OT
-	4d9bHteUtKfateDhNX3+idWefvcSmf+rRimxFGckGmoxFxUnAgARFnKihgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t9jAd3SJ2rBBtO28VrMP3KO1eLov4WM
-	FtdWzGW3mH90B5PFpsfXWC0u75rDZrH31z5WB3aPnbPusntsXlLv0bdlFaPH8RvbmTw+b5IL
-	YI1qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMATpD
-	SaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jxd+5i5oJF8hUX97I2ME6T
-	7GLk5JAQMJHonPubHcIWk7hwbz1bFyMXh5DAIkaJb3sesIEkhAQ6mCQmzI4FsdkE1CQ2rrsP
-	1iAikCIx6/0iFhCbWSBD4v+hZYwgtrCAtcTCC8uYQGwWAVWJ4ztWgtXzCjhL9Jw9wAyxTFGi
-	+9kEsPmcAi4S807sBIpzAO1ylliwUmMCI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmb
-	GMHx80xqB+PKBotDjAIcjEo8vBOU1YKFWBPLiitzDzFKcDArifCmXQMK8aYkVlalFuXHF5Xm
-	pBYfYkwGOmois5Rocj4wtvNK4g2NTcxNjU0tTSxMzCxJE1YS5z3Qah0oJJCeWJKanZpakFoE
-	s4WJg1OqgbEyzy7+2K8/FxdGb7RbX6G9tCbfY8V3Y5Gbdsncr9J1el71X9INZjg/17lZ8+yF
-	v7xfmCquqHWsS99iUXQwLzJc2Hvfrn8GT/OceFsU3GwPvF5wxoFz96pvJQvyfDU/ZRU5yqdw
-	ffqrdTrHf8ahl7tPfjEs/r7J2+HAJpHnK+PuHD/0Nb12vYASS3FGoqEWc1FxIgBrSTX74wIA	AA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 17 Mar 2014 08:05:48 -0400
+From: Harini Katakam <harinik@xilinx.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        broonie@kernel.org, grant.likely@linaro.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        michals@xilinx.com, Harini Katakam <harinik@xilinx.com>
+Subject: [PATCH] SPI: Add driver for Cadence SPI controller
+Date: Mon, 17 Mar 2014 17:35:36 +0530
+Message-Id: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the dt node for the mailbox IP
+Add driver for Cadence SPI controller. This is used in Xilinx Zynq.
 
-Signed-off-by: Girish K S <ks.giri@samsung.com>
-
-Change-Id: I35e45e9a62592887a84a909aee54f259a2f731fa
+Signed-off-by: Harini Katakam <harinik@xilinx.com>
 ---
- .../bindings/mailbox/samsung-mailbox.txt           |   24 +++++++
- arch/arm64/boot/dts/samsung-gh7.dtsi               |   66 ++++++++++++++++++++
- arch/arm64/boot/dts/samsung-ssdk-gh7.dts           |    3 +
- 3 files changed, 93 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mailbox/samsung-mailbox.txt
+ .../devicetree/bindings/spi/spi-cadence.txt        |   25 +
+ drivers/spi/Kconfig                                |    7 +
+ drivers/spi/Makefile                               |    1 +
+ drivers/spi/spi-cadence.c                          |  804 ++++++++++++++++++++
+ 4 files changed, 837 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-cadence.txt
+ create mode 100644 drivers/spi/spi-cadence.c
 
-diff --git a/Documentation/devicetree/bindings/mailbox/samsung-mailbox.txt b/Documentation/devicetree/bindings/mailbox/samsung-mailbox.txt
+diff --git a/Documentation/devicetree/bindings/spi/spi-cadence.txt b/Documentation/devicetree/bindings/spi/spi-cadence.txt
 new file mode 100644
-index 0000000..1908d71
+index 0000000..d25bc2d
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/mailbox/samsung-mailbox.txt
-@@ -0,0 +1,24 @@
-+
-+Samsung Mailbox Driver
++++ b/Documentation/devicetree/bindings/spi/spi-cadence.txt
+@@ -0,0 +1,25 @@
++Cadence SPI controller Device Tree Bindings
++-------------------------------------------
 +
 +Required properties:
-+- compatible:		Should be one of the following,
-+			    "samsung,gh7-mailbox" for
-+				Samsung GH7 SoC series
-+			    "samsung,exynos-mailbox" for
-+				exynosx SoC series
-+- reg:			Contains the mailbox register address range (base address
-+			and length)
-+- interrupts: 		Contains the interrupt information for the mailbox
-+			device.
-+- samsung,mbox-names:	Array of the names of the mailboxes
++- compatible		: Should be "cdns,spi-r1p6".
++- reg			: Physical base address and size of SPI registers map.
++- interrupts		: Property with a value describing the interrupt
++			  number.
++- interrupt-parent	: Must be core interrupt controller
++- clock-names		: List of input clock names - "ref_clk", "pclk"
++			  (See clock bindings for details).
++- clocks		: Clock phandles (see clock bindings for details).
++- num-chip-select	: Number of chip selects used.
 +
 +Example:
 +
-+/* Samsung GH7 SoC */
-+mailbox@100a0000 {
-+	compatible = "samsung,gh7-mailbox";
-+	reg = <0x0 0x100a0000 0x0 0x1000>;
-+	interrupts = <0 310 0>;
-+	samsung,mbox-names = "a7q-scp";
++	spi@e0007000 {
++		clock-names = "ref_clk", "pclk";
++		clocks = <&clkc 26>, <&clkc 35>;
++		compatible = "cdns,spi-r1p6";
++		interrupt-parent = <&intc>;
++		interrupts = <0 49 4>;
++		num-chip-select = /bits/ 16 <4>;
++		reg = <0xe0007000 0x1000>;
++	} ;
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index 581ee2a..aeae44a 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -148,6 +148,13 @@ config SPI_BUTTERFLY
+ 	  inexpensive battery powered microcontroller evaluation board.
+ 	  This same cable can be used to flash new firmware.
+ 
++config SPI_CADENCE
++	tristate "Cadence SPI controller"
++	depends on SPI_MASTER
++	help
++	  This selects the Cadence SPI controller master driver
++	  used by Xilinx Zynq.
++
+ config SPI_CLPS711X
+ 	tristate "CLPS711X host SPI controller"
+ 	depends on ARCH_CLPS711X
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index 95af48d..1be2ed7 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -22,6 +22,7 @@ obj-$(CONFIG_SPI_BFIN_V3)               += spi-bfin-v3.o
+ obj-$(CONFIG_SPI_BFIN_SPORT)		+= spi-bfin-sport.o
+ obj-$(CONFIG_SPI_BITBANG)		+= spi-bitbang.o
+ obj-$(CONFIG_SPI_BUTTERFLY)		+= spi-butterfly.o
++obj-$(CONFIG_SPI_CADENCE)		+= spi-cadence.o
+ obj-$(CONFIG_SPI_CLPS711X)		+= spi-clps711x.o
+ obj-$(CONFIG_SPI_COLDFIRE_QSPI)		+= spi-coldfire-qspi.o
+ obj-$(CONFIG_SPI_DAVINCI)		+= spi-davinci.o
+diff --git a/drivers/spi/spi-cadence.c b/drivers/spi/spi-cadence.c
+new file mode 100644
+index 0000000..7344411
+--- /dev/null
++++ b/drivers/spi/spi-cadence.c
+@@ -0,0 +1,804 @@
++/*
++ * Cadence SPI controller driver (master mode only)
++ *
++ * Copyright (C) 2008 - 2014 Xilinx, Inc.
++ *
++ * based on Blackfin On-Chip SPI Driver (spi_bfin5xx.c)
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ */
++
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of_irq.h>
++#include <linux/of_address.h>
++#include <linux/platform_device.h>
++#include <linux/spi/spi.h>
++
++/* Name of this driver */
++#define CDNS_SPI_NAME		"cdns-spi"
++
++/* Register offset definitions */
++#define CDNS_SPI_CR_OFFSET	0x00 /* Configuration  Register, RW */
++#define CDNS_SPI_ISR_OFFSET	0x04 /* Interrupt Status Register, RO */
++#define CDNS_SPI_IER_OFFSET	0x08 /* Interrupt Enable Register, WO */
++#define CDNS_SPI_IDR_OFFSET	0x0c /* Interrupt Disable Register, WO */
++#define CDNS_SPI_IMR_OFFSET	0x10 /* Interrupt Enabled Mask Register, RO */
++#define CDNS_SPI_ER_OFFSET	0x14 /* Enable/Disable Register, RW */
++#define CDNS_SPI_DR_OFFSET	0x18 /* Delay Register, RW */
++#define CDNS_SPI_TXD_OFFSET	0x1C /* Data Transmit Register, WO */
++#define CDNS_SPI_RXD_OFFSET	0x20 /* Data Receive Register, RO */
++#define CDNS_SPI_SICR_OFFSET	0x24 /* Slave Idle Count Register, RW */
++#define CDNS_SPI_THLD_OFFSET	0x28 /* Transmit FIFO Watermark Register,RW */
++
++/*
++ * SPI Configuration Register bit Masks
++ *
++ * This register contains various control bits that affect the operation
++ * of the SPI controller
++ */
++#define CDNS_SPI_CR_MANSTRT_MASK	0x00010000 /* Manual TX Start */
++#define CDNS_SPI_CR_CPHA_MASK		0x00000004 /* Clock Phase Control */
++#define CDNS_SPI_CR_CPOL_MASK		0x00000002 /* Clock Polarity Control */
++#define CDNS_SPI_CR_SSCTRL_MASK		0x00003C00 /* Slave Select Mask */
++#define CDNS_SPI_CR_BAUD_DIV_MASK	0x00000038 /* Baud Rate Divisor Mask */
++#define CDNS_SPI_CR_MSTREN_MASK		0x00000001 /* Master Enable Mask */
++#define CDNS_SPI_CR_MANSTRTEN_MASK	0x00008000 /* Manual TX Enable Mask */
++#define CDNS_SPI_CR_SSFORCE_MASK	0x00004000 /* Manual SS Enable Mask */
++#define CDNS_SPI_CR_BAUD_DIV_4_MASK	0x00000008 /* Default Baud Div Mask */
++#define CDNS_SPI_CR_DEFAULT_MASK	(CDNS_SPI_CR_MSTREN_MASK | \
++					CDNS_SPI_CR_SSCTRL_MASK | \
++					CDNS_SPI_CR_SSFORCE_MASK | \
++					CDNS_SPI_CR_BAUD_DIV_4_MASK)
++
++/*
++ * SPI Configuration Register - Baud rate and slave select
++ *
++ * These are the values used in the calculation of baud rate divisor and
++ * setting the slave select.
++ */
++
++#define CDNS_SPI_BAUD_DIV_MAX		7 /* Baud rate divisor maximum */
++#define CDNS_SPI_BAUD_DIV_MIN		1 /* Baud rate divisor minimum */
++#define CDNS_SPI_BAUD_DIV_SHIFT		3 /* Baud rate divisor shift in CR */
++#define CDNS_SPI_SS_SHIFT		10 /* Slave Select field shift in CR */
++#define CDNS_SPI_SS0			0x1 /* Slave Select zero */
++
++/*
++ * SPI Interrupt Registers bit Masks
++ *
++ * All the four interrupt registers (Status/Mask/Enable/Disable) have the same
++ * bit definitions.
++ */
++#define CDNS_SPI_IXR_TXOW_MASK	0x00000004 /* SPI TX FIFO Overwater */
++#define CDNS_SPI_IXR_MODF_MASK	0x00000002 /* SPI Mode Fault */
++#define CDNS_SPI_IXR_RXNEMTY_MASK 0x00000010 /* SPI RX FIFO Not Empty */
++#define CDNS_SPI_IXR_DEFAULT_MASK	(CDNS_SPI_IXR_TXOW_MASK | \
++					CDNS_SPI_IXR_MODF_MASK)
++#define CDNS_SPI_IXR_TXFULL_MASK	0x00000008 /* SPI TX Full */
++#define CDNS_SPI_IXR_ALL_MASK	0x0000007F /* SPI all interrupts */
++
++/*
++ * SPI Enable Register bit Masks
++ *
++ * This register is used to enable or disable the SPI controller
++ */
++#define CDNS_SPI_ER_ENABLE_MASK	0x00000001 /* SPI Enable Bit Mask */
++#define CDNS_SPI_ER_DISABLE_MASK	0x0 /* SPI Disable Bit Mask */
++
++/* SPI timeout value */
++#define CDNS_SPI_TIMEOUT	(5 * HZ)
++
++/* SPI FIFO depth in bytes */
++#define CDNS_SPI_FIFO_DEPTH	128
++
++/* Macros for the SPI controller read/write */
++#define cdns_spi_read(addr)	readl_relaxed(addr)
++#define cdns_spi_write(addr, val)	writel_relaxed((val), (addr))
++
++/* Driver state - suspend/ready */
++enum driver_state_val {
++	CDNS_SPI_DRIVER_STATE_READY = 0,
++	CDNS_SPI_DRIVER_STATE_SUSPEND
 +};
-diff --git a/arch/arm64/boot/dts/samsung-gh7.dtsi b/arch/arm64/boot/dts/samsung-gh7.dtsi
-index c3610bd..be4cce9 100644
---- a/arch/arm64/boot/dts/samsung-gh7.dtsi
-+++ b/arch/arm64/boot/dts/samsung-gh7.dtsi
-@@ -107,5 +107,71 @@
- 			interrupts = <0 420 0>;
- 			arm,primecell-periphid = <0x341011>; /* HACK */
- 		};
 +
-+	};
++/**
++ * struct cdns_spi - This definition defines spi driver instance
++ * @regs:		Virtual address of the SPI controller registers
++ * @ref_clk:		Pointer to the peripheral clock
++ * @pclk:		Pointer to the APB clock
++ * @speed_hz:		Current SPI bus clock speed in Hz
++ * @txbuf:		Pointer	to the TX buffer
++ * @rxbuf:		Pointer to the RX buffer
++ * @remaining_bytes:	Number of bytes left to transfer
++ * @requested_bytes:	Number of bytes requested
++ * @dev_busy:		Device busy flag
++ * @done:		Transfer complete status
++ * @driver_state:	Describes driver state - ready/suspended
++ */
++struct cdns_spi {
++	void __iomem *regs;
++	struct clk *ref_clk;
++	struct clk *pclk;
++	u32 speed_hz;
++	const u8 *txbuf;
++	u8 *rxbuf;
++	int remaining_bytes;
++	int requested_bytes;
++	u8 dev_busy;
++	struct completion done;
++	enum driver_state_val driver_state;
++};
 +
-+	mailbox@100a0000 {
-+		compatible = "samsung,gh7-mailbox";
-+		reg = <0x0 0x100a0000 0x0 0x1000>;
-+		interrupts = <0 310 0>;
-+		samsung,mbox-names = "a7q-scp";
-+		status = "disabled";
-+	};
++/**
++ * cdns_spi_init_hw - Initialize the hardware and configure the SPI controller
++ * @regs_base:		Base address of SPI controller
++ *
++ * On reset the SPI controller is configured to be in master mode, baud rate
++ * divisor is set to 4, threshold value for TX FIFO not full interrupt is set
++ * to 1 and size of the word to be transferred as 8 bit.
++ * This function initializes the SPI controller to disable and clear all the
++ * interrupts, enable manual slave select and manual start, deselect all the
++ * chip select lines, and enable the SPI controller.
++ */
++static void cdns_spi_init_hw(void __iomem *regs_base)
++{
++	cdns_spi_write(regs_base + CDNS_SPI_ER_OFFSET,
++		       CDNS_SPI_ER_DISABLE_MASK);
++	cdns_spi_write(regs_base + CDNS_SPI_IDR_OFFSET, CDNS_SPI_IXR_ALL_MASK);
 +
-+	mailbox@24100000 {
-+		compatible = "samsung,exynos-mailbox";
-+		reg = 	< 0x0 0x24100000 0x0 0x10000>;
-+		interrupts = <0 251 0>;
-+		samsung,mbox-names = "ncp-a7q-0";
-+		status = "disabled";
-+	};
-+	mailbox@24110000 {
-+		compatible = "samsung,exynos-mailbox";
-+		reg = 	<0x0 0x24110000 0x0 0x10000>;
-+		interrupts = <0 252 0>;
-+		samsung,mbox-names = "ncp-a7q-1";
-+		status = "disabled";
-+	};
-+	mailbox@24120000 {
-+		compatible = "samsung,exynos-mailbox";
-+		reg = 	<0x0 0x24120000 0x0 0x10000>;
-+		interrupts = <0 253 0>;
-+		samsung,mbox-names = "ncp-a7q-2";
-+		status = "disabled";
-+	};
-+	mailbox@24130000 {
-+		compatible = "samsung,exynos-mailbox";
-+		reg = 	<0x0 0x24130000 0x0 0x10000>;
-+		interrupts = <0 254 0>;
-+		samsung,mbox-names = "ncp-a7q-3";
-+		status = "disabled";
-+	};
-+	mailbox@24140000 {
-+		compatible = "samsung,exynos-mailbox";
-+		reg = 	<0x0 0x24140000 0x0 0x10000>;
-+		interrupts = <0 255 0>;
-+		samsung,mbox-names = "ncp-a7q-4";
-+		status = "disabled";
-+	};
-+	mailbox@24150000 {
-+		compatible = "samsung,exynos-mailbox";
-+		reg = 	<0x0 0x24150000 0x0 0x10000>;
-+		interrupts = <0 256 0>;
-+		samsung,mbox-names = "ncp-a7q-5";
-+		status = "disabled";
-+	};
-+	mailbox@24160000 {
-+		compatible = "samsung,exynos-mailbox";
-+		reg = 	<0x0 0x24160000 0x0 0x10000>;
-+		interrupts = <0 257 0>;
-+		samsung,mbox-names = "ncp-a7q-6";
-+		status = "disabled";
-+	};
-+	mailbox@24170000 {
-+		compatible = "samsung,exynos-mailbox";
-+		reg = 	<0x0 0x24170000 0x0 0x10000>;
-+		interrupts = <0 258 0>;
-+		samsung,mbox-names = "ncp-a7q-7";
-+		status = "disabled";
- 	};
- };
-diff --git a/arch/arm64/boot/dts/samsung-ssdk-gh7.dts b/arch/arm64/boot/dts/samsung-ssdk-gh7.dts
-index 4ce7d67..bfe5455 100644
---- a/arch/arm64/boot/dts/samsung-ssdk-gh7.dts
-+++ b/arch/arm64/boot/dts/samsung-ssdk-gh7.dts
-@@ -23,4 +23,7 @@
- 		device_type = "memory";
- 		reg = <0x00000000 0x80000000 0 0x20000000>;
- 	};
-+	mailbox@100a0000 {
-+		status = "okay";
-+	};
- };
++	/* Clear the RX FIFO */
++	while (cdns_spi_read(regs_base + CDNS_SPI_ISR_OFFSET) &
++	       CDNS_SPI_IXR_RXNEMTY_MASK)
++		cdns_spi_read(regs_base + CDNS_SPI_RXD_OFFSET);
++
++	cdns_spi_write(regs_base + CDNS_SPI_ISR_OFFSET, CDNS_SPI_IXR_ALL_MASK);
++	cdns_spi_write(regs_base + CDNS_SPI_CR_OFFSET,
++		       CDNS_SPI_CR_DEFAULT_MASK);
++	cdns_spi_write(regs_base + CDNS_SPI_ER_OFFSET,
++		       CDNS_SPI_ER_ENABLE_MASK);
++}
++
++/**
++ * cdns_spi_chipselect - Select or deselect the chip select line
++ * @spi:	Pointer to the spi_device structure
++ * @is_on:	Select(1) or deselect (0) the chip select line
++ */
++static void cdns_spi_chipselect(struct spi_device *spi, int is_on)
++{
++	struct cdns_spi *xspi = spi_master_get_devdata(spi->master);
++	u32 ctrl_reg;
++
++	ctrl_reg = cdns_spi_read(xspi->regs + CDNS_SPI_CR_OFFSET);
++
++	if (is_on) {
++		/* Select the slave */
++		ctrl_reg &= ~CDNS_SPI_CR_SSCTRL_MASK;
++		ctrl_reg |= ((~(CDNS_SPI_SS0 << spi->chip_select)) <<
++			     CDNS_SPI_SS_SHIFT) & CDNS_SPI_CR_SSCTRL_MASK;
++	} else {
++		/* Deselect the slave */
++		ctrl_reg |= CDNS_SPI_CR_SSCTRL_MASK;
++	}
++
++	cdns_spi_write(xspi->regs + CDNS_SPI_CR_OFFSET, ctrl_reg);
++}
++
++/**
++ * cdns_spi_config_clock - Sets clock polarity, phase and frequency
++ * @spi:	Pointer to the spi_device structure
++ * @transfer:	Pointer to the spi_transfer structure which provides
++ *		information about next transfer setup parameters
++ *
++ * Sets the requested clock polarity, phase and frequency.
++ * Note: If the requested frequency is not an exact match with what can be
++ * obtained using the prescalar value the driver sets the clock frequency which
++ * is lower than the requested frequency (maximum lower) for the transfer. If
++ * the requested frequency is higher or lower than that is supported by the SPI
++ * controller the driver will set the highest or lowest frequency supported by
++ * controller.
++ */
++static void cdns_spi_config_clock(struct spi_device *spi,
++		struct spi_transfer *transfer)
++{
++	struct cdns_spi *xspi = spi_master_get_devdata(spi->master);
++	u32 ctrl_reg, req_hz, baud_rate_val;
++	unsigned long frequency;
++
++	if (transfer && transfer->speed_hz)
++		req_hz = transfer->speed_hz;
++	else
++		req_hz = spi->max_speed_hz;
++
++	frequency = clk_get_rate(xspi->ref_clk);
++
++	cdns_spi_write(xspi->regs + CDNS_SPI_ER_OFFSET,
++		       CDNS_SPI_ER_DISABLE_MASK);
++	ctrl_reg = cdns_spi_read(xspi->regs + CDNS_SPI_CR_OFFSET);
++
++	/* Set the SPI clock phase and clock polarity */
++	ctrl_reg &= ~(CDNS_SPI_CR_CPHA_MASK | CDNS_SPI_CR_CPOL_MASK);
++	if (spi->mode & SPI_CPHA)
++		ctrl_reg |= CDNS_SPI_CR_CPHA_MASK;
++	if (spi->mode & SPI_CPOL)
++		ctrl_reg |= CDNS_SPI_CR_CPOL_MASK;
++
++	/* Set the clock frequency */
++	if (xspi->speed_hz != req_hz) {
++		/* first valid value is 1 */
++		baud_rate_val = CDNS_SPI_BAUD_DIV_MIN;
++		while ((baud_rate_val < CDNS_SPI_BAUD_DIV_MAX) &&
++		       (frequency / (2 << baud_rate_val)) > req_hz)
++			baud_rate_val++;
++
++		ctrl_reg &= ~CDNS_SPI_CR_BAUD_DIV_MASK;
++		ctrl_reg |= baud_rate_val << CDNS_SPI_BAUD_DIV_SHIFT;
++
++		xspi->speed_hz = frequency / (2 << baud_rate_val);
++	}
++
++	cdns_spi_write(xspi->regs + CDNS_SPI_CR_OFFSET, ctrl_reg);
++	cdns_spi_write(xspi->regs + CDNS_SPI_ER_OFFSET,
++		       CDNS_SPI_ER_ENABLE_MASK);
++}
++
++/**
++ * cdns_spi_setup_transfer - Configure SPI controller for specified transfer
++ * @spi:	Pointer to the spi_device structure
++ * @transfer:	Pointer to the spi_transfer structure which provides
++ *		information about next transfer setup parameters
++ *
++ * Sets the operational mode of SPI controller for the next SPI transfer and
++ * sets the requested clock frequency.
++ *
++ * Return:	0 on success and error value on error
++ */
++static int cdns_spi_setup_transfer(struct spi_device *spi,
++		struct spi_transfer *transfer)
++{
++	struct cdns_spi *xspi = spi_master_get_devdata(spi->master);
++	u8 bits_per_word;
++
++	bits_per_word = transfer ?
++			transfer->bits_per_word : spi->bits_per_word;
++
++	if (bits_per_word != 8) {
++		dev_err(&spi->dev, "%s, unsupported bits per word %x\n",
++			__func__, spi->bits_per_word);
++		return -EINVAL;
++	}
++
++	cdns_spi_config_clock(spi, transfer);
++
++	dev_dbg(&spi->dev, "%s, mode %d, %u bits/w, %u clock speed\n",
++		__func__, spi->mode, spi->bits_per_word,
++		xspi->speed_hz);
++
++	return 0;
++}
++
++/**
++ * cdns_spi_setup - Configure the SPI controller
++ * @spi:	Pointer to the spi_device structure
++ *
++ * Sets the operational mode of SPI controller for the next SPI transfer, sets
++ * the baud rate and divisor value to setup the requested spi clock.
++ *
++ * Return:	0 on success and error value on error
++ */
++static int cdns_spi_setup(struct spi_device *spi)
++{
++	if (!spi->max_speed_hz)
++		return -EINVAL;
++
++	if (!spi->bits_per_word)
++		spi->bits_per_word = 8;
++
++	return cdns_spi_setup_transfer(spi, NULL);
++}
++
++/**
++ * cdns_spi_fill_tx_fifo - Fills the TX FIFO with as many bytes as possible
++ * @xspi:	Pointer to the cdns_spi structure
++ */
++static void cdns_spi_fill_tx_fifo(struct cdns_spi *xspi)
++{
++	unsigned long trans_cnt = 0;
++
++	while ((trans_cnt < CDNS_SPI_FIFO_DEPTH) &&
++	       (xspi->remaining_bytes > 0)) {
++		if (xspi->txbuf)
++			cdns_spi_write(xspi->regs + CDNS_SPI_TXD_OFFSET,
++				       *xspi->txbuf++);
++		else
++			cdns_spi_write(xspi->regs + CDNS_SPI_TXD_OFFSET, 0);
++
++		xspi->remaining_bytes--;
++		trans_cnt++;
++	}
++}
++
++/**
++ * cdns_spi_irq - Interrupt service routine of the SPI controller
++ * @irq:	IRQ number
++ * @dev_id:	Pointer to the xspi structure
++ *
++ * This function handles TX empty and Mode Fault interrupts only.
++ * On TX empty interrupt this function reads the received data from RX FIFO and
++ * fills the TX FIFO if there is any data remaining to be transferred.
++ * On Mode Fault interrupt this function indicates that transfer is completed,
++ * the SPI subsystem will identify the error as the remaining bytes to be
++ * transferred is non-zero.
++ *
++ * Return:	IRQ_HANDLED always
++ */
++static irqreturn_t cdns_spi_irq(int irq, void *dev_id)
++{
++	struct cdns_spi *xspi = dev_id;
++	u32 intr_status;
++
++	intr_status = cdns_spi_read(xspi->regs + CDNS_SPI_ISR_OFFSET);
++	cdns_spi_write(xspi->regs + CDNS_SPI_ISR_OFFSET, intr_status);
++
++	if (intr_status & CDNS_SPI_IXR_MODF_MASK) {
++		/* Indicate that transfer is completed, the SPI subsystem will
++		 * identify the error as the remaining bytes to be
++		 * transferred is non-zero
++		 */
++		cdns_spi_write(xspi->regs + CDNS_SPI_IDR_OFFSET,
++			       CDNS_SPI_IXR_DEFAULT_MASK);
++		complete(&xspi->done);
++	} else if (intr_status & CDNS_SPI_IXR_TXOW_MASK) {
++		unsigned long trans_cnt;
++
++		trans_cnt = xspi->requested_bytes - xspi->remaining_bytes;
++
++		/* Read out the data from the RX FIFO */
++		while (trans_cnt) {
++			u8 data;
++
++			data = cdns_spi_read(xspi->regs + CDNS_SPI_RXD_OFFSET);
++			if (xspi->rxbuf)
++				*xspi->rxbuf++ = data;
++
++			xspi->requested_bytes--;
++			trans_cnt--;
++		}
++
++		if (xspi->remaining_bytes) {
++			/* There is more data to send */
++			cdns_spi_fill_tx_fifo(xspi);
++		} else {
++			/* Transfer is completed */
++			cdns_spi_write(xspi->regs + CDNS_SPI_IDR_OFFSET,
++				       CDNS_SPI_IXR_DEFAULT_MASK);
++			complete(&xspi->done);
++		}
++	}
++
++	return IRQ_HANDLED;
++}
++
++/**
++ * cdns_spi_reset_controller - Resets SPI controller
++ * @spi:	Pointer to the spi_device structure
++ *
++ * This function disables the interrupts, de-asserts the chip select and
++ * disables the SPI controller.
++ */
++static void cdns_spi_reset_controller(struct spi_device *spi)
++{
++	struct cdns_spi *xspi = spi_master_get_devdata(spi->master);
++
++	cdns_spi_write(xspi->regs + CDNS_SPI_IDR_OFFSET,
++		       CDNS_SPI_IXR_DEFAULT_MASK);
++	cdns_spi_chipselect(spi, 0);
++	cdns_spi_write(xspi->regs + CDNS_SPI_ER_OFFSET,
++		       CDNS_SPI_ER_DISABLE_MASK);
++}
++
++/**
++ * cdns_spi_start_transfer - Initiates the SPI transfer
++ * @spi:	Pointer to the spi_device structure
++ * @transfer:	Pointer to the spi_transfer structure which provides
++ *		information about next transfer parameters
++ *
++ * This function fills the TX FIFO, starts the SPI transfer, and waits for the
++ * transfer to be completed.
++ *
++ * Return:	Number of bytes transferred in the last transfer
++ */
++static int cdns_spi_start_transfer(struct spi_device *spi,
++			struct spi_transfer *transfer)
++{
++	struct cdns_spi *xspi = spi_master_get_devdata(spi->master);
++	int ret;
++
++	xspi->txbuf = transfer->tx_buf;
++	xspi->rxbuf = transfer->rx_buf;
++	xspi->remaining_bytes = transfer->len;
++	xspi->requested_bytes = transfer->len;
++	reinit_completion(&xspi->done);
++
++	cdns_spi_fill_tx_fifo(xspi);
++
++	cdns_spi_write(xspi->regs + CDNS_SPI_IER_OFFSET,
++		       CDNS_SPI_IXR_DEFAULT_MASK);
++
++	ret = wait_for_completion_interruptible_timeout(&xspi->done,
++							CDNS_SPI_TIMEOUT);
++	if (ret < 1) {
++		cdns_spi_reset_controller(spi);
++		if (!ret)
++			return -ETIMEDOUT;
++
++		return ret;
++	}
++
++	return transfer->len - xspi->remaining_bytes;
++}
++
++/**
++ * cdns_prepare_transfer_hardware - Prepares hardware for transfer.
++ * @master:	Pointer to the spi_master structure which provides
++ *		information about the controller.
++ *
++ * This function enables SPI master controller.
++ *
++ * Return:	0 on success and error value on error
++ */
++static int cdns_prepare_transfer_hardware(struct spi_master *master)
++{
++	struct cdns_spi *xspi = spi_master_get_devdata(master);
++
++	if (xspi->driver_state != CDNS_SPI_DRIVER_STATE_READY)
++		return -EINVAL;
++
++	cdns_spi_write(xspi->regs + CDNS_SPI_ER_OFFSET,
++		       CDNS_SPI_ER_ENABLE_MASK);
++
++	return 0;
++}
++
++/**
++ * cdns_transfer_one_message - Sets up and transfer a message.
++ * @master:	Pointer to the spi_master structure which provides
++ *		information about the controller.
++ * @msg:	Pointer to the spi_message which contains the
++ *		data to be transferred.
++ *
++ * This function calls the necessary functions to setup operational mode,
++ * clock, control chip select and completes the transfer.
++ *
++ * Return:	0 on success and error value on error.
++ */
++static int cdns_transfer_one_message(struct spi_master *master,
++				     struct spi_message *msg)
++{
++	struct spi_device *spi;
++	unsigned cs_change = 1;
++	int status = 0, length = 0;
++	struct spi_transfer *transfer;
++
++	spi = msg->spi;
++
++	list_for_each_entry(transfer, &msg->transfers, transfer_list) {
++		if ((transfer->bits_per_word || transfer->speed_hz) &&
++		    cs_change) {
++			status = cdns_spi_setup_transfer(spi, transfer);
++			if (status < 0)
++				break;
++		}
++
++		if (cs_change)
++			cdns_spi_chipselect(spi, 1);
++
++		cs_change = transfer->cs_change;
++
++		if (!transfer->tx_buf && !transfer->rx_buf &&
++			transfer->len) {
++			status = -EINVAL;
++			break;
++		}
++
++		if (transfer->len)
++			length = cdns_spi_start_transfer(spi, transfer);
++
++		if (length != transfer->len) {
++			if (length > 0)
++				status = -EMSGSIZE;
++			else
++				status = length;
++			break;
++		}
++		msg->actual_length += length;
++		status = 0;
++
++		if (transfer->delay_usecs)
++			udelay(transfer->delay_usecs);
++
++		if (!cs_change)
++			continue;
++
++		if (transfer->transfer_list.next == &msg->transfers)
++			break;
++
++		cdns_spi_chipselect(spi, 0);
++	}
++
++	if (status || !cs_change)
++		cdns_spi_chipselect(spi, 0);
++
++	msg->status = status;
++	spi_finalize_current_message(master);
++
++	return status;
++}
++
++/**
++ * cdns_unprepare_transfer_hardware - Relaxes hardware after transfer
++ * @master:	Pointer to the spi_master structure which provides
++ *		information about the controller.
++ *
++ * This function disables the SPI master controller.
++ *
++ * Return:	0 always
++ */
++static int cdns_unprepare_transfer_hardware(struct spi_master *master)
++{
++	struct cdns_spi *xspi = spi_master_get_devdata(master);
++
++	cdns_spi_write(xspi->regs + CDNS_SPI_ER_OFFSET,
++		       CDNS_SPI_ER_DISABLE_MASK);
++
++	return 0;
++}
++
++/**
++ * cdns_spi_probe - Probe method for the SPI driver
++ * @pdev:	Pointer to the platform_device structure
++ *
++ * This function initializes the driver data structures and the hardware.
++ *
++ * Return:	0 on success and error value on error
++ */
++static int cdns_spi_probe(struct platform_device *pdev)
++{
++	int ret = 0, irq;
++	struct spi_master *master;
++	struct cdns_spi *xspi;
++	struct resource *res;
++
++	master = spi_alloc_master(&pdev->dev, sizeof(*xspi));
++	if (master == NULL)
++		return -ENOMEM;
++
++	xspi = spi_master_get_devdata(master);
++	master->dev.of_node = pdev->dev.of_node;
++	platform_set_drvdata(pdev, master);
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	xspi->regs = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(xspi->regs)) {
++		ret = PTR_ERR(xspi->regs);
++		goto remove_master;
++	}
++
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
++		ret = -ENXIO;
++		dev_err(&pdev->dev, "irq number is negative\n");
++		goto remove_master;
++	}
++
++	ret = devm_request_irq(&pdev->dev, irq, cdns_spi_irq,
++			       0, pdev->name, xspi);
++	if (ret != 0) {
++		ret = -ENXIO;
++		dev_err(&pdev->dev, "request_irq failed\n");
++		goto remove_master;
++	}
++
++	xspi->pclk = devm_clk_get(&pdev->dev, "pclk");
++	if (IS_ERR(xspi->pclk)) {
++		dev_err(&pdev->dev, "pclk clock not found.\n");
++		ret = PTR_ERR(xspi->pclk);
++		goto remove_master;
++	}
++
++	xspi->ref_clk = devm_clk_get(&pdev->dev, "ref_clk");
++	if (IS_ERR(xspi->ref_clk)) {
++		dev_err(&pdev->dev, "ref_clk clock not found.\n");
++		ret = PTR_ERR(xspi->ref_clk);
++		goto remove_master;
++	}
++
++	ret = clk_prepare_enable(xspi->pclk);
++	if (ret) {
++		dev_err(&pdev->dev, "Unable to enable APB clock.\n");
++		goto remove_master;
++	}
++
++	ret = clk_prepare_enable(xspi->ref_clk);
++	if (ret) {
++		dev_err(&pdev->dev, "Unable to enable device clock.\n");
++		goto clk_dis_apb;
++	}
++
++	/* SPI controller initializations */
++	cdns_spi_init_hw(xspi->regs);
++
++	init_completion(&xspi->done);
++
++	ret = of_property_read_u16(pdev->dev.of_node, "num-chip-select",
++				   &master->num_chipselect);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "couldn't determine num-chip-select\n");
++		goto clk_dis_all;
++	}
++	master->setup = cdns_spi_setup;
++	master->prepare_transfer_hardware = cdns_prepare_transfer_hardware;
++	master->transfer_one_message = cdns_transfer_one_message;
++	master->unprepare_transfer_hardware = cdns_unprepare_transfer_hardware;
++	master->mode_bits = SPI_CPOL | SPI_CPHA;
++
++	/* Set to default valid value */
++	xspi->speed_hz = clk_get_rate(xspi->ref_clk) / 4;
++
++	xspi->driver_state = CDNS_SPI_DRIVER_STATE_READY;
++
++	ret = spi_register_master(master);
++	if (ret) {
++		dev_err(&pdev->dev, "spi_register_master failed\n");
++		goto clk_dis_all;
++	}
++
++	dev_info(&pdev->dev, "at 0x%08X mapped to 0x%08X, irq=%d\n",
++		 res->start, (u32 __force)xspi->regs, irq);
++
++	return ret;
++
++clk_dis_all:
++	clk_disable_unprepare(xspi->ref_clk);
++clk_dis_apb:
++	clk_disable_unprepare(xspi->pclk);
++remove_master:
++	spi_master_put(master);
++	return ret;
++}
++
++/**
++ * cdns_spi_remove - Remove method for the SPI driver
++ * @pdev:	Pointer to the platform_device structure
++ *
++ * This function is called if a device is physically removed from the system or
++ * if the driver module is being unloaded. It frees all resources allocated to
++ * the device.
++ *
++ * Return:	0 on success and error value on error
++ */
++static int cdns_spi_remove(struct platform_device *pdev)
++{
++	struct spi_master *master = platform_get_drvdata(pdev);
++	struct cdns_spi *xspi = spi_master_get_devdata(master);
++
++	cdns_spi_write(xspi->regs + CDNS_SPI_ER_OFFSET,
++		       CDNS_SPI_ER_DISABLE_MASK);
++
++	clk_disable_unprepare(xspi->ref_clk);
++	clk_disable_unprepare(xspi->pclk);
++
++	spi_unregister_master(master);
++	spi_master_put(master);
++
++	dev_dbg(&pdev->dev, "remove succeeded\n");
++	return 0;
++}
++
++/**
++ * cdns_spi_suspend - Suspend method for the SPI driver
++ * @dev:	Address of the platform_device structure
++ *
++ * This function disables the SPI controller and
++ * changes the driver state to "suspend"
++ *
++ * Return:	0 on success and error value on error
++ */
++static int __maybe_unused cdns_spi_suspend(struct device *dev)
++{
++	struct platform_device *pdev = container_of(dev,
++			struct platform_device, dev);
++	struct spi_master *master = platform_get_drvdata(pdev);
++	struct cdns_spi *xspi = spi_master_get_devdata(master);
++	u32 ctrl_reg;
++
++	cdns_spi_write(xspi->regs + CDNS_SPI_IDR_OFFSET,
++		       CDNS_SPI_IXR_DEFAULT_MASK);
++	complete(&xspi->done);
++
++	ctrl_reg = cdns_spi_read(xspi->regs + CDNS_SPI_CR_OFFSET);
++	ctrl_reg |= CDNS_SPI_CR_SSCTRL_MASK;
++	cdns_spi_write(xspi->regs + CDNS_SPI_CR_OFFSET, ctrl_reg);
++
++	cdns_spi_write(xspi->regs + CDNS_SPI_ER_OFFSET,
++		       CDNS_SPI_ER_DISABLE_MASK);
++
++	xspi->driver_state = CDNS_SPI_DRIVER_STATE_SUSPEND;
++
++	clk_disable(xspi->ref_clk);
++	clk_disable(xspi->pclk);
++
++	dev_dbg(&pdev->dev, "suspend succeeded\n");
++	return 0;
++}
++
++/**
++ * cdns_spi_resume - Resume method for the SPI driver
++ * @dev:	Address of the platform_device structure
++ *
++ * This function changes the driver state to "ready"
++ *
++ * Return:	0 on success and error value on error
++ */
++static int __maybe_unused cdns_spi_resume(struct device *dev)
++{
++	struct platform_device *pdev = container_of(dev,
++			struct platform_device, dev);
++	struct spi_master *master = platform_get_drvdata(pdev);
++	struct cdns_spi *xspi = spi_master_get_devdata(master);
++	int ret = 0;
++
++	ret = clk_enable(xspi->pclk);
++	if (ret) {
++		dev_err(dev, "Cannot enable APB clock.\n");
++		return ret;
++	}
++
++	ret = clk_enable(xspi->ref_clk);
++	if (ret) {
++		dev_err(dev, "Cannot enable device clock.\n");
++		clk_disable(xspi->pclk);
++		return ret;
++	}
++
++	xspi->driver_state = CDNS_SPI_DRIVER_STATE_READY;
++
++	dev_dbg(&pdev->dev, "resume succeeded\n");
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(cdns_spi_dev_pm_ops, cdns_spi_suspend,
++			 cdns_spi_resume);
++
++/* Work with hotplug and coldplug */
++MODULE_ALIAS("platform:" CDNS_SPI_NAME);
++
++static struct of_device_id cdns_spi_of_match[] = {
++	{ .compatible = "cdns,spi-r1p6" },
++	{ /* end of table */ }
++};
++MODULE_DEVICE_TABLE(of, cdns_spi_of_match);
++
++/* cdns_spi_driver - This structure defines the SPI subsystem platform driver */
++static struct platform_driver cdns_spi_driver = {
++	.probe	= cdns_spi_probe,
++	.remove	= cdns_spi_remove,
++	.driver = {
++		.name = CDNS_SPI_NAME,
++		.owner = THIS_MODULE,
++		.of_match_table = cdns_spi_of_match,
++		.pm = &cdns_spi_dev_pm_ops,
++	},
++};
++
++module_platform_driver(cdns_spi_driver);
++
++MODULE_AUTHOR("Xilinx, Inc.");
++MODULE_DESCRIPTION("Cadence SPI driver");
++MODULE_LICENSE("GPL");
 -- 
-1.7.10.4
+1.7.9.5
 
