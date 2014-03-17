@@ -1,68 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379AbaCQDzW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 23:55:22 -0400
-Received: from ozlabs.org ([203.10.76.45]:34835 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932221AbaCQDzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 23:55:20 -0400
-Date: Mon, 17 Mar 2014 14:55:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>
-Subject: linux-next: manual merge of the block tree with Linus' tree
-Message-Id: <20140317145509.41f0042e7ef1db504d9bb62e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Mar_2014_14_55_09_+1100_hOe1PspIr95JFG5f"
+	id S1750941AbaCQEJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 00:09:33 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:46424 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaCQEJc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 00:09:32 -0400
+Message-ID: <5326750E.1000004@huawei.com>
+Date: Mon, 17 Mar 2014 12:07:42 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: [PATCH v2 1/3] kmemleak: allow freeing internal objects after kmemleak
+ was disabled
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Mar_2014_14_55_09_+1100_hOe1PspIr95JFG5f
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Currently if kmemleak is disabled, the kmemleak objects can never be freed,
+no matter if it's disabled by a user or due to fatal errors.
 
-Hi Jens,
+Those objects can be a big waste of memory.
 
-Today's linux-next merge of the block tree got a conflict in
-fs/bio-integrity.c between commit eec70897d81b ("bio-integrity: Drop
-bio_integrity_verify BUG_ON in post bip->bip_iter world") from Linus'
-tree and commit bf36f9cfa6d3 ("fs/bio-integrity: remove duplicate code")
-from the block tree.
+  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+1200264 1197433  99%    0.30K  46164       26    369312K kmemleak_object
 
-I fixed it up (by using the latter - however, I am not sure that this is
-completely correct as the BUG_ON more or less returns?) and can carry the
-fix as necessary (no action is required).
+With this patch, internal objects will be freed immediately if kmemleak is
+disabled explicitly by a user. If it's disabled due to a kmemleak error,
+The user will be informed, and then he/she can reclaim memory with:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+	# echo off > /sys/kernel/debug/kmemleak
 
---Signature=_Mon__17_Mar_2014_14_55_09_+1100_hOe1PspIr95JFG5f
-Content-Type: application/pgp-signature
+v2: use "off" handler instead of "clear" handler to do this, suggested
+    by Catalin.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ Documentation/kmemleak.txt | 14 +++++++++++++-
+ mm/kmemleak.c              | 21 ++++++++++++++++-----
+ 2 files changed, 29 insertions(+), 6 deletions(-)
 
-iQIcBAEBCAAGBQJTJnIhAAoJEMDTa8Ir7ZwVcUQP/3zKpKZmlobBzCmTlZPNQvAL
-M6+8AdWyAWtWGPoOMuK7EKbWq6FmpMs8J1HJJ0Eh4KQMROp75aYO6A3ELJlkh2wP
-3HUSnrQ4GXjcRm5KLwziDRjA8oymD9y9tkIsaTneWyBHpAVmOphPwPBA9dWOmMgH
-dS4w3C+3dWIcuXx/7DHNeYAGsC6XqwD8eYCB0sP1FVqa5MPoxq273HYyg4eYdGNG
-W8353adoNvOkz0VUD5MdcoLPN8Plak+7fTy0rEhZuJ4OndKXTPWakqpKU3e8c9+X
-b4FZ/+SYZI4t/F9xzmSZ11sI6YAyTzcgWlkyCCD8261E2mXL9G6uldQgjxwCn5hj
-ItcQp1Jdr3x7BKHqo/grFJLTrvEnxeTrZPv4lUCe5vqea4nMio3YdxAsLEr2xjAV
-Gw5fqGL0TLNETh7PKmelzLX2dh3qDk7p+mY9vK+5WdHyNpXYuvy8fXwnNjVH3Ixn
-Zjcp1jWAWuwSh0qliCm2ViJcVUfVSmYaRxca/yZnmNJAj6SBXDtSlWyM17Trgc+E
-3Q0tOwZvjcbORGXGikQYBgVCn8ArcwADOkXmhz90+Z4snlSgVNtopbSMqStuqnQX
-HmZS1tPVr37HuKtOw6SbkHfuePN45HAr6mCaNEfT1fbLEaELWF8nZTGL5wuULKvm
-ts3mYWH2NC1hLvhwA73E
-=fHDk
------END PGP SIGNATURE-----
+diff --git a/Documentation/kmemleak.txt b/Documentation/kmemleak.txt
+index 6dc8013..00aa013 100644
+--- a/Documentation/kmemleak.txt
++++ b/Documentation/kmemleak.txt
+@@ -42,7 +42,8 @@ objects to be reported as orphan.
+ Memory scanning parameters can be modified at run-time by writing to the
+ /sys/kernel/debug/kmemleak file. The following parameters are supported:
+ 
+-  off		- disable kmemleak (irreversible)
++  off		- disable kmemleak, or free all kmemleak objects if kmemleak
++		  has been disabled due to fatal errors. (irreversible).
+   stack=on	- enable the task stacks scanning (default)
+   stack=off	- disable the tasks stacks scanning
+   scan=on	- start the automatic memory scanning thread (default)
+@@ -118,6 +119,17 @@ Then as usual to get your report with:
+ 
+   # cat /sys/kernel/debug/kmemleak
+ 
++Freeing kmemleak internal objects
++---------------------------------
++
++To allow access to previously found memory leaks even when an error fatal
++to kmemleak happens, internal kmemleak objects won't be freed in this case.
++Those objects may occupy a large part of physical memory.
++
++You can reclaim memory from those objects with:
++
++  # echo off > /sys/kernel/debug/kmemleak
++
+ Kmemleak API
+ ------------
+ 
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 31f01c5..7fc030e 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -1616,9 +1616,6 @@ static ssize_t kmemleak_write(struct file *file, const char __user *user_buf,
+ 	int buf_size;
+ 	int ret;
+ 
+-	if (!atomic_read(&kmemleak_enabled))
+-		return -EBUSY;
+-
+ 	buf_size = min(size, (sizeof(buf) - 1));
+ 	if (strncpy_from_user(buf, user_buf, buf_size) < 0)
+ 		return -EFAULT;
+@@ -1628,9 +1625,18 @@ static ssize_t kmemleak_write(struct file *file, const char __user *user_buf,
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (strncmp(buf, "off", 3) == 0)
++	if (strncmp(buf, "off", 3) == 0) {
++		stop_scan_thread();
+ 		kmemleak_disable();
+-	else if (strncmp(buf, "stack=on", 8) == 0)
++		goto out;
++	}
++
++	if (!atomic_read(&kmemleak_enabled)) {
++		ret = -EBUSY;
++		goto out;
++	}
++
++	if (strncmp(buf, "stack=on", 8) == 0)
+ 		kmemleak_stack_scan = 1;
+ 	else if (strncmp(buf, "stack=off", 9) == 0)
+ 		kmemleak_stack_scan = 0;
+@@ -1695,6 +1701,11 @@ static void kmemleak_do_cleanup(struct work_struct *work)
+ 		list_for_each_entry_rcu(object, &object_list, object_list)
+ 			delete_object_full(object->pointer);
+ 		rcu_read_unlock();
++	} else {
++		pr_info("Disable kmemleak without freeing internal objects, "
++			"so you may still check information on memory leak. "
++			"You may reclaim memory by writing \"off\" to "
++			"/sys/kernel/debug/kmemleak\n");
+ 	}
+ 	mutex_unlock(&scan_mutex);
+ }
+-- 
+1.8.0.2
 
---Signature=_Mon__17_Mar_2014_14_55_09_+1100_hOe1PspIr95JFG5f--
