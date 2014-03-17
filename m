@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaCQVUX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 17:20:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43301 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaCQVUW (ORCPT
+	id S1752315AbaCQVVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 17:21:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48385 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226AbaCQVVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 17:20:22 -0400
-Date: Mon, 17 Mar 2014 17:20:19 -0400 (EDT)
-Message-Id: <20140317.172019.167960066441598788.davem@davemloft.net>
-To: peter.senna@gmail.com
-Cc: jcliburn@gmail.com, chris.snook@gmail.com, johannes@sipsolutions.net,
-        jg1.han@samsung.com, wangyijing@huawei.com, linux@hahnjo.de,
-        sd@queasysnail.net, hahnjo@hahnjo.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH V2] ATHEROS-ALX: Use dma_set_mask_and_coherent and fix
- a bug
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394926252-2269-1-git-send-email-peter.senna@gmail.com>
-References: <1394926252-2269-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 17 Mar 2014 14:20:21 -0700 (PDT)
+	Mon, 17 Mar 2014 17:21:13 -0400
+Date: Mon, 17 Mar 2014 14:23:14 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: nandu.hgowda@gmail.com, devel@driverdev.osuosl.org, shaun@xresource.ca,
+        sachin.kamat@linaro.org, gang.chen@asianux.com,
+        linux-kernel@vger.kernel.org, dulshani.gunawardhana89@gmail.com,
+        himangi774@gmail.com, ying.xue@windriver.com, davem@davemloft.net
+Subject: Re: [PATCH 1/2] staging: cxtie1: remove unneeded mkret() calls
+Message-ID: <20140317212314.GA3112@kroah.com>
+References: <1858518.8JZ4tELMNS@daeseok-laptop.cloud.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1858518.8JZ4tELMNS@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-Date: Sun, 16 Mar 2014 00:30:52 +0100
-
->  1. For the 64 bits dma mask use dma_set_mask_and_coherent instead of
->  dma_set_mask and dma_set_coherent_mask.
+On Mon, Mar 10, 2014 at 08:54:18AM +0900, Daeseok Youn wrote:
 > 
->  2. For the 32 bits dma mask dma_set_coherent_mask is only called if
->  dma_set_mask fails, which is unusual. Assuming this as a bug, fixes
->  it by replacing calls to dma_set_mask and dma_set_coherent_mask by a
->  call to dma_set_mask_and_coherent.
->  
->  Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> The mkret() change a value of error from positive to
+> negative. This patch is modified to return negative value
+> when it failed. It doesn't need to call with function
+> for changing from positive to negative.
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/staging/cxt1e1/linux.c     |   72 +++++++++++++----------------------
+>  drivers/staging/cxt1e1/musycc.c    |    2 +-
+>  drivers/staging/cxt1e1/pmcc4_drv.c |   40 ++++++++++----------
+>  3 files changed, 48 insertions(+), 66 deletions(-)
 
-Applied, thanks.
+This patch no longer applies to my tree, can you refresh it and resend?
