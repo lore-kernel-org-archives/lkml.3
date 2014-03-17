@@ -1,105 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaCQTnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 15:43:12 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:32971 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaCQTnA (ORCPT
+	id S1750960AbaCQTsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 15:48:08 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:36000 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaCQTsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 15:43:00 -0400
-From: David Herrmann <dh.herrmann@gmail.com>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, Tom Gundersen <teg@jklm.no>,
-        Johannes berg <johannes@sipsolutions.net>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH v4 2/4] mac80211: set NET_NAME_USER for user-space created ifs
-Date: Mon, 17 Mar 2014 20:42:36 +0100
-Message-Id: <1395085358-1171-3-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1395085358-1171-1-git-send-email-dh.herrmann@gmail.com>
-References: <1395085358-1171-1-git-send-email-dh.herrmann@gmail.com>
+	Mon, 17 Mar 2014 15:48:05 -0400
+MIME-Version: 1.0
+X-Originating-IP: [85.250.70.16]
+In-Reply-To: <532748B7.1080606@ti.com>
+References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
+ <52F9282B.5000702@ti.com> <530B8C00.8020001@ti.com> <CAK=WgbZp_RQPCeZJyMRkNTQxaJsnGZ3DnjhSkYYR_-PAE_Kp4g@mail.gmail.com>
+ <53239789.40600@ti.com> <CAK=WgbZCzA7JovSxnysHCQRZZWc3Z2j3AS8ekpM9fOZ160rmCA@mail.gmail.com>
+ <532748B7.1080606@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 17 Mar 2014 21:47:42 +0200
+Message-ID: <CAK=WgbYjtw+cxy5wX6pjK=Rpj6wOk6Cu+GrPuFN+sqtgDAY=_Q@mail.gmail.com>
+Subject: Re: [PATCHv4 0/7] omap hwspinlock dt support
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The nl80211 interface allows creating new netdevs from user-space. The
-name is *always* provided by user-space, so we should set NET_NAME_USER to
-provide that information via sysfs. But we must not set it for the default
-wlan%d names as these are kernel-provided names.
+Hi Suman,
 
-This allows udev to not rename dynamically created wifi devices (like wifi
-P2P devices).
+On Mon, Mar 17, 2014 at 9:10 PM, Suman Anna <s-anna@ti.com> wrote:
+> base_id would be a property (if added) of the hwspinlock controller node,
+> and from DT perspective, we will be using the phandle for the controller
+> anyway. So, using a base_id+specifier seems redundant, as the specifier is
+> already w.r.t a hwspinlock controller node.  It is best to leave the base_id
+> out, just use the specifier. This is pretty much the standard practice
+> (GPIOs, DMAs, etc all follow this).
 
-Cc: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Acked-by: Tom Gundersen <teg@jklm.no>
----
- net/mac80211/cfg.c         | 2 +-
- net/mac80211/ieee80211_i.h | 1 +
- net/mac80211/iface.c       | 2 ++
- net/mac80211/main.c        | 2 +-
- 4 files changed, 5 insertions(+), 2 deletions(-)
+Do you mean hwspin_lock_get_id() will return just the specifier
+instead of base_id+specifier? This is problematic, because Linux will
+not be able to communicate this lock id outside to a different core
+running a different OS: that OS will have no idea what hwlock
+controller this is relative to.
 
-diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
-index 1acb291..34f10fe 100644
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -31,7 +31,7 @@ static struct wireless_dev *ieee80211_add_iface(struct wiphy *wiphy,
- 	struct ieee80211_sub_if_data *sdata;
- 	int err;
- 
--	err = ieee80211_if_add(local, name, &wdev, type, params);
-+	err = ieee80211_if_add(local, name, NET_NAME_USER, &wdev, type, params);
- 	if (err)
- 		return ERR_PTR(err);
- 
-diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
-index 0d1a0f8..96f453a 100644
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -1469,6 +1469,7 @@ int ieee80211_channel_switch(struct wiphy *wiphy, struct net_device *dev,
- int ieee80211_iface_init(void);
- void ieee80211_iface_exit(void);
- int ieee80211_if_add(struct ieee80211_local *local, const char *name,
-+		     unsigned char name_assign_type,
- 		     struct wireless_dev **new_wdev, enum nl80211_iftype type,
- 		     struct vif_params *params);
- int ieee80211_if_change_type(struct ieee80211_sub_if_data *sdata,
-diff --git a/net/mac80211/iface.c b/net/mac80211/iface.c
-index b8d331e..fe84853 100644
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -1574,6 +1574,7 @@ static void ieee80211_assign_perm_addr(struct ieee80211_local *local,
- }
- 
- int ieee80211_if_add(struct ieee80211_local *local, const char *name,
-+		     unsigned char name_assign_type,
- 		     struct wireless_dev **new_wdev, enum nl80211_iftype type,
- 		     struct vif_params *params)
- {
-@@ -1617,6 +1618,7 @@ int ieee80211_if_add(struct ieee80211_local *local, const char *name,
- 					+ IEEE80211_ENCRYPT_HEADROOM;
- 		ndev->needed_tailroom = IEEE80211_ENCRYPT_TAILROOM;
- 
-+		ndev->name_assign_type = name_assign_type;
- 		ret = dev_alloc_name(ndev, ndev->name);
- 		if (ret < 0) {
- 			free_netdev(ndev);
-diff --git a/net/mac80211/main.c b/net/mac80211/main.c
-index b055f6a5..ee32a83 100644
---- a/net/mac80211/main.c
-+++ b/net/mac80211/main.c
-@@ -1012,7 +1012,7 @@ int ieee80211_register_hw(struct ieee80211_hw *hw)
- 
- 	/* add one default STA interface if supported */
- 	if (local->hw.wiphy->interface_modes & BIT(NL80211_IFTYPE_STATION)) {
--		result = ieee80211_if_add(local, "wlan%d", NULL,
-+		result = ieee80211_if_add(local, "wlan%d", NET_NAME_ENUM, NULL,
- 					  NL80211_IFTYPE_STATION, NULL);
- 		if (result)
- 			wiphy_warn(local->hw.wiphy,
--- 
-1.9.0
+> Please see the comments from Mark regarding the same on an earlier version.
 
+I think I understand and agree with Mark generally, but in this case,
+the hwlock id is not an implementation detail. Unlike GPIOs/DMAs, this
+id number is global and system-wide (Linux is just one component in
+the system, and must use the same predefined id numbers all other
+cores use, otherwise it will be impossible to use those hwlocks for
+multi-core synchronization).
+
+> Yes, I agree this is an issue if we have to have the base_ids fixed per
+> controller.
+
+Do you see any other way this could work if the base_ids were not
+predefined? Linux and some other core running a different OS must
+agree on the id numbers of the hardware locks we have in the system.
+
+>> Before DT came along, early board code could have reserved specific
+>> hwspinlocks if needed. Now with DT, we should add the list of reserved
+>> locks to the controller node, in order to prevent them from being
+>> dynamically allocated by others.
+>
+>
+> But that strictly relied on the order of requests without any core changes
+> in the hwspinlock core, right.
+
+I don't think so, you could request a specific lock by id number.
+
+> With DT, the early board code is much simplified. Looking at the same
+> scenario from DT case, it seems kinda redundant to specify a set of reserved
+> locks both in the controller node, as well as the respective client drivers,
+> as there is almost no platform data with DT. The only use case for DT client
+> nodes would be for requesting specific locks. I agree with the problem you
+> described, and I think it will require a different set of changes to the
+> core.
+
+Exactly. The platform-specific hwspinlock driver will have to inform
+the core, upon registration, which of the locks are already reserved.
+In turn, the core will never provide them to clients that dynamically
+allocate an hwlock: they will be provided only to clients that ask for
+them specifically (using phandle+specifier).
+
+Thanks,
+Ohad.
