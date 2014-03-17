@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169AbaCQWXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 18:23:04 -0400
-Received: from www84.your-server.de ([213.133.104.84]:38863 "EHLO
+	id S1753148AbaCQWXD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 18:23:03 -0400
+Received: from www84.your-server.de ([213.133.104.84]:38861 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023AbaCQWWz (ORCPT
+	with ESMTP id S1753019AbaCQWWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 18:22:55 -0400
+	Mon, 17 Mar 2014 18:22:54 -0400
 From: Stefani Seibold <stefani@seibold.net>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
@@ -15,94 +15,150 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         andriy.shevchenko@linux.intel.com
 Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
         Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v23 02/13] mm: Add new func _install_special_mapping() to mmap.c
-Date: Mon, 17 Mar 2014 23:22:02 +0100
-Message-Id: <1395094933-14252-3-git-send-email-stefani@seibold.net>
+Subject: [PATCH v23 00/13] x86: Add x86 32 bit VDSO time function support
+Date: Mon, 17 Mar 2014 23:22:00 +0100
+Message-Id: <1395094933-14252-1-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1395094933-14252-1-git-send-email-stefani@seibold.net>
-References: <1395094933-14252-1-git-send-email-stefani@seibold.net>
 X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The _install_special_mapping() is the new base function for
-install_special_mapping(). This function will return a pointer of the
-created VMA or a error code in an ERR_PTR()
+This patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
+and vdso_time() to the x86 32 bit VDSO.
 
-This new function will be needed by the for the vdso 32 bit support to map the
-additonal vvar and hpet pages into the 32 bit address space. This will be done
-with io_remap_pfn_range() and remap_pfn_range, which requieres a vm_area_struct.
+The reason to do this was to get a fast reliable time stamp. Many developers
+uses TSC to get a fast time stamp, without knowing the pitfalls. VDSO
+time functions a fast and a reliable way, because the kernel knows the
+best time source and the P- and C-state of the CPU.
 
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- include/linux/mm.h |  3 +++
- mm/mmap.c          | 20 ++++++++++++++++----
- 2 files changed, 19 insertions(+), 4 deletions(-)
+The helper library to use the VDSO functions can be download at
+http://http://seibold.net/vdso.c
+The libary is very small, only 228 lines of code. Compile it with
+gcc -Wall -O3 -fpic vdso.c -lrt -shared -o libvdso.so
+and use it with LD_PRELOAD=<path>/libvdso.so
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index c1b7414..6c7fedf 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1750,6 +1750,9 @@ extern void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file);
- extern struct file *get_mm_exe_file(struct mm_struct *mm);
- 
- extern int may_expand_vm(struct mm_struct *mm, unsigned long npages);
-+extern struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
-+				   unsigned long addr, unsigned long len,
-+				   unsigned long flags, struct page **pages);
- extern int install_special_mapping(struct mm_struct *mm,
- 				   unsigned long addr, unsigned long len,
- 				   unsigned long flags, struct page **pages);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 20ff0c3..81ba54f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2918,7 +2918,7 @@ static const struct vm_operations_struct special_mapping_vmops = {
-  * The array pointer and the pages it points to are assumed to stay alive
-  * for as long as this mapping might exist.
-  */
--int install_special_mapping(struct mm_struct *mm,
-+struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
- 			    unsigned long addr, unsigned long len,
- 			    unsigned long vm_flags, struct page **pages)
- {
-@@ -2927,7 +2927,7 @@ int install_special_mapping(struct mm_struct *mm,
- 
- 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
- 	if (unlikely(vma == NULL))
--		return -ENOMEM;
-+		return ERR_PTR(-ENOMEM);
- 
- 	INIT_LIST_HEAD(&vma->anon_vma_chain);
- 	vma->vm_mm = mm;
-@@ -2948,11 +2948,23 @@ int install_special_mapping(struct mm_struct *mm,
- 
- 	perf_event_mmap(vma);
- 
--	return 0;
-+	return vma;
- 
- out:
- 	kmem_cache_free(vm_area_cachep, vma);
--	return ret;
-+	return ERR_PTR(ret);
-+}
-+
-+int install_special_mapping(struct mm_struct *mm,
-+			    unsigned long addr, unsigned long len,
-+			    unsigned long vm_flags, struct page **pages)
-+{
-+	struct vm_area_struct *vma = _install_special_mapping(mm,
-+			    addr, len, vm_flags, pages);
-+
-+	if (IS_ERR(vma))
-+		return PTR_ERR(vma);
-+	return 0;
- }
- 
- static DEFINE_MUTEX(mm_all_locks_mutex);
--- 
-1.9.0
+There is also a patch http://seibold.net/glibc.patch for glibc 2.19 which also
+works for glibc 2.18.  This patch must be integrated into glibc.
 
+Some linux 32 bit kernel benchmark results (all measurements are in nano
+seconds):
+
+Intel(R) Celeron(TM) CPU 400MHz
+
+Average time kernel call:
+ gettimeofday(): 1039
+ clock_gettime(): 1578
+ time(): 526
+Average time VDSO call:
+ gettimeofday(): 378
+ clock_gettime(): 303
+ time(): 60
+
+Celeron(R) Dual-Core CPU T3100 1.90GHz
+
+Average time kernel call:
+ gettimeofday(): 209
+ clock_gettime(): 406
+ time(): 135
+Average time VDSO call:
+ gettimeofday(): 51
+ clock_gettime(): 43
+ time(): 10
+
+So you can see a performance increase between 4 and 13, depending on the
+CPU and the function.
+
+The IA32 Emulation uses the whole 4 GB address space, so there is no
+fixed address available.
+
+The VDSO for a 32 bit application has now three pages:
+
+^ Higher Address
+|
++----------------------------------------+
++ VDSO page (includes code) ro+x         +
++----------------------------------------+
++ VVAR page (export kernel variables) ro +
++----------------------------------------+
++ HPET page (mapped registers) ro 
++----------------------------------------+
+|
+^ Lower Address
+
+The VDSO page for a 32 bit resided still on 0xffffe000, the the VVAR and
+HPET page are mapped before.
+
+In the non compat mode the VMA of the VDSO is now 3 pages for a 32 bit kernel.
+So this decrease the available logical address room by 2 pages.
+
+The patch is against tip x86/vdso (1f2cbcf648962cdcf511d234cb39745baa9f5d07)
+
+Changelog:
+25.11.2012 - first release and proof of concept for linux 3.4
+11.12.2012 - Port to linux 3.7 and code cleanup
+12.12.2012 - fixes suggested by Andy Lutomirski
+           - fixes suggested by John Stultz
+           - use call VDSO32_vsyscall instead of int 80
+           - code cleanup
+17.12.2012 - support for IA32_EMULATION, this includes
+             - code cleanup
+             - include cleanup to fix compile warnings and errors
+             - move out seqcount from seqlock, enable use in VDSO
+             - map FIXMAP and HPET into the 32 bit address space
+18.12.2012 - split into separate patches
+30.01.2014 - revamp the code
+             - code clean up
+             - VDSO layout changed
+             - no fixed addresses
+             - port to 3.14
+01.02.2014 - code cleanup
+02.02.2014 - code cleanup
+             - split into more patches
+             - use HPET_COUNTER instead of hard coded value
+             - fix changelog to the right year ;-)
+02.02.2014 - reverse the mapping, this make the new VDSO 32 bit support
+             full compatible.
+03.02.2014 - code cleanup
+             - fix comment
+             - fix ABI break in vdso32.lds.S
+04.02.2014 - revamp IA32 emulation support
+             - introduce VVAR macro
+             - rearranged vsyscall_gtod_data struture for IA32 emulation support
+             - code cleanup
+05.02.2014 - revamp IA32 emulation support
+             - replace seqcount_t by an unsigned, to make the vsyscall_gtod_data
+               structure independed of kernel config and functions.
+08.02.2014 - revamp IA32 emulation support
+             - replace all internal structures by fix size elements
+10.02.2014 - code cleanup
+             - add commets
+             - revamp inline assembly
+12.02.2014 - add conditional fixmap of vvar and hpet pages for 32 bit kernel
+14.02.2014 - fix CONFIG_PARAVIRT_CLOCK, which is not supported in 32 bit VDSO
+15.02.2014 - fix tsc
+             code cleanup
+             tested make ARCH=i386 allyesconfig and make allyesconfig
+16.02.2014 - code cleanup
+             - fix all C=1 warnings, also some one not introduced by this patch
+             - hack to fix C=1 32 bit VDSO spinlock for a 64 bit kernel
+             - fix VDSO Makefile for newer gcc
+             tested for gcc 4.3.4 and 4.8.1
+             tested ARCH=i386 allyesconfig, defconfig and allmodconfig
+             tested X86_64 allyesconfig, defconfig and allmodconfig
+17.02.2014 - In case of a 32 bit VDSO for a 64 bit kernel fake a 32 bit kernel
+             configuration.
+19.02.2014 - Add missing #undef and #define to fake proper 32 bit kernel config
+             Add a missing #ifdef CONFIG_HPET_TIMER
+             tested again ARCH=i386 allyesconfig, defconfig and allmodconfig
+             tested again ARCH=X86_64 allyesconfig, defconfig and allmodconfig
+02.03.2014 - Add fixes suggested by Andy Lutomirski
+             - Patch alternatives in the 32 bit VDSO
+	     - Use the default ABI for the 32 bit VDSO
+	     - Inline the CLOCK MONOTONIC VDSO code
+	     - Zero pad the VVAR page
+	     - fix "patch alternatives" compile for 32 bit kernel
+03.03.2014 - Add glibc.patch http://seibold.net/glibc.patch
+             Add reviewed-by tags
+17.03.2014 - Rebase on tip x86/vdso 1f2cbcf648962cdcf511d234cb39745baa9f5d07
+             remove fixmap and compat mode dependencies
