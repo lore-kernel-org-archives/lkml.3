@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaCQVra (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 17:47:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17397 "EHLO mx1.redhat.com"
+	id S1752374AbaCQVtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 17:49:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64112 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308AbaCQVr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 17:47:29 -0400
-Date: Mon, 17 Mar 2014 16:00:40 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        agk@redhat.com
-Subject: Re: [patch v3]DM: dm-insitu-comp: a compressed DM target for SSD
-Message-ID: <20140317200039.GC3269@redhat.com>
-References: <20140218101304.GA24889@kernel.org>
- <20140307075733.GB21790@kernel.org>
- <20140310135256.GA28665@redhat.com>
- <20140314094008.GA2386@kernel.org>
- <20140314224444.GA18027@redhat.com>
- <20140317095653.GA1014@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140317095653.GA1014@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750706AbaCQVta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 17:49:30 -0400
+From: Mark Salter <msalter@redhat.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Mark Salter <msalter@redhat.com>
+Subject: [PATCH] sched: use zalloc_cpumask_var for rootdomain cpumasks
+Date: Mon, 17 Mar 2014 17:48:35 -0400
+Message-Id: <1395092915-26526-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17 2014 at  5:56am -0400,
-Shaohua Li <shli@kernel.org> wrote:
+In kernel/sched/core.c, there is:
 
-> On Fri, Mar 14, 2014 at 06:44:45PM -0400, Mike Snitzer wrote:
-> > On Fri, Mar 14 2014 at  5:40am -0400,
-> > Shaohua Li <shli@kernel.org> wrote:
-> > 
-> > > On Mon, Mar 10, 2014 at 09:52:56AM -0400, Mike Snitzer wrote:
-> > > > On Fri, Mar 07 2014 at  2:57am -0500,
-> > > > Shaohua Li <shli@kernel.org> wrote:
-> > > > 
-> > > > > ping!
-> > > > 
-> > > > Hi,
-> > > > 
-> > > > I intend to get dm-insitu-comp reviewed for 3.15.  Sorry I haven't
-> > > > gotten back with you before now, been busy tending to 3.14-rc issues.
-> > > > 
-> > > > I took a quick first pass over your code a couple weeks ago.  Looks to
-> > > > be in great shape relative to coding conventions and the more DM
-> > > > specific conventions.  Clearly demonstrates you have a good command of
-> > > > DM concepts and quirks.
-> > 
-> > Think I need to eat my words from above at least partially.  Given you
-> > haven't implemented any of the target suspend or resume hooks this
-> > target will _not_ work properly across suspend + resume cycles that all
-> > DM targets must support.
-> > 
-> > But we can obviously work through it with urgency for 3.15.
-> > 
-> > I've pulled your v3 patch into git and have overlayed edits from my
-> > first pass.  Lots of funky wrapping to conform to 80 columns.  But
-> > whitespace aside, I've added FIXME:s in the relevant files.  If you work
-> > on any of these FIXMEs please send follow-up patches so that we don't
-> > step on each others' toes.
-> > 
-> > Please see the 'for-3.15-insitu-comp' branch of this git repo:
-> > git://git.kernel.org/pub/scm/linux/kernel/git/snitzer/linux.git
-> 
-> Thanks for your to look at it. I fixed them against your tree. Please check below patch.
+static int init_rootdomain(struct root_domain *rd)
+{
+	memset(rd, 0, sizeof(*rd));
 
-I folded your changes in, and then committed a patch ontop that cleans
-some code up.  But added 2 FIXMEs that still speak to pretty fundamental
-problems with the architecture of the dm-insitu-comp target, see:
-https://git.kernel.org/cgit/linux/kernel/git/snitzer/linux.git/commit/?h=for-3.15-insitu-comp&id=8565ab6b04837591d03c94851c2f9f9162ce12f4
+	if (!alloc_cpumask_var(&rd->span, GFP_KERNEL))
+		goto out;
+	if (!alloc_cpumask_var(&rd->online, GFP_KERNEL))
+		goto free_span;
+	if (!alloc_cpumask_var(&rd->dlo_mask, GFP_KERNEL))
+		goto free_online;
+	if (!alloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
+		goto free_dlo_mask;
 
-Unfortunately the single insitu_comp_wq workqueue that all insitu-comp
-targets are to share isn't a workable solution.  Each target needs to
-have resource isolation from other targets (imagine insitu-comp used for
-multiple SSDs).  This is important for suspend too because you'll need
-to flush/stop the workqueue.
+In the CONFIG_CPUMASK_OFFSTACK=y case, there doesn't appear to be anything
+clearing the cpumasks. I think these should be zalloc_cpumask_var() calls.
 
-You introduced a state machine for tracking suspending, suspended,
-resumed.  This really isn't necessary.  During suspend you need to
-flush_workqueue().  On resume you shouldn't need to do anything special.
+I noticed this while debugging a memory corruptor in unrelated code which
+cleared the span cpumask and triggered a BUG in the scheduler. I had turned
+on CONFIG_PAGE_POISONING and looking at the span cpumask at various points
+during early boot and saw that the mask was filled with POISON_FREE bytes
+before the secondary cores started coming up and setting their cpu bits in
+the mask.
 
-As I noted in the commit, the thin and cache targets can serve as
-references for how you can manage the workqueue across suspend/resume
-and the lifetime of these workqueues relative to .ctr and .dtr.
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+ kernel/sched/core.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index f5c6635..9843755 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5355,13 +5355,13 @@ static int init_rootdomain(struct root_domain *rd)
+ {
+ 	memset(rd, 0, sizeof(*rd));
+ 
+-	if (!alloc_cpumask_var(&rd->span, GFP_KERNEL))
++	if (!zalloc_cpumask_var(&rd->span, GFP_KERNEL))
+ 		goto out;
+-	if (!alloc_cpumask_var(&rd->online, GFP_KERNEL))
++	if (!zalloc_cpumask_var(&rd->online, GFP_KERNEL))
+ 		goto free_span;
+-	if (!alloc_cpumask_var(&rd->dlo_mask, GFP_KERNEL))
++	if (!zalloc_cpumask_var(&rd->dlo_mask, GFP_KERNEL))
+ 		goto free_online;
+-	if (!alloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
++	if (!zalloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
+ 		goto free_dlo_mask;
+ 
+ 	init_dl_bw(&rd->dl_bw);
+-- 
+1.8.5.3
+
