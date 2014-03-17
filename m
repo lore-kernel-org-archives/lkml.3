@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaCQWGC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 18:06:02 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:49715 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303AbaCQWF7 (ORCPT
+	id S1752862AbaCQWHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 18:07:55 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:43993 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512AbaCQWHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 18:05:59 -0400
-Date: Mon, 17 Mar 2014 18:05:54 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Greg KH <greg@kroah.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@kernel.org>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20140317220554.GG17373@mtj.dyndns.org>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
- <20140312015021.GC10106@kroah.com>
- <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au>
- <20140317183333.GE10565@kroah.com>
- <1395088410.15098.175.camel@pasglop>
- <20140317215619.GA25228@kroah.com>
+	Mon, 17 Mar 2014 18:07:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140317215619.GA25228@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140316094650.GV21483@n2100.arm.linux.org.uk>
+References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
+	<1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
+	<20140307044251.GD9985@codeaurora.org>
+	<CADHgK6s4K+K+OZuUZVbHKNzbFiHzm82Ss0WpSfkUdQgP+E3j=w@mail.gmail.com>
+	<20140316094650.GV21483@n2100.arm.linux.org.uk>
+Date: Mon, 17 Mar 2014 15:07:51 -0700
+Message-ID: <CADHgK6u7caDEZbt6Kj6VpzwADKytpk1068u_wQFFMvd3r1v1gw@mail.gmail.com>
+Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
+From: Sebastian Capella <sebastian.capella@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Len Brown <len.brown@intel.com>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        "Uwe Kleine-K??nig" <u.kleine-koenig@pengutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Laura Abbott <lauraa@codeaurora.org>, Sricharan R <r.sricharan@ti.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Russ Dill <Russ.Dill@ti.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Thanks Russell!
 
-On Mon, Mar 17, 2014 at 02:56:19PM -0700, Greg KH wrote:
-> > Now regarding the practicals of sorting out our trees, Stephen suggested
-> > that rather than doing anything on my side (heh, I like that !), you
-> > should revert the last patch of the series, the one removing the old
-> > API, in your tree.
-> > 
-> > It can then be re-applied later around rc1.
-> 
-> I'll look to see if we can do that, let me dig it up out of my tree...
+On 16 March 2014 02:46, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> On Mon, Mar 10, 2014 at 11:32:17AM -0700, Sebastian Capella wrote:
+...
+> Let's look at the implementations...
+>
+> #define __pa(x)                 __virt_to_phys((unsigned long)(x))
+> static inline phys_addr_t __virt_to_phys(unsigned long x)
+> {
+>         return (phys_addr_t)x - PAGE_OFFSET + PHYS_OFFSET;
+> }
+>
+> So, __pa() returns a phys_addr_t (which may be either 32-bit or 64-bit).
+>
+> #define virt_to_pfn(kaddr)  (__pa(kaddr) >> PAGE_SHIFT)
+>
+> And that will do an appropriate shift to convert the phys_addr_t to a PFN,
+> which will be fine to assign to an unsigned long variable.
+>
+> #define __phys_to_pfn(paddr)    ((unsigned long)((paddr) >> PAGE_SHIFT))
+>
+> This does the same thing, but has an explicit cast.
+>
+> So, the only difference between the two suggestions is that additional
+> cast, which has no effect here.
 
-I think this is being blown out of proportion.  It was a rarely used
-API and converting to the new one is mostly trivial which can be
-easily done as a merge fix, which is what it is.  Seriously, following
-protocols is beneficial upto certain point but we don't want DMV level
-beaurocracy in handling patches and there's something wrong when the
-first questions for merge conflict in devel branches which comes up
-are not "what's this change and what would it take to resolve it?" but
-those of strict adherences to protocol.
+Sounds good, thanks!
 
-Can we please take a step back and look at what we're doing?  This was
-a change of API which was used very obscure and haven't seen new users
-for years.  It is well within the scope of normal (and efficient)
-patch routing to route it directly without separate staging release.
-It sure developed a conflict but there's nothing wrong to that.  We
-don't even want to try to eliminate all the conflicts.  That'd be a
-lot of extra effort for no actual gain and simply a stupid trade-off.
+I was a little unsure about the page sizes that could affect all of
+the implementations.
 
-This is a merge conflict well with in the scope of what we can expect
-to happen with distributed development and this whole thing works as
-well as it does only because we can make *sensible* trade offs not
-only in code itself but also in how we resolve conflicts among
-different branches.
+I'll make this change and repost, basically using virt_to_pfn in place
+of the previous __pa_symbol, and remove unused declarations.
 
-Thanks.
+Thanks again!
 
--- 
-tejun
+Sebastian
