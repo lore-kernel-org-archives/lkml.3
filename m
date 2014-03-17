@@ -1,93 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570AbaCQJhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 05:37:16 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:43462
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932485AbaCQJhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 05:37:13 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(z579ehz98dI936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1de2h1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25cch25f6h2605h262fh1155h)
-Date: Mon, 17 Mar 2014 17:37:08 +0800
-From: Chenhui Zhao <chenhui.zhao@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>, <Jason.Jin@freescale.com>
-Subject: Re: [PATCH 5/9] powerpc/85xx: disable irq by hardware when suspend
- for 64-bit
-Message-ID: <20140317093708.GA6204@localhost.localdomain>
-References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
- <1394168285-32275-5-git-send-email-chenhui.zhao@freescale.com>
- <1394581880.13761.69.camel@snotra.buserror.net>
- <20140312074610.GD4706@localhost.localdomain>
- <1394836901.12479.125.camel@snotra.buserror.net>
+	id S1756499AbaCQJjl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 05:39:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34824 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751290AbaCQJjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 05:39:40 -0400
+Date: Mon, 17 Mar 2014 10:39:37 +0100
+From: Jan Kara <jack@suse.cz>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/3] vrange: Add purged page detection on setting memory
+ non-volatile
+Message-ID: <20140317093937.GB2210@quack.suse.cz>
+References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
+ <1394822013-23804-3-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394836901.12479.125.camel@snotra.buserror.net>
+In-Reply-To: <1394822013-23804-3-git-send-email-john.stultz@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 05:41:41PM -0500, Scott Wood wrote:
-> On Wed, 2014-03-12 at 15:46 +0800, Chenhui Zhao wrote:
-> > On Tue, Mar 11, 2014 at 06:51:20PM -0500, Scott Wood wrote:
-> > > On Fri, 2014-03-07 at 12:58 +0800, Chenhui Zhao wrote:
-> > > > In 64-bit mode, kernel just clears the irq soft-enable flag
-> > > > in struct paca_struct to disable external irqs. But, in
-> > > > the case of suspend, irqs should be disabled by hardware.
-> > > > Therefore, hook a function to ppc_md.suspend_disable_irqs
-> > > > to really disable irqs.
-> > > > 
-> > > > Signed-off-by: Chenhui Zhao <chenhui.zhao@freescale.com>
-> > > > ---
-> > > >  arch/powerpc/platforms/85xx/corenet_generic.c |   12 ++++++++++++
-> > > >  1 files changed, 12 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/arch/powerpc/platforms/85xx/corenet_generic.c b/arch/powerpc/platforms/85xx/corenet_generic.c
-> > > > index 3fdf9f3..983d81f 100644
-> > > > --- a/arch/powerpc/platforms/85xx/corenet_generic.c
-> > > > +++ b/arch/powerpc/platforms/85xx/corenet_generic.c
-> > > > @@ -32,6 +32,13 @@
-> > > >  #include <sysdev/fsl_pci.h>
-> > > >  #include "smp.h"
-> > > >  
-> > > > +#if defined(CONFIG_PPC64) && defined(CONFIG_SUSPEND)
-> > > > +static void fsl_suspend_disable_irqs(void)
-> > > > +{
-> > > > +	__hard_irq_disable();
-> > > > +}
-> > > > +#endif
-> > > 
-> > > Why the underscore version?  Don't you want PACA_IRQ_HARD_DIS to be set?
-> > > 
-> > > If hard disabling is appropriate here, shouldn't we do it in
-> > > generic_suspend_disable_irqs()?
-> > > 
-> > > Are there any existing platforms that supply a
-> > > ppc_md.suspend_disable_irqs()?  I don't see any when grepping.
-> > > 
-> > > -Scott
-> > 
-> > Will use hard_irq_disable().
-> > 
-> > I think this is a general problem for powerpc.
-> > Should clear MSR_EE before suspend. I agree to put it
-> > in generic_suspend_disable_irqs().
+On Fri 14-03-14 11:33:32, John Stultz wrote:
+> Users of volatile ranges will need to know if memory was discarded.
+> This patch adds the purged state tracking required to inform userland
+> when it marks memory as non-volatile that some memory in that range
+> was purged and needs to be regenerated.
 > 
-> BTW, make sure you test this patchset with CONFIG_DEBUG_PREEMPT and
-> similar debugging options to help ensure that the soft IRQ state is
-> being tracked properly.
+> This simplified implementation which uses some of the logic from
+> Minchan's earlier efforts, so credit to Minchan for his work.
+  Some minor comments below...
+
 > 
-> -Scott
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Robert Love <rlove@google.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Dave Hansen <dave@sr71.net>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Mike Hommey <mh@glandium.org>
+> Cc: Taras Glek <tglek@mozilla.com>
+> Cc: Dhaval Giani <dgiani@mozilla.com>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+> Cc: Michel Lespinasse <walken@google.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  include/linux/swap.h   | 15 +++++++++++--
+>  include/linux/vrange.h | 13 ++++++++++++
+>  mm/vrange.c            | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 83 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index 46ba0c6..18c12f9 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -70,8 +70,19 @@ static inline int current_is_kswapd(void)
+>  #define SWP_HWPOISON_NUM 0
+>  #endif
+>  
+> -#define MAX_SWAPFILES \
+> -	((1 << MAX_SWAPFILES_SHIFT) - SWP_MIGRATION_NUM - SWP_HWPOISON_NUM)
+> +
+> +/*
+> + * Purged volatile range pages
+> + */
+> +#define SWP_VRANGE_PURGED_NUM 1
+> +#define SWP_VRANGE_PURGED (MAX_SWAPFILES + SWP_HWPOISON_NUM + SWP_MIGRATION_NUM)
+> +
+> +
+> +#define MAX_SWAPFILES ((1 << MAX_SWAPFILES_SHIFT)	\
+> +				- SWP_MIGRATION_NUM	\
+> +				- SWP_HWPOISON_NUM	\
+> +				- SWP_VRANGE_PURGED_NUM	\
+> +			)
+>  
+>  /*
+>   * Magic header for a swap area. The first part of the union is
+> diff --git a/include/linux/vrange.h b/include/linux/vrange.h
+> index 652396b..c4a1616 100644
+> --- a/include/linux/vrange.h
+> +++ b/include/linux/vrange.h
+> @@ -1,7 +1,20 @@
+>  #ifndef _LINUX_VRANGE_H
+>  #define _LINUX_VRANGE_H
+>  
+> +#include <linux/swap.h>
+> +#include <linux/swapops.h>
+> +
+>  #define VRANGE_NONVOLATILE 0
+>  #define VRANGE_VOLATILE 1
+>  
+> +static inline swp_entry_t swp_entry_mk_vrange_purged(void)
+> +{
+> +	return swp_entry(SWP_VRANGE_PURGED, 0);
+> +}
+> +
+> +static inline int entry_is_vrange_purged(swp_entry_t entry)
+> +{
+> +	return swp_type(entry) == SWP_VRANGE_PURGED;
+> +}
+> +
+>  #endif /* _LINUX_VRANGE_H */
+> diff --git a/mm/vrange.c b/mm/vrange.c
+> index acb4356..844571b 100644
+> --- a/mm/vrange.c
+> +++ b/mm/vrange.c
+> @@ -8,6 +8,60 @@
+>  #include <linux/mm_inline.h>
+>  #include "internal.h"
+>  
+> +struct vrange_walker {
+> +	struct vm_area_struct *vma;
+> +	int pages_purged;
+  Maybe call this 'was_page_purged'? To better suggest the value is bool
+and not a number of pages... Or make that 'bool' instead of 'int'?
 
-OK. I'll keep that in mind.
+> +};
+> +
+> +static int vrange_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+> +				struct mm_walk *walk)
+> +{
+> +	struct vrange_walker *vw = walk->private;
+> +	pte_t *pte;
+> +	spinlock_t *ptl;
+> +
+> +	if (pmd_trans_huge(*pmd))
+> +		return 0;
+> +	if (pmd_trans_unstable(pmd))
+> +		return 0;
+> +
+> +	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+> +	for (; addr != end; pte++, addr += PAGE_SIZE) {
+> +		if (!pte_present(*pte)) {
+> +			swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
+> +
+> +			if (unlikely(entry_is_vrange_purged(vrange_entry))) {
+> +				vw->pages_purged = 1;
+> +				break;
+> +			}
+> +		}
+> +	}
+> +	pte_unmap_unlock(pte - 1, ptl);
+> +	cond_resched();
+> +
+> +	return 0;
+> +}
+> +
+> +static unsigned long vrange_check_purged(struct mm_struct *mm,
+  What's the point of this function returning ulong when everything else
+expects 'int'?
 
--Chenhui
+> +					 struct vm_area_struct *vma,
+> +					 unsigned long start,
+> +					 unsigned long end)
+> +{
+> +	struct vrange_walker vw;
+> +	struct mm_walk vrange_walk = {
+> +		.pmd_entry = vrange_pte_range,
+> +		.mm = vma->vm_mm,
+> +		.private = &vw,
+> +	};
+> +	vw.pages_purged = 0;
+> +	vw.vma = vma;
+> +
+> +	walk_page_range(start, end, &vrange_walk);
+> +
+> +	return vw.pages_purged;
+> +
+> +}
+> +
+>  static ssize_t do_vrange(struct mm_struct *mm, unsigned long start,
+>  				unsigned long end, int mode, int *purged)
+>  {
+> @@ -57,6 +111,9 @@ static ssize_t do_vrange(struct mm_struct *mm, unsigned long start,
+>  			break;
+>  		case VRANGE_NONVOLATILE:
+>  			new_flags &= ~VM_VOLATILE;
+> +			lpurged |= vrange_check_purged(mm, vma,
+> +							vma->vm_start,
+> +							vma->vm_end);
+  Hum, why don't you actually just call vrange_check_purge() once for the
+whole syscall range? walk_page_range() seems to handle multiple vmas just
+fine...
 
+>  		}
+>  
+>  		pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
+> -- 
+> 1.8.3.2
+> 
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
