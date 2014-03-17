@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475AbaCQROg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 13:14:36 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:1413 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932422AbaCQROf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 13:14:35 -0400
-X-IronPort-AV: E=Sophos;i="4.97,671,1389744000"; 
-   d="scan'208";a="112189694"
-Message-ID: <53272D79.5050605@eu.citrix.com>
-Date: Mon, 17 Mar 2014 17:14:33 +0000
-From: George Dunlap <george.dunlap@eu.citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S932535AbaCQRPD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 13:15:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38401 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932486AbaCQRPB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 13:15:01 -0400
+Date: Mon, 17 Mar 2014 18:14:34 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: mingo@elte.hu, josh@joshtriplett.org, laijs@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: cond_resched() and RCU CPU stall warnings
+Message-ID: <20140317171434.GJ25546@laptop.programming.kicks-ass.net>
+References: <20140316015914.GA22102@linux.vnet.ibm.com>
+ <20140317101300.GA27965@twins.programming.kicks-ass.net>
+ <20140317165806.GG21124@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>, "H. Peter Anvin" <hpa@zytor.com>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Sarah Newman <srn@prgmr.com>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCHv1] x86: don't schedule when handling #NM exception
-References: <1394468273-13676-1-git-send-email-david.vrabel@citrix.com> <531DEB11.2070709@zytor.com> <531DF319.6010800@citrix.com> <53266841.6090308@prgmr.com> <1ebfa80c-4a68-4602-bc98-e5d5f0893998@email.android.com> <CAFLBxZZz4Ot0CgWRHNRaM5zVkpf+QdXveFz_m3aVYnKUd9cAdQ@mail.gmail.com> <5327291D.60009@zytor.com> <532739810200007800124E85@nat28.tlf.novell.com>
-In-Reply-To: <532739810200007800124E85@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140317165806.GG21124@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2014 05:05 PM, Jan Beulich wrote:
->>>> On 17.03.14 at 17:55, "H. Peter Anvin" <hpa@zytor.com> wrote:
->> On 03/17/2014 05:19 AM, George Dunlap wrote:
->>> On Mon, Mar 17, 2014 at 3:33 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>> No, the right thing is to unf*ck the Xen braindamage and use eagerfpu as a
->> workaround for the legacy hypervisor versions.
->>> The interface wasn't an accident.  In the most common case you'll want
->>> to clear the bit anyway. In PV mode clearing it would require an extra
->>> trip up into the hypervisor.  So this saves one trip up into the
->>> hypervisor on every context switch which involves an FPU, at the
->>> expense of not being able to context-switch away when handling the
->>> trap.
->> The interface was a complete faceplant, because it caused failures.
->> You're not infinitely unconstrained since you want to play in the same
->> sandbox as the native architecture, and if you want to have a hope of
->> avoiding these kinds of failures you really need to avoid making random
->> "improvements", certainly not without an explicit guest opt-in (the same
->> we do for the native CPU architecture when adding new features.)
->>
->> So if this interface wasn't an accident it was active negligence and
->> incompetence.
-> I don't think so - while it (as we now see) disallows certain things
-> inside the guest, back at the time when this was designed there was
-> no sign of any sort of allocation/scheduling being done inside the
-> #NM handler. And furthermore, a PV specification is by its nature
-> allowed to define deviations from real hardware behavior, or else it
-> wouldn't be needed in the first place.
+On Mon, Mar 17, 2014 at 09:58:07AM -0700, Paul E. McKenney wrote:
+> @@ -4111,6 +4115,7 @@ int __sched __cond_resched_softirq(void)
+>  {
+>  	BUG_ON(!in_softirq());
+>  
+> +	rcu_cond_resched();
 
-But it's certainly the case that deviating from the hardware in *this* 
-way by default was always very likely to case the exact kind of bug 
-we've seen here.  It is an "interface trap" that was bound to be tripped 
-over (much like Intel's infamous sysret vulnerability).
+Don't you have to enable BHs before doing that? And if not; that needs a
+comment for sure! :-)
 
-Making it opt-in would have been a much better idea.  But the people who 
-made that decision are long gone, and we now need to deal with the 
-situation as we have it.
-
-  -George
+>  	if (should_resched()) {
+>  		local_bh_enable();
+>  		__cond_resched();
+> 
