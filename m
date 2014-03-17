@@ -1,97 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677AbaCQQTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 12:19:36 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54758 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754844AbaCQQTe (ORCPT
+	id S1755277AbaCQQWS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 12:22:18 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:41525 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754641AbaCQQWP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 12:19:34 -0400
-Date: Mon, 17 Mar 2014 16:19:16 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jyri Sarha <jsarha@ti.com>
-Cc: Jean-Francois Moine <moinejf@free.fr>, Xiubo Li <Li.Xiubo@freescale.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Message-ID: <20140317161916.GL11706@sirena.org.uk>
-References: <cover.1394533640.git.moinejf@free.fr>
- <d71a2b62b331302772d35b3cd35c6dc5da1e9e5d.1394533640.git.moinejf@free.fr>
- <5322E4FC.7060605@ti.com>
- <20140314194037.7da888cd@armhf>
- <cbc30d6fcafead46267347269cbabfb7@kapsi.fi>
+	Mon, 17 Mar 2014 12:22:15 -0400
+Date: Mon, 17 Mar 2014 16:22:11 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>
+Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
+Message-ID: <20140317162211.GH6457@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Rob Herring <robherring2@gmail.com>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	Arnd Bergmann <arnd@arndb.de>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Tanmay Inamdar <tinamdar@apm.com>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com>
+ <CAL_Jsq+9X-9VahsP79mtHN0RC64vRA_2R3ucjX0LefO6q2YN3Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qo7zVO9a9OQ5oQtr"
-Content-Disposition: inline
-In-Reply-To: <cbc30d6fcafead46267347269cbabfb7@kapsi.fi>
-X-Cookie: Turn the other cheek.
+In-Reply-To: <CAL_Jsq+9X-9VahsP79mtHN0RC64vRA_2R3ucjX0LefO6q2YN3Q@mail.gmail.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH v2 3/4] ASoC: simple-card: accept many DAI
- links
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-OriginalArrivalTime: 17 Mar 2014 16:22:24.0371 (UTC) FILETIME=[14833C30:01CF41FD]
+X-MC-Unique: 114031716221203301
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 17, 2014 at 04:05:38PM +0000, Rob Herring wrote:
+> On Fri, Mar 14, 2014 at 10:34 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > Use the generic host bridge functions to provide support for
+> > PCI Express on arm64. There is no support for ISA memory.
+> >
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+> > ---
+> >  arch/arm64/Kconfig            |  19 +++-
+> >  arch/arm64/include/asm/Kbuild |   1 +
+> >  arch/arm64/include/asm/io.h   |   3 +-
+> >  arch/arm64/include/asm/pci.h  |  51 ++++++++++
+> >  arch/arm64/kernel/Makefile    |   1 +
+> >  arch/arm64/kernel/pci.c       | 173 ++++++++++++++++++++++++++++++++
+> >  6 files changed, 246 insertions(+), 2 deletions(-)
+> >  create mode 100644 arch/arm64/include/asm/pci.h
+> >  create mode 100644 arch/arm64/kernel/pci.c
+> 
+> [snip]
+> 
+> > +#endif
+> > +
+> > +extern unsigned long pci_ioremap_io(const struct resource *res, phys_addr_t phys_addr);
+> 
+> Can we at least align the function definition across architectures if
+> not the implementation.
 
---qo7zVO9a9OQ5oQtr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The choice of names is unfortunate. We are trying to follow the spirit of the
+arch/arm function, not the implementation, and for RFC that served the purpose.
 
-On Sat, Mar 15, 2014 at 11:14:13AM +0200, Jyri Sarha wrote:
-> On 2014-03-14 20:40, Jean-Francois Moine wrote:
+I'll come up with a better name as I don't intend to share the implementation
+with arch/arm here.
 
-> >So, the actual solution I use is 3 DAI links (= 3 PCMs):
-> >- HDMI via I2S
-> >- HDMI via S/PDIF (no S/PDIF output)
-> >- S/PDIF via S/PDIF (no HDMI output)
+Best regards,
+Liviu
 
-> Maybe a HW specific machine-driver would serve your case better. Of course
-> it would be great to have a generic implementation that can handle this case
-> too, but I am not sure if it should be called a simple-card anymore :).
+> 
+> 
+> > +int pci_register_io_range(phys_addr_t address, resource_size_t size)
+> > +{
+> > +       struct ioresource *res;
+> > +       resource_size_t allocated_size = 0;
+> > +
+> > +       /* find if the range has not been already allocated */
+> > +       list_for_each_entry(res, &io_list, list) {
+> > +               if (address >= res->start &&
+> > +                       address + size <= res->start + size)
+> > +                       return 0;
+> > +               allocated_size += res->size;
+> > +       }
+> > +
+> > +       /* range not already registered, check for space */
+> > +       if (allocated_size + size > IO_SPACE_LIMIT)
+> 
+> I believe this needs to be "allocated_size + size - 1".
+> 
+> > +               return -E2BIG;
+> > +
+> 
 
-I am a bit concerned about that I have to say.
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-> >>You need to update the DT-binding document too when you are changing the
-> >>binding. That way it would also be easier to follow what you are trying
-> >>to accomplish here.
-
-> >Some people want to have 2 different patchs: one for the code and the
-> >other one for the DT change. Some other people like you want only one
-> >patch. Which is the right way?
-
-> I did not mean it should be in the same patch. Part of the same series is
-> fine with me. It is up to maintainer to decide these things anyway. I would
-> just like to compare the document with the implementation.
-
-If the binding is being changed in the code the documentation absolutely
-must be updated as part of the same patch series if it's not already
-been changed previously.  You can have documentation without code but
-not code without documentation.
-
---qo7zVO9a9OQ5oQtr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTJyCBAAoJELSic+t+oim94SgP/3tG55DrJ+yCCxM06NeXkpCq
-UmLoYKzwdLEeH26Pfb8Q4X/ddn9A30uWeKWThSKsXt5LKWRFAu+sea+VzMqKd8Ey
-r4EOYXnrVStMhkJEhVpkb+xIfGuxwtJEMhbVraWpqus3kBXrZr8RocU4914GiE5j
-fu9GZlmTbySlsxbqusywSgdOVqtnZNsuVO85xSeovXLyZsv1I6mrdv9e8XwlrD8u
-2K7/hgbmxLAsw9hw+dVmbtMehusL/bx7ms2av971+nBSfadTgqu+suS7Km7r0UOd
-b1d6EVWUOJYVhoLtjKk3UtqWpOTsZ7bWW6jXGM9ZLhBUhwTumh9sodQGNGUdalu2
-eqpU9lBdwcK4GWvjf3f1S9xlwwGB8WrSNXHOSsHug4tg58CJMHgawO14GedUeOSm
-UxsLtLarpFCzHFMCIsux/kLwKbafaLF1gURJO1F5C5EYGCA+nOjgITwr0Ih13TZ9
-wcToJGs3xMJVH6wUVCym9+YZftYO8CEsWS3gDKGLpQ9utzESIYiKO+LRev2yTTnU
-vYOHdd/4b/672iZSsNBIectxoFSo67JrYGtN8184jFCuEJTMYnuPbPrRzzFILP4P
-rOuBOqP/ic/tACYKjG+QlX0b6rCeVkRn2oNjKtehHBipIFmvnQ9wzJFNkTseFGQl
-sI/Gir9VO271fk7EarRK
-=NakR
------END PGP SIGNATURE-----
-
---qo7zVO9a9OQ5oQtr--
