@@ -1,133 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933163AbaCQNLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:11:09 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:34369 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932927AbaCQNLF (ORCPT
+	id S933089AbaCQNPU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:15:20 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32798 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514AbaCQNPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:11:05 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH 2/2] [RFC] serial_core: Avoid NULL pointer dereference in uart_close()
-Date: Mon, 17 Mar 2014 14:10:59 +0100
-Message-Id: <1395061859-15295-2-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395061859-15295-1-git-send-email-geert@linux-m68k.org>
-References: <1395061859-15295-1-git-send-email-geert@linux-m68k.org>
+	Mon, 17 Mar 2014 09:15:16 -0400
+Date: Mon, 17 Mar 2014 13:14:53 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Harini Katakam <harinik@xilinx.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        michals@xilinx.com
+Message-ID: <20140317131453.GF11706@sirena.org.uk>
+References: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
+ <CAL_JsqKacetGytGUJir7ky3qOgCy-3ny1pT_Bx4eCYV2wMgcTg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nYySOmuH/HDX6pKp"
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqKacetGytGUJir7ky3qOgCy-3ny1pT_Bx4eCYV2wMgcTg@mail.gmail.com>
+X-Cookie: Turn the other cheek.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] SPI: Add driver for Cadence SPI controller
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-When unbinding a serial driver that's being used as a serial console,
-the kernel may crash with a NULL pointer dereference in a uart_*() function
-called from uart_close () (e.g. uart_flush_buffer() or
-uart_chars_in_buffer()).
+--nYySOmuH/HDX6pKp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-To fix this, let uart_close() check for port->count == 0. If this is the
-case, bail out early. Else tty_port_close_start() will make the port
-counts inconsistent, printing out warnings like
+On Mon, Mar 17, 2014 at 07:47:24AM -0500, Rob Herring wrote:
 
-    tty_port_close_start: tty->count = 1 port count = 0.
+Please delete irrelevant context from your replies, it makes it easier
+to find the new content.
 
-and
+> On Mon, Mar 17, 2014 at 7:05 AM, Harini Katakam <harinik@xilinx.com> wrote:
 
-    tty_port_close_start: count = -1
+> > +/* Macros for the SPI controller read/write */
+> > +#define cdns_spi_read(addr)    readl_relaxed(addr)
+> > +#define cdns_spi_write(addr, val)      writel_relaxed((val), (addr))
 
-and once uport == NULL, it will also crash.
+> Just use readl/writel directly.
 
-Also fix the related crash in pr_debug() by checking for a non-NULL uport
-first.
+Or make them static inline structures which take the driver data
+structure and an offset within the register map for the device and do
+the maths to resolve the actual address.
 
-Detailed description:
+> > +static SIMPLE_DEV_PM_OPS(cdns_spi_dev_pm_ops, cdns_spi_suspend,
+> > +                        cdns_spi_resume);
 
-On driver unbind, uart_remove_one_port() is called. Basically it;
-  - marks the port dead,
-  - calls tty_vhangup(),
-  - sets state->uart_port = NULL.
+> > +/* Work with hotplug and coldplug */
+> > +MODULE_ALIAS("platform:" CDNS_SPI_NAME);
 
-What will happen depends on whether the port is just in use by e.g. getty,
-or was also opened as a console.
+> Not sure, but I don't think this should be needed.
 
-A. If the tty was not opened as a console:
+It won't be used by DT systems but it is good practice, especially with
+something like this that clearly is a generic IP which could be used on
+non-DT systems too (it's not like it costs anything meaningful).
 
-  - tty_vhangup() will (in __tty_hangup()):
-      - mark all file descriptors for this tty hung up by pointing them to
-	hung_up_tty_fops,
-      - call uart_hangup(), which sets port->count to 0.
+--nYySOmuH/HDX6pKp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  - A subsequent uart_open() (this may be through /dev/ttyS*, or through
-    /dev/console if this is a serial console) will fail with -ENXIO as the
-    port was marked dead,
-  - uart_close() after the failed uart_open() will return early, as
-    tty_hung_up_p() (called from tty_port_close_start()) will notice it was
-    hung up.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-B. If the tty was also opened as a console:
+iQIcBAEBAgAGBQJTJvVKAAoJELSic+t+oim9NoMP/3CVL2JtmNVGnAlppFjd9mMJ
+LtioqcpAiBYfuq/ayoHIQ1JaZYmjTPMvMty9TFetCAhGy2g6lFnlNll15vtnKj/g
+Y9El2X3L8HwNw48jkcV180vBxi5yxGtWjoaM4o1wCewsTwhNiZwC5F0M/ytagORb
+BUJgptmgAv9/dF1Nq+nxJONmJ8avR48PKPeY06950oWtrwWFNJ05g0yC04ZQCzoF
+w3yoPdYXQANLT4HMI4St7qVu+CO6+q/0u+sqB9Ugi5aQijF7Q5kA7/mZHxtXAvif
+mrBHru2O/Qh2E76rzu98xyq79IJ8Jb5vYR+hLauvPsO1wB1xmQ+iNu8bZc62fyId
+APABMGlqcB+o/PbbQ1znnAjuaXWOs06nIGv62MEpI1ar+vrwgwVVow/rc8FN9K5o
+OrzSYSdAR71CmLnW4upTnOsnV2TyBrwTEFt4cLQXsXWuo4g7Qg04DbPmILS5UYjM
+NCkww40V+lnETl/IWUeVoIYzm+hU6Nr9J69oKAmt6XKbTkWl7lk4LQGM23rN6/po
+4+ui+gkkHzeJfJS3RQGZNi2QVxjPWV6IEbBOaWVaGmxOPmI/CH5JS331pwSSLY0S
+2oaY0MgLrsmtLACJn3G3iFfJ5PLalenlr1JKERm4LTCwLgvcLtVdQwSMn7kjhCFL
+K5N9uzM0yG3kkWZHuQTJ
+=ISNL
+-----END PGP SIGNATURE-----
 
-  - tty_vhangup() will (in __tty_hangup()):
-      - mark non-console file descriptors for this tty hung up by pointing
-	them to hung_up_tty_fops,
-      - NOT call uart_hangup(), but instead call uart_close() for every
-        non-console file descriptor, so port->count will still have a
-	non-zero value afterwards.
-
-  - A subsequent uart_open() will fail with -ENXIO as the port was
-    marked dead,
-  - uart_close() after the failed uart_open() starts to misbehave:
-      - tty_hung_up_p() will not notice it was hung up,
-      - As port->count is non-zero, tty_port_close_start() will decrease
-        port->count, making the tty and port counts inconsistent. Later,
-	warnings like these will be printed:
-
-	    tty_port_close_start: tty->count = 1 port count = 0.
-
-	and
-	    tty_port_close_start: count = -1
-
-      - If all of this happens after state->uart_port was set to zero, a
-        NULL pointer dereference will happen.
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
----
-This still doesn't fix everything, but avoids the NULL pointer dereference.
-
-In case B, port->count is still non-zero after tty_vhangup().  Hence when
-uart_close() is called after a failed uart_open(), it will decrement
-port->count, and, on reaching zero, it will close the port for real (incl.
-calling uart_shutdown()).  This doesn't seem to cause any harm, though.
-Besides, if uart_close() wouldn't do that, who else would shut down the
-port?
-
-As tty_open() always calls tty_release() on failure of ->open(),
-->close() is always called.
-How can uart_close() after a failed uart_open() know it should not do
-anything? Set a (new) flag in its port structure?
----
- drivers/tty/serial/serial_core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 21084f0b8ea4..56dda84f82a5 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -1319,9 +1319,9 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
- 	uport = state->uart_port;
- 	port = &state->port;
- 
--	pr_debug("uart_close(%d) called\n", uport->line);
-+	pr_debug("uart_close(%d) called\n", uport ? uport->line : -1);
- 
--	if (tty_port_close_start(port, tty, filp) == 0)
-+	if (!port->count || tty_port_close_start(port, tty, filp) == 0)
- 		return;
- 
- 	/*
--- 
-1.7.9.5
-
+--nYySOmuH/HDX6pKp--
