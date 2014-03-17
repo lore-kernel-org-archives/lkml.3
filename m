@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773AbaCQLPH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 07:15:07 -0400
-Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:39725 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932672AbaCQLPE convert rfc822-to-8bit (ORCPT
+	id S932855AbaCQLR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 07:17:27 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:61740 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514AbaCQLRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 07:15:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <53205A46.6000304@gmail.com>
-References: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com>
-	<1393841162-25339-4-git-send-email-jjhiblot@traphandler.com>
-	<53205A46.6000304@gmail.com>
-Date: Mon, 17 Mar 2014 12:14:50 +0100
-Message-ID: <CACh+v5N+Ms9ZVFN=F_sQQhRbwhiYFg6LO+383UL8iw7qYaPKtQ@mail.gmail.com>
-Subject: Re: [PATCH v5 3/9] at91: pinctrl: don't request GPIOs used for
- interrupts but lock them as IRQ
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Ovh-Tracer-Id: 15648882807205681176
-X-Ovh-Remote: 209.85.220.43 (mail-pa0-f43.google.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrvdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrvdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Mon, 17 Mar 2014 07:17:25 -0400
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: rjw@rjwysocki.net, lenb@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [PATCH] cpuidle: sysfs: Export target residency information
+Date: Mon, 17 Mar 2014 12:17:30 +0100
+Message-Id: <1395055050-27729-1-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+>From userspace, there is no way to know the target residency for each idle
+state. If we want to write tools to measure the accuracy of the idle state
+selection from the governor, we need this info.
 
-Sorry for being late, I was on vacation.
-Yes this patch can be dropped from the serie.
+As the exit latency is exported through sysfs, exporting the target residency
+in the same place makes sense.
 
-2014-03-12 13:59 GMT+01:00 Boris BREZILLON <b.brezillon.dev@gmail.com>:
-> Hi JJ,
->
-> IIRC this patch was necessary for the DM9000 device, which is not defined
-> in this series anymore.
-> And, correct me if I'm wrong, but there's still a discussion about how
-> this should be fixed properly (https://lkml.org/lkml/2014/2/25/388).
->
-> As a result, shouldn't we remove this patch from this series ?
->
-> Best Regards,
->
-> Boris
->
-> Le 03/03/2014 11:05, Jean-Jacques Hiblot a écrit :
->
->> During the xlate stage of the DT interrupt parsing, the at91 pinctrl
->> driver
->> requests the GPIOs that are described as interrupt sources. This prevents
->> a
->> driver to request the gpio later to get its electrical value.
->> This patch replaces the gpio_request with a gpio_lock_as_irq to prevent
->> the
->> gpio to be set as an ouput while allowing a subsequent gpio_request to
->> succeed
->>
->> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
->> ---
->>   drivers/pinctrl/pinctrl-at91.c | 5 ++---
->>   1 file changed, 2 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/pinctrl/pinctrl-at91.c
->> b/drivers/pinctrl/pinctrl-at91.c
->> index d990e33..db55b96 100644
->> --- a/drivers/pinctrl/pinctrl-at91.c
->> +++ b/drivers/pinctrl/pinctrl-at91.c
->> @@ -1478,18 +1478,17 @@ static int at91_gpio_irq_domain_xlate(struct
->> irq_domain *d,
->>   {
->>         struct at91_gpio_chip *at91_gpio = d->host_data;
->>         int ret;
->> -       int pin = at91_gpio->chip.base + intspec[0];
->>         if (WARN_ON(intsize < 2))
->>                 return -EINVAL;
->>         *out_hwirq = intspec[0];
->>         *out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
->>   -     ret = gpio_request(pin, ctrlr->full_name);
->> +       ret = gpio_lock_as_irq(&at91_gpio->chip, intspec[0]);
->>         if (ret)
->>                 return ret;
->>   -     ret = gpio_direction_input(pin);
->> +       ret = at91_gpio_direction_input(&at91_gpio->chip, intspec[0]);
->>         if (ret)
->>                 return ret;
->>
->
->
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ drivers/cpuidle/sysfs.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+index e918b6d..efe2f17 100644
+--- a/drivers/cpuidle/sysfs.c
++++ b/drivers/cpuidle/sysfs.c
+@@ -293,6 +293,7 @@ static ssize_t show_state_##_name(struct cpuidle_state *state, \
+ }
+ 
+ define_show_state_function(exit_latency)
++define_show_state_function(target_residency)
+ define_show_state_function(power_usage)
+ define_show_state_ull_function(usage)
+ define_show_state_ull_function(time)
+@@ -304,6 +305,7 @@ define_store_state_ull_function(disable)
+ define_one_state_ro(name, show_state_name);
+ define_one_state_ro(desc, show_state_desc);
+ define_one_state_ro(latency, show_state_exit_latency);
++define_one_state_ro(residency, show_state_target_residency);
+ define_one_state_ro(power, show_state_power_usage);
+ define_one_state_ro(usage, show_state_usage);
+ define_one_state_ro(time, show_state_time);
+@@ -313,6 +315,7 @@ static struct attribute *cpuidle_state_default_attrs[] = {
+ 	&attr_name.attr,
+ 	&attr_desc.attr,
+ 	&attr_latency.attr,
++	&attr_residency.attr,
+ 	&attr_power.attr,
+ 	&attr_usage.attr,
+ 	&attr_time.attr,
+-- 
+1.7.9.5
+
