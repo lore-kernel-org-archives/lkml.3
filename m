@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392AbaCQXhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 19:37:03 -0400
+	id S1752759AbaCQXhj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 19:37:39 -0400
 Received: from mga11.intel.com ([192.55.52.93]:48988 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751706AbaCQXgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 19:36:49 -0400
+	id S1750890AbaCQXgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 19:36:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,673,1389772800"; 
-   d="scan'208";a="500757083"
+   d="scan'208";a="500757070"
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 To: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
@@ -17,9 +17,9 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Michael Ellerman <michael@ellerman.id.au>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH v2 3/4] random: If we have arch_get_random_seed*(), try it before blocking
-Date: Mon, 17 Mar 2014 16:36:29 -0700
-Message-Id: <1395099390-807-4-git-send-email-hpa@linux.intel.com>
+Subject: [PATCH v2 2/4] random: Use arch_get_random_seed*() at init time and once a second
+Date: Mon, 17 Mar 2014 16:36:28 -0700
+Message-Id: <1395099390-807-3-git-send-email-hpa@linux.intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1395099390-807-1-git-send-email-hpa@linux.intel.com>
 References: <1395099390-807-1-git-send-email-hpa@linux.intel.com>
@@ -27,70 +27,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we have arch_get_random_seed*(), try to use it for emergency refill
-of the entropy pool before giving up and blocking on /dev/random.  It
-may or may not work in the moment, but if it does work, it will give
-the user better service than blocking will.
+Use arch_get_random_seed*() in two places in the Linux random
+driver (drivers/char/random.c):
 
+1. During entropy pool initialization, use RDSEED in favor of RDRAND,
+   with a fallback to the latter.  Entropy exhaustion is unlikely to
+   happen there on physical hardware as the machine is single-threaded
+   at that point, but could happen in a virtual machine.  In that
+   case, the fallback to RDRAND will still provide more than adequate
+   entropy pool initialization.
+
+2. Once a second, issue RDSEED and, if successful, feed it to the
+   entropy pool.  To ensure an extra layer of security, only credit
+   half the entropy just in case.
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Reviewed-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- drivers/char/random.c | 33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
+ drivers/char/random.c | 24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index a4bea77..c35cee2 100644
+index d07575c..a4bea77 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -1294,6 +1294,34 @@ void rand_initialize_disk(struct gendisk *disk)
+@@ -844,6 +844,8 @@ void add_interrupt_randomness(int irq, int irq_flags)
+ 	cycles_t		cycles = random_get_entropy();
+ 	__u32			input[4], c_high, j_high;
+ 	__u64			ip;
++	unsigned long		seed;
++	int			credit;
+ 
+ 	c_high = (sizeof(cycles) > 4) ? cycles >> 32 : 0;
+ 	j_high = (sizeof(now) > 4) ? now >> 32 : 0;
+@@ -862,20 +864,33 @@ void add_interrupt_randomness(int irq, int irq_flags)
+ 
+ 	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
+ 	__mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool), NULL);
++
+ 	/*
+ 	 * If we don't have a valid cycle counter, and we see
+ 	 * back-to-back timer interrupts, then skip giving credit for
+-	 * any entropy.
++	 * any entropy, otherwise credit 1 bit.
+ 	 */
++	credit = 1;
+ 	if (cycles == 0) {
+ 		if (irq_flags & __IRQF_TIMER) {
+ 			if (fast_pool->last_timer_intr)
+-				return;
++				credit = 0;
+ 			fast_pool->last_timer_intr = 1;
+ 		} else
+ 			fast_pool->last_timer_intr = 0;
+ 	}
+-	credit_entropy_bits(r, 1);
++
++	/*
++	 * If we have architectural seed generator, produce a seed and
++	 * add it to the pool.  For the sake of paranoia count it as
++	 * 50% entropic.
++	 */
++	if (arch_get_random_seed_long(&seed)) {
++		__mix_pool_bytes(r, &seed, sizeof(seed), NULL);
++		credit += sizeof(seed) * 4;
++	}
++
++	credit_entropy_bits(r, credit);
  }
- #endif
  
-+/*
-+ * Attempt an emergency refill using arch_get_random_seed_long().
-+ *
-+ * As with add_interrupt_randomness() be paranoid and only
-+ * credit the output as 50% entropic.
-+ */
-+static int arch_random_refill(void)
-+{
-+	const unsigned int nlongs = 64;	/* Arbitrary number */
-+	unsigned int n = 0;
-+	unsigned int i;
-+	unsigned long buf[nlongs];
-+
-+	for (i = 0; i < nlongs; i++) {
-+		if (arch_get_random_seed_long(&buf[n]))
-+			n++;
-+	}
-+
-+	if (n) {
-+		unsigned int rand_bytes = n * sizeof(unsigned long);
-+
-+		mix_pool_bytes(&input_pool, buf, rand_bytes, NULL);
-+		credit_entropy_bits(&input_pool, rand_bytes*4);
-+	}
-+
-+	return n;
-+}
-+
- static ssize_t
- random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
- {
-@@ -1312,8 +1340,13 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
- 				  ENTROPY_BITS(&input_pool));
- 		if (n > 0)
- 			return n;
-+
- 		/* Pool is (near) empty.  Maybe wait and retry. */
- 
-+		/* First try an emergency refill */
-+		if (arch_random_refill())
-+			continue;
-+
- 		if (file->f_flags & O_NONBLOCK)
- 			return -EAGAIN;
- 
+ #ifdef CONFIG_BLOCK
+@@ -1235,7 +1250,8 @@ static void init_std_data(struct entropy_store *r)
+ 	r->last_pulled = jiffies;
+ 	mix_pool_bytes(r, &now, sizeof(now), NULL);
+ 	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
+-		if (!arch_get_random_long(&rv))
++		if (!arch_get_random_seed_long(&rv) &&
++		    !arch_get_random_long(&rv))
+ 			rv = random_get_entropy();
+ 		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
+ 	}
 -- 
 1.8.5.3
 
