@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496AbaCQHua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 03:50:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1935 "EHLO mga09.intel.com"
+	id S932448AbaCQHuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 03:50:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45253 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932474AbaCQHu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 03:50:28 -0400
+	id S932376AbaCQHuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 03:50:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,668,1389772800"; 
-   d="scan'208";a="473949967"
+   d="scan'208";a="473949622"
 From: Zhang Rui <rui.zhang@intel.com>
 To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: bhelgaas@google.com, matthew.garrett@nebula.com,
         rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com,
         Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH V4 10/11] ACPI: introduce dummy container scan handler
-Date: Mon, 17 Mar 2014 15:49:39 +0800
-Message-Id: <1395042580-3344-11-git-send-email-rui.zhang@intel.com>
+Subject: [PATCH V4 03/11] ACPI: remove ids that does not comply with the ACPI PNP id rule
+Date: Mon, 17 Mar 2014 15:49:32 +0800
+Message-Id: <1395042580-3344-4-git-send-email-rui.zhang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1395042580-3344-1-git-send-email-rui.zhang@intel.com>
 References: <1395042580-3344-1-git-send-email-rui.zhang@intel.com>
@@ -24,84 +24,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_ACPI_CONTAINER is cleared, platform devices would be
-created for ACPI container objects.
+The acpi pnp scan handler id list just copies all the ids from all the
+struct pnp_device_id instances, but some of them do not
+comply with the ACPI PNP id rule (3 Alpha Charactors + 4 Hex numbers).
 
-Introduce a dummy container scan handler in this patch to prevent
-these platform devices from being created.
+For those ids, the coressponding devices will never be enumerated
+via ACPI, so it is safe to remove those ids from the PNPACPI white list.
 
 Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 ---
- drivers/acpi/Makefile    |    2 +-
- drivers/acpi/container.c |   21 +++++++++++++++++++++
- drivers/acpi/internal.h  |    4 ----
- 3 files changed, 22 insertions(+), 5 deletions(-)
+ drivers/acpi/acpi_pnp.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index 2173e30..871d70d 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -63,7 +63,7 @@ obj-$(CONFIG_ACPI_FAN)		+= fan.o
- obj-$(CONFIG_ACPI_VIDEO)	+= video.o
- obj-$(CONFIG_ACPI_PCI_SLOT)	+= pci_slot.o
- obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
--obj-$(CONFIG_ACPI_CONTAINER)	+= container.o
-+obj-y				+= container.o
- obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
- obj-$(CONFIG_ACPI_HOTPLUG_MEMORY) += acpi_memhotplug.o
- obj-$(CONFIG_ACPI_BATTERY)	+= battery.o
-diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-index 368f9dd..c2ec401 100644
---- a/drivers/acpi/container.c
-+++ b/drivers/acpi/container.c
-@@ -43,6 +43,8 @@ static const struct acpi_device_id container_device_ids[] = {
- 	{"", 0},
- };
- 
-+#ifdef CONFIG_ACPI_CONTAINER
-+
- static int acpi_container_offline(struct container_dev *cdev)
- {
- 	struct acpi_device *adev = ACPI_COMPANION(&cdev->dev);
-@@ -110,3 +112,22 @@ void __init acpi_container_init(void)
- {
- 	acpi_scan_add_handler_with_hotplug(&container_handler, "container");
- }
-+
-+#else
-+
-+static inline int container_device_attach(struct acpi_device *adev,
-+			const struct acpi_device_id *not_used)
-+{
-+	return 1;
-+}
-+
-+static struct acpi_scan_handler container_handler = {
-+	.ids = container_device_ids,
-+	.attach = container_device_attach,
-+};
-+
-+void __init acpi_container_init(void)
-+{
-+	acpi_scan_add_handler(&container_handler);
-+}
-+#endif /* CONFIG_ACPI_CONTAINER */
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index a0c9368..253758a 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -32,11 +32,7 @@ void acpi_processor_init(void);
- void acpi_platform_init(void);
- void acpi_pnp_init(void);
- int acpi_sysfs_init(void);
--#ifdef CONFIG_ACPI_CONTAINER
- void acpi_container_init(void);
--#else
--static inline void acpi_container_init(void) {}
--#endif
- #ifdef CONFIG_ACPI_DOCK
- void acpi_dock_init(void);
- #else
+diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+index 5971934..8c14006 100644
+--- a/drivers/acpi/acpi_pnp.c
++++ b/drivers/acpi/acpi_pnp.c
+@@ -33,10 +33,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
+ 	/* ide   */
+ 	{"PNP0600"},		/* Generic ESDI/IDE/ATA compatible hard disk controller */
+ 	/* ns558 */
+-	{"@P@0001"},		/* ALS 100 */
+-	{"@P@0020"},		/* ALS 200 */
+-	{"@P@1001"},		/* ALS 100+ */
+-	{"@P@2001"},		/* ALS 120 */
+ 	{"ASB16fd"},		/* AdLib NSC16 */
+ 	{"AZT3001"},		/* AZT1008 */
+ 	{"CDC0001"},		/* Opl3-SAx */
 -- 
 1.7.9.5
 
