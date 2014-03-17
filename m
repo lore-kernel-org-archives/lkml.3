@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008AbaCQAnZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 20:43:25 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:52018 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755725AbaCQAnX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 20:43:23 -0400
-X-AuditID: 9c93017d-b7c89ae000006ae1-30-5326452848dc
-From: Namhyung Kim <namhyung@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, eranian@google.com, jolsa@redhat.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf, tools: Add script to easily decode addresses
-References: <1394740438-27343-1-git-send-email-andi@firstfloor.org>
-Date: Mon, 17 Mar 2014 09:43:18 +0900
-In-Reply-To: <1394740438-27343-1-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Thu, 13 Mar 2014 12:53:58 -0700")
-Message-ID: <87y509u02h.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S932154AbaCQA5G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 20:57:06 -0400
+Received: from ozlabs.org ([203.10.76.45]:55300 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755856AbaCQA5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 20:57:04 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Venkatesh Srinivas <venkateshs@google.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org,
+        Frank Swiderski <fes@google.com>
+Subject: Re: [PATCH] virtio-blk: make the queue depth the max supportable by the hypervisor
+In-Reply-To: <1394854471-25700-1-git-send-email-tytso@mit.edu>
+References: <1394841445-16142-1-git-send-email-venkateshs@google.com> <1394854471-25700-1-git-send-email-tytso@mit.edu>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Mon, 17 Mar 2014 11:12:15 +1030
+Message-ID: <87siqhu048.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+Theodore Ts'o <tytso@mit.edu> writes:
+> The current virtio block sets a queue depth of 64, which is
+> insufficient for very fast devices.  It has been demonstrated that
+> with a high IOPS device, using a queue depth of 256 can double the
+> IOPS which can be sustained.
+>
+> As suggested by Venkatash Srinivas, set the queue depth by default to
+> be one half the the device's virtqueue, which is the maximum queue
+> depth that can be supported by the channel to the host OS (each I/O
+> request requires at least two VQ entries).
+>
+> Also allow the queue depth to be something which can be set at module
+> load time or via a kernel boot-time parameter, for
+> testing/benchmarking purposes.
 
-On Thu, 13 Mar 2014 12:53:58 -0700, Andi Kleen wrote:
-> +def MASK(bits):
-> +    return (1 << bits) - 1
-> +
-> +def decode_bits(val, names, bits, shift):
-> +    v = (val >> shift) & MASK(bits)
-> +    s = ""
-> +    for name, index in zip(names, range(0, len(names))):
-> +        if v & (1 << index):
-> +            s += " " + name
-> +    return s
-> +
-> +#        __u64   mem_op:5,       /* type of opcode */
-> +#                mem_lvl:14,     /* memory hierarchy level */
-> +#                mem_snoop:5,    /* snoop mode */
-> +#                mem_lock:2,     /* lock instr */
-> +#                mem_dtlb:7,     /* tlb access */
-> +#                mem_rsvd:31;
-> +
-> +def decode_datasrc(d):
-> +    s = ""
-> +    s += decode_bits(d, ['', 'LOAD', 'STORE?', 'PREFETCH', 'EXEC'], 5, 0)
-> +    s += decode_bits(d, ['', 'HIT', 'MISS', 'L1', 'LFB', 'L2', 'L3',
-> +                         'LOC_RAM', 'REM-RAM-1', 'REM-RAM-2', 'REM-CACHE-1'
-> +                         'REM-CACHE-2', 'REM-IO', 'REM-UNCACHED'], 14, 5)
-> +    s += decode_bits(d, ['', 'NONE', 'MISS', 'HITM'], 19, 5)
-> +    s += decode_bits(d, ['', 'LOCKED'], 24, 2)
-> +    s += decode_bits(d, ['', 'L1', 'L2', 'WK', 'OS'], 26, 7)
+Note that with indirect descriptors (which is supported by Almost
+Everyone), we can actually use the full index, so this value is a bit
+pessimistic.  But it's OK as a starting point.
 
-Shouldn't it be like below (bits and shift exchanged)?
-
-	s += decode_bits(d, ['', 'NONE', 'MISS', 'HITM'], 5, 19)
-	s += decode_bits(d, ['', 'LOCKED'], 2, 24)
-	s += decode_bits(d, ['', 'L1', 'L2', 'WK', 'OS'], 7, 26)
-
-Thanks,
-Namhyung
+Cheers,
+Rusty.
