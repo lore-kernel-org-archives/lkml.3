@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933147AbaCQRi4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 13:38:56 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:58204 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933027AbaCQRiw (ORCPT
+	id S933017AbaCQRij (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 13:38:39 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:58862 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756994AbaCQRi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 13:38:52 -0400
-Date: Mon, 17 Mar 2014 17:38:21 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
-Message-ID: <20140317173821.GJ24070@arm.com>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
- <1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com>
- <20140314171457.GK18126@arm.com>
- <201403141838.08900.arnd@arndb.de>
- <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 17 Mar 2014 13:38:29 -0400
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: [PATCH 20/22] Input: atmel_mxt_ts - rename pressure to amplitude to match spec
+Date: Mon, 17 Mar 2014 17:26:53 +0000
+Message-Id: <1395077215-10922-21-git-send-email-nick.dyer@itdev.co.uk>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395077215-10922-1-git-send-email-nick.dyer@itdev.co.uk>
+References: <1395077215-10922-1-git-send-email-nick.dyer@itdev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 06:05:27PM +0000, Liviu Dudau wrote:
-> On Fri, Mar 14, 2014 at 05:38:08PM +0000, Arnd Bergmann wrote:
-> > On Friday 14 March 2014, Catalin Marinas wrote:
-> > > On Fri, Mar 14, 2014 at 03:34:18PM +0000, Liviu Dudau wrote:
-> > > > --- /dev/null
-> > > > +++ b/arch/arm64/kernel/pci.c
-> > > [...]
-> > > > +int pci_register_io_range(phys_addr_t address, resource_size_t size)
-> > > [...]
-> > > > +unsigned long pci_address_to_pio(phys_addr_t address)
-> > > [...]
-> > > > +void pcibios_fixup_bus(struct pci_bus *bus)
-> > > [ actually most of this file ]
-> > > 
-> > > Maybe it was raised before already but can we have __weak generic
-> > > definitions of these functions? They don't seem to be arm64 specific in
-> > > any way.
-[...]
-> Catalin, if you are happy to ask for ACKs from all arch maintainers that might get
-> affected by our custom version of pci_address_to_pio() before you can pull PCI support
-> for arm64 then I can propose a new patchset.
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+Acked-by: Benson Leung <bleung@chromium.org>
+Acked-by: Yufeng Shen <miletus@chromium.org>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-You don't need to change the other architectures, that's the point of a
-__weak definition, it will be automatically overridden. If you want, you
-can even place a GENERIC_PCI or whatever config option that is only
-selected by arm64 for the time being.
-
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index 5cd2261..acd524f 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -629,7 +629,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
+ 	int x;
+ 	int y;
+ 	int area;
+-	int pressure;
++	int amplitude;
+ 
+ 	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
+ 	y = (message->message[2] << 4) | ((message->message[3] & 0xf));
+@@ -639,7 +639,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
+ 		y = y >> 2;
+ 
+ 	area = message->message[4];
+-	pressure = message->message[5];
++	amplitude = message->message[5];
+ 
+ 	dev_dbg(dev,
+ 		"[%u] %c%c%c%c%c%c%c%c x: %5u y: %5u area: %3u amp: %3u\n",
+@@ -652,7 +652,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
+ 		(status & MXT_AMP) ? 'A' : '.',
+ 		(status & MXT_SUPPRESS) ? 'S' : '.',
+ 		(status & MXT_UNGRIP) ? 'U' : '.',
+-		x, y, area, pressure);
++		x, y, area, amplitude);
+ 
+ 	input_mt_slot(input_dev, id);
+ 	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER,
+@@ -661,7 +661,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
+ 	if (status & MXT_DETECT) {
+ 		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
+ 		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
+-		input_report_abs(input_dev, ABS_MT_PRESSURE, pressure);
++		input_report_abs(input_dev, ABS_MT_PRESSURE, amplitude);
+ 		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
+ 	}
+ }
 -- 
-Catalin
+1.8.3.2
+
