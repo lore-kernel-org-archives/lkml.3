@@ -1,337 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933645AbaCQNm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:42:26 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51804 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933240AbaCQNbe (ORCPT
+	id S933449AbaCQNoL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:44:11 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:47424 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932640AbaCQNoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:31:34 -0400
-Message-Id: <20140317133134.564792423@bombadil.infradead.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 17 Mar 2014 06:27:54 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 21/39] scsi: convert host_busy to atomic_t
-References: <20140317132733.789623766@bombadil.infradead.org>
-Content-Disposition: inline; filename=0021-scsi-convert-host_busy-to-atomic_t.patch
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 17 Mar 2014 09:44:04 -0400
+Message-ID: <5326FC20.9020304@gmail.com>
+Date: Mon, 17 Mar 2014 14:44:00 +0100
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, Bo Shen <voice.shen@atmel.com>
+CC: nicolas.ferre@atmel.com, Boris BREZILLON <b.brezillon@overkiz.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH 7/8] ASoC: atmel: document clock properties of the wm8904
+ driver
+References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <1395049541-28128-8-git-send-email-voice.shen@atmel.com> <20140317115518.GD11706@sirena.org.uk>
+In-Reply-To: <20140317115518.GD11706@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid taking the host-wide host_lock to check the per-host queue limit.
-Instead we do an atomic_inc_return early on to grab our slot in the queue,
-and if nessecary decrement it after finishing all checks.
+Hello Mark,
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/advansys.c             |    4 +-
- drivers/scsi/libiscsi.c             |    4 +-
- drivers/scsi/libsas/sas_scsi_host.c |    5 ++-
- drivers/scsi/qlogicpti.c            |    2 +-
- drivers/scsi/scsi.c                 |    2 +-
- drivers/scsi/scsi_error.c           |    6 +--
- drivers/scsi/scsi_lib.c             |   71 +++++++++++++++++++++--------------
- drivers/scsi/scsi_sysfs.c           |    9 ++++-
- include/scsi/scsi_host.h            |   10 ++---
- 9 files changed, 65 insertions(+), 48 deletions(-)
+Le 17/03/2014 12:55, Mark Brown a écrit :
+> On Mon, Mar 17, 2014 at 05:45:40PM +0800, Bo Shen wrote:
+>
+>>     - compatible: "atmel,asoc-wm8904"
+>>     - atmel,model: The user-visible name of this sound complex.
+>> +  - clocks: A list of clocks needed by the wm8904 chip.
+>> +  - clock-output-names: Driver related clock names. Shall contain "pck0".
+> If this is a clock for the CODEC it should be documented as part of the
+> binding for the CODEC and connected to the CODEC in the device tree
+> rather than being part of a machine driver binding.
 
-diff --git a/drivers/scsi/advansys.c b/drivers/scsi/advansys.c
-index d814588..0a6ecbd 100644
---- a/drivers/scsi/advansys.c
-+++ b/drivers/scsi/advansys.c
-@@ -2512,7 +2512,7 @@ static void asc_prt_scsi_host(struct Scsi_Host *s)
- 
- 	printk("Scsi_Host at addr 0x%p, device %s\n", s, dev_name(boardp->dev));
- 	printk(" host_busy %u, host_no %d,\n",
--	       s->host_busy, s->host_no);
-+	       atomic_read(&s->host_busy), s->host_no);
- 
- 	printk(" base 0x%lx, io_port 0x%lx, irq %d,\n",
- 	       (ulong)s->base, (ulong)s->io_port, boardp->irq);
-@@ -3346,7 +3346,7 @@ static void asc_prt_driver_conf(struct seq_file *m, struct Scsi_Host *shost)
- 
- 	seq_printf(m,
- 		   " host_busy %u, max_id %u, max_lun %u, max_channel %u\n",
--		   shost->host_busy, shost->max_id,
-+		   atomic_read(&shost->host_busy), shost->max_id,
- 		   shost->max_lun, shost->max_channel);
- 
- 	seq_printf(m,
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index 4046241..718ca88 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -2922,7 +2922,7 @@ void iscsi_conn_teardown(struct iscsi_cls_conn *cls_conn)
- 	 */
- 	for (;;) {
- 		spin_lock_irqsave(session->host->host_lock, flags);
--		if (!session->host->host_busy) { /* OK for ERL == 0 */
-+		if (!atomic_read(&session->host->host_busy)) { /* OK for ERL == 0 */
- 			spin_unlock_irqrestore(session->host->host_lock, flags);
- 			break;
- 		}
-@@ -2930,7 +2930,7 @@ void iscsi_conn_teardown(struct iscsi_cls_conn *cls_conn)
- 		msleep_interruptible(500);
- 		iscsi_conn_printk(KERN_INFO, conn, "iscsi conn_destroy(): "
- 				  "host_busy %d host_failed %d\n",
--				  session->host->host_busy,
-+				  atomic_read(&session->host->host_busy),
- 				  session->host->host_failed);
- 		/*
- 		 * force eh_abort() to unblock
-diff --git a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
-index da3aee1..9423009 100644
---- a/drivers/scsi/libsas/sas_scsi_host.c
-+++ b/drivers/scsi/libsas/sas_scsi_host.c
-@@ -812,7 +812,7 @@ retry:
- 	spin_unlock_irq(shost->host_lock);
- 
- 	SAS_DPRINTK("Enter %s busy: %d failed: %d\n",
--		    __func__, shost->host_busy, shost->host_failed);
-+		    __func__, atomic_read(&shost->host_busy), shost->host_failed);
- 	/*
- 	 * Deal with commands that still have SAS tasks (i.e. they didn't
- 	 * complete via the normal sas_task completion mechanism),
-@@ -857,7 +857,8 @@ out:
- 		goto retry;
- 
- 	SAS_DPRINTK("--- Exit %s: busy: %d failed: %d tries: %d\n",
--		    __func__, shost->host_busy, shost->host_failed, tries);
-+		    __func__, atomic_read(&shost->host_busy),
-+		    shost->host_failed, tries);
- }
- 
- enum blk_eh_timer_return sas_scsi_timed_out(struct scsi_cmnd *cmd)
-diff --git a/drivers/scsi/qlogicpti.c b/drivers/scsi/qlogicpti.c
-index 6d48d30..740ae49 100644
---- a/drivers/scsi/qlogicpti.c
-+++ b/drivers/scsi/qlogicpti.c
-@@ -959,7 +959,7 @@ static inline void update_can_queue(struct Scsi_Host *host, u_int in_ptr, u_int
- 	/* Temporary workaround until bug is found and fixed (one bug has been found
- 	   already, but fixing it makes things even worse) -jj */
- 	int num_free = QLOGICPTI_REQ_QUEUE_LEN - REQ_QUEUE_DEPTH(in_ptr, out_ptr) - 64;
--	host->can_queue = host->host_busy + num_free;
-+	host->can_queue = atomic_read(&host->host_busy) + num_free;
- 	host->sg_tablesize = QLOGICPTI_MAX_SG(num_free);
- }
- 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index eff189f..a0b5e6f 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -596,7 +596,7 @@ void scsi_log_completion(struct scsi_cmnd *cmd, int disposition)
- 			if (level > 3)
- 				scmd_printk(KERN_INFO, cmd,
- 					    "scsi host busy %d failed %d\n",
--					    cmd->device->host->host_busy,
-+					    atomic_read(&cmd->device->host->host_busy),
- 					    cmd->device->host->host_failed);
- 		}
- 	}
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index 771c16b..759c168 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -59,7 +59,7 @@ static int scsi_try_to_abort_cmd(struct scsi_host_template *,
- /* called with shost->host_lock held */
- void scsi_eh_wakeup(struct Scsi_Host *shost)
- {
--	if (shost->host_busy == shost->host_failed) {
-+	if (atomic_read(&shost->host_busy) == shost->host_failed) {
- 		trace_scsi_eh_wakeup(shost);
- 		wake_up_process(shost->ehandler);
- 		SCSI_LOG_ERROR_RECOVERY(5,
-@@ -2141,7 +2141,7 @@ int scsi_error_handler(void *data)
- 	while (!kthread_should_stop()) {
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if ((shost->host_failed == 0 && shost->host_eh_scheduled == 0) ||
--		    shost->host_failed != shost->host_busy) {
-+		    shost->host_failed != atomic_read(&shost->host_busy)) {
- 			SCSI_LOG_ERROR_RECOVERY(1,
- 				printk("scsi_eh_%d: sleeping\n",
- 					shost->host_no));
-@@ -2153,7 +2153,7 @@ int scsi_error_handler(void *data)
- 		SCSI_LOG_ERROR_RECOVERY(1,
- 			printk("scsi_eh_%d: waking up %d/%d/%d\n",
- 			       shost->host_no, shost->host_eh_scheduled,
--			       shost->host_failed, shost->host_busy));
-+			       shost->host_failed, atomic_read(&shost->host_busy)));
- 
- 		/*
- 		 * We have a host that is failing for some reason.  Figure out
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 01a631e..f1ce764 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -281,14 +281,17 @@ void scsi_device_unbusy(struct scsi_device *sdev)
- 	struct scsi_target *starget = scsi_target(sdev);
- 	unsigned long flags;
- 
--	spin_lock_irqsave(shost->host_lock, flags);
--	shost->host_busy--;
-+	atomic_dec(&shost->host_busy);
- 	atomic_dec(&starget->target_busy);
-+
- 	if (unlikely(scsi_host_in_recovery(shost) &&
--		     (shost->host_failed || shost->host_eh_scheduled)))
-+		     (shost->host_failed || shost->host_eh_scheduled))) {
-+		spin_lock_irqsave(shost->host_lock, flags);
- 		scsi_eh_wakeup(shost);
--	spin_unlock(shost->host_lock);
--	spin_lock(sdev->request_queue->queue_lock);
-+		spin_unlock_irqrestore(shost->host_lock, flags);
-+	}
-+
-+	spin_lock_irqsave(sdev->request_queue->queue_lock, flags);
- 	sdev->device_busy--;
- 	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
- }
-@@ -356,7 +359,8 @@ static inline int scsi_target_is_busy(struct scsi_target *starget)
- 
- static inline int scsi_host_is_busy(struct Scsi_Host *shost)
- {
--	if ((shost->can_queue > 0 && shost->host_busy >= shost->can_queue) ||
-+	if ((shost->can_queue > 0 &&
-+	     atomic_read(&shost->host_busy) >= shost->can_queue) ||
- 	    shost->host_blocked || shost->host_self_blocked)
- 		return 1;
- 
-@@ -1332,38 +1336,51 @@ static inline int scsi_host_queue_ready(struct request_queue *q,
- 				   struct Scsi_Host *shost,
- 				   struct scsi_device *sdev)
- {
--	int ret = 0;
--
--	spin_lock_irq(shost->host_lock);
-+	unsigned int busy;
- 
- 	if (scsi_host_in_recovery(shost))
--		goto out;
--	if (shost->host_busy == 0 && shost->host_blocked) {
-+		return 0;
-+
-+	busy = atomic_inc_return(&shost->host_busy) - 1;
-+	if (busy == 0 && shost->host_blocked) {
- 		/*
- 		 * unblock after host_blocked iterates to zero
- 		 */
--		if (--shost->host_blocked != 0)
--			goto out;
-+		spin_lock_irq(shost->host_lock);
-+		if (--shost->host_blocked != 0) {
-+			spin_unlock_irq(shost->host_lock);
-+			goto out_dec;
-+		}
-+		spin_unlock_irq(shost->host_lock);
- 
- 		SCSI_LOG_MLQUEUE(3,
- 			printk("scsi%d unblocking host at zero depth\n",
- 				shost->host_no));
- 	}
--	if (scsi_host_is_busy(shost)) {
--		if (list_empty(&sdev->starved_entry))
--			list_add_tail(&sdev->starved_entry, &shost->starved_list);
--		goto out;
--	}
-+
-+	if (shost->can_queue > 0 && busy >= shost->can_queue)
-+		goto starved;
-+	if (shost->host_blocked || shost->host_self_blocked)
-+		goto starved;
- 
- 	/* We're OK to process the command, so we can't be starved */
--	if (!list_empty(&sdev->starved_entry))
--		list_del_init(&sdev->starved_entry);
-+	if (!list_empty(&sdev->starved_entry)) {
-+		spin_lock_irq(shost->host_lock);
-+		if (!list_empty(&sdev->starved_entry))
-+			list_del_init(&sdev->starved_entry);
-+		spin_unlock_irq(shost->host_lock);
-+	}
-+
-+	return 1;
- 
--	shost->host_busy++;
--	ret = 1;
--out:
-+starved:
-+	spin_lock_irq(shost->host_lock);
-+	if (list_empty(&sdev->starved_entry))
-+		list_add_tail(&sdev->starved_entry, &shost->starved_list);
- 	spin_unlock_irq(shost->host_lock);
--	return ret;
-+out_dec:
-+	atomic_dec(&shost->host_busy);
-+	return 0;
- }
- 
- /*
-@@ -1427,12 +1444,8 @@ static void scsi_kill_request(struct request *req, struct request_queue *q)
- 	 * with the locks as normal issue path does.
- 	 */
- 	sdev->device_busy++;
--	spin_unlock(sdev->request_queue->queue_lock);
--	spin_lock(shost->host_lock);
--	shost->host_busy++;
-+	atomic_inc(&shost->host_busy);
- 	atomic_inc(&starget->target_busy);
--	spin_unlock(shost->host_lock);
--	spin_lock(sdev->request_queue->queue_lock);
- 
- 	blk_complete_request(req);
- }
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 9117d0b..658ee82 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -332,7 +332,6 @@ store_shost_eh_deadline(struct device *dev, struct device_attribute *attr,
- static DEVICE_ATTR(eh_deadline, S_IRUGO | S_IWUSR, show_shost_eh_deadline, store_shost_eh_deadline);
- 
- shost_rd_attr(unique_id, "%u\n");
--shost_rd_attr(host_busy, "%hu\n");
- shost_rd_attr(cmd_per_lun, "%hd\n");
- shost_rd_attr(can_queue, "%hd\n");
- shost_rd_attr(sg_tablesize, "%hu\n");
-@@ -342,6 +341,14 @@ shost_rd_attr(prot_capabilities, "%u\n");
- shost_rd_attr(prot_guard_type, "%hd\n");
- shost_rd_attr2(proc_name, hostt->proc_name, "%s\n");
- 
-+static ssize_t
-+show_host_busy(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	struct Scsi_Host *shost = class_to_shost(dev);
-+	return snprintf(buf, 20, "%hu\n", atomic_read(&shost->host_busy));
-+}
-+static DEVICE_ATTR(host_busy, S_IRUGO, show_host_busy, NULL);
-+
- static struct attribute *scsi_sysfs_shost_attrs[] = {
- 	&dev_attr_unique_id.attr,
- 	&dev_attr_host_busy.attr,
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index 94844fc..590e1af 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -603,13 +603,9 @@ struct Scsi_Host {
- 	 */
- 	struct blk_queue_tag	*bqt;
- 
--	/*
--	 * The following two fields are protected with host_lock;
--	 * however, eh routines can safely access during eh processing
--	 * without acquiring the lock.
--	 */
--	unsigned int host_busy;		   /* commands actually active on low-level */
--	unsigned int host_failed;	   /* commands that failed. */
-+	atomic_t host_busy;		   /* commands actually active on low-level */
-+	unsigned int host_failed;	   /* commands that failed.
-+					      protected by host_lock */
- 	unsigned int host_eh_scheduled;    /* EH scheduled without command */
-     
- 	unsigned int host_no;  /* Used for IOCTL_GET_IDLUN, /proc/scsi et al. */
--- 
-1.7.10.4
+Tell me if I'm mistaken, but doing this would implies a lot of changes.
+The current wm8904 driver does not handle clk retrieval and configuration,
+and I'm afraid that introducing these concepts would break other drivers 
+(those
+connecting to a wm8904 codec).
 
+Do you see a simple alternative to this approach (or is there something 
+I misunderstood
+in your suggestion) ?
 
+How about adding CCF support as proposed in this series and think about 
+a cleaner
+solution for a future release ?
+
+Best Regards,
+
+Boris
