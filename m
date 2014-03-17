@@ -1,45 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515AbaCQW20 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 18:28:26 -0400
-Received: from mail-yk0-f177.google.com ([209.85.160.177]:39214 "EHLO
-	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbaCQWZ4 (ORCPT
+	id S1753348AbaCQWZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 18:25:55 -0400
+Received: from www84.your-server.de ([213.133.104.84]:38865 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026AbaCQWWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 18:25:56 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/5] MAINTAINERS: add tools/lib/traceevent/ to perf subsystem
-Date: Mon, 17 Mar 2014 18:26:34 -0400
-Message-Id: <1395095198-20034-2-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.9.0.431.g014438b
-In-Reply-To: <1395095198-20034-1-git-send-email-artagnon@gmail.com>
-References: <1395095198-20034-1-git-send-email-artagnon@gmail.com>
+	Mon, 17 Mar 2014 18:22:55 -0400
+From: Stefani Seibold <stefani@seibold.net>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v23 03/13] x86, vdso: Revamp vclock_gettime.c
+Date: Mon, 17 Mar 2014 23:22:03 +0100
+Message-Id: <1395094933-14252-4-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1395094933-14252-1-git-send-email-stefani@seibold.net>
+References: <1395094933-14252-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- MAINTAINERS | 1 +
- 1 file changed, 1 insertion(+)
+This intermediate patch revamps the vclock_gettime.c by moving some functions
+around. It is only for spliting purpose, to make whole the 32 bit vdso timer
+patch easier to review.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b3fdb0f..788effd 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6693,6 +6693,7 @@ F:	arch/*/kernel/*/*/perf_event*.c
- F:	arch/*/include/asm/perf_event.h
- F:	arch/*/kernel/perf_callchain.c
- F:	tools/perf/
-+F:	tools/lib/traceevent/
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ arch/x86/vdso/vclock_gettime.c | 85 +++++++++++++++++++++---------------------
+ 1 file changed, 42 insertions(+), 43 deletions(-)
+
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index eb5d7a5..bbc8065 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -26,41 +26,26 @@
  
- PERSONALITY HANDLING
- M:	Christoph Hellwig <hch@infradead.org>
+ #define gtod (&VVAR(vsyscall_gtod_data))
+ 
+-notrace static cycle_t vread_tsc(void)
++static notrace cycle_t vread_hpet(void)
+ {
+-	cycle_t ret;
+-	u64 last;
+-
+-	/*
+-	 * Empirically, a fence (of type that depends on the CPU)
+-	 * before rdtsc is enough to ensure that rdtsc is ordered
+-	 * with respect to loads.  The various CPU manuals are unclear
+-	 * as to whether rdtsc can be reordered with later loads,
+-	 * but no one has ever seen it happen.
+-	 */
+-	rdtsc_barrier();
+-	ret = (cycle_t)vget_cycles();
+-
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
+-
+-	if (likely(ret >= last))
+-		return ret;
++	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
++}
+ 
+-	/*
+-	 * GCC likes to generate cmov here, but this branch is extremely
+-	 * predictable (it's just a funciton of time and the likely is
+-	 * very likely) and there's a data dependence, so force GCC
+-	 * to generate a branch instead.  I don't barrier() because
+-	 * we don't actually need a barrier, and if this function
+-	 * ever gets inlined it will generate worse code.
+-	 */
+-	asm volatile ("");
+-	return last;
++notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
++{
++	long ret;
++	asm("syscall" : "=a" (ret) :
++	    "0" (__NR_clock_gettime), "D" (clock), "S" (ts) : "memory");
++	return ret;
+ }
+ 
+-static notrace cycle_t vread_hpet(void)
++notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
+ {
+-	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
++	long ret;
++
++	asm("syscall" : "=a" (ret) :
++	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
++	return ret;
+ }
+ 
+ #ifdef CONFIG_PARAVIRT_CLOCK
+@@ -133,23 +118,37 @@ static notrace cycle_t vread_pvclock(int *mode)
+ }
+ #endif
+ 
+-notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
++notrace static cycle_t vread_tsc(void)
+ {
+-	long ret;
+-	asm("syscall" : "=a" (ret) :
+-	    "0" (__NR_clock_gettime),"D" (clock), "S" (ts) : "memory");
+-	return ret;
+-}
++	cycle_t ret;
++	u64 last;
+ 
+-notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
+-{
+-	long ret;
++	/*
++	 * Empirically, a fence (of type that depends on the CPU)
++	 * before rdtsc is enough to ensure that rdtsc is ordered
++	 * with respect to loads.  The various CPU manuals are unclear
++	 * as to whether rdtsc can be reordered with later loads,
++	 * but no one has ever seen it happen.
++	 */
++	rdtsc_barrier();
++	ret = (cycle_t)vget_cycles();
+ 
+-	asm("syscall" : "=a" (ret) :
+-	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
+-	return ret;
+-}
++	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
+ 
++	if (likely(ret >= last))
++		return ret;
++
++	/*
++	 * GCC likes to generate cmov here, but this branch is extremely
++	 * predictable (it's just a funciton of time and the likely is
++	 * very likely) and there's a data dependence, so force GCC
++	 * to generate a branch instead.  I don't barrier() because
++	 * we don't actually need a barrier, and if this function
++	 * ever gets inlined it will generate worse code.
++	 */
++	asm volatile ("");
++	return last;
++}
+ 
+ notrace static inline u64 vgetsns(int *mode)
+ {
 -- 
-1.9.0.431.g014438b
+1.9.0
 
