@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610AbaCQHla (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 03:41:30 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:35662 "EHLO
+	id S932410AbaCQHld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 03:41:33 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:58761 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756560AbaCQHlB (ORCPT
+	with ESMTP id S1756582AbaCQHlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 03:41:01 -0400
+	Mon, 17 Mar 2014 03:41:08 -0400
 X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8QS9ij0PRv0OgBX++PB3K3G/7rbhwz
 X-RZG-CLASS-ID: mo00
 From: Stephan Mueller <smueller@chronox.de>
 To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
 Cc: aquini@redhat.com, jeremy.wayne.powell@gmail.com
-Subject: [PATCH v2 2/6] header file for DRBG
-Date: Mon, 17 Mar 2014 08:35:10 +0100
-Message-ID: <2831049.lrfGvkkTou@myon.chronox.de>
+Subject: [PATCH v2 6/6] Add DRBG test code to testmgr
+Date: Mon, 17 Mar 2014 08:39:39 +0100
+Message-ID: <2717703.La8pfUukd1@myon.chronox.de>
 User-Agent: KMail/4.12.3 (Linux/3.13.6-200.fc20.x86_64; KDE/4.12.3; x86_64; ; )
-In-Reply-To: <3662681.npTzbSq3ye@myon.chronox.de>
-References: <2396177.vxvG2ljJL8@myon.chronox.de> <5770301.bQ9lKffXf3@myon.chronox.de> <3662681.npTzbSq3ye@myon.chronox.de>
+In-Reply-To: <2836686.FjyLUn6aXI@myon.chronox.de>
+References: <2396177.vxvG2ljJL8@myon.chronox.de> <3319954.xS7rx9A3Ha@myon.chronox.de> <2836686.FjyLUn6aXI@myon.chronox.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -25,33 +25,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The header file includes the definition of:
+The DRBG test code implements the CAVS test approach.
 
-* DRBG data structures with
-        - struct drbg_state as main structure
-        - struct drbg_core referencing the backend ciphers
-        - struct drbg_state_ops callbach handlers for specific code
-          supporting the Hash, HMAC, CTR DRBG implementations
-        - struct drbg_string defining a linked list for input data
-        - struct drbg_test_data holding the test "entropy" data for CAVS
-          testing and testmgr.c
-        - struct drbg_gen allowing test data, additional information
-          string and personalization string data to be funneled through
-          the kernel crypto API -- the DRBG requires additional
-          parameters when invoking the reset and random number
-          generation requests than intended by the kernel crypto API
+As discussed for the test vectors, all DRBG types are covered with
+testing. However, not every backend cipher is covered with testing. To
+prevent the testmgr from logging missing testing, the NULL test is
+registered for all backend ciphers not covered with specific test cases.
 
-* wrapper function to the kernel crypto API functions using struct
-  drbg_gen to pass through all data needed for DRBG
-
-* wrapper functions to kernel crypto API functions usable for testing
-  code to inject test_data into the DRBG as needed by CAVS testing and
-  testmgr.c.
-
-* DRBG flags required for the operation of the DRBG and for selecting
-  the particular DRBG type and backend cipher
-
-* getter functions for data from struct drbg_core
+All currently implemented DRBG types and backend ciphers are definined
+in SP800-90A. Therefore, the fips_allowed flag is set for all.
 
 Changes to v1:
 
@@ -60,304 +42,311 @@ Changes to v1:
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
-create mode 100644 include/crypto/drbg.h
 
-diff --git a/include/crypto/drbg.h b/include/crypto/drbg.h
-new file mode 100644
-index 0000000..f52e7ca
---- /dev/null
-+++ b/include/crypto/drbg.h
-@@ -0,0 +1,292 @@
-+/*
-+ * DRBG based on NIST SP800-90A
-+ *
-+ * Copyright Stephan Mueller <smueller@chronox.de>, 2014
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ * 1. Redistributions of source code must retain the above copyright
-+ *    notice, and the entire permission notice in its entirety,
-+ *    including the disclaimer of warranties.
-+ * 2. Redistributions in binary form must reproduce the above copyright
-+ *    notice, this list of conditions and the following disclaimer in the
-+ *    documentation and/or other materials provided with the distribution.
-+ * 3. The name of the author may not be used to endorse or promote
-+ *    products derived from this software without specific prior
-+ *    written permission.
-+ *
-+ * ALTERNATIVELY, this product may be distributed under the terms of
-+ * the GNU General Public License, in which case the provisions of the GPL are
-+ * required INSTEAD OF the above restrictions.  (This clause is
-+ * necessary due to a potential bad interaction between the GPL and
-+ * the restrictions contained in a BSD-style copyright.)
-+ *
-+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED
-+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ALL OF
-+ * WHICH ARE HEREBY DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE
-+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
-+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-+ * USE OF THIS SOFTWARE, EVEN IF NOT ADVISED OF THE POSSIBILITY OF SUCH
-+ * DAMAGE.
-+ */
-+
-+#ifndef _DRBG_H
-+#define _DRBG_H
-+
-+
-+#include <linux/random.h>
-+#include <linux/scatterlist.h>
-+#include <crypto/hash.h>
-+#include <linux/module.h>
-+#include <linux/crypto.h>
-+#include <linux/slab.h> /* needed for kzalloc */
-+#include <crypto/internal/rng.h>
-+#include <crypto/rng.h>
-+#include <linux/fips.h>
-+#include <linux/spinlock.h>
-+
-+/*
-+ * Concatenation Helper and string operation helper
-+ *
-+ * SP800-90A requires the concatenation of different data. To avoid copying
-+ * buffers around or allocate additional memory, the following data structure
-+ * is used to point to the original memory with its size. In addition, it
-+ * is used to build a linked list. The linked list defines the concatenation
-+ * of individual buffers. The order of memory block referenced in that
-+ * linked list determines the order of concatenation.
-+ */
-+
-+struct drbg_string {
-+	const unsigned char *buf;
-+	size_t len;
-+	struct drbg_string *next;
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index 7795550..baa6cb7 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -27,6 +27,7 @@
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <crypto/rng.h>
++#include <crypto/drbg.h>
+ 
+ #include "internal.h"
+ 
+@@ -108,6 +109,11 @@ struct cprng_test_suite {
+ 	unsigned int count;
+ };
+ 
++struct drbg_test_suite {
++	struct drbg_testvec *vecs;
++	unsigned int count;
 +};
 +
-+static inline void drbg_string_fill(struct drbg_string *string,
-+				    const unsigned char *buf, size_t len)
+ struct alg_test_desc {
+ 	const char *alg;
+ 	int (*test)(const struct alg_test_desc *desc, const char *driver,
+@@ -121,6 +127,7 @@ struct alg_test_desc {
+ 		struct pcomp_test_suite pcomp;
+ 		struct hash_test_suite hash;
+ 		struct cprng_test_suite cprng;
++		struct drbg_test_suite drbg;
+ 	} suite;
+ };
+ 
+@@ -1712,6 +1719,101 @@ static int alg_test_cprng(const struct alg_test_desc *desc, const char *driver,
+ 	return err;
+ }
+ 
++
++static int drbg_cavs_test(struct drbg_testvec *test, int pr,
++			  const char *driver, u32 type, u32 mask)
 +{
-+	string->buf = buf;
-+	string->len = len;
-+	string->next = NULL;
-+}
++	int ret = -EAGAIN;
++	struct crypto_rng *drng;
++	struct drbg_test_data test_data;
++	struct drbg_string addtl, pers, testentropy;
++	unsigned char *buf = kzalloc(test->expectedlen, GFP_KERNEL);
 +
-+struct drbg_state;
-+typedef uint32_t drbg_flag_t;
++	if (!buf)
++		return -ENOMEM;
 +
-+struct drbg_core {
-+	drbg_flag_t flags;	/* flags for the cipher */
-+	__u8 statelen;		/* maximum state length */
-+	__u8 max_addtllen;	/* maximum length of personalization string or
-+				   additional input string -- exponent for base
-+				   2 */
-+	__u8 max_bits;		/* maximum bits per RNG request -- exponent for
-+				   base 2*/
-+	__u8 max_req;		/* maximum number of requests -- exponent for
-+				   base 2 */
-+	__u8 blocklen_bytes;	/* block size of output in bytes */
-+	char cra_name[CRYPTO_MAX_ALG_NAME]; /* mapping to kernel crypto API */
-+	char cra_driver_name[CRYPTO_MAX_ALG_NAME]; /* mapping to kernel crypto
-+						    * API */
-+	char backend_cra_name[CRYPTO_MAX_ALG_NAME]; /* kernel crypto API
-+						     * backend cipher name */
-+};
++	drng = crypto_alloc_rng(driver, type, mask);
++	if (IS_ERR(drng)) {
++		printk(KERN_ERR "alg: drbg: could not allocate DRNG handle for"
++		       "%s\n", driver);
++		kzfree(buf);
++		return -ENOMEM;
++	}
 +
-+struct drbg_state_ops {
-+	int (*update)(struct drbg_state *drbg, struct drbg_string *seed,
-+		       int reseed);
-+	unsigned int (*generate)(struct drbg_state *drbg,
-+				 unsigned char *buf, unsigned int buflen,
-+				 struct drbg_string *addtl);
-+	int (*crypto_init)(struct drbg_state *drbg);
-+	int (*crypto_fini)(struct drbg_state *drbg);
++	test_data.testentropy = &testentropy;
++	drbg_string_fill(&testentropy, test->entropy, test->entropylen);
++	drbg_string_fill(&pers, test->pers, test->perslen);
++	ret = crypto_drbg_reset_test(drng, &pers, &test_data);
++	if (ret) {
++		printk(KERN_ERR "alg: drbg: Failed to reset rng\n");
++		goto outbuf;
++	}
 +
-+};
++	drbg_string_fill(&addtl, test->addtla, test->addtllen);
++	if (pr) {
++		drbg_string_fill(&testentropy, test->entpra, test->entprlen);
++		ret = crypto_drbg_get_bytes_addtl_test(drng,
++			buf, test->expectedlen, &addtl,	&test_data);
++	} else {
++		ret = crypto_drbg_get_bytes_addtl(drng,
++			buf, test->expectedlen, &addtl);
++	}
++	if (ret <= 0) {
++		printk(KERN_ERR "alg: drbg: could not obtain random data for"
++		       "driver %s\n", driver);
++		goto outbuf;
++	}
 +
-+struct drbg_test_data {
-+	struct drbg_string *testentropy; /* TEST PARAMETER: test entropy */
-+};
++	drbg_string_fill(&addtl, test->addtlb, test->addtllen);
++	if (pr) {
++		drbg_string_fill(&testentropy, test->entprb, test->entprlen);
++		ret = crypto_drbg_get_bytes_addtl_test(drng,
++			buf, test->expectedlen, &addtl, &test_data);
++	} else {
++		ret = crypto_drbg_get_bytes_addtl(drng,
++			buf, test->expectedlen, &addtl);
++	}
++	if (ret <= 0) {
++		printk(KERN_ERR "alg: drbg: could not obtain random data for"
++		       "driver %s\n", driver);
++		goto outbuf;
++	}
 +
-+struct drbg_state {
-+	spinlock_t drbg_lock;	/* lock around DRBG */
-+	unsigned char *V;	/* internal state 10.1.1.1 1a) */
-+	unsigned char *C;	/* hash: static value 10.1.1.1 1b)
-+				 * hmac / ctr: key */
-+	size_t reseed_ctr;	/* Number of RNG requests since last reseed --
-+				 * 10.1.1.1 1c) */
-+	unsigned char *scratchpad; /* some memory the DRBG can use for its
-+				    * operation -- allocated during init */
-+	void *priv_data;	/* Data needed for specific cipher
-+				 * implementation */
-+	bool seeded;		/* DRBG fully seeded? */
-+	bool pr;		/* Prediction resistance enabled? */
-+#ifdef CONFIG_CRYPTO_FIPS
-+	bool fips_primed;	/* Continuous test primed? */
-+	unsigned char *prev;	/* previous output value of DRBG_BLOCKLEN for
-+				 * FIPS 140-2 continuous test */
-+#endif
-+	const struct drbg_state_ops *d_ops;
-+	const struct drbg_core *core;
-+	struct drbg_test_data *test_data;
-+};
++	ret = memcmp(test->expected, buf, test->expectedlen);
 +
-+/* helper functions */
-+static inline __u8 drbg_statelen(struct drbg_state *drbg)
-+{
-+	if (drbg && drbg->core)
-+		return drbg->core->statelen;
-+	return 0;
-+}
-+
-+static inline __u8 drbg_blocklen(struct drbg_state *drbg)
-+{
-+	if (drbg && drbg->core)
-+		return drbg->core->blocklen_bytes;
-+	return 0;
-+}
-+
-+static inline __u8 drbg_keylen(struct drbg_state *drbg)
-+{
-+	if (drbg && drbg->core)
-+		return (drbg->core->statelen - drbg->core->blocklen_bytes);
-+	return 0;
-+}
-+
-+static inline size_t drbg_max_request_bytes(struct drbg_state *drbg)
-+{
-+	/* max_bits is in bits, but buflen is in bytes */
-+	return (1 << (drbg->core->max_bits - 3));
-+}
-+
-+static inline size_t drbg_max_addtl(struct drbg_state *drbg)
-+{
-+	return (1UL<<(drbg->core->max_addtllen));
-+}
-+
-+static inline size_t drbg_max_requests(struct drbg_state *drbg)
-+{
-+	return (1UL<<(drbg->core->max_req));
-+}
-+
-+/* kernel crypto API input data structure for DRBG generate in case dlen
-+ * is set to 0 */
-+struct drbg_gen {
-+	unsigned char *outbuf;	/* output buffer for random numbers */
-+	unsigned int outlen;	/* size of output buffer */
-+	struct drbg_string *addtl;	/* input buffer for
-+					 * additional information string */
-+	struct drbg_test_data *test_data;	/* test data */
-+};
-+
-+/*
-+ * This is a wrapper to the kernel crypto API function of
-+ * crypto_rng_get_bytes() to allow the caller to provide additional data
-+ *
-+ * @drng DRBG handle -- see crypto_rng_get_bytes
-+ * @outbuf output buffer -- see crypto_rng_get_bytes
-+ * @outlen length of output buffer -- see crypto_rng_get_bytes
-+ * @addtl_input additional information string input buffer
-+ * @addtllen length of additional information string buffer
-+ *
-+ * return
-+ *	see crypto_rng_get_bytes
-+ */
-+static inline int crypto_drbg_get_bytes_addtl(struct crypto_rng *drng,
-+			unsigned char *outbuf, unsigned int outlen,
-+			struct drbg_string *addtl)
-+{
-+	int ret;
-+	struct drbg_gen genbuf;
-+	genbuf.outbuf = outbuf;
-+	genbuf.outlen = outlen;
-+	genbuf.addtl = addtl;
-+	genbuf.test_data = NULL;
-+	ret = crypto_rng_get_bytes(drng, (u8 *)&genbuf, 0);
++outbuf:
++	crypto_free_rng(drng);
++	kzfree(buf);
 +	return ret;
 +}
 +
-+/*
-+ * TEST code
-+ *
-+ * This is a wrapper to the kernel crypto API function of
-+ * crypto_rng_get_bytes() to allow the caller to provide additional data and
-+ * allow furnishing of test_data
-+ *
-+ * @drng DRBG handle -- see crypto_rng_get_bytes
-+ * @outbuf output buffer -- see crypto_rng_get_bytes
-+ * @outlen length of output buffer -- see crypto_rng_get_bytes
-+ * @addtl_input additional information string input buffer
-+ * @addtllen length of additional information string buffer
-+ * @test_data filled test data
-+ *
-+ * return
-+ *	see crypto_rng_get_bytes
-+ */
-+static inline int crypto_drbg_get_bytes_addtl_test(struct crypto_rng *drng,
-+			unsigned char *outbuf, unsigned int outlen,
-+			struct drbg_string *addtl,
-+			struct drbg_test_data *test_data)
++
++static int alg_test_drbg(const struct alg_test_desc *desc, const char *driver,
++			 u32 type, u32 mask)
 +{
-+	int ret;
-+	struct drbg_gen genbuf;
-+	genbuf.outbuf = outbuf;
-+	genbuf.outlen = outlen;
-+	genbuf.addtl = addtl;
-+	genbuf.test_data = test_data;
-+	ret = crypto_rng_get_bytes(drng, (u8 *)&genbuf, 0);
-+	return ret;
++	int err = 0;
++	int pr = 0;
++	int i = 0;
++	struct drbg_testvec *template = desc->suite.drbg.vecs;
++	unsigned int tcount = desc->suite.drbg.count;
++
++	if ((0 == memcmp(driver, "drbg(pr(", 8)) ||
++	    (0 == memcmp(driver, "drbg_pr_", 8)))
++		pr = 1;
++
++	for (i = 0; i < tcount; i++) {
++		err = drbg_cavs_test(&template[i], pr, driver, type, mask);
++		if (err) {
++			printk(KERN_ERR "alg: drbg: Test %d failed for %s\n",
++			       i, driver);
++			err = -EINVAL;
++			break;
++		}
++	}
++	return err;
++
 +}
 +
-+/*
-+ * TEST code
-+ *
-+ * This is a wrapper to the kernel crypto API function of
-+ * crypto_rng_reset() to allow the caller to provide test_data
-+ *
-+ * @drng DRBG handle -- see crypto_rng_reset
-+ * @pers personalization string input buffer
-+ * @perslen length of additional information string buffer
-+ * @test_data filled test data
-+ *
-+ * return
-+ *	see crypto_rng_reset
-+ */
-+static inline int crypto_drbg_reset_test(struct crypto_rng *drng,
-+					 struct drbg_string *pers,
-+					 struct drbg_test_data *test_data)
-+{
-+	int ret;
-+	struct drbg_gen genbuf;
-+	genbuf.outbuf = NULL;
-+	genbuf.outlen = 0;
-+	genbuf.addtl = pers;
-+	genbuf.test_data = test_data;
-+	ret = crypto_rng_reset(drng, (u8 *)&genbuf, 0);
-+	return ret;
-+}
-+
-+/* DRBG type flags */
-+#define DRBG_CTR	((drbg_flag_t)1<<0)
-+#define DRBG_HMAC	((drbg_flag_t)1<<1)
-+#define DRBG_HASH	((drbg_flag_t)1<<2)
-+#define DRBG_TYPE_MASK	(DRBG_CTR | DRBG_HMAC | DRBG_HASH)
-+/* DRBG strength flags */
-+#define DRBG_STRENGTH128	((drbg_flag_t)1<<3)
-+#define DRBG_STRENGTH192	((drbg_flag_t)1<<4)
-+#define DRBG_STRENGTH256	((drbg_flag_t)1<<5)
-+#define DRBG_STRENGTH_MASK	(DRBG_STRENGTH128 | DRBG_STRENGTH192 | \
-+				 DRBG_STRENGTH256)
-+
-+enum drbg_prefixes {
-+	DRBG_PREFIX0 = 0x00,
-+	DRBG_PREFIX1,
-+	DRBG_PREFIX2,
-+	DRBG_PREFIX3
-+};
-+
-+#endif /* _DRBG_H */
+ static int alg_test_null(const struct alg_test_desc *desc,
+ 			     const char *driver, u32 type, u32 mask)
+ {
+@@ -2273,6 +2375,171 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 		.alg = "digest_null",
+ 		.test = alg_test_null,
+ 	}, {
++		.alg = "drbg(nopr(ctr(aes128)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_nopr_ctr_aes128_tv_template,
++				.count = ARRAY_SIZE(drbg_nopr_ctr_aes128_tv_template)
++			}
++		}
++	}, {
++		.alg = "drbg(nopr(ctr(aes192)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_nopr_ctr_aes192_tv_template,
++				.count = ARRAY_SIZE(drbg_nopr_ctr_aes192_tv_template)
++			}
++		}
++	}, {
++		.alg = "drbg(nopr(ctr(aes256)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_nopr_ctr_aes256_tv_template,
++				.count = ARRAY_SIZE(drbg_nopr_ctr_aes256_tv_template)
++			}
++		}
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(nopr(hmac(sha256))) test */
++		.alg = "drbg(nopr(hmac(sha1)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(nopr(hmac(sha256)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_nopr_hmac_sha256_tv_template,
++				.count =
++				ARRAY_SIZE(drbg_nopr_hmac_sha256_tv_template)
++			}
++		}
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(nopr(hmac(sha256))) test */
++		.alg = "drbg(nopr(hmac(sha384)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(nopr(hmac(sha256))) test */
++		.alg = "drbg(nopr(hmac(sha512)))",
++		.test = alg_test_null,
++		.fips_allowed = 1,
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(nopr(sha256)) test */
++		.alg = "drbg(nopr(sha1))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(nopr(sha256))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_nopr_sha256_tv_template,
++				.count = ARRAY_SIZE(drbg_nopr_sha256_tv_template)
++			}
++		}
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(nopr(sha256)) test */
++		.alg = "drbg(nopr(sha384))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(nopr(sha256)) test */
++		.alg = "drbg(nopr(sha512))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(pr(ctr(aes128)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_pr_ctr_aes128_tv_template,
++				.count = ARRAY_SIZE(drbg_pr_ctr_aes128_tv_template)
++			}
++		}
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(pr(aes128)) test */
++		.alg = "drbg(pr(ctr(aes192)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(pr(aes128)) test */
++		.alg = "drbg(pr(ctr(aes256)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(pr(hmac(sha256))) test */
++		.alg = "drbg(pr(hmac(sha1)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(pr(hmac(sha256)))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_pr_hmac_sha256_tv_template,
++				.count = ARRAY_SIZE(drbg_pr_hmac_sha256_tv_template)
++			}
++		}
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(pr(hmac(sha256))) test */
++		.alg = "drbg(pr(hmac(sha384)))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(pr(hmac(sha256))) test */
++		.alg = "drbg(pr(hmac(sha512)))",
++		.test = alg_test_null,
++		.fips_allowed = 1,
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(pr(sha256)) test */
++		.alg = "drbg(pr(sha1))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		.alg = "drbg(pr(sha256))",
++		.test = alg_test_drbg,
++		.fips_allowed = 1,
++		.suite = {
++			.drbg = {
++				.vecs = drbg_pr_sha256_tv_template,
++				.count = ARRAY_SIZE(drbg_pr_sha256_tv_template)
++			}
++		}
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(pr(sha256)) test */
++		.alg = "drbg(pr(sha384))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
++		/* There is no need to specifically test the DRBG with every
++		 * backend cipher -- covered by drbg(pr(sha256)) test */
++		.alg = "drbg(pr(sha512))",
++		.fips_allowed = 1,
++		.test = alg_test_null,
++	}, {
+ 		.alg = "ecb(__aes-aesni)",
+ 		.test = alg_test_null,
+ 		.fips_allowed = 1,
 
