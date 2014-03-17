@@ -1,64 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626AbaCQLBe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 07:01:34 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51225 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932477AbaCQLBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 07:01:33 -0400
-Date: Mon, 17 Mar 2014 08:01:22 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: linux-next: manual merge of the staging tree with the v4l-dvb
- tree
-Message-ID: <20140317080122.459ff9d4@infradead.org>
-In-Reply-To: <20140317185542.fe4554210fc1893b44289008@canb.auug.org.au>
-References: <20140317185542.fe4554210fc1893b44289008@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S932702AbaCQLDR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 07:03:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756143AbaCQLDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 07:03:15 -0400
+Message-ID: <5326D65E.6060205@redhat.com>
+Date: Mon, 17 Mar 2014 12:02:54 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        kvm-devel <kvm@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Sagi Grimberg <sagig@dev.mellanox.co.il>
+Subject: Re: [RFCv2 5/7] vhost/scsi: Enable T10 PI IOV -> SGL memory mapping
+References: <1395034381-656-1-git-send-email-nab@daterainc.com> <1395034381-656-6-git-send-email-nab@daterainc.com>
+In-Reply-To: <1395034381-656-6-git-send-email-nab@daterainc.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 17 Mar 2014 18:55:42 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
+Il 17/03/2014 06:32, Nicholas A. Bellinger ha scritto:
+> +		if (vq->iov[0].iov_len == sizeof(v_req_pi)) {
+> +			req = (unsigned char *)&v_req_pi;
+> +			target = &v_req_pi.lun[1];
+> +			req_size = sizeof(v_req_pi);
+> +			hdr_pi = true;
+> +		} else if (vq->iov[0].iov_len == sizeof(v_req)) {
+> +			req = (unsigned char *)&v_req;
+> +			target = &v_req.lun[1];
+> +			req_size = sizeof(v_req);
+> +			hdr_pi = false;
 
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/media/platform/exynos4-is/fimc-is.c between commit d265d9ac6c7c
-> ("[media] exynos4-is: Use external s5k6a3 sensor driver") from the
-> v4l-dvb tree and commit fd9fdb78a9bf ("[media] of: move graph helpers
-> from drivers/media/v4l2-core to drivers/of") from the staging tree.
-> I fixed it up (see below, though I suspect it is wasted?) and can carry
-> the fix as necessary (no action is required).
+The right check here is on the negotiated features.
 
-I used to have those OF patches on my tree, but I was forced to remove,
-as Grant rejected the patches. After his nack, lots of dicussions about
-the DT bindings started and, until last week, there were no consensus
-about that (as far as I followed the discussions).
+You need a matching QEMU patch to enable the protection information
+feature, like this (untested):
 
-So, reluctantly, I just dropped this series from my tree, pretending
-it never existed, as reverting them could cause troubles if it 
-(or some version of it) got merged via Greg, Grant and/or Russell
-trees.
+diff --git a/hw/scsi/vhost-scsi.c b/hw/scsi/vhost-scsi.c
+index 3983a5b..4c8d5cd 100644
+--- a/hw/scsi/vhost-scsi.c
++++ b/hw/scsi/vhost-scsi.c
+@@ -154,6 +154,9 @@ static uint32_t vhost_scsi_get_features(VirtIODevice *vdev,
+     if (!(s->dev.features & (1 << VIRTIO_SCSI_F_HOTPLUG))) {
+         features &= ~(1 << VIRTIO_SCSI_F_HOTPLUG);
+     }
++    if (!(s->dev.features & (1 << VIRTIO_SCSI_F_T10_PI))) {
++        features &= ~(1 << VIRTIO_SCSI_F_T10_PI);
++    }
+ 
+     return features;
+ }
+diff --git a/hw/scsi/virtio-scsi.c b/hw/scsi/virtio-scsi.c
+index 6610b3a..4a551e9 100644
+--- a/hw/scsi/virtio-scsi.c
++++ b/hw/scsi/virtio-scsi.c
+@@ -629,6 +629,9 @@ static void virtio_scsi_device_realize(DeviceState *dev, Error **errp)
+         return;
+     }
+ 
++    /* Protection information is not supported yet.  */
++    dev->guest_features &= ~VIRTIO_SCSI_F_T10_PI;
++
+     scsi_bus_new(&s->bus, sizeof(s->bus), dev,
+                  &virtio_scsi_scsi_info, vdev->bus_name);
+ 
+diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
+index 9010246..8621fbf 100644
+--- a/include/hw/i386/pc.h
++++ b/include/hw/i386/pc.h
+@@ -267,6 +267,16 @@ int e820_add_entry(uint64_t, uint64_t, uint32_t);
+             .value    = "no",\
+         },\
+         {\
++            .driver   = "virtio-scsi-pci",\
++            .property = "prot_info",\
++            .value    = "off",\
++        },\
++        {\
++            .driver   = "vhost-scsi-pci",\
++            .property = "prot_info",\
++            .value    = "off",\
++        },\
++        {\
+             .driver   = "PIIX4_PM",\
+             .property = "acpi-pci-hotplug-with-bridge-support",\
+             .value    = "off",\
+diff --git a/include/hw/virtio/virtio-scsi.h b/include/hw/virtio/virtio-scsi.h
+index 42b1024..a555f49 100644
+--- a/include/hw/virtio/virtio-scsi.h
++++ b/include/hw/virtio/virtio-scsi.h
+@@ -34,6 +34,7 @@
+ #define VIRTIO_SCSI_F_INOUT                    0
+ #define VIRTIO_SCSI_F_HOTPLUG                  1
+ #define VIRTIO_SCSI_F_CHANGE                   2
++#define VIRTIO_SCSI_F_T10_PI                   3
+ 
+ #define VIRTIO_SCSI_VQ_SIZE     128
+ #define VIRTIO_SCSI_CDB_SIZE    32
+@@ -184,7 +185,9 @@ typedef struct {
+     DEFINE_PROP_BIT("hotplug", _state, _feature_field, VIRTIO_SCSI_F_HOTPLUG,  \
+                                                        true),                  \
+     DEFINE_PROP_BIT("param_change", _state, _feature_field,                    \
+-                                            VIRTIO_SCSI_F_CHANGE, true)
++                                            VIRTIO_SCSI_F_CHANGE, true)        \
++    DEFINE_PROP_BIT("prot_info", _state, _feature_field,                       \
++                                            VIRTIO_SCSI_F_T10_PI, true)
+ 
+ void virtio_scsi_common_realize(DeviceState *dev, Error **errp);
+ void virtio_scsi_common_unrealize(DeviceState *dev, Error **errp);
 
-On my head, it become too late to merge it for 3.15, as first
-people must agree on the DT bindings. Also, I already closed the
-media merge window, as -rc7 seems to be the last -rc.
-
-One possible approach for this would be to merge the patches that move
-the OF graph code away from drivers/media, and the corresponding
-internal ABI changes early at -rc, and applying the DT binding
-patches, and the staging imx-drm driver for 3.16.
-
-Regards,
-Mauro
