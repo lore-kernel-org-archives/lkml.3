@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683AbaCQSFw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 14:05:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31456 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932530AbaCQSFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 14:05:50 -0400
-Date: Mon, 17 Mar 2014 19:05:10 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Hurley <peter@hurleysoftware.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Sree Harsha Totakura <sreeharsha@totakura.in>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jeff Dike <jdike@addtoit.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 2/2] exit: move check_stack_usage() to the end of do_exit()
-Message-ID: <20140317180510.GC15708@redhat.com>
-References: <531DEEA6.4090808@totakura.in> <531E111A.8040207@hurleysoftware.com> <20140313170622.GA31206@redhat.com> <5321F113.7090000@hurleysoftware.com> <53230FE5.9020204@hurleysoftware.com> <20140314192346.GA14823@redhat.com> <53236662.3020707@hurleysoftware.com> <20140314210456.GA19032@redhat.com> <53244C61.5090508@hurleysoftware.com> <20140317180416.GA15708@redhat.com>
+	id S1756886AbaCQSPA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 14:15:00 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40331 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598AbaCQSO6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 14:14:58 -0400
+Date: Mon, 17 Mar 2014 18:14:40 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Harini Katakam <harinik@xilinx.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, michals@xilinx.com
+Message-ID: <20140317181440.GY11706@sirena.org.uk>
+References: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
+ <20140317173017.GW11706@sirena.org.uk>
+ <20140317175911.GU18529@joshc.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kigERAySUJmIn/9g"
 Content-Disposition: inline
-In-Reply-To: <20140317180416.GA15708@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140317175911.GU18529@joshc.qualcomm.com>
+X-Cookie: Turn the other cheek.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] SPI: Add driver for Cadence SPI controller
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not clear why check_stack_usage() is called so early and
-thus it never checks the stack usage in, say, exit_notify() or
-flush_ptrace_hw_breakpoint() or other functions which are only
-called by do_exit().
 
-Move the callsite down to the last preempt_disable/schedule.
+--kigERAySUJmIn/9g
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/exit.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Mon, Mar 17, 2014 at 12:59:11PM -0500, Josh Cartwright wrote:
+> On Mon, Mar 17, 2014 at 05:30:17PM +0000, Mark Brown wrote:
+> > On Mon, Mar 17, 2014 at 05:35:36PM +0530, Harini Katakam wrote:
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 5d5b472..6d1f245 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -788,7 +788,6 @@ void do_exit(long code)
- 		disassociate_ctty(1);
- 	exit_task_namespaces(tsk);
- 	exit_task_work(tsk);
--	check_stack_usage();
- 	exit_thread();
- 
- 	/*
-@@ -842,6 +841,7 @@ void do_exit(long code)
- 
- 	validate_creds_for_do_exit(tsk);
- 
-+	check_stack_usage();
- 	preempt_disable();
- 	if (tsk->nr_dirtied)
- 		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
--- 
-1.5.5.1
+> > > +static int __maybe_unused cdns_spi_suspend(struct device *dev)
+> > > +{
 
+> > This needs to call spi_master_suspend() as well (and similarly on
+> > resume).
 
+> I'm not that familiar with the SPI core, but this seems like an
+> inversion.  Is there a reason why the SPI master class doesn't implement
+> suspend/resume() callbacks which handle stopping/starting the queue
+> automatically for all masters?
+
+This is for users of an optional feature of the infrastructure.  We
+probably should just call it anyway since it does have checks for the
+feature being used (but given all the open coding around this stuff I'd
+need to verify that the class callbacks would reliably get called).
+
+In any case that's not happening now and the driver as it stands is
+buggy since it's trampling all over the hardware without syncing with
+anything that isn't ongoing.
+
+--kigERAySUJmIn/9g
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTJzuMAAoJELSic+t+oim9ZGMP/iMA13Ug+kBvAWKjqod06Ph8
+kBgZ38Llih+cwSsMYfeQ2Eyc+FMcWFA5/JOpxQOoEB4HFyGdUr99uo9CmbUwYsBO
+ynA0vMfcHFQ16mQPtRa9GnCzrZR6Vhbml8CtX6Q8ol+mys4y3S0l2DRS1BqdoaIv
+gP0W+aqyqYMCAIKz+bJ3+R4KjFOJ/gqMg4PizB0Zaacqmx0sxvFaYhGTNClH2ldu
+/hBXBUMK6EqKONRtTO7wHRMZgPEX7KveIOSeecpZnbiKKcvEYOGxpGWXP5yO7Zwh
+un53dHmsKmoAHPK+KX6NOsYLh3QgpwNgtYu4BJqK4HXVmdU5DdVSqSDBSVTXANe2
+KP97QeOF3Hy829VKJsVrOU2cPbZ5SeA55ri+FD6SdQ8OkAsuUX9DWkoLCtlpUBHH
+0SlfJHNOVAKE2s+y4xbGYR93tRsi4+8nw+4Zj80FHdkutykuK87FkCekrbJ0bUqc
+cxaHkTKLqZVSRRpXlvqbyZq1ONlvjZLHrKwyyrnyV86EJ1D0Ijh6G4uuxI5vjs03
+qgnAOMOMQdc2Fsfwpj6M93TOElYrYlBirSQ2pKa5Gi6HNQtzchyKSD5sBWf+wEbp
+q9y8smKiT/wvhwYtZMuVes3JlkJTRctJ59mTjldx2MfWCEQBsZi1NNZFWvXxDMWN
+KNqmdVzcYXDqxcI5VTno
+=G5Dg
+-----END PGP SIGNATURE-----
+
+--kigERAySUJmIn/9g--
