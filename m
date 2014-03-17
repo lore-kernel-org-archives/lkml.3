@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397AbaCQLG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 07:06:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753178AbaCQLG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 07:06:57 -0400
-Date: Mon, 17 Mar 2014 11:45:33 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 5/5] perf tools: Share process map groups within process
- threads
-Message-ID: <20140317104533.GB6469@krava.brq.redhat.com>
-References: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
- <1394805606-25883-6-git-send-email-jolsa@redhat.com>
- <871ty1thgk.fsf@sejong.aot.lge.com>
+	id S932728AbaCQLL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 07:11:57 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42844 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932526AbaCQLLz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 07:11:55 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>
+CC: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH] usb: dwc3: core: Fix gadget for system suspend/resume
+Date: Mon, 17 Mar 2014 13:11:50 +0200
+Message-ID: <1395054710-21183-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871ty1thgk.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 04:25:15PM +0900, Namhyung Kim wrote:
-> On Fri, 14 Mar 2014 15:00:06 +0100, Jiri Olsa wrote:
-> > +	if (!mg) {
-> > +		struct thread *leader = thread__get_leader(thread);
-> > +
-> > +		if (!leader)
-> > +			return NULL;
-> > +
-> > +		if (leader->mg)
-> > +			mg = leader->mg;
-> > +		else
-> > +			mg = thread__map_groups_alloc(leader);
-> > +
-> > +		if (leader != thread)
-> > +			thread->mg = mg;
-> > +
-> > +		mg->refcnt++;
-> 
-> What's the value of mg->refcnt here in case of leader != thread and
-> leader->mg was not allocated originally?  I think it's 1 - but shouldn't
-> it be 2 since it's referenced from both of leader and the thread now?
+During system resume, if the event buffers are not setup before
+the gadget controller starts then we start with invalid context
+and this can lead to bus access errors. This is especially true for
+platforms that loose the controller context during system suspend.
+e.g. AM437x.
 
-right you are..
+The following backtrace was found when the system is suspended
+and resumed with g_zero loaded on AM437x-evm (USB cable connected
+to host all the while).
 
-I need to initialize refcnt to 1 in thread__map_groups_alloc
-and increase it only for the '(leader != thread)' case
+[  120.981506] WARNING: CPU: 0 PID: 1656 at drivers/bus/omap_l3_noc.c:137 l3_interrupt_handler+0x198/0x28c()
+[  120.981514] L3 custom error: MASTER:USB0 WR TARGET:GPMC
+[  120.981638] Modules linked in: g_mass_storage usb_f_mass_storage libcomposite configfs bufferclass_ti(O) omaplfb(O) cryptodev(O) dwc3 snd_soc_evm snd_soc_omap snd_pe
+[  120.981659] CPU: 0 PID: 1656 Comm: sh Tainted: G           O 3.12.10-gc559824 #1
+[  120.981669] Backtrace:
+[  120.981705] [<c0017880>] (dump_backtrace+0x0/0x10c) from [<c0017a1c>] (show_stack+0x18/0x1c)
+[  120.981730]  r6:c02819ac r5:00000009 r4:ec137cb8 r3:00000000
+[  120.981767] [<c0017a04>] (show_stack+0x0/0x1c) from [<c056c0b0>] (dump_stack+0x20/0x28)
+[  120.981802] [<c056c090>] (dump_stack+0x0/0x28) from [<c0046d08>] (warn_slowpath_common+0x70/0x90)
+[  120.981830] [<c0046c98>] (warn_slowpath_common+0x0/0x90) from [<c0046dcc>] (warn_slowpath_fmt+0x38/0x40)
+[  120.981856]  r8:c0855eb0 r7:00000002 r6:f1000700 r5:00000007 r4:80080003
+[  120.981886] [<c0046d94>] (warn_slowpath_fmt+0x0/0x40) from [<c02819ac>] (l3_interrupt_handler+0x198/0x28c)
+[  120.981900]  r3:c0801ab8 r2:c06cb354
+[  120.981936] [<c0281814>] (l3_interrupt_handler+0x0/0x28c) from [<c007162c>] (handle_irq_event_percpu+0x54/0x1b8)
+[  120.981962] [<c00715d8>] (handle_irq_event_percpu+0x0/0x1b8) from [<c00717c0>] (handle_irq_event+0x30/0x40)
+[  120.981993] [<c0071790>] (handle_irq_event+0x0/0x40) from [<c0074058>] (handle_fasteoi_irq+0x74/0x128)
+[  120.982006]  r4:ed0056c0 r3:00000000
+[  120.982033] [<c0073fe4>] (handle_fasteoi_irq+0x0/0x128) from [<c0070f34>] (generic_handle_irq+0x28/0x38)
+[  120.982046]  r4:0000002a r3:c0073fe4
+[  120.982085] [<c0070f0c>] (generic_handle_irq+0x0/0x38) from [<c0015560>] (handle_IRQ+0x38/0x8c)
+[  120.982098]  r4:c080137c r3:00000182
+[  120.982124] [<c0015528>] (handle_IRQ+0x0/0x8c) from [<c00087e0>] (gic_handle_irq+0x30/0x5c)
+[  120.982145]  r6:ec137dd0 r5:c07ac480 r4:fa24010c r3:00000100
+[  120.982169] [<c00087b0>] (gic_handle_irq+0x0/0x5c) from [<c056fcc0>] (__irq_svc+0x40/0x54)
+[  120.982179] Exception stack(0xec137dd0 to 0xec137e18)
+[  120.982195] 7dc0:                                     00000000 a00001d3 00000000 00000004
+[  120.982216] 7de0: a0000153 ec1d9010 c080de90 ec137e30 c080debc 00000000 ed756e44 ec137e2c
+[  120.982232] 7e00: ec137de0 ec137e18 bf1150e4 bf115474 60000153 ffffffff
+[  120.982253]  r7:ec137e04 r6:ffffffff r5:60000153 r4:bf115474
+[  120.982327] [<bf115438>] (dwc3_complete+0x0/0x40 [dwc3]) from [<c0338f50>] (dpm_complete+0xd4/0x19c)
+[  120.982341]  r5:ed756e10 r4:ed756e64
+[  120.982370] [<c0338e7c>] (dpm_complete+0x0/0x19c) from [<c0339034>] (dpm_resume_end+0x1c/0x20)
+[  120.982400] [<c0339018>] (dpm_resume_end+0x0/0x20) from [<c006d4ec>] (suspend_devices_and_enter+0x118/0x33c)
+[  120.982412]  r4:c0833da4 r3:00000000
+[  120.982436] [<c006d3d4>] (suspend_devices_and_enter+0x0/0x33c) from [<c006d928>] (pm_suspend+0x218/0x254)
+[  120.982458] [<c006d710>] (pm_suspend+0x0/0x254) from [<c006c594>] (state_store+0x70/0xc0)
+[  120.982478]  r6:c057a6cc r5:c06a8320 r4:00000003 r3:0000006d
+[  120.982515] [<c006c524>] (state_store+0x0/0xc0) from [<c0264cc0>] (kobj_attr_store+0x1c/0x28)
+[  120.982546] [<c0264ca4>] (kobj_attr_store+0x0/0x28) from [<c012ccb8>] (sysfs_write_file+0x170/0x1a4)
+[  120.982583] [<c012cb48>] (sysfs_write_file+0x0/0x1a4) from [<c00d17e4>] (vfs_write+0xb8/0x190)
+[  120.982611] [<c00d172c>] (vfs_write+0x0/0x190) from [<c00d1bf8>] (SyS_write+0x44/0x78)
+[  120.982641] [<c00d1bb4>] (SyS_write+0x0/0x78) from [<c0014660>] (ret_fast_syscall+0x0/0x30)
 
-I'll add some test for this
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ drivers/usb/dwc3/core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-thanks,
-jirka
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index d001417..0b99e3a 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -824,8 +824,9 @@ static void dwc3_complete(struct device *dev)
+ 	switch (dwc->dr_mode) {
+ 	case USB_DR_MODE_PERIPHERAL:
+ 	case USB_DR_MODE_OTG:
++		dwc3_event_buffers_setup(dwc);
+ 		dwc3_gadget_complete(dwc);
+-		/* FALLTHROUGH */
++		break;
+ 	case USB_DR_MODE_HOST:
+ 	default:
+ 		dwc3_event_buffers_setup(dwc);
+-- 
+1.8.3.2
+
