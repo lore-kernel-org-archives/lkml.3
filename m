@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655AbaCQQmH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 12:42:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44885 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753572AbaCQQmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 12:42:05 -0400
-Date: Mon, 17 Mar 2014 17:42:03 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, glommer@gmail.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, devel@openvz.org
-Subject: Re: [PATCH RESEND -mm 02/12] memcg: fix race in memcg cache
- destruction path
-Message-ID: <20140317164203.GC30623@dhcp22.suse.cz>
-References: <cover.1394708827.git.vdavydov@parallels.com>
- <94fc308b9074e45a2aac7a06cf357a33c5d97c9f.1394708827.git.vdavydov@parallels.com>
+	id S1755751AbaCQQms (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 12:42:48 -0400
+Received: from [213.199.154.206] ([213.199.154.206]:41377 "EHLO
+	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753572AbaCQQmq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 12:42:46 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zz98dIc89bh936eIe0eah1432I4015I14ffIzz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h906i1155h)
+Date: Mon, 17 Mar 2014 09:41:18 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: linux-next: manual merge of the tip tree with the arm-soc tree
+References: <20140317163506.5770f06a77ba011e682f47ff@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <94fc308b9074e45a2aac7a06cf357a33c5d97c9f.1394708827.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140317163506.5770f06a77ba011e682f47ff@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <6b7bc052-bb06-4821-9710-50c4852425c8@AM1EHSMHS002.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-03-14 19:06:40, Vladimir Davydov wrote:
-> We schedule memcg cache shrink+destruction work (memcg_params::destroy)
-> from two places: when we turn memcg offline
-> (mem_cgroup_destroy_all_caches) and when the last page of the cache is
-> freed (memcg_params::nr_pages reachs zero, see memcg_release_pages,
-> mem_cgroup_destroy_cache).
+On Mon, 2014-03-17 at 04:35PM +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the tip tree got a conflict in
+> arch/arm/mach-zynq/Kconfig between commit ddb902cc3459 ("ARM: centralize
+> common multi-platform kconfig options") from the arm-soc tree and commit
+> cd325295871f ("arm: zynq: Add support for cpufreq") from the tip tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/mach-zynq/Kconfig
+> index 105d39b72a25,f03e75bd0b2b..000000000000
+> --- a/arch/arm/mach-zynq/Kconfig
+> +++ b/arch/arm/mach-zynq/Kconfig
+> @@@ -2,10 -2,19 +2,12 @@@ config ARCH_ZYN
+>   	bool "Xilinx Zynq ARM Cortex A9 Platform" if ARCH_MULTI_V7
+>   	select ARM_AMBA
+>   	select ARM_GIC
+> + 	select ARCH_HAS_CPUFREQ
+> + 	select ARCH_HAS_OPP
+>  -	select COMMON_CLK
+>  -	select CPU_V7
+>  -	select GENERIC_CLOCKEVENTS
+>   	select HAVE_ARM_SCU if SMP
+>   	select HAVE_ARM_TWD if SMP
+>   	select ICST
+>  -	select MIGHT_HAVE_CACHE_L2X0
 
-This is just ugly! Why do we mem_cgroup_destroy_all_caches from the
-offline code at all? Just calling kmem_cache_shrink and then wait for
-the last pages to go away should be sufficient to fix this, no?
+The two conflicting patches mentioned above don't touch this line, I
+think. I'm not sure whether this should go away.
+Apart from this, things look okay to me.
 
-Whether the current code is good (no it's not) is another question. But
-this should be fixed also in the stable trees (is the bug there since
-the very beginning?) so the fix should be as simple as possible IMO.
-So if there is a simpler solution I would prefer it. But I am drowning
-in the kmem trickiness spread out all over the place so I might be
-missing something very easily.
+	Thanks,
+	Sören
 
-> Since the latter can happen while the work
-> scheduled from mem_cgroup_destroy_all_caches is in progress or still
-> pending, we need to be cautious to avoid races there - we should
-> accurately bail out in one of those functions if we see that the other
-> is in progress. Currently we only check if memcg_params::nr_pages is 0
-> in the destruction work handler and do not destroy the cache if so. But
-> that's not enough. An example of race we can get is shown below:
-> 
->   CPU0					CPU1
->   ----					----
->   kmem_cache_destroy_work_func:		memcg_release_pages:
-> 					  atomic_sub_and_test(1<<order, &s->
-> 							memcg_params->nr_pages)
-> 					  /* reached 0 => schedule destroy */
-> 
->     atomic_read(&cachep->memcg_params->nr_pages)
->     /* 0 => going to destroy the cache */
->     kmem_cache_destroy(cachep);
-> 
-> 					  mem_cgroup_destroy_cache(s):
-> 					    /* the cache was destroyed on CPU0
-> 					       - use after free */
-> 
-> An obvious way to fix this would be substituting the nr_pages counter
-> with a reference counter and make memcg take a reference. The cache
-> destruction would be then scheduled from that thread which decremented
-> the refcount to 0. Generally, this is what this patch does, but there is
-> one subtle thing here - the work handler serves not only for cache
-> destruction, it also shrinks the cache if it's still in use (we can't
-> call shrink directly from mem_cgroup_destroy_all_caches due to locking
-> dependencies). We handle this by noting that we should only issue shrink
-> if called from mem_cgroup_destroy_all_caches, because the cache is
-> already empty when we release its last page. And if we drop the
-> reference taken by memcg in the work handler, we can detect who exactly
-> scheduled the worker - mem_cgroup_destroy_all_caches or
-> memcg_release_pages.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Glauber Costa <glommer@gmail.com>
-[...]
--- 
-Michal Hocko
-SUSE Labs
+
