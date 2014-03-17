@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891AbaCQSFE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 14:05:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30441 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755233AbaCQSFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 14:05:02 -0400
-Date: Mon, 17 Mar 2014 19:04:16 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Hurley <peter@hurleysoftware.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Sree Harsha Totakura <sreeharsha@totakura.in>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jeff Dike <jdike@addtoit.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 0/2] (Was: pppd service crash in linux-3.13.6)
-Message-ID: <20140317180416.GA15708@redhat.com>
-References: <531A37FF.4000509@totakura.in> <531DEEA6.4090808@totakura.in> <531E111A.8040207@hurleysoftware.com> <20140313170622.GA31206@redhat.com> <5321F113.7090000@hurleysoftware.com> <53230FE5.9020204@hurleysoftware.com> <20140314192346.GA14823@redhat.com> <53236662.3020707@hurleysoftware.com> <20140314210456.GA19032@redhat.com> <53244C61.5090508@hurleysoftware.com>
+	id S932464AbaCQSFf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 14:05:35 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38666 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756897AbaCQSFa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 14:05:30 -0400
+Date: Mon, 17 Mar 2014 18:05:25 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
+Message-ID: <20140317180525.GL6457@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Catalin Marinas <catalin.marinas@arm.com>,
+	Arnd Bergmann <arnd@arndb.de>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	Grant Likely <grant.likely@secretlab.ca>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com>
+ <20140314171457.GK18126@arm.com>
+ <201403141838.08900.arnd@arndb.de>
+ <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
+ <20140317173821.GJ24070@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20140317173821.GJ24070@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 17 Mar 2014 18:05:38.0795 (UTC) FILETIME=[80AD53B0:01CF420B]
+X-MC-Unique: 114031718052800301
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <53244C61.5090508@hurleysoftware.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15, Peter Hurley wrote:
->
-> On 03/14/2014 05:04 PM, Oleg Nesterov wrote:
->>
->> But it can't even know who called call_usermodehelper(). Besides,
->> cgroup_release_agent() uses UMH_WAIT_EXEC, so the caller can continue
->> and disappear completely before the usermode process has any chance
->> to do something.
->
-> I'm just hypothesizing potential breakage, since the order of teardown
-> is sensitive to changes, and I didn't do a complete audit of all the
-> possibilities.
+On Mon, Mar 17, 2014 at 05:38:21PM +0000, Catalin Marinas wrote:
+> On Fri, Mar 14, 2014 at 06:05:27PM +0000, Liviu Dudau wrote:
+> > On Fri, Mar 14, 2014 at 05:38:08PM +0000, Arnd Bergmann wrote:
+> > > On Friday 14 March 2014, Catalin Marinas wrote:
+> > > > On Fri, Mar 14, 2014 at 03:34:18PM +0000, Liviu Dudau wrote:
+> > > > > --- /dev/null
+> > > > > +++ b/arch/arm64/kernel/pci.c
+> > > > [...]
+> > > > > +int pci_register_io_range(phys_addr_t address, resource_size_t size)
+> > > > [...]
+> > > > > +unsigned long pci_address_to_pio(phys_addr_t address)
+> > > > [...]
+> > > > > +void pcibios_fixup_bus(struct pci_bus *bus)
+> > > > [ actually most of this file ]
+> > > > 
+> > > > Maybe it was raised before already but can we have __weak generic
+> > > > definitions of these functions? They don't seem to be arm64 specific in
+> > > > any way.
+> [...]
+> > Catalin, if you are happy to ask for ACKs from all arch maintainers that might get
+> > affected by our custom version of pci_address_to_pio() before you can pull PCI support
+> > for arm64 then I can propose a new patchset.
+> 
+> You don't need to change the other architectures, that's the point of a
+> __weak definition, it will be automatically overridden. If you want, you
+> can even place a GENERIC_PCI or whatever config option that is only
+> selected by arm64 for the time being.
 
-Yes, I understand your concerns. Still I do not see how cgroup_exit()
-can depend on tty/namespace.
+pci_address_to_pio() is alread __weak. My patch was adding the arm64 version of it. Adding
+an #ifdef GENERIC_PCI to the __weak implementation is not just a temporary solution.
+We would still have to keep some sort of #ifdef around in the function as x86
+will never pickup our version. Regardless, the list of people that would need to ACK that
+change will increase, right?
 
-> If you feel strongly about moving disassociate_tty(), I won't object.
+Best regards,
+Liviu
 
-It is not that I feel really strongly... just in looks better to me.
-If nothing else:
+> 
+> -- 
+> Catalin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-	1. If we actually can not do disassociate_ctty() before, say,
-	   cgroup_exit(), then we should understand and document the
-	   reason.
-
-	2. task_work_add() can have more users in drivers/tty which
-	   can be triggered by disassociate_tty() paths. So I think
-	   it would be nice to call it before task_work_exit().
-
-2/2 is offtopic and hopefully trivial.
-
-Oleg.
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
