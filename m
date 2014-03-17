@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699AbaCQOB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 10:01:59 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58258 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932692AbaCQN5X (ORCPT
+	id S933716AbaCQOCL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 10:02:11 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55367 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932692AbaCQOCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:57:23 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH v2 05/15] ARM: at91: sam9m10g45ek: Add touchscreen support through at91_adc
-Date: Mon, 17 Mar 2014 14:56:58 +0100
-Message-Id: <1395064628-644-6-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 17 Mar 2014 10:02:06 -0400
+Date: Mon, 17 Mar 2014 15:02:01 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 3/3] workqueue: Add anon workqueue sysfs hierarchy
+Message-ID: <20140317140158.GA23962@localhost.localdomain>
+References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
+ <1394815131-17271-4-git-send-email-fweisbec@gmail.com>
+ <7ha9csionc.fsf@paris.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7ha9csionc.fsf@paris.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-at91_adc now supports reading a touchscreen for ADCs without a TSMR register.
-Enable touchscreen support through at91_adc. This allows to use both a
-touchscreen and the remaining ADC channel at the same time.
+On Fri, Mar 14, 2014 at 12:08:39PM -0700, Kevin Hilman wrote:
+> Frederic Weisbecker <fweisbec@gmail.com> writes:
+> 
+> > We call "anon workqueues" the set of unbound workqueues that don't
+> > carry the WQ_SYSFS flag.
+> >
+> > They are a problem nowaday because people who work on CPU isolation
+> > (HPC, Real time, etc...) want to be able to migrate all the unbound
+> > workqueues away to a single CPU. This control is possible through sysfs
+> > but only with WQ_SYSFS workqueues.
+> >
+> > Now we need to deal with the other unbound workqueues. There is two
+> > possible solutions:
+> >
+> > 1) Implement a sysfs directory for each unbound !WQ_SYSFS. This could
+> > be done with a specific Kconfig to make sure that these workqueue
+> > won't be considered as a stable ABI. But we all know that all distros
+> > will enable this Kconfig symbol and that a warning in the Kconfig help
+> > text won't protect against anything.
+> >
+> > 2) Implement a single sysfs directory containing only the cpumask file
+> > to the control the affinity of all the !WQ_SYSFS workqueues.
+> >
+> > This patch implements the second solution.
+> >
+> > Two issues I have seen though:
+> >
+> > * This triggers the following warning in apply_workqueue_attrs():
+> >
+> > 	/* creating multiple pwqs breaks ordering guarantee */
+> > 	if (WARN_ON((wq->flags & __WQ_ORDERED) && !list_empty(&wq->pwqs)))
+> > 		return -EINVAL;
+> >
+> >   I haven't yet checked into the details.
+> 
+> I tried to test this series and ran into this too for the kmmcd
+> workqueue.  Looking at the commit that introduced this check, it looks
+> changing attributes will break the ordering constraints[1], so it's
+> prevented all together.  hmmm...
+> 
+> Kevin
+> 
+> [1]
+> commit 8719dceae2f98a578507c0f6b49c93f320bd729c
+> Author: Tejun Heo <tj@kernel.org>
+> Date:   Tue Mar 12 11:30:04 2013 -0700
+> 
+> workqueue: reject adjusting max_active or applying attrs to ordered
+> workqueues
+> 
+> Adjusting max_active of or applying new workqueue_attrs to an ordered
+> workqueue breaks its ordering guarantee.  The former is obvious.  The
+> latter is because applying attrs creates a new pwq (pool_workqueue) and
+> there is no ordering constraint between the old and new pwqs.
 
-Also, lower the clock for the ADC as it allows to have more stable reads and
-this is the speed used by atmel_tsadcc.
-It lowers the maximum throughput rate from 440000 samples per second to 12958
-samples per second. It shouldn't be an issue as the CPU is not able to keep up
-reading samples at that frequency.
+Ah I see. The way apply_workqueue_attrs() applies the cpumask with the pwqs creation
+does break ordering.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/at91sam9g45.c        | 2 +-
- arch/arm/mach-at91/board-sam9m10g45ek.c | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+Hmm, looks like some more plumbing is required.
 
-diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-index 2f455ce35268..3c519a7a938f 100644
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ b/arch/arm/mach-at91/at91sam9g45.c
-@@ -181,7 +181,7 @@ static struct clk vdec_clk = {
- static struct clk adc_op_clk = {
- 	.name		= "adc_op_clk",
- 	.type		= CLK_TYPE_PERIPHERAL,
--	.rate_hz	= 13200000,
-+	.rate_hz	= 300000,
- };
- 
- /* AES/TDES/SHA clock - Only for sam9m11/sam9g56 */
-diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
-index ef39078c8ce2..4d775b796ce4 100644
---- a/arch/arm/mach-at91/board-sam9m10g45ek.c
-+++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
-@@ -315,6 +315,7 @@ static struct at91_adc_data ek_adc_data = {
- 	.channels_used = BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4) | BIT(5) | BIT(6) | BIT(7),
- 	.use_external_triggers = true,
- 	.vref = 3300,
-+	.touchscreen_type = ATMEL_ADC_TOUCHSCREEN_4WIRE,
- };
- 
- /*
--- 
-1.8.3.2
-
+> 
+> Make apply_workqueue_attrs() and workqueue_set_max_active() trigger
+> WARN_ON() if those operations are requested on an ordered workqueue
+> and fail / ignore respectively.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
