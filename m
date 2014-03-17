@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbaCQVtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 17:49:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706AbaCQVta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 17:49:30 -0400
-From: Mark Salter <msalter@redhat.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Mark Salter <msalter@redhat.com>
-Subject: [PATCH] sched: use zalloc_cpumask_var for rootdomain cpumasks
-Date: Mon, 17 Mar 2014 17:48:35 -0400
-Message-Id: <1395092915-26526-1-git-send-email-msalter@redhat.com>
+	id S1752759AbaCQVyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 17:54:21 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33825 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752634AbaCQVyT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 17:54:19 -0400
+X-Sasl-enc: 9vv6/ES/yezOU0WVfjZfheytKNnML24tvmNJ01VQ0DPP 1395093258
+Date: Mon, 17 Mar 2014 14:56:19 -0700
+From: Greg KH <greg@kroah.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Mark Brown <broonie@kernel.org>,
+        Stewart Smith <stewart@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20140317215619.GA25228@kroah.com>
+References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
+ <20140312015021.GC10106@kroah.com>
+ <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au>
+ <20140317183333.GE10565@kroah.com>
+ <1395088410.15098.175.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395088410.15098.175.camel@pasglop>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In kernel/sched/core.c, there is:
+On Tue, Mar 18, 2014 at 07:33:30AM +1100, Benjamin Herrenschmidt wrote:
+> On Mon, 2014-03-17 at 11:33 -0700, Greg KH wrote:
+> 
+> > There were only 3 (or 4), users of this api, and no new ones had been
+> > added in _years_, it's a very obscure thing, and odds are, it wouldn't
+> > ever be added again, especially as it was just removed entirely not
+> > being needed anymore.  And I'd argue, it's something that you shouldn't
+> > have even been doing in the first place, so why a new user of it was
+> > added now is quite strange to me.
+> 
+> Actually that's a good question. Is there a better way for us than to
+> use this API ? Essentially we use that because it's our understanding
+> that it is what is needed for a sysfs file that can remove its parent
+> directory from within a write() op.
+> 
+> We followed the driver "remove" implementation as an example.
+> 
+> The reason the opal elog and dump patches use it is that those two
+> patches add sysfs interface that represent the error logs (and platform
+> dumps but you can treat the latter as some kind of special case of error
+> logs) from the service processor in sysfs.
+> 
+> So for each log we create a dir (kobject) which we populate with a few
+> things like the log unique ID, raw data, etc.... and a file that can be
+> used to "ack" the log with the service processor.
+> 
+> The latter has the effect of removing it. This is done by the collection
+> daemon after it has confirmed that the error log has been stored to disk
+> and properly flushed.
+> 
+> Is there a better interface ? Can we implement for example unlink() on
+> the kobject itself ? IE. Do the ack by essentially having userspace rm
+> the directory ? :-)
 
-static int init_rootdomain(struct root_domain *rd)
-{
-	memset(rd, 0, sizeof(*rd));
+No you can't, sorry.
 
-	if (!alloc_cpumask_var(&rd->span, GFP_KERNEL))
-		goto out;
-	if (!alloc_cpumask_var(&rd->online, GFP_KERNEL))
-		goto free_span;
-	if (!alloc_cpumask_var(&rd->dlo_mask, GFP_KERNEL))
-		goto free_online;
-	if (!alloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
-		goto free_dlo_mask;
+And this seems like a huge abuse of sysfs, you better be using binary
+sysfs files for your log data...
 
-In the CONFIG_CPUMASK_OFFSTACK=y case, there doesn't appear to be anything
-clearing the cpumasks. I think these should be zalloc_cpumask_var() calls.
+Do you have a pointer to where you document this sysfs api in
+Documentation/ABI/ ?
 
-I noticed this while debugging a memory corruptor in unrelated code which
-cleared the span cpumask and triggered a BUG in the scheduler. I had turned
-on CONFIG_PAGE_POISONING and looking at the span cpumask at various points
-during early boot and saw that the mask was filled with POISON_FREE bytes
-before the secondary cores started coming up and setting their cpu bits in
-the mask.
+> Now regarding the practicals of sorting out our trees, Stephen suggested
+> that rather than doing anything on my side (heh, I like that !), you
+> should revert the last patch of the series, the one removing the old
+> API, in your tree.
+> 
+> It can then be re-applied later around rc1.
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
----
- kernel/sched/core.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+I'll look to see if we can do that, let me dig it up out of my tree...
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f5c6635..9843755 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5355,13 +5355,13 @@ static int init_rootdomain(struct root_domain *rd)
- {
- 	memset(rd, 0, sizeof(*rd));
- 
--	if (!alloc_cpumask_var(&rd->span, GFP_KERNEL))
-+	if (!zalloc_cpumask_var(&rd->span, GFP_KERNEL))
- 		goto out;
--	if (!alloc_cpumask_var(&rd->online, GFP_KERNEL))
-+	if (!zalloc_cpumask_var(&rd->online, GFP_KERNEL))
- 		goto free_span;
--	if (!alloc_cpumask_var(&rd->dlo_mask, GFP_KERNEL))
-+	if (!zalloc_cpumask_var(&rd->dlo_mask, GFP_KERNEL))
- 		goto free_online;
--	if (!alloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
-+	if (!zalloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
- 		goto free_dlo_mask;
- 
- 	init_dl_bw(&rd->dl_bw);
--- 
-1.8.5.3
+thanks,
 
+greg k-h
