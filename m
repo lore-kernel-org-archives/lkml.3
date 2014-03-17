@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617AbaCQEMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 00:12:16 -0400
-Received: from mail.xen.prgmr.com ([71.19.149.6]:57140 "EHLO
-	mail.xen.prgmr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423AbaCQEMP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 00:12:15 -0400
-Message-ID: <5326761D.5000905@prgmr.com>
-Date: Sun, 16 Mar 2014 21:12:13 -0700
-From: Sarah Newman <srn@prgmr.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, David Vrabel <david.vrabel@citrix.com>
-CC: Suresh Siddha <sbsiddha@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org
-Subject: Re: [Xen-devel] [PATCHv1] x86: don't schedule when handling #NM exception
-References: <1394468273-13676-1-git-send-email-david.vrabel@citrix.com>	<531DEB11.2070709@zytor.com>	<531DF319.6010800@citrix.com>	<53266841.6090308@prgmr.com>	<1ebfa80c-4a68-4602-bc98-e5d5f0893998@email.android.com>	<53266D94.70902@prgmr.com> <53266F56.9030909@zytor.com>
-In-Reply-To: <53266F56.9030909@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751361AbaCQEOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 00:14:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1821 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781AbaCQEOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 00:14:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,667,1389772800"; 
+   d="scan'208";a="473864422"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [RFC PATCH 0/2] ACPICA: Updates for auto-serialization mechanism.
+Date: Mon, 17 Mar 2014 12:13:52 +0800
+Message-Id: <cover.1395028738.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <14866.1394813101@turing-police.cc.vt.edu>
+References: <14866.1394813101@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2014 08:43 PM, H. Peter Anvin wrote:
-> On 03/16/2014 08:35 PM, Sarah Newman wrote:
->> Can you please review my patch first?  It's only enabled when absolutely required.
-> 
-> It doesn't help.  It means you're running on Xen, and you will have
-> processes subjected to random SIGKILL because they happen to touch the
-> FPU when the atomic pool is low.
-> 
-> However, there is probably a happy medium: you don't actually need eager
-> FPU restore, you just need eager FPU *allocation*.  We have been
-> intending to allocate the FPU state at task creation time for eagerfpu,
-> and Suresh Siddha has already produced such a patch; it just needs some
-> minor fixups due to an __init failure.
-> 
-> http://lkml.kernel.org/r/1391325599.6481.5.camel@europa
-> 
-> In the Xen case we could turn on eager allocation but not eager fpu.  In
-> fact, it might be justified to *always* do eager allocation...
+It is reported that the auto-serialization mechanism has broken some
+machine.  A patch in this series tries to fix the reported issue, it is
+sent to the reporter for verification, thus marked as RFC.
 
-Unconditional eager allocation works. Can xen users count on this being included and applied to the
-stable kernels?
+Since this feature may still need to be validated, we can disable it
+temporarily in order not to break users.  The patch to make it default
+disabled is also marked as RFC.  We can determine if it is needed according
+to the verification result.
 
-Thanks, Sarah
+References: https://bugzilla.kernel.org/show_bug.cgi?id=52191
+References: http://www.spinics.net/lists/linux-acpi/msg49496.html
+
+Lv Zheng (1):
+  ACPI: Default disable auto-serialization.
+
+Robert Moore (1):
+  ACPICA: Dispatcher: Add sync_level support for auto-serialization
+    mechanism.
+
+ Documentation/kernel-parameters.txt |    8 ++++----
+ drivers/acpi/acpica/acglobal.h      |    2 +-
+ drivers/acpi/acpica/acobject.h      |    3 ++-
+ drivers/acpi/acpica/dsmethod.c      |   24 +++++++++++++++++++-----
+ drivers/acpi/osl.c                  |   12 ++++++------
+ 5 files changed, 32 insertions(+), 17 deletions(-)
+
+-- 
+1.7.10
+
