@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595AbaCQIhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 04:37:47 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:26026 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258AbaCQIhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 04:37:45 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-4e-5326b44ea94f
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev] [PATCH 2/2] f2fs: avoid to return incorrect errno of
- read_normal_summaries
-Date: Mon, 17 Mar 2014 16:36:24 +0800
-Message-id: <000201cf41bc$250d00e0$6f2702a0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9BufEUrGpNfFM4S5ekduuv4oAwvg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQV3/LWrBBsdWsFpc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAldG05ClLwWmOivaZ
-	vawNjL/Zuhg5OSQETCS+bNkIZYtJXLi3Hsjm4hASmM4ocenlS2YI5wejxPz+bywgVWwCKhLL
-	O/4zgdgiAooSG95vYAexmQUyJe41zQBq4OAQFkiQaJmoDRJmEVCVuHPhA1gJr4ClxIzDU9kg
-	bEGJH5PvsUC0akms33mcCcKWl9i85i0zxEEKEjvOvmYEGSkioCex53QuRIm4xMYjt1gmMArM
-	QjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4DB+Jr2DcVWDxSFG
-	AQ5GJR7eCcpqwUKsiWXFlbmHGCU4mJVEeHnXAoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1
-	DhQSSE8sSc1OTS1ILYLJMnFwSjUw6lz59FPs7+SVthMsC/N65nm9eBWu+nD6YcFZuaaa1rln
-	t3XrVKSr9FWf9K4p6uC79pmj5l7rtd6OIyrci+x0bvDHbxAq3hh0IYd765bq2YKHe6Ocls42
-	9POSWiJeVzD/Vc/mQ6H/HAxnXZgeenjlv/uS1S+ebYqZ+tx7sWXuI8bTiYeYjigeVmIpzkg0
-	1GIuKk4EAKtpTa5fAgAA
+	id S1756143AbaCQJAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 05:00:05 -0400
+Received: from ozlabs.org ([203.10.76.45]:44141 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751421AbaCQJAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 05:00:02 -0400
+Date: Mon, 17 Mar 2014 19:59:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Stewart Smith <stewart@linux.vnet.ibm.com>
+Subject: linux-next: manual merge of the powernv-cpuidle tree with the
+ powerpc tree
+Message-Id: <20140317195955.f7b50aa835d281caf5725610@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__17_Mar_2014_19_59_55_+1100_MJm+zueLLJeqRQCd"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should return error number of read_normal_summaries instead of -EINVAL when
-read_normal_summaries failed.
+--Signature=_Mon__17_Mar_2014_19_59_55_+1100_MJm+zueLLJeqRQCd
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/segment.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+Hi all,
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index b3f8431..6c5a4f0 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -1186,6 +1186,7 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int type)
- static int restore_curseg_summaries(struct f2fs_sb_info *sbi)
- {
- 	int type = CURSEG_HOT_DATA;
-+	int err;
- 
- 	if (is_set_ckpt_flags(F2FS_CKPT(sbi), CP_COMPACT_SUM_FLAG)) {
- 		/* restore for compacted data summary */
-@@ -1194,9 +1195,12 @@ static int restore_curseg_summaries(struct f2fs_sb_info *sbi)
- 		type = CURSEG_HOT_NODE;
- 	}
- 
--	for (; type <= CURSEG_COLD_NODE; type++)
--		if (read_normal_summaries(sbi, type))
--			return -EINVAL;
-+	for (; type <= CURSEG_COLD_NODE; type++) {
-+		err = read_normal_summaries(sbi, type);
-+		if (err)
-+			return err;
-+	}
-+
- 	return 0;
- }
- 
--- 
-1.7.9.5
+Today's linux-next merge of the powernv-cpuidle tree got a conflict in
+arch/powerpc/include/asm/opal.h between commit c7e64b9ce04a
+("powerpc/powernv Platform dump interface") from the powerpc tree and
+commit 97eb001f0349 ("powerpc/powernv: Add OPAL call to resync timebase
+on wakeup") from the powernv-cpuidle tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/powerpc/include/asm/opal.h
+index 2636acfcd340,c71c72e47d47..000000000000
+--- a/arch/powerpc/include/asm/opal.h
++++ b/arch/powerpc/include/asm/opal.h
+@@@ -159,15 -154,10 +159,16 @@@ extern int opal_enter_rtas(struct rtas_
+  #define OPAL_FLASH_VALIDATE			76
+  #define OPAL_FLASH_MANAGE			77
+  #define OPAL_FLASH_UPDATE			78
++ #define OPAL_RESYNC_TIMEBASE			79
+ +#define OPAL_DUMP_INIT				81
+ +#define OPAL_DUMP_INFO				82
+ +#define OPAL_DUMP_READ				83
+ +#define OPAL_DUMP_ACK				84
+  #define OPAL_GET_MSG				85
+  #define OPAL_CHECK_ASYNC_COMPLETION		86
+ +#define OPAL_DUMP_RESEND			91
+  #define OPAL_SYNC_HOST_REBOOT			87
+ +#define OPAL_DUMP_INFO2				94
+ =20
+  #ifndef __ASSEMBLY__
+ =20
+@@@ -888,13 -862,11 +889,14 @@@ extern void opal_get_rtc_time(struct rt
+  extern unsigned long opal_get_boot_time(void);
+  extern void opal_nvram_init(void);
+  extern void opal_flash_init(void);
+ +extern int opal_elog_init(void);
+ +extern void opal_platform_dump_init(void);
+ =20
+  extern int opal_machine_check(struct pt_regs *regs);
+ +extern bool opal_mce_check_early_recovery(struct pt_regs *regs);
+ =20
+  extern void opal_shutdown(void);
++ extern int opal_resync_timebase(void);
+ =20
+  extern void opal_lpc_init(void);
+ =20
+
+--Signature=_Mon__17_Mar_2014_19_59_55_+1100_MJm+zueLLJeqRQCd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTJrmPAAoJEMDTa8Ir7ZwV4HIP/Alc3en+bBqvm4nsO7nlLkPU
+0xqWYU8MQYTuQ0Ak9LABXYQ1JE6m6MvMIFunXzhOy6J6gBACieJjbHT3lilq/ZH6
+FSVyLJEjMW3HVAAiP/ljGtcLpBoaUxIKxLAijNWLHrpSpPC5zAFh/mt7eQHtbVAi
+Yw0SYY5sqSW3jeO+BfnPttCjLijltyAEaFGPUoY5PqudooImy6uRKQ2TDw2qgyBz
+SOlwdbx/rklgnE0FpNRGQ/+Njq1vDQDcPh2gYDgwQBMQOCcnq6YQJ22DA9Rpa0ha
+SnoSegEjkwuUCWOFikz0Lq/KX8k7L86rtkuclsWt1rIsh/JvTX2oUlpKea/5jxbv
+EpTavAeR/NuSm+/5fN6P/BXz6+5NAw0B2lKEQOzUScD4VvZkL/QiU79ukyzOJjZi
+RsMOv7g03R+JADfjD68pQJIZPqgSAwPfKpOHCjtCWHE/DutM6D0+RBCGgI6y71ND
+VS36N7Y6LLTRQfGBOQly/MXmSTZQcSxxK1tbEbx034B1TwPBVnZL/zq/2z8oU2Jv
+LePgRdRTc5Ve78AderfM7WkPCk+axAyL0GDr1hq5FB/oJ/e3q5aN+DcNTc5utcUz
+Qk1wX6iMVi/Ft834lYW200CoeJHLMUAKgGLlR5QLSaWDUJymtQqVtoSbvgz7Z0bC
+PvsdQx3nF6yXiYiFmFL2
+=EYhw
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__17_Mar_2014_19_59_55_+1100_MJm+zueLLJeqRQCd--
