@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560AbaCQGD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 02:03:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60868 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932355AbaCQF6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 01:58:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,667,1389772800"; 
-   d="scan'208";a="473898343"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v4 07/16] perf, x86: track number of events that use LBR callstack
-Date: Mon, 17 Mar 2014 13:57:27 +0800
-Message-Id: <1395035856-15411-8-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
-References: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
+	id S1756616AbaCQGDx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 02:03:53 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:36688 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754189AbaCQGDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 02:03:50 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2H63YC1014249, This message is accepted by code: ctloc85258
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: "'David Miller'" <davem@davemloft.net>, <David.Laight@ACULAB.COM>,
+        <netdev@vger.kernel.org>, <nic_swsd@realtek.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+References: <063D6719AE5E284EB5DD2968C1650D6D0F6DCB6E@AcuExch.aculab.com> <20140313.132222.536931544768069240.davem@davemloft.net> <A56A13416A724183888BB62CEFD2B817@realtek.com.tw> <20140314.000741.1829674011496195593.davem@davemloft.net> <CE95F5CF3B924F0A921DDC3493A67365@realtek.com.tw> <20140314234233.GA2341@electric-eye.fr.zoreil.com>
+Subject: RE: [PATCH net-next v3 1/2] r8152:addRTL8152_EARLY_AGG_TIMEOUT_SUPER
+Date: Mon, 17 Mar 2014 14:03:33 +0800
+Message-ID: <4E261E0D59E54F2DA7F00A98B313B717@realtek.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <20140314234233.GA2341@electric-eye.fr.zoreil.com>
+Thread-Index: Ac8/3xiZ09FY0wXVSD+dnvhBCXilXwBxrCHg
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+X-Originating-IP: [172.21.71.143]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When enabling/disabling an event, check if the event uses the LBR
-callstack feature, adjust the LBR callstack usage count accordingly.
-Later patch will use the usage count to decide if LBR stack should
-be saved/restored.
+ From: Francois Romieu [mailto:romieu@fr.zoreil.com] 
+> Sent: Saturday, March 15, 2014 7:43 AM
+[...]
+> > Besides, I don't wish to modify the setting by ethtool when re-loading
+> > the driver or rebooting every time.
+> 
+> Why ?
+> 
+> The recipe is different but there isn't much setup difference 
+> between a module param and an ethtool command that is run through udev.
+> The latter is more versatile though.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 32423ff..34b121b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -198,9 +198,15 @@ void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
- 	}
- }
+Thanks for your suggestion. I think I have to understand how to use them first.
  
-+static inline bool branch_user_callstack(unsigned br_sel)
-+{
-+	return (br_sel & X86_BR_USER) && (br_sel & X86_BR_CALL_STACK);
-+}
-+
- void intel_pmu_lbr_enable(struct perf_event *event)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct x86_perf_task_context *task_ctx;
- 
- 	if (!x86_pmu.lbr_nr)
- 		return;
-@@ -214,6 +220,10 @@ void intel_pmu_lbr_enable(struct perf_event *event)
- 	}
- 	cpuc->br_sel = event->hw.branch_reg.reg;
- 
-+	task_ctx = event->ctx ? event->ctx->task_ctx_data : NULL;
-+	if (branch_user_callstack(cpuc->br_sel))
-+		task_ctx->lbr_callstack_users++;
-+
- 	cpuc->lbr_users++;
- 	if (cpuc->lbr_users == 1)
- 		perf_sched_cb_enable(event->ctx->pmu);
-@@ -222,10 +232,15 @@ void intel_pmu_lbr_enable(struct perf_event *event)
- void intel_pmu_lbr_disable(struct perf_event *event)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct x86_perf_task_context *task_ctx;
- 
- 	if (!x86_pmu.lbr_nr)
- 		return;
- 
-+	task_ctx = event->ctx ? event->ctx->task_ctx_data : NULL;
-+	if (branch_user_callstack(cpuc->br_sel))
-+		task_ctx->lbr_callstack_users--;
-+
- 	cpuc->lbr_users--;
- 	WARN_ON_ONCE(cpuc->lbr_users < 0);
- 
--- 
-1.8.5.3
+Best Regards,
+Hayes
 
