@@ -1,105 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933132AbaCQOHD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 10:07:03 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42892 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756244AbaCQOHA (ORCPT
+	id S933252AbaCQOIb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 10:08:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61544 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756244AbaCQOI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 10:07:00 -0400
-Date: Mon, 17 Mar 2014 14:06:25 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Girish K S <ks.giri@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jassisinghbrar@gmail.com" <jassisinghbrar@gmail.com>,
-        "s-anna@ti.com" <s-anna@ti.com>,
-        "ilho215.lee@samsung.com" <ilho215.lee@samsung.com>
-Subject: Re: [PATCH 2/2] arm64: dts: exynos: added mailbox node
-Message-ID: <20140317140625.GJ8070@e106331-lin.cambridge.arm.com>
-References: <1395057839-23871-1-git-send-email-ks.giri@samsung.com>
- <1395057839-23871-3-git-send-email-ks.giri@samsung.com>
+	Mon, 17 Mar 2014 10:08:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: DT update for 3.15 #1
+Date: Mon, 17 Mar 2014 15:08:21 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, arm@kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+References: <1394705197-29992-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1394705197-29992-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395057839-23871-3-git-send-email-ks.giri@samsung.com>
-Thread-Topic: [PATCH 2/2] arm64: dts: exynos: added mailbox node
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403171508.21419.arnd@arndb.de>
+X-Provags-ID: V02:K0:mGSqNc/plnF3h9rLzqkeCE7/xtJF4+8rC2Qs6ktewzd
+ 8xrcIjnUEIi9xKLvorsVe4qPhCDhW6gFxejPMl58AxRL4ZG/1T
+ vPcJP2zRfUu/zx4fLq+L+RMj0AEaa6ituHwuc+2xsok8vhQVj1
+ kIKZ60Q3FIkcViilf1UlMEDYiTn7KGFU76jKqdHi7KAOdlkJal
+ +Kn/d7m0H91sKjaBrEH+cLSaGM0KEESwfEXiaa5DADkQLG0cuW
+ IqEikj2TOyzBZPIZzWy3kBBP8Ig7kvpTta6A9ILGRq1gkTFuif
+ XW1N5m2Pn43jQd5baFQSmLMHAbVnJD5NAt5msZRtz2GYh/wz2u
+ kGEH6t7wL+bBPeuiIllhqaLmFNpSnVySDuUXomEor
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 12:03:59PM +0000, Girish K S wrote:
-> This patch adds the dt node for the mailbox IP
+On Thursday 13 March 2014, Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
 > 
-> Signed-off-by: Girish K S <ks.giri@samsung.com>
-> 
-> Change-Id: I35e45e9a62592887a84a909aee54f259a2f731fa
-> ---
->  .../bindings/mailbox/samsung-mailbox.txt           |   24 +++++++
->  arch/arm64/boot/dts/samsung-gh7.dtsi               |   66 ++++++++++++++++++++
->  arch/arm64/boot/dts/samsung-ssdk-gh7.dts           |    3 +
->  3 files changed, 93 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mailbox/samsung-mailbox.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/mailbox/samsung-mailbox.txt b/Documentation/devicetree/bindings/mailbox/samsung-mailbox.txt
-> new file mode 100644
-> index 0000000..1908d71
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mailbox/samsung-mailbox.txt
-> @@ -0,0 +1,24 @@
-> +
-> +Samsung Mailbox Driver
-> +
-> +Required properties:
-> +- compatible:		Should be one of the following,
-> +			    "samsung,gh7-mailbox" for
-> +				Samsung GH7 SoC series
-> +			    "samsung,exynos-mailbox" for
-> +				exynosx SoC series
-> +- reg:			Contains the mailbox register address range (base address
-> +			and length)
-> +- interrupts: 		Contains the interrupt information for the mailbox
-> +			device.
+> This is one request for AT91 DT update for 3.15. A lot of forgotten bits that
+> are corrected here, and old DT properties that are removed, nothing really new.
+> I think that the little modifications to the documentation can also go the
+> arm-soc way: there is no fundamental change to the binding, only more coherence
+> added.
 
-How many interrupts?
+Merged into next/dt branch, thanks!
 
-What are they for?
-
-> +- samsung,mbox-names:	Array of the names of the mailboxes
-
-Juding by the code there is one name per reg entry, but the description
-above implies a single entry (as all the dt fragments have).
-
-What values are expected? What is the consumer of these values? What are
-they used for?
-
-> +
-> +Example:
-> +
-> +/* Samsung GH7 SoC */
-> +mailbox@100a0000 {
-> +	compatible = "samsung,gh7-mailbox";
-> +	reg = <0x0 0x100a0000 0x0 0x1000>;
-> +	interrupts = <0 310 0>;
-> +	samsung,mbox-names = "a7q-scp";
-> +};
-> diff --git a/arch/arm64/boot/dts/samsung-gh7.dtsi b/arch/arm64/boot/dts/samsung-gh7.dtsi
-> index c3610bd..be4cce9 100644
-> --- a/arch/arm64/boot/dts/samsung-gh7.dtsi
-> +++ b/arch/arm64/boot/dts/samsung-gh7.dtsi
-> @@ -107,5 +107,71 @@
->  			interrupts = <0 420 0>;
->  			arm,primecell-periphid = <0x341011>; /* HACK */
-
-This looks odd.
-
-What tree is this against?
-
-Cheers,
-Mark.
+	Arnd
