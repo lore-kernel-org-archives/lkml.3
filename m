@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229AbaCQRGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 13:06:00 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:60848 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097AbaCQRF7 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
-	Mon, 17 Mar 2014 13:05:59 -0400
-Message-Id: <532739810200007800124E85@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 17 Mar 2014 17:05:53 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "David Vrabel" <david.vrabel@citrix.com>,
-        "George Dunlap" <George.Dunlap@eu.citrix.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "Sarah Newman" <srn@prgmr.com>, "Ingo Molnar" <mingo@redhat.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCHv1] x86: don't schedule when handling
- #NM exception
-References: <1394468273-13676-1-git-send-email-david.vrabel@citrix.com>
- <531DEB11.2070709@zytor.com> <531DF319.6010800@citrix.com>
- <53266841.6090308@prgmr.com>
- <1ebfa80c-4a68-4602-bc98-e5d5f0893998@email.android.com>
- <CAFLBxZZz4Ot0CgWRHNRaM5zVkpf+QdXveFz_m3aVYnKUd9cAdQ@mail.gmail.com>
- <5327291D.60009@zytor.com>
-In-Reply-To: <5327291D.60009@zytor.com>
+	id S1756771AbaCQRIO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 13:08:14 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54164 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755115AbaCQRIM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 13:08:12 -0400
+Message-ID: <1395076090.2227.29.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: DMA-API mapping errors in vmw_pvscsi
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Arvind Kumar <arvindkumar@vmware.com>,
+        VMware PV-Drivers <pv-drivers@vmware.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Date: Mon, 17 Mar 2014 10:08:10 -0700
+In-Reply-To: <CA+5PVA5CmTJSjaikwtTTLwp1dLwFkYpXVr56ASA4t5n8ESRmOA@mail.gmail.com>
+References: <CA+5PVA5CmTJSjaikwtTTLwp1dLwFkYpXVr56ASA4t5n8ESRmOA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.10.2 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.03.14 at 17:55, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> On 03/17/2014 05:19 AM, George Dunlap wrote:
->> On Mon, Mar 17, 2014 at 3:33 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> No, the right thing is to unf*ck the Xen braindamage and use eagerfpu as a 
-> workaround for the legacy hypervisor versions.
->> 
->> The interface wasn't an accident.  In the most common case you'll want
->> to clear the bit anyway. In PV mode clearing it would require an extra
->> trip up into the hypervisor.  So this saves one trip up into the
->> hypervisor on every context switch which involves an FPU, at the
->> expense of not being able to context-switch away when handling the
->> trap.
+On Mon, 2014-03-17 at 12:52 -0400, Josh Boyer wrote:
+> Hi All,
 > 
-> The interface was a complete faceplant, because it caused failures.
-> You're not infinitely unconstrained since you want to play in the same
-> sandbox as the native architecture, and if you want to have a hope of
-> avoiding these kinds of failures you really need to avoid making random
-> "improvements", certainly not without an explicit guest opt-in (the same
-> we do for the native CPU architecture when adding new features.)
+> We've had a few reports[1][2] now on the vmw_pvscsi driver throwing
+> DMA-API mapping errors when the DMA_API_DEBUG option is enabled.  I've
+> included one from a recent 3.14-rc6 kernel below.  Looking at
+> vmw_pvscsi.c, I can see pvscsi_map_buffers is missing the calls to
+> pci_dma_mapping_error, which is what causes the warnings to be thrown.
 > 
-> So if this interface wasn't an accident it was active negligence and
-> incompetence.
+> However, I'm not familiar with this driver and I can't see what the
+> proper error path should be in this case.  pvscsi_map_buffers is a
+> void function and doesn't currently have the ability to return an
+> error to the caller.  Even if it did, I'm not sure what the proper
+> response to an error should be.  Thoughts?
 
-I don't think so - while it (as we now see) disallows certain things
-inside the guest, back at the time when this was designed there was
-no sign of any sort of allocation/scheduling being done inside the
-#NM handler. And furthermore, a PV specification is by its nature
-allowed to define deviations from real hardware behavior, or else it
-wouldn't be needed in the first place.
+It's missing checking in two places: from pci_map_single() and on
+scsi_dma_map().  In the latter case, pvscsi_map_buffers needs to return
+an error code and then pvscsi_queue_ring can return -1.
 
-Jan
+James
 
 
