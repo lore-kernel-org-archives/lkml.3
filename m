@@ -1,87 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438AbaCQJse (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 05:48:34 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:2975 "EHLO sjogate2.atmel.com"
+	id S932543AbaCQJvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 05:51:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35052 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756371AbaCQJsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 05:48:33 -0400
-From: Bo Shen <voice.shen@atmel.com>
-To: Mark Brown <broonie@kernel.org>, nicolas.ferre@atmel.com
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>, Bo Shen <voice.shen@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] ASoC: atmel: support CCF based clks
-Date: Mon, 17 Mar 2014 17:45:39 +0800
-Message-Id: <1395049541-28128-7-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1395049541-28128-1-git-send-email-voice.shen@atmel.com>
-References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com>
+	id S1756229AbaCQJvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 05:51:43 -0400
+Date: Mon, 17 Mar 2014 10:51:41 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, vegard.nossum@oracle.com,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Vegard Nossum <vegard.nossum@gmail.com>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: kmemcheck: OS boot failed because NMI handlers access the memory
+ tracked by kmemcheck
+Message-ID: <20140317095141.GA4777@dhcp22.suse.cz>
+References: <5326BE25.9090201@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5326BE25.9090201@huawei.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <b.brezillon@overkiz.com>
+On Mon 17-03-14 17:19:33, Xishi Qiu wrote:
+> OS boot failed when set cmdline kmemcheck=1. The reason is that
+> NMI handlers will access the memory from kmalloc(), this will cause
+> page fault, because memory from kmalloc() is tracked by kmemcheck.
+> 
+> watchdog_nmi_enable()
+> 	perf_event_create_kernel_counter()
+> 		perf_event_alloc()
+> 			event = kzalloc(sizeof(*event), GFP_KERNEL);
 
-Provide dev to clk_get function if we're using CCF based clks.
-CCF based prog clks support automatic parent selection when asking for a
-specific rate: remove the clk32k clk retrieval if we're using these clks.
+Where is this path called from an NMI context?
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-[voice.shen@atmel.com: switch to devm manage function]
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Your trace bellow points at something else and it doesn't seem to
+allocate any memory either. It looks more like x86_perf_event_update
+sees an invalid perf_event or something like that...
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
----
+> Now we don't support page faults in NMI context is that we
+> may already be handling an existing fault (or trap) when the NMI hits.
+> So that would mess up kmemcheck's working state.
+> 
+> Here is the failed log:
+> [    1.731052] WARNING: CPU: 0 PID: 1 at arch/x86/mm/kmemcheck/kmemcheck.c:634 k
+> memcheck_fault+0xb1/0xc0()
+> [    1.731053] Modules linked in:
+> [    1.731056] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc3-0.1-default+
+>  #1
+> [    1.731057] Hardware name: Huawei Technologies Co., Ltd. Tecal RH2285
+>   /BC11BTSA              , BIOS CTSAV036 04/27/2011
+> [    1.731061]  000000000000027a ffff880c39c07678 ffffffff814ca491 ffff880c39c07
+> 6b8
+> [    1.731063]  ffffffff8104ce97 0000000000000000 ffff880c39c07838 ffff880c21028
+> 1d4
+> [    1.731065]  0000000000000000 0000000000000000 ffff880c210281d4 ffff880c39c07
+> 6c8
+> [    1.731065] Call Trace:
+> [    1.731073]  <NMI>  [<ffffffff814ca491>] dump_stack+0x6a/0x79
+> [    1.731077]  [<ffffffff8104ce97>] warn_slowpath_common+0x87/0xb0
+> [    1.731079]  [<ffffffff8104ced5>] warn_slowpath_null+0x15/0x20
+> [    1.731081]  [<ffffffff810452c1>] kmemcheck_fault+0xb1/0xc0
+> [    1.731087]  [<ffffffff814d262b>] __do_page_fault+0x39b/0x4c0
+> [    1.731092]  [<ffffffff81272cd2>] ? put_dec+0x72/0x90
+> [    1.731093]  [<ffffffff812730ba>] ? number+0x33a/0x360
+> [    1.731096]  [<ffffffff814d2829>] do_page_fault+0x9/0x10
+> [    1.731098]  [<ffffffff814cf222>] page_fault+0x22/0x30
+> [    1.731104]  [<ffffffff81348b4c>] ? vt_console_print+0x8c/0x400
+> [    1.731106]  [<ffffffff81348b2c>] ? vt_console_print+0x6c/0x400
+> [    1.731111]  [<ffffffff8109cd9b>] ? msg_print_text+0x18b/0x1f0
+> [    1.731113]  [<ffffffff8109bed1>] call_console_drivers+0xc1/0xe0
+> [    1.731115]  [<ffffffff8109d746>] console_unlock+0x236/0x280
+> [    1.731117]  [<ffffffff8109e095>] vprintk_emit+0x2b5/0x450
+> [    1.731119]  [<ffffffff810452c1>] ? kmemcheck_fault+0xb1/0xc0
+> [    1.731120]  [<ffffffff814ca3f7>] printk+0x4a/0x4c
+> [    1.731122]  [<ffffffff810452c1>] ? kmemcheck_fault+0xb1/0xc0
+> [    1.731124]  [<ffffffff8104ce4e>] warn_slowpath_common+0x3e/0xb0
+> [    1.731126]  [<ffffffff8104ced5>] warn_slowpath_null+0x15/0x20
+> [    1.731128]  [<ffffffff810452c1>] kmemcheck_fault+0xb1/0xc0
+> [    1.731130]  [<ffffffff814d262b>] __do_page_fault+0x39b/0x4c0
+> [    1.731132]  [<ffffffff814d2829>] do_page_fault+0x9/0x10
+> [    1.731134]  [<ffffffff814cf222>] page_fault+0x22/0x30
+> [    1.731138]  [<ffffffff81015b52>] ? x86_perf_event_update+0x2/0x70
+> [    1.731142]  [<ffffffff8101de21>] ? intel_pmu_save_and_restart+0x11/0x50
+> [    1.731144]  [<ffffffff8101eb02>] intel_pmu_handle_irq+0x142/0x3a0
+> [    1.731146]  [<ffffffff814d0655>] perf_event_nmi_handler+0x35/0x60
+> [    1.731148]  [<ffffffff814cfe83>] nmi_handle+0x63/0x150
+> [    1.731150]  [<ffffffff814cffd3>] default_do_nmi+0x63/0x290
+> [    1.731151]  [<ffffffff814d02a8>] do_nmi+0xa8/0xe0
+> 
+> Another NMI handler which from CONFIG_ACPI_APEI_GHES=y, has the same problem too.
+> ghes_probe()
+> 	register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0, "ghes");
+> 
+> I find it is not easy to change, because:
+> e.g.
+> ghes_ioremap_init()
+> 	ghes_ioremap_area = __get_vm_area() -> it will call kmalloc() at last, and we 
+> 						can not change the general interface. 
+> 
+> And we can not use kmem_cache_alloc()(create a new slab with SLAB_NOTRACK) instead of 
+> kmalloc() when the size is variable.
+> 
+> Thanks,
+> Xishi Qiu
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
- sound/soc/atmel/atmel_wm8904.c | 25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
-
-diff --git a/sound/soc/atmel/atmel_wm8904.c b/sound/soc/atmel/atmel_wm8904.c
-index b4e3690..a797d33 100644
---- a/sound/soc/atmel/atmel_wm8904.c
-+++ b/sound/soc/atmel/atmel_wm8904.c
-@@ -170,25 +170,26 @@ static int atmel_asoc_wm8904_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	mclk = clk_get(NULL, "pck0");
-+	mclk = devm_clk_get(&pdev->dev, "pck0");
- 	if (IS_ERR(mclk)) {
- 		dev_err(&pdev->dev, "failed to get pck0\n");
- 		ret = PTR_ERR(mclk);
- 		goto err_set_audio;
- 	}
- 
--	clk_src = clk_get(NULL, "clk32k");
--	if (IS_ERR(clk_src)) {
--		dev_err(&pdev->dev, "failed to get clk32k\n");
--		ret = PTR_ERR(clk_src);
--		goto err_set_audio;
--	}
-+	if (!IS_ENABLED(CONFIG_COMMON_CLK)) {
-+		clk_src = devm_clk_get(&pdev->dev, "clk32k");
-+		if (IS_ERR(clk_src)) {
-+			dev_err(&pdev->dev, "failed to get clk32k\n");
-+			ret = PTR_ERR(clk_src);
-+			goto err_set_audio;
-+		}
- 
--	ret = clk_set_parent(mclk, clk_src);
--	clk_put(clk_src);
--	if (ret != 0) {
--		dev_err(&pdev->dev, "failed to set MCLK parent\n");
--		goto err_set_audio;
-+		ret = clk_set_parent(mclk, clk_src);
-+		if (ret != 0) {
-+			dev_err(&pdev->dev, "failed to set MCLK parent\n");
-+			goto err_set_audio;
-+		}
- 	}
- 
- 	dev_info(&pdev->dev, "setting pck0 to %dHz\n", MCLK_RATE);
 -- 
-1.8.5.2
-
+Michal Hocko
+SUSE Labs
