@@ -1,228 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824AbaCQRat (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 13:30:49 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35038 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756696AbaCQRam (ORCPT
+	id S1756838AbaCQRaz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 13:30:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38635 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755836AbaCQRav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 13:30:42 -0400
-Date: Mon, 17 Mar 2014 17:30:17 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Harini Katakam <harinik@xilinx.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, michals@xilinx.com
-Message-ID: <20140317173017.GW11706@sirena.org.uk>
-References: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
+	Mon, 17 Mar 2014 13:30:51 -0400
+Date: Mon, 17 Mar 2014 18:30:38 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] [RFC] perf: Fix a race between ring_buffer_detach() and
+ ring_buffer_wakeup()
+Message-ID: <20140317173038.GK25546@laptop.programming.kicks-ass.net>
+References: <1394199526-6400-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <20140313195816.GJ21124@linux.vnet.ibm.com>
+ <20140314095033.GP27965@twins.programming.kicks-ass.net>
+ <20140314204736.GG21124@linux.vnet.ibm.com>
+ <20140314224317.GQ30956@twins.programming.kicks-ass.net>
+ <20140314230231.GM21124@linux.vnet.ibm.com>
+ <20140315000009.GA28008@linux.vnet.ibm.com>
+ <20140317111807.GE27965@twins.programming.kicks-ass.net>
+ <20140317164815.GF21124@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eLx2Oic5rP1+EtIt"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] SPI: Add driver for Cadence SPI controller
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140317164815.GF21124@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 17, 2014 at 09:48:15AM -0700, Paul E. McKenney wrote:
+> Good point, this barrier is a bit obsure.  Here you go:
+> 
+> 	/*
+> 	 * Make sure this load happens before the purportedly
+> 	 * time-consuming work between get_state_synchronize_rcu()
+> 	 * and cond_synchronize_rcu().
+> 	 */
+> 
+> So all you lose by leaving this barrier out is a slightly higher
+> probability of invoking synchronize_rcu() at cond_synchronize_rcu() time.
+> And without the barrier there is some chance of the CPU doing the load in
+> cond_synchronize_rcu() before this load in get_state_synchronize_rcu().
+> Which should be OK, but simpler to exclude this than have to worry about
+> counters out of sync.  Besides, you are taking a grace-period delay in
+> here somewhere, so the memory barrier is way down in the noise.
 
---eLx2Oic5rP1+EtIt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Oh sure; expense wasn't my concern. But I always question barriers
+without comments, and I couldn't come up with a reason for this one.
 
-On Mon, Mar 17, 2014 at 05:35:36PM +0530, Harini Katakam wrote:
+> > The way I imaged using this is taking this snapshot after the RCU
+> > operation, such that we err towards seeing a later grace period and
+> > synchronizing too much in stead of seeing an earlier and sync'ing too
+> > little.
+> > 
+> > Such use would suggest the barrier the other way around.
+> 
+> Ah, but that ordering happens at the updater's end.  And there
+> are in fact memory barriers before and after the increment of
+> ->gpnum in rcu_gp_init():
+> 
+> 	/* Advance to a new grace period and initialize state. */
+> 	record_gp_stall_check_time(rsp);
+> 	/* Record GP times before starting GP, hence smp_store_release(). */
+> 	smp_store_release(&rsp->gpnum, rsp->gpnum + 1);
+> 	trace_rcu_grace_period(rsp->name, rsp->gpnum, TPS("start"));
+> 	raw_spin_unlock_irq(&rnp->lock);
+> 
+> 	/* Exclude any concurrent CPU-hotplug operations. */
+> 	mutex_lock(&rsp->onoff_mutex);
+> 	smp_mb__after_unlock_lock(); /* ->gpnum increment before GP! */
+> 
+> The smp_store_release() provides the memory barrier before, and the
+> smp_mb__after_unlock_lock() provides it after.
 
-> +	bits_per_word = transfer ?
-> +			transfer->bits_per_word : spi->bits_per_word;
+That wasn't exactly what I was talking about.
 
-This would be a lot more legible without the ternery operator.
+So suppose:
 
-> +	if (bits_per_word != 8) {
-> +		dev_err(&spi->dev, "%s, unsupported bits per word %x\n",
-> +			__func__, spi->bits_per_word);
-> +		return -EINVAL;
-> +	}
+  spin_lock(&lock)
+  list_del_rcu(&entry->foo);
+  spin_unlock(&lock);
 
-The core will check this for you.
+  rcu_stamp = get_state_sync_rcu();
 
-> +static int cdns_spi_setup(struct spi_device *spi)
-> +{
-> +	if (!spi->max_speed_hz)
-> +		return -EINVAL;
-> +
-> +	if (!spi->bits_per_word)
-> +		spi->bits_per_word = 8;
+Now we very much want to ensure to get the gpnum _after_ completing that
+list_del_rcu(), because if we were to observe the gpnum before it could
+complete before and we'd fail to wait long enough.
 
-The core does this for you.
+Now in the above, and with your proposed implementation, there is in
+fact no guarantee the load doesn't slip up past the list_del_rcu().
 
-> +	return cdns_spi_setup_transfer(spi, NULL);
-> +}
+The RELEASE per the spin_unlock() only guarantees the list_del_rcu()
+happens before it, but the gpnum load can slip in, and in fact pass over
+the list_del_rcu().
 
-It's not clear to me why this has been split into a separate function
-and the function will write to the hardware which you're not allowed to
-do in setup() if it might affect an ongoing transfer.
+> > > +void cond_synchronize_rcu(unsigned long oldstate)
+> > > +{
+> > > +	unsigned long newstate = smp_load_acquire(&rcu_state->completed);
+> > 
+> > Again, uncommented barriers; the load_acquire seems to suggest you want
+> > to make sure the sync_rcu() bits happen after this read. But seeing how
+> > sync_rcu() will invariably read the same data again and you get an
+> > address dep this seems somewhat superfluous.
+> 
+> Not quite!  The get_state_synchronize_rcu() function reads ->gpnum,
+> but cond_synchronize_rcu() reads ->completed.  The
 
-> +	intr_status = cdns_spi_read(xspi->regs + CDNS_SPI_ISR_OFFSET);
-> +	cdns_spi_write(xspi->regs + CDNS_SPI_ISR_OFFSET, intr_status);
-> +
-> +	if (intr_status & CDNS_SPI_IXR_MODF_MASK) {
-> +		/* Indicate that transfer is completed, the SPI subsystem will
-> +		 * identify the error as the remaining bytes to be
-> +		 * transferred is non-zero
-> +		 */
-> +		cdns_spi_write(xspi->regs + CDNS_SPI_IDR_OFFSET,
-> +			       CDNS_SPI_IXR_DEFAULT_MASK);
-> +		complete(&xspi->done);
-> +	} else if (intr_status & CDNS_SPI_IXR_TXOW_MASK) {
+I was talking about the synchronize_rcu() call later in
+cond_synchronize_rcu().
 
-What happens if both interrupts are flagged at the same time?
+But looking at its implementation; they don't in fact load either gpnum
+or completed.
 
-> +		if (xspi->remaining_bytes) {
-> +			/* There is more data to send */
-> +			cdns_spi_fill_tx_fifo(xspi);
-> +		} else {
-> +			/* Transfer is completed */
-> +			cdns_spi_write(xspi->regs + CDNS_SPI_IDR_OFFSET,
-> +				       CDNS_SPI_IXR_DEFAULT_MASK);
-> +			complete(&xspi->done);
-> +		}
-> +	}
+> > > +	if (ULONG_CMP_GE(oldstate, newstate))
+> > 
+> > So if the observed active gp (oldstate) is ahead or equal to the last
+> > completed gp, then we wait?
+> 
+> Yep!  I will risk an ASCII diagram:
+> 
+> 
+> 3:	                                                  +----gpnum----+-- ...
+> 	                                                  |             |
+> 2:	                            +----gpnum----+-------+--completed--+
+> 	                            |             |
+> 1:	      +----gpnum----+-------+--completed--+
+> 	      |             |
+> 0:	+-----+--completed--+
+> 
+> 
+> A full RCU grace period happens between a pair of "|"s on the same line.
+> By inspection, if your snapshot of ->gpnum is greater than the current
+> value of ->completed, a grace period has passed.
 
-I see from further up the file that there are error interrupt states
-which might be flagged but these are just being ignored.
-
-> +
-> +	return IRQ_HANDLED;
-
-This should only be returned if an interrupt was actually handled - if
-the line is shared in some system this will break.
-
-> +	cdns_spi_write(xspi->regs + CDNS_SPI_IER_OFFSET,
-> +		       CDNS_SPI_IXR_DEFAULT_MASK);
-> +
-> +	ret = wait_for_completion_interruptible_timeout(&xspi->done,
-> +							CDNS_SPI_TIMEOUT);
-> +	if (ret < 1) {
-
-If you return a positive value from transfer_one() the core will wait
-for you.
-
-> +static int cdns_prepare_transfer_hardware(struct spi_master *master)
-> +{
-> +	struct cdns_spi *xspi = spi_master_get_devdata(master);
-> +
-> +	if (xspi->driver_state != CDNS_SPI_DRIVER_STATE_READY)
-> +		return -EINVAL;
-> +
-> +	cdns_spi_write(xspi->regs + CDNS_SPI_ER_OFFSET,
-> +		       CDNS_SPI_ER_ENABLE_MASK);
-> +
-> +	return 0;
-> +}
-
-You probably want to enable the clocks here (and disable them when
-unpreparing too).
-
-> +static int cdns_transfer_one_message(struct spi_master *master,
-> +				     struct spi_message *msg)
-> +{
-
-Just implement transfer_one() and provide a set_cs() operation and most
-of this code will go away.
-
-> +	irq = platform_get_irq(pdev, 0);
-> +	if (irq < 0) {
-> +		ret = -ENXIO;
-> +		dev_err(&pdev->dev, "irq number is negative\n");
-> +		goto remove_master;
-> +	}
-> +
-> +	ret = devm_request_irq(&pdev->dev, irq, cdns_spi_irq,
-> +			       0, pdev->name, xspi);
-> +	if (ret != 0) {
-> +		ret = -ENXIO;
-> +		dev_err(&pdev->dev, "request_irq failed\n");
-> +		goto remove_master;
-> +	}
-
-I'd expect to see something that initialises the hardware prior to
-requesting the interrupt, you don't know what state the hardware is in
-when the driver takes control.
-
-> +	init_completion(&xspi->done);
-
-This needs to be done prior to the interrupt as well.
-
-> +	ret = of_property_read_u16(pdev->dev.of_node, "num-chip-select",
-> +				   &master->num_chipselect);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "couldn't determine num-chip-select\n");
-> +		goto clk_dis_all;
-> +	}
-
-Is there no reasonable default?
-
-> +	/* Set to default valid value */
-> +	xspi->speed_hz = clk_get_rate(xspi->ref_clk) / 4;
-
-The driver should set max_speed_hz as well.
-
-> +	dev_info(&pdev->dev, "at 0x%08X mapped to 0x%08X, irq=%d\n",
-> +		 res->start, (u32 __force)xspi->regs, irq);
-
-No need for this, it's just noisy.
-
-> +static int __maybe_unused cdns_spi_suspend(struct device *dev)
-> +{
-
-This needs to call spi_master_suspend() as well (and similarly on
-resume).
-
-> +	cdns_spi_write(xspi->regs + CDNS_SPI_IDR_OFFSET,
-> +		       CDNS_SPI_IXR_DEFAULT_MASK);
-> +	complete(&xspi->done);
-> +
-> +	ctrl_reg = cdns_spi_read(xspi->regs + CDNS_SPI_CR_OFFSET);
-> +	ctrl_reg |= CDNS_SPI_CR_SSCTRL_MASK;
-> +	cdns_spi_write(xspi->regs + CDNS_SPI_CR_OFFSET, ctrl_reg);
-
-Don't do this, the spi_master_suspend() call will quiesce transfers (or
-if open coding it should be doing something similar rather than just
-breaking any ongoing transfer).
-
-> +	clk_disable(xspi->ref_clk);
-> +	clk_disable(xspi->pclk);
-
-Why not unprepare?
-
---eLx2Oic5rP1+EtIt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTJzEmAAoJELSic+t+oim9wEkP/1P7ScD65qsVH6V2O/QK6doB
-c1Xc/IrO6P82LOKM4HwAIFrXmhVO3nVHX+uCvLhg1zoKUshu7W9ATYbGdUg9CE78
-X09YE1YplvYu5BsMLeCWE6f5O5hPbLYl0qUON5jfPgBscMEpjIz8agUJDaG0JCCz
-GN4Y99To8OCkrGGwaTNaOqyKHk6WiNnj6PetOQuDds8UHAZ/z0ibdLwYsav6Oivb
-lh/46HN8RSf4bM/DxCz1QJ+SiFZcMzodMMTZD0I5i1iwz6OL5UZpYixpJeJW8E0g
-j8sZifiMb++SyrWQtBgfZuyelY/8G50dMk9Ym8Gik+ZErUViyogWOfMvZndgWDkb
-BL68YExorUJFR6VbcOyqkZ1ssMyrkzDaQueI8MQLgyED1mNXdiPVtu7RDmzxiQU2
-APmunciPbJx7GQkequ51uZj2gWajDkN8ETwOtKcpilBz5C1hT4/0idmT4FZPo+oj
-6wo5M125rcB3JI/5jdxuEDCaQzXwHD3wfjaEWpYf/LlnyhdJi2XDMDWUMjgzd2Ic
-AnZkVIp7zi3cPIlKWt7PoojUUnXmU+lxX5h/K3PzAumlDLi+xWvXAfOE7exrvgGD
-EtNmrkUnneIu1Lz2klMMBDqL/lTMZpybXVp5xnbV62chFYMA0RNzOt053YH35Jxs
-RfwrMlpgQDYW5xvT81qG
-=s9A7
------END PGP SIGNATURE-----
-
---eLx2Oic5rP1+EtIt--
+OK, so I get the > part, but I'm not sure I get the = part of the above.
+The way I read the diagram, when completed matches gpnum the grace
+period is done and we don't have to wait anymore.
