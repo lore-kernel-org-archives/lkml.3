@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933761AbaCQODr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 10:03:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58251 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932870AbaCQN5V (ORCPT
+	id S1756720AbaCQOFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 10:05:09 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:34850 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754804AbaCQOFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:57:21 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH v2 02/15] ARM: at91: sam9260: remove unused platform_data
-Date: Mon, 17 Mar 2014 14:56:55 +0100
-Message-Id: <1395064628-644-3-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 17 Mar 2014 10:05:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <5326F8C5.5090406@ti.com>
+References: <5316FFCE.1060603@ti.com>
+	<1394018461-757-1-git-send-email-holler@ahsoftware.de>
+	<CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>
+	<5322D529.4070904@ahsoftware.de>
+	<CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>
+	<5326F8C5.5090406@ti.com>
+Date: Mon, 17 Mar 2014 15:05:05 +0100
+Message-ID: <CACRpkdYZMzw31NkA4uSq+ZowzOnZgZthXhZri-eJY2Ozb8aNRQ@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Alexander Holler <holler@ahsoftware.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-num_channels and registers are not used anymore since they are defined inside
-the at91_adc driver and assigned by matching the id_table.
+On Mon, Mar 17, 2014 at 2:29 PM, Sekhar Nori <nsekhar@ti.com> wrote:
 
-Also, remove the mach/at91_adc.h include that is not necessary anymore.
+> One thing to note is that this driver is used by keystone too and all
+> its users are DT-only. Although I do not see any in-kernel DT GPIO users
+> even there.
+>
+> I can confirm the patch does not break my gpiolib based test module
+> (test with and without DT), but then it did not have an issue even before.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
----
- arch/arm/mach-at91/at91sam9260_devices.c | 10 ----------
- 1 file changed, 10 deletions(-)
+Is that a Tested-by tag? :-)
 
-diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
-index 0a0315920963..a299c50512f0 100644
---- a/arch/arm/mach-at91/at91sam9260_devices.c
-+++ b/arch/arm/mach-at91/at91sam9260_devices.c
-@@ -24,7 +24,6 @@
- #include <mach/at91sam9260_matrix.h>
- #include <mach/at91_matrix.h>
- #include <mach/at91sam9_smc.h>
--#include <mach/at91_adc.h>
- 
- #include "board.h"
- #include "generic.h"
-@@ -1321,13 +1320,6 @@ static struct at91_adc_trigger at91_adc_triggers[] = {
- 	},
- };
- 
--static struct at91_adc_reg_desc at91_adc_register_g20 = {
--	.channel_base = AT91_ADC_CHR(0),
--	.drdy_mask = AT91_ADC_DRDY,
--	.status_register = AT91_ADC_SR,
--	.trigger_register = AT91_ADC_MR,
--};
--
- void __init at91_add_device_adc(struct at91_adc_data *data)
- {
- 	if (!data)
-@@ -1345,9 +1337,7 @@ void __init at91_add_device_adc(struct at91_adc_data *data)
- 	if (data->use_external_triggers)
- 		at91_set_A_periph(AT91_PIN_PA22, 0);
- 
--	data->num_channels = 4;
- 	data->startup_time = 10;
--	data->registers = &at91_adc_register_g20;
- 	data->trigger_number = 4;
- 	data->trigger_list = at91_adc_triggers;
- 
--- 
-1.8.3.2
+If you're also convinced that fix is safe I'll push it as a fix to v3.14-rcN
+if for nothing else so for getting Mr. Holler to stop poking me in the
+chest.
 
+Yours,
+Linus Walleij
