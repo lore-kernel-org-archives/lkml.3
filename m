@@ -1,257 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933519AbaCQPfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 11:35:23 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:59814 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933093AbaCQPfU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 11:35:20 -0400
-Message-ID: <53271631.4090205@monstr.eu>
-Date: Mon, 17 Mar 2014 16:35:13 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1756735AbaCQPiR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 11:38:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5263 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756604AbaCQPiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 11:38:15 -0400
+Date: Mon, 17 Mar 2014 11:37:47 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: eranian@google.com, jmario@redhat.com, jolsa@redhat.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, lwoodman@redhat.com
+Subject: Re: perf MMAP2 interface and COW faults
+Message-ID: <20140317153747.GH25953@redhat.com>
+References: <20140313200352.GU25953@redhat.com>
+ <20140314111705.GU27965@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: zynq: Add OCM driver
-References: <299e37ab245da9132808c6d4265a17b9a417bf62.1389022555.git.michal.simek@xilinx.com> <CAOesGMiroyjPbcjfG24_sUqCicCD4M7NF2aD=Xi8NVgagZThuA@mail.gmail.com> <53204C73.5070807@monstr.eu> <20140317044830.GA18269@quad.lixom.net>
-In-Reply-To: <20140317044830.GA18269@quad.lixom.net>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="ucmjQ2B2sGkk5urmBnnkJFgno5v3nhslH"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140314111705.GU27965@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---ucmjQ2B2sGkk5urmBnnkJFgno5v3nhslH
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Mar 14, 2014 at 12:17:05PM +0100, Peter Zijlstra wrote:
+> On Thu, Mar 13, 2014 at 04:03:52PM -0400, Don Zickus wrote:
+> > Hi Peter,
+> > 
+> > So we found another corner case with MMAP2 interface.  I don't think it is
+> > a big hurdle to overcome, just wanted a suggestion.
+> > 
+> > Joe ran specjbb2013 (which creates about 10,000 java threads across 9
+> > processes) and our c2c tool turned up some cacheline collision data on
+> > libjvm.so.  This didn't make sense because you shouldn't be able to write
+> > to a shared library.
+> > 
+> > Even worse, our tool said it affected all the java process and a majority
+> > of the threads.  Which again didn't make sense because this shared library
+> > should be local to each pid's memory.
+> > 
+> > Anyway, what we determined is that the shared library had mmap data that
+> > was non-zero (because it was backed by a file, libjvm.so).  So the
+> > assumption was if the major, minor, inode and inode generation numbers
+> > were non-zero, this memory segment was shared across processes.
+> > 
+> > So perf setup its map files for the mmap area and then started sampling data
+> > addresses.  A few hundred HITMs were to a virtual address that fell into
+> > the libjvm.so memory segment (which was assumed to be mmap'd across
+> > processes).
+> > 
+> > Coalescing all the data suggested that multiple pids/tids were contending
+> > for a cacheline in a shared library.
+> > 
+> > After talking with Larry Woodman, we realized when you write to a 'data' or
+> > 'bss' segment of a shared library, you incur a COW fault that maps to an
+> > anonymous page in the pid's memory.  However, perf doesn't see this.
+> > 
+> > So when all the tids start writing to this 'data' or 'bss' segment they
+> > generate HITMs within their pid (which is fine).  However the tool thinks
+> > it affects other pids (which is not fine).
+> > 
+> > My question is, how can our tool determine if a virtual address is private
+> > to a pid or not?  Originally it had to have a zero for maj, min, ino, and
+> > ino gen.  But for file map'd libraries this doesn't always work because we
+> > don't see COW faults in perf (and we may not want too :-) ).
+> > 
+> > Is there another technique we can use?  Perhaps during the reading of
+> > /proc/<pid>/maps, if the protection is marked 'p' for private, we just tell
+> > the sort algorithm to sort locally to the process but a 's' for shared can
+> > be sorted globally based on data addresses?
+> > 
+> > Or something else that tells us that a virtual address has changed its
+> > mapping?  Thoughts?
+> 
+> Very good indeed; we're missing the protection and flags bits.
+> 
+> How about something like the below; with that you can solve your problem
+> by looking at mmap2.flags & MAP_PRIVATE.
 
-On 03/17/2014 05:48 AM, Olof Johansson wrote:
-> On Wed, Mar 12, 2014 at 01:00:51PM +0100, Michal Simek wrote:
->> Hi Olof,
->>
->>>> diff --git a/Documentation/devicetree/bindings/arm/zynq/xlnx,zynq-oc=
-m.txt b/Documentation/devicetree/bindings/arm/zynq/xlnx,zynq-ocm.txt
->>>> new file mode 100644
->>>> index 0000000..64cb5e8
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/arm/zynq/xlnx,zynq-ocm.txt
->>>> @@ -0,0 +1,17 @@
->>>> +Device tree bindings for Zynq's OCM
->>>> +
->>>> +The OCM is divided to 4 64kB segments which can be separately confi=
-gured
->>>> +to low or high location. Location is controlled via SLCR.
->>>> +
->>>> +Required properties:
->>>> + compatible: Compatibility string. Must be "xlnx,zynq-ocm-1.0".
->>>> + reg: Specify the base and size of the OCM registers in the memory =
-map.
->>>> +      E.g.: reg =3D <0xf800c000 0x1000>;
->>>> +
->>>> +Example:
->>>> +ocmc: ocmc@f800c000 {
->>>> +       compatible =3D  "xlnx,zynq-ocm-1.0";
->>>> +       interrupt-parent =3D <&intc>;
->>>> +       interrupts =3D <0 3 4>;
->>>> +       reg =3D <0xf800c000 0x1000>;
->>>> +} ;
->>>> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zy=
-nq-7000.dtsi
->>>> index 1d942e2..4929be5 100644
->>>> --- a/arch/arm/boot/dts/zynq-7000.dtsi
->>>> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
->>>> @@ -66,6 +66,13 @@
->>>>                         cache-level =3D <2>;
->>>>                 };
->>>>
->>>> +               ocmc: ocmc@f800c000 {
->>>> +                       compatible =3D "xlnx,zynq-ocm-1.0";
->>>> +                       interrupt-parent =3D <&intc>;
->>>> +                       interrupts =3D <0 3 4>;
->>>> +                       reg =3D <0xf800c000 0x1000>;
->>>> +               } ;
->>>> +
->>>>                 uart0: uart@e0000000 {
->>>>                         compatible =3D "xlnx,xuartps";
->>>>                         status =3D "disabled";
->>>> diff --git a/arch/arm/mach-zynq/Kconfig b/arch/arm/mach-zynq/Kconfig=
+Yes this seemed to work.  I attached a slight update to your patch (one
+that compiles :-) ).  And I will reply to this thread with the tool
+changes I used to verify this (in case I did that piece wrong).
 
->>>> index 323e505..f3e6ce4 100644
->>>> --- a/arch/arm/mach-zynq/Kconfig
->>>> +++ b/arch/arm/mach-zynq/Kconfig
->>>> @@ -15,5 +15,6 @@ config ARCH_ZYNQ
->>>>         select CADENCE_TTC_TIMER
->>>>         select ARM_GLOBAL_TIMER
->>>>         select MFD_SYSCON
->>>> +       select GENERIC_ALLOCATOR
->>>>         help
->>>>           Support for Xilinx Zynq ARM Cortex A9 Platform
->>>> diff --git a/arch/arm/mach-zynq/Makefile b/arch/arm/mach-zynq/Makefi=
-le
->>>> index 1b25d92..626f64b 100644
->>>> --- a/arch/arm/mach-zynq/Makefile
->>>> +++ b/arch/arm/mach-zynq/Makefile
->>>> @@ -3,7 +3,7 @@
->>>>  #
->>>>
->>>>  # Common support
->>>> -obj-y                          :=3D common.o slcr.o
->>>> +obj-y                          :=3D common.o slcr.o zynq_ocm.o
->>>>  CFLAGS_REMOVE_hotplug.o                =3D-march=3Darmv6k
->>>>  CFLAGS_hotplug.o               =3D-Wa,-march=3Darmv7-a -mcpu=3Dcort=
-ex-a9
->>>>  obj-$(CONFIG_HOTPLUG_CPU)      +=3D hotplug.o
->>>> diff --git a/arch/arm/mach-zynq/common.h b/arch/arm/mach-zynq/common=
-=2Eh
->>>> index b097844..953f6a1 100644
->>>> --- a/arch/arm/mach-zynq/common.h
->>>> +++ b/arch/arm/mach-zynq/common.h
->>>> @@ -24,6 +24,7 @@ extern int zynq_early_slcr_init(void);
->>>>  extern void zynq_slcr_system_reset(void);
->>>>  extern void zynq_slcr_cpu_stop(int cpu);
->>>>  extern void zynq_slcr_cpu_start(int cpu);
->>>> +extern u32 zynq_slcr_get_ocm_config(void);
->>>>
->>>>  #ifdef CONFIG_SMP
->>>>  extern void secondary_startup(void);
->>>> diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
->>>> index c1f1499..9a37ab3 100644
->>>> --- a/arch/arm/mach-zynq/slcr.c
->>>> +++ b/arch/arm/mach-zynq/slcr.c
->>>> @@ -26,6 +26,7 @@
->>>>  #define SLCR_PS_RST_CTRL_OFFSET                0x200 /* PS Software=
- Reset Control */
->>>>  #define SLCR_A9_CPU_RST_CTRL_OFFSET    0x244 /* CPU Software Reset =
-Control */
->>>>  #define SLCR_REBOOT_STATUS_OFFSET      0x258 /* PS Reboot Status */=
-
->>>> +#define SLCR_OCM_CFG_OFFSET            0x910 /* OCM Address Mapping=
- */
->>>>
->>>>  #define SLCR_UNLOCK_MAGIC              0xDF0D
->>>>  #define SLCR_A9_CPU_CLKSTOP            0x10
->>>> @@ -107,6 +108,20 @@ void zynq_slcr_system_reset(void)
->>>>  }
->>>>
->>>>  /**
->>>> + * zynq_slcr_get_ocm_config - Get SLCR OCM config
->>>> + *
->>>> + * return:     OCM config bits
->>>> + */
->>>> +u32 zynq_slcr_get_ocm_config(void)
->>>> +{
->>>> +       u32 val;
->>>> +
->>>> +       zynq_slcr_read(&val, SLCR_OCM_CFG_OFFSET);
->>>> +
->>>> +       return val;
->>>> +}
->>>> +
->>>> +/**
->>>>   * zynq_slcr_cpu_start - Start cpu
->>>>   * @cpu:       cpu number
->>>>   */
->>>> diff --git a/arch/arm/mach-zynq/zynq_ocm.c b/arch/arm/mach-zynq/zynq=
-_ocm.c
->>>> new file mode 100644
->>>> index 0000000..034a65b
->>>> --- /dev/null
->>>> +++ b/arch/arm/mach-zynq/zynq_ocm.c
->>>> @@ -0,0 +1,243 @@
->>>> +/*
->>>> + * Copyright (C) 2013 Xilinx
->>>> + *
->>>> + * Based on "Generic on-chip SRAM allocation driver"
->>>
->>> We're not adding new drivers under arch/arm, so if you need this
->>> driver then you should either merge it under drivers/ somewhere, or
->>> look at extending the generic driver in a way that you can reuse it.
->>
->> Driver is reusing ideas from this generic driver but
->> incorporation our changes to will be problematic.
->>
->> It is a shame that you didn't review the rest of code below.
->> The reason why I have added this driver to arch/arm/mach-zynq
->> was that there is code connection to zynq SMP bootup trampoline
->> which has to be added at 0x0 when OCM is placed at 0x0.
->> And this memory can't be used for generic purpose.
->> If you see any nice way how to it please let me know.
->=20
-> Rockchip just went through some of the same discussions -- they need to=
-
-> use onchip SRAM for SMP spin-up. You should look at that patchset and
-> see if you can solve it in a similar manner, the needs seem to be quite=
-
-> similar.
-
-I found that
-http://www.spinics.net/lists/arm-kernel/msg310761.html
-it is definitely good starting point. Thanks for that.
-
-The solution which I have in my mind because of autodetection
-via slcr is to build up that node in zynq code from controller
-and support ranges in node just because of not copy that node
-in worst case 4 times.
-
-               sram: sram@0 {
-                       compatible =3D "mmio-sram";
-                       reg =3D <0x0 0x20000 0xfffe0000 0x20000>;
-                       #address-cells =3D <1>;
-                       #size-cells =3D <1>;
-                       ranges;
-
-                       smp-sram@0 {
-                               compatible =3D "xlnx,zynq-smp-sram";
-                               reg =3D <0x0 0x50>;
-                       };
-               };
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Cheers,
+Don
 
 
-
---ucmjQ2B2sGkk5urmBnnkJFgno5v3nhslH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMnFjEACgkQykllyylKDCEQRgCcCH0gflDxXH2VxIM8vsWpCqIp
-GSMAoIZtckeapPHf9SbfhFE0grFtMhbV
-=CvCm
------END PGP SIGNATURE-----
-
---ucmjQ2B2sGkk5urmBnnkJFgno5v3nhslH--
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 853bc1c..2ed502f 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -699,6 +699,7 @@ enum perf_event_type {
+ 	 *	u32				min;
+ 	 *	u64				ino;
+ 	 *	u64				ino_generation;
++	 *	u32				prot, flags;
+ 	 *	char				filename[];
+ 	 * 	struct sample_id		sample_id;
+ 	 * };
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 81919fe..ace46f8 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -39,6 +39,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/mm_types.h>
+ #include <linux/cgroup.h>
++#include <linux/mman.h>
+ 
+ #include "internal.h"
+ 
+@@ -5100,6 +5101,7 @@ struct perf_mmap_event {
+ 	int			maj, min;
+ 	u64			ino;
+ 	u64			ino_generation;
++	u32			prot, flags;
+ 
+ 	struct {
+ 		struct perf_event_header	header;
+@@ -5141,6 +5143,8 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->min);
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->ino_generation);
++		mmap_event->event_id.header.size += sizeof(mmap_event->prot);
++		mmap_event->event_id.header.size += sizeof(mmap_event->flags);
+ 	}
+ 
+ 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
+@@ -5159,6 +5163,8 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 		perf_output_put(&handle, mmap_event->min);
+ 		perf_output_put(&handle, mmap_event->ino);
+ 		perf_output_put(&handle, mmap_event->ino_generation);
++		perf_output_put(&handle, mmap_event->prot);
++		perf_output_put(&handle, mmap_event->flags);
+ 	}
+ 
+ 	__output_copy(&handle, mmap_event->file_name,
+@@ -5177,6 +5183,7 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 	struct file *file = vma->vm_file;
+ 	int maj = 0, min = 0;
+ 	u64 ino = 0, gen = 0;
++	u32 prot = 0, flags = 0;
+ 	unsigned int size;
+ 	char tmp[16];
+ 	char *buf = NULL;
+@@ -5207,6 +5214,28 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 		gen = inode->i_generation;
+ 		maj = MAJOR(dev);
+ 		min = MINOR(dev);
++
++		if (vma->vm_flags & VM_READ)
++			prot |= PROT_READ;
++		if (vma->vm_flags & VM_WRITE)
++			prot |= PROT_WRITE;
++		if (vma->vm_flags & VM_EXEC)
++			prot |= PROT_EXEC;
++
++		if (vma->vm_flags & VM_MAYSHARE)
++			flags = MAP_SHARED;
++		else
++			flags = MAP_PRIVATE;
++
++		if (vma->vm_flags & VM_DENYWRITE)
++			flags |= MAP_DENYWRITE;
++		if (vma->vm_flags & VM_MAYEXEC)
++			flags |= MAP_EXECUTABLE;
++		if (vma->vm_flags & VM_LOCKED)
++			flags |= MAP_LOCKED;
++		if (vma->vm_flags & VM_HUGETLB)
++			flags |= MAP_HUGETLB;
++
+ 		goto got_name;
+ 	} else {
+ 		name = (char *)arch_vma_name(vma);
+@@ -5247,6 +5276,8 @@ got_name:
+ 	mmap_event->min = min;
+ 	mmap_event->ino = ino;
+ 	mmap_event->ino_generation = gen;
++	mmap_event->prot = prot;
++	mmap_event->flags = flags;
+ 
+ 	if (!(vma->vm_flags & VM_EXEC))
+ 		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
+@@ -5287,6 +5318,8 @@ void perf_event_mmap(struct vm_area_struct *vma)
+ 		/* .min (attr_mmap2 only) */
+ 		/* .ino (attr_mmap2 only) */
+ 		/* .ino_generation (attr_mmap2 only) */
++		/* .prot (attr_mmap2 only) */
++		/* .flags (attr_mmap2 only) */
+ 	};
+ 
+ 	perf_event_mmap_event(&mmap_event);
