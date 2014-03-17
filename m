@@ -1,94 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaCQUyA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 16:54:00 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:47750 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277AbaCQUx6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 16:53:58 -0400
+	id S1752212AbaCQUyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 16:54:18 -0400
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.89]:5150 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752105AbaCQUyN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 16:54:13 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next,v2,1/1] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+Thread-Topic: [PATCH net-next,v2,1/1] hyperv: Add support for virtual
+ Receive Side Scaling (vRSS)
+Thread-Index: AQHPQGtOCpW0rMAQ3kiLiwjAUkgWbJrmMQeA//+T/6A=
+Date: Mon, 17 Mar 2014 20:54:00 +0000
+Message-ID: <5af7efbf6690432da2ef54dcbc99df20@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1394903887-30421-1-git-send-email-haiyangz@microsoft.com>
+	<1394903887-30421-2-git-send-email-haiyangz@microsoft.com>
+ <20140317.161955.776021754942208577.davem@davemloft.net>
+In-Reply-To: <20140317.161955.776021754942208577.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140317144020.GA13749@htj.dyndns.org>
-References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
-	<20140218225548.GI31892@mtj.dyndns.org>
-	<20140219092731.GA4849@quack.suse.cz>
-	<20140219190139.GQ10134@htj.dyndns.org>
-	<CAGAzgspTZnUh_qi=FeQ4hS4LRiexPccTyALMg3Gt1K0ZZq_MuQ@mail.gmail.com>
-	<20140316145951.GB26026@htj.dyndns.org>
-	<CAGAzgsqD0aRnDMMyDCUVii6Rv22f97G0irpzFBz4c_ukKsn2hg@mail.gmail.com>
-	<20140317144020.GA13749@htj.dyndns.org>
-Date: Mon, 17 Mar 2014 13:53:57 -0700
-X-Google-Sender-Auth: Zo7qYWZqCSqhrvEzy_sI3NsVmJ8
-Message-ID: <CAGAzgsrQvJL8BFF1ADVvi9oWjyPaaKdFh20OGUg-BCvtNmMc1A@mail.gmail.com>
-Subject: Re: [PATCH] backing_dev: Fix hung task on sync
-From: "dbasehore ." <dbasehore@chromium.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zento.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        bleung@chromium.org, sonnyrao@chromium.org,
-        Luigi Semenzato <semenzato@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(189002)(199002)(377454003)(164054003)(51704005)(13464003)(47736001)(93136001)(87266001)(74366001)(50986001)(49866001)(44976005)(83322001)(85306002)(76786001)(76796001)(80976001)(2656002)(47976001)(6806004)(19580405001)(81816001)(81686001)(79102001)(19580395003)(33646001)(90146001)(92566001)(4396001)(46102001)(56816005)(85852003)(83072002)(54316002)(69226001)(51856001)(95666003)(81342001)(93516002)(76482001)(46406003)(56776001)(50466002)(54356001)(53806001)(81542001)(86612001)(97736001)(2009001)(97756001)(65816001)(80022001)(77982001)(74706001)(74876001)(95416001)(94316002)(66066001)(97336001)(97186001)(47776003)(20776003)(94946001)(63696002)(59766001)(74502001)(74662001)(47446002)(31966008)(87936001)(23726002)(84676001)(142933001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2SR01MB609;H:hybrid.exchange.microsoft.com;FPR:3876402A.3CE3AD29.31F5B526.60E15A98.201D3;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-Test: BULK:None;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:(2001)
+X-Forefront-PRVS: 0153A8321A
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 7:40 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> On Sun, Mar 16, 2014 at 12:13:55PM -0700, dbasehore . wrote:
->> There's already behavior that is somewhat like that with the current
->> implementation. If there's an item on a workqueue, it could run at any
->> time. From the perspective of the driver/etc. that is using the
->> workqueue, there should be no difference between work being on the
->> workqueue and the kernel triggering a schedule right after the work is
->> removed from the workqueue, but before the work function has done
->> anything.
->
-> It is different.  mod_delayed_work() *guarantees* that the target work
-> item will become pending for execution at least after the specified
-> time has passed.  What you're suggesting removes any semantically
-> consistent meaning of the API.
->
 
-It will still be at least be pending after the specified time has
-passed. I'm proposing that we still set the timer. The difference is
-that there is a possibility the work will already be pending when the
-timer goes off. There will still at least be an execution after the
-given time has past. We could still remove the work in the workqueue
-from the timer function, but this would make the mod_delayed_work not
-race with any work that was scheduled for immediate execution
-previously.
 
-If you make the timer function remove any pending work from the
-workqueue when the timer goes off, this is still following the API.
-The work will still become pending at least after the specified time
-has passed.
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Monday, March 17, 2014 4:20 PM
+> To: Haiyang Zhang
+> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next,v2,1/1] hyperv: Add support for virtual Receive
+> Side Scaling (vRSS)
+> 
+> From: Haiyang Zhang <haiyangz@microsoft.com>
+> Date: Sat, 15 Mar 2014 10:18:07 -0700
+> 
+> > -		if (netif_queue_stopped(ndev) && !net_device->start_remove
+> &&
+> > -			(hv_ringbuf_avail_percent(&device->channel-
+> >outbound)
+> > -			> RING_AVAIL_PERCENT_HIWATER ||
+> > -			num_outstanding_sends < 1))
+> > -				netif_wake_queue(ndev);
+> > +		if (netif_tx_queue_stopped(netdev_get_tx_queue(ndev, q_idx))
+> > +			&& !net_device->start_remove &&
+> > +			(hv_ringbuf_avail_percent(&channel->outbound)
+> > +			> RING_AVAIL_PERCENT_HIWATER || queue_sends <
+> 1))
+> > +				netif_tx_wake_queue(netdev_get_tx_queue(
+> > +						    ndev, q_idx));
+> 
+> This is not indented properly, make it:
+> 
+> 	if (A && B &&
+> 	    (C >
+>              D || E < 1))
+> 
+> Never put operators at the beginning of a conditional line, always at the end.
 
->> So to reiterate, calling mod_delayed_work on something that is already
->> in the workqueue has two behaviors. One, the work is dispatched before
->> mod_delayed_work can remove it from the workqueue. Two,
->> mod_delayed_work removes it from the workqueue and sets the timer (or
->> not in the case of 0). The behavior of the proposed change should be
->> no different than the first behavior.
->
-> No, mod_delayed_work() does *one* thing - the work item is queued for
-> the specified delay no matter the current state of the work item.  It
-> is *guaranteed* that the work item will go pending after the specified
-> time.  That is the sole meaning of the API.
->
->> This should not introduce new behavior from the perspective of the
->> code using delayed_work. It is true that there is a larger window of
->> time between when you call mod_delayed_work and when an already queued
->> work item will run, but I don't believe that matters.
->
-> You're completely misunderstanding the API.  Plesae re-read it and
-> understand what it does first.
->
-> Thanks.
->
-> --
-> tejun
+I will do. 
+
+Thanks,
+- Haiyang
