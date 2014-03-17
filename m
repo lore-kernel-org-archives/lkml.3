@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267AbaCQBpz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 21:45:55 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61604 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932070AbaCQBpw (ORCPT
+	id S932283AbaCQBsE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 21:48:04 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:36631 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070AbaCQBsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 21:45:52 -0400
-X-AuditID: 9c93016f-b7b09ae000000557-10-532653ce82c2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@redhat.com, jolsa@redhat.com, jmario@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] perf: Speed up thread map generation
-In-Reply-To: <1394808224-113774-1-git-send-email-dzickus@redhat.com> (Don
-	Zickus's message of "Fri, 14 Mar 2014 10:43:44 -0400")
-References: <1394808224-113774-1-git-send-email-dzickus@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-Date: Mon, 17 Mar 2014 10:45:49 +0900
-Message-ID: <87ob15tx6a.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 16 Mar 2014 21:48:01 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-spi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>, Axel Lin <axel.lin@ingics.com>
+Subject: [PATCH] spi: sc18is602: Don't be that restrictive with the maximum transfer speed
+Date: Sun, 16 Mar 2014 18:47:50 -0700
+Message-Id: <1395020870-18107-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Don,
+Commit 09e99bca8 (spi: sc18is602: Convert to let spi core validate
+transfer speed) made the maximum transfer speed much more restrictive
+than before. The transfer speed used to be adjusted to 1/4 of the chip
+clock rate if a higher transfer speed was requested. Now such transfers are
+simply rejected. With default settings, this causes, for example, a transfer
+request at 2 mbps to be rejected because the maximum speed with the default
+chip clock is 1.843 mbps.
 
-On Fri, 14 Mar 2014 10:43:44 -0400, Don Zickus wrote:
-> When trying to capture perf data on a system running spejbb2013,
-> perf hung for about 15 minutes.  This is because it took that
-> long to gather about 10,000 thread maps and process them.
->
-> I don't think a user wants to wait that long.
->
-> Instead, recognize that thread maps are roughly equivalent to
-> pid maps and just quickly copy those instead.
->
-> To do this, I synthesize 'fork' events, this eventually calls
-> thread__fork() and copies the maps over.
->
-> The overhead goes from 15 minutes down to about a few seconds.
+This is unnecessarily restrictive and causes unnecessary failures. Loosen
+the limit to accept transfers up to 50% of the clock rate and adjust
+the speed as needed when setting up the actualt transfer.
 
-[SNIP]
-> @@ -416,6 +453,10 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
->  	if (mmap_event == NULL)
->  		goto out_free_comm;
->  
-> +	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
-> +	if (fork_event == NULL)
-> +		goto out_free_mmap;
-> +
->  	if (machine__is_default_guest(machine))
->  		return 0;
-
-Not related to this patch, but this will causes a memory leak..
-So I think below patch is needed on top (not sure it's also needed for
-perf_event__synthesize_thread_map() too).
-
-
->From 3c4b49b4f540c7d49ee78364b02faa0bfce59c67 Mon Sep 17 00:00:00 2001
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Mon, 17 Mar 2014 10:23:06 +0900
-Subject: [PATCH] perf tools: Fix a possible memory leak
-
-Checking default guest machine should be done before allocating event
-structures otherwise it'll leak memory.
-
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- tools/perf/util/event.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+This patch applies to the tip of linux-next.
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 3e580be0f6fb..eab930d28159 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -445,6 +445,9 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
- 	union perf_event *comm_event, *mmap_event, *fork_event;
- 	int err = -1;
+ drivers/spi/spi-sc18is602.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/spi/spi-sc18is602.c b/drivers/spi/spi-sc18is602.c
+index 237f2e7..f0e55aa 100644
+--- a/drivers/spi/spi-sc18is602.c
++++ b/drivers/spi/spi-sc18is602.c
+@@ -297,7 +297,7 @@ static int sc18is602_probe(struct i2c_client *client,
+ 	master->transfer_one_message = sc18is602_transfer_one;
+ 	master->dev.of_node = np;
+ 	master->min_speed_hz = hw->freq / 128;
+-	master->max_speed_hz = hw->freq / 4;
++	master->max_speed_hz = hw->freq / 2;
  
-+	if (machine__is_default_guest(machine))
-+		return 0;
-+
- 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
- 	if (comm_event == NULL)
- 		goto out;
-@@ -457,9 +460,6 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
- 	if (fork_event == NULL)
- 		goto out_free_mmap;
- 
--	if (machine__is_default_guest(machine))
--		return 0;
--
- 	snprintf(proc_path, sizeof(proc_path), "%s/proc", machine->root_dir);
- 	proc = opendir(proc_path);
- 
+ 	error = devm_spi_register_master(dev, master);
+ 	if (error)
 -- 
-1.7.11.7
+1.7.9.7
 
