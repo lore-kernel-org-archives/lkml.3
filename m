@@ -1,194 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735AbaCQPiR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 11:38:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5263 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756604AbaCQPiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 11:38:15 -0400
-Date: Mon, 17 Mar 2014 11:37:47 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: eranian@google.com, jmario@redhat.com, jolsa@redhat.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, lwoodman@redhat.com
-Subject: Re: perf MMAP2 interface and COW faults
-Message-ID: <20140317153747.GH25953@redhat.com>
-References: <20140313200352.GU25953@redhat.com>
- <20140314111705.GU27965@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140314111705.GU27965@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933596AbaCQPih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 11:38:37 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:18445 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756604AbaCQPie (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 11:38:34 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-8d-532716f7ed31
+Date: Mon, 17 Mar 2014 16:38:24 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lukasz Majewski <l.majewski@samsung.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Thomas Abraham <ta.omasab@gmail.com>,
+        thomas.ab@samsung.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [RFC v3 0/5] cpufreq:LAB: Support for LAB governor.
+Message-id: <20140317163824.3c5480b3@amdc2363>
+In-reply-to: <1393928852-22725-1-git-send-email-l.majewski@samsung.com>
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
+ <1393928852-22725-1-git-send-email-l.majewski@samsung.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t9jQd3vYurBBv1PrC02zljPavG06Qe7
+	RefZJ8wWbx5xW7x5uJnRYtPja6wWl3fNYbP43HuE0WLG+X1MFrcbV7BZnDl9idVi/YzXLBab
+	J2xks+hYxmix8auHA7/Hzll32T3uXNvD5rF5Sb3HumlvmT22XG1n8ejbsorR4/MmuQD2KC6b
+	lNSczLLUIn27BK6MS3tqCn6IV3xbs5itgfGWUBcjJ4eEgInEvKX32SBsMYkL99YD2VwcQgLT
+	GSWWT97NCuH8YpTobLrKBFLFIqAq8e/JARYQm01AT+Lz3adgcRGBUImjU7+ygzQwC5xhkZhz
+	dAJYkbCAg8SJXU3MIDYvUEProgOMIDangLvE8RXNzBAbWhklLu+8ATaJX0BSov3fD2aIm+wk
+	zn3awA7RLCjxY/I9sKHMAloSm7c1sULY8hKb17xlnsAoOAtJ2SwkZbOQlC1gZF7FKJpakFxQ
+	nJSea6hXnJhbXJqXrpecn7uJERxdz6R2MK5ssDjEKMDBqMTD+4JNPViINbGsuDL3EKMEB7OS
+	CO8lXqAQb0piZVVqUX58UWlOavEhRmkOFiVx3gOt1oFCAumJJanZqakFqUUwWSYOTqkGxglK
+	U6d8avv3vXtyhYbewfqHWd/jc3c/NHdlvjBN4a9xQ5umO7tx5ly5JXdY1q+ZXuquHcDYvLbJ
+	cs3lVY1t3FyVFnOuvz80yTSwO2C2f5+pwLwUiwDW/fJvhO+d/fSr5IGm+Fq3p00Hf6+6sTtF
+	WNL01OU2udgzPVMa+bdUe6ytVO7Pu1Aer8RSnJFoqMVcVJwIADgeVBCqAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 12:17:05PM +0100, Peter Zijlstra wrote:
-> On Thu, Mar 13, 2014 at 04:03:52PM -0400, Don Zickus wrote:
-> > Hi Peter,
-> > 
-> > So we found another corner case with MMAP2 interface.  I don't think it is
-> > a big hurdle to overcome, just wanted a suggestion.
-> > 
-> > Joe ran specjbb2013 (which creates about 10,000 java threads across 9
-> > processes) and our c2c tool turned up some cacheline collision data on
-> > libjvm.so.  This didn't make sense because you shouldn't be able to write
-> > to a shared library.
-> > 
-> > Even worse, our tool said it affected all the java process and a majority
-> > of the threads.  Which again didn't make sense because this shared library
-> > should be local to each pid's memory.
-> > 
-> > Anyway, what we determined is that the shared library had mmap data that
-> > was non-zero (because it was backed by a file, libjvm.so).  So the
-> > assumption was if the major, minor, inode and inode generation numbers
-> > were non-zero, this memory segment was shared across processes.
-> > 
-> > So perf setup its map files for the mmap area and then started sampling data
-> > addresses.  A few hundred HITMs were to a virtual address that fell into
-> > the libjvm.so memory segment (which was assumed to be mmap'd across
-> > processes).
-> > 
-> > Coalescing all the data suggested that multiple pids/tids were contending
-> > for a cacheline in a shared library.
-> > 
-> > After talking with Larry Woodman, we realized when you write to a 'data' or
-> > 'bss' segment of a shared library, you incur a COW fault that maps to an
-> > anonymous page in the pid's memory.  However, perf doesn't see this.
-> > 
-> > So when all the tids start writing to this 'data' or 'bss' segment they
-> > generate HITMs within their pid (which is fine).  However the tool thinks
-> > it affects other pids (which is not fine).
-> > 
-> > My question is, how can our tool determine if a virtual address is private
-> > to a pid or not?  Originally it had to have a zero for maj, min, ino, and
-> > ino gen.  But for file map'd libraries this doesn't always work because we
-> > don't see COW faults in perf (and we may not want too :-) ).
-> > 
-> > Is there another technique we can use?  Perhaps during the reading of
-> > /proc/<pid>/maps, if the protection is marked 'p' for private, we just tell
-> > the sort algorithm to sort locally to the process but a 's' for shared can
-> > be sorted globally based on data addresses?
-> > 
-> > Or something else that tells us that a virtual address has changed its
-> > mapping?  Thoughts?
+Dear all,
+
+> Despite this patch set is working and applicable on top of 3.14-rc5, 
+> please regard it solely as a pure RFC.
 > 
-> Very good indeed; we're missing the protection and flags bits.
+> This patch provides support for LAB governor build on top of ondemand.
+> Previous version of LAB can be found here:
+> http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
 > 
-> How about something like the below; with that you can solve your problem
-> by looking at mmap2.flags & MAP_PRIVATE.
+> LAB short reminder:
+> 
+> LAB uses information about how many cores are in "idle" state (the
+> core idleness is represented as the value between 0 and 100) and the
+> overall load of the system (from 0 to 100) to decide about frequency
+> to be set. It is extremely useful with SoCs like Exynos4412, which
+> can set only one frequency for all cores.
+> 
+> Important design decisions:
+> 
+> - Reuse well established ondemand governor's internal code. To do this
+>   I had to expose some previously static internal ondemand code. 
+>   This allowed smaller LAB code when compared to previous version.
+> 	
+> - LAB works on top of ondemand, which means that one via device tree
+>   attributes can specify if and when e.g. BOOST shall be enabled or
+> if any particular frequency shall be imposed. For situation NOT
+> important from the power consumption reduction viewpoint the ondemand
+> is used to set proper frequency.
+> 
+> - It is only possible to either compile in or not the LAB into the
+> kernel. There is no "M" option for Kconfig. It is done on purpose,
+> since ondemand itself can be also compiled as a module and then it
+> would be possible to remove ondemand when LAB is working on top of it.
+> 
+> - The LAB operation is specified (and thereof extendable) via device
+> tree lab-ctrl-freq attribute defined at /cpus/cpu0.
+> 
+> 
+> Problems:
+> - How the governor will work for big.LITTLE systems (especially
+> Global Task Scheduling).
+> - Will there be agreement to expose internal ondemand code to be
+> reused for more specialized governors.
+> 
+> Test HW:
+> 	Exynos4412 - Trats2 board.
+> Above patches were posted on top of Linux 3.14-rc5
+> (SHA1: 3f9590c281c66162bf8ae9b7b2d987f0a89043c6)
+> 
 
-Yes this seemed to work.  I attached a slight update to your patch (one
-that compiles :-) ).  And I will reply to this thread with the tool
-changes I used to verify this (in case I did that piece wrong).
+Any comments about those patches?
 
-Cheers,
-Don
+> Lukasz Majewski (5):
+>   cpufreq:LAB:ondemand Adjust ondemand to be able to reuse its methods
+>   cpufreq:LAB:cpufreq_governor Adjust cpufreq_governor.[h|c] to
+> support LAB
+>   cpufreq:LAB:lab Add LAB governor code
+>   cpufreq:LAB:Kconfig Add LAB definitions to Kconfig
+>   cpufreq:LAB:dts:trats2: Add DTS nodes for LAB governor
+> 
+>  arch/arm/boot/dts/exynos4412-trats2.dts |   29 ++
+>  drivers/cpufreq/Kconfig                 |   28 ++
+>  drivers/cpufreq/Makefile                |    1 +
+>  drivers/cpufreq/cpufreq_governor.c      |    7 +
+>  drivers/cpufreq/cpufreq_governor.h      |   12 +
+>  drivers/cpufreq/cpufreq_lab.c           |  457
+> +++++++++++++++++++++++++++++++
+> drivers/cpufreq/cpufreq_ondemand.c      |   24 +- 7 files changed,
+> 550 insertions(+), 8 deletions(-) create mode 100644
+> drivers/cpufreq/cpufreq_lab.c
+> 
 
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 853bc1c..2ed502f 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -699,6 +699,7 @@ enum perf_event_type {
- 	 *	u32				min;
- 	 *	u64				ino;
- 	 *	u64				ino_generation;
-+	 *	u32				prot, flags;
- 	 *	char				filename[];
- 	 * 	struct sample_id		sample_id;
- 	 * };
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 81919fe..ace46f8 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -39,6 +39,7 @@
- #include <linux/hw_breakpoint.h>
- #include <linux/mm_types.h>
- #include <linux/cgroup.h>
-+#include <linux/mman.h>
- 
- #include "internal.h"
- 
-@@ -5100,6 +5101,7 @@ struct perf_mmap_event {
- 	int			maj, min;
- 	u64			ino;
- 	u64			ino_generation;
-+	u32			prot, flags;
- 
- 	struct {
- 		struct perf_event_header	header;
-@@ -5141,6 +5143,8 @@ static void perf_event_mmap_output(struct perf_event *event,
- 		mmap_event->event_id.header.size += sizeof(mmap_event->min);
- 		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
- 		mmap_event->event_id.header.size += sizeof(mmap_event->ino_generation);
-+		mmap_event->event_id.header.size += sizeof(mmap_event->prot);
-+		mmap_event->event_id.header.size += sizeof(mmap_event->flags);
- 	}
- 
- 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
-@@ -5159,6 +5163,8 @@ static void perf_event_mmap_output(struct perf_event *event,
- 		perf_output_put(&handle, mmap_event->min);
- 		perf_output_put(&handle, mmap_event->ino);
- 		perf_output_put(&handle, mmap_event->ino_generation);
-+		perf_output_put(&handle, mmap_event->prot);
-+		perf_output_put(&handle, mmap_event->flags);
- 	}
- 
- 	__output_copy(&handle, mmap_event->file_name,
-@@ -5177,6 +5183,7 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 	struct file *file = vma->vm_file;
- 	int maj = 0, min = 0;
- 	u64 ino = 0, gen = 0;
-+	u32 prot = 0, flags = 0;
- 	unsigned int size;
- 	char tmp[16];
- 	char *buf = NULL;
-@@ -5207,6 +5214,28 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 		gen = inode->i_generation;
- 		maj = MAJOR(dev);
- 		min = MINOR(dev);
-+
-+		if (vma->vm_flags & VM_READ)
-+			prot |= PROT_READ;
-+		if (vma->vm_flags & VM_WRITE)
-+			prot |= PROT_WRITE;
-+		if (vma->vm_flags & VM_EXEC)
-+			prot |= PROT_EXEC;
-+
-+		if (vma->vm_flags & VM_MAYSHARE)
-+			flags = MAP_SHARED;
-+		else
-+			flags = MAP_PRIVATE;
-+
-+		if (vma->vm_flags & VM_DENYWRITE)
-+			flags |= MAP_DENYWRITE;
-+		if (vma->vm_flags & VM_MAYEXEC)
-+			flags |= MAP_EXECUTABLE;
-+		if (vma->vm_flags & VM_LOCKED)
-+			flags |= MAP_LOCKED;
-+		if (vma->vm_flags & VM_HUGETLB)
-+			flags |= MAP_HUGETLB;
-+
- 		goto got_name;
- 	} else {
- 		name = (char *)arch_vma_name(vma);
-@@ -5247,6 +5276,8 @@ got_name:
- 	mmap_event->min = min;
- 	mmap_event->ino = ino;
- 	mmap_event->ino_generation = gen;
-+	mmap_event->prot = prot;
-+	mmap_event->flags = flags;
- 
- 	if (!(vma->vm_flags & VM_EXEC))
- 		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
-@@ -5287,6 +5318,8 @@ void perf_event_mmap(struct vm_area_struct *vma)
- 		/* .min (attr_mmap2 only) */
- 		/* .ino (attr_mmap2 only) */
- 		/* .ino_generation (attr_mmap2 only) */
-+		/* .prot (attr_mmap2 only) */
-+		/* .flags (attr_mmap2 only) */
- 	};
- 
- 	perf_event_mmap_event(&mmap_event);
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
