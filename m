@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933235AbaCQNId (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:08:33 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:58843 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933185AbaCQNI3 (ORCPT
+	id S933281AbaCQNJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:09:11 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51583 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933001AbaCQNJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:08:29 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-0f-5326f3cc1de6
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Oliver Schinagl <oliver@schinagl.nl>, linux-ide@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ata: ahci_sunxi: fix code formatting
-Date: Mon, 17 Mar 2014 14:08:12 +0100
-Message-id: <10509185.3UEOEZKTc5@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t9jQd0zn9WCDY581LV4c3w6k8Wmx9dY
-	LY7teMRkcXnXHDaLrZv2Mlu8nPSQ1eLX8qOMDuweTzZdZPTYtKqTzWPzknqP9/uusnm0tixn
-	9fi8SS6ALYrLJiU1J7MstUjfLoEr49HP52wFH/gqFr/6yt7A+IWni5GTQ0LARGLKyi/sELaY
-	xIV769m6GLk4hASmM0p8OHOIFcJpYZJY9P0DG0gVm4CVxMT2VYwgtoiArMSVaQ8ZQYqYBZ4w
-	Siw4uRWsSFjAVKLx0yawIhYBVYktH9+AreAV0JK4+mcBC4gtKuApsWP7SjaIuKDEj8n3wOLM
-	AvIS+/ZPZYWwtSTW7zzONIGRbxaSsllIymYhKVvAyLyKUTS1ILmgOCk910ivODG3uDQvXS85
-	P3cTIziAn0nvYFzVYHGIUYCDUYmHd4KyWrAQa2JZcWXuIUYJDmYlEV6nd0Ah3pTEyqrUovz4
-	otKc1OJDjNIcLErivAdbrQOFBNITS1KzU1MLUotgskwcnFINjC4uS5Orvlx4cbqgZIuElvne
-	2+vn7eMy6Ptekbs3eZKo5c+CIttXTI6PO3rKNzbPOMqQkMskpP939Z/l7v1TvvucD4qZrG7b
-	c2/BAQ8Ti8abc+6lGez8vfBS9vwvIo/yE22aFi6QdjA/viiCx/eeQ7H+q23Zv+OYmVv2iGjl
-	HZlvXFRXx5YQp8RSnJFoqMVcVJwIAB72wdpcAgAA
+	Mon, 17 Mar 2014 09:09:09 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: v3.14-rc1+: new error: "nsc-ircc, Wrong chip version ff"
+Date: Mon, 17 Mar 2014 14:24:36 +0100
+Message-ID: <3479041.IcXy3De7AH@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1395059613.1999.7.camel@x41>
+References: <1395006095.2002.8.camel@x41> <3120107.Slm5jUkmCN@vostro.rjw.lan> <1395059613.1999.7.camel@x41>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
----
- drivers/ata/ahci_sunxi.c |   44 ++++++++++++++++++++++----------------------
- 1 file changed, 22 insertions(+), 22 deletions(-)
+On Monday, March 17, 2014 01:33:33 PM Paul Bolle wrote:
+> Rafael J. Wysocki schreef op ma 17-03-2014 om 01:02 [+0100]:
+> > On Sunday, March 16, 2014 10:41:35 PM Paul Bolle wrote:
+> > > 2) What should I do to make that error go away?
+> > 
+> > This is not an error, but a message whose log level is too high.  It basically
+> > means "I found something, but I don't like it, so I'm not going to handle it."
+> 
+> I see. It's actually quite old and is mentioned rather often on the web.
+> I must have seen if before, when I actually used IrDA, but that's a few
+> years ago now.
 
-Index: b/drivers/ata/ahci_sunxi.c
-===================================================================
---- a/drivers/ata/ahci_sunxi.c	2014-03-17 13:59:06.220474478 +0100
-+++ b/drivers/ata/ahci_sunxi.c	2014-03-17 14:00:48.720472730 +0100
-@@ -27,28 +27,28 @@
- #include <linux/regulator/consumer.h>
- #include "ahci.h"
- 
--#define AHCI_BISTAFR 0x00a0
--#define AHCI_BISTCR 0x00a4
--#define AHCI_BISTFCTR 0x00a8
--#define AHCI_BISTSR 0x00ac
--#define AHCI_BISTDECR 0x00b0
--#define AHCI_DIAGNR0 0x00b4
--#define AHCI_DIAGNR1 0x00b8
--#define AHCI_OOBR 0x00bc
--#define AHCI_PHYCS0R 0x00c0
--#define AHCI_PHYCS1R 0x00c4
--#define AHCI_PHYCS2R 0x00c8
--#define AHCI_TIMER1MS 0x00e0
--#define AHCI_GPARAM1R 0x00e8
--#define AHCI_GPARAM2R 0x00ec
--#define AHCI_PPARAMR 0x00f0
--#define AHCI_TESTR 0x00f4
--#define AHCI_VERSIONR 0x00f8
--#define AHCI_IDR 0x00fc
--#define AHCI_RWCR 0x00fc
--#define AHCI_P0DMACR 0x0170
--#define AHCI_P0PHYCR 0x0178
--#define AHCI_P0PHYSR 0x017c
-+#define AHCI_BISTAFR	0x00a0
-+#define AHCI_BISTCR	0x00a4
-+#define AHCI_BISTFCTR	0x00a8
-+#define AHCI_BISTSR	0x00ac
-+#define AHCI_BISTDECR	0x00b0
-+#define AHCI_DIAGNR0	0x00b4
-+#define AHCI_DIAGNR1	0x00b8
-+#define AHCI_OOBR	0x00bc
-+#define AHCI_PHYCS0R	0x00c0
-+#define AHCI_PHYCS1R	0x00c4
-+#define AHCI_PHYCS2R	0x00c8
-+#define AHCI_TIMER1MS	0x00e0
-+#define AHCI_GPARAM1R	0x00e8
-+#define AHCI_GPARAM2R	0x00ec
-+#define AHCI_PPARAMR	0x00f0
-+#define AHCI_TESTR	0x00f4
-+#define AHCI_VERSIONR	0x00f8
-+#define AHCI_IDR	0x00fc
-+#define AHCI_RWCR	0x00fc
-+#define AHCI_P0DMACR	0x0170
-+#define AHCI_P0PHYCR	0x0178
-+#define AHCI_P0PHYSR	0x017c
- 
- static void sunxi_clrbits(void __iomem *reg, u32 clr_val)
- {
+I see.
 
+> > The messages come from nsc_ircc_setup(), which is called from nsc_ircc_open(),
+> > which in turn is called by nsc_ircc_init(), which is a module intialization
+> > function of the nsc-ircc module.
+> > 
+> > I *guess* what happens is that the PNP layer creates a PNP device object
+> > for something it didn't create an object for previously, so I wonder if the
+> > patch below makes those messages go away?
+> 
+> No, they're still there (with this patch applied on top of v3.14-rc7).
+
+Beats me then.
+
+I'm sure it can be tracked down, but I'm not sure it's worth spending the time.
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
