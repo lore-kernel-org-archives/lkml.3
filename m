@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933684AbaCQOBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 10:01:37 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:36388
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933182AbaCQOBc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 10:01:32 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI9371I542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hz8dhz1de098h8275bh1de097hz2fh95h109h839h944hc61hd24hf0ah119dh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h262fh906i1155h)
-From: Harini Katakam <harini.katakam@xilinx.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        Michal Simek <michals@xilinx.com>
-Subject: RE: [PATCH] SPI: Add driver for Cadence SPI controller
-Thread-Topic: [PATCH] SPI: Add driver for Cadence SPI controller
-Thread-Index: AQHPQdlDwreFYNSC5UqDMedDfaXPCprktEcAgACZw5A=
-Date: Mon, 17 Mar 2014 14:01:17 +0000
-References: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
- <CAL_JsqKacetGytGUJir7ky3qOgCy-3ny1pT_Bx4eCYV2wMgcTg@mail.gmail.com>
-In-Reply-To: <CAL_JsqKacetGytGUJir7ky3qOgCy-3ny1pT_Bx4eCYV2wMgcTg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.228.178]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <d0d4dc5c-aade-4155-b998-3d177b6581c2@CH1EHSMHS004.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S933699AbaCQOB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 10:01:59 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58258 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932692AbaCQN5X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 09:57:23 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH v2 05/15] ARM: at91: sam9m10g45ek: Add touchscreen support through at91_adc
+Date: Mon, 17 Mar 2014 14:56:58 +0100
+Message-Id: <1395064628-644-6-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+at91_adc now supports reading a touchscreen for ADCs without a TSMR register.
+Enable touchscreen support through at91_adc. This allows to use both a
+touchscreen and the remaining ADC channel at the same time.
 
-> -----Original Message-----
-> From: Rob Herring [mailto:robherring2@gmail.com]
-> Sent: Monday, March 17, 2014 6:17 PM
-> To: Harini Katakam
-> Cc: Rob Herring; Pawel Moll; Mark Rutland; Ian Campbell; Kumar Gala; Rob
-> Landley; Mark Brown; Grant Likely; devicetree@vger.kernel.org; linux-
-> doc@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
-> spi@vger.kernel.org; Michal Simek
-> Subject: Re: [PATCH] SPI: Add driver for Cadence SPI controller
->
-> On Mon, Mar 17, 2014 at 7:05 AM, Harini Katakam <harinik@xilinx.com>
-> wrote:
-> > Add driver for Cadence SPI controller. This is used in Xilinx Zynq.
-> >
-> > Signed-off-by: Harini Katakam <harinik@xilinx.com>
-> > ---
->
-> > +- reg                  : Physical base address and size of SPI registers map.
-> > +- interrupts           : Property with a value describing the interrupt
-> > +                         number.
-> > +- interrupt-parent     : Must be core interrupt controller
-> > +- clock-names          : List of input clock names - "ref_clk", "pclk"
-> > +                         (See clock bindings for details).
-> > +- clocks               : Clock phandles (see clock bindings for details).
-> > +- num-chip-select      : Number of chip selects used.
->
-> See Documentation/devicetree/bindings/spi/spi-bus.txt. Use "num-cs"
-> here.
+Also, lower the clock for the ADC as it allows to have more stable reads and
+this is the speed used by atmel_tsadcc.
+It lowers the maximum throughput rate from 440000 samples per second to 12958
+samples per second. It shouldn't be an issue as the CPU is not able to keep up
+reading samples at that frequency.
 
-I'll check that.
-> > +
-> > +       irq = platform_get_irq(pdev, 0);
-> > +       if (irq < 0) {
->
-> I believe this returns NO_IRQ which could be 0.
->
-> s/</<=/
->
-> > +       dev_dbg(&pdev->dev, "suspend succeeded\n");
->
-> Not needed. The kernel already has suspend/resume tracing printks.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/at91sam9g45.c        | 2 +-
+ arch/arm/mach-at91/board-sam9m10g45ek.c | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-Will remove.
-
-> > +       dev_dbg(&pdev->dev, "resume succeeded\n");
->
-> Not needed. The kernel already has suspend/resume tracing printks.
-
-Will remove.
-
-Regards,
-Harini
-
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 2f455ce35268..3c519a7a938f 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -181,7 +181,7 @@ static struct clk vdec_clk = {
+ static struct clk adc_op_clk = {
+ 	.name		= "adc_op_clk",
+ 	.type		= CLK_TYPE_PERIPHERAL,
+-	.rate_hz	= 13200000,
++	.rate_hz	= 300000,
+ };
+ 
+ /* AES/TDES/SHA clock - Only for sam9m11/sam9g56 */
+diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
+index ef39078c8ce2..4d775b796ce4 100644
+--- a/arch/arm/mach-at91/board-sam9m10g45ek.c
++++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
+@@ -315,6 +315,7 @@ static struct at91_adc_data ek_adc_data = {
+ 	.channels_used = BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4) | BIT(5) | BIT(6) | BIT(7),
+ 	.use_external_triggers = true,
+ 	.vref = 3300,
++	.touchscreen_type = ATMEL_ADC_TOUCHSCREEN_4WIRE,
+ };
+ 
+ /*
+-- 
+1.8.3.2
 
