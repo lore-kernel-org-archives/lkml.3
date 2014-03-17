@@ -1,56 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459AbaCQFlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 01:41:09 -0400
-Received: from imap.thunk.org ([74.207.234.97]:42357 "EHLO imap.thunk.org"
+	id S1752079AbaCQFq4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 01:46:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54183 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaCQFlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 01:41:07 -0400
-Date: Mon, 17 Mar 2014 01:40:53 -0400
-From: tytso@mit.edu
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        Venkatesh Srinivas <venkateshs@google.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org,
-        Frank Swiderski <fes@google.com>
-Subject: Re: [PATCH] virtio-blk: make the queue depth the max supportable by
- the hypervisor
-Message-ID: <20140317054053.GF14162@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Rusty Russell <rusty@rustcorp.com.au>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	Venkatesh Srinivas <venkateshs@google.com>,
-	"Michael S. Tsirkin" <mst@redhat.com>,
-	virtio-dev@lists.oasis-open.org,
-	virtualization@lists.linux-foundation.org,
-	Frank Swiderski <fes@google.com>
-References: <1394841445-16142-1-git-send-email-venkateshs@google.com>
- <1394854471-25700-1-git-send-email-tytso@mit.edu>
- <87siqhu048.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87siqhu048.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1750860AbaCQFqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 01:46:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,667,1389772800"; 
+   d="scan'208";a="501317430"
+Message-ID: <1395035276.2740.2.camel@sagar-desktop>
+Subject: Re: [PATCH v4 1/1] drm/i915: Enabling 128x128 and 256x256 ARGB
+ Cursor Support
+From: Sagar Arun Kamble <sagar.a.kamble@intel.com>
+To: intel-gfx@lists.freedesktop.org
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, "G, Pallavi" <pallavi.g@intel.com>,
+        shashidhar.hiremath@intel.com, indranil.mukherjee@intel.com
+Date: Mon, 17 Mar 2014 11:17:56 +0530
+In-Reply-To: <1394451383-27133-1-git-send-email-sagar.a.kamble@intel.com>
+References: <20140310100321.GA30571@phenom.ffwll.local>
+	 <1394451383-27133-1-git-send-email-sagar.a.kamble@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 11:12:15AM +1030, Rusty Russell wrote:
+Gentle reminder for reviewing this and i-g-t patch.
+
+On Mon, 2014-03-10 at 17:06 +0530, sagar.a.kamble@intel.com wrote:
+> From: Sagar Kamble <sagar.a.kamble@intel.com>
 > 
-> Note that with indirect descriptors (which is supported by Almost
-> Everyone), we can actually use the full index, so this value is a bit
-> pessimistic.  But it's OK as a starting point.
+> With this patch we allow larger cursor planes of sizes 128x128
+> and 256x256.
+> 
+> v2: Added more precise check on size while setting cursor plane.
+> 
+> v3: Changes related to restructuring cursor size restrictions
+> and DRM_DEBUG usage.
+> 
+> v4: Indentation related changes for setting cursor control and
+> implementing DRM_CAP_CURSOR_WIDTH and DRM_CAP_CURSOR_HEIGHT
+> 
+> Testcase: igt/kms_cursor_crc
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: Jani Nikula <jani.nikula@linux.intel.com>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: G, Pallavi <pallavi.g@intel.com>
+> Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
+> ---
+>  drivers/gpu/drm/i915/i915_reg.h      |  4 +++
+>  drivers/gpu/drm/i915/intel_display.c | 53 ++++++++++++++++++++++++++++++++----
+>  drivers/gpu/drm/i915/intel_drv.h     |  7 +++++
+>  3 files changed, 59 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+> index 146609a..aee8258 100644
+> --- a/drivers/gpu/drm/i915/i915_reg.h
+> +++ b/drivers/gpu/drm/i915/i915_reg.h
+> @@ -3551,7 +3551,11 @@ enum punit_power_well {
+>  /* New style CUR*CNTR flags */
+>  #define   CURSOR_MODE		0x27
+>  #define   CURSOR_MODE_DISABLE   0x00
+> +#define   CURSOR_MODE_128_32B_AX 0x02
+> +#define   CURSOR_MODE_256_32B_AX 0x03
+>  #define   CURSOR_MODE_64_32B_AX 0x07
+> +#define   CURSOR_MODE_128_ARGB_AX ((1 << 5) | CURSOR_MODE_128_32B_AX)
+> +#define   CURSOR_MODE_256_ARGB_AX ((1 << 5) | CURSOR_MODE_256_32B_AX)
+>  #define   CURSOR_MODE_64_ARGB_AX ((1 << 5) | CURSOR_MODE_64_32B_AX)
+>  #define   MCURSOR_PIPE_SELECT	(1 << 28)
+>  #define   MCURSOR_PIPE_A	0x00
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index 0868afb..ec6a073 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -7440,10 +7440,26 @@ static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
+>  	bool visible = base != 0;
+>  
+>  	if (intel_crtc->cursor_visible != visible) {
+> +		int16_t width = intel_crtc->cursor_width;
+>  		uint32_t cntl = I915_READ(CURCNTR(pipe));
+>  		if (base) {
+>  			cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
+> -			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
+> +			cntl |= MCURSOR_GAMMA_ENABLE;
+> +
+> +			switch (width) {
+> +			case 64:
+> +				cntl |= CURSOR_MODE_64_ARGB_AX;
+> +				break;
+> +			case 128:
+> +				cntl |= CURSOR_MODE_128_ARGB_AX;
+> +				break;
+> +			case 256:
+> +				cntl |= CURSOR_MODE_256_ARGB_AX;
+> +				break;
+> +			default:
+> +				WARN_ON(1);
+> +				return;
+> +			}
+>  			cntl |= pipe << 28; /* Connect to correct pipe */
+>  		} else {
+>  			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
+> @@ -7468,10 +7484,25 @@ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
+>  	bool visible = base != 0;
+>  
+>  	if (intel_crtc->cursor_visible != visible) {
+> +		int16_t width = intel_crtc->cursor_width;
+>  		uint32_t cntl = I915_READ(CURCNTR_IVB(pipe));
+>  		if (base) {
+>  			cntl &= ~CURSOR_MODE;
+> -			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
+> +			cntl |= MCURSOR_GAMMA_ENABLE;
+> +			switch (width) {
+> +			case 64:
+> +				cntl |= CURSOR_MODE_64_ARGB_AX;
+> +				break;
+> +			case 128:
+> +				cntl |= CURSOR_MODE_128_ARGB_AX;
+> +				break;
+> +			case 256:
+> +				cntl |= CURSOR_MODE_256_ARGB_AX;
+> +				break;
+> +			default:
+> +				WARN_ON(1);
+> +				return;
+> +			}
+>  		} else {
+>  			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
+>  			cntl |= CURSOR_MODE_DISABLE;
+> @@ -7567,9 +7598,11 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
+>  		goto finish;
+>  	}
+>  
+> -	/* Currently we only support 64x64 cursors */
+> -	if (width != 64 || height != 64) {
+> -		DRM_ERROR("we currently only support 64x64 cursors\n");
+> +	/* Check for which cursor types we support */
+> +	if (!((width == 64 && height == 64) ||
+> +			(width == 128 && height == 128 && !IS_GEN2(dev)) ||
+> +			(width == 256 && height == 256 && !IS_GEN2(dev)))) {
+> +		DRM_DEBUG("Cursor dimension not supported\n");
+>  		return -EINVAL;
+>  	}
+>  
+> @@ -10331,6 +10364,16 @@ static void intel_crtc_init(struct drm_device *dev, int pipe)
+>  
+>  	drm_crtc_init(dev, &intel_crtc->base, &intel_crtc_funcs);
+>  
+> +	if (IS_GEN2(dev)) {
+> +		intel_crtc->max_cursor_width = GEN2_CURSOR_WIDTH;
+> +		intel_crtc->max_cursor_height = GEN2_CURSOR_HEIGHT;
+> +	} else {
+> +		intel_crtc->max_cursor_width = CURSOR_WIDTH;
+> +		intel_crtc->max_cursor_height = CURSOR_HEIGHT;
+> +	}
+> +	dev->mode_config.cursor_width = intel_crtc->max_cursor_width;
+> +	dev->mode_config.cursor_height = intel_crtc->max_cursor_height;
+> +
+>  	drm_mode_crtc_set_gamma_size(&intel_crtc->base, 256);
+>  	for (i = 0; i < 256; i++) {
+>  		intel_crtc->lut_r[i] = i;
+> diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+> index 9c70905..eca4a0a 100644
+> --- a/drivers/gpu/drm/i915/intel_drv.h
+> +++ b/drivers/gpu/drm/i915/intel_drv.h
+> @@ -78,6 +78,12 @@
+>  #define MAX_OUTPUTS 6
+>  /* maximum connectors per crtcs in the mode set */
+>  
+> +/* Maximum cursor sizes */
+> +#define GEN2_CURSOR_WIDTH 64
+> +#define GEN2_CURSOR_HEIGHT 64
+> +#define CURSOR_WIDTH 256
+> +#define CURSOR_HEIGHT 256
+> +
+>  #define INTEL_I2C_BUS_DVO 1
+>  #define INTEL_I2C_BUS_SDVO 2
+>  
+> @@ -364,6 +370,7 @@ struct intel_crtc {
+>  	uint32_t cursor_addr;
+>  	int16_t cursor_x, cursor_y;
+>  	int16_t cursor_width, cursor_height;
+> +	int16_t max_cursor_width, max_cursor_height;
+>  	bool cursor_visible;
+>  
+>  	struct intel_crtc_config config;
 
-So is this something that can go upstream with perhaps a slight
-adjustment in the commit description?  Do you think we need to be able
-to dynamically adjust the queue depth after the module has been loaded
-or the kernel has been booted?  If so, anyone a hint about the best
-way to do that would be much appreciated.
 
-Thanks,
-
-					- Ted
