@@ -1,171 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932951AbaCQLec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 07:34:32 -0400
-Received: from canardo.mork.no ([148.122.252.1]:33816 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932915AbaCQLeF convert rfc822-to-8bit (ORCPT
+	id S932843AbaCQLgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 07:36:20 -0400
+Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:55148 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932732AbaCQLgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 07:34:05 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Ben Chan <benchan@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Greg Suarez <gsuarez@smithmicro.com>
-Subject: Re: [PATCH 2/2] net: cdc_ncm: respect operator preferred MTU reported by MBIM
-Organization: m
-References: <1394952550-9308-1-git-send-email-benchan@chromium.org>
-	<1394952550-9308-2-git-send-email-benchan@chromium.org>
-Date: Mon, 17 Mar 2014 10:42:09 +0100
-In-Reply-To: <1394952550-9308-2-git-send-email-benchan@chromium.org> (Ben
-	Chan's message of "Sat, 15 Mar 2014 23:49:10 -0700")
-Message-ID: <87ob15maa6.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130009 (Ma Gnus v0.9) Emacs/23.4 (gnu/linux)
+	Mon, 17 Mar 2014 07:36:17 -0400
+Date: Mon, 17 Mar 2014 12:38:11 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: nicolas.ferre@atmel.com, b.brezillon@overkiz.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregory.clement@free-electrons.com, devicetree@vger.kernel.org,
+        thomas.petazzoni@free-electrons.com,
+        alexandre.belloni@free-electrons.com
+Subject: Re: [PATCH v5 6/9] at91: dt: sam9261: Device Tree support for the
+ at91sam9261ek
+Message-ID: <20140317113811.GD9558@ns203013.ovh.net>
+References: <1393841162-25339-1-git-send-email-jjhiblot@traphandler.com>
+ <1393841162-25339-7-git-send-email-jjhiblot@traphandler.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393841162-25339-7-git-send-email-jjhiblot@traphandler.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 16009170775713229657
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrvdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrvdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is this *really* driver material, or should we just leave the IP MTU
-hint handling up to the userspace management application?
-
-There are no less than 3(!) different ways for a device to specify the
-MBIM MTU:
-
- 1) wMaxSegmentSize field of the "MBIM Control Model Functional
-      Descriptor"
-      (mandatory, pre-errata1, per-device, both IP and DSS)
-
- 2) IPv4Mtu/IPv6Mtu fields of the MBIM_IP_CONFIGURATION_INFO response to
-      MBIM_CID_IP_CONFIGURATION
-      (mandatory, pre-errata1, per-session, IP only)
- 
- 3) wMTU field of the "MBIM Extended Functional Descriptor"
-      (optional, errata1, per-operator, IP only)
-
-I see the optional extended MBIM descriptor as no more than a hint, and
-given that MBIM_CID_IP_CONFIGURATION is mandatory I see no real use case
-at all.
-
-If the extended decriptor is there, and the application supports it,
-then fine - let the application base the default IP MTU on this
-value. But I cannot see anything possibly break for an application and
-driver which does not support it.  The fact that the USB-IF didn't
-bother to update the MBIM version number when they added this descriptor
-supports that claim IMHO.  It tells us that it is perfectly OK for any
-MBIM v1.0 compliant application/driver to not even parse this
-descriptor, because the application/driver can predate Errata1.  The
-descriptor was added out of the blue in something called an "Errata",
-and is IMHO best ignored until a proper new version of the standard is
-published.
-
-The driver currently set the MTU based on the wMaxSegmentSize from the
-mandatory MBIM descriptor.  AFAICS this is the only field the driver
-*can* use.  The MBIM management application may make use of the extended
-descriptor, because it will know about "operator" and the relation to
-"IP data streams".  The driver does not have this knowledge, and it must
-be capable of supporting non-IP streams (DSS) multiplexed over the same
-network device.
-
-AFAICS, the MTU information provided by the extended descriptor is
-completely redundant for all cases where it has a meaning (the mandatory
-MBIM_CID_IP_CONFIGURATION will provde the IPv4 and IPv6 per-session
-MTUs), and possily completely wrong for any other case (wMaxSegmentSize
-sets the maximum size for non-IP sessions)
-
-My advice is to leave parsing of this descriptor to userspace.  That is
-also the only place where we can make use of the
-bMaxOutstandingCommandMessages, which actually is useful information. I
-just don't understand why they had to make that part of a descriptor
-when they have defined a new dedicated and extensible management
-protocol....
-
-In case you disagree with the above (and do feel free to do so... I am
-often wrong), some minor nits regarding the actual implementation:
-
-
-Ben Chan <benchan@chromium.org> writes:
-
-> According to "Universal Serial Bus Communications Class Subclass
-> Specification for Mobile Broadband Interface Model, Revision 1.0,
-> Errata-1" published by USB-IF, the wMTU field of the MBIM extended
-> functional descriptor indicates the operator preferred MTU for IP data
-> streams.
->
-> This patch modifies cdc_ncm_setup to ensure that the MTU value set on
-> the usbnet device does not exceed the operator preferred MTU indicated
-> by wMTU if the MBIM device exposes a MBIM extended functional
-> descriptor.
->
-> Signed-off-by: Ben Chan <benchan@chromium.org>
+On 11:05 Mon 03 Mar     , Jean-Jacques Hiblot wrote:
+> This patch implements a DTS to boot a at91sam9261ek with a dt-enabled
+> kernel (at91_dt_defconfig).
+> supported features are:
+> * dbgu
+> * lcdc
+> * usb host
+> * usb gadget,
+> * spi dataflash
+> * nand flash
+> * touchscreen
+> * leds
+> * user buttons
+> 
+> In the TODO list:
+> * dm9000 (ethernet)
+> * audio
+> * mmc
+> 
+> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
 > ---
->  drivers/net/usb/cdc_ncm.c   | 15 +++++++++++++++
->  include/linux/usb/cdc_ncm.h |  1 +
->  2 files changed, 16 insertions(+)
->
-> diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
-> index dbff290..0b036ed 100644
-> --- a/drivers/net/usb/cdc_ncm.c
-> +++ b/drivers/net/usb/cdc_ncm.c
-> @@ -261,6 +261,13 @@ out:
->  	/* set MTU to max supported by the device if necessary */
->  	if (dev->net->mtu > ctx->max_datagram_size - eth_hlen)
->  		dev->net->mtu = ctx->max_datagram_size - eth_hlen;
+>  arch/arm/boot/dts/Makefile          |   2 +
+>  arch/arm/boot/dts/at91sam9261ek.dts | 204 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 206 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
+> 
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 0320303..f496473 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -12,6 +12,8 @@ dtb-$(CONFIG_ARCH_AT91) += ethernut5.dtb
+>  dtb-$(CONFIG_ARCH_AT91) += evk-pro3.dtb
+>  dtb-$(CONFIG_ARCH_AT91) += tny_a9260.dtb
+>  dtb-$(CONFIG_ARCH_AT91) += usb_a9260.dtb
+> +# sam9261
+> +dtb-$(CONFIG_ARCH_AT91) += at91sam9261ek.dtb
+>  # sam9263
+>  dtb-$(CONFIG_ARCH_AT91) += at91sam9263ek.dtb
+>  dtb-$(CONFIG_ARCH_AT91) += tny_a9263.dtb
+> diff --git a/arch/arm/boot/dts/at91sam9261ek.dts b/arch/arm/boot/dts/at91sam9261ek.dts
+> new file mode 100644
+> index 0000000..03adb7f
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/at91sam9261ek.dts
+> @@ -0,0 +1,204 @@
+> +/*
+> + * at91sam9261ek.dts - Device Tree file for Atmel at91sam9261 reference board
+> + *
+> + *  Copyright (C) 2013 Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> + *
+> + * Licensed under GPLv2 only.
+> + */
+> +/dts-v1/;
+> +#include "at91sam9261.dtsi"
 > +
-> +	/* do not exceed operater preferred MTU */
-> +	if (ctx->mbim_extended_desc &&
-> +		ctx->mbim_extended_desc->wMTU != 0 &&
-> +		dev->net->mtu > ctx->mbim_extended_desc->wMTU)
-> +		dev->net->mtu = ctx->mbim_extended_desc->wMTU;
-
-wMTU access needs le16_to_cpu.
-
+> +/ {
+> +	model = "Atmel at91sam9261ek";
+> +	compatible = "atmel,at91sam9261ek", "atmel,at91sam9261", "atmel,at91sam9";
 > +
->  	return 0;
->  }
->  
-> @@ -399,6 +406,14 @@ int cdc_ncm_bind_common(struct usbnet *dev, struct usb_interface *intf, u8 data_
->  			ctx->mbim_desc = (const struct usb_cdc_mbim_desc *)buf;
->  			break;
->  
-> +		case USB_CDC_MBIM_EXTENDED_TYPE:
-> +			if (buf[0] < sizeof(*(ctx->mbim_extended_desc)))
-> +				break;
+> +	chosen {
+> +		bootargs = "console=ttyS0,115200 rootfstype=ubifs ubi.mtd=5 root=ubi0:rootfs rw";
+> +	};
 > +
-> +			ctx->mbim_extended_desc =
-> +				(const struct usb_cdc_mbim_extended_desc *)buf;
-> +			break;
+> +	memory {
+> +		reg = <0x20000000 0x4000000>;
+> +	};
 > +
->  		default:
->  			break;
->  		}
-> diff --git a/include/linux/usb/cdc_ncm.h b/include/linux/usb/cdc_ncm.h
-> index c3fa807..bdf05fb 100644
-> --- a/include/linux/usb/cdc_ncm.h
-> +++ b/include/linux/usb/cdc_ncm.h
-> @@ -93,6 +93,7 @@ struct cdc_ncm_ctx {
->  
->  	const struct usb_cdc_ncm_desc *func_desc;
->  	const struct usb_cdc_mbim_desc *mbim_desc;
-> +	const struct usb_cdc_mbim_extended_desc *mbim_extended_desc;
->  	const struct usb_cdc_ether_desc *ether_desc;
->  
->  	struct usb_interface *control;
+> +	clocks {
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +		ranges;
+> +
+> +		main_clock: clock@0 {
+> +			compatible = "atmel,osc", "fixed-clock";
+> +			clock-frequency = <18432000>;
+> +		};
+> +	};
+> +
+> +	ahb {
+> +		usb0: ohci@00500000 {
+> +			status = "okay";
+> +		};
+> +
+> +		fb0: fb@0x00600000 {
+> +			display = <&display0>;
+> +			atmel,power-control-gpio = <&pioA 12 GPIO_ACTIVE_LOW>;
+> +			status = "okay";
+> +
+> +			display0: display {
+> +				bits-per-pixel = <16>;
+> +				atmel,lcdcon-backlight;
+> +				atmel,dmacon = <0x1>;
+> +				atmel,lcdcon2 = <0x80008002>;
+> +				atmel,guard-time = <1>;
+> +				atmel,lcd-wiring-mode = "BRG";
+> +
+> +				display-timings {
+> +					native-mode = <&timing0>;
+> +					timing0: timing0 {
+> +						clock-frequency = <4965000>;
+> +						hactive = <240>;
+> +						vactive = <320>;
+> +						hback-porch = <1>;
+> +						hfront-porch = <33>;
+> +						vback-porch = <1>;
+> +						vfront-porch = <0>;
+> +						hsync-len = <5>;
+> +						vsync-len = <1>;
+> +						hsync-active = <1>;
+> +						vsync-active = <1>;
+> +					};
+> +				};
+> +			};
+> +		};
+> +
+> +		nand0: nand@40000000 {
+> +			nand-bus-width = <8>;
+> +			nand-ecc-mode = "soft";
+> +			nand-on-flash-bbt;
+> +			status = "okay";
+> +
+> +			at91bootstrap@0 {
+> +				label = "at91bootstrap";
+> +				reg = <0x0 0x40000>;
+> +			};
+> +
+> +			bootloader@40000 {
+> +				label = "bootloader";
+> +				reg = <0x40000 0x80000>;
+> +			};
+> +
+> +			bootloaderenv@c0000 {
+> +				label = "bootloader env";
+> +				reg = <0xc0000 0xc0000>;
+> +			};
+> +
+> +			dtb@180000 {
+> +				label = "device tree";
+> +				reg = <0x180000 0x80000>;
+> +			};
+> +
+> +			kernel@200000 {
+> +				label = "kernel";
+> +				reg = <0x200000 0x600000>;
+> +			};
+> +
+> +			rootfs@800000 {
+> +				label = "rootfs";
+> +				reg = <0x800000 0x0f800000>;
+> +			};
+> +		};
+> +
+> +		apb {
+> +			usb1: gadget@fffa4000 {
+> +				atmel,vbus-gpio = <&pioB 29 GPIO_ACTIVE_HIGH>;
+> +				status = "okay";
+> +			};
+> +			spi0: spi@fffc8000 {
+if you use cs-gpios you do not need to respect the hw order but ok just drop
+the last 0
+> +				cs-gpios = <&pioA 3 0>, <0>, <&pioA 28 0>, <0>;
+> +				status = "okay";
+> +
+> +				mtd_dataflash@0 {
+> +					compatible = "atmel,at45", "atmel,dataflash";
+> +					reg = <0>;
+> +					spi-max-frequency = <15000000>;
+> +				};
+please add empty line
+> +				tsc2046@0 {
+> +					reg = <2>;
+> +					compatible = "ti,ads7843";
+> +					interrupts-extended = <&pioC 2 IRQ_TYPE_EDGE_BOTH>;
+> +					spi-max-frequency = <3000000>;
+> +					pendown-gpio = <&pioC 2 GPIO_ACTIVE_HIGH>;
+> +
+> +					ti,x-min = /bits/ 16 <150>;
+> +					ti,x-max = /bits/ 16 <3830>;
+> +					ti,y-min = /bits/ 16 <190>;
+> +					ti,y-max = /bits/ 16 <3830>;
+> +					ti,vref-delay-usecs = /bits/ 16 <450>;
+> +					ti,x-plate-ohms = /bits/ 16 <450>;
+> +					ti,y-plate-ohms = /bits/ 16 <250>;
+> +					ti,pressure-max = /bits/ 16 <15000>;
+> +					ti,debounce-rep = /bits/ 16 <0>;
+> +					ti,debounce-tol = /bits/ 16 <65535>;
+> +					ti,debounce-max = /bits/ 16 <1>;
+> +
+> +					linux,wakeup;
+> +				};
+> +			};
+> +
+> +			dbgu: serial@fffff200 {
+> +				status = "okay";
+> +			};
+> +
+> +			watchdog@fffffd40 {
+> +				status = "okay";
+> +			};
+> +
+> +		};
+> +	};
+> +
+> +	leds {
+> +		compatible = "gpio-leds";
+> +
+> +		ds8 {
+> +			label = "ds8";
+> +			gpios = <&pioA 13 GPIO_ACTIVE_LOW>;
+> +			linux,default-trigger = "none";
+no-need drop it
 
-
-Could we move this final MTU correction from cdc_ncm_setup to
-cdc_ncm_bind_common to avoid bloating the device struct with another
-descriptor pointer we donæt really need to keep around?
-
-I know we look into descriptors in cdc_ncm_setup, because we have to,
-but ideally I would have loved to see cdc_ncm_setup dealing with *just*
-the NCM/MBIM specific control setup messages and cdc_ncm_bind_common
-dealing with all the functional descriptors.  That seems most logic to
-me (but is of course only my personal opinion and nothing else - I do
-not know what the original cdc_ncm author intended)
-
-
-Bjørn
+please fix the missing empty line
+> +		};
+> +		ds7 {
+> +			label = "ds7";
+> +			gpios = <&pioA 14 GPIO_ACTIVE_LOW>;
+> +			linux,default-trigger = "nand-disk";
+> +		};
+> +		ds1 {
+> +			label = "ds1";
+> +			gpios = <&pioA 23 GPIO_ACTIVE_LOW>;
+> +			linux,default-trigger = "heartbeat";
+> +		};
+> +	};
+> +
+> +	gpio_keys {
+> +		compatible = "gpio-keys";
+> +
+> +		button_0 {
+> +			label = "button_0";
+> +			gpios = <&pioA 27 GPIO_ACTIVE_LOW>;
+> +			linux,code = <256>;
+> +			gpio-key,wakeup;
+> +		};
+> +		button_1 {
+> +			label = "button_1";
+> +			gpios = <&pioA 26 GPIO_ACTIVE_LOW>;
+> +			linux,code = <257>;
+> +			gpio-key,wakeup;
+> +		};
+> +		button_2 {
+> +			label = "button_2";
+> +			gpios = <&pioA 25 GPIO_ACTIVE_LOW>;
+> +			linux,code = <258>;
+> +			gpio-key,wakeup;
+> +		};
+> +		button_3 {
+> +			label = "button_3";
+> +			gpios = <&pioA 24 GPIO_ACTIVE_LOW>;
+> +			linux,code = <259>;
+> +			gpio-key,wakeup;
+> +		};
+> +	};
+> +};
+> -- 
+> 1.9.0
+> 
