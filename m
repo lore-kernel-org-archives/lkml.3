@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693AbaCQOh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 10:37:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.13]:52553 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221AbaCQOh0 (ORCPT
+	id S933526AbaCQOk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 10:40:27 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:33298 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933197AbaCQOkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 10:37:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] CNS3xxx: Fix PCIe early iotable_init().
-Date: Mon, 17 Mar 2014 15:37:19 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Krzysztof =?utf-8?q?Ha=C5=82asa?= <khalasa@piap.pl>,
-        Russell King <linux@arm.linux.org.uk>,
-        Anton Vorontsov <anton@enomsg.org>, Yinghai Lu <yinghai@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, arm@kernel.org
-References: <m3eh2nqz7n.fsf@t19.piap.pl> <m3r46io1nd.fsf@t19.piap.pl> <m3eh2inxef.fsf@t19.piap.pl>
-In-Reply-To: <m3eh2inxef.fsf@t19.piap.pl>
+	Mon, 17 Mar 2014 10:40:24 -0400
+Date: Mon, 17 Mar 2014 10:40:20 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "dbasehore ." <dbasehore@chromium.org>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zento.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        bleung@chromium.org, sonnyrao@chromium.org,
+        Luigi Semenzato <semenzato@chromium.org>
+Subject: Re: [PATCH] backing_dev: Fix hung task on sync
+Message-ID: <20140317144020.GA13749@htj.dyndns.org>
+References: <1392437537-27392-1-git-send-email-dbasehore@chromium.org>
+ <20140218225548.GI31892@mtj.dyndns.org>
+ <20140219092731.GA4849@quack.suse.cz>
+ <20140219190139.GQ10134@htj.dyndns.org>
+ <CAGAzgspTZnUh_qi=FeQ4hS4LRiexPccTyALMg3Gt1K0ZZq_MuQ@mail.gmail.com>
+ <20140316145951.GB26026@htj.dyndns.org>
+ <CAGAzgsqD0aRnDMMyDCUVii6Rv22f97G0irpzFBz4c_ukKsn2hg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201403171537.19546.arnd@arndb.de>
-X-Provags-ID: V02:K0:8TA3rlE2rqAuE18RXytIDRVKsyK0hwUAXWrwU0ryjR3
- l8X4gCZrTREAx+OTon2vY5ufdDZfJ4NXad+y9gq2NgISJOCj0r
- WFXOECV6bfZ0I9PHgGispdizBxhfzqyoD3T4lId1bTHkCe2iAZ
- 70Dy+T21INX+PWeRKFCFb/x6pB+nERxrikaXFXhXochPaKY3zg
- VP24OGMZJE2MXsndiQaz/QL+bfVh0+24kbaFG51WXhUalQSHCS
- H9F5PG7GvqeMw84Ijq0xGZoLs4KbDSPJgL+Bd3mWjWSHVvFYxh
- Js9BOahmSIssn/ayTpfcL41Pdt9Jx1Zl1bvMdYgVzhn563Y6iQ
- EORxEf1RWZhnrNzmXZ6NQOvzvFMFroNqA2HMGCpB2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGAzgsqD0aRnDMMyDCUVii6Rv22f97G0irpzFBz4c_ukKsn2hg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 March 2014, Krzysztof Hałasa wrote:
-> khalasa@piap.pl (Krzysztof Hałasa) writes:
-> 
-> > This patch fixes the following BUG:
-> >
-> >> kernel BUG at mm/vmalloc.c:1132!
-> >> PC is at vm_area_add_early+0x20/0x84
-> >> LR is at add_static_vm_early+0xc/0x60
-> >>
-> >> The problem is cns3xxx_pcie_init() (device_initcall) calls the "early"
-> >> iotable_init().
-> 
-> That's obviously:
-> 
-> Signed-off-by: Krzysztof Hałasa <khalasa@piap.pl>
-> 
+Hello,
 
-Applied to next/fixes-non-critical.
+On Sun, Mar 16, 2014 at 12:13:55PM -0700, dbasehore . wrote:
+> There's already behavior that is somewhat like that with the current
+> implementation. If there's an item on a workqueue, it could run at any
+> time. From the perspective of the driver/etc. that is using the
+> workqueue, there should be no difference between work being on the
+> workqueue and the kernel triggering a schedule right after the work is
+> removed from the workqueue, but before the work function has done
+> anything.
 
-Since the problem is not new and you didn't mark the patch as 'stable',
-this seems to be the right place. Let us know if you need backports
-to stable kernels, also fo the other patch.
+It is different.  mod_delayed_work() *guarantees* that the target work
+item will become pending for execution at least after the specified
+time has passed.  What you're suggesting removes any semantically
+consistent meaning of the API.
 
-In general, when submitting arm-soc patches for inclusion, please add
-arm@kernel.org to Cc, so we don't miss it.
+> So to reiterate, calling mod_delayed_work on something that is already
+> in the workqueue has two behaviors. One, the work is dispatched before
+> mod_delayed_work can remove it from the workqueue. Two,
+> mod_delayed_work removes it from the workqueue and sets the timer (or
+> not in the case of 0). The behavior of the proposed change should be
+> no different than the first behavior.
 
-Thanks,
+No, mod_delayed_work() does *one* thing - the work item is queued for
+the specified delay no matter the current state of the work item.  It
+is *guaranteed* that the work item will go pending after the specified
+time.  That is the sole meaning of the API.
 
-	Arnd
+> This should not introduce new behavior from the perspective of the
+> code using delayed_work. It is true that there is a larger window of
+> time between when you call mod_delayed_work and when an already queued
+> work item will run, but I don't believe that matters.
+
+You're completely misunderstanding the API.  Plesae re-read it and
+understand what it does first.
+
+Thanks.
+
+-- 
+tejun
