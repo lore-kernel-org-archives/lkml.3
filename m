@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569AbaCQI2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 04:28:13 -0400
-Received: from ozlabs.org ([203.10.76.45]:48110 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253AbaCQI2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 04:28:11 -0400
-Date: Mon, 17 Mar 2014 19:28:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-Id: <20140317192804.c338ea1863f70615ab1a53dc@canb.auug.org.au>
-In-Reply-To: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Mar_2014_19_28_04_+1100_bu8Gb2Lia/n=nWIy"
+	id S932433AbaCQIdn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 04:33:43 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:37770 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751258AbaCQIdl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 04:33:41 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-10.tower-39.messagelabs.com!1395045217!7966626!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>, Lee Jones <lee.jones@linaro.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC V2] mfd: da9063: Add support for production silicon
+ variant code
+Thread-Topic: [RFC V2] mfd: da9063: Add support for production silicon
+ variant code
+Thread-Index: AQHPKaPjGoIDakt27U6TyM0JXmSxpZrg0n+AgARPolA=
+Date: Mon, 17 Mar 2014 08:33:36 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7A0C7EB5B@SW-EX-MBX01.diasemi.com>
+References: <201402141506.s1EF6iYr002690@swsrvapps-01.diasemi.com>
+	 <20140214164319.GB30687@lee--X1>
+ <1394807833.3710.57.camel@paszta.hi.pengutronix.de>
+In-Reply-To: <1394807833.3710.57.camel@paszta.hi.pengutronix.de>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.61]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2H8Xm7C028554
 
---Signature=_Mon__17_Mar_2014_19_28_04_+1100_bu8Gb2Lia/n=nWIy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 14 March 2014 14:37 Philipp Zabel wrote:
 
-Hi all,
-
-On Wed, 12 Mar 2014 00:51:52 +0000 Mark Brown <broonie@kernel.org> wrote:
+>Hi,
 >
-> After merging the driver-core tree, today's linux-next build ()
-> failed like this on a PowerPC defconfig:
->=20
-> HEAD is now at ceb98e684dec Merge remote-tracking branch 'driver-core/dri=
-ver-core-next'
->   GEN     /home/broonie/next/powerpc_ppc64_defconfig/Makefile
-> #
-> # configuration written to .config
-> #
-> /home/broonie/next/next/arch/powerpc/platforms/powernv/opal-elog.c: In fu=
-nction 'elog_ack_store':
-> /home/broonie/next/next/arch/powerpc/platforms/powernv/opal-elog.c:84:2: =
-error: implicit declaration of function 'sysfs_schedule_callback' [-Werror=
-=3Dimplicit-function-declaration]
->   sysfs_schedule_callback(&elog_obj->kobj, delay_release_kobj,
->   ^
-> cc1: all warnings being treated as errors
-> make[3]: *** [arch/powerpc/platforms/powernv/opal-elog.o] Error 1
-> make[3]: *** Waiting for unfinished jobs....
-> /home/broonie/next/next/arch/powerpc/platforms/powernv/opal-dump.c: In fu=
-nction 'dump_ack_store':
-> /home/broonie/next/next/arch/powerpc/platforms/powernv/opal-dump.c:100:2:=
- error: implicit declaration of function 'sysfs_schedule_callback' [-Werror=
-=3Dimplicit-function-declaration]
->   sysfs_schedule_callback(&dump_obj->kobj, delay_release_kobj,
->   ^
-> cc1: all warnings being treated as errors
->=20
-> due to an interaction between d1ba277e7988908 (sysfs, driver-core: remove=
- unused {sysfs|device}_schedule_callback_owner()) and 774fea1a38c6a5a8 (pow=
-erpc/powernv: Read OPAL error log and export it through sysfs) from the Pow=
-erPC tree.
->=20
-> I reverted 774fea1a38c6a5a8 for today.
+>Am Freitag, den 14.02.2014, 16:43 +0000 schrieb Lee Jones:
+>> > From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>> >
+>> > Add the correct silicon variant code ID (0x5) to the driver. This
+>> > new code is the 'production' variant code ID for DA9063.
+>> >
+>> > This patch will remove the older variant code ID which matches the
+>> > pre-production silicon ID (0x3) for the DA9063 chip.
+>> >
+>> > There is also some small amount of correction done in this patch:
+>> > it splits the revision code and correctly names it according to
+>> > the hardware specification and moves the dev_info() call before
+>> > the variant ID test.
+>> >
+>> > Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>>
+>> Applied, thanks.
+>
+>we have a few i.MX6 Modules (imx6q-phytec-pfla02) with DA9063 PMICs that
+>all report the model/revision ID as 0x61/0x03. Those are marked as
+>follows:
+>    dialog DA9063 44 1240EHDA
+>    dialog DA9063 44 1312ECAF
+>We now have received a report from Phytec that those PMICs were not
+>marketed as preproduction in any way, but as a normal mask revision.
 
-I instead reverted commit d1ba277e7988908 (sysfs, driver-core: remove
-unused {sysfs|device}_schedule_callback_owner()).  I hope that will work
-as well.
+I will speak with our AEs this morning and try and get an answer to this one.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>Their Dialog Semiconductor contact talked about AD, BA, and BB silicon
+>variants. How do those relate to the variant register value and to the
+>markings on the chips?
+>There seems to be a serious miscommunication somewhere.
 
---Signature=_Mon__17_Mar_2014_19_28_04_+1100_bu8Gb2Lia/n=nWIy
-Content-Type: application/pgp-signature
+Regards,
+Steve
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTJrIYAAoJEMDTa8Ir7ZwVb9gP/0Zwyxhaxn47TDKNmRqvelHU
-p9pbGvvc+G5Ujg/0AkP+UfA+G/9N/+51OmVnr//8HLrLRfL4LRxGiL3gKi9X64Gh
-GAw8SNApMqohV16Q+I4g13b0/fkNuyX8nT83SLRYNkoAjf2co1kQwrctu9LF+pln
-nf+Oreyx+w9YE0ZMfFb7m94bwgBzoADQc62BgqkoZPK9kTUST0AcKPaJGEPWIuO4
-nf6v7eiCIHR6gD1yVBG+A/G0knYpB1aKyvj9NwlPK1HVEGrcIg1UR9+WffDCt8RC
-oCC4NzuvEPr/+3GfKWcmAm6qizbQA/wxBU6VtHtDbI6hzeXoWKn/dRvgww5sq4Hy
-BO3J+adQ8B9MuLrIZMCHwVWwW8aTUi0n8/cwPIdFTgl4dcrbZ0CK9e4yWetAEq3U
-ykQ76OWDzVnhCafWPzgPmmhwxqNsVkmifW+QpXRPwBQCYZn01TPFrxyLmCB9yXld
-GsGm6FhXboaSgsrK1cyEr+6AktjJBxGiTbQek1NsSVnGBkMRb8W+pbLZUA/P3Fq7
-71uZfbXR1vcFBxD2q6rnj1S9fQKx6DuSXMZSDF8VmqqWznkKZ21zisl+pQ46RijZ
-jJAzXqje1nxuWLdzE9xiN5KPIoVec7FmoulXA2k+2PVpOhN/goAknHSgGckHSlwH
-hG28bLtUHDsvnGORLNxC
-=XaDU
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Mar_2014_19_28_04_+1100_bu8Gb2Lia/n=nWIy--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
