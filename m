@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096AbaCQWW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 18:22:59 -0400
-Received: from www84.your-server.de ([213.133.104.84]:38858 "EHLO
+	id S1753300AbaCQWYZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 18:24:25 -0400
+Received: from www84.your-server.de ([213.133.104.84]:38867 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017AbaCQWWy (ORCPT
+	with ESMTP id S1753028AbaCQWW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 18:22:54 -0400
+	Mon, 17 Mar 2014 18:22:56 -0400
 From: Stefani Seibold <stefani@seibold.net>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
@@ -14,10 +14,10 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
         andriy.shevchenko@linux.intel.com
 Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v23 06/13] x86, vdso: Cleanup __vdso_gettimeofday()
-Date: Mon, 17 Mar 2014 23:22:06 +0100
-Message-Id: <1395094933-14252-7-git-send-email-stefani@seibold.net>
+        stefani@seibold.net
+Subject: [PATCH v23 08/13] x86, vdso: Patch alternatives in the 32-bit VDSO
+Date: Mon, 17 Mar 2014 23:22:08 +0100
+Message-Id: <1395094933-14252-9-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1395094933-14252-1-git-send-email-stefani@seibold.net>
 References: <1395094933-14252-1-git-send-email-stefani@seibold.net>
@@ -26,46 +26,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch do a little cleanup for the __vdso_gettimeofday() function.
+From: Andy Lutomirski <luto@amacapital.net>
 
-It kicks out an unneeded ret local variable and makes the code faster
-if only the timezone is needed (an admittedly rare case.)
+We need the alternatives mechanism for rdtsc_barrier() to work.
 
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
- arch/x86/vdso/vclock_gettime.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/vdso.h  |  2 ++
+ arch/x86/vdso/Makefile       |  3 ++-
+ arch/x86/vdso/vdso32-setup.c | 23 ++++++++++++-----------
+ arch/x86/vdso/vma.c          | 13 ++++++++++---
+ 4 files changed, 26 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 743f277..09dae4a 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -259,13 +259,12 @@ int clock_gettime(clockid_t, struct timespec *)
+diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
+index 5594e84..f8605e6 100644
+--- a/arch/x86/include/asm/vdso.h
++++ b/arch/x86/include/asm/vdso.h
+@@ -28,4 +28,6 @@ extern const char vdso32_int80_start, vdso32_int80_end;
+ extern const char vdso32_syscall_start, vdso32_syscall_end;
+ extern const char vdso32_sysenter_start, vdso32_sysenter_end;
  
- notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
++void __init patch_vdso32(void *vdso, size_t len);
++
+ #endif /* _ASM_X86_VDSO_H */
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index fd14be1..7a3d13e 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -21,7 +21,8 @@ vobjs-$(VDSOX32-y) += $(vobjx32s-compat)
+ vobj64s := $(filter-out $(vobjx32s-compat),$(vobjs-y))
+ 
+ # files to link into kernel
+-obj-$(VDSO64-y)			+= vma.o vdso.o
++obj-y				+= vma.o
++obj-$(VDSO64-y)			+= vdso.o
+ obj-$(VDSOX32-y)		+= vdsox32.o
+ obj-$(VDSO32-y)			+= vdso32.o vdso32-setup.o
+ 
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index ab20c04..e0fc767 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -112,24 +112,25 @@ void enable_sep_cpu(void)
+ 
+ int __init sysenter_setup(void)
  {
--	long ret = VCLOCK_NONE;
--
- 	if (likely(tv != NULL)) {
- 		BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
- 			     offsetof(struct timespec, tv_nsec) ||
- 			     sizeof(*tv) != sizeof(struct timespec));
--		ret = do_realtime((struct timespec *)tv);
-+		if (unlikely(do_realtime((struct timespec *)tv) == VCLOCK_NONE))
-+			return vdso_fallback_gtod(tv, tz);
- 		tv->tv_usec /= 1000;
- 	}
- 	if (unlikely(tz != NULL)) {
-@@ -274,8 +273,6 @@ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
- 		tz->tz_dsttime = gtod->sys_tz.tz_dsttime;
+-	void *syscall_page = (void *)get_zeroed_page(GFP_ATOMIC);
+-	const void *vsyscall;
+-	size_t vsyscall_len;
++	void *vdso_page = (void *)get_zeroed_page(GFP_ATOMIC);
++	const void *vdso;
++	size_t vdso_len;
+ 
+-	vdso32_pages[0] = virt_to_page(syscall_page);
++	vdso32_pages[0] = virt_to_page(vdso_page);
+ 
+ 	if (vdso32_syscall()) {
+-		vsyscall = &vdso32_syscall_start;
+-		vsyscall_len = &vdso32_syscall_end - &vdso32_syscall_start;
++		vdso = &vdso32_syscall_start;
++		vdso_len = &vdso32_syscall_end - &vdso32_syscall_start;
+ 	} else if (vdso32_sysenter()){
+-		vsyscall = &vdso32_sysenter_start;
+-		vsyscall_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
++		vdso = &vdso32_sysenter_start;
++		vdso_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
+ 	} else {
+-		vsyscall = &vdso32_int80_start;
+-		vsyscall_len = &vdso32_int80_end - &vdso32_int80_start;
++		vdso = &vdso32_int80_start;
++		vdso_len = &vdso32_int80_end - &vdso32_int80_start;
  	}
  
--	if (ret == VCLOCK_NONE)
--		return vdso_fallback_gtod(tv, tz);
+-	memcpy(syscall_page, vsyscall, vsyscall_len);
++	memcpy(vdso_page, vdso, vdso_len);
++	patch_vdso32(vdso_page, vdso_len);
+ 
  	return 0;
  }
- int gettimeofday(struct timeval *, struct timezone *)
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index 431e875..7345bc9 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -16,6 +16,7 @@
+ #include <asm/vdso.h>
+ #include <asm/page.h>
+ 
++#if defined(CONFIG_X86_64)
+ unsigned int __read_mostly vdso_enabled = 1;
+ 
+ extern char vdso_start[], vdso_end[];
+@@ -28,8 +29,12 @@ static unsigned vdso_size;
+ extern char vdsox32_start[], vdsox32_end[];
+ extern struct page *vdsox32_pages[];
+ static unsigned vdsox32_size;
++#endif
++#endif
+ 
+-static void __init patch_vdsox32(void *vdso, size_t len)
++#if defined(CONFIG_X86_32) || defined(CONFIG_X86_X32_ABI) || \
++	defined(CONFIG_COMPAT)
++void __init patch_vdso32(void *vdso, size_t len)
+ {
+ 	Elf32_Ehdr *hdr = vdso;
+ 	Elf32_Shdr *sechdrs, *alt_sec = 0;
+@@ -52,7 +57,7 @@ static void __init patch_vdsox32(void *vdso, size_t len)
+ 	}
+ 
+ 	/* If we get here, it's probably a bug. */
+-	pr_warning("patch_vdsox32: .altinstructions not found\n");
++	pr_warning("patch_vdso32: .altinstructions not found\n");
+ 	return;  /* nothing to patch */
+ 
+ found:
+@@ -61,6 +66,7 @@ found:
+ }
+ #endif
+ 
++#if defined(CONFIG_X86_64)
+ static void __init patch_vdso64(void *vdso, size_t len)
+ {
+ 	Elf64_Ehdr *hdr = vdso;
+@@ -104,7 +110,7 @@ static int __init init_vdso(void)
+ 		vdso_pages[i] = virt_to_page(vdso_start + i*PAGE_SIZE);
+ 
+ #ifdef CONFIG_X86_X32_ABI
+-	patch_vdsox32(vdsox32_start, vdsox32_end - vdsox32_start);
++	patch_vdso32(vdsox32_start, vdsox32_end - vdsox32_start);
+ 	npages = (vdsox32_end - vdsox32_start + PAGE_SIZE - 1) / PAGE_SIZE;
+ 	vdsox32_size = npages << PAGE_SHIFT;
+ 	for (i = 0; i < npages; i++)
+@@ -204,3 +210,4 @@ static __init int vdso_setup(char *s)
+ 	return 0;
+ }
+ __setup("vdso=", vdso_setup);
++#endif
 -- 
 1.9.0
 
