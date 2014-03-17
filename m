@@ -1,123 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268AbaCQGBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 02:01:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46546 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756543AbaCQF6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 01:58:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,667,1389772800"; 
-   d="scan'208";a="473898380"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v4 10/16] perf, core: simplify need branch stack check
-Date: Mon, 17 Mar 2014 13:57:30 +0800
-Message-Id: <1395035856-15411-11-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
-References: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
+	id S932499AbaCQGBn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 02:01:43 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:54039 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753304AbaCQGBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 02:01:40 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2H61NkK013827, This message is accepted by code: ctloc85258
+From: hayeswang <hayeswang@realtek.com>
+To: "'David Miller'" <davem@davemloft.net>
+CC: <David.Laight@ACULAB.COM>, <netdev@vger.kernel.org>,
+        <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+References: <A56A13416A724183888BB62CEFD2B817@realtek.com.tw><20140314.000741.1829674011496195593.davem@davemloft.net><CE95F5CF3B924F0A921DDC3493A67365@realtek.com.tw> <20140314.144311.2001561184461945910.davem@davemloft.net>
+Subject: RE: [PATCH net-next v3 1/2]r8152:addRTL8152_EARLY_AGG_TIMEOUT_SUPER
+Date: Mon, 17 Mar 2014 14:01:23 +0800
+Message-ID: <B2AB7D81B9814DE685426165CF613D72@realtek.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <20140314.144311.2001561184461945910.davem@davemloft.net>
+Thread-Index: Ac8/tUI90ZeD04/XTjSpIs1NSTcyKQB8DH6A
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+X-Originating-IP: [172.21.71.143]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-event->attr.branch_sample_type is non-zero no matter branch stack
-is enabled explicitly or is enabled implicitly. we can use it to
-replace intel_pmu_needs_lbr_smpl(). This avoids duplicating code
-that implicitly enables the LBR.
+ From: David Miller [mailto:davem@davemloft.net] 
+> Sent: Saturday, March 15, 2014 2:43 AM
+[...]
+> > Besides, I don't wish to modify the setting by ethtool when re-loading
+> > the driver or rebooting every time.
+> 
+> You have code to reset the driver, you can do it when the user asks
+> for the setting to be changed via ethtool.  I do not see this as
+> a problem.
+> 
+> The ethtool change can occur while the driver is already up, you'll
+> just need to reset the chip and make the new configuration, this is
+> not a problem.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 20 +++-----------------
- include/linux/perf_event.h             |  5 +++++
- kernel/events/core.c                   |  3 +++
- 3 files changed, 11 insertions(+), 17 deletions(-)
+Thanks for your answer. I would study how to set it by ethtool. 
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index be0e59e..4cf0d6d 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1030,20 +1030,6 @@ static __initconst const u64 slm_hw_cache_event_ids
-  },
- };
- 
--static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
--{
--	/* user explicitly requested branch sampling */
--	if (has_branch_stack(event))
--		return true;
--
--	/* implicit branch sampling to correct PEBS skid */
--	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
--	    x86_pmu.intel_cap.pebs_format < 2)
--		return true;
--
--	return false;
--}
--
- static void intel_pmu_disable_all(void)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-@@ -1208,7 +1194,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
- 	 * must disable before any actual event
- 	 * because any event may be combined with LBR
- 	 */
--	if (intel_pmu_needs_lbr_smpl(event))
-+	if (needs_branch_stack(event))
- 		intel_pmu_lbr_disable(event);
- 
- 	if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
-@@ -1269,7 +1255,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
- 	 * must enabled before any actual event
- 	 * because any event may be combined with LBR
- 	 */
--	if (intel_pmu_needs_lbr_smpl(event))
-+	if (needs_branch_stack(event))
- 		intel_pmu_lbr_enable(event);
- 
- 	if (event->attr.exclude_host)
-@@ -1739,7 +1725,7 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
- 		x86_pmu.pebs_aliases(event);
- 
--	if (intel_pmu_needs_lbr_smpl(event)) {
-+	if (needs_branch_stack(event)) {
- 		ret = intel_pmu_setup_lbr_filter(event);
- 		if (ret)
- 			return ret;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 3da433d..6afc675 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -763,6 +763,11 @@ static inline bool has_branch_stack(struct perf_event *event)
- 	return event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK;
- }
- 
-+static inline bool needs_branch_stack(struct perf_event *event)
-+{
-+	return event->attr.branch_sample_type != 0;
-+}
-+
- extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size);
- extern void perf_output_end(struct perf_output_handle *handle);
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 20da73c..89940f6 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6769,6 +6769,9 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 	if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
- 		goto err_ns;
- 
-+	if (!has_branch_stack(event))
-+		event->attr.branch_sample_type = 0;
-+
- 	pmu = perf_init_event(event);
- 	if (!pmu)
- 		goto err_ns;
--- 
-1.8.5.3
+Best Regards,
+Hayes
 
