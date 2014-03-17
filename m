@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089AbaCQNPU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:15:20 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32798 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514AbaCQNPQ (ORCPT
+	id S933022AbaCQNQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:16:36 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:23614 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932338AbaCQNQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:15:16 -0400
-Date: Mon, 17 Mar 2014 13:14:53 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Harini Katakam <harinik@xilinx.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        michals@xilinx.com
-Message-ID: <20140317131453.GF11706@sirena.org.uk>
-References: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
- <CAL_JsqKacetGytGUJir7ky3qOgCy-3ny1pT_Bx4eCYV2wMgcTg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nYySOmuH/HDX6pKp"
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqKacetGytGUJir7ky3qOgCy-3ny1pT_Bx4eCYV2wMgcTg@mail.gmail.com>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] SPI: Add driver for Cadence SPI controller
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 17 Mar 2014 09:16:33 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-69-5326f5b03b19
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Oliver Schinagl <oliver@schinagl.nl>, linux-ide@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ata: ahci_sunxi: disable resources on driver removal
+Date: Mon, 17 Mar 2014 14:16:16 +0100
+Message-id: <1541332.S2AMpmTS9V@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <4639408.hubNkUp5Oa@amdc1032>
+References: <4639408.hubNkUp5Oa@amdc1032>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t9jAd0NX9WCDWY8krR4c3w6k8Wmx9dY
+	LY7teMRkcXnXHDaLrZv2Mlu8nPSQ1eLX8qOMDuweTzZdZPTYtKqTzWPzknqP9/uusnm0tixn
+	9fi8SS6ALYrLJiU1J7MstUjfLoErY1/3WcaC9cwVOz7eZ2lgfMrUxcjJISFgInGg6SorhC0m
+	ceHeerYuRi4OIYFFjBKXGxdBOS1MEs0/PoNVsQlYSUxsX8UIYosIyEpcmfaQEaSIWeAJo8SC
+	k1vZQBLCAp4ScxcdZAaxWQRUJe5d3Axm8wpoSrzcPhvMFgWq2bF9JVg9p4CWxJOOT2BDhYBq
+	1p1cywZRLyjxY/I9FhCbWUBeYt/+qawQtpbE+p3HmSYwCsxCUjYLSdksJGULGJlXMYqmFiQX
+	FCel5xrpFSfmFpfmpesl5+duYgQH/DPpHYyrGiwOMQpwMCrx8E5QVgsWYk0sK67MPcQowcGs
+	JMLr9A4oxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgdFN
+	mN3HolpcYwNL9utyfvsj7XLCeYuWyx/S1zZOzXbiOS2+pSnIdv8nNaOlXOubXm/dwarJ8HjJ
+	rDVeJRZmqZHWCyd949G0vCpj/+DivfeXE1/trOQ5Ej7N2t0krKRFazrL9/tqD2zun1dTO598
+	+jtnn4mWl9NJhWCv+QZp5nuUuWfV5C74oMRSnJFoqMVcVJwIAMxgTyB0AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, March 17, 2014 02:05:15 PM Bartlomiej Zolnierkiewicz wrote:
+> Add custom ->host_stop method to disable resources on driver removal.
+> 
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
---nYySOmuH/HDX6pKp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+After looking some more into ahci_platform.c it seems that this patch
+is not needed, sorry for the noise.
 
-On Mon, Mar 17, 2014 at 07:47:24AM -0500, Rob Herring wrote:
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-Please delete irrelevant context from your replies, it makes it easier
-to find the new content.
-
-> On Mon, Mar 17, 2014 at 7:05 AM, Harini Katakam <harinik@xilinx.com> wrote:
-
-> > +/* Macros for the SPI controller read/write */
-> > +#define cdns_spi_read(addr)    readl_relaxed(addr)
-> > +#define cdns_spi_write(addr, val)      writel_relaxed((val), (addr))
-
-> Just use readl/writel directly.
-
-Or make them static inline structures which take the driver data
-structure and an offset within the register map for the device and do
-the maths to resolve the actual address.
-
-> > +static SIMPLE_DEV_PM_OPS(cdns_spi_dev_pm_ops, cdns_spi_suspend,
-> > +                        cdns_spi_resume);
-
-> > +/* Work with hotplug and coldplug */
-> > +MODULE_ALIAS("platform:" CDNS_SPI_NAME);
-
-> Not sure, but I don't think this should be needed.
-
-It won't be used by DT systems but it is good practice, especially with
-something like this that clearly is a generic IP which could be used on
-non-DT systems too (it's not like it costs anything meaningful).
-
---nYySOmuH/HDX6pKp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTJvVKAAoJELSic+t+oim9NoMP/3CVL2JtmNVGnAlppFjd9mMJ
-LtioqcpAiBYfuq/ayoHIQ1JaZYmjTPMvMty9TFetCAhGy2g6lFnlNll15vtnKj/g
-Y9El2X3L8HwNw48jkcV180vBxi5yxGtWjoaM4o1wCewsTwhNiZwC5F0M/ytagORb
-BUJgptmgAv9/dF1Nq+nxJONmJ8avR48PKPeY06950oWtrwWFNJ05g0yC04ZQCzoF
-w3yoPdYXQANLT4HMI4St7qVu+CO6+q/0u+sqB9Ugi5aQijF7Q5kA7/mZHxtXAvif
-mrBHru2O/Qh2E76rzu98xyq79IJ8Jb5vYR+hLauvPsO1wB1xmQ+iNu8bZc62fyId
-APABMGlqcB+o/PbbQ1znnAjuaXWOs06nIGv62MEpI1ar+vrwgwVVow/rc8FN9K5o
-OrzSYSdAR71CmLnW4upTnOsnV2TyBrwTEFt4cLQXsXWuo4g7Qg04DbPmILS5UYjM
-NCkww40V+lnETl/IWUeVoIYzm+hU6Nr9J69oKAmt6XKbTkWl7lk4LQGM23rN6/po
-4+ui+gkkHzeJfJS3RQGZNi2QVxjPWV6IEbBOaWVaGmxOPmI/CH5JS331pwSSLY0S
-2oaY0MgLrsmtLACJn3G3iFfJ5PLalenlr1JKERm4LTCwLgvcLtVdQwSMn7kjhCFL
-K5N9uzM0yG3kkWZHuQTJ
-=ISNL
------END PGP SIGNATURE-----
-
---nYySOmuH/HDX6pKp--
