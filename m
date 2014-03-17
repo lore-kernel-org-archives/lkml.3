@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509AbaCQJ35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 05:29:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35782 "EHLO comal.ext.ti.com"
+	id S1756386AbaCQJa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 05:30:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17379 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932396AbaCQJ34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 05:29:56 -0400
-Message-ID: <5326C086.6080609@ti.com>
-Date: Mon, 17 Mar 2014 11:29:42 +0200
-From: Jyri Sarha <jsarha@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753379AbaCQJa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 05:30:56 -0400
+Message-ID: <5326C0C3.6000105@redhat.com>
+Date: Mon, 17 Mar 2014 10:30:43 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Jean-Francois Moine <moinejf@free.fr>, Mark Brown <broonie@kernel.org>
-CC: <alsa-devel@alsa-project.org>, Xiubo Li <Li.Xiubo@freescale.com>,
-        <linux-kernel@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: [alsa-devel] [PATCH v3 2/4] ASoC: simple-card: dynamically allocate
- the DAI link and properties
-References: <cover.1394883134.git.moinejf@free.fr> <1cf50fea2306bcb05987533042dbf1495b2c6f07.1394883134.git.moinejf@free.fr>
-In-Reply-To: <1cf50fea2306bcb05987533042dbf1495b2c6f07.1394883134.git.moinejf@free.fr>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: "H. Peter Anvin" <hpa@zytor.com>, Igor Mammedov <imammedo@redhat.com>,
+        linux-kernel@vger.kernel.org
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 0/2] KVM: x86 emulator: emulate MOVAPS and MOVAPD SSE
+ instructions
+References: <1394913720-6466-1-git-send-email-imammedo@redhat.com> <8569d2b4-0593-4f7a-859c-3848670f718d@email.android.com>
+In-Reply-To: <8569d2b4-0593-4f7a-859c-3848670f718d@email.android.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2014 01:09 PM, Jean-Francois Moine wrote:
-> The DAI link array and the properties (fmt, sysclk slots) are
-> hard-coded for a single CPU / CODEC link.
->
-> This patch dynamically allocates the DAI link array and the
-> properties with the aim of supporting many DAI links.
->
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
->   sound/soc/generic/simple-card.c | 49 +++++++++++++++++++++++++----------------
->   1 file changed, 30 insertions(+), 19 deletions(-)
->
-> diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
-> index ca7e63e..a55dc46 100644
-> --- a/sound/soc/generic/simple-card.c
-> +++ b/sound/soc/generic/simple-card.c
-> @@ -20,9 +20,11 @@
->
->   struct simple_card_data {
->   	struct snd_soc_card snd_card;
-> -	struct asoc_simple_dai cpu_dai;
-> -	struct asoc_simple_dai codec_dai;
-> -	struct snd_soc_dai_link snd_link;
-> +	struct simple_dais {
-> +		struct asoc_simple_dai cpu_dai;
-> +		struct asoc_simple_dai codec_dai;
-> +	} *dais;
-> +	struct snd_soc_dai_link dai_link[];	/* dynamically allocated */
->   };
+Il 15/03/2014 23:42, H. Peter Anvin ha scritto:
+> Stupid question... what instructions do NOT need emulsion in KVM? It would seem that at least anything that touches memory would?
+
+Yes, indeed.  Anything that touches memory can be used on MMIO and then 
+needs emulation.
+
+Paolo
+
+> On March 15, 2014 1:01:58 PM PDT, Igor Mammedov <imammedo@redhat.com> wrote:
+>> MS HCK test fails on 32-bit Windows 8.1 due to missing MOVAPS
+>> instruction emulation, this series adds it and while at it,
+>> it adds emulation of MOVAPD which is trivial to implement on
+>> top of MOVAPS.
+>>
+>> Igor Mammedov (2):
+>>  KVM: x86 emulator: emulate MOVAPS
+>>  KVM: x86 emulator: emulate MOVAPD
+>>
+>> arch/x86/kvm/emulate.c | 8 +++++++-
+>> 1 file changed, 7 insertions(+), 1 deletion(-)
 >
 
-This is only an implementation detail, but wouldn't it produce a cleaner 
-implementation if you would write the above structure like this:
-
-   struct simple_card_data {
-   	struct snd_soc_card snd_card;
-	struct simple_dai_links {
-		struct snd_soc_dai_link dai_link;
-		struct asoc_simple_dai cpu_dai;
-		struct asoc_simple_dai codec_dai;
-	} *dai_links;
-   };
-
-or even
-
-   struct simple_card_data {
-   	struct snd_soc_card snd_card;
-	struct simple_dai_links {
-		struct snd_soc_dai_link dai_link;
-		struct asoc_simple_dai cpu_dai;
-		struct asoc_simple_dai codec_dai;
-	} dai_links[]; /* dynamically allocated */
-   };
-
-But, as said this only an implementation detail.
-
-Best regards,
-Jyri
