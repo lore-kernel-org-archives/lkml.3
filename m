@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933411AbaCQO2d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 10:28:33 -0400
-Received: from ip-196-116.sn1.eutelia.it ([62.94.196.116]:27632 "EHLO
-	goldrake.enneenne.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932700AbaCQO2b (ORCPT
+	id S933368AbaCQOeF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 10:34:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:50207 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932728AbaCQOeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 10:28:31 -0400
-X-Greylist: delayed 1604 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Mar 2014 10:28:31 EDT
-Date: Mon, 17 Mar 2014 15:00:56 +0100
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Message-ID: <20140317140056.GX21643@enneenne.com>
-Mail-Followup-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-	Nicolas Ferre <nicolas.ferre@atmel.com>,
-	Jonathan Cameron <jic23@kernel.org>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-	Maxime Ripard <maxime.ripard@free-electrons.com>,
-	Gregory Clement <gregory.clement@free-electrons.com>
-References: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1395064628-644-16-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 17 Mar 2014 10:34:02 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH2] CNS3xxx: Fix a WARN() related to IRQ allocation.
+Date: Mon, 17 Mar 2014 15:33:49 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Krzysztof =?utf-8?q?Ha=C5=82asa?= <khalasa@piap.pl>,
+        Russell King <linux@arm.linux.org.uk>,
+        Anton Vorontsov <anton@enomsg.org>, Yinghai Lu <yinghai@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+References: <m3eh2nqz7n.fsf@t19.piap.pl> <m338iynsp0.fsf@t19.piap.pl>
+In-Reply-To: <m338iynsp0.fsf@t19.piap.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395064628-644-16-git-send-email-alexandre.belloni@free-electrons.com>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 192.168.32.10
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCH v2 15/15] ARM: at91/dt: at91-cosino_mega2560 remove
- useless tsadcc node
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on goldrake.enneenne.com)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201403171533.50200.arnd@arndb.de>
+X-Provags-ID: V02:K0:J6lnhUOamfjkaq0z+l2KGGWKVwchCJosifKZbCsR6M9
+ iv8IMsMjgAfVMD59Uv/CiDAkAov1bp0Z5ovYxStG0LsWgxUC2d
+ jPfR9gcDla76Yke3CERqYlF7bmVe78z3LTd7g9aL7r8AkdCTvT
+ UG0nHm5evsxiGzZPSdzO7pKZz2PqDFZF+wxybZqhxkzlB8zRE4
+ EvlvpqHx52IS63jH1or5osXynokeXshAvoeUiGkZaqoc/QtuUJ
+ rixyUUeQW/NdbyunEsC37YNbzx4JFN1X/oFBzCZ1LDwcn1G/RL
+ frXuXqW2ARlICZW//81nm6OsTVCTsFgoVsGBik5yXTKcFoVj81
+ rDjqQ0elEvdFE9OCJExcBJUY75ocB7ReJdXjH/rXw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 02:57:08PM +0100, Alexandre Belloni wrote:
-> The tsadcc node is useless as it doesn't refer to anything and the touchscreen
-> is handled by the adc0 node.
+On Tuesday 04 March 2014, Krzysztof Hałasa wrote:
+> WARNING: at drivers/irqchip/irq-gic.c:952 gic_init_bases+0xe4/0x2b8()
+> Cannot allocate irq_descs @ IRQ16, assuming pre-allocated
+> Backtrace:
+> gic_init_bases    from cns3xxx_init_irq+0x24/0x34
+> cns3xxx_init_irq  from init_IRQ+0x24/0x2c
+> init_IRQ          from start_kernel+0x1a8/0x338
+> start_kernel      from 0x2000806c
 > 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Cc: Rodolfo Giometti <giometti@linux.it>
+> The problem is that 64 CNS3xxx CPU interrupts, starting at 32, are
+> allocated by the ARM platform-independent code (as requested by
+> machine_desc->nr_irqs = 96), and then the GIC code tries to allocate
+> them again.
+> 
+> Tested on Gateworks Laguna board, masqueraded as CNS3420VB.
+> 
+> Signed-off-by: Krzysztof Hałasa <khalasa@piap.pl>
 
-Acked.
+Applied to next/fixes-non-critical.
 
-Rodolfo
+	Arnd
 
--- 
+> --- a/arch/arm/mach-cns3xxx/cns3420vb.c
+> +++ b/arch/arm/mach-cns3xxx/cns3420vb.c
+> @@ -246,7 +246,6 @@ static void __init cns3420_map_io(void)
+>  
+>  MACHINE_START(CNS3420VB, "Cavium Networks CNS3420 Validation Board")
+>         .atag_offset    = 0x100,
+> -       .nr_irqs        = NR_IRQS_CNS3XXX,
+>         .map_io         = cns3420_map_io,
+>         .init_irq       = cns3xxx_init_irq,
+>         .init_time      = cns3xxx_timer_init,
+> --- a/arch/arm/mach-cns3xxx/core.c
+> +++ b/arch/arm/mach-cns3xxx/core.c
+> @@ -400,7 +400,6 @@ static const char *cns3xxx_dt_compat[] __initdata = {
+>  
+>  DT_MACHINE_START(CNS3XXX_DT, "Cavium Networks CNS3xxx")
+>         .dt_compat      = cns3xxx_dt_compat,
+> -       .nr_irqs        = NR_IRQS_CNS3XXX,
+>         .map_io         = cns3xxx_map_io,
+>         .init_irq       = cns3xxx_init_irq,
+>         .init_time      = cns3xxx_timer_init,
 
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
