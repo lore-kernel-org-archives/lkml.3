@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297AbaCQJTc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 05:19:32 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:34083 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768AbaCQJT3 (ORCPT
+	id S932371AbaCQJTh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 05:19:37 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:29404 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768AbaCQJTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 05:19:29 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-37-5326be1f8b3d
+	Mon, 17 Mar 2014 05:19:33 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-3e-5326be2120ec
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org,
@@ -21,67 +21,97 @@ Cc: Tushar Behera <tushar.behera@linaro.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v3 0/3] clk: s2mps11: Add support for S2MPS14 clocks
-Date: Mon, 17 Mar 2014 10:19:15 +0100
-Message-id: <1395047958-17953-1-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v3 3/3] Documentation: mfd: s2mps11: Describe S5M8767 and
+ S2MPS14 clocks
+Date: Mon, 17 Mar 2014 10:19:18 +0100
+Message-id: <1395047958-17953-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmluLIzCtJLcpLzFFi42I5/e/4VV35fWrBBsduK1psnLGe1eL1C0OL
-	s01v2C3ufz3KaLHp8TVWi8u75rBZzDi/j8li7ZG77BZPJ1xkszj5p5fR4nQ3q8XFFV+YLNbP
-	eM1i0f53L5vFnOnvmBz4Pe5c28PmMe9koMfmJfUefVtWMXp83iQXwBrFZZOSmpNZllqkb5fA
-	lfG94wpzwSmuihVrprE2MDZydDFyckgImEj8ntbADGGLSVy4t56ti5GLQ0hgKaPEvJZGFgin
-	j0li4vo/bCBVbALGEpuXLwGrEhFoZpLY9/UxE4jDLPCWSeLOoZvsIFXCAi4SHduWMoLYLAKq
-	EntubWICsXkF3CW+zDzI2sXIAbRPQWLOJJsJjNwLGBlWMYqmliYXFCel5xrqFSfmFpfmpesl
-	5+duYoQE3JcdjIuPWR1iFOBgVOLhnaCsFizEmlhWXJl7iFGCg1lJhLd0G1CINyWxsiq1KD++
-	qDQntfgQIxMHp1QD48y1ElWMXKVajTMXv11yw8nzkwNz/uy6827x6tJ5SZ5SheWrD1UecDg5
-	Jds+4Wl4o+kvoxaeG9Ux564+7Aq9ckdsufff/1vYZzvnq69lWOoy82rpmYlc52S/MygHrO3u
-	e7P3TJ+QiKX7LMYXEUuUU6RbXdaW6/OILLsfe+P3b7mUoJmhQawrlFiKMxINtZiLihMBWWMk
-	mhYCAAA=
+In-reply-to: <1395047958-17953-1-git-send-email-k.kozlowski@samsung.com>
+References: <1395047958-17953-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/xq7qK+9SCDX5v0LPYOGM9q8X8I+dY
+	LfrfLGS1OPdqJaPF6xeGFmeb3rBb3P96lNFi0+NrrBaXd81hs5hxfh+Txdojd9ktll6/yGTx
+	dMJFNosJ09eyWLTuPcJucfJPL6PF6W5Wi4srvjBZrJ/xmsWi/e9eNos5098xOYh6rJm3htHj
+	cl8vk8fK5V/YPDat6mTzuHNtD5vHvJOBHpuX1Hv0bVnF6PF5k1wAZxSXTUpqTmZZapG+XQJX
+	xtr+FpaCzaIV7dePMDcw9gl2MXJySAiYSFzd3MwKYYtJXLi3ng3EFhJYyihx+7BwFyMXkN3H
+	JPHu9U2wIjYBY4nNy5ewgSREBJqZJPZ9fcwEkmAWOMUiMfmGDIgtLBAlsa13DWMXIwcHi4Cq
+	xJ51ISAmr4C7RPdzCRBTQkBBYs4kGxCTU8BD4tdmPoit7hJtCyezTGDkXcDIsIpRNLU0uaA4
+	KT3XUK84Mbe4NC9dLzk/dxMjJPS/7GBcfMzqEKMAB6MSD+8EZbVgIdbEsuLK3EOMEhzMSiK8
+	pduAQrwpiZVVqUX58UWlOanFhxiZODilGhi1X/0O3iii3PlmL2vYveKvEXlR2798nG/bmerq
+	UXG6ZYFX+Sn/j9z+Du+Pd1jmHHqou9rkxReWbXZslpVxzmukm2222sRt99/T9mHy7U/Pdl4K
+	nXXp0UuJ5TczmG4tO8/4/2VTennI1Lh1JWYcvNfMD0566vJ8W3UPx52fqlO3yKp2XFj4/Gqf
+	EktxRqKhFnNRcSIATpoELVsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add bindings documentation for clocks on S5M8767 and S2MPS14 devices.
 
-This is third version of patchset adding support for the S2MPS14
-device to the s2mps11 clock driver.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: devicetree@vger.kernel.org
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+---
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   24 +++++++++++++--------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
-
-The patchset *depends on*:
-==========================
-1. Work done by Tushar Behera:
-   [PATCH V2 0/2] Add support for clocks in S5M8767
-   http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27264
-2. Support for S2MPS14 in main sec-core MFD driver (already in linux-next
-   and Lee's tree).
-
-Changes since v2:
-=================
-1. Patch 2/3: Remove MFD cells of_compatible which aren't used by child
-   drivers and are not documented.
-2. Added Tomasz's Review-by.
-
-Changes since v1:
-=================
-1. Patch 1/3: Update driver description in Kconfig.
-2. Patch 2/3: Add of_compatible to all MFD cells.
-3. Add Yadwinder's Review-by.
-
-Best regards,
-Krzysztof
-
-
-Krzysztof Kozlowski (3):
-  clk: s2mps11: Add support for S2MPS14 clocks
-  mfd: sec-core: Add of_compatible strings for clock MFD cells
-  Documentation: mfd: s2mps11: Describe S5M8767 and S2MPS14 clocks
-
- Documentation/devicetree/bindings/mfd/s2mps11.txt |   24 +++++---
- drivers/clk/Kconfig                               |    8 +--
- drivers/clk/clk-s2mps11.c                         |   61 ++++++++++++++++-----
- drivers/mfd/sec-core.c                            |    3 +
- 4 files changed, 68 insertions(+), 28 deletions(-)
-
+diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+index 15ee89c3cc7b..67ea05ca8050 100644
+--- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
++++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+@@ -16,20 +16,25 @@ Optional properties:
+ - interrupts: Interrupt specifiers for interrupt sources.
+ 
+ Optional nodes:
+-- clocks: s2mps11 provides three(AP/CP/BT) buffered 32.768 KHz outputs, so to
+-  register these as clocks with common clock framework instantiate a sub-node
+-  named "clocks". It uses the common clock binding documented in :
++- clocks: s2mps11 and s5m8767 provide three(AP/CP/BT) buffered 32.768 KHz
++  outputs, so to register these as clocks with common clock framework
++  instantiate a sub-node named "clocks". It uses the common clock binding
++  documented in :
+   [Documentation/devicetree/bindings/clock/clock-bindings.txt]
++  The s2mps14 provides two (AP/BT) buffered 32.768 KHz outputs.
+   - #clock-cells: should be 1.
+ 
+   - The following is the list of clocks generated by the controller. Each clock
+     is assigned an identifier and client nodes use this identifier to specify
+     the clock which they consume.
+-    Clock               ID
+-    ----------------------
+-    32KhzAP		0
+-    32KhzCP		1
+-    32KhzBT		2
++    Clock               ID           Devices
++    ----------------------------------------------------------
++    32KhzAP		0            S2MPS11, S2MPS14, S5M8767
++    32KhzCP		1            S2MPS11, S5M8767
++    32KhzBT		2            S2MPS11, S2MPS14, S5M8767
++
++  - compatible: Should be one of: "samsung,s2mps11-clk", "samsung,s2mps14-clk",
++		"samsung,s5m8767-clk"
+ 
+ - regulators: The regulators of s2mps11 that have to be instantiated should be
+ included in a sub-node named 'regulators'. Regulator nodes included in this
+@@ -71,7 +76,8 @@ Example:
+ 		compatible = "samsung,s2mps11-pmic";
+ 		reg = <0x66>;
+ 
+-		s2m_osc: clocks{
++		s2m_osc: clocks {
++			compatible = "samsung,s2mps11-clk";
+ 			#clock-cells = 1;
+ 			clock-output-names = "xx", "yy", "zz";
+ 		};
 -- 
 1.7.9.5
 
