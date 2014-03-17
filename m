@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933470AbaCQNj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:39:57 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51809 "EHLO
+	id S933402AbaCQNjz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:39:55 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51811 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933260AbaCQNbf (ORCPT
+	with ESMTP id S933261AbaCQNbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Mar 2014 09:31:35 -0400
-Message-Id: <20140317133135.117680200@bombadil.infradead.org>
+Message-Id: <20140317133135.255494845@bombadil.infradead.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Mar 2014 06:27:58 -0700
+Date: Mon, 17 Mar 2014 06:27:59 -0700
 From: Christoph Hellwig <hch@infradead.org>
 To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 25/39] blk-mq: add async paramter to blk_mq_start_stopped_hw_queues
+Subject: [PATCH 26/39] HACK: support blk_delay_queue for blk-mq
 References: <20140317132733.789623766@bombadil.infradead.org>
-Content-Disposition: inline; filename=0025-blk-mq-add-async-paramter-to-blk_mq_start_stopped_hw.patch
+Content-Disposition: inline; filename=0026-HACK-support-blk_delay_queue-for-blk-mq.patch
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,68 +23,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- block/blk-mq.c             |    4 ++--
- drivers/block/virtio_blk.c |    4 ++--
- include/linux/blk-mq.h     |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ block/blk-core.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 9e13761..6f04dda 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -671,7 +671,7 @@ void blk_mq_start_hw_queue(struct blk_mq_hw_ctx *hctx)
- }
- EXPORT_SYMBOL(blk_mq_start_hw_queue);
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 4cd5ffc..47af781 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -163,9 +163,14 @@ static void blk_delay_work(struct work_struct *work)
+ 	struct request_queue *q;
  
--void blk_mq_start_stopped_hw_queues(struct request_queue *q)
-+void blk_mq_start_stopped_hw_queues(struct request_queue *q, bool async)
- {
- 	struct blk_mq_hw_ctx *hctx;
- 	int i;
-@@ -681,7 +681,7 @@ void blk_mq_start_stopped_hw_queues(struct request_queue *q)
- 			continue;
- 
- 		clear_bit(BLK_MQ_S_STOPPED, &hctx->state);
--		blk_mq_run_hw_queue(hctx, true);
-+		blk_mq_run_hw_queue(hctx, async);
- 	}
- }
- EXPORT_SYMBOL(blk_mq_start_stopped_hw_queues);
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index a2e925b..3232b83 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -148,7 +148,7 @@ static void virtblk_done(struct virtqueue *vq)
- 
- 	/* In case queue is stopped waiting for more buffers. */
- 	if (req_done)
--		blk_mq_start_stopped_hw_queues(vblk->disk->queue);
-+		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
+ 	q = container_of(work, struct request_queue, delay_work.work);
+-	spin_lock_irq(q->queue_lock);
+-	__blk_run_queue(q);
+-	spin_unlock_irq(q->queue_lock);
++
++	if (q->mq_ops) {
++		blk_mq_start_stopped_hw_queues(q, false);
++	} else {
++		spin_lock_irq(q->queue_lock);
++		__blk_run_queue(q);
++		spin_unlock_irq(q->queue_lock);
++	}
  }
  
- static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
-@@ -734,7 +734,7 @@ static int virtblk_restore(struct virtio_device *vdev)
- 	vblk->config_enable = true;
- 	ret = init_vq(vdev->priv);
- 	if (!ret)
--		blk_mq_start_stopped_hw_queues(vblk->disk->queue);
-+		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
- 
- 	return ret;
- }
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index 6325a24..4d34957 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -155,7 +155,7 @@ void blk_mq_complete_request(struct request *rq);
- void blk_mq_stop_hw_queue(struct blk_mq_hw_ctx *hctx);
- void blk_mq_start_hw_queue(struct blk_mq_hw_ctx *hctx);
- void blk_mq_stop_hw_queues(struct request_queue *q);
--void blk_mq_start_stopped_hw_queues(struct request_queue *q);
-+void blk_mq_start_stopped_hw_queues(struct request_queue *q, bool async);
- 
- /*
-  * Driver command data is immediately after the request. So subtract request
+ /**
 -- 
 1.7.10.4
 
