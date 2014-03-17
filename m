@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197AbaCQA0v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 20:26:51 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:52597 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964AbaCQA0s (ORCPT
+	id S932221AbaCQA2i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 20:28:38 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:17753 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754964AbaCQA2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 20:26:48 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-7a-53264146dced
-Date: Mon, 17 Mar 2014 09:26:46 +0900
+	Sun, 16 Mar 2014 20:28:35 -0400
+X-AuditID: cbfee68e-b7f566d000002344-4f-532641b0da1a
+Date: Mon, 17 Mar 2014 09:28:32 +0900
 From: Cho KyongHo <pullip.cho@samsung.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
+To: Tomasz Figa <t.figa@samsung.com>
 Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
         Linux DeviceTree <devicetree@vger.kernel.org>,
         Linux IOMMU <iommu@lists.linux-foundation.org>,
@@ -21,47 +21,46 @@ Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
         Kukjin Kim <kgene.kim@samsung.com>,
         Prathyush <prathyush.k@samsung.com>,
         Rahul Sharma <rahul.sharma@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH v11 01/27] iommu/exynos: do not include removed header
-Message-id: <20140317092646.b696d2245fb95ea8835cbd2e@samsung.com>
-In-reply-to: <CAK9yfHyGfdP+0RKtdSCdU4tO=PX8GbQRQ7ar=ST5B2RenZMMsg@mail.gmail.com>
-References: <20140314140129.68a41cc1bd9e0a48a198ca13@samsung.com>
- <CAK9yfHzRasE3jroDUZgAa=DN5N=2ZDAxgNiHDCip+f2868BAVQ@mail.gmail.com>
- <000e01cf3f7b$6edcdfd0$4c969f70$@samsung.com>
- <CAK9yfHyGfdP+0RKtdSCdU4tO=PX8GbQRQ7ar=ST5B2RenZMMsg@mail.gmail.com>
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: Re: [PATCH v11 11/27] clk: exynos: add gate clock descriptions of
+ System MMU
+Message-id: <20140317092832.af0e8e8b503c98eb639dd09a@samsung.com>
+In-reply-to: <5322F356.6030608@samsung.com>
+References: <20140314140621.14df1e40601c4f6a2487b5a8@samsung.com>
+ <5322F356.6030608@samsung.com>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t8zA103R7Vgg/NPzCzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
-	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4Mp4dGE9S8Fs3oq9+xayNTAe5epi5OSQEDCR+Hb3HCOE
-	LSZx4d56ti5GLg4hgWWMEp8b21lgij7+v8UEkVjEKLFv/xooZzKTxN6lfUwgVSwCqhKTf/4B
-	s9kEtCRWzz0ONlYEyH7ZvRysgVngJ4vEpbfPWEESwgJeElNf3mMGsXkFHCUWHe4HszkFgiV2
-	dp9nhNjwn1Fi+7EmNog7LCQuNHWwQzQISvyYfA/sPmagDZu3NbFC2PISm9e8ZQZplhCYyyFx
-	6ekqFojzBCS+TT4EZHMAJWQlNh1ghpgpKXFwxQ2WCYxis5CMnYVk7CwkYxcwMq9iFE0tSC4o
-	TkovMtUrTswtLs1L10vOz93ECIn4iTsY7x+wPsSYDLRyIrOUaHI+MGHklcQbGpsZWZiamBob
-	mVuakSasJM6b/igpSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANj+/LNZx6ENigXbOhKLZ+Z
-	ukd59v+6atPdzmWvv8/YxyJxMkM8p/qWyHRBF17OJONtEtGinxkz3VQfbbeP2H064JfM1jsz
-	RMs67CJiPaf/+3Mo0XmBusYUSaWad0J/k5Rmcit++xvdrnJo/e80724bK5nGZH+BVKkfnFXJ
-	qyPjzj07InJKNFuJpTgj0VCLuag4EQBedw03DgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBKsWRmVeSWpSXmKPExsVy+t9jAV03R7VggzdLDC3u3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
-	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAH6QEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8ejCepaC2bwV
-	e/ctZGtgPMrVxcjJISFgIvHx/y0mCFtM4sK99WxdjFwcQgKLGCX27V/DBOFMZpLYu7QPrIpF
-	QFVi8s8/YDabgJbE6rnHGUFsESD7ZfdysAZmgZ8sEpfePmMFSQgLeElMfXmPGcTmFXCUWHS4
-	H8zmFAiW2Nl9nhFiw39Gie3Hmtgg7rCQuNDUwQ7RICjxY/I9FhCbGWjD5m1NrBC2vMTmNW+Z
-	JzAKzEJSNgtJ2SwkZQsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKeTZ1I7GFc2WBxi
-	FOBgVOLhnaCsFizEmlhWXJl7iFGCg1lJhDfBHCjEm5JYWZValB9fVJqTWnyIMRkYHhOZpUST
-	84GpLq8k3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGLXqxI/5
-	Se81e9JfsOTxvL0n2drMSz0CRJKEQ9bPvJS3iO1Lzrp5Ghsuibi4yDzVWFS08WNUXHX5VHFu
-	93qPFU1Vs5bVhQsbSXDXdbjbyPMw8opuWntwneksfc38tdypDWfrKzJbnU5+usAorjXjWOif
-	he5n5ijxXnRbFFr98aP0+47j6TfZlViKMxINtZiLihMB+QD2zGsDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t8zI90NjmrBBufn6lvcuXuO1WL+ESDx
+	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S2mLDrManH4TTurxck/
+	vYwW62e8ZrGYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
+	5DyuHD3DFMAZxWWTkpqTWZZapG+XwJVxf8VCtoJHfBXXJ51kbGA8xN3FyMkhIWAi8efmRHYI
+	W0ziwr31bF2MXBxCAssYJdp6D7LCFDVNvscKkVjEKPHoxVawDiGByUwShzYpgNgsAqoSS1/+
+	A4uzCWhJrJ57nBHEFhFQkbh8ajojSDOzQCOrxKP7y4CK2DmEBcIlrjKDlPAKOEo8XfwAbBen
+	gLbE3L7ZLBDjkyTenLgGdZyFxIWmDnaIekGJH5PvgdUwA63avK2JFcKWl9i85i0zyCoJgYUc
+	En0XJzFD3CYg8W3yIaAGDqCErMSmA8wQMyUlDq64wTKBUWwWkrGzkIydhWTsAkbmVYyiqQXJ
+	BcVJ6UVGesWJucWleel6yfm5mxghkd63g/HmAetDjMlAKycyS4km5wMTRV5JvKGxmZGFqYmp
+	sZG5pRlpwkrivIseJgUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYCzt9XzP+W7insXfXbjM
+	46byzeR8FRhVsHivzv45OV7MutPrr/Q8b7z4/9OHC4YHz3fOe/3k4hOXFyGfHx9c+Tc10UB2
+	Ufxz9e3yr0MNduTOtS2u2Cjzcud0Vc9Vl31d4j/N3ZRkHCIor2r1zFey+P4OZ5NDCsIBiZMs
+	3QJXHeRlXWa5eEn0XSklluKMREMt5qLiRADvDYn5CgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCKsWRmVeSWpSXmKPExsVy+t9jAd0NjmrBBo+3aFrcuXuO1WL+ESDx
+	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S2mLDrManH4TTurxck/
+	vYwW62e8ZrGYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
+	5DyuHD3DFMAZ1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
+	oOuWmQP0gZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4/6KhWwFj/gq
+	rk86ydjAeIi7i5GTQ0LARKJp8j1WCFtM4sK99WxdjFwcQgKLGCUevdjKDpIQEpjMJHFokwKI
+	zSKgKrH05T+wOJuAlsTquccZQWwRARWJy6emM4I0Mws0sko8ur8MqIidQ1ggXOIqM0gJr4Cj
+	xNPFD8B2cQpoS8ztm80CMT5J4s2Ja+wQN1hIXGjqYIeoF5T4MfkeWA0z0KrN25pYIWx5ic1r
+	3jJPYBSYhaRsFpKyWUjKFjAyr2IUTS1ILihOSs810itOzC0uzUvXS87P3cQITiPPpHcwrmqw
+	OMQowMGoxMM7QVktWIg1say4MvcQowQHs5IIb4I5UIg3JbGyKrUoP76oNCe1+BBjMjAwJjJL
+	iSbnA1NcXkm8obGJmZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUw5mSy
+	l+s6l0Se+MOQJZI6T/2s/JpG/oO8uvtsNFbuV3KNSk9v3De5pjxJckVQ62O2O3lV6izWN34s
+	WSGydQZbmPlN3k0L8iUcrac8mLJM7P7RwOmHna7vjm67q5S9dFVg+ha2La7VOVxfXcxmb7vd
+	0n3tvQdX8KlFX95zHT500XdyeTb7k59LlViKMxINtZiLihMB63nALGcDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -69,49 +68,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Mar 2014 17:29:36 +0530, Sachin Kamat wrote:
-> On 14 March 2014 17:19, Cho KyongHo <pullip.cho@samsung.com> wrote:
-> >> From: Sachin Kamat [mailto:sachin.kamat@linaro.org]
-> >> Sent: Friday, March 14, 2014 7:00 PM
-> >>
-> >> On 14 March 2014 10:31, Cho KyongHo <pullip.cho@samsung.com> wrote:
-> >> > Commit 25e9d28d92 (ARM: EXYNOS: remove system mmu initialization from
-> >> > exynos tree) removed arch/arm/mach-exynos/mach/sysmmu.h header without
-> >> > removing remaining use of it from exynos-iommu driver, thus causing a
-> >> > compilation error.
-> >> >
-> >> > This patch fixes the error by removing respective include line
-> >> > from exynos-iommu.c.
-> >> >
-> >> > CC: Tomasz Figa <t.figa@samsung.com>
-> >> > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> >> > ---
-> >> >  drivers/iommu/exynos-iommu.c |    3 +--
-> >> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> >> >
-> >> > diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> >> > index 0740189..4876d35 100644
-> >> > --- a/drivers/iommu/exynos-iommu.c
-> >> > +++ b/drivers/iommu/exynos-iommu.c
-> >> > @@ -12,6 +12,7 @@
-> >> >  #define DEBUG
-> >> >  #endif
-> >> >
-> >> > +#include <linux/kernel.h>
-> >>
-> >> This change doesn't look related to the patch subject/description.
-> >>
-> > Yes. But it is simply added without any side-effect.
-> > Do you think it should be in a separate patch?.
-> > Actually, the added line is a redundant.
+On Fri, 14 Mar 2014 13:17:26 +0100, Tomasz Figa wrote:
+> Hi KyongHo,
 > 
-> If it is redundant, then you shouldn't be adding it. If it is
-> required, then please
-> mention about the need in the commit description if not a separate patch.
+> On 14.03.2014 06:06, Cho KyongHo wrote:
+> > This adds gate clocks of all System MMUs and their master IPs
+> > that are not apeared in clk-exynos5250.c and clk-exynos5420.c
+> > Also fixes GATE_IP_ACP to 0x18800 and changed GATE_DA to GATE
+> > for System MMU clocks in clk-exynos4.c
+> >
+> > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+> > ---
+> >   .../devicetree/bindings/clock/exynos5250-clock.txt |    3 +++
+> >   .../devicetree/bindings/clock/exynos5420-clock.txt |    6 +++++-
+> >   drivers/clk/samsung/clk-exynos5250.c               |    5 +++++
+> >   drivers/clk/samsung/clk-exynos5420.c               |   13 +++++++++++--
+> >   include/dt-bindings/clock/exynos5250.h             |    4 ++++
+> >   include/dt-bindings/clock/exynos5420.h             |    6 +++++-
+> >   6 files changed, 33 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/Documentation/devicetree/bindings/clock/exynos5250-clock.txt b/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
+> > index 72ce617..67e50ba 100644
+> > --- a/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
+> > +++ b/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
+> > @@ -162,6 +162,9 @@ clock which they consume.
+> >     g2d			345
+> >     mdma0			346
+> >     smmu_mdma0		347
+> > +  smmu_tv		348
+> > +  smmu_fimd1		349
+> > +  smmu_2d		350
+> >
+> 
+> This patch should be rebased on top of Andrzej Hajda's patches removing 
+> these clock ID listings and reworking dts files to use defined macros. 
+> They are present in v3.15-next/dt-clk-exynos branch of linux-samsung 
+> tree, but I have asked Kukjin to merge them to his for-next branch, so 
+> they could show up in linux-next tree.
 > 
 
-Ok.
+Thanks for the information.
+I will also ask Kukjin for the correct base of the patches.
 
-Thanks for the advice.
-
-KyongHo
+KyongHo.
