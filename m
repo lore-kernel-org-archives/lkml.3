@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430AbaCQHmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 03:42:49 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.152]:31380 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932124AbaCQHmr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 03:42:47 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-7.tower-178.messagelabs.com!1395042162!32287851!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Mon, 17 Mar 2014 08:42:43 +0100
-Date: Mon, 17 Mar 2014 08:42:38 +0100
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-CC: Borislav Petkov <bp@alien8.de>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        <dougthompson@xmission.com>, <linux-edac@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] EDAC: remove deprecated IRQF_DISABLED
-Message-ID: <20140317074237.GA3086@jtlinux>
-References: <1381641477-7373-1-git-send-email-michael.opdenacker@free-electrons.com>
- <20131014095602.GA14274@jtlinux>
- <5316B065.7070104@free-electrons.com>
- <20140305064915.GA28317@pd.tnic>
- <531AA766.3050309@free-electrons.com>
+	id S1756547AbaCQHqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 03:46:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39640 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753542AbaCQHqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 03:46:16 -0400
+Date: Mon, 17 Mar 2014 08:48:51 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: kbuild-all@01.org, kbuild test robot <fengguang.wu@intel.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: [PATCH] xen: declare notifier_block on xen-ops.h
+Message-ID: <20140317074850.GB1767@redhat.com>
+References: <5323aab1.r24xwrkmR/N+a3KK%fengguang.wu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <531AA766.3050309@free-electrons.com>
+In-Reply-To: <5323aab1.r24xwrkmR/N+a3KK%fengguang.wu@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 08, 2014 at 06:15:18AM +0100, Michael Opdenacker wrote:
-> On 03/05/2014 07:49 AM, Borislav Petkov wrote:
-> > On Wed, Mar 05, 2014 at 06:04:37AM +0100, Michael Opdenacker wrote:
-> >> My patch still applies to 3.14-rc5, which means that mpc85xx_edac is
-> >> still there.
-> >>
-> >> I'd like to get rid of this patch for good ;)
-> > Something like that, right:
-> >
-> > https://git.kernel.org/cgit/linux/kernel/git/bp/bp.git/commit/?id=e245e3b25f9ef33b166f0f01d19d6418f52ae726
-> >
-> > ?
-> >
-> > Its on its way upstream.
-> Great, thank you for the good news!
->
-> Cheers,
->
-> Michael.
->
-> --
-> Michael Opdenacker, CEO, Free Electrons
-> Embedded Linux, Kernel and Android engineering
-> http://free-electrons.com
-> +33 484 258 098
->
+Patch fixes below warnings:
 
-Sorry for not answering you, but I was out of office. As boris told you already, it's on its way.
+   In file included from arch/x86/xen/xen-ops.h:7:0,
+                    from arch/x86/xen/vga.c:9:
+>> include/xen/xen-ops.h:19:42: warning: 'struct notifier_block' declared inside parameter list [enabled by default]
+    void xen_resume_notifier_register(struct notifier_block *nb);
+                                             ^
+>> include/xen/xen-ops.h:19:42: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+>> include/xen/xen-ops.h:20:44: warning: 'struct notifier_block' declared inside parameter list [enabled by default]
+    void xen_resume_notifier_unregister(struct notifier_block *nb);
 
-Johannes
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+ drivers/xen/manage.c  | 1 -
+ include/xen/xen-ops.h | 1 +
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+index 96e4173..fc6c94c 100644
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -13,7 +13,6 @@
+ #include <linux/freezer.h>
+ #include <linux/syscore_ops.h>
+ #include <linux/export.h>
+-#include <linux/notifier.h>
+ 
+ #include <xen/xen.h>
+ #include <xen/xenbus.h>
+diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+index cc8b4cb..acc7b7a 100644
+--- a/include/xen/xen-ops.h
++++ b/include/xen/xen-ops.h
+@@ -2,6 +2,7 @@
+ #define INCLUDE_XEN_OPS_H
+ 
+ #include <linux/percpu.h>
++#include <linux/notifier.h>
+ #include <asm/xen/interface.h>
+ 
+ DECLARE_PER_CPU(struct vcpu_info *, xen_vcpu);
+-- 
+1.7.11.7
+
