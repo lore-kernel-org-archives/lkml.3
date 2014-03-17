@@ -1,124 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695AbaCQJ4K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 05:56:10 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:47735 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932210AbaCQJ4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 05:56:08 -0400
-X-Mailbox-Line: From 11bf968ac586e4a06d56c97d150ecf2c4afd8f27 Mon Sep 17 00:00:00 2001
-Message-Id: <11bf968ac586e4a06d56c97d150ecf2c4afd8f27.1395049204.git.moinejf@free.fr>
-In-Reply-To: <cover.1395049204.git.moinejf@free.fr>
-References: <cover.1395049204.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Mon, 17 Mar 2014 09:52:29 +0100
-Subject: [PATCH RFC 5/5] ARM: AM33XX: dts: Change the tda998x description
-To: dri-devel@lists.freedesktop.org, devicetree@vger.kernel.org
-Cc: Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
+	id S932713AbaCQJ4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 05:56:31 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:14252 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932407AbaCQJ4Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 05:56:24 -0400
+Message-ID: <5326C6AA.7030200@atmel.com>
+Date: Mon, 17 Mar 2014 17:55:54 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, <nicolas.ferre@atmel.com>
+CC: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, <alsa-devel@alsa-project.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/8] ASoC: atmel: support CCF based clks
+References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <1395049541-28128-7-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1395049541-28128-7-git-send-email-voice.shen@atmel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tda998x being moved from a 'slave encoder' to a normal DRM
-encoder/connector and the tilcdc_slave glue being removed, the
-declaration of the HDMI transmitter description must be changed in
-the associated DTs.
+On 03/17/2014 05:45 PM, Bo Shen wrote:
+> From: Boris BREZILLON <b.brezillon@overkiz.com>
+>
+> Provide dev to clk_get function if we're using CCF based clks.
+> CCF based prog clks support automatic parent selection when asking for a
+> specific rate: remove the clk32k clk retrieval if we're using these clks.
+>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> [voice.shen@atmel.com: switch to devm manage function]
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+>
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- arch/arm/boot/dts/am335x-base0033.dts  | 28 +++++++++++++++++++---------
- arch/arm/boot/dts/am335x-boneblack.dts | 21 ++++++++++++++++-----
- 2 files changed, 35 insertions(+), 14 deletions(-)
+Oh, sorry for multi SOBs. Please remove it when apply.
 
-diff --git a/arch/arm/boot/dts/am335x-base0033.dts b/arch/arm/boot/dts/am335x-base0033.dts
-index 72a9b3f..93cd40b 100644
---- a/arch/arm/boot/dts/am335x-base0033.dts
-+++ b/arch/arm/boot/dts/am335x-base0033.dts
-@@ -14,15 +14,6 @@
- 	model = "IGEP COM AM335x on AQUILA Expansion";
- 	compatible = "isee,am335x-base0033", "isee,am335x-igep0033", "ti,am33xx";
- 
--	hdmi {
--		compatible = "ti,tilcdc,slave";
--		i2c = <&i2c0>;
--		pinctrl-names = "default", "off";
--		pinctrl-0 = <&nxp_hdmi_pins>;
--		pinctrl-1 = <&nxp_hdmi_off_pins>;
--		status = "okay";
--	};
--
- 	leds_base {
- 		pinctrl-names = "default";
- 		pinctrl-0 = <&leds_base_pins>;
-@@ -85,6 +76,11 @@
- 
- &lcdc {
- 	status = "okay";
-+	port {
-+		lcd_0: endpoint@0 {
-+			remote-endpoint = <&tda998x_0>;
-+		};
-+	};
- };
- 
- &i2c0 {
-@@ -92,4 +88,18 @@
- 		compatible = "at,24c256";
- 		reg = <0x50>;
- 	};
-+	tda998x: hdmi-encoder {
-+		compatible = "nxp,tda998x";
-+		reg = <0x70>;
-+
-+		pinctrl-names = "default", "off";
-+		pinctrl-0 = <&nxp_hdmi_pins>;
-+		pinctrl-1 = <&nxp_hdmi_off_pins>;
-+
-+		port {
-+			tda998x_0: endpoint@0 {
-+				remote-endpoint = <&lcd_0>;
-+			};
-+		};
-+	};
- };
-diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
-index 6b71ad9..a530bcb 100644
---- a/arch/arm/boot/dts/am335x-boneblack.dts
-+++ b/arch/arm/boot/dts/am335x-boneblack.dts
-@@ -64,15 +64,26 @@
- 
- &lcdc {
- 	status = "okay";
-+	port {
-+		lcd_0: endpoint@0 {
-+			remote-endpoint = <&tda998x_0>;
-+		};
-+	};
- };
- 
--/ {
--	hdmi {
--		compatible = "ti,tilcdc,slave";
--		i2c = <&i2c0>;
-+&i2c0 {
-+	tda998x: hdmi-encoder {
-+		compatible = "nxp,tda998x";
-+		reg = <0x70>;
-+
- 		pinctrl-names = "default", "off";
- 		pinctrl-0 = <&nxp_hdmi_bonelt_pins>;
- 		pinctrl-1 = <&nxp_hdmi_bonelt_off_pins>;
--		status = "okay";
-+
-+		port {
-+			tda998x_0: endpoint@0 {
-+				remote-endpoint = <&lcd_0>;
-+			};
-+		};
- 	};
- };
--- 
-1.9.0
+> ---
+>
+>   sound/soc/atmel/atmel_wm8904.c | 25 +++++++++++++------------
+>   1 file changed, 13 insertions(+), 12 deletions(-)
+>
+> diff --git a/sound/soc/atmel/atmel_wm8904.c b/sound/soc/atmel/atmel_wm8904.c
+> index b4e3690..a797d33 100644
+> --- a/sound/soc/atmel/atmel_wm8904.c
+> +++ b/sound/soc/atmel/atmel_wm8904.c
+> @@ -170,25 +170,26 @@ static int atmel_asoc_wm8904_probe(struct platform_device *pdev)
+>   		return ret;
+>   	}
+>
+> -	mclk = clk_get(NULL, "pck0");
+> +	mclk = devm_clk_get(&pdev->dev, "pck0");
+>   	if (IS_ERR(mclk)) {
+>   		dev_err(&pdev->dev, "failed to get pck0\n");
+>   		ret = PTR_ERR(mclk);
+>   		goto err_set_audio;
+>   	}
+>
+> -	clk_src = clk_get(NULL, "clk32k");
+> -	if (IS_ERR(clk_src)) {
+> -		dev_err(&pdev->dev, "failed to get clk32k\n");
+> -		ret = PTR_ERR(clk_src);
+> -		goto err_set_audio;
+> -	}
+> +	if (!IS_ENABLED(CONFIG_COMMON_CLK)) {
+> +		clk_src = devm_clk_get(&pdev->dev, "clk32k");
+> +		if (IS_ERR(clk_src)) {
+> +			dev_err(&pdev->dev, "failed to get clk32k\n");
+> +			ret = PTR_ERR(clk_src);
+> +			goto err_set_audio;
+> +		}
+>
+> -	ret = clk_set_parent(mclk, clk_src);
+> -	clk_put(clk_src);
+> -	if (ret != 0) {
+> -		dev_err(&pdev->dev, "failed to set MCLK parent\n");
+> -		goto err_set_audio;
+> +		ret = clk_set_parent(mclk, clk_src);
+> +		if (ret != 0) {
+> +			dev_err(&pdev->dev, "failed to set MCLK parent\n");
+> +			goto err_set_audio;
+> +		}
+>   	}
+>
+>   	dev_info(&pdev->dev, "setting pck0 to %dHz\n", MCLK_RATE);
+>
 
+Best Regards,
+Bo Shen
