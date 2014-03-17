@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaCQXx1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 19:53:27 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:56318 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752624AbaCQXxY (ORCPT
+	id S1752918AbaCQXzk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 19:55:40 -0400
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:51658 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295AbaCQXzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 19:53:24 -0400
-Date: Mon, 17 Mar 2014 23:52:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Long <dave.long@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] uprobes: Add uprobes support for ARM
-Message-ID: <20140317235229.GQ21483@n2100.arm.linux.org.uk>
-References: <1394223040-17129-1-git-send-email-dave.long@linaro.org> <531F5799.2070302@linaro.org>
+	Mon, 17 Mar 2014 19:55:39 -0400
+From: Ben Chan <benchan@chromium.org>
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Suarez <gsuarez@smithmicro.com>
+Subject: [PATCH v2 2/2] net: cdc_ncm: respect operator preferred MTU reported by MBIM
+Date: Mon, 17 Mar 2014 16:49:22 -0700
+Message-Id: <1395100162-24853-1-git-send-email-benchan@chromium.org>
+X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531F5799.2070302@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 11, 2014 at 02:36:09PM -0400, David Long wrote:
->   git://git.linaro.org/people/dave.long/linux.git uprobes-v7
-> 
-> for you to fetch changes up to e55c35236b8adf79453a998506ec6081833b9484:
-> 
->   ARM: add uprobes support (2014-03-11 11:40:29 -0400)
+According to "Universal Serial Bus Communications Class Subclass
+Specification for Mobile Broadband Interface Model, Revision 1.0,
+Errata-1" published by USB-IF, the wMTU field of the MBIM extended
+functional descriptor indicates the operator preferred MTU for IP data
+streams.
 
-I pulled this a week ago into my devel-testing (which is unpublished),
-and while it hasn't shown any signs of functional problems, I was just
-about to merge it into devel-stable when I noticed the history.
+This patch modifies cdc_ncm_setup to ensure that the MTU value set on
+the usbnet device does not exceed the operator preferred MTU indicated
+by wMTU if the MBIM device exposes a MBIM extended functional
+descriptor.
 
-This is based upon:
+Signed-off-by: Ben Chan <benchan@chromium.org>
+---
+Patch v2 adds the le16_to_cpu conversion on ctx->mbim_extended_desc->wMTU as
+pointed out and suggested by 'Bjørn Mork <bjorn@mork.no>'.
 
-Merge branch 'for-next' of git://git.samba.org/sfrench/cifs-2.6
-+ Linux 3.11
-+ Merge branch 'perf-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-+ Linux 3.12-rc5
-+ Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-+ Linux 3.13-rc3
-+ Linux 3.13-rc4
-+ Linux 3.13-rc8
-+ Linux 3.14-rc2
-+ Linux 3.14-rc4
-+ Linux 3.14-rc5
-|
-[your uprobes patches]
+ drivers/net/usb/cdc_ncm.c   | 17 +++++++++++++++++
+ include/linux/usb/cdc_ncm.h |  1 +
+ 2 files changed, 18 insertions(+)
 
-where each + is a merge of the named commit into the previous.  This is
-the kind of thing which will make Linus quite unhappy: please base
-patches off a plain -rc release, not off a merge commit.
-
-I'm sure there's others on the mailing list who can guide you on this
-point, but I do need to ask you to re-spin without those merges.  I'm
-happy to take a respin of it provided it's based on 3.14-rc5 (so I can
-more easily confirm that there aren't any changes which I haven't
-already tested.)
-
-Thanks, and sorry about the lateness of this email.
-
+diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
+index dbff290..e8711a8 100644
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -74,6 +74,7 @@ static int cdc_ncm_setup(struct usbnet *dev)
+ 	u8 iface_no;
+ 	int err;
+ 	int eth_hlen;
++	u16 mbim_mtu;
+ 	u16 ntb_fmt_supported;
+ 	__le16 max_datagram_size;
+ 
+@@ -261,6 +262,14 @@ out:
+ 	/* set MTU to max supported by the device if necessary */
+ 	if (dev->net->mtu > ctx->max_datagram_size - eth_hlen)
+ 		dev->net->mtu = ctx->max_datagram_size - eth_hlen;
++
++	/* do not exceed operater preferred MTU */
++	if (ctx->mbim_extended_desc) {
++		mbim_mtu = le16_to_cpu(ctx->mbim_extended_desc->wMTU);
++		if (mbim_mtu != 0 && mbim_mtu < dev->net->mtu)
++			dev->net->mtu = mbim_mtu;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -399,6 +408,14 @@ int cdc_ncm_bind_common(struct usbnet *dev, struct usb_interface *intf, u8 data_
+ 			ctx->mbim_desc = (const struct usb_cdc_mbim_desc *)buf;
+ 			break;
+ 
++		case USB_CDC_MBIM_EXTENDED_TYPE:
++			if (buf[0] < sizeof(*(ctx->mbim_extended_desc)))
++				break;
++
++			ctx->mbim_extended_desc =
++				(const struct usb_cdc_mbim_extended_desc *)buf;
++			break;
++
+ 		default:
+ 			break;
+ 		}
+diff --git a/include/linux/usb/cdc_ncm.h b/include/linux/usb/cdc_ncm.h
+index c3fa807..bdf05fb 100644
+--- a/include/linux/usb/cdc_ncm.h
++++ b/include/linux/usb/cdc_ncm.h
+@@ -93,6 +93,7 @@ struct cdc_ncm_ctx {
+ 
+ 	const struct usb_cdc_ncm_desc *func_desc;
+ 	const struct usb_cdc_mbim_desc *mbim_desc;
++	const struct usb_cdc_mbim_extended_desc *mbim_extended_desc;
+ 	const struct usb_cdc_ether_desc *ether_desc;
+ 
+ 	struct usb_interface *control;
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.9.0.279.gdc9e3eb
+
