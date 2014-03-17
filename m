@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382AbaCQEje (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 00:39:34 -0400
-Received: from ozlabs.org ([203.10.76.45]:53836 "EHLO ozlabs.org"
+	id S932251AbaCQEkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 00:40:31 -0400
+Received: from ozlabs.org ([203.10.76.45]:43146 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781AbaCQEjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750888AbaCQEjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Mar 2014 00:39:32 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Steven Rostedt <rostedt@goodmis.org>, Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+To: Kees Cook <keescook@chromium.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [RFA][PATCH 3/4] tracing/module: Remove include of tracepoint.h from module.h
-In-Reply-To: <20140226221335.3e30572a@gandalf.local.home>
-References: <20140226190140.590029589@goodmis.org> <20140226190644.730153889@goodmis.org> <20140226221335.3e30572a@gandalf.local.home>
+        Andrew Honig <ahonig@google.com>, Michal Marek <mmarek@suse.cz>,
+        "x86\@kernel.org" <x86@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] kallsyms: handle special absolute symbols
+In-Reply-To: <CAGXu5jJvbdLqCNwrbrV-k-j2-=mDuccoodu3OuQg6eEduCvkqQ@mail.gmail.com>
+References: <1394240425-11647-1-git-send-email-keescook@chromium.org> <1394240425-11647-3-git-send-email-keescook@chromium.org> <CAGXu5j+QoHH004usCiCfJU6DPQFnQ2gt3P4GDLS7Gx8Tz_gK+A@mail.gmail.com> <87y50fuei5.fsf@rustcorp.com.au> <CAGXu5j+Zto=D_UYgn6DLVcOQyB_8sAs86masY8iuDTU5ZEZ8OQ@mail.gmail.com> <87lhwevk98.fsf@rustcorp.com.au> <CAGXu5jJvbdLqCNwrbrV-k-j2-=mDuccoodu3OuQg6eEduCvkqQ@mail.gmail.com>
 User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Mon, 17 Mar 2014 13:04:55 +1030
-Message-ID: <87fvmhtuwg.fsf@rustcorp.com.au>
+Date: Mon, 17 Mar 2014 14:06:48 +1030
+Message-ID: <874n2xts1b.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> writes:
-> On Wed, 26 Feb 2014 14:01:43 -0500
-> Hi Rusty,
+Kees Cook <keescook@chromium.org> writes:
+> On Wed, Mar 12, 2014 at 8:40 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> Kees Cook <keescook@chromium.org> writes:
+>>> Why not just do this with 0-base-address detection like my v2? That
+>>> would mean we don't need to remember to add this flag in the future to
+>>> imagined new architectures that might want this 0-based per_cpu
+>>> feature.
+>>
+>> Because future architectures will get this right and emit absolute
+>> symbols.  I hope!
+>>
+>> I'm swamped at the moment, but am hoping to investigate that for
+>> x86-64.  This is a stop-gap.
 >
-> This patch doesn't need to be stable, and can wait till v3.15. But I
-> have other patches that will break with this patch (headers that needed
-> to include tracepoint.h and not depend on a header chain to include it).
+> Okay, I'm convinced. :)
 >
-> Can you give me your Acked-by for this, and I'll just add it to my 3.15
-> queue?
+> Acked-by: Kees Cook <keescook@chromium.org>
+>
+> Thanks!
 
-Cleaning up old mail, in case I didn't ack this:
-
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Applied, thanks.
 
 Cheers,
 Rusty.
-
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->> ---
->>  include/linux/module.h | 1 -
->>  1 file changed, 1 deletion(-)
->> 
->> diff --git a/include/linux/module.h b/include/linux/module.h
->> index eaf60ff..6cc28d9 100644
->> --- a/include/linux/module.h
->> +++ b/include/linux/module.h
->> @@ -15,7 +15,6 @@
->>  #include <linux/stringify.h>
->>  #include <linux/kobject.h>
->>  #include <linux/moduleparam.h>
->> -#include <linux/tracepoint.h>
->>  #include <linux/export.h>
->>  
->>  #include <linux/percpu.h>
