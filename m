@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433AbaCQIdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 04:33:43 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:37770 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751258AbaCQIdl (ORCPT
+	id S932493AbaCQIgK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 04:36:10 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:48973 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932442AbaCQIgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 04:33:41 -0400
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-10.tower-39.messagelabs.com!1395045217!7966626!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>, Lee Jones <lee.jones@linaro.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC V2] mfd: da9063: Add support for production silicon
- variant code
-Thread-Topic: [RFC V2] mfd: da9063: Add support for production silicon
- variant code
-Thread-Index: AQHPKaPjGoIDakt27U6TyM0JXmSxpZrg0n+AgARPolA=
-Date: Mon, 17 Mar 2014 08:33:36 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7A0C7EB5B@SW-EX-MBX01.diasemi.com>
-References: <201402141506.s1EF6iYr002690@swsrvapps-01.diasemi.com>
-	 <20140214164319.GB30687@lee--X1>
- <1394807833.3710.57.camel@paszta.hi.pengutronix.de>
-In-Reply-To: <1394807833.3710.57.camel@paszta.hi.pengutronix.de>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.61]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Mon, 17 Mar 2014 04:36:08 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-39-5326b3f686b3
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev] [PATCH 1/2] f2fs: introduce f2fs_has_xattr_block for better
+ readability
+Date: Mon, 17 Mar 2014 16:35:06 +0800
+Message-id: <000001cf41bb$f0754220$d15fc660$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac9BuWeJ7+oGJppASuqTQ/wbn0QYwg==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAd1vm9WCDbrnGVpc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfHmZlXBWb6Km28P
+	MzUw/uTuYuTkkBAwkbizfgIrhC0mceHeerYuRi4OIYFFjBJH309jgXB+MEpM/3icHaSKTUBF
+	YnnHfyYQW0RAUWLD+w1gcWaBTIl7TTOYQWxhgViJY+2fweIsAqoSHxb/ZwGxeQUsJV58/8cE
+	YQtK/Jh8jwWiV0ti/c7jTBC2vMTmNW+ZIS5SkNhx9jUjxC49ifsXX0PViEtsPHKLZQKjwCwk
+	o2YhGTULyahZSFoWMLKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAgO5GfSOxhXNVgcYhTg
+	YFTi4Z2grBYsxJpYVlyZe4hRgoNZSYSXdy1QiDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutA
+	IYH0xJLU7NTUgtQimCwTB6dUA+PGZ6e8tgu6R+l95lioXsj/5Pf7F+tab/Ewq9dPOxRQ94WP
+	8d/+U+4cLD3x+77/8WSxuaS07+6St8rdE3d3fF1zo1JZKP/xrv9fNhgtsrUWO/M6UVTWmfvI
+	20dT7blvKq6Lf3Ts/tHsTHZm61UJufXyUhxSfkmfNrlJqAqHBfzJnyBu0PHs1UQlluKMREMt
+	5qLiRAB/8AxFYAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2H8Xm7C028554
 
-On 14 March 2014 14:37 Philipp Zabel wrote:
+This patch introduces a help function f2fs_has_xattr_block for better
+readability.
 
->Hi,
->
->Am Freitag, den 14.02.2014, 16:43 +0000 schrieb Lee Jones:
->> > From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
->> >
->> > Add the correct silicon variant code ID (0x5) to the driver. This
->> > new code is the 'production' variant code ID for DA9063.
->> >
->> > This patch will remove the older variant code ID which matches the
->> > pre-production silicon ID (0x3) for the DA9063 chip.
->> >
->> > There is also some small amount of correction done in this patch:
->> > it splits the revision code and correctly names it according to
->> > the hardware specification and moves the dev_info() call before
->> > the variant ID test.
->> >
->> > Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
->>
->> Applied, thanks.
->
->we have a few i.MX6 Modules (imx6q-phytec-pfla02) with DA9063 PMICs that
->all report the model/revision ID as 0x61/0x03. Those are marked as
->follows:
->    dialog DA9063 44 1240EHDA
->    dialog DA9063 44 1312ECAF
->We now have received a report from Phytec that those PMICs were not
->marketed as preproduction in any way, but as a normal mask revision.
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/f2fs.h |    5 +++++
+ fs/f2fs/node.c |    4 ++--
+ fs/f2fs/node.h |    2 +-
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
-I will speak with our AEs this morning and try and get an answer to this one.
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 1f87a04..292cc3c 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -637,6 +637,11 @@ static inline int F2FS_HAS_BLOCKS(struct inode *inode)
+ 		return inode->i_blocks > F2FS_DEFAULT_ALLOCATED_BLOCKS;
+ }
+ 
++static inline bool f2fs_has_xattr_block(unsigned int ofs)
++{
++	return ofs == XATTR_NODE_OFFSET;
++}
++
+ static inline bool inc_valid_block_count(struct f2fs_sb_info *sbi,
+ 				 struct inode *inode, blkcnt_t count)
+ {
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index c618fad..3e36240 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -836,7 +836,7 @@ struct page *new_node_page(struct dnode_of_data *dn,
+ 	SetPageUptodate(page);
+ 	set_page_dirty(page);
+ 
+-	if (ofs == XATTR_NODE_OFFSET)
++	if (f2fs_has_xattr_block(ofs))
+ 		F2FS_I(dn->inode)->i_xattr_nid = dn->nid;
+ 
+ 	dn->node_page = page;
+@@ -1533,7 +1533,7 @@ bool recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
+ 
+ 	recover_inline_xattr(inode, page);
+ 
+-	if (ofs_of_node(page) != XATTR_NODE_OFFSET)
++	if (!f2fs_has_xattr_block(ofs_of_node(page)))
+ 		return false;
+ 
+ 	/* 1: invalidate the previous xattr nid */
+diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
+index 4dea719..ee6d286 100644
+--- a/fs/f2fs/node.h
++++ b/fs/f2fs/node.h
+@@ -242,7 +242,7 @@ static inline bool IS_DNODE(struct page *node_page)
+ {
+ 	unsigned int ofs = ofs_of_node(node_page);
+ 
+-	if (ofs == XATTR_NODE_OFFSET)
++	if (f2fs_has_xattr_block(ofs))
+ 		return false;
+ 
+ 	if (ofs == 3 || ofs == 4 + NIDS_PER_BLOCK ||
+-- 
+1.7.9.5
 
->Their Dialog Semiconductor contact talked about AD, BA, and BB silicon
->variants. How do those relate to the variant register value and to the
->markings on the chips?
->There seems to be a serious miscommunication somewhere.
 
-Regards,
-Steve
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
