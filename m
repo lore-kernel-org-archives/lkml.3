@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148AbaCQRlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 13:41:25 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:33572 "EHLO
+	id S1757129AbaCQRlY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 13:41:24 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:13397 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755233AbaCQRi1 (ORCPT
+	with ESMTP id S1756986AbaCQRi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 13:38:27 -0400
+	Mon, 17 Mar 2014 13:38:28 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
@@ -16,9 +16,9 @@ Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
         linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
         Benson Leung <bleung@chromium.org>,
         Olof Johansson <olofj@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 22/22] Input: atmel_mxt_ts - handle multiple input reports in one message
-Date: Mon, 17 Mar 2014 17:26:55 +0000
-Message-Id: <1395077215-10922-23-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 19/22] Input: atmel_mxt_ts - use deep sleep mode when stopped
+Date: Mon, 17 Mar 2014 17:26:52 +0000
+Message-Id: <1395077215-10922-20-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395077215-10922-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1395077215-10922-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -26,90 +26,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+By writing zero to both the active and idle cycle times the maXTouch device
+is put into a deep sleep mode when it consumes minimal power. It is
+unnecessary to change the configuration of any other objects (for example
+to disable T9 touchscreen).
+
+It is counterproductive to reset the chip on resume, it will result in a
+long delay. However it is necessary to issue a calibrate command after the
+chip has spent any time in deep sleep.
+
+This patch also deals with the situation where the power configuration is
+zero on probe, which would mean that the device never wakes up to execute
+commands.
+
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 Acked-by: Benson Leung <bleung@chromium.org>
 Acked-by: Yufeng Shen <miletus@chromium.org>
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c | 36 +++++++++++++++++++++++++-------
- 1 file changed, 28 insertions(+), 8 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c | 99 +++++++++++++++++++++++---------
+ 1 file changed, 73 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index bd614a7..3a83242 100644
+index ce88ada..5cd2261 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -620,6 +620,12 @@ static void mxt_input_button(struct mxt_data *data, struct mxt_message *message)
- 	}
+@@ -89,9 +89,13 @@
+ #define MXT_T6_STATUS_RESET	(1 << 7)
+ 
+ /* MXT_GEN_POWER_T7 field */
+-#define MXT_POWER_IDLEACQINT	0
+-#define MXT_POWER_ACTVACQINT	1
+-#define MXT_POWER_ACTV2IDLETO	2
++struct t7_config {
++	u8 idle;
++	u8 active;
++} __packed;
++
++#define MXT_POWER_CFG_RUN		0
++#define MXT_POWER_CFG_DEEPSLEEP		1
+ 
+ /* MXT_GEN_ACQUIRE_T8 field */
+ #define MXT_ACQUIRE_CHRGTIME	0
+@@ -103,7 +107,6 @@
+ #define MXT_ACQUIRE_ATCHCALSTHR	7
+ 
+ /* MXT_TOUCH_MULTI_T9 field */
+-#define MXT_TOUCH_CTRL		0
+ #define MXT_T9_ORIENT		9
+ #define MXT_T9_RANGE		18
+ 
+@@ -242,6 +245,7 @@ struct mxt_data {
+ 	u32 config_crc;
+ 	u32 info_crc;
+ 	u8 bootloader_addr;
++	struct t7_config t7_cfg;
+ 
+ 	/* Cached parameters from object table */
+ 	u8 T6_reportid;
+@@ -600,20 +604,6 @@ static int mxt_read_message(struct mxt_data *data,
+ 			sizeof(struct mxt_message), message);
  }
  
-+static void mxt_input_sync(struct input_dev *input_dev)
+-static int mxt_write_object(struct mxt_data *data,
+-				 u8 type, u8 offset, u8 val)
+-{
+-	struct mxt_object *object;
+-	u16 reg;
+-
+-	object = mxt_get_object(data, type);
+-	if (!object || offset >= mxt_obj_size(object))
+-		return -EINVAL;
+-
+-	reg = object->start_address;
+-	return mxt_write_reg(data->client, reg + offset, val);
+-}
+-
+ static void mxt_input_button(struct mxt_data *data, struct mxt_message *message)
+ {
+ 	struct input_dev *input = data->input_dev;
+@@ -1129,6 +1119,60 @@ release:
+ 	return ret;
+ }
+ 
++static int mxt_set_t7_power_cfg(struct mxt_data *data, u8 sleep)
 +{
-+	input_mt_report_pointer_emulation(input_dev, false);
-+	input_sync(input_dev);
++	struct device *dev = &data->client->dev;
++	int error;
++	struct t7_config *new_config;
++	struct t7_config deepsleep = { .active = 0, .idle = 0 };
++
++	if (sleep == MXT_POWER_CFG_DEEPSLEEP)
++		new_config = &deepsleep;
++	else
++		new_config = &data->t7_cfg;
++
++	error = __mxt_write_reg(data->client, data->T7_address,
++				sizeof(data->t7_cfg), new_config);
++	if (error)
++		return error;
++
++	dev_dbg(dev, "Set T7 ACTV:%d IDLE:%d\n",
++		new_config->active, new_config->idle);
++
++	return 0;
 +}
 +
- static void mxt_input_touchevent(struct mxt_data *data,
- 				      struct mxt_message *message, int id)
- {
-@@ -633,10 +639,12 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 
- 	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
- 	y = (message->message[2] << 4) | ((message->message[3] & 0xf));
++static int mxt_init_t7_power_cfg(struct mxt_data *data)
++{
++	struct device *dev = &data->client->dev;
++	int error;
++	bool retry = false;
 +
-+	/* Handle 10/12 bit switching */
- 	if (data->max_x < 1024)
--		x = x >> 2;
-+		x >>= 2;
- 	if (data->max_y < 1024)
--		y = y >> 2;
-+		y >>= 2;
- 
- 	area = message->message[4];
- 	amplitude = message->message[5];
-@@ -655,14 +663,28 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 		x, y, area, amplitude);
- 
- 	input_mt_slot(input_dev, id);
--	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER,
--				   status & MXT_T9_DETECT);
- 
- 	if (status & MXT_T9_DETECT) {
-+		/*
-+		 * Multiple bits may be set if the host is slow to read
-+		 * the status messages, indicating all the events that
-+		 * have happened.
-+		 */
-+		if (status & MXT_T9_RELEASE) {
-+			input_mt_report_slot_state(input_dev,
-+						   MT_TOOL_FINGER, 0);
-+			mxt_input_sync(input_dev);
++recheck:
++	error = __mxt_read_reg(data->client, data->T7_address,
++				sizeof(data->t7_cfg), &data->t7_cfg);
++	if (error)
++		return error;
++
++	if (data->t7_cfg.active == 0 || data->t7_cfg.idle == 0) {
++		if (!retry) {
++			dev_dbg(dev, "T7 cfg zero, resetting\n");
++			mxt_soft_reset(data);
++			retry = true;
++			goto recheck;
++		} else {
++			dev_dbg(dev, "T7 cfg zero after reset, overriding\n");
++			data->t7_cfg.active = 20;
++			data->t7_cfg.idle = 100;
++			return mxt_set_t7_power_cfg(data, MXT_POWER_CFG_RUN);
 +		}
++	}
 +
-+		/* Touch active */
-+		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, 1);
- 		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
- 		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
- 		input_report_abs(input_dev, ABS_MT_PRESSURE, amplitude);
- 		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
-+	} else {
-+		/* Touch no longer active, close out slot */
-+		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, 0);
++	dev_dbg(dev, "Initialized power cfg: ACTV %d, IDLE %d\n",
++		data->t7_cfg.active, data->t7_cfg.idle);
++	return 0;
++}
++
+ static int mxt_make_highchg(struct mxt_data *data)
+ {
+ 	struct device *dev = &data->client->dev;
+@@ -1323,6 +1367,12 @@ static int mxt_initialize(struct mxt_data *data)
+ 		goto err_free_object_table;
  	}
+ 
++	error = mxt_init_t7_power_cfg(data);
++	if (error) {
++		dev_err(&client->dev, "Failed to initialize power cfg\n");
++		goto err_free_object_table;
++	}
++
+ 	error = mxt_read_t9_resolution(data);
+ 	if (error) {
+ 		dev_err(&client->dev, "Failed to initialize T9 resolution\n");
+@@ -1596,16 +1646,15 @@ static const struct attribute_group mxt_attr_group = {
+ 
+ static void mxt_start(struct mxt_data *data)
+ {
+-	/* Touch enable */
+-	mxt_write_object(data,
+-			MXT_TOUCH_MULTI_T9, MXT_TOUCH_CTRL, 0x83);
++	mxt_set_t7_power_cfg(data, MXT_POWER_CFG_RUN);
++
++	/* Recalibrate since chip has been in deep sleep */
++	mxt_t6_command(data, MXT_COMMAND_CALIBRATE, 1, false);
  }
  
-@@ -720,10 +742,8 @@ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
- 		}
- 	} while (reportid != 0xff);
- 
--	if (update_input) {
--		input_mt_report_pointer_emulation(data->input_dev, false);
--		input_sync(data->input_dev);
--	}
-+	if (update_input)
-+		mxt_input_sync(data->input_dev);
- 
- 	return IRQ_HANDLED;
+ static void mxt_stop(struct mxt_data *data)
+ {
+-	/* Touch disable */
+-	mxt_write_object(data,
+-			MXT_TOUCH_MULTI_T9, MXT_TOUCH_CTRL, 0);
++	mxt_set_t7_power_cfg(data, MXT_POWER_CFG_DEEPSLEEP);
  }
+ 
+ static int mxt_input_open(struct input_dev *dev)
+@@ -1796,8 +1845,6 @@ static int mxt_resume(struct device *dev)
+ 	struct mxt_data *data = i2c_get_clientdata(client);
+ 	struct input_dev *input_dev = data->input_dev;
+ 
+-	mxt_soft_reset(data);
+-
+ 	mutex_lock(&input_dev->mutex);
+ 
+ 	if (input_dev->users)
 -- 
 1.8.3.2
 
