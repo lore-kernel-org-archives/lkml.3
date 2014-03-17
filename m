@@ -1,197 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079AbaCQFq4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 01:46:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54183 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaCQFqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 01:46:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,667,1389772800"; 
-   d="scan'208";a="501317430"
-Message-ID: <1395035276.2740.2.camel@sagar-desktop>
-Subject: Re: [PATCH v4 1/1] drm/i915: Enabling 128x128 and 256x256 ARGB
- Cursor Support
-From: Sagar Arun Kamble <sagar.a.kamble@intel.com>
-To: intel-gfx@lists.freedesktop.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, "G, Pallavi" <pallavi.g@intel.com>,
-        shashidhar.hiremath@intel.com, indranil.mukherjee@intel.com
-Date: Mon, 17 Mar 2014 11:17:56 +0530
-In-Reply-To: <1394451383-27133-1-git-send-email-sagar.a.kamble@intel.com>
-References: <20140310100321.GA30571@phenom.ffwll.local>
-	 <1394451383-27133-1-git-send-email-sagar.a.kamble@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756309AbaCQFzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 01:55:49 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:58229 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756229AbaCQFzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 01:55:45 -0400
+From: "Nicholas A. Bellinger" <nab@daterainc.com>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        kvm-devel <kvm@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Sagi Grimberg <sagig@dev.mellanox.co.il>
+Subject: [RFCv2 7/7] virtio-scsi: Enable DIF/DIX modes in SCSI host LLD
+Date: Mon, 17 Mar 2014 05:33:01 +0000
+Message-Id: <1395034381-656-8-git-send-email-nab@daterainc.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1395034381-656-1-git-send-email-nab@daterainc.com>
+References: <1395034381-656-1-git-send-email-nab@daterainc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gentle reminder for reviewing this and i-g-t patch.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-On Mon, 2014-03-10 at 17:06 +0530, sagar.a.kamble@intel.com wrote:
-> From: Sagar Kamble <sagar.a.kamble@intel.com>
-> 
-> With this patch we allow larger cursor planes of sizes 128x128
-> and 256x256.
-> 
-> v2: Added more precise check on size while setting cursor plane.
-> 
-> v3: Changes related to restructuring cursor size restrictions
-> and DRM_DEBUG usage.
-> 
-> v4: Indentation related changes for setting cursor control and
-> implementing DRM_CAP_CURSOR_WIDTH and DRM_CAP_CURSOR_HEIGHT
-> 
-> Testcase: igt/kms_cursor_crc
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: Jani Nikula <jani.nikula@linux.intel.com>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: G, Pallavi <pallavi.g@intel.com>
-> Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
-> ---
->  drivers/gpu/drm/i915/i915_reg.h      |  4 +++
->  drivers/gpu/drm/i915/intel_display.c | 53 ++++++++++++++++++++++++++++++++----
->  drivers/gpu/drm/i915/intel_drv.h     |  7 +++++
->  3 files changed, 59 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-> index 146609a..aee8258 100644
-> --- a/drivers/gpu/drm/i915/i915_reg.h
-> +++ b/drivers/gpu/drm/i915/i915_reg.h
-> @@ -3551,7 +3551,11 @@ enum punit_power_well {
->  /* New style CUR*CNTR flags */
->  #define   CURSOR_MODE		0x27
->  #define   CURSOR_MODE_DISABLE   0x00
-> +#define   CURSOR_MODE_128_32B_AX 0x02
-> +#define   CURSOR_MODE_256_32B_AX 0x03
->  #define   CURSOR_MODE_64_32B_AX 0x07
-> +#define   CURSOR_MODE_128_ARGB_AX ((1 << 5) | CURSOR_MODE_128_32B_AX)
-> +#define   CURSOR_MODE_256_ARGB_AX ((1 << 5) | CURSOR_MODE_256_32B_AX)
->  #define   CURSOR_MODE_64_ARGB_AX ((1 << 5) | CURSOR_MODE_64_32B_AX)
->  #define   MCURSOR_PIPE_SELECT	(1 << 28)
->  #define   MCURSOR_PIPE_A	0x00
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index 0868afb..ec6a073 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -7440,10 +7440,26 @@ static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
->  	bool visible = base != 0;
->  
->  	if (intel_crtc->cursor_visible != visible) {
-> +		int16_t width = intel_crtc->cursor_width;
->  		uint32_t cntl = I915_READ(CURCNTR(pipe));
->  		if (base) {
->  			cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
-> -			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +			cntl |= MCURSOR_GAMMA_ENABLE;
-> +
-> +			switch (width) {
-> +			case 64:
-> +				cntl |= CURSOR_MODE_64_ARGB_AX;
-> +				break;
-> +			case 128:
-> +				cntl |= CURSOR_MODE_128_ARGB_AX;
-> +				break;
-> +			case 256:
-> +				cntl |= CURSOR_MODE_256_ARGB_AX;
-> +				break;
-> +			default:
-> +				WARN_ON(1);
-> +				return;
-> +			}
->  			cntl |= pipe << 28; /* Connect to correct pipe */
->  		} else {
->  			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
-> @@ -7468,10 +7484,25 @@ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
->  	bool visible = base != 0;
->  
->  	if (intel_crtc->cursor_visible != visible) {
-> +		int16_t width = intel_crtc->cursor_width;
->  		uint32_t cntl = I915_READ(CURCNTR_IVB(pipe));
->  		if (base) {
->  			cntl &= ~CURSOR_MODE;
-> -			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-> +			cntl |= MCURSOR_GAMMA_ENABLE;
-> +			switch (width) {
-> +			case 64:
-> +				cntl |= CURSOR_MODE_64_ARGB_AX;
-> +				break;
-> +			case 128:
-> +				cntl |= CURSOR_MODE_128_ARGB_AX;
-> +				break;
-> +			case 256:
-> +				cntl |= CURSOR_MODE_256_ARGB_AX;
-> +				break;
-> +			default:
-> +				WARN_ON(1);
-> +				return;
-> +			}
->  		} else {
->  			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
->  			cntl |= CURSOR_MODE_DISABLE;
-> @@ -7567,9 +7598,11 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
->  		goto finish;
->  	}
->  
-> -	/* Currently we only support 64x64 cursors */
-> -	if (width != 64 || height != 64) {
-> -		DRM_ERROR("we currently only support 64x64 cursors\n");
-> +	/* Check for which cursor types we support */
-> +	if (!((width == 64 && height == 64) ||
-> +			(width == 128 && height == 128 && !IS_GEN2(dev)) ||
-> +			(width == 256 && height == 256 && !IS_GEN2(dev)))) {
-> +		DRM_DEBUG("Cursor dimension not supported\n");
->  		return -EINVAL;
->  	}
->  
-> @@ -10331,6 +10364,16 @@ static void intel_crtc_init(struct drm_device *dev, int pipe)
->  
->  	drm_crtc_init(dev, &intel_crtc->base, &intel_crtc_funcs);
->  
-> +	if (IS_GEN2(dev)) {
-> +		intel_crtc->max_cursor_width = GEN2_CURSOR_WIDTH;
-> +		intel_crtc->max_cursor_height = GEN2_CURSOR_HEIGHT;
-> +	} else {
-> +		intel_crtc->max_cursor_width = CURSOR_WIDTH;
-> +		intel_crtc->max_cursor_height = CURSOR_HEIGHT;
-> +	}
-> +	dev->mode_config.cursor_width = intel_crtc->max_cursor_width;
-> +	dev->mode_config.cursor_height = intel_crtc->max_cursor_height;
-> +
->  	drm_mode_crtc_set_gamma_size(&intel_crtc->base, 256);
->  	for (i = 0; i < 256; i++) {
->  		intel_crtc->lut_r[i] = i;
-> diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-> index 9c70905..eca4a0a 100644
-> --- a/drivers/gpu/drm/i915/intel_drv.h
-> +++ b/drivers/gpu/drm/i915/intel_drv.h
-> @@ -78,6 +78,12 @@
->  #define MAX_OUTPUTS 6
->  /* maximum connectors per crtcs in the mode set */
->  
-> +/* Maximum cursor sizes */
-> +#define GEN2_CURSOR_WIDTH 64
-> +#define GEN2_CURSOR_HEIGHT 64
-> +#define CURSOR_WIDTH 256
-> +#define CURSOR_HEIGHT 256
-> +
->  #define INTEL_I2C_BUS_DVO 1
->  #define INTEL_I2C_BUS_SDVO 2
->  
-> @@ -364,6 +370,7 @@ struct intel_crtc {
->  	uint32_t cursor_addr;
->  	int16_t cursor_x, cursor_y;
->  	int16_t cursor_width, cursor_height;
-> +	int16_t max_cursor_width, max_cursor_height;
->  	bool cursor_visible;
->  
->  	struct intel_crtc_config config;
+This patch updates virtscsi_probe() to setup necessary Scsi_Host
+level protection resources. (currently hardcoded to 1)
 
+It changes virtscsi_add_cmd() to attach outgoing / incoming
+protection SGLs preceeding the data payload, and is using the
+new virtio_scsi_cmd_req_pi->d[oi],pi_niv field to signal
+to signal to vhost/scsi how many prot_sgs to expect.
+
+v2 changes:
+  - Make protection buffer come before data buffer (Paolo)
+  - Enable virtio_scsi_cmd_req_pi usage (Paolo)
+
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/scsi/virtio_scsi.c |   79 ++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 61 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 16bfd50..4cccfed 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -37,6 +37,7 @@ struct virtio_scsi_cmd {
+ 	struct completion *comp;
+ 	union {
+ 		struct virtio_scsi_cmd_req       cmd;
++		struct virtio_scsi_cmd_req_pi    cmd_pi;
+ 		struct virtio_scsi_ctrl_tmf_req  tmf;
+ 		struct virtio_scsi_ctrl_an_req   an;
+ 	} req;
+@@ -440,7 +441,7 @@ static int virtscsi_add_cmd(struct virtqueue *vq,
+ 			    size_t req_size, size_t resp_size, gfp_t gfp)
+ {
+ 	struct scsi_cmnd *sc = cmd->sc;
+-	struct scatterlist *sgs[4], req, resp;
++	struct scatterlist *sgs[6], req, resp;
+ 	struct sg_table *out, *in;
+ 	unsigned out_num = 0, in_num = 0;
+ 
+@@ -458,16 +459,24 @@ static int virtscsi_add_cmd(struct virtqueue *vq,
+ 	sgs[out_num++] = &req;
+ 
+ 	/* Data-out buffer.  */
+-	if (out)
++	if (out) {
++		/* Place WRITE protection SGLs before Data OUT payload */
++		if (scsi_prot_sg_count(sc))
++			sgs[out_num++] = scsi_prot_sglist(sc);
+ 		sgs[out_num++] = out->sgl;
++	}
+ 
+ 	/* Response header.  */
+ 	sg_init_one(&resp, &cmd->resp, resp_size);
+ 	sgs[out_num + in_num++] = &resp;
+ 
+ 	/* Data-in buffer */
+-	if (in)
++	if (in) {
++		/* Place READ protection SGLs before Data IN payload */
++		if (scsi_prot_sg_count(sc))
++			sgs[out_num + in_num++] = scsi_prot_sglist(sc);
+ 		sgs[out_num + in_num++] = in->sgl;
++	}
+ 
+ 	return virtqueue_add_sgs(vq, sgs, out_num, in_num, cmd, gfp);
+ }
+@@ -492,12 +501,36 @@ static int virtscsi_kick_cmd(struct virtio_scsi_vq *vq,
+ 	return err;
+ }
+ 
++static void virtio_scsi_init_hdr(struct virtio_scsi_cmd_req *cmd,
++				 struct scsi_cmnd *sc)
++{
++	cmd->lun[0] = 1;
++	cmd->lun[1] = sc->device->id;
++	cmd->lun[2] = (sc->device->lun >> 8) | 0x40;
++	cmd->lun[3] = sc->device->lun & 0xff;
++	cmd->tag = (unsigned long)sc;
++	cmd->task_attr = VIRTIO_SCSI_S_SIMPLE;
++	cmd->prio = 0;
++	cmd->crn = 0;
++}
++
++static void virtio_scsi_init_hdr_pi(struct virtio_scsi_cmd_req_pi *cmd_pi,
++				    struct scsi_cmnd *sc)
++{
++	virtio_scsi_init_hdr((struct virtio_scsi_cmd_req *)cmd_pi, sc);
++
++	if (sc->sc_data_direction == DMA_TO_DEVICE)
++		cmd_pi->do_pi_niov = scsi_prot_sg_count(sc);
++	else if (sc->sc_data_direction == DMA_FROM_DEVICE)
++		cmd_pi->di_pi_niov = scsi_prot_sg_count(sc);
++}
++
+ static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+ 				 struct virtio_scsi_vq *req_vq,
+ 				 struct scsi_cmnd *sc)
+ {
+ 	struct virtio_scsi_cmd *cmd;
+-	int ret;
++	int ret, req_size;
+ 
+ 	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+ 	BUG_ON(scsi_sg_count(sc) > shost->sg_tablesize);
+@@ -515,22 +548,20 @@ static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+ 
+ 	memset(cmd, 0, sizeof(*cmd));
+ 	cmd->sc = sc;
+-	cmd->req.cmd = (struct virtio_scsi_cmd_req){
+-		.lun[0] = 1,
+-		.lun[1] = sc->device->id,
+-		.lun[2] = (sc->device->lun >> 8) | 0x40,
+-		.lun[3] = sc->device->lun & 0xff,
+-		.tag = (unsigned long)sc,
+-		.task_attr = VIRTIO_SCSI_S_SIMPLE,
+-		.prio = 0,
+-		.crn = 0,
+-	};
+ 
+ 	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+-	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+ 
+-	if (virtscsi_kick_cmd(req_vq, cmd,
+-			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
++	if (scsi_prot_sg_count(sc)) {
++		virtio_scsi_init_hdr_pi(&cmd->req.cmd_pi, sc);
++		memcpy(cmd->req.cmd_pi.cdb, sc->cmnd, sc->cmd_len);
++		req_size = sizeof(cmd->req.cmd_pi);
++	} else {
++		virtio_scsi_init_hdr(&cmd->req.cmd, sc);
++		memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
++		req_size = sizeof(cmd->req.cmd);
++	}
++
++	if (virtscsi_kick_cmd(req_vq, cmd, req_size, sizeof(cmd->resp.cmd),
+ 			      GFP_ATOMIC) == 0)
+ 		ret = 0;
+ 	else
+@@ -871,7 +902,7 @@ static int virtscsi_probe(struct virtio_device *vdev)
+ {
+ 	struct Scsi_Host *shost;
+ 	struct virtio_scsi *vscsi;
+-	int err;
++	int err, host_prot;
+ 	u32 sg_elems, num_targets;
+ 	u32 cmd_per_lun;
+ 	u32 num_queues;
+@@ -921,6 +952,17 @@ static int virtscsi_probe(struct virtio_device *vdev)
+ 	shost->max_id = num_targets;
+ 	shost->max_channel = 0;
+ 	shost->max_cmd_len = VIRTIO_SCSI_CDB_SIZE;
++
++	/* FIXME: Figure out why this is broken.. */
++	if (1 || virtio_has_feature(vdev, VIRTIO_SCSI_F_T10_PI)) {
++		host_prot = SHOST_DIF_TYPE1_PROTECTION | SHOST_DIF_TYPE2_PROTECTION |
++			    SHOST_DIF_TYPE3_PROTECTION | SHOST_DIX_TYPE1_PROTECTION |
++			    SHOST_DIX_TYPE2_PROTECTION | SHOST_DIX_TYPE3_PROTECTION;
++
++		scsi_host_set_prot(shost, host_prot);
++		scsi_host_set_guard(shost, SHOST_DIX_GUARD_CRC);
++	}
++
+ 	err = scsi_add_host(shost, &vdev->dev);
+ 	if (err)
+ 		goto scsi_add_host_failed;
+@@ -990,6 +1032,7 @@ static struct virtio_device_id id_table[] = {
+ static unsigned int features[] = {
+ 	VIRTIO_SCSI_F_HOTPLUG,
+ 	VIRTIO_SCSI_F_CHANGE,
++	VIRTIO_SCSI_F_T10_PI,
+ };
+ 
+ static struct virtio_driver virtio_scsi_driver = {
+-- 
+1.7.2.5
 
