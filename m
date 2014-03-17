@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926AbaCPXrE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 19:47:04 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49568 "HELO
+	id S932148AbaCPXyR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 19:54:17 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58704 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754404AbaCPXrC (ORCPT
+	with SMTP id S932094AbaCPXyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 19:47:02 -0400
+	Sun, 16 Mar 2014 19:54:12 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: v3.14-rc1+: new error: "nsc-ircc, Wrong chip version ff"
-Date: Mon, 17 Mar 2014 01:02:26 +0100
-Message-ID: <3120107.Slm5jUkmCN@vostro.rjw.lan>
+To: Stephane Eranian <eranian@google.com>
+Cc: Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+Date: Mon, 17 Mar 2014 01:09:39 +0100
+Message-ID: <1425376.F2qgSAxAbW@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1395006095.2002.8.camel@x41>
-References: <1395006095.2002.8.camel@x41>
+In-Reply-To: <CABPqkBSmes+ee19iVh0EHvMQ=7TAzN3Fx1BKdOZ-2iuk5L0ugw@mail.gmail.com>
+References: <20140224162400.GE16457@pd.tnic> <20140316115546.GA11935@nazgul.tnic> <CABPqkBSmes+ee19iVh0EHvMQ=7TAzN3Fx1BKdOZ-2iuk5L0ugw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,88 +28,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 16, 2014 10:41:35 PM Paul Bolle wrote:
+On Sunday, March 16, 2014 02:08:16 PM Stephane Eranian wrote:
 > Rafael,
 > 
-> 0) Ever since v3.14-rc1 I've noticed two new boot messages on an,
-> outdated, ThinkPad X41:
->     nsc-ircc, Found chip at base=0x164e
->     nsc-ircc, Wrong chip version ff
+> Thanks for the analysis.
 > 
-> The first is printed at info level, so I would have ignored it, but the
-> second is printed at error level.
+> On Sun, Mar 16, 2014 at 12:55 PM, Borislav Petkov <bp@alien8.de> wrote:
+> > On Sat, Mar 15, 2014 at 03:15:04PM +0100, Rafael J. Wysocki wrote:
+> >> I've just gone throught this.
+> >
+> > Thanks.
+> >
+> >> So the problem is that we have the PNP "system" driver whose only purpose seems
+> >> to be to reserve system resources so that the PCI layer doesn't assign them to
+> >> new devices on hotplug (disclaimer: I didn't invent it, I only read the code and
+> >> comments in there).
+> >>
+> >> It does that for ACPI device objects having the "PNP0C02" and "PNP0C01" IDs.
+> >
+> > Right, pnp 00:01 is PNP0C02.
+> >
+> >> Apparently, snb_uncore_imc_init_box() steps on a range already reserved by that
+> >> driver on your box.  And this doesn't seem to be a coincidence, because the ACPI
+> >> device object in question probably *does* correspond to the memory controller
+> >> that the uncore driver attempts to use.
+> >>
+> >> I'm not sure how to address that right now to be honest.  Arguably, the PNP
+> >> "system" driver should be replaced with something saner, but still the
+> >> resources it claims need to be kept out of reach of the PCI's resource
+> >> allocation code.
+> >
+> > Well, I'm only conjecturing here but there should be a way for the
+> > uncore code to tell the PNP "system" driver to free this resource
+> > because uncore is going to use it now. Or something to that effect.
+> >
+> I agree. The snb_uncore_imc() is making real (good) use of the device.
+> It needs to own it. So we need a way to free the resource from the PNP
+> system or  a way to tell PNP need to grab it on systems with the
+> snb_uncore_imc() support. Does that kind of API exist?
+> 
+> Where do I look to prevent PNP from grabbing the IMC?
 
-It looks like one driver thinks there's something interesting for it, but
-finds out that there really is nothing and gives up.
+drivers/pnp/system.c is the driver in question and system_pnp_probe() makes
+the reservations via reserve_resources_of_dev(), so you'd need to modify that.
 
-> 1) I've finally managed to bisect these messages to commit 202317a573b2
-> ("ACPI / scan: Add acpi_device objects for all device nodes in the
-> namespace"). That's a rather big commit, so I've not even bothered to
-> try to revert it on top on v3.14-rc6.
+I'm not sure what's the right way to go here, though.
 
-And there really is no reason to do that, because those messages don't indicate
-any real problems. :-)
-
-> 2) What should I do to make that error go away?
-
-This is not an error, but a message whose log level is too high.  It basically
-means "I found something, but I don't like it, so I'm not going to handle it."
-
-The messages come from nsc_ircc_setup(), which is called from nsc_ircc_open(),
-which in turn is called by nsc_ircc_init(), which is a module intialization
-function of the nsc-ircc module.
-
-I *guess* what happens is that the PNP layer creates a PNP device object
-for something it didn't create an object for previously, so I wonder if the
-patch below makes those messages go away?
-
-Rafael
-
-
----
- drivers/acpi/internal.h    |    1 -
- drivers/pnp/pnpacpi/core.c |    5 ++++-
- include/acpi/acpi_bus.h    |    1 +
- 3 files changed, 5 insertions(+), 2 deletions(-)
-
-Index: linux-pm/drivers/pnp/pnpacpi/core.c
-===================================================================
---- linux-pm.orig/drivers/pnp/pnpacpi/core.c
-+++ linux-pm/drivers/pnp/pnpacpi/core.c
-@@ -258,7 +258,10 @@ static int __init pnpacpi_add_device(str
- 	if (!pnpid)
- 		return 0;
- 
--	if (is_exclusive_device(device) || !device->status.present)
-+	if (acpi_bus_get_status(device))
-+		return 0;
-+
-+	if (is_exclusive_device(device) || !acpi_device_is_present(device))
- 		return 0;
- 
- 	dev = pnp_alloc_dev(&pnpacpi_protocol, num, pnpid);
-Index: linux-pm/drivers/acpi/internal.h
-===================================================================
---- linux-pm.orig/drivers/acpi/internal.h
-+++ linux-pm/drivers/acpi/internal.h
-@@ -97,7 +97,6 @@ void acpi_device_add_finalize(struct acp
- void acpi_free_pnp_ids(struct acpi_device_pnp *pnp);
- int acpi_bind_one(struct device *dev, struct acpi_device *adev);
- int acpi_unbind_one(struct device *dev);
--bool acpi_device_is_present(struct acpi_device *adev);
- bool acpi_device_is_battery(struct acpi_device *adev);
- 
- /* --------------------------------------------------------------------------
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -422,6 +422,7 @@ void acpi_bus_put_acpi_device(struct acp
- acpi_status acpi_bus_get_status_handle(acpi_handle handle,
- 				       unsigned long long *sta);
- int acpi_bus_get_status(struct acpi_device *device);
-+bool acpi_device_is_present(struct acpi_device *adev);
- 
- int acpi_bus_set_power(acpi_handle handle, int state);
- const char *acpi_power_state_string(int state);
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
