@@ -1,106 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933075AbaCQMdh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 08:33:37 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:56125 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933061AbaCQMdf (ORCPT
+	id S933022AbaCQMiY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 08:38:24 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:51100 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932906AbaCQMiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 08:33:35 -0400
-Message-ID: <1395059613.1999.7.camel@x41>
-Subject: Re: v3.14-rc1+: new error: "nsc-ircc, Wrong chip version ff"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 17 Mar 2014 13:33:33 +0100
-In-Reply-To: <3120107.Slm5jUkmCN@vostro.rjw.lan>
-References: <1395006095.2002.8.camel@x41>
-	 <3120107.Slm5jUkmCN@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+	Mon, 17 Mar 2014 08:38:23 -0400
+X-Nat-Received: from [202.181.97.72]:58386 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1395059901.11978
+To: oleg@redhat.com
+Cc: rientjes@google.com, akpm@linux-foundation.org,
+        joseph.salisbury@canonical.com, torvalds@linux-foundation.org,
+        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: Re: [v3.13][v3.14][Regression] kthread: make kthread_create()killable
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <53236AA2.7030105@canonical.com>
+	<201403150943.BIH30251.FOQLOOtFJHSMVF@I-love.SAKURA.ne.jp>
+	<201403170013.GJF86930.FtVOOQOHLFFMSJ@I-love.SAKURA.ne.jp>
+	<20140316162512.GA9467@redhat.com>
+In-Reply-To: <20140316162512.GA9467@redhat.com>
+Message-Id: <201403172138.GFB43278.OOOFFSQLVHJMtF@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 17 Mar 2014 21:38:19 +0900
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Mar 2014 12:33:33.0582 (UTC) FILETIME=[1C531AE0:01CF41DD]
-X-RcptDomain: vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 17032014 #7535038, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki schreef op ma 17-03-2014 om 01:02 [+0100]:
-> On Sunday, March 16, 2014 10:41:35 PM Paul Bolle wrote:
-> > 2) What should I do to make that error go away?
+Oleg Nesterov wrote:
+> > @@ -292,6 +292,17 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+> >  	 * new kernel thread.
+> >  	 */
+> >  	if (unlikely(wait_for_completion_killable(&done))) {
+> > +		int i = 0;
+> > +
+> > +		/*
+> > +		 * I got SIGKILL, but wait for 10 more seconds for completion
+> > +		 * unless chosen by the OOM killer. This delay is there as a
+> > +		 * workaround for boot failure caused by SIGKILL upon device
+> > +		 * driver initialization timeout.
+> > +		 */
+> > +		while (i++ < 10 && !test_tsk_thread_flag(current, TIF_MEMDIE))
+> > +			if (wait_for_completion_timeout(&done, HZ))
+> > +				goto ready;
 > 
-> This is not an error, but a message whose log level is too high.  It basically
-> means "I found something, but I don't like it, so I'm not going to handle it."
+> Personally I really dislike this hack. And btw, why we return -ENOMEM if
+> SIGKILL'ed? Why not EINTR ?
 
-I see. It's actually quite old and is mentioned rather often on the web.
-I must have seen if before, when I actually used IrDA, but that's a few
-years ago now.
+I chose -ENOMEM because -ENOMEM looked better for conveying that current thread
+was SIGKILLed by the OOM killer in order to solve no memory state. But I forgot
+that -ENOMEM will not convey the reason properly if current thread was
+SIGKILLed by other than the OOM killer. Maybe
 
-> The messages come from nsc_ircc_setup(), which is called from nsc_ircc_open(),
-> which in turn is called by nsc_ircc_init(), which is a module intialization
-> function of the nsc-ircc module.
+  return test_tsk_thread_flag(current, TIF_MEMDIE) ? -ENOMEM : -EINTR;
+
+rather than
+
+  return -ENOMEM;
+
+?
+
+> > Commit 786235ee "kthread: make kthread_create() killable" changed to
+> > leave kthread_create() as soon as receiving SIGKILL. But this change
+> > caused boot failures if systemd-udevd received SIGKILL (probably due
+> > to timeout) while loading SCSI controller drivers using
+> > finit_module() [1].
 > 
-> I *guess* what happens is that the PNP layer creates a PNP device object
-> for something it didn't create an object for previously, so I wonder if the
-> patch below makes those messages go away?
-
-No, they're still there (with this patch applied on top of v3.14-rc7).
-
-> ---
->  drivers/acpi/internal.h    |    1 -
->  drivers/pnp/pnpacpi/core.c |    5 ++++-
->  include/acpi/acpi_bus.h    |    1 +
->  3 files changed, 5 insertions(+), 2 deletions(-)
+> Shouldn't we fix the caller instead? It should handle the error from
+> kthread_create() correctly.
 > 
-> Index: linux-pm/drivers/pnp/pnpacpi/core.c
-> ===================================================================
-> --- linux-pm.orig/drivers/pnp/pnpacpi/core.c
-> +++ linux-pm/drivers/pnp/pnpacpi/core.c
-> @@ -258,7 +258,10 @@ static int __init pnpacpi_add_device(str
->  	if (!pnpid)
->  		return 0;
->  
-> -	if (is_exclusive_device(device) || !device->status.present)
-> +	if (acpi_bus_get_status(device))
-> +		return 0;
-> +
-> +	if (is_exclusive_device(device) || !acpi_device_is_present(device))
->  		return 0;
->  
->  	dev = pnp_alloc_dev(&pnpacpi_protocol, num, pnpid);
-> Index: linux-pm/drivers/acpi/internal.h
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/internal.h
-> +++ linux-pm/drivers/acpi/internal.h
-> @@ -97,7 +97,6 @@ void acpi_device_add_finalize(struct acp
->  void acpi_free_pnp_ids(struct acpi_device_pnp *pnp);
->  int acpi_bind_one(struct device *dev, struct acpi_device *adev);
->  int acpi_unbind_one(struct device *dev);
-> -bool acpi_device_is_present(struct acpi_device *adev);
->  bool acpi_device_is_battery(struct acpi_device *adev);
->  
->  /* --------------------------------------------------------------------------
+> And could you tell who is the caller which doesn't do this? If it can't
+> be fixed, then, say, it can use workqueue to create a kernel thread.
+> 
 
-This hunk required a trivial context change in v3.14-rc7.
+There are many callers. One of them is scsi_host_alloc() which is called
+upon bootup in order to recognize SCSI storage devices.
 
-> Index: linux-pm/include/acpi/acpi_bus.h
-> ===================================================================
-> --- linux-pm.orig/include/acpi/acpi_bus.h
-> +++ linux-pm/include/acpi/acpi_bus.h
-> @@ -422,6 +422,7 @@ void acpi_bus_put_acpi_device(struct acp
->  acpi_status acpi_bus_get_status_handle(acpi_handle handle,
->  				       unsigned long long *sta);
->  int acpi_bus_get_status(struct acpi_device *device);
-> +bool acpi_device_is_present(struct acpi_device *adev);
->  
->  int acpi_bus_set_power(acpi_handle handle, int state);
->  const char *acpi_power_state_string(int state);
+To my surprise, systemd-udevd process sends SIGKILL to worker systemd-udevd
+processes if they did not complete their jobs within 30 seconds. On some
+machines, it takes more than 30 seconds to recognize SCSI storage devices.
 
-Thanks,
+On such machines, scsi_host_alloc() is called after the worker process
+received SIGKILL. Since commit 786235ee "kthread: make kthread_create()
+killable" broke all callers of kthread_create() who had been able to survive
+SIGKILL, I think fixing this regression at kthread_create() is the appropriate
+response.
 
+Given that said, which one do we prefer?
 
-Paul Bolle
+  (a) Wait for completion forever after receiving SIGKILL, unless chosen
+      by the OOM killer.
 
+  (b) Wait for completion for only limited duration after receiving SIGKILL.
+
+This patch is (b) which waits for only 10 seconds after receiving SIGKILL.
+(a) will change "kthread: make kthread_create() killable" to
+"kthread: allow the OOM-killer to kill kthread_create()".
