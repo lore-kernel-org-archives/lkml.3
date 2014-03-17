@@ -1,328 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933467AbaCQNlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:41:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51807 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933247AbaCQNbf (ORCPT
+	id S933641AbaCQNlW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:41:22 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38077 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933390AbaCQNlI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:31:35 -0400
-Message-Id: <20140317133134.819366684@bombadil.infradead.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 17 Mar 2014 06:27:56 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 23/39] scsi: fix the {host,target,device}_blocked counter mess
-References: <20140317132733.789623766@bombadil.infradead.org>
-Content-Disposition: inline; filename=0023-scsi-fix-the-host-target-device-_blocked-counter-mes.patch
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 17 Mar 2014 09:41:08 -0400
+Date: Mon, 17 Mar 2014 13:41:03 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 2/6] pci: OF: Fix the conversion of IO ranges into IO
+ resources.
+Message-ID: <20140317134103.GD6457@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	Grant Likely <grant.likely@secretlab.ca>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <201403141946.23921.arnd@arndb.de>
+ <20140314190017.GA6457@e106497-lin.cambridge.arm.com>
+ <201403142016.11105.arnd@arndb.de>
+MIME-Version: 1.0
+In-Reply-To: <201403142016.11105.arnd@arndb.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 17 Mar 2014 13:41:15.0936 (UTC) FILETIME=[91AD2200:01CF41E6]
+X-MC-Unique: 114031713410502801
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems like these counters are missing any sort of synchronization for
-updates, as a over 10 year old comment from me noted.  Fix this by
-using atomic counters, and while we're at it also make sure they are
-in the same cacheline as the _busy counters and not needlessly stored
-to in every I/O completion.
+On Fri, Mar 14, 2014 at 07:16:10PM +0000, Arnd Bergmann wrote:
+> On Friday 14 March 2014, Liviu Dudau wrote:
+> > On Fri, Mar 14, 2014 at 06:46:23PM +0000, Arnd Bergmann wrote:
+> > > On Friday 14 March 2014, Liviu Dudau wrote:
+> > > 
+> > > > +int of_pci_range_to_resource(struct of_pci_range *range,
+> > > > +       struct device_node *np, struct resource *res)
+> > > > +{
+> > > > +       res->flags = range->flags;
+> > > > +       res->parent = res->child = res->sibling = NULL;
+> > > > +       res->name = np->full_name;
+> > > > +
+> > > > +       if (res->flags & IORESOURCE_IO) {
+> > > > +               unsigned long port = -1;
+> > > > +               int err = pci_register_io_range(range->cpu_addr, range->size);
+> > > > +               if (err)
+> > > > +                       goto invalid_range;
+> > > > +               port = pci_address_to_pio(range->cpu_addr);
+> > > > +               if (port == (unsigned long)-1) {
+> > > > +                       err = -EINVAL;
+> > > > +                       goto invalid_range;
+> > > > +               }
+> > > > +               res->start = port;
+> > > > +       } else {
+> > > 
+> > > This one concatenates the I/O spaces and assumes that each space starts
+> > > at bus address zero, and takes little precaution to avoid filling up IO_SPACE_LIMIT
+> > > if the sizes are too big.
+> > 
+> > Actually, you are attaching too much meaning to this one. pci_register_io_range()
+> > only tries to remember the ranges, nothing else. And it *does* check that the
+> > total sum of registered ranges does not exceed IO_SPACE_LIMIT. This is used before
+> > we have any resource mapped for that range (actually it is used to *create* the
+> > resource for the range) so there is no other helping hand.
+> > 
+> > It doesn't assume that space starts at bus address zero, it ignores the bus address.
+> > It only handles CPU addresses for the range, to help with generating logical IO ports.
+> > If you have overlapping CPU addresses with different bus addresses it will not work,
+> > but then I guess you will have different problems then.
+> 
+> The problem is that it tries to set up a mapping so that pci_address_to_pio
+> returns the actual port number, but the port that you assign to res->start
+> above is assumed to match the 'start' variable below. If the value ends
+> up different, the BARs that get set by the PCI bus scan are not in the
+> same place that got ioremapped into the virtual I/O aperture.
 
-With the new model the _busy counters can temporarily go negative,
-so all the readers are updated to check for > 0 values.  Longer
-term every successful I/O completion will reset the counters to zero,
-so the temporarily negative values will not cause any harm.
+Yes, after writting a reply trying to justify why it would actually work I've realised
+where the fault of my logic stands (short version, two host controllers will get different
+io_offsets but the ports numbers will start from zero leading to confusion about which
+host controller the resource belongs to).
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/scsi.c        |   21 ++++++------
- drivers/scsi/scsi_lib.c    |   82 +++++++++++++++++++++-----------------------
- drivers/scsi/scsi_sysfs.c  |   10 +++++-
- include/scsi/scsi_device.h |    7 ++--
- include/scsi/scsi_host.h   |    7 ++--
- 5 files changed, 64 insertions(+), 63 deletions(-)
+I will try to split your function into two parts, one that calculates the io_offset and
+another that does the ioremap_page_range() side and replace my cooked function.
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index a0b5e6f..0e8a077 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -752,17 +752,16 @@ void scsi_finish_command(struct scsi_cmnd *cmd)
- 
- 	scsi_device_unbusy(sdev);
- 
--        /*
--         * Clear the flags which say that the device/host is no longer
--         * capable of accepting new commands.  These are set in scsi_queue.c
--         * for both the queue full condition on a device, and for a
--         * host full condition on the host.
--	 *
--	 * XXX(hch): What about locking?
--         */
--        shost->host_blocked = 0;
--	starget->target_blocked = 0;
--        sdev->device_blocked = 0;
-+	/*
-+	 * Clear the flags which say that the device/target/host is no longer
-+	 * capable of accepting new commands.
-+	 */
-+	if (atomic_read(&shost->host_blocked))
-+		atomic_set(&shost->host_blocked, 0);
-+	if (atomic_read(&starget->target_blocked))
-+		atomic_set(&starget->target_blocked, 0);
-+	if (atomic_read(&sdev->device_blocked))
-+		atomic_set(&sdev->device_blocked, 0);
- 
- 	/*
- 	 * If we have valid sense information, then some kind of recovery
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 6281595..a23e8c3 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -113,14 +113,16 @@ static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
- 	 */
- 	switch (reason) {
- 	case SCSI_MLQUEUE_HOST_BUSY:
--		host->host_blocked = host->max_host_blocked;
-+		atomic_set(&host->host_blocked, host->max_host_blocked);
- 		break;
- 	case SCSI_MLQUEUE_DEVICE_BUSY:
- 	case SCSI_MLQUEUE_EH_RETRY:
--		device->device_blocked = device->max_device_blocked;
-+		atomic_set(&device->device_blocked,
-+			   device->max_device_blocked);
- 		break;
- 	case SCSI_MLQUEUE_TARGET_BUSY:
--		starget->target_blocked = starget->max_target_blocked;
-+		atomic_set(&starget->target_blocked,
-+			   starget->max_target_blocked);
- 		break;
- 	}
- 
-@@ -340,30 +342,39 @@ static void scsi_single_lun_run(struct scsi_device *current_sdev)
- 	spin_unlock_irqrestore(shost->host_lock, flags);
- }
- 
--static inline int scsi_device_is_busy(struct scsi_device *sdev)
-+static inline bool scsi_device_is_busy(struct scsi_device *sdev)
- {
- 	if (atomic_read(&sdev->device_busy) >= sdev->queue_depth)
--		return 1;
--	if (sdev->device_blocked)
--		return 1;
-+		return true;
-+	if (atomic_read(&sdev->device_blocked) > 0)
-+		return true;
- 	return 0;
- }
- 
--static inline int scsi_target_is_busy(struct scsi_target *starget)
-+static inline bool scsi_target_is_busy(struct scsi_target *starget)
- {
--	return ((starget->can_queue > 0 &&
--		 atomic_read(&starget->target_busy) >= starget->can_queue) ||
--		 starget->target_blocked);
-+	if (starget->can_queue > 0) {
-+		if (atomic_read(&starget->target_busy) >= starget->can_queue)
-+			return true;
-+		if (atomic_read(&starget->target_blocked) > 0)
-+			return true;
-+	}
-+
-+	return false;
- }
- 
--static inline int scsi_host_is_busy(struct Scsi_Host *shost)
-+static inline bool scsi_host_is_busy(struct Scsi_Host *shost)
- {
--	if ((shost->can_queue > 0 &&
--	     atomic_read(&shost->host_busy) >= shost->can_queue) ||
--	    shost->host_blocked || shost->host_self_blocked)
--		return 1;
-+	if (shost->can_queue > 0) {
-+		if (atomic_read(&shost->host_busy) >= shost->can_queue)
-+			return true;
-+		if (atomic_read(&shost->host_blocked) > 0)
-+			return true;
-+		if (shost->host_self_blocked)
-+			return true;
-+	}
- 
--	return 0;
-+	return false;
- }
- 
- static void scsi_starved_list_run(struct Scsi_Host *shost)
-@@ -1256,11 +1267,8 @@ static inline int scsi_dev_queue_ready(struct request_queue *q,
- 	unsigned int busy;
- 
- 	busy = atomic_inc_return(&sdev->device_busy) - 1;
--	if (busy == 0 && sdev->device_blocked) {
--		/*
--		 * unblock after device_blocked iterates to zero
--		 */
--		if (--sdev->device_blocked != 0) {
-+	if (busy == 0 && atomic_read(&sdev->device_blocked) > 0) {
-+		if (atomic_dec_return(&sdev->device_blocked) > 0) {
- 			blk_delay_queue(q, SCSI_QUEUE_DELAY);
- 			goto out_dec;
- 		}
-@@ -1270,7 +1278,7 @@ static inline int scsi_dev_queue_ready(struct request_queue *q,
- 
- 	if (busy >= sdev->queue_depth)
- 		goto out_dec;
--	if (sdev->device_blocked)
-+	if (atomic_read(&sdev->device_blocked) > 0)
- 		goto out_dec;
- 
- 	return 1;
-@@ -1301,16 +1309,9 @@ static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
- 	}
- 
- 	busy = atomic_inc_return(&starget->target_busy) - 1;
--	if (busy == 0 && starget->target_blocked) {
--		/*
--		 * unblock after target_blocked iterates to zero
--		 */
--		spin_lock_irq(shost->host_lock);
--		if (--starget->target_blocked != 0) {
--			spin_unlock_irq(shost->host_lock);
-+	if (busy == 0 && atomic_read(&starget->target_blocked) > 0) {
-+		if (atomic_dec_return(&starget->target_blocked) > 0)
- 			goto out_dec;
--		}
--		spin_unlock_irq(shost->host_lock);
- 
- 		SCSI_LOG_MLQUEUE(3, starget_printk(KERN_INFO, starget,
- 				 "unblocking target at zero depth\n"));
-@@ -1318,7 +1319,7 @@ static inline int scsi_target_queue_ready(struct Scsi_Host *shost,
- 
- 	if (starget->can_queue > 0 && busy >= starget->can_queue)
- 		goto starved;
--	if (starget->target_blocked)
-+	if (atomic_read(&starget->target_blocked) > 0)
- 		goto starved;
- 
- 	return 1;
-@@ -1347,16 +1348,9 @@ static inline int scsi_host_queue_ready(struct request_queue *q,
- 		return 0;
- 
- 	busy = atomic_inc_return(&shost->host_busy) - 1;
--	if (busy == 0 && shost->host_blocked) {
--		/*
--		 * unblock after host_blocked iterates to zero
--		 */
--		spin_lock_irq(shost->host_lock);
--		if (--shost->host_blocked != 0) {
--			spin_unlock_irq(shost->host_lock);
-+	if (busy == 0 && atomic_read(&shost->host_blocked) > 0) {
-+		if (atomic_dec_return(&shost->host_blocked) > 0)
- 			goto out_dec;
--		}
--		spin_unlock_irq(shost->host_lock);
- 
- 		SCSI_LOG_MLQUEUE(3,
- 			printk("scsi%d unblocking host at zero depth\n",
-@@ -1365,7 +1359,9 @@ static inline int scsi_host_queue_ready(struct request_queue *q,
- 
- 	if (shost->can_queue > 0 && busy >= shost->can_queue)
- 		goto starved;
--	if (shost->host_blocked || shost->host_self_blocked)
-+	if (atomic_read(&shost->host_blocked) > 0)
-+		goto starved;
-+	if (shost->host_self_blocked)
- 		goto starved;
- 
- 	/* We're OK to process the command, so we can't be starved */
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index c59e146..707a10c 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -585,7 +585,6 @@ static int scsi_sdev_check_buf_bit(const char *buf)
- /*
-  * Create the actual show/store functions and data structures.
-  */
--sdev_rd_attr (device_blocked, "%d\n");
- sdev_rd_attr (queue_depth, "%d\n");
- sdev_rd_attr (type, "%d\n");
- sdev_rd_attr (scsi_level, "%d\n");
-@@ -602,6 +601,15 @@ sdev_show_device_busy(struct device *dev, struct device_attribute *attr,
- }
- static DEVICE_ATTR(device_busy, S_IRUGO, sdev_show_device_busy, NULL);
- 
-+static ssize_t
-+sdev_show_device_blocked(struct device *dev, struct device_attribute *attr,
-+		char *buf)
-+{
-+	struct scsi_device *sdev = to_scsi_device(dev);
-+	return snprintf(buf, 20, "%d\n", atomic_read(&sdev->device_blocked));
-+}
-+static DEVICE_ATTR(device_blocked, S_IRUGO, sdev_show_device_blocked, NULL);
-+
- /*
-  * TODO: can we make these symlinks to the block layer ones?
-  */
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index 7bb39e4..d72c842 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -82,6 +82,8 @@ struct scsi_device {
- 	struct list_head    same_target_siblings; /* just the devices sharing same target id */
- 
- 	atomic_t device_busy;		/* commands actually active on LLDD */
-+	atomic_t device_blocked;	/* Device returned QUEUE_FULL. */
-+
- 	spinlock_t list_lock;
- 	struct list_head cmd_list;	/* queue of in use SCSI Command structures */
- 	struct list_head starved_entry;
-@@ -173,8 +175,6 @@ struct scsi_device {
- 	struct list_head event_list;	/* asserted events */
- 	struct work_struct event_work;
- 
--	unsigned int device_blocked;	/* Device returned QUEUE_FULL. */
--
- 	unsigned int max_device_blocked; /* what device_blocked counts down from  */
- #define SCSI_DEFAULT_DEVICE_BLOCKED	3
- 
-@@ -272,12 +272,13 @@ struct scsi_target {
- 						 * the same target will also. */
- 	/* commands actually active on LLD. */
- 	atomic_t		target_busy;
-+	atomic_t		target_blocked;
-+
- 	/*
- 	 * LLDs should set this in the slave_alloc host template callout.
- 	 * If set to zero then there is not limit.
- 	 */
- 	unsigned int		can_queue;
--	unsigned int		target_blocked;
- 	unsigned int		max_target_blocked;
- #define SCSI_DEFAULT_TARGET_BLOCKED	3
- 
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index 590e1af..c4e4875 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -604,6 +604,8 @@ struct Scsi_Host {
- 	struct blk_queue_tag	*bqt;
- 
- 	atomic_t host_busy;		   /* commands actually active on low-level */
-+	atomic_t host_blocked;
-+
- 	unsigned int host_failed;	   /* commands that failed.
- 					      protected by host_lock */
- 	unsigned int host_eh_scheduled;    /* EH scheduled without command */
-@@ -703,11 +705,6 @@ struct Scsi_Host {
- 	struct workqueue_struct *tmf_work_q;
- 
- 	/*
--	 * Host has rejected a command because it was busy.
--	 */
--	unsigned int host_blocked;
--
--	/*
- 	 * Value host_blocked counts down from
- 	 */
- 	unsigned int max_host_blocked;
+Best regards,
+Liviu
+
+> 
+> > > >+unsigned long pci_ioremap_io(const struct resource *res, phys_addr_t phys_addr)
+> > > >+{
+> > > >+       unsigned long start, len, virt_start;
+> > > >+       int err;
+> > > >+
+> > > >+       if (res->end > IO_SPACE_LIMIT)
+> > > >+               return -EINVAL;
+> > > >+
+> > > >+       /*
+> > > >+        * try finding free space for the whole size first,
+> > > >+        * fall back to 64K if not available
+> > > >+        */
+> > > >+       len = resource_size(res);
+> > > >+       start = bitmap_find_next_zero_area(pci_iospace, IO_SPACE_PAGES,
+> > > >+                               res->start / PAGE_SIZE, len / PAGE_SIZE, 0);
+> > > >+       if (start == IO_SPACE_PAGES && len > SZ_64K) {
+> > > >+               len = SZ_64K;
+> > > >+               start = 0;
+> > > >+               start = bitmap_find_next_zero_area(pci_iospace, IO_SPACE_PAGES,
+> > > >+                                       start, len / PAGE_SIZE, 0);
+> > > >+       }
+> > > >+
+> > > >+       /* no 64K area found */
+> > > >+       if (start == IO_SPACE_PAGES)
+> > > >+               return -ENOMEM;
+> > > >+
+> > > >+       /* ioremap physical aperture to virtual aperture */
+> > > >+       virt_start = start * PAGE_SIZE + (unsigned long)PCI_IOBASE;
+> > > >+       err = ioremap_page_range(virt_start, virt_start + len,
+> > > >+                               phys_addr, __pgprot(PROT_DEVICE_nGnRE));
+> > > >+       if (err)
+> > > >+               return err;
+> > > >+
+> > > >+       bitmap_set(pci_iospace, start, len / PAGE_SIZE);
+> > > >+
+> > > >+       /* return io_offset */
+> > > >+       return start * PAGE_SIZE - res->start;
+> > > >+}
+> 
+> 	Arnd
+> 
+
 -- 
-1.7.10.4
-
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
