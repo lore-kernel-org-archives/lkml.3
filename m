@@ -1,226 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996AbaCQWWn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 18:22:43 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:36983 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084AbaCQWWm (ORCPT
+	id S1753074AbaCQWW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 18:22:57 -0400
+Received: from www84.your-server.de ([213.133.104.84]:38855 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016AbaCQWWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 18:22:42 -0400
-Message-ID: <532775AD.90007@linaro.org>
-Date: Mon, 17 Mar 2014 15:22:37 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dgiani@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/3] vrange: Add purged page detection on setting memory
- non-volatile
-References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org> <1394822013-23804-3-git-send-email-john.stultz@linaro.org> <20140317093937.GB2210@quack.suse.cz>
-In-Reply-To: <20140317093937.GB2210@quack.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 17 Mar 2014 18:22:53 -0400
+From: Stefani Seibold <stefani@seibold.net>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v23 05/13] x86, vdso: Replace VVAR(vsyscall_gtod_data) by gtod macro
+Date: Mon, 17 Mar 2014 23:22:05 +0100
+Message-Id: <1395094933-14252-6-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1395094933-14252-1-git-send-email-stefani@seibold.net>
+References: <1395094933-14252-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2014 02:39 AM, Jan Kara wrote:
-> On Fri 14-03-14 11:33:32, John Stultz wrote:
->> Users of volatile ranges will need to know if memory was discarded.
->> This patch adds the purged state tracking required to inform userland
->> when it marks memory as non-volatile that some memory in that range
->> was purged and needs to be regenerated.
->>
->> This simplified implementation which uses some of the logic from
->> Minchan's earlier efforts, so credit to Minchan for his work.
->   Some minor comments below...
->
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Android Kernel Team <kernel-team@android.com>
->> Cc: Johannes Weiner <hannes@cmpxchg.org>
->> Cc: Robert Love <rlove@google.com>
->> Cc: Mel Gorman <mel@csn.ul.ie>
->> Cc: Hugh Dickins <hughd@google.com>
->> Cc: Dave Hansen <dave@sr71.net>
->> Cc: Rik van Riel <riel@redhat.com>
->> Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
->> Cc: Neil Brown <neilb@suse.de>
->> Cc: Andrea Arcangeli <aarcange@redhat.com>
->> Cc: Mike Hommey <mh@glandium.org>
->> Cc: Taras Glek <tglek@mozilla.com>
->> Cc: Dhaval Giani <dgiani@mozilla.com>
->> Cc: Jan Kara <jack@suse.cz>
->> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
->> Cc: Michel Lespinasse <walken@google.com>
->> Cc: Minchan Kim <minchan@kernel.org>
->> Cc: linux-mm@kvack.org <linux-mm@kvack.org>
->> Signed-off-by: John Stultz <john.stultz@linaro.org>
->> ---
->>  include/linux/swap.h   | 15 +++++++++++--
->>  include/linux/vrange.h | 13 ++++++++++++
->>  mm/vrange.c            | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 83 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/swap.h b/include/linux/swap.h
->> index 46ba0c6..18c12f9 100644
->> --- a/include/linux/swap.h
->> +++ b/include/linux/swap.h
->> @@ -70,8 +70,19 @@ static inline int current_is_kswapd(void)
->>  #define SWP_HWPOISON_NUM 0
->>  #endif
->>  
->> -#define MAX_SWAPFILES \
->> -	((1 << MAX_SWAPFILES_SHIFT) - SWP_MIGRATION_NUM - SWP_HWPOISON_NUM)
->> +
->> +/*
->> + * Purged volatile range pages
->> + */
->> +#define SWP_VRANGE_PURGED_NUM 1
->> +#define SWP_VRANGE_PURGED (MAX_SWAPFILES + SWP_HWPOISON_NUM + SWP_MIGRATION_NUM)
->> +
->> +
->> +#define MAX_SWAPFILES ((1 << MAX_SWAPFILES_SHIFT)	\
->> +				- SWP_MIGRATION_NUM	\
->> +				- SWP_HWPOISON_NUM	\
->> +				- SWP_VRANGE_PURGED_NUM	\
->> +			)
->>  
->>  /*
->>   * Magic header for a swap area. The first part of the union is
->> diff --git a/include/linux/vrange.h b/include/linux/vrange.h
->> index 652396b..c4a1616 100644
->> --- a/include/linux/vrange.h
->> +++ b/include/linux/vrange.h
->> @@ -1,7 +1,20 @@
->>  #ifndef _LINUX_VRANGE_H
->>  #define _LINUX_VRANGE_H
->>  
->> +#include <linux/swap.h>
->> +#include <linux/swapops.h>
->> +
->>  #define VRANGE_NONVOLATILE 0
->>  #define VRANGE_VOLATILE 1
->>  
->> +static inline swp_entry_t swp_entry_mk_vrange_purged(void)
->> +{
->> +	return swp_entry(SWP_VRANGE_PURGED, 0);
->> +}
->> +
->> +static inline int entry_is_vrange_purged(swp_entry_t entry)
->> +{
->> +	return swp_type(entry) == SWP_VRANGE_PURGED;
->> +}
->> +
->>  #endif /* _LINUX_VRANGE_H */
->> diff --git a/mm/vrange.c b/mm/vrange.c
->> index acb4356..844571b 100644
->> --- a/mm/vrange.c
->> +++ b/mm/vrange.c
->> @@ -8,6 +8,60 @@
->>  #include <linux/mm_inline.h>
->>  #include "internal.h"
->>  
->> +struct vrange_walker {
->> +	struct vm_area_struct *vma;
->> +	int pages_purged;
->   Maybe call this 'was_page_purged'? To better suggest the value is bool
-> and not a number of pages... Or make that 'bool' instead of 'int'?
+There a currently more than 30 users of the gtod macro, so replace the
+last VVAR(vsyscall_gtod_data) by gtod macro.
 
-Yea, page_was_purged sounds good to me. Thanks for pointing out the
-ambiguity.  Similarly the
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ arch/x86/vdso/vclock_gettime.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-entry_is_vrange_purged/swp_entry_mk_vrange_purged functions are a little inconsistently named.
-
-
-
->
->> +};
->> +
->> +static int vrange_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
->> +				struct mm_walk *walk)
->> +{
->> +	struct vrange_walker *vw = walk->private;
->> +	pte_t *pte;
->> +	spinlock_t *ptl;
->> +
->> +	if (pmd_trans_huge(*pmd))
->> +		return 0;
->> +	if (pmd_trans_unstable(pmd))
->> +		return 0;
->> +
->> +	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
->> +	for (; addr != end; pte++, addr += PAGE_SIZE) {
->> +		if (!pte_present(*pte)) {
->> +			swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
->> +
->> +			if (unlikely(entry_is_vrange_purged(vrange_entry))) {
->> +				vw->pages_purged = 1;
->> +				break;
->> +			}
->> +		}
->> +	}
->> +	pte_unmap_unlock(pte - 1, ptl);
->> +	cond_resched();
->> +
->> +	return 0;
->> +}
->> +
->> +static unsigned long vrange_check_purged(struct mm_struct *mm,
->   What's the point of this function returning ulong when everything else
-> expects 'int'?
-
-Thanks, I'll fix that.
-
->> +					 struct vm_area_struct *vma,
->> +					 unsigned long start,
->> +					 unsigned long end)
->> +{
->> +	struct vrange_walker vw;
->> +	struct mm_walk vrange_walk = {
->> +		.pmd_entry = vrange_pte_range,
->> +		.mm = vma->vm_mm,
->> +		.private = &vw,
->> +	};
->> +	vw.pages_purged = 0;
->> +	vw.vma = vma;
->> +
->> +	walk_page_range(start, end, &vrange_walk);
->> +
->> +	return vw.pages_purged;
->> +
->> +}
->> +
->>  static ssize_t do_vrange(struct mm_struct *mm, unsigned long start,
->>  				unsigned long end, int mode, int *purged)
->>  {
->> @@ -57,6 +111,9 @@ static ssize_t do_vrange(struct mm_struct *mm, unsigned long start,
->>  			break;
->>  		case VRANGE_NONVOLATILE:
->>  			new_flags &= ~VM_VOLATILE;
->> +			lpurged |= vrange_check_purged(mm, vma,
->> +							vma->vm_start,
->> +							vma->vm_end);
->   Hum, why don't you actually just call vrange_check_purge() once for the
-> whole syscall range? walk_page_range() seems to handle multiple vmas just
-> fine...
->
-
-Another good suggestion!
-
-Thanks!
--john
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index fd074dd..743f277 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -109,7 +109,7 @@ static notrace cycle_t vread_pvclock(int *mode)
+ 		*mode = VCLOCK_NONE;
+ 
+ 	/* refer to tsc.c read_tsc() comment for rationale */
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++	last = gtod->clock.cycle_last;
+ 
+ 	if (likely(ret >= last))
+ 		return ret;
+@@ -133,7 +133,7 @@ notrace static cycle_t vread_tsc(void)
+ 	rdtsc_barrier();
+ 	ret = (cycle_t)vget_cycles();
+ 
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++	last = gtod->clock.cycle_last;
+ 
+ 	if (likely(ret >= last))
+ 		return ret;
+@@ -288,7 +288,7 @@ int gettimeofday(struct timeval *, struct timezone *)
+ notrace time_t __vdso_time(time_t *t)
+ {
+ 	/* This is atomic on x86_64 so we don't need any locks. */
+-	time_t result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
++	time_t result = ACCESS_ONCE(gtod->wall_time_sec);
+ 
+ 	if (t)
+ 		*t = result;
+-- 
+1.9.0
 
