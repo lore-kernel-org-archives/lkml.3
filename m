@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924AbaCQNaQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:30:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52510 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932766AbaCQNaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:30:12 -0400
-Message-ID: <5326F8C5.5090406@ti.com>
-Date: Mon, 17 Mar 2014 18:59:41 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S933053AbaCQNag (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:30:36 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:38534 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756489AbaCQNae (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 09:30:34 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexander Holler <holler@ahsoftware.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
+In-Reply-To: <5326F72E.7010401@monstr.eu>
+References: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
+	<CAL_JsqKacetGytGUJir7ky3qOgCy-3ny1pT_Bx4eCYV2wMgcTg@mail.gmail.com>
+	<5326F72E.7010401@monstr.eu>
+Date: Mon, 17 Mar 2014 14:30:33 +0100
+X-Google-Sender-Auth: agTw580ZSBAzZUztItnOhvcTbBI
+Message-ID: <CAMuHMdVzE=oWTb-D5j_xRu4Q25YGWbFHi8wnaYZSTSXor2kbxA@mail.gmail.com>
+Subject: Re: [PATCH] SPI: Add driver for Cadence SPI controller
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Rob Herring <robherring2@gmail.com>, Harini Katakam <harinik@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Mark Brown <broonie@kernel.org>,
         Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
-References: <5316FFCE.1060603@ti.com>	<1394018461-757-1-git-send-email-holler@ahsoftware.de>	<CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>	<5322D529.4070904@ahsoftware.de> <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>
-In-Reply-To: <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 March 2014 04:32 PM, Linus Walleij wrote:
-> On Fri, Mar 14, 2014 at 11:08 AM, Alexander Holler <holler@ahsoftware.de> wrote:
->> Am 11.03.2014 11:15, schrieb Linus Walleij:
->>> On Wed, Mar 5, 2014 at 12:21 PM, Alexander Holler <holler@ahsoftware.de> wrote:
->>>
->>>> The driver missed an of_xlate function to translate gpio numbers
->>>> as found in the DT to the correct chip and number.
->>>>
->>>> While there I've set #gpio_cells to a fixed value of 2.
->>>>
->>>> I've used gpio-pxa.c as template for those changes and tested my changes
->>>> successfully on a da850 board using entries for gpio-leds in a DT. So I didn't
->>>> reinvent the wheel but just copied and tested stuff.
->>>>
->>>> Thanks to Grygorii Strashko for the hint to the existing code in gpio-pxa.
->>>>
->>>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
->>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>>
->>> This v2 version applied, thanks!
+On Mon, Mar 17, 2014 at 2:22 PM, Michal Simek <monstr@monstr.eu> wrote:
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +static SIMPLE_DEV_PM_OPS(cdns_spi_dev_pm_ops, cdns_spi_suspend,
+>>> +                        cdns_spi_resume);
+>>> +
+>>> +/* Work with hotplug and coldplug */
+>>> +MODULE_ALIAS("platform:" CDNS_SPI_NAME);
 >>
->> Thanks, but actually that should have been a fix for 3.14 with which the
->> OF functionality for davinci gpio gets introduced. I assum with the
->> patch in for-next, 3.14 will appear with that functionality broken and
->> it will become a candidate for -stable.
-> 
-> I just get the impression that DT support for DaVinci in v3.14 is so risky
-> and unstable that noone except those implementing it (i.e. you) is really
-> using it, is that correct?
-> 
-> In that case it is hardly a fix that we need to rush out to the entire world.
+>> Not sure, but I don't think this should be needed.
+>
+> I don't know too.
 
-One thing to note is that this driver is used by keystone too and all
-its users are DT-only. Although I do not see any in-kernel DT GPIO users
-even there.
+A plain platform device driver needs the MODULE_ALIAS, unless there's
+a "MODULE_DEVICE_TABLE(platform, ...)", which doesn't exist in this driver.
 
-I can confirm the patch does not break my gpiolib based test module
-(test with and without DT), but then it did not have an issue even before.
+However, as the driver fails in the absence of DT:
 
-Thanks,
-Sekhar
+      ret = of_property_read_u16(pdev->dev.of_node, "num-chip-select",
+                                  &master->num_chipselect);
+      if (ret < 0) {
+              dev_err(&pdev->dev, "couldn't determine num-chip-select\n");
+              goto clk_dis_all;
+      }
 
+it won't work (yet) as a plain platform device driver.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
