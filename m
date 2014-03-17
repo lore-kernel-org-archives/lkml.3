@@ -1,111 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaCQWYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 18:24:22 -0400
-Received: from www84.your-server.de ([213.133.104.84]:38871 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035AbaCQWW4 (ORCPT
+	id S1753411AbaCQW0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 18:26:00 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:60652 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753338AbaCQWZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 18:22:56 -0400
-From: Stefani Seibold <stefani@seibold.net>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v23 04/13] x86, vdso: __vdso_clock_gettime() cleanup
-Date: Mon, 17 Mar 2014 23:22:04 +0100
-Message-Id: <1395094933-14252-5-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1395094933-14252-1-git-send-email-stefani@seibold.net>
-References: <1395094933-14252-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Mon, 17 Mar 2014 18:25:55 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/5] Squelch warnings emitted by 'perf test'
+Date: Mon, 17 Mar 2014 18:26:33 -0400
+Message-Id: <1395095198-20034-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.9.0.431.g014438b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is a small code cleanup for the __vdso_clock_gettime() function.
+Hi,
 
-It removes the unneeded return values from do_monotonic_coarse() and
-do_realtime_coarse() and add a fallback label for doing the kernel
-gettimeofday() system call.
+The motivation for the series is mainly [2/5] and [5/5] -- to squelch
+the warnings emitted by 'perf test'. I made some effort to understand
+what's going on, but I didn't get very far. [5/5] feels especially
+like a band-aid fix: please let me know how to do it right.
 
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- arch/x86/vdso/vclock_gettime.c | 27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
+Thanks.
 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index bbc8065..fd074dd 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -209,7 +209,7 @@ notrace static int do_monotonic(struct timespec *ts)
- 	return mode;
- }
- 
--notrace static int do_realtime_coarse(struct timespec *ts)
-+notrace static void do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -217,10 +217,9 @@ notrace static int do_realtime_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--	return 0;
- }
- 
--notrace static int do_monotonic_coarse(struct timespec *ts)
-+notrace static void do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
-@@ -228,30 +227,32 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
- 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
--
--	return 0;
- }
- 
- notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
- {
--	int ret = VCLOCK_NONE;
--
- 	switch (clock) {
- 	case CLOCK_REALTIME:
--		ret = do_realtime(ts);
-+		if (do_realtime(ts) == VCLOCK_NONE)
-+			goto fallback;
- 		break;
- 	case CLOCK_MONOTONIC:
--		ret = do_monotonic(ts);
-+		if (do_monotonic(ts) == VCLOCK_NONE)
-+			goto fallback;
- 		break;
- 	case CLOCK_REALTIME_COARSE:
--		return do_realtime_coarse(ts);
-+		do_realtime_coarse(ts);
-+		break;
- 	case CLOCK_MONOTONIC_COARSE:
--		return do_monotonic_coarse(ts);
-+		do_monotonic_coarse(ts);
-+		break;
-+	default:
-+		goto fallback;
- 	}
- 
--	if (ret == VCLOCK_NONE)
--		return vdso_fallback_gettime(clock, ts);
- 	return 0;
-+fallback:
-+	return vdso_fallback_gettime(clock, ts);
- }
- int clock_gettime(clockid_t, struct timespec *)
- 	__attribute__((weak, alias("__vdso_clock_gettime")));
+Ramkumar Ramachandra (5):
+  MAINTAINERS: add tools/lib/traceevent/ to perf subsystem
+  tools lib traceevent: handle the '->' operator
+  tools lib traceevent: use else-if cascade, not separate ifs
+  tools lib traceevent: field_is_long() includes unsigned long
+  perf test: squelch warnings about undefined sizeof
+
+ MAINTAINERS                        |  1 +
+ tools/lib/traceevent/event-parse.c | 23 +++++++++++++----------
+ 2 files changed, 14 insertions(+), 10 deletions(-)
+
 -- 
-1.9.0
+1.9.0.431.g014438b
 
