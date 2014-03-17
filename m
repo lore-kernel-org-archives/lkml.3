@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975AbaCQSbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 14:31:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47290 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756060AbaCQSbf (ORCPT
+	id S932973AbaCQScS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 14:32:18 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:19937 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755313AbaCQScO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 14:31:35 -0400
-X-Sasl-enc: JA8++rECgEUQ8NVs6MivwYU8/sCE9SteASVnDVocE9lV 1395081093
-Date: Mon, 17 Mar 2014 11:33:33 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Mark Brown <broonie@kernel.org>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20140317183333.GE10565@kroah.com>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
- <20140312015021.GC10106@kroah.com>
- <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 17 Mar 2014 14:32:14 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-91-53273facdcf0
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@deeprootsystems.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, linux-ide@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        spear-devel@list.st.com, b.zolnierkie@samsung.com
+Subject: [PATCH 0/4] ata: add remaining new-style AHCI platform drivers
+Date: Mon, 17 Mar 2014 19:31:54 +0100
+Message-id: <1395081118-15248-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t9jQd019urBBt0LlS02zljPanHuVgOr
+	xZ0VzBabHl9jtTi24xGTxeVdc9gs9vduYLJo6O5ht5gzYzOrxa/lRxktVl78y+zA7XH91X8m
+	j52z7rJ7bFrVyeYxZ1oTi8fJCydZPDYvqffo27KK0ePpj73MHsdvbGfy+LxJLoArissmJTUn
+	syy1SN8ugStj0/rqgpvcFYeXT2JtYDzC2cXIySEhYCLROO8KM4QtJnHh3nq2LkYuDiGB6YwS
+	J3raWCGcLiaJNbM+soJUsQlYSUxsX8UIYosIyEpcmfaQEaSIWeAxk8TOlVPYQRLCAu4Svz/u
+	ZAOxWQRUJRacfwrWwCvgITHv9TkWiHWKEt3PJrBNYORewMiwilE0tSC5oDgpPddIrzgxt7g0
+	L10vOT93EyM4+J5J72Bc1WBxiFGAg1GJh/cFm3qwEGtiWXFl7iFGCQ5mJRFeCROgEG9KYmVV
+	alF+fFFpTmrxIUZpDhYlcd6DrdaBQgLpiSWp2ampBalFMFkmDk6pBsatvV45cm4LLSq4Dv+K
+	YzO5KfLrcMvNyYrn7pbPljx7LmZtBddT33kxq51ndu15lrH6q+eH0hTZuJs8VzUC097OSfZ9
+	ufTtt/VFch4aOf+m7tjodOGNg/S0zxJtv8yv6Bc6nfy4cOve1iMN9X1WSXOvb7N+4nMvdlf2
+	yjPMilc3CVReOiUjnXVLiaU4I9FQi7moOBEAvdcKNjoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 10:16:11AM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> On Tue, 11 Mar 2014 18:50:21 -0700 Greg KH <greg@kroah.com> wrote:
-> >
-> > On Wed, Mar 12, 2014 at 12:51:52AM +0000, Mark Brown wrote:
-> > > 
-> > > After merging the driver-core tree, today's linux-next build ()
-> > > failed like this on a PowerPC defconfig:
-> > > 
-> > > HEAD is now at ceb98e684dec Merge remote-tracking branch 'driver-core/driver-core-next'
-> > >   GEN     /home/broonie/next/powerpc_ppc64_defconfig/Makefile
-> > > #
-> > > # configuration written to .config
-> > > #
-> > > /home/broonie/next/next/arch/powerpc/platforms/powernv/opal-elog.c: In function 'elog_ack_store':
-> > > /home/broonie/next/next/arch/powerpc/platforms/powernv/opal-elog.c:84:2: error: implicit declaration of function 'sysfs_schedule_callback' [-Werror=implicit-function-declaration]
-> > >   sysfs_schedule_callback(&elog_obj->kobj, delay_release_kobj,
-> > >   ^
-> > > cc1: all warnings being treated as errors
-> > > make[3]: *** [arch/powerpc/platforms/powernv/opal-elog.o] Error 1
-> > > make[3]: *** Waiting for unfinished jobs....
-> > > /home/broonie/next/next/arch/powerpc/platforms/powernv/opal-dump.c: In function 'dump_ack_store':
-> > > /home/broonie/next/next/arch/powerpc/platforms/powernv/opal-dump.c:100:2: error: implicit declaration of function 'sysfs_schedule_callback' [-Werror=implicit-function-declaration]
-> > >   sysfs_schedule_callback(&dump_obj->kobj, delay_release_kobj,
-> > >   ^
-> > > cc1: all warnings being treated as errors
-> > > 
-> > > due to an interaction between d1ba277e7988908 (sysfs, driver-core: remove unused {sysfs|device}_schedule_callback_owner()) and 774fea1a38c6a5a8 (powerpc/powernv: Read OPAL error log and export it through sysfs) from the PowerPC tree.
-> > > 
-> > > I reverted 774fea1a38c6a5a8 for today.
-> > 
-> > Sounds like the powerpc tree also needs to stop using this function :)
-> 
-> So, explain to us in detail why the old interface could not be maintained
-> for a release, please.  I thought we had become a bit more sophisticated
-> about changing core APIs i.e. introduce the new API - fix up all the
-> users - keep the old one around if possible for a release (or beyond
-> -rc1) to catch the new users.
-> 
-> It may be that there is a good reason not to so this in this case, but it
-> is not explained as far as I can see.
+Hi,
 
-There were only 3 (or 4), users of this api, and no new ones had been
-added in _years_, it's a very obscure thing, and odds are, it wouldn't
-ever be added again, especially as it was just removed entirely not
-being needed anymore.  And I'd argue, it's something that you shouldn't
-have even been doing in the first place, so why a new user of it was
-added now is quite strange to me.
+This patch series adds new-style AHCI platform drivers for DaVinci DA850
+AHCI controller and ST SPEAr1340 AHCI controller.  As a preparation for
+adding these drivers it also fixes ahci_platform_data->suspend() handling
+(patch #1) and moves library AHCI platform code to its own file (patch #2).
+The new AHCI platform drivers are only compile tested (they are marked as
+experimental because of this) and I would ask somebody with the hardware
+to verify them (thanks!).
 
-thanks,
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-greg k-h
+
+Bartlomiej Zolnierkiewicz (4):
+  ata: ahci_platform: fix ahci_platform_data->suspend method handling
+  ata: move library code from ahci_platform.c to libahci_platform.c
+  ata: add new-style AHCI platform driver for DaVinci DA850 AHCI
+    controller
+  ata: add new-style AHCI platform driver for ST SPEAr1340 AHCI
+    controller
+
+ drivers/ata/Kconfig            |  23 +-
+ drivers/ata/Makefile           |  10 +-
+ drivers/ata/ahci_da850.c       | 178 ++++++++++++++
+ drivers/ata/ahci_platform.c    | 508 --------------------------------------
+ drivers/ata/ahci_spear1340.c   | 222 +++++++++++++++++
+ drivers/ata/libahci_platform.c | 541 +++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 967 insertions(+), 515 deletions(-)
+ create mode 100644 drivers/ata/ahci_da850.c
+ create mode 100644 drivers/ata/ahci_spear1340.c
+ create mode 100644 drivers/ata/libahci_platform.c
+
+-- 
+1.8.2.3
+
