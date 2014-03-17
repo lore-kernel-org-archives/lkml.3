@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813AbaCQLni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 07:43:38 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:40567 "EHLO jenni2.inet.fi"
+	id S932868AbaCQLod (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 07:44:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3584 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932672AbaCQLnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 07:43:37 -0400
-Date: Mon, 17 Mar 2014 13:43:21 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, kirill.shutemov@linux.intel.com,
-        david@fromorbit.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH] Support map_pages() for DAX
-Message-ID: <20140317114321.GA30191@node.dhcp.inet.fi>
-References: <1394838199-29102-1-git-send-email-toshi.kani@hp.com>
- <20140314233233.GA8310@node.dhcp.inet.fi>
- <20140316024613.GF6091@linux.intel.com>
+	id S932672AbaCQLoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 07:44:32 -0400
+Message-ID: <5326DA5D.7040503@redhat.com>
+Date: Mon, 17 Mar 2014 12:19:57 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140316024613.GF6091@linux.intel.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+To: "H. Peter Anvin" <hpa@zytor.com>, Igor Mammedov <imammedo@redhat.com>,
+        linux-kernel@vger.kernel.org
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 0/2] KVM: x86 emulator: emulate MOVAPS and MOVAPD SSE
+ instructions
+References: <1394913720-6466-1-git-send-email-imammedo@redhat.com> <f9c71833-f869-440c-8ab1-cd1f81f2da3b@email.android.com>
+In-Reply-To: <f9c71833-f869-440c-8ab1-cd1f81f2da3b@email.android.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 15, 2014 at 10:46:13PM -0400, Matthew Wilcox wrote:
-> On Sat, Mar 15, 2014 at 01:32:33AM +0200, Kirill A. Shutemov wrote:
-> > Side note: I'm sceptical about whole idea to use i_mmap_mutux to protect
-> > against truncate. It will not scale good enough comparing lock_page()
-> > with its granularity.
-> 
-> I'm actually working on this now.  The basic idea is to put an entry in
-> the radix tree for each page.  For zero pages, that's a pagecache page.
-> For pages that map to the media, it's an exceptional entry.  Radix tree
-> exceptional entries take two bits, leaving us with 30 or 62 bits depending
-> on sizeof(void *).  We can then take two more bits for Dirty and Lock,
-> leaving 28 or 60 bits that we can use to cache the PFN on the page,
-> meaning that we won't have to call the filesystem's get_block as often.
+Il 15/03/2014 23:39, H. Peter Anvin ha scritto:
+> MOVAPS, MOVAPD, and MOVDQA are the same operation.  They may, architecturally, have different performance characteristics, but nothing that would affect an emulator.
 
-Sound reasonable to me. Implementation of ->map_pages should be trivial
-with this.
+In fact MOVAPS and MOVAPD are implemented the same way in this patch:
 
-Few questions:
- - why would you need Dirty for DAX?
- - are you sure that 28 bits is enough for PFN everywhere?
-   ARM with LPAE can have up to 40 physical address lines. Is there any
-   32-bit machine with more address lines?
+I(Aligned, em_mov), I(Aligned, em_mov), N, N,
 
--- 
- Kirill A. Shutemov
+These are respectively for no prefix, 0x66, 0xf2 and 0xf3.  MOVDQA was 
+already implemented, but on AMD some memcpy implementations use MOVAPS 
+because it's a byte shorter.
+
+Paolo
+
+> On March 15, 2014 1:01:58 PM PDT, Igor Mammedov <imammedo@redhat.com> wrote:
+>> MS HCK test fails on 32-bit Windows 8.1 due to missing MOVAPS
+>> instruction emulation, this series adds it and while at it,
+>> it adds emulation of MOVAPD which is trivial to implement on
+>> top of MOVAPS.
+>>
+>> Igor Mammedov (2):
+>>  KVM: x86 emulator: emulate MOVAPS
+>>  KVM: x86 emulator: emulate MOVAPD
+>>
+>> arch/x86/kvm/emulate.c | 8 +++++++-
+>> 1 file changed, 7 insertions(+), 1 deletion(-)
+>
+
