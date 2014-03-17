@@ -1,158 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634AbaCQGEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 02:04:13 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:60048 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051AbaCQGEL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 02:04:11 -0400
-X-AuditID: 85900ec0-d452db9000001514-45-532690572d4c
-Message-ID: <53269056.6000903@hitachi.com>
-Date: Mon, 17 Mar 2014 15:04:06 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
-MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@nvidia.com>, Jingoo Han <jg1.han@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Re: [PATCH V3] serial/uart/8250: Add tunable RX interrupt
- trigger I/F of FIFO buffers
-References: <20140314022154.4345.23024.stgit@yunodevel> <20140314120400.4e17c47a@alan.etchedpixels.co.uk>
-In-Reply-To: <20140314120400.4e17c47a@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S932315AbaCQF62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 01:58:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37734 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932285AbaCQF60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 01:58:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,667,1389772800"; 
+   d="scan'208";a="473898221"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH v4 00/16] perf, x86: Haswell LBR call stack support
+Date: Mon, 17 Mar 2014 13:57:20 +0800
+Message-Id: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+For many profiling tasks we need the callgraph. For example we often
+need to see the caller of a lock or the caller of a memcpy or other
+library function to actually tune the program. Frame pointer unwinding
+is efficient and works well. But frame pointers are off by default on
+64bit code (and on modern 32bit gccs), so there are many binaries around
+that do not use frame pointers. Profiling unchanged production code is
+very useful in practice. On some CPUs frame pointer also has a high
+cost. Dwarf2 unwinding also does not always work and is extremely slow
+(upto 20% overhead).
 
-Thank you for your reply.
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are
+executed the last captured branch record is popped from the on-chip LBR
+registers. The LBR call stack facility provides an alternative to get
+callgraph. It has some limitations too, but should work in most cases
+and is significantly faster than dwarf. Frame pointer unwinding is still
+the best default, but LBR call stack is a good alternative when nothing
+else works.
 
-(2014/03/14 21:04), One Thousand Gnomes wrote:
->> @@ -2325,10 +2323,19 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
->>   		if ((baud < 2400 && !up->dma) || fifo_bug) {
->>   			fcr &= ~UART_FCR_TRIGGER_MASK;
->>   			fcr |= UART_FCR_TRIGGER_1;
->> +			/* Don't use user setting RX trigger */
->> +			up->fcr = 0;
->
-> This breaks
->
-> 	set fcr via sysfs
-> 	set baud rate below 2400
-> 	set baud rate higher
->
-> If baud < 2400 and the user has set a value then probably we should honour
+When profiling bc(1) on Fedora 19:
+ echo 'scale=2000; 4*a(1)' > cmd; perf record -g bc -l < cmd
 
-OK, I'll add !up->fcr in this flow as follows:
+If this feature is enabled, perf report output looks like:
+    50.36%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
 
-/* NOTE: If fifo_bug is not set, a user can set RX trigger. */
-if ((baud < 2400 && !up->dma && !up->fcr) || fifo_bug) {
-      fcr &= ~UART_TRIGGER_MASK;
-      fcr |= UART_FCR_TRIGGER_1;
-      up->fcr = 0;
-}
+    33.66%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+                     bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
 
-> it. If fifo_bug is set then we should never honour it (and should perhaps
-> eventually error it in the sysfs set).
+     7.62%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                    |
+                    |--99.89%-- 0x2000186a8
+                     --0.11%-- [...]
 
-When fifo_bug is set to "1", we need to check not only
-whether (up->bugs & UART_BUG_PARITY) but whether parity is enabled.
-We can check whether parity is enable only in this function currently,
-so I think we need to store fifo_bug's value into up->fifo_bug and
-refer it in the sysfs set(do_set_rx_int_trig()) as follows:
+     6.83%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+                    |
+                    |--99.94%-- bc_add
+                    |          execute
+                    |          run_code
+                    |          yyparse
+                    |          main
+                    |          __libc_start_main
+                    |          _start
+                     --0.06%-- [...]
 
-@do_set_rx_int_trig()
-     if (!(up->capabilities & UART_CAP_FIFO) || uport->fifosize <= 1
-         || (up->fifo_bug & UART_BUG_PARITY))
-         return -EINVAL;
+     0.46%       bc  libc-2.17.so       [.] __memset_sse2
+                 |
+                 --- __memset_sse2
+                    |
+                    |--54.13%-- bc_new_num
+                    |          |
+                    |          |--51.00%-- bc_divide
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |          |--30.46%-- _bc_do_sub
+                    |          |          bc_add
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |           --18.55%-- _bc_do_add
+                    |                     bc_add
+                    |                     execute
+                    |                     run_code
+                    |                     yyparse
+                    |                     main
+                    |                     __libc_start_main
+                    |                     _start
+                    |
+                     --45.87%-- bc_divide
+                               execute
+                               run_code
+                               yyparse
+                               main
+                               __libc_start_main
+                               _start
 
->
->> +static unsigned char convert_fcr2val(struct uart_8250_port *up,
->> +				     unsigned char fcr)
->> +{
->> +	unsigned char val = 0, trig_raw = fcr & UART_FCR_TRIGGER_MASK;
->> +
->> +	switch (up->port.type) {
->> +	case PORT_16550A:
->> +		if (trig_raw == UART_FCR_R_TRIG_00)
->> +			val = 1;
->> +		else if (trig_raw == UART_FCR_R_TRIG_01)
->> +			val = 4;
->> +		else if (trig_raw == UART_FCR_R_TRIG_10)
->> +			val = 8;
->> +		else if (trig_raw == UART_FCR_R_TRIG_11)
->> +			val = 14;
->> +		break;
->
-> Surely the default case should be returning 1 not 0 ?
+If this feature is disabled, perf report output looks like:
+    50.49%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
 
-In the default case, it returns "0" meaning error because "1" has
-other meaning (1 byte RX trigger). But, "0" is not instinctive value for
-the error, so it should return -EOPNOTSUPP here.
+    33.57%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
 
->
->> +static int convert_val2rxtrig(struct uart_8250_port *up, unsigned char val)
->> +{
->> +	switch (up->port.type) {
->> +	case PORT_16550A:
->> +		if (val == 1)
->> +			return UART_FCR_R_TRIG_00;
->> +		else if (val == 4)
->> +			return UART_FCR_R_TRIG_01;
->> +		else if (val == 8)
->> +			return UART_FCR_R_TRIG_10;
->> +		else if (val == 14)
->> +			return UART_FCR_R_TRIG_11;
->
-> What happens if you specify a meaningless value. Doing exact matching
-> means that you have to know the hardware exactly. How about
->
-> 	if (val < 4)
-> 		return UART_FCR_R_TRIG_00;
-> 	else if (val < 8)
-> 		return UART_FCR_R_TRIG_01;
-> 	else if (val < 14)
-> 		return UART_FCR_R_TRIG_10;
-> 	else
-> 		return UART_FCR_R_TRIG_11;
->
-> so you get the nearest lower value that the hardware can provide ?
+     7.61%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                     0x2000186a8
 
-It is a good idea. I was concerned about the same thing which users
-must know the HW exactly.
+     6.88%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
 
-I'll implement it as you say.
+     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
+                 |
+                 --- __memcpy_ssse3_back
 
->> +		break;
->> +	default:
->> +		pr_info("Not support RX-trigger setting for this serial %u\n",
->> +			up->port.type);
->
-> That lets users spew into the logs. I think actually you just want
->
-> 	default:
-> 		return -EOPNOTSUPP;
+The LBR call stack has following known limitations
+ - Zero length calls are not filtered out by hardware
+ - Exception handing such as setjmp/longjmp will have calls/returns not
+   match
+ - Pushing different return address onto the stack will have calls/returns
+   not match
+ - If callstack is deeper than the LBR, only the last entries are captured
 
-OK, I'll use this.
+Changes since v1
+ - split change into more patches
+ - introduce context switch callback and use it to flush LBR
+ - use the context switch callback to save/restore LBR
+ - dynamic allocate memory area for storing LBR stack, always switch the
+   memory area during context switch
+ - disable this feature by default
+ - more description in change logs
 
-Thank you,
+Changes since v2
+ - don't use xchg to switch PMU specific data
+ - remove nr_branch_stack from struct perf_event_context
+ - simplify the save/restore LBR stack logical
+ - remove unnecessary 'has_branch_stack -> needs_branch_stack'
+   conversion
+ - more description in change logs
 
-Yoshihiro YUNOMAE
+Changes since v3
+ - remove the sysfs file that enables this feature. This feature
+   is unconditional enabled.
+ - split change into more patches
+ - more description in change logs
 
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
-
-
+These patches are also available at:
+  https://github.com/ukernel/linux.git perf-lbr-callstack
