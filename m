@@ -1,137 +1,693 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593AbaCQQIA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 12:08:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44007 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752989AbaCQQH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 12:07:59 -0400
-Date: Mon, 17 Mar 2014 17:07:55 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, glommer@gmail.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, devel@openvz.org
-Subject: Re: [PATCH RESEND -mm 01/12] memcg: flush cache creation works
- before memcg cache destruction
-Message-ID: <20140317160755.GB30623@dhcp22.suse.cz>
-References: <cover.1394708827.git.vdavydov@parallels.com>
- <4cccfcf74595f26532a6dda7264dc420df82fb8a.1394708827.git.vdavydov@parallels.com>
+	id S1754867AbaCQQQk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 12:16:40 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:52702 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844AbaCQQPj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 12:15:39 -0400
+Message-ID: <53271B69.3000305@gmail.com>
+Date: Mon, 17 Mar 2014 16:57:29 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4cccfcf74595f26532a6dda7264dc420df82fb8a.1394708827.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+CC: mtk.manpages@gmail.com, Andreas Dilger <adilger@dilger.ca>,
+        NeilBrown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>
+Subject: For review: open_by_name_at(2) man page
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-03-14 19:06:39, Vladimir Davydov wrote:
-> When we get to memcg cache destruction, either from the root cache
-> destruction path or when turning memcg offline, there still might be
-> memcg cache creation works pending that was scheduled before we
-> initiated destruction. We need to flush them before starting to destroy
-> memcg caches, otherwise we can get a leaked kmem cache or, even worse,
-> an attempt to use after free.
+Hi Aneesh, (and others)
 
-How can we use-after-free? Even if there is a pending work item to
-create a new cache then we keep the css reference for the memcg and
-release it from the worker (memcg_create_cache_work_func). So although
-this can race with memcg offlining the memcg itself will be still alive.
+Below is a man page I've written for name_to_handle_at(2) and
+open_by_name_at(2). Would you be willing to review it please,
+and let me know of any corrections/improvements?
 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Glauber Costa <glommer@gmail.com>
-> ---
->  mm/memcontrol.c |   32 +++++++++++++++++++++++++++++++-
->  1 file changed, 31 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9d489a9e7701..b183aaf1b616 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2904,6 +2904,7 @@ static DEFINE_MUTEX(set_limit_mutex);
->  
->  #ifdef CONFIG_MEMCG_KMEM
->  static DEFINE_MUTEX(activate_kmem_mutex);
-> +static struct workqueue_struct *memcg_cache_create_wq;
->  
->  static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
->  {
-> @@ -3327,6 +3328,15 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
->  	int i, failed = 0;
->  
->  	/*
-> +	 * Since the cache is being destroyed, it shouldn't be allocated from
-> +	 * any more, and therefore no new memcg cache creation works could be
-> +	 * scheduled. However, there still might be pending works scheduled
-> +	 * before the cache destruction was initiated. Flush them before
-> +	 * destroying child caches to avoid nasty races.
-> +	 */
-> +	flush_workqueue(memcg_cache_create_wq);
-> +
-> +	/*
->  	 * If the cache is being destroyed, we trust that there is no one else
->  	 * requesting objects from it. Even if there are, the sanity checks in
->  	 * kmem_cache_destroy should caught this ill-case.
-> @@ -3374,6 +3384,15 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
->  	if (!memcg_kmem_is_active(memcg))
->  		return;
->  
-> +	/*
-> +	 * By the time we get here, the cgroup must be empty. That said no new
-> +	 * allocations can happen from its caches, and therefore no new memcg
-> +	 * cache creation works can be scheduled. However, there still might be
-> +	 * pending works scheduled before the cgroup was turned offline. Flush
-> +	 * them before destroying memcg caches to avoid nasty races.
-> +	 */
-> +	flush_workqueue(memcg_cache_create_wq);
-> +
->  	mutex_lock(&memcg->slab_caches_mutex);
->  	list_for_each_entry(params, &memcg->memcg_slab_caches, list) {
->  		cachep = memcg_params_to_cache(params);
-> @@ -3418,7 +3437,7 @@ static void __memcg_create_cache_enqueue(struct mem_cgroup *memcg,
->  	cw->cachep = cachep;
->  
->  	INIT_WORK(&cw->work, memcg_create_cache_work_func);
-> -	schedule_work(&cw->work);
-> +	queue_work(memcg_cache_create_wq, &cw->work);
->  }
->  
->  static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
-> @@ -3621,10 +3640,20 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order)
->  	VM_BUG_ON_PAGE(mem_cgroup_is_root(memcg), page);
->  	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
->  }
-> +
-> +static void __init memcg_kmem_init(void)
-> +{
-> +	memcg_cache_create_wq = alloc_workqueue("memcg_cache_create", 0, 1);
-> +	BUG_ON(!memcg_cache_create_wq);
-> +}
->  #else
->  static inline void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
->  {
->  }
-> +
-> +static void __init memcg_kmem_init(void)
-> +{
-> +}
->  #endif /* CONFIG_MEMCG_KMEM */
->  
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> @@ -7181,6 +7210,7 @@ static int __init mem_cgroup_init(void)
->  	enable_swap_cgroup();
->  	mem_cgroup_soft_limit_tree_init();
->  	memcg_stock_init();
-> +	memcg_kmem_init();
->  	return 0;
->  }
->  subsys_initcall(mem_cgroup_init);
-> -- 
-> 1.7.10.4
-> 
+Thanks,
+
+Michael
+
+
+'\" t -*- coding: UTF-8 -*-
+.\" Copyright (c) 2014 by Michael Kerrisk <mtk.manpages@gmail.com>
+.\"
+.\" %%%LICENSE_START(VERBATIM)
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of this
+.\" manual under the conditions for verbatim copying, provided that the
+.\" entire resulting derived work is distributed under the terms of a
+.\" permission notice identical to this one.
+.\"
+.\" Since the Linux kernel and libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+.\" responsibility for errors or omissions, or for damages resulting from
+.\" the use of the information contained herein.  The author(s) may not
+.\" have taken the same level of care in the production of this manual,
+.\" which is licensed free of charge, as they might when working
+.\" professionally.
+.\"
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\" %%%LICENSE_END
+.\"
+.TH OPEN_BY_HANDLE_AT 2 2014-03-24 "Linux" "Linux Programmer's Manual"
+.SH NAME
+name_to_handle_at, open_by_handle_at \- obtain handle
+for a pathname and open file via a handle
+.SH SYNOPSIS
+.nf
+.B #define _GNU_SOURCE
+.B #include <sys/types.h>
+.B #include <sys/stat.h>
+.B #include <fcntl.h>
+
+.BI "int name_to_handle_at(int " dirfd ", const char *" pathname ,
+.BI "                      struct file_handle *" handle ,
+.BI "                      int *" mnt_id ", int " flags );
+
+.BI "int open_by_handle_at(int " mountdirfd ", struct file_handle *" handle ,
+.BI "                      int " flags );
+.fi
+.SH DESCRIPTION
+The
+.BR name_to_handle_at ()
+and
+.BR open_by_handle_at ()
+system calls split the functionality of
+.BR openat (2)
+into two parts:
+.BR name_to_handle_at ()
+returns an opaque handle that corresponds to a specified file;
+.BR open_by_handle_at ()
+opens the file corresponding to a handle returned by a previous call to
+.BR name_to_handle_at ()
+and returns an open file descriptor.
+.SS name_to_handle_at()
+The
+.BR name_to_handle_at ()
+system call returns a file handle and a mount ID corresponding to
+the file specified by
+.IR pathname ,
+which specifies the pathname of an existing file.
+The file handle is returned via the argument
+.IR handle ,
+which is a pointer to a structure of the following form:
+
+.in +4n
+.nf
+struct file_handle {
+    unsigned int  handle_bytes;   /* Size of f_handle [in, out] */
+    int           handle_type;    /* Handle type [out] */
+    unsigned char f_handle[0];    /* File identifier (sized by
+                                     caller) [out] */
+};
+.fi
+.in
+.PP
+It is the caller's responsibility to allocate the structure
+with a size large enough to hold the handle returned in
+.IR f_handle .
+Before the call, the
+.IR handle_bytes
+field should be initialized to contain the allocated size for
+.IR f_handle .
+(The constant
+.BR MAX_HANDLE_SZ ,
+defined in
+.IR <fcntl.h> ,
+specifies the maximum possible size for a file handle.)
+Upon successful return, the
+.IR handle_bytes
+field is updated to contain the number of bytes actually written to
+.IR f_handle .
+
+The caller can discover the required size for the
+.I file_handle
+structure by making a call in which
+.IR handle->handle_bytes
+is zero;
+in this case, the call fails with the error
+.BR EOVERFLOW
+and
+.IR handle->handle_bytes
+is set to indicate the required size;
+the caller can then use this information to allocate a structure
+of the correct size (see EXAMPLE below).
+
+Other than the use of the
+.IR handle_bytes
+field, the caller should treat the
+.IR file_handle
+structure as an opaque data type: the
+.IR handle_type
+and
+.IR f_handle
+fields are needed only by a subsequent call to
+.BR open_by_handle_at ().
+
+The treatment of a relative pathname in
+.I pathname
+depends on the value of
+.IR dirfd .
+If
+.I dirfd
+has the special value
+.BR AT_FDCWD ,
+then
+.I pathname
+is interpreted relative to the current working
+directory of the calling process.
+(see
+.BR openat (3)
+for an explanation of why this is useful.)
+Otherwise,
+.IR dirfd
+must be a file descriptor that refers to a directory, and
+.I pathname
+is interpreted relative to that directory.
+If
+.I pathname
+is an absolute pathname, then
+.I dirfd
+is ignored.
+
+The
+.I mnt_id
+argument returns an identifier for the filesystem
+mount that corresponds to
+.IR pathname .
+This corresponds to the first field in one of the records in
+.IR /proc/self/mountinfo .
+Opening the pathname in the fifth field of that record yields a file
+descriptor for the mount point;
+that file descriptor can be used in a subsequent call to
+.BR open_by_handle_at ().
+
+The
+.I flags
+argument is a bit mask constructed by ORing together
+zero or more of the following value:
+.TP
+.B AT_EMPTY_PATH
+If
+.I pathname
+is an empty string,
+then obtain a handle for the file referred to by
+.IR dirfd
+(which may have been obtained using the
+.BR open (2)
+.B O_PATH
+flag).
+In this case,
+.I dirfd
+can refer to any type of file, not just a directory.
+.TP
+.B AT_SYMLINK_FOLLOW
+By default,
+.BR name_to_handle_at ()
+does not dereference
+.I pathname
+if it is a symbolic link.
+The flag
+.B AT_SYMLINK_FOLLOW
+can be specified in
+.I flags
+to cause
+.I pathname
+to be dereferenced if it is a symbolic link.
+.SS open_by_handle_at()
+The
+.BR open_by_handle_at ()
+system call opens the file referred to by
+.IR handle ,
+a file handle returned by a previous call to
+.BR name_to_handle_at ().
+
+The
+.IR mountdirfd
+argument is a file descriptor for a directory under
+the mount point with respect to which
+.IR handle
+should be interpreted.
+The special value
+.B AT_FDCWD
+can be specified, meaning the current working directory of the caller.
+
+The
+.I flags
+argument
+is as for
+.BR open (2).
+
+The caller must have the
+.B CAP_DAC_READ_SEARCH
+capability to invoke
+.BR open_by_handle_at ().
+.SH RETURN VALUE
+On success,
+.BR name_to_handle_at ()
+returns 0,
+and
+.BR open_by_handle_at ()
+returns a nonnegative file descriptor.
+
+In the event of an error, both system calls return \-1 and set
+.I errno
+to indicate the cause of the error.
+.SH ERRORS
+.BR name_to_handle_at ()
+and
+.BR open_by_handle_at ()
+can fail for the same errors as
+.BR open (2).
+In addition, they can fail with the errors noted below.
+
+.BR name_to_handle_at ()
+can fail with the following errors:
+.TP
+.B EBADF
+.IR dirfd
+is not an open file descriptor.
+.TP
+.B EINVAL
+.I flags
+includes an invalid bit value.
+.TP
+.B EINVAL
+.IR handle_bytes\->handle_bytes
+is greater than
+.BR MAX_HANDLE_SZ .
+.TP
+.B ENOTDIR
+The file descriptor supplied in
+.I dirfd
+does not refer to a directory,
+and it it is not the case that both
+.I flags
+includes
+.BR AT_EMPTY_PATH
+and
+.I pathname
+is an empty string.
+.TP
+.B EOPNOTSUPP
+The filesystem does not support decoding of a pathname to a file handle.
+.TP
+.B EOVERFLOW
+The
+.I handle->handle_bytes
+value passed into the call was too small.
+When this error occurs,
+.I handle->handle_bytes
+is updated to indicate the required size for the handle.
+.\"
+.\"
+.PP
+.BR open_by_handle_at ()
+can fail with the following errors:
+.TP
+.B EBADF
+.IR mountdirfd
+is not an open file descriptor.
+.TP
+.B EINVAL
+.I handle->handle_bytes
+is greater than
+.BR MAX_HANDLE_SZ
+or is equal to zero.
+.TP
+.B ENOMEM
+Insufficient memory.
+.TP
+.B ENOTDIR
+.IR mountdirfd
+is not
+.B AT_FDCWD
+and does not refer to a directory.
+.TP
+.B EPERM
+The caller does not have the
+.BR CAP_DAC_READ_SEARCH
+capability.
+.TP
+.B ESTALE
+The specified
+.I handle
+is no longer valid.
+.SH VERSIONS
+These system calls first appeared in Linux 2.6.39.
+.SH CONFORMING TO
+These system calls are nonstandard Linux extensions.
+.SH NOTES
+A file handle can be generated in one process using
+.BR name_to_handle_at ()
+and later used in a different process that calls
+.BR open_by_handle_at ().
+
+These system calls are designed for use by user-space file servers.
+For example, a user-space NFS server might generate a file handle
+and pass it to an NFS client.
+Later, when the client wants to open the file,
+it could pass the handle back to the server.
+.\" https://lwn.net/Articles/375888/
+.\"	"Open by handle" - Jonathan Corbet, 2010-02-23
+This sort of functionality allows a user-space file server to operate in
+a stateless fashion with respect to the files it serves.
+
+Specifying both
+.BR O_PATH
+and
+.BR O_NOFOLLOW
+in a call to
+.BR name_to_handle_at ()
+that operates on a symbolic link can be used to obtain a handle for the link.
+.\" commit bcda76524cd1fa32af748536f27f674a13e56700
+The process receiving the handle can later perform operations
+on the symbolic link by converting the handle to a file descriptor using
+.BR open_by_handle_at ()
+and then passing the file descriptor as the
+.IR dirfd
+argument in system calls such as
+.BR readlinkat (2)
+and
+.BR fchownat (2).
+.SS Obtaining a persistent filesystem ID
+The mount IDs in
+.IR /proc/self/mountinfo
+can be reused as filesystems are unmounted and mounted.
+Therefore, the mount ID returned by
+.BR name_to_handle_at (3)
+(in
+.IR *mnt_id )
+should not be treated as a persistent identifier
+for the corresponding mounted filesystem.
+However, an application can use the information in the
+.I mountinfo
+record that corresponds to the mount ID
+to derive a persistent identifier.
+
+For example, one can use the device name in the fifth field of the
+.I mountinfo
+record to search for the corresponding device UUID via the symbolic links in
+.IR /dev/disks/by-uuid .
+(A more comfortable way of obtaining the UUID is to use the
+.\" e.g., http://stackoverflow.com/questions/6748429/using-libblkid-to-find-uuid-of-a-partition
+.BR libblkid (3)
+library, which uses the
+.I /sys
+filesystem to obtain the same information.)
+That process can then be reversed,
+using the UUID to look up the device name,
+and then obtaining the corresponding mount point,
+in order to produce the
+.IR mountdirfd
+argument used by
+.BR open_by_name_at ().
+.SH EXAMPLE
+The two programs below demonstrate the use of
+.BR name_to_handle_at ()
+and
+.BR open_by_handle_at ().
+The first program
+.RI ( t_name_to_handle_at.c )
+uses
+.BR name_to_handle_at ()
+to obtain the file handle and mount ID
+for the file specified in its command-line argument;
+the handle and ID are written to standard output.
+
+The second program
+.RI ( t_open_by_handle_at.c )
+reads a mount ID and file handle from standard input.
+The program then employs
+.BR open_by_handle_at ()
+to open the file using that handle.
+If an optional command-line argument is supplied, then the
+.IR mountdirfd
+argument for
+.BR open_by_handle_at ()
+is obtained by opening the directory named in that argument.
+Otherwise,
+.IR mountdirfd
+is obtained by scanning
+.IR /proc/self/mountinfo
+to find a record whose mount ID matches the mount ID
+read from standard input,
+and the mount directory specified in that record is opened.
+(These programs do not deal with the fact that mount IDs are not persistent.)
+
+The following shell session demonstrates the use of these two programs:
+
+.in +4n
+.nf
+$ \fBecho 'Kannst du bitte überlegen?' > cecilia.txt\fP
+$ \fB./t_name_to_handle_at cecilia.txt > fh\fP
+$ \fB./t_open_by_handle_at < fh\fP
+open_by_handle_at: Operation not permitted
+$ \fBsudo ./t_open_by_handle_at < fh\fP      # Need CAP_SYS_ADMIN
+Read 28 bytes
+$ \fBrm cecilia.txt\fP
+.fi
+.in
+
+Now delete and re-create the file with the same inode number;
+.BR open_by_handle_at ()
+recognizes that the file referred to by the file handle no longer exists.
+
+.in +4n
+.nf
+$ \fBstat \-\-printf="%i\\n" cecilia.txt\fP       # Display inode number 
+4072121
+$ \fBecho 'Warum?' > cecilia.txt\fP
+$ \fBstat \-\-printf="%i\\n" cecilia.txt\fP       # Check inode number
+4072121
+$ \fBsudo ./t_open_by_handle_at < fh\fP
+open_by_handle_at: Stale NFS file handle
+.fi
+.in
+.SS Program source: t_name_to_handle_at.c
+\&
+.nf
+#define _GNU_SOURCE
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+
+#define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \\
+                        } while (0)
+
+int
+main(int argc, char *argv[])
+{
+    struct file_handle *fhp;
+    int mount_id, fhsize, s;
+
+    if (argc < 2 || strcmp(argv[1], "\-\-help") == 0) {
+        fprintf(stderr, "Usage: %s pathname\\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Allocate file_handle structure */
+
+    fhsize = sizeof(struct file_handle *);
+    fhp = malloc(fhsize);
+    if (fhp == NULL)
+        errExit("malloc");
+
+    /* Make an initial call to name_to_handle_at() to discover
+       the size required for file handle */
+
+    fhp\->handle_bytes = 0;
+    s = name_to_handle_at(AT_FDCWD, argv[1], fhp, &mount_id, 0);
+    if (s != \-1 || errno != EOVERFLOW) {
+        fprintf(stderr, "Unexpected result from name_to_handle_at()\\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Reallocate file_handle structure with correct size */
+
+    fhsize = sizeof(struct file_handle) + fhp\->handle_bytes;
+    fhp = realloc(fhp, fhsize);         /* Copies fhp\->handle_bytes */
+    if (fhp == NULL)
+        errExit("realloc");
+
+    /* Get file handle from pathname supplied on command line */
+
+    if (name_to_handle_at(AT_FDCWD, argv[1], fhp, &mount_id, 0) == \-1)
+        errExit("name_to_handle_at");
+
+    /* Write mount ID, file handle size, and file handle to stdout,
+       for later reuse by t_open_by_handle_at.c */
+
+    if (write(STDOUT_FILENO, &mount_id, sizeof(int)) != sizeof(int) ||
+            write(STDOUT_FILENO, &fhsize, sizeof(int)) != sizeof(int) ||
+            write(STDOUT_FILENO, fhp, fhsize) != fhsize) {
+        fprintf(stderr, "Write failure\\n");
+        exit(EXIT_FAILURE);
+    }
+
+    exit(EXIT_SUCCESS);
+}
+.fi
+.SS Program source: t_open_by_handle_at.c
+\&
+.nf
+#define _GNU_SOURCE
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+#define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \\
+                        } while (0)
+
+/* Scan /proc/self/mountinfo to find the line whose mount ID matches
+   \(aqmount_id\(aq. (An easier way to do this is to install and use the
+   \(aqlibmount\(aq library provided by the \(aqutil\-linux\(aq project.)
+   Open the corresponding mount path and return the resulting file
+   descriptor. */
+
+static int
+open_mount_path_by_id(int mount_id)
+{
+    char *linep;
+    size_t lsize;
+    char mount_path[PATH_MAX];
+    int fmnt_id, fnd, nread;
+    FILE *fp;
+
+    fp  = fopen("/proc/self/mountinfo", "r");
+    if (fp == NULL)
+        errExit("fopen");
+
+    for (fnd = 0; !fnd ; ) {
+        linep = NULL;
+        nread = getline(&linep, &lsize, fp);
+        if (nread == \-1)
+            break;
+
+	nread = sscanf(linep, "%d %*d %*s %*s %s", &fmnt_id, mount_path);
+        if (nread != 2) {
+            fprintf(stderr, "Bad sscanf()\\n");
+            exit(EXIT_FAILURE);
+        }
+
+        free(linep);
+
+        if (fmnt_id == mount_id)
+            fnd = 1;
+    }
+
+    fclose(fp);
+
+    if (!fnd) {
+        fprintf(stderr, "Could not find mount point\\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return open(mount_path, O_RDONLY | O_DIRECTORY);
+}
+
+int
+main(int argc, char *argv[])
+{
+    struct file_handle *fhp;
+    int mount_id, fd, mount_fd, fhsize;
+    ssize_t nread;
+#define BSIZE 1000
+    char buf[BSIZE];
+
+    if (argc > 1 && strcmp(argv[1], "\-\-help") == 0) {
+        fprintf(stderr, "Usage: %s [mount\-dir]]\\n",
+                argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Read data produced by t_name_to_handle_at.c */
+
+    if (read(STDIN_FILENO, &mount_id, sizeof(int)) != sizeof(int))
+        errExit("read");
+
+    if (read(STDIN_FILENO, &fhsize, sizeof(int)) != sizeof(int))
+        errExit("read");
+
+    fhp = malloc(fhsize);
+    if (fhp == NULL)
+        errExit("malloc");
+
+    if (read(STDIN_FILENO, fhp, fhsize) != fhsize)
+        errExit("read");
+
+    /* Obtain file descriptor for mount point, either by opening
+       the pathname specified on the command line, or by scanning
+       /proc/self/mounts to find a mount that matches the \(aqmount_id\(aq
+       obtained by name_to_handle_at() (in t_name_to_handle_at.c) */
+
+    if (argc > 1)
+        mount_fd = open(argv[1], O_RDONLY | O_DIRECTORY);
+    else
+        mount_fd = open_mount_path_by_id(mount_id);
+
+    if (mount_fd == \-1)
+        errExit("opening mount fd");
+
+    /* Open name using handle and mount point */
+
+    fd = open_by_handle_at(mount_fd, fhp, O_RDONLY);
+    if (fd == \-1)
+        errExit("open_by_handle_at");
+
+    /* Try reading a few bytes from the file */
+
+    nread = read(fd, buf, BSIZE);
+    if (nread == \-1)
+        errExit("read");
+    printf("Read %ld bytes\\n", (long) nread);
+
+    exit(EXIT_SUCCESS);
+}
+.fi
+.SH SEE ALSO
+.BR blkid (1),
+.BR findfs (1),
+.BR open (2),
+.BR libblkid (3),
+.BR mount (8)
+
+The
+.I libblkid
+and
+.I libmount
+documentation under the latest
+.I util-linux
+release at
+.UR https://www.kernel.org/pub/linux/utils/util-linux/
+.UE
+
+
+
 
 -- 
-Michal Hocko
-SUSE Labs
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
