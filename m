@@ -1,107 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737AbaCQKbU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 06:31:20 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:50322 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932351AbaCQKbS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 06:31:18 -0400
-Message-ID: <5326CEF1.90109@gmail.com>
-Date: Mon, 17 Mar 2014 11:31:13 +0100
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S932608AbaCQKjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 06:39:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36791 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932348AbaCQKjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 06:39:21 -0400
+Date: Mon, 17 Mar 2014 11:39:05 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 1/5] perf tests: Add tip/pid mmap automated tests
+Message-ID: <20140317103905.GA6469@krava.brq.redhat.com>
+References: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
+ <1394805606-25883-2-git-send-email-jolsa@redhat.com>
+ <87iordtomz.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Bo Shen <voice.shen@atmel.com>, Mark Brown <broonie@kernel.org>,
-        nicolas.ferre@atmel.com
-CC: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] ASoC: atmel: support CCF based clks
-References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <1395049541-28128-7-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1395049541-28128-7-git-send-email-voice.shen@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87iordtomz.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 17/03/2014 10:45, Bo Shen a écrit :
-> From: Boris BREZILLON <b.brezillon@overkiz.com>
->
-> Provide dev to clk_get function if we're using CCF based clks.
-> CCF based prog clks support automatic parent selection when asking for a
-> specific rate: remove the clk32k clk retrieval if we're using these clks.
-I would have split this patch:
-1) make use of devm in the existing code
-2) add CCF support
+On Mon, Mar 17, 2014 at 01:50:12PM +0900, Namhyung Kim wrote:
+> Hi Jiri,
+> 
+> On Fri, 14 Mar 2014 15:00:02 +0100, Jiri Olsa wrote:
+> > +static int thread_init(struct thread_data *td)
+> > +{
+> > +	void *map;
+> > +
+> > +	map = mmap(NULL, page_size, PROT_READ|PROT_WRITE,
+> > +		   MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+> 
+> Shouldn't it be an executable mapping to be found by MAP__FUNCTION?
+
+yea.. looks like my arch implies PROT_EXEC via PROT_READ, man mmap:
+
+  On some hardware architectures (e.g., i386), PROT_WRITE implies PROT_READ.   It  is  architecture  dependent  whether  PROT_READ
+  implies PROT_EXEC or not.  Portable programs should always set PROT_EXEC if they intend to execute code in the new mapping.
 
 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> [voice.shen@atmel.com: switch to devm manage function]
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
->
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-> ---
->
->   sound/soc/atmel/atmel_wm8904.c | 25 +++++++++++++------------
->   1 file changed, 13 insertions(+), 12 deletions(-)
->
-> diff --git a/sound/soc/atmel/atmel_wm8904.c b/sound/soc/atmel/atmel_wm8904.c
-> index b4e3690..a797d33 100644
-> --- a/sound/soc/atmel/atmel_wm8904.c
-> +++ b/sound/soc/atmel/atmel_wm8904.c
-> @@ -170,25 +170,26 @@ static int atmel_asoc_wm8904_probe(struct platform_device *pdev)
->   		return ret;
->   	}
->   
-> -	mclk = clk_get(NULL, "pck0");
-> +	mclk = devm_clk_get(&pdev->dev, "pck0");
+mm/mmap.c:
 
-I wonder if we shouldn't change the requested clk name when using CCF.
-After all this is a board decision to choose which programmable clk 
-should be used.
-The "pck0" implies that you're always connecting programmable clk 0 to 
-the wm8904 chip.
-
-What about "pck" instead of "pck0" ?
+        /*
+         * Does the application expect PROT_READ to imply PROT_EXEC?
+         *
+         * (the exception is when the underlying filesystem is noexec
+         *  mounted, in which case we dont add PROT_EXEC.)
+         */
+        if ((prot & PROT_READ) && (current->personality & READ_IMPLIES_EXEC))
+                if (!(file && (file->f_path.mnt->mnt_flags & MNT_NOEXEC)))
+                        prot |= PROT_EXEC;
 
 
-Best Regards,
+I'll set the PROT_EXEC as the man page says.
 
-Boris
->   	if (IS_ERR(mclk)) {
->   		dev_err(&pdev->dev, "failed to get pck0\n");
->   		ret = PTR_ERR(mclk);
->   		goto err_set_audio;
->   	}
->   
-> -	clk_src = clk_get(NULL, "clk32k");
-> -	if (IS_ERR(clk_src)) {
-> -		dev_err(&pdev->dev, "failed to get clk32k\n");
-> -		ret = PTR_ERR(clk_src);
-> -		goto err_set_audio;
-> -	}
-> +	if (!IS_ENABLED(CONFIG_COMMON_CLK)) {
-> +		clk_src = devm_clk_get(&pdev->dev, "clk32k");
-> +		if (IS_ERR(clk_src)) {
-> +			dev_err(&pdev->dev, "failed to get clk32k\n");
-> +			ret = PTR_ERR(clk_src);
-> +			goto err_set_audio;
-> +		}
->   
-> -	ret = clk_set_parent(mclk, clk_src);
-> -	clk_put(clk_src);
-> -	if (ret != 0) {
-> -		dev_err(&pdev->dev, "failed to set MCLK parent\n");
-> -		goto err_set_audio;
-> +		ret = clk_set_parent(mclk, clk_src);
-> +		if (ret != 0) {
-> +			dev_err(&pdev->dev, "failed to set MCLK parent\n");
-> +			goto err_set_audio;
-> +		}
->   	}
->   
->   	dev_info(&pdev->dev, "setting pck0 to %dHz\n", MCLK_RATE);
 
+thanks,
+jirka
