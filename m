@@ -1,88 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338AbaCQJBw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 05:01:52 -0400
-Received: from ozlabs.org ([203.10.76.45]:41120 "EHLO ozlabs.org"
+	id S932238AbaCQJRH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 05:17:07 -0400
+Received: from mail.us.es ([193.147.175.20]:41739 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756338AbaCQJBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 05:01:51 -0400
-Date: Mon, 17 Mar 2014 20:01:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>
-Subject: linux-next: manual merge of the powernv-cpuidle tree with the
- powerpc tree
-Message-Id: <20140317200143.0ab543c6092e4f6e84ccb9ca@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Mar_2014_20_01_43_+1100_jFh0IHINV/N.2hpO"
+	id S1751448AbaCQJRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 05:17:04 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus5 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.1/18612. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-98.0/7.5):. 
+ Processed in 4.394095 secs); 17 Mar 2014 09:17:01 -0000
+X-Spam-ASN: AS12715 188.76.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Mon, 17 Mar 2014 10:16:55 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: David Miller <davem@davemloft.net>, ast@plumgrid.com, mingo@kernel.org,
+        wad@chromium.org, rostedt@goodmis.org, a.p.zijlstra@chello.nl,
+        hpa@zytor.com, hagen@jauu.net, jesse@nicira.com, tglx@linutronix.de,
+        edumazet@google.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, fweisbec@gmail.com, acme@infradead.org,
+        penberg@iki.fi, arjan@infradead.org, hch@infradead.org,
+        xemul@parallels.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v10 net-next 1/3] filter: add Extended BPF interpreter
+ and converter
+Message-ID: <20140317091655.GB4735@localhost>
+References: <20140314125822.GA16457@localhost>
+ <CAMEtUuzqzAHf64DHBao3xKzHdhrp77JEZhe-_c5oC3Vr63QxNA@mail.gmail.com>
+ <CAMEtUuxd0yd81p7KPxyotMOcOxm3MS4Cj9oguS5QAzfXYChLXQ@mail.gmail.com>
+ <20140314.160851.1134730495663127657.davem@davemloft.net>
+ <5324AFD3.8040804@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5324AFD3.8040804@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Mar_2014_20_01_43_+1100_jFh0IHINV/N.2hpO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Mar 15, 2014 at 08:53:55PM +0100, Daniel Borkmann wrote:
+> On 03/14/2014 09:08 PM, David Miller wrote:
+> >From: Alexei Starovoitov <ast@plumgrid.com>
+> >Date: Fri, 14 Mar 2014 12:51:17 -0700
+> >
+> >>can you please explain why the status of these
+> >>patches is 'deferred' in patchwork ?
+> >>Is it because of bpf vs nft thread?
+> >>I think that's orthogonal.
+> >
+> >I do not find it orthogonal, Pablo brings up some very valid points
+> >which I agree with.
+> >
+> >EBPF has a lot of the same user side interface limitations that the
+> >existing BPF has, and you refuse to accept this core point Pablo is
+> >making.
+> >
+> >That is, that it lacks extensibility, and is too strongly tied to the
+> >implementation.
+> >
+> >This is exactly how we run into problems in the future, and you'll be
+> >proposing EBPF_2.0 to address such problems.
+> 
+> Hm, so currently there's no interface where this is exposed to uapi,
+> and we surely can and should put the definitions back to the non-uapi
+> include to keep it inside the kernel, you're right.
 
-Hi all,
+Yes please, move that to somewhere to avoid exposing internal
+implementation details to userspace.
 
-Today's linux-next merge of the powernv-cpuidle tree got a conflict in
-arch/powerpc/platforms/powernv/opal-wrappers.S between commit
-c7e64b9ce04a ("powerpc/powernv Platform dump interface") from the powerpc
-tree and commit 97eb001f0349 ("powerpc/powernv: Add OPAL call to resync
-timebase on wakeup") from the powernv-cpuidle tree.
+I also don't find a good reason to add that new /proc user interface
+switch to enable/disable the conversion to the new internal
+representation that this patch adds. I think benchmarking old and new
+approaches is *not* a good reason to expose that to userspace. My
+impression is that, without that /proc switch, the patch will be
+simplified.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> I think, at least for me, the take-away of Alexei's work is, that
+> even (if we assume) without any further functionality, the new design
+> would greatly improve the interpreter (and presumably later on as
+> well JIT) performance based on Alexei's benchmarks, which would already
+> be a win for seccomp and socket filters and where ever they are being
+> used across the networking subsystem, and therefore out-of-the-box
+> without any changes for user space applications such as libpcap.
+> 
+> I was thinking that it could be an option to make this transparently
+> available to everyone, by just dropping the bpf_ext_enable knob, and
+> perhaps just replace the old BPF interpreter entirely in this set?
+> So the process would be: 1) test if normal BPF filter can be JIT'ed,
+> go for it, if it's not supported by JIT (or if it is disabled), run
+> it transparently in the new (non-exposed) BPF representation to have
+> a better overall performance.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+That makes sense to me. If the purpose is to keep this as an internal
+representation, the decisions on how to represent the filter to boost
+performance should remain in the kernel-space, I don't find a good
+reason for keeping it there.  Please, remove it.
 
-diff --cc arch/powerpc/platforms/powernv/opal-wrappers.S
-index 47ec3f738062,aab54b60334f..000000000000
---- a/arch/powerpc/platforms/powernv/opal-wrappers.S
-+++ b/arch/powerpc/platforms/powernv/opal-wrappers.S
-@@@ -131,12 -126,7 +131,13 @@@ OPAL_CALL(opal_write_elog,			OPAL_ELOG_
-  OPAL_CALL(opal_validate_flash,			OPAL_FLASH_VALIDATE);
-  OPAL_CALL(opal_manage_flash,			OPAL_FLASH_MANAGE);
-  OPAL_CALL(opal_update_flash,			OPAL_FLASH_UPDATE);
-+ OPAL_CALL(opal_resync_timebase,			OPAL_RESYNC_TIMEBASE);
- +OPAL_CALL(opal_dump_init,			OPAL_DUMP_INIT);
- +OPAL_CALL(opal_dump_info,			OPAL_DUMP_INFO);
- +OPAL_CALL(opal_dump_info2,			OPAL_DUMP_INFO2);
- +OPAL_CALL(opal_dump_read,			OPAL_DUMP_READ);
- +OPAL_CALL(opal_dump_ack,			OPAL_DUMP_ACK);
-  OPAL_CALL(opal_get_msg,				OPAL_GET_MSG);
-  OPAL_CALL(opal_check_completion,		OPAL_CHECK_ASYNC_COMPLETION);
- +OPAL_CALL(opal_dump_resend_notification,	OPAL_DUMP_RESEND);
-  OPAL_CALL(opal_sync_host_reboot,		OPAL_SYNC_HOST_REBOOT);
+Moreover, as we discussed already the new jit flag should be scratched
+from the len attribute of the sk_filter object. That should be sent as
+an initial patch in the series, David requested that change and he can
+take it already since it's independent from this.
 
---Signature=_Mon__17_Mar_2014_20_01_43_+1100_jFh0IHINV/N.2hpO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTJrn7AAoJEMDTa8Ir7ZwVbA8P/3chAcl9QagyqsZqzXSJh/r+
-DSFUpRXVhyUia+BGuf8eFHmbQlhkF3Hcm4scp0PlHZzhRqs4rufU+Gmi4J/hlGiq
-9xWuoFsS8BXb/nYzg/ga0qYV2JY34dWqNGNI2cLafb+PVLwBbzjY1G0t41+y89eY
-lbReKU+0fQ6M/x8hN1NX1v2swrC9i9SHr64OgQneUXWen2PhbuOubpQh2igNwS+d
-Vfxpk4w5iufpsakm5E29l+ifDFgMdC4q5v+fSLXD5nuWQlVL2QHkA9Qu/Sl5XMOa
-V+wbsDxfmshUZ8V+ioxyNt3EvHqgWkdIPr2eV5JB5+naM7e0RLPFM7TJGCKU4ySW
-QcPfwr1NO7YpWyr6zGfk6xAHsBYOWfRla5uzF5yuUO68FZAe87cAJqXeLWsVwT/y
-5DWd/oDpDoN7mmNz8Z5VNLLWRSjDU9ZmLbWimx3ZoIMvTB+QzwbznCG8YFdTBRa5
-B6gm4F6NZ3doACwrswDP13u8i/IYs+/ReyL00rlPY8qMQ/Ek/ontu2fM1CgXA5qY
-slfvOrkWNzTC/Pt4umJr5x4Uzb0wYtUJyG1Ff9QPVCC8nocwANfCaCCK5kVOodf+
-nt/AkM1I8Jd71Il84aNDAjTBSgsKPGSiotxNHhZkVD/6RAvvGes/6YdR3vPAW6pU
-IvjHesvelmMaqzEuniHX
-=VAKu
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_Mar_2014_20_01_43_+1100_jFh0IHINV/N.2hpO--
+> Would that perhaps address the above concern? So on the big picture,
+> it provides a BPF performance improvement. I think if there's a wish
+> to extend the socket filtering api to run alternative interpreters,
+> such as nft, then that could still happen, of course.
