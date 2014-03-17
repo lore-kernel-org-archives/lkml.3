@@ -1,72 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933674AbaCQPaS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 11:30:18 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58656 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933310AbaCQPaP (ORCPT
+	id S933519AbaCQPfX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 11:35:23 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:59814 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933093AbaCQPfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 11:30:15 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/RKjnOR7sDEFNYVIGCGqmpMRYzI4HoxOM=
-X-DKIM: OpenDKIM Filter v2.0.1 titan B00505451FD
-Date: Mon, 17 Mar 2014 11:29:58 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Kevin Hilman <khilman@linaro.org>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] ARM: add Marvell Dove and some drivers to multi_v7
- defconfig
-Message-ID: <20140317152958.GJ15608@titan.lakedaemon.net>
-References: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1393536486-3827-5-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140304040729.GJ1872@titan.lakedaemon.net>
+	Mon, 17 Mar 2014 11:35:20 -0400
+Message-ID: <53271631.4090205@monstr.eu>
+Date: Mon, 17 Mar 2014 16:35:13 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140304040729.GJ1872@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Olof Johansson <olof@lixom.net>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: zynq: Add OCM driver
+References: <299e37ab245da9132808c6d4265a17b9a417bf62.1389022555.git.michal.simek@xilinx.com> <CAOesGMiroyjPbcjfG24_sUqCicCD4M7NF2aD=Xi8NVgagZThuA@mail.gmail.com> <53204C73.5070807@monstr.eu> <20140317044830.GA18269@quad.lixom.net>
+In-Reply-To: <20140317044830.GA18269@quad.lixom.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="ucmjQ2B2sGkk5urmBnnkJFgno5v3nhslH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--ucmjQ2B2sGkk5urmBnnkJFgno5v3nhslH
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Here's the multi_v7_defconfig change I was referring to:
+On 03/17/2014 05:48 AM, Olof Johansson wrote:
+> On Wed, Mar 12, 2014 at 01:00:51PM +0100, Michal Simek wrote:
+>> Hi Olof,
+>>
+>>>> diff --git a/Documentation/devicetree/bindings/arm/zynq/xlnx,zynq-oc=
+m.txt b/Documentation/devicetree/bindings/arm/zynq/xlnx,zynq-ocm.txt
+>>>> new file mode 100644
+>>>> index 0000000..64cb5e8
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/bindings/arm/zynq/xlnx,zynq-ocm.txt
+>>>> @@ -0,0 +1,17 @@
+>>>> +Device tree bindings for Zynq's OCM
+>>>> +
+>>>> +The OCM is divided to 4 64kB segments which can be separately confi=
+gured
+>>>> +to low or high location. Location is controlled via SLCR.
+>>>> +
+>>>> +Required properties:
+>>>> + compatible: Compatibility string. Must be "xlnx,zynq-ocm-1.0".
+>>>> + reg: Specify the base and size of the OCM registers in the memory =
+map.
+>>>> +      E.g.: reg =3D <0xf800c000 0x1000>;
+>>>> +
+>>>> +Example:
+>>>> +ocmc: ocmc@f800c000 {
+>>>> +       compatible =3D  "xlnx,zynq-ocm-1.0";
+>>>> +       interrupt-parent =3D <&intc>;
+>>>> +       interrupts =3D <0 3 4>;
+>>>> +       reg =3D <0xf800c000 0x1000>;
+>>>> +} ;
+>>>> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zy=
+nq-7000.dtsi
+>>>> index 1d942e2..4929be5 100644
+>>>> --- a/arch/arm/boot/dts/zynq-7000.dtsi
+>>>> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
+>>>> @@ -66,6 +66,13 @@
+>>>>                         cache-level =3D <2>;
+>>>>                 };
+>>>>
+>>>> +               ocmc: ocmc@f800c000 {
+>>>> +                       compatible =3D "xlnx,zynq-ocm-1.0";
+>>>> +                       interrupt-parent =3D <&intc>;
+>>>> +                       interrupts =3D <0 3 4>;
+>>>> +                       reg =3D <0xf800c000 0x1000>;
+>>>> +               } ;
+>>>> +
+>>>>                 uart0: uart@e0000000 {
+>>>>                         compatible =3D "xlnx,xuartps";
+>>>>                         status =3D "disabled";
+>>>> diff --git a/arch/arm/mach-zynq/Kconfig b/arch/arm/mach-zynq/Kconfig=
 
-https://lkml.kernel.org/r/1393536486-3827-5-git-send-email-sebastian.hesselbarth@gmail.com
+>>>> index 323e505..f3e6ce4 100644
+>>>> --- a/arch/arm/mach-zynq/Kconfig
+>>>> +++ b/arch/arm/mach-zynq/Kconfig
+>>>> @@ -15,5 +15,6 @@ config ARCH_ZYNQ
+>>>>         select CADENCE_TTC_TIMER
+>>>>         select ARM_GLOBAL_TIMER
+>>>>         select MFD_SYSCON
+>>>> +       select GENERIC_ALLOCATOR
+>>>>         help
+>>>>           Support for Xilinx Zynq ARM Cortex A9 Platform
+>>>> diff --git a/arch/arm/mach-zynq/Makefile b/arch/arm/mach-zynq/Makefi=
+le
+>>>> index 1b25d92..626f64b 100644
+>>>> --- a/arch/arm/mach-zynq/Makefile
+>>>> +++ b/arch/arm/mach-zynq/Makefile
+>>>> @@ -3,7 +3,7 @@
+>>>>  #
+>>>>
+>>>>  # Common support
+>>>> -obj-y                          :=3D common.o slcr.o
+>>>> +obj-y                          :=3D common.o slcr.o zynq_ocm.o
+>>>>  CFLAGS_REMOVE_hotplug.o                =3D-march=3Darmv6k
+>>>>  CFLAGS_hotplug.o               =3D-Wa,-march=3Darmv7-a -mcpu=3Dcort=
+ex-a9
+>>>>  obj-$(CONFIG_HOTPLUG_CPU)      +=3D hotplug.o
+>>>> diff --git a/arch/arm/mach-zynq/common.h b/arch/arm/mach-zynq/common=
+=2Eh
+>>>> index b097844..953f6a1 100644
+>>>> --- a/arch/arm/mach-zynq/common.h
+>>>> +++ b/arch/arm/mach-zynq/common.h
+>>>> @@ -24,6 +24,7 @@ extern int zynq_early_slcr_init(void);
+>>>>  extern void zynq_slcr_system_reset(void);
+>>>>  extern void zynq_slcr_cpu_stop(int cpu);
+>>>>  extern void zynq_slcr_cpu_start(int cpu);
+>>>> +extern u32 zynq_slcr_get_ocm_config(void);
+>>>>
+>>>>  #ifdef CONFIG_SMP
+>>>>  extern void secondary_startup(void);
+>>>> diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
+>>>> index c1f1499..9a37ab3 100644
+>>>> --- a/arch/arm/mach-zynq/slcr.c
+>>>> +++ b/arch/arm/mach-zynq/slcr.c
+>>>> @@ -26,6 +26,7 @@
+>>>>  #define SLCR_PS_RST_CTRL_OFFSET                0x200 /* PS Software=
+ Reset Control */
+>>>>  #define SLCR_A9_CPU_RST_CTRL_OFFSET    0x244 /* CPU Software Reset =
+Control */
+>>>>  #define SLCR_REBOOT_STATUS_OFFSET      0x258 /* PS Reboot Status */=
 
-On Mon, Mar 03, 2014 at 11:07:29PM -0500, Jason Cooper wrote:
-> Arnd, Olof, Kevin,
-> 
-> On Thu, Feb 27, 2014 at 10:28:05PM +0100, Sebastian Hesselbarth wrote:
-> > With Marvell Dove now being part of the multi_v7 family, add some Dove
-> > specific drivers to multi_v7 defconfig.
-> > 
-> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > ---
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: Olof Johansson <olof@lixom.net>
-> > Cc: Kevin Hilman <khilman@linaro.org>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Jason Cooper <jason@lakedaemon.net>
-> > Cc: Andrew Lunn <andrew@lunn.ch>
-> > Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  arch/arm/configs/multi_v7_defconfig | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> 
-> I'm taking the other part of this series in, so:
-> 
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
+>>>> +#define SLCR_OCM_CFG_OFFSET            0x910 /* OCM Address Mapping=
+ */
+>>>>
+>>>>  #define SLCR_UNLOCK_MAGIC              0xDF0D
+>>>>  #define SLCR_A9_CPU_CLKSTOP            0x10
+>>>> @@ -107,6 +108,20 @@ void zynq_slcr_system_reset(void)
+>>>>  }
+>>>>
+>>>>  /**
+>>>> + * zynq_slcr_get_ocm_config - Get SLCR OCM config
+>>>> + *
+>>>> + * return:     OCM config bits
+>>>> + */
+>>>> +u32 zynq_slcr_get_ocm_config(void)
+>>>> +{
+>>>> +       u32 val;
+>>>> +
+>>>> +       zynq_slcr_read(&val, SLCR_OCM_CFG_OFFSET);
+>>>> +
+>>>> +       return val;
+>>>> +}
+>>>> +
+>>>> +/**
+>>>>   * zynq_slcr_cpu_start - Start cpu
+>>>>   * @cpu:       cpu number
+>>>>   */
+>>>> diff --git a/arch/arm/mach-zynq/zynq_ocm.c b/arch/arm/mach-zynq/zynq=
+_ocm.c
+>>>> new file mode 100644
+>>>> index 0000000..034a65b
+>>>> --- /dev/null
+>>>> +++ b/arch/arm/mach-zynq/zynq_ocm.c
+>>>> @@ -0,0 +1,243 @@
+>>>> +/*
+>>>> + * Copyright (C) 2013 Xilinx
+>>>> + *
+>>>> + * Based on "Generic on-chip SRAM allocation driver"
+>>>
+>>> We're not adding new drivers under arch/arm, so if you need this
+>>> driver then you should either merge it under drivers/ somewhere, or
+>>> look at extending the generic driver in a way that you can reuse it.
+>>
+>> Driver is reusing ideas from this generic driver but
+>> incorporation our changes to will be problematic.
+>>
+>> It is a shame that you didn't review the rest of code below.
+>> The reason why I have added this driver to arch/arm/mach-zynq
+>> was that there is code connection to zynq SMP bootup trampoline
+>> which has to be added at 0x0 when OCM is placed at 0x0.
+>> And this memory can't be used for generic purpose.
+>> If you see any nice way how to it please let me know.
+>=20
+> Rockchip just went through some of the same discussions -- they need to=
 
-thx,
+> use onchip SRAM for SMP spin-up. You should look at that patchset and
+> see if you can solve it in a similar manner, the needs seem to be quite=
 
-Jason.
+> similar.
+
+I found that
+http://www.spinics.net/lists/arm-kernel/msg310761.html
+it is definitely good starting point. Thanks for that.
+
+The solution which I have in my mind because of autodetection
+via slcr is to build up that node in zynq code from controller
+and support ranges in node just because of not copy that node
+in worst case 4 times.
+
+               sram: sram@0 {
+                       compatible =3D "mmio-sram";
+                       reg =3D <0x0 0x20000 0xfffe0000 0x20000>;
+                       #address-cells =3D <1>;
+                       #size-cells =3D <1>;
+                       ranges;
+
+                       smp-sram@0 {
+                               compatible =3D "xlnx,zynq-smp-sram";
+                               reg =3D <0x0 0x50>;
+                       };
+               };
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--ucmjQ2B2sGkk5urmBnnkJFgno5v3nhslH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlMnFjEACgkQykllyylKDCEQRgCcCH0gflDxXH2VxIM8vsWpCqIp
+GSMAoIZtckeapPHf9SbfhFE0grFtMhbV
+=CvCm
+-----END PGP SIGNATURE-----
+
+--ucmjQ2B2sGkk5urmBnnkJFgno5v3nhslH--
