@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086AbaCQRio (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 13:38:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37216 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933027AbaCQRik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 13:38:40 -0400
-Message-ID: <53273309.8060103@zytor.com>
-Date: Mon, 17 Mar 2014 10:38:17 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S933147AbaCQRi4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 13:38:56 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:58204 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933027AbaCQRiw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 13:38:52 -0400
+Date: Mon, 17 Mar 2014 17:38:21 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
+Message-ID: <20140317173821.GJ24070@arm.com>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com>
+ <20140314171457.GK18126@arm.com>
+ <201403141838.08900.arnd@arndb.de>
+ <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, Igor Mammedov <imammedo@redhat.com>,
-        linux-kernel@vger.kernel.org
-CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 0/2] KVM: x86 emulator: emulate MOVAPS and MOVAPD SSE
- instructions
-References: <1394913720-6466-1-git-send-email-imammedo@redhat.com> <8569d2b4-0593-4f7a-859c-3848670f718d@email.android.com> <5326C0C3.6000105@redhat.com> <fb38ff9d-8c00-4b02-b0da-2db989f7190e@email.android.com> <53272A53.8090605@redhat.com>
-In-Reply-To: <53272A53.8090605@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2014 10:01 AM, Paolo Bonzini wrote:
-> the emulator).
-> 
-> If CS and possibly SS are valid real mode selectors, it should be
-> possible to run big real mode at almost-full speed, taking exits only
-> for memory accesses via other segment registers.  It is on my todo list,
-> but not very high.  Depending on the exit overhead, it may be a better
-> idea to revert the emulate_invalid_guest_state default to N and let
-> people who care about big real mode specify Y.
-> 
+On Fri, Mar 14, 2014 at 06:05:27PM +0000, Liviu Dudau wrote:
+> On Fri, Mar 14, 2014 at 05:38:08PM +0000, Arnd Bergmann wrote:
+> > On Friday 14 March 2014, Catalin Marinas wrote:
+> > > On Fri, Mar 14, 2014 at 03:34:18PM +0000, Liviu Dudau wrote:
+> > > > --- /dev/null
+> > > > +++ b/arch/arm64/kernel/pci.c
+> > > [...]
+> > > > +int pci_register_io_range(phys_addr_t address, resource_size_t size)
+> > > [...]
+> > > > +unsigned long pci_address_to_pio(phys_addr_t address)
+> > > [...]
+> > > > +void pcibios_fixup_bus(struct pci_bus *bus)
+> > > [ actually most of this file ]
+> > > 
+> > > Maybe it was raised before already but can we have __weak generic
+> > > definitions of these functions? They don't seem to be arm64 specific in
+> > > any way.
+[...]
+> Catalin, if you are happy to ask for ACKs from all arch maintainers that might get
+> affected by our custom version of pci_address_to_pio() before you can pull PCI support
+> for arm64 then I can propose a new patchset.
 
-I'm not sure what you mean with "valid real mode selectors"; the normal
-case in big real mode is that either CS = SS = 0 or CS = SS = <some
-program base address>.
+You don't need to change the other architectures, that's the point of a
+__weak definition, it will be automatically overridden. If you want, you
+can even place a GENERIC_PCI or whatever config option that is only
+selected by arm64 for the time being.
 
-As Big Real Mode is part of the spec for certain things (option ROMs, as
-we discussed) it probably matters, but especially with the CPUs not
-supporting unrestricted mode fading into history I suspect it is fine
-for BRM to be slow on those older processors.
-
-The PM transitions that you mentioned are usually only a handful of
-instructions and thus can be slow.
-
-	-hpa
-
-
+-- 
+Catalin
