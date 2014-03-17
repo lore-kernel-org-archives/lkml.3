@@ -1,234 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933579AbaCQNps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:45:48 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51793 "EHLO
+	id S933802AbaCQNsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:48:17 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51779 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933193AbaCQNbd (ORCPT
+	with ESMTP id S933153AbaCQNbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:31:33 -0400
-Message-Id: <20140317133133.684994848@bombadil.infradead.org>
+	Mon, 17 Mar 2014 09:31:32 -0400
+Message-Id: <20140317133131.542697844@bombadil.infradead.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 17 Mar 2014 06:27:48 -0700
+Date: Mon, 17 Mar 2014 06:27:34 -0700
 From: Christoph Hellwig <hch@infradead.org>
 To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 15/39] scsi: add support for per-host cmd pools
+Cc: Hannes Reinecke <hare@suse.de>, Mike Snitzer <snitzer@redhat.com>,
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 01/39] block: fix q->flush_rq NULL pointer crash on dm-mpath flush
 References: <20140317132733.789623766@bombadil.infradead.org>
-Content-Disposition: inline; filename=0015-scsi-add-support-for-per-host-cmd-pools.patch
+Content-Disposition: inline; filename=0001-block-fix-q-flush_rq-NULL-pointer-crash-on-dm-mpath-.patch
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows drivers to specify the size of their per-command private
-data in the host template and then get extra memory allocated for
-each command instead of needing another allocation in ->queuecommand.
+Commit 1874198 ("blk-mq: rework flush sequencing logic") switched
+->flush_rq from being an embedded member of the request_queue structure
+to being dynamically allocated in blk_init_queue_node().
 
-With the current SCSI code that already does multiple allocations for
-each command this probably doesn't make a big performance impact, but
-it allows to clean up the drivers, and prepare them for using the
-blk-mq infrastructure where the common allocation will make a difference.
+Request-based DM multipath doesn't use blk_init_queue_node(), instead it
+uses blk_alloc_queue_node() + blk_init_allocated_queue().  Because
+commit 1874198 placed the dynamic allocation of ->flush_rq in
+blk_init_queue_node() any flush issued to a dm-mpath device would crash
+with a NULL pointer, e.g.:
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffff8125037e>] blk_rq_init+0x1e/0xb0
+PGD bb3c7067 PUD bb01d067 PMD 0
+Oops: 0002 [#1] SMP
+...
+CPU: 5 PID: 5028 Comm: dt Tainted: G        W  O 3.14.0-rc3.snitm+ #10
+...
+task: ffff88032fb270e0 ti: ffff880079564000 task.ti: ffff880079564000
+RIP: 0010:[<ffffffff8125037e>]  [<ffffffff8125037e>] blk_rq_init+0x1e/0xb0
+RSP: 0018:ffff880079565c98  EFLAGS: 00010046
+RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000030
+RDX: ffff880260c74048 RSI: 0000000000000000 RDI: 0000000000000000
+RBP: ffff880079565ca8 R08: ffff880260aa1e98 R09: 0000000000000001
+R10: ffff88032fa78500 R11: 0000000000000246 R12: 0000000000000000
+R13: ffff880260aa1de8 R14: 0000000000000650 R15: 0000000000000000
+FS:  00007f8d36a2a700(0000) GS:ffff88033fca0000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 0000000079b36000 CR4: 00000000000007e0
+Stack:
+ 0000000000000000 ffff880260c74048 ffff880079565cd8 ffffffff81257a47
+ ffff880260aa1de8 ffff880260c74048 0000000000000001 0000000000000000
+ ffff880079565d08 ffffffff81257c2d 0000000000000000 ffff880260aa1de8
+Call Trace:
+ [<ffffffff81257a47>] blk_flush_complete_seq+0x2d7/0x2e0
+ [<ffffffff81257c2d>] blk_insert_flush+0x1dd/0x210
+ [<ffffffff8124ec59>] __elv_add_request+0x1f9/0x320
+ [<ffffffff81250681>] ? blk_account_io_start+0x111/0x190
+ [<ffffffff81253a4b>] blk_queue_bio+0x25b/0x330
+ [<ffffffffa0020bf5>] dm_request+0x35/0x40 [dm_mod]
+ [<ffffffff812530c0>] generic_make_request+0xc0/0x100
+ [<ffffffff81253173>] submit_bio+0x73/0x140
+ [<ffffffff811becdd>] submit_bio_wait+0x5d/0x80
+ [<ffffffff81257528>] blkdev_issue_flush+0x78/0xa0
+ [<ffffffff811c1f6f>] blkdev_fsync+0x3f/0x60
+ [<ffffffff811b7fde>] vfs_fsync_range+0x1e/0x20
+ [<ffffffff811b7ffc>] vfs_fsync+0x1c/0x20
+ [<ffffffff811b81f1>] do_fsync+0x41/0x80
+ [<ffffffff8118874e>] ? SyS_lseek+0x7e/0x80
+ [<ffffffff811b8260>] SyS_fsync+0x10/0x20
+ [<ffffffff8154c2d2>] system_call_fastpath+0x16/0x1b
+
+Fix this by moving the ->flush_rq allocation from blk_init_queue_node()
+to blk_init_allocated_queue().  blk_init_queue_node() also calls
+blk_init_allocated_queue() so this change is functionality equivalent
+for all blk_init_queue_node() callers.
+
+Reported-by: Hannes Reinecke <hare@suse.de>
+Reported-by: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 ---
- drivers/scsi/scsi.c      |   96 +++++++++++++++++++++++++++++++++++++---------
- include/scsi/scsi_host.h |    7 ++++
- 2 files changed, 84 insertions(+), 19 deletions(-)
+ block/blk-core.c |   17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 391dd9f..eff189f 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -331,46 +331,103 @@ void scsi_put_command(struct scsi_cmnd *cmd)
- }
- EXPORT_SYMBOL(scsi_put_command);
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 853f927..4cd5ffc 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -693,20 +693,11 @@ blk_init_queue_node(request_fn_proc *rfn, spinlock_t *lock, int node_id)
+ 	if (!uninit_q)
+ 		return NULL;
  
--static struct scsi_host_cmd_pool *scsi_get_host_cmd_pool(gfp_t gfp_mask)
-+static struct scsi_host_cmd_pool *
-+scsi_find_host_cmd_pool(struct Scsi_Host *shost)
- {
-+	if (shost->hostt->cmd_size)
-+		return shost->hostt->cmd_pool;
-+	if (shost->unchecked_isa_dma)
-+		return &scsi_cmd_dma_pool;
-+	return &scsi_cmd_pool;
-+}
-+
-+static void
-+scsi_free_host_cmd_pool(struct scsi_host_cmd_pool *pool)
-+{
-+	kfree(pool->sense_name);
-+	kfree(pool->cmd_name);
-+	kfree(pool);
-+}
-+
-+static struct scsi_host_cmd_pool *
-+scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
-+{
-+	struct scsi_host_template *hostt = shost->hostt;
-+	struct scsi_host_cmd_pool *pool;
-+
-+	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
-+	if (!pool)
-+		return NULL;
-+
-+	pool->cmd_name = kasprintf(GFP_KERNEL, "%s_cmd", hostt->name);
-+	pool->sense_name = kasprintf(GFP_KERNEL, "%s_sense", hostt->name);
-+	if (!pool->cmd_name || !pool->sense_name) {
-+		scsi_free_host_cmd_pool(pool);
-+		return NULL;
-+	}
-+
-+	pool->slab_flags = SLAB_HWCACHE_ALIGN;
-+	if (shost->unchecked_isa_dma) {
-+		pool->slab_flags |= SLAB_CACHE_DMA;
-+		pool->gfp_mask = __GFP_DMA;
-+	}
-+	return pool;
-+}
-+
-+static struct scsi_host_cmd_pool *
-+scsi_get_host_cmd_pool(struct Scsi_Host *shost)
-+{
-+	struct scsi_host_template *hostt = shost->hostt;
- 	struct scsi_host_cmd_pool *retval = NULL, *pool;
-+	size_t cmd_size = sizeof(struct scsi_cmnd) + hostt->cmd_size;
-+
- 	/*
- 	 * Select a command slab for this host and create it if not
- 	 * yet existent.
- 	 */
- 	mutex_lock(&host_cmd_pool_mutex);
--	pool = (gfp_mask & __GFP_DMA) ? &scsi_cmd_dma_pool :
--		&scsi_cmd_pool;
-+	pool = scsi_find_host_cmd_pool(shost);
-+	if (!pool) {
-+		pool = scsi_alloc_host_cmd_pool(shost);
-+		if (!pool)
-+			goto out;
-+	}
-+
- 	if (!pool->users) {
--		pool->cmd_slab = kmem_cache_create(pool->cmd_name,
--						   sizeof(struct scsi_cmnd), 0,
-+		pool->cmd_slab = kmem_cache_create(pool->cmd_name, cmd_size, 0,
- 						   pool->slab_flags, NULL);
- 		if (!pool->cmd_slab)
--			goto fail;
-+			goto out_free_pool;
- 
- 		pool->sense_slab = kmem_cache_create(pool->sense_name,
- 						     SCSI_SENSE_BUFFERSIZE, 0,
- 						     pool->slab_flags, NULL);
--		if (!pool->sense_slab) {
--			kmem_cache_destroy(pool->cmd_slab);
--			goto fail;
--		}
-+		if (!pool->sense_slab)
-+			goto out_free_slab;
- 	}
- 
- 	pool->users++;
- 	retval = pool;
-- fail:
-+out:
- 	mutex_unlock(&host_cmd_pool_mutex);
- 	return retval;
-+
-+out_free_slab:
-+	kmem_cache_destroy(pool->cmd_slab);
-+out_free_pool:
-+	if (hostt->cmd_size)
-+		scsi_free_host_cmd_pool(pool);
-+	goto out;
- }
- 
--static void scsi_put_host_cmd_pool(gfp_t gfp_mask)
-+static void scsi_put_host_cmd_pool(struct Scsi_Host *shost)
- {
-+	struct scsi_host_template *hostt = shost->hostt;
- 	struct scsi_host_cmd_pool *pool;
- 
- 	mutex_lock(&host_cmd_pool_mutex);
--	pool = (gfp_mask & __GFP_DMA) ? &scsi_cmd_dma_pool :
--		&scsi_cmd_pool;
-+	pool = scsi_find_host_cmd_pool(shost);
-+
- 	/*
- 	 * This may happen if a driver has a mismatched get and put
- 	 * of the command pool; the driver should be implicated in
-@@ -381,6 +438,8 @@ static void scsi_put_host_cmd_pool(gfp_t gfp_mask)
- 	if (!--pool->users) {
- 		kmem_cache_destroy(pool->cmd_slab);
- 		kmem_cache_destroy(pool->sense_slab);
-+		if (hostt->cmd_size)
-+			scsi_free_host_cmd_pool(pool);
- 	}
- 	mutex_unlock(&host_cmd_pool_mutex);
- }
-@@ -397,14 +456,13 @@ static void scsi_put_host_cmd_pool(gfp_t gfp_mask)
-  */
- int scsi_setup_command_freelist(struct Scsi_Host *shost)
- {
--	struct scsi_cmnd *cmd;
- 	const gfp_t gfp_mask = shost->unchecked_isa_dma ? GFP_DMA : GFP_KERNEL;
-+	struct scsi_cmnd *cmd;
- 
- 	spin_lock_init(&shost->free_list_lock);
- 	INIT_LIST_HEAD(&shost->free_list);
- 
--	shost->cmd_pool = scsi_get_host_cmd_pool(gfp_mask);
+-	uninit_q->flush_rq = kzalloc(sizeof(struct request), GFP_KERNEL);
+-	if (!uninit_q->flush_rq)
+-		goto out_cleanup_queue;
 -
-+	shost->cmd_pool = scsi_get_host_cmd_pool(shost);
- 	if (!shost->cmd_pool)
- 		return -ENOMEM;
+ 	q = blk_init_allocated_queue(uninit_q, rfn, lock);
+ 	if (!q)
+-		goto out_free_flush_rq;
+-	return q;
++		blk_cleanup_queue(uninit_q);
  
-@@ -413,7 +471,7 @@ int scsi_setup_command_freelist(struct Scsi_Host *shost)
- 	 */
- 	cmd = scsi_host_alloc_command(shost, gfp_mask);
- 	if (!cmd) {
--		scsi_put_host_cmd_pool(gfp_mask);
-+		scsi_put_host_cmd_pool(shost);
- 		shost->cmd_pool = NULL;
- 		return -ENOMEM;
- 	}
-@@ -442,7 +500,7 @@ void scsi_destroy_command_freelist(struct Scsi_Host *shost)
- 		scsi_host_free_command(shost, cmd);
- 	}
- 	shost->cmd_pool = NULL;
--	scsi_put_host_cmd_pool(shost->unchecked_isa_dma ? GFP_DMA : GFP_KERNEL);
-+	scsi_put_host_cmd_pool(shost);
+-out_free_flush_rq:
+-	kfree(uninit_q->flush_rq);
+-out_cleanup_queue:
+-	blk_cleanup_queue(uninit_q);
+-	return NULL;
++	return q;
  }
+ EXPORT_SYMBOL(blk_init_queue_node);
  
- #ifdef CONFIG_SCSI_LOGGING
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index 53075e5..94844fc 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -15,6 +15,7 @@ struct completion;
- struct module;
- struct scsi_cmnd;
- struct scsi_device;
-+struct scsi_host_cmd_pool;
- struct scsi_target;
- struct Scsi_Host;
- struct scsi_host_cmd_pool;
-@@ -524,6 +525,12 @@ struct scsi_host_template {
- 	 *   scsi_netlink.h
- 	 */
- 	u64 vendor_id;
+@@ -717,6 +708,10 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+ 	if (!q)
+ 		return NULL;
+ 
++	q->flush_rq = kzalloc(sizeof(struct request), GFP_KERNEL);
++	if (!q->flush_rq)
++		return NULL;
 +
-+	/*
-+	 * Additional per-command data allocated for the driver.
-+	 */
-+	unsigned int cmd_size;
-+	struct scsi_host_cmd_pool *cmd_pool;
- };
+ 	if (blk_init_rl(&q->root_rl, q, GFP_KERNEL))
+ 		return NULL;
  
- /*
 -- 
 1.7.10.4
 
