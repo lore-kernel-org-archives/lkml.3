@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903AbaCQVRt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 17:17:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52906 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaCQVRq (ORCPT
+	id S1752222AbaCQVUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 17:20:23 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43301 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaCQVUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 17:17:46 -0400
-Message-ID: <53276678.6060000@codeaurora.org>
-Date: Mon, 17 Mar 2014 14:17:44 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Josh Cartwright <joshc@codeaurora.org>, linux-input@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 0/9] Use regmap+devm+DT in pm8xxx input drivers
-References: <1393958088-1456-1-git-send-email-sboyd@codeaurora.org> <531F4CC8.5010202@codeaurora.org>
-In-Reply-To: <531F4CC8.5010202@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Mar 2014 17:20:22 -0400
+Date: Mon, 17 Mar 2014 17:20:19 -0400 (EDT)
+Message-Id: <20140317.172019.167960066441598788.davem@davemloft.net>
+To: peter.senna@gmail.com
+Cc: jcliburn@gmail.com, chris.snook@gmail.com, johannes@sipsolutions.net,
+        jg1.han@samsung.com, wangyijing@huawei.com, linux@hahnjo.de,
+        sd@queasysnail.net, hahnjo@hahnjo.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH V2] ATHEROS-ALX: Use dma_set_mask_and_coherent and fix
+ a bug
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394926252-2269-1-git-send-email-peter.senna@gmail.com>
+References: <1394926252-2269-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 17 Mar 2014 14:20:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+Date: Sun, 16 Mar 2014 00:30:52 +0100
 
-On 03/11/14 10:50, Stephen Boyd wrote:
-> ping?
->
-> On 03/04/14 10:34, Stephen Boyd wrote:
->> These patches move the pm8xxx input drivers over to use devm_* APIs
->> and regmap. This breaks the dependency of these drivers on the pm8xxx
->> specific read/write calls and also simplifies the probe code a bit.
->> Finally we add devicetree support to these drivers so they can be probed
->> on the platforms that are supported upstream.
->>
->> Changes since v4:
->>  * Added reg property to bindings
->>  * Added linux,* properties to keypad binding
->>
->> Changes since v3:
->>  * Dropped devm conversion patch for pwrkey
->>  * Fixed compilation of keypad
->>
->> Changes since v2:
->>  * Rebased to v3.14-rc3
->>
->> Changes since v1:
->>  * Picked up Dmitry's version of devm for pwrkey
->>  * Added DT bindings and parsing patches
->>  * Dropped patches picked up by Dmitry
->>
->> Stephen Boyd (9):
->>   Input: pmic8xxx-keypad - Fix build by removing gpio configuration
->>   Input: pmic8xxx-keypad - Migrate to devm_* APIs
->>   Input: pmic8xxx-keypad - Migrate to regmap APIs
->>   Input: pmic8xxx-keypad - Migrate to DT
->>   Input: pmic8xxx-pwrkey - Migrate to DT
->>   Input: pm8xxx-vibrator - Add DT match table
->>   devicetree: bindings: Document PM8921/8058 keypads
->>   devicetree: bindings: Document PM8921/8058 power keys
->>   devicetree: bindings: Document PM8921/8058 vibrators
->>
->>  .../bindings/input/qcom,pm8xxx-keypad.txt          |  89 ++++++
->>  .../bindings/input/qcom,pm8xxx-pwrkey.txt          |  46 +++
->>  .../devicetree/bindings/input/qcom,pm8xxx-vib.txt  |  22 ++
->>  drivers/input/keyboard/pmic8xxx-keypad.c           | 348 ++++++++-------------
->>  drivers/input/misc/pm8xxx-vibrator.c               |   8 +
->>  drivers/input/misc/pmic8xxx-pwrkey.c               |  33 +-
->>  include/linux/input/pmic8xxx-keypad.h              |  52 ---
->>  include/linux/input/pmic8xxx-pwrkey.h              |  31 --
->>  8 files changed, 316 insertions(+), 313 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
->>  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
->>  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-vib.txt
->>  delete mode 100644 include/linux/input/pmic8xxx-keypad.h
->>  delete mode 100644 include/linux/input/pmic8xxx-pwrkey.h
->>
->
+>  1. For the 64 bits dma mask use dma_set_mask_and_coherent instead of
+>  dma_set_mask and dma_set_coherent_mask.
+> 
+>  2. For the 32 bits dma mask dma_set_coherent_mask is only called if
+>  dma_set_mask fails, which is unusual. Assuming this as a bug, fixes
+>  it by replacing calls to dma_set_mask and dma_set_coherent_mask by a
+>  call to dma_set_mask_and_coherent.
+>  
+>  Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Applied, thanks.
