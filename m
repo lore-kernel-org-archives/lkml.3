@@ -1,89 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677AbaCQNzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:55:11 -0400
-Received: from 13.mo1.mail-out.ovh.net ([178.33.253.128]:45782 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756201AbaCQNzJ (ORCPT
+	id S933505AbaCQN5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:57:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58258 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756691AbaCQN5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:55:09 -0400
-X-Greylist: delayed 8400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Mar 2014 09:55:09 EDT
-Message-ID: <5326CBE0.1000309@overkiz.com>
-Date: Mon, 17 Mar 2014 11:18:08 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>, Bo Shen <voice.shen@atmel.com>
-CC: Mark Brown <broonie@kernel.org>,
-        "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Mark Brown <broonie@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] ASoC: atmel: document clock properties of the wm8904
- driver
-References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <1395049541-28128-8-git-send-email-voice.shen@atmel.com> <20140317100219.GB8070@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20140317100219.GB8070@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 14656402038492592353
-X-Ovh-Remote: 88.188.80.5 (col31-4-88-188-80-5.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrvdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrvdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Mon, 17 Mar 2014 09:57:25 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH v2 08/15] ARM: at91: sam9rl: add at91_adc to support adc and touchscreen
+Date: Mon, 17 Mar 2014 14:57:01 +0100
+Message-Id: <1395064628-644-9-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
+The ADC clock needs to be defined to enable the at91_adc driver. It is defined
+to the same speed that is used for atmel_tsadcc.
 
-Le 17/03/2014 11:02, Mark Rutland a écrit :
-> On Mon, Mar 17, 2014 at 09:45:40AM +0000, Bo Shen wrote:
->> From: Boris BREZILLON <b.brezillon@overkiz.com>
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> Signed-off-by: Bo Shen <voice.shen@atmel.com>
->> ---
->>
->>   Documentation/devicetree/bindings/sound/atmel-wm8904.txt | 2 ++
->>   1 file changed, 2 insertions(+)
->>
->> diff --git a/Documentation/devicetree/bindings/sound/atmel-wm8904.txt b/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
->> index 8bbe50c..aca341c 100644
->> --- a/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
->> +++ b/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
->> @@ -3,6 +3,8 @@ Atmel ASoC driver with wm8904 audio codec complex
->>   Required properties:
->>     - compatible: "atmel,asoc-wm8904"
->>     - atmel,model: The user-visible name of this sound complex.
->> +  - clocks: A list of clocks needed by the wm8904 chip.
->> +  - clock-output-names: Driver related clock names. Shall contain "pck0".
-> The word "driver"  doesn't need to appear in biding documents, and this
-> fails to describe what it sets out to. How about the following:
->
-> - clocks: a list of phandle + clock-specifier pairs, one for each entry
->    in clock-names.
-Agreed.
-> - clock-names: Should contain "pck0"
-After thinking a bit more about it, this can be any programmable clk (pckX).
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/at91sam9rl.c         |  7 +++
+ arch/arm/mach-at91/at91sam9rl_devices.c | 85 +++++++++++++++++++++++++++++++++
+ 2 files changed, 92 insertions(+)
 
-I'll fix it.
-
-Thanks.
-
-Best Regards,
-
-Boris
-
->
-> Thanks,
-> Mark.
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index 3651517abedf..753ba4893836 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -151,6 +151,11 @@ static struct clk ac97_clk = {
+ 	.pmc_mask	= 1 << AT91SAM9RL_ID_AC97C,
+ 	.type		= CLK_TYPE_PERIPHERAL,
+ };
++static struct clk adc_op_clk = {
++	.name		= "adc_op_clk",
++	.type		= CLK_TYPE_PERIPHERAL,
++	.rate_hz	= 1000000,
++};
+ 
+ static struct clk *periph_clocks[] __initdata = {
+ 	&pioA_clk,
+@@ -176,6 +181,7 @@ static struct clk *periph_clocks[] __initdata = {
+ 	&udphs_clk,
+ 	&lcdc_clk,
+ 	&ac97_clk,
++	&adc_op_clk,
+ 	// irq0
+ };
+ 
+@@ -196,6 +202,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_ID("pioB", &pioB_clk),
+ 	CLKDEV_CON_ID("pioC", &pioC_clk),
+ 	CLKDEV_CON_ID("pioD", &pioD_clk),
++	CLKDEV_CON_ID("adc_clk", &tsc_clk),
+ };
+ 
+ static struct clk_lookup usart_clocks_lookups[] = {
+diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
+index a698bdab2cce..b836dada942c 100644
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+@@ -22,6 +22,7 @@
+ #include <mach/at91_matrix.h>
+ #include <mach/at91sam9_smc.h>
+ #include <linux/platform_data/dma-atmel.h>
++#include <linux/platform_data/at91_adc.h>
+ 
+ #include "board.h"
+ #include "generic.h"
+@@ -656,6 +657,90 @@ void __init at91_add_device_tsadcc(struct at91_tsadcc_data *data)
+ void __init at91_add_device_tsadcc(struct at91_tsadcc_data *data) {}
+ #endif
+ 
++/* --------------------------------------------------------------------
++ *  ADC and Touchscreen
++ * -------------------------------------------------------------------- */
++
++#if IS_ENABLED(CONFIG_AT91_ADC)
++static struct at91_adc_data adc_data;
++
++static struct resource adc_resources[] = {
++	[0] = {
++		.start	= AT91SAM9RL_BASE_TSC,
++		.end	= AT91SAM9RL_BASE_TSC + SZ_16K - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++	[1] = {
++		.start	= NR_IRQS_LEGACY + AT91SAM9RL_ID_TSC,
++		.end	= NR_IRQS_LEGACY + AT91SAM9RL_ID_TSC,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
++
++static struct platform_device at91_adc_device = {
++	.name           = "at91sam9rl-adc",
++	.id             = -1,
++	.dev            = {
++		.platform_data  = &adc_data,
++	},
++	.resource       = adc_resources,
++	.num_resources  = ARRAY_SIZE(adc_resources),
++};
++
++static struct at91_adc_trigger at91_adc_triggers[] = {
++	[0] = {
++		.name = "external-rising",
++		.value = 1,
++		.is_external = true,
++	},
++	[1] = {
++		.name = "external-falling",
++		.value = 2,
++		.is_external = true,
++	},
++	[2] = {
++		.name = "external-any",
++		.value = 3,
++		.is_external = true,
++	},
++	[3] = {
++		.name = "continuous",
++		.value = 6,
++		.is_external = false,
++	},
++};
++
++void __init at91_add_device_adc(struct at91_adc_data *data)
++{
++	if (!data)
++		return;
++
++	if (test_bit(0, &data->channels_used))
++		at91_set_A_periph(AT91_PIN_PA17, 0);
++	if (test_bit(1, &data->channels_used))
++		at91_set_A_periph(AT91_PIN_PA18, 0);
++	if (test_bit(2, &data->channels_used))
++		at91_set_A_periph(AT91_PIN_PA19, 0);
++	if (test_bit(3, &data->channels_used))
++		at91_set_A_periph(AT91_PIN_PA20, 0);
++	if (test_bit(4, &data->channels_used))
++		at91_set_A_periph(AT91_PIN_PD6, 0);
++	if (test_bit(5, &data->channels_used))
++		at91_set_A_periph(AT91_PIN_PD7, 0);
++
++	if (data->use_external_triggers)
++		at91_set_A_periph(AT91_PIN_PB15, 0);
++
++	data->startup_time = 40;
++	data->trigger_number = 4;
++	data->trigger_list = at91_adc_triggers;
++
++	adc_data = *data;
++	platform_device_register(&at91_adc_device);
++}
++#else
++void __init at91_add_device_adc(struct at91_adc_data *data) {}
++#endif
+ 
+ /* --------------------------------------------------------------------
+  *  RTC
+-- 
+1.8.3.2
 
