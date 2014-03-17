@@ -1,215 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681AbaCQGE6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 02:04:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62763 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320AbaCQF6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 01:58:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,667,1389772800"; 
-   d="scan'208";a="473898260"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v4 02/16] perf, core: introduce pmu context switch callback
-Date: Mon, 17 Mar 2014 13:57:22 +0800
-Message-Id: <1395035856-15411-3-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
-References: <1395035856-15411-1-git-send-email-zheng.z.yan@intel.com>
+	id S1755499AbaCQGJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 02:09:54 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:7475 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751200AbaCQGJx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 02:09:53 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvoZAAORJlNXQzLI/2dsb2JhbABZgwY7gwumT5UPg3ECAoEWF3SCUxMcIxiBAiQTh30B0kuOaIQ/BI5QiXUBki+BP4FvPA
+Date: Mon, 17 Mar 2014 07:11:28 +0100
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, anton <anton@tuxera.com>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH V3] NTFS: Logging clean-up
+Message-Id: <20140317071128.424f4e89b46b11ca6297e60d@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The callback is invoked when process is scheduled in or out.
-It provides mechanism for later patches to save/store the LBR
-stack. For the schedule in case, the callback is invoked at
-the same place that flush branch stack callback is invoked.
-So it also can replace the flush branch stack callback. To
-avoid unnecessary overhead, the callback is enabled only when
-there are events use the LBR stack.
+-Convert spinlock/static array to va_format (inspired by Joe Perches help
+on previous logging patches).
+-Convert printk(KERN_ERR to pr_warn in __ntfs_warning.
+-Convert printk(KERN_ERR to pr_err in __ntfs_error.
+-Convert printk(KERN_DEBUG to pr_debug in __ntfs_debug.
+(Note that __ntfs_debug is still guarded by #if DEBUG)
+-Improve !DEBUG to parse all arguments (Joe Perches).
+-Sparse pr_foo() conversions in super.c
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+NTFS, NTFS-fs prefixes as well as 'warning' and 'error'
+were removed : pr_foo() automatically adds module name
+and error level is already specified.
+
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- arch/x86/kernel/cpu/perf_event.c |  7 +++++
- arch/x86/kernel/cpu/perf_event.h |  2 ++
- include/linux/perf_event.h       |  8 ++++++
- kernel/events/core.c             | 60 +++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 76 insertions(+), 1 deletion(-)
+ fs/ntfs/debug.c | 58 ++++++++++++++++++++++++---------------------------------
+ fs/ntfs/debug.h |  7 ++++++-
+ fs/ntfs/super.c | 28 ++++++++++++----------------
+ 3 files changed, 42 insertions(+), 51 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index ae407f7..03e977f 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1872,6 +1872,12 @@ static const struct attribute_group *x86_pmu_attr_groups[] = {
- 	NULL,
- };
+diff --git a/fs/ntfs/debug.c b/fs/ntfs/debug.c
+index 807150e..dd6103c 100644
+--- a/fs/ntfs/debug.c
++++ b/fs/ntfs/debug.c
+@@ -18,16 +18,9 @@
+  * distribution in the file COPYING); if not, write to the Free Software
+  * Foundation,Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+-
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ #include "debug.h"
  
-+static void x86_pmu_sched_task(struct perf_event_context *ctx, bool sched_in)
-+{
-+	if (x86_pmu.sched_task)
-+		x86_pmu.sched_task(ctx, sched_in);
-+}
-+
- static void x86_pmu_flush_branch_stack(void)
+-/*
+- * A static buffer to hold the error string being displayed and a spinlock
+- * to protect concurrent accesses to it.
+- */
+-static char err_buf[1024];
+-static DEFINE_SPINLOCK(err_buf_lock);
+-
+ /**
+  * __ntfs_warning - output a warning to the syslog
+  * @function:	name of function outputting the warning
+@@ -50,6 +43,7 @@ static DEFINE_SPINLOCK(err_buf_lock);
+ void __ntfs_warning(const char *function, const struct super_block *sb,
+ 		const char *fmt, ...)
  {
- 	if (x86_pmu.flush_branch_stack)
-@@ -1905,6 +1911,7 @@ static struct pmu pmu = {
++	struct va_format vaf;
+ 	va_list args;
+ 	int flen = 0;
  
- 	.event_idx		= x86_pmu_event_idx,
- 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
-+	.sched_task		= x86_pmu_sched_task,
- };
- 
- void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index b58c0ba..1e2118a 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -429,6 +429,8 @@ struct x86_pmu {
- 
- 	void		(*check_microcode)(void);
- 	void		(*flush_branch_stack)(void);
-+	void		(*sched_task)(struct perf_event_context *ctx,
-+				      bool sched_in);
- 
- 	/*
- 	 * Intel Arch Perfmon v2+
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index e56b07f..adc20f2 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -251,6 +251,12 @@ struct pmu {
- 	 * flush branch stack on context-switches (needed in cpu-wide mode)
- 	 */
- 	void (*flush_branch_stack)	(void);
-+
-+	/*
-+	 * PMU callback for context-switches. optional
-+	 */
-+	void (*sched_task)		(struct perf_event_context *ctx,
-+					 bool sched_in);
- };
+@@ -59,17 +53,15 @@ void __ntfs_warning(const char *function, const struct super_block *sb,
+ #endif
+ 	if (function)
+ 		flen = strlen(function);
+-	spin_lock(&err_buf_lock);
+ 	va_start(args, fmt);
+-	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
+-	va_end(args);
++	vaf.fmt = fmt;
++	vaf.va = &args;
+ 	if (sb)
+-		printk(KERN_ERR "NTFS-fs warning (device %s): %s(): %s\n",
+-				sb->s_id, flen ? function : "", err_buf);
++		pr_warn("(device %s): %s(): %pV\n",
++			sb->s_id, flen ? function : "", &vaf);
+ 	else
+-		printk(KERN_ERR "NTFS-fs warning: %s(): %s\n",
+-				flen ? function : "", err_buf);
+-	spin_unlock(&err_buf_lock);
++		pr_warn("%s(): %pV\n", flen ? function : "", &vaf);
++	va_end(args);
+ }
  
  /**
-@@ -544,6 +550,8 @@ extern void perf_event_delayed_put(struct task_struct *task);
- extern void perf_event_print_debug(void);
- extern void perf_pmu_disable(struct pmu *pmu);
- extern void perf_pmu_enable(struct pmu *pmu);
-+extern void perf_sched_cb_disable(struct pmu *pmu);
-+extern void perf_sched_cb_enable(struct pmu *pmu);
- extern int perf_event_task_disable(void);
- extern int perf_event_task_enable(void);
- extern int perf_event_refresh(struct perf_event *event, int refresh);
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 661951a..5a24193 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -142,6 +142,7 @@ enum event_type_t {
- struct static_key_deferred perf_sched_events __read_mostly;
- static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
- static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
-+static DEFINE_PER_CPU(int, perf_sched_cb_usages);
- 
- static atomic_t nr_mmap_events __read_mostly;
- static atomic_t nr_comm_events __read_mostly;
-@@ -151,6 +152,7 @@ static atomic_t nr_freq_events __read_mostly;
- static LIST_HEAD(pmus);
- static DEFINE_MUTEX(pmus_lock);
- static struct srcu_struct pmus_srcu;
-+static struct idr pmu_idr;
- 
- /*
-  * perf event paranoia level:
-@@ -2358,6 +2360,57 @@ unlock:
- 	}
- }
- 
-+void perf_sched_cb_disable(struct pmu *pmu)
-+{
-+	__get_cpu_var(perf_sched_cb_usages)--;
-+}
-+
-+void perf_sched_cb_enable(struct pmu *pmu)
-+{
-+	__get_cpu_var(perf_sched_cb_usages)++;
-+}
-+
-+/*
-+ * This function provides the context switch callback to the lower code
-+ * layer. It is invoked ONLY when the context switch callback is enabled.
-+ */
-+static void perf_pmu_sched_task(struct task_struct *prev,
-+				struct task_struct *next,
-+				bool sched_in)
-+{
-+	struct perf_cpu_context *cpuctx;
-+	struct pmu *pmu;
-+	unsigned long flags;
-+
-+	if (prev == next)
-+		return;
-+
-+	local_irq_save(flags);
-+
-+	rcu_read_lock();
-+
-+	pmu = idr_find(&pmu_idr, PERF_TYPE_RAW);
-+
-+	if (pmu && pmu->sched_task) {
-+		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+		pmu = cpuctx->ctx.pmu;
-+
-+		perf_ctx_lock(cpuctx, cpuctx->task_ctx);
-+
-+		perf_pmu_disable(pmu);
-+
-+		pmu->sched_task(cpuctx->task_ctx, sched_in);
-+
-+		perf_pmu_enable(pmu);
-+
-+		perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
-+	}
-+
-+	rcu_read_unlock();
-+
-+	local_irq_restore(flags);
-+}
-+
- #define for_each_task_context_nr(ctxn)					\
- 	for ((ctxn) = 0; (ctxn) < perf_nr_task_contexts; (ctxn)++)
- 
-@@ -2377,6 +2430,9 @@ void __perf_event_task_sched_out(struct task_struct *task,
+@@ -94,6 +86,7 @@ void __ntfs_warning(const char *function, const struct super_block *sb,
+ void __ntfs_error(const char *function, const struct super_block *sb,
+ 		const char *fmt, ...)
  {
- 	int ctxn;
++	struct va_format vaf;
+ 	va_list args;
+ 	int flen = 0;
  
-+	if (__get_cpu_var(perf_sched_cb_usages))
-+		perf_pmu_sched_task(task, next, false);
-+
- 	for_each_task_context_nr(ctxn)
- 		perf_event_context_sched_out(task, ctxn, next);
- 
-@@ -2634,6 +2690,9 @@ void __perf_event_task_sched_in(struct task_struct *prev,
- 	/* check for system-wide branch_stack events */
- 	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
- 		perf_branch_stack_sched_in(prev, task);
-+
-+	if (__get_cpu_var(perf_sched_cb_usages))
-+		perf_pmu_sched_task(prev, task, true);
+@@ -103,17 +96,15 @@ void __ntfs_error(const char *function, const struct super_block *sb,
+ #endif
+ 	if (function)
+ 		flen = strlen(function);
+-	spin_lock(&err_buf_lock);
+ 	va_start(args, fmt);
+-	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
+-	va_end(args);
++	vaf.fmt = fmt;
++	vaf.va = &args;
+ 	if (sb)
+-		printk(KERN_ERR "NTFS-fs error (device %s): %s(): %s\n",
+-				sb->s_id, flen ? function : "", err_buf);
++		pr_err("(device %s): %s(): %pV\n",
++		       sb->s_id, flen ? function : "", &vaf);
+ 	else
+-		printk(KERN_ERR "NTFS-fs error: %s(): %s\n",
+-				flen ? function : "", err_buf);
+-	spin_unlock(&err_buf_lock);
++		pr_err("%s(): %pV\n", flen ? function : "", &vaf);
++	va_end(args);
  }
  
- static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
-@@ -6359,7 +6418,6 @@ static void free_pmu_context(struct pmu *pmu)
- out:
- 	mutex_unlock(&pmus_lock);
- }
--static struct idr pmu_idr;
+ #ifdef DEBUG
+@@ -124,6 +115,7 @@ int debug_msgs = 0;
+ void __ntfs_debug (const char *file, int line, const char *function,
+ 		const char *fmt, ...)
+ {
++	struct va_format vaf;
+ 	va_list args;
+ 	int flen = 0;
  
- static ssize_t
- type_show(struct device *dev, struct device_attribute *attr, char *page)
+@@ -131,13 +123,11 @@ void __ntfs_debug (const char *file, int line, const char *function,
+ 		return;
+ 	if (function)
+ 		flen = strlen(function);
+-	spin_lock(&err_buf_lock);
+ 	va_start(args, fmt);
+-	vsnprintf(err_buf, sizeof(err_buf), fmt, args);
++	vaf.fmt = fmt;
++	vaf.va = &args;
++	pr_debug("(%s, %d): %s(): %pV", file, line, flen ? function : "", &vaf);
+ 	va_end(args);
+-	printk(KERN_DEBUG "NTFS-fs DEBUG (%s, %d): %s(): %s\n", file, line,
+-			flen ? function : "", err_buf);
+-	spin_unlock(&err_buf_lock);
+ }
+ 
+ /* Dump a runlist. Caller has to provide synchronisation for @rl. */
+@@ -149,12 +139,12 @@ void ntfs_debug_dump_runlist(const runlist_element *rl)
+ 
+ 	if (!debug_msgs)
+ 		return;
+-	printk(KERN_DEBUG "NTFS-fs DEBUG: Dumping runlist (values in hex):\n");
++	pr_debug("Dumping runlist (values in hex):\n");
+ 	if (!rl) {
+-		printk(KERN_DEBUG "Run list not present.\n");
++		pr_debug("Run list not present.\n");
+ 		return;
+ 	}
+-	printk(KERN_DEBUG "VCN              LCN               Run length\n");
++	pr_debug("VCN              LCN               Run length\n");
+ 	for (i = 0; ; i++) {
+ 		LCN lcn = (rl + i)->lcn;
+ 
+@@ -163,13 +153,13 @@ void ntfs_debug_dump_runlist(const runlist_element *rl)
+ 
+ 			if (index > -LCN_ENOENT - 1)
+ 				index = 3;
+-			printk(KERN_DEBUG "%-16Lx %s %-16Lx%s\n",
++			pr_debug("%-16Lx %s %-16Lx%s\n",
+ 					(long long)(rl + i)->vcn, lcn_str[index],
+ 					(long long)(rl + i)->length,
+ 					(rl + i)->length ? "" :
+ 						" (runlist end)");
+ 		} else
+-			printk(KERN_DEBUG "%-16Lx %-16Lx  %-16Lx%s\n",
++			pr_debug("%-16Lx %-16Lx  %-16Lx%s\n",
+ 					(long long)(rl + i)->vcn,
+ 					(long long)(rl + i)->lcn,
+ 					(long long)(rl + i)->length,
+diff --git a/fs/ntfs/debug.h b/fs/ntfs/debug.h
+index 53c27ea..61bf091 100644
+--- a/fs/ntfs/debug.h
++++ b/fs/ntfs/debug.h
+@@ -48,7 +48,12 @@ extern void ntfs_debug_dump_runlist(const runlist_element *rl);
+ 
+ #else	/* !DEBUG */
+ 
+-#define ntfs_debug(f, a...)		do {} while (0)
++#define ntfs_debug(fmt, ...)						\
++do {									\
++	if (0)								\
++		no_printk(fmt, ##__VA_ARGS__);				\
++} while (0)
++
+ #define ntfs_debug_dump_runlist(rl)	do {} while (0)
+ 
+ #endif	/* !DEBUG */
+diff --git a/fs/ntfs/super.c b/fs/ntfs/super.c
+index 82650d5..e23fb9d 100644
+--- a/fs/ntfs/super.c
++++ b/fs/ntfs/super.c
+@@ -19,6 +19,7 @@
+  * distribution in the file COPYING); if not, write to the Free Software
+  * Foundation,Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/stddef.h>
+ #include <linux/init.h>
+@@ -1894,7 +1895,7 @@ get_ctx_vol_failed:
+ 	vol->minor_ver = vi->minor_ver;
+ 	ntfs_attr_put_search_ctx(ctx);
+ 	unmap_mft_record(NTFS_I(vol->vol_ino));
+-	printk(KERN_INFO "NTFS volume version %i.%i.\n", vol->major_ver,
++	pr_info("volume version %i.%i.\n", vol->major_ver,
+ 			vol->minor_ver);
+ 	if (vol->major_ver < 3 && NVolSparseEnabled(vol)) {
+ 		ntfs_warning(vol->sb, "Disabling sparse support due to NTFS "
+@@ -3093,7 +3094,7 @@ static int __init init_ntfs_fs(void)
+ 	int err = 0;
+ 
+ 	/* This may be ugly but it results in pretty output so who cares. (-8 */
+-	printk(KERN_INFO "NTFS driver " NTFS_VERSION " [Flags: R/"
++	pr_info("driver " NTFS_VERSION " [Flags: R/"
+ #ifdef NTFS_RW
+ 			"W"
+ #else
+@@ -3113,16 +3114,15 @@ static int __init init_ntfs_fs(void)
+ 			sizeof(ntfs_index_context), 0 /* offset */,
+ 			SLAB_HWCACHE_ALIGN, NULL /* ctor */);
+ 	if (!ntfs_index_ctx_cache) {
+-		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+-				ntfs_index_ctx_cache_name);
++		pr_crit("Failed to create %s!\n", ntfs_index_ctx_cache_name);
+ 		goto ictx_err_out;
+ 	}
+ 	ntfs_attr_ctx_cache = kmem_cache_create(ntfs_attr_ctx_cache_name,
+ 			sizeof(ntfs_attr_search_ctx), 0 /* offset */,
+ 			SLAB_HWCACHE_ALIGN, NULL /* ctor */);
+ 	if (!ntfs_attr_ctx_cache) {
+-		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+-				ntfs_attr_ctx_cache_name);
++		pr_crit("NTFS: Failed to create %s!\n",
++			ntfs_attr_ctx_cache_name);
+ 		goto actx_err_out;
+ 	}
+ 
+@@ -3130,8 +3130,7 @@ static int __init init_ntfs_fs(void)
+ 			(NTFS_MAX_NAME_LEN+1) * sizeof(ntfschar), 0,
+ 			SLAB_HWCACHE_ALIGN, NULL);
+ 	if (!ntfs_name_cache) {
+-		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+-				ntfs_name_cache_name);
++		pr_crit("Failed to create %s!\n", ntfs_name_cache_name);
+ 		goto name_err_out;
+ 	}
+ 
+@@ -3139,8 +3138,7 @@ static int __init init_ntfs_fs(void)
+ 			sizeof(ntfs_inode), 0,
+ 			SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD, NULL);
+ 	if (!ntfs_inode_cache) {
+-		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+-				ntfs_inode_cache_name);
++		pr_crit("Failed to create %s!\n", ntfs_inode_cache_name);
+ 		goto inode_err_out;
+ 	}
+ 
+@@ -3149,15 +3147,14 @@ static int __init init_ntfs_fs(void)
+ 			SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD,
+ 			ntfs_big_inode_init_once);
+ 	if (!ntfs_big_inode_cache) {
+-		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+-				ntfs_big_inode_cache_name);
++		pr_crit("Failed to create %s!\n", ntfs_big_inode_cache_name);
+ 		goto big_inode_err_out;
+ 	}
+ 
+ 	/* Register the ntfs sysctls. */
+ 	err = ntfs_sysctl(1);
+ 	if (err) {
+-		printk(KERN_CRIT "NTFS: Failed to register NTFS sysctls!\n");
++		pr_crit("Failed to register NTFS sysctls!\n");
+ 		goto sysctl_err_out;
+ 	}
+ 
+@@ -3166,7 +3163,7 @@ static int __init init_ntfs_fs(void)
+ 		ntfs_debug("NTFS driver registered successfully.");
+ 		return 0; /* Success! */
+ 	}
+-	printk(KERN_CRIT "NTFS: Failed to register NTFS filesystem driver!\n");
++	pr_crit("Failed to register NTFS filesystem driver!\n");
+ 
+ 	/* Unregister the ntfs sysctls. */
+ 	ntfs_sysctl(0);
+@@ -3182,8 +3179,7 @@ actx_err_out:
+ 	kmem_cache_destroy(ntfs_index_ctx_cache);
+ ictx_err_out:
+ 	if (!err) {
+-		printk(KERN_CRIT "NTFS: Aborting NTFS filesystem driver "
+-				"registration...\n");
++		pr_crit("Aborting NTFS filesystem driver registration...\n");
+ 		err = -ENOMEM;
+ 	}
+ 	return err;
 -- 
-1.8.5.3
+1.8.4.5
 
