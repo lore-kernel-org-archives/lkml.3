@@ -1,178 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227AbaCQBSS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 21:18:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5978 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932124AbaCQBSP convert rfc822-to-8bit (ORCPT
+	id S932216AbaCQBen (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 21:34:43 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:11130 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812AbaCQBei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 21:18:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,666,1389772800"; 
-   d="scan'208";a="499990398"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        "Len Brown" <lenb@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: ACPICA 20140214 auto-serialize weirds my machine...
-Thread-Topic: ACPICA 20140214 auto-serialize weirds my machine...
-Thread-Index: AQHPP58shDdqiwJvA0Skea9zGEuiRZrke6ag
-Date: Mon, 17 Mar 2014 01:18:10 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88024DF6E1@SHSMSX101.ccr.corp.intel.com>
-References: <14866.1394813101@turing-police.cc.vt.edu>
-In-Reply-To: <14866.1394813101@turing-police.cc.vt.edu>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sun, 16 Mar 2014 21:34:38 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-23-5326512bf644
+Message-id: <5326512D.9010500@samsung.com>
+Date: Mon, 17 Mar 2014 10:34:37 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        rafael.j.wysocki@intel.com, nm@ti.com, b.zolnierkie@samsaung.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCHv3 5/8] devfreq: exynos4: Use SET_SYSTEM_SLEEP_PM_OPS macro
+References: <1394789408-14648-1-git-send-email-cw00.choi@samsung.com>
+ <1394789408-14648-6-git-send-email-cw00.choi@samsung.com>
+ <001501cf4176$3d23daa0$b76b8fe0$%han@samsung.com>
+In-reply-to: <001501cf4176$3d23daa0$b76b8fe0$%han@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsWyRsSkSFcnUC3Y4NJDVouOnt8sFvOPnGO1
+	OPdqJaPF5YWXWC3ONr1ht1jYtoTF4vKuOWwWn3uPMFrMOL+PyWLp9YtMFrcbV7BZvPlxlsli
+	wvS1LBaPV7xlt3h1sI3Fgd9jzbw1jB4rl39h81i85yWTx8/l29k9+rasYvQ4fmM7k8fnTXIe
+	G+eGBnBEcdmkpOZklqUW6dslcGVMmbiQqWADT8Wqxk2MDYxLuLoYOTkkBEwkfnxawwJhi0lc
+	uLeerYuRg0NIYCmjxCd2EBOkZP+G2C5GLqDodEaJ3nUn2CGcV4wSL24/YgXp5RXQklh9ZR+Y
+	zSKgKnFxzV1GEJsNKL7/xQ02EFtUIExi5fQrLBD1ghI/Jt8Ds0UEVCQ+rz8OVsMs8JVJ4uY8
+	JhBbWMBP4umfJ8wQy7YySrw/ux+siFPATuL3gl9MEA06Evtbp0E1y0tsXvMWrEFCYC6HxJbJ
+	vcwQFwlIfJt8iAXiHVmJTQeYIR6WlDi44gbLBEaxWUhumoVk7CwkYxcwMq9iFE0tSC4oTkov
+	MtQrTswtLs1L10vOz93ECIzw0/+e9e5gvH3A+hBjMtDKicxSosn5wASRVxJvaGxmZGFqYmps
+	ZG5pRpqwkjhv0sOkICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MrXqHGNh/L+CZ9t+iVzvg
+	kJrFR9OwQ4sfblwn/vLvl9tX/wcq/Umfv/G0iW7Z5NfdKb9PbEoNXuf/+mrf1o4Fm3oupLi0
+	hprpN701XrBds6Keu871ENsevXLHwtvBhTrnPhz7s7xqqvWSky++Mzx9LrZsmsfmnzlXDNqi
+	5WcsCLlsUHG2sCv1mhJLcUaioRZzUXEiAEQ7t3sGAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEKsWRmVeSWpSXmKPExsVy+t9jQV3tQLVgg3cnLS06en6zWMw/co7V
+	4tyrlYwWlxdeYrU42/SG3WJh2xIWi8u75rBZfO49wmgx4/w+Joul1y8yWdxuXMFm8ebHWSaL
+	CdPXslg8XvGW3eLVwTYWB36PNfPWMHqsXP6FzWPxnpdMHj+Xb2f36NuyitHj+I3tTB6fN8l5
+	bJwbGsAR1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuW
+	mQN0vZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYxY8rEhUwFG3gqVjVu
+	YmxgXMLVxcjBISFgIrF/Q2wXIyeQKSZx4d56ti5GLg4hgemMEr3rTrBDOK8YJV7cfsQKUsUr
+	oCWx+so+MJtFQFXi4pq7jCA2G1B8/4sbbCC2qECYxMrpV1gg6gUlfky+B2aLCKhIfF5/HKyG
+	WeArk8TNeUwgtrCAn8TTP0+YIZZtZZR4f3Y/WBGngJ3E7wW/mCAadCT2t06DapaX2LzmLfME
+	RoFZSHbMQlI2C0nZAkbmVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBKeSZ1A7GlQ0WhxgF
+	OBiVeHgnKKsFC7EmlhVX5h5ilOBgVhLhTTAHCvGmJFZWpRblxxeV5qQWH2JMBgbBRGYp0eR8
+	YHrLK4k3NDYxM7I0Mje0MDI2J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5OqQbGDAVWRkYT
+	/9RsbaO8/Vt//GJ7fKK74uHlK2e39EQuqZpi6b332cr3Juud+fqMlvwu9dI48+EJywK5KZae
+	ig1Hpbe0St7+U8pUlypr7SSe4n7xfv93ltimB61u20XORGiwu927Pm23Ub2Z7683qS/j3k9t
+	8Wcs3P46M886TOZavYfo2xl9l9YosRRnJBpqMRcVJwIASaZljWUDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Jingoo,
 
-> From: Valdis Kletnieks [mailto:Valdis.Kletnieks@vt.edu]
-> Sent: Saturday, March 15, 2014 12:05 AM
+On 03/17/2014 09:17 AM, Jingoo Han wrote:
+> On Friday, March 14, 2014 6:30 PM, Chanwoo Choi wrote:
+>>
+>> This patch use SET_SYSTEM_SLEEP_PM_OPS macro instead of legacy method.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> ---
+>>  drivers/devfreq/exynos/exynos4_bus.c | 4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
+>> index 60539e8..e5d2c5a 100644
+>> --- a/drivers/devfreq/exynos/exynos4_bus.c
+>> +++ b/drivers/devfreq/exynos/exynos4_bus.c
+>> @@ -1247,6 +1247,7 @@ static int exynos4_busfreq_remove(struct platform_device *pdev)
+>>  	return 0;
+>>  }
+>>
+>> +#ifdef CONFIG_PM_SLEEP
+>>  static int exynos4_busfreq_resume(struct device *dev)
+>>  {
+>>  	struct busfreq_data *data = dev_get_drvdata(dev);
+>> @@ -1254,9 +1255,10 @@ static int exynos4_busfreq_resume(struct device *dev)
+>>  	busfreq_mon_reset(data);
+>>  	return 0;
+>>  }
+>> +#endif
+>>
+>>  static const struct dev_pm_ops exynos4_busfreq_pm = {
+>> -	.resume	= exynos4_busfreq_resume,
+>> +	SET_SYSTEM_SLEEP_PM_OPS(NULL, exynos4_busfreq_resume)
 > 
-> Surprisingly enough, this hasn't seemed to have bitten many Linux people yet,
-> Google only finds a BSD thread (where the same ACPICA code is in use):
+> Hi Chanwoo Choi,
 > 
-> http://comments.gmane.org/gmane.os.dragonfly-bsd.user/1817
+> How about using SIMPLE_DEV_PM_OPS instead of SET_SYSTEM_SLEEP_PM_OPS?
+> SIMPLE_DEV_PM_OPS is simpler as below.
 > 
-> I found this, but haven't tried it yet:
+> static SIMPLE_DEV_PM_OPS(exynos4_busfreq_pm, NULL, exynos4_busfreq_resume);
 > 
-> commit 5f1cb4a92e4c4aabd139ff9ca1e11c0e2db2ac59
-> Author: Lv Zheng <lv.zheng@intel.com>
-> Date:   Wed Feb 26 10:32:01 2014 +0800
+> However, if runtime pm functions will be added later,
+> SIMPLE_DEV_PM_OPS is not necessary.
 > 
->     ACPICA: Remove global option to serialize all control methods.
-> 
->     With the addition of the auto-serialization feature, this option
->     is obsolete and is completely removed. Lv Zheng.
 
-This is not the right commit that is related to your issue.
-This commit only removes the old facility, it is harmless.
-Actually the facility is enabled by default in this commit:
-https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=cd52379678785b02d7a357988cfba214fdaf92f4
+OK, I'll use SIMPLE_DEV_PM_OPS on next patchset.
 
-commit cd52379678785b02d7a357988cfba214fdaf92f4
-Subject: ACPICA: Add global option to disable method auto-serialization.
+Best Regards,
+Chanwoo Choi
 
-This change adds an option to disable the auto-serialization of
-methods that create named objects.
 
-And the commit you are talking about just re-used the kernel parameter in order to add an option to disable the new facility.
-
-> 
->     This patch also updates acpi_serialize kernel parameter using the
->     new auto-serialization feature - acpi_gbl_auto_serialize_methods.
-> 
-> This looks like a user nightmare waiting to happen, because:
-> 
-> -   	acpi_serialize	[HW,ACPI] force serialization of AML methods
-> +	acpi_serialize=	[HW,ACPI] configure auto-serialization of AML methods
-> 
-> Re-using a kernel parameter name with different semantics is just asking for trouble.
-> 
-> I get this in my dmesg, and then I end up with all sorts of ACPI-related
-> weirdness - everything from 4 or 5 temperature sensors evaporating to it
-> claiming that my laptop doesn't have a battery bay (it may also be related to
-> an issue I'm seeing with multiple graphics monitors as well, but I haven't
-> verified that yet).
-> 
-> We're going to need a better way to deal with this before it gets to
-> mainline....
-> 
-> [    0.119344] ACPI: Executed 1 blocks of module-level executable AML code
-> [    0.135282] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
-> [    0.135288] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.135298] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.135307] ACPI Error: Method parse/execution failed [\EISC] (Node ffff88012d02d560), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.135320] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470),
-> AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.135328] ACPI Error: Method parse/execution failed [\ECRB] (Node ffff88012d02d5d8), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.135336] ACPI Error: Method parse/execution failed [\ECG5] (Node ffff88012d02d740), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.135343] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EINI] (Node ffff88012d02db00), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.135351] ACPI Error: Method parse/execution failed [\EV3_] (Node ffff88012d0314c0), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.135359] ACPI Error: Method parse/execution failed [\_SB_.PCI0._INI] (Node ffff88012d026920), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.135574] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
-> [    0.136283] ACPI: SSDT 0x00000000CE789598 000523 (v01 PmRef  Cpu0Cst  00003001 INTL 20051117)
-> [    0.138312] ACPI: Dynamic OEM Table Load:
-> [    0.138316] ACPI: SSDT 0x0000000000000000 000523 (v01 PmRef  Cpu0Cst  00003001 INTL 20051117)
-> [    0.141483] ACPI: SSDT 0x00000000CE78AA98 000303 (v01 PmRef  ApIst    00003000 INTL 20051117)
-> [    0.143683] ACPI: Dynamic OEM Table Load:
-> [    0.143687] ACPI: SSDT 0x0000000000000000 000303 (v01 PmRef  ApIst    00003000 INTL 20051117)
-> [    0.146215] ACPI: SSDT 0x00000000CE790C18 000119 (v01 PmRef  ApCst    00003000 INTL 20051117)
-> [    0.148279] ACPI: Dynamic OEM Table Load:
-> [    0.148282] ACPI: SSDT 0x0000000000000000 000119 (v01 PmRef  ApCst    00003000 INTL 20051117)
-> [    0.152678] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
-> [    0.152684] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.152693] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.152702] ACPI Error: Method parse/execution failed [\EISC] (Node ffff88012d02d560), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.152714] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470),
-> AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.152722] ACPI Error: Method parse/execution failed [\ECBT] (Node ffff88012d02d588), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.152730] ACPI Error: Method parse/execution failed [\ECG3] (Node ffff88012d02d6c8), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.152737] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV.ECIN] (Node ffff88012d02d3d0),
-> AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.152745] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV._REG] (Node ffff88012d02d3f8),
-> AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.152818] ACPI: Interpreter enabled
-> [    0.152828] ACPI: (supports S0)
-> [    0.152830] ACPI: Using IOAPIC for interrupt routing
-> [    0.152883] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
-> [    0.156479] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
-> [    0.156485] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.156494] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.156504] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.UAR1._STA] (Node ffff88012d02fb28),
-> AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.156666] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
-> [    0.156671] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.156680] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.156689] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.LPTE.CLPS] (Node ffff88012d02fcb8),
-> AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.156702] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.LPTE._STA] (Node ffff88012d02fce0),
-> AE_AML_MUTEX_ORDER (20140214/psparse-536)
-> [    0.162229] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
-> [    0.162234] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.162244] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-> [    0.162254] ACPI Error: Method parse/execution failed [\EISC] (Node ffff88012d02d560), AE_AML_MUTEX_ORDER
-> (20140214/psparse-536)
-
-We are not sure if this is the Windows behavior.
-And we have a discussion at:
-https://bugzilla.kernel.org/show_bug.cgi?id=52191
-Such error messages are useful to improve the facility or force us to change our mind.
-
-Thanks and best regards
--Lv
-
-> 
-> (you get the idea.  I get a total of 172 'ACPI Error:' messages before I get to
-> a single-user prompt)
