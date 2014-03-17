@@ -1,90 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaCQBFz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 21:05:55 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:47941 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755812AbaCQBFx (ORCPT
+	id S932227AbaCQBSS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 21:18:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5978 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932124AbaCQBSP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 21:05:53 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-7d-53264a70daf3
-Message-id: <53264E61.2010502@samsung.com>
-Date: Mon, 17 Mar 2014 10:22:41 +0900
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308
- Thunderbird/17.0.4
-MIME-version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: t.figa@samsung.com, mturquette@linaro.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: samsung: fixed compiler warning
- [-Wpointer-to-int-cast]
-References: <1393382561-5388-1-git-send-email-pankaj.dubey@samsung.com>
-In-reply-to: <1393382561-5388-1-git-send-email-pankaj.dubey@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zI90CL7Vgg00b1Cw2Pb7GanF51xw2
-	ixnn9zFZPJ1wkc1i0dYv7BbrZ7xmcWDzuHNtD5vH5iX1Hn1bVjF6fN4kF8ASxWWTkpqTWZZa
-	pG+XwJXx9/QcxoL5HBUtu18xNjC+Yeti5OCQEDCReHEjtouRE8gUk7hwbz1QmItDSGAZo0Tr
-	2ZdMEAkTiY9zehkhEosYJa6dOc0E4bxmlNhx+CQLSBWvgJbE90lnwGwWAVWJd8eesoLYbAK6
-	Ek/ez2UGsUUFwiQ2Te9jhagXlPgx+R5YvYiAtkTn5XusIEOZBWYwSrxdd40RJCEsECzRvLMD
-	7AwhAXeJnpnfwOKcAh4SE65uBrOZBawlVk7aBmXLS2xe85YZZJCEwD52iduNy5ghLhKQ+Db5
-	EAvEz7ISmw4wQ7wmKXFwxQ2WCYxis5DcNAvJ2FlIxi5gZF7FKJpakFxQnJReZKxXnJhbXJqX
-	rpecn7uJERJj/TsY7x6wPsSYDLRyIrOUaHI+MEbzSuINjc2MLExNTI2NzC3NSBNWEue9/zAp
-	SEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANjkkykp4DGzej8n9P7JHV2H5un9kDqYuPxuDO/
-	gtsXm1We+9rmXfVA16+rK9fyanet3pSZZ0MnzPx8qTO8vv66xNnJrolNbDtCmv7K+HD++Pf3
-	/uyOds1NBQ1XJnrOn/FW6Mg16zsFZdKhKYul5344W/z/fOQXlwxFg5YZi9MmG544Ozc/yMdb
-	iaU4I9FQi7moOBEAodft6ccCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jAd0CL7Vgg9nPlSw2Pb7GanF51xw2
-	ixnn9zFZPJ1wkc1i0dYv7BbrZ7xmcWDzuHNtD5vH5iX1Hn1bVjF6fN4kF8AS1cBok5GamJJa
-	pJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0XEmhLDGnFCgUkFhc
-	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8ff0HMaC+RwVLbtfMTYwvmHrYuTkkBAwkfg4
-	p5cRwhaTuHBvPVCci0NIYBGjxLUzp5kgnNeMEjsOn2QBqeIV0JL4PukMmM0ioCrx7thTVhCb
-	TUBX4sn7ucwgtqhAmMSm6X2sEPWCEj8m3wOrFxHQlui8fI8VZCizwAxGibfrroGtFhYIlmje
-	2cEEYgsJuEv0zPwGFucU8JCYcHUzmM0sYC2xctI2KFteYvOat8wTGAVmIdkxC0nZLCRlCxiZ
-	VzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx/Az6R2MqxosDjEKcDAq8fBOUFYLFmJNLCuu
-	zD3EKMHBrCTCm2AOFOJNSaysSi3Kjy8qzUktPsSYDAyCicxSosn5wPSSVxJvaGxiZmRpZGZh
-	ZGJuTpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MK2SNSnrOxB7z+8Wsfd5f5vVDdtV6
-	rWvuyj0mMW8CZyfOrCvS0bgZ+T2cc7dqTNXy3wpP77s9WvC+/cLEfInC3Ka5jquZhPy6SiVu
-	ZghcUv4iq/nqgHH9BKWk0z8uxN2vF+cQW/zER2iWzf8tH1dLnI05vkzlW92ED8e2f9cquBPv
-	k97N4nJSiaU4I9FQi7moOBEAy3sw1SUDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 16 Mar 2014 21:18:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,666,1389772800"; 
+   d="scan'208";a="499990398"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        "Len Brown" <lenb@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: RE: ACPICA 20140214 auto-serialize weirds my machine...
+Thread-Topic: ACPICA 20140214 auto-serialize weirds my machine...
+Thread-Index: AQHPP58shDdqiwJvA0Skea9zGEuiRZrke6ag
+Date: Mon, 17 Mar 2014 01:18:10 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88024DF6E1@SHSMSX101.ccr.corp.intel.com>
+References: <14866.1394813101@turing-police.cc.vt.edu>
+In-Reply-To: <14866.1394813101@turing-police.cc.vt.edu>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 11:42 AM, Pankaj Dubey wrote:
-> When compiled using ARM64 cross compiler, gcc complains as
->
-> drivers/clk/samsung/clk.c:293:18:
-> warning: cast from pointer to integer of different size
-> [-Wpointer-to-int-cast]
->
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->   drivers/clk/samsung/clk.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/clk/samsung/clk.c b/drivers/clk/samsung/clk.c
-> index 91bec3e..59142ba 100644
-> --- a/drivers/clk/samsung/clk.c
-> +++ b/drivers/clk/samsung/clk.c
-> @@ -278,7 +278,7 @@ void __init samsung_clk_of_register_fixed_ext(
->   	for_each_matching_node_and_match(np, clk_matches, &match) {
->   		if (of_property_read_u32(np, "clock-frequency", &freq))
->   			continue;
-> -		fixed_rate_clk[(u32)match->data].fixed_rate = freq;
-> +		fixed_rate_clk[(unsigned long)match->data].fixed_rate = freq;
->   	}
->   	samsung_clk_register_fixed_rate(fixed_rate_clk, nr_fixed_rate_clk);
->   }
+Hi,
 
-Gentle Ping.
+> From: Valdis Kletnieks [mailto:Valdis.Kletnieks@vt.edu]
+> Sent: Saturday, March 15, 2014 12:05 AM
+> 
+> Surprisingly enough, this hasn't seemed to have bitten many Linux people yet,
+> Google only finds a BSD thread (where the same ACPICA code is in use):
+> 
+> http://comments.gmane.org/gmane.os.dragonfly-bsd.user/1817
+> 
+> I found this, but haven't tried it yet:
+> 
+> commit 5f1cb4a92e4c4aabd139ff9ca1e11c0e2db2ac59
+> Author: Lv Zheng <lv.zheng@intel.com>
+> Date:   Wed Feb 26 10:32:01 2014 +0800
+> 
+>     ACPICA: Remove global option to serialize all control methods.
+> 
+>     With the addition of the auto-serialization feature, this option
+>     is obsolete and is completely removed. Lv Zheng.
 
--- 
-Best Regards,
-Pankaj Dubey
+This is not the right commit that is related to your issue.
+This commit only removes the old facility, it is harmless.
+Actually the facility is enabled by default in this commit:
+https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=cd52379678785b02d7a357988cfba214fdaf92f4
 
+commit cd52379678785b02d7a357988cfba214fdaf92f4
+Subject: ACPICA: Add global option to disable method auto-serialization.
+
+This change adds an option to disable the auto-serialization of
+methods that create named objects.
+
+And the commit you are talking about just re-used the kernel parameter in order to add an option to disable the new facility.
+
+> 
+>     This patch also updates acpi_serialize kernel parameter using the
+>     new auto-serialization feature - acpi_gbl_auto_serialize_methods.
+> 
+> This looks like a user nightmare waiting to happen, because:
+> 
+> -   	acpi_serialize	[HW,ACPI] force serialization of AML methods
+> +	acpi_serialize=	[HW,ACPI] configure auto-serialization of AML methods
+> 
+> Re-using a kernel parameter name with different semantics is just asking for trouble.
+> 
+> I get this in my dmesg, and then I end up with all sorts of ACPI-related
+> weirdness - everything from 4 or 5 temperature sensors evaporating to it
+> claiming that my laptop doesn't have a battery bay (it may also be related to
+> an issue I'm seeing with multiple graphics monitors as well, but I haven't
+> verified that yet).
+> 
+> We're going to need a better way to deal with this before it gets to
+> mainline....
+> 
+> [    0.119344] ACPI: Executed 1 blocks of module-level executable AML code
+> [    0.135282] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+> [    0.135288] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.135298] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.135307] ACPI Error: Method parse/execution failed [\EISC] (Node ffff88012d02d560), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.135320] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470),
+> AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.135328] ACPI Error: Method parse/execution failed [\ECRB] (Node ffff88012d02d5d8), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.135336] ACPI Error: Method parse/execution failed [\ECG5] (Node ffff88012d02d740), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.135343] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EINI] (Node ffff88012d02db00), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.135351] ACPI Error: Method parse/execution failed [\EV3_] (Node ffff88012d0314c0), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.135359] ACPI Error: Method parse/execution failed [\_SB_.PCI0._INI] (Node ffff88012d026920), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.135574] [Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
+> [    0.136283] ACPI: SSDT 0x00000000CE789598 000523 (v01 PmRef  Cpu0Cst  00003001 INTL 20051117)
+> [    0.138312] ACPI: Dynamic OEM Table Load:
+> [    0.138316] ACPI: SSDT 0x0000000000000000 000523 (v01 PmRef  Cpu0Cst  00003001 INTL 20051117)
+> [    0.141483] ACPI: SSDT 0x00000000CE78AA98 000303 (v01 PmRef  ApIst    00003000 INTL 20051117)
+> [    0.143683] ACPI: Dynamic OEM Table Load:
+> [    0.143687] ACPI: SSDT 0x0000000000000000 000303 (v01 PmRef  ApIst    00003000 INTL 20051117)
+> [    0.146215] ACPI: SSDT 0x00000000CE790C18 000119 (v01 PmRef  ApCst    00003000 INTL 20051117)
+> [    0.148279] ACPI: Dynamic OEM Table Load:
+> [    0.148282] ACPI: SSDT 0x0000000000000000 000119 (v01 PmRef  ApCst    00003000 INTL 20051117)
+> [    0.152678] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+> [    0.152684] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.152693] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.152702] ACPI Error: Method parse/execution failed [\EISC] (Node ffff88012d02d560), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.152714] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV.ECR1] (Node ffff88012d02d470),
+> AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.152722] ACPI Error: Method parse/execution failed [\ECBT] (Node ffff88012d02d588), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.152730] ACPI Error: Method parse/execution failed [\ECG3] (Node ffff88012d02d6c8), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.152737] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV.ECIN] (Node ffff88012d02d3d0),
+> AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.152745] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.ECDV._REG] (Node ffff88012d02d3f8),
+> AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.152818] ACPI: Interpreter enabled
+> [    0.152828] ACPI: (supports S0)
+> [    0.152830] ACPI: Using IOAPIC for interrupt routing
+> [    0.152883] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+> [    0.156479] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+> [    0.156485] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.156494] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.156504] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.UAR1._STA] (Node ffff88012d02fb28),
+> AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.156666] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+> [    0.156671] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.156680] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.156689] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.LPTE.CLPS] (Node ffff88012d02fcb8),
+> AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.156702] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.LPTE._STA] (Node ffff88012d02fce0),
+> AE_AML_MUTEX_ORDER (20140214/psparse-536)
+> [    0.162229] ACPI Error: Cannot acquire Mutex for method [SNVC], current SyncLevel is too large (1) (20140214/dsmethod-362)
+> [    0.162234] ACPI Error: Method parse/execution failed [\SMBF] (Node ffff88012d026ec0), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.162244] ACPI Error: Method parse/execution failed [\GENS] (Node ffff88012d026e70), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+> [    0.162254] ACPI Error: Method parse/execution failed [\EISC] (Node ffff88012d02d560), AE_AML_MUTEX_ORDER
+> (20140214/psparse-536)
+
+We are not sure if this is the Windows behavior.
+And we have a discussion at:
+https://bugzilla.kernel.org/show_bug.cgi?id=52191
+Such error messages are useful to improve the facility or force us to change our mind.
+
+Thanks and best regards
+-Lv
+
+> 
+> (you get the idea.  I get a total of 172 'ACPI Error:' messages before I get to
+> a single-user prompt)
