@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933662AbaCQO5E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 10:57:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933197AbaCQO5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 10:57:01 -0400
-Date: Mon, 17 Mar 2014 15:56:44 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 4/5] perf tools: Add machine pointer into thread struct
-Message-ID: <20140317145644.GE6469@krava.brq.redhat.com>
-References: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
- <1394805606-25883-5-git-send-email-jolsa@redhat.com>
- <20140314141612.GE2396@ghostprotocols.net>
- <878us9tht4.fsf@sejong.aot.lge.com>
+	id S933138AbaCQO6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 10:58:11 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:53673 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932733AbaCQO6I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 10:58:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878us9tht4.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5346848.pBsh8NcQja@wuerfel>
+References: <1395057839-23871-1-git-send-email-ks.giri@samsung.com>
+	<1395057839-23871-3-git-send-email-ks.giri@samsung.com>
+	<5346848.pBsh8NcQja@wuerfel>
+Date: Mon, 17 Mar 2014 20:28:07 +0530
+Message-ID: <CABb+yY0XXMQaEuDV0FeURjOijYEUKyqU9Dr6XTDRcxc1qaBu9g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] arm64: dts: exynos: added mailbox node
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Girish K S <ks.giri@samsung.com>, devicetree@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suman Anna <s-anna@ti.com>, Ilho Lee <ilho215.lee@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 04:17:43PM +0900, Namhyung Kim wrote:
-> Hi Arnaldo,
-> 
-> On Fri, 14 Mar 2014 11:16:12 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Fri, Mar 14, 2014 at 03:00:05PM +0100, Jiri Olsa escreveu:
-> >> Need machine pointer in thread object, so we could
-> >> lookup the process thread in following patch.
-> >
-> > Can't we use the already existing thread->mg.machine for that?
-> 
-> It needs to know the machine when ->mg is not allocated yet.
+On Mon, Mar 17, 2014 at 5:45 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 17 March 2014 17:33:59 Girish K S wrote:
+>> +Samsung Mailbox Driver
+>> +
+>> +Required properties:
+>> +- compatible:          Should be one of the following,
+>> +                           "samsung,gh7-mailbox" for
+>> +                               Samsung GH7 SoC series
+>> +                           "samsung,exynos-mailbox" for
+>> +                               exynosx SoC series
+>> +- reg:                 Contains the mailbox register address range (base address
+>> +                       and length)
+>> +- interrupts:          Contains the interrupt information for the mailbox
+>> +                       device.
+>> +- samsung,mbox-names:  Array of the names of the mailboxes
+>>
+>
+> I think we should not allow new mailbox drivers that don't conform to
+> the framework that is currently under discussion. In particular, this
+> means don't do a "samsung,mbox-names" property. The current consensus
+> seems to be to have a #mbox-cells" property that allows to pass extra
+> parameters from the client driver, and uses an "mboxes" property
+> to reference the mailbox provided.
+>
+> It would be good if you follow up for the subsystem discussion and
+> ensure it gets merged in time, and supports all the use cases you are
+> interested in. The interface is not entirely nailed down yet, so
+> it's a good time to contribute. However, I can already promise that
+> it won't use matching by strings.
+>
+I was just about to submit next revision of framework that this
+Samsung driver conforms to. Now I think I need some expert opinion ...
+(sorry if following is repetition)
 
-right
+  As Kumar Gala pointed out in the other thread, the mailbox/ipc chain
+is going to be _very_ platform specific so much so that one rethinks
+if a common api is even warranted : because the client driver will be
+different even if just the remote api(which is going to be
+proprietary) changes, keeping everything else same. For example, a
+client driver for Highbank is highly unlikely to be reusable on
+Exynos, even if both used the same mailbox controller. By my limited
+foresight, mailbox assignment via DT doesn't bring us much benefit but
+only ritual code.
 
-> 
-> That means we can now get rid of the mg->machine?
+  Perhaps the mailbox controller driver should name its links as it
+wants. By how the remote works with the mailbox links, the client
+driver asks for a specific mailbox link (which maybe a hardcoded
+string in the driver or be gotten alongside other data via client's
+DT) ?
 
-not really, it's heavilly used in kernel symbol handling,
-to get machine details.. and there's no kernel thread
-specific info, which we could use to get machine pointer
+  IOW we can't have a generic API/DT-bindings that could get us
+reusable client drivers. But only common framework/code that would
+otherwise be duplicated by every platform.
 
-we would need to factor this part to be able to get rid
-of mg->machine
-
-jirka
+Thanks
+Jassi
