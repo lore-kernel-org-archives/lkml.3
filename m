@@ -1,66 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251AbaCQCct (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Mar 2014 22:32:49 -0400
-Received: from ozlabs.org ([203.10.76.45]:47389 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755818AbaCQCcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 22:32:47 -0400
-Date: Mon, 17 Mar 2014 13:32:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jikos@jikos.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: linux-next: manual merge of the hid tree with Linus' tree
-Message-Id: <20140317133232.c18d3d977ecf8466f9959a8f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__17_Mar_2014_13_32_32_+1100_8Ugo4k6G6oI=a_lx"
+	id S932291AbaCQCfU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Mar 2014 22:35:20 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:45891 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932257AbaCQCfT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Mar 2014 22:35:19 -0400
+Date: Mon, 17 Mar 2014 03:34:41 +0100
+From: Davide Berardi <berardi.dav@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: joe@perches.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fixing some coding style issues on line6 driver.c
+Message-ID: <20140317033441.125d2212@White-Rabbit>
+In-Reply-To: <1394988926.5689.39.camel@joe-AO722>
+References: <20140316132016.388a3f69@White-Rabbit>
+	<20140316163700.GA1781@kroah.com>
+	<1394988926.5689.39.camel@joe-AO722>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_Mar_2014_13_32_32_+1100_8Ugo4k6G6oI=a_lx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for your replies, I've applied your suggestions to the patch.
 
-Hi Jiri,
+Davide
 
-Today's linux-next merge of the hid tree got a conflict in
-drivers/hid/i2c-hid/i2c-hid.c between commit 9d27f43274e4 ("HID: fix
-buffer allocations") from Linus' tree and commit 649f94790314 ("HID:
-i2c-hid: use generic .request() implementation") from the hid tree.
+Fixed some line over 80 characters.
 
-I fixed it up (the latter removes the code modified by the former, so I
-just used the latter) and can carry the fix as necessary (no action is
-required).
+From: Davide Berardi <berardi.dav@gmail.com>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Davide Berardi <berardi.dav@gmail.com>
 
---Signature=_Mon__17_Mar_2014_13_32_32_+1100_8Ugo4k6G6oI=a_lx
-Content-Type: application/pgp-signature
+---
+ drivers/staging/line6/driver.c  | 54 ++++++++++++++++++++++-------------------
+ drivers/staging/line6/usbdefs.h |  2 +-
+ 2 files changed, 30 insertions(+), 26 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
+index e7a9d8d..77f1b42 100644
+--- a/drivers/staging/line6/driver.c
++++ b/drivers/staging/line6/driver.c
+@@ -57,28 +57,32 @@ static const struct usb_device_id line6_id_table[] = {
 
-iQIcBAEBCAAGBQJTJl7EAAoJEMDTa8Ir7ZwVzY0P/AlciGvWxOpazljxC4+suQc/
-fQcUAU5ngfSPJhjPKSry8IQLJCleF+DhbNrbHwUwXbGxCWbfN+PthYcJTXyVd/dx
-hZKthWhvy97Hfam1eFYppmfdXaYtHdYao1tmEThZeKWzqZxKns+YIq70muZIZScL
-G2PbFTwlLo2Fx7upWOnGIvqmnFI7xsAIc8pK4tXVjmNQ+qvaFci5Sqx6t+imD+p3
-audugdN7vWEXe2rDpBRR7oEesHlC5iCs5XNofO7gVKJT7dWmtXKDYgZMrub3WYtf
-gS4YNgnsJ7NIfAL+K32rRESVOVavxvqJA1G9oH+7IhfSLJ/drTpKbkzeQanavOzP
-Or4KuIjlOdY5UkQduoRT0gpGeV0jQXqnr8OYPU/KJUjHWPdPGITlye6t4Usp8S81
-gDgoW9w3CABeLZEHjX22oCCbqg1FCrgYVVU0plGBYavFawi0YYahKZ0SoEwdGVN0
-DGSKtZ2A4GgOJhOBbdUPs/ex/Gl4HBdcGOkaQYM5bT0uUhhtjmPOSNvAmcXDlU7a
-KOcWd8dSAR7n/Wc4IHhPiLzGQA231lda+gl1m8KdnaUGRoaDy9ThgI092PnU/Cim
-BreQX1KJ7odAgXfQP6r9vx8PtKfEEdJwvxSuL07DC7tZc+1xVmmdD7Fo6JrRMdyi
-YzY/8RfctOPilsFu7eTs
-=p/a8
------END PGP SIGNATURE-----
+ MODULE_DEVICE_TABLE(usb, line6_id_table);
 
---Signature=_Mon__17_Mar_2014_13_32_32_+1100_8Ugo4k6G6oI=a_lx--
++#define L6PROP(dev_bit, dev_id, dev_name, dev_cap)\
++	{.device_bit = LINE6_BIT_##dev_bit, .id = dev_id,\
++	 .name = dev_name, .capabilities = LINE6_BIT_##dev_cap}
++
+ /* *INDENT-OFF* */
+-static struct line6_properties line6_properties_table[] = {
+-	{ LINE6_BIT_BASSPODXT,     "BassPODxt",     "BassPODxt",        LINE6_BIT_CONTROL_PCM_HWMON },
+-	{ LINE6_BIT_BASSPODXTLIVE, "BassPODxtLive", "BassPODxt Live",   LINE6_BIT_CONTROL_PCM_HWMON },
+-	{ LINE6_BIT_BASSPODXTPRO,  "BassPODxtPro",  "BassPODxt Pro",    LINE6_BIT_CONTROL_PCM_HWMON },
+-	{ LINE6_BIT_GUITARPORT,    "GuitarPort",    "GuitarPort",       LINE6_BIT_PCM               },
+-	{ LINE6_BIT_POCKETPOD,     "PocketPOD",     "Pocket POD",       LINE6_BIT_CONTROL           },
+-	{ LINE6_BIT_PODHD300,      "PODHD300",      "POD HD300",        LINE6_BIT_CONTROL_PCM_HWMON },
+-	{ LINE6_BIT_PODHD400,      "PODHD400",      "POD HD400",        LINE6_BIT_CONTROL_PCM_HWMON },
+-	{ LINE6_BIT_PODHD500,      "PODHD500",      "POD HD500",        LINE6_BIT_CONTROL_PCM_HWMON },
+-	{ LINE6_BIT_PODSTUDIO_GX,  "PODStudioGX",   "POD Studio GX",    LINE6_BIT_PCM               },
+-	{ LINE6_BIT_PODSTUDIO_UX1, "PODStudioUX1",  "POD Studio UX1",   LINE6_BIT_PCM               },
+-	{ LINE6_BIT_PODSTUDIO_UX2, "PODStudioUX2",  "POD Studio UX2",   LINE6_BIT_PCM               },
+-	{ LINE6_BIT_PODX3,         "PODX3",         "POD X3",           LINE6_BIT_PCM               },
+-	{ LINE6_BIT_PODX3LIVE,     "PODX3Live",     "POD X3 Live",      LINE6_BIT_PCM               },
+-	{ LINE6_BIT_PODXT,         "PODxt",         "PODxt",            LINE6_BIT_CONTROL_PCM_HWMON },
+-	{ LINE6_BIT_PODXTLIVE,     "PODxtLive",     "PODxt Live",       LINE6_BIT_CONTROL_PCM_HWMON },
+-	{ LINE6_BIT_PODXTPRO,      "PODxtPro",      "PODxt Pro",        LINE6_BIT_CONTROL_PCM_HWMON },
+-	{ LINE6_BIT_TONEPORT_GX,   "TonePortGX",    "TonePort GX",      LINE6_BIT_PCM               },
+-	{ LINE6_BIT_TONEPORT_UX1,  "TonePortUX1",   "TonePort UX1",     LINE6_BIT_PCM               },
+-	{ LINE6_BIT_TONEPORT_UX2,  "TonePortUX2",   "TonePort UX2",     LINE6_BIT_PCM               },
+-	{ LINE6_BIT_VARIAX,        "Variax",        "Variax Workbench", LINE6_BIT_CONTROL           },
++static const struct line6_properties line6_properties_table[] = {
++	L6PROP(BASSPODXT,     "BassPODxt",     "BassPODxt",        CTRL_PCM_HW),
++	L6PROP(BASSPODXTLIVE, "BassPODxtLive", "BassPODxt Live",   CTRL_PCM_HW),
++	L6PROP(BASSPODXTPRO,  "BassPODxtPro",  "BassPODxt Pro",    CTRL_PCM_HW),
++	L6PROP(GUITARPORT,    "GuitarPort",    "GuitarPort",       PCM),
++	L6PROP(POCKETPOD,     "PocketPOD",     "Pocket POD",       CONTROL),
++	L6PROP(PODHD300,      "PODHD300",      "POD HD300",        CTRL_PCM_HW),
++	L6PROP(PODHD400,      "PODHD400",      "POD HD400",        CTRL_PCM_HW),
++	L6PROP(PODHD500,      "PODHD500",      "POD HD500",        CTRL_PCM_HW),
++	L6PROP(PODSTUDIO_GX,  "PODStudioGX",   "POD Studio GX",    PCM),
++	L6PROP(PODSTUDIO_UX1, "PODStudioUX1",  "POD Studio UX1",   PCM),
++	L6PROP(PODSTUDIO_UX2, "PODStudioUX2",  "POD Studio UX2",   PCM),
++	L6PROP(PODX3,         "PODX3",         "POD X3",           PCM),
++	L6PROP(PODX3LIVE,     "PODX3Live",     "POD X3 Live",      PCM),
++	L6PROP(PODXT,         "PODxt",         "PODxt",            CTRL_PCM_HW),
++	L6PROP(PODXTLIVE,     "PODxtLive",     "PODxt Live",       CTRL_PCM_HW),
++	L6PROP(PODXTPRO,      "PODxtPro",      "PODxt Pro",        CTRL_PCM_HW),
++	L6PROP(TONEPORT_GX,   "TonePortGX",    "TonePort GX",      PCM),
++	L6PROP(TONEPORT_UX1,  "TonePortUX1",   "TonePort UX1",     PCM),
++	L6PROP(TONEPORT_UX2,  "TonePortUX2",   "TonePort UX2",     PCM),
++	L6PROP(VARIAX,        "Variax",        "Variax Workbench", CONTROL),
+ };
+ /* *INDENT-ON* */
+
+@@ -152,10 +156,10 @@ int line6_send_raw_message(struct usb_line6 *line6, const char *buffer,
+ 		int retval;
+
+ 		retval = usb_interrupt_msg(line6->usbdev,
+-					   usb_sndintpipe(line6->usbdev,
+-							  line6->ep_control_write),
+-					   (char *)frag_buf, frag_size,
+-					   &partial, LINE6_TIMEOUT * HZ);
++					usb_sndintpipe(line6->usbdev,
++						line6->ep_control_write),
++					(char *)frag_buf, frag_size,
++					&partial, LINE6_TIMEOUT * HZ);
+
+ 		if (retval) {
+ 			dev_err(line6->ifcdev,
+diff --git a/drivers/staging/line6/usbdefs.h b/drivers/staging/line6/usbdefs.h
+index eda0456..2d1cc47 100644
+--- a/drivers/staging/line6/usbdefs.h
++++ b/drivers/staging/line6/usbdefs.h
+@@ -106,7 +106,7 @@ enum {
+ /* device support hardware monitoring */
+ #define LINE6_BIT_HWMON (1 << 2)
+
+-#define LINE6_BIT_CONTROL_PCM_HWMON	(LINE6_BIT_CONTROL |	\
++#define LINE6_BIT_CTRL_PCM_HW	(LINE6_BIT_CONTROL |	\
+ 					 LINE6_BIT_PCM |	\
+ 					 LINE6_BIT_HWMON)
+
