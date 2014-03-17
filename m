@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932989AbaCQMTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 08:19:12 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:57107 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932767AbaCQMTK (ORCPT
+	id S933032AbaCQMTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 08:19:34 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:55970 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932767AbaCQMTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 08:19:10 -0400
-Message-ID: <5326E836.7060407@gmail.com>
-Date: Mon, 17 Mar 2014 20:19:02 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 17 Mar 2014 08:19:33 -0400
 MIME-Version: 1.0
-To: gxt@mprc.pku.edu.cn
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Consult] unicore32: Is unicore32 still alive?
-References: <5322592B.6060104@gmail.com>
-In-Reply-To: <5322592B.6060104@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1ebfa80c-4a68-4602-bc98-e5d5f0893998@email.android.com>
+References: <1394468273-13676-1-git-send-email-david.vrabel@citrix.com>
+	<531DEB11.2070709@zytor.com>
+	<531DF319.6010800@citrix.com>
+	<53266841.6090308@prgmr.com>
+	<1ebfa80c-4a68-4602-bc98-e5d5f0893998@email.android.com>
+Date: Mon, 17 Mar 2014 12:19:31 +0000
+X-Google-Sender-Auth: SxzBLWN0f-Lv3QfTuOrwAmMA6Js
+Message-ID: <CAFLBxZZz4Ot0CgWRHNRaM5zVkpf+QdXveFz_m3aVYnKUd9cAdQ@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCHv1] x86: don't schedule when handling #NM exception
+From: George Dunlap <George.Dunlap@eu.citrix.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Sarah Newman <srn@prgmr.com>, David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all:
+On Mon, Mar 17, 2014 at 3:33 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> No, the right thing is to unf*ck the Xen braindamage and use eagerfpu as a workaround for the legacy hypervisor versions.
 
-As far as I know, unicore32 is still alive. If it will be obsoleted,
-please let me know, so we can avoid the related spam about unicored32
-(also can save my time resource).
+The interface wasn't an accident.  In the most common case you'll want
+to clear the bit anyway. In PV mode clearing it would require an extra
+trip up into the hypervisor.  So this saves one trip up into the
+hypervisor on every context switch which involves an FPU, at the
+expense of not being able to context-switch away when handling the
+trap.
 
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+ -George
