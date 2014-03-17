@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933252AbaCQOIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 10:08:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61544 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244AbaCQOI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 10:08:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91: DT update for 3.15 #1
-Date: Mon, 17 Mar 2014 15:08:21 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, arm@kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-References: <1394705197-29992-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1394705197-29992-1-git-send-email-nicolas.ferre@atmel.com>
+	id S1756701AbaCQOMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 10:12:05 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51177 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756367AbaCQOMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 10:12:02 -0400
+Message-ID: <53270EF8.6020908@ti.com>
+Date: Mon, 17 Mar 2014 17:04:24 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexander Holler <holler@ahsoftware.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
+References: <5316FFCE.1060603@ti.com>	<1394018461-757-1-git-send-email-holler@ahsoftware.de>	<CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>	<5322D529.4070904@ahsoftware.de> <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com> <5326F8C5.5090406@ti.com>
+In-Reply-To: <5326F8C5.5090406@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201403171508.21419.arnd@arndb.de>
-X-Provags-ID: V02:K0:mGSqNc/plnF3h9rLzqkeCE7/xtJF4+8rC2Qs6ktewzd
- 8xrcIjnUEIi9xKLvorsVe4qPhCDhW6gFxejPMl58AxRL4ZG/1T
- vPcJP2zRfUu/zx4fLq+L+RMj0AEaa6ituHwuc+2xsok8vhQVj1
- kIKZ60Q3FIkcViilf1UlMEDYiTn7KGFU76jKqdHi7KAOdlkJal
- +Kn/d7m0H91sKjaBrEH+cLSaGM0KEESwfEXiaa5DADkQLG0cuW
- IqEikj2TOyzBZPIZzWy3kBBP8Ig7kvpTta6A9ILGRq1gkTFuif
- XW1N5m2Pn43jQd5baFQSmLMHAbVnJD5NAt5msZRtz2GYh/wz2u
- kGEH6t7wL+bBPeuiIllhqaLmFNpSnVySDuUXomEor
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 March 2014, Nicolas Ferre wrote:
-> Arnd, Olof, Kevin,
+On 03/17/2014 03:29 PM, Sekhar Nori wrote:
+> On Friday 14 March 2014 04:32 PM, Linus Walleij wrote:
+>> On Fri, Mar 14, 2014 at 11:08 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+>>> Am 11.03.2014 11:15, schrieb Linus Walleij:
+>>>> On Wed, Mar 5, 2014 at 12:21 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+>>>>
+>>>>> The driver missed an of_xlate function to translate gpio numbers
+>>>>> as found in the DT to the correct chip and number.
+>>>>>
+>>>>> While there I've set #gpio_cells to a fixed value of 2.
+>>>>>
+>>>>> I've used gpio-pxa.c as template for those changes and tested my changes
+>>>>> successfully on a da850 board using entries for gpio-leds in a DT. So I didn't
+>>>>> reinvent the wheel but just copied and tested stuff.
+>>>>>
+>>>>> Thanks to Grygorii Strashko for the hint to the existing code in gpio-pxa.
+>>>>>
+>>>>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+>>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>>>
+>>>> This v2 version applied, thanks!
+>>>
+>>> Thanks, but actually that should have been a fix for 3.14 with which the
+>>> OF functionality for davinci gpio gets introduced. I assum with the
+>>> patch in for-next, 3.14 will appear with that functionality broken and
+>>> it will become a candidate for -stable.
+>>
+>> I just get the impression that DT support for DaVinci in v3.14 is so risky
+>> and unstable that noone except those implementing it (i.e. you) is really
+>> using it, is that correct?
+>>
+>> In that case it is hardly a fix that we need to rush out to the entire world.
 > 
-> This is one request for AT91 DT update for 3.15. A lot of forgotten bits that
-> are corrected here, and old DT properties that are removed, nothing really new.
-> I think that the little modifications to the documentation can also go the
-> arm-soc way: there is no fundamental change to the binding, only more coherence
-> added.
+> One thing to note is that this driver is used by keystone too and all
+> its users are DT-only. Although I do not see any in-kernel DT GPIO users
+> even there.
+> 
+> I can confirm the patch does not break my gpiolib based test module
+> (test with and without DT), but then it did not have an issue even before.
 
-Merged into next/dt branch, thanks!
+The issues isn't observed on Keystone2 as it has <32 gpios as of now, also GPIO
+ support for keystone is going to be added in 3.15 (including DT changes).
 
-	Arnd
+Regards,
+-grygorii
+
