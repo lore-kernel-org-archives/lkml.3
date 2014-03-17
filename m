@@ -1,40 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933115AbaCQNbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 09:31:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62012 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014AbaCQNbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 09:31:10 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1394837930-27731-2-git-send-email-lauraa@codeaurora.org>
-References: <1394837930-27731-2-git-send-email-lauraa@codeaurora.org> <1394837930-27731-1-git-send-email-lauraa@codeaurora.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: dhowells@redhat.com, Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Simek <monstr@monstr.eu>, Chen Liqin <liqin.linux@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-cris-kernel@axis.com,
-        linux-m32r@ml.linux-m32r.org, microblaze-uclinux@itee.uq.edu.au,
-        linux-am33-list@redhat.com
-Subject: Re: [PATCH 2/2] Cleanup useless architecture versions of scatterlist.h
-Date: Mon, 17 Mar 2014 13:30:16 +0000
-Message-ID: <11082.1395063016@warthog.procyon.org.uk>
+	id S933270AbaCQNbg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 09:31:36 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51772 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933122AbaCQNbb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 09:31:31 -0400
+Message-Id: <20140317132733.789623766@bombadil.infradead.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 17 Mar 2014 06:27:33 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 00/39] [WIP] scsi multiqueue
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Laura Abbott <lauraa@codeaurora.org> wrote:
+I'd like to repost the current state of the scsi multiqueue work.  This
+version has shown stable under various loads and is getting close to
+feature complete.  So far we see it improving the IOPS over the old code
+up to 30% and maxing out the current test hardware, so we will have to
+test on bigger hardware for more numbers.  More impressive is the CPU
+usage reduction of over 200% on multi-lun tests where we can now mostly
+avoid the host lock contention.
 
-> There's no need to have an architecture version of scatterlist.h
-> if the only thing the file does is include asm-generic/scatterlist.h.
-> Switch to the asm-generic versions directly.
+The big remaining TODO item is to look into the queue limit and tag
+allocation in blk-mq to make it work for all existing SCSI drivers.
 
-Acked-by: David Howells <dhowells@redhat.com> [FRV and MN10300]
+Feel free to test it with the existing drivers that set use_blk_mq as well
+as with any other driver that doesn't use scsi_init_shared_tag_map.
