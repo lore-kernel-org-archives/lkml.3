@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaCQVyV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 17:54:21 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33825 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752634AbaCQVyT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 17:54:19 -0400
-X-Sasl-enc: 9vv6/ES/yezOU0WVfjZfheytKNnML24tvmNJ01VQ0DPP 1395093258
-Date: Mon, 17 Mar 2014 14:56:19 -0700
-From: Greg KH <greg@kroah.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Mark Brown <broonie@kernel.org>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20140317215619.GA25228@kroah.com>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
- <20140312015021.GC10106@kroah.com>
- <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au>
- <20140317183333.GE10565@kroah.com>
- <1395088410.15098.175.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395088410.15098.175.camel@pasglop>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752785AbaCQV6T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 17:58:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9536 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899AbaCQV6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 17:58:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,673,1389772800"; 
+   d="scan'208";a="493895060"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 3/5 V2] mei: client.h fix checkpatch errors
+Date: Mon, 17 Mar 2014 23:57:23 +0200
+Message-Id: <1395093443-11533-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 07:33:30AM +1100, Benjamin Herrenschmidt wrote:
-> On Mon, 2014-03-17 at 11:33 -0700, Greg KH wrote:
-> 
-> > There were only 3 (or 4), users of this api, and no new ones had been
-> > added in _years_, it's a very obscure thing, and odds are, it wouldn't
-> > ever be added again, especially as it was just removed entirely not
-> > being needed anymore.  And I'd argue, it's something that you shouldn't
-> > have even been doing in the first place, so why a new user of it was
-> > added now is quite strange to me.
-> 
-> Actually that's a good question. Is there a better way for us than to
-> use this API ? Essentially we use that because it's our understanding
-> that it is what is needed for a sysfs file that can remove its parent
-> directory from within a write() op.
-> 
-> We followed the driver "remove" implementation as an example.
-> 
-> The reason the opal elog and dump patches use it is that those two
-> patches add sysfs interface that represent the error logs (and platform
-> dumps but you can treat the latter as some kind of special case of error
-> logs) from the service processor in sysfs.
-> 
-> So for each log we create a dir (kobject) which we populate with a few
-> things like the log unique ID, raw data, etc.... and a file that can be
-> used to "ack" the log with the service processor.
-> 
-> The latter has the effect of removing it. This is done by the collection
-> daemon after it has confirmed that the error log has been stored to disk
-> and properly flushed.
-> 
-> Is there a better interface ? Can we implement for example unlink() on
-> the kobject itself ? IE. Do the ack by essentially having userspace rm
-> the directory ? :-)
+Fix checkpatch error
+return is not a function, parentheses are not required
 
-No you can't, sorry.
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+V2: fix typo in the commit message
+ checkpetch -> checkpatch
 
-And this seems like a huge abuse of sysfs, you better be using binary
-sysfs files for your log data...
+ drivers/misc/mei/client.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Do you have a pointer to where you document this sysfs api in
-Documentation/ABI/ ?
+diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
+index 8139393..96d5de0 100644
+--- a/drivers/misc/mei/client.h
++++ b/drivers/misc/mei/client.h
+@@ -68,15 +68,15 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl);
+  */
+ static inline bool mei_cl_is_connected(struct mei_cl *cl)
+ {
+-	return (cl->dev &&
++	return  cl->dev &&
+ 		cl->dev->dev_state == MEI_DEV_ENABLED &&
+-		cl->state == MEI_FILE_CONNECTED);
++		cl->state == MEI_FILE_CONNECTED;
+ }
+ static inline bool mei_cl_is_transitioning(struct mei_cl *cl)
+ {
+-	return (MEI_FILE_INITIALIZING == cl->state ||
++	return  MEI_FILE_INITIALIZING == cl->state ||
+ 		MEI_FILE_DISCONNECTED == cl->state ||
+-		MEI_FILE_DISCONNECTING == cl->state);
++		MEI_FILE_DISCONNECTING == cl->state;
+ }
+ 
+ bool mei_cl_is_other_connecting(struct mei_cl *cl);
+-- 
+1.8.5.3
 
-> Now regarding the practicals of sorting out our trees, Stephen suggested
-> that rather than doing anything on my side (heh, I like that !), you
-> should revert the last patch of the series, the one removing the old
-> API, in your tree.
-> 
-> It can then be re-applied later around rc1.
-
-I'll look to see if we can do that, let me dig it up out of my tree...
-
-thanks,
-
-greg k-h
