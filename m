@@ -1,75 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751063AbaCQUCo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 16:02:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47792 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaCQUCn (ORCPT
+	id S1751382AbaCQUEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 16:04:00 -0400
+Received: from smtprelay0070.hostedemail.com ([216.40.44.70]:53290 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750745AbaCQUD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 16:02:43 -0400
-Date: Mon, 17 Mar 2014 13:02:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: penguin-kernel@I-love.SAKURA.ne.jp, Oleg Nesterov <oleg@redhat.com>,
-        rientjes@google.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        tj@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kernel Team <kernel-team@lists.ubuntu.com>
-Subject: Re: [v3.13][v3.14][Regression] kthread: make kthread_create()
- killable
-Message-Id: <20140317130241.7e4fde86d75d417628da6f1a@linux-foundation.org>
-In-Reply-To: <53236AA2.7030105@canonical.com>
-References: <53236AA2.7030105@canonical.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Mon, 17 Mar 2014 16:03:59 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3868:3872:3874:4321:5007:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: chess93_5cbcd87a70b28
+X-Filterd-Recvd-Size: 1083
+Message-ID: <1395086635.2556.28.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Reduce false positives for "Missing blank
+ line after declarations" test
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 17 Mar 2014 13:03:55 -0700
+In-Reply-To: <1395081926.2556.27.camel@joe-AO722>
+References: <1395081926.2556.27.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Mar 2014 16:46:26 -0400 Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
+On Mon, 2014-03-17 at 11:45 -0700, Joe Perches wrote:
+> Avoid some false positives for this test by adding
+> a few common macro types that declare variables.
 
-> Hi Tetsuo,
-> 
-> A kernel bug report was opened against Ubuntu[0].  We performed a kernel
-> bisect, and found that reverting the following commit resolved this bug:
-> 
-> 
-> commit 786235eeba0e1e85e5cbbb9f97d1087ad03dfa21
-> Author: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date:   Tue Nov 12 15:06:45 2013 -0800
-> 
->     kthread: make kthread_create() killable
-> 
-> The regression was introduced as of v3.13-rc1.
-> 
-> The bug indicates an issue with the SAS controller during
-> initialization, which prevents the system from booting.  Additional
-> details are available in the bug report or on request.
-> 
-> I was hoping to get your feedback, since you are the patch author.  Do
-> you think gathering any additional data will help diagnose this issue,
-> or would it be best to submit a revert request?
-> 
-> [0] http://pad.lv/1276705
+Self-NAK.  It causes too many other false positives.
 
-What process is running here?  Presumably modprobe.
+I'll play with it awhile and test it better before
+posting something else.
 
-A possible explanation is that modprobe has genuinely received a
-SIGKILL.  Can you identify anything in this setup which might send a
-SIGKILL to the modprobe process?
-
-kthread_create_on_node() thinks that SIGKILL came from the oom-killer
-and it cheerfully returns -ENOMEM, which is incorrect if that signal
-came from userspace.  And I don't _think_ we prevent
-userspace-originated signals from unblocking
-wait_for_completion_killable()?
-
-
-Root cause time: it's wrong for the oom-killer to use SIGKILL.  In fact
-it's basically always wrong to send signals from in-kernel.  Signals
-are a userspace IPC mechanism and using them in-kernel a) makes it hard
-(or impossible) to distinguish them from userspace-originated signals
-and b) permits userspace to produce surprising results in the kernel,
-which I suspect is what we're seeing here.
