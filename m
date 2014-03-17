@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060AbaCQUeD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 16:34:03 -0400
-Received: from gate.crashing.org ([63.228.1.57]:40021 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061AbaCQUd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 16:33:59 -0400
-Message-ID: <1395088410.15098.175.camel@pasglop>
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Mark Brown <broonie@kernel.org>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 18 Mar 2014 07:33:30 +1100
-In-Reply-To: <20140317183333.GE10565@kroah.com>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
-	 <20140312015021.GC10106@kroah.com>
-	 <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au>
-	 <20140317183333.GE10565@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
+	id S1751953AbaCQUjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 16:39:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47935 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaCQUjX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 16:39:23 -0400
+Date: Mon, 17 Mar 2014 13:39:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        penguin-kernel@I-love.SAKURA.ne.jp, rientjes@google.com,
+        Linus Torvalds <torvalds@linux-foundation.org>, tj@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kernel Team <kernel-team@lists.ubuntu.com>
+Subject: Re: [v3.13][v3.14][Regression] kthread: make kthread_create()
+ killable
+Message-Id: <20140317133920.7b944250d90886daa8ea4287@linux-foundation.org>
+In-Reply-To: <20140317201919.GA28997@redhat.com>
+References: <53236AA2.7030105@canonical.com>
+	<20140317130241.7e4fde86d75d417628da6f1a@linux-foundation.org>
+	<20140317201919.GA28997@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-17 at 11:33 -0700, Greg KH wrote:
+On Mon, 17 Mar 2014 21:19:19 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
 
-> There were only 3 (or 4), users of this api, and no new ones had been
-> added in _years_, it's a very obscure thing, and odds are, it wouldn't
-> ever be added again, especially as it was just removed entirely not
-> being needed anymore.  And I'd argue, it's something that you shouldn't
-> have even been doing in the first place, so why a new user of it was
-> added now is quite strange to me.
+> > kthread_create_on_node() thinks that SIGKILL came from the oom-killer
+> > and it cheerfully returns -ENOMEM, which is incorrect if that signal
+> > came from userspace.
+> 
+> Yes, I think it should return -EINTR.
+> 
+> > And I don't _think_ we prevent
+> > userspace-originated signals from unblocking
+> > wait_for_completion_killable()?
+> 
+> And we should not.
+> 
+> > Root cause time: it's wrong for the oom-killer to use SIGKILL.
+> 
+> Not sure... what else?
 
-Actually that's a good question. Is there a better way for us than to
-use this API ? Essentially we use that because it's our understanding
-that it is what is needed for a sysfs file that can remove its parent
-directory from within a write() op.
+If we really really have to use userspace IPC in the kernel then I
+suppose we could add a new signal type (SIGKERNEL?) which userspace can
+neither receive nor send.
 
-We followed the driver "remove" implementation as an example.
+> > In fact
+> > it's basically always wrong to send signals from in-kernel.
+> 
+> Well, SIGSEGV, SIGIO...
 
-The reason the opal elog and dump patches use it is that those two
-patches add sysfs interface that represent the error logs (and platform
-dumps but you can treat the latter as some kind of special case of error
-logs) from the service processor in sysfs.
+Those are kernel->userspace, not kernel->kernel.
 
-So for each log we create a dir (kobject) which we populate with a few
-things like the log unique ID, raw data, etc.... and a file that can be
-used to "ack" the log with the service processor.
+We have all sorts of cross-task mechanisms available in kernel (set_bit
+and wake_up would suffice here) so we don't need to use signals with
+all the baggage they bring along.
 
-The latter has the effect of removing it. This is done by the collection
-daemon after it has confirmed that the error log has been stored to disk
-and properly flushed.
+We used to do a lot more kernel signalling, but quite a lot got weeded
+out years ago.  The favorite failure mode was for a task to use
+TASK_INTERRUPTIBLE so that a kernel-sent signal could wake it up. 
+Whoops, drivers would outright fail if the calling task happened to
+have SIGINT pending!
 
-Is there a better interface ? Can we implement for example unlink() on
-the kobject itself ? IE. Do the ack by essentially having userspace rm
-the directory ? :-)
+> > Signals
+> > are a userspace IPC mechanism and using them in-kernel a) makes it hard
+> > (or impossible) to distinguish them from userspace-originated signals
+> > and b) permits userspace to produce surprising results in the kernel,
+> > which I suspect is what we're seeing here.
+> 
+> Well, I think in this case it doesn't matter who/why sends a signal.
+> The task is killed, it should react and exit asap. And kthread_create()
+> can fail in any case, at least the kernel should not crash.
 
-Now regarding the practicals of sorting out our trees, Stephen suggested
-that rather than doing anything on my side (heh, I like that !), you
-should revert the last patch of the series, the one removing the old
-API, in your tree.
-
-It can then be re-applied later around rc1.
-
-Cheers,
-Ben.
-
+Well yes.  In this "bug", userspace tried to kill udev and surprise
+surprise, that's what happened.  The only real kernel bug here is the
+incorrect errno.  But in the real world, the kernel changed and systems
+broke - we should try to unbreak them.
