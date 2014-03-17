@@ -1,120 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125AbaCQXq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 19:46:58 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53946 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaCQXq4 (ORCPT
+	id S1752479AbaCQXwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 19:52:47 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:53712 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaCQXwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 19:46:56 -0400
-Message-ID: <53278950.5030905@ti.com>
-Date: Mon, 17 Mar 2014 18:46:24 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 17 Mar 2014 19:52:45 -0400
+Date: Mon, 17 Mar 2014 17:52:40 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Jouni =?iso-8859-1?Q?Mett=E4l=E4?= <jtmettala@gmail.com>
+Cc: linux-pci@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Yinghai Lu <yinghai@kernel.org>, Guo Chao <yan@linux.vnet.ibm.com>,
+        David Airlie <airlied@linux.ie>, Aaron Durbin <adurbin@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [bisected] e501 "agp: Support 64-bit APBASE" agp fails without
+ iommu=remap=2
+Message-ID: <20140317235240.GA14292@google.com>
+References: <CAGG0vUg+No2GHLbOLQzV+fNm37OW-pfhmoQ3moxhr8uEObj9pQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>
-CC: Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv4 0/7] omap hwspinlock dt support
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com> <52F9282B.5000702@ti.com> <530B8C00.8020001@ti.com> <CAK=WgbZp_RQPCeZJyMRkNTQxaJsnGZ3DnjhSkYYR_-PAE_Kp4g@mail.gmail.com> <53239789.40600@ti.com> <CAK=WgbZCzA7JovSxnysHCQRZZWc3Z2j3AS8ekpM9fOZ160rmCA@mail.gmail.com> <532748B7.1080606@ti.com> <CAK=WgbYjtw+cxy5wX6pjK=Rpj6wOk6Cu+GrPuFN+sqtgDAY=_Q@mail.gmail.com>
-In-Reply-To: <CAK=WgbYjtw+cxy5wX6pjK=Rpj6wOk6Cu+GrPuFN+sqtgDAY=_Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGG0vUg+No2GHLbOLQzV+fNm37OW-pfhmoQ3moxhr8uEObj9pQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
+[+cc Daniel, Dave, Yinghai, Guo, Aaron, LKML]
 
-On 03/17/2014 02:47 PM, Ohad Ben-Cohen wrote:
-> Hi Suman,
+On Sat, Mar 15, 2014 at 02:32:22PM +0200, Jouni Mettälä wrote:
+> Hi. I can't start xsession without iommu=remap=2 kernel parameter.
 > 
-> On Mon, Mar 17, 2014 at 9:10 PM, Suman Anna <s-anna@ti.com> wrote:
->> base_id would be a property (if added) of the hwspinlock controller node,
->> and from DT perspective, we will be using the phandle for the controller
->> anyway. So, using a base_id+specifier seems redundant, as the specifier is
->> already w.r.t a hwspinlock controller node.  It is best to leave the base_id
->> out, just use the specifier. This is pretty much the standard practice
->> (GPIOs, DMAs, etc all follow this).
+> Kernel bisect lead to this commit
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=e501b3d87f003dfad8fcbd0f55ae17ea52495a56
 > 
-> Do you mean hwspin_lock_get_id() will return just the specifier
-> instead of base_id+specifier? This is problematic, because Linux will
-> not be able to communicate this lock id outside to a different core
-> running a different OS: that OS will have no idea what hwlock
-> controller this is relative to.
+> Reverting e501b3d87f003dfad8fcbd0f55ae17ea52495a56 fixes if for me.
+> 
+> I think this is relevant part of dmesg from affected kernel
+> 
+> agpgart-amd64 0000:00:04.0: AGP bridge [10b9/1689]
+> agpgart-amd64 0000:00:04.0: aperture from AGP @ 0 size 4096 MB
+> pci 0000:00:18.3: no usable aperture found
+> pci 0000:00:18.3: consider rebooting with iommu=memaper=2 to get a good
+> aperture
+> agpgart-amd64 0000:00:04.0: AGP bridge [10b9/1689]
+> agpgart-amd64 0000:00:04.0: aperture from AGP @ 0 size 4096 MB
+> pci 0000:00:18.3: no usable aperture found
+> pci 0000:00:18.3: consider rebooting with iommu=memaper=2 to get a good
+> aperture
+> agpgart-amd64 0000:04:00.0: AGP bridge [1002/4150]
+> agpgart-amd64 0000:04:00.0: aperture size 4096 MB is not right, using
+> settings from NB
+> agpgart-amd64 0000:04:00.0: AGP aperture is 256M @ 0xa0000000
 
-The behavior of hwspin_lock_get_id() is unchanged, so you will still get
-the global lock id back. The hwspin_lock_request_specific() (note: not
-the OF one) will also still be operating on the global lock id.
+Jouni also opened this bug report with complete dmesg logs:
+https://bugzilla.kernel.org/show_bug.cgi?id=72201
 
-> 
->> Please see the comments from Mark regarding the same on an earlier version.
-> 
-> I think I understand and agree with Mark generally, but in this case,
-> the hwlock id is not an implementation detail. Unlike GPIOs/DMAs, this
-> id number is global and system-wide (Linux is just one component in
-> the system, and must use the same predefined id numbers all other
-> cores use, otherwise it will be impossible to use those hwlocks for
-> multi-core synchronization).
-> 
->> Yes, I agree this is an issue if we have to have the base_ids fixed per
->> controller.
-> 
-> Do you see any other way this could work if the base_ids were not
-> predefined? Linux and some other core running a different OS must
-> agree on the id numbers of the hardware locks we have in the system.
+This is a regression that appeared in v3.14-rc1, when we merged
+e501b3d87f00.  The relevant part of that change is this:
 
-So far, we have not come across multiple controllers. I see your point,
-and I think this also depends on the semantics of how you exchange the
-lock id number. The agreement at the moment is on base_ids across
-multiple SoC components. If the semantics involve exchanging the
-controller instance, for example, then we might get away with it. But
-that probably involves adding additional helpers to retrieve controller
-instance in addition to lock number, or some other similar functions.
-I can add back the hwlock-base-id binding to the controller node.
+    --- a/drivers/char/agp/amd64-agp.c
+    +++ b/drivers/char/agp/amd64-agp.c
+    @@ -295,9 +294,7 @@ static int fix_northbridge(struct pci_dev *nb, struct pci_dev *agp, u16 cap)
 
-Mark, Kumar,
-Do you have any issues adding back this element for registration purposes?
+    -       pci_read_config_dword(agp, 0x10, &aper_low);
+    -       pci_read_config_dword(agp, 0x14, &aper_hi);
+    -       aper = (aper_low & ~((1<<22)-1)) | ((u64)aper_hi << 32);
+    +       aper = pci_bus_address(agp, AGP_APERTURE_BAR);
 
-> 
->>> Before DT came along, early board code could have reserved specific
->>> hwspinlocks if needed. Now with DT, we should add the list of reserved
->>> locks to the controller node, in order to prevent them from being
->>> dynamically allocated by others.
->>
->>
->> But that strictly relied on the order of requests without any core changes
->> in the hwspinlock core, right.
-> 
-> I don't think so, you could request a specific lock by id number.
+Here's what I think is happening: Previously, we read the GART
+aperture base directly from the BAR.  After e501b3d87f00, we use
+pci_bus_address() to convert the aperture *resource* (which the PCI
+core has previously read from the BAR and converted to a CPU address)
+back into a bus address.
 
-Sorry, I should have rephrased it better - by order, I meant the
-inherent order between board early code and other drivers. With DT, we
-cannot guarantee that right, as specific locks are requested from drivers.
+Normally both ways would give the same result, but here we had this:
 
-> 
->> With DT, the early board code is much simplified. Looking at the same
->> scenario from DT case, it seems kinda redundant to specify a set of reserved
->> locks both in the controller node, as well as the respective client drivers,
->> as there is almost no platform data with DT. The only use case for DT client
->> nodes would be for requesting specific locks. I agree with the problem you
->> described, and I think it will require a different set of changes to the
->> core.
-> 
-> Exactly. The platform-specific hwspinlock driver will have to inform
-> the core, upon registration, which of the locks are already reserved.
-> In turn, the core will never provide them to clients that dynamically
-> allocate an hwlock: they will be provided only to clients that ask for
-> them specifically (using phandle+specifier).
+    Node 0: aperture @ a0000000 size 256 MB
+    pci 0000:00:04.0: reg 0x10: [mem 0xa0000000-0xafffffff pref]
+    pci 0000:00:04.0: address space collision: [mem 0xa0000000-0xafffffff pref] conflicts with GART [mem 0xa0000000-0xafffffff]
 
-Understood. And we may have to assign the client association with a lock
-as well. These are core changes that were actually not needed in the
-non-DT case due to the inherent order as stated above. So, are you
-suggesting that we add one more property to the controller node to mark
-which are reserved, or rely on constructing this through DT tree parsing?
+The "Node 0" line is where we inserted the "GART [mem 0xa0000000-
+0xafffffff]" resource in gart_iommu_hole_init().  Then we enumerated
+the northbridge, which had a BAR containing 0xa0000000.  When we tried
+to claim that BAR, it conflicted with the "GART" resource, and we set
+r->start = 0 (in pcibios_allocate_dev_resources()).  So when we
+finally got to fix_northbridge(), the aperture resource was set to
+zero, not 0xa0000000.
 
-regards
-Suman
+Note that we complained about the collision even before e501b3d87f00.
+The only difference is that we used to re-read the BAR, where we still
+got 0xa0000000 even though the PCI core thought the resource was
+invalid and had set it to zero.
+
+I think we should stop inserting the GART resource directly in
+iomem_resource in gart_iommu_hole_init().  That should avoid the
+collision and leave the BAR resource valid, which means
+pci_bus_address() should work.
+
+Jouni, could you try the patch below?
+
+Bjorn
+
+
+
+Revert "[PATCH] Insert GART region into resource map"
+
+From: Bjorn Helgaas <bhelgaas@google.com>
+
+This reverts commit 56dd669a138c, which makes the GART visible in
+/proc/iomem.
+
+The GART addresses are bus addresses, not CPU addresses, and therefore
+should not be inserted in iomem_resource.
+
+On many machines, the GART region is addressable by the CPU as well as by
+an AGP master, but CPU addressability is not required by the spec.  On some
+of these machines, the GART is mapped by a PCI BAR, and in that case, the
+PCI core automatically inserts it into iomem_resource, just as it does for
+all BARs.
+
+Inserting it here means we'll have a conflict if the PCI core later tries
+to claim the GART region.
+
+Conflicts:
+	arch/x86_64/kernel/aperture.c
+
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ arch/x86/kernel/aperture_64.c |   20 +-------------------
+ 1 file changed, 1 insertion(+), 19 deletions(-)
+
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index fd972a3e4cbb..9fa8aa051f54 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -18,7 +18,6 @@
+ #include <linux/pci_ids.h>
+ #include <linux/pci.h>
+ #include <linux/bitops.h>
+-#include <linux/ioport.h>
+ #include <linux/suspend.h>
+ #include <asm/e820.h>
+ #include <asm/io.h>
+@@ -54,18 +53,6 @@ int fallback_aper_force __initdata;
+ 
+ int fix_aperture __initdata = 1;
+ 
+-static struct resource gart_resource = {
+-	.name	= "GART",
+-	.flags	= IORESOURCE_MEM,
+-};
+-
+-static void __init insert_aperture_resource(u32 aper_base, u32 aper_size)
+-{
+-	gart_resource.start = aper_base;
+-	gart_resource.end = aper_base + aper_size - 1;
+-	insert_resource(&iomem_resource, &gart_resource);
+-}
+-
+ /* This code runs before the PCI subsystem is initialized, so just
+    access the northbridge directly. */
+ 
+@@ -96,7 +83,6 @@ static u32 __init allocate_aperture(void)
+ 	memblock_reserve(addr, aper_size);
+ 	printk(KERN_INFO "Mapping aperture over %d KB of RAM @ %lx\n",
+ 			aper_size >> 10, addr);
+-	insert_aperture_resource((u32)addr, aper_size);
+ 	register_nosave_region(addr >> PAGE_SHIFT,
+ 			       (addr+aper_size) >> PAGE_SHIFT);
+ 
+@@ -444,12 +430,8 @@ int __init gart_iommu_hole_init(void)
+ 
+ out:
+ 	if (!fix && !fallback_aper_force) {
+-		if (last_aper_base) {
+-			unsigned long n = (32 * 1024 * 1024) << last_aper_order;
+-
+-			insert_aperture_resource((u32)last_aper_base, n);
++		if (last_aper_base)
+ 			return 1;
+-		}
+ 		return 0;
+ 	}
+ 
