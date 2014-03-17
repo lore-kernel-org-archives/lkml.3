@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933563AbaCQPQi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 11:16:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35704 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933452AbaCQPQP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 11:16:15 -0400
-Date: Mon, 17 Mar 2014 16:16:01 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>
-Subject: Re: Subject: Warning in workqueue.c
-Message-ID: <20140317151601.GH25546@laptop.programming.kicks-ass.net>
-References: <52FB90C6.4010701@linux.vnet.ibm.com>
- <52FC3C83.8020303@cn.fujitsu.com>
- <52FD07B2.5080402@linux.vnet.ibm.com>
- <20140213204102.GC17608@htj.dyndns.org>
- <20140214160923.GK27965@twins.programming.kicks-ass.net>
- <20140214162556.GF31544@htj.dyndns.org>
- <530B5EE3.8050200@linux.vnet.ibm.com>
- <20140224183501.GC2522@htj.dyndns.org>
- <20140225103726.GJ9987@twins.programming.kicks-ass.net>
- <531DCE36.8010906@linux.vnet.ibm.com>
+	id S933663AbaCQPRI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 11:17:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35963 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933452AbaCQPRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 11:17:06 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <5326C0C3.6000105@redhat.com>
+References: <1394913720-6466-1-git-send-email-imammedo@redhat.com> <8569d2b4-0593-4f7a-859c-3848670f718d@email.android.com> <5326C0C3.6000105@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531DCE36.8010906@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 0/2] KVM: x86 emulator: emulate MOVAPS and MOVAPD SSE instructions
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 17 Mar 2014 08:16:35 -0700
+To: Paolo Bonzini <pbonzini@redhat.com>, Igor Mammedov <imammedo@redhat.com>,
+        linux-kernel@vger.kernel.org
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org
+Message-ID: <fb38ff9d-8c00-4b02-b0da-2db989f7190e@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 10, 2014 at 10:37:42AM -0400, Jason J. Herne wrote:
-> 
-> Did you intend for me to run with this patch or was it posted for discussion
-> only? If you want it run, please tell me what to look for.
-> Also, if I should run this, should I include any other patches, either the
-> last one you posted in this thread or any of Tejun's?
+After seeing the sheer number of one-off additions, I'm wondering if going through the opcode map systematically and see what is still missing might not be a bad idea.
 
-It needs some workqueue side debugging too; I'm not entirely sure where
-the moving back to the online cpu happens, but you want to check the
-set_cpus_allowed_ptr() return value there.
+On March 17, 2014 2:30:43 AM PDT, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>Il 15/03/2014 23:42, H. Peter Anvin ha scritto:
+>> Stupid question... what instructions do NOT need emulsion in KVM? It
+>would seem that at least anything that touches memory would?
+>
+>Yes, indeed.  Anything that touches memory can be used on MMIO and then
+>
+>needs emulation.
+>
+>Paolo
+>
+>> On March 15, 2014 1:01:58 PM PDT, Igor Mammedov <imammedo@redhat.com>
+>wrote:
+>>> MS HCK test fails on 32-bit Windows 8.1 due to missing MOVAPS
+>>> instruction emulation, this series adds it and while at it,
+>>> it adds emulation of MOVAPD which is trivial to implement on
+>>> top of MOVAPS.
+>>>
+>>> Igor Mammedov (2):
+>>>  KVM: x86 emulator: emulate MOVAPS
+>>>  KVM: x86 emulator: emulate MOVAPD
+>>>
+>>> arch/x86/kvm/emulate.c | 8 +++++++-
+>>> 1 file changed, 7 insertions(+), 1 deletion(-)
+>>
+
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
