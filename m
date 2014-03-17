@@ -1,80 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338AbaCQQFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 12:05:42 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:36331 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaCQQFj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 12:05:39 -0400
+	id S932593AbaCQQIA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 12:08:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44007 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752989AbaCQQH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 12:07:59 -0400
+Date: Mon, 17 Mar 2014 17:07:55 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, glommer@gmail.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, devel@openvz.org
+Subject: Re: [PATCH RESEND -mm 01/12] memcg: flush cache creation works
+ before memcg cache destruction
+Message-ID: <20140317160755.GB30623@dhcp22.suse.cz>
+References: <cover.1394708827.git.vdavydov@parallels.com>
+ <4cccfcf74595f26532a6dda7264dc420df82fb8a.1394708827.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
-	<1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com>
-Date: Mon, 17 Mar 2014 11:05:38 -0500
-Message-ID: <CAL_Jsq+9X-9VahsP79mtHN0RC64vRA_2R3ucjX0LefO6q2YN3Q@mail.gmail.com>
-Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
-From: Rob Herring <robherring2@gmail.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4cccfcf74595f26532a6dda7264dc420df82fb8a.1394708827.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 10:34 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> Use the generic host bridge functions to provide support for
-> PCI Express on arm64. There is no support for ISA memory.
->
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+On Thu 13-03-14 19:06:39, Vladimir Davydov wrote:
+> When we get to memcg cache destruction, either from the root cache
+> destruction path or when turning memcg offline, there still might be
+> memcg cache creation works pending that was scheduled before we
+> initiated destruction. We need to flush them before starting to destroy
+> memcg caches, otherwise we can get a leaked kmem cache or, even worse,
+> an attempt to use after free.
+
+How can we use-after-free? Even if there is a pending work item to
+create a new cache then we keep the css reference for the memcg and
+release it from the worker (memcg_create_cache_work_func). So although
+this can race with memcg offlining the memcg itself will be still alive.
+
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Glauber Costa <glommer@gmail.com>
 > ---
->  arch/arm64/Kconfig            |  19 +++-
->  arch/arm64/include/asm/Kbuild |   1 +
->  arch/arm64/include/asm/io.h   |   3 +-
->  arch/arm64/include/asm/pci.h  |  51 ++++++++++
->  arch/arm64/kernel/Makefile    |   1 +
->  arch/arm64/kernel/pci.c       | 173 ++++++++++++++++++++++++++++++++
->  6 files changed, 246 insertions(+), 2 deletions(-)
->  create mode 100644 arch/arm64/include/asm/pci.h
->  create mode 100644 arch/arm64/kernel/pci.c
-
-[snip]
-
-> +#endif
+>  mm/memcontrol.c |   32 +++++++++++++++++++++++++++++++-
+>  1 file changed, 31 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9d489a9e7701..b183aaf1b616 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2904,6 +2904,7 @@ static DEFINE_MUTEX(set_limit_mutex);
+>  
+>  #ifdef CONFIG_MEMCG_KMEM
+>  static DEFINE_MUTEX(activate_kmem_mutex);
+> +static struct workqueue_struct *memcg_cache_create_wq;
+>  
+>  static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
+>  {
+> @@ -3327,6 +3328,15 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+>  	int i, failed = 0;
+>  
+>  	/*
+> +	 * Since the cache is being destroyed, it shouldn't be allocated from
+> +	 * any more, and therefore no new memcg cache creation works could be
+> +	 * scheduled. However, there still might be pending works scheduled
+> +	 * before the cache destruction was initiated. Flush them before
+> +	 * destroying child caches to avoid nasty races.
+> +	 */
+> +	flush_workqueue(memcg_cache_create_wq);
 > +
-> +extern unsigned long pci_ioremap_io(const struct resource *res, phys_addr_t phys_addr);
-
-Can we at least align the function definition across architectures if
-not the implementation.
-
-
-> +int pci_register_io_range(phys_addr_t address, resource_size_t size)
+> +	/*
+>  	 * If the cache is being destroyed, we trust that there is no one else
+>  	 * requesting objects from it. Even if there are, the sanity checks in
+>  	 * kmem_cache_destroy should caught this ill-case.
+> @@ -3374,6 +3384,15 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
+>  	if (!memcg_kmem_is_active(memcg))
+>  		return;
+>  
+> +	/*
+> +	 * By the time we get here, the cgroup must be empty. That said no new
+> +	 * allocations can happen from its caches, and therefore no new memcg
+> +	 * cache creation works can be scheduled. However, there still might be
+> +	 * pending works scheduled before the cgroup was turned offline. Flush
+> +	 * them before destroying memcg caches to avoid nasty races.
+> +	 */
+> +	flush_workqueue(memcg_cache_create_wq);
+> +
+>  	mutex_lock(&memcg->slab_caches_mutex);
+>  	list_for_each_entry(params, &memcg->memcg_slab_caches, list) {
+>  		cachep = memcg_params_to_cache(params);
+> @@ -3418,7 +3437,7 @@ static void __memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+>  	cw->cachep = cachep;
+>  
+>  	INIT_WORK(&cw->work, memcg_create_cache_work_func);
+> -	schedule_work(&cw->work);
+> +	queue_work(memcg_cache_create_wq, &cw->work);
+>  }
+>  
+>  static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+> @@ -3621,10 +3640,20 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order)
+>  	VM_BUG_ON_PAGE(mem_cgroup_is_root(memcg), page);
+>  	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
+>  }
+> +
+> +static void __init memcg_kmem_init(void)
 > +{
-> +       struct ioresource *res;
-> +       resource_size_t allocated_size = 0;
+> +	memcg_cache_create_wq = alloc_workqueue("memcg_cache_create", 0, 1);
+> +	BUG_ON(!memcg_cache_create_wq);
+> +}
+>  #else
+>  static inline void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
+>  {
+>  }
 > +
-> +       /* find if the range has not been already allocated */
-> +       list_for_each_entry(res, &io_list, list) {
-> +               if (address >= res->start &&
-> +                       address + size <= res->start + size)
-> +                       return 0;
-> +               allocated_size += res->size;
-> +       }
-> +
-> +       /* range not already registered, check for space */
-> +       if (allocated_size + size > IO_SPACE_LIMIT)
+> +static void __init memcg_kmem_init(void)
+> +{
+> +}
+>  #endif /* CONFIG_MEMCG_KMEM */
+>  
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> @@ -7181,6 +7210,7 @@ static int __init mem_cgroup_init(void)
+>  	enable_swap_cgroup();
+>  	mem_cgroup_soft_limit_tree_init();
+>  	memcg_stock_init();
+> +	memcg_kmem_init();
+>  	return 0;
+>  }
+>  subsys_initcall(mem_cgroup_init);
+> -- 
+> 1.7.10.4
+> 
 
-I believe this needs to be "allocated_size + size - 1".
-
-> +               return -E2BIG;
-> +
+-- 
+Michal Hocko
+SUSE Labs
