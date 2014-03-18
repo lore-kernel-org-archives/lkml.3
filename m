@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914AbaCRRTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:19:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55703 "EHLO
+	id S1756882AbaCRRTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:19:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55702 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756623AbaCRRS7 (ORCPT
+	with ESMTP id S1756541AbaCRRS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Mar 2014 13:18:59 -0400
-Message-Id: <20140318171126.720944558@linutronix.de>
+Message-Id: <20140318171126.593414691@linutronix.de>
 User-Agent: quilt/0.60-1
 Date: Tue, 18 Mar 2014 17:19:08 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
@@ -17,9 +17,9 @@ Cc: Wolfgang Grandegger <wg@grandegger.com>,
         Markus Pargmann <mpa@pengutronix.de>,
         Benedikt Spranger <b.spranger@linutronix.de>,
         linux-can@vger.kernel.org, netdev@vger.kernel.org
-Subject: [patch 02/12] can: c_can: Fix hardware raminit function
+Subject: [patch 01/12] can: c_can: Wait for CONTROL_INIT to be cleared
 References: <20140318171007.528610837@linutronix.de>
-Content-Disposition: inline; filename=can-c_can-wait-for-raminit.patch
+Content-Disposition: inline; filename=cac-c_can-wait-for-control-init.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,95 +27,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function is broken in several ways:
+According to the documentation the CPU must wait for CONTROL_INIT to
+be cleared before writing to the baudrate registers.
 
-    - The function does not wait for the init to complete.
-      That can take quite some microseconds.
-
-    - No protection against being called for two chips at the same
-      time. SMP is such a new thing, right?
-
-Clear the start and the init done bit unconditionally and wait for
-both bits to be clear.
-
-In the enable path set the init bit and wait
-for the init done bit.
-
-Add proper locking.
-
+Signed-off-by: Benedikt Spranger <b.spranger@linutronix.de>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/net/can/c_can/c_can_platform.c |   48 ++++++++++++++++++++++++++-------
- 1 file changed, 39 insertions(+), 9 deletions(-)
+ drivers/net/can/c_can/c_can.c |   26 +++++++++++++++++++++++---
+ 1 file changed, 23 insertions(+), 3 deletions(-)
 
-Index: linux/drivers/net/can/c_can/c_can_platform.c
+Index: linux/drivers/net/can/c_can/c_can.c
 ===================================================================
---- linux.orig/drivers/net/can/c_can/c_can_platform.c
-+++ linux/drivers/net/can/c_can/c_can_platform.c
-@@ -37,8 +37,10 @@
- 
- #include "c_can.h"
- 
--#define CAN_RAMINIT_START_MASK(i)	(1 << (i))
--
-+#define CAN_RAMINIT_START_MASK(i)	(0x001 << (i))
-+#define CAN_RAMINIT_DONE_MASK(i)	(0x100 << (i))
-+#define CAN_RAMINIT_ALL_MASK(i)		(0x101 << (i))
-+static DEFINE_SPINLOCK(raminit_lock);
- /*
-  * 16-bit c_can registers can be arranged differently in the memory
-  * architecture of different implementations. For example: 16-bit
-@@ -69,16 +71,44 @@ static void c_can_plat_write_reg_aligned
- 	writew(val, priv->base + 2 * priv->regs[index]);
+--- linux.orig/drivers/net/can/c_can/c_can.c
++++ linux/drivers/net/can/c_can/c_can.c
+@@ -566,6 +566,21 @@ static netdev_tx_t c_can_start_xmit(stru
+ 	return NETDEV_TX_OK;
  }
  
-+static void c_can_hw_raminit_wait(const struct c_can_priv *priv, u32 mask,
-+				  u32 val)
++static int c_can_wait_for_ctrl_init(struct net_device *dev,
++				    struct c_can_priv *priv, u32 init)
 +{
-+	/* We look only at the bits of our instance. */
-+	val &= mask;
-+	while ((readl(priv->raminit_ctrlreg) & mask) != val)
-+		udelay(1);
++	int retry = 0;
++
++	while (init != (priv->read_reg(priv, C_CAN_CTRL_REG) & CONTROL_INIT)) {
++		udelay(10);
++		if (retry++ > 1000) {
++			netdev_err(dev, "CCTRL: set CONTROL_INIT failed\n");
++			return -EIO;
++		}
++	}
++	return 0;
 +}
 +
- static void c_can_hw_raminit(const struct c_can_priv *priv, bool enable)
+ static int c_can_set_bittiming(struct net_device *dev)
  {
--	u32 val;
-+	u32 mask = CAN_RAMINIT_ALL_MASK(priv->instance);
-+	u32 ctrl;
-+
-+	spin_lock(&raminit_lock);
+ 	unsigned int reg_btr, reg_brpe, ctrl_save;
+@@ -573,6 +588,7 @@ static int c_can_set_bittiming(struct ne
+ 	u32 ten_bit_brp;
+ 	struct c_can_priv *priv = netdev_priv(dev);
+ 	const struct can_bittiming *bt = &priv->can.bittiming;
++	int res;
  
--	val = readl(priv->raminit_ctrlreg);
--	if (enable)
--		val |= CAN_RAMINIT_START_MASK(priv->instance);
--	else
--		val &= ~CAN_RAMINIT_START_MASK(priv->instance);
--	writel(val, priv->raminit_ctrlreg);
-+	ctrl = readl(priv->raminit_ctrlreg);
-+	/*
-+	 * We clear the done and start bit first. The start bit is
-+	 * looking at the 0 -> transition, but is not self clearing;
-+	 * And we clear the init done bit as well.
-+	 */
-+	ctrl &= ~CAN_RAMINIT_START_MASK(priv->instance);
-+	ctrl |= CAN_RAMINIT_DONE_MASK(priv->instance);
-+	writel(ctrl, priv->raminit_ctrlreg);
-+	ctrl &= ~CAN_RAMINIT_DONE_MASK(priv->instance);
-+	c_can_hw_raminit_wait(priv, ctrl, mask);
+ 	/* c_can provides a 6-bit brp and 4-bit brpe fields */
+ 	ten_bit_brp = bt->brp - 1;
+@@ -590,13 +606,17 @@ static int c_can_set_bittiming(struct ne
+ 		"setting BTR=%04x BRPE=%04x\n", reg_btr, reg_brpe);
+ 
+ 	ctrl_save = priv->read_reg(priv, C_CAN_CTRL_REG);
+-	priv->write_reg(priv, C_CAN_CTRL_REG,
+-			ctrl_save | CONTROL_CCE | CONTROL_INIT);
++	ctrl_save &= ~CONTROL_INIT;
++	priv->write_reg(priv, C_CAN_CTRL_REG, CONTROL_CCE | CONTROL_INIT);
++	res = c_can_wait_for_ctrl_init(dev, priv, CONTROL_INIT);
++	if (res)
++		return res;
 +
-+	if (enable) {
-+		/*
-+		 * Set start bit and wait for the done bit.
-+		 */
-+		ctrl |= CAN_RAMINIT_START_MASK(priv->instance);
-+		writel(ctrl, priv->raminit_ctrlreg);
-+		ctrl |= CAN_RAMINIT_DONE_MASK(priv->instance);
-+		c_can_hw_raminit_wait(priv, ctrl, mask);
-+	}
-+	spin_unlock(&raminit_lock);
+ 	priv->write_reg(priv, C_CAN_BTR_REG, reg_btr);
+ 	priv->write_reg(priv, C_CAN_BRPEXT_REG, reg_brpe);
+ 	priv->write_reg(priv, C_CAN_CTRL_REG, ctrl_save);
+ 
+-	return 0;
++	return c_can_wait_for_ctrl_init(dev, priv, 0);
  }
  
- static struct platform_device_id c_can_id_table[] = {
+ /*
 
 
