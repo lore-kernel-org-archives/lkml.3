@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388AbaCRUvv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 16:51:51 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:63299 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758008AbaCRUvs (ORCPT
+	id S932605AbaCRUwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:52:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57067 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758040AbaCRUwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 16:51:48 -0400
-From: Matei Oprea <eu@opreamatei.ro>
-To: jbottomley@parallels.com
-Cc: james.smart@emulex.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matei Oprea <eu@opreamatei.ro>,
-        ROSEdu Kernel Community <firefly@lists.rosedu.org>
-Subject: [PATCH] scsi: lpfc: lpfc_init: use kcalloc for allocating memory
-Date: Tue, 18 Mar 2014 22:51:40 +0200
-Message-Id: <1395175900-9659-1-git-send-email-eu@opreamatei.ro>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 18 Mar 2014 16:52:51 -0400
+Date: Tue, 18 Mar 2014 21:52:58 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
+In-Reply-To: <alpine.DEB.2.10.1403181523360.15687@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.02.1403182149540.18573@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.10.1403031526210.11945@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403041620390.15963@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403181250110.14816@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403181921010.18573@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1403181523360.15687@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's easier to use kcalloc for allocating arrays. While at it
-also remove useless casting value.
+On Tue, 18 Mar 2014, Vince Weaver wrote:
+> On Tue, 18 Mar 2014, Thomas Gleixner wrote:
+> 
+> > On Tue, 18 Mar 2014, Vince Weaver wrote:
+> > 
+> > > 
+> > > The perf_fuzzer can quickly cause a machine to lockup with an hrtimer 
+> > > related rb tree related oops.  I've had a hard time debugging this in any 
+> > > useful manner, but I can trigger it on both core2 and haswell test systems 
+> > > on 3.14-rc7.
+> > > 
+> > > This involves making a large number of perf_event events of all types and 
+> > > then forking a lot.
+> > 
+> > Can you enable debugobjects please? The should give us an hint what
+> > corrupts the rbtree.
+> 
+> I enabled debugobjects and then said Y to most of the questions brought up 
+> by make oldconfig but now the system crashes at boot:
 
-Signed-off-by: Matei Oprea <eu@opreamatei.ro>
-Cc: ROSEdu Kernel Community <firefly@lists.rosedu.org>
----
- drivers/scsi/lpfc/lpfc_init.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> [    3.678040] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018                                                                        
+> [    3.686776] IP: [<ffffffff8106d7a8>] get_next_timer_interrupt+0x168/0x250    
 
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index 68c94cc..0a51ca5 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -4731,9 +4731,9 @@ lpfc_sli_driver_resource_setup(struct lpfc_hba *phba)
- 	}
- 
- 	if (!phba->sli.ring)
--		phba->sli.ring = (struct lpfc_sli_ring *)
--			kzalloc(LPFC_SLI3_MAX_RING *
-+		phba->sli.ring = kcalloc(LPFC_SLI3_MAX_RING,
- 			sizeof(struct lpfc_sli_ring), GFP_KERNEL);
-+
- 	if (!phba->sli.ring)
- 		return -ENOMEM;
- 
--- 
-1.7.9.5
+The back trace is not really helpful. Is there anything before that
+BUG in dmesg?
+
+Thanks,
+
+	tglx
 
