@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670AbaCRO7S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:59:18 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:58224 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957AbaCRO7Q (ORCPT
+	id S932717AbaCRPAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:00:23 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:64304 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932678AbaCRPAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:59:16 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v4 3/6] fat: zero out seek range on _fat_get_block
-References: <1393769349-3540-1-git-send-email-linkinjeon@gmail.com>
-Date: Tue, 18 Mar 2014 23:59:14 +0900
-In-Reply-To: <1393769349-3540-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Sun, 2 Mar 2014 23:09:09 +0900")
-Message-ID: <87a9cn4kot.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Tue, 18 Mar 2014 11:00:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Subject: Re: [PATCH] ARM: mmp: allow platform devices with modular USB
+Date: Tue, 18 Mar 2014 16:00:14 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Chao Xie <cxie4@marvell.com>, Russell King <linux@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <5101681.pZMdJoGtZk@wuerfel> <CAN1soZys1-uO9bCY_C7cF19-nrRVSw-CLGj--g5m7nCjuvZAsw@mail.gmail.com>
+In-Reply-To: <CAN1soZys1-uO9bCY_C7cF19-nrRVSw-CLGj--g5m7nCjuvZAsw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403181600.15025.arnd@arndb.de>
+X-Provags-ID: V02:K0:6w1flyDJQO7y9zCH2fChCEkvmEXlcfF+LEZONSAhFtX
+ PGgvlhfgKVuDKFIzPyMiYAgK1wmsfydsZR38HINF6o2JcTkjiq
+ h7+QKxO2pn9peCJL7DLEzIPirXUIDvZqUNlm24eAPXXjSu8JdA
+ rXKP8ghDr1xgGSGa6snYmI7yOUWZMRQ7uRseO7UDuVSm0jZx1x
+ a+AxnXO/M1aE3k0YOikRHS4yNMZQVkIWCgLKALQ2P79Cze7OWK
+ Oj2tK5rtGIBBwxn9tFSPGTDwsqCYR38uWW0QrRPugrpiOzXmFQ
+ +ShuOORafkPQyNHEvUWzfpgcjrs/wcb3EKNif9iCLmNyV0On8y
+ 8mycZSMbNZl/JHcLNuS+duaX7Kwz0UlMJged7ZYvr
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Tuesday 18 March 2014, Haojian Zhuang wrote:
+> Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 
-> +static void check_fallocated_region(struct inode *inode, sector_t iblock,
-> +		unsigned long *max_blocks, struct buffer_head *bh_result)
-> +{
-> +	struct super_block *sb = inode->i_sb;
-> +	sector_t last_block, disk_block;
-> +	const unsigned long blocksize = sb->s_blocksize;
-> +	const unsigned char blocksize_bits = sb->s_blocksize_bits;
-> +
-> +	last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
-> +		>> blocksize_bits;
-> +	disk_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
-> +		>> blocksize_bits;
-> +	if (iblock >= last_block && iblock <= disk_block) {
-
-Maybe off-by-one error. If iblock == disk_block, phys should not be set
-by fat_bmap()?
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Thanks, applied to next/fixes-non-critical now.
+	
+	Arnd
