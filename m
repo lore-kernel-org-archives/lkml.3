@@ -1,84 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945AbaCRRqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:46:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40680 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756705AbaCRRqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:46:10 -0400
-Date: Tue, 18 Mar 2014 18:45:27 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        penguin-kernel@I-love.SAKURA.ne.jp, rientjes@google.com,
-        Linus Torvalds <torvalds@linux-foundation.org>, tj@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kernel Team <kernel-team@lists.ubuntu.com>
-Subject: Re: [v3.13][v3.14][Regression] kthread: make kthread_create()
-	killable
-Message-ID: <20140318174527.GA11866@redhat.com>
-References: <53236AA2.7030105@canonical.com> <20140317130241.7e4fde86d75d417628da6f1a@linux-foundation.org> <20140317201919.GA28997@redhat.com> <20140317133920.7b944250d90886daa8ea4287@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140317133920.7b944250d90886daa8ea4287@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757105AbaCRRup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:50:45 -0400
+Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:26959 "EHLO
+	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756673AbaCRRun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 13:50:43 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq0NAFmGKFNbsn1//2dsb2JhbABagwaDRr9rAgKBKxd0glMTHCMYgQIkE4d9AdA+jmKEPwSYRQGSMIMuPA
+Date: Tue, 18 Mar 2014 18:52:21 +0100
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] MINIX: specific inode data access standardization
+Message-Id: <20140318185221.697f8368fca2e51728e201ca@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17, Andrew Morton wrote:
->
-> On Mon, 17 Mar 2014 21:19:19 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > > Root cause time: it's wrong for the oom-killer to use SIGKILL.
-> >
-> > Not sure... what else?
->
-> If we really really have to use userspace IPC in the kernel then I
-> suppose we could add a new signal type (SIGKERNEL?) which userspace can
-> neither receive nor send.
+minix_i uppercase conversion (like majority of other filesystems).
 
-But for what?
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/minix/bitmap.c   |  2 +-
+ fs/minix/inode.c    | 10 +++++-----
+ fs/minix/itree_v1.c |  2 +-
+ fs/minix/itree_v2.c |  2 +-
+ fs/minix/minix.h    |  2 +-
+ 5 files changed, 9 insertions(+), 9 deletions(-)
 
-> > > In fact
-> > > it's basically always wrong to send signals from in-kernel.
-> >
-> > Well, SIGSEGV, SIGIO...
->
-> Those are kernel->userspace, not kernel->kernel.
-
-OK, this is probably true.
-
-> We have all sorts of cross-task mechanisms available in kernel (set_bit
-> and wake_up would suffice here) so we don't need to use signals with
-> all the baggage they bring along.
-
-but why do we need another mechanism if we want terminate the task
-for any reason?
-
-OK. Perhaps the killed task wants to know if it was killed by kernel
-or user-space... Not sure we really need this, but OK. We can add the
-SIGNAL_GROUP_KILLED_BY_KERNEL flag. But it is not clear if we want
-TASK_WAKEKILL_BY_KERNEL or not... And probably I missed your point.
-
-> > Well, I think in this case it doesn't matter who/why sends a signal.
-> > The task is killed, it should react and exit asap. And kthread_create()
-> > can fail in any case, at least the kernel should not crash.
->
-> Well yes.  In this "bug", userspace tried to kill udev and surprise
-> surprise, that's what happened.  The only real kernel bug here is the
-> incorrect errno.
-
-and the kernel crash in mptsas_probe's error paths. This should be fixed.
-And it seems that this driver has more problems, but I can be wrong.
-
-> But in the real world, the kernel changed and systems
-> broke - we should try to unbreak them.
-
-Yes, yes, sure. But so far I think we should uglify the driver or scsi
-(unless we have the right fix), not the poor kthread_create().
-
-Oleg.
+diff --git a/fs/minix/bitmap.c b/fs/minix/bitmap.c
+index 4bc50da..29cd60d 100644
+--- a/fs/minix/bitmap.c
++++ b/fs/minix/bitmap.c
+@@ -255,7 +255,7 @@ struct inode *minix_new_inode(const struct inode *dir, umode_t mode, int *error)
+ 	inode->i_ino = j;
+ 	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME_SEC;
+ 	inode->i_blocks = 0;
+-	memset(&minix_i(inode)->u, 0, sizeof(minix_i(inode)->u));
++	memset(&MINIX_I(inode)->u, 0, sizeof(MINIX_I(inode)->u));
+ 	insert_inode_hash(inode);
+ 	mark_inode_dirty(inode);
+ 
+diff --git a/fs/minix/inode.c b/fs/minix/inode.c
+index 0332109..3231944 100644
+--- a/fs/minix/inode.c
++++ b/fs/minix/inode.c
+@@ -71,7 +71,7 @@ static struct inode *minix_alloc_inode(struct super_block *sb)
+ static void minix_i_callback(struct rcu_head *head)
+ {
+ 	struct inode *inode = container_of(head, struct inode, i_rcu);
+-	kmem_cache_free(minix_inode_cachep, minix_i(inode));
++	kmem_cache_free(minix_inode_cachep, MINIX_I(inode));
+ }
+ 
+ static void minix_destroy_inode(struct inode *inode)
+@@ -463,7 +463,7 @@ static struct inode *V1_minix_iget(struct inode *inode)
+ {
+ 	struct buffer_head * bh;
+ 	struct minix_inode * raw_inode;
+-	struct minix_inode_info *minix_inode = minix_i(inode);
++	struct minix_inode_info *minix_inode = MINIX_I(inode);
+ 	int i;
+ 
+ 	raw_inode = minix_V1_raw_inode(inode->i_sb, inode->i_ino, &bh);
+@@ -496,7 +496,7 @@ static struct inode *V2_minix_iget(struct inode *inode)
+ {
+ 	struct buffer_head * bh;
+ 	struct minix2_inode * raw_inode;
+-	struct minix_inode_info *minix_inode = minix_i(inode);
++	struct minix_inode_info *minix_inode = MINIX_I(inode);
+ 	int i;
+ 
+ 	raw_inode = minix_V2_raw_inode(inode->i_sb, inode->i_ino, &bh);
+@@ -550,7 +550,7 @@ static struct buffer_head * V1_minix_update_inode(struct inode * inode)
+ {
+ 	struct buffer_head * bh;
+ 	struct minix_inode * raw_inode;
+-	struct minix_inode_info *minix_inode = minix_i(inode);
++	struct minix_inode_info *minix_inode = MINIX_I(inode);
+ 	int i;
+ 
+ 	raw_inode = minix_V1_raw_inode(inode->i_sb, inode->i_ino, &bh);
+@@ -577,7 +577,7 @@ static struct buffer_head * V2_minix_update_inode(struct inode * inode)
+ {
+ 	struct buffer_head * bh;
+ 	struct minix2_inode * raw_inode;
+-	struct minix_inode_info *minix_inode = minix_i(inode);
++	struct minix_inode_info *minix_inode = MINIX_I(inode);
+ 	int i;
+ 
+ 	raw_inode = minix_V2_raw_inode(inode->i_sb, inode->i_ino, &bh);
+diff --git a/fs/minix/itree_v1.c b/fs/minix/itree_v1.c
+index 282e15a..a96bdae 100644
+--- a/fs/minix/itree_v1.c
++++ b/fs/minix/itree_v1.c
+@@ -18,7 +18,7 @@ static inline block_t cpu_to_block(unsigned long n)
+ 
+ static inline block_t *i_data(struct inode *inode)
+ {
+-	return (block_t *)minix_i(inode)->u.i1_data;
++	return (block_t *)MINIX_I(inode)->u.i1_data;
+ }
+ 
+ static int block_to_path(struct inode * inode, long block, int offsets[DEPTH])
+diff --git a/fs/minix/itree_v2.c b/fs/minix/itree_v2.c
+index 78e2d93..7cdfdb5 100644
+--- a/fs/minix/itree_v2.c
++++ b/fs/minix/itree_v2.c
+@@ -17,7 +17,7 @@ static inline block_t cpu_to_block(unsigned long n)
+ 
+ static inline block_t *i_data(struct inode *inode)
+ {
+-	return (block_t *)minix_i(inode)->u.i2_data;
++	return (block_t *)MINIX_I(inode)->u.i2_data;
+ }
+ 
+ #define DIRCOUNT 7
+diff --git a/fs/minix/minix.h b/fs/minix/minix.h
+index 1ebd118..8729dc1 100644
+--- a/fs/minix/minix.h
++++ b/fs/minix/minix.h
+@@ -82,7 +82,7 @@ static inline struct minix_sb_info *minix_sb(struct super_block *sb)
+ 	return sb->s_fs_info;
+ }
+ 
+-static inline struct minix_inode_info *minix_i(struct inode *inode)
++static inline struct minix_inode_info *MINIX_I(struct inode *inode)
+ {
+ 	return list_entry(inode, struct minix_inode_info, vfs_inode);
+ }
+-- 
+1.8.4.5
 
