@@ -1,267 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933241AbaCRVlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:41:35 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:56203 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757619AbaCRVlI (ORCPT
+	id S1756760AbaCRVo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:44:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57493 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaCRVo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:41:08 -0400
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
-Cc: Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Sricharan R <r.sricharan@ti.com>, Jiang Liu <liuj97@gmail.com>,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: [PATCH v9 2/2] ARM hibernation / suspend-to-disk
-Date: Tue, 18 Mar 2014 14:40:58 -0700
-Message-Id: <1395178858-27343-3-git-send-email-sebastian.capella@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395178858-27343-1-git-send-email-sebastian.capella@linaro.org>
-References: <1395178858-27343-1-git-send-email-sebastian.capella@linaro.org>
+	Tue, 18 Mar 2014 17:44:57 -0400
+Date: Tue, 18 Mar 2014 22:45:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
+In-Reply-To: <alpine.DEB.2.10.1403181705000.15687@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.02.1403182218170.18573@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.10.1403031526210.11945@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403041620390.15963@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403181250110.14816@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403181921010.18573@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1403181523360.15687@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403182149540.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403181705000.15687@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russ Dill <Russ.Dill@ti.com>
+On Tue, 18 Mar 2014, Vince Weaver wrote:
 
-Enable hibernation for ARM architectures and provide ARM
-architecture specific calls used during hibernation.
+> On Tue, 18 Mar 2014, Thomas Gleixner wrote:
+> > 
+> > > [    3.678040] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018                                                                        
+> > > [    3.686776] IP: [<ffffffff8106d7a8>] get_next_timer_interrupt+0x168/0x250    
+> > 
+> > The back trace is not really helpful. Is there anything before that
+> > BUG in dmesg?
+> 
+> no, just normal boot messages.
+> 
+> I re-compiled with the frame pointer enabled and here's an updated 
+> version:
+> 
+> [    3.722836] sd 1:0:0:0: [sda] 4096-byte physical blocks                      
+> [    3.728682] sd 1:0:0:0: [sda] Write Protect is off                           
+> [    3.728826] sr 0:0:0:0: Attached scsi generic sg0 type 5                     
+> [    3.728992] sd 1:0:0:0: Attached scsi generic sg1 type 0                     
+> [    3.745700] sd 1:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA                                                          
+> [    3.787096]  sda: sda1 sda2 sda3 sda4                                        
+> [    3.792169] sd 1:0:0:0: [sda] Attached SCSI disk                             
+> [    4.312111] ------------[ cut here ]------------                             
+> [    4.317176] kernel BUG at kernel/timer.c:1084!                               
 
-The swsusp hibernation framework depends on the
-platform first having functional suspend/resume.
+Wow. That's in the cascade code. So it looks like the timer got
+corrupted without using the timer api wrong. That might be a memset or
+a stray pointer. Can you apply the following patch?
 
-Then, in order to enable hibernation on a given platform, a
-platform_hibernation_ops structure may need to be registered with
-the system in order to save/restore any SoC-specific / cpu specific
-state needing (re)init over a suspend-to-disk/resume-from-disk cycle.
+That really should give us a hint.
 
-For example:
+If that fails, enable the tracer in your config and add the following
+to your commandline
 
-     - "secure" SoCs that have different sets of control registers
-       and/or different CR reg access patterns.
+   trace_event=timer_* ftrace_dump_on_oops
 
-     - SoCs with L2 caches as the activation sequence there is
-       SoC-dependent; a full off-on cycle for L2 is not done
-       by the hibernation support code.
+That will spill out a lot of crap over serial, but it should tell us
+which timer is corrupted.
 
-     - SoCs requiring steps on wakeup _before_ the "generic" parts
-       done by cpu_suspend / cpu_resume can work correctly.
+Thanks,
 
-     - SoCs having persistent state which is maintained during suspend
-       and resume, but will be lost during the power off cycle after
-       suspend-to-disk.
+	tglx
 
-This is a rebase/rework of Frank Hofmann's v5 hibernation patchset.
-
-Acked-by: Russ Dill <Russ.Dill@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-Acked-by: Pavel Machek <pavel@ucw.cz>
-Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Nicolas Pitre <nico@linaro.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Jonathan Austin <jonathan.austin@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com
-Cc: Victor Kamensky <victor.kamensky@linaro.org>
-Cc: Sricharan R <r.sricharan@ti.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Laura Abbott <lauraa@codeaurora.org>
----
- arch/arm/Kconfig              |    5 ++
- arch/arm/include/asm/memory.h |    1 +
- arch/arm/kernel/Makefile      |    1 +
- arch/arm/kernel/hibernate.c   |  107 +++++++++++++++++++++++++++++++++++++++++
- include/linux/suspend.h       |    2 +
- 5 files changed, 116 insertions(+)
- create mode 100644 arch/arm/kernel/hibernate.c
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 1594945..d204231 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -2279,6 +2279,11 @@ config ARCH_SUSPEND_POSSIBLE
- config ARM_CPU_SUSPEND
- 	def_bool PM_SLEEP
+Index: linux-2.6/include/linux/debugobjects.h
+===================================================================
+--- linux-2.6.orig/include/linux/debugobjects.h
++++ linux-2.6/include/linux/debugobjects.h
+@@ -68,6 +68,7 @@ extern void debug_object_deactivate(void
+ extern void debug_object_destroy   (void *addr, struct debug_obj_descr *descr);
+ extern void debug_object_free      (void *addr, struct debug_obj_descr *descr);
+ extern void debug_object_assert_init(void *addr, struct debug_obj_descr *descr);
++extern void debug_object_info(void *addr, struct debug_obj_descr *descr);
  
-+config ARCH_HIBERNATION_POSSIBLE
-+	bool
-+	depends on MMU
-+	default y if ARCH_SUSPEND_POSSIBLE
-+
- endmenu
+ /*
+  * Active state:
+@@ -95,6 +96,8 @@ static inline void
+ debug_object_free      (void *addr, struct debug_obj_descr *descr) { }
+ static inline void
+ debug_object_assert_init(void *addr, struct debug_obj_descr *descr) { }
++static inline void
++debug_object_info(void *addr, struct debug_obj_descr *descr) { }
  
- source "net/Kconfig"
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 4afb376..47347dd 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -289,6 +289,7 @@ static inline void *phys_to_virt(phys_addr_t x)
- #define __pa(x)			__virt_to_phys((unsigned long)(x))
- #define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
- #define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
-+#define virt_to_pfn(kaddr)      (__pa(kaddr) >> PAGE_SHIFT)
+ static inline void debug_objects_early_init(void) { }
+ static inline void debug_objects_mem_init(void) { }
+Index: linux-2.6/kernel/timer.c
+===================================================================
+--- linux-2.6.orig/kernel/timer.c
++++ linux-2.6/kernel/timer.c
+@@ -1081,7 +1081,12 @@ static int cascade(struct tvec_base *bas
+ 	 * don't have to detach them individually.
+ 	 */
+ 	list_for_each_entry_safe(timer, tmp, &tv_list, entry) {
+-		BUG_ON(tbase_get_base(timer->base) != base);
++		if (tbase_get_base(timer->base) != base) {
++			pr_err("Invalid timer base: tmr %p tmr->base %p base %p\n",
++			       timer, timer->base, base);
++			debug_object_info(timer, &timer_debug_descr);
++			BUG();
++		}
+ 		/* No accounting, while moving them */
+ 		__internal_add_timer(base, timer);
+ 	}
+Index: linux-2.6/lib/debugobjects.c
+===================================================================
+--- linux-2.6.orig/lib/debugobjects.c
++++ linux-2.6/lib/debugobjects.c
+@@ -377,6 +377,28 @@ void debug_object_init_on_stack(void *ad
+ 	__debug_object_init(addr, descr, 1);
+ }
  
- extern phys_addr_t (*arch_virt_to_idmap)(unsigned long x);
- 
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index a30fc9b..8afa848 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -39,6 +39,7 @@ obj-$(CONFIG_ARTHUR)		+= arthur.o
- obj-$(CONFIG_ISA_DMA)		+= dma-isa.o
- obj-$(CONFIG_PCI)		+= bios32.o isa.o
- obj-$(CONFIG_ARM_CPU_SUSPEND)	+= sleep.o suspend.o
-+obj-$(CONFIG_HIBERNATION)	+= hibernate.o
- obj-$(CONFIG_SMP)		+= smp.o
- ifdef CONFIG_MMU
- obj-$(CONFIG_SMP)		+= smp_tlb.o
-diff --git a/arch/arm/kernel/hibernate.c b/arch/arm/kernel/hibernate.c
-new file mode 100644
-index 0000000..bb8b796
---- /dev/null
-+++ b/arch/arm/kernel/hibernate.c
-@@ -0,0 +1,107 @@
-+/*
-+ * Hibernation support specific for ARM
-+ *
-+ * Derived from work on ARM hibernation support by:
-+ *
-+ * Ubuntu project, hibernation support for mach-dove
-+ * Copyright (C) 2010 Nokia Corporation (Hiroshi Doyu)
-+ * Copyright (C) 2010 Texas Instruments, Inc. (Teerth Reddy et al.)
-+ *  https://lkml.org/lkml/2010/6/18/4
-+ *  https://lists.linux-foundation.org/pipermail/linux-pm/2010-June/027422.html
-+ *  https://patchwork.kernel.org/patch/96442/
-+ *
-+ * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+#include <linux/mm.h>
-+#include <linux/suspend.h>
-+#include <asm/system_misc.h>
-+#include <asm/idmap.h>
-+#include <asm/suspend.h>
-+#include <asm/memory.h>
-+
-+extern const void __nosave_begin, __nosave_end;
-+
-+int pfn_is_nosave(unsigned long pfn)
++void debug_object_info(void *addr, struct debug_obj_descr *descr)
 +{
-+	unsigned long nosave_begin_pfn = virt_to_pfn(&__nosave_begin);
-+	unsigned long nosave_end_pfn = virt_to_pfn(&__nosave_end - 1);
++	struct debug_bucket *db;
++	struct debug_obj *obj;
++	unsigned long flags;
 +
-+	return (pfn >= nosave_begin_pfn) && (pfn <= nosave_end_pfn);
++	if (!debug_objects_enabled)
++		return;
++
++	db = get_bucket((unsigned long) addr);
++
++	raw_spin_lock_irqsave(&db->lock, flags);
++
++	obj = lookup_object(addr, db);
++	if (!obj)
++		pr_err("Object unknown %p\n", addr);
++	else
++		debug_print_object(obj, "Info");
++
++	raw_spin_unlock_irqrestore(&db->lock, flags);
 +}
 +
-+void notrace save_processor_state(void)
-+{
-+	WARN_ON(num_online_cpus() != 1);
-+	local_fiq_disable();
-+}
-+
-+void notrace restore_processor_state(void)
-+{
-+	local_fiq_enable();
-+}
-+
-+/*
-+ * Snapshot kernel memory and reset the system.
-+ *
-+ * swsusp_save() is executed in the suspend finisher so that the CPU
-+ * context pointer and memory are part of the saved image, which is
-+ * required by the resume kernel image to restart execution from
-+ * swsusp_arch_suspend().
-+ *
-+ * soft_restart is not technically needed, but is used to get success
-+ * returned from cpu_suspend.
-+ *
-+ * When soft reboot completes, the hibernation snapshot is written out.
-+ */
-+static int notrace arch_save_image(unsigned long unused)
-+{
-+	int ret;
-+
-+	ret = swsusp_save();
-+	if (ret == 0)
-+		soft_restart(virt_to_phys(cpu_resume));
-+	return ret;
-+}
-+
-+/*
-+ * Save the current CPU state before suspend / poweroff.
-+ */
-+int notrace swsusp_arch_suspend(void)
-+{
-+	return cpu_suspend(0, arch_save_image);
-+}
-+
-+/*
-+ * Restore page contents for physical pages that were in use during loading
-+ * hibernation image.  Switch to idmap_pgd so the physical page tables
-+ * are overwritten with the same contents.
-+ */
-+static void notrace arch_restore_image(void *unused)
-+{
-+	struct pbe *pbe;
-+
-+	cpu_switch_mm(idmap_pgd, &init_mm);
-+	for (pbe = restore_pblist; pbe; pbe = pbe->next)
-+		copy_page(pbe->orig_address, pbe->address);
-+
-+	soft_restart(virt_to_phys(cpu_resume));
-+}
-+
-+static u64 resume_stack[PAGE_SIZE/2/sizeof(u64)] __nosavedata;
-+
-+/*
-+ * Resume from the hibernation image.
-+ * Due to the kernel heap / data restore, stack contents change underneath
-+ * and that would make function calls impossible; switch to a temporary
-+ * stack within the nosave region to avoid that problem.
-+ */
-+int swsusp_arch_resume(void)
-+{
-+	extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
-+	call_with_stack(arch_restore_image, 0,
-+		resume_stack + ARRAY_SIZE(resume_stack));
-+	return 0;
-+}
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index f73cabf..38bbf95 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -320,6 +320,8 @@ extern unsigned long get_safe_page(gfp_t gfp_mask);
- extern void hibernation_set_ops(const struct platform_hibernation_ops *ops);
- extern int hibernate(void);
- extern bool system_entering_hibernation(void);
-+asmlinkage int swsusp_save(void);
-+extern struct pbe *restore_pblist;
- #else /* CONFIG_HIBERNATION */
- static inline void register_nosave_region(unsigned long b, unsigned long e) {}
- static inline void register_nosave_region_late(unsigned long b, unsigned long e) {}
--- 
-1.7.9.5
-
+ /**
+  * debug_object_activate - debug checks when an object is activated
+  * @addr:	address of the object
