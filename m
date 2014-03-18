@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757879AbaCRUS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 16:18:56 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57500 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756808AbaCRUSx (ORCPT
+	id S932717AbaCRUTV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:19:21 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:50293 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757882AbaCRUTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 16:18:53 -0400
-Date: Tue, 18 Mar 2014 20:18:29 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <lgirdwood@gmail.com>,
-        <kuninori.morimoto.gx@renesas.com>, <jsarha@ti.com>,
-        <devicetree@vger.kernel.org>, <Li.Xiubo@freescale.com>,
-        <moinejf@free.fr>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>
-Message-ID: <20140318201829.GR11706@sirena.org.uk>
-References: <1394593331-22867-1-git-send-email-Guangyu.Chen@freescale.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9+r891pQCxLAqAJT"
-Content-Disposition: inline
-In-Reply-To: <1394593331-22867-1-git-send-email-Guangyu.Chen@freescale.com>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] ASoC: simple-card: overwrite cpu_dai->fmt with
- codec_dai->fmt
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 18 Mar 2014 16:19:18 -0400
+From: Boris BREZILLON <brezillonboris@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+Subject: [PATCH 00/11] ARM: at91: rework main and slow clk implementation
+Date: Tue, 18 Mar 2014 21:18:33 +0100
+Message-Id: <1395173924-3648-1-git-send-email-b.brezillon.dev@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---9+r891pQCxLAqAJT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This series introduce the real clock model (as described in atmel datasheets)
+for slow and main clocks.
 
-On Wed, Mar 12, 2014 at 11:02:11AM +0800, Nicolin Chen wrote:
+The modifications introduced by this series break the DT compat, but, as the
+at91 CCF based implementation is pretty new (introduced in 3.14 only for sama5
+eval boards) I think it won't impact a lot of users.
 
-> The current simple-card driver separates the daimft for cpu_dai and codec_dai.
-> So we might get different values for them (0x4003 and 0x1003 for example):
+I tested it on sama5d3.
+Alexandre, Jean-Jacques, could you test this series on your eval boards
+(sam9261ek and sam9rlek) so that we can move to this new model and hopefully
+consider the at91 clk DT binding as (almost :-)) stable.
 
-Since I really want to see some sort of fix in v3.15 that allows
-sensible looking DTs to be written I've gone ahead and applied this.
-I'd expect we'll change it again but this at least lets us only set the
-master flag on one end of the link.
+Jean-Jacques, as you can see I reworked my first implementation as you
+suggested, do you want me to add your Signed-off-by in the next version ?
 
---9+r891pQCxLAqAJT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Mike, if this series is accepted, I'd like to get it merged as soon as possible
+to prevent other developpers from using a deprecated DT binding.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Best Regards,
 
-iQIcBAEBAgAGBQJTKKoSAAoJELSic+t+oim9lM0P/jpv+JMyZ5oul2TmwMnK/Hhb
-uGzFyGhPAtrG3HxmSP94k9l+ufMIYD1dyc2Bdi9dpcIetLCqjYmRt0Z07M+hEg+Z
-kgsOte7Yre95AENq1/hLyViRfOwN6j5IOj48z4EbGTAx5wt8m3P45KEKu3jYLCp5
-acQFuQMClMXUvSMfvio1QGpbhYf6PFlcKnqaglrpR0v5gBCv+aWKbZ61CqCy+wCk
-sgcWRUSg7XOMhReSMUsg7K/rJDMpZ0sRI+v2ux8OS/0riYyqWmOK/EcFU/tbVrZz
-KoOKIIdOAlfYD802JDpHMx7wcCn+ZAarUmuS2/K9olfzNpBs9AE7ZHtP3+gbJ3h+
-hDKAw/UXw+pOt3Z/nRuNFh2NqTKRAuZSmcAqJ87trGBCThRQRXIJ/d2tl6rwrJhF
-5Z2jpPnFl7Chb/ftlZDSTZsDjnC206vTnpGj/YjArnEEtTmH7W8AqI5e4dBEeiXM
-sxjkkvJXFP4beIobZzrn6jlMtMk8jf6B+O8TgWmaGIjrq65lNC2ce1g2CA7I/uU1
-i2l+WQZ5Bh2n6D/JraNtaEghRSTXN6l5oiMSaGZXeOtEUri5pAK9w6H9N9fjPJ1e
-L1oJ7YV7IihfblWQRxUnEBF91ATm3WQCIa9wlVrPls3jUSwEtuRx8lWfbed47IH4
-V+OX6req3q9prJ1KcsqH
-=/7wV
------END PGP SIGNATURE-----
+Boris
 
---9+r891pQCxLAqAJT--
+Boris BREZILLON (11):
+  clk: at91: rework main clk implementation
+  clk: at91: update main clk documentation
+  clk: at91: add slow clks driver
+  clk: at91: add slow clk documentation
+  ARM: at91/dt: move sama5d3 SoC to the new main/slow clk model
+  ARM: at91/dt: add xtal frequencies to sama5d3xcm boards
+  ARM: at91/dt: add xtal frequencies to sama5d3 xplained board
+  ARM: at91/dt: move at91sam9261 SoC to the new main clock model
+  ARM: at91/dt: define main xtal frequency of the at91sam9261ek board
+  ARM: at91/dt: move at91sam9rl SoC to the new slow/main clock models
+  ARM: at91/dt: define sam9rlek crystal frequencies
+
+ .../devicetree/bindings/clock/at91-clock.txt       |  128 ++++-
+ arch/arm/boot/dts/at91-sama5d3_xplained.dts        |   10 +
+ arch/arm/boot/dts/at91sam9261.dtsi                 |   10 +-
+ arch/arm/boot/dts/at91sam9261ek.dts                |    4 +
+ arch/arm/boot/dts/at91sam9rl.dtsi                  |   45 +-
+ arch/arm/boot/dts/at91sam9rlek.dts                 |    8 +
+ arch/arm/boot/dts/sama5d3.dtsi                     |   61 +-
+ arch/arm/boot/dts/sama5d3xcm.dtsi                  |   10 +
+ drivers/clk/at91/Makefile                          |    4 +-
+ drivers/clk/at91/clk-main.c                        |  581 +++++++++++++++++---
+ drivers/clk/at91/clk-slow.c                        |  467 ++++++++++++++++
+ drivers/clk/at91/pmc.c                             |   12 +
+ drivers/clk/at91/pmc.h                             |    9 +
+ drivers/clk/at91/sckc.c                            |   57 ++
+ drivers/clk/at91/sckc.h                            |   22 +
+ include/linux/clk/at91_pmc.h                       |    1 +
+ 16 files changed, 1342 insertions(+), 87 deletions(-)
+ create mode 100644 drivers/clk/at91/clk-slow.c
+ create mode 100644 drivers/clk/at91/sckc.c
+ create mode 100644 drivers/clk/at91/sckc.h
+
+-- 
+1.7.9.5
+
