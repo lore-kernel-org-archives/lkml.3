@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690AbaCRIv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:51:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53964 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798AbaCRIvx (ORCPT
+	id S1754093AbaCRIzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:55:11 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:52209 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534AbaCRIzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:51:53 -0400
-Date: Tue, 18 Mar 2014 09:51:18 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, josh@joshtriplett.org, laijs@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: cond_resched() and RCU CPU stall warnings
-Message-ID: <20140318085118.GO25546@laptop.programming.kicks-ass.net>
-References: <20140316015914.GA22102@linux.vnet.ibm.com>
- <20140317101300.GA27965@twins.programming.kicks-ass.net>
- <20140317165806.GG21124@linux.vnet.ibm.com>
- <20140317171434.GJ25546@laptop.programming.kicks-ass.net>
- <20140318021706.GE4420@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140318021706.GE4420@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 18 Mar 2014 04:55:08 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, gleb@kernel.org, kvm@vger.kernel.org
+Subject: [GIT PULL] Another KVM fix for 3.14 (PPC)
+Date: Tue, 18 Mar 2014 09:55:00 +0100
+Message-Id: <1395132900-1603-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 07:17:06PM -0700, Paul E. McKenney wrote:
-> On Mon, Mar 17, 2014 at 06:14:34PM +0100, Peter Zijlstra wrote:
-> > On Mon, Mar 17, 2014 at 09:58:07AM -0700, Paul E. McKenney wrote:
-> > > @@ -4111,6 +4115,7 @@ int __sched __cond_resched_softirq(void)
-> > >  {
-> > >  	BUG_ON(!in_softirq());
-> > >  
-> > > +	rcu_cond_resched();
-> > 
-> > Don't you have to enable BHs before doing that? And if not; that needs a
-> > comment for sure! :-)
-> 
-> No need to enable BHs, just RCU marking quiescent states.  But yes,
-> the name does look a bit scary in that context, doesn't it?  Added
-> a comment, please see below for updated patch.
+Linus,
 
-The below seemed like an unrelated patch entirely :-)
+The following changes since commit b73117c49364551ff789db7c424a115ac5b77850:
 
-> ------------------------------------------------------------------------
-> 
-> torture: Better summary diagnostics for build failures
-> 
-> The reaction of kvm-recheck.sh is obscure at best, and easy to miss
-> completely.  This commit therefore prints "BUG: Build failed" in the
-> summary at the end of a run.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+  Merge branch 'kvm-ppc-next' of git://github.com/agraf/linux-2.6 into kvm-queue (2014-01-29 18:29:01 +0100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
+
+for you to fetch changes up to e724f080f5dd03881bc6d378750c37f7374cae7e:
+
+  KVM: PPC: Book3S HV: Fix register usage when loading/saving VRSAVE (2014-03-13 10:47:01 +0100)
+
+----------------------------------------------------------------
+A fix for a PowerPC bug that was introduced during the 3.14 merge window.
+
+----------------------------------------------------------------
+Paul Mackerras (2):
+      KVM: PPC: Book3S HV: Remove bogus duplicate code
+      KVM: PPC: Book3S HV: Fix register usage when loading/saving VRSAVE
+
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S | 71 +--------------------------------
+ 1 file changed, 2 insertions(+), 69 deletions(-)
