@@ -1,103 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292AbaCRVyG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:54:06 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:38514 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757199AbaCRVyD (ORCPT
+	id S932792AbaCRV4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:56:14 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:56012 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756119AbaCRV4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:54:03 -0400
-Date: Tue, 18 Mar 2014 22:53:58 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Matt Porter <mporter@linaro.org>
-Cc: Tim Kryger <tim.kryger@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux PWM List <linux-pwm@vger.kernel.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux Doc List <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/5] Add Broadcom Kona PWM Support
-Message-ID: <20140318215357.GI5917@mithrandir>
-References: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
- <20140314134324.GY25092@beef>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k9xkV0rc9XGsukaG"
-Content-Disposition: inline
-In-Reply-To: <20140314134324.GY25092@beef>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 18 Mar 2014 17:56:11 -0400
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Subject: [PATCH v3 0/7] Introducing (yet again) Device Tree Overlays
+Date: Tue, 18 Mar 2014 23:55:59 +0200
+Message-Id: <1395179766-31575-1-git-send-email-pantelis.antoniou@konsulko.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following patchset introduces Device Tree overlays, a method
+of dynamically altering the kernel's live Device Tree, along with
+a generic interface to use it in a board agnostic manner.
 
---k9xkV0rc9XGsukaG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It is dependent on Grant Likely's DT kobjectification patches located
+in his tree as queued for -next.
 
-On Fri, Mar 14, 2014 at 09:43:24AM -0400, Matt Porter wrote:
-> On Wed, Mar 12, 2014 at 01:15:41PM -0700, Tim Kryger wrote:
-> > This series introduces the driver for the Kona PWM controller found in
-> > Broadcom mobile SoCs like bcm281xx and updates the device tree and the
-> > defconfig to enable use of this hardware on the bcm28155 AP board.
-> >=20
-> > Changes since v2:
-> >   - SoC DTS file updated to use real clock's phandle + specifier
-> >   - Toggle smooth mode off during apply so new settings take immediately
-> >=20
-> > Changes since v1:
-> >   - Fixed up macros to be clearer and more complete
-> >   - Corrected spelling and punctuation mistakes
-> >   - Added support for polarity
-> >   - Made peripheral clock use more efficient
-> >   - Made prescale and duty computation clearer
-> >   - Moved Makefile addition to keep alphabetical
-> >   - Split complex lines into multiple steps
-> >=20
-> > Dependencies:
-> > The "ARM: dts: Declare the PWM for bcm11351 (bcm281xx)" patch depends
-> > upon "ARM: dts: bcm281xx: define real clocks" which is queued up in
-> > for-next of arm-soc. See https://lkml.org/lkml/2014/2/14/451
-> >=20
-> > Tim Kryger (5):
-> >   Documentation: dt: Add Kona PWM binding
-> >   pwm: kona: Introduce Kona PWM controller support
->=20
-> Thierry, are you planning to merge these first two for 3.15? If so, I
-> will apply dts patches for my last mach-bcm 3.15 pull. I don't want to
-> do so until the binding is accepted.
+It relies on the following previously submitted patches/patchsets:
 
-I've reviewed this and it doesn't look like 3.15 material.
+* OF: Add [__]of_find_node_by_full_name
+* OF: Utility helper functions for dynamic nodes
+* of: Make of_find_node_by_path() handle /aliases
 
-Thierry
+To compile overlays you need the DTC compiler patch
 
---k9xkV0rc9XGsukaG
-Content-Type: application/pgp-signature
+* "dtc: Dynamic symbols & fixup support (v2)"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Changes since V2:
+* Use of a configfs board agnostic overlay method
+* Use of per bus handlers instead of hardcoded behaviour
+* Optional target-path overlay target, which allows one to use standard
+DTBs without resolution options.
 
-iQIcBAEBAgAGBQJTKMB1AAoJEN0jrNd/PrOh838P/iOx0jBvU8WyFgVf7QAlrPd4
-gFCSHAmju3qqzjuv1k+79aHCuf2MyNeFYG4BBZS6bBg9DpsX4uqtVbyuK1T3A656
-1cIC+dPDDiiU/RgxHYZJehS03BtYobOfGtvI51psuJ+AE5x2ChWGkhsbnCgUTDE2
-+gdAy8zb7bYxFZ0UbyUMJvRCSajbrjs2QPTqsGqGgLjr7zsGd7wnzfTJ54lJ9e3e
-lyXfskKMQJrOiZRYAw1vHs9mYBrbApBxf3trJqWj2htqhT+QoEfw9vkjBMjgKJid
-XMc4eocnZLSKsM6LLycVpncMV0Km8p8MBqtriAXDGamND78XyZcHc/k9khhkgY0x
-HPRYkwtbUyNM2SsytU20QuoKz7S+mpy6NnLDNpcfbqbuo7N3fMfwvU7eeGA2U9p1
-ae/C8n2p11DxQPd7Ne3mIQUZ2xYBjzXw132XzmXi7lJpYKAWGUAx0beMEgXZfkFL
-5oTfAtJajZQQQ++uh0ppY7l1upzIaV+Gf+9Nel6/N0GnTmonBEAiN7GU+Bcd1T00
-ocUQoG7yDTsE14v7DdMkSKYl6XMMMieo3V4i712xDnXxnodyHeYLZ+VcZhKwFyH4
-L/wpTzx/T23HPKNWhKVHxN7VY64biHVaBVOjj61kM6DiOinYcxL/ZHE1xxXzvIB7
-xrvVZszr1/r6mRANVMip
-=Rq9l
------END PGP SIGNATURE-----
+Changes since V1:
 
---k9xkV0rc9XGsukaG--
+* Removal of any bits related to a specific board (beaglebone).
+* Introduced a platform agnostic interface using /proc/device-tree-overlay
+* Various bug fixes related to i2c device handling have been squashed in.
+
+
+Pantelis Antoniou (7):
+  OF: Introduce Device Tree resolve support.
+  OF: Introduce DT overlay support.
+  OF: DT-Overlay configfs interface
+  OF: platform: Add overlay bus handler
+  OF: i2c: Add overlay bus handler
+  OF: spi: Add overlay bus handler
+  of: i2c: Export single device registration method
+
+ .../devicetree/dynamic-resolution-notes.txt        |  25 +
+ Documentation/devicetree/overlay-notes.txt         | 187 +++++
+ drivers/base/platform.c                            |  99 ++-
+ drivers/i2c/i2c-core.c                             | 186 +++--
+ drivers/of/Kconfig                                 |  24 +
+ drivers/of/Makefile                                |   3 +
+ drivers/of/configfs.c                              | 272 +++++++
+ drivers/of/overlay.c                               | 895 +++++++++++++++++++++
+ drivers/of/resolver.c                              | 376 +++++++++
+ drivers/spi/spi.c                                  | 345 +++++---
+ include/linux/i2c.h                                |  10 +
+ include/linux/of.h                                 | 170 ++++
+ 12 files changed, 2440 insertions(+), 152 deletions(-)
+ create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
+ create mode 100644 Documentation/devicetree/overlay-notes.txt
+ create mode 100644 drivers/of/configfs.c
+ create mode 100644 drivers/of/overlay.c
+ create mode 100644 drivers/of/resolver.c
+
+-- 
+1.7.12
+
