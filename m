@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838AbaCRRgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:36:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33679 "EHLO
+	id S1757085AbaCRRgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:36:36 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33682 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755175AbaCRRgR (ORCPT
+	by vger.kernel.org with ESMTP id S1755613AbaCRRgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Mar 2014 13:36:17 -0400
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: lee.jones@linaro.org
 Cc: sameo@linux.intel.com, broonie@kernel.org,
         patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] mfd: arizona: Add MICVDD to mapped regulators
-Date: Tue, 18 Mar 2014 17:27:42 +0000
-Message-Id: <1395163663-1845-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] mfd: wm8997: Add registers for high power mode
+Date: Tue, 18 Mar 2014 17:27:43 +0000
+Message-Id: <1395163663-1845-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1395163663-1845-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1395163663-1845-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, MICVDD only binds because it is both the regulator name and
-the consumer name and we will always match against the regulator name
-regardless of the consumer device. If the regulator was renamed using
-the init_data ASoC will no longer be able to locate the supply, as it
-will be looking on the CODEC device where as the MICVDD consumer is on
-the Arizona device. Add a mapping as we do for the other regulators.
+Some output configurations can require a 50Mhz SYSCLK which requires
+DCVDD to be 1.8V. This patch adds the registers necessary for
+supporting this operational mode.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/arizona-core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/mfd/wm8997-tables.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index a45aab9..a068748 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -575,6 +575,7 @@ static const char *wm5102_supplies[] = {
- 	"CPVDD",
- 	"SPKVDDL",
- 	"SPKVDDR",
-+	"MICVDD",
- };
- 
- static const struct mfd_cell wm5102_devs[] = {
+diff --git a/drivers/mfd/wm8997-tables.c b/drivers/mfd/wm8997-tables.c
+index 5aa8076..c9c6519 100644
+--- a/drivers/mfd/wm8997-tables.c
++++ b/drivers/mfd/wm8997-tables.c
+@@ -846,6 +846,7 @@ static bool wm8997_readable_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_RATE_ESTIMATOR_3:
+ 	case ARIZONA_RATE_ESTIMATOR_4:
+ 	case ARIZONA_RATE_ESTIMATOR_5:
++	case ARIZONA_DYNAMIC_FREQUENCY_SCALING_1:
+ 	case ARIZONA_FLL1_CONTROL_1:
+ 	case ARIZONA_FLL1_CONTROL_2:
+ 	case ARIZONA_FLL1_CONTROL_3:
+@@ -880,6 +881,7 @@ static bool wm8997_readable_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_FLL2_GPIO_CLOCK:
+ 	case ARIZONA_MIC_CHARGE_PUMP_1:
+ 	case ARIZONA_LDO1_CONTROL_1:
++	case ARIZONA_LDO1_CONTROL_2:
+ 	case ARIZONA_LDO2_CONTROL_1:
+ 	case ARIZONA_MIC_BIAS_CTRL_1:
+ 	case ARIZONA_MIC_BIAS_CTRL_2:
 -- 
 1.7.2.5
 
