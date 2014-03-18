@@ -1,65 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757870AbaCRT0z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 15:26:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11423 "EHLO mx1.redhat.com"
+	id S1757916AbaCRT1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 15:27:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44683 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757845AbaCRT0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 15:26:53 -0400
+	id S1757861AbaCRT0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 15:26:55 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, hpa@zytor.com
 Cc: Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 0/5] x86/boot: Some string function cleanup and consolidation
-Date: Tue, 18 Mar 2014 15:26:35 -0400
-Message-Id: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 5/5] x86/boot: Move memset() definition in compressed/string.c
+Date: Tue, 18 Mar 2014 15:26:40 -0400
+Message-Id: <1395170800-11059-6-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
+References: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Currently compressed/misc.c needs to link against memset(). I think one of
+the reasons of this need is inclusion of various header files which define
+static inline functions and use memset() inside these. For example,
+include/linux/bitmap.h
 
-I have tried cleaning up a bit the usage of string functions in arch/x86/boot/.
+I think trying to include "../string.h" and using builtin version of memset
+does not work because by the time "#define memset" shows up, it is too
+late. Some other header file has already used memset() and expects to
+find a definition during link phase.
 
-I have created x86/boot/string.h which all the callers can include and by
-default they get the built in definition of memcpy, memset and memcmp. Those
-who want to use optimized version of these functions, need to #undef respective
-macro and link again the approprate string.c file which provides the function
-definition.
+Currently we have a C definitoin of memset() in misc.c. Move it to
+compressed/string.c so that others can use it if need be.
 
-After this change I am planning to include x86/boot/string.h in purgatory
-code and get built-in definitions of memcpy, memset and memcmp.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ arch/x86/boot/compressed/misc.c   | 20 +++++++-------------
+ arch/x86/boot/compressed/string.c | 10 ++++++++++
+ 2 files changed, 17 insertions(+), 13 deletions(-)
 
-There seem to be lot of magic going on in arch/x86/boot/. I do not claim
-to understand it all. Hopefully above changes do not break anything.
-
-Please have a look.
-
-Thanks
-Vivek
-
-
-Vivek Goyal (5):
-  x86/boot: undef memcmp before providing a new definition
-  x86/boot: Create a separate string.h file to provide standard string
-    functions
-  x86/boot: Move optmized memcpy() 32/64 bit versions to
-    compressed/string.c
-  x86/boot: Move memcmp() into string.h and string.c
-  x86/boot: Move memset() definition in compressed/string.c
-
- arch/x86/boot/boot.h              | 13 ----------
- arch/x86/boot/compressed/misc.c   | 51 ++++++---------------------------------
- arch/x86/boot/compressed/string.c | 46 ++++++++++++++++++++++++++++++-----
- arch/x86/boot/cpucheck.c          |  1 +
- arch/x86/boot/edd.c               |  1 +
- arch/x86/boot/main.c              |  1 +
- arch/x86/boot/regs.c              |  1 +
- arch/x86/boot/string.c            | 14 +++++++++++
- arch/x86/boot/string.h            | 21 ++++++++++++++++
- arch/x86/boot/video-vesa.c        |  1 +
- 10 files changed, 88 insertions(+), 62 deletions(-)
- create mode 100644 arch/x86/boot/string.h
-
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 3100092..1768461 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -98,8 +98,14 @@
+  */
+ #define STATIC		static
+ 
+-#undef memset
+ #undef memcpy
++
++/*
++ * Use a normal definition of memset() from string.c. There are already
++ * included header files which expect a definition of memset() and by
++ * the time we define memset macro, it is too late.
++ */
++#undef memset
+ #define memzero(s, n)	memset((s), 0, (n))
+ 
+ 
+@@ -110,8 +116,6 @@ static void error(char *m);
+  */
+ struct boot_params *real_mode;		/* Pointer to real-mode data */
+ 
+-void *memset(void *s, int c, size_t n);
+-
+ memptr free_mem_ptr;
+ memptr free_mem_end_ptr;
+ 
+@@ -216,16 +220,6 @@ void __putstr(const char *s)
+ 	outb(0xff & (pos >> 1), vidport+1);
+ }
+ 
+-void *memset(void *s, int c, size_t n)
+-{
+-	int i;
+-	char *ss = s;
+-
+-	for (i = 0; i < n; i++)
+-		ss[i] = c;
+-	return s;
+-}
+-
+ static void error(char *x)
+ {
+ 	error_putstr("\n\n");
+diff --git a/arch/x86/boot/compressed/string.c b/arch/x86/boot/compressed/string.c
+index 920b55e..f3c57e3 100644
+--- a/arch/x86/boot/compressed/string.c
++++ b/arch/x86/boot/compressed/string.c
+@@ -33,3 +33,13 @@ void *memcpy(void *dest, const void *src, size_t n)
+ 	return dest;
+ }
+ #endif
++
++void *memset(void *s, int c, size_t n)
++{
++	int i;
++	char *ss = s;
++
++	for (i = 0; i < n; i++)
++		ss[i] = c;
++	return s;
++}
 -- 
 1.8.5.3
 
