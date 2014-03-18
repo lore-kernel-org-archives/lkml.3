@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbaCRAhC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 20:37:02 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61852 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263AbaCRAhA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 20:37:00 -0400
-Message-ID: <53279525.7090101@linaro.org>
-Date: Mon, 17 Mar 2014 17:36:53 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753365AbaCRAiY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 20:38:24 -0400
+Received: from ring0.de ([5.45.105.125]:34178 "EHLO ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752598AbaCRAiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 20:38:23 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.1 DKIM_VALID_AU Message has a valid DKIM or DK signature from author's
+	*       domain
+	*  0.1 DKIM_SIGNED Message has a DKIM or DK signature, not necessarily
+	*      valid
+	* -0.1 DKIM_VALID Message has at least one valid DKIM or DK signature
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Tue, 18 Mar 2014 01:38:18 +0100
+From: sre@ring0.de
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/4] power_supply: Add DT helper function to get
+ power-supply dev from dt
+Message-ID: <20140318003818.GA17391@earth.universe>
+References: <1395060227-23378-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/3] vrange: Add vrange syscall and handle splitting/merging
- and marking vmas
-References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org> <1394822013-23804-2-git-send-email-john.stultz@linaro.org> <20140317092118.GA2210@quack.suse.cz> <20140317094339.GC2210@quack.suse.cz>
-In-Reply-To: <20140317094339.GC2210@quack.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
+Content-Disposition: inline
+In-Reply-To: <1395060227-23378-1-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2014 02:43 AM, Jan Kara wrote:
-> On Mon 17-03-14 10:21:18, Jan Kara wrote:
->> On Fri 14-03-14 11:33:31, John Stultz wrote:
->>> +	for (;;) {
->>> +		unsigned long new_flags;
->>> +		pgoff_t pgoff;
->>> +		unsigned long tmp;
->>> +
->>> +		if (!vma)
->>> +			goto out;
->>> +
->>> +		if (vma->vm_flags & (VM_SPECIAL|VM_LOCKED|VM_MIXEDMAP|
->>> +					VM_HUGETLB))
->>> +			goto out;
->>> +
->>> +		/* We don't support volatility on files for now */
->>> +		if (vma->vm_file) {
->>> +			ret = -EINVAL;
->>> +			goto out;
->>> +		}
->>> +
->>> +		new_flags = vma->vm_flags;
->>> +
->>> +		if (start < vma->vm_start) {
->>> +			start = vma->vm_start;
->>> +			if (start >= end)
->>> +				goto out;
->>> +		}
->   One more question: This seems to silently skip any holes between VMAs. Is
-> that really intended? I'd expect that marking unmapped range as volatile /
-> non-volatile should return error... In any case what happens should be
-> defined in the description.
 
-So.. initially it was by design, but as I look at madvise and think
-about it further, it does make more sense to throw errors if memory in
-the range is not mapped.
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'll try to rework things to adapt to this.
+Hi,
 
-thanks
--john
+On Mon, Mar 17, 2014 at 09:43:43PM +0900, Chanwoo Choi wrote:
+> This patchset add DT helper function to get power-supply device from devi=
+cetree.
+> - of_power_supply_get_dev(struct device *dev, enum power_supply_dev_type =
+type,
+> 			  int index)
+> Power-supply class provides 'power_supply_get_by_name()' to users who wan=
+t to
+> find power-supply device with the name of power-supply device.
+>=20
+> If CONFIG_OF is enabled, device drivers which want to get power-supply de=
+vice
+> would directly get the power-supply device from devicetree by using of_po=
+wer_
+> supply_get_dev(). This function can be used instead of power_supply_get_b=
+y_name().
+>=20
+> For example,
+> [...]
+
+include/linux/power_supply.h provides the following function already:
+
+struct power_supply *
+power_supply_get_by_phandle(struct device_node *np, const char *property);
+
+-- Sebastian
+
+--BOKacYhQ+x31HxR3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTJ5V6AAoJENju1/PIO/qau3MP/0ZXwc2MATHiqdHZ9Lo7GJ1F
+7BDTBpFAbELKUglZYi2+n3q3kWNhci1NQhCkIkJUi0u+uqyZJk1ZMmnoA3b1udrM
+dB5oGN2pSmH51GIV4YgkQq0iaLCHb0pPoq1GqIfGibYhBsrWU8cL+OdSO2hOyDph
+hEdO8TCVz/5OV/2xei5s3MUL9BK/7GoehwTw4SUHy+/khVtU6O21houtLYLnVTYu
+w9Pwxq20kcQn3LyfWycWx2aNg+VmAtbCCS6M+uC30IhVa1eQn0+Aa2pd+JA0KdPi
+Ageb1odA8rG5gXWk6eL4RP2qrlT6hzaW0lujnfTC7XZ//wdpCaXeJxo6qB6Gy9X2
+87Q7KrSSWj5h/4BX8fD7BTHsliesBAYZHNqd7IgrZGEP5MBL+p5AGXSrFaJrjRIg
+BhtDL+s5YicY58OUORIk0vUqKpX5p44YYweFk7PfJ24zTeq5rTdcvgNRV8GT9l3m
+KBrK+zg/IIIOhpaf/5Zmc6dWe1uC50mv6oZE+T2qzrwB4UEij56v1HNfg9JKLML4
+22zvgNPZw2ZuMtuPxCNmBe3LUELeFRFSM8lo9qaFFizZr7oTj43umgAoIOk31VRZ
+Fv0dand5hHr6VjcZUWJLHyPuhmtXMrQxvNf9o4C+n9tUGjpJYf/dDrcxDLBljrGi
+tC2lqI87QHQltFWPFYfO
+=wuKR
+-----END PGP SIGNATURE-----
+
+--BOKacYhQ+x31HxR3--
