@@ -1,151 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137AbaCRVR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:17:56 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:3338 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755126AbaCRVRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:17:53 -0400
-X-IronPort-AV: E=Sophos;i="4.97,680,1389744000"; 
-   d="scan'208";a="111270526"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Jesse Gross <jesse@nicira.com>, <pshelar@nicira.com>, <tgraf@redhat.com>,
-        <dev@openvswitch.org>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
-        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
-        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Miklos Szeredi <mszeredi@suse.cz>, <netfilter-devel@vger.kernel.org>,
-        <netfilter@vger.kernel.org>, <coreteam@netfilter.org>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
-        Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
-Date: Tue, 18 Mar 2014 21:17:35 +0000
-Message-ID: <1395177455-2077-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1758150AbaCRVSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:18:16 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:40608 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755126AbaCRVSL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 17:18:11 -0400
+Date: Tue, 18 Mar 2014 22:18:07 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux Doc List <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 1/5] Documentation: dt: Add Kona PWM binding
+Message-ID: <20140318211806.GG5917@mithrandir>
+References: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
+ <1394655346-30048-2-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4ndw/alBWmZEhfcZ"
+Content-Disposition: inline
+In-Reply-To: <1394655346-30048-2-git-send-email-tim.kryger@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
-orphan them. Also, it doesn't handle errors, so this patch takes care of that
-as well.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- net/openvswitch/datapath.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+--4ndw/alBWmZEhfcZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 03db95a..35c4e85 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2508,8 +2508,8 @@ int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
- 		    unsigned int flags);
- void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
- unsigned int skb_zerocopy_headlen(const struct sk_buff *from);
--void skb_zerocopy(struct sk_buff *to, const struct sk_buff *from,
--		  int len, int hlen);
-+int skb_zerocopy(struct sk_buff *to, const struct sk_buff *from,
-+		 int len, int hlen);
- void skb_split(struct sk_buff *skb, struct sk_buff *skb1, const u32 len);
- int skb_shift(struct sk_buff *tgt, struct sk_buff *skb, int shiftlen);
- void skb_scrub_packet(struct sk_buff *skb, bool xnet);
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 3f14c63..60f623c 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2127,25 +2127,36 @@ EXPORT_SYMBOL_GPL(skb_zerocopy_headlen);
-  *
-  *	The `hlen` as calculated by skb_zerocopy_headlen() specifies the
-  *	headroom in the `to` buffer.
-+ *
-+ *	Return value:
-+ *	0: everything is OK
-+ *	-ENOMEM: couldn't orphan frags of from due to lack of memory
-+ *	-EFAULT: skb_copy_bits() found some problem with geometry
-  */
--void
-+int
- skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
- {
- 	int i, j = 0;
- 	int plen = 0; /* length of skb->head fragment */
-+	int ret;
- 	struct page *page;
- 	unsigned int offset;
- 
- 	BUG_ON(!from->head_frag && !hlen);
- 
- 	/* dont bother with small payloads */
--	if (len <= skb_tailroom(to)) {
--		skb_copy_bits(from, 0, skb_put(to, len), len);
--		return;
-+	if (len <= skb_tailroom(to))
-+		return skb_copy_bits(from, 0, skb_put(to, len), len);
-+
-+	if (unlikely(skb_orphan_frags(to, GFP_ATOMIC))) {
-+		skb_tx_error(to);
-+		return -ENOMEM;
- 	}
- 
- 	if (hlen) {
--		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-+		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-+		if (unlikely(ret))
-+			return ret;
- 		len -= hlen;
- 	} else {
- 		plen = min_t(int, skb_headlen(from), len);
-@@ -2173,6 +2184,8 @@ skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
- 		j++;
- 	}
- 	skb_shinfo(to)->nr_frags = j;
-+
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(skb_zerocopy);
- 
-diff --git a/net/netfilter/nfnetlink_queue_core.c b/net/netfilter/nfnetlink_queue_core.c
-index f072fe8..ea02d16 100644
---- a/net/netfilter/nfnetlink_queue_core.c
-+++ b/net/netfilter/nfnetlink_queue_core.c
-@@ -488,7 +488,8 @@ nfqnl_build_packet_message(struct net *net, struct nfqnl_instance *queue,
- 		nla->nla_type = NFQA_PAYLOAD;
- 		nla->nla_len = nla_attr_size(data_len);
- 
--		skb_zerocopy(skb, entskb, data_len, hlen);
-+		if (skb_zerocopy(skb, entskb, data_len, hlen))
-+			goto nla_put_failure;
- 	}
- 
- 	nlh->nlmsg_len = skb->len;
-diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
-index c53fe0c..9a9f668 100644
---- a/net/openvswitch/datapath.c
-+++ b/net/openvswitch/datapath.c
-@@ -464,7 +464,9 @@ static int queue_userspace_packet(struct datapath *dp, struct sk_buff *skb,
- 	}
- 	nla->nla_len = nla_attr_size(skb->len);
- 
--	skb_zerocopy(user_skb, skb, skb->len, hlen);
-+	err = skb_zerocopy(user_skb, skb, skb->len, hlen);
-+	if (err)
-+		goto out;
- 
- 	/* Pad OVS_PACKET_ATTR_PACKET if linear copy was performed */
- 	if (!(dp->user_features & OVS_DP_F_UNALIGNED)) {
+On Wed, Mar 12, 2014 at 01:15:42PM -0700, Tim Kryger wrote:
+> Add the binding description for the Kona PWM controller found on Broadcom=
+'s
+> mobile SoCs.
+>=20
+> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+> Reviewed-by: Alex Elder <elder@linaro.org>
+> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> ---
+>  .../devicetree/bindings/pwm/bcm-kona-pwm.txt       | 24 ++++++++++++++++=
+++++++
+>  1 file changed, 24 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
+>=20
+> diff --git a/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt b/Doc=
+umentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
+> new file mode 100644
+> index 0000000..c8e2d13
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
+> @@ -0,0 +1,24 @@
+> +Broadcom Kona PWM controller device tree bindings
+> +
+> +This controller has 6 channels.
+> +
+> +Required Properties :
+> +- compatible: should be "brcm,kona-pwm"
+
+This is somewhat inconsistent because the example below clearly doesn't
+set the compatible property to "brcm,kona-pwm". Perhaps better wording
+would be:
+
+	- compatible: should contain "brcm,kona-pwm"
+
+> +- reg: physical base address and length of the controller's registers
+> +- clocks: phandle + clock specifier pair for the external clock
+> +- #pwm-cells: should be 3.  The first cell specifies the per-chip index
+> +  of the PWM to use, the second cell is the period in nanoseconds, and
+> +  the third cell is the flags.
+
+Please use the canonical description for this:
+
+	- #pwm-cells: Should be 3. See pwm.txt in this directory for a
+	  description of the cells format.
+
+> +Refer to pwm/pwm.txt for generic pwm controller node properties.
+
+With the above, this line should go away. But still: "pwm controller" ->
+"PWM controller".
+
+Thierry
+
+--4ndw/alBWmZEhfcZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTKLgOAAoJEN0jrNd/PrOhdPoP/in+sozoaEIa6Cdl51/NuIzl
+WAN+rlNjkkwyUVm4XY87guwwdnu0scjX0Cal8PaRoxmxdFSMNcRS5AX2W8pCylZo
+9Te4RkFDnLJaXaYlcpvhevRz014HmY1tGnWdaSxySPt2jUXP3Y/d1rLZAVX9kOh6
+BpBxER71Jd6htT8BkM2OSMdCHUPDxy48WLbtiyb2zngsrChqEa4OOHQf9YRKFdQD
+SYWvQqP6gAeBTYH8amtTQjCf+4JAphlCm29ZaaMYsncbbiVKm24NXNFDTYXA8hcz
+U7su5nwwHJOFhGGdsTX+wQ/9WHItewIsqIMnysdaRAU4xZ6E00N8tSoAIrKtA6HP
+nvV5pWgpEaIDR1VKck38sNa6g1PKFJ1hDx1dHAjvKOKUxHiN8Yt4YdgAs7/NDhYP
+7xtaYS0bCukAZrQxyo6CL7rASuy45TkRC4KyIZ29IeHrW+tHXpFfT8rAI0HUTVVm
+8MxUAGyiuY+23wtSmqL9tI4l8LXvmXUk4xREYF1T9G+bQNrYvONczaY8gDNgybqc
+ga22mMCnqH7Yo0vu0Vi/eZDw1JKu3728NSGfkCAwxPi0lsbybQ03dJJMoYkYGG6K
+yfSDN1t2ei2RNmGXf81onNm5L5lU15lDvuERAc61c7/+VYk880l6gphOL1m+BiaR
+1CKE+TDQGKAv0aY/wBxt
+=z6zP
+-----END PGP SIGNATURE-----
+
+--4ndw/alBWmZEhfcZ--
