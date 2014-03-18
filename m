@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310AbaCRXvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 19:51:18 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:8767 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575AbaCRXvR (ORCPT
+	id S1758041AbaCRX74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 19:59:56 -0400
+Received: from exprod5og104.obsmtp.com ([64.18.0.178]:54170 "HELO
+	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755163AbaCRX7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 19:51:17 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 18 Mar 2014 16:47:32 -0700
-From: Arun Shamanna Lakshmi <aruns@nvidia.com>
-To: <lgirdwood@gmail.com>, <broonie@kernel.org>
-CC: <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>,
-        Arun Shamanna Lakshmi <aruns@nvidia.com>,
-        Songhee Baek <sbaek@nvidia.com>
-Subject: [PATCH] ASoC: Add support for multi register mux
-Date: Tue, 18 Mar 2014 16:51:32 -0700
-Message-ID: <1395186692-11735-1-git-send-email-aruns@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	Tue, 18 Mar 2014 19:59:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1391040198-14185-1-git-send-email-fkan@apm.com>
+References: <1391040198-14185-1-git-send-email-fkan@apm.com>
+Date: Tue, 18 Mar 2014 16:59:13 -0700
+Message-ID: <CAL85gmA=7auR3_=8J7FZctU=uiu+z0ZzNNC7XhZ2hGwW2aW9oQ@mail.gmail.com>
+Subject: Re: [PATCH V5 0/5] Add X-Gene platform reboot mechanism
+From: Feng Kan <fkan@apm.com>
+To: patches <patches@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Cc: Feng Kan <fkan@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently soc_enum structure supports only 2 registers (reg, reg2)
-for kcontrol. However, it is possible to have multiple registers
-per mux. This change allows us to control these multiple registers.
+Just want to ping this again, since no activity for a while. I have
+added endian and
+access size related information in the documentation.  Please let me
+know if more is
+needed.
 
-Signed-off-by: Arun Shamanna Lakshmi <aruns@nvidia.com>
-Signed-off-by: Songhee Baek <sbaek@nvidia.com>
----
- include/sound/soc.h |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/include/sound/soc.h b/include/sound/soc.h
-index 9a00147..ddedfb4 100644
---- a/include/sound/soc.h
-+++ b/include/sound/soc.h
-@@ -1093,6 +1093,9 @@ struct soc_enum {
- 	unsigned int mask;
- 	const char * const *texts;
- 	const unsigned int *values;
-+	unsigned int *regs;
-+	unsigned int *masks;
-+	unsigned int num_regs;
- };
- 
- /* codec IO */
--- 
-1.7.9.5
-
+On Wed, Jan 29, 2014 at 4:03 PM, Feng Kan <fkan@apm.com> wrote:
+> Enable reboot driver for the X-Gene platform. Add generic syscon reboot
+> driver.
+>
+> V5 Change:
+>         - Documentation update, endian and access size.
+>
+> V4 Change:
+>         - Remove old X-Gene reboot driver
+>         - Add generic syscon reboot driver
+>         - Add DTS and Kconfig for X-Gene reboot using syscon method
+>
+> V3 Change:
+>         - Remove the reboot driver's use of acpi resource patch.
+>         - Change the reboot driver to use syscon to parse out
+>           system clock register. Remove the old method of getting
+>           register from the reboot driver directly.
+>         - Remove documentation since its now simple.
+>
+> V2 Change:
+>         - Add support for using ACPI resource.
+>
+> Feng Kan (5):
+>   power: reset: Add generic SYSCON register mapped reset
+>   power: reset: Remove X-Gene reboot driver
+>   arm64: dts: Add X-Gene reboot driver dts node
+>   arm64: Select reboot driver for X-Gene platform
+>   Documentation: power: reset: Add documentation for generic SYSCON
+>     reboot driver
+>
+>  .../bindings/power/reset/syscon-reboot.txt         |   23 +++++
+>  arch/arm64/Kconfig                                 |    2 +
+>  arch/arm64/boot/dts/apm-storm.dtsi                 |   13 +++
+>  drivers/power/reset/Kconfig                        |    8 +-
+>  drivers/power/reset/Makefile                       |    2 +-
+>  drivers/power/reset/syscon-reboot.c                |  100 +++++++++++++++++++
+>  drivers/power/reset/xgene-reboot.c                 |  103 --------------------
+>  7 files changed, 143 insertions(+), 108 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+>  create mode 100644 drivers/power/reset/syscon-reboot.c
+>  delete mode 100644 drivers/power/reset/xgene-reboot.c
+>
+> --
+> 1.7.6.1
+>
