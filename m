@@ -1,181 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885AbaCRLmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 07:42:15 -0400
-Received: from [217.156.133.130] ([217.156.133.130]:43255 "EHLO
-	imgpgp01.kl.imgtec.org" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752329AbaCRLmN (ORCPT
+	id S1754188AbaCRLoJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 07:44:09 -0400
+Received: from forward14.mail.yandex.net ([95.108.130.92]:37995 "EHLO
+	forward14.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754064AbaCRLoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 07:42:13 -0400
-X-PGP-Universal: processed;
-	by imgpgp01.kl.imgtec.org on Tue, 18 Mar 2014 11:41:50 +0000
-Message-ID: <532830F6.8090305@imgtec.com>
-Date: Tue, 18 Mar 2014 11:41:42 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 18 Mar 2014 07:44:08 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Preeti Murthy <preeti.lkml@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+In-Reply-To: <CAM4v1pOtUDNn_yFG3HyYbBy0VDy4qCh-Ms3jMO_+hfOVQLhw-A@mail.gmail.com>
+References: <1394835289.18748.31.camel@HP-250-G1-Notebook-PC> <CAM4v1pOtUDNn_yFG3HyYbBy0VDy4qCh-Ms3jMO_+hfOVQLhw-A@mail.gmail.com>
+Subject: Re: [PATCH 1/4] sched/rt: Sum number of all children tasks in hierarhy at rt_nr_running
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <viro@zeniv.linux.org.uk>, <vgupta@synopsys.com>,
-        <catalin.marinas@arm.com>, <will.deacon@arm.com>,
-        <hskinnemoen@gmail.com>, <egtvedt@samfundet.no>, <vapier@gentoo.org>,
-        <msalter@redhat.com>, <a-jacquiot@ti.com>, <starvik@axis.com>,
-        <jesper.nilsson@axis.com>, <dhowells@redhat.com>,
-        <rkuo@codeaurora.org>, <tony.luck@intel.com>, <fenghua.yu@intel.com>,
-        <takata@linux-m32r.org>, <geert@linux-m68k.org>, <monstr@monstr.eu>,
-        <yasutake.koichi@jp.panasonic.com>, <ralf@linux-mips.org>,
-        <jonas@southpole.se>, <jejb@parisc-linux.org>, <deller@gmx.de>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <schwidefsky@de.ibm.com>, <heiko.carstens@de.ibm.com>,
-        <liqin.linux@gmail.com>, <lennox.wu@gmail.com>, <cmetcalf@tilera.com>,
-        <gxt@mprc.pku.edu.cn>, <linux-xtensa@linux-xtensa.org>,
-        <akpm@linux-foundation.org>, <oleg@redhat.com>, <tj@kernel.org>,
-        <hch@infradead.org>, linux-metag <linux-metag@vger.kernel.org>
-Subject: Re: [PATCH 12/44] metag: Use get_signal() signal_setup_done()
-References: <1393804646-7797-1-git-send-email-richard@nod.at> <1393804646-7797-2-git-send-email-richard@nod.at> <53146440.707@imgtec.com>
-In-Reply-To: <53146440.707@imgtec.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="Xv2dRd4QbdO0uLoxOfUOlEn63mHEUm8WF"
-X-Originating-IP: [192.168.154.65]
-X-ESG-ENCRYPT-TAG: 542c405f
+Message-Id: <2983961395143041@web25j.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Tue, 18 Mar 2014 15:44:01 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Xv2dRd4QbdO0uLoxOfUOlEn63mHEUm8WF
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 03/03/14 11:15, James Hogan wrote:
-> Hi Richard,
->=20
-> On 02/03/14 23:57, Richard Weinberger wrote:
->> @@ -235,10 +230,8 @@ static void handle_signal(unsigned long sig, sigi=
-nfo_t *info,
->>  static int do_signal(struct pt_regs *regs, int syscall)
->>  {
->>  	unsigned int retval =3D 0, continue_addr =3D 0, restart_addr =3D 0;
->> -	struct k_sigaction ka;
->> -	siginfo_t info;
->> -	int signr;
->>  	int restart =3D 0;
->> +	struct ksignal ksig;
->> =20
->>  	/*
->>  	 * By the end of rt_sigreturn the context describes the point that t=
-he
->> @@ -272,30 +265,30 @@ static int do_signal(struct pt_regs *regs, int s=
-yscall)
->>  	}
->> =20
->>  	/*
->> -	 * Get the signal to deliver. When running under ptrace, at this poi=
-nt
->> -	 * the debugger may change all our registers ...
->> -	 */
->> -	signr =3D get_signal_to_deliver(&info, &ka, regs, NULL);
->> -	/*
->>  	 * Depending on the signal settings we may need to revert the decisi=
-on
->>  	 * to restart the system call. But skip this if a debugger has chose=
-n to
->>  	 * restart at a different PC.
->>  	 */
->>  	if (regs->REG_PC !=3D restart_addr)
->>  		restart =3D 0;
->> -	if (signr > 0) {
->> +
->> +	/*
->> +	 * Get the signal to deliver. When running under ptrace, at this poi=
-nt
->> +	 * the debugger may change all our registers ...
->> +	 */
->> +	if (get_signal(&ksig)) {
->=20
-> The patch all looks good to me except for this bit. You've moved the bi=
-t
-> at which a ptrace debugger can alter the registers to after the check
-> for whether the PC has been altered, which would still need to cancel
-> the restart.
->=20
-> Does something like the hunks below look reasonable to you?
->=20
-> Would you like me to take this patch through the metag tree or do you
-> want to keep them together?
-
-I've applied the altered version of this patch to the metag tree for v3.1=
-5.
-
-Thanks
-James
-
->=20
-> Cheers
-> James
->=20
-> @@ -275,7 +268,7 @@ static int do_signal(struct pt_regs *regs, int sysc=
-all)
->  	 * Get the signal to deliver. When running under ptrace, at this poin=
-t
->  	 * the debugger may change all our registers ...
->  	 */
-> -	signr =3D get_signal_to_deliver(&info, &ka, regs, NULL);
-> +	get_signal(&ksig);
->  	/*
->  	 * Depending on the signal settings we may need to revert the decisio=
-n
->  	 * to restart the system call. But skip this if a debugger has chosen=
- to
-> @@ -283,19 +276,19 @@ static int do_signal(struct pt_regs *regs, int sy=
-scall)
->  	 */
->  	if (regs->REG_PC !=3D restart_addr)
->  		restart =3D 0;
-> -	if (signr > 0) {
-> +	if (ksig.sig > 0) {
->  		if (unlikely(restart)) {
->  			if (retval =3D=3D -ERESTARTNOHAND
->  			    || retval =3D=3D -ERESTART_RESTARTBLOCK
->  			    || (retval =3D=3D -ERESTARTSYS
-> -				&& !(ka.sa.sa_flags & SA_RESTART))) {
-> +				&& !(ksig.ka.sa.sa_flags & SA_RESTART))) {
->  				regs->REG_RETVAL =3D -EINTR;
->  				regs->REG_PC =3D continue_addr;
->  			}
->  		}
-> =20
->  		/* Whee! Actually deliver the signal.  */
-> -		handle_signal(signr, &info, &ka, regs);
-> +		handle_signal(&ksig, regs);
->  		return 0;
->  	}
-> =20
->=20
 
 
---Xv2dRd4QbdO0uLoxOfUOlEn63mHEUm8WF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+18.03.2014, 15:08, "Preeti Murthy" <preeti.lkml@gmail.com>:
+> On Sat, Mar 15, 2014 at 3:44 AM, Kirill Tkhai <tkhai@yandex.ru> wrote:
+>
+>> š{inc,dec}_rt_tasks used to count entities which are directly queued
+>> šon rt_rq. If an entity was not a task (i.e., it is some queue), its
+>> šchildren were not counted.
+>
+> Its always the case that a task is queued right, never a sched entity?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
+With patch applied, when sched entity is group queue, we add number of
+its child tasks instead of "1".
 
-iQIcBAEBAgAGBQJTKDD9AAoJEGwLaZPeOHZ65bgP/iyE+ySo0E5wPRP5zDvQb5qA
-LTYlxrR+sfnaO5cqnMuSmu5jnGI4bhokApgZGPPHcz8RsX7RnwsVOBOfnDrNf348
-qtFT32/WFObeqw9gZl7ZreVa/vAGXLtOQqN6y3rBh0OKqL/q3aDCHuU+FGY37bb4
-xCDSucR1Fqgjo/LyFWFrbWAWrWH1IgbJcGa0BD6cpxNNWVkE4w+VIzEq40jwOP/O
-e9LYrPIhRVSBi4c25hIknxY8qUHEO6WmyKBCzxdN0lDtnqszmpDfHF1qTFZVd+Wg
-xQEj4bJ7QDON/kJ0n3evOa9b9d77YbhlB4NomKApamSJlhYaCN4U87wbX3Eu3Wgo
-J4dHbhuyeDihMZjrDWZkkkpDVppmQdiROO4tyUVZAm9Kj1todibna1csqMnKwJfU
-MNL6BUo0LnHbhz8soCfpKDCKSuH71e3zWmfoZg/7znCLr80b10WwoYlm11OhLC8n
-C744SorxtNRP/UgJNMzLQCCUTjB4e5n4n0A3Nnr6+TNXY5D3Iz5fmtbxJIt1EWAU
-IJgDxwY1uiSDlZISQCMlkLmJc/w33JnjFeFQAAZHp6DUsEaqrTxrWRV3Z5wKvUie
-V6Z3AMhre8RGvAWFeOh4WkvCqRWWPg3lrCfwqRO2OgZrgoqgWQy6PHPEbmHj/WpV
-p0T8cQysOdtR2LTCl/x0
-=iV3W
------END PGP SIGNATURE-----
+> When a task is queued, the nr_running of every rt_rq in the hierarchy
+> of sched entities which are parents of this task is incremented by 1.
 
---Xv2dRd4QbdO0uLoxOfUOlEn63mHEUm8WF--
+Only if they had not had a queued task before.
+
+> Similar is with dequeue of a sched_entity. If the sched_entity has
+> just 1 task on it, then its dequeued from its parent queue and its number
+> decremented for every rq in the hierarchy. But you would
+> never dequeue a sched_entity if it has more than 1 task in it. The
+> granularity of enqueue and dequeue of sched_entities is one task
+> at a time. You can extend this to enqueue and dequeue of a sched_entity
+> only if it has just one task in its queue.
+
+We do not queue entites, which are empty. In __enqueue_rt_entity():
+
+if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
+         return;
+
+Where do you see a collision? Please explain, if so.
+
+> Regards
+> Preeti U Murthy
+>
+>> šThere is no problem here, but now we want to count number of all tasks
+>> šwhich are actually queued under the rt_rq in all the hierarhy (except
+>> šthrottled rt queues).
+>>
+>> šEmpty queues are not able to be queued and all of the places, which
+>> šuse rt_nr_running, just compare it with zero, so we do not break
+>> šanything here.
+>>
+>> šSigned-off-by: Kirill Tkhai <tkhai@yandex.ru>
+>> šCC: Peter Zijlstra <peterz@infradead.org>
+>> šCC: Ingo Molnar <mingo@kernel.org>
+>> š---
+>> šškernel/sched/rt.c | šš15 +++++++++++++--
+>> šš1 file changed, 13 insertions(+), 2 deletions(-)
+>>
+>> šdiff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+>> šindex d8cdf16..e4def13 100644
+>> š--- a/kernel/sched/rt.c
+>> š+++ b/kernel/sched/rt.c
+>> š@@ -1045,12 +1045,23 @@ void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
+>> šš#endif /* CONFIG_RT_GROUP_SCHED */
+>>
+>> ššstatic inline
+>> š+unsigned int rt_se_nr_running(struct sched_rt_entity *rt_se)
+>> š+{
+>> š+ ššššššstruct rt_rq *group_rq = group_rt_rq(rt_se);
+>> š+
+>> š+ ššššššif (group_rq)
+>> š+ ššššššššššššššreturn group_rq->rt_nr_running;
+>> š+ ššššššelse
+>> š+ ššššššššššššššreturn 1;
+>> š+}
+>> š+
+>> š+static inline
+>> ššvoid inc_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+>> šš{
+>> šššššššššint prio = rt_se_prio(rt_se);
+>>
+>> šššššššššWARN_ON(!rt_prio(prio));
+>> š- ššššššrt_rq->rt_nr_running++;
+>> š+ ššššššrt_rq->rt_nr_running += rt_se_nr_running(rt_se);
+>>
+>> šššššššššinc_rt_prio(rt_rq, prio);
+>> šššššššššinc_rt_migration(rt_se, rt_rq);
+>> š@@ -1062,7 +1073,7 @@ void dec_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+>> šš{
+>> šššššššššWARN_ON(!rt_prio(rt_se_prio(rt_se)));
+>> šššššššššWARN_ON(!rt_rq->rt_nr_running);
+>> š- ššššššrt_rq->rt_nr_running--;
+>> š+ ššššššrt_rq->rt_nr_running -= rt_se_nr_running(rt_se);
+>>
+>> šššššššššdec_rt_prio(rt_rq, rt_se_prio(rt_se));
+>> šššššššššdec_rt_migration(rt_se, rt_rq);
+>>
+>> š--
+>> šTo unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> šthe body of a message to majordomo@vger.kernel.org
+>> šMore majordomo info at šhttp://vger.kernel.org/majordomo-info.html
+>> šPlease read the FAQ at šhttp://www.tux.org/lkml/
