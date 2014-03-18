@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969AbaCRO1U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:27:20 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:57153 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730AbaCRO1R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755824AbaCRO1R (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Mar 2014 10:27:17 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: gleb@kernel.org, mtosatti@redhat.com
-Subject: [PATCH 0/4] KVM: cleanup ioapic and fix KVM_SET_IRQCHIP with irr != 0
-Date: Tue, 18 Mar 2014 15:27:05 +0100
-Message-Id: <1395152829-22694-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:35470 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755674AbaCRO1O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 10:27:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140318132355.GA7845@krava.brq.redhat.com>
+References: <1395095198-20034-1-git-send-email-artagnon@gmail.com>
+ <1395095198-20034-6-git-send-email-artagnon@gmail.com> <878us8rkqq.fsf@sejong.aot.lge.com>
+ <20140318132355.GA7845@krava.brq.redhat.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Tue, 18 Mar 2014 23:26:53 +0900
+X-Google-Sender-Auth: 8saPLjuNKJMohOv336pIhVJwIqs
+Message-ID: <CAM9d7ciRP17_YV5dtrphWKEXEzOTy7XQw7tG13oVs5RV3XzcYg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] perf test: squelch warnings about undefined sizeof
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Ramkumar Ramachandra <artagnon@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the old qemu-kvm, which really never did that, with new QEMU
-it is for some reason somewhat likely to migrate a VM with a nonzero
-IRR in the ioapic.  In the case of ISA edge-triggered interrupts,
-this represents an interrupt that has not left the IOAPIC, which would
-be okay but it is not handled right by KVM_SET_IRQCHIP.  Because the
-interrupt is never injected, the guest never acknowledges it, the host
-never deasserts the pin and new interrupts are dropped.
+Hi Jiri,
 
-There are two problems to solve.
+On Tue, Mar 18, 2014 at 10:23 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Tue, Mar 18, 2014 at 05:09:33PM +0900, Namhyung Kim wrote:
+>> On Mon, 17 Mar 2014 18:26:38 -0400, Ramkumar Ramachandra wrote:
+>> > perf test emits the following warnings on the parse events test:
+>> >
+>> >   $ perf test
+>> >    5: parse events tests
+>> >     Warning: function sizeof not defined
+>> >     Warning: function sizeof not defined
+>> >     Warning: function sizeof not defined
+>> >     Warning: function sizeof not defined
+>> >     Warning: function sizeof not defined
+>> >     Warning: function sizeof not defined
+>> >     Warning: function sizeof not defined
+>> >     Warning: function sizeof not defined
+>> >     ...
+>> >
+>> > Squelch the warnings by explicitly ignoring the sizeof function.
+>>
+>> It just hides the warning leaving the real problem untouched.  If you
+>> really don't want to see those, I guess installing proper plugin for the
+>> failing events will help you (in case you didn't).
+>
+> it wont' help, sizeof is special.. AFAIK we did not figure
+> out a way to handle that so far
+>
+> but I think it was used only in one trace subsystem.. maybe we
+> could replace it and forbid to use it in future ;-)
 
-The obvious one is that interrupts are not reinjected upon KVM_SET_IRQCHIP,
-which is taken care of by patches 3-4.
+Yep, I know.  But I meant that if we have a handler for the failing
+event, it might print the event without even using the sizeof somehow.
+;-)
 
-The second is that right now the IRR value depends on the falling edge
-of the interrupt (as passed by the userspace via kvm_ioapic_set_irq).
-This is unnecessary, and may lead to spurious reinjection in the
-destination of migration; instead, we can clear the (internal-only)
-IRR bit as soon as the interrupt leaves the IOAPIC.  This is done by
-patch 2, which patch 1 prepares for.
-
-This fixes migration of Windows guests without HPET.  Please review.
-
-Paolo
-
-Paolo Bonzini (4):
-  KVM: ioapic: merge ioapic_deliver into ioapic_service
-  KVM: ioapic: clear IRR for edge-triggered interrupts at delivery
-  KVM: ioapic: extract body of kvm_ioapic_set_irq
-  KVM: ioapic: reinject pending interrupts on KVM_SET_IRQCHIP
-
- virt/kvm/ioapic.c | 97 +++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 59 insertions(+), 38 deletions(-)
-
--- 
-1.8.3.1
-
+Thanks,
+Namhyung
