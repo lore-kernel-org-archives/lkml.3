@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064AbaCRRVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:21:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55746 "EHLO
+	id S1757234AbaCRRWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:22:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55736 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756847AbaCRRTF (ORCPT
+	with ESMTP id S1756812AbaCRRTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:19:05 -0400
-Message-Id: <20140318171127.802717594@linutronix.de>
+	Tue, 18 Mar 2014 13:19:04 -0400
+Message-Id: <20140318171127.557159136@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Tue, 18 Mar 2014 17:19:14 -0000
+Date: Tue, 18 Mar 2014 17:19:13 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Wolfgang Grandegger <wg@grandegger.com>,
@@ -17,9 +17,10 @@ Cc: Wolfgang Grandegger <wg@grandegger.com>,
         Markus Pargmann <mpa@pengutronix.de>,
         Benedikt Spranger <b.spranger@linutronix.de>,
         linux-can@vger.kernel.org, netdev@vger.kernel.org
-Subject: [patch 11/12] can: c_can: Simplify TX interrupt cleanup
+Subject: [patch 09/12] can: c_can: Reduce register access for real
 References: <20140318171007.528610837@linutronix.de>
-Content-Disposition: inline; filename=can-c_can-simplify-xmit.patch
+Content-Disposition: inline;
+ filename=can-c-can-reduce-ctrl-register-access.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,98 +28,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function loads the message object from the hardware to get the
-payload length. The previous patch stores that information in an
-array, so we can avoid the hardware access.
+commit 4ce78a838c (can: c_can: Speed up rx_poll function) hyped a
+performance improvement by reducing the access to the interrupt
+pending register from a dual 16 bit to a single 16 bit access. Wow!
 
-Remove the hardware access and move the led toggle outside of the
-spinlocked region. Toggle the led only once when at least one packet
-has been received.
+Thereby it crippled the driver to cast the 16 msg objects in stone,
+which is completly braindead as contemporary hardware has up to 128
+message objects. Supporting larger object buffers is a major surgery,
+but it'd be definitely worth it especially as the driver does not
+support HW message filtering ....
 
-Binary size shrinks along with the code
+Now Mr. Optimize totally missed that there is a way worse issue due to
+the implementation of msg objects handling.
+
+The logic of the "FIFO" implementation is to split the FIFO in half.
+
+For the lower half we read the buffers and clear the interrupt pending
+bit, but keep the newdat bit set, so the HW will queue above those
+buffers.
+
+When we read out the last low buffer then we reenable all the low half
+buffers by clearing the newdat bit.
+
+The upper half buffers clear the newdat and the interrupt pending bit
+right away as we know that the lower half bits are clear and give us a
+headstart against the hardware.
+
+Now the implementation is:
+    
+    transfer_message_object()
+    read_object_and_put_into_skb();
+
+    if (obj < END_OF_LOW_BUF)
+       clear_intpending(obj)
+    else if (obj > END_OF_LOW_BUF)
+       clear_intpending_and_newdat(obj)
+    else if (obj == END_OF_LOW_BUF)
+       clear_newdat_of_all_low_objects()
+	 
+The hardware allows to avoid most of the mess simply because we can
+tell the transfer_message_object() function to clear bits right away.
+
+So we can be clever and do:
+
+   if (obj <= END_OF_LOW_BUF)
+      ctrl = TRANSFER_MSG | CLEAR_INTPND;
+   else
+      ctrl = TRANSFER_MSG | CLEAR_INTPND | CLEAR_NEWDAT;
+
+    transfer_message_object(ctrl)
+    read_object_and_put_into_skb();
+
+    if (obj == END_OF_LOW_BUF)
+       clear_newdat_of_all_low_objects()
+
+So we save a complete control operation on all message objects except
+the one which is the end of the low buffer. That's a few micro seconds
+per object.
+
+I'm not adding a boasting profile to that, simply because it's self
+explaining. I leave that analysis to Mr. Optimize.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/net/can/c_can/c_can.c |   37 +++++++++++++++++--------------------
- 1 file changed, 17 insertions(+), 20 deletions(-)
+ drivers/net/can/c_can/c_can.c |   49 ++++++++++++------------------------------
+ 1 file changed, 15 insertions(+), 34 deletions(-)
 
 Index: linux/drivers/net/can/c_can/c_can.c
 ===================================================================
 --- linux.orig/drivers/net/can/c_can/c_can.c
 +++ linux/drivers/net/can/c_can/c_can.c
-@@ -232,10 +232,9 @@ static inline int get_tx_next_msg_obj(co
- 			C_CAN_MSG_OBJ_TX_FIRST;
- }
+@@ -114,6 +114,14 @@
+ 				IF_COMM_CONTROL | IF_COMM_TXRQST | \
+ 				IF_COMM_DATAA | IF_COMM_DATAB)
  
--static inline int get_tx_echo_msg_obj(const struct c_can_priv *priv)
-+static inline int get_tx_echo_msg_obj(int txecho)
- {
--	return (priv->tx_echo & C_CAN_NEXT_MSG_OBJ_MASK) +
--			C_CAN_MSG_OBJ_TX_FIRST;
-+	return (txecho & C_CAN_NEXT_MSG_OBJ_MASK) + C_CAN_MSG_OBJ_TX_FIRST;
- }
- 
- static u32 c_can_read_reg32(struct c_can_priv *priv, enum reg index)
-@@ -720,8 +719,6 @@ static int c_can_get_berr_counter(const
- }
- 
- /*
-- * theory of operation:
-- *
-  * priv->tx_echo holds the number of the oldest can_frame put for
-  * transmission into the hardware, but not yet ACKed by the CAN tx
-  * complete IRQ.
-@@ -732,29 +729,23 @@ static int c_can_get_berr_counter(const
-  */
- static void c_can_do_tx(struct net_device *dev)
- {
--	u32 val;
--	u32 msg_obj_no;
- 	struct c_can_priv *priv = netdev_priv(dev);
- 	struct net_device_stats *stats = &dev->stats;
-+	u32 val, obj, pkts = 0, bytes = 0;
- 
- 	spin_lock_bh(&priv->xmit_lock);
- 
- 	for (; (priv->tx_next - priv->tx_echo) > 0; priv->tx_echo++) {
--		msg_obj_no = get_tx_echo_msg_obj(priv);
-+		obj = get_tx_echo_msg_obj(priv->tx_echo);
- 		val = c_can_read_reg32(priv, C_CAN_TXRQST1_REG);
--		if (!(val & (1 << (msg_obj_no - 1)))) {
--			can_get_echo_skb(dev,
--					msg_obj_no - C_CAN_MSG_OBJ_TX_FIRST);
--			c_can_object_get(dev, IF_TX, msg_obj_no, IF_COMM_ALL);
--			stats->tx_bytes += priv->read_reg(priv,
--					C_CAN_IFACE(MSGCTRL_REG, IF_TX))
--					& IF_MCONT_DLC_MASK;
--			stats->tx_packets++;
--			can_led_event(dev, CAN_LED_EVENT_TX);
--			c_can_inval_msg_object(dev, IF_TX, msg_obj_no);
--		} else {
++/* For the low buffers we clear the interrupt bit, but keep newdat */
++#define IF_COMM_RCV_LOW		(IF_COMM_MASK | IF_COMM_ARB | \
++				 IF_COMM_CONTROL | IF_COMM_CLR_INT_PND | \
++				 IF_COMM_DATAA | IF_COMM_DATAB)
 +
-+		if (val & (1 << (obj - 1)))
- 			break;
--		}
++/* For the high buffers we clear the interrupt bit and newdat */
++#define IF_COMM_RCV_HIGH	(IF_COMM_RCV_LOW | IF_COMM_TXRQST)
 +
-+		can_get_echo_skb(dev, obj - C_CAN_MSG_OBJ_TX_FIRST);
-+		bytes += priv->dlc[obj - C_CAN_MSG_OBJ_TX_FIRST];
-+		pkts++;
-+		c_can_inval_msg_object(dev, IF_TX, obj);
+ /* IFx arbitration */
+ #define IF_ARB_MSGVAL		BIT(15)
+ #define IF_ARB_MSGXTD		BIT(14)
+@@ -371,18 +379,6 @@ static void c_can_write_msg_object(struc
+ 	c_can_object_put(dev, iface, objno, IF_COMM_ALL);
+ }
+ 
+-static inline void c_can_mark_rx_msg_obj(struct net_device *dev,
+-						int iface, int ctrl_mask,
+-						int obj)
+-{
+-	struct c_can_priv *priv = netdev_priv(dev);
+-
+-	priv->write_reg(priv, C_CAN_IFACE(MSGCTRL_REG, iface),
+-			ctrl_mask & ~(IF_MCONT_MSGLST | IF_MCONT_INTPND));
+-	c_can_object_put(dev, iface, obj, IF_COMM_CONTROL);
+-
+-}
+-
+ static inline void c_can_activate_all_lower_rx_msg_obj(struct net_device *dev,
+ 						int iface,
+ 						int ctrl_mask)
+@@ -392,24 +388,11 @@ static inline void c_can_activate_all_lo
+ 
+ 	for (i = C_CAN_MSG_OBJ_RX_FIRST; i <= C_CAN_MSG_RX_LOW_LAST; i++) {
+ 		priv->write_reg(priv, C_CAN_IFACE(MSGCTRL_REG, iface),
+-				ctrl_mask & ~(IF_MCONT_MSGLST |
+-					IF_MCONT_INTPND | IF_MCONT_NEWDAT));
++				ctrl_mask & ~IF_MCONT_NEWDAT);
+ 		c_can_object_put(dev, iface, i, IF_COMM_CONTROL);
  	}
- 
- 	/* restart queue if wrap-up or if queue stalled on last pkt */
-@@ -763,6 +754,12 @@ static void c_can_do_tx(struct net_devic
- 		netif_wake_queue(dev);
- 
- 	spin_unlock_bh(&priv->xmit_lock);
-+
-+	if (pkts) {
-+		stats->tx_bytes += bytes;
-+		stats->tx_packets += pkts;
-+		can_led_event(dev, CAN_LED_EVENT_TX);
-+	}
  }
  
- /*
+-static inline void c_can_activate_rx_msg_obj(struct net_device *dev,
+-						int iface, int ctrl_mask,
+-						int obj)
+-{
+-	struct c_can_priv *priv = netdev_priv(dev);
+-
+-	priv->write_reg(priv, C_CAN_IFACE(MSGCTRL_REG, iface),
+-			ctrl_mask & ~(IF_MCONT_MSGLST |
+-				IF_MCONT_INTPND | IF_MCONT_NEWDAT));
+-	c_can_object_put(dev, iface, obj, IF_COMM_CONTROL);
+-}
+-
+ static int c_can_handle_lost_msg_obj(struct net_device *dev,
+ 				     int iface, int objno, u32 ctrl)
+ {
+@@ -843,12 +826,15 @@ static u32 c_can_adjust_pending(u32 pend
+ static int c_can_read_objects(struct net_device *dev, struct c_can_priv *priv,
+ 			      u32 pend, int quota)
+ {
+-	u32 pkts = 0, ctrl, obj;
++	u32 pkts = 0, ctrl, obj, mcmd;
+ 
+ 	while ((obj = ffs(pend)) && quota > 0) {
+ 		pend &= ~BIT(obj - 1);
+ 
+-		c_can_object_get(dev, IF_RX, obj, IF_COMM_ALL &	~IF_COMM_TXRQST);
++		mcmd = obj < C_CAN_MSG_RX_LOW_LAST ?
++			IF_COMM_RCV_LOW : IF_COMM_RCV_HIGH;
++
++		c_can_object_get(dev, IF_RX, obj, mcmd);
+ 		ctrl = priv->read_reg(priv, C_CAN_IFACE(MSGCTRL_REG, IF_RX));
+ 
+ 		if (ctrl & IF_MCONT_MSGLST) {
+@@ -870,12 +856,7 @@ static int c_can_read_objects(struct net
+ 		/* read the data from the message object */
+ 		c_can_read_msg_object(dev, IF_RX, ctrl);
+ 
+-		if (obj < C_CAN_MSG_RX_LOW_LAST)
+-			c_can_mark_rx_msg_obj(dev, IF_RX, ctrl, obj);
+-		else if (obj > C_CAN_MSG_RX_LOW_LAST)
+-			/* activate this msg obj */
+-			c_can_activate_rx_msg_obj(dev, IF_RX, ctrl, obj);
+-		else if (obj == C_CAN_MSG_RX_LOW_LAST)
++		if (obj == C_CAN_MSG_RX_LOW_LAST)
+ 			/* activate all lower message objects */
+ 			c_can_activate_all_lower_rx_msg_obj(dev, IF_RX, ctrl);
+ 
 
 
