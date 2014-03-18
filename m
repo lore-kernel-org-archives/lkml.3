@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157AbaCREPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 00:15:46 -0400
-Received: from ozlabs.org ([203.10.76.45]:53460 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750734AbaCREPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 00:15:44 -0400
-Date: Tue, 18 Mar 2014 15:15:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Paris <eparis@redhat.com>, Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Markos Chandras <markos.chandras@imgtec.com>
-Subject: linux-next: manual merge of the audit tree with the mips tree
-Message-Id: <20140318151529.0b0acf9a6d74c6aca080efe0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__18_Mar_2014_15_15_29_+1100_3y4HHsUKBftS/T/J"
+	id S1751527AbaCRET3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 00:19:29 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:56364 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaCRET2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 00:19:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140317200832.GE31482@ghostprotocols.net>
+References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
+ <1394437440-11609-3-git-send-email-namhyung@kernel.org> <20140317200832.GE31482@ghostprotocols.net>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Tue, 18 Mar 2014 13:19:07 +0900
+X-Google-Sender-Auth: 2BE5MzASBfmBs8RoXLzLEm54pP4
+Message-ID: <CAM9d7ch0xHO4S6drn_G2CELTD6G51ADE+XvvSJw5Jid2Dy7Khw@mail.gmail.com>
+Subject: Re: [PATCH 2/9] perf tools: Count periods of filtered entries separately
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_Mar_2014_15_15_29_+1100_3y4HHsUKBftS/T/J
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 18, 2014 at 5:08 AM, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+> Em Mon, Mar 10, 2014 at 04:43:53PM +0900, Namhyung Kim escreveu:
+>> @@ -749,9 +750,6 @@ int perf_event__preprocess_sample(const union perf_event *event,
+>>       if (thread == NULL)
+>>               return -1;
+>>
+>> -     if (thread__is_filtered(thread))
+>> -             goto out_filtered;
+>> -
+>
+> What was the intent of moving this test from here...
+>
+>>       dump_printf(" ... thread: %s:%d\n", thread__comm_str(thread), thread->tid);
+>>       /*
+>>        * Have we already created the kernel maps for this machine?
+>> @@ -766,6 +764,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
+>>
+>>       thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+>>                             sample->ip, al);
+>> +
+>> +     if (thread__is_filtered(thread))
+>> +             al->filtered |= (1 << HIST_FILTER__THREAD);
+>> +
+>
+> ... to here? At first I thought it was because thread__is_filtered()
+> would check something that thread__find_addr_map() was doing, but no,
+> its invariant, we can do it here or at the original site, so I'm keeping
+> it there, ok?
 
-Hi Eric,
+It's because thread__find_addr_map() clears al->filtered, so filtering
+with -d option won't work.  Maybe we can move initialization of the
+al->filtered upto this function.
 
-Today's linux-next merge of the audit tree got conflicts in
-arch/mips/include/asm/syscall.h and arch/mips/kernel/ptrace.c between
-commits cdda64d4d01f ("MIPS: asm: syscall: Define syscall_get_arch"),
-d746666c2862 ("MIPS: ptrace: Move away from secure_computing_strict") and
-f5179287b016 ("MIPS: Fix randconfig build error") from the mips tree and
-commits 74d0bf770dd6 ("syscall_get_arch: remove useless function
-arguments") and e8d1226a197d ("audit: use uapi/linux/audit.h for
-AUDIT_ARCH declarations") from the audit tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/mips/include/asm/syscall.h
-index 6c488c85d791,fc556d8052c9..000000000000
---- a/arch/mips/include/asm/syscall.h
-+++ b/arch/mips/include/asm/syscall.h
-@@@ -13,8 -13,7 +13,8 @@@
-  #ifndef __ASM_MIPS_SYSCALL_H
-  #define __ASM_MIPS_SYSCALL_H
- =20
- +#include <linux/compiler.h>
-- #include <linux/audit.h>
-+ #include <uapi/linux/audit.h>
-  #include <linux/elf-em.h>
-  #include <linux/kernel.h>
-  #include <linux/sched.h>
-@@@ -132,8 -105,7 +131,8 @@@ static inline int syscall_get_arch(void
-  {
-  	int arch =3D EM_MIPS;
-  #ifdef CONFIG_64BIT
-- 	if (!test_tsk_thread_flag(task, TIF_32BIT_REGS))
- -	arch |=3D  __AUDIT_ARCH_64BIT;
-++	if (!test_tsk_thread_flag(current, TIF_32BIT_REGS))
- +		arch |=3D __AUDIT_ARCH_64BIT;
-  #endif
-  #if defined(__LITTLE_ENDIAN)
-  	arch |=3D  __AUDIT_ARCH_LE;
-diff --cc arch/mips/kernel/ptrace.c
-index 4137a49eae26,65ba622baf3e..000000000000
---- a/arch/mips/kernel/ptrace.c
-+++ b/arch/mips/kernel/ptrace.c
-@@@ -706,11 -671,10 +706,11 @@@ asmlinkage long syscall_trace_enter(str
-  	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-  		trace_sys_enter(regs, regs->regs[2]);
- =20
-- 	audit_syscall_entry(syscall_get_arch(current, regs),
-+ 	audit_syscall_entry(syscall_get_arch(),
- -			    regs->regs[2],
- +			    syscall,
-  			    regs->regs[4], regs->regs[5],
-  			    regs->regs[6], regs->regs[7]);
- +	return syscall;
-  }
- =20
-  /*
-
---Signature=_Tue__18_Mar_2014_15_15_29_+1100_3y4HHsUKBftS/T/J
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTJ8hlAAoJEMDTa8Ir7ZwV8lYP/icvMK/pMXbBP0axym3GKB7R
-gRzeL6yXpzIvH8dh4+O3M5kpv1Kygn34OnpzvRVHoFMAGf5KxSYGg03xg0FT+qhj
-rNq2owgteX/hz+pM8ilHOy3/DlVLLamje8OfAPLp6YWaprKpiL7B2tdBaDf93ELc
-oWG1NpKuVV70ZEQK71xIN3m80Nb+y7ouGLWgEVRuWbd69ZVPRUfeDCRvx7Ol126C
-6Suku8VG81rYi2r4KsjNvw3jihztv6Lf18WBM1Jj7CDMPji3nZ7pn2zhYhJxoFdC
-fwoaWN+lMXxCCNu4zMOW6c2YiZPQmq2T5mFtpv3KDJYpFEAL4FbG1vND2j5Xlu3I
-qISn3GrLQuWL2VEiSo4QNUoZn0liybxpgquZstN0wu8nh3ZmH8ZBC6RXvc5rzXGe
-QboH/pe5IAkKT5/+CVqZKoVq85J1xY432w9wNnLKZc768jBZ3crieP3Ni/jJ4D2q
-/cajSf4qagb0yuMgqeYF2Pk2kQWBfTeOrpkmfnGHiAv2K/6FlBnKmSy0OvUu6RaM
-JIB5w0RoUfRik8iTPnLANlhQhKxR4emZ+tXianKR5yAl4tiFrhE2TaFYcCuhS3ae
-xGn3qbWtZ7pt+m874NhMH7yW/81gYJC3a2YDRWXfMVTSj8FkfkQHOXnqMJaukhP3
-JPvPtvRXXa5MnUuGZa9g
-=uRdS
------END PGP SIGNATURE-----
-
---Signature=_Tue__18_Mar_2014_15_15_29_+1100_3y4HHsUKBftS/T/J--
+Thanks,
+Namhyung
