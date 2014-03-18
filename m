@@ -1,120 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210AbaCRGMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 02:12:12 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:34029 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457AbaCRGMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 02:12:09 -0400
-From: behanw@converseincode.com
-To: davem@davemloft.net
-Cc: pablo@netfilter.org, kaber@trash.net, kadlec@blackhole.kfki.hu,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
-        pageexec@freemail.hu, Mark Charlebois <charlebm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>
-Subject: [PATCH v2] net: netfilter: LLVMLinux: vlais-netfilter
-Date: Mon, 17 Mar 2014 23:12:01 -0700
-Message-Id: <1395123121-27053-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <022D9517-4804-47BB-B789-CCF25F25C1ED@me.com>
-References: <022D9517-4804-47BB-B789-CCF25F25C1ED@me.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1753324AbaCRGPP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 02:15:15 -0400
+Received: from ozlabs.org ([203.10.76.45]:37477 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750923AbaCRGPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 02:15:13 -0400
+Date: Tue, 18 Mar 2014 17:15:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Uma Sharma <uma.sharma523@gmail.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Antti Palosaari <crope@iki.fi>
+Subject: linux-next: manual merge of the staging tree with the v4l-dvb tree
+Message-Id: <20140318171506.d94275bb6dcad73899fd39fe@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__18_Mar_2014_17_15_06_+1100_rVIp=+YKCcebiFdT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Charlebois <charlebm@gmail.com>
+--Signature=_Tue__18_Mar_2014_17_15_06_+1100_rVIp=+YKCcebiFdT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Replaced non-standard C use of Variable Length Arrays In Structs (VLAIS) in
-xt_repldata.h with a C99 compliant flexible array member and then calculated
-offsets to the other struct members. These other members aren't referenced by
-name in this code, however this patch maintains the same memory layout and
-padding as was previously accomplished using VLAIS.
+Hi Greg,
 
-Had the original structure been ordered differently, with the entries VLA at
-the end, then it could have been a flexible member, and this patch would have
-been a lot simpler. However since the data stored in this structure is
-ultimately exported to userspace, the order of this structure can't be changed.
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/media/msi3101/sdr-msi3101.c between commit 3d0c8fa3c5a0
+("[media] msi3101: convert to SDR API") from the v4l-dvb tree and commit
+6e878c0299c1 ("staging: media/msi3101/sdr-msi3101.c removed warning")
+from the staging tree.
 
-This patch makes no attempt to change the existing behavior, merely the way in
-which the current layout is accomplished using standard C99 constructs. As such
-the code can now be compiled with either gcc or clang.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Author: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
----
- net/netfilter/xt_repldata.h | 33 +++++++++++++++++++++++++++------
- 1 file changed, 27 insertions(+), 6 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/net/netfilter/xt_repldata.h b/net/netfilter/xt_repldata.h
-index 6efe4e5..f83a519 100644
---- a/net/netfilter/xt_repldata.h
-+++ b/net/netfilter/xt_repldata.h
-@@ -5,29 +5,50 @@
-  * they serve as the hanging-off data accessed through repl.data[].
-  */
- 
-+/* tbl has the following structure equivalent, but is C99 compliant:
-+ * struct {
-+ *	struct type##_replace repl;
-+ *	struct type##_standard entries[nhooks];
-+ *	struct type##_error term;
-+ * } *tbl;
-+ */
-+
- #define xt_alloc_initial_table(type, typ2) ({ \
- 	unsigned int hook_mask = info->valid_hooks; \
- 	unsigned int nhooks = hweight32(hook_mask); \
- 	unsigned int bytes = 0, hooknum = 0, i = 0; \
- 	struct { \
- 		struct type##_replace repl; \
--		struct type##_standard entries[nhooks]; \
--		struct type##_error term; \
--	} *tbl = kzalloc(sizeof(*tbl), GFP_KERNEL); \
-+		char data[0]; \
-+	} *tbl; \
-+	struct type##_standard *entries; \
-+	struct type##_error *term; \
-+	size_t entries_offset = (-sizeof(tbl->repl)) & \
-+		(__alignof__(*entries)-1); \
-+	size_t entries_end = entries_offset + nhooks * sizeof(*entries); \
-+	size_t term_offset = entries_end + \
-+		(-sizeof(tbl->repl) - entries_end) & (__alignof__(*term)-1); \
-+	size_t term_end = term_offset + sizeof(*term); \
-+	size_t data_sz = term_end + \
-+		(-sizeof(tbl->repl) - term_end) & (__alignof__(tbl->repl)-1); \
-+	size_t tbl_sz = sizeof(tbl->repl) + data_sz; \
-+	tbl = kzalloc(tbl_sz, GFP_KERNEL); \
- 	if (tbl == NULL) \
- 		return NULL; \
-+	entries = (struct type##_standard *)&tbl->data[entries_offset]; \
-+	term = (struct type##_error *)&tbl->data[term_offset]; \
- 	strncpy(tbl->repl.name, info->name, sizeof(tbl->repl.name)); \
--	tbl->term = (struct type##_error)typ2##_ERROR_INIT;  \
-+	*term = (struct type##_error)typ2##_ERROR_INIT;  \
- 	tbl->repl.valid_hooks = hook_mask; \
- 	tbl->repl.num_entries = nhooks + 1; \
- 	tbl->repl.size = nhooks * sizeof(struct type##_standard) + \
--	                 sizeof(struct type##_error); \
-+			 sizeof(struct type##_error); \
- 	for (; hook_mask != 0; hook_mask >>= 1, ++hooknum) { \
- 		if (!(hook_mask & 1)) \
- 			continue; \
- 		tbl->repl.hook_entry[hooknum] = bytes; \
- 		tbl->repl.underflow[hooknum]  = bytes; \
--		tbl->entries[i++] = (struct type##_standard) \
-+		entries[i++] = (struct type##_standard) \
- 			typ2##_STANDARD_INIT(NF_ACCEPT); \
- 		bytes += sizeof(struct type##_standard); \
- 	} \
--- 
-1.8.3.2
+diff --cc drivers/staging/media/msi3101/sdr-msi3101.c
+index 011db2c08014,5a0400fdb98c..000000000000
+--- a/drivers/staging/media/msi3101/sdr-msi3101.c
++++ b/drivers/staging/media/msi3101/sdr-msi3101.c
+@@@ -132,7 -411,7 +132,7 @@@ struct msi3101_state=20
+  	unsigned int vb_full; /* vb is full and packets dropped */
+ =20
+  	struct urb *urbs[MAX_ISO_BUFS];
+- 	int (*convert_stream) (struct msi3101_state *s, u8 *dst, u8 *src,
+ -	int (*convert_stream)(struct msi3101_state *s, u32 *dst, u8 *src,
+++	int (*convert_stream)(struct msi3101_state *s, u8 *dst, u8 *src,
+  			unsigned int src_len);
+ =20
+  	/* Controls */
 
+--Signature=_Tue__18_Mar_2014_17_15_06_+1100_rVIp=+YKCcebiFdT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTJ+RuAAoJEMDTa8Ir7ZwVBEYQAIlJeM0OYVmSpje56LbIIHqn
+lfCXzEHnWwVc7125hL7xmiEc4pA2YCJ5Vp+Tq6LWIBM8jZV/KAbBqtMpckqGPWrq
+ZOFNx3X4pV1UWFo+kxNYYZR3Lf8eS0n7yqg9YFV7o01noBeQ2ppYRHCEzmv/wBFB
+wWMa6Dp2kFb8D3A41Ya1XjLdTmiRJ1rUadSzGToZEz/tGf57RvteOuPVvMnMvHbQ
+82MbBED/go7ooUwJv01xaRGqeA+xoFX9ir5FzK1Nuo1Ri+WO+U7DdjRWIxcJdSgU
+CupjxzwRYt29eHqSqaBhhVLdiZG6cvJ/75w9fcVmf5oa0lN95nliLh7XaO/zB0rB
+FEwYJgXOLwuXhBB49++b49Y/uLpqKMLdJt/6088I/+ErRcXM5j8uTUVb3MRhgbWY
+vhTjFDeDPh02/hr+/1bxT+7IPryy3Oy7/EUzIscJo0GuBFW0IaIVLfYvTShvJcm2
+DOrn9toRbQG60pP3l/eiTnbmkBNu1keK9ICfhEuyMFGOTuAA2JF1df1U1HiMb32z
+DeMCrxm3sQ7JBrnuKl9ykZURVqUcTqJTJVSbmy/B/gSWi4+gFTnCKQgXUHURxBkA
+8poD47+23a7aq1MLMKD7deZJiAYILtFkKsksrb7SdgaZdb+n+/H3muRXxHyUAla7
+jHkmZxbzJN/divGqrZKB
+=y1qh
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__18_Mar_2014_17_15_06_+1100_rVIp=+YKCcebiFdT--
