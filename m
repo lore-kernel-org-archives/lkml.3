@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584AbaCRIbP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:31:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45689 "EHLO
+	id S1754608AbaCRIbX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:31:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45696 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900AbaCRIbL (ORCPT
+	with ESMTP id S1753900AbaCRIbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:31:11 -0400
-Date: Tue, 18 Mar 2014 01:30:48 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-94a0793ddf7fa9890006a8dc203b985e7b120785@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1394437440-11609-2-git-send-email-namhyung@kernel.org>
-References: <1394437440-11609-2-git-send-email-namhyung@kernel.org>
+	Tue, 18 Mar 2014 04:31:17 -0400
+Date: Tue, 18 Mar 2014 01:30:59 -0700
+From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
+Message-ID: <tip-09a71b97cce70551356b13b668aa1d7d6da84457@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de, artagnon@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de, artagnon@gmail.com
+In-Reply-To: <1393896396-10427-1-git-send-email-artagnon@gmail.com>
+References: <1393896396-10427-1-git-send-email-artagnon@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui hists: Pass evsel to hpp->header/
- width functions explicitly
-Git-Commit-ID: 94a0793ddf7fa9890006a8dc203b985e7b120785
+Subject: [tip:perf/core] perf kvm:
+  introduce --list-cmds for use by scripts
+Git-Commit-ID: 09a71b97cce70551356b13b668aa1d7d6da84457
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,187 +34,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  94a0793ddf7fa9890006a8dc203b985e7b120785
-Gitweb:     http://git.kernel.org/tip/94a0793ddf7fa9890006a8dc203b985e7b120785
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Mon, 10 Mar 2014 16:43:52 +0900
+Commit-ID:  09a71b97cce70551356b13b668aa1d7d6da84457
+Gitweb:     http://git.kernel.org/tip/09a71b97cce70551356b13b668aa1d7d6da84457
+Author:     Ramkumar Ramachandra <artagnon@gmail.com>
+AuthorDate: Mon, 3 Mar 2014 20:26:36 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 14 Mar 2014 18:08:40 -0300
+CommitDate: Fri, 14 Mar 2014 18:08:41 -0300
 
-perf ui hists: Pass evsel to hpp->header/width functions explicitly
+perf kvm: introduce --list-cmds for use by scripts
 
-Those functions need evsel to investigate event group and it's passed
-via hpp->ptr.  However as it can be missed easily so it's better to
-pass it via an argument IMHO.
+Introduce
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
+  $ perf kvm --list-cmds
+
+to dump a raw list of commands for use by the completion script. In
+order to do this, introduce parse_options_subcommand() for handling
+subcommands as a special case in the parse-options machinery.
+
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1394437440-11609-2-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1393896396-10427-1-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c  |  7 ++++---
- tools/perf/ui/gtk/hists.c  |  3 +--
- tools/perf/ui/hist.c       | 24 ++++++++++--------------
- tools/perf/ui/stdio/hist.c |  5 ++---
- tools/perf/util/hist.h     |  6 ++++--
- 5 files changed, 21 insertions(+), 24 deletions(-)
+ tools/perf/builtin-kvm.c        | 12 +++++-------
+ tools/perf/perf-completion.sh   |  2 +-
+ tools/perf/util/parse-options.c | 37 +++++++++++++++++++++++++++++++++----
+ tools/perf/util/parse-options.h |  8 +++++++-
+ 4 files changed, 46 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index a77e312..204fffe 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -952,8 +952,8 @@ static int hpp__entry_global(struct perf_hpp_fmt *_fmt, struct perf_hpp *hpp,
- 				 dfmt->header_width, buf);
- }
- 
--static int hpp__header(struct perf_hpp_fmt *fmt,
--		       struct perf_hpp *hpp)
-+static int hpp__header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+		       struct perf_evsel *evsel __maybe_unused)
- {
- 	struct diff_hpp_fmt *dfmt =
- 		container_of(fmt, struct diff_hpp_fmt, fmt);
-@@ -963,7 +963,8 @@ static int hpp__header(struct perf_hpp_fmt *fmt,
- }
- 
- static int hpp__width(struct perf_hpp_fmt *fmt,
--		      struct perf_hpp *hpp __maybe_unused)
-+		      struct perf_hpp *hpp __maybe_unused,
-+		      struct perf_evsel *evsel __maybe_unused)
- {
- 	struct diff_hpp_fmt *dfmt =
- 		container_of(fmt, struct diff_hpp_fmt, fmt);
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 7912dab..e395ef9 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -165,7 +165,6 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 	struct perf_hpp hpp = {
- 		.buf		= s,
- 		.size		= sizeof(s),
--		.ptr		= hists_to_evsel(hists),
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index a735051..21c164b 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1691,17 +1691,15 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		OPT_END()
  	};
  
- 	nr_cols = 0;
-@@ -192,7 +191,7 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 	col_idx = 0;
- 
- 	perf_hpp__for_each_format(fmt) {
--		fmt->header(fmt, &hpp);
-+		fmt->header(fmt, &hpp, hists_to_evsel(hists));
- 
- 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
- 							    -1, ltrim(s),
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index ac39313..0f403b8 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -118,29 +118,27 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 
- #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
- static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
--			       struct perf_hpp *hpp)			\
-+			       struct perf_hpp *hpp,			\
-+			       struct perf_evsel *evsel)		\
- {									\
- 	int len = _min_width;						\
- 									\
--	if (symbol_conf.event_group) {					\
--		struct perf_evsel *evsel = hpp->ptr;			\
--									\
-+	if (symbol_conf.event_group)					\
- 		len = max(len, evsel->nr_members * _unit_width);	\
--	}								\
-+									\
- 	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);	\
- }
- 
- #define __HPP_WIDTH_FN(_type, _min_width, _unit_width) 			\
- static int hpp__width_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
--			      struct perf_hpp *hpp __maybe_unused)	\
-+			      struct perf_hpp *hpp __maybe_unused,	\
-+			      struct perf_evsel *evsel)			\
- {									\
- 	int len = _min_width;						\
- 									\
--	if (symbol_conf.event_group) {					\
--		struct perf_evsel *evsel = hpp->ptr;			\
--									\
-+	if (symbol_conf.event_group)					\
- 		len = max(len, evsel->nr_members * _unit_width);	\
--	}								\
-+									\
- 	return len;							\
- }
- 
-@@ -329,15 +327,13 @@ unsigned int hists__sort_list_width(struct hists *hists)
- 	struct perf_hpp_fmt *fmt;
- 	struct sort_entry *se;
- 	int i = 0, ret = 0;
--	struct perf_hpp dummy_hpp = {
--		.ptr	= hists_to_evsel(hists),
+-
+-	const char * const kvm_usage[] = {
+-		"perf kvm [<options>] {top|record|report|diff|buildid-list|stat}",
+-		NULL
 -	};
-+	struct perf_hpp dummy_hpp;
++	const char *const kvm_subcommands[] = { "top", "record", "report", "diff",
++						"buildid-list", "stat", NULL };
++	const char *kvm_usage[] = { NULL, NULL };
  
- 	perf_hpp__for_each_format(fmt) {
- 		if (i)
- 			ret += 2;
+ 	perf_host  = 0;
+ 	perf_guest = 1;
  
--		ret += fmt->width(fmt, &dummy_hpp);
-+		ret += fmt->width(fmt, &dummy_hpp, hists_to_evsel(hists));
- 	}
+-	argc = parse_options(argc, argv, kvm_options, kvm_usage,
+-			PARSE_OPT_STOP_AT_NON_OPTION);
++	argc = parse_options_subcommand(argc, argv, kvm_options, kvm_subcommands, kvm_usage,
++					PARSE_OPT_STOP_AT_NON_OPTION);
+ 	if (!argc)
+ 		usage_with_options(kvm_usage, kvm_options);
  
- 	list_for_each_entry(se, &hist_entry__sort_list, list)
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 9bad892..d59893e 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -379,7 +379,6 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 	struct perf_hpp dummy_hpp = {
- 		.buf	= bf,
- 		.size	= sizeof(bf),
--		.ptr	= hists_to_evsel(hists),
- 	};
- 	bool first = true;
- 	size_t linesz;
-@@ -398,7 +397,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 		else
- 			first = false;
+diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
+index 496e2ab..ae3a576 100644
+--- a/tools/perf/perf-completion.sh
++++ b/tools/perf/perf-completion.sh
+@@ -123,7 +123,7 @@ __perf_main ()
+ 		__perfcomp_colon "$evts" "$cur"
+ 	# List subcommands for 'perf kvm'
+ 	elif [[ $prev == "kvm" ]]; then
+-		subcmds="top record report diff buildid-list stat"
++		subcmds=$($cmd $prev --list-cmds)
+ 		__perfcomp_colon "$subcmds" "$cur"
+ 	# List long option names
+ 	elif [[ $cur == --* ]];  then
+diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
+index d22e3f8..bf48092 100644
+--- a/tools/perf/util/parse-options.c
++++ b/tools/perf/util/parse-options.c
+@@ -407,7 +407,9 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 		if (internal_help && !strcmp(arg + 2, "help"))
+ 			return usage_with_options_internal(usagestr, options, 0);
+ 		if (!strcmp(arg + 2, "list-opts"))
+-			return PARSE_OPT_LIST;
++			return PARSE_OPT_LIST_OPTS;
++		if (!strcmp(arg + 2, "list-cmds"))
++			return PARSE_OPT_LIST_SUBCMDS;
+ 		switch (parse_long_opt(ctx, arg + 2, options)) {
+ 		case -1:
+ 			return parse_options_usage(usagestr, options, arg + 2, 0);
+@@ -433,25 +435,45 @@ int parse_options_end(struct parse_opt_ctx_t *ctx)
+ 	return ctx->cpidx + ctx->argc;
+ }
  
--		fmt->header(fmt, &dummy_hpp);
-+		fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
- 		fprintf(fp, "%s", bf);
- 	}
+-int parse_options(int argc, const char **argv, const struct option *options,
+-		  const char * const usagestr[], int flags)
++int parse_options_subcommand(int argc, const char **argv, const struct option *options,
++			const char *const subcommands[], const char *usagestr[], int flags)
+ {
+ 	struct parse_opt_ctx_t ctx;
  
-@@ -443,7 +442,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 		else
- 			first = false;
+ 	perf_header__set_cmdline(argc, argv);
  
--		width = fmt->width(fmt, &dummy_hpp);
-+		width = fmt->width(fmt, &dummy_hpp, hists_to_evsel(hists));
- 		for (i = 0; i < width; i++)
- 			fprintf(fp, ".");
- 	}
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 9e1cada..0c76bf9 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -132,8 +132,10 @@ struct perf_hpp {
++	/* build usage string if it's not provided */
++	if (subcommands && !usagestr[0]) {
++		struct strbuf buf = STRBUF_INIT;
++
++		strbuf_addf(&buf, "perf %s [<options>] {", argv[0]);
++		for (int i = 0; subcommands[i]; i++) {
++			if (i)
++				strbuf_addstr(&buf, "|");
++			strbuf_addstr(&buf, subcommands[i]);
++		}
++		strbuf_addstr(&buf, "}");
++
++		usagestr[0] = strdup(buf.buf);
++		strbuf_release(&buf);
++	}
++
+ 	parse_options_start(&ctx, argc, argv, flags);
+ 	switch (parse_options_step(&ctx, options, usagestr)) {
+ 	case PARSE_OPT_HELP:
+ 		exit(129);
+ 	case PARSE_OPT_DONE:
+ 		break;
+-	case PARSE_OPT_LIST:
++	case PARSE_OPT_LIST_OPTS:
+ 		while (options->type != OPTION_END) {
+ 			printf("--%s ", options->long_name);
+ 			options++;
+ 		}
+ 		exit(130);
++	case PARSE_OPT_LIST_SUBCMDS:
++		for (int i = 0; subcommands[i]; i++)
++			printf("%s ", subcommands[i]);
++		exit(130);
+ 	default: /* PARSE_OPT_UNKNOWN */
+ 		if (ctx.argv[0][1] == '-') {
+ 			error("unknown option `%s'", ctx.argv[0] + 2);
+@@ -464,6 +486,13 @@ int parse_options(int argc, const char **argv, const struct option *options,
+ 	return parse_options_end(&ctx);
+ }
+ 
++int parse_options(int argc, const char **argv, const struct option *options,
++		  const char * const usagestr[], int flags)
++{
++	return parse_options_subcommand(argc, argv, options, NULL,
++					(const char **) usagestr, flags);
++}
++
+ #define USAGE_OPTS_WIDTH 24
+ #define USAGE_GAP         2
+ 
+diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
+index cbf0149..d8dac8a 100644
+--- a/tools/perf/util/parse-options.h
++++ b/tools/perf/util/parse-options.h
+@@ -140,6 +140,11 @@ extern int parse_options(int argc, const char **argv,
+                          const struct option *options,
+                          const char * const usagestr[], int flags);
+ 
++extern int parse_options_subcommand(int argc, const char **argv,
++				const struct option *options,
++				const char *const subcommands[],
++				const char *usagestr[], int flags);
++
+ extern NORETURN void usage_with_options(const char * const *usagestr,
+                                         const struct option *options);
+ 
+@@ -148,7 +153,8 @@ extern NORETURN void usage_with_options(const char * const *usagestr,
+ enum {
+ 	PARSE_OPT_HELP = -1,
+ 	PARSE_OPT_DONE,
+-	PARSE_OPT_LIST,
++	PARSE_OPT_LIST_OPTS,
++	PARSE_OPT_LIST_SUBCMDS,
+ 	PARSE_OPT_UNKNOWN,
  };
  
- struct perf_hpp_fmt {
--	int (*header)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp);
--	int (*width)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp);
-+	int (*header)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+		      struct perf_evsel *evsel);
-+	int (*width)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+		     struct perf_evsel *evsel);
- 	int (*color)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- 		     struct hist_entry *he);
- 	int (*entry)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
