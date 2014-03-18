@@ -1,169 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516AbaCRWOV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 18:14:21 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:55269 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575AbaCRWOT convert rfc822-to-8bit (ORCPT
+	id S1758180AbaCRWPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 18:15:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57729 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757953AbaCRWPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 18:14:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=CyrqqapGOsJWuHOo4ag
-	PXZRk2NInb24nSKp02gyQ8LYOmxr1Amodax3Hez3dpuBJAqD12/7sUx5i2tROF1C
-	GORmS3pCIViAm/S7ongED7n9BPBz7tco8sYo99VQRBQDfHHevqqQdSNjarPVY17o
-	ccUt+rS6cEiD2jN5gF6OxC5o=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.9.1
-Date: Tue, 18 Mar 2014 15:14:14 -0700
-Message-ID: <xmqq38if6top.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 18 Mar 2014 18:15:47 -0400
+Date: Tue, 18 Mar 2014 23:15:56 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Benedikt Spranger <b.spranger@linutronix.de>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [patch 02/12] can: c_can: Fix hardware raminit function
+In-Reply-To: <532892BC.7080406@pengutronix.de>
+Message-ID: <alpine.DEB.2.02.1403182313110.18573@ionos.tec.linutronix.de>
+References: <20140318171007.528610837@linutronix.de> <20140318171126.720944558@linutronix.de> <532892BC.7080406@pengutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: A59A52A8-AEEA-11E3-9686-8D19802839F8-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.9.1 is now available at
-the usual places.
+On Tue, 18 Mar 2014, Marc Kleine-Budde wrote:
+> On 03/18/2014 06:19 PM, Thomas Gleixner wrote:
+> > +static void c_can_hw_raminit_wait(const struct c_can_priv *priv, u32 mask,
+> > +				  u32 val)
+> > +{
+> > +	/* We look only at the bits of our instance. */
+> > +	val &= mask;
+> > +	while ((readl(priv->raminit_ctrlreg) & mask) != val)
+> > +		udelay(1);
+> 
+> Do we have to add a timeout here, or is it "safe" to have a potential
+> endless loop here? As you have probably tortured the hardware and driver
+> a lot (or have been tortured by them), I assume you would have added a
+> timeout check if you had seen a lockup here.
 
-The release tarballs are found at:
+I haven't seen any failure on that. We could add a timeout for
+paranoia reasons. I'm quite sure that the raminit works as advertised
+when we do it the right way. The only way to wreckage it so far is by
+not waiting for it to complete.
 
-    https://www.kernel.org/pub/software/scm/git/
+Thanks,
 
-The following public repositories all have a copy of the v1.9.1
-tag and the maint branch that the tag points at:
-
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-
-Git v1.9.1 Release Notes
-========================
-
-Fixes since v1.9.0
-------------------
-
- * "git clean -d pathspec" did not use the given pathspec correctly
-   and ended up cleaning too much.
-
- * "git difftool" misbehaved when the repository is bound to the
-   working tree with the ".git file" mechanism, where a textual file
-   ".git" tells us where it is.
-
- * "git push" did not pay attention to branch.*.pushremote if it is
-   defined earlier than remote.pushdefault; the order of these two
-   variables in the configuration file should not matter, but it did
-   by mistake.
-
- * Codepaths that parse timestamps in commit objects have been
-   tightened.
-
- * "git diff --external-diff" incorrectly fed the submodule directory
-   in the working tree to the external diff driver when it knew it is
-   the same as one of the versions being compared.
-
- * "git reset" needs to refresh the index when working in a working
-   tree (it can also be used to match the index to the HEAD in an
-   otherwise bare repository), but it failed to set up the working
-   tree properly, causing GIT_WORK_TREE to be ignored.
-
- * "git check-attr" when working on a repository with a working tree
-   did not work well when the working tree was specified via the
-   --work-tree (and obviously with --git-dir) option.
-
- * "merge-recursive" was broken in 1.7.7 era and stopped working in
-   an empty (temporary) working tree, when there are renames
-   involved.  This has been corrected.
-
- * "git rev-parse" was loose in rejecting command line arguments
-   that do not make sense, e.g. "--default" without the required
-   value for that option.
-
- * include.path variable (or any variable that expects a path that
-   can use ~username expansion) in the configuration file is not a
-   boolean, but the code failed to check it.
-
- * "git diff --quiet -- pathspec1 pathspec2" sometimes did not return
-   correct status value.
-
- * Attempting to deepen a shallow repository by fetching over smart
-   HTTP transport failed in the protocol exchange, when no-done
-   extension was used.  The fetching side waited for the list of
-   shallow boundary commits after the sending end stopped talking to
-   it.
-
- * Allow "git cmd path/", when the 'path' is where a submodule is
-   bound to the top-level working tree, to match 'path', despite the
-   extra and unnecessary trailing slash (such a slash is often
-   given by command line completion).
-
-----------------------------------------------------------------
-
-Changes since v1.9.0 are as follows:
-
-Brad King (4):
-      t3030-merge-recursive: test known breakage with empty work tree
-      read-cache.c: refactor --ignore-missing implementation
-      read-cache.c: extend make_cache_entry refresh flag with options
-      merge-recursive.c: tolerate missing files while refreshing index
-
-David Aguilar (1):
-      difftool: support repositories with .git-files
-
-David Sharp (1):
-      rev-parse: check i before using argv[i] against argc
-
-Jeff King (12):
-      expand_user_path: do not look at NULL path
-      handle_path_include: don't look at NULL value
-      tests: auto-set LIB_HTTPD_PORT from test name
-      t4212: test bogus timestamps with git-log
-      fsck: report integer overflow in author timestamps
-      date: check date overflow against time_t
-      log: handle integer overflow in timestamps
-      log: do not segfault on gmtime errors
-      remote: handle pushremote config in any order
-      show_ident_date: fix tz range check
-      clean: respect pathspecs with "-d"
-      clean: simplify dir/not-dir logic
-
-Junio C Hamano (4):
-      t0003: do not chdir the whole test process
-      check-attr: move to the top of working tree when in non-bare repository
-      t7800: add a difftool test for .git-files
-      Git 1.9.1
-
-Nguyễn Thái Ngọc Duy (17):
-      test: rename http fetch and push test files
-      pack-protocol.txt: clarify 'obj-id' in the last ACK after 'done'
-      protocol-capabilities.txt: refer multi_ack_detailed back to pack-protocol.txt
-      protocol-capabilities.txt: document no-done
-      fetch-pack: fix deepen shallow over smart http with no-done cap
-      t5537: move http tests out to t5539
-      reset: optionally setup worktree and refresh index on --mixed
-      pathspec: convert some match_pathspec_depth() to ce_path_match()
-      pathspec: convert some match_pathspec_depth() to dir_path_match()
-      pathspec: rename match_pathspec_depth() to match_pathspec()
-      dir.c: prepare match_pathspec_item for taking more flags
-      match_pathspec: match pathspec "foo/" against directory "foo"
-      pathspec: pass directory indicator to match_pathspec_item()
-      clean: replace match_pathspec() with dir_path_match()
-      clean: use cache_name_is_other()
-      diff.c: move diffcore_skip_stat_unmatch core logic out for reuse later
-      diff: do not quit early on stat-dirty files
-
-Sandy Carter (1):
-      i18n: proposed command missing leading dash
-
-Thomas Rast (1):
-      diff: do not reuse_worktree_file for submodules
-
+	tglx
