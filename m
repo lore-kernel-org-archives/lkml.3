@@ -1,84 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757745AbaCRTZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 15:25:23 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:51851 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756715AbaCRTZV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 15:25:21 -0400
-Message-ID: <53289D9A.8070805@gmail.com>
-Date: Tue, 18 Mar 2014 12:25:14 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: dirk.brandewie@gmail.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
-        patrick.marlier@gmail.com, viresh.kumar@linaro.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: Re: [PATCH v3 0/2] Add stop callback to the cpufreq_driver interface.
-References: <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com> <1395163361-26380-1-git-send-email-dirk.j.brandewie@intel.com> <532899B2.2060106@linux.vnet.ibm.com>
-In-Reply-To: <532899B2.2060106@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757886AbaCRT04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 15:26:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46427 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757853AbaCRT0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 15:26:54 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, hpa@zytor.com
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Subject: [PATCH 4/5] x86/boot: Move memcmp() into string.h and string.c
+Date: Tue, 18 Mar 2014 15:26:39 -0400
+Message-Id: <1395170800-11059-5-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
+References: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2014 12:08 PM, Srivatsa S. Bhat wrote:
-> On 03/18/2014 10:52 PM, dirk.brandewie@gmail.com wrote:
->> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
->>
->
-> I don't mean to nitpick, but generally its easier to deal with
-> patchsets if you post the subsequent versions in fresh email threads.
-> Otherwise it can get a bit muddled along with too many other email
-> discussions in the same thread :-(
->
->> Changes:
->> v2->v3
->> Changed the calling of the ->stop() callback to be conditional on the
->> core being the last core controlled by a given policy.
->>
->
-> Wait, why? I'm sorry if I am not catching up with the discussions on
-> this issue quickly enough, but I don't see why we should make it
-> conditional on _that_. I thought we agreed that we should make it
-> conditional in the sense that ->stop() should be invoked only for
-> ->setpolicy drivers, right?
+Try to treat memcmp() in same way as memcpy() and memset(). Provide a
+declaration in boot/string.h and by default user gets a memcmp() which
+maps to builtin function.
 
-This was done at Viresh's suggestion since thought there might be value
-for ->target drivers.
+Move optimized definition of memcmp() in boot/string.c. Now a user can
+do #undef memcmp and link against string.c to use optimzied memcmp().
 
-Any of the options work for me
-    called only for set_policy scaling drivers
-    called unconditionally for all scaling drivers
-    called for last core controlled by a given policy
+It also simplifies boot/compressed/string.c where we had to redefine
+memcmp(). That extra definition is gone now.
 
->
-> The way I look at it, ->stop() gives you a chance to stop managing
-> the CPU going offline. As in "stop this CPU". ->exit() is your chance
-> to cleanup the policy, since all its users have gone offline (or this
-> is the last CPU belonging to that policy which is going offline).
->
-> With this in mind, we should invoke ->stop() every time we take a
-> CPU offline, and invoke ->exit() only when the last CPU in the policy
-> goes offline.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ arch/x86/boot/boot.h              |  8 --------
+ arch/x86/boot/compressed/string.c | 11 -----------
+ arch/x86/boot/string.c            | 14 ++++++++++++++
+ arch/x86/boot/string.h            |  2 ++
+ 4 files changed, 16 insertions(+), 19 deletions(-)
 
-This is exactly what will happen for intel_pstate since the policies cover
-a single core.
-
-I will defer to you and Viresh how policies that affect more that one
-cpu should be handled.
-
-What intel_pstate needs it to be called during the PREPARE phase of the
-offline process.
-
->
-> What am I missing?
->
-> Regards,
-> Srivatsa S. Bhat
->
+diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+index bed9665..bd49ec6 100644
+--- a/arch/x86/boot/boot.h
++++ b/arch/x86/boot/boot.h
+@@ -177,14 +177,6 @@ static inline void wrgs32(u32 v, addr_t addr)
+ }
+ 
+ /* Note: these only return true/false, not a signed return value! */
+-static inline int memcmp(const void *s1, const void *s2, size_t len)
+-{
+-	u8 diff;
+-	asm("repe; cmpsb; setnz %0"
+-	    : "=qm" (diff), "+D" (s1), "+S" (s2), "+c" (len));
+-	return diff;
+-}
+-
+ static inline int memcmp_fs(const void *s1, addr_t s2, size_t len)
+ {
+ 	u8 diff;
+diff --git a/arch/x86/boot/compressed/string.c b/arch/x86/boot/compressed/string.c
+index 3b5a82f..920b55e 100644
+--- a/arch/x86/boot/compressed/string.c
++++ b/arch/x86/boot/compressed/string.c
+@@ -1,15 +1,4 @@
+ #include "misc.h"
+-
+-/* Avoid intereference from any defines in string_32.h */
+-#undef memcmp
+-int memcmp(const void *s1, const void *s2, size_t len)
+-{
+-	u8 diff;
+-	asm("repe; cmpsb; setnz %0"
+-	    : "=qm" (diff), "+D" (s1), "+S" (s2), "+c" (len));
+-	return diff;
+-}
+-
+ #include "../string.c"
+ 
+ /* misc.h might pull in string_32.h which has a macro for memcpy. undef that */
+diff --git a/arch/x86/boot/string.c b/arch/x86/boot/string.c
+index 574dedf..5339040 100644
+--- a/arch/x86/boot/string.c
++++ b/arch/x86/boot/string.c
+@@ -14,6 +14,20 @@
+ 
+ #include "boot.h"
+ 
++/*
++ * This file gets included in compressed/string.c which might pull in
++ * string_32.h and which in turn maps memcmp to __builtin_memcmp(). Undo
++ * that first.
++ */
++#undef memcmp
++int memcmp(const void *s1, const void *s2, size_t len)
++{
++	u8 diff;
++	asm("repe; cmpsb; setnz %0"
++	    : "=qm" (diff), "+D" (s1), "+S" (s2), "+c" (len));
++	return diff;
++}
++
+ int strcmp(const char *str1, const char *str2)
+ {
+ 	const unsigned char *s1 = (const unsigned char *)str1;
+diff --git a/arch/x86/boot/string.h b/arch/x86/boot/string.h
+index 10939d8..725e820 100644
+--- a/arch/x86/boot/string.h
++++ b/arch/x86/boot/string.h
+@@ -8,6 +8,7 @@
+ 
+ void *memcpy(void *dst, const void *src, size_t len);
+ void *memset(void *dst, int c, size_t len);
++int memcmp(const void *s1, const void *s2, size_t len);
+ 
+ /*
+  * Access builtin version by default. If one needs to use optimized version,
+@@ -15,5 +16,6 @@ void *memset(void *dst, int c, size_t len);
+  */
+ #define memcpy(d,s,l) __builtin_memcpy(d,s,l)
+ #define memset(d,c,l) __builtin_memset(d,c,l)
++#define memcmp	__builtin_memcmp
+ 
+ #endif /* BOOT_STRING_H */
+-- 
+1.8.5.3
 
