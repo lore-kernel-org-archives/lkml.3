@@ -1,39 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603AbaCRUN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 16:13:29 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55325 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757281AbaCRUNY (ORCPT
+	id S932693AbaCRUMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:12:54 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:51957 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757281AbaCRUMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 16:13:24 -0400
-Date: Tue, 18 Mar 2014 16:13:20 -0400 (EDT)
-Message-Id: <20140318.161320.2140829838583694961.davem@davemloft.net>
-To: peter.senna@gmail.com
-Cc: jcliburn@gmail.com, chris.snook@gmail.com, hannes@stressinduktion.org,
-        nhorman@tuxdriver.com, kaber@trash.net, sd@queasysnail.net,
-        PeterHuewe@gmx.de, andrea.merello@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/2] ATHEROS-ATL1E: Convert iounmap to pci_iounmap
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1395159085-11691-1-git-send-email-peter.senna@gmail.com>
-References: <1395159085-11691-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 18 Mar 2014 13:13:24 -0700 (PDT)
+	Tue, 18 Mar 2014 16:12:12 -0400
+From: Valentina Manea <valentina.manea.m@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: tulinizer@gmail.com, stern@rowland.harvard.edu, mail@beyermatthias.de,
+        hdegoede@redhat.com, f.manzan@gmail.com, kurt@garloff.de,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        firefly@lists.rosedu.org, andy.grover@gmail.com,
+        Valentina Manea <valentina.manea.m@gmail.com>
+Subject: [PATCH 3/3] usbip: remove struct usb_device_id table
+Date: Tue, 18 Mar 2014 22:11:23 +0200
+Message-Id: <1395173483-27542-4-git-send-email-valentina.manea.m@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1395173483-27542-1-git-send-email-valentina.manea.m@gmail.com>
+References: <1395173483-27542-1-git-send-email-valentina.manea.m@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-Date: Tue, 18 Mar 2014 17:11:24 +0100
+This was used back when usbip-host was an interface device driver;
+after the conversion to device driver, the table remained unused.
+Remove it in order to stop receiving a warning about it.
 
-> Use pci_iounmap instead of iounmap when the virtual mapping was done
-> with pci_iomap. A simplified version of the semantic patch that finds this
-> issue is as follows: (http://coccinelle.lip6.fr/)
- ...
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
+---
+ drivers/usb/usbip/stub_dev.c | 27 ---------------------------
+ 1 file changed, 27 deletions(-)
 
-Applied, thanks.
+diff --git a/drivers/usb/usbip/stub_dev.c b/drivers/usb/usbip/stub_dev.c
+index 773d8ca..ca01f67 100644
+--- a/drivers/usb/usbip/stub_dev.c
++++ b/drivers/usb/usbip/stub_dev.c
+@@ -26,33 +26,6 @@
+ #include "stub.h"
+ 
+ /*
+- * Define device IDs here if you want to explicitly limit exportable devices.
+- * In most cases, wildcard matching will be okay because driver binding can be
+- * changed dynamically by a userland program.
+- */
+-static struct usb_device_id stub_table[] = {
+-#if 0
+-	/* just an example */
+-	{ USB_DEVICE(0x05ac, 0x0301) },   /* Mac 1 button mouse */
+-	{ USB_DEVICE(0x0430, 0x0009) },   /* Plat Home Keyboard */
+-	{ USB_DEVICE(0x059b, 0x0001) },   /* Iomega USB Zip 100 */
+-	{ USB_DEVICE(0x04b3, 0x4427) },   /* IBM USB CD-ROM */
+-	{ USB_DEVICE(0x05a9, 0xa511) },   /* LifeView USB cam */
+-	{ USB_DEVICE(0x55aa, 0x0201) },   /* Imation card reader */
+-	{ USB_DEVICE(0x046d, 0x0870) },   /* Qcam Express(QV-30) */
+-	{ USB_DEVICE(0x04bb, 0x0101) },   /* IO-DATA HD 120GB */
+-	{ USB_DEVICE(0x04bb, 0x0904) },   /* IO-DATA USB-ET/TX */
+-	{ USB_DEVICE(0x04bb, 0x0201) },   /* IO-DATA USB-ET/TX */
+-	{ USB_DEVICE(0x08bb, 0x2702) },   /* ONKYO USB Speaker */
+-	{ USB_DEVICE(0x046d, 0x08b2) },   /* Logicool Qcam 4000 Pro */
+-#endif
+-	/* magic for wild card */
+-	{ .driver_info = 1 },
+-	{ 0, }                                     /* Terminating entry */
+-};
+-MODULE_DEVICE_TABLE(usb, stub_table);
+-
+-/*
+  * usbip_status shows the status of usbip-host as long as this driver is bound
+  * to the target device.
+  */
+-- 
+1.8.1.2
+
