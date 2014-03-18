@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268AbaCRP7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:59:04 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:47730 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708AbaCRP7B (ORCPT
+	id S1756446AbaCRP7j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:59:39 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54718 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394AbaCRP7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:59:01 -0400
-Date: Tue, 18 Mar 2014 11:58:57 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@kernel.org>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20140318155857.GB3642@htj.dyndns.org>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
- <20140312015021.GC10106@kroah.com>
- <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au>
- <20140317183333.GE10565@kroah.com>
- <1395088410.15098.175.camel@pasglop>
- <20140317215619.GA25228@kroah.com>
- <20140317220554.GG17373@mtj.dyndns.org>
- <20140317222107.GH17373@mtj.dyndns.org>
- <1395102146.15098.198.camel@pasglop>
+	Tue, 18 Mar 2014 11:59:36 -0400
+Date: Tue, 18 Mar 2014 15:59:16 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Harini Katakam <harini.katakam@xilinx.com>
+Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        Michal Simek <michals@xilinx.com>
+Message-ID: <20140318155916.GD11706@sirena.org.uk>
+References: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
+ <20140317173017.GW11706@sirena.org.uk>
+ <255edf4f-05a8-4d9a-b32d-1a4a8ddaffb5@CH1EHSMHS004.ehs.local>
+ <20140318110401.GH11706@sirena.org.uk>
+ <d7cf691a-c9cb-4a8a-bf5c-eae952a5d729@VA3EHSMHS045.ehs.local>
+ <20140318123348.GR11706@sirena.org.uk>
+ <aa8486d2-8571-4b31-8980-78806a80e600@CH1EHSMHS031.ehs.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2Z4DYh21Th0UNJ5x"
 Content-Disposition: inline
-In-Reply-To: <1395102146.15098.198.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <aa8486d2-8571-4b31-8980-78806a80e600@CH1EHSMHS031.ehs.local>
+X-Cookie: Turn the other cheek.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] SPI: Add driver for Cadence SPI controller
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ben.
 
-On Tue, Mar 18, 2014 at 11:22:26AM +1100, Benjamin Herrenschmidt wrote:
-> On Mon, 2014-03-17 at 18:21 -0400, Tejun Heo wrote:
-> > So, looked at the failed code.  The only necessary change seems to be
-> > calling device_remove_file_self() in dump_ack_store() and then doing
-> > kobject_put() directly afterwards, which would have been completely
-> > fine as a merge fix patch.
-> 
-> Ok. Since there's no merge error, I'll have to tell Linus explicitly to
-> apply it during the merge. I've never done that before but I suppose
-> it's doable.
+--2Z4DYh21Th0UNJ5x
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, that should be fine.  For the next tree, including the fix patch
-in a temp branch and pulling that into your for-next branch should
-work fine.
+On Tue, Mar 18, 2014 at 02:45:09PM +0000, Harini Katakam wrote:
 
-> Sorry I don't understand. Reverting the removal until after -rc1 (or
-> later in the merge window) is the easiest path from my perspective and
-> ensure no bisection breakage but whatever Linus prefers works here.
+> OK. I dint consider interrupt sharing.=20
+> Do you think the following implementation would be better?
 
-Merge fix doesn't cause any bisection issue either (because it *is* a
-merge problem after all).  It could be just my personal preference but
-I'd handle this one as merge fix.  If we rever the removal of the
-interface, we'll probably need to mark it deprecated too as people
-tend to fork off their devel branches before or at rc1.
+> status =3D IRQ_NONE;
+> if (intr_status & CDNS_SPI_IXR_MODF_MASK) {
+> 	/* Handle this interrupt here */
+> 	status =3D IRQ_HANDLED;
+> } else if (intr_status & CDNS_SPI_IXR_TXOW_MASK) {
+> 	/* Handle this interrupt here */
+> 	status =3D IRQ_HANDLED;
+> }
 
-> I don't think it's a drastic action or anything like that. It can
-> trivially be re-applied once the merge window has settled. But I'm happy
-> to also just send Linus a "apply this as a merge fixup" patch if he's
-> happy with the method (as I said, I've never done that before on
-> something that doesn't have an actual merge conflict to begin with)
+> return status;
 
-Sure, either should work.
+Yes, that looks good.
 
-Thanks.
+--2Z4DYh21Th0UNJ5x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-tejun
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTKG1QAAoJELSic+t+oim9STMP/RKGeGtOb5KYT2GZnDLOFnaO
+37N957TIqJFycMYhY+mmWST81tGCHI0LQh8KBj09niR2kl7M/4grSj2ehmf5BQHI
+NNdRJLHfO9vGHTFovOQQoFZeXoqqPBE84/uVmtLLL23jPDncACDHwPuItJV/J9YN
+SibRUm1Hb9tDSAzmGj3b6s8ek7X/YhPMgsdxelLNnBC57AhaIRdOfgmy1zzN9YdK
+4835CGkod+lZAesCQNq4VXeRImegAGJoUBNYqu6rgMsF6gjKh0WpdWZBZk7IcKkc
+qZi7EoqWt69SCAhOFF5y3yx8NHen/aAWeXDyZsAFNCk/f6zpsnVaLSKv3hkb8PUu
+KbpXzYuOk+4WQ4p33snte1kuWfoyN0d9dh7yu5VBwx6/Cq8Aocu8QN2zH0nWD5q/
+Rj3fVu9ivPyned8QSxuSRxfDsQgGMnYF7L+KHTlBASiJWrBnmByGsYzmjccoLswG
+z+zsSUV0mmHyxqG7qKER43X6YJZIqj6PfPWbSAdJuivbbV0b+kfTU8IIzyYHUiLR
+q5jpika9ZfEan9sfW7SaRlU3IxjHy5/0xfUYQZsfBQOgp+XYMm9qjR8AKasoSJyS
++kOcr4aRg8yAHfP6KrzSzpgf5rEpj4K+6p60HFdd0cP6ovckuSi/J2uBbh7opP4C
+dRBhxwM5fNOjmyETVoHM
+=nRfP
+-----END PGP SIGNATURE-----
+
+--2Z4DYh21Th0UNJ5x--
