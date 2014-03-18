@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789AbaCRP3C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:29:02 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:59925 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756459AbaCRP3A (ORCPT
+	id S1756818AbaCRP3h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:29:37 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:58242 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755441AbaCRP3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:29:00 -0400
-Date: Tue, 18 Mar 2014 16:28:56 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Chew Kean Ho <kean.ho.chew@intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] pwm: add support for Intel Low Power Subsystem PWM
-Message-ID: <20140318152855.GA7237@mithrandir>
-References: <1393599057-26451-1-git-send-email-chiau.ee.chew@intel.com>
+	Tue, 18 Mar 2014 11:29:35 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v4 5/6] fat: permit to return phy block number by fibmap in fallocated region
+References: <1393769373-3609-1-git-send-email-linkinjeon@gmail.com>
+Date: Wed, 19 Mar 2014 00:29:32 +0900
+In-Reply-To: <1393769373-3609-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Sun, 2 Mar 2014 23:09:33 +0900")
+Message-ID: <8738if4jab.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
-Content-Disposition: inline
-In-Reply-To: <1393599057-26451-1-git-send-email-chiau.ee.chew@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
---PEIAKu/WMn1b1Hv9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, Feb 28, 2014 at 10:50:57PM +0800, Chew Chiau Ee wrote:
-> From: Mika Westerberg <mika.westerberg@linux.intel.com>
->=20
-> Add support for Intel Low Power I/O subsystem PWM controllers found on
-> Intel BayTrail SoC.
->=20
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Chew, Kean Ho <kean.ho.chew@intel.com>
-> Signed-off-by: Chang, Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> ---
->  drivers/pwm/Kconfig    |   10 +++
->  drivers/pwm/Makefile   |    1 +
->  drivers/pwm/pwm-lpss.c |  179 ++++++++++++++++++++++++++++++++++++++++++=
-++++++
->  3 files changed, 190 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/pwm/pwm-lpss.c
-
-Sorry for taking so long to get back to you on this. Things have been
-somewhat crazy lately.
-
-This generally looks very good, but I found two issues that escaped last
-time. See below.
-
-> diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
-[...]
-> +static int pwm_lpss_config(struct pwm_chip *chip, struct pwm_device *pwm,
-> +			   int duty_ns, int period_ns)
+> +int fat_bmap2(struct inode *inode, sector_t sector,
+> +	      unsigned long *mapped_blocks, struct buffer_head *bh_result,
+> +	      int create, sector_t *bmap)
 > +{
-> +	struct pwm_lpss_chip *lpwm =3D to_lpwm(chip);
-> +	u8 on_time_div;
-> +	unsigned long c =3D clk_get_rate(lpwm->clk);
-> +	unsigned long long base_unit, freq =3D NSECS_PER_SEC;
-> +	u32 ctrl;
+> +	struct super_block *sb = inode->i_sb;
+> +	sector_t last_block;
+> +	const unsigned long blocksize = sb->s_blocksize;
+> +	const unsigned char blocksize_bits = sb->s_blocksize_bits;
 > +
-> +	do_div(freq, period_ns);
+> +	BUG_ON(create != 0);
 > +
-> +	/* The equation is: base_unit =3D ((freq / c) * 65536) + correction */
-> +	base_unit =3D freq * 65536;
-> +	do_div(base_unit, c);
+> +	*bmap = 0;
+> +	*mapped_blocks = 0;
+> +
+> +	last_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
+> +		>> blocksize_bits;
+> +
+> +	if (sector >= last_block)
+> +		return 0;
+> +
+> +	return fat_get_mapped_cluster(inode, sector, last_block, mapped_blocks,
+> +				      bmap);
 
-clk_get_rate() can return 0, so perhaps it would be safer to check for
-the validity of c before dividing by it. This will probably never
-happen for your driver or platform, but people may look at your driver
-for inspiration at some point, so it should still be handling this
-correctly.
-
-> +MODULE_DESCRIPTION("PWM driver for Intel LPSS");
-> +MODULE_AUTHOR("Mika Westerberg <mika.westerberg@linux.intel.com>");
-> +MODULE_LICENSE("GPLv2");
-
-I think this needs to be "GPL v2".
-
-Thierry
-
---PEIAKu/WMn1b1Hv9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTKGY3AAoJEN0jrNd/PrOhlwsP/Rw3YvlmjSz+Qb0iWflprVjz
-XpB0RBf/zaDkuroyE6iTSaEd447iuWaSSE+mCBfRod3JjeZCPdCrQRB2kqRHpYQD
-Ms0FRqborxwO61B5fPcd6+Xw8NjR3vPKh+NQ5KMl1S/bEPxHeW1SPxBHLwOIr84z
-xMTkDmhjtRVwyc/q7Hran0QF8PBj63eHdT0WDnR0/JQ2rNMY7vR5Di/PEtan8Lcy
-J4Lnv/BQ0vcmclgtbrXQTMuB2Lm8Yl6GwaDJd+d/yuiS0HoigRJz1orik7mt9HdK
-csTGhNkc3niIXocCCdHuvSMhypAtFt5qazul/yKCowbVwmAU3Z/wN2yEZ+sC7oJP
-KKGuwc0O/NgE0o5btIlv4CxTXbm2jrCBlL2lE5184YVz+Cu4CGTTaKEGc3AJ2zCQ
-7K6u8qP8p4qRvx9aI7GbQqSp9sILONoLydzivHM2uFzMDNyGje3dsCngd2oNudE+
-1n4Q/mjZZL3LGE70qGGfg4IPuBrnvQHpX8EAMz92aF6TNzI7IC84kcFKASoKh5xv
-C2sUVVXeEzoxV8lIlKUq8w76yAGWBLuJm7Th8KOLZKvbMllwncNksuoTVd47BiBd
-5+/nbRhuYTykBSbB52Dl9Ba5GQ/vGOCgbkprRuP78J7ZscJ8ewsqY8z1+Vib0SIo
-Y/7us46pPhtAzWiA5MGt
-=rWC0
------END PGP SIGNATURE-----
-
---PEIAKu/WMn1b1Hv9--
+Maybe, we are better to merge fat_bmap2() and fat_get_block_bmap()?
+fat_bmap2() seems to be pointless.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
