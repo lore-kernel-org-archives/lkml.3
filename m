@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaCRAWq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 20:22:46 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57397 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716AbaCRAWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 20:22:44 -0400
-Message-ID: <1395102146.15098.198.camel@pasglop>
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@kernel.org>,
-        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 18 Mar 2014 11:22:26 +1100
-In-Reply-To: <20140317222107.GH17373@mtj.dyndns.org>
-References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
-	 <20140312015021.GC10106@kroah.com>
-	 <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au>
-	 <20140317183333.GE10565@kroah.com> <1395088410.15098.175.camel@pasglop>
-	 <20140317215619.GA25228@kroah.com> <20140317220554.GG17373@mtj.dyndns.org>
-	 <20140317222107.GH17373@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752994AbaCRA0J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 20:26:09 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:51731 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144AbaCRA0I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 20:26:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140317214145.GA29105@kroah.com>
+References: <4376102.svyTz8ADVT@daeseok-laptop.cloud.net>
+	<20140317214145.GA29105@kroah.com>
+Date: Tue, 18 Mar 2014 09:26:07 +0900
+Message-ID: <CAHb8M2BwuCJEGueP+-cOatynS5QcSrJMeei_D=0-GdKGxi5N-Q@mail.gmail.com>
+Subject: Re: [PATCH] staging: unisys: use kzalloc instead of kmalloc/memset 0
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: jkc@redhat.com, devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-17 at 18:21 -0400, Tejun Heo wrote:
-> So, looked at the failed code.  The only necessary change seems to be
-> calling device_remove_file_self() in dump_ack_store() and then doing
-> kobject_put() directly afterwards, which would have been completely
-> fine as a merge fix patch.
+I think vmalloc/kmalloc in uislib_malloc() can be removed and just use
+vmalloc/kmalloc directly.
+(UISMALLOC() macro is also removed.)
+And uislib_malloc() is renamed to "uislib_trace_buffer_status()" which
+is just tracing buffer status(Malloc_FailuresAlloc, Malloc_BytesInUse
+...) for info_proc_read_helper().
 
-Ok. Since there's no merge error, I'll have to tell Linus explicitly to
-apply it during the merge. I've never done that before but I suppose
-it's doable.
+If this change is accepted, it also need to change uislib_free().
 
-> Just to be clear, I'm not necessarily against reverting the removal of
-> the API.  The removal was based on the speculation that this isn't
-> likely to cause trouble.  The speculation was perfectly reasonable but
-> being a speculation it failed, so we take actions to remedy that and
-> we *do* want to do things that way.  Reverting the removal can sure be
-> one choice but the way that choice is being made here seems completely
-> wrong to me.  There's no technical evaluation whatsoever.  I'd really
-> hate to work in an environment where taking active trade off is
-> discouraged replaced with blind policy enforcement.
+Is it fine to change like this?
 
-Sorry I don't understand. Reverting the removal until after -rc1 (or
-later in the merge window) is the easiest path from my perspective and
-ensure no bisection breakage but whatever Linus prefers works here.
+Thanks.
+Daeseok Youn.
 
-I don't think it's a drastic action or anything like that. It can
-trivially be re-applied once the merge window has settled. But I'm happy
-to also just send Linus a "apply this as a merge fixup" patch if he's
-happy with the method (as I said, I've never done that before on
-something that doesn't have an actual merge conflict to begin with)
-
-Cheers,
-Ben.
-
-
+2014-03-18 6:41 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+> On Wed, Mar 12, 2014 at 07:37:50PM +0900, Daeseok Youn wrote:
+>>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> ---
+>>  drivers/staging/unisys/uislib/uislib.c   |    5 +----
+>>  drivers/staging/unisys/uislib/uisutils.c |    2 +-
+>>  2 files changed, 2 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/staging/unisys/uislib/uislib.c b/drivers/staging/unisys/uislib/uislib.c
+>> index d77df9a..9748fcb 100644
+>> --- a/drivers/staging/unisys/uislib/uislib.c
+>> +++ b/drivers/staging/unisys/uislib/uislib.c
+>> @@ -339,8 +339,6 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+>>               return CONTROLVM_RESP_ERROR_KMALLOC_FAILED;
+>>       }
+>>
+>> -     memset(bus, 0, size);
+>> -
+>>       /* Currently by default, the bus Number is the GuestHandle.
+>>        * Configure Bus message can override this.
+>>        */
+>> @@ -530,7 +528,6 @@ create_device(CONTROLVM_MESSAGE *msg, char *buf)
+>>               return CONTROLVM_RESP_ERROR_KMALLOC_FAILED;
+>>       }
+>>
+>> -     memset(dev, 0, sizeof(struct device_info));
+>>       dev->channelTypeGuid = msg->cmd.createDevice.dataTypeGuid;
+>>       dev->intr = msg->cmd.createDevice.intr;
+>>       dev->channelAddr = msg->cmd.createDevice.channelAddr;
+>> @@ -1437,7 +1434,7 @@ uislib_malloc(size_t siz, gfp_t gfp, U8 contiguous, char *fn, int ln)
+>>               * get memory for you (like, invoke oom killer), which
+>>               * will probably cripple the system.
+>>               */
+>> -             p = kmalloc(siz, gfp | __GFP_NORETRY);
+>> +             p = kzalloc(siz, gfp | __GFP_NORETRY);
+>>       }
+>>       if (p == NULL) {
+>>               LOGERR("uislib_malloc failed to alloc %d bytes @%s:%d",
+>> diff --git a/drivers/staging/unisys/uislib/uisutils.c b/drivers/staging/unisys/uislib/uisutils.c
+>> index 208b7ea..2f05be1 100644
+>> --- a/drivers/staging/unisys/uislib/uisutils.c
+>> +++ b/drivers/staging/unisys/uislib/uisutils.c
+>> @@ -294,7 +294,7 @@ ReqHandlerAdd(GUID switchTypeGuid,
+>>       rc = UISMALLOC(sizeof(*rc), GFP_ATOMIC);
+>>       if (!rc)
+>>               return NULL;
+>> -     memset(rc, 0, sizeof(*rc));
+>> +
+>>       rc->switchTypeGuid = switchTypeGuid;
+>>       rc->controlfunc = controlfunc;
+>>       rc->min_channel_bytes = min_channel_bytes;
+>
+> Can you just remove the UISMALLOC() macro completly, so that it's easier
+> to verify that changes like this are actually correct?
+>
+> thanks,
+>
+> greg k-h
