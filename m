@@ -1,330 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715AbaCRQx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 12:53:57 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:62854 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933AbaCRQxy (ORCPT
+	id S932087AbaCRRN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:13:59 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:34982 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756031AbaCRRN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 12:53:54 -0400
-Date: Tue, 18 Mar 2014 12:56:17 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
-In-Reply-To: <alpine.DEB.2.10.1403041620390.15963@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1403181250110.14816@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1403031526210.11945@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403041620390.15963@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 18 Mar 2014 13:13:57 -0400
+Subject: [PATCH] Remove GART aperture from iomem_resource
+To: linux-pci@vger.kernel.org
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Aaron Durbin <adurbin@google.com>, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Ingo Molnar <mingo@redhat.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jouni =?utf-8?b?TWV0dMOkbMOk?= <jtmettala@gmail.com>
+Date: Tue, 18 Mar 2014 11:13:52 -0600
+Message-ID: <20140318170841.8189.7972.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a fix for a regression exposed by an AGP patch I merged in
+v3.14-rc1.  Assuming nobody complains, I'd like to ask Linus to pull
+it ASAP, before v3.14 releases.
 
-The perf_fuzzer can quickly cause a machine to lockup with an hrtimer 
-related rb tree related oops.  I've had a hard time debugging this in any 
-useful manner, but I can trigger it on both core2 and haswell test systems 
-on 3.14-rc7.
+I think it's correct, but I'd sure appreciate it if an AGP expert could
+check this out and confirm my belief that the GART aperture I'm removing is
+actually *bus* addresses, not CPU addresses (though they happen to be
+identical in many systems).
 
-This involves making a large number of perf_event events of all types and 
-then forking a lot.
+---
 
-As mentioned previously in this e-mail thread the errors look like this:
-[ 4330.676015] BUG: unable to handle kernel NULL pointer dereference at 0000000000000040
-[ 4330.684003] IP: [<ffffffff812a3867>] rb_insert_color+0x18/0x12d
-or
-[  232.642581] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-[  232.646569] IP: [<ffffffff812a3872>] rb_insert_color+0x23/0x12d
+Bjorn Helgaas (1):
+      Revert "[PATCH] Insert GART region into resource map"
 
-or here's the most recent dump on the haswell machine:
 
-[68075.490103] BUG: unable to handle kernel NULL pointer dereference at 0000000000000459
-[68075.499728] IP: [<ffffffff812da7b9>] rb_erase+0xc9/0x3c0
-[68075.506426] PGD 0 
-[68075.509681] Oops: 0000 [#1] SMP 
-[68075.514310] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs lockd fscache sunrpc fuse x86_pkg_temp_thermal snd_hda_codec_realtek intel_powerclamp snd_hda_codec_hdmi snd_hda_codec_generic coretemp kvm crct10dif_pclmul iTCO_wdt crc32_pclmul ghash_clmulni_intel snd_hda_intel aesni_intel snd_hda_codec snd_hwdep snd_pcm i915 drm_kms_helper aes_x86_64 lrw gf128mul glue_helper drm iTCO_vendor_support ablk_helper snd_seq parport_pc i2c_algo_bit psmouse i2c_i801 tpm_tis mei_me cryptd snd_seq_device lpc_ich parport pcspkr i2c_core serio_raw tpm mfd_core mei snd_timer processor snd video wmi soundcore evdev battery button sg sd_mod sr_mod crc_t10dif crct10dif_common cdrom hid_generic usbhid hid ahci libahci ehci_pci libata xhci_hcd ehci_hcd e1000e scsi_mod ptp usbcore crc32c_intel usb_common pps_core thermal fan thermal_sys
-[68075.600313] CPU: 2 PID: 0 Comm: swapper/2 Not tainted 3.14.0-rc7 #1
-[68075.607917] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[68075.616728] task: ffff880118e920d0 ti: ffff880118e9c000 task.ti: ffff880118e9c000
-[68075.625592] RIP: 0010:[<ffffffff812da7b9>]  [<ffffffff812da7b9>] rb_erase+0xc9/0x3c0
-[68075.634744] RSP: 0018:ffff880118e9de70  EFLAGS: 00010006
-[68075.641239] RAX: ffff88011ea8ee00 RBX: ffff88011ea8ec60 RCX: 0000000000000000
-[68075.649669] RDX: ffff880113406128 RSI: ffff88011ea8e170 RDI: 0000000000000459
-[68075.658097] RBP: ffff88011ea8e170 R08: 0000000000000000 R09: 0000000000000000
-[68075.666527] R10: 0000000000000004 R11: 0000000000000005 R12: 0000000000000000
-[68075.674971] R13: 0000000000000001 R14: ffff88011ea8ec60 R15: 0000000000000000
-[68075.683374] FS:  0000000000000000(0000) GS:ffff88011ea80000(0000) knlGS:0000000000000000
-[68075.692854] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[68075.699773] CR2: 0000000000000459 CR3: 000000000180e000 CR4: 00000000001407e0
-[68075.708150] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[68075.716557] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[68075.724924] Stack:
-[68075.727819]  ffffffff812dc80e ffff88011ea8ec60 ffff88011ea8e160 ffffffff81082efe
-[68075.736576]  0000000000000001 ffff88011ea8ec60 ffff88011ea8e160 ffff880118e9dfd8
-[68075.745302]  ffff880118e9dfd8 ffffffff810832fc 0000000000000086 ffff88011ea8ec60
-[68075.754063] Call Trace:
-[68075.757409]  [<ffffffff812dc80e>] ? timerqueue_del+0x1e/0x60
-[68075.764238]  [<ffffffff81082efe>] ? __remove_hrtimer+0x3e/0x90
-[68075.771192]  [<ffffffff810832fc>] ? hrtimer_try_to_cancel+0x8c/0xd0
-[68075.778621]  [<ffffffff8108335a>] ? hrtimer_cancel+0x1a/0x30
-[68075.785365]  [<ffffffff810c4a0e>] ? tick_nohz_idle_exit+0x8e/0x1a0
-[68075.792653]  [<ffffffff810b046b>] ? cpu_startup_entry+0x1eb/0x230
-[68075.799856] Code: 40 00 48 8b 3a 48 89 0a 83 e7 01 0f 84 11 01 00 00 48 85 c0 0f 84 08 01 00 00 31 c9 eb 47 0f 1f 40 00 48 8b 7a 08 48 85 ff 74 09 <f6> 07 01 0f 84 d7 01 00 00 48 8b 4a 10 48 85 c9 74 09 f6 01 01 
-[68075.822929] RIP  [<ffffffff812da7b9>] rb_erase+0xc9/0x3c0
-[68075.829396]  RSP <ffff880118e9de70>
-[68075.833838] CR2: 0000000000000459
-[68096.514495] INFO: rcu_sched detected stalls on CPUs/tasks: { 0 2} (detected by 7, t=5252 jiffies, g=452763, c=452762, q=27)
-[68096.527278] sending NMI to all CPUs:
-[68096.531796] NMI backtrace for cpu 2
-[68096.536772] CPU: 2 PID: 18 Comm: ksoftirqd/2 Not tainted 3.14.0-rc7 #1
-[68096.545020] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[68096.554197] task: ffff880118f0f3b0 ti: ffff880118f90000 task.ti: ffff880118f90000
-[68096.563497] RIP: 0010:[<ffffffff81510a03>]  [<ffffffff81510a03>] _raw_spin_lock+0x23/0x30
-[68096.573567] RSP: 0018:ffff88011ea83f38  EFLAGS: 00000093
-[68096.580540] RAX: 00000000000044b8 RBX: ffff88011ea94340 RCX: 00000000000044ba
-[68096.589462] RDX: 00000000000044ba RSI: 0000000000000002 RDI: ffff88011ea8e120
-[68096.598358] RBP: ffff88011ea8e120 R08: ffff880118f90000 R09: ffffffff81659a40
-[68096.607221] R10: 0000000000000001 R11: 0000000000aaaaaa R12: ffff88011778b480
-[68096.616089] R13: 0000000000000000 R14: 00000000ffffffff R15: 0000000000000003
-[68096.624935] FS:  0000000000000000(0000) GS:ffff88011ea80000(0000) knlGS:0000000000000000
-[68096.634839] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[68096.642219] CR2: 0000000000000459 CR3: 000000000180e000 CR4: 00000000001407e0
-[68096.651110] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[68096.659983] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[68096.668893] Stack:
-[68096.672344]  ffffffff81083ada 0000000200000200 0000000101026f07 ffff880118e9dfd8
-[68096.681704]  ffff88011ea8e680 0000000000000046 ffff88011ea94340 0000000000000000
-[68096.691055]  ffff88011778b480 0000000000000000 00000000ffffffff ffff880118f0f3b0
-[68096.700405] Call Trace:
-[68096.704358]  <IRQ> 
-[68096.706438]  [<ffffffff81083ada>] ? hrtimer_interrupt+0x4a/0x220
-[68096.715650]  [<ffffffff81042adc>] ? smp_trace_apic_timer_interrupt+0x3c/0xc0
-[68096.724497]  [<ffffffff815199dd>] ? trace_apic_timer_interrupt+0x6d/0x80
-[68096.732944]  <EOI> 
-[68096.735035]  [<ffffffff81089491>] ? finish_task_switch+0x41/0xf0
-[68096.744172]  [<ffffffff810894f0>] ? finish_task_switch+0xa0/0xf0
-[68096.751753]  [<ffffffff8150d606>] ? __schedule+0x2a6/0x6e0
-[68096.758755]  [<ffffffff81086e56>] ? smpboot_thread_fn+0xc6/0x1a0
-[68096.766274]  [<ffffffff81086d90>] ? SyS_setgroups+0x180/0x180
-[68096.773563]  [<ffffffff81080811>] ? kthread+0xc1/0xe0
-[68096.780091]  [<ffffffff81080750>] ? kthread_create_on_node+0x180/0x180
-[68096.788182]  [<ffffffff81518b4c>] ? ret_from_fork+0x7c/0xb0
-[68096.795225]  [<ffffffff81080750>] ? kthread_create_on_node+0x180/0x180
-[68096.803272] Code: 0f 1f 84 00 00 00 00 00 b8 00 00 01 00 f0 0f c1 07 89 c2 c1 ea 10 66 39 c2 89 d1 75 01 c3 0f b7 07 66 39 d0 74 f7 f3 90 0f b7 07 <66> 39 c8 75 f6 c3 0f 1f 80 00 00 00 00 fa 66 0f 1f 44 00 00 b8 
-[68096.827145] NMI backtrace for cpu 7
-[68096.827146] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 295.349 msecs
-[68096.843512] CPU: 7 PID: 28456 Comm: perf_fuzzer Not tainted 3.14.0-rc7 #1
-[68096.851934] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[68096.861034] task: ffff8801128cb2f0 ti: ffff8800d058a000 task.ti: ffff8800d058a000
-[68096.870215] RIP: 0010:[<ffffffff812e050f>]  [<ffffffff812e050f>] delay_tsc+0x2f/0x70
-[68096.879746] RSP: 0000:ffff88011ebc3e30  EFLAGS: 00000046
-[68096.886640] RAX: 0000000000000007 RBX: 00000000754b1baf RCX: 00000000019e1478
-[68096.895523] RDX: 00000000754b1bc7 RSI: 0000000000000200 RDI: 00000000003358a8
-[68096.904356] RBP: 00000000003358a8 R08: 0000000000000000 R09: 00000000000023f2
-[68096.913202] R10: 0000000000000001 R11: 0000000000aaaaaa R12: 0000000000000007
-[68096.922017] R13: ffffffff818b1fc0 R14: 000000000000001b R15: ffffffff818411c0
-[68096.930842] FS:  00007fd6a1db6700(0000) GS:ffff88011ebc0000(0000) knlGS:0000000000000000
-[68096.940671] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[68096.948029] CR2: 000000000040a570 CR3: 00000000cfaab000 CR4: 00000000001407e0
-[68096.956832] DR0: 0000000000000000 DR1: 0000000001068000 DR2: 0000000001068000
-[68096.965664] DR3: 0000000001068000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[68096.974481] Stack:
-[68096.977811]  0000000000002710 ffffffff818411c0 0000000000000007 ffffffff81044532
-[68096.987022]  ffff88011ebce820 ffffffff810baa30 0000000000000002 0000000000000083
-[68096.996215]  0000000200000082 ffff8801128cb2f0 0000000000000001 0000000000000007
-[68097.005394] Call Trace:
-[68097.009221]  <IRQ> 
-[68097.011324]  [<ffffffff81044532>] ? arch_trigger_all_cpu_backtrace+0xb2/0xd0
-[68097.021399]  [<ffffffff810baa30>] ? rcu_check_callbacks+0x600/0x620
-[68097.029307]  [<ffffffff810c4890>] ? tick_sched_handle.isra.16+0x60/0x60
-[68097.037547]  [<ffffffff8106d65b>] ? update_process_times+0x3b/0x60
-[68097.045298]  [<ffffffff810c484b>] ? tick_sched_handle.isra.16+0x1b/0x60
-[68097.053535]  [<ffffffff810c48c7>] ? tick_sched_timer+0x37/0x60
-[68097.060857]  [<ffffffff810833d2>] ? __run_hrtimer+0x62/0x1b0
-[68097.067983]  [<ffffffff81083b79>] ? hrtimer_interrupt+0xe9/0x220
-[68097.075518]  [<ffffffff81042adc>] ? smp_trace_apic_timer_interrupt+0x3c/0xc0
-[68097.084170]  [<ffffffff815199dd>] ? trace_apic_timer_interrupt+0x6d/0x80
-[68097.092479]  <EOI> 
-[68097.094538] Code: fd 53 65 44 8b 24 25 c4 b0 00 00 66 66 90 0f ae e8 e8 b6 a8 d3 ff 66 90 89 c3 eb 0f f3 90 65 8b 04 25 c4 b0 00 00 41 39 c4 75 1a <66> 66 90 0f ae e8 e8 96 a8 d3 ff 66 90 89 c2 29 d8 39 e8 72 dc 
-[68097.119697] NMI backtrace for cpu 0
-[68097.119699] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 587.901 msecs
-[68097.136033] CPU: 0 PID: 26910 Comm: perf_fuzzer Not tainted 3.14.0-rc7 #1
-[68097.144438] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[68097.153497] task: ffff880113046960 ti: ffff880036b04000 task.ti: ffff880036b04000
-[68097.162663] RIP: 0010:[<ffffffff81510a77>]  [<ffffffff81510a77>] _raw_spin_lock_irqsave+0x37/0x40
-[68097.173395] RSP: 0018:ffff880036b05a60  EFLAGS: 00000002
-[68097.180263] RAX: 00000000000044b9 RBX: ffff88011ea8e160 RCX: 00000000000044b9
-[68097.189094] RDX: 00000000000044b8 RSI: 0000000000000286 RDI: ffff88011ea8e120
-[68097.197938] RBP: ffff880036b05ae0 R08: ffff880036b04000 R09: 0000000000000000
-[68097.206773] R10: ffff880118e69978 R11: 0000000000005cfc R12: ffff880036b05a88
-[68097.215606] R13: ffff880118075364 R14: ffff880118075364 R15: 0000000000000000
-[68097.224444] FS:  00007fd6a1db6700(0000) GS:ffff88011ea00000(0000) knlGS:0000000000000000
-[68097.234320] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[68097.241654] CR2: 000000000069d5b8 CR3: 00000000ce667000 CR4: 00000000001407f0
-[68097.250504] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[68097.259331] DR3: 0000000001068000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[68097.268152] Stack:
-[68097.271519]  ffffffff8108320b ffff880036b05ba8 ffff880036b05ab0 0000000000000000
-[68097.280793]  ffffffff81083287 0000000000000000 ffff880036b05ba8 000000000000c350
-[68097.290003]  0000000000000000 ffffffff8150d192 ffff880036b05ab0 ffff88011ea8ec60
-[68097.299240] Call Trace:
-[68097.303071]  [<ffffffff8108320b>] ? lock_hrtimer_base.isra.19+0x1b/0x40
-[68097.311383]  [<ffffffff81083287>] ? hrtimer_try_to_cancel+0x17/0xd0
-[68097.319347]  [<ffffffff8150d192>] ? schedule_hrtimeout_range_clock+0xb2/0x140
-[68097.328203]  [<ffffffff81083170>] ? hrtimer_get_res+0x40/0x40
-[68097.335544]  [<ffffffff8150d16f>] ? schedule_hrtimeout_range_clock+0x8f/0x140
-[68097.344354]  [<ffffffff81198ce0>] ? poll_schedule_timeout+0x40/0x60
-[68097.352215]  [<ffffffff8119a232>] ? do_sys_poll+0x422/0x540
-[68097.359345]  [<ffffffff81198e60>] ? poll_select_copy_remaining+0x130/0x130
-[68097.367843]  [<ffffffff81198e60>] ? poll_select_copy_remaining+0x130/0x130
-[68097.376327]  [<ffffffff81198e60>] ? poll_select_copy_remaining+0x130/0x130
-[68097.384773]  [<ffffffff81198e60>] ? poll_select_copy_remaining+0x130/0x130
-[68097.393211]  [<ffffffff81198e60>] ? poll_select_copy_remaining+0x130/0x130
-[68097.401624]  [<ffffffff81198e60>] ? poll_select_copy_remaining+0x130/0x130
-[68097.410057]  [<ffffffff81198e60>] ? poll_select_copy_remaining+0x130/0x130
-[68097.418498]  [<ffffffff81198e60>] ? poll_select_copy_remaining+0x130/0x130
-[68097.426930]  [<ffffffff81198e60>] ? poll_select_copy_remaining+0x130/0x130
-[68097.435322]  [<ffffffff8119a408>] ? SyS_poll+0x58/0xf0
-[68097.441857]  [<ffffffff81518bfd>] ? system_call_fastpath+0x1a/0x1f
-[68097.449501] Code: 0f 1f 44 00 00 ba 00 00 01 00 f0 0f c1 17 89 d1 c1 e9 10 66 39 d1 89 c8 75 04 48 89 f0 c3 0f b7 17 66 39 d1 74 f4 f3 90 0f b7 17 <66> 39 d0 75 f6 eb e8 90 90 41 55 48 39 f7 41 54 49 89 d4 55 48 
-[68097.473168] NMI backtrace for cpu 4
-[68097.473169] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 941.372 msecs
-[68097.489525] CPU: 4 PID: 0 Comm: swapper/4 Not tainted 3.14.0-rc7 #1
-[68097.497414] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[68097.506532] task: ffff880118e9e9e0 ti: ffff880118ea2000 task.ti: ffff880118ea2000
-[68097.515682] RIP: 0010:[<ffffffff8133d620>]  [<ffffffff8133d620>] intel_idle+0xd0/0x160
-[68097.525401] RSP: 0000:ffff880118ea3e70  EFLAGS: 00000046
-[68097.532220] RAX: 0000000000000032 RBX: 0000000000000010 RCX: 0000000000000001
-[68097.541064] RDX: 0000000000000000 RSI: ffffffff81876880 RDI: 0000000000000004
-[68097.549884] RBP: 0000000000000005 R08: ffff88011eb11194 R09: 0000000000000018
-[68097.558707] R10: 00000000001e8429 R11: 00000000002be43c R12: 0000000000000032
-[68097.567530] R13: 0000000000000004 R14: 0000000000000005 R15: ffffffff81876a50
-[68097.576342] FS:  0000000000000000(0000) GS:ffff88011eb00000(0000) knlGS:0000000000000000
-[68097.586234] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[68097.593584] CR2: 000000000040a570 CR3: 000000000180e000 CR4: 00000000001407e0
-[68097.602457] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000001068000
-[68097.611265] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[68097.620084] Stack:
-[68097.623359]  000000048101adf5 ffff88011eb1a500 ffff880118ea3ec8 ffffffff81876880
-[68097.632509]  00003de81e705915 ffffffff813f0b5b 00000000fffffff0 0000000000000005
-[68097.641678]  0000000000000004 ffffffff81876880 0000000000000000 ffff88011eb1a500
-[68097.650843] Call Trace:
-[68097.654603]  [<ffffffff813f0b5b>] ? cpuidle_enter_state+0x3b/0xc0
-[68097.662291]  [<ffffffff813f0c89>] ? cpuidle_idle_call+0xa9/0x1d0
-[68097.669888]  [<ffffffff8101ca95>] ? arch_cpu_idle+0x5/0x30
-[68097.676904]  [<ffffffff810b0315>] ? cpu_startup_entry+0x95/0x230
-[68097.684442] Code: c8 00 00 48 89 d1 48 2d c8 1f 00 00 0f 01 c8 65 48 8b 04 25 30 c8 00 00 48 8b 80 38 e0 ff ff a8 08 75 08 b1 01 4c 89 e0 0f 01 c9 <65> 48 8b 04 25 30 c8 00 00 83 a0 3c e0 ff ff fb 0f ae f0 65 48 
-[68097.708259] NMI backtrace for cpu 6
-[68097.708261] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 1176.462 msecs
-[68097.724610] CPU: 6 PID: 0 Comm: swapper/6 Not tainted 3.14.0-rc7 #1
-[68097.732503] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[68097.741595] task: ffff880118eab2f0 ti: ffff880118eac000 task.ti: ffff880118eac000
-[68097.750837] RIP: 0010:[<ffffffff8133d620>]  [<ffffffff8133d620>] intel_idle+0xd0/0x160
-[68097.760583] RSP: 0000:ffff880118eade70  EFLAGS: 00000046
-[68097.767471] RAX: 0000000000000032 RBX: 0000000000000010 RCX: 0000000000000001
-[68097.776322] RDX: 0000000000000000 RSI: ffffffff81876880 RDI: 0000000000000006
-[68097.785115] RBP: 0000000000000005 R08: ffff88011eb91184 R09: 0000000000000014
-[68097.793912] R10: 00000000003d08e8 R11: 00000000003d091f R12: 0000000000000032
-[68097.802781] R13: 0000000000000004 R14: 0000000000000005 R15: ffffffff81876a50
-[68097.811514] FS:  0000000000000000(0000) GS:ffff88011eb80000(0000) knlGS:0000000000000000
-[68097.821324] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[68097.828660] CR2: 000000000040a570 CR3: 000000000180e000 CR4: 00000000001407e0
-[68097.837554] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000001068000
-[68097.846326] DR3: 0000000001068000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[68097.855136] Stack:
-[68097.858454]  000000068101adf5 ffff88011eb9a500 ffff880118eadec8 ffffffff81876880
-[68097.867643]  00003de774a97afa ffffffff813f0b5b 00000000fffffff0 0000000000000005
-[68097.876865]  0000000000000006 ffffffff81876880 0000000000000000 ffff88011eb9a500
-[68097.886026] Call Trace:
-[68097.889806]  [<ffffffff813f0b5b>] ? cpuidle_enter_state+0x3b/0xc0
-[68097.897621]  [<ffffffff813f0c89>] ? cpuidle_idle_call+0xa9/0x1d0
-[68097.905233]  [<ffffffff8101ca95>] ? arch_cpu_idle+0x5/0x30
-[68097.912283]  [<ffffffff810b0315>] ? cpu_startup_entry+0x95/0x230
-[68097.919959] Code: c8 00 00 48 89 d1 48 2d c8 1f 00 00 0f 01 c8 65 48 8b 04 25 30 c8 00 00 48 8b 80 38 e0 ff ff a8 08 75 08 b1 01 4c 89 e0 0f 01 c9 <65> 48 8b 04 25 30 c8 00 00 83 a0 3c e0 ff ff fb 0f ae f0 65 48 
-[68097.943945] NMI backtrace for cpu 3
-[68097.943947] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 1412.149 msecs
-[68097.960436] CPU: 3 PID: 0 Comm: swapper/3 Not tainted 3.14.0-rc7 #1
-[68097.968391] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[68097.977590] task: ffff880118e9f2b0 ti: ffff880118ea0000 task.ti: ffff880118ea0000
-[68097.986867] RIP: 0010:[<ffffffff8133d620>]  [<ffffffff8133d620>] intel_idle+0xd0/0x160
-[68097.996682] RSP: 0018:ffff880118ea1e70  EFLAGS: 00000046
-[68098.003583] RAX: 0000000000000032 RBX: 0000000000000010 RCX: 0000000000000001
-[68098.012479] RDX: 0000000000000000 RSI: ffffffff81876880 RDI: 0000000000000003
-[68098.021334] RBP: 0000000000000005 R08: ffff88011ead1184 R09: 0000000000000018
-[68098.030208] R10: 00000000003d08e8 R11: 00000000007a1206 R12: 0000000000000032
-[68098.039026] R13: 0000000000000004 R14: 0000000000000005 R15: ffffffff81876a50
-[68098.047812] FS:  0000000000000000(0000) GS:ffff88011eac0000(0000) knlGS:0000000000000000
-[68098.057638] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[68098.064946] CR2: 000000000069d488 CR3: 000000000180e000 CR4: 00000000001407e0
-[68098.073771] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[68098.082621] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[68098.091433] Stack:
-[68098.094770]  000000038101adf5 ffff88011eada500 ffff880118ea1ec8 ffffffff81876880
-[68098.103978]  00003de7724722e3 ffffffff813f0b5b 00000000fffffff0 0000000000000005
-[68098.113216]  0000000000000003 ffffffff81876880 0000000000000000 ffff88011eada500
-[68098.122417] Call Trace:
-[68098.126227]  [<ffffffff813f0b5b>] ? cpuidle_enter_state+0x3b/0xc0
-[68098.134001]  [<ffffffff813f0c89>] ? cpuidle_idle_call+0xa9/0x1d0
-[68098.141643]  [<ffffffff8101ca95>] ? arch_cpu_idle+0x5/0x30
-[68098.148717]  [<ffffffff810b0315>] ? cpu_startup_entry+0x95/0x230
-[68098.156312] Code: c8 00 00 48 89 d1 48 2d c8 1f 00 00 0f 01 c8 65 48 8b 04 25 30 c8 00 00 48 8b 80 38 e0 ff ff a8 08 75 08 b1 01 4c 89 e0 0f 01 c9 <65> 48 8b 04 25 30 c8 00 00 83 a0 3c e0 ff ff fb 0f ae f0 65 48 
-[68098.180354] NMI backtrace for cpu 1
-[68098.180355] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 1648.557 msecs
-[68098.197010] CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.14.0-rc7 #1
-[68098.204971] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[68098.214192] task: ffff880118e929a0 ti: ffff880118e98000 task.ti: ffff880118e98000
-[68098.223499] RIP: 0010:[<ffffffff8133d620>]  [<ffffffff8133d620>] intel_idle+0xd0/0x160
-[68098.233299] RSP: 0018:ffff880118e99e70  EFLAGS: 00000046
-[68098.240237] RAX: 0000000000000032 RBX: 0000000000000010 RCX: 0000000000000001
-[68098.249115] RDX: 0000000000000000 RSI: ffffffff81876880 RDI: 0000000000000001
-[68098.257974] RBP: 0000000000000005 R08: ffff88011ea5118c R09: 0000000000001ecf
-[68098.266859] R10: 00000000ffffffff R11: 0000000000007cb3 R12: 0000000000000032
-[68098.275703] R13: 0000000000000004 R14: 0000000000000005 R15: ffffffff81876a50
-[68098.284578] FS:  0000000000000000(0000) GS:ffff88011ea40000(0000) knlGS:0000000000000000
-[68098.294484] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[68098.301820] CR2: 00007fff3a0283f8 CR3: 000000000180e000 CR4: 00000000001407e0
-[68098.310655] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[68098.319509] DR3: 0000000001068000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[68098.328369] Stack:
-[68098.331737]  000000018101adf5 ffff88011ea5a500 ffff880118e99ec8 ffffffff81876880
-[68098.340937]  00003de8450a9810 ffffffff813f0b5b 00000000fffffff0 0000000000000005
-[68098.350202]  0000000000000001 ffffffff81876880 0000000000000000 ffff88011ea5a500
-[68098.359447] Call Trace:
-[68098.363268]  [<ffffffff813f0b5b>] ? cpuidle_enter_state+0x3b/0xc0
-[68098.370997]  [<ffffffff813f0c89>] ? cpuidle_idle_call+0xa9/0x1d0
-[68098.378687]  [<ffffffff8101ca95>] ? arch_cpu_idle+0x5/0x30
-[68098.385753]  [<ffffffff810b0315>] ? cpu_startup_entry+0x95/0x230
-[68098.393393] Code: c8 00 00 48 89 d1 48 2d c8 1f 00 00 0f 01 c8 65 48 8b 04 25 30 c8 00 00 48 8b 80 38 e0 ff ff a8 08 75 08 b1 01 4c 89 e0 0f 01 c9 <65> 48 8b 04 25 30 c8 00 00 83 a0 3c e0 ff ff fb 0f ae f0 65 48 
-[68098.417424] NMI backtrace for cpu 5
-[68098.417426] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 1885.605 msecs
-[68098.433041] CPU: 5 PID: 0 Comm: swapper/5 Not tainted 3.14.0-rc7 #1
-[68098.440461] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[68098.449101] task: ffff880118e9e110 ti: ffff880118ea6000 task.ti: ffff880118ea6000
-[68098.457795] RIP: 0010:[<ffffffff8133d620>]  [<ffffffff8133d620>] intel_idle+0xd0/0x160
-[68098.466996] RSP: 0000:ffff880118ea7e70  EFLAGS: 00000046
-[68098.473382] RAX: 0000000000000032 RBX: 0000000000000010 RCX: 0000000000000001
-[68098.481728] RDX: 0000000000000000 RSI: ffffffff81876880 RDI: 0000000000000005
-[68098.490039] RBP: 0000000000000005 R08: ffff88011eb5118c R09: 0000000000001ecf
-[68098.498346] R10: 00000000ffffffff R11: 0000000000007cc6 R12: 0000000000000032
-[68098.506646] R13: 0000000000000004 R14: 0000000000000005 R15: ffffffff81876a50
-[68098.514922] FS:  0000000000000000(0000) GS:ffff88011eb40000(0000) knlGS:0000000000000000
-[68098.524237] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[68098.531049] CR2: 000000000040a570 CR3: 000000000180e000 CR4: 00000000001407e0
-[68098.539336] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000001068000
-[68098.547621] DR3: 0000000001068000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[68098.555962] Stack:
-[68098.558809]  000000058101adf5 ffff88011eb5a500 ffff880118ea7ec8 ffffffff81876880
-[68098.567491]  00003de84918106f ffffffff813f0b5b 00000000fffffff0 0000000000000005
-[68098.576179]  0000000000000005 ffffffff81876880 0000000000000000 ffff88011eb5a500
-[68098.584862] Call Trace:
-[68098.588160]  [<ffffffff813f0b5b>] ? cpuidle_enter_state+0x3b/0xc0
-[68098.595371]  [<ffffffff813f0c89>] ? cpuidle_idle_call+0xa9/0x1d0
-[68098.602509]  [<ffffffff8101ca95>] ? arch_cpu_idle+0x5/0x30
-[68098.609060]  [<ffffffff810b0315>] ? cpu_startup_entry+0x95/0x230
-[68098.616137] Code: c8 00 00 48 89 d1 48 2d c8 1f 00 00 0f 01 c8 65 48 8b 04 25 30 c8 00 00 48 8b 80 38 e0 ff ff a8 08 75 08 b1 01 4c 89 e0 0f 01 c9 <65> 48 8b 04 25 30 c8 00 00 83 a0 3c e0 ff ff fb 0f ae f0 65 48 
-[68098.639064] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 2107.244 msecs
-
+ arch/x86/kernel/aperture_64.c |   20 +-------------------
+ 1 file changed, 1 insertion(+), 19 deletions(-)
