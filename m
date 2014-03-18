@@ -1,133 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533AbaCRUIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 16:08:18 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:54781 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932348AbaCRUIN (ORCPT
+	id S932620AbaCRUIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:08:46 -0400
+Received: from mail-yk0-f169.google.com ([209.85.160.169]:63061 "EHLO
+	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932348AbaCRUIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 16:08:13 -0400
-From: Silvio F <silvio.fricke@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: daeseok.youn@gmail.com, silvio.fricke@gmail.com, silvio@port1024.net
-Subject: [PATCH] staging: unisys: kmalloc/memset to kzalloc conversation
-Date: Tue, 18 Mar 2014 21:07:51 +0100
-Message-Id: <1395173271-13190-2-git-send-email-silvio.fricke@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1395173271-13190-1-git-send-email-silvio.fricke@gmail.com>
-References: <4376102.svyTz8ADVT@daeseok-laptop.cloud.net>
- <1395173271-13190-1-git-send-email-silvio.fricke@gmail.com>
+	Tue, 18 Mar 2014 16:08:44 -0400
+Date: Tue, 18 Mar 2014 17:08:37 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 3/9] perf hists: Add support for showing relative
+ percentage
+Message-ID: <20140318200837.GG6482@ghostprotocols.net>
+References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
+ <1394437440-11609-4-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394437440-11609-4-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch solves the Coccinelle warning: "kzalloc should be used
-instead of kmalloc/memset"
+Em Mon, Mar 10, 2014 at 04:43:54PM +0900, Namhyung Kim escreveu:
+> @@ -695,12 +695,17 @@ static void hists__remove_entry_filter(struct hists *hists, struct hist_entry *h
+>  	if (h->filtered)
+>  		return;
+>  
+> -	++hists->nr_entries;
+> -	if (h->ms.unfolded)
+> +	hists->nr_entries++;
+> +	hists->nr_non_filtered_entries++;
 
-This patch is a fixup for
+Why not keep existing practice? prefix or suffix generates the same
+code, changing it from prefix to suffix increment just adds noise to the
+patch :-\
 
-	linux-next: 97a84f1203786985856a0d4b49b1d7cc387238ce
-	"Staging: unisys: Replace kmalloc/memset with kzalloc"
+Also, this is why I was asking about nr_entries and total_period being
+invariant, looking at this function we can see it is _not_ invariant, as
+when we apply/remove filters we touch them.
 
-Signed-off-by: Silvio F <silvio.fricke@gmail.com>
----
- drivers/staging/unisys/include/uisutils.h           | 5 +----
- drivers/staging/unisys/virthba/virthba.c            | 3 +--
- drivers/staging/unisys/virtpci/virtpci.c            | 3 +--
- drivers/staging/unisys/visorutil/memregion_direct.c | 5 ++---
- drivers/staging/unisys/visorutil/periodic_work.c    | 5 ++---
- 5 files changed, 7 insertions(+), 14 deletions(-)
+This is why I made the comment (in a private conversation) about having
+a invariant_total_period invariant_nr_entries pair (I think I used some
+other naming) while knowing that the existing variables nr_entries and
+total_period are actually subjected to the filters being used.
 
-diff --git a/drivers/staging/unisys/include/uisutils.h b/drivers/staging/unisys/include/uisutils.h
-index 81b5d9b..0dd9c80 100644
---- a/drivers/staging/unisys/include/uisutils.h
-+++ b/drivers/staging/unisys/include/uisutils.h
-@@ -190,10 +190,7 @@ struct chaninfo {
- }
- 
- #define ALLOC_CMDRSP(cmdrsp) { \
--	cmdrsp = kmalloc(SIZEOF_CMDRSP, GFP_ATOMIC); \
--	if (cmdrsp != NULL) { \
--		memset(cmdrsp, 0, SIZEOF_CMDRSP); \
--	} \
-+	cmdrsp = kzalloc(SIZEOF_CMDRSP, GFP_ATOMIC); \
- }
- 
- /* This is a hack until we fix IOVM to initialize the channel header
-diff --git a/drivers/staging/unisys/virthba/virthba.c b/drivers/staging/unisys/virthba/virthba.c
-index 8aefaa8..d99a38d 100644
---- a/drivers/staging/unisys/virthba/virthba.c
-+++ b/drivers/staging/unisys/virthba/virthba.c
-@@ -402,9 +402,8 @@ process_disk_notify(struct Scsi_Host *shost, struct uiscmdrsp *cmdrsp)
- 	struct diskaddremove *dar;
- 	unsigned long flags;
- 
--	dar = kmalloc(sizeof(struct diskaddremove), GFP_ATOMIC);
-+	dar = kzalloc(sizeof(struct diskaddremove), GFP_ATOMIC);
- 	if (dar) {
--		memset(dar, 0, sizeof(struct diskaddremove));
- 		dar->add = cmdrsp->disknotify.add;
- 		dar->shost = shost;
- 		dar->channel = cmdrsp->disknotify.channel;
-diff --git a/drivers/staging/unisys/virtpci/virtpci.c b/drivers/staging/unisys/virtpci/virtpci.c
-index 1b64632..8e34650 100644
---- a/drivers/staging/unisys/virtpci/virtpci.c
-+++ b/drivers/staging/unisys/virtpci/virtpci.c
-@@ -254,13 +254,12 @@ static int add_vbus(struct add_vbus_guestpart *addparams)
- {
- 	int ret;
- 	struct device *vbus;
--	vbus = kmalloc(sizeof(struct device), GFP_ATOMIC);
-+	vbus = kzalloc(sizeof(struct device), GFP_ATOMIC);
- 
- 	POSTCODE_LINUX_2(VPCI_CREATE_ENTRY_PC, POSTCODE_SEVERITY_INFO);
- 	if (!vbus)
- 		return 0;
- 
--	memset(vbus, 0, sizeof(struct device));
- 	dev_set_name(vbus, "vbus%d", addparams->busNo);
- 	vbus->release = virtpci_bus_release;
- 	vbus->parent = &virtpci_rootbus_device;	/* root bus is parent */
-diff --git a/drivers/staging/unisys/visorutil/memregion_direct.c b/drivers/staging/unisys/visorutil/memregion_direct.c
-index 82c651d..b9b61e8 100644
---- a/drivers/staging/unisys/visorutil/memregion_direct.c
-+++ b/drivers/staging/unisys/visorutil/memregion_direct.c
-@@ -41,13 +41,12 @@ MEMREGION *
- visor_memregion_create(HOSTADDRESS physaddr, ulong nbytes)
- {
- 	MEMREGION *rc = NULL;
--	MEMREGION *memregion = kmalloc(sizeof(MEMREGION),
--				       GFP_KERNEL|__GFP_NORETRY);
-+	MEMREGION *memregion = kzalloc(sizeof(MEMREGION),
-+				       GFP_KERNEL | __GFP_NORETRY);
- 	if (memregion == NULL) {
- 		ERRDRV("visor_memregion_create allocation failed");
- 		return NULL;
- 	}
--	memset(memregion, 0, sizeof(MEMREGION));
- 	memregion->physaddr = physaddr;
- 	memregion->nbytes = nbytes;
- 	memregion->overlapped = FALSE;
-diff --git a/drivers/staging/unisys/visorutil/periodic_work.c b/drivers/staging/unisys/visorutil/periodic_work.c
-index cc1c678..fb1e894 100644
---- a/drivers/staging/unisys/visorutil/periodic_work.c
-+++ b/drivers/staging/unisys/visorutil/periodic_work.c
-@@ -56,13 +56,12 @@ PERIODIC_WORK *visor_periodic_work_create(ulong jiffy_interval,
- 					  void *workfuncarg,
- 					  const char *devnam)
- {
--	PERIODIC_WORK *periodic_work = kmalloc(sizeof(PERIODIC_WORK),
--					       GFP_KERNEL|__GFP_NORETRY);
-+	PERIODIC_WORK *periodic_work = kzalloc(sizeof(PERIODIC_WORK),
-+					       GFP_KERNEL | __GFP_NORETRY);
- 	if (periodic_work == NULL) {
- 		ERRDRV("periodic_work allocation failed ");
- 		return NULL;
- 	}
--	memset(periodic_work, '\0', sizeof(PERIODIC_WORK));
- 	rwlock_init(&periodic_work->lock);
- 	periodic_work->jiffy_interval = jiffy_interval;
- 	periodic_work->workqueue = workqueue;
--- 
-1.9.0
+I.e. to avoid confusion we need to make total_entries and nr_entries
+never change when a filter is applied, touching only two new variables
+for non_filtered total_period and nr_entries.
 
+I'll try doing it if you don't do it first, but will first process some
+more patches and submit what I already processed.
+
+- Arnaldo
+
+> +	if (h->ms.unfolded) {
+>  		hists->nr_entries += h->nr_rows;
+> +		hists->nr_non_filtered_entries += h->nr_rows;
+> +	}
+>  	h->row_offset = 0;
+>  	hists->stats.total_period += h->stat.period;
+> +	hists->stats.total_non_filtered_period += h->stat.period;
+>  	hists->stats.nr_events[PERF_RECORD_SAMPLE] += h->stat.nr_events;
+> +	hists->stats.nr_non_filtered_samples += h->stat.nr_events;
+>  
+>  	hists__calc_col_len(hists, h);
+>  }
+> @@ -723,7 +728,9 @@ void hists__filter_by_dso(struct hists *hists)
+>  	struct rb_node *nd;
+>  
+>  	hists->nr_entries = hists->stats.total_period = 0;
+> +	hists->nr_non_filtered_entries = hists->stats.total_non_filtered_period = 0;
+>  	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
+> +	hists->stats.nr_non_filtered_samples = 0;
+>  	hists__reset_col_len(hists);
+>  
+>  	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+> @@ -756,7 +763,9 @@ void hists__filter_by_thread(struct hists *hists)
+>  	struct rb_node *nd;
+>  
+>  	hists->nr_entries = hists->stats.total_period = 0;
+> +	hists->nr_non_filtered_entries = hists->stats.total_non_filtered_period = 0;
+>  	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
+> +	hists->stats.nr_non_filtered_samples = 0;
+>  	hists__reset_col_len(hists);
+>  
+>  	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+> @@ -787,7 +796,9 @@ void hists__filter_by_symbol(struct hists *hists)
+>  	struct rb_node *nd;
+>  
+>  	hists->nr_entries = hists->stats.total_period = 0;
+> +	hists->nr_non_filtered_entries = hists->stats.total_non_filtered_period = 0;
+>  	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
+> +	hists->stats.nr_non_filtered_samples = 0;
+>  	hists__reset_col_len(hists);
+>  
+>  	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+> index a149f1adaae4..213551469f36 100644
+> --- a/tools/perf/util/hist.h
+> +++ b/tools/perf/util/hist.h
+> @@ -41,6 +41,7 @@ struct events_stats {
+>  	u64 total_lost;
+>  	u64 total_invalid_chains;
+>  	u32 nr_events[PERF_RECORD_HEADER_MAX];
+> +	u32 nr_non_filtered_samples;
+>  	u32 nr_lost_warned;
+>  	u32 nr_unknown_events;
+>  	u32 nr_invalid_chains;
+> @@ -84,6 +85,7 @@ struct hists {
+>  	struct rb_root		entries;
+>  	struct rb_root		entries_collapsed;
+>  	u64			nr_entries;
+> +	u64			nr_non_filtered_entries;
+>  	const struct thread	*thread_filter;
+>  	const struct dso	*dso_filter;
+>  	const char		*uid_filter_str;
+> -- 
+> 1.7.11.7
