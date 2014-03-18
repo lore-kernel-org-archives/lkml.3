@@ -1,121 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349AbaCRNBd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 09:01:33 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:14043 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148AbaCRNBa (ORCPT
+	id S1755358AbaCRNDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 09:03:13 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45166 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139AbaCRNDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 09:01:30 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-6f-532843a9b48f
-Date: Tue, 18 Mar 2014 22:01:28 +0900
-From: Cho KyongHo <pullip.cho@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: Re: [PATCH v11 20/27] iommu/exynos: allow having multiple System MMUs
- for a master H/W
-Message-id: <20140318220128.564740c88d06b86c9c5c10e3@samsung.com>
-In-reply-to: <53232A53.4040708@samsung.com>
-References: <20140314141050.c8bedcb66532d277c496796d@samsung.com>
- <53232A53.4040708@samsung.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t8zY92VzhrBBrOOs1jcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S2mLDrManH4TTurxck/
-	vYwW62e8ZrGYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
-	5DyuHD3DFMAZxWWTkpqTWZZapG+XwJVxaHU7e8F8gYo/KyayNTB+4uli5OSQEDCR6H3Tzgxh
-	i0lcuLeerYuRi0NIYBmjxLK1nSwwRVfm/mSESCxilFj5vJ8JwpnMJHF0zxEgh4ODRUBV4n2X
-	P0gDm4CWxOq5xxlBbBEBFYnLp6aDNTMLNLJKPLq/jB0kISyQKPHw0yQmEJtXwFFizuZ/rCA2
-	p4C2xP1d05lBZgoJJEm0f06EOMJC4kJTBztEuaDEj8n3wI5jBtq1eVsTK4QtL7F5zVtmkF0S
-	Aks5JOYs/w32GouAgMS3yYdYQGZKCMhKbDoA9bGkxMEVN1gmMIrNQjJ2FpKxs5CMXcDIvIpR
-	NLUguaA4Kb3IUK84Mbe4NC9dLzk/dxMjJNZ7dzDePmB9iDEZaOVEZinR5HxgqsgriTc0NjOy
-	MDUxNTYytzQjTVhJnDfpYVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsYtURV2yluX1xbu
-	tetzFfim6ZT1QCegd8bamz0e9fYLHRU+KC78wvB/aW1kk7a4u9fBM2qPP8d9tHy+0bHAuzjv
-	75fI44vkTjsXhu88uGbP30kMK5wteLQCmkye7z1y1H/XnCfxPFycl3VXvjCYeFtSZMODGKnz
-	f853zq+77u65mrOi+cbH9U1KLMUZiYZazEXFiQCmkDfECwMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKKsWRmVeSWpSXmKPExsVy+t9jAd0VzhrBBseOWVvcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S2mLDrManH4TTurxck/
-	vYwW62e8ZrGYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
-	5DyuHD3DFMAZ1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
-	oOuWmQP0gZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x49DqdvaC+QIV
-	f1ZMZGtg/MTTxcjJISFgInFl7k9GCFtM4sK99WxdjFwcQgKLGCVWPu9ngnAmM0kc3XMEyOHg
-	YBFQlXjf5Q/SwCagJbF67nGwZhEBFYnLp6YzgtQzCzSySjy6v4wdJCEskCjx8NMkJhCbV8BR
-	Ys7mf6wgNqeAtsT9XdOZQWYKCSRJtH9OhDjCQuJCUwc7RLmgxI/J91hAbGagXZu3NbFC2PIS
-	m9e8ZZ7AKDALSdksJGWzkJQtYGRexSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRGcSJ5J7WBc
-	2WBxiFGAg1GJh/cFm3qwEGtiWXFl7iFGCQ5mJRFediuNYCHelMTKqtSi/Pii0pzU4kOMycDA
-	mMgsJZqcD0xyeSXxhsYmZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXA
-	ONdZpphHSqA6QPHiGrGjM5WOr61OyOrkCQxSe3dEbue58sKZPCEftoUy5O75Xtk/QSQgTi0x
-	VpvRtspz+f1toZI9Ey35lt69/0qDwWPORTfuy9Ozgo43K07+YHftUEy7mIO+4YezksmJwrJH
-	Xfeb1k5PenVYpkVbonaZVuklVT+Trx8vX7unxFKckWioxVxUnAgAj0DST2gDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 18 Mar 2014 09:03:10 -0400
+Message-ID: <53283D7A.1020409@gmail.com>
+Date: Tue, 18 Mar 2014 13:35:06 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: NeilBrown <neilb@suse.de>
+CC: mtk.manpages@gmail.com,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger@dilger.ca>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: For review: open_by_name_at(2) man page
+References: <53271B69.3000305@gmail.com> <20140318090007.3adee3d0@notabene.brown>
+In-Reply-To: <20140318090007.3adee3d0@notabene.brown>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Mar 2014 17:12:03 +0100, Tomasz Figa wrote:
-> Hi KyongHo,
+On 03/17/2014 11:00 PM, NeilBrown wrote:
+> On Mon, 17 Mar 2014 16:57:29 +0100 "Michael Kerrisk (man-pages)"
+> <mtk.manpages@gmail.com> wrote:
 > 
-> On 14.03.2014 06:10, Cho KyongHo wrote:
-> > Some master device descriptor like fimc-is which is an abstraction
-> > of very complex H/W may have multiple System MMUs. For those devices,
-> > the design of the link between System MMU and its master H/W is needed
-> > to be reconsidered.
-> >
-> > A link structure, sysmmu_list_data is introduced that provides a link
-> > to master H/W and that has a pointer to the device descriptor of a
-> > System MMU. Given a device descriptor of a master H/W, it is possible
-> > to traverse all System MMUs that must be controlled along with the
-> > master H/W.
+>> Hi Aneesh, (and others)
+>>
+>> Below is a man page I've written for name_to_handle_at(2) and
+>> open_by_name_at(2). Would you be willing to review it please,
+>> and let me know of any corrections/improvements?
+>>
+>> Thanks,
+>>
+>> Michael
 > 
-> NAK.
+> Thanks for writing this Michael.  The fact that I can only find very small
+> points to comment on reflects the high quality...
+
+Thanks, Neil. But there was at least one good clanger below :-}.
+
 > 
-> A device driver should handle particular hardware instances separately, 
-> without abstracting a virtual hardware instance consisting of multiple 
-> physical ones.
+>> Otherwise,
+>> .IR dirfd
+>> must be a file descriptor that refers to a directory, and
+>   ^^^^^^^
+>> .I pathname
+>> is interpreted relative to that directory.
 > 
-> If such abstraction is needed, it should be done above the exynos-iommu 
-> driver, e.g. by something like iommu-composite driver that would 
-> aggregate several IOMMUs. Keep in mind that such IOMMUs in a group could 
-> be different, e.g. different Exynos SysMMU versions or even completely 
-> different IPs handled by different drivers.
+> As you clarify later, "must be" is not correct.  Maybe this is just an issue
+> of style, in which case you should obviously keep a consistent style across
+> man pages, but to me it sounds wrong.  I would use "is generally" or similar.
+
+Yep, good point. In fact, what I did was rewrite that section completely, to 
+more clearly describe the distinct cases based on dirfd/pathname/AT_EMPTY_PATH.
+
+
+>> The
+>> .IR mountdirfd
+>> argument is a file descriptor for a directory under
+>> the mount point with respect to which
+>> .IR handle
+>> should be interpreted.
 > 
-> Still, I don't think there is a real need for such abstraction. Instead, 
-> related drivers shall be fixed to properly handle multiple memory 
-> masters and their IOMMUs.
+> mountdirfd does not have to be for a directory.  It can be for any object in
+> the filesystem.  And I would say "in", not "under".
+> If /foo and /foo/bar are both mountpoints, and I want to look up a
+> filehandle for the filesystem mounted at /foo, then opening "/foo/bar"
+> wouldn't work even though /foo/bar is "under" /foo.  And opening "/foo" would
+> work even though "/foo" is not under "/foo/" (is it?).
+
+Good catch. I got deceived by the name of the argument, which in the kernel
+source is indeed 'mountdirfd', implying it must be a descriptor for a directory.
+I'll rename the argument in the man page to 'mount_fd' and fix the description 
+as you suggest here:
+
+>   The
+>   .IR mountfd
+>   argument is a file descriptor for any object (file, directory, etc.) in the
+>   filesystem with respect to which
+
+I did s/filesystem/mounted filesystem/
+
+>   .IR handle
+>   should be interpreted.
 > 
+> ??
+>> .B ESTALE
+>> The specified
+>> .I handle
+>> is no longer valid.
+> 
+> ESTALE is also returned if the filesystem does not support file-handle ->
+> file mappings.
+> On filesystems which don't provide export_operations (/sys /proc ubifs
+> romfs cramfs nfs coda ... several others) name_to_handle_at will produce a
+> generic handle using the 32 bit inode and 32 bit i_generation.
 
-G2D, Scalers and FIMD of Exynos5420 has 2 System MMUs while aother SoC like
-Exynos5250 does not.
+Are you sure about this? When I try name_to_handle_at() on /proc and
+/sys, it gives an error (EOPNOTSUPP). I haven't tested the other
+FSes though, so maybe some of them do what you say.
 
-I don't understand why you are negative to this approach.
-This is the simplest than the others.
+> open_by_name_at given this (or any) filehandle will fail with ESTALE.
+> I don't know how best to include this in the documentation.  Maybe a note
+> earlier noting that some filesystems do not support open_by_name_at(), and
+> you cannot programatically determine which do except by trying.
+> At the same time note that a file handle can become in valid if a file is
+> deleted or for any other reason as determined by the filesystem, and that the
+> error is the same as for when the filesystem doesn't support open_by_name_at.
 
-Let me show you an example.
-FIMC-IS driver just controls MCU in FIMC-IS subsystem and the firmware of
-the MCU controls all other peripherals in the subsystem. Each peripherals
-have their own System MMU. Moreover, the configuration of the peripherals
-varies according to the SoCs.
+I've added text about invalid file handles into NOTES, and noted that not all
+FSes support the production of file handles, but haven't noted ESTALE for the
+latter, since I don't yet know if your statement above is true for some 
+filesystems.
 
-If System MMU driver accepts multiple masters, everything is done in DT.
-But I worry that it is not easy if System MMU driver does not support
-multiple masters. 
 
-Thank you.
+>> For example, one can use the device name in the fifth field of the
+>> .I mountinfo
+>> record to search for the corresponding device UUID via the symbolic links in
+>> .IR /dev/disks/by-uuid .
+>> (A more comfortable way of obtaining the UUID is to use the
+>> .\" e.g., http://stackoverflow.com/questions/6748429/using-libblkid-to-find-uuid-of-a-partition
+>> .BR libblkid (3)
+>> library, which uses the
+>> .I /sys
+>> filesystem to obtain the same information.)
+> 
+> Does it?  My understanding from "man libblkid" (it is a while since I've read
+> the code) is that it either uses info in /dev/disks/by-* or reads directly
+> from the block devices (maybe using /sys to find them?) and interprets the
+> superblock to extract a UUID.
 
-KyongHo
+Thanks (and to Christoph) -- I'll just remove the words "which uses the /sys
+filesystem to obtain the same information"
+
+>> Now delete and re-create the file with the same inode number;
+>> .BR open_by_handle_at ()
+>> recognizes that the file referred to by the file handle no longer exists.
+>>
+>> .in +4n
+>> .nf
+>> $ \fBstat \-\-printf="%i\\n" cecilia.txt\fP       # Display inode number 
+>> 4072121
+>> $ \fBecho 'Warum?' > cecilia.txt\fP
+>> $ \fBstat \-\-printf="%i\\n" cecilia.txt\fP       # Check inode number
+>> 4072121
+>> $ \fBsudo ./t_open_by_handle_at < fh\fP
+>> open_by_handle_at: Stale NFS file handle
+> 
+> Something is very wrong here.
+>    echo foo > somefile
+> does not "delete and re-create" the file.  It opens and truncates.
+> That operation should not invalidate the filehandle on any sane filesystem.
+
+Indeed! I don't know quite what I was smoking as I reviewed that piece.
+In fact, I started writing this page a long time ago, but then other 
+events intervened, and it was a long time before I came back to it recently.
+Certainly, when I produced that shell session log, things proceeded
+(almost) as shown. I'm guessing that what happened is that I by 
+accident edited out a line
+
+    rm cecilia.txt
+
+just before
+
+    echo 'Warum?' > cecilia.txt
+
+Fixed now. (In that case of course, it is of course a matter of chance
+whether the pathname is re-created with the same i-node number, but if 
+you are quick, it often is. I'll add some explanation to the page.)
+
+>>     if (argc > 1)
+>>         mount_fd = open(argv[1], O_RDONLY | O_DIRECTORY);
+> 
+> O_DIRECTORY is not appropriate, as mentioned earlier.
+
+Fixed (in two places).
+
+Thanks for the review, Neil. That helped fix a lot of problems in the page.
+
+Cheers,
+
+Michael
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
