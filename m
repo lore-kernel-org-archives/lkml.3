@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757708AbaCRSrB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 14:47:01 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:33928 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757691AbaCRSq5 (ORCPT
+	id S1757481AbaCRSwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 14:52:44 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:59379 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788AbaCRSwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 14:46:57 -0400
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, s-anna@ti.com, tony@atomide.com,
-        omar.ramirez@copitl.com, loic.pallardy@st.com, lftan.linux@gmail.com,
-        slapdau@yahoo.com.au, courtney.cavin@sonymobile.com,
-        rafael.j.wysocki@intel.com, robherring2@gmail.com, arnd@arndb.de,
-        joshc@codeaurora.org, linus.walleij@linaro.org, galak@codeaurora.org,
-        ks.giri@samsung.com, Jassi Brar <jaswinder.singh@linaro.org>
-Subject: [PATCHv4 5/5] mailbox: Fix deleteing poll timer
-Date: Wed, 19 Mar 2014 00:16:39 +0530
-Message-Id: <1395168399-29237-1-git-send-email-jaswinder.singh@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1395168169-28978-1-git-send-email-jaswinder.singh@linaro.org>
-References: <1395168169-28978-1-git-send-email-jaswinder.singh@linaro.org>
+	Tue, 18 Mar 2014 14:52:42 -0400
+Message-ID: <532895DF.2090100@linux.vnet.ibm.com>
+Date: Wed, 19 Mar 2014 00:22:15 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Patrick Marlier <patrick.marlier@gmail.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH v2 2/2] intel_pstate: Set core to min P state during core
+ offline
+References: <16035918.jZXKnQ3yiq@vostro.rjw.lan> <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com> <1394831037-15553-3-git-send-email-dirk.j.brandewie@intel.com> <CAOh2x=kFC5cwdYVgFCwNgqZAwWaE-CFQoyYizBuv1W6MOnQ9DA@mail.gmail.com> <53285FDB.40102@gmail.com>
+In-Reply-To: <53285FDB.40102@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031818-6102-0000-0000-000005289325
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: LeyFoon Tan <lftan.linux@gmail.com>
+On 03/18/2014 08:31 PM, Dirk Brandewie wrote:
+> On 03/17/2014 10:44 PM, Viresh Kumar wrote:
+>> On Sat, Mar 15, 2014 at 2:33 AM,  <dirk.brandewie@gmail.com> wrote:
+>>> +
+>>>   static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
+>>>   {
+>>>          struct cpudata *cpu;
+>>> @@ -818,7 +824,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+>>>          .setpolicy      = intel_pstate_set_policy,
+>>>          .get            = intel_pstate_get,
+>>>          .init           = intel_pstate_cpu_init,
+>>> -       .exit           = intel_pstate_cpu_exit,
+>>> +       .stop           = intel_pstate_cpu_stop,
+>>
+>> Probably, keep exit as is and only change P-state in stop(). So that
+>> allocation of resources happen in init() and they are freed in exit()?
+>>
+> I looked at doing just that but it junked up the code.  if stop() is called
+> during PREPARE then init() will be called via __cpufreq_add_dev() in the
+> ONLINE
+> and DOWN_FAILED case. So once stop() is called the driver will be ready for
+> init() to be called exactly like when exit() is called.
+>
 
-Try to delete the timer only if it was init/used.
+I'm sorry, but that didn't make much sense to me. Can you be a little
+more specific as to what problems you hit while trying to have a
+->stop() which sets min P state and a separate ->exit() which frees
+the resources? I think we can achieve this with almost no trouble.
 
-Signed-off-by: LeyFoon Tan <lftan.linux@gmail.com>
-Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
----
- drivers/mailbox/mailbox.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+If you ignore the failure case (such as DOWN_FAILED) for now, do you
+still see any serious roadblocks?
 
-diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
-index cdf7d45..d080fc3 100644
---- a/drivers/mailbox/mailbox.c
-+++ b/drivers/mailbox/mailbox.c
-@@ -584,7 +584,8 @@ void mbox_controller_unregister(struct mbox_controller *mbox)
- 	list_for_each_entry(chan, &con->channels, node)
- 		mbox_free_channel(chan);
- 
--	del_timer_sync(&con->poll);
-+	if (mbox->txdone_poll)
-+		del_timer_sync(&con->poll);
- 
- 	kfree(con);
- }
--- 
-1.8.1.2
+Regards,
+Srivatsa S. Bhat
 
