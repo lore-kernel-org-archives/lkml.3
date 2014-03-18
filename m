@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229AbaCRRvh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:51:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51734 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756707AbaCRRvf (ORCPT
+	id S1757266AbaCRRxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:53:06 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:65475 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756902AbaCRRxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:51:35 -0400
-Date: Tue, 18 Mar 2014 17:51:33 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: Re: [PATCH v2 1/5] drivers: input: keyboard: st-keyscan: add
- keyscan driver
-Message-ID: <20140318175133.GE2941@e106331-lin.cambridge.arm.com>
-References: <1395154806-2810-1-git-send-email-gabriel.fernandez@st.com>
- <1395154806-2810-2-git-send-email-gabriel.fernandez@st.com>
+	Tue, 18 Mar 2014 13:53:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395154806-2810-2-git-send-email-gabriel.fernandez@st.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140318122425.GD3191@dhcp22.suse.cz>
+References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
+	<20140318122425.GD3191@dhcp22.suse.cz>
+Date: Tue, 18 Mar 2014 10:53:03 -0700
+Message-ID: <CALAqxLU30YQs9PQaybWnTXOkVWGVX2Y7zOSLJH3Y4YSq_KDp3Q@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Volatile Ranges (v11)
+From: John Stultz <john.stultz@linaro.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 03:00:02PM +0000, Gabriel FERNANDEZ wrote:
-> This patch adds ST Keyscan driver to use the keypad hw a subset
-> of ST boards provide. Specific board setup will be put in the
-> given dt.
-> 
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
-> Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-> ---
->  .../devicetree/bindings/input/st-keyscan.txt       |  60 +++++
->  drivers/input/keyboard/Kconfig                     |  12 +
->  drivers/input/keyboard/Makefile                    |   1 +
->  drivers/input/keyboard/st-keyscan.c                | 260 +++++++++++++++++++++
->  4 files changed, 333 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/input/st-keyscan.txt
->  create mode 100644 drivers/input/keyboard/st-keyscan.c
-> 
-> diff --git a/Documentation/devicetree/bindings/input/st-keyscan.txt b/Documentation/devicetree/bindings/input/st-keyscan.txt
-> new file mode 100644
-> index 0000000..51eb428
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/st-keyscan.txt
-> @@ -0,0 +1,60 @@
-> +* ST Keyscan controller Device Tree bindings
-> +
-> +The ST keyscan controller Device Tree binding is based on the
-> +matrix-keymap.
-> +
-> +Required properties:
-> +- compatible: "st,sti-keyscan"
-> +
-> +- reg: Register base address and size of st-keyscan controller.
-> +
-> +- interrupts: Interrupt number for the st-keyscan controller.
-> +
-> +- clocks: Must contain one entry, for the module clock.
-> +  See ../clocks/clock-bindings.txt for details.
-> +
-> +- pinctrl: Should specify pin control groups used for this controller.
-> +  See ../pinctrl/pinctrl-bindings.txt for details.
-> +
-> +- linux,keymap: The keymap for keys as described in the binding document
-> +  devicetree/bindings/input/matrix-keymap.txt.
-> +
-> +- keypad,num-rows: Number of row lines connected to the keypad controller.
-> +
-> +- keypad,num-columns: Number of column lines connected to the keypad
-> +  controller.
-> +
-> +Optional property:
-> +- st,debounce_us: Debouncing interval time in microseconds
+On Tue, Mar 18, 2014 at 5:24 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Fri 14-03-14 11:33:30, John Stultz wrote:
+> [...]
+>> Volatile ranges provides a method for userland to inform the kernel that
+>> a range of memory is safe to discard (ie: can be regenerated) but
+>> userspace may want to try access it in the future.  It can be thought of
+>> as similar to MADV_DONTNEED, but that the actual freeing of the memory
+>> is delayed and only done under memory pressure, and the user can try to
+>> cancel the action and be able to quickly access any unpurged pages. The
+>> idea originated from Android's ashmem, but I've since learned that other
+>> OSes provide similar functionality.
+>
+> Maybe I have missed something (I've only glanced through the patches)
+> but it seems that marking a range volatile doesn't alter neither
+> reference bits nor position in the LRU. I thought that a volatile page
+> would be moved to the end of inactive LRU with the reference bit
+> dropped. Or is this expectation wrong and volatility is not supposed to
+> touch page aging?
 
-s/_/-/ here, please.
+Hrmm. So you're right, I had talked about how we'd end up purging
+pages in a range together (as opposed to just randomly) because the
+pages would have been marked together. On this pass, I was trying to
+avoid touching all the pages on every operation, but I'll try to add
+the referencing to keep it consistent with what was discussed (and
+we'll get a sense of the performance impact).
 
-Otherwise this looks ok.
+Though subtleties like this are still open for discussion. For
+instance, Minchan would like to see the volatile pages moved to the
+front of the LRU instead of the back.
 
-Mark.
+thanks
+-john
