@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757270AbaCRRXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:23:10 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:49476 "EHLO
+	id S1757279AbaCRRXm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:23:42 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:41866 "EHLO
 	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238AbaCRRW5 (ORCPT
+	with ESMTP id S1757237AbaCRRWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:22:57 -0400
+	Tue, 18 Mar 2014 13:22:55 -0400
 From: dirk.brandewie@gmail.com
 To: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, rjw@rjwysocki.net, patrick.marlier@gmail.com,
         viresh.kumar@linaro.org, srivatsa.bhat@linux.vnet.ibm.com,
         dirk.brandewie@gmail.com, Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: [PATCH 2/2] intel_pstate: Set core to min P state during core offline
-Date: Tue, 18 Mar 2014 10:22:41 -0700
-Message-Id: <1395163361-26380-3-git-send-email-dirk.j.brandewie@intel.com>
+Subject: [PATCH 1/2] cpufreq: Add stop callback to cpufreq_driver interface
+Date: Tue, 18 Mar 2014 10:22:40 -0700
+Message-Id: <1395163361-26380-2-git-send-email-dirk.j.brandewie@intel.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1395163361-26380-1-git-send-email-dirk.j.brandewie@intel.com>
 References: <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com>
@@ -25,68 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-Change to use ->exit_prepare() callback to do clean up during CPU
-hotplug. The requested P state for an offline core will be used by the
-hardware coordination function to select the package P state. If the
-core is under load when it is offlined it will fix the package P state
-floor to the requested P state of offline core.
+This callback allows the driver to do clean up before the CPU is
+completely down and its state cannot be modified.  This is used
+by the intel_pstate driver to reduce the requested P state prior to
+the core going away.  This is required because the requested P state
+of the offline core is used to select the package P state. This
+effectively sets the floor package P state to the requested P state on
+the offline core.
 
-Reported-by: Patrick Marlier <patrick.marlier@gmail.com>
 Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 ---
- drivers/cpufreq/intel_pstate.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ Documentation/cpu-freq/cpu-drivers.txt | 8 +++++++-
+ drivers/cpufreq/cpufreq.c              | 3 ++-
+ include/linux/cpufreq.h                | 1 +
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 2cd36b9..e9092fd 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -447,7 +447,7 @@ static void core_set_pstate(struct cpudata *cpudata, int pstate)
- 	if (limits.no_turbo)
- 		val |= (u64)1 << 32;
+diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
+index 8b1a445..79def80 100644
+--- a/Documentation/cpu-freq/cpu-drivers.txt
++++ b/Documentation/cpu-freq/cpu-drivers.txt
+@@ -61,7 +61,13 @@ target_index		-	See below on the differences.
  
--	wrmsrl(MSR_IA32_PERF_CTL, val);
-+	wrmsrl_on_cpu(cpudata->cpu, MSR_IA32_PERF_CTL, val);
- }
+ And optionally
  
- static struct cpu_defaults core_params = {
-@@ -773,16 +773,22 @@ static int intel_pstate_verify_policy(struct cpufreq_policy *policy)
+-cpufreq_driver.exit -		A pointer to a per-CPU cleanup function.
++cpufreq_driver.exit -		A pointer to a per-CPU cleanup
++		    		function called during CPU_POST_DEAD
++		    		phase of cpu hotplug process.
++
++cpufreq_driver.stop -		A pointer to a per-CPU stop function
++			    	called during CPU_DOWN_PREPARE phase of
++				cpu hotplug process.
+ 
+ cpufreq_driver.resume -		A pointer to a per-CPU resume function
+ 				which is called with interrupts disabled
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index cf485d9..6e6beae 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1336,7 +1336,8 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+ 						__func__, new_cpu, cpu);
+ 			}
+ 		}
+-	}
++	} else if (cpufreq_driver->stop)
++		cpufreq_driver->stop(policy);
+ 
  	return 0;
  }
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 4d89e0e..ff8db19 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -224,6 +224,7 @@ struct cpufreq_driver {
+ 	int	(*bios_limit)	(int cpu, unsigned int *limit);
  
--static int intel_pstate_cpu_exit(struct cpufreq_policy *policy)
-+static int intel_pstate_cpu_stop(struct cpufreq_policy *policy)
- {
--	int cpu = policy->cpu;
-+	int cpu_num = policy->cpu;
-+	struct cpudata *cpu = all_cpu_data[cpu_num];
-+
-+	pr_info("intel_pstate CPU %d exiting\n", cpu_num);
-+
-+	del_timer(&all_cpu_data[cpu_num]->timer);
-+	intel_pstate_set_pstate(cpu, cpu->pstate.min_pstate);
-+	kfree(all_cpu_data[cpu_num]);
-+	all_cpu_data[cpu_num] = NULL;
- 
--	del_timer(&all_cpu_data[cpu]->timer);
--	kfree(all_cpu_data[cpu]);
--	all_cpu_data[cpu] = NULL;
- 	return 0;
- }
- 
-+
- static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
- {
- 	struct cpudata *cpu;
-@@ -818,7 +824,7 @@ static struct cpufreq_driver intel_pstate_driver = {
- 	.setpolicy	= intel_pstate_set_policy,
- 	.get		= intel_pstate_get,
- 	.init		= intel_pstate_cpu_init,
--	.exit		= intel_pstate_cpu_exit,
-+	.stop		= intel_pstate_cpu_stop,
- 	.name		= "intel_pstate",
- };
- 
+ 	int	(*exit)		(struct cpufreq_policy *policy);
++	int	(*stop)		(struct cpufreq_policy *policy);
+ 	int	(*suspend)	(struct cpufreq_policy *policy);
+ 	int	(*resume)	(struct cpufreq_policy *policy);
+ 	struct freq_attr	**attr;
 -- 
 1.8.3.1
 
