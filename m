@@ -1,109 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558AbaCRNeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 09:34:19 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:41269 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379AbaCRNeR (ORCPT
+	id S1755584AbaCRNfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 09:35:55 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:62815 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955AbaCRNfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 09:34:17 -0400
-Date: Tue, 18 Mar 2014 14:34:07 +0100
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-To: Zhouyi Zhou <zhouzhouyi@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-s390@vger.kernel.org, joe@perches.com, gang.chen@asianux.com,
-        linux390@de.ibm.com, heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Subject: Re: [PATCH] s390: correct misuses of module_put in
- appldata_generic_handler.
-Message-ID: <20140318143407.0df4457f@thinkpad>
-In-Reply-To: <CAABZP2zrLqTRu4sTbYSQ58G1SHGR_YhdGC7365aVmyq6q1n_dg@mail.gmail.com>
-References: <1394890540-2435-1-git-send-email-zhouzhouyi@gmail.com>
-	<20140317142851.50e5f533@thinkpad>
-	<CAABZP2zrLqTRu4sTbYSQ58G1SHGR_YhdGC7365aVmyq6q1n_dg@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031813-0542-0000-0000-0000085D4C53
+	Tue, 18 Mar 2014 09:35:53 -0400
+MIME-Version: 1.0
+X-Originating-IP: [85.250.70.16]
+In-Reply-To: <53278950.5030905@ti.com>
+References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
+ <52F9282B.5000702@ti.com> <530B8C00.8020001@ti.com> <CAK=WgbZp_RQPCeZJyMRkNTQxaJsnGZ3DnjhSkYYR_-PAE_Kp4g@mail.gmail.com>
+ <53239789.40600@ti.com> <CAK=WgbZCzA7JovSxnysHCQRZZWc3Z2j3AS8ekpM9fOZ160rmCA@mail.gmail.com>
+ <532748B7.1080606@ti.com> <CAK=WgbYjtw+cxy5wX6pjK=Rpj6wOk6Cu+GrPuFN+sqtgDAY=_Q@mail.gmail.com>
+ <53278950.5030905@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 18 Mar 2014 15:35:32 +0200
+Message-ID: <CAK=WgbZ1M0JZE2BH0ukNo33hBuffTGbd3-DD0WCiwZ-akgvQ-Q@mail.gmail.com>
+Subject: Re: [PATCHv4 0/7] omap hwspinlock dt support
+To: Suman Anna <s-anna@ti.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Tony Lindgren <tony@atomide.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014 09:24:55 +0800
-Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
+Hi Suman,
 
-> Thanks Gerald for reviewing and sorry for not elaborated it in the e-mail.
-> 
-> Firstly, I think you can't call module_put after fail try_module_get
+On Tue, Mar 18, 2014 at 1:46 AM, Suman Anna <s-anna@ti.com> wrote:
+> So far, we have not come across multiple controllers. I see your point,
+> and I think this also depends on the semantics of how you exchange the
+> lock id number. The agreement at the moment is on base_ids across
+> multiple SoC components. If the semantics involve exchanging the
+> controller instance, for example, then we might get away with it. But
+> that probably involves adding additional helpers to retrieve controller
+> instance in addition to lock number, or some other similar functions.
 
-There is another try_module_get() in this function before that, so I need
-to call module_put() once if the second try_module_get() fails.
+Yes, this could be done too, but I agree it is less simple with no real win.
 
-The first try_module_get() is only needed within the function, while the
-second one is needed to prevent a module from being unloaded while its
-callback is registered, so that reference is kept as long as the module
-is active.
+> Sorry, I should have rephrased it better - by order, I meant the
+> inherent order between board early code and other drivers. With DT, we
+> cannot guarantee that right, as specific locks are requested from drivers.
 
-> 
-> Secondly, there exists duplicate module_put on the program path (the last
-> one is before return 0)
+Yeah.
 
-There is one module_put() for every try_module_get(). If "1" is written
-to the sysctl, the function exits with one "missing" module_put(), which
-is held to protect the callback. When "0" is written, this reference
-is returned again with an "extra" module_put().
+> Understood. And we may have to assign the client association with a lock
+> as well. These are core changes that were actually not needed in the
+> non-DT case due to the inherent order as stated above. So, are you
+> suggesting that we add one more property to the controller node to mark
+> which are reserved, or rely on constructing this through DT tree parsing?
 
-> 
-> On Mon, Mar 17, 2014 at 9:28 PM, Gerald Schaefer
-> <gerald.schaefer@de.ibm.com> wrote:
-> > On Sat, 15 Mar 2014 21:35:40 +0800
-> > Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
-> >
-> >> correct misuses of module_put in  appldata_generic_handler
-> >
-> > Sorry, I don't see any misuse, could you elaborate?
-> >
-> >>
-> >> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-> >> ---
-> >>  arch/s390/appldata/appldata_base.c | 3 ---
-> >>  1 file changed, 3 deletions(-)
-> >>
-> >> diff --git a/arch/s390/appldata/appldata_base.c b/arch/s390/appldata/appldata_base.c
-> >> index 47c8630..683e0282 100644
-> >> --- a/arch/s390/appldata/appldata_base.c
-> >> +++ b/arch/s390/appldata/appldata_base.c
-> >> @@ -343,7 +343,6 @@ appldata_generic_handler(struct ctl_table *ctl, int write,
-> >>               // protect work queue callback
-> >>               if (!try_module_get(ops->owner)) {
-> >>                       mutex_unlock(&appldata_ops_mutex);
-> >> -                     module_put(ops->owner);
-> >>                       return -ENODEV;
-> >>               }
-> >>               ops->callback(ops->data);       // init record
-> >> @@ -354,7 +353,6 @@ appldata_generic_handler(struct ctl_table *ctl, int write,
-> >>               if (rc != 0) {
-> >>                       pr_err("Starting the data collection for %s "
-> >>                              "failed with rc=%d\n", ops->name, rc);
-> >> -                     module_put(ops->owner);
-> >>               } else
-> >>                       ops->active = 1;
-> >>       } else if ((buf[0] == '0') && (ops->active == 1)) {
-> >> @@ -365,7 +363,6 @@ appldata_generic_handler(struct ctl_table *ctl, int write,
-> >>               if (rc != 0)
-> >>                       pr_err("Stopping the data collection for %s "
-> >>                              "failed with rc=%d\n", ops->name, rc);
-> >> -             module_put(ops->owner);
-> >>       }
-> >>       mutex_unlock(&appldata_ops_mutex);
-> >>  out:
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-s390" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+I guess this is a question to the DT folks; both approaches work from
+hwspinlock perspective.
 
+In the past Arnd Benoit and myself were happy with adding one more
+property to the controller node, but this might be somewhat error
+prone as it leaves room for mistakes - developers can add hwlock
+phandles and forget to update the reserved property in the controller
+node.
+
+Thanks,
+Ohad.
