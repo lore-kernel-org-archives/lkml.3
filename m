@@ -1,321 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933042AbaCRUxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 16:53:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33382 "EHLO mga09.intel.com"
+	id S932968AbaCRUxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:53:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13521 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932681AbaCRUxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 16:53:39 -0400
+	id S932681AbaCRUxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 16:53:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,680,1389772800"; 
-   d="scan'208";a="475172412"
+   d="scan'208";a="475172297"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [char-misc-next 05/13] mei: expose hardware power gating state to mei layer
-Date: Tue, 18 Mar 2014 22:51:59 +0200
-Message-Id: <1395175927-10562-6-git-send-email-tomas.winkler@intel.com>
+        linux-pm@vger.kernel.org, Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 00/13] mei: add runtime pm
+Date: Tue, 18 Mar 2014 22:51:54 +0200
+Message-Id: <1395175927-10562-1-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1395175927-10562-1-git-send-email-tomas.winkler@intel.com>
-References: <1395175927-10562-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the runtime pm and the internal power gating
-cannot be in complete sync in regards to I/O
-operations, we need to expose the device
-hardware internal power gating state to mei layer
+Alexander Usyskin (2):
+  mei: txe: add runtime pm framework
+  mei: txe: use runtime PG pm domain for non wakeable devices
 
-2. We add pg_state handler that translate the hw
-internal pg state to mei layer
+Tomas Winkler (11):
+  mei: implement power gating isolation hbm layer
+  mei: me: introduce power gating registers
+  mei: me: add power gating isolation register write wrappers
+  mei: condition PGI support on HW and HBM version
+  mei: expose hardware power gating state to mei layer
+  mei: me: add pg exit and entry flow commands
+  mei: add function to check write queues
+  mei: me: add runtime pm framework
+  mei: use runtime pm in write and read flow
+  mei: me: use runtime PG pm domain for non wakeable devices
+  mei: me: bump hbm version to 1.1 to support power gating
 
-2. We add power gating event variable to keep
-power track of power gating transitions
+ drivers/misc/mei/client.c     |  84 +++++++++++++++++----
+ drivers/misc/mei/hbm.c        |  51 +++++++++++++
+ drivers/misc/mei/hbm.h        |   1 +
+ drivers/misc/mei/hw-me-regs.h |   9 +++
+ drivers/misc/mei/hw-me.c      | 171 +++++++++++++++++++++++++++++++++++++++++-
+ drivers/misc/mei/hw-me.h      |   6 ++
+ drivers/misc/mei/hw-txe.c     |  57 +++++++++++---
+ drivers/misc/mei/hw-txe.h     |  16 ++--
+ drivers/misc/mei/hw.h         |  25 +++++-
+ drivers/misc/mei/init.c       |  24 ++++++
+ drivers/misc/mei/mei_dev.h    |  54 +++++++++++++
+ drivers/misc/mei/pci-me.c     | 142 ++++++++++++++++++++++++++++++++++-
+ drivers/misc/mei/pci-txe.c    | 150 +++++++++++++++++++++++++++++++++++-
+ 13 files changed, 748 insertions(+), 42 deletions(-)
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Reviewed-by: Alexander Usyskin <alexander.usyskin@intel.com>
----
- drivers/misc/mei/hw-me.c   | 15 +++++++++++++++
- drivers/misc/mei/hw-txe.c  | 43 ++++++++++++++++++++++++++++++++-----------
- drivers/misc/mei/hw-txe.h  | 14 ++++++--------
- drivers/misc/mei/init.c    |  2 ++
- drivers/misc/mei/mei_dev.h | 38 ++++++++++++++++++++++++++++++++++++++
- 5 files changed, 93 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 7a7e662..02f3b0c 100644
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -113,6 +113,19 @@ static void mei_me_hw_config(struct mei_device *dev)
- 	/* Doesn't change in runtime */
- 	dev->hbuf_depth = (hcsr & H_CBD) >> 24;
- }
-+
-+/**
-+ * mei_me_pg_state  - translate internal pg state
-+ *   to the mei power gating state
-+ *
-+ * @hw -  me hardware
-+ * returns: MEI_PG_OFF if aliveness is on and MEI_PG_ON otherwise
-+ */
-+static inline enum mei_pg_state mei_me_pg_state(struct mei_device *dev)
-+{
-+	return MEI_PG_OFF;
-+}
-+
- /**
-  * mei_clear_interrupts - clear and stop interrupts
-  *
-@@ -601,6 +614,8 @@ end:
- }
- static const struct mei_hw_ops mei_me_hw_ops = {
- 
-+	.pg_state  = mei_me_pg_state,
-+
- 	.host_is_ready = mei_me_host_is_ready,
- 
- 	.hw_is_ready = mei_me_hw_is_ready,
-diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
-index 49f197a..4a6f567 100644
---- a/drivers/misc/mei/hw-txe.c
-+++ b/drivers/misc/mei/hw-txe.c
-@@ -158,7 +158,7 @@ static bool mei_txe_aliveness_set(struct mei_device *dev, u32 req)
- 	dev_dbg(&dev->pdev->dev, "Aliveness current=%d request=%d\n",
- 				hw->aliveness, req);
- 	if (do_req) {
--		hw->recvd_aliveness = false;
-+		dev->pg_event = MEI_PG_EVENT_WAIT;
- 		mei_txe_br_reg_write(hw, SICR_HOST_ALIVENESS_REQ_REG, req);
- 	}
- 	return do_req;
-@@ -213,6 +213,7 @@ static int mei_txe_aliveness_poll(struct mei_device *dev, u32 expected)
- 	do {
- 		hw->aliveness = mei_txe_aliveness_get(dev);
- 		if (hw->aliveness == expected) {
-+			dev->pg_event = MEI_PG_EVENT_IDLE;
- 			dev_dbg(&dev->pdev->dev,
- 				"aliveness settled after %d msecs\n", t);
- 			return t;
-@@ -223,6 +224,7 @@ static int mei_txe_aliveness_poll(struct mei_device *dev, u32 expected)
- 		t += MSEC_PER_SEC / 5;
- 	} while (t < SEC_ALIVENESS_WAIT_TIMEOUT);
- 
-+	dev->pg_event = MEI_PG_EVENT_IDLE;
- 	dev_err(&dev->pdev->dev, "aliveness timed out\n");
- 	return -ETIME;
- }
-@@ -249,19 +251,22 @@ static int mei_txe_aliveness_wait(struct mei_device *dev, u32 expected)
- 		return 0;
- 
- 	mutex_unlock(&dev->device_lock);
--	err = wait_event_timeout(hw->wait_aliveness,
--			hw->recvd_aliveness, timeout);
-+	err = wait_event_timeout(hw->wait_aliveness_resp,
-+			dev->pg_event == MEI_PG_EVENT_RECEIVED, timeout);
- 	mutex_lock(&dev->device_lock);
- 
- 	hw->aliveness = mei_txe_aliveness_get(dev);
- 	ret = hw->aliveness == expected ? 0 : -ETIME;
- 
- 	if (ret)
--		dev_err(&dev->pdev->dev, "aliveness timed out");
-+		dev_warn(&dev->pdev->dev, "aliveness timed out = %ld aliveness = %d event = %d\n",
-+			err, hw->aliveness, dev->pg_event);
- 	else
--		dev_dbg(&dev->pdev->dev, "aliveness settled after %d msecs\n",
--				jiffies_to_msecs(timeout - err));
--	hw->recvd_aliveness = false;
-+		dev_dbg(&dev->pdev->dev, "aliveness settled after = %d msec aliveness = %d event = %d\n",
-+			jiffies_to_msecs(timeout - err),
-+			hw->aliveness, dev->pg_event);
-+
-+	dev->pg_event = MEI_PG_EVENT_IDLE;
- 	return ret;
- }
- 
-@@ -292,6 +297,20 @@ static bool mei_txe_pg_is_enabled(struct mei_device *dev)
- }
- 
- /**
-+ * mei_txe_pg_state  - translate aliveness register value
-+ *   to the mei power gating state
-+ *
-+ * @dev: the device structure
-+ *
-+ * returns: MEI_PG_OFF if aliveness is on and MEI_PG_ON otherwise
-+ */
-+static inline enum mei_pg_state mei_txe_pg_state(struct mei_device *dev)
-+{
-+	struct mei_txe_hw *hw = to_txe_hw(dev);
-+	return hw->aliveness ? MEI_PG_OFF : MEI_PG_ON;
-+}
-+
-+/**
-  * mei_txe_input_ready_interrupt_enable - sets the Input Ready Interrupt
-  *
-  * @dev: the device structure
-@@ -972,9 +991,9 @@ irqreturn_t mei_txe_irq_thread_handler(int irq, void *dev_id)
- 		/* Clear the interrupt cause */
- 		dev_dbg(&dev->pdev->dev,
- 			"Aliveness Interrupt: Status: %d\n", hw->aliveness);
--		hw->recvd_aliveness = true;
--		if (waitqueue_active(&hw->wait_aliveness))
--			wake_up(&hw->wait_aliveness);
-+		dev->pg_event = MEI_PG_EVENT_RECEIVED;
-+		if (waitqueue_active(&hw->wait_aliveness_resp))
-+			wake_up(&hw->wait_aliveness_resp);
- 	}
- 
- 
-@@ -1024,6 +1043,8 @@ static const struct mei_hw_ops mei_txe_hw_ops = {
- 
- 	.host_is_ready = mei_txe_host_is_ready,
- 
-+	.pg_state = mei_txe_pg_state,
-+
- 	.hw_is_ready = mei_txe_hw_is_ready,
- 	.hw_reset = mei_txe_hw_reset,
- 	.hw_config = mei_txe_hw_config,
-@@ -1069,7 +1090,7 @@ struct mei_device *mei_txe_dev_init(struct pci_dev *pdev)
- 
- 	hw = to_txe_hw(dev);
- 
--	init_waitqueue_head(&hw->wait_aliveness);
-+	init_waitqueue_head(&hw->wait_aliveness_resp);
- 
- 	dev->ops = &mei_txe_hw_ops;
- 
-diff --git a/drivers/misc/mei/hw-txe.h b/drivers/misc/mei/hw-txe.h
-index 0812d98..799f9f2 100644
---- a/drivers/misc/mei/hw-txe.h
-+++ b/drivers/misc/mei/hw-txe.h
-@@ -35,12 +35,11 @@
- /**
-  * struct mei_txe_hw - txe hardware specifics
-  *
-- * @mem_addr:        SeC and BRIDGE bars
-- * @aliveness:       aliveness (power gating) state of the hardware
-- * @readiness:       readiness state of the hardware
-- * @wait_aliveness:  aliveness wait queue
-- * @recvd_aliveness: aliveness interrupt was recived
-- * @intr_cause:      translated interrupt cause
-+ * @mem_addr:            SeC and BRIDGE bars
-+ * @aliveness:           aliveness (power gating) state of the hardware
-+ * @readiness:           readiness state of the hardware
-+ * @wait_aliveness_resp: aliveness wait queue
-+ * @intr_cause:          translated interrupt cause
-  */
- struct mei_txe_hw {
- 	void __iomem *mem_addr[NUM_OF_MEM_BARS];
-@@ -48,8 +47,7 @@ struct mei_txe_hw {
- 	u32 readiness;
- 	u32 slots;
- 
--	wait_queue_head_t wait_aliveness;
--	bool recvd_aliveness;
-+	wait_queue_head_t wait_aliveness_resp;
- 
- 	unsigned long intr_cause;
- };
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index cc604e1..4b1eb37 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -341,6 +341,8 @@ void mei_device_init(struct mei_device *dev)
- 	 * 0: Reserved for MEI Bus Message communications
- 	 */
- 	bitmap_set(dev->host_clients_map, 0, 1);
-+
-+	dev->pg_event = MEI_PG_EVENT_IDLE;
- }
- EXPORT_SYMBOL_GPL(mei_device_init);
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index ca7581c..bec6ade 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -220,6 +220,7 @@ struct mei_cl {
-  * @hw_start         - start hw after reset
-  * @hw_config        - configure hw
- 
-+ * @pg_state         - power gating state of the device
-  * @pg_is_enabled    - is power gating enabled
- 
-  * @intr_clear       - clear pending interrupts
-@@ -246,6 +247,7 @@ struct mei_hw_ops {
- 	int (*hw_start)(struct mei_device *dev);
- 	void (*hw_config)(struct mei_device *dev);
- 
-+	enum mei_pg_state (*pg_state)(struct mei_device *dev);
- 	bool (*pg_is_enabled)(struct mei_device *dev);
- 
- 	void (*intr_clear)(struct mei_device *dev);
-@@ -335,11 +337,37 @@ struct mei_cl_device {
- 	void *priv_data;
- };
- 
-+
-+ /**
-+ * enum mei_pg_event - power gating transition events
-+ *
-+ * @MEI_PG_EVENT_IDLE: the driver is not in power gating transition
-+ * @MEI_PG_EVENT_WAIT: the driver is waiting for a pg event to complete
-+ * @MEI_PG_EVENT_RECEIVED: the driver received pg event
-+ */
-+enum mei_pg_event {
-+	MEI_PG_EVENT_IDLE,
-+	MEI_PG_EVENT_WAIT,
-+	MEI_PG_EVENT_RECEIVED,
-+};
-+
-+/**
-+ * enum mei_pg_state - device internal power gating state
-+ *
-+ * @MEI_PG_OFF: device is not power gated - it is active
-+ * @MEI_PG_ON:  device is power gated - it is in lower power state
-+ */
-+enum mei_pg_state {
-+	MEI_PG_OFF = 0,
-+	MEI_PG_ON =  1,
-+};
-+
- /**
-  * struct mei_device -  MEI private device struct
- 
-  * @reset_count - limits the number of consecutive resets
-  * @hbm_state - state of host bus message protocol
-+ * @pg_event - power gating event
-  * @mem_addr - mem mapped base register address
- 
-  * @hbuf_depth - depth of hardware host/write buffer is slots
-@@ -387,6 +415,11 @@ struct mei_device {
- 	enum mei_hbm_state hbm_state;
- 	u16 init_clients_timer;
- 
-+	/*
-+	 * Power Gating support
-+	 */
-+	enum mei_pg_event pg_event;
-+
- 	unsigned char rd_msg_buf[MEI_RD_MSG_BUF_SIZE];	/* control messages */
- 	u32 rd_msg_hdr;
- 
-@@ -563,6 +596,11 @@ static inline void mei_hw_config(struct mei_device *dev)
- 	dev->ops->hw_config(dev);
- }
- 
-+static inline enum mei_pg_state mei_pg_state(struct mei_device *dev)
-+{
-+	return dev->ops->pg_state(dev);
-+}
-+
- static inline bool mei_pg_is_enabled(struct mei_device *dev)
- {
- 	return dev->ops->pg_is_enabled(dev);
 -- 
 1.8.5.3
 
