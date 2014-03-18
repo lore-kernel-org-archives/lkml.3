@@ -1,61 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990AbaCRKy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 06:54:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58415 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753013AbaCRKyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 06:54:55 -0400
-Message-ID: <532825D9.4050708@ti.com>
-Date: Tue, 18 Mar 2014 16:24:17 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
-References: <5316FFCE.1060603@ti.com> <1394018461-757-1-git-send-email-holler@ahsoftware.de> <CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com> <5322D529.4070904@ahsoftware.de> <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com> <5326F8C5.5090406@ti.com> <CACRpkdYZMzw31NkA4uSq+ZowzOnZgZthXhZri-eJY2Ozb8aNRQ@mail.gmail.com> <532805AE.9000806@ti.com> <532815A8.9090807@ahsoftware.de>
-In-Reply-To: <532815A8.9090807@ahsoftware.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755090AbaCRK4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 06:56:16 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:32782 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587AbaCRK4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 06:56:14 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, peterz@infradead.org, mingo@kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] timer: remove code redundancy while calling get_nohz_timer_target()
+Date: Tue, 18 Mar 2014 16:26:07 +0530
+Message-Id: <1e1b53537217d58d48c2d7a222a9c3ac47d5b64c.1395140107.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
+There are only two users of get_nohz_timer_target(): timer and hrtimer. Both
+call it under same circumstances, i.e.
 
-On Tuesday 18 March 2014 03:15 PM, Alexander Holler wrote:
-> Am 18.03.2014 09:37, schrieb Sekhar Nori:
-> 
->> It is safe - at the least it does not break anything that is already
->> working. I guess the decision to put it into -rc depends on whether you
->> consider out of tree dtbs to be a valid usecase for the kernel.
-> 
-> That's all DT is about, getting rid of the necessity for in-tree
-> hw-descriptions. ;)
-> 
-> But I don't need any rush here, I'm just unable to understand why the
-> -rc phase isn't used for bug fixing as I believe that's what this phase
-> is for.
+	#ifdef CONFIG_NO_HZ_COMMON
+	       if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
+	               return get_nohz_timer_target();
+	#endif
 
-The push back you are seeing is because this is pretty late in -rc
-cycle. If this push back was not there the bug fix cycle would probably
-never close.
+So, it makes more sense to get all this as part of get_nohz_timer_target()
+instead of duplicating code at two places. For this another parameter is
+required to be passed to this routine, pinned.
 
-In all probability, if this was -rc2 or even -rc3 there would not be so
-much discussion.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ include/linux/sched.h |  6 +++++-
+ kernel/hrtimer.c      | 15 +--------------
+ kernel/sched/core.c   |  5 ++++-
+ kernel/timer.c        |  7 +------
+ 4 files changed, 11 insertions(+), 22 deletions(-)
 
-Thanks,
-Sekhar
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 6dbb9e5..9819f93 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -299,10 +299,14 @@ extern int runqueue_is_locked(int cpu);
+ #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ_COMMON)
+ extern void nohz_balance_enter_idle(int cpu);
+ extern void set_cpu_sd_state_idle(void);
+-extern int get_nohz_timer_target(void);
++extern int get_nohz_timer_target(int pinned);
+ #else
+ static inline void nohz_balance_enter_idle(int cpu) { }
+ static inline void set_cpu_sd_state_idle(void) { }
++static inline int get_nohz_timer_target(int pinned)
++{
++	return smp_processor_id();
++}
+ #endif
+ 
+ /*
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index f60dce8..7eef615 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -168,19 +168,6 @@ struct hrtimer_clock_base *lock_hrtimer_base(const struct hrtimer *timer,
+ 	}
+ }
+ 
+-
+-/*
+- * Get the preferred target CPU for NOHZ
+- */
+-static int hrtimer_get_target(int this_cpu, int pinned)
+-{
+-#ifdef CONFIG_NO_HZ_COMMON
+-	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
+-		return get_nohz_timer_target();
+-#endif
+-	return this_cpu;
+-}
+-
+ /*
+  * With HIGHRES=y we do not migrate the timer when it is expiring
+  * before the next event on the target cpu because we cannot reprogram
+@@ -214,7 +201,7 @@ switch_hrtimer_base(struct hrtimer *timer, struct hrtimer_clock_base *base,
+ 	struct hrtimer_clock_base *new_base;
+ 	struct hrtimer_cpu_base *new_cpu_base;
+ 	int this_cpu = smp_processor_id();
+-	int cpu = hrtimer_get_target(this_cpu, pinned);
++	int cpu = get_nohz_timer_target(pinned);
+ 	int basenum = base->index;
+ 
+ again:
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 6fde755..a58e24d 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -556,12 +556,15 @@ void resched_cpu(int cpu)
+  * selecting an idle cpu will add more delays to the timers than intended
+  * (as that cpu's timer base may not be uptodate wrt jiffies etc).
+  */
+-int get_nohz_timer_target(void)
++int get_nohz_timer_target(int pinned)
+ {
+ 	int cpu = smp_processor_id();
+ 	int i;
+ 	struct sched_domain *sd;
+ 
++	if (pinned || !get_sysctl_timer_migration() || !idle_cpu(cpu))
++		return cpu;
++
+ 	rcu_read_lock();
+ 	for_each_domain(cpu, sd) {
+ 		for_each_cpu(i, sched_domain_span(sd)) {
+diff --git a/kernel/timer.c b/kernel/timer.c
+index e6868bf..2cf8616 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -760,12 +760,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
+ 
+ 	debug_activate(timer, expires);
+ 
+-	cpu = smp_processor_id();
+-
+-#if defined(CONFIG_NO_HZ_COMMON) && defined(CONFIG_SMP)
+-	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
+-		cpu = get_nohz_timer_target();
+-#endif
++	cpu = get_nohz_timer_target(pinned);
+ 	new_base = per_cpu(tvec_bases, cpu);
+ 
+ 	if (base != new_base) {
+-- 
+1.7.12.rc2.18.g61b472e
+
