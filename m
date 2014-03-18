@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197AbaCRQMg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 12:12:36 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:52222 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534AbaCRQMF (ORCPT
+	id S1756041AbaCRQMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 12:12:34 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:50241 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791AbaCRQMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 12:12:05 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
-        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
-        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
-        alexander.h.duyck@intel.com, john.ronciak@intel.com,
-        mitch.a.williams@intel.com, linux.nics@intel.com,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 2/2] INTEL-IGB: Convert iounmap to pci_iounmap
-Date: Tue, 18 Mar 2014 17:11:25 +0100
-Message-Id: <1395159085-11691-2-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1395159085-11691-1-git-send-email-peter.senna@gmail.com>
-References: <1395159085-11691-1-git-send-email-peter.senna@gmail.com>
+	Tue, 18 Mar 2014 12:12:30 -0400
+Date: Tue, 18 Mar 2014 12:12:25 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: fix a failure path in create_css()
+Message-ID: <20140318161225.GD3642@htj.dyndns.org>
+References: <53280BAC.5060404@huawei.com>
+ <20140318152445.GA3642@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140318152445.GA3642@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use pci_iounmap instead of iounmap when the virtual mapping was done
-with pci_iomap. A simplified version of the semantic patch that finds this
-issue is as follows: (http://coccinelle.lip6.fr/)
-    
-// <smpl>
-@r@
-expression addr;
-@@
-addr = pci_iomap(...)
+On Tue, Mar 18, 2014 at 11:24:45AM -0400, Tejun Heo wrote:
+> On Tue, Mar 18, 2014 at 05:02:36PM +0800, Li Zefan wrote:
+> > If online_css() fails, we should remove cgroup files belonging
+> > to css->ss.
+> > 
+> > Signed-off-by: Li Zefan <lizefan@huawei.com>
+> 
+> Applied to libata/for-3.14-fixes.
 
-@rr@
-expression r.addr;
-@@
-* iounmap(addr)
-// </smpl>
+Hmmm... didn't apply cleanly and generated build error.  Looks like
+the patch was generated against for-3.15.  Can you please regenerate
+the patch against for-3.14-fixes?
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
- Tested by compilation only.
+Thanks.
 
- drivers/net/ethernet/intel/igb/igb_main.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index 340a344..fc49177 100644
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -2623,7 +2623,7 @@ err_eeprom:
- 		iounmap(hw->flash_address);
- err_sw_init:
- 	igb_clear_interrupt_scheme(adapter);
--	iounmap(hw->hw_addr);
-+	pci_iounmap(pdev, hw->hw_addr);
- err_ioremap:
- 	free_netdev(netdev);
- err_alloc_etherdev:
-@@ -2790,7 +2790,7 @@ static void igb_remove(struct pci_dev *pdev)
- 	igb_disable_sriov(pdev);
- #endif
- 
--	iounmap(hw->hw_addr);
-+	pci_iounmap(pdev, hw->hw_addr);
- 	if (hw->flash_address)
- 		iounmap(hw->flash_address);
- 	pci_release_selected_regions(pdev,
 -- 
-1.8.3.1
-
+tejun
