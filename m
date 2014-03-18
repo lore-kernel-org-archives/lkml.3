@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933718AbaCRV3m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:29:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54491 "EHLO
+	id S1757668AbaCRV3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:29:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54495 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933651AbaCRV3i (ORCPT
+	with ESMTP id S933651AbaCRV3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:29:38 -0400
-Date: Tue, 18 Mar 2014 14:29:00 -0700
-From: tip-bot for Stefani Seibold <tipbot@zytor.com>
-Message-ID: <tip-ef721987aef0cc0abba08c88810f2155f76b0b1f@git.kernel.org>
+	Tue, 18 Mar 2014 17:29:43 -0400
+Date: Tue, 18 Mar 2014 14:29:11 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-b4b541a610c4db8643b36030ee5012203ca65778@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
         mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de,
         hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
         linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de,
         hpa@linux.intel.com
-In-Reply-To: <1395094933-14252-8-git-send-email-stefani@seibold.net>
-References: <1395094933-14252-8-git-send-email-stefani@seibold.net>
+In-Reply-To: <1395094933-14252-9-git-send-email-stefani@seibold.net>
+References: <1395094933-14252-9-git-send-email-stefani@seibold.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86, vdso: Introduce VVAR marco for vdso32
-Git-Commit-ID: ef721987aef0cc0abba08c88810f2155f76b0b1f
+Subject: [tip:x86/vdso] x86, vdso: Patch alternatives in the 32-bit VDSO
+Git-Commit-ID: b4b541a610c4db8643b36030ee5012203ca65778
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,58 +33,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ef721987aef0cc0abba08c88810f2155f76b0b1f
-Gitweb:     http://git.kernel.org/tip/ef721987aef0cc0abba08c88810f2155f76b0b1f
-Author:     Stefani Seibold <stefani@seibold.net>
-AuthorDate: Mon, 17 Mar 2014 23:22:07 +0100
+Commit-ID:  b4b541a610c4db8643b36030ee5012203ca65778
+Gitweb:     http://git.kernel.org/tip/b4b541a610c4db8643b36030ee5012203ca65778
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Mon, 17 Mar 2014 23:22:08 +0100
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 18 Mar 2014 12:52:29 -0700
+CommitDate: Tue, 18 Mar 2014 12:52:33 -0700
 
-x86, vdso: Introduce VVAR marco for vdso32
+x86, vdso: Patch alternatives in the 32-bit VDSO
 
-This patch revamps the vvar.h for introduce the VVAR macro for vdso32.
+We need the alternatives mechanism for rdtsc_barrier() to work.
 
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Stefani Seibold <stefani@seibold.net>
-Link: http://lkml.kernel.org/r/1395094933-14252-8-git-send-email-stefani@seibold.net
+Link: http://lkml.kernel.org/r/1395094933-14252-9-git-send-email-stefani@seibold.net
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/vvar.h | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/vdso.h  |  2 ++
+ arch/x86/vdso/Makefile       |  3 ++-
+ arch/x86/vdso/vdso32-setup.c | 23 ++++++++++++-----------
+ arch/x86/vdso/vma.c          | 13 ++++++++++---
+ 4 files changed, 26 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-index 0a534ea..52c79ff 100644
---- a/arch/x86/include/asm/vvar.h
-+++ b/arch/x86/include/asm/vvar.h
-@@ -26,6 +26,15 @@
+diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
+index 5594e84..f8605e6 100644
+--- a/arch/x86/include/asm/vdso.h
++++ b/arch/x86/include/asm/vdso.h
+@@ -28,4 +28,6 @@ extern const char vdso32_int80_start, vdso32_int80_end;
+ extern const char vdso32_syscall_start, vdso32_syscall_end;
+ extern const char vdso32_sysenter_start, vdso32_sysenter_end;
  
- #else
++void __init patch_vdso32(void *vdso, size_t len);
++
+ #endif /* _ASM_X86_VDSO_H */
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index fd14be1..7a3d13e 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -21,7 +21,8 @@ vobjs-$(VDSOX32-y) += $(vobjx32s-compat)
+ vobj64s := $(filter-out $(vobjx32s-compat),$(vobjs-y))
  
-+#ifdef BUILD_VDSO32
-+
-+#define DECLARE_VVAR(offset, type, name)				\
-+	extern type vvar_ ## name __attribute__((visibility("hidden")));
-+
-+#define VVAR(name) (vvar_ ## name)
-+
-+#else
-+
- extern char __vvar_page;
+ # files to link into kernel
+-obj-$(VDSO64-y)			+= vma.o vdso.o
++obj-y				+= vma.o
++obj-$(VDSO64-y)			+= vdso.o
+ obj-$(VDSOX32-y)		+= vdsox32.o
+ obj-$(VDSO32-y)			+= vdso32.o vdso32-setup.o
  
- /* Base address of vvars.  This is not ABI. */
-@@ -39,12 +48,13 @@ extern char __vvar_page;
- 	static type const * const vvaraddr_ ## name =			\
- 		(void *)(VVAR_ADDRESS + (offset));
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index ab20c04..e0fc767 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -112,24 +112,25 @@ void enable_sep_cpu(void)
  
-+#define VVAR(name) (*vvaraddr_ ## name)
+ int __init sysenter_setup(void)
+ {
+-	void *syscall_page = (void *)get_zeroed_page(GFP_ATOMIC);
+-	const void *vsyscall;
+-	size_t vsyscall_len;
++	void *vdso_page = (void *)get_zeroed_page(GFP_ATOMIC);
++	const void *vdso;
++	size_t vdso_len;
+ 
+-	vdso32_pages[0] = virt_to_page(syscall_page);
++	vdso32_pages[0] = virt_to_page(vdso_page);
+ 
+ 	if (vdso32_syscall()) {
+-		vsyscall = &vdso32_syscall_start;
+-		vsyscall_len = &vdso32_syscall_end - &vdso32_syscall_start;
++		vdso = &vdso32_syscall_start;
++		vdso_len = &vdso32_syscall_end - &vdso32_syscall_start;
+ 	} else if (vdso32_sysenter()){
+-		vsyscall = &vdso32_sysenter_start;
+-		vsyscall_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
++		vdso = &vdso32_sysenter_start;
++		vdso_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
+ 	} else {
+-		vsyscall = &vdso32_int80_start;
+-		vsyscall_len = &vdso32_int80_end - &vdso32_int80_start;
++		vdso = &vdso32_int80_start;
++		vdso_len = &vdso32_int80_end - &vdso32_int80_start;
+ 	}
+ 
+-	memcpy(syscall_page, vsyscall, vsyscall_len);
++	memcpy(vdso_page, vdso, vdso_len);
++	patch_vdso32(vdso_page, vdso_len);
+ 
+ 	return 0;
+ }
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index 431e875..7345bc9 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -16,6 +16,7 @@
+ #include <asm/vdso.h>
+ #include <asm/page.h>
+ 
++#if defined(CONFIG_X86_64)
+ unsigned int __read_mostly vdso_enabled = 1;
+ 
+ extern char vdso_start[], vdso_end[];
+@@ -28,8 +29,12 @@ static unsigned vdso_size;
+ extern char vdsox32_start[], vdsox32_end[];
+ extern struct page *vdsox32_pages[];
+ static unsigned vdsox32_size;
 +#endif
-+
- #define DEFINE_VVAR(type, name)						\
- 	type name							\
- 	__attribute__((section(".vvar_" #name), aligned(16))) __visible
++#endif
  
--#define VVAR(name) (*vvaraddr_ ## name)
--
+-static void __init patch_vdsox32(void *vdso, size_t len)
++#if defined(CONFIG_X86_32) || defined(CONFIG_X86_X32_ABI) || \
++	defined(CONFIG_COMPAT)
++void __init patch_vdso32(void *vdso, size_t len)
+ {
+ 	Elf32_Ehdr *hdr = vdso;
+ 	Elf32_Shdr *sechdrs, *alt_sec = 0;
+@@ -52,7 +57,7 @@ static void __init patch_vdsox32(void *vdso, size_t len)
+ 	}
+ 
+ 	/* If we get here, it's probably a bug. */
+-	pr_warning("patch_vdsox32: .altinstructions not found\n");
++	pr_warning("patch_vdso32: .altinstructions not found\n");
+ 	return;  /* nothing to patch */
+ 
+ found:
+@@ -61,6 +66,7 @@ found:
+ }
  #endif
  
- /* DECLARE_VVAR(offset, type, name) */
++#if defined(CONFIG_X86_64)
+ static void __init patch_vdso64(void *vdso, size_t len)
+ {
+ 	Elf64_Ehdr *hdr = vdso;
+@@ -104,7 +110,7 @@ static int __init init_vdso(void)
+ 		vdso_pages[i] = virt_to_page(vdso_start + i*PAGE_SIZE);
+ 
+ #ifdef CONFIG_X86_X32_ABI
+-	patch_vdsox32(vdsox32_start, vdsox32_end - vdsox32_start);
++	patch_vdso32(vdsox32_start, vdsox32_end - vdsox32_start);
+ 	npages = (vdsox32_end - vdsox32_start + PAGE_SIZE - 1) / PAGE_SIZE;
+ 	vdsox32_size = npages << PAGE_SHIFT;
+ 	for (i = 0; i < npages; i++)
+@@ -204,3 +210,4 @@ static __init int vdso_setup(char *s)
+ 	return 0;
+ }
+ __setup("vdso=", vdso_setup);
++#endif
