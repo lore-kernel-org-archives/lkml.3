@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905AbaCROGj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:06:39 -0400
-Received: from mail.efficios.com ([78.47.125.74]:50280 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755810AbaCROGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:06:01 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC PATCH v5 2/3] Tracepoint API doc update: data argument
-Date: Tue, 18 Mar 2014 10:05:45 -0400
-Message-Id: <1395151546-20445-3-git-send-email-mathieu.desnoyers@efficios.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1395151546-20445-1-git-send-email-mathieu.desnoyers@efficios.com>
-References: <1395151546-20445-1-git-send-email-mathieu.desnoyers@efficios.com>
+	id S1755956AbaCROHF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 10:07:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36604 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755913AbaCROHD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 10:07:03 -0400
+Message-ID: <53285303.8000305@free-electrons.com>
+Date: Tue, 18 Mar 2014 15:06:59 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Jason Cooper <jason@lakedaemon.net>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [patch 5/5] irqchip: armanda: Sanitize set_irq_affinity()
+References: <20140304202425.102779779@linutronix.de> <20140304203101.088889302@linutronix.de> <20140306190531.GF1872@titan.lakedaemon.net> <5319ED86.2050707@free-electrons.com> <alpine.DEB.2.02.1403071816340.18573@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1403071816340.18573@ionos.tec.linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Describe the @data argument (probe private data).
+Hi Thomas,
 
-Fixes: 38516ab59fbc "tracing: Let tracepoints have data passed to tracepoint callbacks"
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
----
- kernel/tracepoint.c |    2 ++
- 1 file changed, 2 insertions(+)
+On 07/03/2014 18:17, Thomas Gleixner wrote:
+> On Fri, 7 Mar 2014, Gregory CLEMENT wrote:
+> 
+>> On 06/03/2014 20:05, Jason Cooper wrote:
+>>> Thomas,
+>>>
+>>> nit: s/armanda/armada/ in the patch subject.
+>>>
+>>> Gregory,
+>>>
+>>> Mind providing an Ack on this?
+>>
+>> Well sorry but with this patch the kernel doesn't
+>> work anymore.
+>>
+>> I am investigating to find if some part could be kept.
+> 
+> It might be the readback of the routing register. I don't have the
+> datasheet of this.
 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 0faf2a4..cc6c8b6 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -373,6 +373,7 @@ tracepoint_add_probe(const char *name, void *probe, void *data)
-  * tracepoint_probe_register -  Connect a probe to a tracepoint
-  * @name: tracepoint name
-  * @probe: probe handler
-+ * @data: probe private data
-  *
-  * Returns 0 if ok, error value on error.
-  * The probe address must at least be aligned on the architecture pointer size.
-@@ -415,6 +416,7 @@ tracepoint_remove_probe(const char *name, void *probe, void *data)
-  * tracepoint_probe_unregister -  Disconnect a probe from a tracepoint
-  * @name: tracepoint name
-  * @probe: probe function pointer
-+ * @data: probe private data
-  *
-  * We do not need to call a synchronize_sched to make sure the probes have
-  * finished running before doing a module unload, because the module unload
+Sorry for the delay, I was on vacation without the hardware to test it.
+
+Indeed it was the readback of the routing register. (Unfortunately the
+datasheet was not yet publicly available :(  ). In your patch by replacing
+the line:
+
+writel(mask, main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
+
+by the following ones:
+
+reg = readl(main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
+reg = (reg & (~ARMADA_370_XP_INT_SOURCE_CPU_MASK)) | mask;
+writel(reg, main_int_base + ARMADA_370_XP_INT_SOURCE_CTL(hwirq));
+
+with
+#define ARMADA_370_XP_INT_SOURCE_CPU_MASK	0xF
+
+Then it worked.
+
+About masking with the online CPU in the original code, the purpose
+was to allow sharing the SoC with an other OS by doing AMP. This feature
+is part of the Marvell version of the kernel.
+The idea was to bring this latter in the vanilla kernel, but I am not sure
+that all the part needed for AMP are acceptable for mainline. So I can add
+it back later when we will need it.
+
+
+Thanks,
+
+Gregory
+
+
+>  
+> Thanks,
+> 
+> 	tglx
+> 
+
+
+
 -- 
-1.7.10.4
-
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
