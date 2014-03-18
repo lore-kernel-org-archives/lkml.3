@@ -1,135 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139AbaCRHhu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 03:37:50 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:15420 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942AbaCRHhV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 03:37:21 -0400
-Message-ID: <5327F75F.1010406@huawei.com>
-Date: Tue, 18 Mar 2014 15:35:59 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: <linux@arm.linux.org.uk>
-CC: Wang Nan <wangnan0@huawei.com>, <gregkh@linuxfoundation.org>,
-        <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Li Zefan <lizefan@huawei.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] ARM: mm: support big-endian page tables
-References: <5301B4AF.1040305@huawei.com>
-In-Reply-To: <5301B4AF.1040305@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.155]
-X-CFilter-Loop: Reflected
+	id S1752740AbaCRHlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 03:41:10 -0400
+Received: from ozlabs.org ([203.10.76.45]:44486 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752369AbaCRHlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 03:41:09 -0400
+Date: Tue, 18 Mar 2014 18:41:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fariya Fatima <fariyaf@gmail.com>
+Subject: linux-next: build failure after merge of the final tree
+ (wireless-next tree related)
+Message-Id: <20140318184102.63b5780e764ad20670f2cbc0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__18_Mar_2014_18_41_02_+1100_7nYp7sJX7I1Y0Cjv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+--Signature=_Tue__18_Mar_2014_18_41_02_+1100_7nYp7sJX7I1Y0Cjv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cloud you please take a look at this?
+Hi all,
 
-Thanks!
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-On 2014/2/17 15:05, Jianguo Wu wrote:
+In file included from drivers/net/wireless/rsi/rsi_mgmt.h:22:0,
+                 from drivers/net/wireless/rsi/rsi_91x_core.c:17:
+drivers/net/wireless/rsi/rsi_91x_core.c: In function 'rsi_dbg':
+drivers/net/wireless/rsi/rsi_main.h:44:20: error: function 'rsi_dbg' can ne=
+ver be inlined because it uses variable argument lists
+ static inline void rsi_dbg(u32 zone, const char *fmt, ...)
+                    ^
 
-> When enable LPAE and big-endian in a hisilicon board, while specify
-> mem=384M mem=512M@7680M, will get bad page state:
-> 
-> Freeing unused kernel memory: 180K (c0466000 - c0493000)
-> BUG: Bad page state in process init  pfn:fa442
-> page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
-> page flags: 0x40000400(reserved)
-> Modules linked in:
-> CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
-> [<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
-> [<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
-> [<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
-> [<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
-> [<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
-> [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
-> [<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
-> [<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
-> [<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
-> 
-> The bad pfn:fa442 is not system memory(mem=384M mem=512M@7680M), after debugging,
-> I find in page fault handler, will get wrong pfn from pte just after set pte,
-> as follow:
-> do_anonymous_page()
-> {
-> 	...
-> 	set_pte_at(mm, address, page_table, entry);
-> 	
-> 	//debug code
-> 	pfn = pte_pfn(entry);
-> 	pr_info("pfn:0x%lx, pte:0x%llx\n", pfn, pte_val(entry));
-> 
-> 	//read out the pte just set
-> 	new_pte = pte_offset_map(pmd, address);
-> 	new_pfn = pte_pfn(*new_pte);
-> 	pr_info("new pfn:0x%lx, new pte:0x%llx\n", pfn, pte_val(entry));
-> 	...
-> }
-> 
-> pfn:   0x1fa4f5,     pte:0xc00001fa4f575f
-> new_pfn:0xfa4f5, new_pte:0xc00000fa4f5f5f	//new pfn/pte is wrong.
-> 
-> The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
-> when pte is 64-bit, for little-endian, will store low 32-bit in r2,
-> high 32-bit in r3; for big-endian, will store low 32-bit in r3,
-> high 32-bit in r2, this will cause wrong pfn stored in pte,
-> so we should exchange r2 and r3 for big-endian.
-> 
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> ---
->  arch/arm/mm/proc-v7-3level.S |   18 +++++++++++++-----
->  1 files changed, 13 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-> index 01a719e..22e3ad6 100644
-> --- a/arch/arm/mm/proc-v7-3level.S
-> +++ b/arch/arm/mm/proc-v7-3level.S
-> @@ -64,6 +64,14 @@ ENTRY(cpu_v7_switch_mm)
->  	mov	pc, lr
->  ENDPROC(cpu_v7_switch_mm)
->  
-> +#ifdef __ARMEB__
-> +#define rl r3
-> +#define rh r2
-> +#else
-> +#define rl r2
-> +#define rh r3
-> +#endif
-> +
->  /*
->   * cpu_v7_set_pte_ext(ptep, pte)
->   *
-> @@ -73,13 +81,13 @@ ENDPROC(cpu_v7_switch_mm)
->   */
->  ENTRY(cpu_v7_set_pte_ext)
->  #ifdef CONFIG_MMU
-> -	tst	r2, #L_PTE_VALID
-> +	tst	rl, #L_PTE_VALID
->  	beq	1f
-> -	tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
-> -	bicne	r2, #L_PTE_VALID
-> +	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
-> +	bicne	rl, #L_PTE_VALID
->  	bne	1f
-> -	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
-> -	orreq	r2, #L_PTE_RDONLY
-> +	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
-> +	orreq	rl, #L_PTE_RDONLY
->  1:	strd	r2, r3, [r0]
->  	ALT_SMP(W(nop))
->  	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
+I got quite a few of these.  I am using gcc version 4.8.1 if that matters.
 
+Caused by commit dad0d04fa7ba ("rsi: Add RS9113 wireless driver") from
+the wireless-next tree.
 
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Tue__18_Mar_2014_18_41_02_+1100_7nYp7sJX7I1Y0Cjv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTJ/iSAAoJEMDTa8Ir7ZwV/TMP/0sgPpTroU38xCKSGYNZk98K
+kUkxAQltb8MlztZTkYNOcTNVa9pCRyF2gogeG1vq8RsIJsI2gqIyu+B1wq4a84Ws
+bsD/ZbF7DttxrdOzrSi+cb0eWjznGLFPeeOE/NoySEbo/uwrcEnLw0So4VrQhpA/
+VPMWfCigOh2TNsZZO3DudYzvjemRPHPeh8+GKWzb571mQOoalHlK1j9O8rziXAZf
+vGxy0LUZNA8KYImiG6Wbdgrd6MP02naQ6KpoPnE84AKildmrCL5Yx+o709lEdQA/
+abbwvt6ytSjXv9Vp3ngxrWc3s/yIWjfqQxdYu+GRNgMSubepcdw1IIT3qcxo3rNL
+5jbNbD+eSXZlN3Q0sC1W7scF24r7tX5jyguDLZwMvJ1/Oc7e49aSnJlffkYy8IEg
+JR/Xi/Q0czj3oYIgYOsIuh6OAZZgE5o1muGKU7X010J2huY5TQEAgEmzwVmqpkRa
+B0XBI9FIAtAcGPoaEgZNQZ7yo0lMOZstos/k6Tri4pFuwTbyMm8FjEAmMu/sZmH/
+Edd5sr3wBWTEUYwXRvryqqpp0d6+QjwUyr4sNjAQzMdGXAgKlOP3lhc5doQzlpwH
+4OcS+/JCdAdC7Dy6Z8DI/CC3OjdRpl+nqufv7K5PQCtOUJnmOK9bDXupfpcoZoK1
+VUVynjkLbyt0OJX7/Qvi
+=JQLf
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__18_Mar_2014_18_41_02_+1100_7nYp7sJX7I1Y0Cjv--
