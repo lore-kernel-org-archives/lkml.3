@@ -1,130 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235AbaCRLDf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 07:03:35 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:30028 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873AbaCRLDc (ORCPT
+	id S1754769AbaCRLE0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 07:04:26 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47558 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876AbaCRLEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 07:03:32 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-8f-532828021869
-Date: Tue, 18 Mar 2014 20:03:29 +0900
-From: Cho KyongHo <pullip.cho@samsung.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: Re: [PATCH v11 15/27] iommu/exynos: use convenient macro to handle
- gate clocks
-Message-id: <20140318200329.cc1dca7541b4b1916e5d9d48@samsung.com>
-In-reply-to: <CAK9yfHx_=Os1G46nNO1HDA3tigkRNeHKN1KGCvuN=w7dRTkfjg@mail.gmail.com>
-References: <20140314140951.3d443a3096e80297c9fecef0@samsung.com>
- <5323078E.4060903@samsung.com>
- <CAK9yfHx_=Os1G46nNO1HDA3tigkRNeHKN1KGCvuN=w7dRTkfjg@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t8zY10mDY1ggwnzBCzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
-	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4Mq4vXInc8EigYpPm7ewNTBu4Oli5OSQEDCRWHd7KSuE
-	LSZx4d56ti5GLg4hgWWMEjNfX2DsYuQAK/pzXBQiPp1RYvO188wQzmQmiRfXf7CBFLEIqEqc
-	W+kDMohNQEti9dzjjCC2CJD9sns5E0g9s8BvFonb+/+wgCSEBSIl9nZ3MIPYvAKOEu+3z2QH
-	sTkFgiXm9j9jh1iwklFi/p7VLBDnWUhcaOpgh2gQlPgx+R5YnBlow+ZtTawQtrzE5jVvwa6T
-	EFjKIbHt9TSwM1gEBCS+TT7EAvGOrMSmA8wQMyUlDq64wTKBUWwWkrGzkIydhWTsAkbmVYyi
-	qQXJBcVJ6UWmesWJucWleel6yfm5mxgh0T5xB+P9A9aHGJOBVk5klhJNzgcmi7ySeENjMyML
-	UxNTYyNzSzPShJXEedMfJQUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYLxw77H2D6+lR5ff
-	+X2C3b74+5tpKqI6JW1Mi5kLtsyednlikl2R7myxSWUvSncn/ur4fXhP6Z89CkteBTfl/m4x
-	W2e9S+jTl+Nmu2yM38xr1rj5J3PZhdC7C/d8uefz2CFlnUf9h/mL5z+TY74t6PdVMda8rjKI
-	X3dthWte3NqlD45ZfXmVa+SvxFKckWioxVxUnAgAdOwDfgwDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGKsWRmVeSWpSXmKPExsVy+t9jQV0mDY1gg6fvuCzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
-	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAH6QEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYcXvlTuaCRQIV
-	nzZvYWtg3MDTxcjBISFgIvHnuGgXIyeQKSZx4d56ti5GLg4hgemMEpuvnWeGcCYzSby4/oMN
-	pIFFQFXi3EofkAY2AS2J1XOPM4LYIkD2y+7lTCD1zAK/WSRu7//DApIQFoiU2NvdwQxi8wo4
-	SrzfPpMdxOYUCJaY2/+MHWLBSkaJ+XtWs0CcYSFxoamDHaJBUOLH5HtgcWagDZu3NbFC2PIS
-	m9e8ZZ7AKDALSdksJGWzkJQtYGRexSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRGcSp5J72Bc
-	1WBxiFGAg1GJh/cFm3qwEGtiWXFl7iFGCQ5mJRHepWoawUK8KYmVValF+fFFpTmpxYcYk4HB
-	MZFZSjQ5H5jm8kriDY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qB
-	ccFZNtntS4X/NjhFNiY/a2bnNTBQm3g9OOHml2cvNyhuW7FyqfIVjSKBdQ+7+NSqavosatJk
-	bLe//XFrCTN7/Rn+a9Okn8e8U1v3xqlus4SVv6GR18q/ii/krqWaqfGY7Ff5W/A4KGt7kf1V
-	O62mBVlikWsYj/8x/vV1k2fY041BHeJl/b0dSizFGYmGWsxFxYkAS5hfn2kDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 18 Mar 2014 07:04:23 -0400
+Date: Tue, 18 Mar 2014 11:04:01 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Harini Katakam <harini.katakam@xilinx.com>
+Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        Michal Simek <michals@xilinx.com>
+Message-ID: <20140318110401.GH11706@sirena.org.uk>
+References: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
+ <20140317173017.GW11706@sirena.org.uk>
+ <255edf4f-05a8-4d9a-b32d-1a4a8ddaffb5@CH1EHSMHS004.ehs.local>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PBu/a+gn9/ndsyD5"
+Content-Disposition: inline
+In-Reply-To: <255edf4f-05a8-4d9a-b32d-1a4a8ddaffb5@CH1EHSMHS004.ehs.local>
+X-Cookie: Turn the other cheek.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] SPI: Add driver for Cadence SPI controller
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Mar 2014 22:27:59 +0530, Sachin Kamat wrote:
->  Hi KyongHo,
-> 
-> On 14 March 2014 19:13, Tomasz Figa <t.figa@samsung.com> wrote:
-> > Hi KyongHo,
-> >
-> >
-> > On 14.03.2014 06:09, Cho KyongHo wrote:
-> >>
-> >> exynos-iommu driver must care about master H/W's gate clock as well as
-> >> System MMU's gate clock. To enhance readability of the source code,
-> >> macros to gate/ungate those clocks are defined.
-> >>
-> >> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> >> ---
-> >>   drivers/iommu/exynos-iommu.c |   34 ++++++++++++++++++++++------------
-> >>   1 file changed, 22 insertions(+), 12 deletions(-)
-> >>
-> >> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> >> index 71e77f1..cef62d0 100644
-> >> --- a/drivers/iommu/exynos-iommu.c
-> >> +++ b/drivers/iommu/exynos-iommu.c
-> >> @@ -101,6 +101,16 @@
-> >>   #define REG_PB1_SADDR         0x054
-> >>   #define REG_PB1_EADDR         0x058
-> >>
-> >> +#define __clk_gate_ctrl(data, clk, en) do {            \
-> >> +               if (data->clk)                          \
-> >> +                       clk_##en##able(data->clk);      \
-> >> +       } while (0)
-> >> +
-> >> +#define __sysmmu_clk_enable(data)      __clk_gate_ctrl(data, clk, en)
-> >> +#define __sysmmu_clk_disable(data)     __clk_gate_ctrl(data, clk, dis)
-> >> +#define __master_clk_enable(data)      __clk_gate_ctrl(data, clk_master,
-> >> en)
-> >> +#define __master_clk_disable(data)     __clk_gate_ctrl(data, clk_master,
-> >> dis)
-> >> +
-> >
-> >
-> > I'd say that such macros only obfuscate code, without any gains, as you can
-> > see in diffstat - this patch adds more lines than it removes.
-> >
-> > Please drop this change.
-> 
->  I agree with Tomasz here.
-> 
 
-Are you concerning about using macros or more insertions than deletions?
+--PBu/a+gn9/ndsyD5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The deletions in this patch are only clk_enable() and clk_disable()
-but they must be
-"if (!IS_ERR(clk)) clk_enable(clk)" and "if (!IS_ERR(clk)) clk_disable(clk)".
+On Tue, Mar 18, 2014 at 05:16:26AM +0000, Harini Katakam wrote:
 
-I think use of macro is fancier in that case.
+Please fix your mailer to word wrap within paragraphs, this will make
+your mail much more legible.
 
-Thank you.
+> > > +	if (bits_per_word !=3D 8) {
+> > > +		dev_err(&spi->dev, "%s, unsupported bits per word %x\n",
+> > > +			__func__, spi->bits_per_word);
+> > > +		return -EINVAL;
+> > > +	}
 
-KyongHo.
+> > The core will check this for you.
+
+> I dint find that the core does this.
+
+bpw_mask.
+
+> > It's not clear to me why this has been split into a separate function a=
+nd the
+> > function will write to the hardware which you're not allowed to do in
+> > setup() if it might affect an ongoing transfer.
+
+> Are you saying  that there's a chance cdns_spi_setup() will be called
+> when there's an ongoing transfer?  In that case I have to remove the
+> cdns_setup_transfer() call from here but then there's nothing left to
+> do in setup.
+
+yes.
+
+> > I see from further up the file that there are error interrupt states wh=
+ich
+> > might be flagged but these are just being ignored.
+
+> I'm not sure I understand what you are referring to -
+> The only interrupts enabled (See CNDS_IXR_DEFAULT_MASK) are TXOW and MODF.
+
+The code had:
+
+> +#define CDNS_SPI_IXR_TXOW_MASK 0x00000004 /* SPI TX FIFO Overwater */
+> +#define CDNS_SPI_IXR_MODF_MASK 0x00000002 /* SPI Mode Fault */
+> +#define CDNS_SPI_IXR_RXNEMTY_MASK 0x00000010 /* SPI RX FIFO Not Empty */
+
+> +#define CDNS_SPI_IXR_TXFULL_MASK       0x00000008 /* SPI TX Full */
+
+and defined:
+
+> +#define CDNS_SPI_IXR_ALL_MASK  0x0000007F /* SPI all interrupts */
+
+> > > +	return IRQ_HANDLED;
+
+> > This should only be returned if an interrupt was actually handled - if =
+the line
+> > is shared in some system this will break.
+
+> In this case both possible interrupt conditions are handled.
+
+Are you sure that's the case, and even if you are that's still not
+handling the case where the device isn't flagging an interrupt at all.
+
+> > > +	cdns_spi_write(xspi->regs + CDNS_SPI_IER_OFFSET,
+> > > +		       CDNS_SPI_IXR_DEFAULT_MASK);
+> > > +
+> > > +	ret =3D wait_for_completion_interruptible_timeout(&xspi->done,
+> > > +							CDNS_SPI_TIMEOUT);
+> > > +	if (ret < 1) {
+
+> > If you return a positive value from transfer_one() the core will wait f=
+or you.
+
+> I don't understand. Here, if the ret from
+> wait_for_completion_interruptible_timeout is positive, then this
+> function (spi_start_transfer) will return (transfer->len) -
+> (xspi->remaining_bytes) to cdns_transfer_one_message(the calling
+> funtion). Which will just use this return as information on how many
+> bytes were transferred (see variable length).=20
+> cdns_transfer_one_messag() only returns 0 or error value (-ve) (see
+> variable status).  It doesn't return positive value to core.
+
+I'm saying you should be implementing a transfer_one() operation and
+returning a positive value from it so the core can do the delay for you.
+
+> > > +	ret =3D of_property_read_u16(pdev->dev.of_node, "num-chip-select",
+> > > +				   &master->num_chipselect);
+> > > +	if (ret < 0) {
+> > > +		dev_err(&pdev->dev, "couldn't determine num-chip-
+> > select\n");
+> > > +		goto clk_dis_all;
+> > > +	}
+
+> > Is there no reasonable default?
+
+> Are you saying if I cant read num-chipselect from dts,=20
+> I should set it to a default (that will be 4) and proceed?
+
+Yes.
+
+> > > +	/* Set to default valid value */
+> > > +	xspi->speed_hz =3D clk_get_rate(xspi->ref_clk) / 4;
+
+> > The driver should set max_speed_hz as well.
+
+> This is the max_speed_hz - 4 is the lowest divisor possible. 2 is invalid.
+> It is set in init_hw (see config register default mask).
+
+I'm saying you should set max_speed_hz, not set speed_hz to the maximum
+value.  This tells the core what the maximum speed is so it can error
+check the driver operations.
+
+--PBu/a+gn9/ndsyD5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTKCgeAAoJELSic+t+oim9XN8QAIH4OFQRrDRwa/1eQb8K+LEA
+a0fZiNPZbIr7YMAAbLFSJtAEH0uJH9dZrjH0oJsEEHct7x/UIdhk8JNmXYK540Ra
+LyGq2RmiQ86fzeU/P41a/5BnWmliNdOZgh65OUUHOhT8Biv9AR+/D5O7tUVGt/cY
+jCdkrmYFjOWwemPOC2hWoAXY5GsrMmu0HWL7bGXMUPdsvf95QVkikrYxUcadoQwQ
+9Co9WHCir7Y0C8BZqOKfde9tPP4+cXsyyMsEW/jFNXyyBXUybs6X3ppyQLu1MJI1
+J4lGwwVTRM6mw+tygKkoqsAxb12j2waezSF1pWBGDRQ1IDsYSfCAf3hhJa4gIs9d
+84/shG5schnvkhTDCwNMgidOF8mwBZ9KVB4fKDS2Uy1EoocG2EX/Y27MZS2H3Xmb
+sJzXa76TrkyVPzWy1rELEPMx1ezdGSq3VpymXJ/v7y5prBb1g8I1wnbOH2jzIPTU
+mnq0a+v5/zaB/1sETYdvUTR09b/EtUUDt6hXsie1p9QWd8qO1GaHScUBCCE8yqvN
+0cJs0waK+61Pzeufp2wYKcZVfe7ad6siurI0oqk4Y9YDTAHnuku+MoDYkC7Jc+82
+lslZ0NIYhicGTqVdcG9V9q2LRT5P9mY5xLEtzPdB/HLsQULexwWOiwk3kjssmSsz
+SRFnCtZoekI1F2nOGmqU
+=0b0f
+-----END PGP SIGNATURE-----
+
+--PBu/a+gn9/ndsyD5--
