@@ -1,75 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870AbaCRM6F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 08:58:05 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:31008 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229AbaCRM6D (ORCPT
+	id S1755120AbaCRM7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 08:59:52 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:57749 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863AbaCRM7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 08:58:03 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-e6-532842d7caad
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] mfd: sec-core: Fix I2C dummy device resource leak on probe
- failure
-Date: Tue, 18 Mar 2014 13:57:50 +0100
-Message-id: <1395147470-24817-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDJMWRmVeSWpSXmKPExsVy+t/xa7rXnTSCDfqWmFq8fmFocf/rUUaL
-	y7vmsFmc7ma1uLjiC5MDq8eda3vYPOadDPTo27KK0ePzJrkAligum5TUnMyy1CJ9uwSujOP7
-	JzEWbOeomPZ3DmMD41u2LkZODgkBE4lpG3ezQthiEhfurQeKc3EICSxllJg9ezUjhNPHJHH3
-	0S4WkCo2AWOJzcuXgFWJCPQxSpx/u4YRJMEsYCjx890fdhBbWCBUomH2ETCbRUBV4u3e28wg
-	Nq+Au8T8vxeABnEArVOQmDPJZgIj9wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYISHw
-	dQfj0mNWhxgFOBiVeHhfsqkHC7EmlhVX5h5ilOBgVhLhZbfSCBbiTUmsrEotyo8vKs1JLT7E
-	yMTBKdXAOFfM91n5gxm/zAKF9rAuLfr0/sT2Bd9fBC7Pqc85GbOyJ0fFutE6cxXr/sL7sbtu
-	6XLyaE/uddo4Q+3b1T+ihnt3+bWu+C01J+jS+i4P59kzFayEL3y9pul4eq0Lg/ktb3Pmmxu8
-	r2y/WMXoN2Pj5KuSx7T/Cl5+3Dl5iebEA0bN1Rua7CSO+iixFGckGmoxFxUnAgCgvVNP3wEA	AA==
+	Tue, 18 Mar 2014 08:59:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394207364-4235-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1394207364-4235-1-git-send-email-benjamin.tissoires@redhat.com>
+Date: Tue, 18 Mar 2014 08:59:48 -0400
+Message-ID: <CAN+gG=GFwuzZa5uF5UTQM0b5SoMm8-D0V_70LSi2oqVd+fskTw@mail.gmail.com>
+Subject: Re: [PATCH] Input: synaptics add manual min/max quirk
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Christopher Heiny <cheiny@synaptics.com>,
+        Andrew Duggan <aduggan@synaptics.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        Stephen Chandler Paul <thatslyude@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dummy I2C device allocated in sec_pmic_probe() leaked if
-devm_regmap_init_i2c() failed. Unregister it before returning from
-probe.
+On Fri, Mar 7, 2014 at 10:49 AM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> The new Lenovo Haswell series (-40's) contains a new Synaptics touchpad.
+> However, these new Synaptics devices report bad axis ranges.
+> Under Windows, it is not a problem because the Windows driver uses RMI4
+> over SMBus to talk to the device. Under Linux, we are using the PS/2
+> fallback interface and it occurs the reported ranges are wrong.
+>
+> Of course, it would be too easy to have only one range for the whole
+> series, each touchpad seems to be calibrated in a different way.
+>
+> We can not use SMBus to get the actual range because I suspect the firmware
+> will switch into the SMBus mode and stop talking through PS/2 (this is the
+> case for hybrid HID over I2C / PS/2 Synaptics touchpads).
+>
+> So as a temporary solution (until RMI4 land into upstream), start a new
+> list of quirks with the min/max manually set.
+>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> CC: stable@vger.kernel.org
+> ---
+>
+> Hi Dmitry,
+>
+> Well, this work is part of a (big) attempt to support the new touchpads
+> Lenovo put in its latest series.
+> Those new laptops have lost the buttons associated to the trackstick and are
+> what we call "clickpad".
+> Things would be easy if:
+> 1. the PS/2 firmware did not lied about the actual range of the axis
+> 2. on some install (mine) the DMI matching in udev would not have been broken
+> 3. we did not have to fix a lot of stuff in Xorg / libinput / wayland
+>
+> This patch fixes 1.
+>
+> Matthew Garrett fixed 2. -> https://patchwork.kernel.org/patch/3704401/
+>
+> 3. is heavily working as shown by this tracker bug: https://bugs.freedesktop.org/show_bug.cgi?id=73158
+>
+> I put the 'stable' marker, feel free to remove it if you don't think it should
+> be there, but I really think this should also be backported to have something
+> working in current distros.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/mfd/sec-core.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Dmitry, are there any chances that this one and the one Hans submitted
+shortly after [1] will be considered for 3.15?
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 714e2135210e..6a6168ce3f79 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -260,7 +260,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 		ret = PTR_ERR(sec_pmic->regmap_rtc);
- 		dev_err(&i2c->dev, "Failed to allocate RTC register map: %d\n",
- 			ret);
--		return ret;
-+		goto err_regmap_rtc;
- 	}
- 
- 	if (pdata && pdata->cfg_pmic_irq)
-@@ -293,14 +293,15 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 	}
- 
- 	if (ret)
--		goto err;
-+		goto err_mfd;
- 
- 	device_init_wakeup(sec_pmic->dev, sec_pmic->wakeup);
- 
- 	return ret;
- 
--err:
-+err_mfd:
- 	sec_irq_exit(sec_pmic);
-+err_regmap_rtc:
- 	i2c_unregister_device(sec_pmic->rtc);
- 	return ret;
- }
--- 
-1.7.9.5
+Cheers,
+Benjamin
 
+[1] https://patchwork.kernel.org/patch/3798011/
+
+>  drivers/input/mouse/synaptics.c | 43 +++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 43 insertions(+)
+>
+> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+> index 26386f9..ff6a4cf 100644
+> --- a/drivers/input/mouse/synaptics.c
+> +++ b/drivers/input/mouse/synaptics.c
+> @@ -67,6 +67,8 @@
+>  #define X_MAX_POSITIVE 8176
+>  #define Y_MAX_POSITIVE 8176
+>
+> +static int *quirk_min_max = NULL;
+> +
+>  /*****************************************************************************
+>   *     Stuff we need even when we do not want native Synaptics support
+>   ****************************************************************************/
+> @@ -302,6 +304,13 @@ static int synaptics_resolution(struct psmouse *psmouse)
+>                 }
+>         }
+>
+> +       if (quirk_min_max) {
+> +               priv->x_min = quirk_min_max[0];
+> +               priv->x_max = quirk_min_max[1];
+> +               priv->y_min = quirk_min_max[2];
+> +               priv->y_max = quirk_min_max[3];
+> +       }
+> +
+>         return 0;
+>  }
+>
+> @@ -1485,10 +1494,44 @@ static const struct dmi_system_id olpc_dmi_table[] __initconst = {
+>         { }
+>  };
+>
+> +static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+> +#if defined(CONFIG_DMI)
+> +       {
+> +               /* Lenovo ThinkPad Helix */
+> +               .matches = {
+> +                       DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+> +                       DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
+> +               },
+> +               .driver_data = (int []){1024, 5052, 2258, 4832},
+> +       },
+> +       {
+> +               /* Lenovo ThinkPad T440s */
+> +               .matches = {
+> +                       DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+> +                       DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T440"),
+> +               },
+> +               .driver_data = (int []){1024, 5112, 2024, 4832},
+> +       },
+> +       {
+> +               /* Lenovo ThinkPad T540p */
+> +               .matches = {
+> +                       DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+> +                       DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
+> +               },
+> +               .driver_data = (int []){1024, 5056, 2058, 4832},
+> +       },
+> +#endif
+> +       { }
+> +};
+> +
+>  void __init synaptics_module_init(void)
+>  {
+> +       const struct dmi_system_id *min_max_dmi;
+>         impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
+>         broken_olpc_ec = dmi_check_system(olpc_dmi_table);
+> +       min_max_dmi = dmi_first_match(min_max_dmi_table);
+> +       if (min_max_dmi)
+> +               quirk_min_max = (int *)min_max_dmi->driver_data;
+>  }
+>
+>  static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
+> --
+> 1.8.5.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
