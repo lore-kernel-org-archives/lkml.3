@@ -1,167 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaCRMS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 08:18:57 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:33712 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205AbaCRMSx (ORCPT
+	id S1754299AbaCRMWV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 08:22:21 -0400
+Received: from relay.parallels.com ([195.214.232.42]:34718 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139AbaCRMWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 08:18:53 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-fd-532839aa6ebf
-Message-id: <532839A5.8020505@samsung.com>
-Date: Tue, 18 Mar 2014 13:18:45 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        rafael.j.wysocki@intel.com, nm@ti.com, b.zolnierkie@samsaung.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCHv2 4/8] devfreq: exynos4: Fix bug of resource leak and code
- clean on probe()
-References: <1394698649-20996-1-git-send-email-cw00.choi@samsung.com>
- <1394698649-20996-5-git-send-email-cw00.choi@samsung.com>
- <53234132.8080202@samsung.com> <532682A8.2030300@samsung.com>
-In-reply-to: <532682A8.2030300@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t/xK7qrLDWCDY7d5rbo6PnNYnH9y3NW
-	i/lHzrFanHu1ktHibNMbdouFbUtYLC7vmsNm8bn3CKPFjPP7mCyWXr/IZHG7cQWbxZsfZ5ks
-	Jkxfy2LxeMVbdotXB9tYHPg91sxbw+ixcvkXNo/Fe14yefxcvp3do2/LKkaP4ze2M3l83iTn
-	sXFuaABHFJdNSmpOZllqkb5dAlfG7BtXmAouqVTMW/eOpYHxpkwXIyeHhICJxN3le5ghbDGJ
-	C/fWs3UxcnEICSxllDiy/x0ThPOZUWJh8y3GLkYODl4BLYm2tVIgJouAqkTPEk6QXjYBNYnP
-	DY/YQGx+oIo1TddZQGxRgQiJuRM3g8V5BQQlfky+BxYXEdCQmPn3CiOIzSzwlUni5jwmEFtY
-	IFHi2O5pLBBrDzJK/G2eAtbMKaAt0fVpDVSDtcTKSdugbHmJzWveMk9gFJyFZMcsJGWzkJQt
-	YGRexSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESaV93MC49ZnWIUYCDUYmH9yWberAQa2JZ
-	cWXuIUYJDmYlEd79OhrBQrwpiZVVqUX58UWlOanFhxiZODilGhgnJTKZsn5cGGq+1lItZMPa
-	WannNtsZF2uWdR6Smxix84cnF7vayt8PJ169//3Aj55ZbcyCYlLCHQsZ7pl9PPl252r5kPkK
-	OnP2z7xXLaLgerWk/0XNikx15WeLVjVlM9munPR97St+weeO36Zt4b6+0yLzROPNks3HFOyn
-	f/0dZpPKkr1wJ2OYEktxRqKhFnNRcSIAMD0R9pICAAA=
+	Tue, 18 Mar 2014 08:22:19 -0400
+Message-ID: <532838C2.4050303@parallels.com>
+Date: Tue, 18 Mar 2014 16:14:58 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <glommer@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: Re: [PATCH RESEND -mm 02/12] memcg: fix race in memcg cache destruction
+ path
+References: <cover.1394708827.git.vdavydov@parallels.com> <94fc308b9074e45a2aac7a06cf357a33c5d97c9f.1394708827.git.vdavydov@parallels.com> <20140317164203.GC30623@dhcp22.suse.cz> <53280174.1040507@parallels.com> <20140318100147.GC3191@dhcp22.suse.cz>
+In-Reply-To: <20140318100147.GC3191@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.03.2014 06:05, Chanwoo Choi wrote:
-> Hi Tomasz,
->
-> On 03/15/2014 02:49 AM, Tomasz Figa wrote:
->> Hi Chanwoo,
+On 03/18/2014 02:01 PM, Michal Hocko wrote:
+> On Tue 18-03-14 12:19:00, Vladimir Davydov wrote:
+>> On 03/17/2014 08:42 PM, Michal Hocko wrote:
+>>> On Thu 13-03-14 19:06:40, Vladimir Davydov wrote:
+>>>> We schedule memcg cache shrink+destruction work (memcg_params::destroy)
+>>>> from two places: when we turn memcg offline
+>>>> (mem_cgroup_destroy_all_caches) and when the last page of the cache is
+>>>> freed (memcg_params::nr_pages reachs zero, see memcg_release_pages,
+>>>> mem_cgroup_destroy_cache).
+>>> This is just ugly! Why do we mem_cgroup_destroy_all_caches from the
+>>> offline code at all? Just calling kmem_cache_shrink and then wait for
+>>> the last pages to go away should be sufficient to fix this, no?
+>> The problem is kmem_cache_shrink() can take the slab_mutex, and we
+>> iterate over memcg caches to be destroyed under the memcg's
+>> slab_caches_mutex, which is nested into the slab_mutex (see
+>> mem_cgroup_destroy_all_caches()). So we can't call kmem_cache_shrink()
+>> there directly due to lockdep. That's what all that trickery with using
+>> the same work for both cache shrinking and destruction is for. I agree
+>> this is ugly and somewhat difficult to understand. Let me share my
+>> thoughts on this problem.
+> Nothing prevents mem_cgroup_destroy_all_caches to call kmem_cache_shrink
+> from the workqueue context, no? And then we can move all caches which
+> still have some pages to the parent memcg
+
+Currently, when reparenting memcg caches (see patch 11), I move memcg
+caches from the memcg_slab_caches list of the memcg being offlined to
+its parent under both memcg's slab_caches_mutexes held - this makes
+synchronization with kmem_cache_destroy easier. However, if we could
+take the reference to the root cache there protecting it from being
+destroyed, I guess we could safely release memcg::slab_caches_mutex
+between removal the caches from the old list (of the memcg being
+destroyed) and inserting them to the new list (parent). That said, you
+must be right. It seems that introducing full-fledged refcounting for
+kmem_caches would simplify the code a lot.
+
+> + update back-pointers from respective page_cgroups.
+
+As Johannes mentioned, we don't need page_cgroups for kmem pages since
+we can track kmem objects through page->slab_cache, and this set gets
+rid of them (patch 7).
+
+>> First, why do we need to call kmem_cache_shrink() there at all? AFAIU,
+>> this is because most of memcg caches must be empty by the time the memcg
+>> is destroyed, but since there are some pages left on the caches for
+>> performance reasons, and those pages hold cache references
+>> (kmem_cache::memcg_params::nr_pages) preventing it from being destroyed,
+>> we try to shrink them to get rid of empty caches. If shrink fails (i.e.
+>> the memcg cache is not empty) the cache will be pending for good in the
+>> current implementation (until someone calls the shrink manually at
+>> least). Glauber intended to fix the issue with pending caches by reaping
+>> them on vmpressure, but he didn't have enough time to complete this,
+>> unfortunately.
 >>
->> On 13.03.2014 09:17, Chanwoo Choi wrote:
->>> This patch fix bug about resource leak when happening probe fail and code clean
->>> to add debug message.
->>>
->>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>> ---
->>>    drivers/devfreq/exynos/exynos4_bus.c | 32 ++++++++++++++++++++++++++------
->>>    1 file changed, 26 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
->>> index a2a3a47..152a3e9 100644
->>> --- a/drivers/devfreq/exynos/exynos4_bus.c
->>> +++ b/drivers/devfreq/exynos/exynos4_bus.c
->>> @@ -1152,8 +1152,11 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
->>>            dev_err(dev, "Cannot determine the device id %d\n", data->type);
->>>            err = -EINVAL;
->>>        }
->>> -    if (err)
->>> +    if (err) {
->>> +        dev_err(dev, "Cannot initialize busfreq table %d\n",
->>> +                 data->type);
->>>            return err;
->>> +    }
->>>
->>>        rcu_read_lock();
->>>        opp = dev_pm_opp_find_freq_floor(dev,
->>> @@ -1176,7 +1179,7 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
->>>        if (IS_ERR(data->devfreq)) {
->>>            dev_err(dev, "Failed to add devfreq device\n");
->>>            err = PTR_ERR(data->devfreq);
->>> -        goto err_opp;
->>> +        goto err_devfreq;
->>>        }
->>>
->>>        /*
->>> @@ -1185,18 +1188,35 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
->>>         */
->>>        busfreq_mon_reset(data);
->>>
->>> -    devfreq_register_opp_notifier(dev, data->devfreq);
->>> +    /* Register opp_notifier for Exynos4 busfreq */
->>> +    err = devfreq_register_opp_notifier(dev, data->devfreq);
->>> +    if (err < 0) {
->>> +        dev_err(dev, "Failed to register opp notifier\n");
->>> +        goto err_notifier_opp;
->>> +    }
->>>
->>> +    /* Register pm_notifier for Exynos4 busfreq */
->>>        err = register_pm_notifier(&data->pm_notifier);
->>>        if (err) {
->>>            dev_err(dev, "Failed to setup pm notifier\n");
->>> -        devfreq_remove_device(data->devfreq);
->>> -        return err;
->>> +        goto err_notifier_pm;
->>>        }
->>>
->>>        return 0;
->>>
->>> -err_opp:
->>> +err_notifier_pm:
->>> +    devfreq_unregister_opp_notifier(dev, data->devfreq);
->>> +err_notifier_opp:
->>> +    /*
->>> +     * The devfreq_remove_device() would execute finally devfreq->profile
->>> +     * ->exit(). To avoid duplicate resource free operation, return directly
->>> +     * before executing resource free below 'err_devfreq' goto statement.
->>> +     */
+>> But why do we get cache references per slab?
+> I guess this is natural from the charging point of view. It is also less
+> intrusive because this is a slow path.
+>
+>> I mean why do we inc the
+>> cache refcounter (kmem_cache::memcg_params::nr_pages currently) when
+>> allocating a slab, not an individual object? If we took the reference to
+>> the cache per individual object, we would not have to call
+>> kmem_cache_shrink() on memcg offline - if the cache is empty it will be
+>> destroyed immediately then, because its refcounter reaches 0, otherwise
+>> we could leave it hanging around for a while and only try to shrink it
+>> on vmpressure when we really need free mem. That would make the
+>> destroy_work straightforward - it would simply call kmem_cache_destroy()
+>> and that's it.
 >>
->> I'm not quite sure about this. I believe that in this case devfreq->profile->exit() would be exynos4_bus_exit() and all it does is devfreq_unregister_opp_notifier(dev, data->devfreq), so all remaining resources (regulators, clocks, etc.) would get leaked.
->
-> This patch execute following sequence to probe exynos4_busfreq.c:
->
-> 1. Parse dt node to get resource(regulator/clock/memory address).
-> 2. Enable regulator/clock and map memory.
-> 3. Add devfreq device using devfreq_add_device().
->     The devfreq_add_device() return devfreq instance(data->devfreq).
-> 4. Register opp_notifier using devfreq instance(data->devfreq) which is created in sequence #3.
->
-> Case 1,
-> If an error happens in sequence #3 for registering devfreq_add_device(),
->
-> this case can't execute devfreq->profile->exit() to free resource
-> because this case has failed to register devfreq->profile to devfreq_list.
->
-> So, must goto 'err_devfreq' statement to free resource(regulator/clock/memory).
->
->
-> Case 2,
-> If an error happens in sequence #4 for registering opp_notifier,
->
-> In contrast
-> this case can execute devfreq->profile->exit() to free resource.
-> But, After executed devfreq->profile->exit(),
-> should not execute 'err_devfreq' statement to free resource.
-> In case, will operate twice of resource.
->
-> If my explanation is wrong, please reply your comment.
->
+>> I guess I foresee the answer to the question I've just raised - using a
+>> per cache refcounter and taking it on each alloc/free would hurt
+>> scalability too much. However, we could use percpu refcounter to
+>> overcome this, couldn't we?
+> I am afraid this would still be too invasive for the fast path. That
+> would be a question for slab guys though.
 
-OK, it will work indeed, however the code is barely readable with this.
+Yeah, that's bothering me too. I guess I'll try to send it as RFC in a
+separate patch to get more feedback, because this would be a great
+simplification, IMO.
 
-For consistency (and readability), resources acquired in platform 
-driver's .probe() should be freed in .remove() and error path of 
-.probe() should not rely on external code to do the clean-up.
+>> There is one more argument for taking the cache refcount on a per-object
+>> (not per-slab) basis. There seems to be a race in kmem allocation path.
+>> The point is there is a time window between we get the cache to allocate
+>> from (memcg_kmem_get_cache()) and the actual allocating from the cache
+>> (see slab_alloc_node()). Actually, nothing prevents the cache from going
+>> away in this time window
+> By "the cache" you mean the memcg variant or the global one?
 
-So, as I proposed in my previous reply:
+memcg one
 
+>> - the task can change its cgroup and the former cgroup can be taken
+>> offline resulting in the cache destruction.
+> With a proper synchronization this shouldn't be a big deal I suppose.
+> kmem_cache_create_memcg should check that the memcg is still alive. We
+> mark caches dead and we would need something like that per-memcg as well
+> during css_offline (after all memcg_slab_caches were shrunk). The create
+> worker would then back off and fail when trying to register the cache.
+
+Let's consider the following scenario:
+
+1) A process inside a memcg calls kmem_cache_alloc(). Suppose the
+memcg's cache already exists and is empty.
+2) kmem_cache_alloc() calls memcg_kmem_get_cache(), which returns the
+pointer to the memcg cache to allocate from.
+3) At this time, the process is moved out of the memcg, and the memcg is
+destroyed along with its empty caches.
+4) The process then proceeds to an object allocation from the cache it
+was given by memcg_kmem_get_cache() on step 2, but the cache was freed.
+
+Does it make sense?
+
+>> This is very unlikely, but still possible.
+>> A similar problem with freeing
+>> objects - currently we might continue using a cache after we actually
+>> freed the last object and dropped the reference - look at
+>> kmem_freepages(), there we dereference the cache pointer after calling
+>> memcg_release_pages(), which drops the cache reference.
+> This sounds like an ordering issue. memcg_release_pages should be called
+> as the last. I do not see why the ordering was done this way.
+
+Fixing ordering only in this function wouldn't solve the problem
+completely. Look at slab's cache_free_alien() - it unlocks
+cachep->node[nodeid].list_lock after calling free_block() that might
+schedule the cache destruction. I mean the problem is that
+kmem_freepages and __free_slab(), which issue memcg_release_pages(), are
+not necessarily the last functions using the cache - the code issuing
+them may still want to touch the cache.
+
+>> The latter is
+>> more-or-less easy to fix though by ensuring we always drop the reference
+>> after we stopped using the cache, but this would imply heavy intrusion
+>> into slab internals AFAIU, which is bad. OTOH if we took the cache
+>> reference per allocated object, these problems would be resolved
+>> automatically and clearly.
 >>
->> I believe the correct thing to do would be to remove the .exit() callback from exynos4_devfreq_profile struct and handle all the clean-up here in error path.
->>
+>> I haven't included that in this set, because I tried not to blow it too
+>> much, I just wanted to introduce cache reparenting, in the meanwhile
+>> fixing only those issues that had become really painful. Not sure if it
+>> was the right decision though :-/
+> I would really prefer to go with simplifications first and build
+> reparenting on top of that.
 
-Best regards,
-Tomasz
+Agree, but first we need to come to agreement about what simplifications
+we should go with.
+
+IMO, the most confusing part of kmemcg is how memcg cache
+creation/destruction is handled. I mean all those synchronization tricks
+between kmem_cache_destroy, kmem_cache_create of root cache, memcg
+cache, etc. I think we would benefit if we introduced fully-fledged
+refcounting for kmem caches. This would also solve the problems first
+three patches of this set address.
+
+Next, as I've already mentioned we can handle kmem w/o using
+page_cgroups provided we don't charge kmalloc large allocations. See
+patches 7-10 - they remove ~270 lines of code while adding only ~70.
+When looking at those patches now, I start to think it would be better
+if I sent them first in a separate set.
+
+Currently, nothing else springs to my mind. I guess I need to think a
+bit more...
+
+Thanks.
+
+>> Anyway, I would appreciate if you could share your thoughts about that.
+>>
+>>> Whether the current code is good (no it's not) is another question. But
+>>> this should be fixed also in the stable trees (is the bug there since
+>>> the very beginning?) so the fix should be as simple as possible IMO.
+>>> So if there is a simpler solution I would prefer it. But I am drowning
+>>> in the kmem trickiness spread out all over the place so I might be
+>>> missing something very easily.
+>> Frankly, I'm not bothering about stable trees by now, because I don't
+>> think anybody is using kmemcg since w/o fs cache shrinking it looks
+>> pretty useless. May be, I'm wrong :-/
+> OK, it is all opt-in so there shouldn't be any harm for those who do not
+> use the feature which makes it less urgent but I can still imagine that
+> somebody might want to use the feature even on older kernels.
+>
+> You are right that the feature is really dubious without proper
+> shrinking. Which was btw. my objection at the time when we have
+> discussed that at LSF (before it got merged).
+
