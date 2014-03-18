@@ -1,194 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234AbaCRRWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:22:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55736 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756812AbaCRRTE (ORCPT
+	id S1757253AbaCRRW6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:22:58 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:33538 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756812AbaCRRWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:19:04 -0400
-Message-Id: <20140318171127.557159136@linutronix.de>
-User-Agent: quilt/0.60-1
-Date: Tue, 18 Mar 2014 17:19:13 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Benedikt Spranger <b.spranger@linutronix.de>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org
-Subject: [patch 09/12] can: c_can: Reduce register access for real
-References: <20140318171007.528610837@linutronix.de>
-Content-Disposition: inline;
- filename=can-c-can-reduce-ctrl-register-access.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 18 Mar 2014 13:22:54 -0400
+From: dirk.brandewie@gmail.com
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, rjw@rjwysocki.net, patrick.marlier@gmail.com,
+        viresh.kumar@linaro.org, srivatsa.bhat@linux.vnet.ibm.com,
+        dirk.brandewie@gmail.com, Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: [PATCH v3 0/2] Add stop callback to the cpufreq_driver interface.
+Date: Tue, 18 Mar 2014 10:22:39 -0700
+Message-Id: <1395163361-26380-1-git-send-email-dirk.j.brandewie@intel.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com>
+References: <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 4ce78a838c (can: c_can: Speed up rx_poll function) hyped a
-performance improvement by reducing the access to the interrupt
-pending register from a dual 16 bit to a single 16 bit access. Wow!
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-Thereby it crippled the driver to cast the 16 msg objects in stone,
-which is completly braindead as contemporary hardware has up to 128
-message objects. Supporting larger object buffers is a major surgery,
-but it'd be definitely worth it especially as the driver does not
-support HW message filtering ....
+Changes: 
+v2->v3
+Changed the calling of the ->stop() callback to be conditional on the
+core being the last core controlled by a given policy.
 
-Now Mr. Optimize totally missed that there is a way worse issue due to
-the implementation of msg objects handling.
+v1->2
+Change name of callback function added to cpufreq_driver interface.
 
-The logic of the "FIFO" implementation is to split the FIFO in half.
+Some drivers (intel_pstate) need to modify state on a core before it
+is completely offline.  The ->exit() callback is executed during the
+CPU_POST_DEAD phase of the cpu offline process which is too late to
+change the state of the core.
 
-For the lower half we read the buffers and clear the interrupt pending
-bit, but keep the newdat bit set, so the HW will queue above those
-buffers.
+Patch 1 adds an optional callback function to the cpufreq_driver
+interface which is called by the core during the CPU_DOWN_PREPARE
+phase of cpu offline in __cpufreq_remove_dev_prepare().
 
-When we read out the last low buffer then we reenable all the low half
-buffers by clearing the newdat bit.
+Patch 2 changes intel_pstate to use the ->stop callback to do
+its cleanup during cpu offline. 
 
-The upper half buffers clear the newdat and the interrupt pending bit
-right away as we know that the lower half bits are clear and give us a
-headstart against the hardware.
+Dirk Brandewie (2):
+  cpufreq: Add exit_prepare callback to cpufreq_driver interface
+  intel_pstate: Set core to min P state during core offline
 
-Now the implementation is:
-    
-    transfer_message_object()
-    read_object_and_put_into_skb();
+ Documentation/cpu-freq/cpu-drivers.txt |  8 +++++++-
+ drivers/cpufreq/cpufreq.c              |  3 +++
+ drivers/cpufreq/intel_pstate.c         | 20 +++++++++++++-------
+ include/linux/cpufreq.h                |  1 +
+ 4 files changed, 24 insertions(+), 8 deletions(-)
 
-    if (obj < END_OF_LOW_BUF)
-       clear_intpending(obj)
-    else if (obj > END_OF_LOW_BUF)
-       clear_intpending_and_newdat(obj)
-    else if (obj == END_OF_LOW_BUF)
-       clear_newdat_of_all_low_objects()
-	 
-The hardware allows to avoid most of the mess simply because we can
-tell the transfer_message_object() function to clear bits right away.
-
-So we can be clever and do:
-
-   if (obj <= END_OF_LOW_BUF)
-      ctrl = TRANSFER_MSG | CLEAR_INTPND;
-   else
-      ctrl = TRANSFER_MSG | CLEAR_INTPND | CLEAR_NEWDAT;
-
-    transfer_message_object(ctrl)
-    read_object_and_put_into_skb();
-
-    if (obj == END_OF_LOW_BUF)
-       clear_newdat_of_all_low_objects()
-
-So we save a complete control operation on all message objects except
-the one which is the end of the low buffer. That's a few micro seconds
-per object.
-
-I'm not adding a boasting profile to that, simply because it's self
-explaining. I leave that analysis to Mr. Optimize.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/net/can/c_can/c_can.c |   49 ++++++++++++------------------------------
- 1 file changed, 15 insertions(+), 34 deletions(-)
-
-Index: linux/drivers/net/can/c_can/c_can.c
-===================================================================
---- linux.orig/drivers/net/can/c_can/c_can.c
-+++ linux/drivers/net/can/c_can/c_can.c
-@@ -114,6 +114,14 @@
- 				IF_COMM_CONTROL | IF_COMM_TXRQST | \
- 				IF_COMM_DATAA | IF_COMM_DATAB)
- 
-+/* For the low buffers we clear the interrupt bit, but keep newdat */
-+#define IF_COMM_RCV_LOW		(IF_COMM_MASK | IF_COMM_ARB | \
-+				 IF_COMM_CONTROL | IF_COMM_CLR_INT_PND | \
-+				 IF_COMM_DATAA | IF_COMM_DATAB)
-+
-+/* For the high buffers we clear the interrupt bit and newdat */
-+#define IF_COMM_RCV_HIGH	(IF_COMM_RCV_LOW | IF_COMM_TXRQST)
-+
- /* IFx arbitration */
- #define IF_ARB_MSGVAL		BIT(15)
- #define IF_ARB_MSGXTD		BIT(14)
-@@ -371,18 +379,6 @@ static void c_can_write_msg_object(struc
- 	c_can_object_put(dev, iface, objno, IF_COMM_ALL);
- }
- 
--static inline void c_can_mark_rx_msg_obj(struct net_device *dev,
--						int iface, int ctrl_mask,
--						int obj)
--{
--	struct c_can_priv *priv = netdev_priv(dev);
--
--	priv->write_reg(priv, C_CAN_IFACE(MSGCTRL_REG, iface),
--			ctrl_mask & ~(IF_MCONT_MSGLST | IF_MCONT_INTPND));
--	c_can_object_put(dev, iface, obj, IF_COMM_CONTROL);
--
--}
--
- static inline void c_can_activate_all_lower_rx_msg_obj(struct net_device *dev,
- 						int iface,
- 						int ctrl_mask)
-@@ -392,24 +388,11 @@ static inline void c_can_activate_all_lo
- 
- 	for (i = C_CAN_MSG_OBJ_RX_FIRST; i <= C_CAN_MSG_RX_LOW_LAST; i++) {
- 		priv->write_reg(priv, C_CAN_IFACE(MSGCTRL_REG, iface),
--				ctrl_mask & ~(IF_MCONT_MSGLST |
--					IF_MCONT_INTPND | IF_MCONT_NEWDAT));
-+				ctrl_mask & ~IF_MCONT_NEWDAT);
- 		c_can_object_put(dev, iface, i, IF_COMM_CONTROL);
- 	}
- }
- 
--static inline void c_can_activate_rx_msg_obj(struct net_device *dev,
--						int iface, int ctrl_mask,
--						int obj)
--{
--	struct c_can_priv *priv = netdev_priv(dev);
--
--	priv->write_reg(priv, C_CAN_IFACE(MSGCTRL_REG, iface),
--			ctrl_mask & ~(IF_MCONT_MSGLST |
--				IF_MCONT_INTPND | IF_MCONT_NEWDAT));
--	c_can_object_put(dev, iface, obj, IF_COMM_CONTROL);
--}
--
- static int c_can_handle_lost_msg_obj(struct net_device *dev,
- 				     int iface, int objno, u32 ctrl)
- {
-@@ -843,12 +826,15 @@ static u32 c_can_adjust_pending(u32 pend
- static int c_can_read_objects(struct net_device *dev, struct c_can_priv *priv,
- 			      u32 pend, int quota)
- {
--	u32 pkts = 0, ctrl, obj;
-+	u32 pkts = 0, ctrl, obj, mcmd;
- 
- 	while ((obj = ffs(pend)) && quota > 0) {
- 		pend &= ~BIT(obj - 1);
- 
--		c_can_object_get(dev, IF_RX, obj, IF_COMM_ALL &	~IF_COMM_TXRQST);
-+		mcmd = obj < C_CAN_MSG_RX_LOW_LAST ?
-+			IF_COMM_RCV_LOW : IF_COMM_RCV_HIGH;
-+
-+		c_can_object_get(dev, IF_RX, obj, mcmd);
- 		ctrl = priv->read_reg(priv, C_CAN_IFACE(MSGCTRL_REG, IF_RX));
- 
- 		if (ctrl & IF_MCONT_MSGLST) {
-@@ -870,12 +856,7 @@ static int c_can_read_objects(struct net
- 		/* read the data from the message object */
- 		c_can_read_msg_object(dev, IF_RX, ctrl);
- 
--		if (obj < C_CAN_MSG_RX_LOW_LAST)
--			c_can_mark_rx_msg_obj(dev, IF_RX, ctrl, obj);
--		else if (obj > C_CAN_MSG_RX_LOW_LAST)
--			/* activate this msg obj */
--			c_can_activate_rx_msg_obj(dev, IF_RX, ctrl, obj);
--		else if (obj == C_CAN_MSG_RX_LOW_LAST)
-+		if (obj == C_CAN_MSG_RX_LOW_LAST)
- 			/* activate all lower message objects */
- 			c_can_activate_all_lower_rx_msg_obj(dev, IF_RX, ctrl);
- 
-
+-- 
+1.8.3.1
 
