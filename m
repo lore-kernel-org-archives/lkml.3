@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758413AbaCRXIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 19:08:35 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:42651 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388AbaCRXId (ORCPT
+	id S1758443AbaCRXJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 19:09:51 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39314 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757568AbaCRXJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 19:08:33 -0400
-Message-ID: <5328D1EF.70709@gmail.com>
-Date: Tue, 18 Mar 2014 17:08:31 -0600
-From: Joel Pelaez Jorge <joelpelaez@gmail.com>
-Organization: DarkSoft Foundation
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 18 Mar 2014 19:09:49 -0400
+Date: Wed, 19 Mar 2014 00:09:46 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] leds: pwm: set polarity on non DT platforms
+Message-ID: <20140318230946.GL12021@piout.net>
+References: <1395081521-16568-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <CAK5ve-JU-XfX-wTnr72riWbnSfOcnofjsXpVuyweCndjBe=UgQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Joe Perches'" <joe@perches.com>,
-        "'Rashika Kheria'" <rashika.kheria@gmail.com>,
-        "'Peter P Waskiewicz Jr'" <peter.p.waskiewicz.jr@intel.com>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        "'Wei Yongjun'" <yongjun_wei@trendmicro.com.cn>,
-        "'Dan Carpenter'" <dan.carpenter@oracle.com>
-Subject: Re: [PATCH] staging: slicoss: Fix prefer ether_addr_copy over memcpy
-References: <5327D3C6.70400@gmail.com> <000101cf426d$cba30240$62e906c0$%han@samsung.com>
-In-Reply-To: <000101cf426d$cba30240$62e906c0$%han@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK5ve-JU-XfX-wTnr72riWbnSfOcnofjsXpVuyweCndjBe=UgQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El 17/03/14 23:49, Jingoo Han escribió:
-> On Tuesday, March 18, 2014 2:04 PM, Joel Pelaez Jorge wrote:
->>
->>
->> @@ -810,8 +810,8 @@ static int slic_mac_set_address(struct net_device
->> *dev, void *ptr)
->>    	if (!is_valid_ether_addr(addr->sa_data))
->>    		return -EINVAL;
->>
->> -	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
->> -	memcpy(adapter->currmacaddr, addr->sa_data, dev->addr_len);
->> +	ether_addr_copy(dev->dev_addr, addr->sa_data);
->> +	ether_addr_copy(adapter->currmacaddr, addr->sa_data);
->
-> By the way, I am wondering if 'dev->addr_len' is 6 bytes.
-> Is there anyone who can confirm it?
->
-> If nobody can confirm 'dev->addr_len' is 6 bytes, it should
-> not be changed to 'ether_addr_copy()'.
->
-> Best regards,
-> Jingoo Han
->
-In the first case, is necessary use memcpy for copy te ethernet address 
-to dev->dev_addr because this is a pointer, uses dev->addr_len for 
-define size.
+On 18/03/2014 at 16:02:51 -0700, Bryan Wu wrote :
+> On Mon, Mar 17, 2014 at 11:38 AM, Alexandre Belloni
+> <alexandre.belloni@free-electrons.com> wrote:
+> > Set inversed polarity when .active_low is set in the platform_data. With device
+> > tree, this is taken care of by of_pwm_xlate_with_flags(), called from
+> > of_pwm_get().
+> >
+> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > ---
+> >  drivers/leds/leds-pwm.c | 5 +++++
+> >  1 file changed, 5 insertions(+)
+> >
+> > diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+> > index 605047428b5a..09681556a6aa 100644
+> > --- a/drivers/leds/leds-pwm.c
+> > +++ b/drivers/leds/leds-pwm.c
+> > @@ -180,6 +180,11 @@ static int led_pwm_probe(struct platform_device *pdev)
+> >                         led_dat->cdev.max_brightness = cur_led->max_brightness;
+> >                         led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
+> >
+> > +                       if (led_dat->active_low)
+> 
+> Why .active_low needs to inverse PWM polarity? In
+> of_pwm_xlate_with_flags(), it checked with PWM_POLARITY_INVERSED in
+> args. Moreover in of_pwm_simple_xlate() and pxa_pwm_of_xlate(), we
+> didn't inverse PWM polarity at all.
+> 
 
-But in the second, adapter->currmacaddr is fixed to 6 size, so that here 
-one can use ether_addr_copy without issues.
+Yeah, exactly, there is no issue when using device tree. What I'm trying
+to fix here is th non-DT case where of_pwm_xlate_with_flags() is not
+called.
 
---
-Best regards,
-Joel Pelaez Jorge
-Joel Pelaez Jorge
+> Add Thierry to review this.
+> 
 
-
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
