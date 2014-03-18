@@ -1,105 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690AbaCRME5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 08:04:57 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:49772 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338AbaCRMEy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 08:04:54 -0400
-X-Nat-Received: from [202.181.97.72]:57284 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1395144200.6957
-To: oleg@redhat.com, JBottomley@parallels.com, Nagalakshmi.Nandigama@lsi.com,
-        Sreekanth.Reddy@lsi.com
-Cc: rientjes@google.com, akpm@linux-foundation.org,
-        joseph.salisbury@canonical.com, torvalds@linux-foundation.org,
-        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org
-Subject: Re: [v3.13][v3.14][Regression] kthread: makekthread_create()killable
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201403150943.BIH30251.FOQLOOtFJHSMVF@I-love.SAKURA.ne.jp>
-	<201403170013.GJF86930.FtVOOQOHLFFMSJ@I-love.SAKURA.ne.jp>
-	<20140316162512.GA9467@redhat.com>
-	<201403172138.GFB43278.OOOFFSQLVHJMtF@I-love.SAKURA.ne.jp>
-	<20140317142246.GA27453@redhat.com>
-In-Reply-To: <20140317142246.GA27453@redhat.com>
-Message-Id: <201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 18 Mar 2014 21:03:16 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 18032014 #7540298, status: clean
+	id S1754807AbaCRMFT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 08:05:19 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:2580 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751553AbaCRMFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 08:05:13 -0400
+X-IronPort-AV: E=Sophos;i="4.97,677,1389744000"; 
+   d="scan'208";a="112433441"
+Message-ID: <53283671.1030509@citrix.com>
+Date: Tue, 18 Mar 2014 12:05:05 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>, <linux-kernel@vger.kernel.org>,
+        Dietmar Hahn <dietmar.hahn@ts.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: zram: zsmalloc calls sleeping function from atomic context
+References: <20140317144358.GA374@swordfish.minsk.epam.com> <20140317160117.9bfbfdd5128d45a80f58070c@linux-foundation.org>
+In-Reply-To: <20140317160117.9bfbfdd5128d45a80f58070c@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov wrote:
-> If we need the urgent hack to fix the regression, then I suggest to change
-> scsi_host_alloc() temporary until mptsas (or whatever) is fixed.
-
-Device initialization taking longer than 30 seconds is possible and is not a
-hang up. It is systemd which needs to be fixed.
-
-> --- x/drivers/scsi/hosts.c
-> +++ x/drivers/scsi/hosts.c
-> @@ -447,8 +447,18 @@ struct Scsi_Host *scsi_host_alloc(struct
->  	dev_set_name(&shost->shost_dev, "host%d", shost->host_no);
->  	shost->shost_dev.groups = scsi_sysfs_shost_attr_groups;
->  
-> -	shost->ehandler = kthread_run(scsi_error_handler, shost,
-> -			"scsi_eh_%d", shost->host_no);
-> +	/*
-> +	 * HUGE COMMENT. and kthread_create() needs s/ENOMEM/EINTR/.
-> +	 */
-> +	for (;;) {
-> +		shost->ehandler = kthread_run(scsi_error_handler, shost,
-> +						"scsi_eh_%d", shost->host_no);
-> +		if (!IS_ERR(shost->ehandler) || PTR_ERR(shost->ehandler) != -EINTR)
-> +			break;
-> +		clear_thread_flag(TIF_SIGPENDING);
-> +	}
-> +	recalc_sigpending();
-> +
->  	if (IS_ERR(shost->ehandler)) {
->  		printk(KERN_WARNING "scsi%d: error handler thread failed to spawn, error = %ld\n",
->  			shost->host_no, PTR_ERR(shost->ehandler));
+On 17/03/14 23:01, Andrew Morton wrote:
 > 
-> 
+> OK, thanks.  David, there's our atomic unmap and there are probably
+> others.  Converting a previously-atomic utility function into one which
+> can sleep is going to be difficult.
 
-I think we need a bit different version, in order to take TIF_MEMDIE flag into
-account at the caller of kthread_create(), for the purpose of commit 786235ee
-is "try to die as soon as possible if chosen by the OOM killer".
+I think we should drop these patches.  I think Fujitsu were doing
+something particularly odd with an out-of-tree driver.
 
-	for (;;) {
-		shost->ehandler = kthread_run(scsi_error_handler, shost,
-					      "scsi_eh_%d", shost->host_no);
-		if (PTR_ERR(shost->ehandler) != -EINTR ||
-		    test_thread_flag(TIF_MEMDIE))
-			break;
-		clear_thread_flag(TIF_SIGPENDING);
-	}
-	recalc_sigpending();
+> Or can this code which vmaps 50GB be changed to unmap it in 16MB chunks
+> via unmap_kernel_range(), with a cond_resched() in the loop?
 
-But I have two worrying points.
+This sounds like something the people from Fujitsu can explore.
 
-  (1) Changing return code from -ENOMEM to -EINTR may not be sufficient.
-
-      If kmalloc(GFP_KERNEL) in kthread_create_on_node() does something that
-      calls recalc_sigpending(), TIF_SIGPENDING will be set on the second call
-      to kthread_run(). This will make wait_for_completion_killable() return
-      -EINTR immediately because the second call to kthread_run() happens only
-      when current thread already received SIGKILL (by other than the OOM
-      killer). This may form an infinite busy loop.
-
-      As I think it is difficult to prove that kmalloc(GFP_KERNEL) never sets
-      TIF_SIGPENDING flag, we would need to call
-      clear_thread_flag(TIF_SIGPENDING) immediately before
-      wait_for_completion_killable() and call recalc_sigpending() immediately
-      after wait_for_completion_killable(). Is this better than taking care of
-      SIGKILL (by other than the OOM killer) on the first call to
-      kthread_run() ?
-
-  (2) I don't like scattering around test_thread_flag(TIF_MEMDIE), for there
-      might be other drivers who receive SIGKILL by systemd's 30 seconds
-      timeout.
+David
