@@ -1,239 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373AbaCRPIa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:08:30 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:47880 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298AbaCRPI1 (ORCPT
+	id S932441AbaCRPJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:09:59 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:43801 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756016AbaCRPJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:08:27 -0400
-Date: Tue, 18 Mar 2014 15:11:14 +0000
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/3] Volatile Ranges (v11)
-Message-ID: <20140318151113.GA10724@gmail.com>
-References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Mar 2014 11:09:57 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-64-532861c23da0
+Message-id: <532861BE.7020601@samsung.com>
+Date: Tue, 18 Mar 2014 16:09:50 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: Re: [PATCH v11 17/27] iommu/exynos: remove calls to Runtime PM API
+ functions
+References: <20140314140843.ba055f28dd7ed59c46088029@samsung.com>
+ <5322FD14.5090602@samsung.com>
+ <20140318185605.0380c8dfe6559c06183092e5@samsung.com>
+In-reply-to: <20140318185605.0380c8dfe6559c06183092e5@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42I5/e/4Zd1DiRrBBovOCFvcuXuO1WL+ESDx
+	6sgPJosF+60tOmdvYLfoXXCVzWLT42usFpd3zWGzmHF+H5PFhRUb2S3+9R5ktJiy6DCrxeE3
+	7awWJ//0MlrMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
+	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4Mr4Nq+sYIF+xdUH31kbGBvUuhg5OSQETCTWH13KBmGL
+	SVy4tx7I5uIQEljKKLH721lGkISQwGdGiXvfxUBsXgEtifkPPrOA2CwCqhJLpi0Hq2ETUJP4
+	3PAIbBA/UM2aputgNaICERJzJ25mg+gVlPgx+R5YXERAQ+LzlfWsIMuYBRpZJR7dX8YOkhAW
+	CJc4deMjC8QVsxgl1h3oBUtwCjhJ3H5/HKybWcBaYuWkbYwQtrzE5jVvmScwCs5CsmQWkrJZ
+	SMoWMDKvYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAiJua87GJceszrEKMDBqMTDKxGrESzE
+	mlhWXJl7iFGCg1lJhHe1O1CINyWxsiq1KD++qDQntfgQIxMHp1QDo7MFK4vDxGPXb9dHcDyr
+	Ylt3XjVoTsItVmnpPVv0/8dLa0hq/fET5zRv5qmt61WaOlmYR+z/lMPV8VI/ct/POn7kbN5K
+	leuSfN4nm1KYFixUMlo4516Ez7ptzW9V+J/flvgd/FOB+/6NVr6dG3c7avY/3X2V9e/tG7GG
+	m1U9Jqp7LCyrOpo9T4mlOCPRUIu5qDgRAH4LImeXAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello John,
+On 18.03.2014 10:56, Cho KyongHo wrote:
+> On Fri, 14 Mar 2014 13:59:00 +0100, Tomasz Figa wrote:
+>> Hi KyongHo,
+>>
+>> On 14.03.2014 06:08, Cho KyongHo wrote:
 
-Sorry for late. Timing between us is always not good.
-I say my thought although I don't prepare whole thing in my brain
-since you sent out the patchset(Anyway, we should share ideas before
-the LSF/MM)
+[snip]
 
-On Fri, Mar 14, 2014 at 11:33:30AM -0700, John Stultz wrote:
-> I recently got a chance to try to implement Johannes' suggested approach
-> so I wanted to send it out for comments. It looks like Minchan has also
-> done the same, but from a different direction, focusing on the MADV_FREE
-> use cases. I think both approaches are valid, so I wouldn't consider
+>>> -static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
+>>> +static void __sysmmu_disable_nocount(struct sysmmu_drvdata *data)
+>>
+>> If you are changing the names anyway, it would be probably a good idea
+>> to reduce code obfuscation a bit and drop the underscores from
+>> beginnings of function names. Also I'd suggest keeping the "exynos_" prefix.
+>
+> Thanks for the suggestion.
+> __exynos_sysmmu_disable is splitted into 2 functions: __sysmmu_disable
+> and __sysmmu_disable_nocount.
+> I agree with you that it is good idea to reduce code obfuscation but
+> I don't think dropping beginning underscores of function names reduces
+> obfuscation.
+>
 
-True and I just wanted to think over vrange-anon after resolving
-MADV_FREE first because MADV_FREE is very clear(ie, Other OS and general
-allocators already have supported) and vrange-anon might share some of
-implementaion from MADV_FREE. Once we give up the vrange syscall's speed(
-ex, no mmap_sem writeside lock, no pte enumeration in syscall contex)
-we could do better for other parts. I will describe them in below.
+Well, if you are ending up with a function like 
+__sysmmu_enable_nocount() below with every line starting with two 
+underscores, do you think this improves code readability?
 
-> these patches to be in conflict. Its just that earlier iterations of the
-> volatile range patches had tried to handle numerous different use cases,
-> and the resulting complexity was apparently making it difficult to review
-> and get interest in the patch set. So basically we're splitting the use
-> cases up and trying to find simpler solutions for each.
-> 
-> I'd greatly appreciate any feedback or thoughts!
+Of course this is a minor issue, but let's keep some code quality level 
+in Linux kernel.
 
-1) SIGBUS
+>>
+>>>    {
+>>> -	unsigned long flags;
+>>> -	bool disabled = false;
+>>> -
+>>> -	write_lock_irqsave(&data->lock, flags);
 
-It's one of the arguable issue because some user want to get a
-SIGBUS(ex, Firefox) while other want a just zero page(ex, Google
-address sanitizer) without signal so it should be option.
-	
-	int vrange(start, len, VRANGE_VOLATILE|VRANGE_ZERO, &purged);
-	int vrange(start, len, VRANGE_VOLATILE|VRANGE_SIGNAL, &purged);
+[snip]
 
-2) Accouting
+Here's the function mentioned above:
 
-The one of problem I have thought is lack of accouting of vrange pages.
-I mean we need some statistics for vrange pages and it should be number
-of pages rather than vma size. Without that, user space couldn't see
-current status and then they couldn't control the system's memory
-consumption. It's alredy known problem for other OS which have support
-similar thing(ex, MADV_FREE).
+>>> +
+>>> +static void __sysmmu_enable_nocount(struct sysmmu_drvdata *data)
+>>> +{
+>>> +	__master_clk_enable(data);
+>>> +	__sysmmu_clk_enable(data);
+>>> +
+>>> +	__raw_writel(CTRL_BLOCK, data->sfrbase + REG_MMU_CTRL);
+>>> +
+>>> +	__sysmmu_init_config(data);
+>>> +
+>>> +	__sysmmu_set_ptbase(data->sfrbase, data->pgtable);
+>>> +
+>>> +	__raw_writel(CTRL_ENABLE, data->sfrbase + REG_MMU_CTRL);
+>>> +
+>>> +	__master_clk_disable(data);
+>>> +}
+>>> +
 
-For accouting, we should account how many of existing pages are the range
-when vrange syscall is called. It could increase syscall overhead
-but user could have accurate statistics information. It's just trade-off.
+[snip]
 
-3) Aging
+>>>
+>>> @@ -629,7 +700,7 @@ err_pgtable:
+>>>    static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
+>>>    {
+>>>    	struct exynos_iommu_domain *priv = domain->priv;
+>>> -	struct sysmmu_drvdata *data;
+>>> +	struct exynos_iommu_owner *owner;
+>>>    	unsigned long flags;
+>>>    	int i;
+>>>
+>>> @@ -637,11 +708,14 @@ static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
+>>>
+>>>    	spin_lock_irqsave(&priv->lock, flags);
+>>>
+>>> -	list_for_each_entry(data, &priv->clients, node) {
+>>> -		while (!exynos_sysmmu_disable(data->dev))
+>>> +	list_for_each_entry(owner, &priv->clients, client) {
+>>> +		while (!exynos_sysmmu_disable(owner->dev))
+>>>    			; /* until System MMU is actually disabled */
+>>
+>> What about using list_for_each_entry_safe() and calling list_del_init()
+>> here directly?
+>>
+>
+> That require another variable to be defined.
 
-I think vrange pages should be discarded eariler than other hot pages
-so want to move pages to tail of inactive LRU when syscall is called.
-We could do by using deactivate_page with some tweak while we accouts
-pages in syscall context.
+Is it a problem?
 
-But if user want to treat vrange pages with other hot pages equally
-he could ask so that we could skip deactivating.
+> I just wanted to avoid that because I think it is prettier.
+> Moreover, list_del_init() below the empty while() clause may make
+> the source code readers misunderstood..
 
-	vrange(start, len, VRANGE_VOLATILE|VRANGE_ZERO|VRANGE_AGING, &purged)
-	or
-	vrange(start, len, VRANGE_VOLATILE|VRANGE_SIGNAL|VRANGE_AGING, &purged)
+This raises another question, why the loop above is even needed. 
+exynos_sysmmu_disable() should make sure that SYSMMU is actually 
+disabled, without any need for looping like this.
 
-It could be convenient for Moz usecase if they want to age vrange
-pages.
+>>>    	}
+>>>
+>>> +	while (!list_empty(&priv->clients))
+>>> +		list_del_init(priv->clients.next);
+>>> +
+>>>    	spin_unlock_irqrestore(&priv->lock, flags);
+>>>
+>>>    	for (i = 0; i < NUM_LV1ENTRIES; i++)
 
-4) Permanency
+[snip]
 
-Like MCL_FUTURE of mlockall, it would be better to make the range
-have permanent property until called VRANGE_NOVOLATILE.
-I mean pages faulted on the range in future since syscall is called
-should be volatile automatically so that user could avoid frequent
-syscall to make them volatile.
+>>> +static int sysmmu_hook_driver_register(struct notifier_block *nb,
+>>> +					unsigned long val,
+>>> +					void *p)
+>>> +{
+>>> +	struct device *dev = p;
+>>> +
+>>> +	switch (val) {
+>>> +	case BUS_NOTIFY_BIND_DRIVER:
+>>> +	{
+>>> +		struct exynos_iommu_owner *owner;
+>>
+>> Please move this variable to the top of the function and drop the braces
+>> around case blocks.
+>
+> I don't think it is required because this function is modified
+> by the following patches.
 
-Any thoughts?
+OK, if so, and similar issue is not present after further patches.
 
-> 
-> thanks
-> -john
-> 
-> 
-> Volatile ranges provides a method for userland to inform the kernel that
-> a range of memory is safe to discard (ie: can be regenerated) but
-> userspace may want to try access it in the future.  It can be thought of
-> as similar to MADV_DONTNEED, but that the actual freeing of the memory
-> is delayed and only done under memory pressure, and the user can try to
-> cancel the action and be able to quickly access any unpurged pages. The
-> idea originated from Android's ashmem, but I've since learned that other
-> OSes provide similar functionality.
-> 
-> This functionality allows for a number of interesting uses:
-> * Userland caches that have kernel triggered eviction under memory
-> pressure. This allows for the kernel to "rightsize" userspace caches for
-> current system-wide workload. Things like image bitmap caches, or
-> rendered HTML in a hidden browser tab, where the data is not visible and
-> can be regenerated if needed, are good examples.
-> 
-> * Opportunistic freeing of memory that may be quickly reused. Minchan
-> has done a malloc implementation where free() marks the pages as
-> volatile, allowing the kernel to reclaim under pressure. This avoids the
-> unmapping and remapping of anonymous pages on free/malloc. So if
-> userland wants to malloc memory quickly after the free, it just needs to
-> mark the pages as non-volatile, and only purged pages will have to be
-> faulted back in.
-> 
-> There are two basic ways this can be used:
-> 
-> Explicit marking method:
-> 1) Userland marks a range of memory that can be regenerated if necessary
-> as volatile
-> 2) Before accessing the memory again, userland marks the memory as
-> nonvolatile, and the kernel will provide notification if any pages in the
-> range has been purged.
-> 
-> Optimistic method:
-> 1) Userland marks a large range of data as volatile
-> 2) Userland continues to access the data as it needs.
-> 3) If userland accesses a page that has been purged, the kernel will
-> send a SIGBUS
-> 4) Userspace can trap the SIGBUS, mark the affected pages as
-> non-volatile, and refill the data as needed before continuing on
-> 
-> You can read more about the history of volatile ranges here:
-> http://permalink.gmane.org/gmane.linux.kernel.mm/98848
-> http://permalink.gmane.org/gmane.linux.kernel.mm/98676
-> https://lwn.net/Articles/522135/
-> https://lwn.net/Kernel/Index/#Volatile_ranges
-> 
-> 
-> This version of the patchset, at Johannes Weiner's suggestion, is much
-> reduced in scope compared to earlier attempts. I've only handled
-> volatility on anonymous memory, and we're storing the volatility in
-> the VMA.  This may have performance implications compared with the earlier
-> approach, but it does simplify the approach.
-> 
-> Further, the page discarding happens via normal vmscanning, which due to
-> anonymous pages not being aged on swapless systems, means we'll only purge
-> pages when swap is enabled. I'll be looking at enabling anonymous aging
-> when swap is disabled to resolve this, but I wanted to get this out for
-> initial comment.
-> 
-> Additionally, since we don't handle volatility on tmpfs files with this
-> version of the patch, it is not able to be used to implement semantics
-> similar to Android's ashmem. But since shared volatiltiy on files is
-> more complex, my hope is to start small and hopefully grow from there.
-> 
-> Also, much of the logic in this patchset is based on Minchan's earlier
-> efforts. On this iteration, I've not been in close collaboration with him,
-> so I don't want to mis-attribute my rework of the code as his design,
-> but I do want to make sure the credit goes to him for his major contribution.
-> 
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Robert Love <rlove@google.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Dave Hansen <dave@sr71.net>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-> Cc: Neil Brown <neilb@suse.de>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: Mike Hommey <mh@glandium.org>
-> Cc: Taras Glek <tglek@mozilla.com>
-> Cc: Dhaval Giani <dgiani@mozilla.com>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-> Cc: Michel Lespinasse <walken@google.com>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: linux-mm@kvack.org <linux-mm@kvack.org>
-> 
-> 
-> John Stultz (3):
->   vrange: Add vrange syscall and handle splitting/merging and marking
->     vmas
->   vrange: Add purged page detection on setting memory non-volatile
->   vrange: Add page purging logic & SIGBUS trap
-> 
->  arch/x86/syscalls/syscall_64.tbl |   1 +
->  include/linux/mm.h               |   1 +
->  include/linux/swap.h             |  15 +-
->  include/linux/vrange.h           |  22 +++
->  mm/Makefile                      |   2 +-
->  mm/internal.h                    |   2 -
->  mm/memory.c                      |  21 +++
->  mm/rmap.c                        |   5 +
->  mm/vmscan.c                      |  12 ++
->  mm/vrange.c                      | 306 +++++++++++++++++++++++++++++++++++++++
->  10 files changed, 382 insertions(+), 5 deletions(-)
->  create mode 100644 include/linux/vrange.h
->  create mode 100644 mm/vrange.c
-> 
-> -- 
-> 1.8.3.2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+>>
+>>> +
+>>> +		/* No System MMU assigned. See exynos_sysmmu_probe(). */
+>>> +		if (dev->archdata.iommu == NULL)
+>>> +			break;
+>>
+>> This looks strange... (see below)
+>>
+>> Also this looks racy. There are no guarantees about device probing
+>> order, so you may end up with master devices being probed before the
+>> IOMMUs. Deferred probing should be used to handle this correctly.
+>
+> System MMU driver must be probed earlier than the drivers of master devices
+> because the drivers may want to use System MMU for their initial task.
+
+As I said, there are no guarantees about platform device probe order in 
+Linux kernel. Code must be designed to check whether required 
+dependencies are met and if not, deferred probing must be used.
+
+>>
+>>> +
+>>> +		owner = devm_kzalloc(dev, sizeof(*owner), GFP_KERNEL);
+>>> +		if (!owner) {
+>>> +			dev_err(dev, "No Memory for exynos_iommu_owner\n");
+>>> +			return -ENOMEM;
+>>> +		}
+>>> +
+>>> +		owner->dev = dev;
+>>> +		INIT_LIST_HEAD(&owner->client);
+>>> +		owner->sysmmu = dev->archdata.iommu;
+>>> +
+>>> +		dev->archdata.iommu = owner;
+>>
+>> I don't understand what is happening here in this case statement. There
+>> is already something assigned to dev->archdata.iommu, but this code
+>> reassigns something else to this field. This means that you attempt to
+>> use the same field to store pointers to objects of different types,
+>> which I believe is broken, because you have no way to check what kind of
+>> object is currently pointed by such (void *) pointer.
+>>
+>
+> exynos_sysmmu_probe() assigns the device descriptor of the probing System MMU
+> to archdata.iommu of its master device. The assignment is just a marker that
+> the device is a master device of a System MMU.
+> If dev->archdata.iommu has a value in the case of BUS_NOTIFY_BIND_DRIVER,
+> the 'dev' is a master devices of a System MMU. Then sysmmu_hook_driver_register()
+> assigns the data structure to handle System MMU to dev->archdata.iommu.
+
+Which is wrong (or even if you don't consider it wrong, it is ugly), 
+because one (void *) pointer in the same object is used to store 
+pointers to two completely different types.
+
+Best regards,
+Tomasz
