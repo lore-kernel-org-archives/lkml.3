@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562AbaCRS4H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 14:56:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24998 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757531AbaCRS4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 14:56:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,679,1389772800"; 
-   d="scan'208";a="475106907"
-Message-ID: <532896C3.106@linux.intel.com>
-Date: Tue, 18 Mar 2014 11:56:03 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1757593AbaCRS5W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 14:57:22 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:37443 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757531AbaCRS5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 14:57:20 -0400
+Date: Tue, 18 Mar 2014 21:53:30 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: kswapd using __this_cpu_add() in preemptible code
+Message-ID: <20140318185329.GB430@swordfish>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 4/4] random: Add arch_has_random[_seed]()
-References: <1395099390-807-1-git-send-email-hpa@linux.intel.com>	 <1395099390-807-5-git-send-email-hpa@linux.intel.com> <1395114240.15098.205.camel@pasglop>
-In-Reply-To: <1395114240.15098.205.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2014 08:44 PM, Benjamin Herrenschmidt wrote:
-> On Mon, 2014-03-17 at 16:36 -0700, H. Peter Anvin wrote:
->> Add predicate functions for having arch_get_random[_seed]*().  The
->> only current use is to avoid the loop in arch_random_refill() when
->> arch_get_random_seed_long() is unavailable.
-> 
-> Paul, I think our HW rng on P7+ and later would qualify no ?
-> 
-> Cheers,
-> Ben.
+Hello gentlemen,
 
-Just to be clear: since I don't know the parameters of the PowerPC hwrng
-I just put in the stub functions, leaving it up to you to analyze if it
-is suitable and analyze it.  Do let me know if I can be of any
-assistance, of course.
+Commit 589a606f9539663f162e4a110d117527833b58a4 ("percpu: add preemption
+checks to __this_cpu ops") added preempt check to used in __count_vm_events()
+__this_cpu ops, causing the following kswapd warning:
 
-	-hpa
+ BUG: using __this_cpu_add() in preemptible [00000000] code: kswapd0/56
+ caller is __this_cpu_preempt_check+0x2b/0x2d
+ Call Trace:
+ [<ffffffff813b8d4d>] dump_stack+0x4e/0x7a
+ [<ffffffff8121366f>] check_preemption_disabled+0xce/0xdd
+ [<ffffffff812136bb>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff810f622e>] inode_lru_isolate+0xed/0x197
+ [<ffffffff810be43c>] list_lru_walk_node+0x7b/0x14c
+ [<ffffffff810f6141>] ? iput+0x131/0x131
+ [<ffffffff810f681f>] prune_icache_sb+0x35/0x4c
+ [<ffffffff810e3951>] super_cache_scan+0xe3/0x143
+ [<ffffffff810b1301>] shrink_slab_node+0x103/0x16f
+ [<ffffffff810b19fd>] shrink_slab+0x75/0xe4
+ [<ffffffff810b3f3d>] balance_pgdat+0x2fa/0x47f
+ [<ffffffff810b4395>] kswapd+0x2d3/0x2fd
+ [<ffffffff81068049>] ? __wake_up_sync+0xd/0xd
+ [<ffffffff810b40c2>] ? balance_pgdat+0x47f/0x47f
+ [<ffffffff81051e75>] kthread+0xd6/0xde
+ [<ffffffff81051d9f>] ? kthread_create_on_node+0x162/0x162
+ [<ffffffff813be5bc>] ret_from_fork+0x7c/0xb0
+ [<ffffffff81051d9f>] ? kthread_create_on_node+0x162/0x162
 
 
+list_lru_walk_node() seems to be the only place where __count_vm_events()
+called with preemption enabled. remaining __count_vm_events() and
+__count_vm_event() calls are done with preemption disabled (unless I
+overlooked something).
 
+
+	-ss
