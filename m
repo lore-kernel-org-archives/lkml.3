@@ -1,172 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaCRF6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 01:58:39 -0400
-Received: from ozlabs.org ([203.10.76.45]:55862 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957AbaCRF6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 01:58:38 -0400
-Date: Tue, 18 Mar 2014 16:58:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: linux-next: manual merge of the usb tree with the samsung tree
-Message-Id: <20140318165829.a13e43598654a1144d0325dd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__18_Mar_2014_16_58_29_+1100_ZWm+04+XM81cTegN"
+	id S1752560AbaCRGGG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 02:06:06 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:15903 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534AbaCRGGD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 02:06:03 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-cc-5327e2487319
+Message-id: <5327E248.7040706@samsung.com>
+Date: Tue, 18 Mar 2014 15:06:00 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: sre@ring0.de
+Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/4] power_supply: Add DT helper function to get
+ power-supply dev from dt
+References: <1395060227-23378-1-git-send-email-cw00.choi@samsung.com>
+ <20140318003818.GA17391@earth.universe>
+In-reply-to: <20140318003818.GA17391@earth.universe>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsWyRsSkRNfjkXqwwZ4zZhaTnrxntpi4cjKz
+	xdmmN+wWl3fNYbO43biCzWL5pwgHNo+ds+6ye2xeoeWx99APdo++LasYPT5vkgtgjeKySUnN
+	ySxLLdK3S+DKOPXvPFvBcv6KT4/usTcwPuLpYuTkkBAwkdix7zk7hC0mceHeerYuRi4OIYGl
+	jBLLdh9hhik6cHYGE0RiEaPE1pdvGCGcV4wS21b2sIJU8QpoSdz9fokFxGYRUJVoaZnBCGKz
+	AcX3v7jBBmKLCoRJrJx+hQWiXlDix+R7YLaIgIDE18MXWUGGMgs0MUoc7J8P1iwskCxxeP9y
+	JhBbSCBf4szMy2C3cgKdNOH5VbChzAI6Evtbp0HZ8hKb17xlBhkkIXCIXWLj+Z/MEBcJSHyb
+	fAhoGwdQQlZi0wGo1yQlDq64wTKBUWwWkptmIRk7C8nYBYzMqxhFUwuSC4qT0osM9YoTc4tL
+	89L1kvNzNzECo+30v2e9OxhvH7A+xJgMtHIis5Rocj4wWvNK4g2NzYwsTE1MjY3MLc1IE1YS
+	5016mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgdFymtScBRdv72tbdP0Mn7bnOb9Vazun
+	uAgrLqyRmfH8oFG69aIzUnc/Kl+5Y168w9Dn8tb/fxdcjJhxMmOtzwSvrCmbVF1fFq/QVHm7
+	QoDr3/Fva1Yv6XaXXZ99cnLBthsN/qXsewrrg+2O6zPuqnvH9L/EIX6p/dE/3zh3mpVNqDGZ
+	apCh0pqhxFKckWioxVxUnAgAJ4e6JMwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t9jAV2PR+rBBt//6llMevKe2WLiysnM
+	Fmeb3rBbXN41h83iduMKNovlnyIc2Dx2zrrL7rF5hZbH3kM/2D36tqxi9Pi8SS6ANaqB0SYj
+	NTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6AAlhbLEnFKg
+	UEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8apf+fZCpbzV3x6dI+9gfERTxcjJ4eE
+	gInEgbMzmCBsMYkL99azdTFycQgJLGKU2PryDSOE84pRYtvKHlaQKl4BLYm73y+xgNgsAqoS
+	LS0zGEFsNqD4/hc32EBsUYEwiZXTr7BA1AtK/Jh8D8wWERCQ+Hr4IivIUGaBJkaJg/3zwZqF
+	BZIlDu9fDnaGkEC+xJmZl9lBbE6g8yY8vwo2lFlAR2J/6zQoW15i85q3zBMYBWYh2TELSdks
+	JGULGJlXMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgTH8jOpHYwrGywOMQpwMCrx8L5gUw8W
+	Yk0sK67MPcQowcGsJMK7dDJQiDclsbIqtSg/vqg0J7X4EGMyMAgmMkuJJucD00xeSbyhsYmZ
+	kaWRuaGFkbE5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTBm7LJ2TlOdYb3p49HXTKu8
+	/yacaz2TkaUmFx8wof86I5vX3TdWmdOjbap5+HwVvKexrNhp//nsnGd1epY8bc1KHXdNrgla
+	F71qDnHZ+3z/62NC/0o/HLkQIdGcKhLQtNzU9mf/Mw5JEe4GZb1eYRXzrBSWI02KV4uv6X3c
+	W13H7mw27fR2ZiWW4oxEQy3mouJEACUQQwspAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_Mar_2014_16_58_29_+1100_ZWm+04+XM81cTegN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Sebastian,
 
-Hi Greg,
+On 03/18/2014 09:38 AM, sre@ring0.de wrote:
+> Hi,
+> 
+> On Mon, Mar 17, 2014 at 09:43:43PM +0900, Chanwoo Choi wrote:
+>> This patchset add DT helper function to get power-supply device from devicetree.
+>> - of_power_supply_get_dev(struct device *dev, enum power_supply_dev_type type,
+>> 			  int index)
+>> Power-supply class provides 'power_supply_get_by_name()' to users who want to
+>> find power-supply device with the name of power-supply device.
+>>
+>> If CONFIG_OF is enabled, device drivers which want to get power-supply device
+>> would directly get the power-supply device from devicetree by using of_power_
+>> supply_get_dev(). This function can be used instead of power_supply_get_by_name().
+>>
+>> For example,
+>> [...]
+> 
+> include/linux/power_supply.h provides the following function already:
+> 
+> struct power_supply *
+> power_supply_get_by_phandle(struct device_node *np, const char *property);
+> 
 
-Today's linux-next merge of the usb tree got a conflict in
-Documentation/devicetree/bindings/phy/samsung-phy.txt between commit
-ba0d7ed391b7 ("ARM: dts: enable ahci sata and sata phy for exynos5250")
-from the samsung tree and commit 06fb01373cae ("phy: Add new Exynos USB
-2.0 PHY driver") from the usb tree.
+I checked power_supply_get_by_phandle().
+But power_supply_get_by_phandle() is different from of_power_supply_get_dev()
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+So, I expalin the difference between "power_supply_get_by_phandle()" and "of_power_supply_get_dev()".
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Existing "power_supply_get_by_phandle()"
+- Need correct the name of power_supply property.
+some device driver using power_supply_get_by_phandle() has the dependecy of 
+the name of power_supply property.
 
-diff --cc Documentation/devicetree/bindings/phy/samsung-phy.txt
-index a937f75d062c,28f9edb8f19c..000000000000
---- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
-+++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-@@@ -21,38 -21,56 +21,92 @@@ Required properties
-  - reg : offset and length of the Display Port PHY register set;
-  - #phy-cells : from the generic PHY bindings, must be 0;
- =20
- +Samsung SATA PHY Controller
- +---------------------------
- +
- +SATA PHY nodes are defined to describe on-chip SATA Physical layer contro=
-llers.
- +Each SATA PHY controller should have its own node.
- +
- +Required properties:
- +- compatible        : compatible list, contains "samsung,exynos5250-sata-=
-phy"
- +- reg : offset and length of the SATA PHY register set;
- +- #phy-cells : from the generic phy bindings;
- +
- +Example:
- +	sata_phy: sata-phy@12170000 {
- +		compatible =3D "samsung,exynos5250-sata-phy";
- +		reg =3D <0x12170000 0x1ff>;
- +		clocks =3D <&clock 287>;
- +		clock-names =3D "sata_phyctrl";
- +		#phy-cells =3D <0>;
- +		samsung,exynos-sataphy-i2c-phandle =3D <&sata_phy_i2c>;
- +		samsung,syscon-phandle =3D <&pmu_syscon>;
- +	};
- +
- +Device-Tree bindings for sataphy i2c client driver
- +--------------------------------------------------
- +
- +Required properties:
- +compatible: Should be "samsung,exynos-sataphy-i2c"
- +- reg: I2C address of the sataphy i2c device.
- +
- +Example:
- +
- +	sata_phy_i2c:sata-phy@38 {
- +		compatible =3D "samsung,exynos-sataphy-i2c";
- +		reg =3D <0x38>;
- +	};
-++
-+ Samsung S5P/EXYNOS SoC series USB PHY
-+ -------------------------------------------------
-+=20
-+ Required properties:
-+ - compatible : should be one of the listed compatibles:
-+ 	- "samsung,exynos4210-usb2-phy"
-+ 	- "samsung,exynos4x12-usb2-phy"
-+ 	- "samsung,exynos5250-usb2-phy"
-+ - reg : a list of registers used by phy driver
-+ 	- first and obligatory is the location of phy modules registers
-+ - samsung,sysreg-phandle - handle to syscon used to control the system re=
-gisters
-+ - samsung,pmureg-phandle - handle to syscon used to control PMU registers
-+ - #phy-cells : from the generic phy bindings, must be 1;
-+ - clocks and clock-names:
-+ 	- the "phy" clock is required by the phy module, used as a gate
-+ 	- the "ref" clock is used to get the rate of the clock provided to the
-+ 	  PHY module
-+=20
-+ The first phandle argument in the PHY specifier identifies the PHY, its
-+ meaning is compatible dependent. For the currently supported SoCs (Exynos=
- 4210
-+ and Exynos 4212) it is as follows:
-+   0 - USB device ("device"),
-+   1 - USB host ("host"),
-+   2 - HSIC0 ("hsic0"),
-+   3 - HSIC1 ("hsic1"),
-+=20
-+ Exynos 4210 and Exynos 4212 use mode switching and require that mode swit=
-ch
-+ register is supplied.
-+=20
-+ Example:
-+=20
-+ For Exynos 4412 (compatible with Exynos 4212):
-+=20
-+ usbphy: phy@125b0000 {
-+ 	compatible =3D "samsung,exynos4x12-usb2-phy";
-+ 	reg =3D <0x125b0000 0x100>;
-+ 	clocks =3D <&clock 305>, <&clock 2>;
-+ 	clock-names =3D "phy", "ref";
-+ 	status =3D "okay";
-+ 	#phy-cells =3D <1>;
-+ 	samsung,sysreg-phandle =3D <&sys_reg>;
-+ 	samsung,pmureg-phandle =3D <&pmu_reg>;
-+ };
-+=20
-+ Then the PHY can be used in other nodes such as:
-+=20
-+ phy-consumer@12340000 {
-+ 	phys =3D <&usbphy 2>;
-+ 	phy-names =3D "phy";
-+ };
-+=20
-+ Refer to DT bindings documentation of particular PHY consumer devices for=
- more
-+ information about required PHYs and the way of specification.
+If the name of power_supply property is modified,
+have to modify some device driver using power_supply_get_by_phandle().
 
---Signature=_Tue__18_Mar_2014_16_58_29_+1100_ZWm+04+XM81cTegN
-Content-Type: application/pgp-signature
+But,
+Proposed "of_power_supply_get_dev()"
+- of_power_supply_get_dev() has not dependency of specific name.
+of_power_supply_get_dev() only need device type of power_supply device among following device type:
+	"fuelgague"
+	"charger"
+	we can do addtional device type of power_supply device.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+If some device driver use of_poewr_supply_get_dev(),
+don't need to consider the name of power_supply device.	
 
-iQIcBAEBCAAGBQJTJ+CMAAoJEMDTa8Ir7ZwVQZUP/3Ga+wtPLZp+fXo1IV53uoe+
-GsTa+uneOgt9Kxd1qMtEZvVbQeavV31JQ03Tkb+AabH6uAS6Hvn7pVF6oe5kEHbz
-HL3uDCAy5iEYLAIMMIad36GlAj+E0LvH5dRYiW97CLyFNLJsL3O1YCqbdYiiaG4j
-MHdA3C6QYdzgqyEUWtTbYIb9uqSzysV1E91CE5Wmvw5CEW5P8TwvqzSaKlqRpPML
-8zzXucbs4W4iDQlGquBWxD/EKFqEINCt/aeUkOg+Gfbo1OcLIL1VJ9upxT5kTYc1
-+axRCMCEz3YxpEKpRQEF34pCP1IkXpe/rYryS/LIY+ldu9/9i56oFjhsc01uqGW/
-hD4yuPgyWo9haedMHyZ/bdpf/SG3n3hJtzEDgtAHSllY7ZQvTWu0s6V7bl80E1Ck
-AvFYjdLcN0ek2KWTdqDruU1yu8igNRWHbO65MQKVM6/9O6wA3vpQP2U0bCL7szd6
-9FUoiyqZ0HV4piHh4Q0r4KFBbilJxeVJNYbZyPVi56AQE6U9W/XIgqTOJHuP39f/
-ZfP/7es2eHBLmzFeBXOqhvQU1TvFb4L5vbwuCOJaxMVGym3TksGp96rkwVSDs+Yd
-z6U4H3/FHd94VZvwnQ3ppOJpTXblJkLbc/bSyFH3i4qMjkThmwTUH5sJM9XitMGf
-BHkdqS4iFr1LivmqX2VW
-=cV+c
------END PGP SIGNATURE-----
+Thanks,
+Chanwoo Choi
 
---Signature=_Tue__18_Mar_2014_16_58_29_+1100_ZWm+04+XM81cTegN--
+
+
+
+
+
