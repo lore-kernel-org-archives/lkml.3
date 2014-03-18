@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743AbaCRIho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:37:44 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51318 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754566AbaCRIhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:37:40 -0400
-Message-ID: <532805AE.9000806@ti.com>
-Date: Tue, 18 Mar 2014 14:07:02 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754336AbaCRI3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:29:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45569 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754303AbaCRI30 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 04:29:26 -0400
+Date: Tue, 18 Mar 2014 01:28:01 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-x7h0ghx4pef4n0brywg21krk@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, patrick@parcs.ath.cx,
+        peterz@infradead.org, efault@gmx.de, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, patrick@parcs.ath.cx,
+        efault@gmx.de, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf bench numa: Make no args mean '
+ run all tests'
+Git-Commit-ID: 0fae799e869b9b1ece8c04c714d0529da0b0bade
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
-References: <5316FFCE.1060603@ti.com> <1394018461-757-1-git-send-email-holler@ahsoftware.de> <CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com> <5322D529.4070904@ahsoftware.de> <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com> <5326F8C5.5090406@ti.com> <CACRpkdYZMzw31NkA4uSq+ZowzOnZgZthXhZri-eJY2Ozb8aNRQ@mail.gmail.com>
-In-Reply-To: <CACRpkdYZMzw31NkA4uSq+ZowzOnZgZthXhZri-eJY2Ozb8aNRQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 March 2014 07:35 PM, Linus Walleij wrote:
-> On Mon, Mar 17, 2014 at 2:29 PM, Sekhar Nori <nsekhar@ti.com> wrote:
-> 
->> One thing to note is that this driver is used by keystone too and all
->> its users are DT-only. Although I do not see any in-kernel DT GPIO users
->> even there.
->>
->> I can confirm the patch does not break my gpiolib based test module
->> (test with and without DT), but then it did not have an issue even before.
-> 
-> Is that a Tested-by tag? :-)
+Commit-ID:  0fae799e869b9b1ece8c04c714d0529da0b0bade
+Gitweb:     http://git.kernel.org/tip/0fae799e869b9b1ece8c04c714d0529da0b0bade
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 13 Mar 2014 16:54:03 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 14 Mar 2014 10:04:10 -0300
 
-Yes.
+perf bench numa: Make no args mean 'run all tests'
 
-Tested-by: Sekhar Nori <nsekhar@ti.com>
+If we call just:
 
-> 
-> If you're also convinced that fix is safe I'll push it as a fix to v3.14-rcN
-> if for nothing else so for getting Mr. Holler to stop poking me in the
-> chest.
+  perf bench numa mem
 
-It is safe - at the least it does not break anything that is already
-working. I guess the decision to put it into -rc depends on whether you
-consider out of tree dtbs to be a valid usecase for the kernel.
+it will present the same output as:
 
-Thanks,
-Sekhar
+  perf bench numa mem -h
+
+i.e. ask for instructions about what to run.
+
+While that is kinda ok, using 'run all tests' as the default, i.e.
+making 'no parms' be equivalent to:
+
+  perf bench numa mem -a
+
+Will allow:
+
+  perf bench numa all
+
+to actually do what is asked: i.e. run all the 'bench' tests, instead of
+responding to that by asking what to do.
+
+That, in turn, allows:
+
+  perf bench all
+
+to actually complete, for the same reasons.
+
+And after that, the tests that come after that, and that at some point
+hit a NULL deref, will run, allowing me to reproduce a recently reported
+problem.
+
+That when you have the needed numa libraries, which wasn't the case for
+the reporter, making me a bit confused after trying to reproduce his
+report.
+
+So make no parms mean -a.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Patrick Palka <patrick@parcs.ath.cx>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-x7h0ghx4pef4n0brywg21krk@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/bench/numa.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
+index d4c83c6..97d86d8 100644
+--- a/tools/perf/bench/numa.c
++++ b/tools/perf/bench/numa.c
+@@ -1593,6 +1593,7 @@ static void init_params(struct params *p, const char *name, int argc, const char
+ 	p->data_rand_walk		= true;
+ 	p->nr_loops			= -1;
+ 	p->init_random			= true;
++	p->run_all			= argc == 1;
+ }
+ 
+ static int run_bench_numa(const char *name, const char **argv)
