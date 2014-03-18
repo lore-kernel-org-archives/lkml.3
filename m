@@ -1,44 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233AbaCRMAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 08:00:42 -0400
-Received: from kvm5.telegraphics.com.au ([98.124.60.144]:60107 "EHLO
-	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659AbaCRMAk (ORCPT
+	id S1753829AbaCRMDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 08:03:20 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54684 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaCRMDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 08:00:40 -0400
-Date: Tue, 18 Mar 2014 23:00:12 +1100 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Joe Perches <joe@perches.com>
-cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Sam Creasey <sammy@sammy.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michael Schmitz <schmitz@debian.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH 00/12] scsi/NCR5380: fix debugging macros and #include
- structure
-In-Reply-To: <1395112756.20860.1.camel@joe-AO722>
-Message-ID: <alpine.LNX.2.00.1403182208590.2018@nippy.intranet>
-References: <20140318002822.372705594@telegraphics.com.au> <1395112756.20860.1.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 18 Mar 2014 08:03:19 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Mark Brown <broonie@linaro.org>
+Date: Tue, 18 Mar 2014 12:02:58 +0000
+Message-Id: <1395144178-3729-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.9.0
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regmap: Ensure regmap_register_patch() is compatible with fast_io
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Mark Brown <broonie@linaro.org>
 
-On Mon, 17 Mar 2014, Joe Perches wrote:
+With fast_io we use mutexes to lock the I/O operations so we would need
+to do GFP_ATOMIC allocations if we wanted to do allocations inside the
+lock as we do currently. Since it is unlikely that we will want to register
+a patch outside of init where concurrency shouldn't be an issue move the
+allocation of the patch data outside the lock.
 
-> 
-> My preference would be to change dprintk to scsi_dbg
+Reported-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/base/regmap/regmap.c | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
-Can you be more specific? I gather you're not referring to the debugging 
-routines in include/scsi/scsi_dbg.h as they aren't equivalent.
-
-Is it the name "dprintk" you object to?
-
-I went looking in drivers/scsi/ for some kind of naming convention for a 
-conditional printk. There are some other variations on the theme (DEBUG, 
-PDEBUG, PERROR, etc) but dprintk() seems to be the most popular.
-
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 554119535a64..2d7d55b3bedb 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -2396,6 +2396,9 @@ EXPORT_SYMBOL_GPL(regmap_async_complete);
+  * apply them immediately.  Typically this is used to apply
+  * corrections to be applied to the device defaults on startup, such
+  * as the updates some vendors provide to undocumented registers.
++ *
++ * The caller must ensure that this function cannot be called
++ * concurrently with either itself or regcache_sync().
+  */
+ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
+ 			  int num_regs)
+@@ -2408,6 +2411,17 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
+ 	    num_regs))
+ 		return 0;
+ 
++	p = krealloc(map->patch,
++		     sizeof(struct reg_default) * (map->patch_regs + num_regs),
++		     GFP_KERNEL);
++	if (p) {
++		memcpy(p + map->patch_regs, regs, num_regs * sizeof(*regs));
++		map->patch = p;
++		map->patch_regs += num_regs;
++	} else {
++		return -ENOMEM;
++	}
++
+ 	map->lock(map->lock_arg);
+ 
+ 	bypass = map->cache_bypass;
+@@ -2419,17 +2433,6 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
+ 	if (ret != 0)
+ 		goto out;
+ 
+-	p = krealloc(map->patch,
+-		     sizeof(struct reg_default) * (map->patch_regs + num_regs),
+-		     GFP_KERNEL);
+-	if (p) {
+-		memcpy(p + map->patch_regs, regs, num_regs * sizeof(*regs));
+-		map->patch = p;
+-		map->patch_regs += num_regs;
+-	} else {
+-		ret = -ENOMEM;
+-	}
+-
+ out:
+ 	map->async = false;
+ 	map->cache_bypass = bypass;
 -- 
+1.9.0
+
