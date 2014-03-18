@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbaCRJOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 05:14:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:45886 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753812AbaCRJOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 05:14:15 -0400
-X-IronPort-AV: E=Sophos;i="4.97,676,1389715200"; 
-   d="scan'208";a="9717904"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH] perf tools: Correct the message in feature-dwarf Checking
-Date: Tue, 18 Mar 2014 17:12:16 +0800
-Message-Id: <1395133936-16580-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/18 17:11:15,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/18 17:11:17,
-	Serialize complete at 2014/03/18 17:11:17
+	id S1754309AbaCRJRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 05:17:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54518 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565AbaCRJRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 05:17:03 -0400
+Date: Tue, 18 Mar 2014 10:16:56 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, len.brown@intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86 idle: Repair large-server 50-watt
+ idle-power regression
+Message-ID: <20140318091656.GQ25546@laptop.programming.kicks-ass.net>
+References: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
+ <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
+ <tip-40e2d7f9b5dae048789c64672bf3027fbb663ffa@git.kernel.org>
+ <1395102010.2474.21.camel@buesod1.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395102010.2474.21.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The package required for dwarf is named libdwarf-devel, rather
-than elfutils-devel.
+On Mon, Mar 17, 2014 at 05:20:10PM -0700, Davidlohr Bueso wrote:
+> On Thu, 2013-12-19 at 11:51 -0800, tip-bot for Len Brown wrote:
+> > Commit-ID:  40e2d7f9b5dae048789c64672bf3027fbb663ffa
+> > Gitweb:     http://git.kernel.org/tip/40e2d7f9b5dae048789c64672bf3027fbb663ffa
+> > Author:     Len Brown <len.brown@intel.com>
+> > AuthorDate: Wed, 18 Dec 2013 16:44:57 -0500
+> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> > CommitDate: Thu, 19 Dec 2013 11:47:39 -0800
+> > 
+> > x86 idle: Repair large-server 50-watt idle-power regression
+> 
+> FYI this commit can cause some non trivial performance regressions for
+> larger core count systems. While not surprising because of the nature of
+> the change, having intel_idle do more cacheline invalidations, I still
+> wanted to let you guys know. For instance, on a 160 core Westmere
+> system, aim7 throughput can go down in a number of tests, anywhere from
+> -10% to -25%.
+> 
+> I guess it comes down to one of those performance vs energy things. And
+> sure, max_cstate can be set to overcome this, but it's still something
+> that was previously taken for granted.
 
-This patch corrects the package name in warning message in
-feature-dwarf checking.
+-10% to -25% seems a lot for a single cacheline flush. Also I would
+expect the expected idle time to be very short while running aim7. So
+could it be the cacheflush is actually taking longer than the expected
+idle time?
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- tools/perf/config/Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index c234182..6b52134 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -285,11 +285,11 @@ else
-     ifndef NO_LIBDW_DWARF_UNWIND
-       ifneq ($(feature-libdw-dwarf-unwind),1)
-         NO_LIBDW_DWARF_UNWIND := 1
--        msg := $(warning No libdw DWARF unwind found, Please install elfutils-devel/libdw-dev >= 0.158 and/or set LIBDW_DIR);
-+        msg := $(warning No libdw DWARF unwind found, Please install libdwarf-devel/libdw-dev >= 0.158 and/or set LIBDW_DIR);
-       endif
-     endif
-     ifneq ($(feature-dwarf), 1)
--      msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
-+      msg := $(warning No libdw.h found or old libdw.h found or libdwarf-devel is older than 0.138, disables dwarf support. Please install new libdwarf-devel/libdw-dev);
-       NO_DWARF := 1
-     endif # Dwarf support
-   endif # libelf support
--- 
-1.8.2.1
 
