@@ -1,92 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaCRLG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 07:06:57 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47871 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345AbaCRLGx (ORCPT
+	id S1755053AbaCRLIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 07:08:34 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:64814 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374AbaCRLIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 07:06:53 -0400
-Date: Tue, 18 Mar 2014 11:06:40 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Harini Katakam <harini.katakam@xilinx.com>
-Cc: Josh Cartwright <joshc@codeaurora.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        Michal Simek <michals@xilinx.com>
-Message-ID: <20140318110640.GI11706@sirena.org.uk>
-References: <1395057936-8643-1-git-send-email-harinik@xilinx.com>
- <20140317173017.GW11706@sirena.org.uk>
- <20140317175911.GU18529@joshc.qualcomm.com>
- <20140317181440.GY11706@sirena.org.uk>
- <554ccbca-f92e-454c-90c0-b8a4ddddf3fd@CH1EHSMHS001.ehs.local>
+	Tue, 18 Mar 2014 07:08:30 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oIPRF+aTX2m15D8D"
-Content-Disposition: inline
-In-Reply-To: <554ccbca-f92e-454c-90c0-b8a4ddddf3fd@CH1EHSMHS001.ehs.local>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] SPI: Add driver for Cadence SPI controller
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1394835289.18748.31.camel@HP-250-G1-Notebook-PC>
+References: <1394835289.18748.31.camel@HP-250-G1-Notebook-PC>
+Date: Tue, 18 Mar 2014 16:38:29 +0530
+Message-ID: <CAM4v1pOtUDNn_yFG3HyYbBy0VDy4qCh-Ms3jMO_+hfOVQLhw-A@mail.gmail.com>
+Subject: Re: [PATCH 1/4] sched/rt: Sum number of all children tasks in
+ hierarhy at rt_nr_running
+From: Preeti Murthy <preeti.lkml@gmail.com>
+To: tkhai@yandex.ru
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 15, 2014 at 3:44 AM, Kirill Tkhai <tkhai@yandex.ru> wrote:
+> {inc,dec}_rt_tasks used to count entities which are directly queued
+> on rt_rq. If an entity was not a task (i.e., it is some queue), its
+> children were not counted.
 
---oIPRF+aTX2m15D8D
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Its always the case that a task is queued right, never a sched entity?
+When a task is queued, the nr_running of every rt_rq in the hierarchy
+of sched entities which are parents of this task is incremented by 1.
+Similar is with dequeue of a sched_entity. If the sched_entity has
+just 1 task on it, then its dequeued from its parent queue and its number
+decremented for every rq in the hierarchy. But you would
+never dequeue a sched_entity if it has more than 1 task in it. The
+granularity of enqueue and dequeue of sched_entities is one task
+at a time. You can extend this to enqueue and dequeue of a sched_entity
+only if it has just one task in its queue.
 
-On Tue, Mar 18, 2014 at 05:22:37AM +0000, Harini Katakam wrote:
+Regards
+Preeti U Murthy
 
-> > > > This needs to call spi_master_suspend() as well (and similarly on
-> > > > resume).
 
-...
-
-> In case of a suspend, we are stopping an ongoing transfer and
-> disabling the interface.  In case I add clock disable and anything
-> else to unprepared too, it will be a cleaner exit but it will still
-> stop the transfer right? What do you suggest?  Should we wait for
-> transfer to complete or a timeout to occur?
-
-I suggest doing what I said above and calling spi_master_suspend().
-Right now what the driver is doing is just halting the hardware if a
-transfer is in progress which will break any ongoing transfers.
-
---oIPRF+aTX2m15D8D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTKCi9AAoJELSic+t+oim9QyMP/jWiK6gxNUBgEjcdxAEcl69c
-MkP/Jg7ix04sB81G+YQrjgwIvw4LWvqkL3aLwx2/ko2RvxlA5Ynmt9U79An28BVL
-yt18j+hiPW74297eLkGmYE4i5vNa7U5a1O6kCLc9YCJ0ZGvpJy9rBCn8FhCPsYNz
-l6KqJXLVwpalpZV4EzokDyrRi9y9Hurze9giCBrOq5NLEjm6X9wdGcgKanQPKiRm
-4+Pn8Uu7DiTXuKH05QGWaOBkm3tHHybdPxl41JAoxKnWe+2CQf61tHyc83qEUFAP
-UUCBjZodYMUTW92W+WzLcY88ab8PHYTNcncsihQiqETCC6+GHvp8nw8C/OIPc9q+
-qEbXLWhJqYS4RcOzVjfnGVIMq58JVRAYQbsx5N+rgRpE/Iev5Qpde0H2Ebd1P6pT
-S+i6xEh9mPDOExdfEshc+3IoWOgn+9ev60fNF8FN5v/dFFiPEH21t4kWlpj0YQJ4
-a7rVsOuF3nIktByGxJcyJwrpiHqJW7oulRU8WurCJh2IDboLB7oltY82HRCmM6i2
-LEwVEmyq9MmFg3jb3sPbkQsBfAPIwWZrbvUNVc0wQ7OGSUp9KMWOaNtUSixCTl7H
-iBQZOpCEUXj/wB7E963vdv5YHPiqAwU/URpyY8HiisxOAiJpFrtYWSPRodt0GsLa
-8v1QC8dSQRSy64nZqo85
-=71yq
------END PGP SIGNATURE-----
-
---oIPRF+aTX2m15D8D--
+>
+> There is no problem here, but now we want to count number of all tasks
+> which are actually queued under the rt_rq in all the hierarhy (except
+> throttled rt queues).
+>
+> Empty queues are not able to be queued and all of the places, which
+> use rt_nr_running, just compare it with zero, so we do not break
+> anything here.
+>
+> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Ingo Molnar <mingo@kernel.org>
+> ---
+>  kernel/sched/rt.c |   15 +++++++++++++--
+>  1 file changed, 13 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index d8cdf16..e4def13 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1045,12 +1045,23 @@ void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
+>  #endif /* CONFIG_RT_GROUP_SCHED */
+>
+>  static inline
+> +unsigned int rt_se_nr_running(struct sched_rt_entity *rt_se)
+> +{
+> +       struct rt_rq *group_rq = group_rt_rq(rt_se);
+> +
+> +       if (group_rq)
+> +               return group_rq->rt_nr_running;
+> +       else
+> +               return 1;
+> +}
+> +
+> +static inline
+>  void inc_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+>  {
+>         int prio = rt_se_prio(rt_se);
+>
+>         WARN_ON(!rt_prio(prio));
+> -       rt_rq->rt_nr_running++;
+> +       rt_rq->rt_nr_running += rt_se_nr_running(rt_se);
+>
+>         inc_rt_prio(rt_rq, prio);
+>         inc_rt_migration(rt_se, rt_rq);
+> @@ -1062,7 +1073,7 @@ void dec_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+>  {
+>         WARN_ON(!rt_prio(rt_se_prio(rt_se)));
+>         WARN_ON(!rt_rq->rt_nr_running);
+> -       rt_rq->rt_nr_running--;
+> +       rt_rq->rt_nr_running -= rt_se_nr_running(rt_se);
+>
+>         dec_rt_prio(rt_rq, rt_se_prio(rt_se));
+>         dec_rt_migration(rt_se, rt_rq);
+>
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
