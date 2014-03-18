@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135AbaCRRVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:21:19 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:51983 "EHLO smtp.outflux.net"
+	id S1757114AbaCRRVR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:21:17 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:52594 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757056AbaCRRVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757057AbaCRRVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Mar 2014 13:21:12 -0400
 From: Kees Cook <keescook@chromium.org>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -22,20 +22,341 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH 0/2] sysctl: fix incorrect write position handling
-Date: Tue, 18 Mar 2014 10:17:58 -0700
-Message-Id: <1395163080-6290-1-git-send-email-keescook@chromium.org>
+Subject: [PATCH 2/2] test: make sure sysctl writing works as expected
+Date: Tue, 18 Mar 2014 10:18:00 -0700
+Message-Id: <1395163080-6290-3-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1395163080-6290-1-git-send-email-keescook@chromium.org>
+References: <1395163080-6290-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This creates a series of tests designed to examine the behavior of sysctl
-write behavior, and corrects some unexpected side-effects of the current
-file offset handling when writing sysctls. Namely, short appends don't
-work and multiple writes (with incremented file position) rewrite the
-sysctl string contents.
+This adds several behavioral tests to sysctl string and number writing
+to detect unexpected cases that didn't work correctly before the recent
+logic fixes:
 
--Kees
+[ BEFORE ]
+root@localhost:~# make test_num
+== Testing sysctl behavior against /proc/sys/kernel/domainname ==
+Writing test file ... ok
+Checking sysctl is not set to test value ... ok
+Writing sysctl from shell ... ok
+Resetting sysctl to original value ... ok
+Writing entire sysctl in single write ... ok
+Writing middle of sysctl after synchronized seek ... FAIL
+Writing beyond end of sysctl ... FAIL
+Writing sysctl with multiple long writes ... FAIL
+Writing entire sysctl in short writes ... FAIL
+Writing middle of sysctl after unsynchronized seek ... ok
+Checking sysctl maxlen is at least 65 ... ok
+Checking sysctl keeps original string on overflow append ... FAIL
+Checking sysctl stays NULL terminated on write ... ok
+Checking sysctl stays NULL terminated on overwrite ... ok
+make: *** [test_num] Error 1
+root@localhost:~# make test_string
+== Testing sysctl behavior against /proc/sys/vm/swappiness ==
+Writing test file ... ok
+Checking sysctl is not set to test value ... ok
+Writing sysctl from shell ... ok
+Resetting sysctl to original value ... ok
+Writing entire sysctl in single write ... ok
+Writing middle of sysctl after synchronized seek ... FAIL
+Writing beyond end of sysctl ... FAIL
+Writing sysctl with multiple long writes ... ok
+make: *** [test_string] Error 1
+
+[ AFTER ]
+root@localhost:~# make run_tests
+== Testing sysctl behavior against /proc/sys/kernel/domainname ==
+Writing test file ... ok
+Checking sysctl is not set to test value ... ok
+Writing sysctl from shell ... ok
+Resetting sysctl to original value ... ok
+Writing entire sysctl in single write ... ok
+Writing middle of sysctl after synchronized seek ... ok
+Writing beyond end of sysctl ... ok
+Writing sysctl with multiple long writes ... ok
+Writing entire sysctl in short writes ... ok
+Writing middle of sysctl after unsynchronized seek ... ok
+Checking sysctl maxlen is at least 65 ... ok
+Checking sysctl keeps original string on overflow append ... ok
+Checking sysctl stays NULL terminated on write ... ok
+Checking sysctl stays NULL terminated on overwrite ... ok
+== Testing sysctl behavior against /proc/sys/vm/swappiness ==
+Writing test file ... ok
+Checking sysctl is not set to test value ... ok
+Writing sysctl from shell ... ok
+Resetting sysctl to original value ... ok
+Writing entire sysctl in single write ... ok
+Writing middle of sysctl after synchronized seek ... ok
+Writing beyond end of sysctl ... ok
+Writing sysctl with multiple long writes ... ok
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ tools/testing/selftests/Makefile                |    1 +
+ tools/testing/selftests/sysctl/Makefile         |   18 ++++
+ tools/testing/selftests/sysctl/common_tests     |  109 +++++++++++++++++++++++
+ tools/testing/selftests/sysctl/run_numerictests |   10 +++
+ tools/testing/selftests/sysctl/run_stringtests  |   77 ++++++++++++++++
+ 5 files changed, 215 insertions(+)
+ create mode 100644 tools/testing/selftests/sysctl/Makefile
+ create mode 100644 tools/testing/selftests/sysctl/common_tests
+ create mode 100644 tools/testing/selftests/sysctl/run_numerictests
+ create mode 100644 tools/testing/selftests/sysctl/run_stringtests
+
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 32487ed18354..e66e710cc595 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -10,6 +10,7 @@ TARGETS += timers
+ TARGETS += vm
+ TARGETS += powerpc
+ TARGETS += user
++TARGETS += sysctl
+ 
+ all:
+ 	for TARGET in $(TARGETS); do \
+diff --git a/tools/testing/selftests/sysctl/Makefile b/tools/testing/selftests/sysctl/Makefile
+new file mode 100644
+index 000000000000..64fd6db3b1ce
+--- /dev/null
++++ b/tools/testing/selftests/sysctl/Makefile
+@@ -0,0 +1,18 @@
++# Makefile for sysctl selftests.
++
++# No binaries, but make sure arg-less "make" doesn't trigger "run_tests".
++all:
++
++# Allow specific tests to be selected.
++test_num:
++	@/bin/sh ./run_numerictests
++
++test_string:
++	@/bin/sh ./run_stringtests
++
++run_tests: all test_num test_string
++
++# Nothing to clean up.
++clean:
++
++.PHONY: all run_tests clean test_num test_string
+diff --git a/tools/testing/selftests/sysctl/common_tests b/tools/testing/selftests/sysctl/common_tests
+new file mode 100644
+index 000000000000..17d534b1b7b4
+--- /dev/null
++++ b/tools/testing/selftests/sysctl/common_tests
+@@ -0,0 +1,109 @@
++#!/bin/sh
++
++TEST_FILE=$(mktemp)
++
++echo "== Testing sysctl behavior against ${TARGET} =="
++
++set_orig()
++{
++	echo "${ORIG}" > "${TARGET}"
++}
++
++set_test()
++{
++	echo "${TEST_STR}" > "${TARGET}"
++}
++
++verify()
++{
++	local seen
++	seen=$(cat "$1")
++	if [ "${seen}" != "${TEST_STR}" ]; then
++		return 1
++	fi
++	return 0
++}
++
++trap 'set_orig; rm -f "${TEST_FILE}"' EXIT
++
++rc=0
++
++echo -n "Writing test file ... "
++echo "${TEST_STR}" > "${TEST_FILE}"
++if ! verify "${TEST_FILE}"; then
++	echo "FAIL" >&2
++	exit 1
++else
++	echo "ok"
++fi
++
++echo -n "Checking sysctl is not set to test value ... "
++if verify "${TARGET}"; then
++	echo "FAIL" >&2
++	exit 1
++else
++	echo "ok"
++fi
++
++echo -n "Writing sysctl from shell ... "
++set_test
++if ! verify "${TARGET}"; then
++	echo "FAIL" >&2
++	exit 1
++else
++	echo "ok"
++fi
++
++echo -n "Resetting sysctl to original value ... "
++set_orig
++if verify "${TARGET}"; then
++	echo "FAIL" >&2
++	exit 1
++else
++	echo "ok"
++fi
++
++# Now that we've validated the sanity of "set_test" and "set_orig",
++# we can use those functions to set starting states before running
++# specific behavioral tests.
++
++echo -n "Writing entire sysctl in single write ... "
++set_orig
++dd if="${TEST_FILE}" of="${TARGET}" bs=4096 2>/dev/null
++if ! verify "${TARGET}"; then
++	echo "FAIL" >&2
++	rc=1
++else
++	echo "ok"
++fi
++
++echo -n "Writing middle of sysctl after synchronized seek ... "
++set_test
++dd if="${TEST_FILE}" of="${TARGET}" bs=1 seek=1 skip=1 2>/dev/null
++if ! verify "${TARGET}"; then
++	echo "FAIL" >&2
++	rc=1
++else
++	echo "ok"
++fi
++
++echo -n "Writing beyond end of sysctl ... "
++set_orig
++dd if="${TEST_FILE}" of="${TARGET}" bs=20 seek=2 2>/dev/null
++if verify "${TARGET}"; then
++        echo "FAIL" >&2
++        rc=1
++else
++        echo "ok"
++fi
++
++echo -n "Writing sysctl with multiple long writes ... "
++set_orig
++(perl -e 'print "A" x 50;'; echo "${TEST_STR}") | \
++	dd of="${TARGET}" bs=50 2>/dev/null
++if verify "${TARGET}"; then
++	echo "FAIL" >&2
++	rc=1
++else
++	echo "ok"
++fi
+diff --git a/tools/testing/selftests/sysctl/run_numerictests b/tools/testing/selftests/sysctl/run_numerictests
+new file mode 100644
+index 000000000000..8510f93f2d14
+--- /dev/null
++++ b/tools/testing/selftests/sysctl/run_numerictests
+@@ -0,0 +1,10 @@
++#!/bin/sh
++
++SYSCTL="/proc/sys"
++TARGET="${SYSCTL}/vm/swappiness"
++ORIG=$(cat "${TARGET}")
++TEST_STR=$(( $ORIG + 1 ))
++
++. ./common_tests
++
++exit $rc
+diff --git a/tools/testing/selftests/sysctl/run_stringtests b/tools/testing/selftests/sysctl/run_stringtests
+new file mode 100644
+index 000000000000..90a9293d520c
+--- /dev/null
++++ b/tools/testing/selftests/sysctl/run_stringtests
+@@ -0,0 +1,77 @@
++#!/bin/sh
++
++SYSCTL="/proc/sys"
++TARGET="${SYSCTL}/kernel/domainname"
++ORIG=$(cat "${TARGET}")
++TEST_STR="Testing sysctl"
++
++. ./common_tests
++
++# Only string sysctls support seeking/appending.
++MAXLEN=65
++
++echo -n "Writing entire sysctl in short writes ... "
++set_orig
++dd if="${TEST_FILE}" of="${TARGET}" bs=1 2>/dev/null
++if ! verify "${TARGET}"; then
++	echo "FAIL" >&2
++	rc=1
++else
++	echo "ok"
++fi
++
++echo -n "Writing middle of sysctl after unsynchronized seek ... "
++set_test
++dd if="${TEST_FILE}" of="${TARGET}" bs=1 seek=1 2>/dev/null
++if verify "${TARGET}"; then
++	echo "FAIL" >&2
++	rc=1
++else
++	echo "ok"
++fi
++
++echo -n "Checking sysctl maxlen is at least $MAXLEN ... "
++set_orig
++perl -e 'print "A" x ('"${MAXLEN}"'-2), "B";' | \
++	dd of="${TARGET}" bs="${MAXLEN}" 2>/dev/null
++if ! grep -q B "${TARGET}"; then
++	echo "FAIL" >&2
++	rc=1
++else
++	echo "ok"
++fi
++
++echo -n "Checking sysctl keeps original string on overflow append ... "
++set_orig
++perl -e 'print "A" x ('"${MAXLEN}"'-1), "B";' | \
++	dd of="${TARGET}" bs=$(( MAXLEN - 1 )) 2>/dev/null
++if grep -q B "${TARGET}"; then
++	echo "FAIL" >&2
++	rc=1
++else
++	echo "ok"
++fi
++
++echo -n "Checking sysctl stays NULL terminated on write ... "
++set_orig
++perl -e 'print "A" x ('"${MAXLEN}"'-1), "B";' | \
++	dd of="${TARGET}" bs="${MAXLEN}" 2>/dev/null
++if grep -q B "${TARGET}"; then
++	echo "FAIL" >&2
++	rc=1
++else
++	echo "ok"
++fi
++
++echo -n "Checking sysctl stays NULL terminated on overwrite ... "
++set_orig
++perl -e 'print "A" x ('"${MAXLEN}"'-1), "BB";' | \
++	dd of="${TARGET}" bs=$(( $MAXLEN + 1 )) 2>/dev/null
++if grep -q B "${TARGET}"; then
++	echo "FAIL" >&2
++	rc=1
++else
++	echo "ok"
++fi
++
++exit $rc
+-- 
+1.7.9.5
 
