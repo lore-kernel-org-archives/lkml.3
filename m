@@ -1,109 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053AbaCRLIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 07:08:34 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:64814 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753374AbaCRLIa (ORCPT
+	id S1755135AbaCRLJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 07:09:20 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:51510 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754746AbaCRLJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 07:08:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1394835289.18748.31.camel@HP-250-G1-Notebook-PC>
-References: <1394835289.18748.31.camel@HP-250-G1-Notebook-PC>
-Date: Tue, 18 Mar 2014 16:38:29 +0530
-Message-ID: <CAM4v1pOtUDNn_yFG3HyYbBy0VDy4qCh-Ms3jMO_+hfOVQLhw-A@mail.gmail.com>
-Subject: Re: [PATCH 1/4] sched/rt: Sum number of all children tasks in
- hierarhy at rt_nr_running
-From: Preeti Murthy <preeti.lkml@gmail.com>
-To: tkhai@yandex.ru
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Mar 2014 07:09:17 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-a4-5328295c08b9
+Date: Tue, 18 Mar 2014 20:09:15 +0900
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: Re: [PATCH v11 10/27] iommu/exynos: use managed device helper functions
+Message-id: <20140318200915.7dd833ce0fddbbd6ecd8dac9@samsung.com>
+In-reply-to: <CAK9yfHw7zYaX9EYFE+m3Mh-u8Uiyubx-cS0EwPmfW+0weLiBKw@mail.gmail.com>
+References: <20140314140542.f4ded6c50dbd8a1d937bf354@samsung.com>
+ <CAK9yfHw7zYaX9EYFE+m3Mh-u8Uiyubx-cS0EwPmfW+0weLiBKw@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t8zQ90YTY1gg3sL5S3u3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
+	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
+	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4MrouxpXsIezYtqvD0wNjKfZuhg5OSQETCReT9vJDGGL
+	SVy4tx4ozsUhJLCMUeLy7tusMEXHpjQzQSSmM0ps/7adBcKZzCTRNXUhWDuLgKrE8SVbGEFs
+	NgEtidVzj4PZIkD2y+7lYN3MAj9ZJN78PccCkhAWCJB4cbIBzOYVcJS4tnUGO4jNKRAssX3y
+	IVaIDR2MEgd/LmWBuMNC4kJTBztEg6DEj8n3wOLMQBs2b2tihbDlJTavecsM0iwhMJdD4kPn
+	LFaI8wQkvk0+BNTAAZSQldh0AOppSYmDK26wTGAUm4Vk7CwkY2chGbuAkXkVo2hqQXJBcVJ6
+	kalecWJucWleul5yfu4mRki8T9zBeP+A9SHGZKCVE5mlRJPzgekiryTe0NjMyMLUxNTYyNzS
+	jDRhJXHe9EdJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYuSTk9h6Yr7qf/8THr5/X2ZX/
+	6tvQepBlfsfiiaveeffbZp076X353EaBJXu+KPryXtCvTLtR3l20VOyZFM8HsUsHJJu9DydY
+	m4janC9gfHpRR2L754T8aHeXxXNvv9j52HqLGFO21tvrImL+c3ImSUfmstk3qzG//rxirr52
+	7vfqN1O4+0u6lViKMxINtZiLihMBEJdW/A0DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOKsWRmVeSWpSXmKPExsVy+t9jQd0YTY1gg4UTpSzu3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
+	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
+	ch5Xjp5hCuCMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAH6QEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY0Xc1rmAPZ8W0
+	Xx+YGhhPs3UxcnJICJhIHJvSzARhi0lcuLceKM7FISQwnVFi+7ftLBDOZCaJrqkLmUGqWARU
+	JY4v2cIIYrMJaEmsnnsczBYBsl92L2cCaWAW+Mki8ebvORaQhLBAgMSLkw1gNq+Ao8S1rTPY
+	QWxOgWCJ7ZMPsUJs6GCUOPhzKQvEHRYSF5o62CEaBCV+TL4HFmcG2rB5WxMrhC0vsXnNW+YJ
+	jAKzkJTNQlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjByeSZ9A7GVQ0WhxgF
+	OBiVeHhfsKkHC7EmlhVX5h5ilOBgVhLhXaqmESzEm5JYWZValB9fVJqTWnyIMRkYHhOZpUST
+	84GJLq8k3tDYxMzI0sjMwsjE3Jw0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGJUWdXPO
+	ULsur5izf8ti9gsvRR8W3OmRF+3ieDzjK+tK6+kX5b4rnXRjYti2L00mw8QzMuy4ryV7oKe3
+	uUrQW1aBvtd/t3yMf/Os51H43DO32k6Z503Q2LOn723DN2Yr5o2RcxgF5Fq4/ix4xnm9jb27
+	kcPRfbde29kZYjP2Oq0wbVuUGrVEX4mlOCPRUIu5qDgRAL27HkNqAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 15, 2014 at 3:44 AM, Kirill Tkhai <tkhai@yandex.ru> wrote:
-> {inc,dec}_rt_tasks used to count entities which are directly queued
-> on rt_rq. If an entity was not a task (i.e., it is some queue), its
-> children were not counted.
+On Fri, 14 Mar 2014 20:52:43 +0530, Sachin Kamat wrote:
+> Hi KyongHo,
+> 
+> On 14 March 2014 10:35, Cho KyongHo <pullip.cho@samsung.com> wrote:
+> > This patch uses managed device helper functions in the probe().
+> >
+> > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+> > ---
+> [snip]
+> 
+> > +       data->clk = devm_clk_get(dev, "sysmmu");
+> > +       if (IS_ERR(data->clk)) {
+> > +               dev_info(dev, "No gate clock found!\n");
+> > +               data->clk = NULL;
+> > +       }
+> 
+> Why aren't you returning from here upon error?
 
-Its always the case that a task is queued right, never a sched entity?
-When a task is queued, the nr_running of every rt_rq in the hierarchy
-of sched entities which are parents of this task is incremented by 1.
-Similar is with dequeue of a sched_entity. If the sched_entity has
-just 1 task on it, then its dequeued from its parent queue and its number
-decremented for every rq in the hierarchy. But you would
-never dequeue a sched_entity if it has more than 1 task in it. The
-granularity of enqueue and dequeue of sched_entities is one task
-at a time. You can extend this to enqueue and dequeue of a sched_entity
-only if it has just one task in its queue.
+It is for the case of a System MMU which does not need clock gating.
 
-Regards
-Preeti U Murthy
+> > +
+> > +       ret = clk_prepare(data->clk);
+> > +       if (ret) {
+> > +               dev_err(dev, "Failed to prepare clk\n");
+> > +               return ret;
+> >         }
+> >
+> >         data->sysmmu = dev;
+> > @@ -556,17 +553,8 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
+> >
+> >         pm_runtime_enable(dev);
+> >
+> > -       dev_dbg(dev, "Initialized\n");
+> > +       dev_dbg(dev, "Probed and initialized\n");
+> 
+> This message looks redundant.
 
+Ok.
 
->
-> There is no problem here, but now we want to count number of all tasks
-> which are actually queued under the rt_rq in all the hierarhy (except
-> throttled rt queues).
->
-> Empty queues are not able to be queued and all of the places, which
-> use rt_nr_running, just compare it with zero, so we do not break
-> anything here.
->
-> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Ingo Molnar <mingo@kernel.org>
-> ---
->  kernel/sched/rt.c |   15 +++++++++++++--
->  1 file changed, 13 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index d8cdf16..e4def13 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1045,12 +1045,23 @@ void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
->  #endif /* CONFIG_RT_GROUP_SCHED */
->
->  static inline
-> +unsigned int rt_se_nr_running(struct sched_rt_entity *rt_se)
-> +{
-> +       struct rt_rq *group_rq = group_rt_rq(rt_se);
-> +
-> +       if (group_rq)
-> +               return group_rq->rt_nr_running;
-> +       else
-> +               return 1;
-> +}
-> +
-> +static inline
->  void inc_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
->  {
->         int prio = rt_se_prio(rt_se);
->
->         WARN_ON(!rt_prio(prio));
-> -       rt_rq->rt_nr_running++;
-> +       rt_rq->rt_nr_running += rt_se_nr_running(rt_se);
->
->         inc_rt_prio(rt_rq, prio);
->         inc_rt_migration(rt_se, rt_rq);
-> @@ -1062,7 +1073,7 @@ void dec_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
->  {
->         WARN_ON(!rt_prio(rt_se_prio(rt_se)));
->         WARN_ON(!rt_rq->rt_nr_running);
-> -       rt_rq->rt_nr_running--;
-> +       rt_rq->rt_nr_running -= rt_se_nr_running(rt_se);
->
->         dec_rt_prio(rt_rq, rt_se_prio(rt_se));
->         dec_rt_migration(rt_se, rt_rq);
->
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Do you mean that checking sysfs does the same?
+
+Thank you.
+
+KyongHo.
