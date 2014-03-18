@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198AbaCRTw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 15:52:27 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54333 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314AbaCRTwZ (ORCPT
+	id S1757297AbaCRT4K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 15:56:10 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:58382 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755718AbaCRT4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 15:52:25 -0400
-Date: Tue, 18 Mar 2014 19:51:59 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Paul Handrigan <paul.handrigan@cirrus.com>
-Cc: Brian Austin <brian.austin@cirrus.com>,
-        Nicolin Chen <Guangyu.Chen@freescale.com>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <lgirdwood@gmail.com>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <lars@metafoo.de>
-Message-ID: <20140318195159.GQ11706@sirena.org.uk>
-References: <1394538091-19513-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140318131033.GC11706@sirena.org.uk>
- <alpine.DEB.2.02.1403180936200.14838@heelrod>
- <alpine.DEB.2.00.1403181202310.7177@phandrigan-desktop>
+	Tue, 18 Mar 2014 15:56:07 -0400
+Date: Tue, 18 Mar 2014 12:56:03 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+Subject: [GIT PULL] bcache changes for 3.15
+Message-ID: <20140318195603.GI11655@kmo>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W2IRJ2e1E3eviBXu"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1403181202310.7177@phandrigan-desktop>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] ASoC: cs42888: Add codec driver support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jens, here's the bcache changes for 3.15. Lots of bugfixes, and some refactoring
+and cleanups.
 
---W2IRJ2e1E3eviBXu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
 
-On Tue, Mar 18, 2014 at 12:08:02PM -0500, Paul Handrigan wrote:
-> On Tue, 18 Mar 2014, Brian Austin wrote:
+  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
 
-> >Driver looks good to me. I think we should name it the cs42xx8 since this
-> >actually covers CS42448 and CS42888. The CS42888 is derived from the
-> >CS42448.
+are available in the git repository at:
 
-> V3 looks good. As Brian said, the name should be changed to cs42xx8.
+  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.15
 
-Great, so if Nicolin resubmits with the rename when he gets back he can
-add acks from both of you?  The driver looked fine to me too.
+for you to fetch changes up to cb85114956dc88b287afca2872658f562acbc302:
 
---W2IRJ2e1E3eviBXu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  bcache: remove nested function usage (2014-03-18 12:39:28 -0700)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+----------------------------------------------------------------
+John Sheu (1):
+      bcache: remove nested function usage
 
-iQIcBAEBAgAGBQJTKKPcAAoJELSic+t+oim9Hf0P/3rELI7VwR3LxlMlYZU+9r6B
-sgnvrD/uHk5LbNY5qAflhMdPFZ21652qQ7gMFZWuvU/TslS56B3vh5Ps79AyxLt3
-IjjWPZcjYR/FOdZYEikh6eSuWzBXXZhlJovCLI7Bk5yikpgqO2BoJvSfllfPq6MO
-6azixef+wLPYqxmb7SDQVPWEggwOm49D/8OaG4rrneSGWJ0rheH7OxQOBXXixjO1
-RxY5riSQuMXNeYwuO05MueNtMfMZR83ZFMKrR6h34oqEWEoEG69fCCas7lwoSW5X
-ZqrTOuaWn1N0eq1UqH8X6WRthrbTK9XYldAmee7VY78E+9rCyPz9EjfUE/tzdAzH
-OlYMGKlxb6Q06shngFL/6jNbqd3hKQtTmyJSupWsWka4WxcR7gzh+E8HiLtDlNgq
-L9+ub00dXyqWBzTYpUAiCRq7WxyRsjOU1YWrkFO97txWnp+KP2fRTY8ApkKkV1La
-f5yduYlsw1wS3NDTlL5R9x58XRtJXxfkpjgl+T/mRFyzMOA/HGpQ4M8qPaIeC4td
-MpQiPAwbuazUlXTOg0dni/FjQAii0ZAw+euY1YFRmOLsE8fEfXOc2eo2pmjgTM+R
-56kOa0q3qbUW4Q7qYzWMM8Gi8EFWwg4YBnM1ZtLhvRoDMjeIGwdk4Zq+ldU4AzQM
-8cAd0dPkmZAgjZVcNXcc
-=+khg
------END PGP SIGNATURE-----
+Kent Overstreet (21):
+      bcache: Fix another compiler warning on m68k
+      bcache: Fix flash_dev_cache_miss() for real this time
+      bcache: Fix a shutdown bug
+      bcache: Fix a lockdep splat in an error path
+      bcache: Fix a null ptr deref in journal replay
+      bcache: Fix a journalling reclaim after recovery bug
+      bcache: Fix a bug recovering from unclean shutdown
+      bcache: Fix another bug recovering from unclean shutdown
+      bcache: Fix discard granularity
+      bcache: Fix moving_pred()
+      bcache: Kill dead cgroup code
+      bcache: Better alloc tracepoints
+      bcache: Improve priority_stats
+      bcache: Add bch_keylist_init_single()
+      bcache: Add a real GC_MARK_RECLAIMABLE
+      bcache: Fix a race when freeing btree nodes
+      bcache: btree locking rework
+      bcache: Kill btree_io_wq
+      bcache: Rework btree cache reserve handling
+      bcache: Kill unused freelist
+      bcache: Kill bucket->gc_gen
 
---W2IRJ2e1E3eviBXu--
+Nicholas Swenson (2):
+      bcache: Fix moving_gc deadlocking with a foreground write
+      bcache: stop moving_gc marking buckets that can't be moved.
+
+ drivers/md/bcache/Kconfig     |   8 -
+ drivers/md/bcache/alloc.c     | 173 +++++-------
+ drivers/md/bcache/bcache.h    |  56 ++--
+ drivers/md/bcache/bset.c      |   4 +-
+ drivers/md/bcache/bset.h      |   6 +
+ drivers/md/bcache/btree.c     | 592 ++++++++++++++++++++++++------------------
+ drivers/md/bcache/btree.h     |  12 +-
+ drivers/md/bcache/extents.c   |  36 +--
+ drivers/md/bcache/journal.c   |  46 ++--
+ drivers/md/bcache/journal.h   |   1 +
+ drivers/md/bcache/movinggc.c  |  18 +-
+ drivers/md/bcache/request.c   | 201 +-------------
+ drivers/md/bcache/request.h   |  19 +-
+ drivers/md/bcache/stats.c     |   3 -
+ drivers/md/bcache/super.c     |  64 ++---
+ drivers/md/bcache/sysfs.c     | 155 ++++++-----
+ drivers/md/bcache/trace.c     |   2 +-
+ include/trace/events/bcache.h |  52 ++--
+ 18 files changed, 664 insertions(+), 784 deletions(-)
