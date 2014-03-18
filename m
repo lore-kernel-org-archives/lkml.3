@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226AbaCRIgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:36:18 -0400
-Received: from canardo.mork.no ([148.122.252.1]:47843 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753396AbaCRIgN convert rfc822-to-8bit (ORCPT
+	id S1754420AbaCRIhE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:37:04 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:34571 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754259AbaCRIhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:36:13 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Ben Chan <benchan@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Greg Suarez <gsuarez@smithmicro.com>
-Subject: Re: [PATCH v3 1/2] USB: cdc: add MBIM extended functional descriptor structure
-Organization: m
-References: <1395115145-31821-1-git-send-email-benchan@chromium.org>
-Date: Tue, 18 Mar 2014 09:35:57 +0100
-In-Reply-To: <1395115145-31821-1-git-send-email-benchan@chromium.org> (Ben
-	Chan's message of "Mon, 17 Mar 2014 20:59:04 -0700")
-Message-ID: <87wqfrkioi.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130009 (Ma Gnus v0.9) Emacs/23.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Mar 2014 04:37:01 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: akpm@linux-foundation.org, zaga@fly.cc.fer.hr, JBottomley@parallels.com
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] [SCSI] wd7000: remove deprecated IRQF_DISABLED
+Date: Tue, 18 Mar 2014 09:36:48 +0100
+Message-Id: <1395131808-18314-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1393997579-4035-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1393997579-4035-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Chan <benchan@chromium.org> writes:
+This patch removes the use of the IRQF_DISABLED flag
+from drivers/scsi/wd7000.c
 
-> This patch adds the MBIM extended functional descriptor structure
-> defined in "Universal Serial Bus Communications Class Subclass
-> Specification for Mobile Broadband Interface Model, Revision 1.0,
-> Errata-1" published by USB-IF.
->
-> Signed-off-by: Ben Chan <benchan@chromium.org>
-> ---
-> No changes from patch v1.
+It's a NOOP since 2.6.35 and it will be removed one day.
 
-I believe you could have included Greg KH's ack then, to make sure it is
-recorded.  Or will patchwork keep track of tags across different patch
-versions?
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ drivers/scsi/wd7000.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/scsi/wd7000.c b/drivers/scsi/wd7000.c
+index f9a6e4b0affe..32674236fec7 100644
+--- a/drivers/scsi/wd7000.c
++++ b/drivers/scsi/wd7000.c
+@@ -1252,7 +1252,7 @@ static int wd7000_init(Adapter * host)
+ 		return 0;
+ 
+ 
+-	if (request_irq(host->irq, wd7000_intr, IRQF_DISABLED, "wd7000", host)) {
++	if (request_irq(host->irq, wd7000_intr, 0, "wd7000", host)) {
+ 		printk("wd7000_init: can't get IRQ %d.\n", host->irq);
+ 		return (0);
+ 	}
+-- 
+1.8.3.2
 
-Bjørn
