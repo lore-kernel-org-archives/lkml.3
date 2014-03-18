@@ -1,150 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139AbaCRPoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:44:20 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:47453 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462AbaCRPoT (ORCPT
+	id S1755499AbaCRPrE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:47:04 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:36995 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971AbaCRPq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:44:19 -0400
-Date: Tue, 18 Mar 2014 16:44:14 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: tglx@linutronix.de, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@kernel.org
-Subject: Re: [PATCH] timer: remove code redundancy while calling
- get_nohz_timer_target()
-Message-ID: <20140318154412.GA769@localhost.localdomain>
-References: <1e1b53537217d58d48c2d7a222a9c3ac47d5b64c.1395140107.git.viresh.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1e1b53537217d58d48c2d7a222a9c3ac47d5b64c.1395140107.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Mar 2014 11:46:59 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-e2-53286a71d56a
+Message-id: <53286A6C.5090108@samsung.com>
+Date: Tue, 18 Mar 2014 16:46:52 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "nm@ti.com" <nm@ti.com>,
+        "b.zolnierkie@samsaung.com" <b.zolnierkie@samsaung.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCHv2 8/8] devfreq: exynos4: Add busfreq driver for
+ exynos4210/exynos4x12
+References: <1394698649-20996-1-git-send-email-cw00.choi@samsung.com>
+ <1394698649-20996-9-git-send-email-cw00.choi@samsung.com>
+ <20140313175308.GE25870@e106331-lin.cambridge.arm.com>
+ <5322AC5D.9070200@samsung.com>
+ <20140314103552.GK25870@e106331-lin.cambridge.arm.com>
+ <5322E04D.2060801@samsung.com> <53233DE7.2030902@samsung.com>
+ <532685E0.6040405@samsung.com>
+In-reply-to: <532685E0.6040405@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4Zd3CLI1gg+XTmSw6en6zWFz/8pzV
+	Yv6Rc6wW516tZLQ42/SG3WJh2xIWi8u75rBZfO49wmgx4/w+Joul1y8yWdxuXMFm8ebHWSaL
+	CdPXslg8XvGW3eLVwTYWB36PNfPWMHqsXP6FzWPxnpdMHj+Xb2f36NuyitHj+I3tTB6fN8l5
+	bJwbGsARxWWTkpqTWZZapG+XwJXR1H6GsWCOWcXXt0cZGxhv6HQxcnJICJhIXF+4mBnCFpO4
+	cG89G4gtJLCUUWLPZZ8uRi4g+zOjxOeth1i6GDk4eAW0JB63lIDUsAioSkxq28kKYrMJqEl8
+	bngE1ssPVLKm6ToLiC0qECExd+JmsDivgKDEj8n3wOIiAhoSM/9eYQSZzyzQwiaxc/V9dpCE
+	sEC0xKXJt9kgFn9lkvg34zNYB6eAtsSFyw/BipgFrCVWTtrGCGHLS2xe85Z5AqPgLCRLZiEp
+	m4WkbAEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkFj7soNx8TGrQ4wCHIxKPLySsRrB
+	QqyJZcWVuYcYJTiYlUR4V7sDhXhTEiurUovy44tKc1KLDzEycXBKNTB6tZ1iWF5w/JdKOOMl
+	o2TbqSy7/rmfrd7FUGh7+P5lD4XUffOqtsSoMt/8ZP3P/sk/1X8bNDg7KsWZ9b/EzNZZeU27
+	+VFhfE/3gukP+roerNhWOGsH741EN4drR0+miYWG3S8sevSsqTZoyYE1ksK7zi3c57H+au8t
+	n++ybWmyqS0enDeevqtRYinOSDTUYi4qTgQA7UaMopMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 04:26:07PM +0530, Viresh Kumar wrote:
-> There are only two users of get_nohz_timer_target(): timer and hrtimer. Both
-> call it under same circumstances, i.e.
-> 
-> 	#ifdef CONFIG_NO_HZ_COMMON
-> 	       if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
-> 	               return get_nohz_timer_target();
-> 	#endif
-> 
-> So, it makes more sense to get all this as part of get_nohz_timer_target()
-> instead of duplicating code at two places. For this another parameter is
-> required to be passed to this routine, pinned.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  include/linux/sched.h |  6 +++++-
->  kernel/hrtimer.c      | 15 +--------------
->  kernel/sched/core.c   |  5 ++++-
->  kernel/timer.c        |  7 +------
->  4 files changed, 11 insertions(+), 22 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 6dbb9e5..9819f93 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -299,10 +299,14 @@ extern int runqueue_is_locked(int cpu);
->  #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ_COMMON)
->  extern void nohz_balance_enter_idle(int cpu);
->  extern void set_cpu_sd_state_idle(void);
-> -extern int get_nohz_timer_target(void);
-> +extern int get_nohz_timer_target(int pinned);
->  #else
->  static inline void nohz_balance_enter_idle(int cpu) { }
->  static inline void set_cpu_sd_state_idle(void) { }
-> +static inline int get_nohz_timer_target(int pinned)
-> +{
-> +	return smp_processor_id();
-> +}
->  #endif
->  
->  /*
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index f60dce8..7eef615 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -168,19 +168,6 @@ struct hrtimer_clock_base *lock_hrtimer_base(const struct hrtimer *timer,
->  	}
->  }
->  
-> -
-> -/*
-> - * Get the preferred target CPU for NOHZ
-> - */
-> -static int hrtimer_get_target(int this_cpu, int pinned)
-> -{
-> -#ifdef CONFIG_NO_HZ_COMMON
-> -	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
-> -		return get_nohz_timer_target();
-> -#endif
-> -	return this_cpu;
-> -}
-> -
->  /*
->   * With HIGHRES=y we do not migrate the timer when it is expiring
->   * before the next event on the target cpu because we cannot reprogram
-> @@ -214,7 +201,7 @@ switch_hrtimer_base(struct hrtimer *timer, struct hrtimer_clock_base *base,
->  	struct hrtimer_clock_base *new_base;
->  	struct hrtimer_cpu_base *new_cpu_base;
->  	int this_cpu = smp_processor_id();
-> -	int cpu = hrtimer_get_target(this_cpu, pinned);
-> +	int cpu = get_nohz_timer_target(pinned);
->  	int basenum = base->index;
->  
->  again:
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 6fde755..a58e24d 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -556,12 +556,15 @@ void resched_cpu(int cpu)
->   * selecting an idle cpu will add more delays to the timers than intended
->   * (as that cpu's timer base may not be uptodate wrt jiffies etc).
->   */
-> -int get_nohz_timer_target(void)
-> +int get_nohz_timer_target(int pinned)
->  {
->  	int cpu = smp_processor_id();
->  	int i;
->  	struct sched_domain *sd;
->  
-> +	if (pinned || !get_sysctl_timer_migration() || !idle_cpu(cpu))
-> +		return cpu;
+On 17.03.2014 06:19, Chanwoo Choi wrote:
+> Hi Tomasz,
+>
+> On 03/15/2014 02:35 AM, Tomasz Figa wrote:
+>> Hi Chanwoo, Mark,
+>>
+>> On 14.03.2014 11:56, Chanwoo Choi wrote:
+>>> Hi Mark,
+>>>
+>>> On 03/14/2014 07:35 PM, Mark Rutland wrote:
+>>>> On Fri, Mar 14, 2014 at 07:14:37AM +0000, Chanwoo Choi wrote:
+>>>>> Hi Mark,
+>>>>>
+>>>>> On 03/14/2014 02:53 AM, Mark Rutland wrote:
+>>>>>> On Thu, Mar 13, 2014 at 08:17:29AM +0000, Chanwoo Choi wrote:
+>>>>>>> This patch add busfreq driver for Exynos4210/Exynos4x12 memory interface
+>>>>>>> and bus to support DVFS(Dynamic Voltage Frequency Scaling) according to PPMU
+>>>>>>> counters. PPMU (Performance Profiling Monitorings Units) of Exynos4 SoC provides
+>>>>>>> PPMU counters for DMC(Dynamic Memory Controller) to check memory bus utilization
+>>>>>>> and then busfreq driver adjusts dynamically the operating frequency/voltage
+>>>>>>> by using DEVFREQ Subsystem.
+>>>>>>>
+>>>>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>>>>>> ---
+>>>>>>>    .../devicetree/bindings/devfreq/exynos4_bus.txt    | 49 ++++++++++++++++++++++
+>>>>>>>    1 file changed, 49 insertions(+)
+>>>>>>>    create mode 100644 Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
+>>>>>>>
+>>>>>>> diff --git a/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt b/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
+>>>>>>> new file mode 100644
+>>>>>>> index 0000000..2a83fcc
+>>>>>>> --- /dev/null
+>>>>>>> +++ b/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
+>>>>>>> @@ -0,0 +1,49 @@
+>>>>>>> +
+>>>>>>> +Exynos4210/4x12 busfreq driver
+>>>>>>> +-----------------------------
+>>>>>>> +
+>>>>>>> +Exynos4210/4x12 Soc busfreq driver with devfreq for Memory bus frequency/voltage
+>>>>>>> +scaling according to PPMU counters of memory controllers
+>>>>>>> +
+>>>>>>> +Required properties:
+>>>>>>> +- compatible    : should contain Exynos4 SoC type as follwoing:
+>>>>>>> +          - "samsung,exynos4x12-busfreq" for Exynos4x12
+>>>>>>> +          - "samsung,exynos4210-busfreq" for Exynos4210
+>>>>>>
+>>>>>> Is there a device called "busfreq"? What device does this binding
+>>>>>> describe?
+>>>>>
+>>>>> I'll add detailed description of busfreq as following:
+>>>>>
+>>>>> "busfreq(bus frequendcy)" driver means that busfreq driver control dynamically
+>>>>> memory bus frequency/voltage by checking memory bus utilization to optimize
+>>>>> power-consumption. When checking memeory bus utilization, exynos4_busfreq driver
+>>>>> would use PPMU(Performance Profiling Monitoring Units).
+>>>>
+>>>> This still sounds like a description of the _driver_, not the _device_.
+>>>> The binding should describe the hardware, now the high level abstraction
+>>>> that software is going to build atop of it.
+>>>>
+>>>> It sounds like this is a binding for the DMC PPMU?
+>>>>
+>>>> Is the PPMU a component of the DMC, or is it bolted on the side?
+>>>
+>>> PPMU(Performance Profiling Monitoring Unit) is to profile performance event of
+>>> various IP on Exynos4. Each PPMU provide perforamnce event for each IP.
+>>> We can check various PPMU as following:
+>>>
+>>> PPMU_3D
+>>> PPMU_ACP
+>>> PPMU_CAMIF
+>>> PPMU_CPU
+>>> PPMU_DMC0
+>>> PPMU_DMC1
+>>> PPMU_FSYS
+>>> PPMU_IMAGE
+>>> PPMU_LCD0
+>>> PPMU_LCD1
+>>> PPMU_MFC_L
+>>> PPMU_MFC_R
+>>> PPMU_TV
+>>> PPMU_LEFT_BUS
+>>> PPMU_RIGHT_BUS
+>>>
+>>> DMC (Dynamic Memory Controller) control the operation of DRAM in Exynos4 SoC.
+>>> If we need to get memory bust utilization of DMC, we can get memory bus utilization
+>>> from PPMU_DMC0/PPMU_DMC1.
+>>>
+>>> So, Exynos4's busfreq used two(PPMU_DMC0/PPMU_DMC1) among upper various PPMU list.
+>>
+>> Well, PPMUs and DMCs are separate hardware blocks found inside Exynos SoCs. Busfreq/devfreq is just a Linux-specific abstraction responsible for collecting data using PPMUs and controlling frequencies and voltages of appropriate power planes, vdd_int responsible for powering DMC0 and DMC1 blocks in this case.
+>>
+>
+> I knew already.
+>
+>> I'm afraid that the binding you're proposing is unfortunately incorrect, because it represents the software abstraction, not the real hardware.
+>
+> What is exactly incorrect part of this patch?
+>
 
-Maybe the pinned part should stay a caller detail. Although I don't really mind.
+Device tree contains information about hardware, not about OS-specific 
+drivers or subsystems. Busfreq/devfreq is not a hardware block, but a 
+Linux-specific driver, so it's not suitable to be described by DT 
+directly, especially considering the fact that in future it might be 
+replaced by or merged with another subsystem.
 
-The patch looks good!
+Only PPMUs are real hardware blocks present in the SoC. In addition, a 
+SoC-level aspect of hardware description may be added, such as a list of 
+power planes. See below for explanation.
 
-Thanks.
+>>
+>> Instead, this should be separated into several independent bindings:
+>>
+>>   - PPMU bindings to list all the PPMU instances present in the SoC and resources they need,
+>>
+>>   - power plane bindings, which define a power plane in which multiple IP blocks might reside, can be monitored by one or more PPMU units and frequency and voltage of which can be configured according to determined performance level. Needed resources will be clocks and regulators to scale and probably also operating points.
+>>
+>> Then, exynos-busfreq driver should bind to such power planes, parse necessary data from DT (list of PPMUs and IP blocks, clocks, regulators and operating points) and register a devfreq entity.
+>
+> What is 'power plane'? I don't know 'power plane'.
 
-> +
->  	rcu_read_lock();
->  	for_each_domain(cpu, sd) {
->  		for_each_cpu(i, sched_domain_span(sd)) {
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index e6868bf..2cf8616 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -760,12 +760,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
->  
->  	debug_activate(timer, expires);
->  
-> -	cpu = smp_processor_id();
-> -
-> -#if defined(CONFIG_NO_HZ_COMMON) && defined(CONFIG_SMP)
-> -	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
-> -		cpu = get_nohz_timer_target();
-> -#endif
-> +	cpu = get_nohz_timer_target(pinned);
->  	new_base = per_cpu(tvec_bases, cpu);
->  
->  	if (base != new_base) {
-> -- 
-> 1.7.12.rc2.18.g61b472e
-> 
+Power plane is a part of the SoC (set of IP blocks and buses) that is 
+powered by the same power source. For example in Exynos4412 a power 
+plane would be VDD_ARM, containing 4 Cortex A9 cores, two L2 cache 
+blocks, L2 cache controller, SCU, and several other blocks. Another 
+example in Exynos4412 would be VDD_INT plane, which contains MFC, 
+AudioSS, LCD0, ISP, TV, CAM and several other blocks.
+
+In addition, such power plane might contain certain facilities, such as 
+PPMU blocks, that let you estimate bus bandwidth utilization and scale 
+certain performance and power parameters of such power plane, e.g. 
+frequencies of internal buses and voltage of external regulator used to 
+power it.
+
+> If you suggest 'power plane' concept and then merge this concept to mainline,
+> After merged 'power plane' concept, I will apply 'power plane' concept to Exynos4's busfreq driver.
+>
+> I prefer to handle 'power plane' concept on other patchset for Exynos4's busfreq driver.
+
+This is a necessary prerequisite for having Exynos busfreq facilities 
+described properly in device tree. This is not a concept of high level 
+generic framework, but just a concept of hardware description that can 
+be parsed by Linux drivers, such as Exynos busfreq.
+
+As I said above, a requirement is that DT does not describe 
+Linux-specific internals, but the hardware that is used by them.
+
+Best regards,
+Tomasz
