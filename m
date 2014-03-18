@@ -1,185 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479AbaCRNqD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 09:46:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33371 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754052AbaCRNqA (ORCPT
+	id S1754761AbaCRNv0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 09:51:26 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:36923 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbaCRNvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 09:46:00 -0400
-Date: Tue, 18 Mar 2014 14:45:34 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, josh@joshtriplett.org, laijs@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: cond_resched() and RCU CPU stall warnings
-Message-ID: <20140318134534.GB23193@laptop.programming.kicks-ass.net>
-References: <20140316015914.GA22102@linux.vnet.ibm.com>
- <20140317101300.GA27965@twins.programming.kicks-ass.net>
- <20140317165806.GG21124@linux.vnet.ibm.com>
- <20140317171434.GJ25546@laptop.programming.kicks-ass.net>
- <20140318021706.GE4420@linux.vnet.ibm.com>
- <20140318085118.GO25546@laptop.programming.kicks-ass.net>
- <20140318124951.GI4420@linux.vnet.ibm.com>
+	Tue, 18 Mar 2014 09:51:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140318124951.GI4420@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140318133331.GA23193@laptop.programming.kicks-ass.net>
+References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com> <20140318133331.GA23193@laptop.programming.kicks-ass.net>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Tue, 18 Mar 2014 21:51:04 +0800
+Message-ID: <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com>
+Subject: Re: [PATCH RFC] sched: introduce add_wait_queue_exclusive_head
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> sched,rcu: Make cond_resched() report RCU quiescent states
-> 
-> Given a CPU running a loop containing cond_resched(), with no
-> other tasks runnable on that CPU, RCU will eventually report RCU
-> CPU stall warnings due to lack of quiescent states.  Fortunately,
-> every call to cond_resched() is a perfectly good quiescent state.
-> Unfortunately, invoking rcu_note_context_switch() is a bit heavyweight
-> for cond_resched(), especially given the need to disable preemption,
-> and, for RCU-preempt, interrupts as well.
-> 
-> This commit therefore maintains a per-CPU counter that causes
-> cond_resched(), cond_resched_lock(), and cond_resched_softirq() to call
-> rcu_note_context_switch(), but only about once per 256 invocations.
-> This ratio was chosen in keeping with the relative time constants of
-> RCU grace periods.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 3cea28c64ebe..8d64878111ea 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -44,6 +44,7 @@
->  #include <linux/debugobjects.h>
->  #include <linux/bug.h>
->  #include <linux/compiler.h>
-> +#include <linux/percpu.h>
->  #include <asm/barrier.h>
->  
->  extern int rcu_expedited; /* for sysctl */
-> @@ -287,6 +288,41 @@ bool __rcu_is_watching(void);
->  #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
->  
->  /*
-> + * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
-> + */
-> +
-> +#define RCU_COND_RESCHED_LIM 256	/* ms vs. 100s of ms. */
-> +DECLARE_PER_CPU(int, rcu_cond_resched_count);
-> +void rcu_resched(void);
-> +
-> +/*
-> + * Is it time to report RCU quiescent states?
-> + *
-> + * Note unsynchronized access to rcu_cond_resched_count.  Yes, we might
-> + * increment some random CPU's count, and possibly also load the result from
-> + * yet another CPU's count.  We might even clobber some other CPU's attempt
-> + * to zero its counter.  This is all OK because the goal is not precision,
-> + * but rather reasonable amortization of rcu_note_context_switch() overhead
-> + * and extremely high probability of avoiding RCU CPU stall warnings.
-> + * Note that this function has to be preempted in just the wrong place,
-> + * many thousands of times in a row, for anything bad to happen.
-> + */
-> +static inline bool rcu_should_resched(void)
-> +{
-> +	return __this_cpu_inc_return(rcu_cond_resched_count) >=
-> +	       RCU_COND_RESCHED_LIM;
-> +}
-> +
-> +/*
-> + * Report quiscent states to RCU if it is time to do so.
-> + */
-> +static inline void rcu_cond_resched(void)
-> +{
-> +	if (unlikely(rcu_should_resched()))
-> +		rcu_resched();
-> +}
-> +
-> +/*
->   * Infrastructure to implement the synchronize_() primitives in
->   * TREE_RCU and rcu_barrier_() primitives in TINY_RCU.
->   */
-> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> index 4c0a9b0af469..ed7a0d72562c 100644
-> --- a/kernel/rcu/update.c
-> +++ b/kernel/rcu/update.c
-> @@ -338,3 +338,21 @@ static int __init check_cpu_stall_init(void)
->  early_initcall(check_cpu_stall_init);
->  
->  #endif /* #ifdef CONFIG_RCU_STALL_COMMON */
-> +
-> +/*
-> + * Hooks for cond_resched() and friends to avoid RCU CPU stall warnings.
-> + */
-> +
-> +DEFINE_PER_CPU(int, rcu_cond_resched_count);
-> +
-> +/*
-> + * Report a set of RCU quiescent states, for use by cond_resched()
-> + * and friends.  Out of line due to being called infrequently.
-> + */
-> +void rcu_resched(void)
-> +{
-> +	preempt_disable();
-> +	__this_cpu_write(rcu_cond_resched_count, 0);
+On Tue, Mar 18, 2014 at 9:33 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Mar 18, 2014 at 09:10:08PM +0800, Peng Tao wrote:
+>> Normally wait_queue_t is a FIFO list for exclusive waiting tasks.
+>> As a side effect, if there are many threads waiting on the same
+>> condition (which is common for data servers like Lustre), all
+>> threads will be waken up again and again, causing unnecessary cache
+>> line polution. Instead of FIFO lists, we can use LIFO lists to always
+>> wake up the most recent active threads.
+>>
+>> Lustre implements this add_wait_queue_exclusive_head() privately but we
+>> think it might be useful as a generic function. With it being moved to
+>> generic layer, the rest of Lustre private wrappers for wait queue can be
+>> all removed.
+>>
+>> Of course there is an alternative approach to just open code it but we'd
+>> like to ask first to see if there is objection to making it generic.
+>
+> OK, so I don't particularly mind LIFO, but there are a few problems with
+> the patch.
+>
+> Firstly I think the _head postfix for LIFO is a bad name,
+Do you have any preference on the name? add_wait_queue_exclusive_lifo()?
 
-Somehow I've got the urge to write:
+> and secondly,
+> and most important, this breaks __wake_up_common().
+>
+> So waitqueue wakeups are specified as waking all !exclusive tasks and @n
+> exclusive tasks. The way this works is that !exclusive tasks are added
+> to the head (LIFO) and exclusive tasks are added to the tail
+> (FIFO).
+>
+> We can then iterate the list until @n exclusive tasks have been
+> observed.
+>
+> However if you start adding exclusive tasks to the head this all comes
+> apart.
+>
+> If you don't mix exclusive and !exclusive tasks on the same waitqueue
+> this isn't a problem, but I'm sure people will eventually do this and
+> get a nasty surprise.
+>
+Yes, Lustre takes care not to mix exclusive and !exclusive tasks in this case.
 
-  __this_cpu_add(rcu_cond_resched_count, -RCU_COND_RESCHED_LIM);
+> I'm not sure what the best way around this would be; but I can see two
+> options:
+>
+>  - add enough debugging bits to detect this fail case.
+>  - extend wait_queue_head_t to keep a pointer to the first !exclusive
+>    element and insert exclusive LIFO tasks there -- thereby keeping
+>    !exclusive tasks at the front.
+>
+Thank you for the suggestions. Personally I am in favor of the second
+one but I'll wait others to comment first.
 
-But the immediate write is saver, and I suppose it doesn't matter at
-all.
-
-> +	rcu_note_context_switch(smp_processor_id());
-> +	preempt_enable();
-> +}
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index b46131ef6aab..1f53e8871dd2 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4071,6 +4071,7 @@ static void __cond_resched(void)
->  
->  int __sched _cond_resched(void)
->  {
-> +	rcu_cond_resched();
->  	if (should_resched()) {
->  		__cond_resched();
->  		return 1;
-> @@ -4089,6 +4090,7 @@ EXPORT_SYMBOL(_cond_resched);
->   */
->  int __cond_resched_lock(spinlock_t *lock)
->  {
-> +	bool need_rcu_resched = rcu_should_resched();
->  	int resched = should_resched();
->  	int ret = 0;
->  
-
-I suppose you also need:
-
--	if (spin_needbreak(lock) || resched)
-+	if (spin_needbreak(lock) || resched || need_rcu_resched)
-
-> @@ -4098,6 +4100,8 @@ int __cond_resched_lock(spinlock_t *lock)
->  		spin_unlock(lock);
->  		if (resched)
->  			__cond_resched();
-> +		else if (unlikely(need_rcu_resched))
-> +			rcu_resched();
->  		else
->  			cpu_relax();
->  		ret = 1;
-> @@ -4111,6 +4115,7 @@ int __sched __cond_resched_softirq(void)
->  {
->  	BUG_ON(!in_softirq());
->  
-> +	rcu_cond_resched();  /* BH disabled OK, just recording QSes. */
->  	if (should_resched()) {
->  		local_bh_enable();
->  		__cond_resched();
-
-At which point I'm wondering; do you also want __cond_resched_softirq()
-to advance rcu_bh? I'm forever forgetting the exact rcu_bh semantics
-though.
+Thanks,
+Tao
