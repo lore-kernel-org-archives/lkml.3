@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786AbaCRRhI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:37:08 -0400
-Received: from smtprelay0085.hostedemail.com ([216.40.44.85]:34905 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932172AbaCRRhE (ORCPT
+	id S932379AbaCRRhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:37:07 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:28858 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932175AbaCRRhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Mar 2014 13:37:04 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1515:1516:1518:1534:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2919:3138:3139:3140:3141:3142:3622:3865:4184:4321:5007:7652:10004:10400:10848:11658:11914:12517:12519:12740:13069:13071:13161:13229:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: owl99_204c37c530204
-X-Filterd-Recvd-Size: 1235
-Message-ID: <1395164220.2812.59.camel@joe-AO722>
-Subject: Re: [patch 08/12] can: c_can: Makethe code readable
-From: Joe Perches <joe@perches.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Benedikt Spranger <b.spranger@linutronix.de>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org
-Date: Tue, 18 Mar 2014 10:37:00 -0700
-In-Reply-To: <20140318171127.430027680@linutronix.de>
-References: <20140318171007.528610837@linutronix.de>
-	 <20140318171127.430027680@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Tue, 18 Mar 2014 17:36:20 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>
+Subject: Re: [PATCH v2 13/15] arm64: add EFI runtime services
+Message-ID: <20140318173616.GB20497@arm.com>
+References: <1394750828-16351-1-git-send-email-leif.lindholm@linaro.org>
+ <1394750828-16351-14-git-send-email-leif.lindholm@linaro.org>
+ <20140318123418.GH13200@arm.com>
+ <1395152209.2967.3.camel@deneb.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395152209.2967.3.camel@deneb.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-18 at 17:19 +0000, Thomas Gleixner wrote:
+On Tue, Mar 18, 2014 at 02:16:49PM +0000, Mark Salter wrote:
+> On Tue, 2014-03-18 at 12:34 +0000, Catalin Marinas wrote:
+> > On Thu, Mar 13, 2014 at 10:47:06PM +0000, Leif Lindholm wrote:
+> > > --- /dev/null
+> > > +++ b/arch/arm64/kernel/efi.c
+> > [...]
+> > > +/*
+> > > + * Called from setup_arch with interrupts disabled.
+> > > + */
+> > > +void __init efi_enter_virtual_mode(void)
+> > [...]
+> > > --- a/init/main.c
+> > > +++ b/init/main.c
+> > > @@ -902,6 +902,10 @@ static noinline void __init kernel_init_freeable(void)
+> > >         smp_prepare_cpus(setup_max_cpus);
+> > > 
+> > >         do_pre_smp_initcalls();
+> > > +
+> > > +       if (IS_ENABLED(CONFIG_ARM64) && efi_enabled(EFI_BOOT))
+> > > +               efi_enter_virtual_mode();
+> > 
+> > The comment for the efi_enter_virtual_mode() function says "called from
+> > setup_arch with interrupts disabled". None of these are true for the
+> > call above (and I would really prefer an arch call than this arm64
+> > conditional call in init/main.c.
+> > 
+> 
+> Right, the call changed to later in boot but the comment didn't. Calling
+> from setup_arch is too early. But an early_initcall would work and would
+> get rid of the ugly CONFIG_ARM64 test.
 
-[patch]
+I agree, early_initcall() is better.
 
-Hi
-
-The multi-while loop
-
-	while ((obj = ffs(pend)) && quota > 0) {
-		...
-	} while ((obj = ffs(pend)) && quota > 0);
-
-looks, umm, unusual.
-
-
+-- 
+Catalin
