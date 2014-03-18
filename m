@@ -1,127 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757855AbaCRX7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 19:59:16 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:35765 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593AbaCRX7N (ORCPT
+	id S1758161AbaCSAAB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 20:00:01 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55550 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758057AbaCRX76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 19:59:13 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-e2-5328ddce45d1
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Cho KyongHo'" <pullip.cho@samsung.com>
-Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux DeviceTree'" <devicetree@vger.kernel.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
-        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
-        "'Varun Sethi'" <Varun.Sethi@freescale.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <20140314140542.f4ded6c50dbd8a1d937bf354@samsung.com>
- <53230404.6070601@samsung.com>
- <20140318193817.3448387b75e109e814b9c025@samsung.com>
- <5328625B.508@samsung.com>
-In-reply-to: <5328625B.508@samsung.com>
-Subject: Re: [PATCH v11 10/27] iommu/exynos: use managed device helper functions
-Date: Wed, 19 Mar 2014 08:59:09 +0900
-Message-id: <001201cf4306$0e16e540$2a44afc0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9CvWbrFYk6bh8sS7GItB1MnQBo3QASAuqw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t8zQ91zdzWCDdYfVLa4c/ccq8X8I0Di
-	1ZEfTBYL9ltbXF54idWic/YGdoveBVfZLDY9vsZqcXnXHDaLGef3MVlcWLGR3eJf70FGiymL
-	DrNaHH7Tzmpx8k8vo8X6Ga9ZLGbeWsPiIOjx5OA8Jo/ZDRdZPP4d7mfyuHNtD5vH5iX1HpNv
-	LGf06NuyitHj8yY5jytHzzAFcEZx2aSk5mSWpRbp2yVwZZw818pUcJi3Ys3qFcwNjE+5uhg5
-	OSQETCQ6+rYwQdhiEhfurWfrYuTiEBJYxijxq3UfexcjO1jROzmI8HRGidPbV7JCOL8ZJd5M
-	fMAK0swmoCbx5cthoHoODhEBP4l3+0tAapgFDrJKPDrdwA7RsJ1R4tSZfcwgDZwC6hIX3q8D
-	axYWCJB4cbKBBaSZRUBV4vjMWJAwr4CtxIm2bjYIW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWve
-	MoO0SgCNfPRXFyQsImAksfj3eXaIEhGJfS/eMYKcICFwhUPiwvy7YCewCAhIfJt8iAWiV1Zi
-	0wFmSDhIShxccYNlAqPELCSbZyHZPAvJ5llIVixgZFnFKJpakFxQnJReZKpXnJhbXJqXrpec
-	n7uJEZJCJu5gvH/A+hBjMtD6icxSosn5wBSUVxJvaGxmZGFqYmpsZG5pRpqwkjhv+qOkICGB
-	9MSS1OzU1ILUovii0pzU4kOMTBycUg2M1SvXbPn0pEJ1s7s6c/2Zb2EvufqPKFV2aSa+PRic
-	PkdUYDb3mxi7igl7W6cqWsmp6GuECj059Xlv8jFhrWtrtVinFKwRumlxvq35zGP/JZ+W98/S
-	b6+V/h+g3+nlUrje5Rbv5tUqM9b53i9xdJLdGvXxTAtTJuO+v8oxpzdvDzITLs49mmanxFKc
-	kWioxVxUnAgAWgMuSTcDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e+xoO65uxrBBrsvyFrcuXuO1WL+ESDx
-	6sgPJosF+60tLi+8xGrROXsDu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
-	h1ktDr9pZ7U4+aeX0WL9jNcsFjNvrWFxEPR4cnAek8fshossHv8O9zN53Lm2h81j85J6j8k3
-	ljN69G1ZxejxeZOcx5WjZ5gCOKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3M
-	lRTyEnNTbZVcfAJ03TJzgH5RUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLW
-	MWacPNfKVHCYt2LN6hXMDYxPuboY2TkkBEwk3sl1MXICWWISF+6tZ+ti5OIQEpjOKHF6+0pW
-	COc3o8SbiQ9YQarYBNQkvnw5zN7FyMEhIuAn8W5/CUgNs8BBVolHpxvYIRq2M0qcOrOPGaSB
-	U0Bd4sL7dWDNwgIBEi9ONrCANLMIqEocnxkLEuYVsJU40dbNBmELSvyYfI8FxGYW0JJYv/M4
-	E4QtL7F5zVtmkFYJoJGP/uqChEUEjCQW/z7PDlEiIrHvxTvGCYxCs5BMmoVk0iwkk2YhaVnA
-	yLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzhBPZPawbiyweIQowAHoxIP74EojWAh1sSy
-	4srcQ4wSHMxKIrzCwPQmxJuSWFmVWpQfX1Sak1p8iDEZ6M+JzFKiyfnA5JlXEm9obGJmZGlk
-	ZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYyTd7hHT7n04ee7LLZ2x2lRWpty
-	FpXdebBnw66VUbOf5zz8kyxm45e6y5U559K3RYJLJzJ5VyxIMFD0FHPMPNmmbrR5Sf8joUhz
-	WbfL+5nVOaWkPOdmr3XY9zZ4etmdnbzmFxP2qHpLskpHXxMvTMqZlV3Mrhz+ROranup0HpVt
-	Loacs83TupVYijMSDbWYi4oTATG7AuCUAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 18 Mar 2014 19:59:58 -0400
+Date: Tue, 18 Mar 2014 23:59:41 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Arun Shamanna Lakshmi <aruns@nvidia.com>
+Cc: <lgirdwood@gmail.com>, <perex@perex.cz>, <tiwai@suse.de>,
+        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        Songhee Baek <sbaek@nvidia.com>
+Message-ID: <20140318235941.GT11706@sirena.org.uk>
+References: <1395186692-11735-1-git-send-email-aruns@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jF5TAc7w0HgrN+Xd"
+Content-Disposition: inline
+In-Reply-To: <1395186692-11735-1-git-send-email-aruns@nvidia.com>
+X-Cookie: Turn the other cheek.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: Add support for multi register mux
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 19, 2014 12:12 AM, Tomasz Figa wrote:
-> On 18.03.2014 11:38, Cho KyongHo wrote:
-> > On Fri, 14 Mar 2014 14:28:36 +0100, Tomasz Figa wrote:
-> >> On 14.03.2014 06:05, Cho KyongHo wrote:
-> >>> This patch uses managed device helper functions in the probe().
-> >>>
-> >>> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> >>> ---
-> >>>    drivers/iommu/exynos-iommu.c |   64 +++++++++++++++++-------------------------
-> >>>    1 file changed, 26 insertions(+), 38 deletions(-)
-> >>>
-> >>> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> >>> index 36e6b73..33b424d 100644
-> >>> --- a/drivers/iommu/exynos-iommu.c
-> >>> +++ b/drivers/iommu/exynos-iommu.c
 
-[.....]
+--jF5TAc7w0HgrN+Xd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> >>>    	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >>>    	if (!res) {
-> >>> -		dev_dbg(dev, "Unable to find IOMEM region\n");
-> >>> -		ret = -ENOENT;
-> >>> -		goto err_init;
-> >>> +		dev_err(dev, "Unable to find IOMEM region\n");
-> >>> +		return -ENOENT;
-> >>>    	}
-> >>
-> >> No need to check for error and print message, because
-> >> devm_ioremap_resource() already checks the passed resource and handles
-> >> error cases.
-> >>
-> >
-> > Yes but devm_ioremap_resource() just tells that the given 'res' is not
-> > correct. I think the message in the driver is more informative.
-> 
-> The common practice used in Linux kernel is to not duplicate such
-> messages. It is obvious that devm_ioremap_resource() printing such
-> message is related to an IOMEM resource anyway, as you can't used it
-> with other types of resources.
+On Tue, Mar 18, 2014 at 04:51:32PM -0700, Arun Shamanna Lakshmi wrote:
 
-+1
+> Currently soc_enum structure supports only 2 registers (reg, reg2)
+> for kcontrol. However, it is possible to have multiple registers
+> per mux. This change allows us to control these multiple registers.
 
-I agree with Tomasz Figa's opinion.
-These messages have been being removed from Linux kernel.
-Thank you.
+I'd want to see a user along with this and...
 
-Best regards,
-Jingoo Han
+> @@ -1093,6 +1093,9 @@ struct soc_enum {
+>  	unsigned int mask;
+>  	const char * const *texts;
+>  	const unsigned int *values;
+> +	unsigned int *regs;
+> +	unsigned int *masks;
+> +	unsigned int num_regs;
 
+...it duplicates and generally isn't joined up with the existing members
+of the structure, and has no support in the helpers (for example,
+converting the existing stereo controls to be two element arrays which
+I'd expect to see).  Helpers would count as users here.
+
+Note that we don't support double register enums or muxes - only
+numerical controls are supported.  It's not clear what a multi-register
+enum would mean.
+
+--jF5TAc7w0HgrN+Xd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTKN3pAAoJELSic+t+oim9X90P/juLHAIf9XoQvk30A3LBxtCu
+cIU14vx3hoogOSinsRae+wah8Srhjgr/LYGw8CV1pEOL1r6tFyqt4chIrBB6gzxc
+1sVAOpsjWqvhzGON9bAvzaoa6ZLeWWtrlpMpFxX2b8v1/pAqHspp+zfJIVLX/tS9
+5z/9PWX49rWlgNXqwDFNGGQ2/rS8QSduj0qqzAAHGpOQvf4t/MY071HW/lPiqh0d
+Cw0r+/bI500Y2yhpURqZTmUAAp8pmVup2jJ48Pg0F/fauNot7bQwjzeHlcqFEnS3
+pRUUZILdSKBbUA5aALRhxbs+KHQcpZaJjZsDAiAZQ7Po8W92fu7WvRsr1cAa300+
+86/LcNfXF1EAHXBlpEqVFwe4oBtiXKmsGdG4eGjTNwZhIjHWh1FVM4nCOqe6yJB7
+2xRnHVaHHrn0Uj3lbyt1zXK+ta2BMEDFv2kTMSr2pt9CqQkVyN/NGmOowQcJw0VF
+iV/eHxeHtWfAl1WkTCTE6IJI4A+S0vHcx/puPfkOjyxBV2SUCPi7Rd/C/m+DQhjt
+hv4yk9lvHVzlIpqWFR/HVJtx8KGsTHkfcMQRFxGcauYZGeYfiyU3m3JShVMZQyRR
+SNhSgGs9vlf0aQN734YjxEGvJ2hJFsJoSI+Vyzi91YTn4uj5oDV3AP5O2uYY7op+
+URLCfkLzVEWISLt6nNDe
+=rwRq
+-----END PGP SIGNATURE-----
+
+--jF5TAc7w0HgrN+Xd--
