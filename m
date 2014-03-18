@@ -1,184 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821AbaCRIje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:39:34 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34608 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754422AbaCRIjb (ORCPT
+	id S1754859AbaCRIkV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:40:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45557 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263AbaCRI3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:39:31 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: akpm@linux-foundation.org, JBottomley@parallels.com
-Cc: linuxdrivers@attotech.com, achim_leubner@adaptec.com, xjtuwjp@gmail.com,
-        lindar_liu@usish.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] [SCSI] misc drivers: remove deprecated IRQF_DISABLED
-Date: Tue, 18 Mar 2014 09:39:24 +0100
-Message-Id: <1395131964-18383-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393998313-4240-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1393998313-4240-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 18 Mar 2014 04:29:20 -0400
+Date: Tue, 18 Mar 2014 01:28:31 -0700
+From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
+Message-ID: <tip-27db78307481dbba68c5f3563c6cb694b25521d9@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, dvhart@linux.intel.com,
+        peterz@infradead.org, jason.low2@hp.com, Waiman.Long@hp.com,
+        tglx@linutronix.de, scott.norton@hp.com, davidlohr@hp.com,
+        aswin@hp.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, dvhart@linux.intel.com,
+        peterz@infradead.org, jason.low2@hp.com, Waiman.Long@hp.com,
+        tglx@linutronix.de, davidlohr@hp.com, scott.norton@hp.com,
+        aswin@hp.com
+In-Reply-To: <1387081917-9102-3-git-send-email-davidlohr@hp.com>
+References: <1387081917-9102-3-git-send-email-davidlohr@hp.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf bench: Add futex-wake microbenchmark
+Git-Commit-ID: 27db78307481dbba68c5f3563c6cb694b25521d9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the use of the IRQF_DISABLED flag
-in several drivers in drivers/scsi/
+Commit-ID:  27db78307481dbba68c5f3563c6cb694b25521d9
+Gitweb:     http://git.kernel.org/tip/27db78307481dbba68c5f3563c6cb694b25521d9
+Author:     Davidlohr Bueso <davidlohr@hp.com>
+AuthorDate: Sat, 14 Dec 2013 20:31:56 -0800
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 14 Mar 2014 11:20:43 -0300
 
-It's a NOOP since 2.6.35 and it will be removed one day.
+perf bench: Add futex-wake microbenchmark
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Block a bunch of threads on a futex and wake them up, N at a time.
+
+This program is particularly useful to measure the latency of nthread
+wakeups in non-error situations:  all waiters are queued and all wake
+calls wakeup one or more tasks.
+
+An example run:
+
+  $ perf bench futex wake -t 512 -r 100
+  Run summary [PID 27823]: blocking on 512 threads (at futex 0x7e10d4), waking up 1 at a time.
+
+  [Run 1]: Wokeup 512 of 512 threads in 6.0080 ms
+  [Run 2]: Wokeup 512 of 512 threads in 5.2280 ms
+  [Run 3]: Wokeup 512 of 512 threads in 4.8300 ms
+  ...
+  [Run 100]: Wokeup 512 of 512 threads in 5.0100 ms
+  Wokeup 512 of 512 threads in 5.0109 ms (+-2.25%)
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Acked-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jason Low <jason.low2@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Scott J Norton <scott.norton@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Link: http://lkml.kernel.org/r/1387081917-9102-3-git-send-email-davidlohr@hp.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/scsi/dtc.c                | 2 +-
- drivers/scsi/esas2r/esas2r_init.c | 2 +-
- drivers/scsi/g_NCR5380.c          | 2 +-
- drivers/scsi/gdth.c               | 6 +++---
- drivers/scsi/in2000.c             | 2 +-
- drivers/scsi/initio.c             | 2 +-
- drivers/scsi/pas16.c              | 2 +-
- drivers/scsi/pm8001/pm8001_init.c | 2 --
- drivers/scsi/t128.c               | 2 +-
- 9 files changed, 10 insertions(+), 12 deletions(-)
+ tools/perf/Makefile.perf      |   1 +
+ tools/perf/bench/bench.h      |   1 +
+ tools/perf/bench/futex-wake.c | 201 ++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/bench/futex.h      |  10 +++
+ tools/perf/builtin-bench.c    |   1 +
+ 5 files changed, 214 insertions(+)
 
-diff --git a/drivers/scsi/dtc.c b/drivers/scsi/dtc.c
-index d01f01604140..eb29fe7eaf49 100644
---- a/drivers/scsi/dtc.c
-+++ b/drivers/scsi/dtc.c
-@@ -277,7 +277,7 @@ found:
- 		/* With interrupts enabled, it will sometimes hang when doing heavy
- 		 * reads. So better not enable them until I finger it out. */
- 		if (instance->irq != SCSI_IRQ_NONE)
--			if (request_irq(instance->irq, dtc_intr, IRQF_DISABLED,
-+			if (request_irq(instance->irq, dtc_intr, 0,
- 					"dtc", instance)) {
- 				printk(KERN_ERR "scsi%d : IRQ%d not free, interrupts disabled\n", instance->host_no, instance->irq);
- 				instance->irq = SCSI_IRQ_NONE;
-diff --git a/drivers/scsi/esas2r/esas2r_init.c b/drivers/scsi/esas2r/esas2r_init.c
-index b9750e296d71..6776931e25d4 100644
---- a/drivers/scsi/esas2r/esas2r_init.c
-+++ b/drivers/scsi/esas2r/esas2r_init.c
-@@ -231,7 +231,7 @@ use_legacy_interrupts:
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 54ae547..6fa5d8b 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -427,6 +427,7 @@ endif
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
+ BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
++BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
  
- static void esas2r_claim_interrupts(struct esas2r_adapter *a)
- {
--	unsigned long flags = IRQF_DISABLED;
-+	unsigned long flags = 0;
+ BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
+diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
+index 34edb5c..6ac3f1d 100644
+--- a/tools/perf/bench/bench.h
++++ b/tools/perf/bench/bench.h
+@@ -32,6 +32,7 @@ extern int bench_mem_memcpy(int argc, const char **argv,
+ 			    const char *prefix __maybe_unused);
+ extern int bench_mem_memset(int argc, const char **argv, const char *prefix);
+ extern int bench_futex_hash(int argc, const char **argv, const char *prefix);
++extern int bench_futex_wake(int argc, const char **argv, const char *prefix);
  
- 	if (a->intr_mode == INTR_MODE_LEGACY)
- 		flags |= IRQF_SHARED;
-diff --git a/drivers/scsi/g_NCR5380.c b/drivers/scsi/g_NCR5380.c
-index 5cec6c60ca22..7176365e916b 100644
---- a/drivers/scsi/g_NCR5380.c
-+++ b/drivers/scsi/g_NCR5380.c
-@@ -461,7 +461,7 @@ int __init generic_NCR5380_detect(struct scsi_host_template * tpnt)
+ #define BENCH_FORMAT_DEFAULT_STR	"default"
+ #define BENCH_FORMAT_DEFAULT		0
+diff --git a/tools/perf/bench/futex-wake.c b/tools/perf/bench/futex-wake.c
+new file mode 100644
+index 0000000..d096169
+--- /dev/null
++++ b/tools/perf/bench/futex-wake.c
+@@ -0,0 +1,201 @@
++/*
++ * Copyright (C) 2013  Davidlohr Bueso <davidlohr@hp.com>
++ *
++ * futex-wake: Block a bunch of threads on a futex and wake'em up, N at a time.
++ *
++ * This program is particularly useful to measure the latency of nthread wakeups
++ * in non-error situations:  all waiters are queued and all wake calls wakeup
++ * one or more tasks, and thus the waitqueue is never empty.
++ */
++
++#include "../perf.h"
++#include "../util/util.h"
++#include "../util/stat.h"
++#include "../util/parse-options.h"
++#include "../util/header.h"
++#include "bench.h"
++#include "futex.h"
++
++#include <err.h>
++#include <stdlib.h>
++#include <sys/time.h>
++#include <pthread.h>
++
++/* all threads will block on the same futex */
++static u_int32_t futex1 = 0;
++
++/*
++ * How many wakeups to do at a time.
++ * Default to 1 in order to make the kernel work more.
++ */
++static unsigned int nwakes = 1;
++
++/*
++ * There can be significant variance from run to run,
++ * the more repeats, the more exact the overall avg and
++ * the better idea of the futex latency.
++ */
++static unsigned int repeat = 10;
++
++pthread_t *worker;
++static bool done = 0, silent = 0;
++static pthread_mutex_t thread_lock;
++static pthread_cond_t thread_parent, thread_worker;
++static struct stats waketime_stats, wakeup_stats;
++static unsigned int ncpus, threads_starting, nthreads = 0;
++
++static const struct option options[] = {
++	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
++	OPT_UINTEGER('w', "nwakes",  &nwakes,   "Specify amount of threads to wake at once"),
++	OPT_UINTEGER('r', "repeat",  &repeat,   "Specify amount of times to repeat the run"),
++	OPT_BOOLEAN( 's', "silent",  &silent,   "Silent mode: do not display data/details"),
++	OPT_END()
++};
++
++static const char * const bench_futex_wake_usage[] = {
++	"perf bench futex wake <options>",
++	NULL
++};
++
++static void *workerfn(void *arg __maybe_unused)
++{
++	pthread_mutex_lock(&thread_lock);
++	threads_starting--;
++	if (!threads_starting)
++		pthread_cond_signal(&thread_parent);
++	pthread_cond_wait(&thread_worker, &thread_lock);
++	pthread_mutex_unlock(&thread_lock);
++
++	futex_wait(&futex1, 0, NULL, FUTEX_PRIVATE_FLAG);
++	return NULL;
++}
++
++static void print_summary(void)
++{
++	double waketime_avg = avg_stats(&waketime_stats);
++	double waketime_stddev = stddev_stats(&waketime_stats);
++	unsigned int wakeup_avg = avg_stats(&wakeup_stats);
++
++	printf("Wokeup %d of %d threads in %.4f ms (+-%.2f%%)\n",
++	       wakeup_avg,
++	       nthreads,
++	       waketime_avg/1e3,
++	       rel_stddev_stats(waketime_stddev, waketime_avg));
++}
++
++static void block_threads(pthread_t *w,
++			  pthread_attr_t thread_attr)
++{
++	cpu_set_t cpu;
++	unsigned int i;
++
++	threads_starting = nthreads;
++
++	/* create and block all threads */
++	for (i = 0; i < nthreads; i++) {
++		CPU_ZERO(&cpu);
++		CPU_SET(i % ncpus, &cpu);
++
++		if (pthread_attr_setaffinity_np(&thread_attr, sizeof(cpu_set_t), &cpu))
++			err(EXIT_FAILURE, "pthread_attr_setaffinity_np");
++
++		if (pthread_create(&w[i], &thread_attr, workerfn, NULL))
++			err(EXIT_FAILURE, "pthread_create");
++	}
++}
++
++static void toggle_done(int sig __maybe_unused,
++			siginfo_t *info __maybe_unused,
++			void *uc __maybe_unused)
++{
++	done = true;
++}
++
++int bench_futex_wake(int argc, const char **argv,
++		     const char *prefix __maybe_unused)
++{
++	int ret = 0;
++	unsigned int i, j;
++	struct sigaction act;
++	pthread_attr_t thread_attr;
++
++	argc = parse_options(argc, argv, options, bench_futex_wake_usage, 0);
++	if (argc) {
++		usage_with_options(bench_futex_wake_usage, options);
++		exit(EXIT_FAILURE);
++	}
++
++	ncpus = sysconf(_SC_NPROCESSORS_ONLN);
++
++	sigfillset(&act.sa_mask);
++	act.sa_sigaction = toggle_done;
++	sigaction(SIGINT, &act, NULL);
++
++	if (!nthreads)
++		nthreads = ncpus;
++
++	worker = calloc(nthreads, sizeof(*worker));
++	if (!worker)
++		err(EXIT_FAILURE, "calloc");
++
++	printf("Run summary [PID %d]: blocking on %d threads (at futex %p), "
++	       "waking up %d at a time.\n\n",
++	       getpid(), nthreads, &futex1, nwakes);
++
++	init_stats(&wakeup_stats);
++	init_stats(&waketime_stats);
++	pthread_attr_init(&thread_attr);
++	pthread_mutex_init(&thread_lock, NULL);
++	pthread_cond_init(&thread_parent, NULL);
++	pthread_cond_init(&thread_worker, NULL);
++
++	for (j = 0; j < repeat && !done; j++) {
++		unsigned int nwoken = 0;
++		struct timeval start, end, runtime;
++
++		/* create, launch & block all threads */
++		block_threads(worker, thread_attr);
++
++		/* make sure all threads are already blocked */
++		pthread_mutex_lock(&thread_lock);
++		while (threads_starting)
++			pthread_cond_wait(&thread_parent, &thread_lock);
++		pthread_cond_broadcast(&thread_worker);
++		pthread_mutex_unlock(&thread_lock);
++
++		usleep(100000);
++
++		/* Ok, all threads are patiently blocked, start waking folks up */
++		gettimeofday(&start, NULL);
++		while (nwoken != nthreads)
++			nwoken += futex_wake(&futex1, nwakes, FUTEX_PRIVATE_FLAG);
++		gettimeofday(&end, NULL);
++		timersub(&end, &start, &runtime);
++
++		update_stats(&wakeup_stats, nwoken);
++		update_stats(&waketime_stats, runtime.tv_usec);
++
++		if (!silent) {
++			printf("[Run %d]: Wokeup %d of %d threads in %.4f ms\n",
++			       j + 1, nwoken, nthreads, runtime.tv_usec/1e3);
++		}
++
++		for (i = 0; i < nthreads; i++) {
++			ret = pthread_join(worker[i], NULL);
++			if (ret)
++				err(EXIT_FAILURE, "pthread_join");
++		}
++
++	}
++
++	/* cleanup & report results */
++	pthread_cond_destroy(&thread_parent);
++	pthread_cond_destroy(&thread_worker);
++	pthread_mutex_destroy(&thread_lock);
++	pthread_attr_destroy(&thread_attr);
++
++	print_summary();
++
++	free(worker);
++	return ret;
++}
+diff --git a/tools/perf/bench/futex.h b/tools/perf/bench/futex.h
+index 7d0bda5..6ac4509 100644
+--- a/tools/perf/bench/futex.h
++++ b/tools/perf/bench/futex.h
+@@ -45,4 +45,14 @@ futex_wait(u_int32_t *uaddr, u_int32_t val, struct timespec *timeout, int opflag
+ 	return futex(uaddr, FUTEX_WAIT, val, timeout, NULL, 0, opflags);
+ }
  
- 		if (instance->irq != SCSI_IRQ_NONE)
- 			if (request_irq(instance->irq, generic_NCR5380_intr,
--					IRQF_DISABLED, "NCR5380", instance)) {
-+					0, "NCR5380", instance)) {
- 				printk(KERN_WARNING "scsi%d : IRQ%d not free, interrupts disabled\n", instance->host_no, instance->irq);
- 				instance->irq = SCSI_IRQ_NONE;
- 			}
-diff --git a/drivers/scsi/gdth.c b/drivers/scsi/gdth.c
-index ce5ef0190bad..0f1ae13ce7c7 100644
---- a/drivers/scsi/gdth.c
-+++ b/drivers/scsi/gdth.c
-@@ -4711,7 +4711,7 @@ static int __init gdth_isa_probe_one(u32 isa_bios)
- 	printk("Configuring GDT-ISA HA at BIOS 0x%05X IRQ %u DRQ %u\n",
- 		isa_bios, ha->irq, ha->drq);
++/**
++ * futex_wake() - wake one or more tasks blocked on uaddr
++ * @nr_wake:	wake up to this many tasks
++ */
++static inline int
++futex_wake(u_int32_t *uaddr, int nr_wake, int opflags)
++{
++	return futex(uaddr, FUTEX_WAKE, nr_wake, NULL, NULL, 0, opflags);
++}
++
+ #endif /* _FUTEX_H */
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index a8b0138..743a30a 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -57,6 +57,7 @@ static struct bench mem_benchmarks[] = {
  
--	error = request_irq(ha->irq, gdth_interrupt, IRQF_DISABLED, "gdth", ha);
-+	error = request_irq(ha->irq, gdth_interrupt, 0, "gdth", ha);
- 	if (error) {
- 		printk("GDT-ISA: Unable to allocate IRQ\n");
- 		goto out_host_put;
-@@ -4843,7 +4843,7 @@ static int __init gdth_eisa_probe_one(u16 eisa_slot)
- 	printk("Configuring GDT-EISA HA at Slot %d IRQ %u\n",
- 		eisa_slot >> 12, ha->irq);
- 
--	error = request_irq(ha->irq, gdth_interrupt, IRQF_DISABLED, "gdth", ha);
-+	error = request_irq(ha->irq, gdth_interrupt, 0, "gdth", ha);
- 	if (error) {
- 		printk("GDT-EISA: Unable to allocate IRQ\n");
- 		goto out_host_put;
-@@ -4979,7 +4979,7 @@ static int gdth_pci_probe_one(gdth_pci_str *pcistr, gdth_ha_str **ha_out)
- 		ha->irq);
- 
- 	error = request_irq(ha->irq, gdth_interrupt,
--				IRQF_DISABLED|IRQF_SHARED, "gdth", ha);
-+				IRQF_SHARED, "gdth", ha);
- 	if (error) {
- 		printk("GDT-PCI: Unable to allocate IRQ\n");
- 		goto out_host_put;
-diff --git a/drivers/scsi/in2000.c b/drivers/scsi/in2000.c
-index bf028218ac36..b1c4d831137d 100644
---- a/drivers/scsi/in2000.c
-+++ b/drivers/scsi/in2000.c
-@@ -2015,7 +2015,7 @@ static int __init in2000_detect(struct scsi_host_template * tpnt)
- 		write1_io(0, IO_FIFO_READ);	/* start fifo out in read mode */
- 		write1_io(0, IO_INTR_MASK);	/* allow all ints */
- 		x = int_tab[(switches & (SW_INT0 | SW_INT1)) >> SW_INT_SHIFT];
--		if (request_irq(x, in2000_intr, IRQF_DISABLED, "in2000", instance)) {
-+		if (request_irq(x, in2000_intr, 0, "in2000", instance)) {
- 			printk("in2000_detect: Unable to allocate IRQ.\n");
- 			detect_count--;
- 			continue;
-diff --git a/drivers/scsi/initio.c b/drivers/scsi/initio.c
-index 280d5af113d1..e5dae7b54d9a 100644
---- a/drivers/scsi/initio.c
-+++ b/drivers/scsi/initio.c
-@@ -2931,7 +2931,7 @@ static int initio_probe_one(struct pci_dev *pdev,
- 	shost->base = host->addr;
- 	shost->sg_tablesize = TOTAL_SG_ENTRY;
- 
--	error = request_irq(pdev->irq, i91u_intr, IRQF_DISABLED|IRQF_SHARED, "i91u", shost);
-+	error = request_irq(pdev->irq, i91u_intr, IRQF_SHARED, "i91u", shost);
- 	if (error < 0) {
- 		printk(KERN_WARNING "initio: Unable to request IRQ %d\n", pdev->irq);
- 		goto out_free_scbs;
-diff --git a/drivers/scsi/pas16.c b/drivers/scsi/pas16.c
-index 62f1a6031765..0d78a4d5576c 100644
---- a/drivers/scsi/pas16.c
-+++ b/drivers/scsi/pas16.c
-@@ -453,7 +453,7 @@ int __init pas16_detect(struct scsi_host_template * tpnt)
- 	    instance->irq = NCR5380_probe_irq(instance, PAS16_IRQS);
- 
- 	if (instance->irq != SCSI_IRQ_NONE) 
--	    if (request_irq(instance->irq, pas16_intr, IRQF_DISABLED,
-+	    if (request_irq(instance->irq, pas16_intr, 0,
- 			    "pas16", instance)) {
- 		printk("scsi%d : IRQ%d not free, interrupts disabled\n", 
- 		    instance->host_no, instance->irq);
-diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-index 73a120d81b4d..72d2d07efeb0 100644
---- a/drivers/scsi/pm8001/pm8001_init.c
-+++ b/drivers/scsi/pm8001/pm8001_init.c
-@@ -713,11 +713,9 @@ static u32 pm8001_setup_msix(struct pm8001_hba_info *pm8001_ha)
- 	/* SPCv controllers supports 64 msi-x */
- 	if (pm8001_ha->chip_id == chip_8001) {
- 		number_of_intr = 1;
--		flag |= IRQF_DISABLED;
- 	} else {
- 		number_of_intr = PM8001_MAX_MSIX_VEC;
- 		flag &= ~IRQF_SHARED;
--		flag |= IRQF_DISABLED;
- 	}
- 
- 	max_entry = sizeof(pm8001_ha->msix_entries) /
-diff --git a/drivers/scsi/t128.c b/drivers/scsi/t128.c
-index f1e4b4148c75..a4abce9d526e 100644
---- a/drivers/scsi/t128.c
-+++ b/drivers/scsi/t128.c
-@@ -259,7 +259,7 @@ found:
- 	    instance->irq = NCR5380_probe_irq(instance, T128_IRQS);
- 
- 	if (instance->irq != SCSI_IRQ_NONE) 
--	    if (request_irq(instance->irq, t128_intr, IRQF_DISABLED, "t128",
-+	    if (request_irq(instance->irq, t128_intr, 0, "t128",
- 			    instance)) {
- 		printk("scsi%d : IRQ%d not free, interrupts disabled\n", 
- 		    instance->host_no, instance->irq);
--- 
-1.8.3.2
-
+ static struct bench futex_benchmarks[] = {
+ 	{ "hash",	"Benchmark for futex hash table",               bench_futex_hash	},
++	{ "wake",	"Benchmark for futex wake calls",               bench_futex_wake	},
+ 	{ "all",	"Test all futex benchmarks",			NULL			},
+ 	{ NULL,		NULL,						NULL			}
+ };
