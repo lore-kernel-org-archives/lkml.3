@@ -1,132 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424AbaCRC0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 22:26:44 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:18930 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753108AbaCRC0m convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 22:26:42 -0400
-Date: Tue, 18 Mar 2014 10:24:35 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Antoine =?UTF-8?B?VMOpbmFydA==?= 
-	<antoine.tenart@free-electrons.com>
-CC: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 1/3] ARM: dts: berlin2q: add the Marvell Armada 1500
- pro
-Message-ID: <20140318102435.2d29abc7@xhacker>
-In-Reply-To: <1395068788-19786-2-git-send-email-antoine.tenart@free-electrons.com>
-References: <1395068788-19786-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1395068788-19786-2-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1753503AbaCRCb3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 22:31:29 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:45785 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753135AbaCRCb2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 22:31:28 -0400
+Message-ID: <5327AF4B.6000100@huawei.com>
+Date: Tue, 18 Mar 2014 10:28:27 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-18_01:2014-03-17,2014-03-18,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1403170180
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Vegard Nossum <vegard.nossum@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Xishi Qiu <qiuxishi@huawei.com>, Li Zefan <lizefan@huawei.com>,
+        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kmemcheck: move hook into __alloc_pages_nodemask() for the
+ page allocator
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.179]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Antoine,
+Now kmemcheck_pagealloc_alloc() is only called by __alloc_pages_slowpath().
+__alloc_pages_nodemask()
+	__alloc_pages_slowpath()
+		kmemcheck_pagealloc_alloc()
 
-On Mon, 17 Mar 2014 08:06:26 -0700
-Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+And the page will not be tracked by kmemcheck in the following path.
+__alloc_pages_nodemask()
+	get_page_from_freelist()
 
-> Adds initial support for the Marvell Armada 1500 pro (BG2Q) SoC (Berlin
-> family). The SoC has nodes for cpu, l2 cache controller, interrupt
-> controllers, local timer, apb timers and uarts for now.
-> 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  arch/arm/boot/dts/berlin2q.dtsi | 210
-> ++++++++++++++++++++++++++++++++++++++++ 1 file changed, 210 insertions(+)
->  create mode 100644 arch/arm/boot/dts/berlin2q.dtsi
-> 
-> diff --git a/arch/arm/boot/dts/berlin2q.dtsi
-> b/arch/arm/boot/dts/berlin2q.dtsi new file mode 100644
-> index 000000000000..7a50267b1044
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/berlin2q.dtsi
-> @@ -0,0 +1,210 @@
-> +/*
-> + * Copyright (C) 2014 Antoine Ténart <antoine.tenart@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2. This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <dt-bindings/interrupt-controller/arm-gic.h>
-> +
-> +#include "skeleton.dtsi"
-> +
-> +/ {
-> +	model = "Marvell Armada 1500 pro (BG2-Q) SoC";
-> +	compatible = "marvell,berlin2q", "marvell,berlin";
-> +
-> +	cpus {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		cpu@0 {
-> +			compatible = "arm,cortex-a9";
-> +			device_type = "cpu";
-> +			next-level-cache = <&l2>;
-> +			reg = <0>;
-> +		};
-> +
-> +		cpu@1 {
-> +			compatible = "arm,cortex-a9";
-> +			device_type = "cpu";
-> +			next-level-cache = <&l2>;
-> +			reg = <1>;
-> +		};
-> +
-> +		cpu@2 {
-> +			compatible = "arm,cortex-a9";
-> +			device_type = "cpu";
-> +			next-level-cache = <&l2>;
-> +			reg = <2>;
-> +		};
-> +
-> +		cpu@3 {
-> +			compatible = "arm,cortex-a9";
-> +			device_type = "cpu";
-> +			next-level-cache = <&l2>;
-> +			reg = <3>;
-> +		};
-> +	};
-> +
-> +	smclk: sysmgr-clock {
-> +		compatible = "fixed-clock";
-> +		#clock-cells = <0>;
-> +		clock-frequency = <25000000>;
-> +	};
-> +
-> +	cpuclk: cpu-clock {
-> +		compatible = "fixed-clock";
-> +		#clock-cells = <0>;
-> +		clock-frequency = <1200000000>;
-> +	};
-> +
-> +	sysclk: system-clock {
-> +		compatible = "fixed-factor-clock";
-> +		#clock-cells = <0>;
-> +		clocks = <&cpuclk>;
-> +		clock-multi = <1>;
-> +		clock-div = <3>;
-> +	};
+So move kmemcheck_pagealloc_alloc() into __alloc_pages_nodemask(), 
+like this:
+__alloc_pages_nodemask()
+	...
+	get_page_from_freelist()
+	if (!page)
+		__alloc_pages_slowpath()
+	kmemcheck_pagealloc_alloc()
+	...
 
-Can you please name it as twdclk to avoid confusion? On Berlin, sysclk is another
-clk rather than the clk for twd. 
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ mm/page_alloc.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index e3758a0..ce596b4 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2671,11 +2671,7 @@ rebalance:
+ 
+ nopage:
+ 	warn_alloc_failed(gfp_mask, order, NULL);
+-	return page;
+ got_pg:
+-	if (kmemcheck_enabled)
+-		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+-
+ 	return page;
+ }
+ 
+@@ -2748,6 +2744,8 @@ retry_cpuset:
+ 				preferred_zone, migratetype);
+ 	}
+ 
++	if (kmemcheck_enabled && page)
++		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+ 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
+ 
+ out:
+-- 
+1.7.1
+
+
