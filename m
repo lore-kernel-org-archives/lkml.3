@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673AbaCRPZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:25:22 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:39735 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674AbaCRPZT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:25:19 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-50-5328655c8259
-Message-id: <53286557.6070808@samsung.com>
-Date: Tue, 18 Mar 2014 16:25:11 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: Re: [PATCH v11 13/27] iommu/exynos: support for device tree
-References: <20140314140935.e0652b58ce16591b54d0e10b@samsung.com>
- <53230695.9080606@samsung.com>
- <20140318195210.14c953a70498f634032f35b7@samsung.com>
-In-reply-to: <20140318195210.14c953a70498f634032f35b7@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42I5/e/4Fd2YVI1gg0Pf+C3u3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7Bb/eg8yWkxZdJjV4vCb
-	dlaLk396GS1m3lrD4sDv8eTgPCaP2Q0XWTz+He5n8rhzbQ+bx+Yl9R6Tbyxn9OjbsorR4/Mm
-	OY8rR88wBXBGcdmkpOZklqUW6dslcGV8O/KDteAXZ8XZvi+MDYwdHF2MnBwSAiYSV358YYSw
-	xSQu3FvP1sXIxSEksJRR4uz9d8wgCSGBz4wSv59odTFycPAKaEksWpkCEmYRUJVY//4oK4jN
-	JqAm8bnhERuIzQ9UsqbpOguILSoQITF34mawOK+AoMSPyffA4iICGhKfr6xnBdnFLNDIKvHo
-	/jJ2kISwgIvEg6abzBBHzGKUOPXoFhNIglPASeL401Vg3cwC1hIrJ21jhLDlJTavecs8gVFw
-	FpIls5CUzUJStoCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSMx93cG49JjVIUYBDkYl
-	Hl6JWI1gIdbEsuLK3EOMEhzMSiK8q92BQrwpiZVVqUX58UWlOanFhxiZODilGhjXOwdLpDJd
-	refdfziU5eNuVpFA78yLF261RJnJNC92KuY8wFhWF7BYdsvJoBscXreM7z9+Mik6vpid6wRP
-	9COOsoUXrL+citRY0R3QOaF9fuUpnUiGicksO5r/uHFuN5z+e339Z6esoCv7A7aoL1rxJHHt
-	pZ2/ltwpqYrk1ZiiumBpqG3jDS0lluKMREMt5qLiRAAJbtx0lwIAAA==
+	id S1756720AbaCRPZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:25:36 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:33743 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755754AbaCRPZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 11:25:31 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Behan Webster'" <behanw@converseincode.com>,
+        "davem@davemloft.net" <davem@davemloft.net>
+CC: "pablo@netfilter.org" <pablo@netfilter.org>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "kadlec@blackhole.kfki.hu" <kadlec@blackhole.kfki.hu>,
+        "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
+        "netfilter@vger.kernel.org" <netfilter@vger.kernel.org>,
+        "coreteam@netfilter.org" <coreteam@netfilter.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "pageexec@freemail.hu" <pageexec@freemail.hu>,
+        Mark Charlebois <charlebm@gmail.com>,
+        =?utf-8?B?Vmluw61jaXVzIFRpbnRp?= <viniciustinti@gmail.com>
+Subject: RE: [PATCH v2] net: netfilter: LLVMLinux: vlais-netfilter
+Thread-Topic: [PATCH v2] net: netfilter: LLVMLinux: vlais-netfilter
+Thread-Index: AQHPQnEJEP702KUMQ0ePAIHbN3UAt5rmloBAgABWjICAAAc+AA==
+Date: Tue, 18 Mar 2014 15:24:13 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6E0286@AcuExch.aculab.com>
+References: <022D9517-4804-47BB-B789-CCF25F25C1ED@me.com>
+ <1395123121-27053-1-git-send-email-behanw@converseincode.com>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6E0065@AcuExch.aculab.com>
+ <53285C79.2060907@converseincode.com>
+In-Reply-To: <53285C79.2060907@converseincode.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2IFPg8B005981
 
-On 18.03.2014 11:52, Cho KyongHo wrote:
-> On Fri, 14 Mar 2014 14:39:33 +0100, Tomasz Figa wrote:
->>> @@ -557,11 +558,23 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
->>>    	return 0;
->>>    }
->>>
->>> -static struct platform_driver exynos_sysmmu_driver = {
->>> -	.probe		= exynos_sysmmu_probe,
->>> -	.driver		= {
->>> +#ifdef CONFIG_OF
->>> +static struct of_device_id sysmmu_of_match[] __initconst = {
->>> +	{ .compatible	= "samsung,sysmmu-v1", },
->>> +	{ .compatible	= "samsung,sysmmu-v2", },
->>> +	{ .compatible	= "samsung,sysmmu-v3.1", },
->>> +	{ .compatible	= "samsung,sysmmu-v3.2", },
->>> +	{ .compatible	= "samsung,sysmmu-v3.3", },
->>
->> Do you need all these compatible strings? I mean, are there any
->> implementation differences that can't be identified by reading IP
->> registers, such as REG_MMU_VERSION?
->>
->
-> Unfortunately, there is a SoC which overrides REG_MMU_VERSION with
-> a value for RTL designers and it is not related to System MMU
-> versions.
+From: Behan Webster 
+> On 03/18/14 02:41, David Laight wrote:
+> > From:  behanw@converseincode.com
+> >> From: Mark Charlebois <charlebm@gmail.com>
+> >>
+> >> Replaced non-standard C use of Variable Length Arrays In Structs (VLAIS) in
+> >> xt_repldata.h with a C99 compliant flexible array member and then calculated
+> >> offsets to the other struct members. These other members aren't referenced by
+> >> name in this code, however this patch maintains the same memory layout and
+> >> padding as was previously accomplished using VLAIS.
+> >>
+> >> Had the original structure been ordered differently, with the entries VLA at
+> >> the end, then it could have been a flexible member, and this patch would have
+> >> been a lot simpler. However since the data stored in this structure is
+> >> ultimately exported to userspace, the order of this structure can't be changed.
+> > Why not just remove the last element and allocate space for it after the
+> > structure?
+> Because that would still be employing VLAIS to solve the problem. The
+> last element may be a zero-length array (a flexible member), not a VLA.
+> Sadly both the last 2 elements in the struct need to be manually
+> calculated, which is what we've done.
 
-OK.
+So make the last element a 'flexible member' and then work out where
+the final field goes.
+Something like:
+	struct p {
+		struct a a;
+		struct b b[];
+	} p = malloc(sizeof *p + n * sizeof (struct b) + alignof (struct c)
+		+ sizeof (struct c);
+	struct c *c = (void *)&p->b[n] + (-offsetof(struct p, b[n]) & (alignof(struct c) - 1);
 
-What about having a generic compatible string for Samsung SysMMU then, 
-but an additional property that can override the version to account for 
-such brokenness? If not provided, the version would be read from 
-REG_MMU_VERSION.
+	David
 
-Best regards,
-Tomasz
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
