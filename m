@@ -1,118 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318AbaCRROO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:14:14 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46632 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108AbaCRROG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:14:06 -0400
-Subject: [PATCH] Revert "[PATCH] Insert GART region into resource map"
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Aaron Durbin <adurbin@google.com>, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Ingo Molnar <mingo@redhat.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jouni =?utf-8?b?TWV0dMOkbMOk?= <jtmettala@gmail.com>
-Date: Tue, 18 Mar 2014 11:14:01 -0600
-Message-ID: <20140318171401.8189.46642.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20140318170841.8189.7972.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140318170841.8189.7972.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+	id S1756749AbaCRRRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:17:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46133 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754394AbaCRRRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 13:17:16 -0400
+Date: Tue, 18 Mar 2014 18:16:20 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: JBottomley@parallels.com, Nagalakshmi.Nandigama@lsi.com,
+        Sreekanth.Reddy@lsi.com, rientjes@google.com,
+        akpm@linux-foundation.org, joseph.salisbury@canonical.com,
+        torvalds@linux-foundation.org, tj@kernel.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com,
+        linux-scsi@vger.kernel.org
+Subject: Re: [v3.13][v3.14][Regression] kthread:
+	makekthread_create()killable
+Message-ID: <20140318171620.GA10636@redhat.com>
+References: <201403150943.BIH30251.FOQLOOtFJHSMVF@I-love.SAKURA.ne.jp> <201403170013.GJF86930.FtVOOQOHLFFMSJ@I-love.SAKURA.ne.jp> <20140316162512.GA9467@redhat.com> <201403172138.GFB43278.OOOFFSQLVHJMtF@I-love.SAKURA.ne.jp> <20140317142246.GA27453@redhat.com> <201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 56dd669a138c, which makes the GART visible in
-/proc/iomem.  This fixes a regression: e501b3d87f00 ("agp: Support 64-bit
-APBASE") exposed an existing problem with a conflict between the GART
-region and a PCI BAR region.
+On 03/18, Tetsuo Handa wrote:
+>
+> Oleg Nesterov wrote:
+> > If we need the urgent hack to fix the regression, then I suggest to change
+> > scsi_host_alloc() temporary until mptsas (or whatever) is fixed.
+>
+> Device initialization taking longer than 30 seconds is possible and is not a
+> hang up. It is systemd which needs to be fixed.
 
-The GART addresses are bus addresses, not CPU addresses, and therefore
-should not be inserted in iomem_resource.
+Perhaps systemd needs the fix too, I do not know. But this is irrelevant,
+I think. Or at least this should be discussed separately.
 
-On many machines, the GART region is addressable by the CPU as well as by
-an AGP master, but CPU addressability is not required by the spec.  On some
-of these machines, the GART is mapped by a PCI BAR, and in that case, the
-PCI core automatically inserts it into iomem_resource, just as it does for
-all BARs.
+kthread_run() can fail anyway, mptsas_probe() should not crash the kernel.
 
-Inserting it here means we'll have a conflict if the PCI core later tries
-to claim the GART region, so let's drop the insertion here.
+And btw, it is not clear to me if in this case device initialization really
+needs more than 30 seconds... My understanding is probably wrong, so please
+correct me. But it seems that before your "make kthread_create() killable"
 
-The conflict indirectly causes X failures, as reported by Jouni in the
-bugzilla below.  We detected the conflict even before e501b3d87f00, but
-after it the AGP code (fix_northbridge()) uses the PCI resource (which is
-zeroed because of the conflict) instead of reading the BAR again.
+	- probe hangs
 
-Conflicts:
-	arch/x86_64/kernel/aperture.c
+	- SIGKILL wakes it up
 
-Fixes: e501b3d87f00 agp: Support 64-bit APBASE
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=72201
-Reported-and-tested-by: Jouni Mettälä <jtmettala@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- arch/x86/kernel/aperture_64.c |   20 +-------------------
- 1 file changed, 1 insertion(+), 19 deletions(-)
+	- so I assume that the probe was interrupted and didn't finish
+	  correctly ???
 
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index fd972a3e4cbb..9fa8aa051f54 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -18,7 +18,6 @@
- #include <linux/pci_ids.h>
- #include <linux/pci.h>
- #include <linux/bitops.h>
--#include <linux/ioport.h>
- #include <linux/suspend.h>
- #include <asm/e820.h>
- #include <asm/io.h>
-@@ -54,18 +53,6 @@ int fallback_aper_force __initdata;
- 
- int fix_aperture __initdata = 1;
- 
--static struct resource gart_resource = {
--	.name	= "GART",
--	.flags	= IORESOURCE_MEM,
--};
--
--static void __init insert_aperture_resource(u32 aper_base, u32 aper_size)
--{
--	gart_resource.start = aper_base;
--	gart_resource.end = aper_base + aper_size - 1;
--	insert_resource(&iomem_resource, &gart_resource);
--}
--
- /* This code runs before the PCI subsystem is initialized, so just
-    access the northbridge directly. */
- 
-@@ -96,7 +83,6 @@ static u32 __init allocate_aperture(void)
- 	memblock_reserve(addr, aper_size);
- 	printk(KERN_INFO "Mapping aperture over %d KB of RAM @ %lx\n",
- 			aper_size >> 10, addr);
--	insert_aperture_resource((u32)addr, aper_size);
- 	register_nosave_region(addr >> PAGE_SHIFT,
- 			       (addr+aper_size) >> PAGE_SHIFT);
- 
-@@ -444,12 +430,8 @@ int __init gart_iommu_hole_init(void)
- 
- out:
- 	if (!fix && !fallback_aper_force) {
--		if (last_aper_base) {
--			unsigned long n = (32 * 1024 * 1024) << last_aper_order;
--
--			insert_aperture_resource((u32)last_aper_base, n);
-+		if (last_aper_base)
- 			return 1;
--		}
- 		return 0;
- 	}
- 
+	- initialization continues, does scsi_host_alloc(), etc, and
+	  everything works fine even if probe was interrupted?
+
+So perhaps that probe should not hang and this should be fixed too ?
+Do you know where exactly it hangs? And where it is woken up by SIGKILL ?
+Or I totally misunderstood ?
+
+> > --- x/drivers/scsi/hosts.c
+> > +++ x/drivers/scsi/hosts.c
+> > @@ -447,8 +447,18 @@ struct Scsi_Host *scsi_host_alloc(struct
+> >  	dev_set_name(&shost->shost_dev, "host%d", shost->host_no);
+> >  	shost->shost_dev.groups = scsi_sysfs_shost_attr_groups;
+> >
+> > -	shost->ehandler = kthread_run(scsi_error_handler, shost,
+> > -			"scsi_eh_%d", shost->host_no);
+> > +	/*
+> > +	 * HUGE COMMENT. and kthread_create() needs s/ENOMEM/EINTR/.
+> > +	 */
+> > +	for (;;) {
+> > +		shost->ehandler = kthread_run(scsi_error_handler, shost,
+> > +						"scsi_eh_%d", shost->host_no);
+> > +		if (!IS_ERR(shost->ehandler) || PTR_ERR(shost->ehandler) != -EINTR)
+> > +			break;
+> > +		clear_thread_flag(TIF_SIGPENDING);
+> > +	}
+> > +	recalc_sigpending();
+> > +
+> >  	if (IS_ERR(shost->ehandler)) {
+> >  		printk(KERN_WARNING "scsi%d: error handler thread failed to spawn, error = %ld\n",
+> >  			shost->host_no, PTR_ERR(shost->ehandler));
+> >
+> >
+>
+> I think we need a bit different version, in order to take TIF_MEMDIE flag into
+> account at the caller of kthread_create(), for the purpose of commit 786235ee
+> is "try to die as soon as possible if chosen by the OOM killer".
+>
+> 	for (;;) {
+> 		shost->ehandler = kthread_run(scsi_error_handler, shost,
+> 					      "scsi_eh_%d", shost->host_no);
+> 		if (PTR_ERR(shost->ehandler) != -EINTR ||
+> 		    test_thread_flag(TIF_MEMDIE))
+
+Well, personally I do not care about TIF_MEMDIE/oom at all. We need the
+temporary hack (unless we have the "right" fix right now) which should be
+reverted later.
+
+>   (1) Changing return code from -ENOMEM to -EINTR may not be sufficient.
+
+You mean, in kthread_create() ? And, sufficient for what?
+
+>       If kmalloc(GFP_KERNEL) in kthread_create_on_node() does something that
+>       calls recalc_sigpending(),
+
+firstly, it should not. And almost every caller of recalc_sigpending() outside
+of core signal code is wrong.
+
+> TIF_SIGPENDING will be set on the second call
+>       to kthread_run(). This will make wait_for_completion_killable() return
+>       -EINTR immediately because the second call to kthread_run() happens only
+>       when current thread already received SIGKILL (by other than the OOM
+>       killer). This may form an infinite busy loop.
+
+Not sure I understand... Yes, wait_for_completion_killable() can return
+immediately if TIF_SIGPENDING will be set again for any reason. Say, another
+signal. But the next iteration will clear TIF_SIGPENDING ?
+
+>      As I think it is difficult to prove that kmalloc(GFP_KERNEL) never sets
+>      TIF_SIGPENDING flag
+
+Ah, I see, you mean that kmalloc() can do this every time. No, this should
+not happen or we have another problem.
+
+In any case. My only point is that the regression should be fixed here, imho.
+And just in case, let me repeat that the code above is the dirty temporary hack.
+I won't insist on the ugly TIF_SIGPENDING games, say, we can use workqueue.
+
+>   (2) I don't like scattering around test_thread_flag(TIF_MEMDIE),
+>       might be other drivers who receive SIGKILL by systemd's 30 seconds
+>       timeout.
+
+Can't understand this part too... and it was you who suggested to check
+TIF_MEMDIE.
+
+Anyway. I agree with any hack in scsi_host_alloc/etc, this is up to
+maintainers. I still think that your change uncovered the problems in
+drivers/message/fusion/, these problems should be fixed somehow.
+
+Dear maintainers, we need your help.
+
+Oleg.
 
