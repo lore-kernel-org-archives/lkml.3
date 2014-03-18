@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680AbaCRJCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 05:02:50 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:56569 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340AbaCRJCq (ORCPT
+	id S1753767AbaCRJLN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 05:11:13 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:45178 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaCRJLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 05:02:46 -0400
-Message-ID: <53280BAC.5060404@huawei.com>
-Date: Tue, 18 Mar 2014 17:02:36 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 18 Mar 2014 05:11:09 -0400
+Date: Tue, 18 Mar 2014 09:11:03 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, broonie@kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 1/3] mfd: Add support for S2MPA01 device
+Message-ID: <20140318091103.GH25478@lee--X1>
+References: <1394797919-24642-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH] cgroup: fix a failure path in create_css()
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394797919-24642-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If online_css() fails, we should remove cgroup files belonging
-to css->ss.
+> Add the necessary entries required for S2MPA01 multi-function
+> device. While at it also convert whitespaces to tabs in core.h.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> ---
+> No change since v3
+> ---
+>  drivers/mfd/sec-core.c              |   49 ++++++++-
+>  include/linux/mfd/samsung/core.h    |   16 ++-
+>  include/linux/mfd/samsung/irq.h     |   50 +++++++++
+>  include/linux/mfd/samsung/s2mpa01.h |  192 +++++++++++++++++++++++++++++++++++
+>  4 files changed, 297 insertions(+), 10 deletions(-)
+>  create mode 100644 include/linux/mfd/samsung/s2mpa01.h
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+Applied, thanks.
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 3790617..e673407 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3408,17 +3408,17 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 
- 	err = percpu_ref_init(&css->refcnt, css_release);
- 	if (err)
--		goto err_free;
-+		goto err_free_css;
- 
- 	init_css(css, ss, cgrp);
- 
- 	err = cgroup_populate_dir(cgrp, 1 << ss->id);
- 	if (err)
--		goto err_free;
-+		goto err_free_percpu_ref;
- 
- 	err = online_css(css);
- 	if (err)
--		goto err_free;
-+		goto err_clear_dir;
- 
- 	cgroup_get(cgrp);
- 	css_get(css->parent);
-@@ -3434,8 +3434,11 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 
- 	return 0;
- 
--err_free:
-+err_clear_dir:
-+	cgroup_clear_dir(css->cgroup, 1 << css->ss->id);
-+err_free_percpu_ref:
- 	percpu_ref_cancel_init(&css->refcnt);
-+err_free_css:
- 	ss->css_free(css);
- 	return err;
- }
 -- 
-1.8.0.2
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
