@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570AbaCRPif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:38:35 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53508 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755441AbaCRPid (ORCPT
+	id S1754751AbaCRPm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:42:57 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:43370 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863AbaCRPm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:38:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Sandeep Nair <sandeep_n@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, dmaengine@vger.kernel.org
-Subject: Re: [PATCH] dma: Add Keystone Packet DMA Engine driver
-Date: Tue, 18 Mar 2014 16:38:25 +0100
-Message-ID: <4424649.TIey3uEAed@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140318152444.GC1976@intel.com>
-References: <1393628200-12317-1-git-send-email-santosh.shilimkar@ti.com> <53274F0B.5070201@ti.com> <20140318152444.GC1976@intel.com>
+	Tue, 18 Mar 2014 11:42:56 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:S4etyBSatsDP4tmc5/MEyOjpR5GI4Lk6y5Cft8E11kn
- xv7vYx95cNs9DRutIOBN2CpkI3EbxPo4ACNLvfj6lexVKGaIgJ
- 1fFU1HRY9GyXnGXKmgwuglBvknfrXyBRoYO6f9pRIYIOVttFVI
- aG8dkZJeUbLfR4ww5X+jeP74xg+bHEKy3z9OmWEYn2eyh9HErm
- RiUhI6GI17IjK1iLIyyLfJTGas9btY69lDJZNBdvSoMzAgBrTj
- QH+cQSgTrfbFOBHIslSLh78cc7tbP51XJkw9o6LYC2z0SoWnTe
- /7KiJZGtcEf/Y66CfTWoqnac9M5/tzp1vTBOtTPRAWViCmFRjx
- NiNQrloJQLu7x0p4GqFU=
+In-Reply-To: <CACoUkn4muyjm6LyWYjSyZuxVVqk7qnWr3h=+Xdx-mLWxHdLoBw@mail.gmail.com>
+References: <CACoUkn4muyjm6LyWYjSyZuxVVqk7qnWr3h=+Xdx-mLWxHdLoBw@mail.gmail.com>
+Date: Tue, 18 Mar 2014 15:42:55 +0000
+Message-ID: <CACoUkn55YnJiLaOGNf13exuX1-z6kXA+YronAFpsPPzq51Ne_g@mail.gmail.com>
+Subject: Re: execve and /proc/PID/environ
+From: Paul Jolly <paul@myitcv.org.uk>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 March 2014 20:54:44 Vinod Koul wrote:
-> On Mon, Mar 17, 2014 at 03:37:47PM -0400, Santosh Shilimkar wrote:
-> > >> To simplify this bit more, you can think of this as DMA channels, flows
-> > >> are allocated and DMA channels are enabled by DMA engine and they remains
-> > >> enabled always as long as the channel in use. Enablling dma channel
-> > >> actually don't start the DMA transfer but just sets up the connection/pipe
-> > >> with peripheral and memory and vice a versa.
-> > >>
-> > >> All the descriptor management, triggering, sending completion interrupt or
-> > >> hardware signal to DMAEngine all managed by centralised QMSS.
-> > >>
-> > >> Actual copy of data is still done by DMA hardware but its completely
-> > >> transparent to software. DMAEngine hardware takes care of that in the
-> > >> backyard.
-> > > So you will use the dmaengine just for setting up the controller. Not for actual
-> > > transfers. Those would be governed by the QMSS, right?
-> > >
-> > Correct.
-> >  
-> > > This means that someone expecting to use dmaengine API will get confused about
-> > > this and doing part (alloc) thru dmaengine and rest (transfers) using some other
-> > > API. This brings to me the design approach, does it really make sense creating
-> > > dmaengine driver for this when we are not fully complying to the API
-> > > 
-> > Thats fair. The rationale behind usage of DMEngine was that its the closest
-> > available subsystem which can be leveraged for this hardware. We can
-> > pretty much use all the standard DMAEngine device tree parsing as well as
-> > the config API to setup DMAs. 
-> > 
-> > I think you made your stand clear, just to confirm, you don't prefer this
-> > driver to be a DMAEngine driver considering it doesn't fully complying to
-> > the APIs. We could document the deviation of 'transfer' handling to avoid
-> > any confusion.
-> Yup, a user will just get confused as the driver doenst conform the dmaengine
-> API. Unless someone comes up witha  strong argument on why it should be
-> dmaengine driver and what befits we see form such a model, i would like a
-> damengine driver to comply to standard API and usage.
+After a bit more reading, I have totally ditched my approach in favour
+of http://lwn.net/Articles/531114/
 
-I think it would be possible to turn the QMSS driver into a library and have
-the packet DMA code use the proper dmaengine API by calling into that code.
+Thanks for the great work on the Linux kernel
 
-The main user of packet DMA (the ethernet driver) would however still have
-to call into QMSS directly, so I'm not sure if it's worth the effort.
+On 17 March 2014 20:33, Paul Jolly <paul@myitcv.org.uk> wrote:
+> Hi - this is my first post here so I hope I'm duly abiding by the
+> etiquette outlined in [1]. Indeed I am not subscribed to the list and
+> so would be very grateful to be copied on any replies, per ADB's
+> comment in [2]
+>
+> I am trying to build a fuse-based file system that implements a
+> version of variant symlinks [3]
+>
+> Ignoring the expense of such a file system (for now at least), I've
+> hit upon an issue that I think relates to [4]
+>
+> My fuse-based file system works by examining the environment of the
+> calling process in order to resolve the 'symlink'. If however that
+> process is performing an execve [5] with a filename argument that
+> corresponds to a file within my file system, I essentially hit
+> deadlock because I can't perform an open [6] on the /proc/PID/environ
+> of the calling process.
+>
+> Perhaps someone can confirm the behaviour I am seeing is as expected?
+>
+> In this instance (where an execve is in progress), is there any way to
+> get the environ of the calling process?
+>
+> For reference:
+>
+> $ uname -s -r -v -m -p -i -o
+> Linux 3.11.0-18-generic #32-Ubuntu SMP Tue Feb 18 21:11:14 UTC 2014
+> x86_64 x86_64 x86_64 GNU/Linux
+>
+> Many thanks
+>
+>
+> [1] http://www.tux.org/lkml/#s3-1
+> [2] http://www.tux.org/lkml/#s3-3
+> [3] https://wiki.freebsd.org/200808DevSummit?action=AttachFile&do=get&target=variant-symlinks-for-freebsd.pdf
+> [4] https://lkml.org/lkml/2012/3/10/174
+> [5] http://man7.org/linux/man-pages/man2/execve.2.html
+> [6] http://man7.org/linux/man-pages/man2/open.2.html
 
-	Arnd
+
+
+-- 
++447748 105236
+paul@myitcv.org.uk
