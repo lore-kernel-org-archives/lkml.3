@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242AbaCRI2o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:28:44 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34518 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753852AbaCRI2m (ORCPT
+	id S1754296AbaCRI3X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:29:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45556 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262AbaCRI3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:28:42 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: akpm@linux-foundation.org, mike@i-Connect.Net, ballabio_dario@emc.com,
-        JBottomley@parallels.com
-Cc: linux-eata@i-Connect.Net, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] [SCSI] eata: remove deprecated IRQF_DISABLED
-Date: Tue, 18 Mar 2014 09:28:32 +0100
-Message-Id: <1395131312-18160-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393997144-3865-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1393997144-3865-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 18 Mar 2014 04:29:19 -0400
+Date: Tue, 18 Mar 2014 01:28:55 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-b63940970492f5f187d546e191bc2c6831491fe3@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, ak@linux.intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, ak@linux.intel.com,
+        tglx@linutronix.de
+In-Reply-To: <1393596135-4227-2-git-send-email-andi@firstfloor.org>
+References: <1393596135-4227-2-git-send-email-andi@firstfloor.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf mem: Clarify load-latency in documentation
+Git-Commit-ID: b63940970492f5f187d546e191bc2c6831491fe3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the use of the IRQF_DISABLED flag
-from drivers/scsi/eata*
+Commit-ID:  b63940970492f5f187d546e191bc2c6831491fe3
+Gitweb:     http://git.kernel.org/tip/b63940970492f5f187d546e191bc2c6831491fe3
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Fri, 28 Feb 2014 06:02:14 -0800
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 14 Mar 2014 11:20:44 -0300
 
-It's a NOOP since 2.6.35 and it will be removed one day.
+perf mem: Clarify load-latency in documentation
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Clarify in the documentation that 'perf mem report' reports use-latency,
+not load/store-latency on Intel systems.
+
+This often causes confusion with users.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1393596135-4227-2-git-send-email-andi@firstfloor.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/scsi/eata.c     | 2 +-
- drivers/scsi/eata_pio.c | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/Documentation/perf-mem.txt | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/scsi/eata.c b/drivers/scsi/eata.c
-index 94de88955a99..ebf57364df91 100644
---- a/drivers/scsi/eata.c
-+++ b/drivers/scsi/eata.c
-@@ -1221,7 +1221,7 @@ static int port_detect(unsigned long port_base, unsigned int j,
+diff --git a/tools/perf/Documentation/perf-mem.txt b/tools/perf/Documentation/perf-mem.txt
+index 888d511..1d78a40 100644
+--- a/tools/perf/Documentation/perf-mem.txt
++++ b/tools/perf/Documentation/perf-mem.txt
+@@ -18,6 +18,10 @@ from it, into perf.data. Perf record options are accepted and are passed through
+ "perf mem -t <TYPE> report" displays the result. It invokes perf report with the
+ right set of options to display a memory access profile.
  
- 	/* Board detected, allocate its IRQ */
- 	if (request_irq(irq, do_interrupt_handler,
--			IRQF_DISABLED | ((subversion == ESA) ? IRQF_SHARED : 0),
-+			(subversion == ESA) ? IRQF_SHARED : 0,
- 			driver_name, (void *)&sha[j])) {
- 		printk("%s: unable to allocate IRQ %u, detaching.\n", name,
- 		       irq);
-diff --git a/drivers/scsi/eata_pio.c b/drivers/scsi/eata_pio.c
-index 1663173cdb91..8319d2b417b8 100644
---- a/drivers/scsi/eata_pio.c
-+++ b/drivers/scsi/eata_pio.c
-@@ -687,7 +687,7 @@ static int register_pio_HBA(long base, struct get_conf *gc, struct pci_dev *pdev
- 		return 0;
- 
- 	if (!reg_IRQ[gc->IRQ]) {	/* Interrupt already registered ? */
--		if (!request_irq(gc->IRQ, do_eata_pio_int_handler, IRQF_DISABLED, "EATA-PIO", sh)) {
-+		if (!request_irq(gc->IRQ, do_eata_pio_int_handler, 0, "EATA-PIO", sh)) {
- 			reg_IRQ[gc->IRQ]++;
- 			if (!gc->IRQ_TR)
- 				reg_IRQL[gc->IRQ] = 1;	/* IRQ is edge triggered */
-@@ -921,7 +921,7 @@ static int eata_pio_detect(struct scsi_host_template *tpnt)
- 
- 	for (i = 0; i < MAXIRQ; i++)
- 		if (reg_IRQ[i])
--			request_irq(i, do_eata_pio_int_handler, IRQF_DISABLED, "EATA-PIO", NULL);
-+			request_irq(i, do_eata_pio_int_handler, 0, "EATA-PIO", NULL);
- 
- 	HBA_ptr = first_HBA;
- 
--- 
-1.8.3.2
-
++Note that on Intel systems the memory latency reported is the use-latency,
++not the pure load (or store latency). Use latency includes any pipeline
++queueing delays in addition to the memory subsystem latency.
++
+ OPTIONS
+ -------
+ <command>...::
