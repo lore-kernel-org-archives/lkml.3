@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733AbaCRMY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 08:24:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60512 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754305AbaCRMY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 08:24:28 -0400
-Date: Tue, 18 Mar 2014 13:24:25 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/3] Volatile Ranges (v11)
-Message-ID: <20140318122425.GD3191@dhcp22.suse.cz>
-References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754832AbaCRMZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 08:25:29 -0400
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:34085 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205AbaCRMZ1 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:1:1>);
+	Tue, 18 Mar 2014 08:25:27 -0400
+X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Mar 2014 08:25:27 EDT
+Message-Id: <53284765020000A100014E30@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Tue, 18 Mar 2014 13:17:25 +0100
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Subject: Q on ioctl BLKGETSIZE
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 14-03-14 11:33:30, John Stultz wrote:
-[...]
-> Volatile ranges provides a method for userland to inform the kernel that
-> a range of memory is safe to discard (ie: can be regenerated) but
-> userspace may want to try access it in the future.  It can be thought of
-> as similar to MADV_DONTNEED, but that the actual freeing of the memory
-> is delayed and only done under memory pressure, and the user can try to
-> cancel the action and be able to quickly access any unpurged pages. The
-> idea originated from Android's ashmem, but I've since learned that other
-> OSes provide similar functionality.
+Hi!
 
-Maybe I have missed something (I've only glanced through the patches)
-but it seems that marking a range volatile doesn't alter neither
-reference bits nor position in the LRU. I thought that a volatile page
-would be moved to the end of inactive LRU with the reference bit
-dropped. Or is this expectation wrong and volatility is not supposed to
-touch page aging?
+I'm wondering (on a x86_64 SLES11 system):
 
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
+"man 4 sd" says:
+---
+       BLKGETSIZE
+              Returns the device size  in  sectors.   The  ioctl(2)  parameter
+              should be a pointer to a long.
+---
+
+/usr/src/linux/block/ioctl.c (3.0.101-0.15) reads:
+---
+        case BLKGETSIZE:
+                size = i_size_read(bdev->bd_inode);
+                if ((size >> 9) > ~0UL)
+                        return -EFBIG;
+                return put_ulong(arg, size >> 9);
+---
+
+Three questions:
+1) Shouldn't the manual page says that the sector size of always 512 Bytes, even on new disks with larger sectors?
+2) Should the real sector size be used for new disks?
+3) When using 512-bytes sector size, isn't the capacity limited to 2TB (2^31 kB)?
+
+I'm not subscribed to LKML, so please keep me CC'd when answering.
+
+Regards,
+Ulrich
+
+
