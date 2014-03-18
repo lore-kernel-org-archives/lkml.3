@@ -1,78 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933222AbaCRV0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:26:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44431 "EHLO
+	id S933458AbaCRV0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:26:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44465 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933131AbaCRV0R (ORCPT
+	with ESMTP id S1751590AbaCRV01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:26:17 -0400
+	Tue, 18 Mar 2014 17:26:27 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/13] perf tools: Use tid in mmap/mmap2 events to find maps
-Date: Tue, 18 Mar 2014 18:25:58 -0300
-Message-Id: <1395177965-8879-7-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 00/13] perf/core improvements and fixes
+Date: Tue, 18 Mar 2014 18:25:52 -0300
+Message-Id: <1395177965-8879-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1395177965-8879-1-git-send-email-acme@infradead.org>
-References: <1395177965-8879-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Don Zickus <dzickus@redhat.com>
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 
-Now that we can properly synthesize threads system-wide, make sure the
-mmap and mmap2 events use tids instead of pids to locate their maps.
+Hi Ingo,
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1393429527-167840-3-git-send-email-dzickus@redhat.com
+	Please consider pulling,
+
+- Arnaldo
+
+The following changes since commit 0afd2d51029961281572d02545c7bde1b3f4292c:
+
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-03-18 09:23:09 +0100)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to a51e87cb5a0fbebee15a3373d951dbf6f59a76c2:
+
+  perf tools: Remove unused simple_strtoul() function (2014-03-18 18:17:07 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+User visible:
+
+. Fixup header alignment in 'perf sched latency' output (Ramkumar Ramachandra)
+
+. Fix off-by-one error in 'perf timechart record' argv handling (Ramkumar Ramachandra)
+
+. Print the evsel name in the annotate stdio output, prep to fix support
+  outputting annotation for multiple events, not just for the first one
+  (Arnaldo Carvalho de Melo)
+
+Internals:
+
+. Use tid in mmap/mmap2 events to find maps (Don Zickus)
+
+. Record the reason for filtering an address_location (Namhyung Kim)
+
+. Apply all filters to an addr_location (Namhyung Kim)
+
+. Merge al->filtered with hist_entry->filtered in report/hists (Namhyung Kim)
+
+. Fix memory leak when synthesizing thread records (Namhyung Kim)
+
+. Use ui__has_annotation() in 'report' (Namhyung Kim)
+
+Cleanups:
+
+. Remove unused thread__find_map function (Jiri Olsa)
+
+. Remove unused simple_strtoul() function (Ramkumar Ramachandra)
+
+Documentation:
+
+. Update function names in debug messages (Ramkumar Ramachandra)
+
+. Update some code references in design.txt (Ramkumar Ramachandra)
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/hists_link.c | 1 +
- tools/perf/util/machine.c     | 4 ++--
- 2 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 2b6519e0e36f..7ccbc7b6ae77 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -101,6 +101,7 @@ static struct machine *setup_fake_machine(struct machines *machines)
- 			.mmap = {
- 				.header = { .misc = PERF_RECORD_MISC_USER, },
- 				.pid = fake_mmap_info[i].pid,
-+				.tid = fake_mmap_info[i].pid,
- 				.start = fake_mmap_info[i].start,
- 				.len = 0x1000ULL,
- 				.pgoff = 0ULL,
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index d280bf210183..a53cd0b8c151 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1027,7 +1027,7 @@ int machine__process_mmap2_event(struct machine *machine,
- 	}
- 
- 	thread = machine__findnew_thread(machine, event->mmap2.pid,
--					event->mmap2.pid);
-+					event->mmap2.tid);
- 	if (thread == NULL)
- 		goto out_problem;
- 
-@@ -1075,7 +1075,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
- 	}
- 
- 	thread = machine__findnew_thread(machine, event->mmap.pid,
--					 event->mmap.pid);
-+					 event->mmap.tid);
- 	if (thread == NULL)
- 		goto out_problem;
- 
--- 
-1.8.1.4
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (1):
+      perf annotate: Print the evsel name in the stdio output
 
+Don Zickus (1):
+      perf tools: Use tid in mmap/mmap2 events to find maps
+
+Jiri Olsa (1):
+      perf tools: Remove thread__find_map function
+
+Namhyung Kim (5):
+      perf symbols: Record the reason for filtering an address_location
+      perf symbols: Apply all filters to an addr_location
+      perf report: Merge al->filtered with hist_entry->filtered
+      perf tools: Fix memory leak when synthesizing thread records
+      perf report: Use ui__has_annotation()
+
+Ramkumar Ramachandra (5):
+      perf timechart: Fix off-by-one error in 'record' argv handling
+      perf sched: Fixup header alignment in 'latency' output
+      perf evsel: Update function names in debug messages
+      perf tools: Update some code references in design.txt
+      perf tools: Remove unused simple_strtoul() function
+
+ tools/perf/builtin-report.c            |  4 ++--
+ tools/perf/builtin-sched.c             | 10 +++++-----
+ tools/perf/builtin-timechart.c         |  4 ++--
+ tools/perf/design.txt                  | 12 ++++++------
+ tools/perf/tests/hists_link.c          |  1 +
+ tools/perf/util/annotate.c             | 14 +++++++++-----
+ tools/perf/util/event.c                | 34 +++++++++++++++++-----------------
+ tools/perf/util/evsel.c                |  4 ++--
+ tools/perf/util/hist.c                 |  9 +--------
+ tools/perf/util/hist.h                 |  9 +++++++++
+ tools/perf/util/include/linux/kernel.h |  6 ------
+ tools/perf/util/machine.c              |  6 +++---
+ tools/perf/util/symbol.h               |  2 +-
+ tools/perf/util/thread.h               |  6 ------
+ 14 files changed, 58 insertions(+), 63 deletions(-)
