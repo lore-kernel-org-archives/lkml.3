@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919AbaCRUbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 16:31:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59920 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943AbaCRUbW (ORCPT
+	id S1757997AbaCRUbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:31:44 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:52956 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757953AbaCRUbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 16:31:22 -0400
-Date: Tue, 18 Mar 2014 13:33:24 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Valentina Manea <valentina.manea.m@gmail.com>
-Cc: tulinizer@gmail.com, stern@rowland.harvard.edu, mail@beyermatthias.de,
-        hdegoede@redhat.com, f.manzan@gmail.com, kurt@garloff.de,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        firefly@lists.rosedu.org, andy.grover@gmail.com
-Subject: Re: [PATCH 0/3] usbip: move usbip out of staging
-Message-ID: <20140318203324.GA25579@kroah.com>
-References: <1395173483-27542-1-git-send-email-valentina.manea.m@gmail.com>
+	Tue, 18 Mar 2014 16:31:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395173483-27542-1-git-send-email-valentina.manea.m@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 18 Mar 2014 13:31:19 -0700
+X-Google-Sender-Auth: WgljTt4KpbEVWs6qtncv5uiULqI
+Message-ID: <CAB=NE6W4pSyCU+zFKQPVFoQy5s8KGx34nEepRS0MnhnJuwf0Mg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] bridge: few enhancements and small fixes
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Stephen Hemminger <stephen@networkplumber.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 10:11:20PM +0200, Valentina Manea wrote:
-> After migrating userspace code to libudev, converting usbip-host
-> to a device driver and various bug fixes and enhancements, USB/IP
-> is fully functional and can be moved out of staging.
-> 
-> This patch series moves it as following:
-> * userspace code to tools/usb/usbip
-> * kernel code to drivers/usb/usbip
-> 
-> Besides this, a warning generated in the kernel code is solved.
+On Wed, Mar 12, 2014 at 8:15 PM, Luis R. Rodriguez
+<mcgrof@do-not-panic.com> wrote:
+> Here's a few fixes I've been carrying around. I've now tested them
+> on as many systems / environments as I can. They should be ready.
+>
+> Luis R. Rodriguez (3):
+>   bridge: preserve random init MAC address
+>   bridge: trigger a bridge calculation upon port changes
+>   bridge: fix bridge root block on designated port
 
-Like Joe said, use -M please.
+Folks, let me know if there are any other questions or if you spot any
+other possible issues.
 
-Also, I'm not going to be able to do this until after 3.15-rc1 is out,
-due to changes to this code base in multiple trees.
-
-So can you resend when -rc1 is out?
-
-thanks,
-
-greg k-h
+  Luis
