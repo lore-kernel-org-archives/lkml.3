@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431AbaCRR5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:57:44 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:52882 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757381AbaCRR5i (ORCPT
+	id S1757448AbaCRR5t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:57:49 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37691 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757381AbaCRR5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:57:38 -0400
+	Tue, 18 Mar 2014 13:57:45 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         dietmar.eggemann@arm.com, preeti@linux.vnet.ibm.com,
@@ -15,9 +15,9 @@ To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
 Cc: linaro-kernel@lists.linaro.org,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v2 3/7] sched: s390: create a dedicated topology table
-Date: Tue, 18 Mar 2014 18:56:45 +0100
-Message-Id: <1395165409-18055-4-git-send-email-vincent.guittot@linaro.org>
+Subject: [PATCH v2 6/7] sched: ARM: create a dedicated scheduler topology table
+Date: Tue, 18 Mar 2014 18:56:48 +0100
+Message-Id: <1395165409-18055-7-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1395165409-18055-1-git-send-email-vincent.guittot@linaro.org>
 References: <1395165409-18055-1-git-send-email-vincent.guittot@linaro.org>
@@ -25,95 +25,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BOOK level is only relevant for s390 so we create a dedicated topology table
-with BOOK level and remove it from default table.
+Create a dedicated topology table for ARM which will create new level to
+differentiate CPUs that can or not powergate independantly from others.
+
+The patch gives an example of how to add domain that will take advantage of
+SD_SHARE_POWERDOMAIN.
 
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- arch/s390/include/asm/topology.h | 11 +----------
- arch/s390/kernel/topology.c      | 20 ++++++++++++++++++++
- kernel/sched/core.c              |  3 ---
- 3 files changed, 21 insertions(+), 13 deletions(-)
+ arch/arm/kernel/topology.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-diff --git a/arch/s390/include/asm/topology.h b/arch/s390/include/asm/topology.h
-index 07763bd..56af530 100644
---- a/arch/s390/include/asm/topology.h
-+++ b/arch/s390/include/asm/topology.h
-@@ -26,21 +26,12 @@ extern struct cpu_topology_s390 cpu_topology[NR_CPUS];
- 
- #define mc_capable() 1
- 
--static inline const struct cpumask *cpu_coregroup_mask(int cpu)
--{
--	return &cpu_topology[cpu].core_mask;
--}
--
--static inline const struct cpumask *cpu_book_mask(int cpu)
--{
--	return &cpu_topology[cpu].book_mask;
--}
--
- int topology_cpu_init(struct cpu *);
- int topology_set_cpu_management(int fc);
- void topology_schedule_update(void);
- void store_topology(struct sysinfo_15_1_x *info);
- void topology_expect_change(void);
-+const struct cpumask *cpu_coregroup_mask(int cpu);
- 
- #else /* CONFIG_SCHED_BOOK */
- 
-diff --git a/arch/s390/kernel/topology.c b/arch/s390/kernel/topology.c
-index 4b2e3e3..ceddd77 100644
---- a/arch/s390/kernel/topology.c
-+++ b/arch/s390/kernel/topology.c
-@@ -443,6 +443,23 @@ int topology_cpu_init(struct cpu *cpu)
- 	return sysfs_create_group(&cpu->dev.kobj, &topology_cpu_attr_group);
+diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+index 0bc94b1..71e1fec 100644
+--- a/arch/arm/kernel/topology.c
++++ b/arch/arm/kernel/topology.c
+@@ -185,6 +185,15 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
+ 	return &cpu_topology[cpu].core_sibling;
  }
  
-+const struct cpumask *cpu_coregroup_mask(int cpu)
++/*
++ * The current assumption is that we can power gate each core independently.
++ * This will be superseded by DT binding once available.
++ */
++const struct cpumask *cpu_corepower_mask(int cpu)
 +{
-+	return &cpu_topology[cpu].core_mask;
++	return &cpu_topology[cpu].thread_sibling;
 +}
 +
-+static const struct cpumask *cpu_book_mask(int cpu)
+ static void update_siblings_masks(unsigned int cpuid)
+ {
+ 	struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
+@@ -266,6 +275,20 @@ void store_cpu_topology(unsigned int cpuid)
+ 		cpu_topology[cpuid].socket_id, mpidr);
+ }
+ 
++static inline const int cpu_corepower_flags(void)
 +{
-+	return &cpu_topology[cpu].book_mask;
++	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
 +}
 +
-+static struct sched_domain_topology_level s390_topology[] = {
++static struct sched_domain_topology_level arm_topology[] = {
++#ifdef CONFIG_SCHED_MC
++	{ cpu_corepower_mask, cpu_corepower_flags, SD_INIT_NAME(GMC) },
 +	{ cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },
-+	{ cpu_book_mask, SD_INIT_NAME(BOOK) },
++#endif
 +	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
 +	{ NULL, },
 +};
 +
- static int __init topology_init(void)
- {
- 	if (!MACHINE_HAS_TOPOLOGY) {
-@@ -452,6 +469,9 @@ static int __init topology_init(void)
- 	set_topology_timer();
- out:
- 	update_cpu_masks();
+ /*
+  * init_cpu_topology is called at boot when only one cpu is running
+  * which prevent simultaneous write access to cpu_topology array
+@@ -289,4 +312,7 @@ void __init init_cpu_topology(void)
+ 	smp_wmb();
+ 
+ 	parse_dt_topology();
 +
-+	set_sched_topology(s390_topology);
-+
- 	return device_create_file(cpu_subsys.dev_root, &dev_attr_dispatching);
++	/* Set scheduler topology descriptor */
++	set_sched_topology(arm_topology);
  }
- device_initcall(topology_init);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3397bcb..f2bfa76 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6061,9 +6061,6 @@ static struct sched_domain_topology_level default_topology[] = {
- #ifdef CONFIG_SCHED_MC
- 	{ cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },
- #endif
--#ifdef CONFIG_SCHED_BOOK
--	{ cpu_book_mask, SD_INIT_NAME(BOOK) },
--#endif
- 	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
- 	{ NULL, },
- };
 -- 
 1.9.0
 
