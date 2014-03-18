@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932AbaCRIVD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:21:03 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34446 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751901AbaCRIVA (ORCPT
+	id S1754123AbaCRIVf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:21:35 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:37400 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753958AbaCRIVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:21:00 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: akpm@linux-foundation.org, fischer@norbit.de, JBottomley@parallels.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] [SCSI] aha152x: remove deprecated IRQF_DISABLED
-Date: Tue, 18 Mar 2014 09:20:55 +0100
-Message-Id: <1395130855-18042-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393996570-3604-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1393996570-3604-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 18 Mar 2014 04:21:31 -0400
+Date: Tue, 18 Mar 2014 08:21:26 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-iio@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, sre@debian.org
+Subject: [GIT PULL] mfd: Immutable branch for Sebastian Reichel's work on
+ mfd->io driver conversion
+Message-ID: <20140318082126.GA25478@lee--X1>
+References: <1394934211-21605-1-git-send-email-sre@debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1394934211-21605-1-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the use of the IRQF_DISABLED flag
-from drivers/scsi/aha152x.c
+The following changes since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
 
-It's a NOOP since 2.6.35 and it will be removed one day.
+  Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
 
-Also taking the opportunity to fix checkpatch issues on the lines I modified
+are available in the git repository at:
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/scsi/aha152x.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git ib-mfd-io-3.15
 
-diff --git a/drivers/scsi/aha152x.c b/drivers/scsi/aha152x.c
-index 3f7b6fee0a74..e86eb6a921fc 100644
---- a/drivers/scsi/aha152x.c
-+++ b/drivers/scsi/aha152x.c
-@@ -857,7 +857,7 @@ struct Scsi_Host *aha152x_probe_one(struct aha152x_setup *setup)
- 	SETPORT(SIMODE0, 0);
- 	SETPORT(SIMODE1, 0);
- 
--	if( request_irq(shpnt->irq, swintr, IRQF_DISABLED|IRQF_SHARED, "aha152x", shpnt) ) {
-+	if (request_irq(shpnt->irq, swintr, IRQF_SHARED, "aha152x", shpnt)) {
- 		printk(KERN_ERR "aha152x%d: irq %d busy.\n", shpnt->host_no, shpnt->irq);
- 		goto out_host_put;
- 	}
-@@ -891,7 +891,7 @@ struct Scsi_Host *aha152x_probe_one(struct aha152x_setup *setup)
- 	SETPORT(SSTAT0, 0x7f);
- 	SETPORT(SSTAT1, 0xef);
- 
--	if ( request_irq(shpnt->irq, intr, IRQF_DISABLED|IRQF_SHARED, "aha152x", shpnt) ) {
-+	if (request_irq(shpnt->irq, intr, IRQF_SHARED, "aha152x", shpnt)) {
- 		printk(KERN_ERR "aha152x%d: failed to reassign irq %d.\n", shpnt->host_no, shpnt->irq);
- 		goto out_host_put;
- 	}
+for you to fetch changes up to b2931b98cebfb30d940f248d2054b5268eae87a4:
+
+  mfd: twl4030-madc: Move driver to drivers/iio/adc (2014-03-18 08:16:20 +0000)
+
+----------------------------------------------------------------
+Sebastian Reichel (7):
+      mfd: twl4030-madc: Use managed resources
+      mfd: twl4030-madc: Add DT support and convert to IIO framework
+      mfd: twl4030-madc: Cleanup driver
+      mfd: twl-core: Add twl_i2c_read/write_u16
+      mfd: twl4030-madc: Use twl_i2c_read/write_u16 for 16 bit registers
+      Documentation: DT: Document twl4030-madc binding
+      mfd: twl4030-madc: Move driver to drivers/iio/adc
+
+ Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt |  24 +++++++++
+ drivers/iio/adc/Kconfig                                    |  10 ++++
+ drivers/iio/adc/Makefile                                   |   1 +
+ drivers/{mfd => iio/adc}/twl4030-madc.c                    | 320 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------------------
+ drivers/mfd/Kconfig                                        |  10 ----
+ drivers/mfd/Makefile                                       |   1 -
+ include/linux/i2c/twl.h                                    |  12 +++++
+ include/linux/i2c/twl4030-madc.h                           |   2 +-
+ 8 files changed, 247 insertions(+), 133 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
+ rename drivers/{mfd => iio/adc}/twl4030-madc.c (74%)
+
 -- 
-1.8.3.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
