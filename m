@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaCRJZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 05:25:46 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:64746 "EHLO
+	id S1754345AbaCRJ1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 05:27:41 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:43683 "EHLO
 	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948AbaCRJZo (ORCPT
+	with ESMTP id S1751157AbaCRJ1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 05:25:44 -0400
-Message-ID: <1395134743.4883.72.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: Initialize rq->age_stamp on processor start
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: minyard@acm.org, linux-kernel@vger.kernel.org,
-        Corey Minyard <cminyard@mvista.com>
-Date: Tue, 18 Mar 2014 10:25:43 +0100
-In-Reply-To: <20140318085612.GP25546@laptop.programming.kicks-ass.net>
-References: <1395101149-10097-1-git-send-email-minyard@acm.org>
-	 <1395115586.4883.36.camel@marge.simpson.net>
-	 <20140318085612.GP25546@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 18 Mar 2014 05:27:40 -0400
+Date: Tue, 18 Mar 2014 09:27:35 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Alexander Shiyan <shc_work@mail.ru>, cooloney@gmail.com
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] mfd: mc13xxx: Move definitions out of structures
+Message-ID: <20140318092735.GK25478@lee--X1>
+References: <1394867287-14074-1-git-send-email-shc_work@mail.ru>
+ <20140318090237.GG25478@lee--X1>
+ <1395134091.369687348@f500.i.mail.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395134091.369687348@f500.i.mail.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-18 at 09:56 +0100, Peter Zijlstra wrote: 
-> On Tue, Mar 18, 2014 at 05:06:26AM +0100, Mike Galbraith wrote:
-
-> > > +static void __cpuinit set_cpu_rq_start_time(void)
-> > > +{
-> > > +	int cpu = smp_processor_id();
-> > > +	struct rq *rq = cpu_rq(cpu);
-> > > +	rq->age_stamp = sched_clock_cpu(cpu);
-> > > +}
-> > 
-> > rq->age_stamp must lag rq->clock.  See scale_rt_power(), and what
-> > happens when it munches magic timewarp mushrooms.
-> > 
-> > > +
-> > >  static int sched_cpu_active(struct notifier_block *nfb,
-> > >  				      unsigned long action, void *hcpu)
-> > >  {
-> > >  	switch (action & ~CPU_TASKS_FROZEN) {
-> > >  	case CPU_STARTING:
-> > > +		set_cpu_rq_start_time();
-> > > +		/* fall through */
-> > >  	case CPU_DOWN_FAILED:
-> > >  		set_cpu_active((long)hcpu, true);
-> > >  		return NOTIFY_OK;
-> > > @@ -6922,6 +6931,7 @@ void __init sched_init(void)
-> > >  	init_sched_fair_class();
+> > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> > > ---
+> > >  include/linux/mfd/mc13xxx.h | 22 ++++++++++++----------
+> > >  1 file changed, 12 insertions(+), 10 deletions(-)
+> > > 
+> > > diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
+> > > index a326c85..d63b1d3 100644
+> > > --- a/include/linux/mfd/mc13xxx.h
+> > > +++ b/include/linux/mfd/mc13xxx.h
+> > > @@ -117,10 +117,6 @@ struct mc13xxx_led_platform_data {
 > > >  
-> > >  	scheduler_running = 1;
-> > > +	set_cpu_rq_start_time();
+> > >  #define MAX_LED_CONTROL_REGS	6
+> > >  
+> > > -struct mc13xxx_leds_platform_data {
+> > > -	struct mc13xxx_led_platform_data *led;
+> > > -	int num_leds;
+> > > -
+> > >  /* MC13783 LED Control 0 */
+> > >  #define MC13783_LED_C0_ENABLE		(1 << 0)
+> > >  #define MC13783_LED_C0_TRIODE_MD	(1 << 7)
+> > > @@ -169,10 +165,13 @@ struct mc13xxx_leds_platform_data {
+> > >  /* MC34708 LED Control 0 */
+> > 
+> > I don't see the line above in the MFD tree?
+> > 
+> > Which commit/branch/repo is this patch based on?
 > 
-> I would put it one line up; that scheduler_running=1 is the last thing
-> we should do.
+> Dependency:
+> linux-next, a59ce6584d (leds: leds-mc13783: Add MC34708 LED support)
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/include/linux/mfd/mc13xxx.h?id=a59ce6584d566847980f9dcad5343cd9856145c8
 
-And set clock and age, dazed scale_rt_power() is butt ugly.
+Ah, you can't do that, as it will cause conflicts and Linus will
+likely get upset.
 
--Mike
+Bryan you naughty boy! Why are you applying patches to files in MFD?
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
