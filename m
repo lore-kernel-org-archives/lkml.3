@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008AbaCRRTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:19:32 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:31245 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756988AbaCRRT3 (ORCPT
+	id S1756938AbaCRRTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:19:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55704 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756626AbaCRRS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:19:29 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsAOAKl+KFNbsn1//2dsb2JhbABagwaCSH4Tv1gCAoEnF3SCUxMcIxiBAiQTh30B0DCNfmSEPwEDmEUBilmHV4MuPIEs
-Date: Tue, 18 Mar 2014 18:20:59 +0100
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, hch <hch@infradead.org>
-Subject: [PATCH 1/1] fs/freevfxs/vfxs_lookup.c: Update function comment
-Message-Id: <20140318182059.c3255a948e8d4c72e9dcb544@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Mar 2014 13:18:59 -0400
+Message-Id: <20140318171007.528610837@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Tue, 18 Mar 2014 17:19:07 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Benedikt Spranger <b.spranger@linutronix.de>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org
+Subject: [patch 00/12] can: c_can: Fix a series of serious bugs and improve
+ the performance
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nameidata was replaced by flags in
-00cd8dd3bf95f2 ("stop passing nameidata to ->lookup()")
+First of all, I'm really grumpy as hell.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/freevxfs/vxfs_lookup.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This is the worst driver I looked at in the last 10 years. And that's
+an achievement.
 
-diff --git a/fs/freevxfs/vxfs_lookup.c b/fs/freevxfs/vxfs_lookup.c
-index 25d4099..99c7f0a 100644
---- a/fs/freevxfs/vxfs_lookup.c
-+++ b/fs/freevxfs/vxfs_lookup.c
-@@ -192,7 +192,7 @@ vxfs_inode_by_name(struct inode *dip, struct dentry *dp)
-  * vxfs_lookup - lookup pathname component
-  * @dip:	dir in which we lookup
-  * @dp:		dentry we lookup
-- * @nd:		lookup nameidata
-+ * @flags:	lookup flags
-  *
-  * Description:
-  *   vxfs_lookup tries to lookup the pathname component described
--- 
-1.8.4.5
+The driver is full of serious bugs:
+
+    - Two HW init routines are not spec compliant.
+
+    - Completely defective message buffer handling in several ways
+      That leads to interrupt storms and complete lockups.
+
+    - Complete lack of SMP awareness
+
+What's amazing is that people "optimize" and "fix" the driver over and
+over, but nobody bothered to understand the manual and repair the code
+for real.
+
+The series fixes _ALL_ bugs which I found so far, but I'm sure there
+are more issues burried in that unreadable mess. I'm just not able to
+trigger them.
+
+The last few patches add real performance improvements by removing a
+gazillion of pointless hardware operations.
+
+Thanks,
+
+	tglx
+
+--------------->
+
+ c_can.c          |  311 ++++++++++++++++++++++++++++++-------------------------
+ c_can.h          |   29 +++++
+ c_can_platform.c |   48 ++++++--
+ 3 files changed, 241 insertions(+), 147 deletions(-)
+
+
 
