@@ -1,103 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918AbaCQXzk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 19:55:40 -0400
-Received: from mail-ob0-f202.google.com ([209.85.214.202]:51658 "EHLO
-	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaCQXzj (ORCPT
+	id S1752642AbaCRABP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 20:01:15 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:52742 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbaCRABN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 19:55:39 -0400
-From: Ben Chan <benchan@chromium.org>
-To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Suarez <gsuarez@smithmicro.com>
-Subject: [PATCH v2 2/2] net: cdc_ncm: respect operator preferred MTU reported by MBIM
-Date: Mon, 17 Mar 2014 16:49:22 -0700
-Message-Id: <1395100162-24853-1-git-send-email-benchan@chromium.org>
-X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
+	Mon, 17 Mar 2014 20:01:13 -0400
+From: Stewart Smith <stewart@linux.vnet.ibm.com>
+To: Greg KH <greg@kroah.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Mark Brown <broonie@kernel.org>,
+        Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+In-Reply-To: <20140317215619.GA25228@kroah.com>
+References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org> <20140312015021.GC10106@kroah.com> <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au> <20140317183333.GE10565@kroah.com> <1395088410.15098.175.camel@pasglop> <20140317215619.GA25228@kroah.com>
+User-Agent: Notmuch/0.16 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-redhat-linux-gnu)
+Date: Tue, 18 Mar 2014 11:00:58 +1100
+Message-ID: <87siqggyth.fsf@river.i-did-not-set--mail-host-address--so-tickle-me>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031800-0260-0000-0000-0000048DF5BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to "Universal Serial Bus Communications Class Subclass
-Specification for Mobile Broadband Interface Model, Revision 1.0,
-Errata-1" published by USB-IF, the wMTU field of the MBIM extended
-functional descriptor indicates the operator preferred MTU for IP data
-streams.
+Greg KH <greg@kroah.com> writes:
+> On Tue, Mar 18, 2014 at 07:33:30AM +1100, Benjamin Herrenschmidt wrote:
+>> On Mon, 2014-03-17 at 11:33 -0700, Greg KH wrote:
+>> 
+>> > There were only 3 (or 4), users of this api, and no new ones had been
+>> > added in _years_, it's a very obscure thing, and odds are, it wouldn't
+>> > ever be added again, especially as it was just removed entirely not
+>> > being needed anymore.  And I'd argue, it's something that you shouldn't
+>> > have even been doing in the first place, so why a new user of it was
+>> > added now is quite strange to me.
+>> 
+>> Actually that's a good question. Is there a better way for us than to
+>> use this API ? Essentially we use that because it's our understanding
+>> that it is what is needed for a sysfs file that can remove its parent
+>> directory from within a write() op.
+>> 
+>> We followed the driver "remove" implementation as an example.
+>> 
+>> The reason the opal elog and dump patches use it is that those two
+>> patches add sysfs interface that represent the error logs (and platform
+>> dumps but you can treat the latter as some kind of special case of error
+>> logs) from the service processor in sysfs.
+>> 
+>> So for each log we create a dir (kobject) which we populate with a few
+>> things like the log unique ID, raw data, etc.... and a file that can be
+>> used to "ack" the log with the service processor.
+>> 
+>> The latter has the effect of removing it. This is done by the collection
+>> daemon after it has confirmed that the error log has been stored to disk
+>> and properly flushed.
+>> 
+>> Is there a better interface ? Can we implement for example unlink() on
+>> the kobject itself ? IE. Do the ack by essentially having userspace rm
+>> the directory ? :-)
+>
+> No you can't, sorry.
+>
+> And this seems like a huge abuse of sysfs, you better be using binary
+> sysfs files for your log data...
 
-This patch modifies cdc_ncm_setup to ensure that the MTU value set on
-the usbnet device does not exceed the operator preferred MTU indicated
-by wMTU if the MBIM device exposes a MBIM extended functional
-descriptor.
+We are. It's a binary format we get from the service processor that we
+then parse in userspace.
 
-Signed-off-by: Ben Chan <benchan@chromium.org>
----
-Patch v2 adds the le16_to_cpu conversion on ctx->mbim_extended_desc->wMTU as
-pointed out and suggested by 'Bjørn Mork <bjorn@mork.no>'.
+Seeing as each of these log entries is a separate thing that can be
+retrieved and acknowledged to the service processor, it seemed fitting
+to have each of them exposed to userspace so that policy can be dictated
+there (acking them removes them from FSP and we have use cases for
+peeking at them)
 
- drivers/net/usb/cdc_ncm.c   | 17 +++++++++++++++++
- include/linux/usb/cdc_ncm.h |  1 +
- 2 files changed, 18 insertions(+)
+If there's a better way, I'd be interested in hearing it - it appeared
+to be relatively good fit for sysfs (no sysadmin overhead, busybox has
+enough utility to semi-meaningfully poke at it).
 
-diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
-index dbff290..e8711a8 100644
---- a/drivers/net/usb/cdc_ncm.c
-+++ b/drivers/net/usb/cdc_ncm.c
-@@ -74,6 +74,7 @@ static int cdc_ncm_setup(struct usbnet *dev)
- 	u8 iface_no;
- 	int err;
- 	int eth_hlen;
-+	u16 mbim_mtu;
- 	u16 ntb_fmt_supported;
- 	__le16 max_datagram_size;
- 
-@@ -261,6 +262,14 @@ out:
- 	/* set MTU to max supported by the device if necessary */
- 	if (dev->net->mtu > ctx->max_datagram_size - eth_hlen)
- 		dev->net->mtu = ctx->max_datagram_size - eth_hlen;
-+
-+	/* do not exceed operater preferred MTU */
-+	if (ctx->mbim_extended_desc) {
-+		mbim_mtu = le16_to_cpu(ctx->mbim_extended_desc->wMTU);
-+		if (mbim_mtu != 0 && mbim_mtu < dev->net->mtu)
-+			dev->net->mtu = mbim_mtu;
-+	}
-+
- 	return 0;
- }
- 
-@@ -399,6 +408,14 @@ int cdc_ncm_bind_common(struct usbnet *dev, struct usb_interface *intf, u8 data_
- 			ctx->mbim_desc = (const struct usb_cdc_mbim_desc *)buf;
- 			break;
- 
-+		case USB_CDC_MBIM_EXTENDED_TYPE:
-+			if (buf[0] < sizeof(*(ctx->mbim_extended_desc)))
-+				break;
-+
-+			ctx->mbim_extended_desc =
-+				(const struct usb_cdc_mbim_extended_desc *)buf;
-+			break;
-+
- 		default:
- 			break;
- 		}
-diff --git a/include/linux/usb/cdc_ncm.h b/include/linux/usb/cdc_ncm.h
-index c3fa807..bdf05fb 100644
---- a/include/linux/usb/cdc_ncm.h
-+++ b/include/linux/usb/cdc_ncm.h
-@@ -93,6 +93,7 @@ struct cdc_ncm_ctx {
- 
- 	const struct usb_cdc_ncm_desc *func_desc;
- 	const struct usb_cdc_mbim_desc *mbim_desc;
-+	const struct usb_cdc_mbim_extended_desc *mbim_extended_desc;
- 	const struct usb_cdc_ether_desc *ether_desc;
- 
- 	struct usb_interface *control;
--- 
-1.9.0.279.gdc9e3eb
+> Do you have a pointer to where you document this sysfs api in
+> Documentation/ABI/ ?
+
+Yes:
+- Documentation/ABI/stable/sysfs-firmware-opal-dump
+- Documentation/ABI/stable/sysfs-firmware-opal-elog
+
+>> Now regarding the practicals of sorting out our trees, Stephen suggested
+>> that rather than doing anything on my side (heh, I like that !), you
+>> should revert the last patch of the series, the one removing the old
+>> API, in your tree.
+>> 
+>> It can then be re-applied later around rc1.
+>
+> I'll look to see if we can do that, let me dig it up out of my tree...
+
+Thanks. The new API looks like it should work fine for us, I'll be sure
+to covert my API usage and let you know.
 
