@@ -1,130 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757951AbaCRT2e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 15:28:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29612 "EHLO mx1.redhat.com"
+	id S1757966AbaCRT2u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 15:28:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56265 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757857AbaCRT0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757856AbaCRT0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Mar 2014 15:26:54 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, hpa@zytor.com
 Cc: Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 3/5] x86/boot: Move optmized memcpy() 32/64 bit versions to compressed/string.c
-Date: Tue, 18 Mar 2014 15:26:38 -0400
-Message-Id: <1395170800-11059-4-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 1/5] x86/boot: undef memcmp before providing a new definition
+Date: Tue, 18 Mar 2014 15:26:36 -0400
+Message-Id: <1395170800-11059-2-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
 References: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move optimzied versions of memcpy to compressed/string.c This will allow
-any other code to use these functions too if need be in future. Again
-trying to put definition in a common place instead of hiding it in misc.c
+With CONFIG_X86_32=y, string_32.h gets pulled in compressed/string.c by
+"misch.h". string_32.h defines a macro to map memcmp to __builtin_memcmp().
+And that macro in turn changes the name of memcmp() defined here and
+converts it to __builtin_memcmp().
+
+I thought that's not the intention though. We probably want to provide
+our own optimized definition of memcmp(). If yes, then undef the memcmp
+before we define a new memcmp.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- arch/x86/boot/compressed/misc.c   | 31 +------------------------------
- arch/x86/boot/compressed/string.c | 33 +++++++++++++++++++++++++++++++++
- 2 files changed, 34 insertions(+), 30 deletions(-)
+ arch/x86/boot/compressed/string.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 196eaf3..3100092 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -10,6 +10,7 @@
-  */
- 
- #include "misc.h"
-+#include "../string.h"
- 
- /* WARNING!!
-  * This code is compiled with -fPIC and it is relocated dynamically
-@@ -110,7 +111,6 @@ static void error(char *m);
- struct boot_params *real_mode;		/* Pointer to real-mode data */
- 
- void *memset(void *s, int c, size_t n);
--void *memcpy(void *dest, const void *src, size_t n);
- 
- memptr free_mem_ptr;
- memptr free_mem_end_ptr;
-@@ -225,35 +225,6 @@ void *memset(void *s, int c, size_t n)
- 		ss[i] = c;
- 	return s;
- }
--#ifdef CONFIG_X86_32
--void *memcpy(void *dest, const void *src, size_t n)
--{
--	int d0, d1, d2;
--	asm volatile(
--		"rep ; movsl\n\t"
--		"movl %4,%%ecx\n\t"
--		"rep ; movsb\n\t"
--		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
--		: "0" (n >> 2), "g" (n & 3), "1" (dest), "2" (src)
--		: "memory");
--
--	return dest;
--}
--#else
--void *memcpy(void *dest, const void *src, size_t n)
--{
--	long d0, d1, d2;
--	asm volatile(
--		"rep ; movsq\n\t"
--		"movq %4,%%rcx\n\t"
--		"rep ; movsb\n\t"
--		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
--		: "0" (n >> 3), "g" (n & 7), "1" (dest), "2" (src)
--		: "memory");
--
--	return dest;
--}
--#endif
- 
- static void error(char *x)
- {
 diff --git a/arch/x86/boot/compressed/string.c b/arch/x86/boot/compressed/string.c
-index 212004e..3b5a82f 100644
+index ffb9c5c..212004e 100644
 --- a/arch/x86/boot/compressed/string.c
 +++ b/arch/x86/boot/compressed/string.c
-@@ -11,3 +11,36 @@ int memcmp(const void *s1, const void *s2, size_t len)
- }
+@@ -1,5 +1,7 @@
+ #include "misc.h"
  
- #include "../string.c"
-+
-+/* misc.h might pull in string_32.h which has a macro for memcpy. undef that */
-+#undef memcpy
-+
-+#ifdef CONFIG_X86_32
-+void *memcpy(void *dest, const void *src, size_t n)
-+{
-+	int d0, d1, d2;
-+	asm volatile(
-+		"rep ; movsl\n\t"
-+		"movl %4,%%ecx\n\t"
-+		"rep ; movsb\n\t"
-+		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
-+		: "0" (n >> 2), "g" (n & 3), "1" (dest), "2" (src)
-+		: "memory");
-+
-+	return dest;
-+}
-+#else
-+void *memcpy(void *dest, const void *src, size_t n)
-+{
-+	long d0, d1, d2;
-+	asm volatile(
-+		"rep ; movsq\n\t"
-+		"movq %4,%%rcx\n\t"
-+		"rep ; movsb\n\t"
-+		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
-+		: "0" (n >> 3), "g" (n & 7), "1" (dest), "2" (src)
-+		: "memory");
-+
-+	return dest;
-+}
-+#endif
++/* Avoid intereference from any defines in string_32.h */
++#undef memcmp
+ int memcmp(const void *s1, const void *s2, size_t len)
+ {
+ 	u8 diff;
 -- 
 1.8.5.3
 
