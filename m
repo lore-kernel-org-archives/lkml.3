@@ -1,123 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779AbaCROWw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:22:52 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.146]:34036 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755358AbaCROWu (ORCPT
+	id S932137AbaCROYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 10:24:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:52563 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392AbaCROYm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:22:50 -0400
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-6.tower-180.messagelabs.com!1395152566!25038537!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201403181422.s2IEMgVv031077@swsrvapps-01.diasemi.com>
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Date: Tue, 18 Mar 2014 14:07:35 +0000
-Subject: [PATCH V2] MAINTAINERS: Addition of Dialog Semiconductor files
-To: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>
-CC: David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, "Mark Brown" <broonie@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        "Samuel Ortiz" <sameo@linux.intel.com>
+	Tue, 18 Mar 2014 10:24:42 -0400
+From: Hans-Peter Jansen <hpj@urpla.net>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Stefani Seibold <stefani@seibold.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: OT: Re: [PATCH 3/3] x86, vdso32: handle 32 bit vDSO larger one page
+Date: Tue, 18 Mar 2014 15:22:09 +0100
+Message-ID: <27368739.JufufE7F6v@xrated>
+User-Agent: KMail/4.11.5 (Linux/3.11.10-7-desktop; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140313210010.GB3793@tassilo.jf.intel.com>
+References: <5321F418.1030304@zytor.com> <53220DEB.6030902@zytor.com> <20140313210010.GB3793@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:EHlD0haTx8P3pBdWl9kiDRFNLRr/DgdpBDhQhtrbVtW
+ Cn0Zl/4vOtYchFpAg7wSVicL+UfvvvkVx7oPVq1zLxfBhZWPPF
+ zTFuUsxgD6fqIRovaLDiANDSE9u6th0e1pICd30nmWptKeENID
+ EPRsF1b37j0J+FbvokIUEtTlTzk5+mLK8UGDzMJoZUOtCiCwQb
+ zrrV6xGO+WgRA9XnBCwpV2bHTTtTvbACqy+VD8J1l+CxlK+/BM
+ 6YPj8cnDNKvMx/tuSPPpXlAjhq12clPMmvPyl1lvQIqbYpe8Op
+ RyMaFImXvMINq7BQOKUiDPUhi6HIm2w5rYqmnpCa3kJ24Js9Gw
+ sYs0+s/jMzTbrECjLXmg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-
-Addition of support e-mail address for Dialog Semiconductor Ltd
-
-Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
----
-Checks performed with linux-next/next-20140318/scripts/checkpatch.pl
- MAINTAINERS               total: 0 errors, 0 warnings, 9993 lines checked
-
-Hello,
-
-This is the reason for the patch:
-
-Dialog Semiconductor Ltd would like to add a new section called DIALOG
-SEMICONDUCTOR DRIVERS which contains a new e-mail address that can
-cover all Dialog supported drivers: support.opensource@diasemi.com.
-
-My previous PATCH V1 had a little trouble finding a maintainer for the
-MAINTAINERS file. After taking suggestions, I am now following the
-get_maintainers results more closely. Hence I have added Andrew Morton's
-name into the e-mail fields this time.
-
-PATCH V1 was Acked by Mark Brown, but instead of resending the same
-patch again I have updated it with the changes suggested in that ACK.
-See here: https://lkml.org/lkml/2014/3/10/439
-
-Change History:
-
-- Since PATCH V1
-  - An alteration suggested by Mark Brown to reduce the number of
-    file entries in the include/sound and sound/soc/codecs directories
-    has been made.
-  - The e-mail To: field now includes Andrew Morton as suggested in
-    this thread: https://lkml.org/lkml/2014/3/18/150
-
-- Since RFC V1
-  - An alteration according to the comments provided by Joe Perches
-    in the RFC V1 e-mail thread, see here:
-    https://lkml.org/lkml/2014/3/7/216
-    Changing the L: (mailing-list) to M: (mail patches to) for the
-    e-mail support.opensource address.
-
-This patch applies against linux-next and next-20140318
-
-Regards,
-Steve Twiss, Dialog Semiconductor Ltd.
-
-
-
- MAINTAINERS |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 630cb9f..ddd552f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2754,6 +2754,31 @@ F:	include/linux/device-mapper.h
- F:	include/linux/dm-*.h
- F:	include/uapi/linux/dm-*.h
+On Donnerstag, 13. März 2014 14:00:10 Andi Kleen wrote:
  
-+DIALOG SEMICONDUCTOR DRIVERS
-+M:	Support Opensource <support.opensource@diasemi.com>
-+W:	http://www.dialog-semiconductor.com/products
-+S:	Supported
-+F:	Documentation/hwmon/da90??
-+F:	drivers/gpio/gpio-da90??.c
-+F:	drivers/hwmon/da90??-hwmon.c
-+F:	drivers/input/misc/da90??_onkey.c
-+F:	drivers/input/touchscreen/da9052_tsi.c
-+F:	drivers/leds/leds-da90??.c
-+F:	drivers/mfd/da903x.c
-+F:	drivers/mfd/da90??-*.c
-+F:	drivers/power/da9052-battery.c
-+F:	drivers/regulator/da903x.c
-+F:	drivers/regulator/da9???-regulator.[ch]
-+F:	drivers/rtc/rtc-da90??.c
-+F:	drivers/video/backlight/da90??_bl.c
-+F:	drivers/watchdog/da90??_wdt.c
-+F:	include/linux/mfd/da903x.h
-+F:	include/linux/mfd/da9052/
-+F:	include/linux/mfd/da9055/
-+F:	include/linux/mfd/da9063/
-+F:	include/sound/da[79]*.h
-+F:	sound/soc/codecs/da[79]*.[ch]
-+
- DIGI NEO AND CLASSIC PCI PRODUCTS
- M:	Lidza Louina <lidza.louina@gmail.com>
- L:	driverdev-devel@linuxdriverproject.org
--- 
-end-of-patch for PATCH V2
+> At some point the majority of my nfsroot test image were OpenSUSE 9.
+
+Hehe, I had a 9.3 system (2.6.11.4) with an uptime of > 1000 days before power 
+outage, and one 11.1 (2.6.27.56), that has an uptime of 1029 days now. While 
+git brought in many good aspects, the gain in development speed resulted in 
+noticeable decrease of long term stability. And the kernel is a pretty well 
+managed project still, compared to other related ones..
+
+> It was the last opensuse system that booted fast without udev or initrd :-)
+
+The ramifications of udev and initrd where tiny, given what systemd has caused 
+to openSUSE lately, combined with the (nowadays) usual nfs and autofs 
+dysfunctions.. It all made 13.1 sucking rocks. 
+
+SCR,
+ Pete
 
