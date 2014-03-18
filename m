@@ -1,39 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682AbaCREZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 00:25:53 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:36508 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaCREZw (ORCPT
+	id S1751787AbaCRFDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 01:03:05 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:62693 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaCRFDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 00:25:52 -0400
+	Tue, 18 Mar 2014 01:03:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAM9d7ch0xHO4S6drn_G2CELTD6G51ADE+XvvSJw5Jid2Dy7Khw@mail.gmail.com>
-References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
- <1394437440-11609-3-git-send-email-namhyung@kernel.org> <20140317200832.GE31482@ghostprotocols.net>
- <CAM9d7ch0xHO4S6drn_G2CELTD6G51ADE+XvvSJw5Jid2Dy7Khw@mail.gmail.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Tue, 18 Mar 2014 13:25:31 +0900
-X-Google-Sender-Auth: abtfP34KH4f-p06w-W1t5P2z2Ow
-Message-ID: <CAM9d7ci-8w7z-qgH8Mw+_csqwSNh+1GcO5zuPMSoH8jV+sO0jQ@mail.gmail.com>
-Subject: Re: [PATCH 2/9] perf tools: Count periods of filtered entries separately
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1395026886-14325-1-git-send-email-djkurtz@chromium.org>
+References: <1395026886-14325-1-git-send-email-djkurtz@chromium.org>
+Date: Tue, 18 Mar 2014 14:03:01 +0900
+X-Google-Sender-Auth: 4kUfofdm3sjgLdGRXjit-UIxrrc
+Message-ID: <CAAQKjZMeeyD+6fhCaGk9qzX0oLTS=vHU86Y7gF9ZnbwcpTT7Kg@mail.gmail.com>
+Subject: Re: [PATCH] drm/exynos: Fix (more) freeing issues in exynos_drm_drv.c
+From: Inki Dae <inki.dae@samsung.com>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 1:19 PM, Namhyung Kim <namhyung@kernel.org> wrote:
-
-> It's because thread__find_addr_map() clears al->filtered, so filtering
-> with -d option won't work.  Maybe we can move initialization of the
-> al->filtered upto this function.
-
-Oh, I meant the -c/--comms option actually :)
+Applied.
 
 Thanks,
-Namhyung
+Inki Dae
+
+2014-03-17 12:28 GMT+09:00 Daniel Kurtz <djkurtz@chromium.org>:
+> The following commit [0] fixed a use-after-free, but left the subdrv open
+> in the error path.
+>
+> [0] commit 6ca605f7c70895a35737435f17ae9cc5e36f1466
+> drm/exynos: Fix freeing issues in exynos_drm_drv.c
+>
+> Change-Id: I452e944bf090fb11434d9e34213c890c41c15d73
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> ---
+>  drivers/gpu/drm/exynos/exynos_drm_drv.c | 10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+> index 215131a..c204b4e 100644
+> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
+> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+> @@ -172,20 +172,24 @@ static int exynos_drm_open(struct drm_device *dev, struct drm_file *file)
+>
+>         ret = exynos_drm_subdrv_open(dev, file);
+>         if (ret)
+> -               goto out;
+> +               goto err_file_priv_free;
+>
+>         anon_filp = anon_inode_getfile("exynos_gem", &exynos_drm_gem_fops,
+>                                         NULL, 0);
+>         if (IS_ERR(anon_filp)) {
+>                 ret = PTR_ERR(anon_filp);
+> -               goto out;
+> +               goto err_subdrv_close;
+>         }
+>
+>         anon_filp->f_mode = FMODE_READ | FMODE_WRITE;
+>         file_priv->anon_filp = anon_filp;
+>
+>         return ret;
+> -out:
+> +
+> +err_subdrv_close:
+> +       exynos_drm_subdrv_close(dev, file);
+> +
+> +err_file_priv_free:
+>         kfree(file_priv);
+>         file->driver_priv = NULL;
+>         return ret;
+> --
+> 1.9.0.279.gdc9e3eb
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
