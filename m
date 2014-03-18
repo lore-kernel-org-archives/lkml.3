@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902AbaCRON0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:13:26 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:45212 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755242AbaCRONZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:13:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <87ha6wrl8h.fsf@sejong.aot.lge.com>
-References: <1395095198-20034-1-git-send-email-artagnon@gmail.com>
- <1395095198-20034-3-git-send-email-artagnon@gmail.com> <87ha6wrl8h.fsf@sejong.aot.lge.com>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Tue, 18 Mar 2014 10:12:45 -0400
-Message-ID: <CALkWK0mODh_R9p10q2VPcJK4qnmNuJfQJm5wv2Rr=+cn+X-LDQ@mail.gmail.com>
-Subject: Re: [PATCH 2/5] tools lib traceevent: handle the '->' operator
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755506AbaCRORZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 10:17:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754113AbaCRORX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 10:17:23 -0400
+Message-ID: <1395152209.2967.3.camel@deneb.redhat.com>
+Subject: Re: [PATCH v2 13/15] arm64: add EFI runtime services
+From: Mark Salter <msalter@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>
+Date: Tue, 18 Mar 2014 10:16:49 -0400
+In-Reply-To: <20140318123418.GH13200@arm.com>
+References: <1394750828-16351-1-git-send-email-leif.lindholm@linaro.org>
+	 <1394750828-16351-14-git-send-email-leif.lindholm@linaro.org>
+	 <20140318123418.GH13200@arm.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namhyung,
+On Tue, 2014-03-18 at 12:34 +0000, Catalin Marinas wrote:
+> On Thu, Mar 13, 2014 at 10:47:06PM +0000, Leif Lindholm wrote:
+> > --- /dev/null
+> > +++ b/arch/arm64/kernel/efi.c
+> [...]
+> > +/*
+> > + * Called from setup_arch with interrupts disabled.
+> > + */
+> > +void __init efi_enter_virtual_mode(void)
+> [...]
+> > --- a/init/main.c
+> > +++ b/init/main.c
+> > @@ -902,6 +902,10 @@ static noinline void __init kernel_init_freeable(void)
+> >         smp_prepare_cpus(setup_max_cpus);
+> > 
+> >         do_pre_smp_initcalls();
+> > +
+> > +       if (IS_ENABLED(CONFIG_ARM64) && efi_enabled(EFI_BOOT))
+> > +               efi_enter_virtual_mode();
+> 
+> The comment for the efi_enter_virtual_mode() function says "called from
+> setup_arch with interrupts disabled". None of these are true for the
+> call above (and I would really prefer an arch call than this arm64
+> conditional call in init/main.c.
+> 
 
-On Tue, Mar 18, 2014 at 3:58 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Hmm.. AFAIK we don't support the '->' operator so I think it's an error
-> in the callsite.  Where do you see the message though?  I couldn't find
-> it on my setup.
->
-> I'd also like to add following patch to see the location of parse
-> failure easily.
+Right, the call changed to later in boot but the comment didn't. Calling
+from setup_arch is too early. But an early_initcall would work and would
+get rid of the ugly CONFIG_ARM64 test.
 
-I applied your patch and ran 'perf test'. I get:
 
-  Warning: [i915:i915_gem_evict_vm] unknown op '->'
 
-So, where should we dig to find this callsite?
-
-Ram
