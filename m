@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583AbaCRPbj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:31:39 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:12110 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753543AbaCRPbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:31:38 -0400
-Date: Tue, 18 Mar 2014 11:31:36 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ben Widawsky <ben@bwidawsk.net>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] drm/i915: Do not dereference pointers from ring buffer
- in evict event
-Message-ID: <20140318113136.02d2e08b@gandalf.local.home>
-In-Reply-To: <20140318112737.2192898a@gandalf.local.home>
-References: <20140318112737.2192898a@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1756829AbaCRPdG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:33:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32372 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755040AbaCRPdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 11:33:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,678,1389772800"; 
+   d="scan'208";a="501252776"
+Date: Tue, 18 Mar 2014 20:54:44 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Sandeep Nair <sandeep_n@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH] dma: Add Keystone Packet DMA Engine driver
+Message-ID: <20140318152444.GC1976@intel.com>
+References: <1393628200-12317-1-git-send-email-santosh.shilimkar@ti.com>
+ <20140311102357.GR1976@intel.com>
+ <531F6908.4010104@ti.com>
+ <20140312160017.GY1976@intel.com>
+ <5320CEC4.1060306@ti.com>
+ <20140317044223.GA1976@intel.com>
+ <53274F0B.5070201@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53274F0B.5070201@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014 11:27:37 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> The TP_printk() should never dereference any pointers, because the ring
-> buffer can be read at some unknown time in the future. If a device no
-> longer exists, it can cause a kernel oops. This also makes this
-> event useless when saving the ring buffer in userspaces tools such as
-> perf and trace-cmd.
+On Mon, Mar 17, 2014 at 03:37:47PM -0400, Santosh Shilimkar wrote:
+> >> To simplify this bit more, you can think of this as DMA channels, flows
+> >> are allocated and DMA channels are enabled by DMA engine and they remains
+> >> enabled always as long as the channel in use. Enablling dma channel
+> >> actually don't start the DMA transfer but just sets up the connection/pipe
+> >> with peripheral and memory and vice a versa.
+> >>
+> >> All the descriptor management, triggering, sending completion interrupt or
+> >> hardware signal to DMAEngine all managed by centralised QMSS.
+> >>
+> >> Actual copy of data is still done by DMA hardware but its completely
+> >> transparent to software. DMAEngine hardware takes care of that in the
+> >> backyard.
+> > So you will use the dmaengine just for setting up the controller. Not for actual
+> > transfers. Those would be governed by the QMSS, right?
+> >
+> Correct.
+>  
+> > This means that someone expecting to use dmaengine API will get confused about
+> > this and doing part (alloc) thru dmaengine and rest (transfers) using some other
+> > API. This brings to me the design approach, does it really make sense creating
+> > dmaengine driver for this when we are not fully complying to the API
+> > 
+> Thats fair. The rationale behind usage of DMEngine was that its the closest
+> available subsystem which can be leveraged for this hardware. We can
+> pretty much use all the standard DMAEngine device tree parsing as well as
+> the config API to setup DMAs. 
 > 
-> The i915_gem_evict_vm dereferences the vm pointer which may also not
-> exist when the ring buffer is read sometime in the future.
-> 
-> Link: http://lkml.kernel.org/r/1395095198-20034-3-git-send-email-artagnon@gmail.com
-> Reported-by: Ramkumar Ramachandra <artagnon@gmail.com> Cc:
-> stable@vger.kernel.org # 3.13+
+> I think you made your stand clear, just to confirm, you don't prefer this
+> driver to be a DMAEngine driver considering it doesn't fully complying to
+> the APIs. We could document the deviation of 'transfer' handling to avoid
+> any confusion.
+Yup, a user will just get confused as the driver doenst conform the dmaengine
+API. Unless someone comes up witha  strong argument on why it should be
+dmaengine driver and what befits we see form such a model, i would like a
+damengine driver to comply to standard API and usage.
 
-Bah, claw's mail is playing havoc with my line wraps. Please fix the
-above when applying, or I can send anothe patch. Thanks :-)
-
-I had to re-insert the patch due to it but didn't see the screw up with
-the Cc of stable.
-
--- Steve
-
-> Fixes: bcccff847d1f "drm/i915: trace vm eviction instead of everything"
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
-> diff --git a/drivers/gpu/drm/i915/i915_trace.h b/drivers/gpu/drm/i915/i915_trace.h
-> index 6e580c9..f3e8a90 100644
-> --- a/drivers/gpu/drm/i915/i915_trace.h
-> +++ b/drivers/gpu/drm/i915/i915_trace.h
-> @@ -238,14 +238,16 @@ TRACE_EVENT(i915_gem_evict_vm,
->  	    TP_ARGS(vm),
->  
->  	    TP_STRUCT__entry(
-> +			     __field(u32, dev)
->  			     __field(struct i915_address_space *, vm)
->  			    ),
->  
->  	    TP_fast_assign(
-> +			   __entry->dev = dev->primary->index;
->  			   __entry->vm = vm;
->  			  ),
->  
-> -	    TP_printk("dev=%d, vm=%p", __entry->vm->dev->primary->index, __entry->vm)
-> +	    TP_printk("dev=%d, vm=%p", __entry->dev, __entry->vm)
->  );
->  
->  TRACE_EVENT(i915_gem_ring_sync_to,
-
+-- 
+~Vinod
