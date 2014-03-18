@@ -1,59 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825AbaCRKhC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 06:37:02 -0400
-Received: from smtprelay0021.hostedemail.com ([216.40.44.21]:57803 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754521AbaCRKhA (ORCPT
+	id S1754864AbaCRKig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 06:38:36 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:23402 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752633AbaCRKid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 06:37:00 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4552:5007:7652:7974:9025:10004:10400:10848:11232:11658:11914:12043:12050:12517:12519:12663:12679:12740:13069:13071:13072:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fly43_27fb72d3a716
-X-Filterd-Recvd-Size: 1694
-Message-ID: <1395139015.2812.6.camel@joe-AO722>
-Subject: Re: [PATCH V1] MAINTAINERS: Addition of Dialog Semiconductor files
-From: Joe Perches <joe@perches.com>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Tue, 18 Mar 2014 03:36:55 -0700
-In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB7A0C7F55D@SW-EX-MBX01.diasemi.com>
-References: <201403101800.s2AI0nId021436@swsrvapps-01.diasemi.com>
-	 <6ED8E3B22081A4459DAC7699F3695FB7A0C7F55D@SW-EX-MBX01.diasemi.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Mar 2014 06:38:33 -0400
+X-AuditID: cbfee68e-b7f566d000002344-ff-532822199282
+Date: Tue, 18 Mar 2014 19:38:17 +0900
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: Re: [PATCH v11 10/27] iommu/exynos: use managed device helper functions
+Message-id: <20140318193817.3448387b75e109e814b9c025@samsung.com>
+In-reply-to: <53230404.6070601@samsung.com>
+References: <20140314140542.f4ded6c50dbd8a1d937bf354@samsung.com>
+ <53230404.6070601@samsung.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t8zI11JJY1gg/ezLC3u3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
+	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
+	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4Mq42DiXteALb8WRVcvZGxg/c3UxcnJICJhIzLvwlgXC
+	FpO4cG89WxcjF4eQwDJGiVnTX7F3MXKAFZ3fmAkRX8QocbK1EaxBSGAyk8Sc85ogNouAqsS7
+	nzPYQWw2AS2J1XOPM4LYIgIqEpdPTWcEaWYWaGSVeHR/GViRsECAxIuTDWCDeAUcJRb23wWz
+	OQW0JVY/e8sIsSBJ4uj1e+wQ11lIXGjqYIeoF5T4MfkeWD0z0LLN25pYIWx5ic1r3jKDLJMQ
+	WMoh8XDyAjaI6wQkvk0+xALxjazEpgPMEDMlJQ6uuMEygVFsFpKxs5CMnYVk7AJG5lWMoqkF
+	yQXFSelFRnrFibnFpXnpesn5uZsYIbHet4Px5gHrQ4zJQCsnMkuJJucDU0VeSbyhsZmRhamJ
+	qbGRuaUZacJK4ryLHiYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamAM7Pud8Sz8rmDY/yce
+	chZvzKWdz2iL1mucvPd89jz93sZYmzUWyY32UhXeCt6+Ce37pjhKymnM5+lYfWf27F+u3R4X
+	pR+y8JYe27PiU9nyX+fTt1durPP6a5nP+jl95esnn+7+Z9C5EMz5W3/zTOUJt9V/LuH+8He9
+	zLdTxby3l63ct8KUKTNFiaU4I9FQi7moOBEApH0PwQsDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKKsWRmVeSWpSXmKPExsVy+t9jAV1JJY1gg6nnjS3u3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
+	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
+	ch5Xjp5hCuCMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAH6QEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYcbFxLmvBF96K
+	I6uWszcwfubqYuTgkBAwkTi/MbOLkRPIFJO4cG89WxcjF4eQwCJGiZOtjSwgCSGByUwSc85r
+	gtgsAqoS737OYAex2QS0JFbPPc4IYosIqEhcPjWdEaSZWaCRVeLR/WVgRcICARIvTjaADeIV
+	cJRY2H8XzOYU0JZY/ewtI8SCJImj1++xQ1xhIXGhqYMdol5Q4sfke2D1zEDLNm9rYoWw5SU2
+	r3nLPIFRYBaSsllIymYhKVvAyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIziRPJPewbiq
+	weIQowAHoxIP7ws29WAh1sSy4srcQ4wSHMxKIrwnRDSChXhTEiurUovy44tKc1KLDzEmA4Nj
+	IrOUaHI+MMnllcQbGpuYGVkamVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVAMj
+	74RHE3n9GW+YTd5/4epdheqIZzJS8j8f2qeejHNjt35fpcd5QaNLWS/L5qtcq9bJst1cH7j/
+	JIYc+vHxiHCh/Ym4r+W7Ztk7nj6zqYDJIV9A5PsxLp7LDcqrYtp3OW9TDBScUpChWady1/X2
+	dh8zAdt5dZk95yrexJp2dL46c0568/2dqz8psRRnJBpqMRcVJwIANcJ5qGgDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-18 at 10:13 +0000, Opensource [Steve Twiss] wrote:
-> Hi Joe,
-
-Hi Steve.
-
-> About a week ago I sent a patch for the MAINTAINERS file that added
-> a support e-mail address for Dialog Semiconductor drivers currently in
-> the kernel.
+On Fri, 14 Mar 2014 14:28:36 +0100, Tomasz Figa wrote:
+> Hi KyongHo,
 > 
-> I'm not sure if it may have been missed in your inbox.
+> On 14.03.2014 06:05, Cho KyongHo wrote:
+> > This patch uses managed device helper functions in the probe().
+> >
+> > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+> > ---
+> >   drivers/iommu/exynos-iommu.c |   64 +++++++++++++++++-------------------------
+> >   1 file changed, 26 insertions(+), 38 deletions(-)
+> >
+> > diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+> > index 36e6b73..33b424d 100644
+> > --- a/drivers/iommu/exynos-iommu.c
+> > +++ b/drivers/iommu/exynos-iommu.c
+> > @@ -499,51 +499,48 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
+> >
+> >   static int exynos_sysmmu_probe(struct platform_device *pdev)
+> >   {
+> > -	int ret;
+> > +	int irq, ret;
+> >   	struct device *dev = &pdev->dev;
+> >   	struct sysmmu_drvdata *data;
+> >   	struct resource *res;
+> >
+> > -	data = kzalloc(sizeof(*data), GFP_KERNEL);
+> > -	if (!data) {
+> > -		dev_dbg(dev, "Not enough memory\n");
+> > -		ret = -ENOMEM;
+> > -		goto err_alloc;
+> > -	}
+> > +	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
+> > +	if (!data)
+> > +		return -ENOMEM;
+> >
+> >   	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >   	if (!res) {
+> > -		dev_dbg(dev, "Unable to find IOMEM region\n");
+> > -		ret = -ENOENT;
+> > -		goto err_init;
+> > +		dev_err(dev, "Unable to find IOMEM region\n");
+> > +		return -ENOENT;
+> >   	}
 > 
-> https://lkml.org/lkml/2014/3/10/438
+> No need to check for error and print message, because 
+> devm_ioremap_resource() already checks the passed resource and handles 
+> error cases.
+> 
 
-I received your email.  It looks fine to me.
+Yes but devm_ioremap_resource() just tells that the given 'res' is not
+correct. I think the message in the driver is more informative.
 
-But:
+Thanks.
 
-I am not the MAINTAINERS maintainer nor am I
-a path to get patches accepted into Linus'
-tree.
-
-I suggest you send it to Andrew Morton if no
-one else on this email chain picks it up.
-
-
+KyongHo
