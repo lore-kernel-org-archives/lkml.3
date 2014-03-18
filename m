@@ -1,78 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766AbaCRWbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 18:31:48 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:36648 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757044AbaCRWbq (ORCPT
+	id S1758235AbaCRWd4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 18:33:56 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:40787 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758200AbaCRWdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 18:31:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140318094022.GL25478@lee--X1>
-References: <1394867287-14074-1-git-send-email-shc_work@mail.ru>
- <1395134091.369687348@f500.i.mail.ru> <20140318092735.GK25478@lee--X1>
- <1395135226.132641029@f500.i.mail.ru> <20140318094022.GL25478@lee--X1>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 18 Mar 2014 15:31:25 -0700
-Message-ID: <CAK5ve-+RtBC33R6Kvy8b8ducXUE4=PcJtNrURAvA3fdU_7+SZA@mail.gmail.com>
-Subject: Re: [PATCH] mfd: mc13xxx: Move definitions out of structures
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Alexander Shiyan <shc_work@mail.ru>, lkml <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Mar 2014 18:33:53 -0400
+From: Matei Oprea <eu@opreamatei.ro>
+To: gregkh@linuxfoundation.org
+Cc: sachin.kamat@linaro.org, shaun@xresource.ca, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Matei Oprea <eu@opreamatei.ro>,
+        ROSEdu Kernel Community <firefly@lists.rosedu.org>
+Subject: [PATCH] staging: cxt1e1: hwprobe: Fix sparse warning
+Date: Wed, 19 Mar 2014 00:33:19 +0200
+Message-Id: <1395181999-29433-1-git-send-email-eu@opreamatei.ro>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 2:40 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> > > > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
->> > > > > ---
->> > > > >  include/linux/mfd/mc13xxx.h | 22 ++++++++++++----------
->> > > > >  1 file changed, 12 insertions(+), 10 deletions(-)
->> > > > >
->> > > > > diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
->> > > > > index a326c85..d63b1d3 100644
->> > > > > --- a/include/linux/mfd/mc13xxx.h
->> > > > > +++ b/include/linux/mfd/mc13xxx.h
->> > > > > @@ -117,10 +117,6 @@ struct mc13xxx_led_platform_data {
->> > > > >
->> > > > >  #define MAX_LED_CONTROL_REGS 6
->> > > > >
->> > > > > -struct mc13xxx_leds_platform_data {
->> > > > > -     struct mc13xxx_led_platform_data *led;
->> > > > > -     int num_leds;
->> > > > > -
->> > > > >  /* MC13783 LED Control 0 */
->> > > > >  #define MC13783_LED_C0_ENABLE                (1 << 0)
->> > > > >  #define MC13783_LED_C0_TRIODE_MD     (1 << 7)
->> > > > > @@ -169,10 +165,13 @@ struct mc13xxx_leds_platform_data {
->> > > > >  /* MC34708 LED Control 0 */
->> > > >
->> > > > I don't see the line above in the MFD tree?
->> > > >
->> > > > Which commit/branch/repo is this patch based on?
->> > >
->> > > Dependency:
->> > > linux-next, a59ce6584d (leds: leds-mc13783: Add MC34708 LED support)
->> > >
->> > > https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/include/linux/mfd/mc13xxx.h?id=a59ce6584d566847980f9dcad5343cd9856145c8
->> >
->> > Ah, you can't do that, as it will cause conflicts and Linus will
->> > likely get upset.
->>
->> So what do we do now? What is the solution?
->
-> Don't worry about it. Bryan and I should be able to sort something out.
+This fixes the following sparse warning:
+* drivers/staging/cxt1e1/hwprobe.c:43:19: 
+warning: symbol 'hdw_info' was not declared. Should it be static?
+* drivers/staging/cxt1e1/hwprobe.c:47:1: 
+warning: symbol 'show_two' was not declared. Should it be static?
+* drivers/staging/cxt1e1/hwprobe.c:99:1: 
+warning: symbol 'hdw_sn_get' was not declared. Should it be static?
+*drivers/staging/cxt1e1/hwprobe.c:149:1: 
+warning: symbol 'prep_hdw_info' was not declared. Should it be static?
+* drivers/staging/cxt1e1/hwprobe.c:169:1: 
+warning: symbol 'cleanup_ioremap' was not declared. Should it be static?
+* drivers/staging/cxt1e1/hwprobe.c:195:1: 
+warning: symbol 'cleanup_devs' was not declared. Should it be static?
+drivers/staging/cxt1e1/hwprobe.c:293:1: 
+* warning: symbol 'c4hw_attach_all' was not declared. Should it be static?
 
-I lost the context here.
+Signed-off-by: Matei Oprea <eu@opreamatei.ro>
+Cc: ROSEdu Kernel Community <firefly@lists.rosedu.org>
+---
+ drivers/staging/cxt1e1/hwprobe.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-I merged Alexander's patch as a59ce6584d566847980f9dcad5343cd9856145c8
-which modified the mc13xxx.h. But all things are related to LED driver
-and only add several lines. Next time I will ask Lee to give an review
-and ack.
+diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
+index 02b4f8f..694047a 100644
+--- a/drivers/staging/cxt1e1/hwprobe.c
++++ b/drivers/staging/cxt1e1/hwprobe.c
+@@ -40,10 +40,10 @@ void        c4_stopwd (ci_t *);
+ struct net_device * __init c4_add_dev (hdw_info_t *, int, unsigned long, unsigned long, int, int);
+ 
+ 
+-struct s_hdw_info hdw_info[MAX_BOARDS];
++static struct s_hdw_info hdw_info[MAX_BOARDS];
+ 
+ 
+-void        __init
++static void        __init
+ show_two (hdw_info_t *hi, int brdno)
+ {
+     ci_t       *ci;
+@@ -95,7 +95,7 @@ show_two (hdw_info_t *hi, int brdno)
+ }
+ 
+ 
+-void        __init
++static void        __init
+ hdw_sn_get (hdw_info_t *hi, int brdno)
+ {
+     /* obtain hardware EEPROM information */
+@@ -145,7 +145,7 @@ hdw_sn_get (hdw_info_t *hi, int brdno)
+ }
+ 
+ 
+-void        __init
++static void        __init
+ prep_hdw_info (void)
+ {
+     hdw_info_t *hi;
+@@ -165,7 +165,7 @@ prep_hdw_info (void)
+     }
+ }
+ 
+-void
++static void
+ cleanup_ioremap (void)
+ {
+     hdw_info_t *hi;
+@@ -191,7 +191,7 @@ cleanup_ioremap (void)
+ }
+ 
+ 
+-void
++static void
+ cleanup_devs (void)
+ {
+     hdw_info_t *hi;
+@@ -289,7 +289,7 @@ c4_hdw_init (struct pci_dev *pdev, int found)
+ }
+ 
+ 
+-status_t    __init
++static status_t    __init
+ c4hw_attach_all (void)
+ {
+     hdw_info_t *hi;
+-- 
+1.7.9.5
 
-So probably this patch has to wait for
-a59ce6584d566847980f9dcad5343cd9856145c8 merged.
-
-Thanks,
--Bryan
