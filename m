@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537AbaCRNYH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 09:24:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4523 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754050AbaCRNYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 09:24:03 -0400
-Date: Tue, 18 Mar 2014 14:23:55 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 5/5] perf test: squelch warnings about undefined sizeof
-Message-ID: <20140318132355.GA7845@krava.brq.redhat.com>
+	id S1755427AbaCRNaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 09:30:17 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:22193 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754380AbaCRNaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 09:30:15 -0400
+Date: Tue, 18 Mar 2014 09:30:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 3/5] tools lib traceevent: use else-if cascade, not
+ separate ifs
+Message-ID: <20140318093006.16517a08@gandalf.local.home>
+In-Reply-To: <20140318131048.GA3585@infradead.org>
 References: <1395095198-20034-1-git-send-email-artagnon@gmail.com>
- <1395095198-20034-6-git-send-email-artagnon@gmail.com>
- <878us8rkqq.fsf@sejong.aot.lge.com>
+	<1395095198-20034-4-git-send-email-artagnon@gmail.com>
+	<87d2hkrl32.fsf@sejong.aot.lge.com>
+	<20140318131048.GA3585@infradead.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878us8rkqq.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 05:09:33PM +0900, Namhyung Kim wrote:
-> On Mon, 17 Mar 2014 18:26:38 -0400, Ramkumar Ramachandra wrote:
-> > perf test emits the following warnings on the parse events test:
-> >
-> >   $ perf test
-> >    5: parse events tests
-> >     Warning: function sizeof not defined
-> >     Warning: function sizeof not defined
-> >     Warning: function sizeof not defined
-> >     Warning: function sizeof not defined
-> >     Warning: function sizeof not defined
-> >     Warning: function sizeof not defined
-> >     Warning: function sizeof not defined
-> >     Warning: function sizeof not defined
-> >     ...
-> >
-> > Squelch the warnings by explicitly ignoring the sizeof function.
+On Tue, 18 Mar 2014 10:10:48 -0300
+Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+
+> Em Tue, Mar 18, 2014 at 05:02:09PM +0900, Namhyung Kim escreveu:
+> > On Mon, 17 Mar 2014 18:26:36 -0400, Ramkumar Ramachandra wrote:
+> > > When token cannot be more than one value, it seems wasteful to go
+> > > through all the strcmp() calls. Use an else-if cascade instead.
+> > 
+> > I think the end result will be same since it returns from inside the
+> > block, right?
 > 
-> It just hides the warning leaving the real problem untouched.  If you
-> really don't want to see those, I guess installing proper plugin for the
-> failing events will help you (in case you didn't).
+> Exactly :-)
+> 
+> We could have it changed to something like:
+> 
+> 	if (strcmp()) {
+> 		ret = bla();
+> 		goto out_free_token;
+> 	}
+> .
+> .
+> .
+> out_free_token:
+> 	free_token(token);
+> 	return ret;
+> 
+>  
 
-it wont' help, sizeof is special.. AFAIK we did not figure
-out a way to handle that so far
+Honestly, I prefer the original, thus I would add a NAK to this patch.
 
-but I think it was used only in one trace subsystem.. maybe we
-could replace it and forbid to use it in future ;-)
-
-jirka
+-- Steve
