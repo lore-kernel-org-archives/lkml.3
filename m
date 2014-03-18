@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608AbaCRIbX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:31:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45696 "EHLO
+	id S1754633AbaCRIb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:31:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45704 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900AbaCRIbR (ORCPT
+	with ESMTP id S1753900AbaCRIbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:31:17 -0400
-Date: Tue, 18 Mar 2014 01:30:59 -0700
-From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
-Message-ID: <tip-09a71b97cce70551356b13b668aa1d7d6da84457@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
-        tglx@linutronix.de, artagnon@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, jolsa@redhat.com, dsahern@gmail.com,
-        tglx@linutronix.de, artagnon@gmail.com
-In-Reply-To: <1393896396-10427-1-git-send-email-artagnon@gmail.com>
-References: <1393896396-10427-1-git-send-email-artagnon@gmail.com>
+	Tue, 18 Mar 2014 04:31:23 -0400
+Date: Tue, 18 Mar 2014 01:30:36 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-so6nxkh7xj48bc5kq4jpj991@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        peterz@infradead.org, efault@gmx.de, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        efault@gmx.de, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm:
-  introduce --list-cmds for use by scripts
-Git-Commit-ID: 09a71b97cce70551356b13b668aa1d7d6da84457
+Subject: [tip:perf/core] perf symbols:
+  Introduce thread__find_cpumode_addr_location
+Git-Commit-ID: 52a3cb8cfca16db73cf825cb94325cf54da8304f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,177 +36,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  09a71b97cce70551356b13b668aa1d7d6da84457
-Gitweb:     http://git.kernel.org/tip/09a71b97cce70551356b13b668aa1d7d6da84457
-Author:     Ramkumar Ramachandra <artagnon@gmail.com>
-AuthorDate: Mon, 3 Mar 2014 20:26:36 -0500
+Commit-ID:  52a3cb8cfca16db73cf825cb94325cf54da8304f
+Gitweb:     http://git.kernel.org/tip/52a3cb8cfca16db73cf825cb94325cf54da8304f
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 11 Mar 2014 16:16:49 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 14 Mar 2014 18:08:41 -0300
+CommitDate: Fri, 14 Mar 2014 18:08:40 -0300
 
-perf kvm: introduce --list-cmds for use by scripts
+perf symbols: Introduce thread__find_cpumode_addr_location
 
-Introduce
+Its one level up thread__find_addr_location, where it will look in
+different domains for a sample: user, kernel, hypervisor, etc.
 
-  $ perf kvm --list-cmds
+Will soon be used by a patchkit by Andi Kleen.
 
-to dump a raw list of commands for use by the completion script. In
-order to do this, introduce parse_options_subcommand() for handling
-subcommands as a special case in the parse-options machinery.
-
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1393896396-10427-1-git-send-email-artagnon@gmail.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-so6nxkh7xj48bc5kq4jpj991@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c        | 12 +++++-------
- tools/perf/perf-completion.sh   |  2 +-
- tools/perf/util/parse-options.c | 37 +++++++++++++++++++++++++++++++++----
- tools/perf/util/parse-options.h |  8 +++++++-
- 4 files changed, 46 insertions(+), 13 deletions(-)
+ tools/perf/util/machine.c | 33 ++++++++-------------------------
+ tools/perf/util/thread.c  | 21 +++++++++++++++++++++
+ tools/perf/util/thread.h  |  5 +++++
+ 3 files changed, 34 insertions(+), 25 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index a735051..21c164b 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1691,17 +1691,15 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
- 		OPT_END()
- 	};
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 813e94e..a679953 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1184,39 +1184,22 @@ static bool symbol__match_regex(struct symbol *sym, regex_t *regex)
+ 	return 0;
+ }
  
+-static const u8 cpumodes[] = {
+-	PERF_RECORD_MISC_USER,
+-	PERF_RECORD_MISC_KERNEL,
+-	PERF_RECORD_MISC_GUEST_USER,
+-	PERF_RECORD_MISC_GUEST_KERNEL
+-};
+-#define NCPUMODES (sizeof(cpumodes)/sizeof(u8))
 -
--	const char * const kvm_usage[] = {
--		"perf kvm [<options>] {top|record|report|diff|buildid-list|stat}",
--		NULL
--	};
-+	const char *const kvm_subcommands[] = { "top", "record", "report", "diff",
-+						"buildid-list", "stat", NULL };
-+	const char *kvm_usage[] = { NULL, NULL };
- 
- 	perf_host  = 0;
- 	perf_guest = 1;
- 
--	argc = parse_options(argc, argv, kvm_options, kvm_usage,
--			PARSE_OPT_STOP_AT_NON_OPTION);
-+	argc = parse_options_subcommand(argc, argv, kvm_options, kvm_subcommands, kvm_usage,
-+					PARSE_OPT_STOP_AT_NON_OPTION);
- 	if (!argc)
- 		usage_with_options(kvm_usage, kvm_options);
- 
-diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
-index 496e2ab..ae3a576 100644
---- a/tools/perf/perf-completion.sh
-+++ b/tools/perf/perf-completion.sh
-@@ -123,7 +123,7 @@ __perf_main ()
- 		__perfcomp_colon "$evts" "$cur"
- 	# List subcommands for 'perf kvm'
- 	elif [[ $prev == "kvm" ]]; then
--		subcmds="top record report diff buildid-list stat"
-+		subcmds=$($cmd $prev --list-cmds)
- 		__perfcomp_colon "$subcmds" "$cur"
- 	# List long option names
- 	elif [[ $cur == --* ]];  then
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index d22e3f8..bf48092 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -407,7 +407,9 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 		if (internal_help && !strcmp(arg + 2, "help"))
- 			return usage_with_options_internal(usagestr, options, 0);
- 		if (!strcmp(arg + 2, "list-opts"))
--			return PARSE_OPT_LIST;
-+			return PARSE_OPT_LIST_OPTS;
-+		if (!strcmp(arg + 2, "list-cmds"))
-+			return PARSE_OPT_LIST_SUBCMDS;
- 		switch (parse_long_opt(ctx, arg + 2, options)) {
- 		case -1:
- 			return parse_options_usage(usagestr, options, arg + 2, 0);
-@@ -433,25 +435,45 @@ int parse_options_end(struct parse_opt_ctx_t *ctx)
- 	return ctx->cpidx + ctx->argc;
- }
- 
--int parse_options(int argc, const char **argv, const struct option *options,
--		  const char * const usagestr[], int flags)
-+int parse_options_subcommand(int argc, const char **argv, const struct option *options,
-+			const char *const subcommands[], const char *usagestr[], int flags)
+ static void ip__resolve_ams(struct machine *machine, struct thread *thread,
+ 			    struct addr_map_symbol *ams,
+ 			    u64 ip)
  {
- 	struct parse_opt_ctx_t ctx;
+ 	struct addr_location al;
+-	size_t i;
+-	u8 m;
  
- 	perf_header__set_cmdline(argc, argv);
+ 	memset(&al, 0, sizeof(al));
++	/*
++	 * We cannot use the header.misc hint to determine whether a
++	 * branch stack address is user, kernel, guest, hypervisor.
++	 * Branches may straddle the kernel/user/hypervisor boundaries.
++	 * Thus, we have to try consecutively until we find a match
++	 * or else, the symbol is unknown
++	 */
++	thread__find_cpumode_addr_location(thread, machine, MAP__FUNCTION, ip, &al);
  
-+	/* build usage string if it's not provided */
-+	if (subcommands && !usagestr[0]) {
-+		struct strbuf buf = STRBUF_INIT;
-+
-+		strbuf_addf(&buf, "perf %s [<options>] {", argv[0]);
-+		for (int i = 0; subcommands[i]; i++) {
-+			if (i)
-+				strbuf_addstr(&buf, "|");
-+			strbuf_addstr(&buf, subcommands[i]);
-+		}
-+		strbuf_addstr(&buf, "}");
-+
-+		usagestr[0] = strdup(buf.buf);
-+		strbuf_release(&buf);
-+	}
-+
- 	parse_options_start(&ctx, argc, argv, flags);
- 	switch (parse_options_step(&ctx, options, usagestr)) {
- 	case PARSE_OPT_HELP:
- 		exit(129);
- 	case PARSE_OPT_DONE:
- 		break;
--	case PARSE_OPT_LIST:
-+	case PARSE_OPT_LIST_OPTS:
- 		while (options->type != OPTION_END) {
- 			printf("--%s ", options->long_name);
- 			options++;
- 		}
- 		exit(130);
-+	case PARSE_OPT_LIST_SUBCMDS:
-+		for (int i = 0; subcommands[i]; i++)
-+			printf("%s ", subcommands[i]);
-+		exit(130);
- 	default: /* PARSE_OPT_UNKNOWN */
- 		if (ctx.argv[0][1] == '-') {
- 			error("unknown option `%s'", ctx.argv[0] + 2);
-@@ -464,6 +486,13 @@ int parse_options(int argc, const char **argv, const struct option *options,
- 	return parse_options_end(&ctx);
+-	for (i = 0; i < NCPUMODES; i++) {
+-		m = cpumodes[i];
+-		/*
+-		 * We cannot use the header.misc hint to determine whether a
+-		 * branch stack address is user, kernel, guest, hypervisor.
+-		 * Branches may straddle the kernel/user/hypervisor boundaries.
+-		 * Thus, we have to try consecutively until we find a match
+-		 * or else, the symbol is unknown
+-		 */
+-		thread__find_addr_location(thread, machine, m, MAP__FUNCTION,
+-				ip, &al);
+-		if (al.map)
+-			goto found;
+-	}
+-found:
+ 	ams->addr = ip;
+ 	ams->al_addr = al.addr;
+ 	ams->sym = al.sym;
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 0358882..3ce0498 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -142,3 +142,24 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
+ 
+ 	return 0;
  }
- 
-+int parse_options(int argc, const char **argv, const struct option *options,
-+		  const char * const usagestr[], int flags)
++
++void thread__find_cpumode_addr_location(struct thread *thread,
++					struct machine *machine,
++					enum map_type type, u64 addr,
++					struct addr_location *al)
 +{
-+	return parse_options_subcommand(argc, argv, options, NULL,
-+					(const char **) usagestr, flags);
++	size_t i;
++	const u8 const cpumodes[] = {
++		PERF_RECORD_MISC_USER,
++		PERF_RECORD_MISC_KERNEL,
++		PERF_RECORD_MISC_GUEST_USER,
++		PERF_RECORD_MISC_GUEST_KERNEL
++	};
++
++	for (i = 0; i < ARRAY_SIZE(cpumodes); i++) {
++		thread__find_addr_location(thread, machine, cpumodes[i], type,
++					   addr, al);
++		if (al->map)
++			break;
++	}
 +}
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 5b856bf..9a07074 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -58,6 +58,11 @@ void thread__find_addr_location(struct thread *thread, struct machine *machine,
+ 				u8 cpumode, enum map_type type, u64 addr,
+ 				struct addr_location *al);
+ 
++void thread__find_cpumode_addr_location(struct thread *thread,
++					struct machine *machine,
++					enum map_type type, u64 addr,
++					struct addr_location *al);
 +
- #define USAGE_OPTS_WIDTH 24
- #define USAGE_GAP         2
- 
-diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
-index cbf0149..d8dac8a 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -140,6 +140,11 @@ extern int parse_options(int argc, const char **argv,
-                          const struct option *options,
-                          const char * const usagestr[], int flags);
- 
-+extern int parse_options_subcommand(int argc, const char **argv,
-+				const struct option *options,
-+				const char *const subcommands[],
-+				const char *usagestr[], int flags);
-+
- extern NORETURN void usage_with_options(const char * const *usagestr,
-                                         const struct option *options);
- 
-@@ -148,7 +153,8 @@ extern NORETURN void usage_with_options(const char * const *usagestr,
- enum {
- 	PARSE_OPT_HELP = -1,
- 	PARSE_OPT_DONE,
--	PARSE_OPT_LIST,
-+	PARSE_OPT_LIST_OPTS,
-+	PARSE_OPT_LIST_SUBCMDS,
- 	PARSE_OPT_UNKNOWN,
- };
- 
+ static inline void *thread__priv(struct thread *thread)
+ {
+ 	return thread->priv;
