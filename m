@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaCRNaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 09:30:17 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:22193 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754380AbaCRNaP (ORCPT
+	id S1755533AbaCRNaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 09:30:46 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:62860 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302AbaCRNaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 09:30:15 -0400
-Date: Tue, 18 Mar 2014 09:30:06 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 3/5] tools lib traceevent: use else-if cascade, not
- separate ifs
-Message-ID: <20140318093006.16517a08@gandalf.local.home>
-In-Reply-To: <20140318131048.GA3585@infradead.org>
-References: <1395095198-20034-1-git-send-email-artagnon@gmail.com>
-	<1395095198-20034-4-git-send-email-artagnon@gmail.com>
-	<87d2hkrl32.fsf@sejong.aot.lge.com>
-	<20140318131048.GA3585@infradead.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 18 Mar 2014 09:30:19 -0400
+Message-ID: <53284A66.10402@gmail.com>
+Date: Tue, 18 Mar 2014 14:30:14 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Christoph Hellwig <hch@infradead.org>
+CC: mtk.manpages@gmail.com, NeilBrown <neilb@suse.de>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: Re: For review: open_by_name_at(2) man page
+References: <53271B69.3000305@gmail.com> <20140318090007.3adee3d0@notabene.brown> <53283D7A.1020409@gmail.com> <20140318130708.GA13031@infradead.org>
+In-Reply-To: <20140318130708.GA13031@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014 10:10:48 -0300
-Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+On 03/18/2014 02:07 PM, Christoph Hellwig wrote:
+> That's why the file handles contain a generation counter that gets
+> incremented in this case.
 
-> Em Tue, Mar 18, 2014 at 05:02:09PM +0900, Namhyung Kim escreveu:
-> > On Mon, 17 Mar 2014 18:26:36 -0400, Ramkumar Ramachandra wrote:
-> > > When token cannot be more than one value, it seems wasteful to go
-> > > through all the strcmp() calls. Use an else-if cascade instead.
-> > 
-> > I think the end result will be same since it returns from inside the
-> > block, right?
-> 
-> Exactly :-)
-> 
-> We could have it changed to something like:
-> 
-> 	if (strcmp()) {
-> 		ret = bla();
-> 		goto out_free_token;
-> 	}
-> .
-> .
-> .
-> out_free_token:
-> 	free_token(token);
-> 	return ret;
-> 
->  
+Ahh, yes. Thanks for the reminder/clue.
 
-Honestly, I prefer the original, thus I would add a NAK to this patch.
+Cheers,
 
--- Steve
+Michael
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
