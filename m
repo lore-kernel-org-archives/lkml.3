@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626AbaCRCli (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 22:41:38 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:17598 "EHLO
+	id S1753704AbaCRCmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 22:42:35 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.246]:17883 "EHLO
 	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753593AbaCRClh (ORCPT
+	with ESMTP id S1753664AbaCRCme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 22:41:37 -0400
+	Mon, 17 Mar 2014 22:42:34 -0400
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <linux@maxim.org.za>, <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <wenyou.yang@atmel.com>
-Subject: [PATCH 2/3] ARM: at91: pm_slowclock: add enter standby mode for ARMv7
-Date: Tue, 18 Mar 2014 10:33:56 +0800
-Message-ID: <1395110037-23151-3-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH 3/3] defconfig: arm: sama5_defconfig: update
+Date: Tue, 18 Mar 2014 10:33:57 +0800
+Message-ID: <1395110037-23151-4-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1395110037-23151-1-git-send-email-wenyou.yang@atmel.com>
 References: <1395110037-23151-1-git-send-email-wenyou.yang@atmel.com>
@@ -23,45 +23,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Due to enable CONFIG_AT91_SLOW_CLOCK
+
 Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- arch/arm/mach-at91/pm_slowclock.S |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ arch/arm/configs/sama5_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-index 2001877..842ddaf 100644
---- a/arch/arm/mach-at91/pm_slowclock.S
-+++ b/arch/arm/mach-at91/pm_slowclock.S
-@@ -102,6 +102,20 @@ tmp2	.req	r5
- 2:
- 	.endm
- 
-+/*
-+ * Put the processor to enter into Standby mode, wait for interrupt to wakeup
-+ */
-+	.macro _do_wfi
-+
-+#if defined(CONFIG_CPU_V7)
-+	dsb
-+	wfi		@ Wait For Interrupt
-+#else
-+	mcr	p15, 0, tmp1, c7, c0, 4
-+#endif
-+
-+	.endm
-+
- 	.text
- 
- /* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc,
-@@ -220,7 +234,7 @@ sdr_sr_done:
- 	str	tmp1, [pmc, #AT91_CKGR_MOR]
- 
- 	/* Wait for interrupt */
--	mcr	p15, 0, tmp1, c7, c0, 4
-+	_do_wfi
- 
- 	/* Turn on the main oscillator */
- 	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
+diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
+index dc3881e..a15879c 100644
+--- a/arch/arm/configs/sama5_defconfig
++++ b/arch/arm/configs/sama5_defconfig
+@@ -201,3 +201,4 @@ CONFIG_CRYPTO_DEV_ATMEL_TDES=y
+ CONFIG_CRYPTO_DEV_ATMEL_SHA=y
+ CONFIG_CRC_CCITT=m
+ CONFIG_CRC_ITU_T=m
++CONFIG_AT91_SLOW_CLOCK=y
 -- 
 1.7.9.5
 
