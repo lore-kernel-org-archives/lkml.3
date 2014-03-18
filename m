@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266AbaCRRxG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:53:06 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:65475 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756902AbaCRRxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:53:04 -0400
+	id S1757334AbaCRRyr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:54:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756805AbaCRRyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 13:54:46 -0400
+Date: Tue, 18 Mar 2014 13:54:41 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] audit: get comm using lock to avoid race in string
+ printing
+Message-ID: <20140318175441.GB21578@madcap2.tricolour.ca>
+References: <20140315232846.GE27244@madcap2.tricolour.ca>
+ <14ba8faef484ac199ca33fe78fdf943a8d9755fb.1394925657.git.rgb@redhat.com>
+ <53288477.9060808@tycho.nsa.gov>
 MIME-Version: 1.0
-In-Reply-To: <20140318122425.GD3191@dhcp22.suse.cz>
-References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
-	<20140318122425.GD3191@dhcp22.suse.cz>
-Date: Tue, 18 Mar 2014 10:53:03 -0700
-Message-ID: <CALAqxLU30YQs9PQaybWnTXOkVWGVX2Y7zOSLJH3Y4YSq_KDp3Q@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Volatile Ranges (v11)
-From: John Stultz <john.stultz@linaro.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53288477.9060808@tycho.nsa.gov>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 5:24 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Fri 14-03-14 11:33:30, John Stultz wrote:
-> [...]
->> Volatile ranges provides a method for userland to inform the kernel that
->> a range of memory is safe to discard (ie: can be regenerated) but
->> userspace may want to try access it in the future.  It can be thought of
->> as similar to MADV_DONTNEED, but that the actual freeing of the memory
->> is delayed and only done under memory pressure, and the user can try to
->> cancel the action and be able to quickly access any unpurged pages. The
->> idea originated from Android's ashmem, but I've since learned that other
->> OSes provide similar functionality.
->
-> Maybe I have missed something (I've only glanced through the patches)
-> but it seems that marking a range volatile doesn't alter neither
-> reference bits nor position in the LRU. I thought that a volatile page
-> would be moved to the end of inactive LRU with the reference bit
-> dropped. Or is this expectation wrong and volatility is not supposed to
-> touch page aging?
+On 14/03/18, Stephen Smalley wrote:
+> On 03/15/2014 07:29 PM, Richard Guy Briggs wrote:
+> > ---
+> >  kernel/audit.c   |    5 ++---
+> >  kernel/auditsc.c |    9 +++++----
+> >  2 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> Doesn't this also need to be fixed (twice) in security/lsm_audit.c?
 
-Hrmm. So you're right, I had talked about how we'd end up purging
-pages in a range together (as opposed to just randomly) because the
-pages would have been marked together. On this pass, I was trying to
-avoid touching all the pages on every operation, but I'll try to add
-the referencing to keep it consistent with what was discussed (and
-we'll get a sense of the performance impact).
+Yes.  Tetsuo had sent a tentative patch to James Morris who pushed back
+pending review.
 
-Though subtleties like this are still open for discussion. For
-instance, Minchan would like to see the volatile pages moved to the
-front of the LRU instead of the back.
+I also just found one in security/integrity/integrity_audit.c
 
-thanks
--john
+> > diff --git a/kernel/audit.c b/kernel/audit.c
+> > index 9239e5e..5b600c8 100644
+> > --- a/kernel/audit.c
+> > +++ b/kernel/audit.c
+> > @@ -1883,7 +1883,7 @@ EXPORT_SYMBOL(audit_log_task_context);
+> >  void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+> >  {
+> >  	const struct cred *cred;
+> > -	char name[sizeof(tsk->comm)];
+> > +	char comm[sizeof(tsk->comm)];
+> >  	struct mm_struct *mm = tsk->mm;
+> >  	char *tty;
+> >  
+> > @@ -1917,9 +1917,8 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+> >  			 from_kgid(&init_user_ns, cred->fsgid),
+> >  			 tty, audit_get_sessionid(tsk));
+> >  
+> > -	get_task_comm(name, tsk);
+> >  	audit_log_format(ab, " comm=");
+> > -	audit_log_untrustedstring(ab, name);
+> > +	audit_log_untrustedstring(ab, get_task_comm(name, tsk));
+> >  
+> >  	if (mm) {
+> >  		down_read(&mm->mmap_sem);
+> > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> > index 8fffca8..b789e0c 100644
+> > --- a/kernel/auditsc.c
+> > +++ b/kernel/auditsc.c
+> > @@ -2289,7 +2289,7 @@ void __audit_ptrace(struct task_struct *t)
+> >  	context->target_uid = task_uid(t);
+> >  	context->target_sessionid = audit_get_sessionid(t);
+> >  	security_task_getsecid(t, &context->target_sid);
+> > -	memcpy(context->target_comm, t->comm, TASK_COMM_LEN);
+> > +	get_task_comm(context->target_comm, t);
+> >  }
+> >  
+> >  /**
+> > @@ -2328,7 +2328,7 @@ int __audit_signal_info(int sig, struct task_struct *t)
+> >  		ctx->target_uid = t_uid;
+> >  		ctx->target_sessionid = audit_get_sessionid(t);
+> >  		security_task_getsecid(t, &ctx->target_sid);
+> > -		memcpy(ctx->target_comm, t->comm, TASK_COMM_LEN);
+> > +		get_task_comm(ctx->target_comm, t);
+> >  		return 0;
+> >  	}
+> >  
+> > @@ -2349,7 +2349,7 @@ int __audit_signal_info(int sig, struct task_struct *t)
+> >  	axp->target_uid[axp->pid_count] = t_uid;
+> >  	axp->target_sessionid[axp->pid_count] = audit_get_sessionid(t);
+> >  	security_task_getsecid(t, &axp->target_sid[axp->pid_count]);
+> > -	memcpy(axp->target_comm[axp->pid_count], t->comm, TASK_COMM_LEN);
+> > +	get_task_comm(axp->target_comm[axp->pid_count], t);
+> >  	axp->pid_count++;
+> >  
+> >  	return 0;
+> > @@ -2435,6 +2435,7 @@ static void audit_log_task(struct audit_buffer *ab)
+> >  	kgid_t gid;
+> >  	unsigned int sessionid;
+> >  	struct mm_struct *mm = current->mm;
+> > +	char comm[sizeof(current->comm)];
+> >  
+> >  	auid = audit_get_loginuid(current);
+> >  	sessionid = audit_get_sessionid(current);
+> > @@ -2447,7 +2448,7 @@ static void audit_log_task(struct audit_buffer *ab)
+> >  			 sessionid);
+> >  	audit_log_task_context(ab);
+> >  	audit_log_format(ab, " pid=%d comm=", task_pid_nr(current));
+> > -	audit_log_untrustedstring(ab, current->comm);
+> > +	audit_log_untrustedstring(ab, get_task_comm(comm, current);
+> >  	if (mm) {
+> >  		down_read(&mm->mmap_sem);
+> >  		if (mm->exe_file)
+> > 
+> 
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
