@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504AbaCRTJa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 15:09:30 -0400
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:36506 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932255AbaCRTJY (ORCPT
+	id S932588AbaCRTKA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 15:10:00 -0400
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:45907 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932255AbaCRTJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 15:09:24 -0400
+	Tue, 18 Mar 2014 15:09:58 -0400
 From: Ramkumar Ramachandra <artagnon@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf tools: Update some code references in design.txt
-Date: Tue, 18 Mar 2014 15:10:04 -0400
-Message-Id: <1395169804-1293-1-git-send-email-artagnon@gmail.com>
+Subject: [PATCH] perf evsel: Update function names in debug messages
+Date: Tue, 18 Mar 2014 15:10:42 -0400
+Message-Id: <1395169842-1399-1-git-send-email-artagnon@gmail.com>
 X-Mailer: git-send-email 1.9.0.431.g014438b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the names of some functions and enums in design.txt. The
-document still has some stale information, but the motivation behind
-this patch is to allow a developer to quickly grep and learn about the
-associated structures.
+perf_event_open() was renamed to sys_perf_event_open(); update the debug
+messages to reflect this.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 ---
- tools/perf/design.txt | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ tools/perf/util/evsel.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/design.txt b/tools/perf/design.txt
-index 63a0e6f..a28dca2 100644
---- a/tools/perf/design.txt
-+++ b/tools/perf/design.txt
-@@ -18,7 +18,7 @@ underlying hardware counters.
- Performance counters are accessed via special file descriptors.
- There's one file descriptor per virtual counter used.
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 55407c5..2ebe4ca 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1004,7 +1004,7 @@ retry_sample_id:
  
--The special file descriptor is opened via the perf_event_open()
-+The special file descriptor is opened via the sys_perf_event_open()
- system call:
+ 			group_fd = get_group_fd(evsel, cpu, thread);
+ retry_open:
+-			pr_debug2("perf_event_open: pid %d  cpu %d  group_fd %d  flags %#lx\n",
++			pr_debug2("sys_perf_event_open: pid %d  cpu %d  group_fd %d  flags %#lx\n",
+ 				  pid, cpus->map[cpu], group_fd, flags);
  
-    int sys_perf_event_open(struct perf_event_attr *hw_event_uptr,
-@@ -82,7 +82,7 @@ machine-specific.
- If 'raw_type' is 0, then the 'type' field says what kind of counter
- this is, with the following encoding:
- 
--enum perf_event_types {
-+enum perf_type_id {
- 	PERF_TYPE_HARDWARE		= 0,
- 	PERF_TYPE_SOFTWARE		= 1,
- 	PERF_TYPE_TRACEPOINT		= 2,
-@@ -95,7 +95,7 @@ specified by 'event_id':
-  * Generalized performance counter event types, used by the hw_event.event_id
-  * parameter of the sys_perf_event_open() syscall:
-  */
--enum hw_event_ids {
-+enum perf_hw_id {
- 	/*
- 	 * Common hardware events, generalized by the kernel:
- 	 */
-@@ -129,7 +129,7 @@ software events, selected by 'event_id':
-  * physical and sw events of the kernel (and allow the profiling of them as
-  * well):
-  */
--enum sw_event_ids {
-+enum perf_sw_ids {
- 	PERF_COUNT_SW_CPU_CLOCK		= 0,
- 	PERF_COUNT_SW_TASK_CLOCK	= 1,
- 	PERF_COUNT_SW_PAGE_FAULTS	= 2,
-@@ -230,7 +230,7 @@ these events are recorded in the ring-buffer (see below).
- The 'comm' bit allows tracking of process comm data on process creation.
- This too is recorded in the ring-buffer (see below).
- 
--The 'pid' parameter to the perf_event_open() system call allows the
-+The 'pid' parameter to the sys_perf_event_open() system call allows the
- counter to be specific to a task:
- 
-  pid == 0: if the pid parameter is zero, the counter is attached to the
-@@ -260,7 +260,7 @@ The 'flags' parameter is currently unused and must be zero.
- 
- The 'group_fd' parameter allows counter "groups" to be set up.  A
- counter group has one counter which is the group "leader".  The leader
--is created first, with group_fd = -1 in the perf_event_open call
-+is created first, with group_fd = -1 in the sys_perf_event_open call
- that creates it.  The rest of the group members are created
- subsequently, with group_fd giving the fd of the group leader.
- (A single counter on its own is created with group_fd = -1 and is
+ 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
+@@ -1013,7 +1013,7 @@ retry_open:
+ 								     group_fd, flags);
+ 			if (FD(evsel, cpu, thread) < 0) {
+ 				err = -errno;
+-				pr_debug2("perf_event_open failed, error %d\n",
++				pr_debug2("sys_perf_event_open failed, error %d\n",
+ 					  err);
+ 				goto try_fallback;
+ 			}
 -- 
 1.9.0.431.g014438b
 
