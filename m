@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481AbaCRSwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 14:52:44 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:59379 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754788AbaCRSwm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 14:52:42 -0400
-Message-ID: <532895DF.2090100@linux.vnet.ibm.com>
-Date: Wed, 19 Mar 2014 00:22:15 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1757533AbaCRSxX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 14:53:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52539 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757486AbaCRSxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 14:53:21 -0400
+Message-ID: <53288FF5.3010001@zytor.com>
+Date: Tue, 18 Mar 2014 11:27:01 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Patrick Marlier <patrick.marlier@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: Re: [PATCH v2 2/2] intel_pstate: Set core to min P state during core
- offline
-References: <16035918.jZXKnQ3yiq@vostro.rjw.lan> <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com> <1394831037-15553-3-git-send-email-dirk.j.brandewie@intel.com> <CAOh2x=kFC5cwdYVgFCwNgqZAwWaE-CFQoyYizBuv1W6MOnQ9DA@mail.gmail.com> <53285FDB.40102@gmail.com>
-In-Reply-To: <53285FDB.40102@gmail.com>
+To: Sarah Newman <srn@prgmr.com>, George Dunlap <george.dunlap@eu.citrix.com>,
+        Jan Beulich <JBeulich@suse.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Ingo Molnar <mingo@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCHv1] x86: don't schedule when handling #NM exception
+References: <1394468273-13676-1-git-send-email-david.vrabel@citrix.com>	<531DEB11.2070709@zytor.com> <531DF319.6010800@citrix.com>	<53266841.6090308@prgmr.com>	<1ebfa80c-4a68-4602-bc98-e5d5f0893998@email.android.com>	<CAFLBxZZz4Ot0CgWRHNRaM5zVkpf+QdXveFz_m3aVYnKUd9cAdQ@mail.gmail.com>	<5327291D.60009@zytor.com>	<532739810200007800124E85@nat28.tlf.novell.com> <53272D79.5050605@eu.citrix.com> <53288DD1.9060809@prgmr.com>
+In-Reply-To: <53288DD1.9060809@prgmr.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031818-6102-0000-0000-000005289325
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2014 08:31 PM, Dirk Brandewie wrote:
-> On 03/17/2014 10:44 PM, Viresh Kumar wrote:
->> On Sat, Mar 15, 2014 at 2:33 AM,  <dirk.brandewie@gmail.com> wrote:
->>> +
->>>   static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
->>>   {
->>>          struct cpudata *cpu;
->>> @@ -818,7 +824,7 @@ static struct cpufreq_driver intel_pstate_driver = {
->>>          .setpolicy      = intel_pstate_set_policy,
->>>          .get            = intel_pstate_get,
->>>          .init           = intel_pstate_cpu_init,
->>> -       .exit           = intel_pstate_cpu_exit,
->>> +       .stop           = intel_pstate_cpu_stop,
->>
->> Probably, keep exit as is and only change P-state in stop(). So that
->> allocation of resources happen in init() and they are freed in exit()?
->>
-> I looked at doing just that but it junked up the code.  if stop() is called
-> during PREPARE then init() will be called via __cpufreq_add_dev() in the
-> ONLINE
-> and DOWN_FAILED case. So once stop() is called the driver will be ready for
-> init() to be called exactly like when exit() is called.
->
+On 03/18/2014 11:17 AM, Sarah Newman wrote:
+> 
+> Should or has there been a review of the current xen PVABI to look for any other such deviations?
+> 
 
-I'm sorry, but that didn't make much sense to me. Can you be a little
-more specific as to what problems you hit while trying to have a
-->stop() which sets min P state and a separate ->exit() which frees
-the resources? I think we can achieve this with almost no trouble.
+It would be a very good thing to do.  First of all, the PVABI needs to
+be **documented** because without that there is no hope.  I would like
+to specifically call out the efforts of Konrad Wilk in this general
+area, but he obviously doesn't scale, either...
 
-If you ignore the failure case (such as DOWN_FAILED) for now, do you
-still see any serious roadblocks?
+The other aspect is to get rid of as much of the PVABI as possible.  HPV
+is a big step in that direction, getting rid of some of the most
+invasive hooks, but I think we can minimize further.
 
-Regards,
-Srivatsa S. Bhat
+	-hpa
 
