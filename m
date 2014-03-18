@@ -1,168 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758266AbaCRVlM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:41:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41326 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756975AbaCRVlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:41:07 -0400
-Message-ID: <1395178831.2967.29.camel@deneb.redhat.com>
-Subject: Re: [PATCH v2 11/15] arm64: add EFI stub
-From: Mark Salter <msalter@redhat.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Date: Tue, 18 Mar 2014 17:40:31 -0400
-In-Reply-To: <20140318182826.GC20497@arm.com>
-References: <1394750828-16351-1-git-send-email-leif.lindholm@linaro.org>
-	 <1394750828-16351-12-git-send-email-leif.lindholm@linaro.org>
-	 <20140318120919.GG13200@arm.com>
-	 <1395153629.2967.10.camel@deneb.redhat.com>
-	 <20140318182826.GC20497@arm.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933241AbaCRVlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:41:35 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:56203 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757619AbaCRVlI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 17:41:08 -0400
+From: Sebastian Capella <sebastian.capella@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
+Cc: Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Sricharan R <r.sricharan@ti.com>, Jiang Liu <liuj97@gmail.com>,
+        Laura Abbott <lauraa@codeaurora.org>
+Subject: [PATCH v9 2/2] ARM hibernation / suspend-to-disk
+Date: Tue, 18 Mar 2014 14:40:58 -0700
+Message-Id: <1395178858-27343-3-git-send-email-sebastian.capella@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1395178858-27343-1-git-send-email-sebastian.capella@linaro.org>
+References: <1395178858-27343-1-git-send-email-sebastian.capella@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-18 at 18:28 +0000, Catalin Marinas wrote:
-> On Tue, Mar 18, 2014 at 02:40:29PM +0000, Mark Salter wrote:
-> > On Tue, 2014-03-18 at 12:09 +0000, Catalin Marinas wrote:
-> > > On Thu, Mar 13, 2014 at 10:47:04PM +0000, Leif Lindholm wrote:
-> > > > --- /dev/null
-> > > > +++ b/arch/arm64/kernel/efi-entry.S
-> > > > @@ -0,0 +1,93 @@
-> > > > +/*
-> > > > + * EFI entry point.
-> > > > + *
-> > > > + * Copyright (C) 2013 Red Hat, Inc.
-> > > > + * Author: Mark Salter <msalter@redhat.com>
-> > > > + *
-> > > > + * This program is free software; you can redistribute it and/or modify
-> > > > + * it under the terms of the GNU General Public License version 2 as
-> > > > + * published by the Free Software Foundation.
-> > > > + *
-> > > > + */
-> > > > +#include <linux/linkage.h>
-> > > > +#include <linux/init.h>
-> > > > +
-> > > > +#include <asm/assembler.h>
-> > > > +
-> > > > +#define EFI_LOAD_ERROR 0x8000000000000001
-> > > > +
-> > > > +       __INIT
-> > > > +
-> > > > +       /*
-> > > > +        * We arrive here from the EFI boot manager with:
-> > > > +        *
-> > > > +        *    * MMU on with identity-mapped RAM.
-> > > > +        *    * Icache and Dcache on
-> > > > +        *
-> > > > +        * We will most likely be running from some place other than where
-> > > > +        * we want to be. The kernel image wants to be placed at TEXT_OFFSET
-> > > > +        * from start of RAM.
-> > > > +        */
-> > > > +ENTRY(efi_stub_entry)
-> > > > +       stp     x29, x30, [sp, #-32]!
-> > > > +
-> > > > +       /*
-> > > > +        * Call efi_entry to do the real work.
-> > > > +        * x0 and x1 are already set up by firmware. Current runtime
-> > > > +        * address of image is calculated and passed via *image_addr.
-> > > > +        *
-> > > > +        * unsigned long efi_entry(void *handle,
-> > > > +        *                         efi_system_table_t *sys_table,
-> > > > +        *                         unsigned long *image_addr) ;
-> > > > +        */
-> > > > +       adrp    x8, _text
-> > > > +       add     x8, x8, #:lo12:_text
-> > > > +       add     x2, sp, 16
-> > > > +       str     x8, [x2]
-> > > > +       bl      efi_entry
-> > > > +       cmn     x0, #1
-> > > > +       b.eq    efi_load_fail
-> > > > +
-> > > > +       /*
-> > > > +        * efi_entry() will have relocated the kernel image if necessary
-> > > > +        * and we return here with device tree address in x0 and the kernel
-> > > > +        * entry point stored at *image_addr. Save those values in registers
-> > > > +        * which are preserved by __flush_dcache_all.
-> > > > +        */
-> > > > +       ldr     x1, [sp, #16]
-> > > > +       mov     x20, x0
-> > > > +       mov     x21, x1
-> > > > +
-> > > > +       /* Turn off Dcache and MMU */
-> > > > +       mrs     x0, CurrentEL
-> > > > +       cmp     x0, #PSR_MODE_EL2t
-> > > > +       ccmp    x0, #PSR_MODE_EL2h, #0x4, ne
-> > > > +       b.ne    1f
-> > > > +       mrs     x0, sctlr_el2
-> > > > +       bic     x0, x0, #1 << 0 // clear SCTLR.M
-> > > > +       bic     x0, x0, #1 << 2 // clear SCTLR.C
-> > > > +       msr     sctlr_el2, x0
-> > > > +       isb
-> > > > +       b       2f
-> > > > +1:
-> > > > +       mrs     x0, sctlr_el1
-> > > > +       bic     x0, x0, #1 << 0 // clear SCTLR.M
-> > > > +       bic     x0, x0, #1 << 2 // clear SCTLR.C
-> > > > +       msr     sctlr_el1, x0
-> > > > +       isb
-> > > > +2:
-> > > > +       bl      __flush_dcache_all
-> > > 
-> > > In linux-next I'm pushing a patch which no longer exports the
-> > > __flush_dcache_all function. The reason is that it doesn't really work
-> > > if you have a (not fully transparent) external cache like on the Applied
-> > > Micro boards. There other issues when running as a guest as well.
-> > > 
-> > > If you know exactly what needs to be flushed here, can you use a range
-> > > (MVA) operation?
-> > 
-> > This is just before the EFI stub jumps to kernel proper. The only things
-> > in the dcache would be from identity mapped references to RAM used by
-> > UEFI. The booting.txt doc says dcache should be off and invalidated. I
-> > am just wanting to comply with that. The code here doesn't really know
-> > the extent of DRAM to flush by address.
-> 
-> Does UEFI do anything with the caches before invoking the EFI_STUB code?
-> I guess it doesn't since that's just another application for it. Can
-> UEFI flush the caches via exit boot? When is this called?
-> 
-> As I said, we have a real problem here since the EFI_STUB call does not
-> have information about the SoC to be able to flush all the caches. But
-> UEFI should know more about the hardware.
-> 
-> If UEFI doesn't handle the caches, the only thing left to EFI_STUB is to
-> flush by MVA. We don't need to flush the whole DRAM (and I would even
-> recommend it) but at least the relevant kernel code/data touched with
-> the MMU disabled.
-> 
+From: Russ Dill <Russ.Dill@ti.com>
 
-So, it goes like this:
+Enable hibernation for ARM architectures and provide ARM
+architecture specific calls used during hibernation.
 
-  1) UEFI calls stub with MMU/Caches on. Stub/kernel can be anywhere.
-  2) Stub runs and relocates kernel to the desired runtime location
-     but continues to execute from wherever UEFI loaded it until just
-     after ExitBootServices().
-  3) After ExitBootServices, efi_entry() returns relocated entry point
-     for kernel to efi_stub_entry() in efi-entry.S where the Dcache and
-     MMU are turned off, the __flush_dcache_all is called, then the
-     code jumps to the kernel proper entry point.
+The swsusp hibernation framework depends on the
+platform first having functional suspend/resume.
 
-It isn't clear to me if UEFI does cache flushing at ExitBootServices
-time, but even so, at least stack use will get cached between then and
-the kernel entry point. The stub could conceivably get its hands on the
-EFI memmap and invalidate dcache using address ranges from UEFI memory
-descriptors so maybe that is the way we should do it.
+Then, in order to enable hibernation on a given platform, a
+platform_hibernation_ops structure may need to be registered with
+the system in order to save/restore any SoC-specific / cpu specific
+state needing (re)init over a suspend-to-disk/resume-from-disk cycle.
 
+For example:
+
+     - "secure" SoCs that have different sets of control registers
+       and/or different CR reg access patterns.
+
+     - SoCs with L2 caches as the activation sequence there is
+       SoC-dependent; a full off-on cycle for L2 is not done
+       by the hibernation support code.
+
+     - SoCs requiring steps on wakeup _before_ the "generic" parts
+       done by cpu_suspend / cpu_resume can work correctly.
+
+     - SoCs having persistent state which is maintained during suspend
+       and resume, but will be lost during the power off cycle after
+       suspend-to-disk.
+
+This is a rebase/rework of Frank Hofmann's v5 hibernation patchset.
+
+Acked-by: Russ Dill <Russ.Dill@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
+Acked-by: Pavel Machek <pavel@ucw.cz>
+Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Nicolas Pitre <nico@linaro.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Jonathan Austin <jonathan.austin@arm.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com
+Cc: Victor Kamensky <victor.kamensky@linaro.org>
+Cc: Sricharan R <r.sricharan@ti.com>
+Cc: Jiang Liu <liuj97@gmail.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>
+---
+ arch/arm/Kconfig              |    5 ++
+ arch/arm/include/asm/memory.h |    1 +
+ arch/arm/kernel/Makefile      |    1 +
+ arch/arm/kernel/hibernate.c   |  107 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/suspend.h       |    2 +
+ 5 files changed, 116 insertions(+)
+ create mode 100644 arch/arm/kernel/hibernate.c
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 1594945..d204231 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -2279,6 +2279,11 @@ config ARCH_SUSPEND_POSSIBLE
+ config ARM_CPU_SUSPEND
+ 	def_bool PM_SLEEP
+ 
++config ARCH_HIBERNATION_POSSIBLE
++	bool
++	depends on MMU
++	default y if ARCH_SUSPEND_POSSIBLE
++
+ endmenu
+ 
+ source "net/Kconfig"
+diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+index 4afb376..47347dd 100644
+--- a/arch/arm/include/asm/memory.h
++++ b/arch/arm/include/asm/memory.h
+@@ -289,6 +289,7 @@ static inline void *phys_to_virt(phys_addr_t x)
+ #define __pa(x)			__virt_to_phys((unsigned long)(x))
+ #define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
+ #define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
++#define virt_to_pfn(kaddr)      (__pa(kaddr) >> PAGE_SHIFT)
+ 
+ extern phys_addr_t (*arch_virt_to_idmap)(unsigned long x);
+ 
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index a30fc9b..8afa848 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -39,6 +39,7 @@ obj-$(CONFIG_ARTHUR)		+= arthur.o
+ obj-$(CONFIG_ISA_DMA)		+= dma-isa.o
+ obj-$(CONFIG_PCI)		+= bios32.o isa.o
+ obj-$(CONFIG_ARM_CPU_SUSPEND)	+= sleep.o suspend.o
++obj-$(CONFIG_HIBERNATION)	+= hibernate.o
+ obj-$(CONFIG_SMP)		+= smp.o
+ ifdef CONFIG_MMU
+ obj-$(CONFIG_SMP)		+= smp_tlb.o
+diff --git a/arch/arm/kernel/hibernate.c b/arch/arm/kernel/hibernate.c
+new file mode 100644
+index 0000000..bb8b796
+--- /dev/null
++++ b/arch/arm/kernel/hibernate.c
+@@ -0,0 +1,107 @@
++/*
++ * Hibernation support specific for ARM
++ *
++ * Derived from work on ARM hibernation support by:
++ *
++ * Ubuntu project, hibernation support for mach-dove
++ * Copyright (C) 2010 Nokia Corporation (Hiroshi Doyu)
++ * Copyright (C) 2010 Texas Instruments, Inc. (Teerth Reddy et al.)
++ *  https://lkml.org/lkml/2010/6/18/4
++ *  https://lists.linux-foundation.org/pipermail/linux-pm/2010-June/027422.html
++ *  https://patchwork.kernel.org/patch/96442/
++ *
++ * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
++ *
++ * License terms: GNU General Public License (GPL) version 2
++ */
++
++#include <linux/mm.h>
++#include <linux/suspend.h>
++#include <asm/system_misc.h>
++#include <asm/idmap.h>
++#include <asm/suspend.h>
++#include <asm/memory.h>
++
++extern const void __nosave_begin, __nosave_end;
++
++int pfn_is_nosave(unsigned long pfn)
++{
++	unsigned long nosave_begin_pfn = virt_to_pfn(&__nosave_begin);
++	unsigned long nosave_end_pfn = virt_to_pfn(&__nosave_end - 1);
++
++	return (pfn >= nosave_begin_pfn) && (pfn <= nosave_end_pfn);
++}
++
++void notrace save_processor_state(void)
++{
++	WARN_ON(num_online_cpus() != 1);
++	local_fiq_disable();
++}
++
++void notrace restore_processor_state(void)
++{
++	local_fiq_enable();
++}
++
++/*
++ * Snapshot kernel memory and reset the system.
++ *
++ * swsusp_save() is executed in the suspend finisher so that the CPU
++ * context pointer and memory are part of the saved image, which is
++ * required by the resume kernel image to restart execution from
++ * swsusp_arch_suspend().
++ *
++ * soft_restart is not technically needed, but is used to get success
++ * returned from cpu_suspend.
++ *
++ * When soft reboot completes, the hibernation snapshot is written out.
++ */
++static int notrace arch_save_image(unsigned long unused)
++{
++	int ret;
++
++	ret = swsusp_save();
++	if (ret == 0)
++		soft_restart(virt_to_phys(cpu_resume));
++	return ret;
++}
++
++/*
++ * Save the current CPU state before suspend / poweroff.
++ */
++int notrace swsusp_arch_suspend(void)
++{
++	return cpu_suspend(0, arch_save_image);
++}
++
++/*
++ * Restore page contents for physical pages that were in use during loading
++ * hibernation image.  Switch to idmap_pgd so the physical page tables
++ * are overwritten with the same contents.
++ */
++static void notrace arch_restore_image(void *unused)
++{
++	struct pbe *pbe;
++
++	cpu_switch_mm(idmap_pgd, &init_mm);
++	for (pbe = restore_pblist; pbe; pbe = pbe->next)
++		copy_page(pbe->orig_address, pbe->address);
++
++	soft_restart(virt_to_phys(cpu_resume));
++}
++
++static u64 resume_stack[PAGE_SIZE/2/sizeof(u64)] __nosavedata;
++
++/*
++ * Resume from the hibernation image.
++ * Due to the kernel heap / data restore, stack contents change underneath
++ * and that would make function calls impossible; switch to a temporary
++ * stack within the nosave region to avoid that problem.
++ */
++int swsusp_arch_resume(void)
++{
++	extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
++	call_with_stack(arch_restore_image, 0,
++		resume_stack + ARRAY_SIZE(resume_stack));
++	return 0;
++}
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index f73cabf..38bbf95 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -320,6 +320,8 @@ extern unsigned long get_safe_page(gfp_t gfp_mask);
+ extern void hibernation_set_ops(const struct platform_hibernation_ops *ops);
+ extern int hibernate(void);
+ extern bool system_entering_hibernation(void);
++asmlinkage int swsusp_save(void);
++extern struct pbe *restore_pblist;
+ #else /* CONFIG_HIBERNATION */
+ static inline void register_nosave_region(unsigned long b, unsigned long e) {}
+ static inline void register_nosave_region_late(unsigned long b, unsigned long e) {}
+-- 
+1.7.9.5
 
