@@ -1,46 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094AbaCRVv6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:51:58 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:33510 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754780AbaCRVv4 (ORCPT
+	id S1758140AbaCRVwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:52:39 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:56461 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756193AbaCRVwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:51:56 -0400
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eddie.wai@broadcom.com, paulmck@linux.vnet.ibm.com
-Subject: [PATCH] rcu: Convert rcu_dereference to rcu_access_pointer in drivers/net/ethernet/broadcom/cnic.c
-Date: Wed, 19 Mar 2014 03:21:04 +0530
-Message-Id: <1395179464-17960-1-git-send-email-monamagarwal123@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 18 Mar 2014 17:52:36 -0400
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Subject: [PATCH] of: Make of_find_node_by_path() handle /aliases
+Date: Tue, 18 Mar 2014 23:52:29 +0200
+Message-Id: <1395179549-31345-1-git-send-email-pantelis.antoniou@konsulko.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts rcu_dereference to rcu_access_pointer if its returned value is not used
+Make of_find_node_by_path() handle aliases as prefixes.
 
-Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+Originally by David Daney <ddaney@caviumnetworks.com>, but
+reworked according to remark by Grant Likely.
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Handles all cases without allocating memory as requested by
+Grant Likely <grant.likely@linaro.org>
 
+Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 ---
- drivers/net/ethernet/broadcom/cnic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/of/base.c | 69 +++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 65 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/cnic.c b/drivers/net/ethernet/broadcom/cnic.c
-index 6f10c69..42fb026 100644
---- a/drivers/net/ethernet/broadcom/cnic.c
-+++ b/drivers/net/ethernet/broadcom/cnic.c
-@@ -355,7 +355,7 @@ static int cnic_iscsi_nl_msg_recv(struct cnic_dev *dev, u32 msg_type,
- 			break;
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 7083fad..19bcdb4 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -773,22 +773,83 @@ EXPORT_SYMBOL(of_get_child_by_name);
+ /**
+  *	of_find_node_by_path - Find a node matching a full OF path
+  *	@path:	The full path to match
++ *	@path: Either the full path to match, or if the path does not
++ *	       start with '/', the name of a property of the /aliases
++ *	       node (an alias).  In the case of an alias, the node
++ *	       matching the alias' value will be returned.
++ *
++ *	Valid paths:
++ *		/foo/bar	Full path
++ *		foo		Valid alias
++ *		foo/bar		Valid alias + relative path
+  *
+  *	Returns a node pointer with refcount incremented, use
+  *	of_node_put() on it when done.
+  */
+ struct device_node *of_find_node_by_path(const char *path)
+ {
+-	struct device_node *np = of_allnodes;
++	struct device_node *np = NULL;
++	int len;
++	const char *p = NULL;
++	struct property *prop;
+ 	unsigned long flags;
  
- 		rcu_read_lock();
--		if (!rcu_dereference(cp->ulp_ops[CNIC_ULP_L4])) {
-+		if (!rcu_access_pointer(cp->ulp_ops[CNIC_ULP_L4])) {
- 			rc = -ENODEV;
- 			rcu_read_unlock();
++	/* under lock (not very nice) */
+ 	raw_spin_lock_irqsave(&devtree_lock, flags);
+-	for (; np; np = np->allnext) {
+-		if (np->full_name && (of_node_cmp(np->full_name, path) == 0)
+-		    && of_node_get(np))
++
++	len = strlen(path);
++
++	/* path begins with an alias */
++	if (path[0] != '/') {
++
++		/* now find the relative path (if any)*/
++		p = strchr(path, '/');
++		if (p != NULL)
++			len = p - path;
++
++		/* of_aliases must not be NULL */
++		if (!of_aliases)
++			goto out;
++
++		/* find matching alias */
++		for_each_property_of_node(of_aliases, prop)
++			if (strlen(prop->name) == len &&
++					strncmp(prop->name, path, len) == 0)
++				break;
++
++		/* not found; bail */
++		if (prop == NULL)
++			goto out;
++
++		path = prop->value;
++	}
++
++	/* path lookup */
++	for_each_of_allnodes(np) {
++
++		if (!np->full_name)
++			continue;
++
++		if (p == NULL) {
++			/* full component */
++			if (strcasecmp(np->full_name, path) != 0)
++				continue;
++		} else {
++			/* last component (including '/') */
++			if (strncasecmp(np->full_name, path, len) != 0)
++				continue;
++
++			if (strcasecmp(np->full_name + len, p) != 0)
++				continue;
++		}
++
++		if (of_node_get(np))
  			break;
+ 	}
++
++out:
+ 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
++
+ 	return np;
+ }
+ EXPORT_SYMBOL(of_find_node_by_path);
 -- 
-1.7.9.5
+1.7.12
 
