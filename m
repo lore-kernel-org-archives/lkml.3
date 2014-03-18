@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaCRItN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:49:13 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:47143 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706AbaCRItI (ORCPT
+	id S1754480AbaCRIul (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:50:41 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:61256 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543AbaCRIuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:49:08 -0400
-Date: Tue, 18 Mar 2014 08:49:02 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Matt Porter <mporter@linaro.org>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: bcm590xx: Fix type argument for module device table
-Message-ID: <20140318084902.GE25478@lee--X1>
-References: <1394846690.8939.1.camel@phoenix>
+	Tue, 18 Mar 2014 04:50:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394846690.8939.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1395132465-19450-1-git-send-email-geert@linux-m68k.org>
+References: <1395132465-19450-1-git-send-email-geert@linux-m68k.org>
+Date: Tue, 18 Mar 2014 09:50:37 +0100
+X-Google-Sender-Auth: qj6uU7KBEjFW44IrzpPK4SAWpR0
+Message-ID: <CAMuHMdVUKbgKEaQ-0ksTd3NJoNASmqy0CiVH6AryAt-HT7Qy3A@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.14-rc7
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Linux I2C <linux-i2c@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This fixes below build error.
-> 
-> FATAL: drivers/mfd/bcm590xx: sizeof(struct i2c_device_id)=24 is not a modulo of the size of section __mod_i2c_device_table=392.
-> Fix definition of struct i2c_device_id in mod_devicetable.h
-> make[1]: *** [__modpost] Error 1
-> make: *** [modules] Error 2
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/mfd/bcm590xx.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Tue, Mar 18, 2014 at 9:47 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.14-rc7[1]  to v3.14-rc6[3], the summaries are:
+>   - build errors: +5/-13
 
-Applied, thanks.
+Ignoring randconfig failures that are not really new:
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+  + /scratch/kisskb/src/drivers/i2c/busses/i2c-cpm.c: error: implicit
+declaration of function 'irq_of_parse_and_map'
+[-Werror=implicit-function-declaration]:  => 449:2
+  + /scratch/kisskb/src/drivers/i2c/busses/i2c-cpm.c: error: implicit
+declaration of function 'of_iomap'
+[-Werror=implicit-function-declaration]:  => 460:2
+
+powerpc/mpc85xx_defconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/7277/ (all 119 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/7258/ (all 119 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
