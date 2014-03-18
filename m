@@ -1,140 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612AbaCRPMP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:12:15 -0400
-Received: from vm1.sequanux.org ([188.165.36.56]:50988 "EHLO vm1.sequanux.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755592AbaCRPMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:12:13 -0400
-Date: Tue, 18 Mar 2014 15:48:51 +0100
-From: Simon Guinot <simon.guinot@sequanux.org>
-To: Neil Brown <neilb@suse.de>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?utf-8?B?UsOpbWkgUsOpcm9sbGU=?= <remi.rerolle@seagate.com>
-Subject: Re: [PATCH 0/2] md: fix fix deadlock while suspending RAID array
-Message-ID: <20140318144850.GE14452@kw.sim.vm.gnt>
-References: <1394565130-24233-1-git-send-email-simon.guinot@sequanux.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="juZjCTNxrMaZdGZC"
-Content-Disposition: inline
-In-Reply-To: <1394565130-24233-1-git-send-email-simon.guinot@sequanux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932661AbaCRPMg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:12:36 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:35229 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932541AbaCRPMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 11:12:34 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-ff-5328625f5f52
+Message-id: <5328625B.508@samsung.com>
+Date: Tue, 18 Mar 2014 16:12:27 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: Re: [PATCH v11 10/27] iommu/exynos: use managed device helper functions
+References: <20140314140542.f4ded6c50dbd8a1d937bf354@samsung.com>
+ <53230404.6070601@samsung.com>
+ <20140318193817.3448387b75e109e814b9c025@samsung.com>
+In-reply-to: <20140318193817.3448387b75e109e814b9c025@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e/4Fd34JI1ggytr1Czu3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7Bb/eg8yWkxZdJjV4vCb
+	dlaLk396GS1m3lrD4sDv8eTgPCaP2Q0XWTz+He5n8rhzbQ+bx+Yl9R6Tbyxn9OjbsorR4/Mm
+	OY8rR88wBXBGcdmkpOZklqUW6dslcGVs/9zBWLBMoKL710O2BsZ+3i5GTg4JAROJzv//mCBs
+	MYkL99azdTFycQgJLGWU2P+5gR3C+cwo0d36A6yKV0BNYvXlzSwgNouAqsTbrR2sIDYbUPxz
+	wyM2EJtfQEtiTdN1sBpRgQiJuRM3s0H0Ckr8mHwPLC4ioCHx+cp6VpAFzAKNrBKP7i9jB0kI
+	CwRIvDjZwAKxeRajxKoVt8ASnAJOEpsedzKC2MwC1hIrJ22DsuUlNq95yzyBUXAWkiWzkJTN
+	QlK2gJF5FaNoamlyQXFSeq6RXnFibnFpXrpecn7uJkZI3H3dwbj0mNUhRgEORiUeXolYjWAh
+	1sSy4srcQ4wSHMxKIryr3YFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGBN2XJ6jH3ggbFI573+W
+	N3PdGfffuXjjs6FqiQSzStzUPm9nrhMlz7/8/b912985pXXzbvelp01QuP/4eRqnUnvm9l3T
+	Q9zPxlzap5P54K76hu+bDypPVtm6JoeZ3azo6s/V1V0VC+pXe7Gna4mpPuwVO/ZBpGiu7aRg
+	oc85h2e7z60NEsoQ/q7EUpyRaKjFXFScCACBK0+1mQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 18.03.2014 11:38, Cho KyongHo wrote:
+> On Fri, 14 Mar 2014 14:28:36 +0100, Tomasz Figa wrote:
+>> Hi KyongHo,
+>>
+>> On 14.03.2014 06:05, Cho KyongHo wrote:
+>>> This patch uses managed device helper functions in the probe().
+>>>
+>>> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+>>> ---
+>>>    drivers/iommu/exynos-iommu.c |   64 +++++++++++++++++-------------------------
+>>>    1 file changed, 26 insertions(+), 38 deletions(-)
+>>>
+>>> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+>>> index 36e6b73..33b424d 100644
+>>> --- a/drivers/iommu/exynos-iommu.c
+>>> +++ b/drivers/iommu/exynos-iommu.c
+>>> @@ -499,51 +499,48 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
+>>>
+>>>    static int exynos_sysmmu_probe(struct platform_device *pdev)
+>>>    {
+>>> -	int ret;
+>>> +	int irq, ret;
+>>>    	struct device *dev = &pdev->dev;
+>>>    	struct sysmmu_drvdata *data;
+>>>    	struct resource *res;
+>>>
+>>> -	data = kzalloc(sizeof(*data), GFP_KERNEL);
+>>> -	if (!data) {
+>>> -		dev_dbg(dev, "Not enough memory\n");
+>>> -		ret = -ENOMEM;
+>>> -		goto err_alloc;
+>>> -	}
+>>> +	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
+>>> +	if (!data)
+>>> +		return -ENOMEM;
+>>>
+>>>    	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>>    	if (!res) {
+>>> -		dev_dbg(dev, "Unable to find IOMEM region\n");
+>>> -		ret = -ENOENT;
+>>> -		goto err_init;
+>>> +		dev_err(dev, "Unable to find IOMEM region\n");
+>>> +		return -ENOENT;
+>>>    	}
+>>
+>> No need to check for error and print message, because
+>> devm_ioremap_resource() already checks the passed resource and handles
+>> error cases.
+>>
+>
+> Yes but devm_ioremap_resource() just tells that the given 'res' is not
+> correct. I think the message in the driver is more informative.
 
---juZjCTNxrMaZdGZC
-Content-Type: multipart/mixed; boundary="/2994txjAzEdQwm5"
-Content-Disposition: inline
+The common practice used in Linux kernel is to not duplicate such 
+messages. It is obvious that devm_ioremap_resource() printing such 
+message is related to an IOMEM resource anyway, as you can't used it 
+with other types of resources.
 
-
---/2994txjAzEdQwm5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, Mar 11, 2014 at 08:12:08PM +0100, Simon Guinot wrote:
-> Hi,
->=20
-> This patch series fixes a deadlock which have been observed while
-> updating a RAID array level, using the mdadm --grow command. A full
-> description of the issue (hopefully understandable enough) is provided
-> by the commit message in the second patch.
->=20
-> Please, let me know if this patches are correct and/or if there is an
-> another way (maybe more handy) to solve this deadlock issue.
-
-Hi Neil,
-
-Please, let me know your feedback about this bug and the patches.
-
-Additionally, you will find attached to this email a shell script which
-allows to reproduce the deadlock (with most of the configurations).
-Basically, this script creates some loopback devices on the top of files
-(size 10MB) stored under /tmp. In an infinite loop, the loopback devices
-are used to create a RAID1 array and then to migrate this last into a
-RAID5 one. At some point, you should hit the deadlock.
-
-Thanks,
-
-Simon
-
->=20
-> Thanks,
->=20
-> Simon
->=20
-> Simon Guinot (2):
->   md: move up mddev locking functions
->   md: fix deadlock while suspending RAID array
->=20
->  drivers/md/md.c | 154 ++++++++++++++++++++++++++++++--------------------=
-------
->  1 file changed, 83 insertions(+), 71 deletions(-)
->=20
-> --=20
-> 1.8.5.3
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
---/2994txjAzEdQwm5
-Content-Type: application/x-sh
-Content-Disposition: attachment; filename="md-suspend-deadlock.sh"
-Content-Transfer-Encoding: quoted-printable
-
-#!/bin/sh=0A=0AARRAY_ID=3D0=0Awhile grep -q md$ARRAY_ID /proc/mdstat > /dev=
-/null 2>&1; do=0A    ARRAY_ID=3D$(($ARRAY_ID + 1))=0Adone=0AARRAY=3D/dev/md=
-$ARRAY_ID=0A[ -z "$TMP_DIR" ] && TMP_DIR=3D/tmp=0Als /dev/loop0 > /dev/null=
- 2>&1 || modprobe loop=0ADRIVE_SIZE_MB=3D10=0A=0Asetup() {=0A    [ ! -f "$T=
-MP_DIR/hd0" ] && dd if=3D/dev/zero bs=3D1M count=3D$DRIVE_SIZE_MB of=3D$TMP=
-_DIR/hd0=0A    [ ! -f "$TMP_DIR/hd1" ] && dd if=3D/dev/zero bs=3D1M count=
-=3D$DRIVE_SIZE_MB of=3D$TMP_DIR/hd1=0A    [ ! -f "$TMP_DIR/hd2" ] && dd if=
-=3D/dev/zero bs=3D1M count=3D$DRIVE_SIZE_MB of=3D$TMP_DIR/hd2=0A    LOOP0=
-=3D$(losetup -f); losetup $LOOP0 $TMP_DIR/hd0=0A    LOOP1=3D$(losetup -f); =
-losetup $LOOP1 $TMP_DIR/hd1=0A    LOOP2=3D$(losetup -f); losetup $LOOP2 $TM=
-P_DIR/hd2=0A}=0A=0Ateardown() {=0A    grep $ARRAY /proc/mounts && umount $A=
-RRAY=0A    grep $ARRAY /proc/mdstat && mdadm --stop $ARRAY=0A    losetup | =
-grep -q $LOOP0 && losetup -d $LOOP0=0A    losetup | grep -q $LOOP1 && loset=
-up -d $LOOP1=0A    losetup | grep -q $LOOP2 && losetup -d $LOOP2=0A}=0A=0Ac=
-reate() {=0A    echo "=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D> CREATE <=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D"=0A    mdad=
-m --zero-superblock $LOOP0 $LOOP1 $LOOP2 > /dev/null 2>&1=0A    echo y | md=
-adm --create $ARRAY -l1 -n2 -e1.0 --assume-clean $LOOP0 $LOOP1  > /dev/null=
- 2>&1=0A    mkfs.ext2 -T ext4 $ARRAY > /dev/null 2>&1=0A    mount -t ext4 $=
-ARRAY /mnt=0A    sleep 2=0A}=0A=0Amigrate() {=0A    echo "=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D> MIGR=
-ATE <=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D"=0A    backup_file=3D$TMP_DIR/backup-$(basename $ARRA=
-Y)=0A    [ -f "$backup_file" ] && rm $backup_file=0A    mdadm --add $ARRAY =
-$LOOP2=0A    mdadm --grow $ARRAY -l5 -n3 --backup-file=3D$backup_file=0A   =
- mdadm --wait $ARRAY=0A    sleep 2=0A}=0A=0Adestroy() {=0A    echo "=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D> DESTROY <=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D"=0A    umount /mnt=0A    mdadm --stop $ARRAY=
-=0A    while [ $? -ne 0 ]; do sleep 1; mdadm --stop $ARRAY; done=0A}=0A=0Ar=
-un_test() {=0A    while true; do=0A        rmmod raid456 async_raid6_recov =
-async_memcpy async_pq async_xor xor async_tx raid6_pq=0A        create=0A  =
-      migrate=0A        destroy=0A    done=0A}=0Asetup=0Atrap teardown EXIT=
- INT TERM=0Arun_test=0A
---/2994txjAzEdQwm5--
-
---juZjCTNxrMaZdGZC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iEYEARECAAYFAlMoXNIACgkQgtp0PDeOcDpb2wCfVvo5dCOpaHDtGtLmnln6HhJO
-W78AoJ8MZfyS4MsnuoODBlV4w0wYz4L6
-=7Hw7
------END PGP SIGNATURE-----
-
---juZjCTNxrMaZdGZC--
+Best regards,
+Tomasz
