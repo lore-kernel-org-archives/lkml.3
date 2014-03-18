@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147AbaCROrb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:47:31 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:42160 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932AbaCROr0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:47:26 -0400
-Message-ID: <53285C79.2060907@converseincode.com>
-Date: Tue, 18 Mar 2014 07:47:21 -0700
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>,
-        "davem@davemloft.net" <davem@davemloft.net>
-CC: "pablo@netfilter.org" <pablo@netfilter.org>,
-        "kaber@trash.net" <kaber@trash.net>,
-        "kadlec@blackhole.kfki.hu" <kadlec@blackhole.kfki.hu>,
-        "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
-        "netfilter@vger.kernel.org" <netfilter@vger.kernel.org>,
-        "coreteam@netfilter.org" <coreteam@netfilter.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "pageexec@freemail.hu" <pageexec@freemail.hu>,
-        Mark Charlebois <charlebm@gmail.com>,
-        =?UTF-8?B?Vmluw61jaXVzIFRpbnRp?= <viniciustinti@gmail.com>
-Subject: Re: [PATCH v2] net: netfilter: LLVMLinux: vlais-netfilter
-References: <022D9517-4804-47BB-B789-CCF25F25C1ED@me.com> <1395123121-27053-1-git-send-email-behanw@converseincode.com> <063D6719AE5E284EB5DD2968C1650D6D0F6E0065@AcuExch.aculab.com>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6E0065@AcuExch.aculab.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932270AbaCROry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 10:47:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27012 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756256AbaCROr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 10:47:29 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 2/6] perf tools: Remove thread__find_map function
+Date: Tue, 18 Mar 2014 15:46:52 +0100
+Message-Id: <1395154016-26709-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1395154016-26709-1-git-send-email-jolsa@redhat.com>
+References: <1395154016-26709-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/14 02:41, David Laight wrote:
-> From:  behanw@converseincode.com
->> From: Mark Charlebois <charlebm@gmail.com>
->>
->> Replaced non-standard C use of Variable Length Arrays In Structs (VLAIS) in
->> xt_repldata.h with a C99 compliant flexible array member and then calculated
->> offsets to the other struct members. These other members aren't referenced by
->> name in this code, however this patch maintains the same memory layout and
->> padding as was previously accomplished using VLAIS.
->>
->> Had the original structure been ordered differently, with the entries VLA at
->> the end, then it could have been a flexible member, and this patch would have
->> been a lot simpler. However since the data stored in this structure is
->> ultimately exported to userspace, the order of this structure can't be changed.
-> Why not just remove the last element and allocate space for it after the
-> structure?
-Because that would still be employing VLAIS to solve the problem. The 
-last element may be a zero-length array (a flexible member), not a VLA. 
-Sadly both the last 2 elements in the struct need to be manually 
-calculated, which is what we've done.
+Because it's not used any more.
 
-> That would reduce the complexity of the patch and the unreadability
-> of the new code.
-No one is claiming this patch is more readable, merely that it is C99 
-compliant (though strictly speaking this patch is C89, C99 and C11 
-compliant). We tried to use macros to make it more readable in previous 
-patches. The consensus was that macros were bad.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+---
+ tools/perf/util/thread.h | 6 ------
+ 1 file changed, 6 deletions(-)
 
-> I realise that the alignment of type##_error is 'tricky' to determine.
-That is what makes it "unreadable". :(
-
-Behan
-
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 9a07074..9b29f08 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -44,12 +44,6 @@ void thread__insert_map(struct thread *thread, struct map *map);
+ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp);
+ size_t thread__fprintf(struct thread *thread, FILE *fp);
+ 
+-static inline struct map *thread__find_map(struct thread *thread,
+-					   enum map_type type, u64 addr)
+-{
+-	return thread ? map_groups__find(&thread->mg, type, addr) : NULL;
+-}
+-
+ void thread__find_addr_map(struct thread *thread, struct machine *machine,
+ 			   u8 cpumode, enum map_type type, u64 addr,
+ 			   struct addr_location *al);
 -- 
-Behan Webster
-behanw@converseincode.com
+1.8.3.1
 
