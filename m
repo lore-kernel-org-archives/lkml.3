@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803AbaCRVgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:36:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44731 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543AbaCRVgN (ORCPT
+	id S1757205AbaCRViD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:38:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60665 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaCRViA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:36:13 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/13] perf timechart: Fix off-by-one error in 'record' argv handling
-Date: Tue, 18 Mar 2014 18:25:53 -0300
-Message-Id: <1395177965-8879-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1395177965-8879-1-git-send-email-acme@infradead.org>
-References: <1395177965-8879-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 18 Mar 2014 17:38:00 -0400
+Date: Tue, 18 Mar 2014 14:37:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [linux-next][regression] [PATCH] percpu: add preemption checks
+ to __this_cpu ops
+Message-Id: <20140318143759.04a892434d84a9fd3aa94262@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.10.1403181053110.23935@nuc>
+References: <53285FE7.5010203@ti.com>
+	<alpine.DEB.2.10.1403180922050.17965@nuc>
+	<53286ABF.3040408@ti.com>
+	<alpine.DEB.2.10.1403181053110.23935@nuc>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+On Tue, 18 Mar 2014 10:54:06 -0500 (CDT) Christoph Lameter <cl@linux.com> wrote:
 
-Since 367b315 (perf timechart: Add support for -P and -T in timechart
-recording, 2013-11-01), the 'perf timechart record' command stopped
-working:
+> On Tue, 18 Mar 2014, Grygorii Strashko wrote:
+> 
+> > Any way, I can boot and console works fine with your change :)
+> > Thanks.
+> 
+> Ok here is the properly formatted patch:
+> 
+> 
+> Subject: preemption_checks: Avoid snprintf before checking error conditions
+> 
+> snprintf can cause hangs.
 
-  $ perf timechart record -- git status
-  Workload failed: No such file or directory
+This is weird.  How the heck can snprintf() fail if called too early? 
+All it does is shuffle chars around in memory.  The only external
+dependency I'm seeing is a WARN_ON() which presumably didn't trigger
+anyway.
 
-This happens because of an off-by-one error while preparing the argv for
-cmd_record(): it attempts to execute the command 'status' and complains
-that it doesn't exist. Fix this error.
+I'm suspecting a misdiagnosis here.  Otherwise, we seriously need to
+fix snprintf(), not work around it!
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Link: http://lkml.kernel.org/r/1394985965-2332-1-git-send-email-artagnon@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-timechart.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Also, what does "before checking error conditions" refer to?  Does this
+mean you know why snprintf() failed??
 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 25526d6eae59..d4991a235155 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1238,7 +1238,7 @@ static int timechart__record(struct timechart *tchart, int argc, const char **ar
- 	for (i = 0; i < old_power_args_nr; i++)
- 		*p++ = strdup(old_power_args[i]);
- 
--	for (j = 1; j < (unsigned int)argc; j++)
-+	for (j = 0; j < (unsigned int)argc; j++)
- 		*p++ = argv[j];
- 
- 	return cmd_record(rec_argc, rec_argv, NULL);
--- 
-1.8.1.4
+> Move the string processing into the function
+> so that the string operations only occur when necessary after the
+> conditions have been checked.
+> 
+> Tested-by: Grygorii Strashko <grygorii.strashko@ti.com>
+
+Grygorii, thanks for testing linux-next on unusual machines - it's most
+helpful.
+
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
