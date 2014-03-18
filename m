@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230AbaCRBJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 21:09:03 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:38520 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801AbaCRBJB (ORCPT
+	id S1752802AbaCRBY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 21:24:57 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:46312 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349AbaCRBY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 21:09:01 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-6d-53279ca42c3b
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev] [PATCH v2] f2fs: fix incorrect parsing with option string
-Date: Tue, 18 Mar 2014 09:07:59 +0800
-Message-id: <000101cf4246$a047aeb0$e0d70c10$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9CRW0a1iDcnw8CT5mNxM+9hZlOPQ==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jQd0lc9SDDWb+F7O4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK6Nn9wW2gn72ikOH
-	H7A3MJ5i7WLk5JAQMJHYfHkvG4QtJnHh3nogm4tDSGA6o8SMw0tYIJwfjBIbXu5gAaliE1CR
-	WN7xnwnEFhFQlNjwfgM7iM0skClxr2kGM4gtLOArMbPtK5DNwcEioCpxdW4ESJhXwFLiw5pp
-	zBC2oMSPyfdYIFq1JNbvPM4EYctLbF7zlhniIAWJHWdfM0Ks0pOYsWofM0SNuMTGI7dYJjAK
-	zEIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOBAfia1g3Flg8Uh
-	RgEORiUe3hds6sFCrIllxZW5hxglOJiVRHiXTgYK8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Q
-	ah0oJJCeWJKanZpakFoEk2Xi4JRqYGSccVRCmvHaug2aF3Q8Nk5q3SxWt25r9+nD54TMk99H
-	r3EuV5X7Ypa2//3P7V7rvNstpOuZt/lut0j+fHufplaf9Dvm/HV/Jy658GzupFWVbko/a/jT
-	1y+N9v/u9OJc/tK9H9iXH288u03wuVar9RezoprP907MLtX9+yKLPfPm927nF5u2lWxTYinO
-	SDTUYi4qTgQAK14IDGACAAA=
+	Mon, 17 Mar 2014 21:24:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140317142851.50e5f533@thinkpad>
+References: <1394890540-2435-1-git-send-email-zhouzhouyi@gmail.com>
+	<20140317142851.50e5f533@thinkpad>
+Date: Tue, 18 Mar 2014 09:24:55 +0800
+Message-ID: <CAABZP2zrLqTRu4sTbYSQ58G1SHGR_YhdGC7365aVmyq6q1n_dg@mail.gmail.com>
+Subject: Re: [PATCH] s390: correct misuses of module_put in appldata_generic_handler.
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
+To: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-s390@vger.kernel.org, joe@perches.com, gang.chen@asianux.com,
+        linux390@de.ibm.com, heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
+        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously 'background_gc={on***,off***}' is being parsed as correct option,
-with this patch we cloud fix the trivial bug in mount process.
+Thanks Gerald for reviewing and sorry for not elaborated it in the e-mail.
 
-Change log from v1:
- o need to check length of parameter suggested by Jaegeuk Kim.
+Firstly, I think you can't call module_put after fail try_module_get
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/super.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Secondly, there exists duplicate module_put on the program path (the last
+one is before return 0)
 
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 057a3ef..dbe402b 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -258,9 +258,9 @@ static int parse_options(struct super_block *sb, char *options)
- 
- 			if (!name)
- 				return -ENOMEM;
--			if (!strncmp(name, "on", 2))
-+			if (strlen(name) == 2 && !strncmp(name, "on", 2))
- 				set_opt(sbi, BG_GC);
--			else if (!strncmp(name, "off", 3))
-+			else if (strlen(name) == 3 && !strncmp(name, "off", 3))
- 				clear_opt(sbi, BG_GC);
- 			else {
- 				kfree(name);
--- 
-1.7.9.5
-
-
+On Mon, Mar 17, 2014 at 9:28 PM, Gerald Schaefer
+<gerald.schaefer@de.ibm.com> wrote:
+> On Sat, 15 Mar 2014 21:35:40 +0800
+> Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
+>
+>> correct misuses of module_put in  appldata_generic_handler
+>
+> Sorry, I don't see any misuse, could you elaborate?
+>
+>>
+>> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+>> ---
+>>  arch/s390/appldata/appldata_base.c | 3 ---
+>>  1 file changed, 3 deletions(-)
+>>
+>> diff --git a/arch/s390/appldata/appldata_base.c b/arch/s390/appldata/appldata_base.c
+>> index 47c8630..683e0282 100644
+>> --- a/arch/s390/appldata/appldata_base.c
+>> +++ b/arch/s390/appldata/appldata_base.c
+>> @@ -343,7 +343,6 @@ appldata_generic_handler(struct ctl_table *ctl, int write,
+>>               // protect work queue callback
+>>               if (!try_module_get(ops->owner)) {
+>>                       mutex_unlock(&appldata_ops_mutex);
+>> -                     module_put(ops->owner);
+>>                       return -ENODEV;
+>>               }
+>>               ops->callback(ops->data);       // init record
+>> @@ -354,7 +353,6 @@ appldata_generic_handler(struct ctl_table *ctl, int write,
+>>               if (rc != 0) {
+>>                       pr_err("Starting the data collection for %s "
+>>                              "failed with rc=%d\n", ops->name, rc);
+>> -                     module_put(ops->owner);
+>>               } else
+>>                       ops->active = 1;
+>>       } else if ((buf[0] == '0') && (ops->active == 1)) {
+>> @@ -365,7 +363,6 @@ appldata_generic_handler(struct ctl_table *ctl, int write,
+>>               if (rc != 0)
+>>                       pr_err("Stopping the data collection for %s "
+>>                              "failed with rc=%d\n", ops->name, rc);
+>> -             module_put(ops->owner);
+>>       }
+>>       mutex_unlock(&appldata_ops_mutex);
+>>  out:
+>
