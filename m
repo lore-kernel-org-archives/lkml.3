@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882AbaCRK3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 06:29:39 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:45603 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953AbaCRK3f (ORCPT
+	id S1754904AbaCRKaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 06:30:03 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:41357 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754832AbaCRK3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 06:29:35 -0400
+	Tue, 18 Mar 2014 06:29:32 -0400
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: broonie@kernel.org, lgirdwood@gmail.com, sachin.kamat@linaro.org
-Subject: [PATCH 4/4] regulator: max8952: Silence checkpatch warning
-Date: Tue, 18 Mar 2014 15:53:04 +0530
-Message-Id: <1395138184-25287-4-git-send-email-sachin.kamat@linaro.org>
+Subject: [PATCH 3/4] regulator: max8925: Silence checkpatch warning
+Date: Tue, 18 Mar 2014 15:53:03 +0530
+Message-Id: <1395138184-25287-3-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1395138184-25287-1-git-send-email-sachin.kamat@linaro.org>
 References: <1395138184-25287-1-git-send-email-sachin.kamat@linaro.org>
@@ -25,21 +25,21 @@ WARNING: Missing a blank line after declarations
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
- drivers/regulator/max8952.c |    1 +
+ drivers/regulator/max8925-regulator.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
-index c5ee3cc048ee..d920f5a32ec8 100644
---- a/drivers/regulator/max8952.c
-+++ b/drivers/regulator/max8952.c
-@@ -57,6 +57,7 @@ struct max8952_data {
- static int max8952_read_reg(struct max8952_data *max8952, u8 reg)
+diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
+index e316abae004a..dad2bcd14e96 100644
+--- a/drivers/regulator/max8925-regulator.c
++++ b/drivers/regulator/max8925-regulator.c
+@@ -249,6 +249,7 @@ static int max8925_regulator_dt_init(struct platform_device *pdev,
  {
- 	int ret = i2c_smbus_read_byte_data(max8952->client, reg);
+ 	struct device_node *nproot, *np;
+ 	int rcount;
 +
- 	if (ret > 0)
- 		ret &= 0xff;
- 
+ 	nproot = of_node_get(pdev->dev.parent->of_node);
+ 	if (!nproot)
+ 		return -ENODEV;
 -- 
 1.7.9.5
 
