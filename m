@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209AbaCRP55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:57:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15369 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755643AbaCRP4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:56:40 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 4/6] perf tools: Add machine pointer into thread struct
-Date: Tue, 18 Mar 2014 15:46:54 +0100
-Message-Id: <1395154016-26709-5-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1395154016-26709-1-git-send-email-jolsa@redhat.com>
-References: <1395154016-26709-1-git-send-email-jolsa@redhat.com>
+	id S1756268AbaCRP7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:59:04 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:47730 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754708AbaCRP7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 11:59:01 -0400
+Date: Tue, 18 Mar 2014 11:58:57 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mark Brown <broonie@kernel.org>,
+        Stewart Smith <stewart@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20140318155857.GB3642@htj.dyndns.org>
+References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org>
+ <20140312015021.GC10106@kroah.com>
+ <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au>
+ <20140317183333.GE10565@kroah.com>
+ <1395088410.15098.175.camel@pasglop>
+ <20140317215619.GA25228@kroah.com>
+ <20140317220554.GG17373@mtj.dyndns.org>
+ <20140317222107.GH17373@mtj.dyndns.org>
+ <1395102146.15098.198.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395102146.15098.198.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need machine pointer in thread object, so we could
-lookup the process thread in following patch.
+Hello, Ben.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
----
- tools/perf/util/machine.c | 2 +-
- tools/perf/util/thread.c  | 4 +++-
- tools/perf/util/thread.h  | 5 ++++-
- 3 files changed, 8 insertions(+), 3 deletions(-)
+On Tue, Mar 18, 2014 at 11:22:26AM +1100, Benjamin Herrenschmidt wrote:
+> On Mon, 2014-03-17 at 18:21 -0400, Tejun Heo wrote:
+> > So, looked at the failed code.  The only necessary change seems to be
+> > calling device_remove_file_self() in dump_ack_store() and then doing
+> > kobject_put() directly afterwards, which would have been completely
+> > fine as a merge fix patch.
+> 
+> Ok. Since there's no merge error, I'll have to tell Linus explicitly to
+> apply it during the merge. I've never done that before but I suppose
+> it's doable.
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index d1f06d2..237d7c2 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -311,7 +311,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
- 	if (!create)
- 		return NULL;
- 
--	th = thread__new(pid, tid);
-+	th = thread__new(pid, tid, machine);
- 	if (th != NULL) {
- 		rb_link_node(&th->rb_node, parent, p);
- 		rb_insert_color(&th->rb_node, &machine->threads);
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index bacf60b..cbe451a 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -8,13 +8,15 @@
- #include "debug.h"
- #include "comm.h"
- 
--struct thread *thread__new(pid_t pid, pid_t tid)
-+struct thread *thread__new(pid_t pid, pid_t tid,
-+			   struct machine *machine)
- {
- 	char *comm_str;
- 	struct comm *comm;
- 	struct thread *thread = zalloc(sizeof(*thread));
- 
- 	if (thread != NULL) {
-+		thread->machine = machine;
- 		thread->pid_ = pid;
- 		thread->tid = tid;
- 		thread->ppid = -1;
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index b3f7d8e..21521e1 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -7,12 +7,14 @@
- #include <sys/types.h>
- #include "symbol.h"
- #include <strlist.h>
-+#include "machine.h"
- 
- struct thread {
- 	union {
- 		struct rb_node	 rb_node;
- 		struct list_head node;
- 	};
-+	struct machine		*machine;
- 	struct map_groups	*mg;
- 	pid_t			pid_; /* Not all tools update this */
- 	pid_t			tid;
-@@ -29,7 +31,8 @@ struct thread {
- struct machine;
- struct comm;
- 
--struct thread *thread__new(pid_t pid, pid_t tid);
-+struct thread *thread__new(pid_t pid, pid_t tid,
-+			   struct machine *machine);
- void thread__delete(struct thread *thread);
- static inline void thread__exited(struct thread *thread)
- {
+Yeah, that should be fine.  For the next tree, including the fix patch
+in a temp branch and pulling that into your for-next branch should
+work fine.
+
+> Sorry I don't understand. Reverting the removal until after -rc1 (or
+> later in the merge window) is the easiest path from my perspective and
+> ensure no bisection breakage but whatever Linus prefers works here.
+
+Merge fix doesn't cause any bisection issue either (because it *is* a
+merge problem after all).  It could be just my personal preference but
+I'd handle this one as merge fix.  If we rever the removal of the
+interface, we'll probably need to mark it deprecated too as people
+tend to fork off their devel branches before or at rc1.
+
+> I don't think it's a drastic action or anything like that. It can
+> trivially be re-applied once the merge window has settled. But I'm happy
+> to also just send Linus a "apply this as a merge fixup" patch if he's
+> happy with the method (as I said, I've never done that before on
+> something that doesn't have an actual merge conflict to begin with)
+
+Sure, either should work.
+
+Thanks.
+
 -- 
-1.8.3.1
-
+tejun
