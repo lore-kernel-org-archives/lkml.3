@@ -1,151 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938AbaCRSEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 14:04:49 -0400
-Received: from 5.mo3.mail-out.ovh.net ([87.98.178.36]:52519 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750764AbaCRSEr (ORCPT
+	id S1757036AbaCRSHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 14:07:52 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:35263 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377AbaCRSHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 14:04:47 -0400
-X-Greylist: delayed 6909 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Mar 2014 14:04:47 EDT
-Message-ID: <53286FBD.4050901@metascale.org>
-Date: Tue, 18 Mar 2014 17:09:33 +0100
-From: Adrien BAK <adrien.bak@metascale.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 18 Mar 2014 14:07:51 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org,
-        Mathias Gaunard <mathias.gaunard@metascale.org>
-Subject: [PATCH] perf-script : improves option passing mechansim
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 8052154660180538496
-X-Ovh-Remote: 193.55.35.23 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrvdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrvdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <20140318151113.GA10724@gmail.com>
+References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
+	<20140318151113.GA10724@gmail.com>
+Date: Tue, 18 Mar 2014 11:07:50 -0700
+Message-ID: <CALAqxLV=uRV825taKrnH2=p_kAf5f1PbQ7=J5MopFt9ATj=a3A@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Volatile Ranges (v11)
+From: John Stultz <john.stultz@linaro.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This pull request fixes the following issues :
-* when passing custom arguments to a script, if those arguments are
-  not declared within perf, they prevent the execution of perf.
-e.g.
+On Tue, Mar 18, 2014 at 8:11 AM, Minchan Kim <minchan@kernel.org> wrote:
+> 1) SIGBUS
+>
+> It's one of the arguable issue because some user want to get a
+> SIGBUS(ex, Firefox) while other want a just zero page(ex, Google
+> address sanitizer) without signal so it should be option.
+>
+>         int vrange(start, len, VRANGE_VOLATILE|VRANGE_ZERO, &purged);
+>         int vrange(start, len, VRANGE_VOLATILE|VRANGE_SIGNAL, &purged);
 
-perf script -i path/to/perf.data -s my_script -arg1 arg_value
+So, the zero-fill on volatile access feels like a *very* special case
+to me, since a null page could be valid data in many cases. Since
+support/interest for volatile ranges has been middling at best, I want
+to start culling the stranger use cases. I'm open in the future to
+adding a special flag or something if it really make sense, but at
+this point, lets just get the more general volatile range use cases
+supported.
 
-perf will issue an error message and no processing will occur
+
+> 2) Accouting
+>
+> The one of problem I have thought is lack of accouting of vrange pages.
+> I mean we need some statistics for vrange pages and it should be number
+> of pages rather than vma size. Without that, user space couldn't see
+> current status and then they couldn't control the system's memory
+> consumption. It's alredy known problem for other OS which have support
+> similar thing(ex, MADV_FREE).
+>
+> For accouting, we should account how many of existing pages are the range
+> when vrange syscall is called. It could increase syscall overhead
+> but user could have accurate statistics information. It's just trade-off.
+
+Agreed. As I've been looking at handling anonymous page aging on
+swapless systems, the naive method causes performance issues as we
+scan and scan and scan the anonymous list trying to page things out to
+nowhere. Providing the number of volatile pages would allow the
+scanning to stop at a sensible time.
+
+> 3) Aging
+>
+> I think vrange pages should be discarded eariler than other hot pages
+> so want to move pages to tail of inactive LRU when syscall is called.
+> We could do by using deactivate_page with some tweak while we accouts
+> pages in syscall context.
+>
+> But if user want to treat vrange pages with other hot pages equally
+> he could ask so that we could skip deactivating.
+>
+>         vrange(start, len, VRANGE_VOLATILE|VRANGE_ZERO|VRANGE_AGING, &purged)
+>         or
+>         vrange(start, len, VRANGE_VOLATILE|VRANGE_SIGNAL|VRANGE_AGING, &purged)
+>
+> It could be convenient for Moz usecase if they want to age vrange
+> pages.
+
+Again, I want to keep the scope small for now, so I'd rather not add
+more options just yet. I think we should come up with a sensable
+default and give that time to be used, and if there need to be more
+options later, we can open those up. I think activating on volatile
+(so the pages are purged together) is the right default approach, but
+I'm open to discuss this further.
 
 
-* when passing custom arguments to a script, if those arguments are
-  declared by perf, they are consumed and not passed to the script.
-e.g.
-perf script -i path/to/perf.data -s my_script -h
+> 4) Permanency
+>
+> Like MCL_FUTURE of mlockall, it would be better to make the range
+> have permanent property until called VRANGE_NOVOLATILE.
+> I mean pages faulted on the range in future since syscall is called
+> should be volatile automatically so that user could avoid frequent
+> syscall to make them volatile.
 
-perf will display its own help message, instead of the expected help
-message from my_script.
+I'm not sure I followed this. Is this with respect to the issue of
+unmapped holes in the range?
 
-These issues are addressed as follows :
-* The parse option flag is changed from PARSE_OPT_STOP_AT_NON_OPTION to
-PARSE_OPT_KEEP_UNKNOWN
-* A new option type is introduce OPT_CALLBACK_FINAL_OPTION, which 
-effectively
-  prevents the parsing of all options located after the script.
-
-Signed-off-by: Adrien Bak <adrien.bak@metascale.org>
-
----
-
-  tools/perf/builtin-script.c     | 8 ++++----
-  tools/perf/util/parse-options.c | 4 ++++
-  tools/perf/util/parse-options.h | 5 +++++
-  3 files changed, 13 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 9e9c91f..3cd6a46 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1523,9 +1523,9 @@ int cmd_script(int argc, const char **argv, const 
-char *prefix __maybe_unused)
-              "show latency attributes (irqs/preemption disabled, etc)"),
-      OPT_CALLBACK_NOOPT('l', "list", NULL, NULL, "list available scripts",
-                 list_available_scripts),
--    OPT_CALLBACK('s', "script", NULL, "name",
--             "script file name (lang:script name, script name, or *)",
--             parse_scriptname),
-+    OPT_CALLBACK_FINAL_OPTION('s', "script", NULL, "name",
-+                  "script file name (lang:script name, script name, or *)",
-+                  parse_scriptname),
-      OPT_STRING('g', "gen-script", &generate_script_lang, "lang",
-             "generate perf-script.xx script in specified language"),
-      OPT_STRING('i', "input", &input_name, "file", "input file name"),
-@@ -1578,7 +1578,7 @@ int cmd_script(int argc, const char **argv, const 
-char *prefix __maybe_unused)
-      setup_scripting();
-
-      argc = parse_options(argc, argv, options, script_usage,
--                 PARSE_OPT_STOP_AT_NON_OPTION);
-+                 PARSE_OPT_KEEP_UNKNOWN);
-
-      file.path = input_name;
-
-diff --git a/tools/perf/util/parse-options.c 
-b/tools/perf/util/parse-options.c
-index d22e3f8..77f566d 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -112,6 +112,8 @@ static int get_value(struct parse_opt_ctx_t *p,
-              return (*opt->callback)(opt, NULL, 0) ? (-1) : 0;
-          if (get_arg(p, opt, flags, &arg))
-              return -1;
-+        if (opt->flags & PARSE_OPT_FINAL_OPTION)
-+            return (*opt->callback)(opt, arg, 0)?(-1) : (-3);
-          return (*opt->callback)(opt, arg, 0) ? (-1) : 0;
-
-      case OPTION_INTEGER:
-@@ -366,6 +368,8 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
-                  return parse_options_usage(usagestr, options, arg + 1, 1);
-              case -2:
-                  goto unknown;
-+            case -3:
-+                return PARSE_OPT_DONE;
-              default:
-                  break;
-              }
-diff --git a/tools/perf/util/parse-options.h 
-b/tools/perf/util/parse-options.h
-index cbf0149..b1fa6b6 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -38,6 +38,7 @@ enum parse_opt_option_flags {
-      PARSE_OPT_NONEG   = 4,
-      PARSE_OPT_HIDDEN  = 8,
-      PARSE_OPT_LASTARG_DEFAULT = 16,
-+    PARSE_OPT_FINAL_OPTION = 32,
-  };
-
-  struct option;
-@@ -123,6 +124,10 @@ struct option {
-      { .type = OPTION_CALLBACK, .short_name = (s), .long_name = (l), 
-.value = (v), .argh = "time", .help = (h), .callback = 
-parse_opt_approxidate_cb }
-  #define OPT_CALLBACK(s, l, v, a, h, f) \
-      { .type = OPTION_CALLBACK, .short_name = (s), .long_name = (l), 
-.value = (v), (a), .help = (h), .callback = (f) }
-+#define OPT_CALLBACK_FINAL_OPTION(s, l, v, a, h, f) \
-+    { .type = OPTION_CALLBACK, .short_name = (s), .long_name = (l),\
-+    .value = (v), (a), .help = (h), .callback = (f),\
-+    .flags = PARSE_OPT_FINAL_OPTION}
-  #define OPT_CALLBACK_NOOPT(s, l, v, a, h, f) \
-      { .type = OPTION_CALLBACK, .short_name = (s), .long_name = (l), 
-.value = (v), (a), .help = (h), .callback = (f), .flags = PARSE_OPT_NOARG }
-  #define OPT_CALLBACK_DEFAULT(s, l, v, a, h, f, d) \
-
+thanks
+-john
