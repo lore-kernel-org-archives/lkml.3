@@ -1,574 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647AbaCRXi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 19:38:57 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:39932 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388AbaCRXiy (ORCPT
+	id S1757623AbaCRXrj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 19:47:39 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:49467 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497AbaCRXrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 19:38:54 -0400
-Subject: mmotm 2014-03-18-16-37 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Tue, 18 Mar 2014 16:38:52 -0700
-Message-Id: <20140318233853.06C195A41F4@corp2gmr1-2.hot.corp.google.com>
+	Tue, 18 Mar 2014 19:47:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140318215231.GH5917@mithrandir>
+References: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
+	<1394655346-30048-3-git-send-email-tim.kryger@linaro.org>
+	<20140318215231.GH5917@mithrandir>
+Date: Tue, 18 Mar 2014 16:47:36 -0700
+Message-ID: <CAAYSxhri0evgrbCPew6-MTXVmpzm7Oa6TpmJTSGZpTcV=876HQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/5] pwm: kona: Introduce Kona PWM controller support
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux Doc List <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2014-03-18-16-37 has been uploaded to
+On Tue, Mar 18, 2014 at 2:52 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Wed, Mar 12, 2014 at 01:15:43PM -0700, Tim Kryger wrote:
+> [...]
+>> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+>> index 22f2f28..1fd42af 100644
+>> --- a/drivers/pwm/Kconfig
+>> +++ b/drivers/pwm/Kconfig
+>> @@ -62,6 +62,16 @@ config PWM_ATMEL_TCB
+>>         To compile this driver as a module, choose M here: the module
+>>         will be called pwm-atmel-tcb.
+>>
+>> +config PWM_BCM_KONA
+>> +     tristate "Kona PWM support"
+>> +     depends on ARCH_BCM_MOBILE
+>> +     default y
+>
+> No "default y", please.
 
-   http://www.ozlabs.org/~akpm/mmotm/
+Even though it depends on ARCH_BCM_MOBILE?  It seems like a reasonable default.
 
-mmotm-readme.txt says
+These SoCs target mobile phones which almost always have a backlight
+controlled by the PWM.
 
-README for mm-of-the-moment:
+>
+>> diff --git a/drivers/pwm/pwm-bcm-kona.c b/drivers/pwm/pwm-bcm-kona.c
+> [...]
+>> +static void kona_pwmc_apply_settings(struct kona_pwmc *kp, unsigned int chan)
+>> +{
+>> +     unsigned long value = readl(kp->base + PWM_CONTROL_OFFSET);
+>> +
+>> +     /*
+>> +      * New duty and period settings are only reflected in the PWM output
+>> +      * after a rising edge of the enable bit.  When smooth bit is set, the
+>> +      * new settings are delayed until the prior PWM period has completed.
+>> +      * Furthermore, if the smooth bit is set, the PWM continues to output a
+>> +      * waveform based on the old settings during the time that the enable
+>> +      * bit is low.  Otherwise the output is a constant high signal while
+>> +      * the enable bit is low.
+>> +      */
+>> +
+>> +     /* clear enable bit but set smooth bit to maintain old output */
+>> +     value |= (1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
+>
+> There's no need for the parentheses here.
 
-http://www.ozlabs.org/~akpm/mmotm/
+Ok
 
-This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-more than once a week.
+>
+>> +     value &= ~(1 << PWM_CONTROL_ENABLE_SHIFT(chan));
+>> +     writel(value, kp->base + PWM_CONTROL_OFFSET);
+>> +
+>> +     /* set enable bit and clear smooth bit to apply new settings */
+>> +     value &= ~(1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
+>> +     value |= (1 << PWM_CONTROL_ENABLE_SHIFT(chan));
+>
+> Nor here.
 
-You will need quilt to apply these patches to the latest Linus release (3.x
-or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-http://ozlabs.org/~akpm/mmotm/series
+Ok
 
-The file broken-out.tar.gz contains two datestamp files: .DATE and
-.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-followed by the base kernel version against which this patch series is to
-be applied.
+>
+>> +     writel(value, kp->base + PWM_CONTROL_OFFSET);
+>
+> I'm curious about how this work. The above writes the control register
+> once with smooth set and enable cleared, then immediately rewrites it
+> again with smooth cleared and enable set. Are these writes somehow
+> queued in hardware, so that the subsequent write becomes active only
+> after the current period?
 
-This tree is partially included in linux-next.  To see which patches are
-included in linux-next, consult the `series' file.  Only the patches
-within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-linux-next.
+It isn't exactly queuing up the writes but if smooth mode is set, it
+will wait to apply the new settings.
 
-A git tree which contains the memory management portion of this tree is
-maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-by Michal Hocko.  It contains the patches which are between the
-"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-file, http://www.ozlabs.org/~akpm/mmotm/series.
+>
+>> +static int kona_pwmc_config(struct pwm_chip *chip, struct pwm_device *pwm,
+>> +                             int duty_ns, int period_ns)
+>
+> Please align arguments on subsequent lines with those on the first line.
 
+Sure
 
-A full copy of the full kernel tree with the linux-next and mmotm patches
-already applied is available through git within an hour of the mmotm
-release.  Individual mmotm releases are tagged.  The master branch always
-points to the latest release, so it's constantly rebasing.
+>
+>> +{
+>> +     struct kona_pwmc *kp = dev_get_drvdata(chip->dev);
+>
+> The proper way to do this would be upcasting using container_of().
+> Better yet, define a static inline function that wraps container_of(),
+> just like very other driver does.
+>
 
-http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+I will convert to use this approach (except in kona_pwmc_remove)
 
-To develop on top of mmotm git:
+>> +     u64 val, div, clk_rate;
+>> +     unsigned long prescale = PRESCALE_MIN, pc, dc;
+>> +     unsigned int value, chan = pwm->hwpwm;
+>> +
+>> +     /*
+>> +      * Find period count, duty count and prescale to suit duty_ns and
+>> +      * period_ns. This is done according to formulas described below:
+>> +      *
+>> +      * period_ns = 10^9 * (PRESCALE + 1) * PC / PWM_CLK_RATE
+>> +      * duty_ns = 10^9 * (PRESCALE + 1) * DC / PWM_CLK_RATE
+>> +      *
+>> +      * PC = (PWM_CLK_RATE * period_ns) / (10^9 * (PRESCALE + 1))
+>> +      * DC = (PWM_CLK_RATE * duty_ns) / (10^9 * (PRESCALE + 1))
+>> +      */
+>> +
+>> +     clk_rate = clk_get_rate(kp->clk);
+>
+> "rate" is 50% shorter and would do equally well.
 
-  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-  $ git remote update mmotm
-  $ git checkout -b topic mmotm/master
-  <make changes, commit>
-  $ git send-email mmotm/master.. [...]
+That works for me.
 
-To rebase a branch with older patches to a new mmotm release:
+>
+>> +
+>> +     /* There is polarity support in HW but it is easier to manage in SW */
+>> +     if (pwm->polarity == PWM_POLARITY_INVERSED)
+>> +             duty_ns = period_ns - duty_ns;
+>
+> No, this is wrong. You're not actually changing the *polarity* here.
 
-  $ git remote update mmotm
-  $ git rebase --onto mmotm/master <topic base> topic
+Please elaborate.  I don't understand what is wrong here.
 
+Does polarity influence the output while a PWM is disabled?
 
+>
+> Also I think this is missing a pair of clk_prepare_enable() and
+> clk_disable_unprepare().
 
+There is no issue here since the hardware registers are only touched
+in kona_pwmc_config if the channel was already enabled.
 
-The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
-contains daily snapshots of the -mm tree.  It is updated more frequently
-than mmotm, and is untested.
+>
+>> +static int kona_pwmc_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
+>> +                               enum pwm_polarity polarity)
+>> +{
+>> +     /*
+>> +      * The framework only allows the polarity to be changed when a PWM is
+>> +      * disabled so no immediate action is required here.  When a channel is
+>> +      * enabled, the polarity gets handled as part of the re-config step.
+>> +      */
+>> +
+>> +     return 0;
+>> +}
+>
+> See above. If you don't want to implement the hardware support for
+> inversed polarity, then simply don't implement this.
 
-A git copy of this tree is available at
+I had originally planned to omit polarity support but because it
+affects the binding (which is treated as ABI), it wouldn't be possible
+to add it in later without defining a new compatible string.
 
-	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
+>
+>> +static int kona_pwmc_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+>> +{
+>> +     struct kona_pwmc *kp = dev_get_drvdata(chip->dev);
+>> +     int ret;
+>> +
+>> +     /*
+>> +      * The PWM framework does not clear the enable bit in the flags if an
+>> +      * error is returned from a PWM driver's enable function so it must be
+>> +      * cleared here if any trouble is encountered.
+>> +      */
+>> +
+>> +     ret = clk_prepare_enable(kp->clk);
+>> +     if (ret < 0) {
+>> +             dev_err(chip->dev, "failed to enable clock: %d\n", ret);
+>> +             clear_bit(PWMF_ENABLED, &pwm->flags);
+>
+> You're not supposed to touch these. This is a bug in the core, and it
+> should be fixed in the core.
 
-and use of this tree is similar to
-http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
+Okay.  I'll drop the clear_bit lines from this patch.
 
+>
+>> +             return ret;
+>> +     }
+>> +
+>> +     ret = kona_pwmc_config(chip, pwm, pwm->duty_cycle, pwm->period);
+>> +     if (ret < 0) {
+>> +             clk_disable_unprepare(kp->clk);
+>> +             clear_bit(PWMF_ENABLED, &pwm->flags);
+>> +             return ret;
+>> +     }
+>
+> Why are you doing this? .config() should be setting everything up
+> according to the given duty cycle and period and .enable() should only
+> be enabling a specific channel. Please don't conflate the two.
 
-This mmotm tree contains the following patches against 3.14-rc7:
-(patches marked "*" will be included in linux-next)
+The hardware only supports a configure operation.
 
-  origin.patch
-  arch-alpha-kernel-systblss-remove-debug-check.patch
-  i-need-old-gcc.patch
-  maintainers-akpm-maintenance.patch
-* sh-fix-format-string-bug-in-stack-tracer.patch
-* backing_dev-fix-hung-task-on-sync.patch
-* backing_dev-fix-hung-task-on-sync-fix.patch
-* slub-fix-high-order-page-allocation-problem-with-__gfp_nofail.patch
-* bdi-avoid-oops-on-device-removal.patch
-* kthread-ensure-locality-of-task_struct-allocations.patch
-* arch-x86-mm-kmemcheck-kmemcheckc-use-kstrtoint-instead-of-sscanf.patch
-* arm-use-generic-fixmaph.patch
-* fs-cifs-cifsfsc-add-__init-to-cifs_init_inodecache.patch
-* fs-freevxfs-vxfs_lookupc-update-function-comment.patch
-* fanotify-remove-useless-bypass_perm-check.patch
-* fanotify-use-fanotify-event-structure-for-permission-response-processing.patch
-* fanotify-convert-access_mutex-to-spinlock.patch
-* fanotify-reorganize-loop-in-fanotify_read.patch
-* fanotify-move-unrelated-handling-from-copy_event_to_user.patch
-* sched_clock-document-4mhz-vs-1mhz-decision.patch
-* input-route-kbd-leds-through-the-generic-leds-layer.patch
-* genksyms-fix-typeof-handling.patch
-* score-remove-unused-cpu_score7-kconfig-parameter.patch
-* sh-push-extra-copy-of-r0-r2-for-syscall-parameters.patch
-* sh-remove-unused-do_fpu_error.patch
-* sh-dont-pass-saved-userspace-state-to-exception-handlers.patch
-* arch-sh-boards-board-sh7757lcrc-fixup-sdhi-register-size.patch
-* sh-sh7757-switch-rspi-clock-to-dev-id-match.patch
-* drivers-net-irda-donauboe-convert-to-module_pci_driver.patch
-* net-core-rtnetlinkc-copy-paste-error-in-rtnl_bridge_notify.patch
-* ocfs2-fix-null-pointer-dereference-when-access-dlm_state-before-launching-dlm-thread.patch
-* ocfs2-change-ip_unaligned_aio-to-of-type-mutex-from-atomit_t.patch
-* ocfs2-remove-unused-variable-uuid_net_key-in-ocfs2_initialize_super.patch
-* ocfs2-improve-fsync-efficiency-and-fix-deadlock-between-aio_write-and-sync_file.patch
-* ocfs2-o2net-incorrect-to-terminate-accepting-connections-loop-upon-rejecting-an-invalid-one.patch
-* ocfs2-dlm-fix-lock-migration-crash.patch
-* ocfs2-dlm-fix-recovery-hung.patch
-* ocfs2-add-dlm_recover_callback_support-in-sysfs.patch
-* ocfs2-add-dlm_recover_callback_support-in-sysfs-fix.patch
-* ocfs2-fix-a-tiny-race-when-running-dirop_fileop_racer.patch
-* ocfs2-o2net-o2net_listen_data_ready-should-do-nothing-if-socket-state-is-not-tcp_listen.patch
-* ocfs2-remove-ocfs2_inode_skip_delete-flag.patch
-* ocfs2-move-dquot_initialize-in-ocfs2_delete_inode-somewhat-later.patch
-* quota-provide-function-to-grab-quota-structure-reference.patch
-* ocfs2-implement-delayed-dropping-of-last-dquot-reference.patch
-* ocfs2-avoid-blocking-in-ocfs2_mark_lockres_freeing-in-downconvert-thread.patch
-* ocfs2-revert-iput-deferring-code-in-ocfs2_drop_dentry_lock.patch
-* ocfs2-alloc_dinode-counts-and-group-bitmap-should-be-update-simultaneously.patch
-* ocfs2-flock-drop-cross-node-lock-when-failed-locally.patch
-* ocfs2-flock-drop-cross-node-lock-when-failed-locally-checkpatch-fixes.patch
-* ocfs2-call-ocfs2_update_inode_fsync_trans-when-updating-any-inode.patch
-* ocfs2-do-not-return-dlm_migrate_response_mastery_ref-to-avoid-endlessloop-during-umount.patch
-* ocfs2-do-not-return-dlm_migrate_response_mastery_ref-to-avoid-endlessloop-during-umount-checkpatch-fixes.patch
-* ocfs2-manually-do-the-iput-once-ocfs2_add_entry-failed-in-ocfs2_symlink-and-ocfs2_mknod.patch
-* ocfs2-should-call-ocfs2_journal_access_di-before-ocfs2_delete_entry-in-ocfs2_orphan_del.patch
-* ocfs2-llseek-requires-ocfs2-inode-lock-for-the-file-in-seek_end.patch
-* maintainers-update-ibm-serveraid-raid-info.patch
-* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
-* fs-direct-io-remove-redundant-comparison.patch
-* direct-io-remove-some-left-over-checks.patch
-* kernel-watchdogc-touch_nmi_watchdog-should-only-touch-local-cpu-not-every-one.patch
-* watchdog-trigger-all-cpu-backtrace-when-locked-up-and-going-to-panic.patch
-* mm-slab-slub-use-page-list-consistently-instead-of-page-lru.patch
-  mm.patch
-* mm-vmscan-respect-numa-policy-mask-when-shrinking-slab-on-direct-reclaim.patch
-* mm-vmscan-move-call-to-shrink_slab-to-shrink_zones.patch
-* mm-vmscan-remove-shrink_control-arg-from-do_try_to_free_pages.patch
-* mm-compaction-ignore-pageblock-skip-when-manually-invoking-compaction.patch
-* mm-optimize-put_mems_allowed-usage.patch
-* mm-hugetlb-unify-region-structure-handling.patch
-* mm-hugetlb-improve-cleanup-resv_map-parameters.patch
-* mm-hugetlb-fix-race-in-region-tracking.patch
-* mm-hugetlb-remove-resv_map_put.patch
-* mm-hugetlb-use-vma_resv_map-map-types.patch
-* mm-hugetlb-improve-page-fault-scalability.patch
-* mm-hugetlb-improve-page-fault-scalability-fix.patch
-* mm-vmscan-shrink_slab-rename-max_pass-freeable.patch
-* mm-vmstat-fix-up-zone-state-accounting.patch
-* mm-vmstat-fix-up-zone-state-accounting-fix.patch
-* fs-cachefiles-use-add_to_page_cache_lru.patch
-* lib-radix-tree-radix_tree_delete_item.patch
-* mm-shmem-save-one-radix-tree-lookup-when-truncating-swapped-pages.patch
-* mm-filemap-move-radix-tree-hole-searching-here.patch
-* mm-fs-prepare-for-non-page-entries-in-page-cache-radix-trees.patch
-* mm-fs-prepare-for-non-page-entries-in-page-cache-radix-trees-fix.patch
-* mm-fs-prepare-for-non-page-entries-in-page-cache-radix-trees-fix-fix.patch
-* mm-fs-store-shadow-entries-in-page-cache.patch
-* mm-thrash-detection-based-file-cache-sizing.patch
-* lib-radix_tree-tree-node-interface.patch
-* lib-radix_tree-tree-node-interface-fix.patch
-* mm-keep-page-cache-radix-tree-nodes-in-check.patch
-* mm-keep-page-cache-radix-tree-nodes-in-check-fix.patch
-* mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix.patch
-* mm-keep-page-cache-radix-tree-nodes-in-check-fix-fix-fix.patch
-* mm-hugetlb-mark-some-bootstrap-functions-as-__init.patch
-* mm-compaction-avoid-isolating-pinned-pages.patch
-* mm-compactionc-mark-function-as-static.patch
-* mm-memoryc-mark-functions-as-static.patch
-* mm-mmapc-mark-function-as-static.patch
-* mm-process_vm_accessc-mark-function-as-static.patch
-* mm-process_vm_accessc-mark-function-as-static-fix.patch
-* mm-page_cgroupc-mark-functions-as-static.patch
-* mm-nobootmemc-mark-function-as-static.patch
-* include-linux-mmh-remove-ifdef-condition.patch
-* mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff.patch
-* mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v2.patch
-* mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3.patch
-* mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3-fix.patch
-* pagewalk-update-page-table-walker-core.patch
-* pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range.patch
-* pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range-fix.patch
-* pagewalk-add-walk_page_vma.patch
-* smaps-redefine-callback-functions-for-page-table-walker.patch
-* clear_refs-redefine-callback-functions-for-page-table-walker.patch
-* pagemap-redefine-callback-functions-for-page-table-walker.patch
-* numa_maps-redefine-callback-functions-for-page-table-walker.patch
-* memcg-redefine-callback-functions-for-page-table-walker.patch
-* madvise-redefine-callback-functions-for-page-table-walker.patch
-* arch-powerpc-mm-subpage-protc-use-walk_page_vma-instead-of-walk_page_range.patch
-* pagewalk-remove-argument-hmask-from-hugetlb_entry.patch
-* pagewalk-remove-argument-hmask-from-hugetlb_entry-fix.patch
-* pagewalk-remove-argument-hmask-from-hugetlb_entry-fix-fix.patch
-* mempolicy-apply-page-table-walker-on-queue_pages_range.patch
-* mm-call-vma_adjust_trans_huge-only-for-thp-enabled-vma.patch
-* mm-rename-__do_fault-do_fault.patch
-* mm-do_fault-extract-to-call-vm_ops-do_fault-to-separate-function.patch
-* mm-introduce-do_read_fault.patch
-* mm-introduce-do_cow_fault.patch
-* mm-introduce-do_shared_fault-and-drop-do_fault.patch
-* mm-introduce-do_shared_fault-and-drop-do_fault-fix.patch
-* mm-introduce-do_shared_fault-and-drop-do_fault-fix-fix.patch
-* mm-consolidate-code-to-call-vm_ops-page_mkwrite.patch
-* mm-consolidate-code-to-call-vm_ops-page_mkwrite-fix.patch
-* mm-consolidate-code-to-setup-pte.patch
-* mm-thp-drop-do_huge_pmd_wp_zero_page_fallback.patch
-* mm-remove-read_cache_page_async.patch
-* drop_caches-add-some-documentation-and-info-message.patch
-* kobject-dont-block-for-each-kobject_uevent.patch
-* kobject-dont-block-for-each-kobject_uevent-v2.patch
-* slub-do-not-drop-slab_mutex-for-sysfs_slab_add.patch
-* mm-readaheadc-fix-readahead-failure-for-memoryless-numa-nodes-and-limit-readahead-pages.patch
-* mmnuma-reorganize-change_pmd_range.patch
-* mmnuma-reorganize-change_pmd_range-fix.patch
-* mm-numa-recheck-for-transhuge-pages-under-lock-during-protection-changes.patch
-* move-mmu-notifier-call-from-change_protection-to-change_pmd_range.patch
-* mm-vmscan-restore-sc-gfp_mask-after-promoting-it-to-__gfp_highmem.patch
-* mm-vmscan-do-not-check-compaction_ready-on-promoted-zones.patch
-* mm-memoryc-update-comment-in-unmap_single_vma.patch
-* mm-exclude-memory-less-nodes-from-zone_reclaim.patch
-* mm-compaction-disallow-high-order-page-for-migration-target.patch
-* mm-compaction-do-not-call-suitable_migration_target-on-every-page.patch
-* mm-compaction-change-the-timing-to-check-to-drop-the-spinlock.patch
-* mm-compaction-check-pageblock-suitability-once-per-pageblock.patch
-* mm-compaction-clean-up-code-on-success-of-ballon-isolation.patch
-* mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
-* mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags-ignore-madv_hugepage-on-s390-to-prevent-sigsegv-in-qemu.patch
-* mm-thp-add-vm_init_def_mask-and-prctl_thp_disable.patch
-* exec-kill-the-unnecessary-mm-def_flags-setting-in-load_elf_binary.patch
-* mm-disable-split-page-table-lock-for-mmu.patch
-* tools-vm-page-typesc-page-cache-sniffing-feature.patch
-* drivers-lguest-page_tablesc-rename-do_set_pte.patch
-* mm-introduce-vm_ops-map_pages.patch
-* mm-introduce-vm_ops-map_pages-fix.patch
-* mm-implement-map_pages-for-page-cache.patch
-* mm-implement-map_pages-for-page-cache-fix.patch
-* mm-cleanup-size-checks-in-filemap_fault-and-filemap_map_pages.patch
-* mm-add-debugfs-tunable-for-fault_around_order.patch
-* mm-add-debugfs-tunable-for-fault_around_order-checkpatch-fixes.patch
-* mm-implement-map_pages-for-shmem-tmpfs.patch
-* mm-per-thread-vma-caching.patch
-* mm-per-thread-vma-caching-fix-3.patch
-* mm-per-thread-vma-caching-fix-4.patch
-* mm-per-thread-vma-caching-fix-5.patch
-* mm-per-thread-vma-caching-fix-6.patch
-* mm-per-thread-vma-caching-fix-6-checkpatch-fixes.patch
-* mm-per-thread-vma-caching-fix-6-fix.patch
-* mm-use-macros-from-compilerh-instead-of-__attribute__.patch
-* mm-use-macros-from-compilerh-instead-of-__attribute__-fix.patch
-* fork-collapse-copy_flags-into-copy_process.patch
-* mm-mempolicy-rename-slab_node-for-clarity.patch
-* mm-mempolicy-remove-per-process-flag.patch
-* res_counter-remove-interface-for-locked-charging-and-uncharging.patch
-* mm-compactionc-isolate_freepages_block-small-tuneup.patch
-* mm-compaction-determine-isolation-mode-only-once.patch
-* mempool-add-unlikely-and-likely-hints.patch
-* mm-fix-error-do-not-initialise-globals-to-0-or-null-and-coding-style.patch
-* mm-fix-coding-style.patch
-* mm-vmallocc-enhance-vm_map_ram-comment.patch
-* mm-vmallocc-enhance-vm_map_ram-comment-fix.patch
-* mm-use-const-char-insted-of-char-for-reason-in-dump_page.patch
-* mm-memcg-remove-unnecessary-preemption-disabling.patch
-* mm-memcg-remove-mem_cgroup_move_account_page_stat.patch
-* mm-memcg-inline-mem_cgroup_charge_common.patch
-* mm-memcg-push-mm-handling-out-to-page-cache-charge-function.patch
-* memcg-remove-unnecessary-mm-check-from-try_get_mem_cgroup_from_mm.patch
-* memcg-get_mem_cgroup_from_mm.patch
-* memcg-do-not-replicate-get_mem_cgroup_from_mm-in-__mem_cgroup_try_charge.patch
-* memcg-sanitize-__mem_cgroup_try_charge-call-protocol.patch
-* memcg-sanitize-__mem_cgroup_try_charge-call-protocol-fix.patch
-* memcg-rename-high-level-charging-functions.patch
-* fs-mpagec-forgotten-write_sync-in-case-of-data-integrity-write.patch
-* fs-inodec-inode_lru_isolate-use-atomic-count_vm_events.patch
-* zram-drop-init_done-struct-zram-member.patch
-* zram-do-not-pass-rw-argument-to-__zram_make_request.patch
-* zram-remove-good-and-bad-compress-stats.patch
-* zram-use-atomic64_t-for-all-zram-stats.patch
-* zram-remove-zram-stats-code-duplication.patch
-* zram-report-failed-read-and-write-stats.patch
-* zram-drop-not-used-table-count-member.patch
-* zram-move-zram-size-warning-to-documentation.patch
-* zram-document-failed_reads-failed_writes-stats.patch
-* zram-delete-zram_init_device.patch
-* zram-delete-zram_init_device-fix.patch
-* zram-introduce-compressing-backend-abstraction.patch
-* zram-use-zcomp-compressing-backends.patch
-* zram-use-zcomp-compressing-backends-fix.patch
-* zram-factor-out-single-stream-compression.patch
-* zram-add-multi-stream-functionality.patch
-* zram-add-set_max_streams-knob.patch
-* zram-make-compression-algorithm-selection-possible.patch
-* zram-add-lz4-algorithm-backend.patch
-* zram-move-comp-allocation-out-of-init_lock.patch
-* zram-return-error-valued-pointer-from-zcomp_create.patch
-* zram-return-error-valued-pointer-from-zcomp_create-fix.patch
-* zram-propagate-error-to-user.patch
-* zram-propagate-error-to-user-fix.patch
-* zram-propagate-error-to-user-fix-2.patch
-* zram-use-scnprintf-in-attrs-show-methods.patch
-* zram-support-req_discard.patch
-* zram-support-req_discard-v4.patch
-* zram-support-req_discard-v4-fix.patch
-* mm-zswap-fix-trivial-typo-and-arrange-indentation.patch
-* mm-zswap-update-zsmalloc-in-comment-to-zbud.patch
-* mm-zswap-support-multiple-swap-devices.patch
-* mm-zswapc-remove-unnecessary-parentheses.patch
-* do_shared_fault-check-that-mmap_sem-is-held.patch
-* include-linux-syscallsh-add-sys32_quotactl-prototype.patch
-* include-linux-syscallsh-add-sys32_quotactl-prototype-fix.patch
-* sys_sysfs-add-config_sysfs_syscall.patch
-* sys_sysfs-add-config_sysfs_syscall-fix.patch
-* kernel-groupsc-remove-return-value-of-set_groups.patch
-* kernel-groupsc-remove-return-value-of-set_groups-fix.patch
-* fs-kernel-permit-disabling-the-uselib-syscall.patch
-* fs-kernel-permit-disabling-the-uselib-syscall-v2.patch
-* submittingpatches-add-style-recommendation-to-use-imperative-descriptions.patch
-* submittingpatches-add-recommendation-for-mailing-list-references.patch
-* submittingpatches-document-the-use-of-git.patch
-* errh-use-bool-for-is_err-and-is_err_or_null.patch
-* samples-seccomp-makefile-do-not-build-tests-if-cross-compiling-for-mips.patch
-* kernel-audit-fix-non-modular-users-of-module_init-in-core-code.patch
-* kernel-resourcec-make-reallocate_resource-static.patch
-* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
-* vsprintf-remove-%n-handling.patch
-* printk-remove-duplicated-check-for-log-level.patch
-* printk-remove-obsolete-check-for-log-level-c.patch
-* printk-add-comment-about-tricky-check-for-text-buffer-size.patch
-* printk-use-also-the-last-bytes-in-the-ring-buffer.patch
-* printk-do-not-compute-the-size-of-the-message-twice.patch
-* lib-vsprintf-add-%pt-format-specifier.patch
-* maintainers-add-backlight-co-maintainers.patch
-* maintainers-mark-superh-orphan.patch
-* maintainers-add-xtensa-irqchips-to-xtensa-port-entry.patch
-* maintainers-wimax-linuxwimaxorg-is-subscribers-only.patch
-* backlight-update-bd-state-fb_blank-properties-when-necessary.patch
-* backlight-update-backlight-status-when-necessary.patch
-* backlight-aat2870-remove-unnecessary-oom-messages.patch
-* backlight-adp8860-remove-unnecessary-oom-messages.patch
-* backlight-adp8870-remove-unnecessary-oom-messages.patch
-* backlight-corgi_lcd-remove-unnecessary-oom-messages.patch
-* backlight-hx8357-remove-unnecessary-oom-messages.patch
-* backlight-ili922x-remove-unnecessary-oom-messages.patch
-* backlight-ili9320-remove-unnecessary-oom-messages.patch
-* backlight-l4f00242t03-remove-unnecessary-oom-messages.patch
-* backlight-lm3533_bl-remove-unnecessary-oom-messages.patch
-* backlight-lms283gf05-remove-unnecessary-oom-messages.patch
-* backlight-platform_lcd-remove-unnecessary-oom-messages.patch
-* backlight-tps65217_bl-remove-unnecessary-oom-messages.patch
-* drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent.patch
-* lib-devresc-fix-some-sparse-warnings.patch
-* lib-random32c-minor-cleanups-and-kdoc-fix.patch
-* lib-clz_ctzc-add-prototype-declarations-in-lib-clz_ctzc.patch
-* lib-decompress_inflatec-include-appropriate-header-file.patch
-* lib-xz-enable-all-filters-by-default-in-kconfig.patch
-* mm-utilc-add-kstrimdup.patch
-* lib-add-crc64-ecma-module.patch
-* checkpatch-add-test-for-long-udelay.patch
-* checkpatch-dont-warn-on-some-function-pointer-return-styles.patch
-* checkpatch-add-checks-for-constant-non-octal-permissions.patch
-* checkpatch-warn-on-uses-of-__constant_foo-functions.patch
-* checkpatch-update-octal-permissions-warning.patch
-* checkpatch-avoid-sscanf-test-duplicated-messages.patch
-* checkpatch-fix-jiffies-comparison-and-others.patch
-* checkpatch-add-test-for-char-arrays-that-could-be-static-const.patch
-* checkpatch-use-a-more-consistent-function-argument-style.patch
-* checkpatch-ignore-networking-block-comment-style-first-lines-in-file.patch
-* checkpatch-make-return-is-not-a-function-test-quieter.patch
-* checkpatchpl-modify-warning-message-for-printk-usage.patch
-* checkpatch-net-and-drivers-net-warn-on-missing-blank-line-after-variable-declaration.patch
-* checkpatch-always-warn-on-missing-blank-line-after-variable-declaration-block.patch
-* checkpatch-check-vendor-compatible-with-dashes.patch
-* checkpatch-fix-spurious-vendor-compatible-warnings.patch
-* checkpatch-check-compatible-strings-in-c-and-h-too.patch
-* checkpatch-improve-the-compatible-vendor-match.patch
-* fs-efs-superc-add-__init-to-init_inodecache.patch
-* binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
-* init-do_mountsc-fix-comment-error.patch
-* ncpfs-add-pr_fmt-and-convert-printks-to-pr_level.patch
-* ncpfs-convert-dprintk-ddprintk-to-ncp_dbg.patch
-* ncpfs-convert-dprintk-ddprintk-to-ncp_dbg-fix.patch
-* ncpfs-convert-dprintk-ddprintk-to-ncp_dbg-fix-fix.patch
-* ncpfs-convert-pprintk-to-ncp_vdbg.patch
-* ncpfs-remove-now-unused-printk-macro.patch
-* ncpfs-inode-fix-mismatch-printk-formats-and-arguments.patch
-* ncpfs-cleanup-indenting-in-ncp_lookup.patch
-* rtc-rtc-imxdi-check-the-return-value-from-clk_prepare_enable.patch
-* rtc-rtc-at32ap700x-remove-unnecessary-oom-messages.patch
-* rtc-rtc-davinci-remove-unnecessary-oom-messages.patch
-* rtc-rtc-ds1390-remove-unnecessary-oom-messages.patch
-* rtc-rtc-moxart-remove-unnecessary-oom-messages.patch
-* rtc-rtc-nuc900-remove-unnecessary-oom-messages.patch
-* rtc-rtc-pm8xxx-remove-unnecessary-oom-messages.patch
-* rtc-rtc-rx8025-remove-unnecessary-oom-messages.patch
-* rtc-rtc-sirfsoc-remove-unnecessary-oom-messages.patch
-* rtc-rtc-lpc32xx-remove-unnecessary-oom-messages.patch
-* rtc-rtc-spear-remove-unnecessary-oom-messages.patch
-* rtc-rtc-coh901331-use-devm_ioremap_resource.patch
-* rtc-rtc-davinci-use-devm_ioremap_resource.patch
-* rtc-rtc-vt8500-use-devm_ioremap_resource.patch
-* rtc-rtc-jz4740-use-devm_ioremap_resource.patch
-* drivers-rtc-rtc-isl12057c-remove-duplicate-include.patch
-* drivers-rtc-rtc-da9052c-remove-redundant-private-structure-field.patch
-* drivers-rtc-rtc-sirfsocc-fix-kernel-panic-of-backing-from-hibernation.patch
-* drivers-rtc-rtc-ds1307c-fix-sysfs-wakealarm-attribute-creation.patch
-* drivers-rtc-rtc-ds1307c-add-alarm-support-for-mcp7941x-chips.patch
-* rtc-mc13xxx-remove-__exit_p.patch
-* rtc-mc13xxx-request-irqs-after-rtc-registration.patch
-* rtc-mc13xxx-simplify-alarm_irq_enable.patch
-* rtc-mc13xxx-fix-1hz-interrupt.patch
-* rtc-mc13xxx-change-rtc-validation-scheme.patch
-* rtc-mc13xxx-make-rtc_read_time-more-readable.patch
-* rtc-sunxi-change-compatibles.patch
-* arch-arm-boot-dts-sun4i-a10dtsi-convert-to-the-new-rtc-compatibles.patch
-* drivers-rtc-rtc-ds3232c-make-it-possible-to-share-an-irq.patch
-* drivers-rtc-rtc-cmosc-fix-compilation-warning-when-config_pm_sleep.patch
-* drivers-rtc-rtc-as3722c-use-simple_dev_pm_ops-macro.patch
-* drivers-rtc-rtc-palmasc-use-simple_dev_pm_ops-macro.patch
-* drivers-rtc-rtc-ds3232c-enable-ds3232-to-work-as-wakeup-source.patch
-* rtc-verify-a-critical-argument-to-rtc_update_irq-before-using-it.patch
-* rtc-pm8xxx-fixup-checkpatch-style-issues.patch
-* rtc-pm8xxx-use-regmap-api-for-register-accesses.patch
-* rtc-pm8xxx-use-devm_request_any_context_irq.patch
-* rtc-pm8xxx-add-support-for-devicetree.patch
-* rtc-pm8xxx-move-device_init_wakeup-before-rtc_register.patch
-* documentation-bindings-document-pmic8921-8058-rtc.patch
-* fs-minix-inodec-add-__init-to-init_inodecache.patch
-* befs-replace-kmalloc-memset-0-by-kzalloc.patch
-* fs-befs-linuxvfsc-add-__init-to-befs_init_inodecache.patch
-* befs-logging-clean-up.patch
-* befs-logging-clean-up-fix.patch
-* coda-add-__init-to-init_inodecache.patch
-* nilfs2-update-maintainers-file-entries.patch
-* nilfs2-add-struct-nilfs_suinfo_update-and-flags.patch
-* nilfs2-add-nilfs_sufile_set_suinfo-to-update-segment-usage.patch
-* nilfs2-add-nilfs_sufile_set_suinfo-to-update-segment-usage-fix.patch
-* nilfs2-implementation-of-nilfs_ioctl_set_suinfo-ioctl.patch
-* nilfs2-implementation-of-nilfs_ioctl_set_suinfo-ioctl-fix.patch
-* nilfs2-add-nilfs_sufile_trim_fs-to-trim-clean-segs.patch
-* nilfs2-add-fitrim-ioctl-support-for-nilfs2.patch
-* nilfs2-verify-metadata-sizes-read-from-disk.patch
-* nilfs2-update-maintainers-file-entries-fix.patch
-* nilfs2-update-projects-web-site-in-nilfs2txt.patch
-* hfsplus-remove-unused-variable-in-hfsplus_get_block.patch
-* hfsplus-fix-concurrent-acess-of-alloc_blocks.patch
-* hfsplus-fix-concurrent-acess-of-alloc_blocks-fix.patch
-* hfsplus-fix-concurrent-acess-of-alloc_blocks-fix-fix.patch
-* hfsplus-fix-longname-handling.patch
-* hfsplus-add-__init-to-hfsplus_create_attr_tree_cache.patch
-* fs-reiserfs-move-prototype-declaration-to-header-file.patch
-* fat-add-i_disksize-to-represent-uninitialized-size-v4.patch
-* fat-add-fat_fallocate-operation-v4.patch
-* fat-zero-out-seek-range-on-_fat_get_block-v4.patch
-* fat-fallback-to-buffered-write-in-case-of-fallocated-region-on-direct-io-v4.patch
-* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region-v4.patch
-* documentation-filesystems-vfattxt-update-the-limitation-for-fat-fallocate-v4.patch
-* documentation-update-kmemleaktxt.patch
-* documentation-filesystems-ntfstxt-remove-changelog-reference.patch
-* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2.patch
-* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-fix.patch
-* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-checkpatch-fixes.patch
-* exit-call-disassociate_ctty-before-exit_task_namespaces.patch
-* exit-move-check_stack_usage-to-the-end-of-do_exit.patch
-* exitc-call-proc_exit_connector-after-exit_state-is-set.patch
-* fs-proc-meminfo-meminfo_proc_show-fix-typo-in-comment.patch
-* wait-fix-reparent_leader-vs-exit_dead-exit_zombie-race.patch
-* wait-introduce-exit_trace-to-avoid-the-racy-exit_dead-exit_zombie-transition.patch
-* wait-use-exit_trace-only-if-thread_group_leaderzombie.patch
-* wait-completely-ignore-the-exit_dead-tasks.patch
-* wait-swap-exit_zombie-and-exit_dead-to-hide-exit_trace-from-user-space.patch
-* wait-wstoppedwcontinued-hangs-if-a-zombie-child-is-traced-by-real_parent.patch
-* wait-wstoppedwcontinued-doesnt-work-if-a-zombie-leader-is-traced-by-another-process.patch
-* include-linux-crash_dumph-add-vmcore_cleanup-prototype.patch
-* include-linux-crash_dumph-add-vmcore_cleanup-prototype-fix.patch
-* idr-remove-dead-code-v2.patch
-* rapidio-tsi721_dma-optimize-use-of-bdma-descriptors.patch
-* rapidio-rework-device-hierarchy-and-introduce-mport-class-of-devices.patch
-* fs-adfs-superc-add-__init-to-init_inodecache.patch
-* affs-add-__init-to-init_inodecache.patch
-* fs-affs-dirc-unlock-brelse-dir-on-failure-code-clean-up.patch
-* affs-mount-option-to-avoid-filename-truncates.patch
-* fs-bfs-inodec-add-__init-to-init_inodecache.patch
-* kernel-panicc-display-reason-at-end-pr_emerg.patch
-* kernel-panicc-display-reason-at-end-pr_emerg-fix.patch
-* pps-add-non-blocking-option-to-pps_fetch-ioctl.patch
-* drivers-misc-sgi-gru-grukdumpc-cleanup-gru_dump_context-a-little.patch
-* cris-make-etrax_arch_v10-select-tty-for-use-in-debugport.patch
-* cris-cpuinfo_op-should-depend-on-config_proc_fs.patch
-* ia64-select-config_tty-for-use-of-tty_write_message-in-unaligned.patch
-* ppc-make-ppc_book3s_64-select-irq_work.patch
-* kconfig-make-allnoconfig-disable-options-behind-embedded-and-expert.patch
-* bug-when-config_bug-simplify-warn_on_once-and-family.patch
-* include-asm-generic-bugh-style-fix-s-while0-while-0.patch
-* bug-when-config_bug-make-warn-call-no_printk-to-check-format-and-args.patch
-* bug-make-bug-always-stop-the-machine.patch
-* x86-always-define-bug-and-have_arch_bug-even-with-config_bug.patch
-* fault-injection-set-bounds-on-what-proc-self-make-it-fail-accepts.patch
-* fault-injection-set-bounds-on-what-proc-self-make-it-fail-accepts-fix.patch
-* initramfs-debug-detected-compression-method.patch
-* initramfs-debug-detected-compression-method-fix.patch
-* ipccompat-remove-sc_semopm-macro.patch
-* ipc-use-device_initcall.patch
-  linux-next.patch
-  linux-next-rejects.patch
-  linux-next-git-rejects.patch
-* drivers-gpio-gpio-zevioc-fix-build.patch
-* kconfig-rename-has_ioport-to-has_ioport_map.patch
-* kernel-used-macros-from-compilerh-instead-of-__attribute__.patch
-* asm-systemh-clean-asm-systemh-from-docs.patch
-* asm-systemh-um-arch_align_stack-moved-to-asm-exech.patch
-* memcg-slab-never-try-to-merge-memcg-caches.patch
-* memcg-slab-cleanup-memcg-cache-creation.patch
-* memcg-slab-separate-memcg-vs-root-cache-creation-paths.patch
-* memcg-slab-unregister-cache-from-memcg-before-starting-to-destroy-it.patch
-* memcg-slab-do-not-destroy-children-caches-if-parent-has-aliases.patch
-* slub-adjust-memcg-caches-when-creating-cache-alias.patch
-* slub-rework-sysfs-layout-for-memcg-caches.patch
-* slub-fix-leak-of-name-in-sysfs_slab_add.patch
-* w1-call-put_device-if-device_register-fails.patch
-* arm-move-arm_dma_limit-to-setup_dma_zone.patch
-* percpu-add-raw_cpu_ops.patch
-* mm-use-raw_cpu-ops-for-determining-current-numa-node.patch
-* modules-use-raw_cpu_write-for-initialization-of-per-cpu-refcount.patch
-* net-replace-__this_cpu_inc-in-routec-with-raw_cpu_inc.patch
-* percpu-add-preemption-checks-to-__this_cpu-ops.patch
-* percpu-add-preemption-checks-to-__this_cpu-ops-fix.patch
-* percpu-add-preemption-checks-to-__this_cpu-ops-fix-checkpatch-fixes.patch
-* lglock-map-to-spinlock-when-config_smp.patch
-* x86-mm-sparse-warning-fix-for-early_memremap.patch
-* mm-create-generic-early_ioremap-support.patch
-* x86-use-generic-early_ioremap.patch
-* arm64-initialize-pgprot-info-earlier-in-boot.patch
-* arm64-add-early_ioremap-support.patch
-* doc-kernel-parameterstxt-add-early_ioremap_debug.patch
-* fs-ufs-superc-add-__init-to-init_inodecache.patch
-* fs-ufs-remove-unused-ufs_super_block_first-pointer.patch
-* fs-ufs-remove-unused-ufs_super_block_second-pointer.patch
-* fs-ufs-remove-unused-ufs_super_block_third-pointer.patch
-* ufs-sb-mutex-merge-mutex_destroy.patch
-* mm-add-strictlimit-knob-v2.patch
-  debugging-keep-track-of-page-owners.patch
-  page-owners-correct-page-order-when-to-free-page.patch
-  make-sure-nobodys-leaking-resources.patch
-  journal_add_journal_head-debug.patch
-  journal_add_journal_head-debug-fix.patch
-  releasing-resources-with-children.patch
-  make-frame_pointer-default=y.patch
-  kernel-forkc-export-kernel_thread-to-modules.patch
-  mutex-subsystem-synchro-test-module.patch
-  slab-leaks3-default-y.patch
-  put_bh-debug.patch
-  add-debugging-aid-for-memory-initialisation-problems.patch
-  workaround-for-a-pci-restoring-bug.patch
-  single_open-seq_release-leak-diagnostics.patch
+Thus disable has to be simulated by configuring zero duty.
+
+During an enable operation we have to program the last configuration.
+
+>
+>> +static void kona_pwmc_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+>> +{
+>> +     struct kona_pwmc *kp = dev_get_drvdata(chip->dev);
+>> +     unsigned int chan = pwm->hwpwm;
+>> +
+>> +     /*
+>> +      * The "enable" bits in the control register only affect when settings
+>> +      * start to take effect so the only real way to disable the PWM output
+>> +      * is to program a zero duty cycle.
+>> +      */
+>
+> What's wrong about waiting for the settings to take effect? There's
+> nothing about disable that says it should happen *immediately*.
+
+The current code does wait for the settings to take effect.
+
+Can you clarify what you mean?
+
+>
+>> +
+>> +     writel(0, kp->base + DUTY_CYCLE_HIGH_OFFSET(chan));
+>> +     kona_pwmc_apply_settings(kp, chan);
+>> +
+>> +     /*
+>> +      * When the PWM clock is disabled, the output is pegged high or low
+>> +      * depending on its state at that instant.  To guarantee that the new
+>> +      * settings have taken effect and the output is low a delay of 400ns is
+>> +      * required.
+>> +      */
+>> +
+>> +     ndelay(400);
+>
+> Where does this number come from?
+
+Hardware documentation
+
+>
+>> +static int kona_pwmc_probe(struct platform_device *pdev)
+>> +{
+>> +     struct kona_pwmc *kp;
+>> +     struct resource *res;
+>> +     unsigned int chan, value;
+> [...]
+>> +     /* Set smooth mode, push/pull, and normal polarity for all channels */
+>> +     for (value = 0, chan = 0; chan < kp->chip.npwm; chan++) {
+>
+> Can't you initialize value to 0 when you declare it? That way the for
+> loop becomes much more idiomatic.
+
+Sure.
+
+>
+>> +             value |= (1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
+>> +             value |= (1 << PWM_CONTROL_TYPE_SHIFT(chan));
+>> +             value |= (1 << PWM_CONTROL_POLARITY_SHIFT(chan));
+>> +     }
+>> +     writel(value, kp->base + PWM_CONTROL_OFFSET);
+>
+> I'd prefer a blank line between the above two for readability.
+
+Ok
+
+>
+>> +static struct platform_driver kona_pwmc_driver = {
+>> +
+>
+> Gratuitous blank line.
+
+Ok
+
+>
+>> +     .driver = {
+>> +             .name = "bcm-kona-pwm",
+>> +             .of_match_table = bcm_kona_pwmc_dt,
+>> +     },
+>> +     .probe = kona_pwmc_probe,
+>> +     .remove = kona_pwmc_remove,
+>> +};
+>> +
+>
+> And here.
+
+Ok
+
+>
+>> +module_platform_driver(kona_pwmc_driver);
+>> +
+>> +MODULE_AUTHOR("Broadcom Corporation <bcm-kernel-feedback-list@broadcom.com>");
+>> +MODULE_AUTHOR("Tim Kryger <tkryger@broadcom.com>");
+>> +MODULE_DESCRIPTION("Driver for Kona PWM controller");
+>
+> Perhaps "Broadcom Kona PWM"?
+
+Sure
+
+Thanks for the review.
+
+-Tim
