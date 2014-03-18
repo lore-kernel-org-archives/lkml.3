@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868AbaCRUg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 16:36:26 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:40094 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388AbaCRUgZ (ORCPT
+	id S932553AbaCRUjH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:39:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59934 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132AbaCRUjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 16:36:25 -0400
-Date: Tue, 18 Mar 2014 20:36:18 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        James Ralston <james.d.ralston@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 5/8] watchdog: iTCO_wdt: Add support for v3 silicon
-Message-ID: <20140318203618.GY25478@lee--X1>
-References: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com>
- <1394487298-14459-5-git-send-email-ptyser@xes-inc.com>
- <20140315200309.GC14815@spo001.leaseweb.com>
- <20140318082759.GC25478@lee--X1>
- <20140318135918.GF1484@spo001.leaseweb.com>
+	Tue, 18 Mar 2014 16:39:05 -0400
+Date: Tue, 18 Mar 2014 13:41:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Silvio F <silvio.fricke@gmail.com>
+Cc: linux-kernel@vger.kernel.org, daeseok.youn@gmail.com, silvio@port1024.net
+Subject: Re: [PATCH] staging: unisys: kmalloc/memset to kzalloc conversation
+Message-ID: <20140318204107.GA26473@kroah.com>
+References: <4376102.svyTz8ADVT@daeseok-laptop.cloud.net>
+ <1395173271-13190-1-git-send-email-silvio.fricke@gmail.com>
+ <1395173271-13190-2-git-send-email-silvio.fricke@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140318135918.GF1484@spo001.leaseweb.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1395173271-13190-2-git-send-email-silvio.fricke@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > Some new Atom's, eg Avoton and Bay Trail, have slightly different iTCO
-> > > > functionality:
-> > > > - The watchdog timer ticks at 1 second instead of .6 seconds
-> > > > 
-> > > > - Some 8 and 16-bit registers were combined into 32-bit registers
-> > > > 
-> > > > - Some registers were removed (DAT_IN, DAT_OUT, MESSAGE)
-> > > > 
-> > > > - The BOOT_STS field in TCO_STS was removed
-> > > > 
-> > > > - The NO_REBOOT bit is in the PMC area instead of GCS
-> > > > 
-> > > > Update the driver to support the above changes and bump the version to
-> > > > 1.11.
-> > > > 
-> > > > Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
-> > > > Tested-by: Rajat Jain <rajatjain@juniper.net>
-> > > > Cc: Guenter Roeck <linux@roeck-us.net>
-> > > > Cc: James Ralston <james.d.ralston@intel.com>
-> > > > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > > > Cc: Lee Jones <lee.jones@linaro.org>
-> > > > Cc: Wim Van Sebroeck <wim@iguana.be>
-> > > > Cc: linux-watchdog@vger.kernel.org
-> > > 
-> > > Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-> > 
-> > Why Signed-off-by?
+On Tue, Mar 18, 2014 at 09:07:51PM +0100, Silvio F wrote:
+> This patch solves the Coccinelle warning: "kzalloc should be used
+> instead of kmalloc/memset"
 > 
-> 1) I'm the author of iTCO_wdt.
-> 2) I'm tha maintainer of the watchdog device drivers.
+> This patch is a fixup for
+> 
+> 	linux-next: 97a84f1203786985856a0d4b49b1d7cc387238ce
+> 	"Staging: unisys: Replace kmalloc/memset with kzalloc"
+> 
+> Signed-off-by: Silvio F <silvio.fricke@gmail.com>
+> ---
+>  drivers/staging/unisys/include/uisutils.h           | 5 +----
+>  drivers/staging/unisys/virthba/virthba.c            | 3 +--
+>  drivers/staging/unisys/virtpci/virtpci.c            | 3 +--
+>  drivers/staging/unisys/visorutil/memregion_direct.c | 5 ++---
+>  drivers/staging/unisys/visorutil/periodic_work.c    | 5 ++---
+>  5 files changed, 7 insertions(+), 14 deletions(-)
 
-But you're not the author of this patch, or in the code path.
+If you don't cc: the maintainers of the code, they will never see this
+and it can't be applied :(
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Care to resend it properly?
+
+thanks,
+
+greg k-h
