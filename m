@@ -1,31 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111AbaCRIcT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:32:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45721 "EHLO
+	id S1754682AbaCRIcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:32:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45705 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974AbaCRIbt (ORCPT
+	with ESMTP id S1754612AbaCRIbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:31:49 -0400
-Date: Tue, 18 Mar 2014 01:31:22 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-d75e6097ef1f7669deb500fbbdf53cfe524f1b53@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, dzickus@redhat.com
-In-Reply-To: <1394805606-25883-3-git-send-email-jolsa@redhat.com>
-References: <1394805606-25883-3-git-send-email-jolsa@redhat.com>
+	Tue, 18 Mar 2014 04:31:24 -0400
+Date: Tue, 18 Mar 2014 01:31:11 -0700
+From: tip-bot for Don Zickus <tipbot@zytor.com>
+Message-ID: <tip-363b785f3805a2632eb09a8b430842461c21a640@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, jmario@redhat.com, jolsa@redhat.com,
+        tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, jmario@redhat.com, jolsa@redhat.com,
+        tglx@linutronix.de, dzickus@redhat.com
+In-Reply-To: <1394808224-113774-1-git-send-email-dzickus@redhat.com>
+References: <1394808224-113774-1-git-send-email-dzickus@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf machine:
-  Factor machine__find_thread to take tid argument
-Git-Commit-ID: d75e6097ef1f7669deb500fbbdf53cfe524f1b53
+Subject: [tip:perf/core] perf tools: Speed up thread map generation
+Git-Commit-ID: 363b785f3805a2632eb09a8b430842461c21a640
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,101 +33,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d75e6097ef1f7669deb500fbbdf53cfe524f1b53
-Gitweb:     http://git.kernel.org/tip/d75e6097ef1f7669deb500fbbdf53cfe524f1b53
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Fri, 14 Mar 2014 15:00:03 +0100
+Commit-ID:  363b785f3805a2632eb09a8b430842461c21a640
+Gitweb:     http://git.kernel.org/tip/363b785f3805a2632eb09a8b430842461c21a640
+Author:     Don Zickus <dzickus@redhat.com>
+AuthorDate: Fri, 14 Mar 2014 10:43:44 -0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 14 Mar 2014 18:08:42 -0300
+CommitDate: Fri, 14 Mar 2014 18:08:41 -0300
 
-perf machine: Factor machine__find_thread to take tid argument
+perf tools: Speed up thread map generation
 
-Forcing the code to always search thread by pid/tid pair.
+When trying to capture perf data on a system running spejbb2013, perf
+hung for about 15 minutes.  This is because it took that long to gather
+about 10,000 thread maps and process them.
 
-The PID value will be needed in future to determine the process thread
-leader for map groups sharing.
+I don't think a user wants to wait that long.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1394805606-25883-3-git-send-email-jolsa@redhat.com
+Instead, recognize that thread maps are roughly equivalent to pid maps
+and just quickly copy those instead.
+
+To do this, I synthesize 'fork' events, this eventually calls
+thread__fork() and copies the maps over.
+
+The overhead goes from 15 minutes down to about a few seconds.
+
+--
+V2: based on Jiri's comments, moved malloc up a level
+    and made sure the memory was freed
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Joe Mario <jmario@redhat.com>
+Link: http://lkml.kernel.org/r/1394808224-113774-1-git-send-email-dzickus@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/dwarf-unwind.c |  2 +-
- tools/perf/util/machine.c       | 13 +++++++++----
- tools/perf/util/machine.h       |  3 ++-
- 3 files changed, 12 insertions(+), 6 deletions(-)
+ tools/perf/util/event.c | 59 ++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 51 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-index f16ea28..c059ee8 100644
---- a/tools/perf/tests/dwarf-unwind.c
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -128,7 +128,7 @@ int test__dwarf_unwind(void)
- 	if (verbose > 1)
- 		machine__fprintf(machine, stderr);
- 
--	thread = machine__find_thread(machine, getpid());
-+	thread = machine__find_thread(machine, getpid(), getpid());
- 	if (!thread) {
- 		pr_err("Could not get thread\n");
- 		goto out;
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index a679953..5cecd98 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -327,9 +327,10 @@ struct thread *machine__findnew_thread(struct machine *machine, pid_t pid,
- 	return __machine__findnew_thread(machine, pid, tid, true);
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 55eebe9..3e580be 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -129,6 +129,28 @@ out:
+ 	return tgid;
  }
  
--struct thread *machine__find_thread(struct machine *machine, pid_t tid)
-+struct thread *machine__find_thread(struct machine *machine, pid_t pid,
-+				    pid_t tid)
++static int perf_event__synthesize_fork(struct perf_tool *tool,
++				       union perf_event *event, pid_t pid,
++				       pid_t tgid, perf_event__handler_t process,
++				       struct machine *machine)
++{
++	memset(&event->fork, 0, sizeof(event->fork) + machine->id_hdr_size);
++
++	/* this is really a clone event but we use fork to synthesize it */
++	event->fork.ppid = tgid;
++	event->fork.ptid = tgid;
++	event->fork.pid  = tgid;
++	event->fork.tid  = pid;
++	event->fork.header.type = PERF_RECORD_FORK;
++
++	event->fork.header.size = (sizeof(event->fork) + machine->id_hdr_size);
++
++	if (process(tool, event, &synth_sample, machine) != 0)
++		return -1;
++
++	return 0;
++}
++
+ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 				       union perf_event *event,
+ 				       pid_t pid, pid_t tgid,
+@@ -278,6 +300,7 @@ int perf_event__synthesize_modules(struct perf_tool *tool,
+ 
+ static int __event__synthesize_thread(union perf_event *comm_event,
+ 				      union perf_event *mmap_event,
++				      union perf_event *fork_event,
+ 				      pid_t pid, int full,
+ 					  perf_event__handler_t process,
+ 				      struct perf_tool *tool,
+@@ -326,9 +349,15 @@ static int __event__synthesize_thread(union perf_event *comm_event,
+ 		if (tgid == -1)
+ 			return -1;
+ 
+-		/* process the thread's maps too */
+-		rc = perf_event__synthesize_mmap_events(tool, mmap_event, _pid, tgid,
+-							process, machine, mmap_data);
++		if (_pid == pid) {
++			/* process the parent's maps too */
++			rc = perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
++						process, machine, mmap_data);
++		} else {
++			/* only fork the tid's map, to save time */
++			rc = perf_event__synthesize_fork(tool, fork_event, _pid, tgid,
++						 process, machine);
++		}
+ 
+ 		if (rc)
+ 			return rc;
+@@ -344,7 +373,7 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 				      struct machine *machine,
+ 				      bool mmap_data)
  {
--	return __machine__findnew_thread(machine, 0, tid, false);
-+	return __machine__findnew_thread(machine, pid, tid, false);
- }
+-	union perf_event *comm_event, *mmap_event;
++	union perf_event *comm_event, *mmap_event, *fork_event;
+ 	int err = -1, thread, j;
  
- int machine__process_comm_event(struct machine *machine, union perf_event *event,
-@@ -1114,7 +1115,9 @@ static void machine__remove_thread(struct machine *machine, struct thread *th)
- int machine__process_fork_event(struct machine *machine, union perf_event *event,
- 				struct perf_sample *sample)
- {
--	struct thread *thread = machine__find_thread(machine, event->fork.tid);
-+	struct thread *thread = machine__find_thread(machine,
-+						     event->fork.pid,
-+						     event->fork.tid);
- 	struct thread *parent = machine__findnew_thread(machine,
- 							event->fork.ppid,
- 							event->fork.ptid);
-@@ -1140,7 +1143,9 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
- int machine__process_exit_event(struct machine *machine, union perf_event *event,
- 				struct perf_sample *sample __maybe_unused)
- {
--	struct thread *thread = machine__find_thread(machine, event->fork.tid);
-+	struct thread *thread = machine__find_thread(machine,
-+						     event->fork.pid,
-+						     event->fork.tid);
+ 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
+@@ -355,9 +384,14 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 	if (mmap_event == NULL)
+ 		goto out_free_comm;
  
- 	if (dump_trace)
- 		perf_event__fprintf_task(event, stdout);
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 2e6c248..c8c74a1 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -41,7 +41,8 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
- 	return machine->vmlinux_maps[type];
- }
++	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
++	if (fork_event == NULL)
++		goto out_free_mmap;
++
+ 	err = 0;
+ 	for (thread = 0; thread < threads->nr; ++thread) {
+ 		if (__event__synthesize_thread(comm_event, mmap_event,
++					       fork_event,
+ 					       threads->map[thread], 0,
+ 					       process, tool, machine,
+ 					       mmap_data)) {
+@@ -383,6 +417,7 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 			/* if not, generate events for it */
+ 			if (need_leader &&
+ 			    __event__synthesize_thread(comm_event, mmap_event,
++						       fork_event,
+ 						       comm_event->comm.pid, 0,
+ 						       process, tool, machine,
+ 						       mmap_data)) {
+@@ -391,6 +426,8 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 			}
+ 		}
+ 	}
++	free(fork_event);
++out_free_mmap:
+ 	free(mmap_event);
+ out_free_comm:
+ 	free(comm_event);
+@@ -405,7 +442,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 	DIR *proc;
+ 	char proc_path[PATH_MAX];
+ 	struct dirent dirent, *next;
+-	union perf_event *comm_event, *mmap_event;
++	union perf_event *comm_event, *mmap_event, *fork_event;
+ 	int err = -1;
  
--struct thread *machine__find_thread(struct machine *machine, pid_t tid);
-+struct thread *machine__find_thread(struct machine *machine, pid_t pid,
-+				    pid_t tid);
+ 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
+@@ -416,6 +453,10 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 	if (mmap_event == NULL)
+ 		goto out_free_comm;
  
- int machine__process_comm_event(struct machine *machine, union perf_event *event,
- 				struct perf_sample *sample);
++	fork_event = malloc(sizeof(fork_event->fork) + machine->id_hdr_size);
++	if (fork_event == NULL)
++		goto out_free_mmap;
++
+ 	if (machine__is_default_guest(machine))
+ 		return 0;
+ 
+@@ -423,7 +464,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 	proc = opendir(proc_path);
+ 
+ 	if (proc == NULL)
+-		goto out_free_mmap;
++		goto out_free_fork;
+ 
+ 	while (!readdir_r(proc, &dirent, &next) && next) {
+ 		char *end;
+@@ -435,12 +476,14 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+  		 * We may race with exiting thread, so don't stop just because
+  		 * one thread couldn't be synthesized.
+  		 */
+-		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
+-					   process, tool, machine, mmap_data);
++		__event__synthesize_thread(comm_event, mmap_event, fork_event, pid,
++					   1, process, tool, machine, mmap_data);
+ 	}
+ 
+ 	err = 0;
+ 	closedir(proc);
++out_free_fork:
++	free(fork_event);
+ out_free_mmap:
+ 	free(mmap_event);
+ out_free_comm:
