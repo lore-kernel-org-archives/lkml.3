@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154AbaCRRbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:31:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45295 "EHLO
+	id S1757250AbaCRRby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:31:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45317 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755258AbaCRRbJ (ORCPT
+	by vger.kernel.org with ESMTP id S1757055AbaCRRbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:31:09 -0400
+	Tue, 18 Mar 2014 13:31:12 -0400
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: broonie@kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
         sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
         ckeepax@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] arizona: Correct small errors in the DT binding documentation
-Date: Tue, 18 Mar 2014 17:22:29 +0000
-Message-Id: <1395163353-1608-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 4/5] regulator: arizona-ldo1: Add processing of init_data from device tree
+Date: Tue, 18 Mar 2014 17:22:32 +0000
+Message-Id: <1395163353-1608-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1395163353-1608-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 References: <1395163353-1608-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
@@ -23,68 +23,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch does not alter the binding at all it only brings the
-documentation up to date with the existing binding.
-
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- Documentation/devicetree/bindings/mfd/arizona.txt |   23 +++++++++++---------
- 1 files changed, 13 insertions(+), 10 deletions(-)
+ Documentation/devicetree/bindings/mfd/arizona.txt |    7 +++
+ drivers/regulator/arizona-ldo1.c                  |   46 +++++++++++++++++++-
+ 2 files changed, 50 insertions(+), 3 deletions(-)
 
 diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-index 0e295c9..36a0c3d 100644
+index 36a0c3d..9d54c70 100644
 --- a/Documentation/devicetree/bindings/mfd/arizona.txt
 +++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-@@ -5,9 +5,10 @@ of analogue I/O.
+@@ -42,6 +42,13 @@ Optional properties:
+     the chip default will be used.  If present exactly five values must
+     be specified.
  
- Required properties:
++  - ldo1 : Initial data for the LDO1 regulator, as covered in
++    Documentation/devicetree/bindings/regulator/regulator.txt
++
++  - DCVDD-supply : Power supply, only needs to be specified if DCVDD is being
++    externally supplied. As covered in
++    Documentation/devicetree/bindings/regulator/regulator.txt
++
+ Example:
  
--  - compatible : one of the following chip-specific strings:
--	"wlf,wm5102"
--	"wlf,wm5110"
-+  - compatible : One of the following chip-specific strings:
-+        "wlf,wm5102"
-+        "wlf,wm5110"
-+        "wlf,wm8997"
-   - reg : I2C slave address when connected using I2C, chip select number when
-     using SPI.
+ codec: wm5102@1a {
+diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+index 1b59060..f936ff3 100644
+--- a/drivers/regulator/arizona-ldo1.c
++++ b/drivers/regulator/arizona-ldo1.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
++#include <linux/regulator/of_regulator.h>
+ #include <linux/gpio.h>
+ #include <linux/slab.h>
  
-@@ -25,8 +26,9 @@ Required properties:
-   - #gpio-cells : Must be 2. The first cell is the pin number and the
-     second cell is used to specify optional parameters (currently unused).
- 
--  - AVDD1-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
--    SPKVDDL-supply, SPKVDDR-supply : power supplies for the device, as covered
-+  - AVDD-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply (wm5102, wm5110),
-+    CPVDD-supply, SPKVDDL-supply (wm5102, wm5110), SPKVDDR-supply (wm5102,
-+    wm5110), SPKVDD-supply (wm8997) : Power supplies for the device, as covered
-     in Documentation/devicetree/bindings/regulator/regulator.txt
- 
- Optional properties:
-@@ -46,6 +48,7 @@ codec: wm5102@1a {
- 	compatible = "wlf,wm5102";
- 	reg = <0x1a>;
- 	interrupts = <347>;
-+	interrupt-controller;
- 	#interrupt-cells = <2>;
-         interrupt-parent = <&gic>;
- 
-@@ -53,10 +56,10 @@ codec: wm5102@1a {
- 	#gpio-cells = <2>;
- 
- 	wlf,gpio-defaults = <
--		0x00000000, /* AIF1TXLRCLK */
--		0xffffffff,
--		0xffffffff,
--		0xffffffff,
--		0xffffffff,
-+		0x00000000 /* AIF1TXLRCLK */
-+		0xffffffff
-+		0xffffffff
-+		0xffffffff
-+		0xffffffff
- 	>;
+@@ -179,19 +180,56 @@ static const struct regulator_init_data arizona_ldo1_default = {
  };
+ 
+ #ifdef CONFIG_OF
+-static int arizona_ldo1_of_get_pdata(struct arizona *arizona)
++static int arizona_ldo1_of_get_pdata(struct arizona *arizona,
++				     struct regulator_config *config)
+ {
+ 	struct arizona_pdata *pdata = &arizona->pdata;
++	struct arizona_ldo1 *ldo1 = config->driver_data;
++	struct device_node *init_node, *dcvdd_node;
++	struct regulator_init_data *init_data;
+ 
+ 	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
+ 
++	init_node = of_get_child_by_name(arizona->dev->of_node, "ldo1");
++	dcvdd_node = of_parse_phandle(arizona->dev->of_node, "DCVDD-supply", 0);
++
++	if (init_node) {
++		config->of_node = init_node;
++
++		init_data = of_get_regulator_init_data(arizona->dev, init_node);
++
++		if (init_data) {
++			init_data->consumer_supplies = &ldo1->supply;
++			init_data->num_consumer_supplies = 1;
++
++			if (dcvdd_node && dcvdd_node != init_node)
++				arizona->external_dcvdd = true;
++
++			pdata->ldo1 = init_data;
++		}
++	} else if (dcvdd_node) {
++		arizona->external_dcvdd = true;
++	}
++
++	of_node_put(dcvdd_node);
++
+ 	return 0;
+ }
++
++static void arizona_ldo1_of_put_pdata(struct regulator_config *config)
++{
++	of_node_put(config->of_node);
++}
+ #else
+-static inline int arizona_ldo1_of_get_pdata(struct arizona *arizona)
++static inline int arizona_ldo1_of_get_pdata(struct arizona *arizona,
++					    struct regulator_config *config)
+ {
+ 	return 0;
+ }
++
++static inline void arizona_ldo1_of_put_pdata(struct regulator_config *config)
++{
++}
+ #endif
+ 
+ static int arizona_ldo1_probe(struct platform_device *pdev)
+@@ -233,7 +271,7 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 	config.driver_data = ldo1;
+ 	config.regmap = arizona->regmap;
+ 
+-	ret = arizona_ldo1_of_get_pdata(arizona);
++	ret = arizona_ldo1_of_get_pdata(arizona, &config);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -259,6 +297,8 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
++	arizona_ldo1_of_put_pdata(&config);
++
+ 	platform_set_drvdata(pdev, ldo1);
+ 
+ 	return 0;
 -- 
 1.7.2.5
 
