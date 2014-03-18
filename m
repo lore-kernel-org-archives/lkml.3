@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953AbaCRUfH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 16:35:07 -0400
-Received: from smtprelay0247.hostedemail.com ([216.40.44.247]:50420 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757792AbaCRUfF (ORCPT
+	id S1757868AbaCRUg0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:36:26 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:40094 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388AbaCRUgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 16:35:05 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2194:2199:2393:2559:2562:2729:2828:2904:3138:3139:3140:3141:3142:3622:3865:3868:3871:3872:3874:4225:4250:4321:5007:7652:7901:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13019:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: card46_8327a7203f154
-X-Filterd-Recvd-Size: 1538
-Message-ID: <1395174900.2812.87.camel@joe-AO722>
-Subject: Re: can: c_can: Reduce interrupt load by 50%
-From: Joe Perches <joe@perches.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Benedikt Spranger <b.spranger@linutronix.de>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org
-Date: Tue, 18 Mar 2014 13:35:00 -0700
-In-Reply-To: <alpine.DEB.2.02.1403182114470.18573@ionos.tec.linutronix.de>
-References: <20140318171007.528610837@linutronix.de>
-	 <20140318171127.923041002@linutronix.de>
-	 <alpine.DEB.2.02.1403182114470.18573@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Mar 2014 16:36:25 -0400
+Date: Tue, 18 Mar 2014 20:36:18 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>,
+        James Ralston <james.d.ralston@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 5/8] watchdog: iTCO_wdt: Add support for v3 silicon
+Message-ID: <20140318203618.GY25478@lee--X1>
+References: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com>
+ <1394487298-14459-5-git-send-email-ptyser@xes-inc.com>
+ <20140315200309.GC14815@spo001.leaseweb.com>
+ <20140318082759.GC25478@lee--X1>
+ <20140318135918.GF1484@spo001.leaseweb.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140318135918.GF1484@spo001.leaseweb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-18 at 21:18 +0100, Thomas Gleixner wrote:
-> The driver handles pointlessly TWO interrupts per packet. The reason
-> is that it enables the status interrupt which fires for each rx and tx
-> packet and it enables the per message object interrupts as well.
+> > > > Some new Atom's, eg Avoton and Bay Trail, have slightly different iTCO
+> > > > functionality:
+> > > > - The watchdog timer ticks at 1 second instead of .6 seconds
+> > > > 
+> > > > - Some 8 and 16-bit registers were combined into 32-bit registers
+> > > > 
+> > > > - Some registers were removed (DAT_IN, DAT_OUT, MESSAGE)
+> > > > 
+> > > > - The BOOT_STS field in TCO_STS was removed
+> > > > 
+> > > > - The NO_REBOOT bit is in the PMC area instead of GCS
+> > > > 
+> > > > Update the driver to support the above changes and bump the version to
+> > > > 1.11.
+> > > > 
+> > > > Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+> > > > Tested-by: Rajat Jain <rajatjain@juniper.net>
+> > > > Cc: Guenter Roeck <linux@roeck-us.net>
+> > > > Cc: James Ralston <james.d.ralston@intel.com>
+> > > > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > > > Cc: Lee Jones <lee.jones@linaro.org>
+> > > > Cc: Wim Van Sebroeck <wim@iguana.be>
+> > > > Cc: linux-watchdog@vger.kernel.org
+> > > 
+> > > Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+> > 
+> > Why Signed-off-by?
+> 
+> 1) I'm the author of iTCO_wdt.
+> 2) I'm tha maintainer of the watchdog device drivers.
 
-Are the message object interrupts a possible workaround
-for any defective hardware?
+But you're not the author of this patch, or in the code path.
 
-> performance improment
-
-Now that the code's not being written by amateurs?
-
-
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
