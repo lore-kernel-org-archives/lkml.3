@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995AbaCROwd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:52:33 -0400
-Received: from mail-bl2on0087.outbound.protection.outlook.com ([65.55.169.87]:21016
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752264AbaCROwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:52:30 -0400
-X-Greylist: delayed 869 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Mar 2014 10:52:30 EDT
-Date: Tue, 18 Mar 2014 09:37:52 -0500
-From: Brian Austin <brian.austin@cirrus.com>
-X-X-Sender: heelrod@heelrod
-To: Mark Brown <broonie@kernel.org>
-CC: Nicolin Chen <Guangyu.Chen@freescale.com>, <brian.austin@cirrus.com>,
-        <Paul.Handrigan@cirrus.com>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <lgirdwood@gmail.com>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <lars@metafoo.de>
-Subject: Re: [PATCH v3] ASoC: cs42888: Add codec driver support
-In-Reply-To: <20140318131033.GC11706@sirena.org.uk>
-Message-ID: <alpine.DEB.2.02.1403180936200.14838@heelrod>
-References: <1394538091-19513-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140318131033.GC11706@sirena.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"; format=flowed
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:141.131.3.20;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(458001)(24454002)(51704005)(199002)(189002)(54316002)(47446002)(74502001)(33716001)(81686001)(81816001)(74876001)(83506001)(80022001)(44976005)(83322001)(76482001)(74662001)(50466002)(6806004)(74366001)(85306002)(95666003)(80976001)(65816001)(20776003)(47776003)(31966008)(63696002)(87936001)(74706001)(77096001)(76786001)(76796001)(53806001)(54356001)(92726001)(81342001)(46102001)(93136001)(87266001)(23726002)(97336001)(92566001)(81542001)(94316002)(77982001)(59766001)(94946001)(69226001)(93516002)(56776001)(79102001)(86362001)(4396001)(49866001)(56816005)(47736001)(50986001)(83072002)(47976001)(51856001)(95416001)(97186001)(90146001)(85852003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB059;H:mail1.cirrus.com;FPR:EC45EDA2.2F1C5CFD.3FF77E74.34700FF9.200F5;MLV:sfv;PTR:mail1.cirrus.com;A:1;MX:1;LANG:en;
-X-OriginatorOrg: cirrus4.onmicrosoft.com
-X-Forefront-PRVS: 0154C61618
+	id S1756232AbaCROzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 10:55:05 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:38997 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641AbaCROzC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 10:55:02 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: gleb@kernel.org, mtosatti@redhat.com, kvm@vger.kernel.org
+Subject: [PATCH resend 0/4] KVM: cleanup ioapic and fix KVM_SET_IRQCHIP with irr != 0
+Date: Tue, 18 Mar 2014 15:54:51 +0100
+Message-Id: <1395154495-22807-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014, Mark Brown wrote:
+Unlike the old qemu-kvm, which really never did that, with new QEMU
+it is for some reason somewhat likely to migrate a VM with a nonzero
+IRR in the ioapic.  In the case of ISA edge-triggered interrupts,
+this represents an interrupt that has not left the IOAPIC, which would
+be okay but it is not handled right by KVM_SET_IRQCHIP.  Because the
+interrupt is never injected, the guest never acknowledges it, the host
+never deasserts the pin and new interrupts are dropped.
 
-> On Tue, Mar 11, 2014 at 07:41:31PM +0800, Nicolin Chen wrote:
->> This patch adds support for the Cirrus Logic CS42888 Audio CODEC that
->> has four 24-bit A/D and eight 24-bit D/A converters.
->
-> Brian, Paul - any review comments on this?
->
-Driver looks good to me. I think we should name it the cs42xx8 since this 
-actually covers CS42448 and CS42888. The CS42888 is derived from the 
-CS42448.
+There are two problems to solve.
+
+The obvious one is that interrupts are not reinjected upon KVM_SET_IRQCHIP,
+which is taken care of by patches 3-4.
+
+The second is that right now the IRR value depends on the falling edge
+of the interrupt (as passed by the userspace via kvm_ioapic_set_irq).
+This is unnecessary, and may lead to spurious reinjection in the
+destination of migration; instead, we can clear the (internal-only)
+IRR bit as soon as the interrupt leaves the IOAPIC.  This is done by
+patch 2, which patch 1 prepares for.
+
+This fixes migration of Windows guests without HPET.  Please review.
+
+Paolo
+
+Paolo Bonzini (4):
+  KVM: ioapic: merge ioapic_deliver into ioapic_service
+  KVM: ioapic: clear IRR for edge-triggered interrupts at delivery
+  KVM: ioapic: extract body of kvm_ioapic_set_irq
+  KVM: ioapic: reinject pending interrupts on KVM_SET_IRQCHIP
+
+ virt/kvm/ioapic.c | 97 +++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 59 insertions(+), 38 deletions(-)
+
+-- 
+1.8.3.1
+
