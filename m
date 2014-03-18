@@ -1,116 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759AbaCRNID (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 09:08:03 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:32386 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755718AbaCRNH6 (ORCPT
+	id S1755599AbaCRNHR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 09:07:17 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:40751 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272AbaCRNHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 09:07:58 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-95-5328452bca73
-Message-id: <53284527.8010903@samsung.com>
-Date: Tue, 18 Mar 2014 14:07:51 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>,
-        Cho KyongHo <pullip.cho@samsung.com>
-Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: Re: [PATCH v11 15/27] iommu/exynos: use convenient macro to handle
- gate clocks
-References: <20140314140951.3d443a3096e80297c9fecef0@samsung.com>
- <5323078E.4060903@samsung.com>
- <CAK9yfHx_=Os1G46nNO1HDA3tigkRNeHKN1KGCvuN=w7dRTkfjg@mail.gmail.com>
- <20140318200329.cc1dca7541b4b1916e5d9d48@samsung.com>
- <CAK9yfHxcArgmxm4wSipY1afjmG00zugyycdU+BQbuexvL2bmBw@mail.gmail.com>
-In-reply-to: <CAK9yfHxcArgmxm4wSipY1afjmG00zugyycdU+BQbuexvL2bmBw@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42I5/e/4NV1tV41gg1krNSzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7Bb/eg8yWkxZdJjV4vCb
-	dlaLk396GS1m3lrD4sDv8eTgPCaP2Q0XWTz+He5n8rhzbQ+bx+Yl9R6Tbyxn9OjbsorR4/Mm
-	OY8rR88wBXBGcdmkpOZklqUW6dslcGWcP/abqWCFYMXcz19ZGhjP8nYxcnJICJhIvN3xihXC
-	FpO4cG89WxcjF4eQwFJGiZWbrzFDOJ8ZJf61fwFyODh4BbQkev7mgzSwCKhK/Dr/kBnEZhNQ
-	k/jc8IgNxOYHKlnTdJ0FxBYViJCYO3EzWJxXQFDix+R7YHERgQCJE7+XgM1nFrjOIvHs+C52
-	kISwQKTE3u4OqMUrmCS+7d8Bdh6nQLDEin9zmUBsZgFriZWTtjFC2PISm9e8ZZ7AKDgLyZJZ
-	SMpmISlbwMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMk6r7uYFx6zOoQowAHoxIP70s2
-	9WAh1sSy4srcQ4wSHMxKIrzsVhrBQrwpiZVVqUX58UWlOanFhxiZODilGhglG0O3qWX3X7Pc
-	bNoi+PXVz4UTwp9L3+y6dvAoq19BMhvraRGfozrqTVqb327J2XVjunCRm9/y972a7yWZz+27
-	xyhQnP34mq6LmobbldXzRQuYbijHChlPlj27NOy6hNFMo/4z26cETFwvt6gm8UqIY+6++PKV
-	u1vLl86Pt5wRpPr07IHX1xcrsRRnJBpqMRcVJwIAE+xL4ZgCAAA=
+	Tue, 18 Mar 2014 09:07:14 -0400
+From: Peng Tao <bergwolf@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 4/5] staging/lustre/libcfs: remove schedule_timeout_and_set_state
+Date: Tue, 18 Mar 2014 21:05:55 +0800
+Message-Id: <1395147956-2056-5-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1395147956-2056-4-git-send-email-bergwolf@gmail.com>
+References: <1395147956-2056-1-git-send-email-bergwolf@gmail.com>
+ <1395147956-2056-2-git-send-email-bergwolf@gmail.com>
+ <1395147956-2056-3-git-send-email-bergwolf@gmail.com>
+ <1395147956-2056-4-git-send-email-bergwolf@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.03.2014 12:18, Sachin Kamat wrote:
-> On 18 March 2014 16:33, Cho KyongHo <pullip.cho@samsung.com> wrote:
->> On Fri, 14 Mar 2014 22:27:59 +0530, Sachin Kamat wrote:
->>>   Hi KyongHo,
->>>
->>> On 14 March 2014 19:13, Tomasz Figa <t.figa@samsung.com> wrote:
->>>> Hi KyongHo,
->>>>
->>>>
->>>> On 14.03.2014 06:09, Cho KyongHo wrote:
->>>>>
->>>>> exynos-iommu driver must care about master H/W's gate clock as well as
->>>>> System MMU's gate clock. To enhance readability of the source code,
->>>>> macros to gate/ungate those clocks are defined.
->>>>>
->>>>> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
->>>>> ---
->>>>>    drivers/iommu/exynos-iommu.c |   34 ++++++++++++++++++++++------------
->>>>>    1 file changed, 22 insertions(+), 12 deletions(-)
->>>>>
->>>>> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
->>>>> index 71e77f1..cef62d0 100644
->>>>> --- a/drivers/iommu/exynos-iommu.c
->>>>> +++ b/drivers/iommu/exynos-iommu.c
->>>>> @@ -101,6 +101,16 @@
->>>>>    #define REG_PB1_SADDR         0x054
->>>>>    #define REG_PB1_EADDR         0x058
->>>>>
->>>>> +#define __clk_gate_ctrl(data, clk, en) do {            \
->>>>> +               if (data->clk)                          \
->>>>> +                       clk_##en##able(data->clk);      \
->>>>> +       } while (0)
->>>>> +
->>>>> +#define __sysmmu_clk_enable(data)      __clk_gate_ctrl(data, clk, en)
->>>>> +#define __sysmmu_clk_disable(data)     __clk_gate_ctrl(data, clk, dis)
->>>>> +#define __master_clk_enable(data)      __clk_gate_ctrl(data, clk_master,
->>>>> en)
->>>>> +#define __master_clk_disable(data)     __clk_gate_ctrl(data, clk_master,
->>>>> dis)
->>>>> +
->>>>
->>>>
->>>> I'd say that such macros only obfuscate code, without any gains, as you can
->>>> see in diffstat - this patch adds more lines than it removes.
->>>>
->>>> Please drop this change.
->>>
->>>   I agree with Tomasz here.
->>>
->>
->> Are you concerning about using macros or more insertions than deletions?
->
-> It is just making the code more difficult to read and understand.
+Cc: Andreas Dilger <andreas.dilger@intel.com>
+Cc: Oleg Drokin <oleg.drokin@intel.com>
+Signed-off-by: Peng Tao <bergwolf@gmail.com>
+---
+ .../lustre/include/linux/libcfs/libcfs_prim.h      |    1 -
+ drivers/staging/lustre/lnet/lnet/router.c          |    4 ++--
+ drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c    |    4 ++--
+ drivers/staging/lustre/lustre/libcfs/fail.c        |    4 ++--
+ .../lustre/lustre/libcfs/linux/linux-prim.c        |    8 --------
+ drivers/staging/lustre/lustre/obdclass/genops.c    |    4 ++--
+ drivers/staging/lustre/lustre/obdecho/echo.c       |    3 ++-
+ .../staging/lustre/lustre/obdecho/echo_client.c    |    4 ++--
+ drivers/staging/lustre/lustre/ptlrpc/sec.c         |    4 ++--
+ 9 files changed, 14 insertions(+), 22 deletions(-)
 
-Especially when hiding accesses to struct fields inside and doing fancy 
-stuff like concatenations.
+diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs_prim.h b/drivers/staging/lustre/include/linux/libcfs/libcfs_prim.h
+index 41fad1a..5d13124 100644
+--- a/drivers/staging/lustre/include/linux/libcfs/libcfs_prim.h
++++ b/drivers/staging/lustre/include/linux/libcfs/libcfs_prim.h
+@@ -49,7 +49,6 @@ void cfs_pause(cfs_duration_t ticks);
+  * Timer
+  */
+ typedef  void (cfs_timer_func_t)(ulong_ptr_t);
+-void schedule_timeout_and_set_state(long, int64_t);
+ 
+ void add_wait_queue_exclusive_head(wait_queue_head_t *, wait_queue_t *);
+ 
+diff --git a/drivers/staging/lustre/lnet/lnet/router.c b/drivers/staging/lustre/lnet/lnet/router.c
+index d1ee442..8ea8942 100644
+--- a/drivers/staging/lustre/lnet/lnet/router.c
++++ b/drivers/staging/lustre/lnet/lnet/router.c
+@@ -1209,8 +1209,8 @@ rescan:
+ 		/* Call cfs_pause() here always adds 1 to load average
+ 		 * because kernel counts # active tasks as nr_running
+ 		 * + nr_uninterruptible. */
+-		schedule_timeout_and_set_state(TASK_INTERRUPTIBLE,
+-						   cfs_time_seconds(1));
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule_timeout(cfs_time_seconds(1));
+ 	}
+ 
+ 	LASSERT(the_lnet.ln_rc_state == LNET_RC_STATE_STOPPING);
+diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c b/drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c
+index d87048d..7e63cf3 100644
+--- a/drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c
++++ b/drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c
+@@ -192,8 +192,8 @@ static void ldlm_handle_cp_callback(struct ptlrpc_request *req,
+ 	if (OBD_FAIL_CHECK(OBD_FAIL_LDLM_CANCEL_BL_CB_RACE)) {
+ 		int to = cfs_time_seconds(1);
+ 		while (to > 0) {
+-			schedule_timeout_and_set_state(
+-				TASK_INTERRUPTIBLE, to);
++			set_current_state(TASK_INTERRUPTIBLE);
++			schedule_timeout(to);
+ 			if (lock->l_granted_mode == lock->l_req_mode ||
+ 			    lock->l_flags & LDLM_FL_DESTROYED)
+ 				break;
+diff --git a/drivers/staging/lustre/lustre/libcfs/fail.c b/drivers/staging/lustre/lustre/libcfs/fail.c
+index c54448d..ba43ff7 100644
+--- a/drivers/staging/lustre/lustre/libcfs/fail.c
++++ b/drivers/staging/lustre/lustre/libcfs/fail.c
+@@ -127,8 +127,8 @@ int __cfs_fail_timeout_set(__u32 id, __u32 value, int ms, int set)
+ 	if (ret) {
+ 		CERROR("cfs_fail_timeout id %x sleeping for %dms\n",
+ 		       id, ms);
+-		schedule_timeout_and_set_state(TASK_UNINTERRUPTIBLE,
+-						   cfs_time_seconds(ms) / 1000);
++		set_current_state(TASK_UNINTERRUPTIBLE);
++		schedule_timeout(cfs_time_seconds(ms) / 1000);
+ 		set_current_state(TASK_RUNNING);
+ 		CERROR("cfs_fail_timeout id %x awake\n", id);
+ 	}
+diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-prim.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-prim.c
+index 8aa00e5..fdb4cdb 100644
+--- a/drivers/staging/lustre/lustre/libcfs/linux/linux-prim.c
++++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-prim.c
+@@ -70,14 +70,6 @@ add_wait_queue_exclusive_head(wait_queue_head_t *waitq, wait_queue_t *link)
+ }
+ EXPORT_SYMBOL(add_wait_queue_exclusive_head);
+ 
+-void
+-schedule_timeout_and_set_state(long state, int64_t timeout)
+-{
+-	set_current_state(state);
+-	schedule_timeout(timeout);
+-}
+-EXPORT_SYMBOL(schedule_timeout_and_set_state);
+-
+ /* deschedule for a bit... */
+ void
+ cfs_pause(cfs_duration_t ticks)
+diff --git a/drivers/staging/lustre/lustre/obdclass/genops.c b/drivers/staging/lustre/lustre/obdclass/genops.c
+index 169c9ed..f2bdea3 100644
+--- a/drivers/staging/lustre/lustre/obdclass/genops.c
++++ b/drivers/staging/lustre/lustre/obdclass/genops.c
+@@ -1534,8 +1534,8 @@ void obd_exports_barrier(struct obd_device *obd)
+ 	spin_lock(&obd->obd_dev_lock);
+ 	while (!list_empty(&obd->obd_unlinked_exports)) {
+ 		spin_unlock(&obd->obd_dev_lock);
+-		schedule_timeout_and_set_state(TASK_UNINTERRUPTIBLE,
+-						   cfs_time_seconds(waited));
++		set_current_state(TASK_UNINTERRUPTIBLE);
++		schedule_timeout(cfs_time_seconds(waited));
+ 		if (waited > 5 && IS_PO2(waited)) {
+ 			LCONSOLE_WARN("%s is waiting for obd_unlinked_exports "
+ 				      "more than %d seconds. "
+diff --git a/drivers/staging/lustre/lustre/obdecho/echo.c b/drivers/staging/lustre/lustre/obdecho/echo.c
+index debb9ce..96a807f 100644
+--- a/drivers/staging/lustre/lustre/obdecho/echo.c
++++ b/drivers/staging/lustre/lustre/obdecho/echo.c
+@@ -606,7 +606,8 @@ static int echo_cleanup(struct obd_device *obd)
+ 
+ 	/* XXX Bug 3413; wait for a bit to ensure the BL callback has
+ 	 * happened before calling ldlm_namespace_free() */
+-	schedule_timeout_and_set_state(TASK_UNINTERRUPTIBLE, cfs_time_seconds(1));
++	set_current_state(TASK_UNINTERRUPTIBLE);
++	schedule_timeout(cfs_time_seconds(1));
+ 
+ 	ldlm_namespace_free(obd->obd_namespace, NULL, obd->obd_force);
+ 	obd->obd_namespace = NULL;
+diff --git a/drivers/staging/lustre/lustre/obdecho/echo_client.c b/drivers/staging/lustre/lustre/obdecho/echo_client.c
+index 268a202..754aa8e 100644
+--- a/drivers/staging/lustre/lustre/obdecho/echo_client.c
++++ b/drivers/staging/lustre/lustre/obdecho/echo_client.c
+@@ -997,8 +997,8 @@ static struct lu_device *echo_device_free(const struct lu_env *env,
+ 		spin_unlock(&ec->ec_lock);
+ 		CERROR("echo_client still has objects at cleanup time, "
+ 		       "wait for 1 second\n");
+-		schedule_timeout_and_set_state(TASK_UNINTERRUPTIBLE,
+-						   cfs_time_seconds(1));
++		set_current_state(TASK_UNINTERRUPTIBLE);
++		schedule_timeout(cfs_time_seconds(1));
+ 		lu_site_purge(env, &ed->ed_site->cs_lu, -1);
+ 		spin_lock(&ec->ec_lock);
+ 	}
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/sec.c b/drivers/staging/lustre/lustre/ptlrpc/sec.c
+index 9145dd2..d8041805 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/sec.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/sec.c
+@@ -543,8 +543,8 @@ int sptlrpc_req_replace_dead_ctx(struct ptlrpc_request *req)
+ 		       "ctx (%p, fl %lx) doesn't switch, relax a little bit\n",
+ 		       newctx, newctx->cc_flags);
+ 
+-		schedule_timeout_and_set_state(TASK_INTERRUPTIBLE,
+-						   HZ);
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule_timeout(HZ);
+ 	} else {
+ 		/*
+ 		 * it's possible newctx == oldctx if we're switching
+-- 
+1.7.7.6
 
-Best regards,
-Tomasz
