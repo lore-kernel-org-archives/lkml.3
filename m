@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621AbaCRSqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 14:46:16 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:42948 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757606AbaCRSqN (ORCPT
+	id S1757655AbaCRSqj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 14:46:39 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:39610 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757638AbaCRSqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 14:46:13 -0400
+	Tue, 18 Mar 2014 14:46:36 -0400
 From: Jassi Brar <jassisinghbrar@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org, s-anna@ti.com, tony@atomide.com,
@@ -15,9 +15,9 @@ Cc: gregkh@linuxfoundation.org, s-anna@ti.com, tony@atomide.com,
         rafael.j.wysocki@intel.com, robherring2@gmail.com, arnd@arndb.de,
         joshc@codeaurora.org, linus.walleij@linaro.org, galak@codeaurora.org,
         ks.giri@samsung.com, Jassi Brar <jaswinder.singh@linaro.org>
-Subject: [PATCHv4 3/5] mailbox: pl320: Introduce common API driver
-Date: Wed, 19 Mar 2014 00:15:55 +0530
-Message-Id: <1395168355-29157-1-git-send-email-jaswinder.singh@linaro.org>
+Subject: [PATCHv4 4/5] mailbox: Fix TX completion init
+Date: Wed, 19 Mar 2014 00:16:16 +0530
+Message-Id: <1395168376-29200-1-git-send-email-jaswinder.singh@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1395168169-28978-1-git-send-email-jaswinder.singh@linaro.org>
 References: <1395168169-28978-1-git-send-email-jaswinder.singh@linaro.org>
@@ -25,525 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the PL320 controller driver to work with the common
-mailbox API. Also convert the only user of PL320, highbank-cpufreq.c
-to work with thee API. Drop the obsoleted driver pl320-ipc.c
+From: LeyFoon Tan <lftan.linux@gmail.com>
 
+For fast TX the complete could be called before being initialized as follows
+ mbox_send_message --> poll_txdone --> tx_tick --> complete(&chan->tx_complete)
+
+Init the completion early enough to fix the race.
+
+Signed-off-by: LeyFoon Tan <lftan.linux@gmail.com>
 Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
 ---
- drivers/cpufreq/highbank-cpufreq.c |  24 ++++-
- drivers/mailbox/Makefile           |   2 +-
- drivers/mailbox/pl320-ipc.c        | 198 ----------------------------------
- drivers/mailbox/pl320.c            | 214 +++++++++++++++++++++++++++++++++++++
- include/linux/pl320-ipc.h          |  17 ---
- 5 files changed, 237 insertions(+), 218 deletions(-)
- delete mode 100644 drivers/mailbox/pl320-ipc.c
- create mode 100644 drivers/mailbox/pl320.c
- delete mode 100644 include/linux/pl320-ipc.h
+ drivers/mailbox/mailbox.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
-index b464f29..4846734 100644
---- a/drivers/cpufreq/highbank-cpufreq.c
-+++ b/drivers/cpufreq/highbank-cpufreq.c
-@@ -19,7 +19,7 @@
- #include <linux/cpu.h>
- #include <linux/err.h>
- #include <linux/of.h>
--#include <linux/pl320-ipc.h>
-+#include <linux/mailbox_client.h>
- #include <linux/platform_device.h>
+diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+index 79d576e..cdf7d45 100644
+--- a/drivers/mailbox/mailbox.c
++++ b/drivers/mailbox/mailbox.c
+@@ -278,6 +278,9 @@ int mbox_send_message(struct mbox_chan *chan, void *mssg)
+ 	if (!chan || !chan->cl)
+ 		return -EINVAL;
  
- #define HB_CPUFREQ_CHANGE_NOTE	0x80000001
-@@ -29,8 +29,28 @@
- static int hb_voltage_change(unsigned int freq)
- {
- 	u32 msg[HB_CPUFREQ_IPC_LEN] = {HB_CPUFREQ_CHANGE_NOTE, freq / 1000000};
-+	struct mbox_client cl;
-+	int ret = -ETIMEDOUT;
-+	struct mbox_chan *chan;
++	if (chan->cl->tx_block)
++		init_completion(&chan->tx_complete);
++
+ 	t = _add_to_rbuf(chan, mssg);
+ 	if (t < 0) {
+ 		pr_err("Try increasing MBOX_TX_QUEUE_LEN\n");
+@@ -291,7 +294,6 @@ int mbox_send_message(struct mbox_chan *chan, void *mssg)
  
--	return pl320_ipc_transmit(msg);
-+	cl.rx_callback = NULL;
-+	cl.tx_done = NULL;
-+	cl.tx_block = true;
-+	cl.tx_tout = 1000; /* 1 sec */
-+	cl.link_data = NULL;
-+	cl.knows_txdone = false;
-+	cl.chan_name = "pl320:A9_to_M3";
-+
-+	chan = mbox_request_channel(&cl);
-+	if (IS_ERR(chan))
-+		return PTR_ERR(chan);
-+
-+	if (mbox_send_message(chan, (void *)msg))
-+		ret = msg[1]; /* PL320 updates buffer with FIFO after ACK */
-+
-+	mbox_free_channel(chan);
-+
-+	return ret;
- }
- 
- static int hb_cpufreq_clk_notify(struct notifier_block *nb,
-diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
-index 2fa343a..f3f4ab7 100644
---- a/drivers/mailbox/Makefile
-+++ b/drivers/mailbox/Makefile
-@@ -2,7 +2,7 @@
- 
- obj-$(CONFIG_MAILBOX)		+= mailbox.o
- 
--obj-$(CONFIG_PL320_MBOX)	+= pl320-ipc.o
-+obj-$(CONFIG_PL320_MBOX)	+= pl320.o
- 
- obj-$(CONFIG_OMAP_MBOX)		+= omap-mailbox.o
- obj-$(CONFIG_OMAP1_MBOX)	+= mailbox_omap1.o
-diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
-deleted file mode 100644
-index f3755e0..0000000
---- a/drivers/mailbox/pl320-ipc.c
-+++ /dev/null
-@@ -1,198 +0,0 @@
--/*
-- * Copyright 2012 Calxeda, Inc.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program.  If not, see <http://www.gnu.org/licenses/>.
-- */
--#include <linux/types.h>
--#include <linux/err.h>
--#include <linux/delay.h>
--#include <linux/export.h>
--#include <linux/io.h>
--#include <linux/interrupt.h>
--#include <linux/completion.h>
--#include <linux/mutex.h>
--#include <linux/notifier.h>
--#include <linux/spinlock.h>
--#include <linux/device.h>
--#include <linux/amba/bus.h>
--
--#include <linux/pl320-ipc.h>
--
--#define IPCMxSOURCE(m)		((m) * 0x40)
--#define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
--#define IPCMxDCLEAR(m)		(((m) * 0x40) + 0x008)
--#define IPCMxDSTATUS(m)		(((m) * 0x40) + 0x00C)
--#define IPCMxMODE(m)		(((m) * 0x40) + 0x010)
--#define IPCMxMSET(m)		(((m) * 0x40) + 0x014)
--#define IPCMxMCLEAR(m)		(((m) * 0x40) + 0x018)
--#define IPCMxMSTATUS(m)		(((m) * 0x40) + 0x01C)
--#define IPCMxSEND(m)		(((m) * 0x40) + 0x020)
--#define IPCMxDR(m, dr)		(((m) * 0x40) + ((dr) * 4) + 0x024)
--
--#define IPCMMIS(irq)		(((irq) * 8) + 0x800)
--#define IPCMRIS(irq)		(((irq) * 8) + 0x804)
--
--#define MBOX_MASK(n)		(1 << (n))
--#define IPC_TX_MBOX		1
--#define IPC_RX_MBOX		2
--
--#define CHAN_MASK(n)		(1 << (n))
--#define A9_SOURCE		1
--#define M3_SOURCE		0
--
--static void __iomem *ipc_base;
--static int ipc_irq;
--static DEFINE_MUTEX(ipc_m1_lock);
--static DECLARE_COMPLETION(ipc_completion);
--static ATOMIC_NOTIFIER_HEAD(ipc_notifier);
--
--static inline void set_destination(int source, int mbox)
--{
--	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDSET(mbox));
--	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMSET(mbox));
--}
--
--static inline void clear_destination(int source, int mbox)
--{
--	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDCLEAR(mbox));
--	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMCLEAR(mbox));
--}
--
--static void __ipc_send(int mbox, u32 *data)
--{
--	int i;
--	for (i = 0; i < 7; i++)
--		__raw_writel(data[i], ipc_base + IPCMxDR(mbox, i));
--	__raw_writel(0x1, ipc_base + IPCMxSEND(mbox));
--}
--
--static u32 __ipc_rcv(int mbox, u32 *data)
--{
--	int i;
--	for (i = 0; i < 7; i++)
--		data[i] = __raw_readl(ipc_base + IPCMxDR(mbox, i));
--	return data[1];
--}
--
--/* blocking implmentation from the A9 side, not usuable in interrupts! */
--int pl320_ipc_transmit(u32 *data)
--{
--	int ret;
--
--	mutex_lock(&ipc_m1_lock);
--
--	init_completion(&ipc_completion);
--	__ipc_send(IPC_TX_MBOX, data);
--	ret = wait_for_completion_timeout(&ipc_completion,
--					  msecs_to_jiffies(1000));
--	if (ret == 0) {
--		ret = -ETIMEDOUT;
--		goto out;
--	}
--
--	ret = __ipc_rcv(IPC_TX_MBOX, data);
--out:
--	mutex_unlock(&ipc_m1_lock);
--	return ret;
--}
--EXPORT_SYMBOL_GPL(pl320_ipc_transmit);
--
--static irqreturn_t ipc_handler(int irq, void *dev)
--{
--	u32 irq_stat;
--	u32 data[7];
--
--	irq_stat = __raw_readl(ipc_base + IPCMMIS(1));
--	if (irq_stat & MBOX_MASK(IPC_TX_MBOX)) {
--		__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
--		complete(&ipc_completion);
--	}
--	if (irq_stat & MBOX_MASK(IPC_RX_MBOX)) {
--		__ipc_rcv(IPC_RX_MBOX, data);
--		atomic_notifier_call_chain(&ipc_notifier, data[0], data + 1);
--		__raw_writel(2, ipc_base + IPCMxSEND(IPC_RX_MBOX));
--	}
--
--	return IRQ_HANDLED;
--}
--
--int pl320_ipc_register_notifier(struct notifier_block *nb)
--{
--	return atomic_notifier_chain_register(&ipc_notifier, nb);
--}
--EXPORT_SYMBOL_GPL(pl320_ipc_register_notifier);
--
--int pl320_ipc_unregister_notifier(struct notifier_block *nb)
--{
--	return atomic_notifier_chain_unregister(&ipc_notifier, nb);
--}
--EXPORT_SYMBOL_GPL(pl320_ipc_unregister_notifier);
--
--static int pl320_probe(struct amba_device *adev, const struct amba_id *id)
--{
--	int ret;
--
--	ipc_base = ioremap(adev->res.start, resource_size(&adev->res));
--	if (ipc_base == NULL)
--		return -ENOMEM;
--
--	__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
--
--	ipc_irq = adev->irq[0];
--	ret = request_irq(ipc_irq, ipc_handler, 0, dev_name(&adev->dev), NULL);
--	if (ret < 0)
--		goto err;
--
--	/* Init slow mailbox */
--	__raw_writel(CHAN_MASK(A9_SOURCE),
--			ipc_base + IPCMxSOURCE(IPC_TX_MBOX));
--	__raw_writel(CHAN_MASK(M3_SOURCE),
--			ipc_base + IPCMxDSET(IPC_TX_MBOX));
--	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
--		     ipc_base + IPCMxMSET(IPC_TX_MBOX));
--
--	/* Init receive mailbox */
--	__raw_writel(CHAN_MASK(M3_SOURCE),
--			ipc_base + IPCMxSOURCE(IPC_RX_MBOX));
--	__raw_writel(CHAN_MASK(A9_SOURCE),
--			ipc_base + IPCMxDSET(IPC_RX_MBOX));
--	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
--		     ipc_base + IPCMxMSET(IPC_RX_MBOX));
--
--	return 0;
--err:
--	iounmap(ipc_base);
--	return ret;
--}
--
--static struct amba_id pl320_ids[] = {
--	{
--		.id	= 0x00041320,
--		.mask	= 0x000fffff,
--	},
--	{ 0, 0 },
--};
--
--static struct amba_driver pl320_driver = {
--	.drv = {
--		.name	= "pl320",
--	},
--	.id_table	= pl320_ids,
--	.probe		= pl320_probe,
--};
--
--static int __init ipc_init(void)
--{
--	return amba_driver_register(&pl320_driver);
--}
--module_init(ipc_init);
-diff --git a/drivers/mailbox/pl320.c b/drivers/mailbox/pl320.c
-new file mode 100644
-index 0000000..1121ca8
---- /dev/null
-+++ b/drivers/mailbox/pl320.c
-@@ -0,0 +1,214 @@
-+/*
-+ * Copyright 2012 Calxeda, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/types.h>
-+#include <linux/err.h>
-+#include <linux/delay.h>
-+#include <linux/export.h>
-+#include <linux/io.h>
-+#include <linux/interrupt.h>
-+#include <linux/completion.h>
-+#include <linux/mutex.h>
-+#include <linux/notifier.h>
-+#include <linux/spinlock.h>
-+#include <linux/device.h>
-+#include <linux/amba/bus.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/mailbox_controller.h>
-+
-+#define IPCMSOURCE(m)		((m) * 0x40)
-+#define IPCMDSET(m)		(((m) * 0x40) + 0x004)
-+#define IPCMDCLEAR(m)		(((m) * 0x40) + 0x008)
-+#define IPCMDSTATUS(m)		(((m) * 0x40) + 0x00C)
-+#define IPCMMODE(m)		(((m) * 0x40) + 0x010)
-+#define IPCMMSET(m)		(((m) * 0x40) + 0x014)
-+#define IPCMMCLEAR(m)		(((m) * 0x40) + 0x018)
-+#define IPCMMSTATUS(m)		(((m) * 0x40) + 0x01C)
-+#define IPCMSEND(m)		(((m) * 0x40) + 0x020)
-+#define IPCMDR(m, dr)		(((m) * 0x40) + ((dr) * 4) + 0x024)
-+
-+#define IPCMMIS(irq)		(((irq) * 8) + 0x800)
-+#define IPCMRIS(irq)		(((irq) * 8) + 0x804)
-+
-+#define MBOX_MASK(n)		(1 << (n))
-+#define IPC_TX_MBOX		1
-+
-+#define CHAN_MASK(n)		(1 << (n))
-+#define A9_SOURCE		1
-+#define M3_SOURCE		0
-+
-+struct pl320_con {
-+	u32 *data;
-+	int mbox_irq;
-+	struct device *dev;
-+	struct mbox_link link;
-+	void __iomem *mbox_base;
-+	struct mbox_controller mbox_con;
-+};
-+
-+static inline struct pl320_con *to_pl320(struct mbox_link *l)
-+{
-+	if (!l)
-+		return NULL;
-+
-+	return container_of(l, struct pl320_con, link);
-+}
-+
-+static irqreturn_t mbox_handler(int irq, void *p)
-+{
-+	struct mbox_link *link = (struct mbox_link *)p;
-+	struct pl320_con *pl320 = to_pl320(link);
-+	void __iomem *mbox_base = pl320->mbox_base;
-+	u32 irq_stat;
-+
-+	irq_stat = __raw_readl(mbox_base + IPCMMIS(1));
-+	if (irq_stat & MBOX_MASK(IPC_TX_MBOX)) {
-+		u32 *data = pl320->data;
-+		int i;
-+
-+		__raw_writel(0, mbox_base + IPCMSEND(IPC_TX_MBOX));
-+
-+		/*
-+		 * The PL320 driver specifies that the send buffer
-+		 * will be overwritten by same fifo upon TX ACK.
-+		 */
-+		for (i = 0; i < 7; i++)
-+			data[i] = __raw_readl(mbox_base
-+					 + IPCMDR(IPC_TX_MBOX, i));
-+
-+		mbox_link_txdone(link, MBOX_OK);
-+
-+		pl320->data = NULL;
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int pl320_send_data(struct mbox_link *link, void *msg)
-+{
-+	struct pl320_con *pl320 = to_pl320(link);
-+	void __iomem *mbox_base = pl320->mbox_base;
-+	u32 *data = (u32 *)msg;
-+	int i;
-+
-+	pl320->data = data;
-+
-+	for (i = 0; i < 7; i++)
-+		__raw_writel(data[i], mbox_base + IPCMDR(IPC_TX_MBOX, i));
-+
-+	__raw_writel(0x1, mbox_base + IPCMSEND(IPC_TX_MBOX));
-+
-+	return 0;
-+}
-+
-+static int pl320_startup(struct mbox_link *link, void *ignored)
-+{
-+	struct pl320_con *pl320 = to_pl320(link);
-+	void __iomem *mbox_base = pl320->mbox_base;
-+	int err, mbox_irq = pl320->mbox_irq;
-+
-+	__raw_writel(0, mbox_base + IPCMSEND(IPC_TX_MBOX));
-+
-+	err = request_irq(mbox_irq, mbox_handler,
-+				0, dev_name(pl320->dev), link);
-+	if (err)
-+		return err;
-+
-+	/* Init slow mailbox */
-+	__raw_writel(CHAN_MASK(A9_SOURCE),
-+			mbox_base + IPCMSOURCE(IPC_TX_MBOX));
-+	__raw_writel(CHAN_MASK(M3_SOURCE),
-+			mbox_base + IPCMDSET(IPC_TX_MBOX));
-+	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
-+		     mbox_base + IPCMMSET(IPC_TX_MBOX));
-+
-+	pl320->data = NULL;
-+	return 0;
-+}
-+
-+static void pl320_shutdown(struct mbox_link *link)
-+{
-+	struct pl320_con *pl320 = to_pl320(link);
-+
-+	pl320->data = NULL;
-+	free_irq(pl320->mbox_irq, link);
-+}
-+
-+static struct mbox_link_ops pl320_ops = {
-+	.send_data = pl320_send_data,
-+	.startup = pl320_startup,
-+	.shutdown = pl320_shutdown,
-+};
-+
-+static int pl320_probe(struct amba_device *adev, const struct amba_id *id)
-+{
-+	struct pl320_con *pl320;
-+	struct mbox_link *l[2];
-+	int ret;
-+
-+	pl320 = kzalloc(sizeof(struct pl320_con), GFP_KERNEL);
-+	if (!pl320)
-+		return -ENOMEM;
-+
-+	pl320->mbox_base = ioremap(adev->res.start, resource_size(&adev->res));
-+	if (pl320->mbox_base == NULL) {
-+		kfree(pl320);
-+		return -ENOMEM;
-+	}
-+
-+	pl320->dev = &adev->dev;
-+	pl320->mbox_irq = adev->irq[0];
-+	amba_set_drvdata(adev, pl320);
-+
-+	l[0] = &pl320->link;
-+	l[1] = NULL;
-+	pl320->mbox_con.links = l;
-+	pl320->mbox_con.txdone_irq = true;
-+	pl320->mbox_con.ops = &pl320_ops;
-+	snprintf(pl320->link.link_name, 16, "A9_to_M3");
-+	snprintf(pl320->mbox_con.controller_name, 16, "pl320");
-+	pl320->mbox_con.dev = &adev->dev;
-+
-+	ret = mbox_controller_register(&pl320->mbox_con);
-+	if (ret) {
-+		iounmap(pl320->mbox_base);
-+		kfree(pl320);
-+	}
-+
-+	return ret;
-+}
-+
-+static struct amba_id pl320_ids[] = {
-+	{
-+		.id	= 0x00041320,
-+		.mask	= 0x000fffff,
-+	},
-+	{ 0, 0 },
-+};
-+
-+static struct amba_driver pl320_driver = {
-+	.drv = {
-+		.name	= "pl320",
-+	},
-+	.id_table	= pl320_ids,
-+	.probe		= pl320_probe,
-+};
-+
-+static int __init mbox_init(void)
-+{
-+	return amba_driver_register(&pl320_driver);
-+}
-+module_init(mbox_init);
-diff --git a/include/linux/pl320-ipc.h b/include/linux/pl320-ipc.h
-deleted file mode 100644
-index 5161f63..0000000
---- a/include/linux/pl320-ipc.h
-+++ /dev/null
-@@ -1,17 +0,0 @@
--/*
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program.  If not, see <http://www.gnu.org/licenses/>.
-- */
--
--int pl320_ipc_transmit(u32 *data);
--int pl320_ipc_register_notifier(struct notifier_block *nb);
--int pl320_ipc_unregister_notifier(struct notifier_block *nb);
+ 	if (chan->cl->tx_block && chan->active_req) {
+ 		int ret;
+-		init_completion(&chan->tx_complete);
+ 		ret = wait_for_completion_timeout(&chan->tx_complete,
+ 			chan->cl->tx_tout);
+ 		if (ret == 0) {
 -- 
 1.8.1.2
 
