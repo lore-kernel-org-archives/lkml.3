@@ -1,166 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078AbaCRVNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:13:21 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:36276 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757888AbaCRVNR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:13:17 -0400
-From: Silvio F <silvio.fricke@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: daeseok.youn@gmail.com, silvio.fricke@gmail.com, silvio@port1024.net,
-        sparmaintainer@unisys.com, devel@driverdev.osuosl.org
-Subject: [PATCH] staging: unisys: kmalloc/memset to kzalloc conversation
-Date: Tue, 18 Mar 2014 22:13:10 +0100
-Message-Id: <1395177190-19806-2-git-send-email-silvio.fricke@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1395177190-19806-1-git-send-email-silvio.fricke@gmail.com>
-References: <4376102.svyTz8ADVT@daeseok-laptop.cloud.net>
- <1395177190-19806-1-git-send-email-silvio.fricke@gmail.com>
+	id S1758137AbaCRVR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:17:56 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:3338 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755126AbaCRVRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 17:17:53 -0400
+X-IronPort-AV: E=Sophos;i="4.97,680,1389744000"; 
+   d="scan'208";a="111270526"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Jesse Gross <jesse@nicira.com>, <pshelar@nicira.com>, <tgraf@redhat.com>,
+        <dev@openvswitch.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
+        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
+        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>, <netfilter-devel@vger.kernel.org>,
+        <netfilter@vger.kernel.org>, <coreteam@netfilter.org>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
+Date: Tue, 18 Mar 2014 21:17:35 +0000
+Message-ID: <1395177455-2077-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch solves the Coccinelle warning: "kzalloc should be used
-instead of kmalloc/memset"
+skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+orphan them. Also, it doesn't handle errors, so this patch takes care of that
+as well.
 
-This patch is a fixup for
-
-	linux-next: 97a84f1203786985856a0d4b49b1d7cc387238ce
-	"Staging: unisys: Replace kmalloc/memset with kzalloc"
-
-The ALLOC_CMDRSP #define is after transformation to kzalloc only a
-rename for kzalloc and was completly removed.
-
-Signed-off-by: Silvio F <silvio.fricke@gmail.com>
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 ---
- drivers/staging/unisys/include/uisutils.h           | 7 -------
- drivers/staging/unisys/virthba/virthba.c            | 9 ++++-----
- drivers/staging/unisys/virtpci/virtpci.c            | 3 +--
- drivers/staging/unisys/visorutil/memregion_direct.c | 5 ++---
- drivers/staging/unisys/visorutil/periodic_work.c    | 5 ++---
- 5 files changed, 9 insertions(+), 20 deletions(-)
+ net/openvswitch/datapath.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/staging/unisys/include/uisutils.h b/drivers/staging/unisys/include/uisutils.h
-index 81b5d9b..effd893 100644
---- a/drivers/staging/unisys/include/uisutils.h
-+++ b/drivers/staging/unisys/include/uisutils.h
-@@ -189,13 +189,6 @@ struct chaninfo {
- 	schedule_timeout((x)*HZ); \
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 03db95a..35c4e85 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2508,8 +2508,8 @@ int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
+ 		    unsigned int flags);
+ void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
+ unsigned int skb_zerocopy_headlen(const struct sk_buff *from);
+-void skb_zerocopy(struct sk_buff *to, const struct sk_buff *from,
+-		  int len, int hlen);
++int skb_zerocopy(struct sk_buff *to, const struct sk_buff *from,
++		 int len, int hlen);
+ void skb_split(struct sk_buff *skb, struct sk_buff *skb1, const u32 len);
+ int skb_shift(struct sk_buff *tgt, struct sk_buff *skb, int shiftlen);
+ void skb_scrub_packet(struct sk_buff *skb, bool xnet);
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 3f14c63..60f623c 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2127,25 +2127,36 @@ EXPORT_SYMBOL_GPL(skb_zerocopy_headlen);
+  *
+  *	The `hlen` as calculated by skb_zerocopy_headlen() specifies the
+  *	headroom in the `to` buffer.
++ *
++ *	Return value:
++ *	0: everything is OK
++ *	-ENOMEM: couldn't orphan frags of from due to lack of memory
++ *	-EFAULT: skb_copy_bits() found some problem with geometry
+  */
+-void
++int
+ skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ {
+ 	int i, j = 0;
+ 	int plen = 0; /* length of skb->head fragment */
++	int ret;
+ 	struct page *page;
+ 	unsigned int offset;
+ 
+ 	BUG_ON(!from->head_frag && !hlen);
+ 
+ 	/* dont bother with small payloads */
+-	if (len <= skb_tailroom(to)) {
+-		skb_copy_bits(from, 0, skb_put(to, len), len);
+-		return;
++	if (len <= skb_tailroom(to))
++		return skb_copy_bits(from, 0, skb_put(to, len), len);
++
++	if (unlikely(skb_orphan_frags(to, GFP_ATOMIC))) {
++		skb_tx_error(to);
++		return -ENOMEM;
+ 	}
+ 
+ 	if (hlen) {
+-		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		if (unlikely(ret))
++			return ret;
+ 		len -= hlen;
+ 	} else {
+ 		plen = min_t(int, skb_headlen(from), len);
+@@ -2173,6 +2184,8 @@ skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ 		j++;
+ 	}
+ 	skb_shinfo(to)->nr_frags = j;
++
++	return 0;
  }
+ EXPORT_SYMBOL_GPL(skb_zerocopy);
  
--#define ALLOC_CMDRSP(cmdrsp) { \
--	cmdrsp = kmalloc(SIZEOF_CMDRSP, GFP_ATOMIC); \
--	if (cmdrsp != NULL) { \
--		memset(cmdrsp, 0, SIZEOF_CMDRSP); \
--	} \
--}
--
- /* This is a hack until we fix IOVM to initialize the channel header
-  * correctly at DEVICE_CREATE time, INSTEAD OF waiting until
-  * DEVICE_CONFIGURE time.
-diff --git a/drivers/staging/unisys/virthba/virthba.c b/drivers/staging/unisys/virthba/virthba.c
-index 8aefaa8..817b11d 100644
---- a/drivers/staging/unisys/virthba/virthba.c
-+++ b/drivers/staging/unisys/virthba/virthba.c
-@@ -402,9 +402,8 @@ process_disk_notify(struct Scsi_Host *shost, struct uiscmdrsp *cmdrsp)
- 	struct diskaddremove *dar;
- 	unsigned long flags;
+diff --git a/net/netfilter/nfnetlink_queue_core.c b/net/netfilter/nfnetlink_queue_core.c
+index f072fe8..ea02d16 100644
+--- a/net/netfilter/nfnetlink_queue_core.c
++++ b/net/netfilter/nfnetlink_queue_core.c
+@@ -488,7 +488,8 @@ nfqnl_build_packet_message(struct net *net, struct nfqnl_instance *queue,
+ 		nla->nla_type = NFQA_PAYLOAD;
+ 		nla->nla_len = nla_attr_size(data_len);
  
--	dar = kmalloc(sizeof(struct diskaddremove), GFP_ATOMIC);
-+	dar = kzalloc(sizeof(struct diskaddremove), GFP_ATOMIC);
- 	if (dar) {
--		memset(dar, 0, sizeof(struct diskaddremove));
- 		dar->add = cmdrsp->disknotify.add;
- 		dar->shost = shost;
- 		dar->channel = cmdrsp->disknotify.channel;
-@@ -697,7 +696,7 @@ forward_vdiskmgmt_command(VDISK_MGMT_TYPES vdiskcmdtype,
- 		return FAILED;
+-		skb_zerocopy(skb, entskb, data_len, hlen);
++		if (skb_zerocopy(skb, entskb, data_len, hlen))
++			goto nla_put_failure;
  	}
  
--	ALLOC_CMDRSP(cmdrsp);
-+	cmdrsp = kzalloc(SIZEOF_CMDRSP, GFP_ATOMIC);
- 	if (cmdrsp == NULL) {
- 		LOGERR("kmalloc of cmdrsp failed.\n");
- 		return FAILED;	/* reject */
-@@ -759,7 +758,7 @@ forward_taskmgmt_command(TASK_MGMT_TYPES tasktype, struct scsi_device *scsidev)
- 		return FAILED;
+ 	nlh->nlmsg_len = skb->len;
+diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
+index c53fe0c..9a9f668 100644
+--- a/net/openvswitch/datapath.c
++++ b/net/openvswitch/datapath.c
+@@ -464,7 +464,9 @@ static int queue_userspace_packet(struct datapath *dp, struct sk_buff *skb,
  	}
+ 	nla->nla_len = nla_attr_size(skb->len);
  
--	ALLOC_CMDRSP(cmdrsp);
-+	cmdrsp = kzalloc(SIZEOF_CMDRSP, GFP_ATOMIC);
- 	if (cmdrsp == NULL) {
- 		LOGERR("kmalloc of cmdrsp failed.\n");
- 		return FAILED;	/* reject */
-@@ -930,7 +929,7 @@ virthba_queue_command_lck(struct scsi_cmnd *scsicmd,
- 		return SCSI_MLQUEUE_DEVICE_BUSY;
- 	}
+-	skb_zerocopy(user_skb, skb, skb->len, hlen);
++	err = skb_zerocopy(user_skb, skb, skb->len, hlen);
++	if (err)
++		goto out;
  
--	ALLOC_CMDRSP(cmdrsp);
-+	cmdrsp = kzalloc(SIZEOF_CMDRSP, GFP_ATOMIC);
- 	if (cmdrsp == NULL) {
- 		LOGERR("kmalloc of cmdrsp failed.\n");
- 		return 1;	/* reject the command */
-diff --git a/drivers/staging/unisys/virtpci/virtpci.c b/drivers/staging/unisys/virtpci/virtpci.c
-index 1b64632..8e34650 100644
---- a/drivers/staging/unisys/virtpci/virtpci.c
-+++ b/drivers/staging/unisys/virtpci/virtpci.c
-@@ -254,13 +254,12 @@ static int add_vbus(struct add_vbus_guestpart *addparams)
- {
- 	int ret;
- 	struct device *vbus;
--	vbus = kmalloc(sizeof(struct device), GFP_ATOMIC);
-+	vbus = kzalloc(sizeof(struct device), GFP_ATOMIC);
- 
- 	POSTCODE_LINUX_2(VPCI_CREATE_ENTRY_PC, POSTCODE_SEVERITY_INFO);
- 	if (!vbus)
- 		return 0;
- 
--	memset(vbus, 0, sizeof(struct device));
- 	dev_set_name(vbus, "vbus%d", addparams->busNo);
- 	vbus->release = virtpci_bus_release;
- 	vbus->parent = &virtpci_rootbus_device;	/* root bus is parent */
-diff --git a/drivers/staging/unisys/visorutil/memregion_direct.c b/drivers/staging/unisys/visorutil/memregion_direct.c
-index 82c651d..b9b61e8 100644
---- a/drivers/staging/unisys/visorutil/memregion_direct.c
-+++ b/drivers/staging/unisys/visorutil/memregion_direct.c
-@@ -41,13 +41,12 @@ MEMREGION *
- visor_memregion_create(HOSTADDRESS physaddr, ulong nbytes)
- {
- 	MEMREGION *rc = NULL;
--	MEMREGION *memregion = kmalloc(sizeof(MEMREGION),
--				       GFP_KERNEL|__GFP_NORETRY);
-+	MEMREGION *memregion = kzalloc(sizeof(MEMREGION),
-+				       GFP_KERNEL | __GFP_NORETRY);
- 	if (memregion == NULL) {
- 		ERRDRV("visor_memregion_create allocation failed");
- 		return NULL;
- 	}
--	memset(memregion, 0, sizeof(MEMREGION));
- 	memregion->physaddr = physaddr;
- 	memregion->nbytes = nbytes;
- 	memregion->overlapped = FALSE;
-diff --git a/drivers/staging/unisys/visorutil/periodic_work.c b/drivers/staging/unisys/visorutil/periodic_work.c
-index cc1c678..fb1e894 100644
---- a/drivers/staging/unisys/visorutil/periodic_work.c
-+++ b/drivers/staging/unisys/visorutil/periodic_work.c
-@@ -56,13 +56,12 @@ PERIODIC_WORK *visor_periodic_work_create(ulong jiffy_interval,
- 					  void *workfuncarg,
- 					  const char *devnam)
- {
--	PERIODIC_WORK *periodic_work = kmalloc(sizeof(PERIODIC_WORK),
--					       GFP_KERNEL|__GFP_NORETRY);
-+	PERIODIC_WORK *periodic_work = kzalloc(sizeof(PERIODIC_WORK),
-+					       GFP_KERNEL | __GFP_NORETRY);
- 	if (periodic_work == NULL) {
- 		ERRDRV("periodic_work allocation failed ");
- 		return NULL;
- 	}
--	memset(periodic_work, '\0', sizeof(PERIODIC_WORK));
- 	rwlock_init(&periodic_work->lock);
- 	periodic_work->jiffy_interval = jiffy_interval;
- 	periodic_work->workqueue = workqueue;
--- 
-1.9.0
-
+ 	/* Pad OVS_PACKET_ATTR_PACKET if linear copy was performed */
+ 	if (!(dp->user_features & OVS_DP_F_UNALIGNED)) {
