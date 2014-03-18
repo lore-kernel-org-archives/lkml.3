@@ -1,106 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757916AbaCRT1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 15:27:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44683 "EHLO mx1.redhat.com"
+	id S1757933AbaCRT1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 15:27:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20212 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757861AbaCRT0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 15:26:55 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, hpa@zytor.com
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 5/5] x86/boot: Move memset() definition in compressed/string.c
-Date: Tue, 18 Mar 2014 15:26:40 -0400
-Message-Id: <1395170800-11059-6-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
-References: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
+	id S1757861AbaCRT1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 15:27:47 -0400
+Date: Tue, 18 Mar 2014 19:49:51 +0100
+From: Igor Mammedov <imammedo@redhat.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, bp@suse.de, paul.gortmaker@windriver.com,
+        JBeulich@suse.com, drjones@redhat.com, toshi.kani@hp.com,
+        x86@kernel.org, riel@redhat.com, gong.chen@linux.intel.com
+Subject: Re: [PATCH 0/3] x86: fix hang when AP bringup is too slow
+Message-ID: <20140318194951.17fd61ea@thinkpad>
+In-Reply-To: <53283A3F.6040302@redhat.com>
+References: <1394720720-8484-1-git-send-email-imammedo@redhat.com>
+	<53283A3F.6040302@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently compressed/misc.c needs to link against memset(). I think one of
-the reasons of this need is inclusion of various header files which define
-static inline functions and use memset() inside these. For example,
-include/linux/bitmap.h
+On Tue, 18 Mar 2014 08:21:19 -0400
+Prarit Bhargava <prarit@redhat.com> wrote:
 
-I think trying to include "../string.h" and using builtin version of memset
-does not work because by the time "#define memset" shows up, it is too
-late. Some other header file has already used memset() and expects to
-find a definition during link phase.
+> 
+> 
+> On 03/13/2014 10:25 AM, Igor Mammedov wrote:
+> > Hang is observed on virtual machines during CPU hotplug,
+> > especially in big guests with many CPUs. (It happens more
+> > often if host is over-committed).
+> > 
+> 
+> Hey Igor, I like this better than the previous version.  Thanks for taking into
+> account the possible races in this code.
+> 
+> A quick question on system behaviour.  As you know I've been more concerned
+> lately with error handling, etc., through the cpu hotplug code as we've seen
+> several customer reports of silent failures or cascading failures in the cpu
+> hotplug code when users have been attempting to perform physical hotplug.
+> 
+> After your patches have been applied, in theory the following can happen:
+> 
+> The master CPU is completing the AP cpu's bring up.  The AP cpu is doing (sorry
+> for the cut-and-paste),
+> 
+> void cpu_init(void)
+> {
+>         int cpu = smp_processor_id();
+>         struct task_struct *curr = current;
+>         struct tss_struct *t = &per_cpu(init_tss, cpu);
+>         struct thread_struct *thread = &curr->thread;
+> 
+>         /*
+>          * wait till the master CPU completes it's STARTUP sequence,
+>          * and decides to wait till this AP boots
+>          */
+>         while (!cpumask_test_cpu(cpu, cpu_callout_mask)) {
+>                 cpu_relax();
+>                 if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID)
+>                         halt();
+>         }
+> 
+> and is spinning on cpu_relax().  Suppose something goes wrong and the softlockup
+> watchdog fires on the AP cpu:
+> 
+> 1.  Can it? :) ie) will the softlockup fire at this point of the AP init?  Okay,
+> I'm being really lazy and not looking at the code ;)
+It shouldn't, CPU is in pristine state and just came from boot trampoline at
+this point without interrupts configured yet.
 
-Currently we have a C definitoin of memset() in misc.c. Move it to
-compressed/string.c so that others can use it if need be.
+> 
+> 2.  Is there anything we can do in this code to notify the user of a problem?
+> Even a pr_crit() here I think would help to indicate what went wrong; it might
+> be useful for future debugging in this area to have some sort of output.  I
+> think a WARN() or BUG() is necessary here as there are several calls to cpu_init().
+Do you mean something like this:
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- arch/x86/boot/compressed/misc.c   | 20 +++++++-------------
- arch/x86/boot/compressed/string.c | 10 ++++++++++
- 2 files changed, 17 insertions(+), 13 deletions(-)
++		if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID) {
++                       WARN(1);
++			halt();
++               }
 
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 3100092..1768461 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -98,8 +98,14 @@
-  */
- #define STATIC		static
- 
--#undef memset
- #undef memcpy
-+
-+/*
-+ * Use a normal definition of memset() from string.c. There are already
-+ * included header files which expect a definition of memset() and by
-+ * the time we define memset macro, it is too late.
-+ */
-+#undef memset
- #define memzero(s, n)	memset((s), 0, (n))
- 
- 
-@@ -110,8 +116,6 @@ static void error(char *m);
-  */
- struct boot_params *real_mode;		/* Pointer to real-mode data */
- 
--void *memset(void *s, int c, size_t n);
--
- memptr free_mem_ptr;
- memptr free_mem_end_ptr;
- 
-@@ -216,16 +220,6 @@ void __putstr(const char *s)
- 	outb(0xff & (pos >> 1), vidport+1);
- }
- 
--void *memset(void *s, int c, size_t n)
--{
--	int i;
--	char *ss = s;
--
--	for (i = 0; i < n; i++)
--		ss[i] = c;
--	return s;
--}
--
- static void error(char *x)
- {
- 	error_putstr("\n\n");
-diff --git a/arch/x86/boot/compressed/string.c b/arch/x86/boot/compressed/string.c
-index 920b55e..f3c57e3 100644
---- a/arch/x86/boot/compressed/string.c
-+++ b/arch/x86/boot/compressed/string.c
-@@ -33,3 +33,13 @@ void *memcpy(void *dest, const void *src, size_t n)
- 	return dest;
- }
- #endif
-+
-+void *memset(void *s, int c, size_t n)
-+{
-+	int i;
-+	char *ss = s;
-+
-+	for (i = 0; i < n; i++)
-+		ss[i] = c;
-+	return s;
-+}
+> 
+> 3.  Change this comment:
+> 
+>          * wait till the master CPU completes it's STARTUP sequence,
+>          * and decides to wait till this AP boots
+> 
+> to
+> 
+> 	/* wait for the master CPU to complete this cpu's STARTUP. */ ?
+well, that is not quite the same as above, comment should underline that
+AP waits for ACK from master CPU before continuing with this AP initialization.
+
+How about:
+/* wait for ACK from master CPU before continuing with AP initialization */
+
+> 
+> Apologies for the late review,
+> 
+> P.
+
+
 -- 
-1.8.5.3
-
+Regards,
+  Igor
