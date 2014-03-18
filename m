@@ -1,140 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaCRAnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 20:43:43 -0400
-Received: from kvm5.telegraphics.com.au ([98.124.60.144]:53863 "EHLO
-	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaCRAnR (ORCPT
+	id S1753914AbaCRAq6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 20:46:58 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:48911 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470AbaCRAqs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 20:43:17 -0400
-Message-Id: <20140318004213.222484138@telegraphics.com.au>
-User-Agent: quilt/0.50-1
-Date: Tue, 18 Mar 2014 11:42:14 +1100
-From: Finn Thain <fthain@telegraphics.com.au>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>
-Cc: Sam Creasey <sammy@sammy.net>, Russell King <linux@arm.linux.org.uk>,
-        Michael Schmitz <schmitz@debian.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-m68k@vger.kernel.org>
-Subject: [PATCH 02/12] scsi/NCR5380: remove redundant HOSTS_C macro tests
-References: <20140318004212.612472697@telegraphics.com.au>
-Content-Disposition: inline; filename=ncr5380-HOSTS_C-macro
+	Mon, 17 Mar 2014 20:46:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <87d2hkldmx.fsf@nemi.mork.no>
+References: <1394952550-9308-1-git-send-email-benchan@chromium.org>
+ <1394952550-9308-2-git-send-email-benchan@chromium.org> <87ob15maa6.fsf@nemi.mork.no>
+ <CAC5Y2nN_w46FczgitbPjmXtk7q3rHpTxLddx0_GtStfzNXerXQ@mail.gmail.com> <87d2hkldmx.fsf@nemi.mork.no>
+From: Ben Chan <benchan@chromium.org>
+Date: Mon, 17 Mar 2014 17:46:27 -0700
+X-Google-Sender-Auth: v0G2TW2hc0sIHFDaS2fyCdmZbJs
+Message-ID: <CAC5Y2nMdPM8w3=dgd2as5z8huL1XLPjon8wSmR-2e3=JGWtCpA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] net: cdc_ncm: respect operator preferred MTU reported
+ by MBIM
+To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Greg Suarez <gsuarez@smithmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HOSTS_C is always undefined. There is no hosts.c anymore.
+On Mon, Mar 17, 2014 at 2:27 PM, Bjørn Mork <bjorn@mork.no> wrote:
 
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+>
+> This sounds all reasonable to me. Thanks for taking the time to explain
+> it in such detail. I did know that some vendors set wMaxSegmentSize too
+> low, but had no idea that vendors were using the extended descriptor
+> instead of MBIM_CID_IP_CONFIGURATION.
+>
+> If so, then yes, it does make sense for the driver to base the default
+> MTU on this descriptor.
 
----
- drivers/scsi/g_NCR5380.h |    3 ---
- drivers/scsi/mac_scsi.h  |    3 ---
- drivers/scsi/pas16.h     |    3 ---
- drivers/scsi/sun3_scsi.h |    3 ---
- drivers/scsi/t128.h      |    3 ---
- 5 files changed, 15 deletions(-)
+Hopefully, subsequent MBIM specifications would further clarify and
+simplify things a bit, but it's gonna be a slow process as we all know
+:-/
 
-Index: linux-m68k/drivers/scsi/g_NCR5380.h
-===================================================================
---- linux-m68k.orig/drivers/scsi/g_NCR5380.h	2014-03-17 23:49:30.000000000 +1100
-+++ linux-m68k/drivers/scsi/g_NCR5380.h	2014-03-18 00:18:30.000000000 +1100
-@@ -58,8 +58,6 @@ static const char* generic_NCR5380_info(
- #define CAN_QUEUE 16
- #endif
- 
--#ifndef HOSTS_C
--
- #define __STRVAL(x) #x
- #define STRVAL(x) __STRVAL(x)
- 
-@@ -131,7 +129,6 @@ static const char* generic_NCR5380_info(
- #define BOARD_NCR53C400A 2
- #define BOARD_DTC3181E	3
- 
--#endif /* else def HOSTS_C */
- #endif /* ndef ASM */
- #endif /* GENERIC_NCR5380_H */
- 
-Index: linux-m68k/drivers/scsi/mac_scsi.h
-===================================================================
---- linux-m68k.orig/drivers/scsi/mac_scsi.h	2014-03-18 00:18:20.000000000 +1100
-+++ linux-m68k/drivers/scsi/mac_scsi.h	2014-03-18 00:18:30.000000000 +1100
-@@ -51,8 +51,6 @@
- 
- #include <scsi/scsicam.h>
- 
--#ifndef HOSTS_C
--
- #define NCR5380_implementation_fields \
-     int port, ctrl
- 
-@@ -75,7 +73,6 @@
- #define NCR5380_show_info macscsi_show_info
- #define NCR5380_write_info macscsi_write_info
- 
--#endif /* ndef HOSTS_C */
- #endif /* ndef ASM */
- #endif /* MAC_NCR5380_H */
- 
-Index: linux-m68k/drivers/scsi/pas16.h
-===================================================================
---- linux-m68k.orig/drivers/scsi/pas16.h	2014-03-17 23:49:30.000000000 +1100
-+++ linux-m68k/drivers/scsi/pas16.h	2014-03-18 00:18:30.000000000 +1100
-@@ -129,8 +129,6 @@ static int pas16_bus_reset(Scsi_Cmnd *);
- #define CAN_QUEUE 32 
- #endif
- 
--#ifndef HOSTS_C
--
- #define NCR5380_implementation_fields \
-     volatile unsigned short io_port
- 
-@@ -171,6 +169,5 @@ static int pas16_bus_reset(Scsi_Cmnd *);
-    
- #define PAS16_IRQS 0xd4a8 
- 
--#endif /* else def HOSTS_C */
- #endif /* ndef ASM */
- #endif /* PAS16_H */
-Index: linux-m68k/drivers/scsi/sun3_scsi.h
-===================================================================
---- linux-m68k.orig/drivers/scsi/sun3_scsi.h	2014-03-18 00:18:20.000000000 +1100
-+++ linux-m68k/drivers/scsi/sun3_scsi.h	2014-03-18 00:18:30.000000000 +1100
-@@ -82,8 +82,6 @@ static int sun3scsi_release (struct Scsi
- #define SUN3_SCSI_NAME "Sun3 NCR5380 SCSI"
- #endif
- 
--#ifndef HOSTS_C
--
- #define NCR5380_implementation_fields \
-     int port, ctrl
- 
-@@ -371,6 +369,5 @@ struct sun3_udc_regs {
- 
- 
- 
--#endif /* ndef HOSTS_C */
- #endif /* SUN3_NCR5380_H */
- 
-Index: linux-m68k/drivers/scsi/t128.h
-===================================================================
---- linux-m68k.orig/drivers/scsi/t128.h	2014-03-17 23:49:30.000000000 +1100
-+++ linux-m68k/drivers/scsi/t128.h	2014-03-18 00:18:30.000000000 +1100
-@@ -107,8 +107,6 @@ static int t128_bus_reset(struct scsi_cm
- #define CAN_QUEUE 32
- #endif
- 
--#ifndef HOSTS_C
--
- #define NCR5380_implementation_fields \
-     void __iomem *base
- 
-@@ -148,6 +146,5 @@ static int t128_bus_reset(struct scsi_cm
- 
- #define T128_IRQS 0xc4a8
- 
--#endif /* else def HOSTS_C */
- #endif /* ndef ASM */
- #endif /* T128_H */
+>
+>>> wMTU access needs le16_to_cpu.
+>>
+>> Good catch. I will fix it in patch v2.
+>
+> Tip: I found this because my test script/makefile includes
+> "C=1 CF=-D__CHECK_ENDIAN__"
+>
+> I find that very useful when dealing with USB on a little endian system,
+> like most of us have.  It's all too easy to miss a conversion otherwise.
+>
 
+Thanks again for the review and tip. I've submitted patch v2 to
+address the le16_to_cpu conversion.
+
+
+>>> Could we move this final MTU correction from cdc_ncm_setup to
+>>> cdc_ncm_bind_common to avoid bloating the device struct with another
+>>> descriptor pointer we donæt really need to keep around?
+>>>
+>>> I know we look into descriptors in cdc_ncm_setup, because we have to,
+>>> but ideally I would have loved to see cdc_ncm_setup dealing with *just*
+>>> the NCM/MBIM specific control setup messages and cdc_ncm_bind_common
+>>> dealing with all the functional descriptors.  That seems most logic to
+>>> me (but is of course only my personal opinion and nothing else - I do
+>>> not know what the original cdc_ncm author intended)
+>>>
+>>
+>> I understand the argument against the extra descriptor pointer. But I
+>> think it's better to keep the mtu related code together so that one
+>> can easily see how MTU is determined when trying to change or refactor
+>> the code. I haven't looked into what cdc_ncm_setup was originally
+>> intended for. If we'd like to avoid adding an extra pointer in
+>> cdc_ncm_ctx, we could have cdc_ncm_bind passing a locally scoped
+>> context to cdc_ncm_setup.
+>
+> No, the extra pointer doesn't matter much. Just keep it as it is.
+>
+>
+> Bjørn
