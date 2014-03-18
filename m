@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306AbaCRWSb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 18:18:31 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:33861 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933070AbaCRWS3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 18:18:29 -0400
-Date: Tue, 18 Mar 2014 15:18:25 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Monam Agarwal <monamagarwal123@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eddie.wai@broadcom.com
-Subject: Re: [PATCH] rcu: Replace rcu_assign_pointer(x, NULL) with
- RCU_INIT_POINTER(x, NULL)
-Message-ID: <20140318221825.GW4420@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1395180150-18548-1-git-send-email-monamagarwal123@gmail.com>
+	id S1758189AbaCRWVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 18:21:14 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:33919 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755175AbaCRWVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 18:21:12 -0400
+Date: Tue, 18 Mar 2014 16:21:05 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Roy Franz <roy.franz@linaro.org>
+Cc: Mark Salter <msalter@redhat.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 11/15] arm64: add EFI stub
+Message-ID: <20140318222105.GA11178@obsidianresearch.com>
+References: <1394750828-16351-1-git-send-email-leif.lindholm@linaro.org>
+ <1394750828-16351-12-git-send-email-leif.lindholm@linaro.org>
+ <20140318120919.GG13200@arm.com>
+ <1395153629.2967.10.camel@deneb.redhat.com>
+ <20140318182826.GC20497@arm.com>
+ <1395178831.2967.29.camel@deneb.redhat.com>
+ <CAFECyb_NuHBQD3zPouDde3WTyz8RrUu1OWFOt6VWX_U5n1g8MA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395180150-18548-1-git-send-email-monamagarwal123@gmail.com>
+In-Reply-To: <CAFECyb_NuHBQD3zPouDde3WTyz8RrUu1OWFOt6VWX_U5n1g8MA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031822-8236-0000-0000-000000E46F31
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 03:32:30AM +0530, Monam Agarwal wrote:
-> This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL) in drivers/infiniband/hw/qib/qib_qp.c
-> 
-> Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+On Tue, Mar 18, 2014 at 02:48:30PM -0700, Roy Franz wrote:
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > It isn't clear to me if UEFI does cache flushing at ExitBootServices
+> > time, but even so, at least stack use will get cached between then and
+> > the kernel entry point. The stub could conceivably get its hands on the
+> > EFI memmap and invalidate dcache using address ranges from UEFI memory
+> > descriptors so maybe that is the way we should do it.
 
-> ---
->  drivers/infiniband/hw/qib/qib_qp.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/infiniband/hw/qib/qib_qp.c b/drivers/infiniband/hw/qib/qib_qp.c
-> index 7e7e16f..1f5f04c 100644
-> --- a/drivers/infiniband/hw/qib/qib_qp.c
-> +++ b/drivers/infiniband/hw/qib/qib_qp.c
-> @@ -252,10 +252,10 @@ static void remove_qp(struct qib_ibdev *dev, struct qib_qp *qp)
-> 
->  	if (ibp->qp0 == qp) {
->  		atomic_dec(&qp->refcount);
-> -		rcu_assign_pointer(ibp->qp0, NULL);
-> +		RCU_INIT_POINTER(ibp->qp0, NULL);
->  	} else if (ibp->qp1 == qp) {
->  		atomic_dec(&qp->refcount);
-> -		rcu_assign_pointer(ibp->qp1, NULL);
-> +		RCU_INIT_POINTER(ibp->qp1, NULL);
->  	} else {
->  		struct qib_qp *q, **qpp;
-> 
-> @@ -303,7 +303,7 @@ unsigned qib_free_all_qps(struct qib_devdata *dd)
->  	spin_lock_irqsave(&dev->qpt_lock, flags);
->  	for (n = 0; n < dev->qp_table_size; n++) {
->  		qp = dev->qp_table[n];
-> -		rcu_assign_pointer(dev->qp_table[n], NULL);
-> +		RCU_INIT_POINTER(dev->qp_table[n], NULL);
-> 
->  		for (; qp; qp = qp->next)
->  			qp_inuse++;
-> -- 
-> 1.7.9.5
-> 
+> I looked at the UEFI spec and there is no mention of cache flushing
+> in ExitBootServices(), so it seems it is up to the OS to do any
+> cache management.
 
+Something to think about: On mvebu we recently confirmed a situation
+where turning off the L1 cache is not sufficient for booting. The L2
+cache must also be completely off and disabled prior to jumping in to
+the kernel.
+
+The issue is the decompressor turns the L1 cache back on, and if the
+L2 is also enabled at this point then it gets filled with
+decompression data. Things go wrong from here because after
+decompression the L1 dcache is switched off, but the L2 isn't
+flush-invalidated.
+
+So now the L2 holds writeback data and uncached reads return garbage,
+and/or the L2 misses the uncached writes (eg relocation fixup) and
+becomes inconsistent with memory. Either case gives a black screen
+crash at boot.
+
+Fundementally if the L2 doesn't monitor uncached read/writes then it
+will cause a big problem.
+
+Thus, if the UEFI calls the sub with the caches on, and the stub
+doesn't know enough to turn off the L2 then you might not be able to
+turn the dcache off at all. :(
+
+On ARM64 at least the L1 cache ops are standardized so maybe ARM64
+could keep the mmu+caches enabled during boot and do the L1
+d-flush/i-inval required for instruction coherency?
+
+Jason
