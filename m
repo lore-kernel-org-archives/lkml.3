@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaCRIK2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:10:28 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34336 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753900AbaCRIKZ (ORCPT
+	id S1754033AbaCRILp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:11:45 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:33281 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753948AbaCRILl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:10:25 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: akpm@linux-foundation.org
-Cc: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] drivers: bus: omap_l3: remove deprecated IRQF_DISABLED
-Date: Tue, 18 Mar 2014 09:10:17 +0100
-Message-Id: <1395130217-17828-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393995663-2966-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1393995663-2966-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 18 Mar 2014 04:11:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140318003725.GA12217@kroah.com>
+References: <4376102.svyTz8ADVT@daeseok-laptop.cloud.net>
+	<20140317214145.GA29105@kroah.com>
+	<CAHb8M2BwuCJEGueP+-cOatynS5QcSrJMeei_D=0-GdKGxi5N-Q@mail.gmail.com>
+	<20140318003725.GA12217@kroah.com>
+Date: Tue, 18 Mar 2014 17:11:40 +0900
+Message-ID: <CAHb8M2D9Hf6pRza8-xgoSQrWx0x8CBv-qrThLWF3Hb6nZQQn7Q@mail.gmail.com>
+Subject: Re: [PATCH] staging: unisys: use kzalloc instead of kmalloc/memset 0
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the use of the IRQF_DISABLED flag
-from drivers/bus/omap_l3_*
+2014-03-18 9:37 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+> On Tue, Mar 18, 2014 at 09:26:07AM +0900, DaeSeok Youn wrote:
+>> I think vmalloc/kmalloc in uislib_malloc() can be removed and just use
+>> vmalloc/kmalloc directly.
+>
+> Yes.  Actually, just use kmalloc, I don't knwo why vmalloc is being
+> used, but cc: the driver maintainers just to be sure.
 
-It's a NOOP since 2.6.35 and it will be removed one day.
+It try to allocate 128KiB(131072byte) with vmalloc(). I think if it
+trying to allocate with kmalloc()
+it has a possibility to fail because of memory fragmentation even if
+system has enough memory to use.
+Just my opinion. If I'm wrong, let me know.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/bus/omap_l3_noc.c | 4 ++--
- drivers/bus/omap_l3_smx.c | 6 ++----
- 2 files changed, 4 insertions(+), 6 deletions(-)
+>
+>> (UISMALLOC() macro is also removed.)
+>
+> Yes.
+>
+>> And uislib_malloc() is renamed to "uislib_trace_buffer_status()" which
+>> is just tracing buffer status(Malloc_FailuresAlloc, Malloc_BytesInUse
+>> ...) for info_proc_read_helper().
+>
+> The whole tracing stuff needs to be ripped out, so no problem deleting
+> it here as well.
 
-diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index feeecae623f6..6ada27a911d1 100644
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@ -187,7 +187,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	l3->debug_irq = platform_get_irq(pdev, 0);
- 	ret = request_irq(l3->debug_irq,
- 			l3_interrupt_handler,
--			IRQF_DISABLED, "l3-dbg-irq", l3);
-+			0, "l3-dbg-irq", l3);
- 	if (ret) {
- 		pr_crit("L3: request_irq failed to register for 0x%x\n",
- 						l3->debug_irq);
-@@ -197,7 +197,7 @@ static int omap4_l3_probe(struct platform_device *pdev)
- 	l3->app_irq = platform_get_irq(pdev, 1);
- 	ret = request_irq(l3->app_irq,
- 			l3_interrupt_handler,
--			IRQF_DISABLED, "l3-app-irq", l3);
-+			0, "l3-app-irq", l3);
- 	if (ret) {
- 		pr_crit("L3: request_irq failed to register for 0x%x\n",
- 						l3->app_irq);
-diff --git a/drivers/bus/omap_l3_smx.c b/drivers/bus/omap_l3_smx.c
-index acc216491b8a..769d64c0b0fe 100644
---- a/drivers/bus/omap_l3_smx.c
-+++ b/drivers/bus/omap_l3_smx.c
-@@ -238,8 +238,7 @@ static int __init omap3_l3_probe(struct platform_device *pdev)
- 
- 	l3->debug_irq = platform_get_irq(pdev, 0);
- 	ret = request_irq(l3->debug_irq, omap3_l3_app_irq,
--		IRQF_DISABLED | IRQF_TRIGGER_RISING,
--		"l3-debug-irq", l3);
-+		IRQF_TRIGGER_RISING, "l3-debug-irq", l3);
- 	if (ret) {
- 		dev_err(&pdev->dev, "couldn't request debug irq\n");
- 		goto err1;
-@@ -247,8 +246,7 @@ static int __init omap3_l3_probe(struct platform_device *pdev)
- 
- 	l3->app_irq = platform_get_irq(pdev, 1);
- 	ret = request_irq(l3->app_irq, omap3_l3_app_irq,
--		IRQF_DISABLED | IRQF_TRIGGER_RISING,
--		"l3-app-irq", l3);
-+		IRQF_TRIGGER_RISING, "l3-app-irq", l3);
- 	if (ret) {
- 		dev_err(&pdev->dev, "couldn't request app irq\n");
- 		goto err2;
--- 
-1.8.3.2
+OK. I will remove that information in info_proc_read_helper().
 
+>
+>> If this change is accepted, it also need to change uislib_free().
+>
+> Drop it and just use kfree().
+OK. replace kfree() with uislib_free().
+
+>
+> thanks,
+>
+> greg k-h
