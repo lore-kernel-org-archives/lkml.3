@@ -1,449 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839AbaCRIkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:40:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45558 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267AbaCRI3U (ORCPT
+	id S1754210AbaCRInf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:43:35 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:34661 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752560AbaCRInc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:29:20 -0400
-Date: Tue, 18 Mar 2014 01:28:18 -0700
-From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
-Message-ID: <tip-a043971141f163f9845324a2f83502d15011485d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        hpa@zytor.com, mingo@kernel.org, dvhart@linux.intel.com,
-        peterz@infradead.org, jason.low2@hp.com, Waiman.Long@hp.com,
-        tglx@linutronix.de, scott.norton@hp.com, davidlohr@hp.com,
-        aswin@hp.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, dvhart@linux.intel.com,
-        peterz@infradead.org, jason.low2@hp.com, Waiman.Long@hp.com,
-        tglx@linutronix.de, davidlohr@hp.com, scott.norton@hp.com,
-        aswin@hp.com
-In-Reply-To: <1387081917-9102-2-git-send-email-davidlohr@hp.com>
-References: <1387081917-9102-2-git-send-email-davidlohr@hp.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf bench: Add futex-hash microbenchmark
-Git-Commit-ID: a043971141f163f9845324a2f83502d15011485d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 18 Mar 2014 04:43:32 -0400
+Message-ID: <53280732.4060707@free-electrons.com>
+Date: Tue, 18 Mar 2014 09:43:30 +0100
+From: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Jisheng Zhang <jszhang@marvell.com>
+CC: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 1/3] ARM: dts: berlin2q: add the Marvell Armada 1500
+ pro
+References: <1395068788-19786-1-git-send-email-antoine.tenart@free-electrons.com>	<1395068788-19786-2-git-send-email-antoine.tenart@free-electrons.com> <20140318102435.2d29abc7@xhacker>
+In-Reply-To: <20140318102435.2d29abc7@xhacker>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a043971141f163f9845324a2f83502d15011485d
-Gitweb:     http://git.kernel.org/tip/a043971141f163f9845324a2f83502d15011485d
-Author:     Davidlohr Bueso <davidlohr@hp.com>
-AuthorDate: Sat, 14 Dec 2013 20:31:55 -0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 14 Mar 2014 11:20:43 -0300
+Hi Jisheng,
 
-perf bench: Add futex-hash microbenchmark
+On 18/03/2014 03:24, Jisheng Zhang wrote:
+>> +	sysclk: system-clock {
+>> +		compatible = "fixed-factor-clock";
+>> +		#clock-cells = <0>;
+>> +		clocks = <&cpuclk>;
+>> +		clock-multi = <1>;
+>> +		clock-div = <3>;
+>> +	};
+>
+> Can you please name it as twdclk to avoid confusion? On Berlin, sysclk is another
+> clk rather than the clk for twd.
 
-Introduce futexes to perf-bench and add a program that stresses and
-measures the kernel's implementation of the hash table.
+Sure, I'll change the name and send a v4.
 
-This is a multi-threaded program that simply measures the amount of
-failed futex wait calls - we only want to deal with the hashing
-overhead, so a negative return of futex_wait_setup() is enough to do the
-trick.
+Antoine
 
-An example run:
-
-  $ perf bench futex hash -t 32
-  Run summary [PID 10989]: 32 threads, each operating on 1024 [private] futexes for 10 secs.
-
-  [thread  0] futexes: 0x19d9b10 ... 0x19dab0c [ 418713 ops/sec ]
-  [thread  1] futexes: 0x19daca0 ... 0x19dbc9c [ 469913 ops/sec ]
-  [thread  2] futexes: 0x19dbe30 ... 0x19dce2c [ 479744 ops/sec ]
-  ...
-  [thread 31] futexes: 0x19fbb80 ... 0x19fcb7c [ 464179 ops/sec ]
-
-  Averaged 454310 operations/sec (+- 0.84%), total secs = 10
-
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Acked-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jason Low <jason.low2@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Scott J Norton <scott.norton@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Link: http://lkml.kernel.org/r/1387081917-9102-2-git-send-email-davidlohr@hp.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile.perf      |   1 +
- tools/perf/bench/bench.h      |   1 +
- tools/perf/bench/futex-hash.c | 212 ++++++++++++++++++++++++++++++++++++++++++
- tools/perf/bench/futex.h      |  48 ++++++++++
- tools/perf/builtin-bench.c    |  10 +-
- tools/perf/perf.h             |   6 ++
- 6 files changed, 277 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 1f7ec48..54ae547 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -426,6 +426,7 @@ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
- endif
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
-+BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
- BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
-diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
-index 0fdc852..34edb5c 100644
---- a/tools/perf/bench/bench.h
-+++ b/tools/perf/bench/bench.h
-@@ -31,6 +31,7 @@ extern int bench_sched_pipe(int argc, const char **argv, const char *prefix);
- extern int bench_mem_memcpy(int argc, const char **argv,
- 			    const char *prefix __maybe_unused);
- extern int bench_mem_memset(int argc, const char **argv, const char *prefix);
-+extern int bench_futex_hash(int argc, const char **argv, const char *prefix);
- 
- #define BENCH_FORMAT_DEFAULT_STR	"default"
- #define BENCH_FORMAT_DEFAULT		0
-diff --git a/tools/perf/bench/futex-hash.c b/tools/perf/bench/futex-hash.c
-new file mode 100644
-index 0000000..a84206e
---- /dev/null
-+++ b/tools/perf/bench/futex-hash.c
-@@ -0,0 +1,212 @@
-+/*
-+ * Copyright (C) 2013  Davidlohr Bueso <davidlohr@hp.com>
-+ *
-+ * futex-hash: Stress the hell out of the Linux kernel futex uaddr hashing.
-+ *
-+ * This program is particularly useful for measuring the kernel's futex hash
-+ * table/function implementation. In order for it to make sense, use with as
-+ * many threads and futexes as possible.
-+ */
-+
-+#include "../perf.h"
-+#include "../util/util.h"
-+#include "../util/stat.h"
-+#include "../util/parse-options.h"
-+#include "../util/header.h"
-+#include "bench.h"
-+#include "futex.h"
-+
-+#include <err.h>
-+#include <stdlib.h>
-+#include <sys/time.h>
-+#include <pthread.h>
-+
-+static unsigned int nthreads = 0;
-+static unsigned int nsecs    = 10;
-+/* amount of futexes per thread */
-+static unsigned int nfutexes = 1024;
-+static bool fshared = false, done = false, silent = false;
-+
-+struct timeval start, end, runtime;
-+static pthread_mutex_t thread_lock;
-+static unsigned int threads_starting;
-+static struct stats throughput_stats;
-+static pthread_cond_t thread_parent, thread_worker;
-+
-+struct worker {
-+	int tid;
-+	u_int32_t *futex;
-+	pthread_t thread;
-+	unsigned long ops;
-+};
-+
-+static const struct option options[] = {
-+	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
-+	OPT_UINTEGER('r', "runtime", &nsecs,    "Specify runtime (in seconds)"),
-+	OPT_UINTEGER('f', "futexes", &nfutexes, "Specify amount of futexes per threads"),
-+	OPT_BOOLEAN( 's', "silent",  &silent,   "Silent mode: do not display data/details"),
-+	OPT_BOOLEAN( 'S', "shared",  &fshared,  "Use shared futexes instead of private ones"),
-+	OPT_END()
-+};
-+
-+static const char * const bench_futex_hash_usage[] = {
-+	"perf bench futex hash <options>",
-+	NULL
-+};
-+
-+static void *workerfn(void *arg)
-+{
-+	int ret;
-+	unsigned int i;
-+	struct worker *w = (struct worker *) arg;
-+
-+	pthread_mutex_lock(&thread_lock);
-+	threads_starting--;
-+	if (!threads_starting)
-+		pthread_cond_signal(&thread_parent);
-+	pthread_cond_wait(&thread_worker, &thread_lock);
-+	pthread_mutex_unlock(&thread_lock);
-+
-+	do {
-+		for (i = 0; i < nfutexes; i++, w->ops++) {
-+			/*
-+			 * We want the futex calls to fail in order to stress
-+			 * the hashing of uaddr and not measure other steps,
-+			 * such as internal waitqueue handling, thus enlarging
-+			 * the critical region protected by hb->lock.
-+			 */
-+			ret = futex_wait(&w->futex[i], 1234, NULL,
-+					 fshared ? 0 : FUTEX_PRIVATE_FLAG);
-+			if (!silent &&
-+			    (!ret || errno != EAGAIN || errno != EWOULDBLOCK))
-+				warn("Non-expected futex return call");
-+		}
-+	}  while (!done);
-+
-+	return NULL;
-+}
-+
-+static void toggle_done(int sig __maybe_unused,
-+			siginfo_t *info __maybe_unused,
-+			void *uc __maybe_unused)
-+{
-+	/* inform all threads that we're done for the day */
-+	done = true;
-+	gettimeofday(&end, NULL);
-+	timersub(&end, &start, &runtime);
-+}
-+
-+static void print_summary(void)
-+{
-+	unsigned long avg = avg_stats(&throughput_stats);
-+	double stddev = stddev_stats(&throughput_stats);
-+
-+	printf("%sAveraged %ld operations/sec (+- %.2f%%), total secs = %d\n",
-+	       !silent ? "\n" : "", avg, rel_stddev_stats(stddev, avg),
-+	       (int) runtime.tv_sec);
-+}
-+
-+int bench_futex_hash(int argc, const char **argv,
-+		     const char *prefix __maybe_unused)
-+{
-+	int ret = 0;
-+	cpu_set_t cpu;
-+	struct sigaction act;
-+	unsigned int i, ncpus;
-+	pthread_attr_t thread_attr;
-+	struct worker *worker = NULL;
-+
-+	argc = parse_options(argc, argv, options, bench_futex_hash_usage, 0);
-+	if (argc) {
-+		usage_with_options(bench_futex_hash_usage, options);
-+		exit(EXIT_FAILURE);
-+	}
-+
-+	ncpus = sysconf(_SC_NPROCESSORS_ONLN);
-+
-+	sigfillset(&act.sa_mask);
-+	act.sa_sigaction = toggle_done;
-+	sigaction(SIGINT, &act, NULL);
-+
-+	if (!nthreads) /* default to the number of CPUs */
-+		nthreads = ncpus;
-+
-+	worker = calloc(nthreads, sizeof(*worker));
-+	if (!worker)
-+		goto errmem;
-+
-+	printf("Run summary [PID %d]: %d threads, each operating on %d [%s] futexes for %d secs.\n\n",
-+	       getpid(), nthreads, nfutexes, fshared ? "shared":"private", nsecs);
-+
-+	init_stats(&throughput_stats);
-+	pthread_mutex_init(&thread_lock, NULL);
-+	pthread_cond_init(&thread_parent, NULL);
-+	pthread_cond_init(&thread_worker, NULL);
-+
-+	threads_starting = nthreads;
-+	pthread_attr_init(&thread_attr);
-+	gettimeofday(&start, NULL);
-+	for (i = 0; i < nthreads; i++) {
-+		worker[i].tid = i;
-+		worker[i].futex = calloc(nfutexes, sizeof(*worker[i].futex));
-+		if (!worker[i].futex)
-+			goto errmem;
-+
-+		CPU_ZERO(&cpu);
-+		CPU_SET(i % ncpus, &cpu);
-+
-+		ret = pthread_attr_setaffinity_np(&thread_attr, sizeof(cpu_set_t), &cpu);
-+		if (ret)
-+			err(EXIT_FAILURE, "pthread_attr_setaffinity_np");
-+
-+		ret = pthread_create(&worker[i].thread, &thread_attr, workerfn,
-+				     (void *)(struct worker *) &worker[i]);
-+		if (ret)
-+			err(EXIT_FAILURE, "pthread_create");
-+
-+	}
-+	pthread_attr_destroy(&thread_attr);
-+
-+	pthread_mutex_lock(&thread_lock);
-+	while (threads_starting)
-+		pthread_cond_wait(&thread_parent, &thread_lock);
-+	pthread_cond_broadcast(&thread_worker);
-+	pthread_mutex_unlock(&thread_lock);
-+
-+	sleep(nsecs);
-+	toggle_done(0, NULL, NULL);
-+
-+	for (i = 0; i < nthreads; i++) {
-+		ret = pthread_join(worker[i].thread, NULL);
-+		if (ret)
-+			err(EXIT_FAILURE, "pthread_join");
-+	}
-+
-+	/* cleanup & report results */
-+	pthread_cond_destroy(&thread_parent);
-+	pthread_cond_destroy(&thread_worker);
-+	pthread_mutex_destroy(&thread_lock);
-+
-+	for (i = 0; i < nthreads; i++) {
-+		unsigned long t = worker[i].ops/runtime.tv_sec;
-+		update_stats(&throughput_stats, t);
-+		if (!silent) {
-+			if (nfutexes == 1)
-+				printf("[thread %2d] futex: %p [ %ld ops/sec ]\n",
-+				       worker[i].tid, &worker[i].futex[0], t);
-+			else
-+				printf("[thread %2d] futexes: %p ... %p [ %ld ops/sec ]\n",
-+				       worker[i].tid, &worker[i].futex[0],
-+				       &worker[i].futex[nfutexes-1], t);
-+		}
-+
-+		free(worker[i].futex);
-+	}
-+
-+	print_summary();
-+
-+	free(worker);
-+	return ret;
-+errmem:
-+	err(EXIT_FAILURE, "calloc");
-+}
-diff --git a/tools/perf/bench/futex.h b/tools/perf/bench/futex.h
-new file mode 100644
-index 0000000..7d0bda5
---- /dev/null
-+++ b/tools/perf/bench/futex.h
-@@ -0,0 +1,48 @@
-+/*
-+ * Glibc independent futex library for testing kernel functionality.
-+ * Shamelessly stolen from Darren Hart <dvhltc@us.ibm.com>
-+ *    http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/
-+ */
-+
-+#ifndef _FUTEX_H
-+#define _FUTEX_H
-+
-+#include <unistd.h>
-+#include <sys/syscall.h>
-+#include <sys/types.h>
-+#include <linux/futex.h>
-+
-+/**
-+ * futex() - SYS_futex syscall wrapper
-+ * @uaddr:	address of first futex
-+ * @op:		futex op code
-+ * @val:	typically expected value of uaddr, but varies by op
-+ * @timeout:	typically an absolute struct timespec (except where noted
-+ *		otherwise). Overloaded by some ops
-+ * @uaddr2:	address of second futex for some ops\
-+ * @val3:	varies by op
-+ * @opflags:	flags to be bitwise OR'd with op, such as FUTEX_PRIVATE_FLAG
-+ *
-+ * futex() is used by all the following futex op wrappers. It can also be
-+ * used for misuse and abuse testing. Generally, the specific op wrappers
-+ * should be used instead. It is a macro instead of an static inline function as
-+ * some of the types over overloaded (timeout is used for nr_requeue for
-+ * example).
-+ *
-+ * These argument descriptions are the defaults for all
-+ * like-named arguments in the following wrappers except where noted below.
-+ */
-+#define futex(uaddr, op, val, timeout, uaddr2, val3, opflags) \
-+	syscall(SYS_futex, uaddr, op | opflags, val, timeout, uaddr2, val3)
-+
-+/**
-+ * futex_wait() - block on uaddr with optional timeout
-+ * @timeout:	relative timeout
-+ */
-+static inline int
-+futex_wait(u_int32_t *uaddr, u_int32_t val, struct timespec *timeout, int opflags)
-+{
-+	return futex(uaddr, FUTEX_WAIT, val, timeout, NULL, 0, opflags);
-+}
-+
-+#endif /* _FUTEX_H */
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index e47f90c..a8b0138 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -12,6 +12,7 @@
-  *  sched ... scheduler and IPC performance
-  *  mem   ... memory access performance
-  *  numa  ... NUMA scheduling and MM performance
-+ *  futex ... Futex performance
-  */
- #include "perf.h"
- #include "util/util.h"
-@@ -54,6 +55,12 @@ static struct bench mem_benchmarks[] = {
- 	{ NULL,		NULL,						NULL			}
- };
- 
-+static struct bench futex_benchmarks[] = {
-+	{ "hash",	"Benchmark for futex hash table",               bench_futex_hash	},
-+	{ "all",	"Test all futex benchmarks",			NULL			},
-+	{ NULL,		NULL,						NULL			}
-+};
-+
- struct collection {
- 	const char	*name;
- 	const char	*summary;
-@@ -61,11 +68,12 @@ struct collection {
- };
- 
- static struct collection collections[] = {
--	{ "sched",	"Scheduler and IPC benchmarks",		sched_benchmarks	},
-+	{ "sched",	"Scheduler and IPC benchmarks",			sched_benchmarks	},
- 	{ "mem",	"Memory access benchmarks",			mem_benchmarks		},
- #ifdef HAVE_LIBNUMA_SUPPORT
- 	{ "numa",	"NUMA scheduling and MM benchmarks",		numa_benchmarks		},
- #endif
-+	{"futex",       "Futex stressing benchmarks",                   futex_benchmarks        },
- 	{ "all",	"All benchmarks",				NULL			},
- 	{ NULL,		NULL,						NULL			}
- };
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 6898ad0..e18a8b5 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -12,6 +12,9 @@
- #ifndef __NR_perf_event_open
- # define __NR_perf_event_open 336
- #endif
-+#ifndef __NR_futex
-+# define __NR_futex 240
-+#endif
- #endif
- 
- #if defined(__x86_64__)
-@@ -23,6 +26,9 @@
- #ifndef __NR_perf_event_open
- # define __NR_perf_event_open 298
- #endif
-+#ifndef __NR_futex
-+# define __NR_futex 202
-+#endif
- #endif
- 
- #ifdef __powerpc__
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
