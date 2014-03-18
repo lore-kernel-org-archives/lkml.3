@@ -1,141 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaCRAuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 20:50:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8247 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753034AbaCRAuJ convert rfc822-to-8bit (ORCPT
+	id S1753287AbaCRA5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 20:57:48 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53237 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752598AbaCRA5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 20:50:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,673,1389772800"; 
-   d="scan'208";a="500798178"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Sabrina Dubroka <sd@queasysnail.net>,
-        Valdis Kletnieks <validis.kletnieks@vt.edu>
-CC: Lv Zheng <zetalog@gmail.com>,
+	Mon, 17 Mar 2014 20:57:46 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>
-Subject: RE: [RFC PATCH 1/2] ACPICA: Dispatcher: Ignore SyncLevel for
- auto-serialization mechanism.
-Thread-Topic: [RFC PATCH 1/2] ACPICA: Dispatcher: Ignore SyncLevel for
- auto-serialization mechanism.
-Thread-Index: AQHPQZeB599nwHkdH0iiv6M16UqddJrmBJfQ
-Date: Tue, 18 Mar 2014 00:50:04 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88024E1B17@SHSMSX101.ccr.corp.intel.com>
-References: <14866.1394813101@turing-police.cc.vt.edu>
- <cover.1395028738.git.lv.zheng@intel.com>
- <bf7078d77da8d24ff11337673c6f0ea9442f294a.1395028738.git.lv.zheng@intel.com>
-In-Reply-To: <bf7078d77da8d24ff11337673c6f0ea9442f294a.1395028738.git.lv.zheng@intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/2] ACPI: Default disable auto-serialization.
+Date: Tue, 18 Mar 2014 02:13:14 +0100
+Message-ID: <2040389.QPkIWC2M7W@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88024E1AE0@SHSMSX101.ccr.corp.intel.com>
+References: <14866.1394813101@turing-police.cc.vt.edu> <5326E5E8.4070804@intel.com> <1AE640813FDE7649BE1B193DEA596E88024E1AE0@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Sabrina and Valdis
+On Tuesday, March 18, 2014 12:31:54 AM Zheng, Lv wrote:
+> Hi, Rafael
+> 
+> > From: Wysocki, Rafael J
+> > Sent: Monday, March 17, 2014 8:09 PM
+> > 
+> > On 3/17/2014 5:14 AM, Lv Zheng wrote:
+> > > This feature enabled by the following commit is still under development.
+> > >
+> > >    Commit: cd52379678785b02d7a357988cfba214fdaf92f4
+> > >    Subject: ACPICA: Add global option to disable method auto-serialization.
+> > >    This change adds an option to disable the auto-serialization of
+> > >    methods that create named objects.
+> > >
+> > > This patch disables it by default temporarily according to the bug reports.
+> > 
+> > Well, it doesn't restore the 3.14 behavior of acpi_auto_serialize, as
+> > far as I can say, so we can't apply it.
+> > 
+> > I still can drop the commits related to auto-serialization from my
+> > acpica branch.  Which commits are they?
+> 
+> From linux-pm/bleeding-edge branch, I found this series includes the following commits:
+> 
+> Commit: a0fd108f2da56b769472fc0095616fb370988516
+> Author: Lv Zheng <lv.zheng@intel.com>
+> Subject: ACPI: Rename kernel parameter "acpi_serialize" to "acpi_no_auto_serialize"
+> 
+> Commit: 5f1cb4a92e4c4aabd139ff9ca1e11c0e2db2ac59
+> Author: Lv Zheng <lv.zheng@intel.com>
+> Subject: ACPICA: Remove global option to serialize all control methods.
+> 
+> Commit: cd52379678785b02d7a357988cfba214fdaf92f4
+> Author: Bob Moore <robert.moore@intel.com>
+> Subject: ACPICA: Add global option to disable method auto-serialization.
+> 
+> Commit: f56b05bd111b01141ef74568dc4d262c70295d03
+> Author: Lv Zheng <lv.zheng@intel.com>
+> Subject: ACPICA: Add additional named objects for the auto-serialize method scan.
+> 
+> Commit: 27f1899350a1d6baab117c03c87f0e37730047bd
+> Author: Bob Moore <robert.moore@intel.com>
+> Subject: ACPICA: Add auto-serialization support for ill-behaved control methods.
+> 
+> Reverting these commits can restore original Linux behavior.
+> Please check.
 
-Could you give this patch a try to see if this patch is working?
+OK, I dropped the five commits above from the acpica branch.
 
-Thanks and best regards
--Lv
+Please check if the current ACPICA material in the bleeding-edge branch of
+linux-pm.git looks OK (and let me know either way).
 
-> From: Zheng, Lv
-> Sent: Monday, March 17, 2014 12:15 PM
-> 
-> From: Robert Moore <robert.moore@intel.com>
-> 
-> It is reported that the auto-serialization mechanism has broken some
-> machine.  This patch fixes the issues by igoring the SyncLevel
-> attribute of the marked Method.
-> 
-> References: http://www.spinics.net/lists/linux-acpi/msg49496.html
-> Reported-by: Valdis Kletnieks <validis.kletnieks@vt.edu>
-> Reported-by: Sabrina Dubroka <sd@queasysnail.net>
-> Signed-off-by: Bob Moore <robert.moore@intel.com>
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> ---
->  drivers/acpi/acpica/acobject.h |    3 ++-
->  drivers/acpi/acpica/dsmethod.c |   24 +++++++++++++++++++-----
->  2 files changed, 21 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpica/acobject.h b/drivers/acpi/acpica/acobject.h
-> index 1a4d618..22fb644 100644
-> --- a/drivers/acpi/acpica/acobject.h
-> +++ b/drivers/acpi/acpica/acobject.h
-> @@ -193,7 +193,8 @@ struct acpi_object_method {
->  #define ACPI_METHOD_INTERNAL_ONLY       0x02	/* Method is implemented internally (_OSI) */
->  #define ACPI_METHOD_SERIALIZED          0x04	/* Method is serialized */
->  #define ACPI_METHOD_SERIALIZED_PENDING  0x08	/* Method is to be marked serialized */
-> -#define ACPI_METHOD_MODIFIED_NAMESPACE  0x10	/* Method modified the namespace */
-> +#define ACPI_METHOD_IGNORE_SYNC_LEVEL   0x10	/* Method was auto-serialized at table load time */
-> +#define ACPI_METHOD_MODIFIED_NAMESPACE  0x20	/* Method modified the namespace */
-> 
->  /******************************************************************************
->   *
-> diff --git a/drivers/acpi/acpica/dsmethod.c b/drivers/acpi/acpica/dsmethod.c
-> index 73764c7..3c7f737 100644
-> --- a/drivers/acpi/acpica/dsmethod.c
-> +++ b/drivers/acpi/acpica/dsmethod.c
-> @@ -175,8 +175,15 @@ acpi_ds_detect_named_opcodes(struct acpi_walk_state *walk_state,
->  	 * At this point, we know we have a Named object opcode.
->  	 * Mark the method as serialized. Later code will create a mutex for
->  	 * this method to enforce serialization.
-> +	 *
-> +	 * Note, ACPI_METHOD_IGNORE_SYNC_LEVEL flag means that we will ignore the
-> +	 * Sync Level mechanism for this method, even though it is now serialized.
-> +	 * Otherwise, there can be conflicts with existing ASL code that actually
-> +	 * uses sync levels.
->  	 */
-> -	walk_state->method_desc->method.info_flags |= ACPI_METHOD_SERIALIZED;
-> +	walk_state->method_desc->method.sync_level = 0;
-> +	walk_state->method_desc->method.info_flags |=
-> +	    (ACPI_METHOD_SERIALIZED | ACPI_METHOD_IGNORE_SYNC_LEVEL);
-> 
->  	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
->  			  "Method serialized [%4.4s] %p - [%s] (%4.4X)\n",
-> @@ -349,13 +356,19 @@ acpi_ds_begin_method_execution(struct acpi_namespace_node *method_node,
->  		/*
->  		 * The current_sync_level (per-thread) must be less than or equal to
->  		 * the sync level of the method. This mechanism provides some
-> -		 * deadlock prevention
-> +		 * deadlock prevention.
-> +		 *
-> +		 * If the method was auto-serialized, we just ignore the sync level
-> +		 * mechanism, because auto-serialization of methods can interfere
-> +		 * with ASL code that actually uses sync levels.
->  		 *
->  		 * Top-level method invocation has no walk state at this point
->  		 */
->  		if (walk_state &&
-> -		    (walk_state->thread->current_sync_level >
-> -		     obj_desc->method.mutex->mutex.sync_level)) {
-> +		    (!(obj_desc->method.
-> +		       info_flags & ACPI_METHOD_IGNORE_SYNC_LEVEL))
-> +		    && (walk_state->thread->current_sync_level >
-> +			obj_desc->method.mutex->mutex.sync_level)) {
->  			ACPI_ERROR((AE_INFO,
->  				    "Cannot acquire Mutex for method [%4.4s], current SyncLevel is too large (%u)",
->  				    acpi_ut_get_node_name(method_node),
-> @@ -800,7 +813,8 @@ acpi_ds_terminate_control_method(union acpi_operand_object *method_desc,
->  			method_desc->method.info_flags &=
->  			    ~ACPI_METHOD_SERIALIZED_PENDING;
->  			method_desc->method.info_flags |=
-> -			    ACPI_METHOD_SERIALIZED;
-> +			    (ACPI_METHOD_SERIALIZED |
-> +			     ACPI_METHOD_IGNORE_SYNC_LEVEL);
->  			method_desc->method.sync_level = 0;
->  		}
-> 
-> --
-> 1.7.10
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
