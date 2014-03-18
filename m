@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962AbaCRLP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 07:15:59 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48998 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205AbaCRLP6 (ORCPT
+	id S1755301AbaCRLQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 07:16:26 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:54985 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462AbaCRLQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 07:15:58 -0400
-Date: Tue, 18 Mar 2014 11:15:42 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140318111542.GK11706@sirena.org.uk>
-References: <1395139757-6907-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1395139757-6907-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Tue, 18 Mar 2014 07:16:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pXLKCnUjo+CxjWTT"
-Content-Disposition: inline
-In-Reply-To: <1395139757-6907-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/8] regulator: arizona-ldo1: Add processing of init_data
- from device tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140318201424.e8bde8514726c3639243e9ad@samsung.com>
+References: <20140314140935.e0652b58ce16591b54d0e10b@samsung.com>
+	<CAK9yfHx_FUaUcA_tpsJ73i0iJmczOp7K8gC6sMGHQ6c50i46=A@mail.gmail.com>
+	<20140318201424.e8bde8514726c3639243e9ad@samsung.com>
+Date: Tue, 18 Mar 2014 16:46:24 +0530
+Message-ID: <CAK9yfHy+uiRPZjEDzZRpNKVY1CnWehVGdJmu3ztOTXAuHBx_Yg@mail.gmail.com>
+Subject: Re: [PATCH v11 13/27] iommu/exynos: support for device tree
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 18 March 2014 16:44, Cho KyongHo <pullip.cho@samsung.com> wrote:
+> On Fri, 14 Mar 2014 20:57:42 +0530, Sachin Kamat wrote:
+>> Hi KyongHo,
+>>
+>> On 14 March 2014 10:39, Cho KyongHo <pullip.cho@samsung.com> wrote:
+>> >
+>> > -static struct platform_driver exynos_sysmmu_driver = {
+>> > -       .probe          = exynos_sysmmu_probe,
+>> > -       .driver         = {
+>> > +#ifdef CONFIG_OF
+>>
+>> This is not needed as Exynos is DT only platform.
+>>
+> Yes, but I hesitate to remove that.
 
---pXLKCnUjo+CxjWTT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+What is the reason for your hesitation? :)
 
-On Tue, Mar 18, 2014 at 10:49:13AM +0000, Charles Keepax wrote:
 
-> +  - wlf,ldo1 : Initial data for the LDO1 regulator, as covered in
-> +    Documentation/devicetree/bindings/regulator/regulator.txt
-
-We don't normally prefix the names of the regulator data with a vendor.
-
-> +	np_init = of_get_child_by_name(arizona->dev->of_node, "wlf,ldo1");
-
-You're missing an of_node_put() for this and if you're going to use
-hungarian notation please use a convention other people use.  Calling
-things _node seems more common.
-
---pXLKCnUjo+CxjWTT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTKCrbAAoJELSic+t+oim9v38P/AiAGDPAZrPMON3EkEkvcG7U
-edq+Rzl/nB57PLiuYQNk8INZM7PK7iwJQTNrK4EmMo5aWyQfTAynwn3zzstQ2/hi
-EfWu0rErhEYbQyY1J9BjGmV9gwN12EpMfHdSVWMlaZ7vrGtvWLVQqncyirw5Hzk8
-nIXQRGpE3a2SHX5znh/+iSd/hIv+e3s5Gv5YSX6EL+vX7KFn09LzJ+Z4wPMrjwXF
-gdeXCRrMTG4mWOVjh2AzSPIr/C2ItUu8pO8gFJTkGChJPbMV/+bE40zz/ECFFKO/
-PiRuK6aCLU1ICu6AauvWPhr0bzhP7fNkmqSyvRJIN6zIw1q757u/kCfgf06EaPhz
-9kJRGXomwtkOxp6PI3a0UY4qn/0R9M6h5TEV0u0jW5zpOye0ZBobdLQZX8qXqZb/
-NiWWBmQZ//EmKUrOZ1eEtJzsZ6I11jmGtMVhgVwPBHOnqQNoEAjC6IrWFDyIRT0h
-StuhnnIqt1QWgoguFQqz8giRNb1uhhehenV4AcHbvbTAACnZiGAV7AK0qu3qIMaE
-wvajkbORIxgIWDTcfwAvQ5uoSVvBd3jSp6Cx2WLn65a4hh+5OW2AkAYQjyblHuWK
-Qyd8J/HxSKdu5xlX7eXPxFsohX+vx9vTcI+X3/9IxXFXyQFp/xXaxaEogxx4EPGT
-7Zs4Maa0H2KB58rXRVGf
-=8LTD
------END PGP SIGNATURE-----
-
---pXLKCnUjo+CxjWTT--
+-- 
+With warm regards,
+Sachin
