@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933382AbaCRV5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:57:04 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:42071 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933166AbaCRV4l (ORCPT
+	id S933450AbaCRV5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:57:35 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:63229 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932935AbaCRV4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:56:41 -0400
+	Tue, 18 Mar 2014 17:56:34 -0400
 From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <robherring2@gmail.com>,
@@ -27,9 +27,9 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Dan Malek <dan.malek@konsulko.com>,
         Georgi Vlaev <georgi.vlaev@konsulko.com>,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Subject: [PATCH v3 7/7] of: i2c: Export single device registration method
-Date: Tue, 18 Mar 2014 23:56:06 +0200
-Message-Id: <1395179766-31575-8-git-send-email-pantelis.antoniou@konsulko.com>
+Subject: [PATCH v3 5/7] OF: i2c: Add overlay bus handler
+Date: Tue, 18 Mar 2014 23:56:04 +0200
+Message-Id: <1395179766-31575-6-git-send-email-pantelis.antoniou@konsulko.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1395179766-31575-1-git-send-email-pantelis.antoniou@konsulko.com>
 References: <1395179766-31575-1-git-send-email-pantelis.antoniou@konsulko.com>
@@ -37,174 +37,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
+Add the bus handler registration needed for performing overlays
+containing i2c devices.
 
-Dynamically inserting i2c client device nodes requires the use
-of a single device registration method. Rework and export it.
-
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 ---
- drivers/i2c/i2c-core.c | 99 +++++++++++++++++++++++++++-----------------------
- include/linux/i2c.h    | 10 +++++
- 2 files changed, 64 insertions(+), 45 deletions(-)
+ drivers/i2c/i2c-core.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 86 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 5120d28..017fb03 100644
+index 5fb80b8..5120d28 100644
 --- a/drivers/i2c/i2c-core.c
 +++ b/drivers/i2c/i2c-core.c
-@@ -49,6 +49,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/acpi.h>
- #include <asm/uaccess.h>
-+#include <linux/err.h>
- 
- #include "i2c-core.h"
- 
-@@ -982,63 +983,71 @@ static void i2c_scan_static_board_info(struct i2c_adapter *adapter)
- /* OF support code */
- 
- #if IS_ENABLED(CONFIG_OF)
--static void of_i2c_register_devices(struct i2c_adapter *adap)
-+struct i2c_client *
-+of_i2c_register_device(struct i2c_adapter *adap,
-+		struct device_node *node)
- {
--	void *result;
--	struct device_node *node;
-+	struct i2c_client *result;
-+	struct i2c_board_info info = {};
-+	struct dev_archdata dev_ad = {};
-+	const __be32 *addr;
-+	int len;
- 
--	/* Only register child devices if the adapter has a node pointer set */
--	if (!adap->dev.of_node)
--		return;
-+	dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
- 
--	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
-+	if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
-+		dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
-+			node->full_name);
-+		return ERR_PTR(-EINVAL);
-+	}
- 
--	for_each_available_child_of_node(adap->dev.of_node, node) {
--		struct i2c_board_info info = {};
--		struct dev_archdata dev_ad = {};
--		const __be32 *addr;
--		int len;
-+	addr = of_get_property(node, "reg", &len);
-+	if (!addr || (len < sizeof(int))) {
-+		dev_err(&adap->dev, "of_i2c: invalid reg on %s\n",
-+			node->full_name);
-+		return ERR_PTR(-EINVAL);
-+	}
- 
--		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
-+	info.addr = be32_to_cpup(addr);
-+	if (info.addr > (1 << 10) - 1) {
-+		dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
-+			info.addr, node->full_name);
-+		return ERR_PTR(-EINVAL);
-+	}
- 
--		if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
--			dev_err(&adap->dev, "of_i2c: modalias failure on %s\n",
--				node->full_name);
--			continue;
--		}
-+	info.irq = irq_of_parse_and_map(node, 0);
-+	info.of_node = of_node_get(node);
-+	info.archdata = &dev_ad;
- 
--		addr = of_get_property(node, "reg", &len);
--		if (!addr || (len < sizeof(int))) {
--			dev_err(&adap->dev, "of_i2c: invalid reg on %s\n",
--				node->full_name);
--			continue;
--		}
-+	if (of_get_property(node, "wakeup-source", NULL))
-+		info.flags |= I2C_CLIENT_WAKE;
- 
--		info.addr = be32_to_cpup(addr);
--		if (info.addr > (1 << 10) - 1) {
--			dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
--				info.addr, node->full_name);
--			continue;
--		}
-+	request_module("%s%s", I2C_MODULE_PREFIX, info.type);
- 
--		info.irq = irq_of_parse_and_map(node, 0);
--		info.of_node = of_node_get(node);
--		info.archdata = &dev_ad;
-+	result = i2c_new_device(adap, &info);
-+	if (result == NULL) {
-+		dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
-+			node->full_name);
-+		of_node_put(node);
-+		irq_dispose_mapping(info.irq);
-+		return ERR_PTR(-EINVAL);
-+	}
-+	return result;
-+}
-+EXPORT_SYMBOL(of_i2c_register_device);
- 
--		if (of_get_property(node, "wakeup-source", NULL))
--			info.flags |= I2C_CLIENT_WAKE;
-+static void of_i2c_register_devices(struct i2c_adapter *adap)
-+{
-+	struct device_node *node;
- 
--		request_module("%s%s", I2C_MODULE_PREFIX, info.type);
-+	/* Only register child devices if the adapter has a node pointer set */
-+	if (!adap->dev.of_node)
-+		return;
- 
--		result = i2c_new_device(adap, &info);
--		if (result == NULL) {
--			dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
--				node->full_name);
--			of_node_put(node);
--			irq_dispose_mapping(info.irq);
--			continue;
--		}
--	}
-+	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
-+
-+	for_each_available_child_of_node(adap->dev.of_node, node)
-+		of_i2c_register_device(adap, node);
+@@ -1073,10 +1073,89 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
+ 	return i2c_verify_adapter(dev);
  }
- 
- static int of_dev_node_match(struct device *dev, void *data)
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index deddeb8..a5802be 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -557,6 +557,9 @@ static inline int i2c_adapter_id(struct i2c_adapter *adap)
- #endif /* I2C */
- 
- #if IS_ENABLED(CONFIG_OF)
-+struct i2c_client *
-+of_i2c_register_device(struct i2c_adapter *adap, struct device_node *node);
+ EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
 +
- /* must call put_device() when done with returned i2c_client device */
- extern struct i2c_client *of_find_i2c_device_by_node(struct device_node *node);
- 
-@@ -565,6 +568,13 @@ extern struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
- 
- #else
- 
-+static inline struct i2c_client *
-+of_i2c_register_device(struct i2c_adapter *adap,
-+		struct device_node *node)
++#ifdef CONFIG_OF_OVERLAY
++static int i2c_handler_create(struct of_overlay_device_entry *de,
++		int revert)
 +{
-+	return ERR_PTR(-ENODEV);
++	struct device_node *dn;
++	struct i2c_adapter *adap;
++	struct i2c_client *client;
++
++	if (!de || !de->np)
++		return -ENOTSUPP;
++
++	dn = de->np;
++
++	adap = of_find_i2c_adapter_by_node(dn->parent);
++	if (adap == NULL)
++		return -ENOTSUPP;
++
++	client = of_i2c_register_device(adap, dn);
++	put_device(&adap->dev);
++
++	if (client == NULL) {
++		pr_err("%s: failed to create i2c client device "
++				"for '%s'\n",
++				__func__, dn->full_name);
++		/* of_i2c_device_create tosses the real error code */
++		return -EINVAL;
++	}
++
++	return 0;
 +}
 +
- static inline struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
- {
- 	return NULL;
++static int i2c_handler_remove(struct of_overlay_device_entry *de,
++		int revert)
++{
++	struct device_node *dn;
++	struct i2c_client *client;
++
++	if (!de || !de->np)
++		return -ENOTSUPP;
++
++	dn = de->np;
++
++	client = of_find_i2c_device_by_node(dn);
++	if (client == NULL)
++		return -ENOTSUPP;
++
++	/* unregister takes one ref away */
++	i2c_unregister_device(client);
++
++	/* and put the reference of the find */
++	put_device(&client->dev);
++
++	return 0;
++}
++
++static const struct of_overlay_handler_ops i2c_handler_ops = {
++	.create	= i2c_handler_create,
++	.remove = i2c_handler_remove,
++};
++
++static struct of_overlay_handler i2c_handler = {
++	.name = "i2c",
++	.ops = &i2c_handler_ops,
++};
++
++static int __init i2c_bus_handler_register(void)
++{
++	return of_overlay_handler_register(&i2c_handler);
++}
++#endif
++
+ #else
+ static void of_i2c_register_devices(struct i2c_adapter *adap) { }
+ #endif /* CONFIG_OF */
+ 
++#if !defined(CONFIG_OF) || !defined(CONFIG_OF_OVERLAY)
++static inline int i2c_bus_handler_register(void)
++{
++	return 0;
++}
++#endif
++
+ /* ACPI support code */
+ 
+ #if IS_ENABLED(CONFIG_ACPI)
+@@ -1668,8 +1747,14 @@ static int __init i2c_init(void)
+ 	retval = i2c_add_driver(&dummy_driver);
+ 	if (retval)
+ 		goto class_err;
+-	return 0;
+ 
++	retval = i2c_bus_handler_register();
++	if (retval)
++		goto bus_handler_err;
++
++	return 0;
++bus_handler_err:
++	i2c_del_driver(&dummy_driver);
+ class_err:
+ #ifdef CONFIG_I2C_COMPAT
+ 	class_compat_unregister(i2c_adapter_compat_class);
 -- 
 1.7.12
 
