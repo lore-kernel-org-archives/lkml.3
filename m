@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375AbaCRK7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 06:59:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42385 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755246AbaCRK6E (ORCPT
+	id S1755403AbaCRLAQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 07:00:16 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:59866 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755381AbaCRLAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 06:58:04 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/8] regulator: arizona-ldo1: Add processing of init_data from device tree
-Date: Tue, 18 Mar 2014 10:49:13 +0000
-Message-Id: <1395139757-6907-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1395139757-6907-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1395139757-6907-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Tue, 18 Mar 2014 07:00:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1678906.b5uh0Nm7QE@amdc1032>
+References: <1678906.b5uh0Nm7QE@amdc1032>
+Date: Tue, 18 Mar 2014 16:30:08 +0530
+X-Google-Sender-Auth: 4jjWukohzJD5rZA8fI4HomnaUMw
+Message-ID: <CAOh2x=nr1mrkcFk8nQFwNXxCqMPiN1Hq4=f1wwN=i65StawJ1Q@mail.gmail.com>
+Subject: Re: [PATCH RESEND] ARM: SPEAr1340: static-ize SATA functions
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Shiraz Hashim <shiraz.hashim@st.com>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "...)" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- Documentation/devicetree/bindings/mfd/arizona.txt |    7 +++++
- drivers/regulator/arizona-ldo1.c                  |   26 +++++++++++++++++++++
- 2 files changed, 33 insertions(+), 0 deletions(-)
+On Tue, Mar 18, 2014 at 4:28 PM, Bartlomiej Zolnierkiewicz
+<b.zolnierkie@samsung.com> wrote:
+> Make sata_miphy_exit(), sata_suspend() and sata_resume() static.
+>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+> Previous submission:
+> https://lkml.org/lkml/2013/10/4/369
+>
+>  arch/arm/mach-spear/spear1340.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/mach-spear/spear1340.c b/arch/arm/mach-spear/spear1340.c
+> index 3fb6834..e0e4251 100644
+> --- a/arch/arm/mach-spear/spear1340.c
+> +++ b/arch/arm/mach-spear/spear1340.c
+> @@ -93,7 +93,7 @@ static int sata_miphy_init(struct device *dev, void __iomem *addr)
+>         return 0;
+>  }
+>
+> -void sata_miphy_exit(struct device *dev)
+> +static void sata_miphy_exit(struct device *dev)
+>  {
+>         writel(0, SPEAR1340_PCIE_SATA_CFG);
+>         writel(0, SPEAR1340_PCIE_MIPHY_CFG);
+> @@ -107,7 +107,7 @@ void sata_miphy_exit(struct device *dev)
+>         msleep(20);
+>  }
+>
+> -int sata_suspend(struct device *dev)
+> +static int sata_suspend(struct device *dev)
+>  {
+>         if (dev->power.power_state.event == PM_EVENT_FREEZE)
+>                 return 0;
+> @@ -117,7 +117,7 @@ int sata_suspend(struct device *dev)
+>         return 0;
+>  }
+>
+> -int sata_resume(struct device *dev)
+> +static int sata_resume(struct device *dev)
+>  {
+>         if (dev->power.power_state.event == PM_EVENT_THAW)
+>                 return 0;
 
-diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-index 36a0c3d..d78f1aa 100644
---- a/Documentation/devicetree/bindings/mfd/arizona.txt
-+++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-@@ -42,6 +42,13 @@ Optional properties:
-     the chip default will be used.  If present exactly five values must
-     be specified.
- 
-+  - wlf,ldo1 : Initial data for the LDO1 regulator, as covered in
-+    Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+  - DCVDD-supply : Power supply, only needs to be specified if DCVDD is being
-+    externally supplied. As covered in
-+    Documentation/devicetree/bindings/regulator/regulator.txt
-+
- Example:
- 
- codec: wm5102@1a {
-diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
-index 6379fd3..a67013f 100644
---- a/drivers/regulator/arizona-ldo1.c
-+++ b/drivers/regulator/arizona-ldo1.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/gpio.h>
- #include <linux/slab.h>
- 
-@@ -184,9 +185,34 @@ static const struct regulator_init_data arizona_ldo1_default = {
- static int arizona_ldo1_get_pdata(struct arizona *arizona,
- 				  struct regulator_config *config)
- {
-+	struct arizona_pdata *pdata = &arizona->pdata;
-+	struct arizona_ldo1 *ldo1 = config->driver_data;
-+	struct device_node *np_init, *np_dcvdd;
-+
- 	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true,
- 				  &config->ena_gpio);
- 
-+	np_init = of_get_child_by_name(arizona->dev->of_node, "wlf,ldo1");
-+	np_dcvdd = of_parse_phandle(arizona->dev->of_node, "DCVDD-supply", 0);
-+
-+	if (np_init) {
-+		config->of_node = np_init;
-+
-+		pdata->ldo1 = of_get_regulator_init_data(arizona->dev, np_init);
-+
-+		if (np_dcvdd) {
-+			if (np_dcvdd != np_init)
-+				arizona->external_dcvdd = true;
-+		} else {
-+			pdata->ldo1->consumer_supplies = &ldo1->supply;
-+			pdata->ldo1->num_consumer_supplies = 1;
-+		}
-+
-+		config->init_data = pdata->ldo1;
-+	} else if (np_dcvdd) {
-+		arizona->external_dcvdd = true;
-+	}
-+
- 	return 0;
- }
- #else
--- 
-1.7.2.5
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
