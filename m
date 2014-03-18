@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840AbaCRPDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:03:40 -0400
-Received: from mx08-00178001.pphosted.com ([62.209.51.94]:51041 "EHLO
+	id S932881AbaCRPDs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:03:48 -0400
+Received: from mx08-00178001.pphosted.com ([62.209.51.94]:44731 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S932070AbaCRPDh (ORCPT
+	by vger.kernel.org with ESMTP id S932070AbaCRPDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:03:37 -0400
+	Tue, 18 Mar 2014 11:03:43 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -19,11 +19,11 @@ Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-input@vger.kernel.org, kernel@stlinux.com,
         Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@st.com>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: [PATCH v2 3/5] ARM: STi: DT: add keyscan for stih416
-Date: Tue, 18 Mar 2014 16:00:04 +0100
-Message-Id: <1395154806-2810-4-git-send-email-gabriel.fernandez@st.com>
+        Giuseppe CONDORELLI <giuseppe.condorelli@st.com>,
+        Gabriel Fernandez <gabriel.fernandez@st.com>
+Subject: [PATCH v2 2/5] ARM: STi: DT: add keyscan for stih415
+Date: Tue, 18 Mar 2014 16:00:03 +0100
+Message-Id: <1395154806-2810-3-git-send-email-gabriel.fernandez@st.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1395154806-2810-1-git-send-email-gabriel.fernandez@st.com>
 References: <1395154806-2810-1-git-send-email-gabriel.fernandez@st.com>
@@ -33,22 +33,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add keyscan support for stih416.
-It is disabled by default given that it is not enabled on all boards.
+From: Giuseppe CONDORELLI <giuseppe.condorelli@st.com>
+
+Add keyscan support for stih415.
+It is put disabled by default because it is not enabled on all boards
 Also there are PIOs conflict with already claimed lines.
 
 Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
 ---
- arch/arm/boot/dts/stih416-pinctrl.dtsi | 16 ++++++++++++++++
- arch/arm/boot/dts/stih416.dtsi         | 10 ++++++++++
+ arch/arm/boot/dts/stih415-pinctrl.dtsi | 16 ++++++++++++++++
+ arch/arm/boot/dts/stih415.dtsi         | 10 ++++++++++
  2 files changed, 26 insertions(+)
 
-diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-index b29ff4b..79c036a 100644
---- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-@@ -98,6 +98,22 @@
+diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
+index e56449d..3e5e074 100644
+--- a/arch/arm/boot/dts/stih415-pinctrl.dtsi
++++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
+@@ -87,6 +87,22 @@
  				};
  			};
  
@@ -71,11 +73,11 @@ index b29ff4b..79c036a 100644
  			sbc_i2c0 {
  				pinctrl_sbc_i2c0_default: sbc_i2c0-default {
  					st,pins {
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-index b7ab47b..8a695dc 100644
---- a/arch/arm/boot/dts/stih416.dtsi
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -145,5 +145,15 @@
+diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
+index d9c7dd1..bda9e23 100644
+--- a/arch/arm/boot/dts/stih415.dtsi
++++ b/arch/arm/boot/dts/stih415.dtsi
+@@ -136,5 +136,15 @@
  
  			status		= "disabled";
  		};
