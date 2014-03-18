@@ -1,163 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120AbaCRM7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 08:59:52 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:57749 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863AbaCRM7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 08:59:49 -0400
+	id S1755286AbaCRNBM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 09:01:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21644 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752638AbaCRNBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 09:01:10 -0400
+Message-ID: <53284382.7080509@redhat.com>
+Date: Tue, 18 Mar 2014 08:00:50 -0500
+From: Ken Cox <jkc@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <1394207364-4235-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1394207364-4235-1-git-send-email-benjamin.tissoires@redhat.com>
-Date: Tue, 18 Mar 2014 08:59:48 -0400
-Message-ID: <CAN+gG=GFwuzZa5uF5UTQM0b5SoMm8-D0V_70LSi2oqVd+fskTw@mail.gmail.com>
-Subject: Re: [PATCH] Input: synaptics add manual min/max quirk
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        Andrew Duggan <aduggan@synaptics.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Stephen Chandler Paul <thatslyude@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: DaeSeok Youn <daeseok.youn@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: unisys: use kzalloc instead of kmalloc/memset
+ 0
+References: <4376102.svyTz8ADVT@daeseok-laptop.cloud.net>	<20140317214145.GA29105@kroah.com> <CAHb8M2BwuCJEGueP+-cOatynS5QcSrJMeei_D=0-GdKGxi5N-Q@mail.gmail.com>
+In-Reply-To: <CAHb8M2BwuCJEGueP+-cOatynS5QcSrJMeei_D=0-GdKGxi5N-Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 7, 2014 at 10:49 AM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> The new Lenovo Haswell series (-40's) contains a new Synaptics touchpad.
-> However, these new Synaptics devices report bad axis ranges.
-> Under Windows, it is not a problem because the Windows driver uses RMI4
-> over SMBus to talk to the device. Under Linux, we are using the PS/2
-> fallback interface and it occurs the reported ranges are wrong.
->
-> Of course, it would be too easy to have only one range for the whole
-> series, each touchpad seems to be calibrated in a different way.
->
-> We can not use SMBus to get the actual range because I suspect the firmware
-> will switch into the SMBus mode and stop talking through PS/2 (this is the
-> case for hybrid HID over I2C / PS/2 Synaptics touchpads).
->
-> So as a temporary solution (until RMI4 land into upstream), start a new
-> list of quirks with the min/max manually set.
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> CC: stable@vger.kernel.org
-> ---
->
-> Hi Dmitry,
->
-> Well, this work is part of a (big) attempt to support the new touchpads
-> Lenovo put in its latest series.
-> Those new laptops have lost the buttons associated to the trackstick and are
-> what we call "clickpad".
-> Things would be easy if:
-> 1. the PS/2 firmware did not lied about the actual range of the axis
-> 2. on some install (mine) the DMI matching in udev would not have been broken
-> 3. we did not have to fix a lot of stuff in Xorg / libinput / wayland
->
-> This patch fixes 1.
->
-> Matthew Garrett fixed 2. -> https://patchwork.kernel.org/patch/3704401/
->
-> 3. is heavily working as shown by this tracker bug: https://bugs.freedesktop.org/show_bug.cgi?id=73158
->
-> I put the 'stable' marker, feel free to remove it if you don't think it should
-> be there, but I really think this should also be backported to have something
-> working in current distros.
 
-Dmitry, are there any chances that this one and the one Hans submitted
-shortly after [1] will be considered for 3.15?
+On 03/17/2014 07:26 PM, DaeSeok Youn wrote:
+> I think vmalloc/kmalloc in uislib_malloc() can be removed and just use
+> vmalloc/kmalloc directly.
+> (UISMALLOC() macro is also removed.)
+> And uislib_malloc() is renamed to "uislib_trace_buffer_status()" which
+> is just tracing buffer status(Malloc_FailuresAlloc, Malloc_BytesInUse
+> ...) for info_proc_read_helper().
+>
+> If this change is accepted, it also need to change uislib_free().
+>
+> Is it fine to change like this?
+This change is fine with me.  It makes the logic easier to follow.
+>
+> Thanks.
+> Daeseok Youn.
+>
+> 2014-03-18 6:41 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+>> On Wed, Mar 12, 2014 at 07:37:50PM +0900, Daeseok Youn wrote:
+>>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>>> ---
+>>>   drivers/staging/unisys/uislib/uislib.c   |    5 +----
+>>>   drivers/staging/unisys/uislib/uisutils.c |    2 +-
+>>>   2 files changed, 2 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/drivers/staging/unisys/uislib/uislib.c b/drivers/staging/unisys/uislib/uislib.c
+>>> index d77df9a..9748fcb 100644
+>>> --- a/drivers/staging/unisys/uislib/uislib.c
+>>> +++ b/drivers/staging/unisys/uislib/uislib.c
+>>> @@ -339,8 +339,6 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+>>>                return CONTROLVM_RESP_ERROR_KMALLOC_FAILED;
+>>>        }
+>>>
+>>> -     memset(bus, 0, size);
+>>> -
+>>>        /* Currently by default, the bus Number is the GuestHandle.
+>>>         * Configure Bus message can override this.
+>>>         */
+>>> @@ -530,7 +528,6 @@ create_device(CONTROLVM_MESSAGE *msg, char *buf)
+>>>                return CONTROLVM_RESP_ERROR_KMALLOC_FAILED;
+>>>        }
+>>>
+>>> -     memset(dev, 0, sizeof(struct device_info));
+>>>        dev->channelTypeGuid = msg->cmd.createDevice.dataTypeGuid;
+>>>        dev->intr = msg->cmd.createDevice.intr;
+>>>        dev->channelAddr = msg->cmd.createDevice.channelAddr;
+>>> @@ -1437,7 +1434,7 @@ uislib_malloc(size_t siz, gfp_t gfp, U8 contiguous, char *fn, int ln)
+>>>                * get memory for you (like, invoke oom killer), which
+>>>                * will probably cripple the system.
+>>>                */
+>>> -             p = kmalloc(siz, gfp | __GFP_NORETRY);
+>>> +             p = kzalloc(siz, gfp | __GFP_NORETRY);
+>>>        }
+>>>        if (p == NULL) {
+>>>                LOGERR("uislib_malloc failed to alloc %d bytes @%s:%d",
+>>> diff --git a/drivers/staging/unisys/uislib/uisutils.c b/drivers/staging/unisys/uislib/uisutils.c
+>>> index 208b7ea..2f05be1 100644
+>>> --- a/drivers/staging/unisys/uislib/uisutils.c
+>>> +++ b/drivers/staging/unisys/uislib/uisutils.c
+>>> @@ -294,7 +294,7 @@ ReqHandlerAdd(GUID switchTypeGuid,
+>>>        rc = UISMALLOC(sizeof(*rc), GFP_ATOMIC);
+>>>        if (!rc)
+>>>                return NULL;
+>>> -     memset(rc, 0, sizeof(*rc));
+>>> +
+>>>        rc->switchTypeGuid = switchTypeGuid;
+>>>        rc->controlfunc = controlfunc;
+>>>        rc->min_channel_bytes = min_channel_bytes;
+>> Can you just remove the UISMALLOC() macro completly, so that it's easier
+>> to verify that changes like this are actually correct?
+>>
+>> thanks,
+>>
+>> greg k-h
 
-Cheers,
-Benjamin
-
-[1] https://patchwork.kernel.org/patch/3798011/
-
->  drivers/input/mouse/synaptics.c | 43 +++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 43 insertions(+)
->
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index 26386f9..ff6a4cf 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -67,6 +67,8 @@
->  #define X_MAX_POSITIVE 8176
->  #define Y_MAX_POSITIVE 8176
->
-> +static int *quirk_min_max = NULL;
-> +
->  /*****************************************************************************
->   *     Stuff we need even when we do not want native Synaptics support
->   ****************************************************************************/
-> @@ -302,6 +304,13 @@ static int synaptics_resolution(struct psmouse *psmouse)
->                 }
->         }
->
-> +       if (quirk_min_max) {
-> +               priv->x_min = quirk_min_max[0];
-> +               priv->x_max = quirk_min_max[1];
-> +               priv->y_min = quirk_min_max[2];
-> +               priv->y_max = quirk_min_max[3];
-> +       }
-> +
->         return 0;
->  }
->
-> @@ -1485,10 +1494,44 @@ static const struct dmi_system_id olpc_dmi_table[] __initconst = {
->         { }
->  };
->
-> +static const struct dmi_system_id min_max_dmi_table[] __initconst = {
-> +#if defined(CONFIG_DMI)
-> +       {
-> +               /* Lenovo ThinkPad Helix */
-> +               .matches = {
-> +                       DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +                       DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
-> +               },
-> +               .driver_data = (int []){1024, 5052, 2258, 4832},
-> +       },
-> +       {
-> +               /* Lenovo ThinkPad T440s */
-> +               .matches = {
-> +                       DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +                       DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T440"),
-> +               },
-> +               .driver_data = (int []){1024, 5112, 2024, 4832},
-> +       },
-> +       {
-> +               /* Lenovo ThinkPad T540p */
-> +               .matches = {
-> +                       DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +                       DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
-> +               },
-> +               .driver_data = (int []){1024, 5056, 2058, 4832},
-> +       },
-> +#endif
-> +       { }
-> +};
-> +
->  void __init synaptics_module_init(void)
->  {
-> +       const struct dmi_system_id *min_max_dmi;
->         impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
->         broken_olpc_ec = dmi_check_system(olpc_dmi_table);
-> +       min_max_dmi = dmi_first_match(min_max_dmi_table);
-> +       if (min_max_dmi)
-> +               quirk_min_max = (int *)min_max_dmi->driver_data;
->  }
->
->  static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
-> --
-> 1.8.5.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
