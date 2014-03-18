@@ -1,88 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183AbaCRSIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 14:08:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37098 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757129AbaCRSIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 14:08:05 -0400
-Message-ID: <53283A3F.6040302@redhat.com>
-Date: Tue, 18 Mar 2014 08:21:19 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+	id S1757243AbaCRSLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 14:11:32 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:32893 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756691AbaCRSLb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 14:11:31 -0400
+Message-ID: <53288C47.5090308@pengutronix.de>
+Date: Tue, 18 Mar 2014 19:11:19 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
 MIME-Version: 1.0
-To: Igor Mammedov <imammedo@redhat.com>
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, bp@suse.de, paul.gortmaker@windriver.com,
-        JBeulich@suse.com, drjones@redhat.com, toshi.kani@hp.com,
-        x86@kernel.org, riel@redhat.com, gong.chen@linux.intel.com
-Subject: Re: [PATCH 0/3] x86: fix hang when AP bringup is too slow
-References: <1394720720-8484-1-git-send-email-imammedo@redhat.com>
-In-Reply-To: <1394720720-8484-1-git-send-email-imammedo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+CC: Wolfgang Grandegger <wg@grandegger.com>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Benedikt Spranger <b.spranger@linutronix.de>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [patch 01/12] can: c_can: Wait for CONTROL_INIT to be cleared
+References: <20140318171007.528610837@linutronix.de> <20140318171126.593414691@linutronix.de>
+In-Reply-To: <20140318171126.593414691@linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="4irx6vuafGuJchm5gtKwoUuUJsCquUFqm"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--4irx6vuafGuJchm5gtKwoUuUJsCquUFqm
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+On 03/18/2014 06:19 PM, Thomas Gleixner wrote:
+> According to the documentation the CPU must wait for CONTROL_INIT to
+> be cleared before writing to the baudrate registers.
+
+Thanks for the catch.
+
+> Signed-off-by: Benedikt Spranger <b.spranger@linutronix.de>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>
+> ---
+>  drivers/net/can/c_can/c_can.c |   26 +++++++++++++++++++++++---
+>  1 file changed, 23 insertions(+), 3 deletions(-)
+>=20
+> Index: linux/drivers/net/can/c_can/c_can.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux.orig/drivers/net/can/c_can/c_can.c
+> +++ linux/drivers/net/can/c_can/c_can.c
+> @@ -566,6 +566,21 @@ static netdev_tx_t c_can_start_xmit(stru
+>  	return NETDEV_TX_OK;
+>  }
+> =20
+> +static int c_can_wait_for_ctrl_init(struct net_device *dev,
+> +				    struct c_can_priv *priv, u32 init)
+> +{
+> +	int retry =3D 0;
+> +
+> +	while (init !=3D (priv->read_reg(priv, C_CAN_CTRL_REG) & CONTROL_INIT=
+)) {
+> +		udelay(10);
+> +		if (retry++ > 1000) {
+> +			netdev_err(dev, "CCTRL: set CONTROL_INIT failed\n");
+> +			return -EIO;
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +
+>  static int c_can_set_bittiming(struct net_device *dev)
+>  {
+>  	unsigned int reg_btr, reg_brpe, ctrl_save;
+> @@ -573,6 +588,7 @@ static int c_can_set_bittiming(struct ne
+>  	u32 ten_bit_brp;
+>  	struct c_can_priv *priv =3D netdev_priv(dev);
+>  	const struct can_bittiming *bt =3D &priv->can.bittiming;
+> +	int res;
+> =20
+>  	/* c_can provides a 6-bit brp and 4-bit brpe fields */
+>  	ten_bit_brp =3D bt->brp - 1;
+> @@ -590,13 +606,17 @@ static int c_can_set_bittiming(struct ne
+>  		"setting BTR=3D%04x BRPE=3D%04x\n", reg_btr, reg_brpe);
+> =20
+>  	ctrl_save =3D priv->read_reg(priv, C_CAN_CTRL_REG);
+> -	priv->write_reg(priv, C_CAN_CTRL_REG,
+> -			ctrl_save | CONTROL_CCE | CONTROL_INIT);
+> +	ctrl_save &=3D ~CONTROL_INIT;
+> +	priv->write_reg(priv, C_CAN_CTRL_REG, CONTROL_CCE | CONTROL_INIT);
+> +	res =3D c_can_wait_for_ctrl_init(dev, priv, CONTROL_INIT);
+> +	if (res)
+> +		return res;
+> +
+>  	priv->write_reg(priv, C_CAN_BTR_REG, reg_btr);
+>  	priv->write_reg(priv, C_CAN_BRPEXT_REG, reg_brpe);
+>  	priv->write_reg(priv, C_CAN_CTRL_REG, ctrl_save);
+> =20
+> -	return 0;
+> +	return c_can_wait_for_ctrl_init(dev, priv, 0);
+
+I'll post a patch that adds return value checking of all direct and
+indirect users of c_can_set_bittiming().
+
+>  }
+> =20
+>  /*
+
+Thanks,
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
-On 03/13/2014 10:25 AM, Igor Mammedov wrote:
-> Hang is observed on virtual machines during CPU hotplug,
-> especially in big guests with many CPUs. (It happens more
-> often if host is over-committed).
-> 
+--4irx6vuafGuJchm5gtKwoUuUJsCquUFqm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Hey Igor, I like this better than the previous version.  Thanks for taking into
-account the possible races in this code.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
-A quick question on system behaviour.  As you know I've been more concerned
-lately with error handling, etc., through the cpu hotplug code as we've seen
-several customer reports of silent failures or cascading failures in the cpu
-hotplug code when users have been attempting to perform physical hotplug.
+iEYEARECAAYFAlMojEcACgkQjTAFq1RaXHMIrACdFSe+ND7y5fDZZ95e0D24fy7g
+p/wAn1DCktoG3V3F6YQUc8grbdrLi4iK
+=uz65
+-----END PGP SIGNATURE-----
 
-After your patches have been applied, in theory the following can happen:
-
-The master CPU is completing the AP cpu's bring up.  The AP cpu is doing (sorry
-for the cut-and-paste),
-
-void cpu_init(void)
-{
-        int cpu = smp_processor_id();
-        struct task_struct *curr = current;
-        struct tss_struct *t = &per_cpu(init_tss, cpu);
-        struct thread_struct *thread = &curr->thread;
-
-        /*
-         * wait till the master CPU completes it's STARTUP sequence,
-         * and decides to wait till this AP boots
-         */
-        while (!cpumask_test_cpu(cpu, cpu_callout_mask)) {
-                cpu_relax();
-                if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID)
-                        halt();
-        }
-
-and is spinning on cpu_relax().  Suppose something goes wrong and the softlockup
-watchdog fires on the AP cpu:
-
-1.  Can it? :) ie) will the softlockup fire at this point of the AP init?  Okay,
-I'm being really lazy and not looking at the code ;)
-
-2.  Is there anything we can do in this code to notify the user of a problem?
-Even a pr_crit() here I think would help to indicate what went wrong; it might
-be useful for future debugging in this area to have some sort of output.  I
-think a WARN() or BUG() is necessary here as there are several calls to cpu_init().
-
-3.  Change this comment:
-
-         * wait till the master CPU completes it's STARTUP sequence,
-         * and decides to wait till this AP boots
-
-to
-
-	/* wait for the master CPU to complete this cpu's STARTUP. */ ?
-
-Apologies for the late review,
-
-P.
+--4irx6vuafGuJchm5gtKwoUuUJsCquUFqm--
