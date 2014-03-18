@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298AbaCRMzP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 08:55:15 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:32976 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753891AbaCRMzN (ORCPT
+	id S1754870AbaCRM6F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 08:58:05 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:31008 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754229AbaCRM6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 08:55:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <1395146702.2812.47.camel@joe-AO722>
-References: <20140318002822.372705594@telegraphics.com.au>
-	<1395112756.20860.1.camel@joe-AO722>
-	<alpine.LNX.2.00.1403182208590.2018@nippy.intranet>
-	<1395146702.2812.47.camel@joe-AO722>
-Date: Tue, 18 Mar 2014 13:55:12 +0100
-X-Google-Sender-Auth: Jx92wNKzqAIDiWFqYcKj5b4I7MQ
-Message-ID: <CAMuHMdUMpdp7deL5zC4hUVTHjyNbtkZ2bNFupo5JiDyuyc345w@mail.gmail.com>
-Subject: Re: [PATCH 00/12] scsi/NCR5380: fix debugging macros and #include structure
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: Finn Thain <fthain@telegraphics.com.au>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        scsi <linux-scsi@vger.kernel.org>, Sam Creasey <sammy@sammy.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michael Schmitz <schmitz@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 18 Mar 2014 08:58:03 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-e6-532842d7caad
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] mfd: sec-core: Fix I2C dummy device resource leak on probe
+ failure
+Date: Tue, 18 Mar 2014 13:57:50 +0100
+Message-id: <1395147470-24817-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDJMWRmVeSWpSXmKPExsVy+t/xa7rXnTSCDfqWmFq8fmFocf/rUUaL
+	y7vmsFmc7ma1uLjiC5MDq8eda3vYPOadDPTo27KK0ePzJrkAligum5TUnMyy1CJ9uwSujOP7
+	JzEWbOeomPZ3DmMD41u2LkZODgkBE4lpG3ezQthiEhfurQeKc3EICSxllJg9ezUjhNPHJHH3
+	0S4WkCo2AWOJzcuXgFWJCPQxSpx/u4YRJMEsYCjx890fdhBbWCBUomH2ETCbRUBV4u3e28wg
+	Nq+Au8T8vxeABnEArVOQmDPJZgIj9wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYISHw
+	dQfj0mNWhxgFOBiVeHhfsqkHC7EmlhVX5h5ilOBgVhLhZbfSCBbiTUmsrEotyo8vKs1JLT7E
+	yMTBKdXAOFfM91n5gxm/zAKF9rAuLfr0/sT2Bd9fBC7Pqc85GbOyJ0fFutE6cxXr/sL7sbtu
+	6XLyaE/uddo4Q+3b1T+ihnt3+bWu+C01J+jS+i4P59kzFayEL3y9pul4eq0Lg/ktb3Pmmxu8
+	r2y/WMXoN2Pj5KuSx7T/Cl5+3Dl5iebEA0bN1Rua7CSO+iixFGckGmoxFxUnAgCgvVNP3wEA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 1:45 PM, Joe Perches <joe@perches.com> wrote:
-> NCR does use pr_debug for the dprintk call, but
-> it also doesn't verify fmt/arg matching when not
-> compiled in
->
-> drivers/scsi/NCR5380.h-#if NDEBUG
-> drivers/scsi/NCR5380.h:#define dprintk(flg, fmt, args...) \
-> drivers/scsi/NCR5380.h- do { if ((NDEBUG) & (flg)) pr_debug(fmt, ## args); } while (0)
-> []
-> drivers/scsi/NCR5380.h-#else
-> drivers/scsi/NCR5380.h:#define dprintk(flg, fmt, args...)     do {} while (0)
->
-> It'd be nice to change the last do {} while (0)
-> to something like:
->
-> #define dprintk(flg, fmt, args...) \
-> do { if (0) pr_debug(fmt, ## args); } while (0)
->
-> so the compiler can always verify but not emit any
-> actual code or format strings.
->
-> Also, using macros with ... and __VA_ARGS__ is
-> a bit more modern.
->
-> #define dprintk(flg, fmt, ...) \
-> do { if (0) pr_debug(fmt, ##__VA_ARGS__); } while (0)
+Dummy I2C device allocated in sec_pmic_probe() leaked if
+devm_regmap_init_i2c() failed. Unregister it before returning from
+probe.
 
-Na, no_printk():
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/mfd/sec-core.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-#define dprintk(flg, fmt, ...) no_printk(fmt, ##__VA_ARGS__)
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 714e2135210e..6a6168ce3f79 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -260,7 +260,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 		ret = PTR_ERR(sec_pmic->regmap_rtc);
+ 		dev_err(&i2c->dev, "Failed to allocate RTC register map: %d\n",
+ 			ret);
+-		return ret;
++		goto err_regmap_rtc;
+ 	}
+ 
+ 	if (pdata && pdata->cfg_pmic_irq)
+@@ -293,14 +293,15 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 	}
+ 
+ 	if (ret)
+-		goto err;
++		goto err_mfd;
+ 
+ 	device_init_wakeup(sec_pmic->dev, sec_pmic->wakeup);
+ 
+ 	return ret;
+ 
+-err:
++err_mfd:
+ 	sec_irq_exit(sec_pmic);
++err_regmap_rtc:
+ 	i2c_unregister_device(sec_pmic->rtc);
+ 	return ret;
+ }
+-- 
+1.7.9.5
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
