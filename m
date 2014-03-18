@@ -1,58 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912AbaCRNLj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 09:11:39 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:4621 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148AbaCRNLh convert rfc822-to-8bit (ORCPT
+	id S1755969AbaCRNLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 09:11:43 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:62987 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913AbaCRNLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 09:11:37 -0400
-From: "Zuckerman, Boris" <borisz@hp.com>
-To: Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: "Kani, Toshimitsu" <toshi.kani@hp.com>,
-        "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: RE: [RFC PATCH] Support map_pages() for DAX
-Thread-Topic: [RFC PATCH] Support map_pages() for DAX
-Thread-Index: Ac9Cq3c4O0QmV5yiRcyQgqpCAI0hZw==
-Date: Tue, 18 Mar 2014 13:10:44 +0000
-Message-ID: <4C30833E5CDF444D84D942543DF65BDA625BD721@G4W3303.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.18]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 18 Mar 2014 09:11:40 -0400
+From: Peng Tao <bergwolf@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peng Tao <bergwolf@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH RFC] sched: introduce add_wait_queue_exclusive_head
+Date: Tue, 18 Mar 2014 21:10:08 +0800
+Message-Id: <1395148208-2209-1-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew,
+Normally wait_queue_t is a FIFO list for exclusive waiting tasks.
+As a side effect, if there are many threads waiting on the same
+condition (which is common for data servers like Lustre), all
+threads will be waken up again and again, causing unnecessary cache
+line polution. Instead of FIFO lists, we can use LIFO lists to always
+wake up the most recent active threads.
 
-First of all, thank you for doing this job! 
-Supporting persistent memory for any OS is bit more than adding "just another device".
-There are some thoughts and questions below. Perhaps, you discussed those already. If so, please point me to that discussion!
+Lustre implements this add_wait_queue_exclusive_head() privately but we
+think it might be useful as a generic function. With it being moved to
+generic layer, the rest of Lustre private wrappers for wait queue can be
+all removed.
 
-> > Few questions:
-> >  - why would you need Dirty for DAX?
-> 
-> One of the areas ignored by the original XIP code was CPU caches.  Maybe
-> s390 has write-through caches or something, but on x86 we need to write back the
-> lines from the CPU cache to the memory on an msync().  We'll also need to do this for
-> a write(), although that's a SMOP.
-> 
+Of course there is an alternative approach to just open code it but we'd
+like to ask first to see if there is objection to making it generic.
 
-X86 cache lines are much smaller than a page. Cache lined are flushed "naturally", but we do not know about that.
-How many Dirty pages do we anticipate? What is the performance cost of msync()? Is that higher, if we do page-based accounting?
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Drokin <oleg.drokin@intel.com>
+Signed-off-by: Peng Tao <bergwolf@gmail.com>
+Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+---
+ .../lustre/include/linux/libcfs/libcfs_prim.h      |    1 -
+ .../lustre/lustre/libcfs/linux/linux-prim.c        |   24 --------------------
+ include/linux/wait.h                               |    2 +
+ kernel/sched/wait.c                                |   23 +++++++++++++++++++
+ 4 files changed, 25 insertions(+), 25 deletions(-)
 
-Reasons and frequency of msync():
-Atomicity: needs barriers, happens frequently, leaves relatively small number of Dirty pages. Here the cost is probably smaller. 
-Durability of application updates: issued infrequently, leaves many Dirty pages. The cost could be high, right?
+diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs_prim.h b/drivers/staging/lustre/include/linux/libcfs/libcfs_prim.h
+index e6e417a..c23b78c 100644
+--- a/drivers/staging/lustre/include/linux/libcfs/libcfs_prim.h
++++ b/drivers/staging/lustre/include/linux/libcfs/libcfs_prim.h
+@@ -54,7 +54,6 @@ void schedule_timeout_and_set_state(long, int64_t);
+ void init_waitqueue_entry_current(wait_queue_t *link);
+ int64_t waitq_timedwait(wait_queue_t *, long, int64_t);
+ void waitq_wait(wait_queue_t *, long);
+-void add_wait_queue_exclusive_head(wait_queue_head_t *, wait_queue_t *);
+ 
+ void cfs_init_timer(struct timer_list *t);
+ void cfs_timer_init(struct timer_list *t, cfs_timer_func_t *func, void *arg);
+diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-prim.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-prim.c
+index c7bc7fc..13b4a80 100644
+--- a/drivers/staging/lustre/lustre/libcfs/linux/linux-prim.c
++++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-prim.c
+@@ -53,30 +53,6 @@ init_waitqueue_entry_current(wait_queue_t *link)
+ }
+ EXPORT_SYMBOL(init_waitqueue_entry_current);
+ 
+-/**
+- * wait_queue_t of Linux (version < 2.6.34) is a FIFO list for exclusively
+- * waiting threads, which is not always desirable because all threads will
+- * be waken up again and again, even user only needs a few of them to be
+- * active most time. This is not good for performance because cache can
+- * be polluted by different threads.
+- *
+- * LIFO list can resolve this problem because we always wakeup the most
+- * recent active thread by default.
+- *
+- * NB: please don't call non-exclusive & exclusive wait on the same
+- * waitq if add_wait_queue_exclusive_head is used.
+- */
+-void
+-add_wait_queue_exclusive_head(wait_queue_head_t *waitq, wait_queue_t *link)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&waitq->lock, flags);
+-	__add_wait_queue_exclusive(waitq, link);
+-	spin_unlock_irqrestore(&waitq->lock, flags);
+-}
+-EXPORT_SYMBOL(add_wait_queue_exclusive_head);
+-
+ void
+ waitq_wait(wait_queue_t *link, long state)
+ {
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 559044c..634a49c 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -105,6 +105,8 @@ static inline int waitqueue_active(wait_queue_head_t *q)
+ 
+ extern void add_wait_queue(wait_queue_head_t *q, wait_queue_t *wait);
+ extern void add_wait_queue_exclusive(wait_queue_head_t *q, wait_queue_t *wait);
++extern void add_wait_queue_exclusive_head(wait_queue_head_t *q,
++					  wait_queue_t *wait);
+ extern void remove_wait_queue(wait_queue_head_t *q, wait_queue_t *wait);
+ 
+ static inline void __add_wait_queue(wait_queue_head_t *head, wait_queue_t *new)
+diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+index 7d50f79..69925c3 100644
+--- a/kernel/sched/wait.c
++++ b/kernel/sched/wait.c
+@@ -30,6 +30,29 @@ void add_wait_queue(wait_queue_head_t *q, wait_queue_t *wait)
+ }
+ EXPORT_SYMBOL(add_wait_queue);
+ 
++/**
++ * wait_queue_t is a FIFO list for exclusively waiting threads, which is
++ * not always desirable because all threads will be waken up again and
++ * again, even user only needs a few of them to be active most time. This
++ * is not good for performance because cache can be polluted by different
++ * threads.
++ *
++ * LIFO list can resolve this problem because we always wakeup the most
++ * recent active thread by default.
++ *
++ * NB: please don't call non-exclusive & exclusive wait on the same
++ * waitq if add_wait_queue_exclusive_head is used.
++ */
++void add_wait_queue_exclusive_head(wait_queue_head_t *q, wait_queue_t *wait)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&q->lock, flags);
++	__add_wait_queue_exclusive(q, wait);
++	spin_unlock_irqrestore(&q->lock, flags);
++}
++EXPORT_SYMBOL(add_wait_queue_exclusive_head);
++
+ void add_wait_queue_exclusive(wait_queue_head_t *q, wait_queue_t *wait)
+ {
+ 	unsigned long flags;
+-- 
+1.7.7.6
 
-Let's assume that at some point we get CPU/Persistent Memory Controller combinations that support atomicity of multiple updates in hardware. Would you need to mark pages Dirty in such cases? If not, what is the right layer build that support for x86?
