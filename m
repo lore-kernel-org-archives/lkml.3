@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345AbaCRJ1l (ORCPT <rfc822;w@1wt.eu>);
+	id S1754778AbaCRJ15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 05:27:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:40659 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751553AbaCRJ1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Mar 2014 05:27:41 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:43683 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaCRJ1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 05:27:40 -0400
-Date: Tue, 18 Mar 2014 09:27:35 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Alexander Shiyan <shc_work@mail.ru>, cooloney@gmail.com
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] mfd: mc13xxx: Move definitions out of structures
-Message-ID: <20140318092735.GK25478@lee--X1>
-References: <1394867287-14074-1-git-send-email-shc_work@mail.ru>
- <20140318090237.GG25478@lee--X1>
- <1395134091.369687348@f500.i.mail.ru>
+X-IronPort-AV: E=Sophos;i="4.97,676,1389715200"; 
+   d="scan'208";a="9717994"
+Message-ID: <53281119.2080201@cn.fujitsu.com>
+Date: Tue, 18 Mar 2014 17:25:45 +0800
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395134091.369687348@f500.i.mail.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: acme@ghostprotocols.net
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Correct the message in feature-dwarf Checking
+References: <1395133936-16580-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+In-Reply-To: <1395133936-16580-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/18 17:24:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/18 17:24:44,
+	Serialize complete at 2014/03/18 17:24:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-> > > ---
-> > >  include/linux/mfd/mc13xxx.h | 22 ++++++++++++----------
-> > >  1 file changed, 12 insertions(+), 10 deletions(-)
-> > > 
-> > > diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
-> > > index a326c85..d63b1d3 100644
-> > > --- a/include/linux/mfd/mc13xxx.h
-> > > +++ b/include/linux/mfd/mc13xxx.h
-> > > @@ -117,10 +117,6 @@ struct mc13xxx_led_platform_data {
-> > >  
-> > >  #define MAX_LED_CONTROL_REGS	6
-> > >  
-> > > -struct mc13xxx_leds_platform_data {
-> > > -	struct mc13xxx_led_platform_data *led;
-> > > -	int num_leds;
-> > > -
-> > >  /* MC13783 LED Control 0 */
-> > >  #define MC13783_LED_C0_ENABLE		(1 << 0)
-> > >  #define MC13783_LED_C0_TRIODE_MD	(1 << 7)
-> > > @@ -169,10 +165,13 @@ struct mc13xxx_leds_platform_data {
-> > >  /* MC34708 LED Control 0 */
-> > 
-> > I don't see the line above in the MFD tree?
-> > 
-> > Which commit/branch/repo is this patch based on?
-> 
-> Dependency:
-> linux-next, a59ce6584d (leds: leds-mc13783: Add MC34708 LED support)
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/include/linux/mfd/mc13xxx.h?id=a59ce6584d566847980f9dcad5343cd9856145c8
+Hi Arnaldo,
+     Sorry for the noise, please ignore this patch.
 
-Ah, you can't do that, as it will cause conflicts and Linus will
-likely get upset.
+On 03/18/2014 05:12 PM, Dongsheng Yang wrote:
+> The package required for dwarf is named libdwarf-devel, rather
+> than elfutils-devel.
+>
+> This patch corrects the package name in warning message in
+> feature-dwarf checking.
+>
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> ---
+>   tools/perf/config/Makefile | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> index c234182..6b52134 100644
+> --- a/tools/perf/config/Makefile
+> +++ b/tools/perf/config/Makefile
+> @@ -285,11 +285,11 @@ else
+>       ifndef NO_LIBDW_DWARF_UNWIND
+>         ifneq ($(feature-libdw-dwarf-unwind),1)
+>           NO_LIBDW_DWARF_UNWIND := 1
+> -        msg := $(warning No libdw DWARF unwind found, Please install elfutils-devel/libdw-dev >= 0.158 and/or set LIBDW_DIR);
+> +        msg := $(warning No libdw DWARF unwind found, Please install libdwarf-devel/libdw-dev >= 0.158 and/or set LIBDW_DIR);
+>         endif
+>       endif
+>       ifneq ($(feature-dwarf), 1)
+> -      msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+> +      msg := $(warning No libdw.h found or old libdw.h found or libdwarf-devel is older than 0.138, disables dwarf support. Please install new libdwarf-devel/libdw-dev);
+>         NO_DWARF := 1
+>       endif # Dwarf support
+>     endif # libelf support
 
-Bryan you naughty boy! Why are you applying patches to files in MFD?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
