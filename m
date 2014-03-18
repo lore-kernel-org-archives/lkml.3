@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359AbaCRI3c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 04:29:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45564 "EHLO
+	id S1754391AbaCRI3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 04:29:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45578 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754298AbaCRI3X (ORCPT
+	with ESMTP id S1754365AbaCRI3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 04:29:23 -0400
-Date: Tue, 18 Mar 2014 01:29:06 -0700
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-5b4398209d646635a4d84c46a5c7193fbce1a07c@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, ak@linux.intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, masami.hiramatsu.pt@hitachi.com, ak@linux.intel.com,
-        tglx@linutronix.de
-In-Reply-To: <1393596135-4227-3-git-send-email-andi@firstfloor.org>
-References: <1393596135-4227-3-git-send-email-andi@firstfloor.org>
+	Tue, 18 Mar 2014 04:29:35 -0400
+Date: Tue, 18 Mar 2014 01:29:17 -0700
+From: tip-bot for Don Zickus <tipbot@zytor.com>
+Message-ID: <tip-bfd66cc71a3f831ba7c2116d79416cfb8883f6cf@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, jolsa@redhat.com, tglx@linutronix.de,
+        dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@redhat.com,
+        tglx@linutronix.de, dzickus@redhat.com
+In-Reply-To: <1393429527-167840-2-git-send-email-dzickus@redhat.com>
+References: <1393429527-167840-2-git-send-email-dzickus@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe:
-  Clarify x86 register naming for perf probe
-Git-Commit-ID: 5b4398209d646635a4d84c46a5c7193fbce1a07c
+Subject: [tip:perf/core] perf tools: Fix synthesizing mmaps for threads
+Git-Commit-ID: bfd66cc71a3f831ba7c2116d79416cfb8883f6cf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,37 +33,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5b4398209d646635a4d84c46a5c7193fbce1a07c
-Gitweb:     http://git.kernel.org/tip/5b4398209d646635a4d84c46a5c7193fbce1a07c
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Fri, 28 Feb 2014 06:02:15 -0800
+Commit-ID:  bfd66cc71a3f831ba7c2116d79416cfb8883f6cf
+Gitweb:     http://git.kernel.org/tip/bfd66cc71a3f831ba7c2116d79416cfb8883f6cf
+Author:     Don Zickus <dzickus@redhat.com>
+AuthorDate: Wed, 26 Feb 2014 10:45:26 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Fri, 14 Mar 2014 11:20:44 -0300
 
-perf probe: Clarify x86 register naming for perf probe
+perf tools: Fix synthesizing mmaps for threads
 
-Clarify how to specify x86 registers in perf probe. I recently ran into
-this problem and had to figure it out from the source.
+Currently if a process creates a bunch of threads using pthread_create
+and then perf is run in system_wide mode, the mmaps for those threads
+are not captured with a synthesized mmap event.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/1393596135-4227-3-git-send-email-andi@firstfloor.org
+The reason is those threads are not visible when walking the /proc/
+directory looking for /proc/<pid>/maps files.  Instead they are
+discovered using the /proc/<pid>/tasks file (which the synthesized comm
+event uses).
+
+This causes problems when a program is trying to map a data address to a
+tid.  Because the tid has no maps, the event is dropped.  Changing the
+program to look up using the pid instead of the tid, finds the correct
+maps but creates ugly hacks in the program to carry the correct tid
+around.
+
+Fix this by moving the walking of the /proc/<pid>/tasks up a level (out
+of the comm function) based on Arnaldo's suggestion.
+
+Tweaked things a bit to special case the 'full' bit and 'guest' check.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1393429527-167840-2-git-send-email-dzickus@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-probe.txt | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/util/event.c | 111 ++++++++++++++++++++++++------------------------
+ 1 file changed, 56 insertions(+), 55 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index b715cb7..1513935 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -136,6 +136,8 @@ Each probe argument follows below syntax.
- 'NAME' specifies the name of this argument (optional). You can use the name of local variable, local data structure member (e.g. var->field, var.field2), local array with fixed index (e.g. array[1], var->array[0], var->pointer[2]), or kprobe-tracer argument format (e.g. $retval, %ax, etc). Note that the name of this argument will be set as the last member name if you specify a local data structure member (e.g. field2 for 'var->field1.field2'.)
- 'TYPE' casts the type of this argument (optional). If omitted, perf probe automatically set the type based on debuginfo. You can specify 'string' type only for the local variable or structure member which is an array of or a pointer to 'char' or 'unsigned char' type.
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index b0f3ca8..55eebe9 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -94,14 +94,10 @@ static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
  
-+On x86 systems %REG is always the short form of the register: for example %AX. %RAX or %EAX is not valid.
+ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+ 					 union perf_event *event, pid_t pid,
+-					 int full,
+ 					 perf_event__handler_t process,
+ 					 struct machine *machine)
+ {
+-	char filename[PATH_MAX];
+ 	size_t size;
+-	DIR *tasks;
+-	struct dirent dirent, *next;
+ 	pid_t tgid;
+ 
+ 	memset(&event->comm, 0, sizeof(event->comm));
+@@ -124,53 +120,11 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+ 	event->comm.header.size = (sizeof(event->comm) -
+ 				(sizeof(event->comm.comm) - size) +
+ 				machine->id_hdr_size);
+-	if (!full) {
+-		event->comm.tid = pid;
+-
+-		if (process(tool, event, &synth_sample, machine) != 0)
+-			return -1;
++	event->comm.tid = pid;
+ 
+-		goto out;
+-	}
+-
+-	if (machine__is_default_guest(machine))
+-		return 0;
+-
+-	snprintf(filename, sizeof(filename), "%s/proc/%d/task",
+-		 machine->root_dir, pid);
+-
+-	tasks = opendir(filename);
+-	if (tasks == NULL) {
+-		pr_debug("couldn't open %s\n", filename);
+-		return 0;
+-	}
+-
+-	while (!readdir_r(tasks, &dirent, &next) && next) {
+-		char *end;
+-		pid = strtol(dirent.d_name, &end, 10);
+-		if (*end)
+-			continue;
+-
+-		/* already have tgid; jut want to update the comm */
+-		(void) perf_event__get_comm_tgid(pid, event->comm.comm,
+-					 sizeof(event->comm.comm));
+-
+-		size = strlen(event->comm.comm) + 1;
+-		size = PERF_ALIGN(size, sizeof(u64));
+-		memset(event->comm.comm + size, 0, machine->id_hdr_size);
+-		event->comm.header.size = (sizeof(event->comm) -
+-					  (sizeof(event->comm.comm) - size) +
+-					  machine->id_hdr_size);
+-
+-		event->comm.tid = pid;
+-
+-		if (process(tool, event, &synth_sample, machine) != 0) {
+-			tgid = -1;
+-			break;
+-		}
+-	}
++	if (process(tool, event, &synth_sample, machine) != 0)
++		return -1;
+ 
+-	closedir(tasks);
+ out:
+ 	return tgid;
+ }
+@@ -329,12 +283,59 @@ static int __event__synthesize_thread(union perf_event *comm_event,
+ 				      struct perf_tool *tool,
+ 				      struct machine *machine, bool mmap_data)
+ {
+-	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, full,
+-						 process, machine);
+-	if (tgid == -1)
+-		return -1;
+-	return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
+-						  process, machine, mmap_data);
++	char filename[PATH_MAX];
++	DIR *tasks;
++	struct dirent dirent, *next;
++	pid_t tgid;
 +
- LINE SYNTAX
- -----------
- Line range is described by following syntax.
++	/* special case: only send one comm event using passed in pid */
++	if (!full) {
++		tgid = perf_event__synthesize_comm(tool, comm_event, pid,
++						   process, machine);
++
++		if (tgid == -1)
++			return -1;
++
++		return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
++							  process, machine, mmap_data);
++	}
++
++	if (machine__is_default_guest(machine))
++		return 0;
++
++	snprintf(filename, sizeof(filename), "%s/proc/%d/task",
++		 machine->root_dir, pid);
++
++	tasks = opendir(filename);
++	if (tasks == NULL) {
++		pr_debug("couldn't open %s\n", filename);
++		return 0;
++	}
++
++	while (!readdir_r(tasks, &dirent, &next) && next) {
++		char *end;
++		int rc = 0;
++		pid_t _pid;
++
++		_pid = strtol(dirent.d_name, &end, 10);
++		if (*end)
++			continue;
++
++		tgid = perf_event__synthesize_comm(tool, comm_event, _pid,
++						   process, machine);
++		if (tgid == -1)
++			return -1;
++
++		/* process the thread's maps too */
++		rc = perf_event__synthesize_mmap_events(tool, mmap_event, _pid, tgid,
++							process, machine, mmap_data);
++
++		if (rc)
++			return rc;
++	}
++
++	closedir(tasks);
++	return 0;
+ }
+ 
+ int perf_event__synthesize_thread_map(struct perf_tool *tool,
