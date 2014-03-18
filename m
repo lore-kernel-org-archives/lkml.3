@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755812AbaCRP4k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:56:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35148 "EHLO mx1.redhat.com"
+	id S1756209AbaCRP55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:57:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15369 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754761AbaCRP4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:56:38 -0400
+	id S1755643AbaCRP4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 11:56:40 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Don Zickus <dzickus@redhat.com>,
@@ -16,33 +16,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Don Zickus <dzickus@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 5/6] perf tools: Share process map groups within process threads
-Date: Tue, 18 Mar 2014 15:46:55 +0100
-Message-Id: <1395154016-26709-6-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 4/6] perf tools: Add machine pointer into thread struct
+Date: Tue, 18 Mar 2014 15:46:54 +0100
+Message-Id: <1395154016-26709-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1395154016-26709-1-git-send-email-jolsa@redhat.com>
 References: <1395154016-26709-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sharing map groups within all process threads. This way
-there's only one copy of mmap info and it's reachable
-from any thread within the process.
-
-Adding reference counting for struct map_groups and
-changing the thread map groups get/put interface.
-
-Adding reference counter 'refcnt' into struct map_groups.
-
-Function thread__map_groups_get now:
-  - lookup (&create) thread leader and returns its mg,
-    allocates one if needed
-  - increments reference counter for each copy
-
-Function thread__map_groups_put now:
-  - decrease map groups reference counter and sets
-    its pointer to NULL
-  - frees map groups data if it was last copy
+Need machine pointer in thread object, so we could
+lookup the process thread in following patch.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Don Zickus <dzickus@redhat.com>
@@ -55,94 +39,74 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 ---
- tools/perf/util/map.h    |  2 ++
- tools/perf/util/thread.c | 40 +++++++++++++++++++++++++++++++++++-----
- 2 files changed, 37 insertions(+), 5 deletions(-)
+ tools/perf/util/machine.c | 2 +-
+ tools/perf/util/thread.c  | 4 +++-
+ tools/perf/util/thread.h  | 5 ++++-
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 99a6488..472a686 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -59,6 +59,8 @@ struct map_groups {
- 	struct rb_root	 maps[MAP__NR_TYPES];
- 	struct list_head removed_maps[MAP__NR_TYPES];
- 	struct machine	 *machine;
-+	/* Used for thread sharing. */
-+	int		  refcnt;
- };
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index d1f06d2..237d7c2 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -311,7 +311,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+ 	if (!create)
+ 		return NULL;
  
- static inline struct kmap *map__kmap(struct map *map)
+-	th = thread__new(pid, tid);
++	th = thread__new(pid, tid, machine);
+ 	if (th != NULL) {
+ 		rb_link_node(&th->rb_node, parent, p);
+ 		rb_insert_color(&th->rb_node, &machine->threads);
 diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index cbe451a..f34fda1 100644
+index bacf60b..cbe451a 100644
 --- a/tools/perf/util/thread.c
 +++ b/tools/perf/util/thread.c
-@@ -130,6 +130,13 @@ int thread__insert_map(struct thread *thread, struct map *map)
- 	return 0;
- }
+@@ -8,13 +8,15 @@
+ #include "debug.h"
+ #include "comm.h"
  
-+static struct thread *thread__get_leader(struct thread *thread)
-+{
-+	pid_t pid = thread->pid_;
-+
-+	return machine__findnew_thread(thread->machine, pid, pid);
-+}
-+
- static struct map_groups *thread__map_groups_alloc(struct thread *thread)
+-struct thread *thread__new(pid_t pid, pid_t tid)
++struct thread *thread__new(pid_t pid, pid_t tid,
++			   struct machine *machine)
  {
- 	struct map_groups *mg = zalloc(sizeof(*mg));
-@@ -137,6 +144,7 @@ static struct map_groups *thread__map_groups_alloc(struct thread *thread)
- 	if (mg) {
- 		map_groups__init(mg);
- 		thread->mg = mg;
-+		mg->refcnt = 1;
- 	}
+ 	char *comm_str;
+ 	struct comm *comm;
+ 	struct thread *thread = zalloc(sizeof(*thread));
  
- 	return mg;
-@@ -146,17 +154,39 @@ struct map_groups *thread__map_groups_get(struct thread *thread)
+ 	if (thread != NULL) {
++		thread->machine = machine;
+ 		thread->pid_ = pid;
+ 		thread->tid = tid;
+ 		thread->ppid = -1;
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index b3f7d8e..21521e1 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -7,12 +7,14 @@
+ #include <sys/types.h>
+ #include "symbol.h"
+ #include <strlist.h>
++#include "machine.h"
+ 
+ struct thread {
+ 	union {
+ 		struct rb_node	 rb_node;
+ 		struct list_head node;
+ 	};
++	struct machine		*machine;
+ 	struct map_groups	*mg;
+ 	pid_t			pid_; /* Not all tools update this */
+ 	pid_t			tid;
+@@ -29,7 +31,8 @@ struct thread {
+ struct machine;
+ struct comm;
+ 
+-struct thread *thread__new(pid_t pid, pid_t tid);
++struct thread *thread__new(pid_t pid, pid_t tid,
++			   struct machine *machine);
+ void thread__delete(struct thread *thread);
+ static inline void thread__exited(struct thread *thread)
  {
- 	struct map_groups *mg = thread->mg;
- 
--	if (!mg)
--		mg = thread__map_groups_alloc(thread);
-+	if (!mg) {
-+		struct thread *leader = thread__get_leader(thread);
-+
-+		if (!leader)
-+			return NULL;
-+
-+		if (leader->mg)
-+			mg = leader->mg;
-+		else
-+			mg = thread__map_groups_alloc(leader);
-+
-+		if (leader != thread) {
-+			thread->mg = mg;
-+			mg->refcnt++;
-+		}
-+	}
- 
- 	return mg;
- }
- 
- void thread__map_groups_put(struct thread *thread)
- {
--	if (thread->mg) {
--		map_groups__exit(thread->mg);
--		zfree(&thread->mg);
-+	struct map_groups *mg = thread->mg;
-+
-+	if (mg) {
-+		BUG_ON(!mg->refcnt);
-+
-+		if (!--mg->refcnt) {
-+			map_groups__exit(thread->mg);
-+			free(thread->mg);
-+		}
-+
-+		thread->mg = NULL;
- 	}
- }
- 
 -- 
 1.8.3.1
 
