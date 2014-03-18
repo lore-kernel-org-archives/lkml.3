@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933107AbaCRUxm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 16:53:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13521 "EHLO mga09.intel.com"
+	id S933176AbaCRUxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:53:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18752 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932956AbaCRUxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 16:53:38 -0400
+	id S932956AbaCRUxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 16:53:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,680,1389772800"; 
-   d="scan'208";a="475172392"
+   d="scan'208";a="475172466"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, Tomas Winkler <tomas.winkler@intel.com>,
         Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [char-misc-next 04/13] mei: condition PGI support on HW and HBM version
-Date: Tue, 18 Mar 2014 22:51:58 +0200
-Message-Id: <1395175927-10562-5-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 08/13] mei: me: add runtime pm framework
+Date: Tue, 18 Mar 2014 22:52:02 +0200
+Message-Id: <1395175927-10562-9-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1395175927-10562-1-git-send-email-tomas.winkler@intel.com>
 References: <1395175927-10562-1-git-send-email-tomas.winkler@intel.com>
@@ -24,161 +24,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable power gating isolation only if hw and fw support it.
-This is indicated by ME_PGIC_HRA bit in ME_CSR_HA register
-and on HBM protocol version.
-
-The information is exported to MEI layer through
-new pg_is_enabled hw op.
+Add runtime pm framework for ME devices.
+The runtime pm handlers are used to run
+me power gating isolation protocol
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 ---
- drivers/misc/mei/hw-me.c   | 37 +++++++++++++++++++++++++++++++++++++
- drivers/misc/mei/hw-txe.c  | 14 ++++++++++++++
- drivers/misc/mei/hw.h      |  6 ++++++
- drivers/misc/mei/mei_dev.h | 10 ++++++++++
- 4 files changed, 67 insertions(+)
+ drivers/misc/mei/hbm.c    |  8 +++++
+ drivers/misc/mei/hw-me.h  |  2 ++
+ drivers/misc/mei/pci-me.c | 92 +++++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 100 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index fc5d001..7a7e662 100644
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -460,6 +460,41 @@ static void mei_me_pg_exit(struct mei_device *dev)
- }
+diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+index a725365..b9a4bb5 100644
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -19,6 +19,7 @@
+ #include <linux/sched.h>
+ #include <linux/wait.h>
+ #include <linux/mei.h>
++#include <linux/pm_runtime.h>
  
- /**
-+ * mei_me_pg_is_enabled - detect if PG is supported by HW
-+ *
-+ * @dev: the device structure
-+ *
-+ * returns: true is pg supported, false otherwise
-+ */
-+static bool mei_me_pg_is_enabled(struct mei_device *dev)
+ #include "mei_dev.h"
+ #include "hbm.h"
+@@ -742,6 +743,13 @@ int mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
+ 		dev->pg_event = MEI_PG_EVENT_RECEIVED;
+ 		if (waitqueue_active(&dev->wait_pg))
+ 			wake_up(&dev->wait_pg);
++		else
++			/*
++			* If the driver is not waiting on this then
++			* this is HW initiated exit from PG.
++			* Start runtime pm resume sequence to exit from PG.
++			*/
++			pm_request_resume(&dev->pdev->dev);
+ 		break;
+ 
+ 	case HOST_CLIENT_PROPERTIES_RES_CMD:
+diff --git a/drivers/misc/mei/hw-me.h b/drivers/misc/mei/hw-me.h
+index 1d72b55..dbea454 100644
+--- a/drivers/misc/mei/hw-me.h
++++ b/drivers/misc/mei/hw-me.h
+@@ -23,6 +23,8 @@
+ #include "mei_dev.h"
+ #include "client.h"
+ 
++#define MEI_ME_RPM_TIMEOUT    500 /* ms */
++
+ struct mei_me_hw {
+ 	void __iomem *mem_addr;
+ 	/*
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index 1c8fd3a..967f2f2 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -33,6 +33,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/miscdevice.h>
+ 
++#include <linux/pm_runtime.h>
++
+ #include <linux/mei.h>
+ 
+ #include "mei_dev.h"
+@@ -196,6 +198,9 @@ static int mei_me_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		goto release_irq;
+ 	}
+ 
++	pm_runtime_set_autosuspend_delay(&pdev->dev, MEI_ME_RPM_TIMEOUT);
++	pm_runtime_use_autosuspend(&pdev->dev);
++
+ 	err = mei_register(dev);
+ 	if (err)
+ 		goto release_irq;
+@@ -204,6 +209,9 @@ static int mei_me_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 
+ 	schedule_delayed_work(&dev->timer_work, HZ);
+ 
++	if (mei_pg_is_enabled(dev))
++		pm_runtime_put_noidle(&pdev->dev);
++
+ 	dev_dbg(&pdev->dev, "initialization successful.\n");
+ 
+ 	return 0;
+@@ -243,6 +251,9 @@ static void mei_me_remove(struct pci_dev *pdev)
+ 	if (!dev)
+ 		return;
+ 
++	if (mei_pg_is_enabled(dev))
++		pm_runtime_get_noresume(&pdev->dev);
++
+ 	hw = to_me_hw(dev);
+ 
+ 
+@@ -327,12 +338,89 @@ static int mei_me_pci_resume(struct device *device)
+ 
+ 	return 0;
+ }
++#endif /* CONFIG_PM_SLEEP */
++
++#ifdef CONFIG_PM_RUNTIME
++static int mei_me_pm_runtime_idle(struct device *device)
 +{
-+	struct mei_me_hw *hw = to_me_hw(dev);
-+	u32 reg = mei_me_reg_read(hw, ME_CSR_HA);
++	struct pci_dev *pdev = to_pci_dev(device);
++	struct mei_device *dev;
 +
-+	if ((reg & ME_PGIC_HRA) == 0)
-+		goto notsupported;
++	dev_dbg(&pdev->dev, "rpm: me: runtime_idle\n");
 +
-+	if (dev->version.major_version < HBM_MAJOR_VERSION_PGI)
-+		goto notsupported;
++	dev = pci_get_drvdata(pdev);
++	if (!dev)
++		return -ENODEV;
++	if (mei_write_is_idle(dev))
++		pm_schedule_suspend(device, MEI_ME_RPM_TIMEOUT * 2);
 +
-+	if (dev->version.major_version == HBM_MAJOR_VERSION_PGI &&
-+	    dev->version.minor_version < HBM_MINOR_VERSION_PGI)
-+		goto notsupported;
-+
-+	return true;
-+
-+notsupported:
-+	dev_dbg(&dev->pdev->dev, "pg: not supported: HGP = %d hbm version %d.%d ?= %d.%d\n",
-+		!!(reg & ME_PGIC_HRA),
-+		dev->version.major_version,
-+		dev->version.minor_version,
-+		HBM_MAJOR_VERSION_PGI,
-+		HBM_MINOR_VERSION_PGI);
-+
-+	return false;
++	return -EBUSY;
 +}
 +
-+/**
-  * mei_me_irq_quick_handler - The ISR of the MEI device
-  *
-  * @irq: The irq number
-@@ -573,6 +608,8 @@ static const struct mei_hw_ops mei_me_hw_ops = {
- 	.hw_config = mei_me_hw_config,
- 	.hw_start = mei_me_hw_start,
- 
-+	.pg_is_enabled = mei_me_pg_is_enabled,
-+
- 	.intr_clear = mei_me_intr_clear,
- 	.intr_enable = mei_me_intr_enable,
- 	.intr_disable = mei_me_intr_disable,
-diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
-index f60182a..49f197a 100644
---- a/drivers/misc/mei/hw-txe.c
-+++ b/drivers/misc/mei/hw-txe.c
-@@ -280,6 +280,18 @@ int mei_txe_aliveness_set_sync(struct mei_device *dev, u32 req)
- }
- 
- /**
-+ * mei_txe_pg_is_enabled - detect if PG is supported by HW
-+ *
-+ * @dev: the device structure
-+ *
-+ * returns: true is pg supported, false otherwise
-+ */
-+static bool mei_txe_pg_is_enabled(struct mei_device *dev)
++static int mei_me_pm_runtime_suspend(struct device *device)
 +{
-+	return true;
++	struct pci_dev *pdev = to_pci_dev(device);
++	struct mei_device *dev;
++	int ret;
++
++	dev_dbg(&pdev->dev, "rpm: me: runtime suspend\n");
++
++	dev = pci_get_drvdata(pdev);
++	if (!dev)
++		return -ENODEV;
++
++	mutex_lock(&dev->device_lock);
++
++	if (mei_write_is_idle(dev))
++		ret = mei_me_pg_set_sync(dev);
++	else
++		ret = -EAGAIN;
++
++	mutex_unlock(&dev->device_lock);
++
++	dev_dbg(&pdev->dev, "rpm: me: runtime suspend ret=%d\n", ret);
++
++	return ret;
 +}
 +
-+/**
-  * mei_txe_input_ready_interrupt_enable - sets the Input Ready Interrupt
-  *
-  * @dev: the device structure
-@@ -1017,6 +1029,8 @@ static const struct mei_hw_ops mei_txe_hw_ops = {
- 	.hw_config = mei_txe_hw_config,
- 	.hw_start = mei_txe_hw_start,
- 
-+	.pg_is_enabled = mei_txe_pg_is_enabled,
-+
- 	.intr_clear = mei_txe_intr_clear,
- 	.intr_enable = mei_txe_intr_enable,
- 	.intr_disable = mei_txe_intr_disable,
-diff --git a/drivers/misc/mei/hw.h b/drivers/misc/mei/hw.h
-index 1d70968..ec4a91a 100644
---- a/drivers/misc/mei/hw.h
-+++ b/drivers/misc/mei/hw.h
-@@ -39,6 +39,12 @@
- #define HBM_MINOR_VERSION                   0
- #define HBM_MAJOR_VERSION                   1
- 
-+/*
-+ * MEI version with PGI support
-+ */
-+#define HBM_MINOR_VERSION_PGI               1
-+#define HBM_MAJOR_VERSION_PGI               1
-+
- /* Host bus message command opcode */
- #define MEI_HBM_CMD_OP_MSK                  0x7f
- /* Host bus message command RESPONSE */
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 4d4c041..ca7581c 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -220,6 +220,8 @@ struct mei_cl {
-  * @hw_start         - start hw after reset
-  * @hw_config        - configure hw
- 
-+ * @pg_is_enabled    - is power gating enabled
-+
-  * @intr_clear       - clear pending interrupts
-  * @intr_enable      - enable interrupts
-  * @intr_disable     - disable interrupts
-@@ -244,6 +246,8 @@ struct mei_hw_ops {
- 	int (*hw_start)(struct mei_device *dev);
- 	void (*hw_config)(struct mei_device *dev);
- 
-+	bool (*pg_is_enabled)(struct mei_device *dev);
-+
- 	void (*intr_clear)(struct mei_device *dev);
- 	void (*intr_enable)(struct mei_device *dev);
- 	void (*intr_disable)(struct mei_device *dev);
-@@ -558,6 +562,12 @@ static inline void mei_hw_config(struct mei_device *dev)
- {
- 	dev->ops->hw_config(dev);
- }
-+
-+static inline bool mei_pg_is_enabled(struct mei_device *dev)
++static int mei_me_pm_runtime_resume(struct device *device)
 +{
-+	return dev->ops->pg_is_enabled(dev);
-+}
++	struct pci_dev *pdev = to_pci_dev(device);
++	struct mei_device *dev;
++	int ret;
 +
- static inline int mei_hw_reset(struct mei_device *dev, bool enable)
- {
- 	return dev->ops->hw_reset(dev, enable);
++	dev_dbg(&pdev->dev, "rpm: me: runtime resume\n");
++
++	dev = pci_get_drvdata(pdev);
++	if (!dev)
++		return -ENODEV;
++
++	mutex_lock(&dev->device_lock);
++
++	ret = mei_me_pg_unset_sync(dev);
++
++	mutex_unlock(&dev->device_lock);
++
++	dev_dbg(&pdev->dev, "rpm: me: runtime resume ret = %d\n", ret);
++
++	return ret;
++}
++#endif /* CONFIG_PM_RUNTIME */
++
++#ifdef CONFIG_PM
++static const struct dev_pm_ops mei_me_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(mei_me_pci_suspend,
++				mei_me_pci_resume)
++	SET_RUNTIME_PM_OPS(
++		mei_me_pm_runtime_suspend,
++		mei_me_pm_runtime_resume,
++		mei_me_pm_runtime_idle)
++};
+ 
+-static SIMPLE_DEV_PM_OPS(mei_me_pm_ops, mei_me_pci_suspend, mei_me_pci_resume);
+ #define MEI_ME_PM_OPS	(&mei_me_pm_ops)
+ #else
+ #define MEI_ME_PM_OPS	NULL
+-#endif /* CONFIG_PM_SLEEP */
++#endif /* CONFIG_PM */
+ /*
+  *  PCI driver structure
+  */
 -- 
 1.8.5.3
 
