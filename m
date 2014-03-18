@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216AbaCRBlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 21:41:51 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45122 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801AbaCRBlu (ORCPT
+	id S1753432AbaCRB7D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 21:59:03 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:39999 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716AbaCRB6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 21:41:50 -0400
-Date: Mon, 17 Mar 2014 21:41:48 -0400 (EDT)
-Message-Id: <20140317.214148.2254695408331774828.davem@davemloft.net>
-To: benchan@chromium.org
-Cc: bjorn@mork.no, linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, oliver@neukum.org, gregkh@linuxfoundation.org,
-        gsuarez@smithmicro.com
-Subject: Re: [PATCH 2/2] net: cdc_ncm: respect operator preferred MTU
- reported by MBIM
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAC5Y2nMdPM8w3=dgd2as5z8huL1XLPjon8wSmR-2e3=JGWtCpA@mail.gmail.com>
-References: <CAC5Y2nN_w46FczgitbPjmXtk7q3rHpTxLddx0_GtStfzNXerXQ@mail.gmail.com>
-	<87d2hkldmx.fsf@nemi.mork.no>
-	<CAC5Y2nMdPM8w3=dgd2as5z8huL1XLPjon8wSmR-2e3=JGWtCpA@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 17 Mar 2014 18:41:50 -0700 (PDT)
+	Mon, 17 Mar 2014 21:58:46 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2I1wG6g029140, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <chris@printf.net>, <sameo@linux.intel.com>
+CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
+        <ulf.hansson@linaro.org>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>,
+        Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH 0/2] add new cmd type handle and remove smatch warnings
+Date: Tue, 18 Mar 2014 10:01:43 +0800
+Message-ID: <cover.1395107222.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Chan <benchan@chromium.org>
-Date: Mon, 17 Mar 2014 17:46:27 -0700
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-> Thanks again for the review and tip. I've submitted patch v2 to
-> address the le16_to_cpu conversion.
+Add new command type(R1 without CRC) handle, without this patch mmc card
+initialize will be failed.
 
-When you update a patch from a series, you should repost the entire
-patch set, rather than just the patch which changes.
+Using a more careful handle in request timeout, and debug info is printed
+using non DMA mode. Smatch warning was removed.
 
-This avoids any and all ambiguity of which patches go with which
-others.
+Micky Ching (2):
+  mmc: rtsx: add R1-no-CRC mmc command type handle
+  mmc: rtsx: modify error handle and remove smatch warnings
+
+ drivers/mmc/host/rtsx_pci_sdmmc.c |  121 ++++++++++++++++++++-----------------
+ 1 file changed, 67 insertions(+), 54 deletions(-)
+
+--
+1.7.9.5
