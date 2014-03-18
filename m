@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758443AbaCRXJv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 19:09:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39314 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757568AbaCRXJt (ORCPT
+	id S1758478AbaCRXKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 19:10:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32938 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758462AbaCRXKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 19:09:49 -0400
-Date: Wed, 19 Mar 2014 00:09:46 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] leds: pwm: set polarity on non DT platforms
-Message-ID: <20140318230946.GL12021@piout.net>
-References: <1395081521-16568-1-git-send-email-alexandre.belloni@free-electrons.com>
- <CAK5ve-JU-XfX-wTnr72riWbnSfOcnofjsXpVuyweCndjBe=UgQ@mail.gmail.com>
+	Tue, 18 Mar 2014 19:10:34 -0400
+Date: Tue, 18 Mar 2014 16:12:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Matei Oprea <eu@opreamatei.ro>
+Cc: sachin.kamat@linaro.org, shaun@xresource.ca, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        ROSEdu Kernel Community <firefly@lists.rosedu.org>
+Subject: Re: [PATCH] staging: cxt1e1: hwprobe: Fix sparse warning
+Message-ID: <20140318231236.GA2327@kroah.com>
+References: <1395181999-29433-1-git-send-email-eu@opreamatei.ro>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAK5ve-JU-XfX-wTnr72riWbnSfOcnofjsXpVuyweCndjBe=UgQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1395181999-29433-1-git-send-email-eu@opreamatei.ro>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/03/2014 at 16:02:51 -0700, Bryan Wu wrote :
-> On Mon, Mar 17, 2014 at 11:38 AM, Alexandre Belloni
-> <alexandre.belloni@free-electrons.com> wrote:
-> > Set inversed polarity when .active_low is set in the platform_data. With device
-> > tree, this is taken care of by of_pwm_xlate_with_flags(), called from
-> > of_pwm_get().
-> >
-> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > ---
-> >  drivers/leds/leds-pwm.c | 5 +++++
-> >  1 file changed, 5 insertions(+)
-> >
-> > diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-> > index 605047428b5a..09681556a6aa 100644
-> > --- a/drivers/leds/leds-pwm.c
-> > +++ b/drivers/leds/leds-pwm.c
-> > @@ -180,6 +180,11 @@ static int led_pwm_probe(struct platform_device *pdev)
-> >                         led_dat->cdev.max_brightness = cur_led->max_brightness;
-> >                         led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
-> >
-> > +                       if (led_dat->active_low)
+On Wed, Mar 19, 2014 at 12:33:19AM +0200, Matei Oprea wrote:
+> This fixes the following sparse warning:
+> * drivers/staging/cxt1e1/hwprobe.c:43:19: 
+> warning: symbol 'hdw_info' was not declared. Should it be static?
+> * drivers/staging/cxt1e1/hwprobe.c:47:1: 
+> warning: symbol 'show_two' was not declared. Should it be static?
+> * drivers/staging/cxt1e1/hwprobe.c:99:1: 
+> warning: symbol 'hdw_sn_get' was not declared. Should it be static?
+> *drivers/staging/cxt1e1/hwprobe.c:149:1: 
+> warning: symbol 'prep_hdw_info' was not declared. Should it be static?
+> * drivers/staging/cxt1e1/hwprobe.c:169:1: 
+> warning: symbol 'cleanup_ioremap' was not declared. Should it be static?
+> * drivers/staging/cxt1e1/hwprobe.c:195:1: 
+> warning: symbol 'cleanup_devs' was not declared. Should it be static?
+> drivers/staging/cxt1e1/hwprobe.c:293:1: 
+> * warning: symbol 'c4hw_attach_all' was not declared. Should it be static?
 > 
-> Why .active_low needs to inverse PWM polarity? In
-> of_pwm_xlate_with_flags(), it checked with PWM_POLARITY_INVERSED in
-> args. Moreover in of_pwm_simple_xlate() and pxa_pwm_of_xlate(), we
-> didn't inverse PWM polarity at all.
-> 
+> Signed-off-by: Matei Oprea <eu@opreamatei.ro>
+> Cc: ROSEdu Kernel Community <firefly@lists.rosedu.org>
 
-Yeah, exactly, there is no issue when using device tree. What I'm trying
-to fix here is th non-DT case where of_pwm_xlate_with_flags() is not
-called.
+Why the cc: for a non-maintainer / person?
 
-> Add Thierry to review this.
-> 
+curious,
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+greg k-h
