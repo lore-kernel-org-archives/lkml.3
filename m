@@ -1,115 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392AbaCRFiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 01:38:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33766 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751825AbaCRFiG (ORCPT
+	id S1752583AbaCRFnL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 01:43:11 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:37740 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923AbaCRFnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 01:38:06 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: dhowells@redhat.com
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] frv: remove deprecated IRQF_DISABLED
-Date: Tue, 18 Mar 2014 06:36:45 +0100
-Message-Id: <1395121005-16791-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393964724-16925-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1393964724-16925-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 18 Mar 2014 01:43:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <3229882.l5W5UxujLO@vostro.rjw.lan>
+References: <16035918.jZXKnQ3yiq@vostro.rjw.lan>
+	<1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com>
+	<1394831037-15553-2-git-send-email-dirk.j.brandewie@intel.com>
+	<3229882.l5W5UxujLO@vostro.rjw.lan>
+Date: Tue, 18 Mar 2014 11:13:08 +0530
+X-Google-Sender-Auth: UNCHBEnLtAnIBHqzqqY0xFUaaLE
+Message-ID: <CAOh2x=nDBrofobgHokDxqpkpfSBPB-a32TE10WZQLYaqq4QGTw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] cpufreq: Add exit_prepare callback to
+ cpufreq_driver interface
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patrick Marlier <patrick.marlier@gmail.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the IRQF_DISABLED flag from FRV architecture
-code. It's a NOOP since 2.6.35 and it will be removed one day.
+On Sat, Mar 15, 2014 at 7:34 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Friday, March 14, 2014 02:03:56 PM dirk.brandewie@gmail.com wrote:
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- arch/frv/kernel/irq-mb93091.c | 8 ++++----
- arch/frv/kernel/irq-mb93093.c | 1 -
- arch/frv/kernel/irq-mb93493.c | 4 ++--
- arch/frv/kernel/time.c        | 1 -
- 4 files changed, 6 insertions(+), 8 deletions(-)
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -1338,6 +1338,9 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+>>               }
+>>       }
+>>
+>> +     if (cpufreq_driver->stop)
+>
+> What about doing
+>
+> +       if (cpufreq_driver->setpolicy && cpufreq_driver->stop)
+>
+> here instead?  That would make it clear where the new callback belongs.
 
-diff --git a/arch/frv/kernel/irq-mb93091.c b/arch/frv/kernel/irq-mb93091.c
-index 2cc327a1ca44..091b2839be90 100644
---- a/arch/frv/kernel/irq-mb93091.c
-+++ b/arch/frv/kernel/irq-mb93091.c
-@@ -107,25 +107,25 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
- static struct irqaction fpga_irq[4]  = {
- 	[0] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.0",
- 		.dev_id		= (void *) 0x0028UL,
- 	},
- 	[1] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.1",
- 		.dev_id		= (void *) 0x0050UL,
- 	},
- 	[2] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.2",
- 		.dev_id		= (void *) 0x1c00UL,
- 	},
- 	[3] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.3",
- 		.dev_id		= (void *) 0x6386UL,
- 	}
-diff --git a/arch/frv/kernel/irq-mb93093.c b/arch/frv/kernel/irq-mb93093.c
-index 95e4eb4f1f38..1f3015cf80f5 100644
---- a/arch/frv/kernel/irq-mb93093.c
-+++ b/arch/frv/kernel/irq-mb93093.c
-@@ -105,7 +105,6 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
- static struct irqaction fpga_irq[1]  = {
- 	[0] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED,
- 		.name		= "fpga.0",
- 		.dev_id		= (void *) 0x0700UL,
- 	}
-diff --git a/arch/frv/kernel/irq-mb93493.c b/arch/frv/kernel/irq-mb93493.c
-index ba648da0932d..8ca5aa4ff595 100644
---- a/arch/frv/kernel/irq-mb93493.c
-+++ b/arch/frv/kernel/irq-mb93493.c
-@@ -118,13 +118,13 @@ static irqreturn_t mb93493_interrupt(int irq, void *_piqsr)
- static struct irqaction mb93493_irq[2]  = {
- 	[0] = {
- 		.handler	= mb93493_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "mb93493.0",
- 		.dev_id		= (void *) __addr_MB93493_IQSR(0),
- 	},
- 	[1] = {
- 		.handler	= mb93493_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "mb93493.1",
- 		.dev_id		= (void *) __addr_MB93493_IQSR(1),
- 	}
-diff --git a/arch/frv/kernel/time.c b/arch/frv/kernel/time.c
-index b457de496b70..332e00bf9d06 100644
---- a/arch/frv/kernel/time.c
-+++ b/arch/frv/kernel/time.c
-@@ -44,7 +44,6 @@ static irqreturn_t timer_interrupt(int irq, void *dummy);
- 
- static struct irqaction timer_irq  = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_DISABLED,
- 	.name = "timer",
- };
- 
--- 
-1.8.3.2
+This is called after stopping governor and so might be useful for ->target()
+drivers. So, wouldn't be a bad option if we keep it available for all..
 
+@Dirk: I thought about the solution I mentioned in another mail. And it looks
+like I will end up getting a similar solution. So, we will go with
+your solution.
+
+Just few changes for your solution..
+
+You need to call ->stop() only for the last CPU of every policy and not for
+every CPU, so you need something like this:
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 19d25a8..78d41c0 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1371,6 +1371,8 @@ static int __cpufreq_remove_dev_prepare(struct
+device *dev,
+                                         __func__, new_cpu, cpu);
+                        }
+                }
++       } else if (cpufreq_driver->stop) {
++               cpufreq_driver->stop(policy);
+        }
+
+        return 0;
