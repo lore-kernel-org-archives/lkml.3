@@ -1,43 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041AbaCRQMe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 12:12:34 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:50241 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791AbaCRQMa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 12:12:30 -0400
-Date: Tue, 18 Mar 2014 12:12:25 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] cgroup: fix a failure path in create_css()
-Message-ID: <20140318161225.GD3642@htj.dyndns.org>
-References: <53280BAC.5060404@huawei.com>
- <20140318152445.GA3642@htj.dyndns.org>
+	id S1756218AbaCRQO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 12:14:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57248 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753543AbaCRQO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 12:14:28 -0400
+Date: Tue, 18 Mar 2014 14:31:31 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 3/5] perf tools: Allocate thread map_groups dynamicaly
+Message-ID: <20140318133131.GB7845@krava.brq.redhat.com>
+References: <1394805606-25883-1-git-send-email-jolsa@redhat.com>
+ <1394805606-25883-4-git-send-email-jolsa@redhat.com>
+ <87d2hlthzi.fsf@sejong.aot.lge.com>
+ <20140317145259.GD6469@krava.brq.redhat.com>
+ <87lhw8rnsi.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140318152445.GA3642@htj.dyndns.org>
+In-Reply-To: <87lhw8rnsi.fsf@sejong.aot.lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 11:24:45AM -0400, Tejun Heo wrote:
-> On Tue, Mar 18, 2014 at 05:02:36PM +0800, Li Zefan wrote:
-> > If online_css() fails, we should remove cgroup files belonging
-> > to css->ss.
-> > 
-> > Signed-off-by: Li Zefan <lizefan@huawei.com>
+On Tue, Mar 18, 2014 at 04:03:41PM +0900, Namhyung Kim wrote:
+> Hi Jiri,
 > 
-> Applied to libata/for-3.14-fixes.
+> On Mon, 17 Mar 2014 15:52:59 +0100, Jiri Olsa wrote:
+> > On Mon, Mar 17, 2014 at 04:13:53PM +0900, Namhyung Kim wrote:
+> >> On Fri, 14 Mar 2014 15:00:04 +0100, Jiri Olsa wrote:
+> >> > Moving towards sharing map groups within a process threads.
+> >> >
+> >> > Because of this we need the map groups to be dynamically
+> >> > allocated. No other functional change is intended in here.
+> >> > @@ -664,7 +664,7 @@ void thread__find_addr_map(struct thread *thread,
+> >> >  	al->cpumode = cpumode;
+> >> >  	al->filtered = false;
+> >> >  
+> >> > -	if (machine == NULL) {
+> >> > +	if ((machine == NULL) || (mg == NULL)) {
+> >> >  		al->map = NULL;
+> >> >  		return;
+> >> >  	}
+> >> 
+> >> What about the kernel threads?  I guess they're not using thread->mg but
+> >> machine->kmaps instead?
+> >
+> > The machine->kmaps is used to store kernel maps - core + modules.
+> >
+> > All threads (including kernel ones) are using thread->mg,
+> > kernel threads have empty /proc/x/maps file.
+> >
+> > In case the sample address is detected within kernel space,
+> > the machine->kmaps is used instead of thread->mg:
+> 
+> That means kernel threads don't need to allocate ->mg, right?  So I'd
+> suggest checking cpumode first and then allocate ->mg for userspace maps
+> only.
 
-Hmmm... didn't apply cleanly and generated build error.  Looks like
-the patch was generated against for-3.15.  Can you please regenerate
-the patch against for-3.14-fixes?
+good idea, will do
 
-Thanks.
-
--- 
-tejun
+thanks,
+jirka
