@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070AbaCRJpj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 05:45:39 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:60195 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaCRJph (ORCPT
+	id S1754033AbaCRJvK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 05:51:10 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:44596 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072AbaCRJvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 05:45:37 -0400
-Message-ID: <532815A8.9090807@ahsoftware.de>
-Date: Tue, 18 Mar 2014 10:45:12 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
-References: <5316FFCE.1060603@ti.com> <1394018461-757-1-git-send-email-holler@ahsoftware.de> <CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com> <5322D529.4070904@ahsoftware.de> <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com> <5326F8C5.5090406@ti.com> <CACRpkdYZMzw31NkA4uSq+ZowzOnZgZthXhZri-eJY2Ozb8aNRQ@mail.gmail.com> <532805AE.9000806@ti.com>
-In-Reply-To: <532805AE.9000806@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Mar 2014 05:51:07 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-40-53281709868e
+Message-id: <53281709.5010102@samsung.com>
+Date: Tue, 18 Mar 2014 18:51:05 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Robert Baldyga <r.baldyga@samsung.com>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, myungjoo.ham@samsung.com,
+        dmitry.torokhov@gmail.com, cooloney@gmail.com, rpurdie@rpsys.net,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, lgirdwood@gmail.com,
+        broonie@kernel.org, a.zummo@towertech.it, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-leds@vger.kernel.org, rtc-linux@googlegroups.com,
+        m.szyprowski@samsung.com, k.kozlowski@samsung.com
+Subject: Re: [PATCH v3 1/4] mfd: max8997: use regmap to access registers
+References: <1394703532-494-1-git-send-email-r.baldyga@samsung.com>
+ <1394703532-494-2-git-send-email-r.baldyga@samsung.com>
+In-reply-to: <1394703532-494-2-git-send-email-r.baldyga@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsWyRsSkRJdTXCPY4MApdYslF6+yW0x9+ITN
+	4ujOiUwWk568Z7Y4vOgFo8XElZOZLV6/MLS4//Uoo8W3Kx1MFjc/fWO1uLxrDpvF1jfrGC3W
+	HrnLbnG7cQWbxbW9x5ktHhzeyW6xe9dTVov9nR2MFqe7WR2EPXbOusvusWfiSTaPzSu0PDat
+	6mTzuHNtD5vHvJOBHnvm/2D16NuyitFj+ryfTB6fN8l5rN+ylSmAO4rLJiU1J7MstUjfLoEr
+	48uc6SwFLzkq/k99z9rA+Jyti5GTQ0LARGL3mtVMELaYxIV764HiXBxCAksZJVY+2MkIU/R8
+	/ndmiMQiRon227ugql4xStzYOwFsFK+AlsTih5dZuhg5OFgEVCXmzw4FCbMBhfe/uAFWIioQ
+	JrFy+hUWiHJBiR+T74HZIkA1dz7OZwexmQWOMku8b5ADsYUFPCQatm9jBbGFBGolptxfxQQy
+	nlPAReLVOQ+Ich2J/a3T2CBseYnNa96C3SkhcIJD4tv0PrD5LAICEt8mHwI7TUJAVmLTAWaI
+	vyQlDq64wTKBUWwWkotmIRk7C8nYBYzMqxhFUwuSC4qT0osM9YoTc4tL89L1kvNzNzECE8Tp
+	f896dzDePmB9iDEZaOVEZinR5HxggskriTc0NjOyMDUxNTYytzQjTVhJnDfpYVKQkEB6Yklq
+	dmpqQWpRfFFpTmrxIUYmDk6pBkbVXU/FmeY6pB9fzV2xarbJ6VXxpUuulv3jM1/tppmpcjej
+	beoKjXxerQpe5WTp9qly8nvsv2lPUSqYIq2ataA2J6FPPP2k1+XkD9Oe+io2nkhcc/H6iQOM
+	c/MtCn9tVGuayHPgVHdb7wZmvaMRh4//Wyhybt/b3fF185wEVwhuF5a4wlxatkKJpTgj0VCL
+	uag4EQBeIxbCJgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAKsWRmVeSWpSXmKPExsVy+t9jAV1OcY1ggw3b5CyWXLzKbjH14RM2
+	i6M7JzJZTHryntni8KIXjBYTV05mtnj9wtDi/tejjBbfrnQwWdz89I3V4vKuOWwWW9+sY7RY
+	e+Quu8XtxhVsFtf2Hme2eHB4J7vF7l1PWS32d3YwWpzuZnUQ9tg56y67x56JJ9k8Nq/Q8ti0
+	qpPN4861PWwe804GeuyZ/4PVo2/LKkaP6fN+Mnl83iTnsX7LVqYA7qgGRpuM1MSU1CKF1Lzk
+	/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoO+UFMoSc0qBQgGJxcVK+naY
+	JoSGuOlawDRG6PqGBMH1GBmggYQ1jBlf5kxnKXjJUfF/6nvWBsbnbF2MnBwSAiYSz+d/Z4aw
+	xSQu3FsPFOfiEBJYxCjRfnsXlPOKUeLG3glgHbwCWhKLH15m6WLk4GARUJWYPzsUJMwGFN7/
+	4gZYiahAmMTK6VdYIMoFJX5MvgdmiwDV3Pk4nx3EZhY4yizxvkEOxBYW8JBo2L6NFcQWEqiV
+	mHJ/FRPIeE4BF4lX5zwgynUk9rdOY4Ow5SU2r3nLPIFRYBaSDbOQlM1CUraAkXkVo2hqQXJB
+	cVJ6rqFecWJucWleul5yfu4mRnD6eSa1g3Flg8UhRgEORiUe3hds6sFCrIllxZW5hxglOJiV
+	RHhPiGgEC/GmJFZWpRblxxeV5qQWH2JMBvp/IrOUaHI+MDXmlcQbGpuYGVkamRtaGBmbkyas
+	JM57oNU6UEggPbEkNTs1tSC1CGYLEwenVAOjOnOrtdQZUeGj15eIhV+YK/Ij8Bfn1MfbooW9
+	Mu1rAmYHrDmmENBUUNoZ0KTdqcFg+jtb8zLPH1b9vC5JZXf9NYasWf4x9+8k8l1yvfJraZ3D
+	5dboNAU/gajmx21vmviZO/yXpk8NqY69U9TE4ix59JDGR8/7S7dJc/l58KSbvoxQ6Tw3RYml
+	OCPRUIu5qDgRAPhXlsWDAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 18.03.2014 09:37, schrieb Sekhar Nori:
+On 03/13/2014 06:38 PM, Robert Baldyga wrote:
+> This patch modifies max8997 driver and each associated function driver,
+> to use regmap instead of operating directly on i2c bus. It will allow to
+> simplify IRQ handling using regmap-irq.
+> 
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/extcon/extcon-max8997.c     |   31 ++++----
+>  drivers/input/misc/max8997_haptic.c |   34 +++++----
+>  drivers/leds/leds-max8997.c         |   13 ++--
+>  drivers/mfd/Kconfig                 |    1 +
+>  drivers/mfd/max8997-irq.c           |   64 +++++++---------
+>  drivers/mfd/max8997.c               |  141 ++++++++++++++++-------------------
+>  drivers/power/max8997_charger.c     |   33 ++++----
+>  drivers/regulator/max8997.c         |   87 +++++++++++----------
+>  drivers/rtc/rtc-max8997.c           |   56 +++++++-------
+>  include/linux/mfd/max8997-private.h |   17 ++---
+>  10 files changed, 228 insertions(+), 249 deletions(-)
+> 
 
-> It is safe - at the least it does not break anything that is already
-> working. I guess the decision to put it into -rc depends on whether you
-> consider out of tree dtbs to be a valid usecase for the kernel.
+For extcon part,
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
 
-That's all DT is about, getting rid of the necessity for in-tree 
-hw-descriptions. ;)
+Thanks,
+Chanwoo Choi
 
-But I don't need any rush here, I'm just unable to understand why the 
--rc phase isn't used for bug fixing as I believe that's what this phase 
-is for.
-
-Most people are unable to track the various -next trees, therefor many 
-failures only come up when stuff reaches mainline where it might be 
-tested by some more people. And if all bugs found in the -rc phase are 
-fixed in -next only, the -rc phase would be useless.
-
-And it just happened to me too often, that even silly bugfixes (like 
-oneliners) needed between 5 and 9 months to reach a stable kernel and 
-thus users.
-
-Regards,
-
-Alexander Holler
