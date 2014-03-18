@@ -1,147 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749AbaCRRRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:17:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754394AbaCRRRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:17:16 -0400
-Date: Tue, 18 Mar 2014 18:16:20 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: JBottomley@parallels.com, Nagalakshmi.Nandigama@lsi.com,
-        Sreekanth.Reddy@lsi.com, rientjes@google.com,
-        akpm@linux-foundation.org, joseph.salisbury@canonical.com,
-        torvalds@linux-foundation.org, tj@kernel.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        linux-scsi@vger.kernel.org
-Subject: Re: [v3.13][v3.14][Regression] kthread:
-	makekthread_create()killable
-Message-ID: <20140318171620.GA10636@redhat.com>
-References: <201403150943.BIH30251.FOQLOOtFJHSMVF@I-love.SAKURA.ne.jp> <201403170013.GJF86930.FtVOOQOHLFFMSJ@I-love.SAKURA.ne.jp> <20140316162512.GA9467@redhat.com> <201403172138.GFB43278.OOOFFSQLVHJMtF@I-love.SAKURA.ne.jp> <20140317142246.GA27453@redhat.com> <201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756965AbaCRRTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:19:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55710 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756662AbaCRRTA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 13:19:00 -0400
+Message-Id: <20140318171126.962446866@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Tue, 18 Mar 2014 17:19:10 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Benedikt Spranger <b.spranger@linutronix.de>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org
+Subject: [patch 04/12] can: c_can: Fix buffer ordering for real
+References: <20140318171007.528610837@linutronix.de>
+Content-Disposition: inline; filename=can-c-can-fix-buffer-handling.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18, Tetsuo Handa wrote:
->
-> Oleg Nesterov wrote:
-> > If we need the urgent hack to fix the regression, then I suggest to change
-> > scsi_host_alloc() temporary until mptsas (or whatever) is fixed.
->
-> Device initialization taking longer than 30 seconds is possible and is not a
-> hang up. It is systemd which needs to be fixed.
+The buffer handling of c_can has been broken forever. That leads to
+message reordering:
 
-Perhaps systemd needs the fix too, I do not know. But this is irrelevant,
-I think. Or at least this should be discussed separately.
+ksoftirqd/0-3     [000] ..s.    79.123776: c_can_poll: rx_poll: val: 00007fff
+ksoftirqd/0-3     [000] ..s.    79.124101: c_can_poll: rx_poll: val: 00008001
 
-kthread_run() can fail anyway, mptsas_probe() should not crash the kernel.
+What happens is:
 
-And btw, it is not clear to me if in this case device initialization really
-needs more than 30 seconds... My understanding is probably wrong, so please
-correct me. But it seems that before your "make kthread_create() killable"
+CPU				HW
+				queue new packet into obj 16 (0-15 are busy)
+read obj 1-15			
+return because pending is 0
+				set pending obj 16 -> pending reg 8000
+				queue new packet into obj 1 
+				set pending obj 1 -> pending reg 8001
 
-	- probe hangs
+So the current algorithmus reads the newest message first, which
+violates the ordering rules of CAN.
 
-	- SIGKILL wakes it up
+Add proper handling of that situation by analyzing the contents of the
+pending register for gaps.
 
-	- so I assume that the probe was interrupted and didn't finish
-	  correctly ???
+This does NOT fix the message object corruption which can lead to
+interrupt storms. Thats addressed in the next patches.
 
-	- initialization continues, does scsi_host_alloc(), etc, and
-	  everything works fine even if probe was interrupted?
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/net/can/c_can/c_can.c |   52 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 50 insertions(+), 2 deletions(-)
 
-So perhaps that probe should not hang and this should be fixed too ?
-Do you know where exactly it hangs? And where it is woken up by SIGKILL ?
-Or I totally misunderstood ?
+Index: linux/drivers/net/can/c_can/c_can.c
+===================================================================
+--- linux.orig/drivers/net/can/c_can/c_can.c
++++ linux/drivers/net/can/c_can/c_can.c
+@@ -808,6 +808,38 @@ static void c_can_do_tx(struct net_devic
+ }
+ 
+ /*
++ * If we have a gap in the pending bits, that means we either
++ * raced with the hardware or failed to readout all upper
++ * objects in the last run due to quota limit.
++ */
++static u32 c_can_adjust_pending(u32 pend)
++{
++	u32 weight, lasts;
++
++	if (pend == RECEIVE_OBJECT_BITS)
++		return pend;
++
++	/*
++	 * If the last set bit is larger than the number of pending
++	 * bits we have a gap.
++	 */
++	weight = hweight32(pend);
++	lasts = fls(pend);
++
++	/* If the bits are linear, nothing to do */
++	if (lasts == weight)
++		return pend;
++
++	/*
++	 * Find the first set bit after the gap. We walk backwards
++	 * from the last set bit.
++	 */
++	for (lasts--; pend & (1 << (lasts - 1)); lasts--);
++
++	return pend & ~((1 << lasts) - 1);
++}
++
++/*
+  * theory of operation:
+  *
+  * c_can core saves a received CAN message into the first free message
+@@ -834,7 +866,7 @@ static int c_can_do_rx_poll(struct net_d
+ 	u32 num_rx_pkts = 0;
+ 	unsigned int msg_obj, msg_ctrl_save;
+ 	struct c_can_priv *priv = netdev_priv(dev);
+-	u16 val;
++	u32 val, pend = 0;
+ 
+ 	/*
+ 	 * It is faster to read only one 16bit register. This is only possible
+@@ -843,7 +875,23 @@ static int c_can_do_rx_poll(struct net_d
+ 	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
+ 			"Implementation does not support more message objects than 16");
+ 
+-	while (quota > 0 && (val = priv->read_reg(priv, C_CAN_INTPND1_REG))) {
++	while (quota > 0) {
++
++		if (!pend) {
++			pend = priv->read_reg(priv, C_CAN_INTPND1_REG);
++			if (!pend)
++				return num_rx_pkts;
++			/*
++			 * If the pending field has a gap, handle the
++			 * bits above the gap first.
++			 */
++			val = c_can_adjust_pending(pend);
++		} else {
++			val = pend;
++		}
++		/* Remove the bits from pend */
++		pend &= ~val;
++
+ 		while ((msg_obj = ffs(val)) && quota > 0) {
+ 			val &= ~BIT(msg_obj - 1);
+ 
 
-> > --- x/drivers/scsi/hosts.c
-> > +++ x/drivers/scsi/hosts.c
-> > @@ -447,8 +447,18 @@ struct Scsi_Host *scsi_host_alloc(struct
-> >  	dev_set_name(&shost->shost_dev, "host%d", shost->host_no);
-> >  	shost->shost_dev.groups = scsi_sysfs_shost_attr_groups;
-> >
-> > -	shost->ehandler = kthread_run(scsi_error_handler, shost,
-> > -			"scsi_eh_%d", shost->host_no);
-> > +	/*
-> > +	 * HUGE COMMENT. and kthread_create() needs s/ENOMEM/EINTR/.
-> > +	 */
-> > +	for (;;) {
-> > +		shost->ehandler = kthread_run(scsi_error_handler, shost,
-> > +						"scsi_eh_%d", shost->host_no);
-> > +		if (!IS_ERR(shost->ehandler) || PTR_ERR(shost->ehandler) != -EINTR)
-> > +			break;
-> > +		clear_thread_flag(TIF_SIGPENDING);
-> > +	}
-> > +	recalc_sigpending();
-> > +
-> >  	if (IS_ERR(shost->ehandler)) {
-> >  		printk(KERN_WARNING "scsi%d: error handler thread failed to spawn, error = %ld\n",
-> >  			shost->host_no, PTR_ERR(shost->ehandler));
-> >
-> >
->
-> I think we need a bit different version, in order to take TIF_MEMDIE flag into
-> account at the caller of kthread_create(), for the purpose of commit 786235ee
-> is "try to die as soon as possible if chosen by the OOM killer".
->
-> 	for (;;) {
-> 		shost->ehandler = kthread_run(scsi_error_handler, shost,
-> 					      "scsi_eh_%d", shost->host_no);
-> 		if (PTR_ERR(shost->ehandler) != -EINTR ||
-> 		    test_thread_flag(TIF_MEMDIE))
-
-Well, personally I do not care about TIF_MEMDIE/oom at all. We need the
-temporary hack (unless we have the "right" fix right now) which should be
-reverted later.
-
->   (1) Changing return code from -ENOMEM to -EINTR may not be sufficient.
-
-You mean, in kthread_create() ? And, sufficient for what?
-
->       If kmalloc(GFP_KERNEL) in kthread_create_on_node() does something that
->       calls recalc_sigpending(),
-
-firstly, it should not. And almost every caller of recalc_sigpending() outside
-of core signal code is wrong.
-
-> TIF_SIGPENDING will be set on the second call
->       to kthread_run(). This will make wait_for_completion_killable() return
->       -EINTR immediately because the second call to kthread_run() happens only
->       when current thread already received SIGKILL (by other than the OOM
->       killer). This may form an infinite busy loop.
-
-Not sure I understand... Yes, wait_for_completion_killable() can return
-immediately if TIF_SIGPENDING will be set again for any reason. Say, another
-signal. But the next iteration will clear TIF_SIGPENDING ?
-
->      As I think it is difficult to prove that kmalloc(GFP_KERNEL) never sets
->      TIF_SIGPENDING flag
-
-Ah, I see, you mean that kmalloc() can do this every time. No, this should
-not happen or we have another problem.
-
-In any case. My only point is that the regression should be fixed here, imho.
-And just in case, let me repeat that the code above is the dirty temporary hack.
-I won't insist on the ugly TIF_SIGPENDING games, say, we can use workqueue.
-
->   (2) I don't like scattering around test_thread_flag(TIF_MEMDIE),
->       might be other drivers who receive SIGKILL by systemd's 30 seconds
->       timeout.
-
-Can't understand this part too... and it was you who suggested to check
-TIF_MEMDIE.
-
-Anyway. I agree with any hack in scsi_host_alloc/etc, this is up to
-maintainers. I still think that your change uncovered the problems in
-drivers/message/fusion/, these problems should be fixed somehow.
-
-Dear maintainers, we need your help.
-
-Oleg.
 
