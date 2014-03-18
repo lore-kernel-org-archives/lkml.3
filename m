@@ -1,85 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338AbaCRK6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 06:58:53 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:29087 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314AbaCRK6v (ORCPT
+	id S1755265AbaCRK6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 06:58:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42385 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754767AbaCRK6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 06:58:51 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-72-532826eac6cd
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Viresh Kumar <viresh.linux@gmail.com>
-Cc: Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com,
-        linux-arm-kernel@lists.infradead.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH RESEND] ARM: SPEAr1340: static-ize SATA functions
-Date: Tue, 18 Mar 2014 11:58:27 +0100
-Message-id: <1678906.b5uh0Nm7QE@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd1XahrBBksW81rMWb+GzeJs0xt2
-	i02Pr7FaHNvxiMni8q45bBYN3T3sFnNmbGa1WHnxL7MDh8fOWXfZPU7M+M3icfLCSRaPzUvq
-	Pfq2rGL0ePpjL7PH501yAexRXDYpqTmZZalF+nYJXBlT5j9hKljNVbF2yy7mBsabHF2MnBwS
-	AiYSHacnsELYYhIX7q1n62Lk4hASmM4o8ezjYXYIp4VJYsG91ywgVWwCVhIT21cxgtgiApoS
-	/zZdYwEpYhb4wyixvvUCG0hCWMBR4v7yo8wgNouAqsT1vtlAkzg4eIEafvaKg4RFBTwldmxf
-	CVbOKyAo8WPyPbD5zALyEvv2T2WFsLUk1u88zjSBkW8WkrJZSMpmISlbwMi8ilE0tSC5oDgp
-	PddIrzgxt7g0L10vOT93EyM4pJ9J72Bc1WBxiFGAg1GJh/cFm3qwEGtiWXFl7iFGCQ5mJRHe
-	EyIawUK8KYmVValF+fFFpTmpxYcYpTlYlMR5D7ZaBwoJpCeWpGanphakFsFkmTg4pRoYZeVb
-	PDZOm3P2yw2L1SKFCu+Zn3w/4ar/a30dv1fU7Qkfk31DhdarChkp7dayM1OeIsWgkHT7h2hl
-	YbGQltkmsxlHrr3XLGUW9Su8YdDA8XruopUlvrs+ZvB1ua+M3FiV8P4809NDXFJnjK8XKk8J
-	TebiPdHwjrG75WHCj6Rv9f1Tkm7/KuhQYinOSDTUYi4qTgQAX68BVmUCAAA=
+	Tue, 18 Mar 2014 06:58:01 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/8] regulator: arizona-micsupp: Add processing of init_data from device tree
+Date: Tue, 18 Mar 2014 10:49:14 +0000
+Message-Id: <1395139757-6907-6-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1395139757-6907-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1395139757-6907-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sata_miphy_exit(), sata_suspend() and sata_resume() static.
-
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
-Previous submission:
-https://lkml.org/lkml/2013/10/4/369
+ Documentation/devicetree/bindings/mfd/arizona.txt |    6 ++-
+ drivers/regulator/arizona-micsupp.c               |   47 +++++++++++++++++++--
+ 2 files changed, 47 insertions(+), 6 deletions(-)
 
- arch/arm/mach-spear/spear1340.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mach-spear/spear1340.c b/arch/arm/mach-spear/spear1340.c
-index 3fb6834..e0e4251 100644
---- a/arch/arm/mach-spear/spear1340.c
-+++ b/arch/arm/mach-spear/spear1340.c
-@@ -93,7 +93,7 @@ static int sata_miphy_init(struct device *dev, void __iomem *addr)
- 	return 0;
- }
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+index d78f1aa..88c1c0f 100644
+--- a/Documentation/devicetree/bindings/mfd/arizona.txt
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -44,9 +44,11 @@ Optional properties:
  
--void sata_miphy_exit(struct device *dev)
-+static void sata_miphy_exit(struct device *dev)
- {
- 	writel(0, SPEAR1340_PCIE_SATA_CFG);
- 	writel(0, SPEAR1340_PCIE_MIPHY_CFG);
-@@ -107,7 +107,7 @@ void sata_miphy_exit(struct device *dev)
- 	msleep(20);
- }
+   - wlf,ldo1 : Initial data for the LDO1 regulator, as covered in
+     Documentation/devicetree/bindings/regulator/regulator.txt
++  - wlf,micvdd : Initial data for the MICVDD regulator, as covered in
++    Documentation/devicetree/bindings/regulator/regulator.txt
  
--int sata_suspend(struct device *dev)
-+static int sata_suspend(struct device *dev)
- {
- 	if (dev->power.power_state.event == PM_EVENT_FREEZE)
- 		return 0;
-@@ -117,7 +117,7 @@ int sata_suspend(struct device *dev)
- 	return 0;
- }
+-  - DCVDD-supply : Power supply, only needs to be specified if DCVDD is being
+-    externally supplied. As covered in
++  - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
++    they are being externally supplied. As covered in
+     Documentation/devicetree/bindings/regulator/regulator.txt
  
--int sata_resume(struct device *dev)
-+static int sata_resume(struct device *dev)
+ Example:
+diff --git a/drivers/regulator/arizona-micsupp.c b/drivers/regulator/arizona-micsupp.c
+index 034ece7..1d5bd8d 100644
+--- a/drivers/regulator/arizona-micsupp.c
++++ b/drivers/regulator/arizona-micsupp.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
++#include <linux/regulator/of_regulator.h>
+ #include <linux/gpio.h>
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
+@@ -195,6 +196,44 @@ static const struct regulator_init_data arizona_micsupp_ext_default = {
+ 	.num_consumer_supplies = 1,
+ };
+ 
++#ifdef CONFIG_OF
++static int arizona_micsupp_get_pdata(struct arizona *arizona,
++				     struct regulator_config *config)
++{
++	struct arizona_pdata *pdata = &arizona->pdata;
++	struct arizona_micsupp *micsupp = config->driver_data;
++	struct device_node *np_init, *np_micvdd;
++
++	np_init = of_get_child_by_name(arizona->dev->of_node, "wlf,micvdd");
++	np_micvdd = of_parse_phandle(arizona->dev->of_node, "MICVDD-supply", 0);
++
++	if (np_init) {
++		config->of_node = np_init;
++
++		pdata->micvdd = of_get_regulator_init_data(arizona->dev,
++							   np_init);
++
++		if (!np_micvdd) {
++			pdata->micvdd->consumer_supplies = &micsupp->supply;
++			pdata->micvdd->num_consumer_supplies = 1;
++		}
++
++		config->init_data = pdata->micvdd;
++	}
++
++	return 0;
++}
++#else
++static inline int arizona_micsupp_get_pdata(struct arizona *arizona,
++					    struct regulator_config *config)
++{
++	if (arizona->pdata.micvdd)
++		config->init_data = arizona->pdata.micvdd;
++
++	return 0;
++}
++#endif
++
+ static int arizona_micsupp_probe(struct platform_device *pdev)
  {
- 	if (dev->power.power_state.event == PM_EVENT_THAW)
- 		return 0;
+ 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
+@@ -235,11 +274,11 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
+ 	config.dev = arizona->dev;
+ 	config.driver_data = micsupp;
+ 	config.regmap = arizona->regmap;
++	config.init_data = &micsupp->init_data;
+ 
+-	if (arizona->pdata.micvdd)
+-		config.init_data = arizona->pdata.micvdd;
+-	else
+-		config.init_data = &micsupp->init_data;
++	ret = arizona_micsupp_get_pdata(arizona, &config);
++	if (ret < 0)
++		return ret;
+ 
+ 	/* Default to regulated mode until the API supports bypass */
+ 	regmap_update_bits(arizona->regmap, ARIZONA_MIC_CHARGE_PUMP_1,
 -- 
-1.8.2.3
-
+1.7.2.5
 
