@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287AbaCRA5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 20:57:48 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53237 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752598AbaCRA5q (ORCPT
+	id S1753362AbaCRA75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 20:59:57 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:9769 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaCRA7z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 20:57:46 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [RFC PATCH 2/2] ACPI: Default disable auto-serialization.
-Date: Tue, 18 Mar 2014 02:13:14 +0100
-Message-ID: <2040389.QPkIWC2M7W@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88024E1AE0@SHSMSX101.ccr.corp.intel.com>
-References: <14866.1394813101@turing-police.cc.vt.edu> <5326E5E8.4070804@intel.com> <1AE640813FDE7649BE1B193DEA596E88024E1AE0@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 17 Mar 2014 20:59:55 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-36-53279a8a44c5
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <000301cf41c5$10f247b0$32d6d710$@samsung.com>
+ <1395102807.3870.156.camel@kjgkr>
+In-reply-to: <1395102807.3870.156.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: fix incorrect parsing with option string
+Date: Tue, 18 Mar 2014 08:59:08 +0800
+Message-id: <000001cf4245$5f848250$1e8d86f0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQHkftPyJOYmOMW8xMk/fS1Cv2qhuAIB2wK5mqt9ScA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t9jAd2uWerBBifPc1pc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXH950vGgs/cFSue
+	72VqYFzO2cXIySEhYCLxqHU1C4QtJnHh3nq2LkYuDiGBRYwSbY27GSGcH4wSkzbtYgapYhNQ
+	kVje8Z8JxBYRkJaY9WkeWDezQKbEvaYZYDVCArESi95BTOUU0JOY+HM1G4gtLOAncWrqcbBe
+	FgFVifYVa8BsXgFLiQtb/rFC2IISPybfg5qpLjFp3iJmCFtb4sm7C6wQlypI7Dj7mhHiBiuJ
+	UyeesULUiEtsPHKLZQKj0Cwko2YhGTULyahZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dL
+	zs/dxAgO/WdSOxhXNlgcYhTgYFTi4X3Bph4sxJpYVlyZe4hRgoNZSYR36WSgEG9KYmVValF+
+	fFFpTmrxIUZpDhYlcd4DrdaBQgLpiSWp2ampBalFMFkmDk6pBkbZdQL772r+e732zTPb1YFX
+	T9wJan75Tb+22d/6xqFmzg29zmsSo4/EBgU9lfOacpvR906OAutqkX85+lkFBVx2OQfWNHRJ
+	9fFd6ldxkp9zo2OCvf6XRddqIr7qRZ2Zs8pg/az0sxpStv3hHA4F4nM7Lu25Ft60smfmOu0H
+	az62PeJ1qc2ZOU+JpTgj0VCLuag4EQBhT8a3eQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 18, 2014 12:31:54 AM Zheng, Lv wrote:
-> Hi, Rafael
-> 
-> > From: Wysocki, Rafael J
-> > Sent: Monday, March 17, 2014 8:09 PM
-> > 
-> > On 3/17/2014 5:14 AM, Lv Zheng wrote:
-> > > This feature enabled by the following commit is still under development.
-> > >
-> > >    Commit: cd52379678785b02d7a357988cfba214fdaf92f4
-> > >    Subject: ACPICA: Add global option to disable method auto-serialization.
-> > >    This change adds an option to disable the auto-serialization of
-> > >    methods that create named objects.
-> > >
-> > > This patch disables it by default temporarily according to the bug reports.
-> > 
-> > Well, it doesn't restore the 3.14 behavior of acpi_auto_serialize, as
-> > far as I can say, so we can't apply it.
-> > 
-> > I still can drop the commits related to auto-serialization from my
-> > acpica branch.  Which commits are they?
-> 
-> From linux-pm/bleeding-edge branch, I found this series includes the following commits:
-> 
-> Commit: a0fd108f2da56b769472fc0095616fb370988516
-> Author: Lv Zheng <lv.zheng@intel.com>
-> Subject: ACPI: Rename kernel parameter "acpi_serialize" to "acpi_no_auto_serialize"
-> 
-> Commit: 5f1cb4a92e4c4aabd139ff9ca1e11c0e2db2ac59
-> Author: Lv Zheng <lv.zheng@intel.com>
-> Subject: ACPICA: Remove global option to serialize all control methods.
-> 
-> Commit: cd52379678785b02d7a357988cfba214fdaf92f4
-> Author: Bob Moore <robert.moore@intel.com>
-> Subject: ACPICA: Add global option to disable method auto-serialization.
-> 
-> Commit: f56b05bd111b01141ef74568dc4d262c70295d03
-> Author: Lv Zheng <lv.zheng@intel.com>
-> Subject: ACPICA: Add additional named objects for the auto-serialize method scan.
-> 
-> Commit: 27f1899350a1d6baab117c03c87f0e37730047bd
-> Author: Bob Moore <robert.moore@intel.com>
-> Subject: ACPICA: Add auto-serialization support for ill-behaved control methods.
-> 
-> Reverting these commits can restore original Linux behavior.
-> Please check.
+Hi,
 
-OK, I dropped the five commits above from the acpica branch.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Tuesday, March 18, 2014 8:33 AM
+> To: Chao Yu
+> Cc: linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [f2fs-dev] [PATCH] f2fs: fix incorrect parsing with option string
+> 
+> Hi,
+> 
+> 2014-03-17 (월), 17:40 +0800, Chao Yu:
+> > Previously 'background_gc={on***,off***}' is being parsed as correct option,
+> > with this patch we cloud fix the trivial bug in mount process.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  fs/f2fs/super.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> > index 057a3ef..6597290 100644
+> > --- a/fs/f2fs/super.c
+> > +++ b/fs/f2fs/super.c
+> > @@ -258,9 +258,9 @@ static int parse_options(struct super_block *sb, char *options)
+> >
+> >  			if (!name)
+> >  				return -ENOMEM;
+> > -			if (!strncmp(name, "on", 2))
+> > +			if (!strncmp(name, "on", strlen(name)))
+> 
+> What about 'background_gc=o'?
+> Need to check strlen(name) == 2...
 
-Please check if the current ACPICA material in the bleeding-edge branch of
-linux-pm.git looks OK (and let me know either way).
+Oh, you're right. I will fix it and send v2 patch.
+Thanks for your review. :)
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Thanks,
+> 
+> >  				set_opt(sbi, BG_GC);
+> > -			else if (!strncmp(name, "off", 3))
+> > +			else if (!strncmp(name, "off", strlen(name)))
+> >  				clear_opt(sbi, BG_GC);
+> >  			else {
+> >  				kfree(name);
+> 
+> --
+> Jaegeuk Kim
+> Samsung
+
