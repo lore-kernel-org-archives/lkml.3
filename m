@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943AbaCROiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:38:06 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:57239 "EHLO
-	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791AbaCROiC convert rfc822-to-8bit (ORCPT
+	id S1755783AbaCROiE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 10:38:04 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:40246 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752264AbaCROiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:38:02 -0400
-X-Greylist: delayed 458 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Mar 2014 10:38:01 EDT
-Date: Tue, 18 Mar 2014 15:30:16 +0100
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Philipp Reisner <philipp.reisner@linbit.com>, drbd-user@lists.linbit.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [drbd] Kernel panic - not syncing: Out of memory and no killable
- processes...
-Message-ID: <20140318143015.GB18403@soda.linbit>
-Mail-Followup-To: Fengguang Wu <fengguang.wu@intel.com>,
-	Philipp Reisner <philipp.reisner@linbit.com>,
-	drbd-user@lists.linbit.com, linux-kernel@vger.kernel.org
-References: <20140318140717.GA21372@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20140318140717.GA21372@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Mar 2014 10:38:01 -0400
+Date: Tue, 18 Mar 2014 09:37:58 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [linux-next][regression] [PATCH] percpu: add preemption checks
+ to __this_cpu ops
+In-Reply-To: <53285FE7.5010203@ti.com>
+Message-ID: <alpine.DEB.2.10.1403180922050.17965@nuc>
+References: <53285FE7.5010203@ti.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 10:07:17PM +0800, Fengguang Wu wrote:
-> Greetings,
-> 
-> We get the below OOM errors in our KVM boot tests and they are
-> bisected to
-> 
-> commit 23361cf32b58efdf09945a64e1d8d41fa6117157
+On Tue, 18 Mar 2014, Grygorii Strashko wrote:
 
-We have been there before:
+> diff --git a/lib/smp_processor_id.c b/lib/smp_processor_id.c
+> index a270dce..73a2004 100644
+> --- a/lib/smp_processor_id.c
+> +++ b/lib/smp_processor_id.c
+> @@ -58,9 +58,6 @@ EXPORT_SYMBOL(debug_smp_processor_id);
+>
+>  notrace void __this_cpu_preempt_check(const char *op)
+>  {
+> -       char text[40];
+> -
+> -       snprintf(text, sizeof(text), "__this_cpu_%s()", op);
+> -       check_preemption_disabled(text);
+> +       check_preemption_disabled(op);
+>  }
+>  EXPORT_SYMBOL(__this_cpu_preempt_check);
 
-.---
-| Date: Wed, 12 Jun 2013 18:11:43 +0800
-| From: Fengguang Wu <fengguang.wu@intel.com>
-| To: Philipp Reisner <philipp.reisner@linbit.com>, drbd-user@lists.linbit.com, linux-kernel@vger.kernel.org
-| Subject: Re: [drbd?] Kernel panic - not syncing: Out of memory and no killable processes...
-| Message-ID: <20130612101143.GA13837@localhost>
-| 
-| On Tue, Jun 11, 2013 at 05:33:27PM +0200, Lars Ellenberg wrote:
-| > On Fri, Jun 07, 2013 at 10:31:54AM +0800, Fengguang Wu wrote:
-| > > Greetings,
-| > >
-| > > My "kvm -m 256" reliably goes Out Of Memory after this commit.  It may
-| > > not be the only one that eats up the memory, however I wonder how much
-| > > memory consumption this commit added? Thanks!
+So it looks like there is an early this cpu operation in a context that
+cannot handle snprintf. But the checks in check_preemption_disabled()
+avoid processing there so that works.
 
-...
+We could fix this by moving the string concatenation operation into
+the check function.
 
-| > We scale certain mempools and reserves with
-| > DRBD_MAX_BIO_SIZE/PAGE_SIZE * minor_count.
-| >
-| > DRBD_MAX_BIO_SIZE has been increased by this patch,
-| > resulting in more memory allocated to those reserved pools.
-| >
-| > Please just scale down the "minor_count" parameter.
-| > You can use the module parameter (e.g. modprobe drbd minor_count=8),
-| > or, compiled in, use the kernel command line parameter drbd.minor_count=8.
-| >
-| > Though "minor_count" at some point used to be the hard limit for the number of
-| > minor devices (allocation of an array of corresponding size), that has
-| > long since changed, and now it is really only used as scaling factor for
-| > these mempools.
-| 
-| Got it, thank you very much for the helpful tips and explanations!
-| I'll add the drbd.minor_count=8 option.
-| 
-| Thanks,
-| Fengguang
-`---
+Index: linux/lib/smp_processor_id.c
+===================================================================
+--- linux.orig/lib/smp_processor_id.c	2014-03-18 09:36:31.330450525 -0500
++++ linux/lib/smp_processor_id.c	2014-03-18 09:36:37.822315534 -0500
+@@ -7,7 +7,8 @@
+ #include <linux/kallsyms.h>
+ #include <linux/sched.h>
 
-Does that help?
+-notrace static unsigned int check_preemption_disabled(char *what)
++notrace static unsigned int check_preemption_disabled(const char *what1,
++							const char *what2)
+ {
+ 	int this_cpu = raw_smp_processor_id();
 
--- 
-: Lars Ellenberg
-: LINBIT | Your Way to High Availability
-: DRBD/HA support and consulting http://www.linbit.com
+@@ -38,8 +39,8 @@
+ 	if (!printk_ratelimit())
+ 		goto out_enable;
 
-DRBD® and LINBIT® are registered trademarks of LINBIT, Austria.
+-	printk(KERN_ERR "BUG: using %s in preemptible [%08x] code: %s/%d\n",
+-		what, preempt_count() - 1, current->comm, current->pid);
++	printk(KERN_ERR "BUG: using %s%s() in preemptible [%08x] code: %s/%d\n",
++		what1, what2, preempt_count() - 1, current->comm, current->pid);
+
+ 	print_symbol("caller is %s\n", (long)__builtin_return_address(0));
+ 	dump_stack();
+@@ -52,15 +53,12 @@
+
+ notrace unsigned int debug_smp_processor_id(void)
+ {
+-	return check_preemption_disabled("smp_processor_id()");
++	return check_preemption_disabled("smp_processor_id","");
+ }
+ EXPORT_SYMBOL(debug_smp_processor_id);
+
+ notrace void __this_cpu_preempt_check(const char *op)
+ {
+-	char text[40];
+-
+-	snprintf(text, sizeof(text), "__this_cpu_%s()", op);
+-	check_preemption_disabled(text);
++	check_preemption_disabled("__this_cpu_", op);
+ }
+ EXPORT_SYMBOL(__this_cpu_preempt_check);
