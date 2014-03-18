@@ -1,112 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933AbaCRT1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 15:27:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20212 "EHLO mx1.redhat.com"
+	id S1757951AbaCRT2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 15:28:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29612 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757861AbaCRT1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 15:27:47 -0400
-Date: Tue, 18 Mar 2014 19:49:51 +0100
-From: Igor Mammedov <imammedo@redhat.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, bp@suse.de, paul.gortmaker@windriver.com,
-        JBeulich@suse.com, drjones@redhat.com, toshi.kani@hp.com,
-        x86@kernel.org, riel@redhat.com, gong.chen@linux.intel.com
-Subject: Re: [PATCH 0/3] x86: fix hang when AP bringup is too slow
-Message-ID: <20140318194951.17fd61ea@thinkpad>
-In-Reply-To: <53283A3F.6040302@redhat.com>
-References: <1394720720-8484-1-git-send-email-imammedo@redhat.com>
-	<53283A3F.6040302@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757857AbaCRT0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 15:26:54 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, hpa@zytor.com
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Subject: [PATCH 3/5] x86/boot: Move optmized memcpy() 32/64 bit versions to compressed/string.c
+Date: Tue, 18 Mar 2014 15:26:38 -0400
+Message-Id: <1395170800-11059-4-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
+References: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014 08:21:19 -0400
-Prarit Bhargava <prarit@redhat.com> wrote:
+Move optimzied versions of memcpy to compressed/string.c This will allow
+any other code to use these functions too if need be in future. Again
+trying to put definition in a common place instead of hiding it in misc.c
 
-> 
-> 
-> On 03/13/2014 10:25 AM, Igor Mammedov wrote:
-> > Hang is observed on virtual machines during CPU hotplug,
-> > especially in big guests with many CPUs. (It happens more
-> > often if host is over-committed).
-> > 
-> 
-> Hey Igor, I like this better than the previous version.  Thanks for taking into
-> account the possible races in this code.
-> 
-> A quick question on system behaviour.  As you know I've been more concerned
-> lately with error handling, etc., through the cpu hotplug code as we've seen
-> several customer reports of silent failures or cascading failures in the cpu
-> hotplug code when users have been attempting to perform physical hotplug.
-> 
-> After your patches have been applied, in theory the following can happen:
-> 
-> The master CPU is completing the AP cpu's bring up.  The AP cpu is doing (sorry
-> for the cut-and-paste),
-> 
-> void cpu_init(void)
-> {
->         int cpu = smp_processor_id();
->         struct task_struct *curr = current;
->         struct tss_struct *t = &per_cpu(init_tss, cpu);
->         struct thread_struct *thread = &curr->thread;
-> 
->         /*
->          * wait till the master CPU completes it's STARTUP sequence,
->          * and decides to wait till this AP boots
->          */
->         while (!cpumask_test_cpu(cpu, cpu_callout_mask)) {
->                 cpu_relax();
->                 if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID)
->                         halt();
->         }
-> 
-> and is spinning on cpu_relax().  Suppose something goes wrong and the softlockup
-> watchdog fires on the AP cpu:
-> 
-> 1.  Can it? :) ie) will the softlockup fire at this point of the AP init?  Okay,
-> I'm being really lazy and not looking at the code ;)
-It shouldn't, CPU is in pristine state and just came from boot trampoline at
-this point without interrupts configured yet.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ arch/x86/boot/compressed/misc.c   | 31 +------------------------------
+ arch/x86/boot/compressed/string.c | 33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 30 deletions(-)
 
-> 
-> 2.  Is there anything we can do in this code to notify the user of a problem?
-> Even a pr_crit() here I think would help to indicate what went wrong; it might
-> be useful for future debugging in this area to have some sort of output.  I
-> think a WARN() or BUG() is necessary here as there are several calls to cpu_init().
-Do you mean something like this:
-
-+		if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID) {
-+                       WARN(1);
-+			halt();
-+               }
-
-> 
-> 3.  Change this comment:
-> 
->          * wait till the master CPU completes it's STARTUP sequence,
->          * and decides to wait till this AP boots
-> 
-> to
-> 
-> 	/* wait for the master CPU to complete this cpu's STARTUP. */ ?
-well, that is not quite the same as above, comment should underline that
-AP waits for ACK from master CPU before continuing with this AP initialization.
-
-How about:
-/* wait for ACK from master CPU before continuing with AP initialization */
-
-> 
-> Apologies for the late review,
-> 
-> P.
-
-
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 196eaf3..3100092 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -10,6 +10,7 @@
+  */
+ 
+ #include "misc.h"
++#include "../string.h"
+ 
+ /* WARNING!!
+  * This code is compiled with -fPIC and it is relocated dynamically
+@@ -110,7 +111,6 @@ static void error(char *m);
+ struct boot_params *real_mode;		/* Pointer to real-mode data */
+ 
+ void *memset(void *s, int c, size_t n);
+-void *memcpy(void *dest, const void *src, size_t n);
+ 
+ memptr free_mem_ptr;
+ memptr free_mem_end_ptr;
+@@ -225,35 +225,6 @@ void *memset(void *s, int c, size_t n)
+ 		ss[i] = c;
+ 	return s;
+ }
+-#ifdef CONFIG_X86_32
+-void *memcpy(void *dest, const void *src, size_t n)
+-{
+-	int d0, d1, d2;
+-	asm volatile(
+-		"rep ; movsl\n\t"
+-		"movl %4,%%ecx\n\t"
+-		"rep ; movsb\n\t"
+-		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
+-		: "0" (n >> 2), "g" (n & 3), "1" (dest), "2" (src)
+-		: "memory");
+-
+-	return dest;
+-}
+-#else
+-void *memcpy(void *dest, const void *src, size_t n)
+-{
+-	long d0, d1, d2;
+-	asm volatile(
+-		"rep ; movsq\n\t"
+-		"movq %4,%%rcx\n\t"
+-		"rep ; movsb\n\t"
+-		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
+-		: "0" (n >> 3), "g" (n & 7), "1" (dest), "2" (src)
+-		: "memory");
+-
+-	return dest;
+-}
+-#endif
+ 
+ static void error(char *x)
+ {
+diff --git a/arch/x86/boot/compressed/string.c b/arch/x86/boot/compressed/string.c
+index 212004e..3b5a82f 100644
+--- a/arch/x86/boot/compressed/string.c
++++ b/arch/x86/boot/compressed/string.c
+@@ -11,3 +11,36 @@ int memcmp(const void *s1, const void *s2, size_t len)
+ }
+ 
+ #include "../string.c"
++
++/* misc.h might pull in string_32.h which has a macro for memcpy. undef that */
++#undef memcpy
++
++#ifdef CONFIG_X86_32
++void *memcpy(void *dest, const void *src, size_t n)
++{
++	int d0, d1, d2;
++	asm volatile(
++		"rep ; movsl\n\t"
++		"movl %4,%%ecx\n\t"
++		"rep ; movsb\n\t"
++		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
++		: "0" (n >> 2), "g" (n & 3), "1" (dest), "2" (src)
++		: "memory");
++
++	return dest;
++}
++#else
++void *memcpy(void *dest, const void *src, size_t n)
++{
++	long d0, d1, d2;
++	asm volatile(
++		"rep ; movsq\n\t"
++		"movq %4,%%rcx\n\t"
++		"rep ; movsb\n\t"
++		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
++		: "0" (n >> 3), "g" (n & 7), "1" (dest), "2" (src)
++		: "memory");
++
++	return dest;
++}
++#endif
 -- 
-Regards,
-  Igor
+1.8.5.3
+
