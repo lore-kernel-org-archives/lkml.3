@@ -1,124 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757886AbaCRT04 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 15:26:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46427 "EHLO mx1.redhat.com"
+	id S1757901AbaCRT1B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 15:27:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47356 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757853AbaCRT0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 15:26:54 -0400
+	id S1757880AbaCRT04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 15:26:56 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, hpa@zytor.com
 Cc: Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 4/5] x86/boot: Move memcmp() into string.h and string.c
-Date: Tue, 18 Mar 2014 15:26:39 -0400
-Message-Id: <1395170800-11059-5-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 2/5] x86/boot: Create a separate string.h file to provide standard string functions
+Date: Tue, 18 Mar 2014 15:26:37 -0400
+Message-Id: <1395170800-11059-3-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
 References: <1395170800-11059-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Try to treat memcmp() in same way as memcpy() and memset(). Provide a
-declaration in boot/string.h and by default user gets a memcmp() which
-maps to builtin function.
+Create a separate arch/x86/boot/string.h file to provide declaration of
+some of the common string functions.
 
-Move optimized definition of memcmp() in boot/string.c. Now a user can
-do #undef memcmp and link against string.c to use optimzied memcmp().
+By default memcpy, memset and memcmp functions will default to gcc
+builtin functions. If code wants to use an optimized version of any
+of these functions, they need to #undef the respective macro and link
+against a local file providing definition of undefed function.
 
-It also simplifies boot/compressed/string.c where we had to redefine
-memcmp(). That extra definition is gone now.
+For example, arch/x86/boot/* code links against copy.S to get memcpy()
+and memcmp() definitions. arch/86/boot/compressed/* links against
+compressed/string.c.
+
+There are quite a few places in arch/x86/ where these functions are
+used. Idea is to try to consilidate  their declaration and possibly
+definitions so that it can be reused.
+
+I am planning to reuse boot/string.h in arch/x86/purgatory/ and use
+gcc builtin functions for memcpy, memset and memcmp.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- arch/x86/boot/boot.h              |  8 --------
- arch/x86/boot/compressed/string.c | 11 -----------
- arch/x86/boot/string.c            | 14 ++++++++++++++
- arch/x86/boot/string.h            |  2 ++
- 4 files changed, 16 insertions(+), 19 deletions(-)
+ arch/x86/boot/boot.h       |  5 -----
+ arch/x86/boot/cpucheck.c   |  1 +
+ arch/x86/boot/edd.c        |  1 +
+ arch/x86/boot/main.c       |  1 +
+ arch/x86/boot/regs.c       |  1 +
+ arch/x86/boot/string.h     | 19 +++++++++++++++++++
+ arch/x86/boot/video-vesa.c |  1 +
+ 7 files changed, 24 insertions(+), 5 deletions(-)
+ create mode 100644 arch/x86/boot/string.h
 
 diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index bed9665..bd49ec6 100644
+index 50f8c5e..bed9665 100644
 --- a/arch/x86/boot/boot.h
 +++ b/arch/x86/boot/boot.h
-@@ -177,14 +177,6 @@ static inline void wrgs32(u32 v, addr_t addr)
- }
+@@ -228,11 +228,6 @@ void copy_to_fs(addr_t dst, void *src, size_t len);
+ void *copy_from_fs(void *dst, addr_t src, size_t len);
+ void copy_to_gs(addr_t dst, void *src, size_t len);
+ void *copy_from_gs(void *dst, addr_t src, size_t len);
+-void *memcpy(void *dst, void *src, size_t len);
+-void *memset(void *dst, int c, size_t len);
+-
+-#define memcpy(d,s,l) __builtin_memcpy(d,s,l)
+-#define memset(d,c,l) __builtin_memset(d,c,l)
  
- /* Note: these only return true/false, not a signed return value! */
--static inline int memcmp(const void *s1, const void *s2, size_t len)
--{
--	u8 diff;
--	asm("repe; cmpsb; setnz %0"
--	    : "=qm" (diff), "+D" (s1), "+S" (s2), "+c" (len));
--	return diff;
--}
--
- static inline int memcmp_fs(const void *s1, addr_t s2, size_t len)
- {
- 	u8 diff;
-diff --git a/arch/x86/boot/compressed/string.c b/arch/x86/boot/compressed/string.c
-index 3b5a82f..920b55e 100644
---- a/arch/x86/boot/compressed/string.c
-+++ b/arch/x86/boot/compressed/string.c
-@@ -1,15 +1,4 @@
- #include "misc.h"
--
--/* Avoid intereference from any defines in string_32.h */
--#undef memcmp
--int memcmp(const void *s1, const void *s2, size_t len)
--{
--	u8 diff;
--	asm("repe; cmpsb; setnz %0"
--	    : "=qm" (diff), "+D" (s1), "+S" (s2), "+c" (len));
--	return diff;
--}
--
- #include "../string.c"
+ /* a20.c */
+ int enable_a20(void);
+diff --git a/arch/x86/boot/cpucheck.c b/arch/x86/boot/cpucheck.c
+index 100a9a1..086c4f4 100644
+--- a/arch/x86/boot/cpucheck.c
++++ b/arch/x86/boot/cpucheck.c
+@@ -27,6 +27,7 @@
+ #include <asm/processor-flags.h>
+ #include <asm/required-features.h>
+ #include <asm/msr-index.h>
++#include "string.h"
  
- /* misc.h might pull in string_32.h which has a macro for memcpy. undef that */
-diff --git a/arch/x86/boot/string.c b/arch/x86/boot/string.c
-index 574dedf..5339040 100644
---- a/arch/x86/boot/string.c
-+++ b/arch/x86/boot/string.c
-@@ -14,6 +14,20 @@
+ static u32 err_flags[NCAPINTS];
+ 
+diff --git a/arch/x86/boot/edd.c b/arch/x86/boot/edd.c
+index c501a5b..223e425 100644
+--- a/arch/x86/boot/edd.c
++++ b/arch/x86/boot/edd.c
+@@ -15,6 +15,7 @@
  
  #include "boot.h"
+ #include <linux/edd.h>
++#include "string.h"
  
-+/*
-+ * This file gets included in compressed/string.c which might pull in
-+ * string_32.h and which in turn maps memcmp to __builtin_memcmp(). Undo
-+ * that first.
-+ */
-+#undef memcmp
-+int memcmp(const void *s1, const void *s2, size_t len)
-+{
-+	u8 diff;
-+	asm("repe; cmpsb; setnz %0"
-+	    : "=qm" (diff), "+D" (s1), "+S" (s2), "+c" (len));
-+	return diff;
-+}
-+
- int strcmp(const char *str1, const char *str2)
- {
- 	const unsigned char *s1 = (const unsigned char *)str1;
-diff --git a/arch/x86/boot/string.h b/arch/x86/boot/string.h
-index 10939d8..725e820 100644
---- a/arch/x86/boot/string.h
-+++ b/arch/x86/boot/string.h
-@@ -8,6 +8,7 @@
+ #if defined(CONFIG_EDD) || defined(CONFIG_EDD_MODULE)
  
- void *memcpy(void *dst, const void *src, size_t len);
- void *memset(void *dst, int c, size_t len);
-+int memcmp(const void *s1, const void *s2, size_t len);
- 
- /*
-  * Access builtin version by default. If one needs to use optimized version,
-@@ -15,5 +16,6 @@ void *memset(void *dst, int c, size_t len);
+diff --git a/arch/x86/boot/main.c b/arch/x86/boot/main.c
+index cf6083d..fd6c9f2 100644
+--- a/arch/x86/boot/main.c
++++ b/arch/x86/boot/main.c
+@@ -14,6 +14,7 @@
   */
- #define memcpy(d,s,l) __builtin_memcpy(d,s,l)
- #define memset(d,c,l) __builtin_memset(d,c,l)
-+#define memcmp	__builtin_memcmp
  
- #endif /* BOOT_STRING_H */
+ #include "boot.h"
++#include "string.h"
+ 
+ struct boot_params boot_params __attribute__((aligned(16)));
+ 
+diff --git a/arch/x86/boot/regs.c b/arch/x86/boot/regs.c
+index 958019b..c0fb356 100644
+--- a/arch/x86/boot/regs.c
++++ b/arch/x86/boot/regs.c
+@@ -17,6 +17,7 @@
+  */
+ 
+ #include "boot.h"
++#include "string.h"
+ 
+ void initregs(struct biosregs *reg)
+ {
+diff --git a/arch/x86/boot/string.h b/arch/x86/boot/string.h
+new file mode 100644
+index 0000000..10939d8
+--- /dev/null
++++ b/arch/x86/boot/string.h
+@@ -0,0 +1,19 @@
++#ifndef BOOT_STRING_H
++#define BOOT_STRING_H
++
++/* Undef any of these macros coming from string_32.h. */
++#undef memcpy
++#undef memset
++#undef memcmp
++
++void *memcpy(void *dst, const void *src, size_t len);
++void *memset(void *dst, int c, size_t len);
++
++/*
++ * Access builtin version by default. If one needs to use optimized version,
++ * do "undef memcpy" in .c file and link against right string.c
++ */
++#define memcpy(d,s,l) __builtin_memcpy(d,s,l)
++#define memset(d,c,l) __builtin_memset(d,c,l)
++
++#endif /* BOOT_STRING_H */
+diff --git a/arch/x86/boot/video-vesa.c b/arch/x86/boot/video-vesa.c
+index 11e8c6e..ba3e100 100644
+--- a/arch/x86/boot/video-vesa.c
++++ b/arch/x86/boot/video-vesa.c
+@@ -16,6 +16,7 @@
+ #include "boot.h"
+ #include "video.h"
+ #include "vesa.h"
++#include "string.h"
+ 
+ /* VESA information */
+ static struct vesa_general_info vginfo;
 -- 
 1.8.5.3
 
