@@ -1,37 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346AbaCRSfB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 14:35:01 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45076 "EHLO
+	id S1757431AbaCRShG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 14:37:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45328 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241AbaCRSe7 (ORCPT
+	with ESMTP id S1753109AbaCRShE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 14:34:59 -0400
-Date: Tue, 18 Mar 2014 18:34:53 +0000
+	Tue, 18 Mar 2014 14:37:04 -0400
+Date: Tue, 18 Mar 2014 18:36:45 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>
-Message-ID: <20140318183453.GL11706@sirena.org.uk>
-References: <1394187052-591-1-git-send-email-k.kozlowski@samsung.com>
- <1395164052.24909.11.camel@AMDC1943>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Anson Huang <b20788@freescale.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140318183645.GM11706@sirena.org.uk>
+References: <1393044798.15653.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Tvdx/ap0jMH9YXQh"
+	protocol="application/pgp-signature"; boundary="wFsmFZmaatp/x6ak"
 Content-Disposition: inline
-In-Reply-To: <1395164052.24909.11.camel@AMDC1943>
+In-Reply-To: <1393044798.15653.1.camel@phoenix>
 X-Cookie: Turn the other cheek.
 User-Agent: Mutt/1.5.22 (2013-10-16)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 0/3] regulator: s2mps11: Add support for S2MPS14
- regulators
+Subject: Re: [PATCH RFC] regulator: anatop: Remove checking control_reg in
+ [set|get]_voltage_sel
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -39,41 +34,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Tvdx/ap0jMH9YXQh
+--wFsmFZmaatp/x6ak
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Mar 18, 2014 at 06:34:12PM +0100, Krzysztof Kozlowski wrote:
+On Sat, Feb 22, 2014 at 12:53:18PM +0800, Axel Lin wrote:
+> Remove checking control_reg in [set|get]_voltage_sel and then convert to use
+> regulator_[set|get]_voltage_sel_regmap for [set|get]_voltage_sel callbacks.
 
-> Lee Jones in his pull request [1] put also my changes for S2MPS14
-> support in MFD sec-core driver. They are needed by this patchset for adding
-> suppt for regulators on S2MPS14.
+Applied, thanks - if there's a problem I guess doing this will shake it
+out!
 
-> Do you have time to look at these patches and apply them if they're OK
-> (or ACK them)?
-
-Possibly, though we are *very* near to the merge window.
-
---Tvdx/ap0jMH9YXQh
+--wFsmFZmaatp/x6ak
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTKJHKAAoJELSic+t+oim9CUoQAJQNE93VJz/xQ0HEBbRfHjmG
-yHbbzd0iLrTos0QDbDf8oZei1OWR8o5QKQvLldvC/YUbEi0q3INKHS2U1ZTzrKGp
-EFrgVXKYrYVF576PksPmH3QYIQe+VBeDACwGYM2Tx0qE5u8gTZQp7QkKv8oM5LPm
-27sGikqCajJ59dutAI3Fv7tcLNri4y4g7q9uNR5FluNSas5qSmoDd2tNuqgDoo13
-N8cOa3GmQGNPQWsKKXlSIRr//n2uju+Hl/SB6LwXRo+/U7MPLp3DCeeVZnCRTb7j
-/wv1ysGL0IPK0TGuWIjT+Pm/yTVg9zFzIpQT2NTMqOyL9LLhZxsLMYjl7JUjO10D
-int/RKUK8S3304ea0LpXbFbHu1CS7UvFDFPgqjfVwHIr24Bt/8F5BxFd6RFhJETR
-oPq6K14SMv1MGNXJMTxqnO/vGrUUGde3+OpREzTWxus+YPa3DskSyjMkCVlXHlBU
-r46J+CTkmnerlkXQrUqf9ZmkhMME/geb7L/FAPBrUPv+XSDperKq9pAanR+LS5kF
-M5C/PZHbaEDR/lTyjjuNDxYCiJGy+JETOVcauokyo6ixkMuYr8S+o6nUkzHTXYzh
-YtT1mSnZm1FXnCgjmEGeNqpKIDKpgOou4imoNi+JefnZ+kzOO5QXZF2/VYEHJYvQ
-hAEkxNijNyKB/q5chZaF
-=eDkE
+iQIcBAEBAgAGBQJTKJI5AAoJELSic+t+oim9XCIP/RaETrgOEnU44AELMV7HgpDI
+1gUSe8ss/Yq44WE0BQVr0o9W69fcHf4SYhRRtT+X4HpQ/GWt2spz2jtfmQxOYMIp
+yMCtgTLR8w6BLXe77I7wqL4ykXAYRi/HGkFGGbVZoiJpLIqWwbNBDBhGm4WnpHPA
+i4z/BD2lFRD7reWpakarxGzTXMD9wuBwx3KgGM+CjT/DoKtWoKnXGWC3JCHpHv09
+2Y5ylm/hYEsenmVuQwxjuGnWNy6g/XnZ465A9uc+F7gKcZo9NMln1Dg5AKTy9Obi
+NghTzsAIi27xIIh7gmVfRmaNSe68AYFHN09+nkTJo2sVfWNULftM47AjLCFpAxq4
+x3Zn1QSTVdHIxZ3O0y7uoqIHW5JoyJY91ZjXFxCnQQUbKCjCLkz354e8qqD58hke
+3cEpHHvXQcPnmy+ZbkSH0aBjNStZDdtTzV5WN1VkMM9dXkJWUUP18z/3IqK8aAyE
+LeD5PfB5PL9RO4XoJmKLva1BwzZPhaIGo4V7jjgyIVJLo2jiXI7ukpActfE6JCZ2
+juu/aXwd2V+w4o1fIKIAQB26b5Pn5CEypINrbjzEJm0dkx06ZKq6c9Rx3RQY/zui
+lbFa8XnJfmpXZsUo8ybmYg/YyH2p0XNo04GgQPyc3oGfGyBypu5M+ffoqA24sQDU
+o14rdYKBkgO8BT2q2P+U
+=oOdC
 -----END PGP SIGNATURE-----
 
---Tvdx/ap0jMH9YXQh--
+--wFsmFZmaatp/x6ak--
