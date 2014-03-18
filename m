@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720AbaCRPZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:25:36 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:33743 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755754AbaCRPZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:25:31 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Behan Webster'" <behanw@converseincode.com>,
-        "davem@davemloft.net" <davem@davemloft.net>
-CC: "pablo@netfilter.org" <pablo@netfilter.org>,
-        "kaber@trash.net" <kaber@trash.net>,
-        "kadlec@blackhole.kfki.hu" <kadlec@blackhole.kfki.hu>,
-        "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
-        "netfilter@vger.kernel.org" <netfilter@vger.kernel.org>,
-        "coreteam@netfilter.org" <coreteam@netfilter.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "pageexec@freemail.hu" <pageexec@freemail.hu>,
-        Mark Charlebois <charlebm@gmail.com>,
-        =?utf-8?B?Vmluw61jaXVzIFRpbnRp?= <viniciustinti@gmail.com>
-Subject: RE: [PATCH v2] net: netfilter: LLVMLinux: vlais-netfilter
-Thread-Topic: [PATCH v2] net: netfilter: LLVMLinux: vlais-netfilter
-Thread-Index: AQHPQnEJEP702KUMQ0ePAIHbN3UAt5rmloBAgABWjICAAAc+AA==
-Date: Tue, 18 Mar 2014 15:24:13 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6E0286@AcuExch.aculab.com>
-References: <022D9517-4804-47BB-B789-CCF25F25C1ED@me.com>
- <1395123121-27053-1-git-send-email-behanw@converseincode.com>
- <063D6719AE5E284EB5DD2968C1650D6D0F6E0065@AcuExch.aculab.com>
- <53285C79.2060907@converseincode.com>
-In-Reply-To: <53285C79.2060907@converseincode.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1756749AbaCRP1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:27:41 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:9825 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756487AbaCRP1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 11:27:39 -0400
+Date: Tue, 18 Mar 2014 11:27:37 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Ben Widawsky <ben@bwidawsk.net>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, stable <stable@vger.kernel.org>
+Subject: [PATCH] drm/i915: Do not dereference pointers from ring buffer in
+ evict event
+Message-ID: <20140318112737.2192898a@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2IFPg8B005981
 
-From: Behan Webster 
-> On 03/18/14 02:41, David Laight wrote:
-> > From:  behanw@converseincode.com
-> >> From: Mark Charlebois <charlebm@gmail.com>
-> >>
-> >> Replaced non-standard C use of Variable Length Arrays In Structs (VLAIS) in
-> >> xt_repldata.h with a C99 compliant flexible array member and then calculated
-> >> offsets to the other struct members. These other members aren't referenced by
-> >> name in this code, however this patch maintains the same memory layout and
-> >> padding as was previously accomplished using VLAIS.
-> >>
-> >> Had the original structure been ordered differently, with the entries VLA at
-> >> the end, then it could have been a flexible member, and this patch would have
-> >> been a lot simpler. However since the data stored in this structure is
-> >> ultimately exported to userspace, the order of this structure can't be changed.
-> > Why not just remove the last element and allocate space for it after the
-> > structure?
-> Because that would still be employing VLAIS to solve the problem. The
-> last element may be a zero-length array (a flexible member), not a VLA.
-> Sadly both the last 2 elements in the struct need to be manually
-> calculated, which is what we've done.
+The TP_printk() should never dereference any pointers, because the ring
+buffer can be read at some unknown time in the future. If a device no
+longer exists, it can cause a kernel oops. This also makes this
+event useless when saving the ring buffer in userspaces tools such as
+perf and trace-cmd.
 
-So make the last element a 'flexible member' and then work out where
-the final field goes.
-Something like:
-	struct p {
-		struct a a;
-		struct b b[];
-	} p = malloc(sizeof *p + n * sizeof (struct b) + alignof (struct c)
-		+ sizeof (struct c);
-	struct c *c = (void *)&p->b[n] + (-offsetof(struct p, b[n]) & (alignof(struct c) - 1);
+The i915_gem_evict_vm dereferences the vm pointer which may also not
+exist when the ring buffer is read sometime in the future.
 
-	David
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Link: http://lkml.kernel.org/r/1395095198-20034-3-git-send-email-artagnon@gmail.com
+Reported-by: Ramkumar Ramachandra <artagnon@gmail.com> Cc:
+stable@vger.kernel.org # 3.13+
+Fixes: bcccff847d1f "drm/i915: trace vm eviction instead of everything"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+diff --git a/drivers/gpu/drm/i915/i915_trace.h b/drivers/gpu/drm/i915/i915_trace.h
+index 6e580c9..f3e8a90 100644
+--- a/drivers/gpu/drm/i915/i915_trace.h
++++ b/drivers/gpu/drm/i915/i915_trace.h
+@@ -238,14 +238,16 @@ TRACE_EVENT(i915_gem_evict_vm,
+ 	    TP_ARGS(vm),
+ 
+ 	    TP_STRUCT__entry(
++			     __field(u32, dev)
+ 			     __field(struct i915_address_space *, vm)
+ 			    ),
+ 
+ 	    TP_fast_assign(
++			   __entry->dev = dev->primary->index;
+ 			   __entry->vm = vm;
+ 			  ),
+ 
+-	    TP_printk("dev=%d, vm=%p", __entry->vm->dev->primary->index, __entry->vm)
++	    TP_printk("dev=%d, vm=%p", __entry->dev, __entry->vm)
+ );
+ 
+ TRACE_EVENT(i915_gem_ring_sync_to,
