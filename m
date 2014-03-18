@@ -1,177 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757090AbaCRRVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:21:15 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:53834 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757059AbaCRRVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757064AbaCRRVM (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 18 Mar 2014 13:21:12 -0400
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Aaron Tomlin <atomlin@redhat.com>, Andrew Shewmaker <agshew@gmail.com>,
-        Li Zefan <lizefan@huawei.com>, Dario Faggioli <raistlin@linux.it>,
-        Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 1/2] sysctl: fix incorrect write position handling
-Date: Tue, 18 Mar 2014 10:17:59 -0700
-Message-Id: <1395163080-6290-2-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395163080-6290-1-git-send-email-keescook@chromium.org>
-References: <1395163080-6290-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+Received: from www.linutronix.de ([62.245.132.108]:55746 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756847AbaCRRTF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 13:19:05 -0400
+Message-Id: <20140318171127.802717594@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Tue, 18 Mar 2014 17:19:14 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Benedikt Spranger <b.spranger@linutronix.de>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org
+Subject: [patch 11/12] can: c_can: Simplify TX interrupt cleanup
+References: <20140318171007.528610837@linutronix.de>
+Content-Disposition: inline; filename=can-c_can-simplify-xmit.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When writing to a sysctl string, each write, regardless of VFS position,
-began writing the string from the start. This meant the contents of
-the last write to the sysctl controlled the string contents instead of
-the first:
+The function loads the message object from the hardware to get the
+payload length. The previous patch stores that information in an
+array, so we can avoid the hardware access.
 
-open("/proc/sys/kernel/modprobe", O_WRONLY)   = 1
-write(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"..., 4096) = 4096
-write(1, "/bin/true", 9)                = 9
-close(1)                                = 0
+Remove the hardware access and move the led toggle outside of the
+spinlocked region. Toggle the led only once when at least one packet
+has been received.
 
-$ cat /proc/sys/kernel/modprobe
-/bin/true
+Binary size shrinks along with the code
 
-Expected behaviour would be to have the sysctl be "AAAA..." capped at
-maxlen (in this case KMOD_PATH_LEN: 256), instead of truncating to the
-contents of the second write. Similarly, multiple short writes would not
-append to the sysctl.
-
-This fixes the unexpected behavior for strings, and disallows non-zero
-file position when writing numeric sysctls (similar to what is already
-done when reading from non-zero file positions). Additionally cleans up
-the void vs char arguments for better readability.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sysctl.c |   41 ++++++++++++++++++++++++++++-------------
- 1 file changed, 28 insertions(+), 13 deletions(-)
+ drivers/net/can/c_can/c_can.c |   37 +++++++++++++++++--------------------
+ 1 file changed, 17 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 49e13e1f8fe6..ad40a1677b36 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1711,8 +1711,8 @@ int __init sysctl_init(void)
+Index: linux/drivers/net/can/c_can/c_can.c
+===================================================================
+--- linux.orig/drivers/net/can/c_can/c_can.c
++++ linux/drivers/net/can/c_can/c_can.c
+@@ -232,10 +232,9 @@ static inline int get_tx_next_msg_obj(co
+ 			C_CAN_MSG_OBJ_TX_FIRST;
+ }
  
- #ifdef CONFIG_PROC_SYSCTL
- 
--static int _proc_do_string(void* data, int maxlen, int write,
--			   void __user *buffer,
-+static int _proc_do_string(char *data, int maxlen, int write,
-+			   char __user *buffer,
- 			   size_t *lenp, loff_t *ppos)
+-static inline int get_tx_echo_msg_obj(const struct c_can_priv *priv)
++static inline int get_tx_echo_msg_obj(int txecho)
  {
- 	size_t len;
-@@ -1725,21 +1725,30 @@ static int _proc_do_string(void* data, int maxlen, int write,
- 	}
+-	return (priv->tx_echo & C_CAN_NEXT_MSG_OBJ_MASK) +
+-			C_CAN_MSG_OBJ_TX_FIRST;
++	return (txecho & C_CAN_NEXT_MSG_OBJ_MASK) + C_CAN_MSG_OBJ_TX_FIRST;
+ }
  
- 	if (write) {
-+		size_t existing;
-+		loff_t offset = *ppos;
-+
-+		existing = strlen(data);
-+		if (existing > maxlen - 1)
-+			existing = maxlen - 1;
-+
-+		*ppos += *lenp;
-+
-+		/* Ignore anything past the end. */
-+		if (offset > existing)
-+			return 0;
-+
- 		len = 0;
- 		p = buffer;
--		while (len < *lenp) {
-+		while (len < *lenp && offset < maxlen - 1) {
- 			if (get_user(c, p++))
- 				return -EFAULT;
- 			if (c == 0 || c == '\n')
- 				break;
-+			data[offset++] = c;
- 			len++;
- 		}
--		if (len >= maxlen)
--			len = maxlen-1;
--		if(copy_from_user(data, buffer, len))
--			return -EFAULT;
--		((char *) data)[len] = 0;
--		*ppos += *lenp;
-+		data[offset] = 0;
- 	} else {
- 		len = strlen(data);
- 		if (len > maxlen)
-@@ -1756,10 +1765,10 @@ static int _proc_do_string(void* data, int maxlen, int write,
- 		if (len > *lenp)
- 			len = *lenp;
- 		if (len)
--			if(copy_to_user(buffer, data, len))
-+			if (copy_to_user(buffer, data, len))
- 				return -EFAULT;
- 		if (len < *lenp) {
--			if(put_user('\n', ((char __user *) buffer) + len))
-+			if (put_user('\n', buffer + len))
- 				return -EFAULT;
- 			len++;
- 		}
-@@ -1789,8 +1798,8 @@ static int _proc_do_string(void* data, int maxlen, int write,
- int proc_dostring(struct ctl_table *table, int write,
- 		  void __user *buffer, size_t *lenp, loff_t *ppos)
+ static u32 c_can_read_reg32(struct c_can_priv *priv, enum reg index)
+@@ -720,8 +719,6 @@ static int c_can_get_berr_counter(const
+ }
+ 
+ /*
+- * theory of operation:
+- *
+  * priv->tx_echo holds the number of the oldest can_frame put for
+  * transmission into the hardware, but not yet ACKed by the CAN tx
+  * complete IRQ.
+@@ -732,29 +729,23 @@ static int c_can_get_berr_counter(const
+  */
+ static void c_can_do_tx(struct net_device *dev)
  {
--	return _proc_do_string(table->data, table->maxlen, write,
--			       buffer, lenp, ppos);
-+	return _proc_do_string((char *)(table->data), table->maxlen, write,
-+			       (char __user *)buffer, lenp, ppos);
- }
+-	u32 val;
+-	u32 msg_obj_no;
+ 	struct c_can_priv *priv = netdev_priv(dev);
+ 	struct net_device_stats *stats = &dev->stats;
++	u32 val, obj, pkts = 0, bytes = 0;
  
- static size_t proc_skip_spaces(char **buf)
-@@ -1964,6 +1973,8 @@ static int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
- 		conv = do_proc_dointvec_conv;
+ 	spin_lock_bh(&priv->xmit_lock);
  
- 	if (write) {
-+		if (*ppos)
-+			goto out;
- 		if (left > PAGE_SIZE - 1)
- 			left = PAGE_SIZE - 1;
- 		page = __get_free_page(GFP_TEMPORARY);
-@@ -2021,6 +2032,7 @@ free:
- 			return err ? : -EINVAL;
+ 	for (; (priv->tx_next - priv->tx_echo) > 0; priv->tx_echo++) {
+-		msg_obj_no = get_tx_echo_msg_obj(priv);
++		obj = get_tx_echo_msg_obj(priv->tx_echo);
+ 		val = c_can_read_reg32(priv, C_CAN_TXRQST1_REG);
+-		if (!(val & (1 << (msg_obj_no - 1)))) {
+-			can_get_echo_skb(dev,
+-					msg_obj_no - C_CAN_MSG_OBJ_TX_FIRST);
+-			c_can_object_get(dev, IF_TX, msg_obj_no, IF_COMM_ALL);
+-			stats->tx_bytes += priv->read_reg(priv,
+-					C_CAN_IFACE(MSGCTRL_REG, IF_TX))
+-					& IF_MCONT_DLC_MASK;
+-			stats->tx_packets++;
+-			can_led_event(dev, CAN_LED_EVENT_TX);
+-			c_can_inval_msg_object(dev, IF_TX, msg_obj_no);
+-		} else {
++
++		if (val & (1 << (obj - 1)))
+ 			break;
+-		}
++
++		can_get_echo_skb(dev, obj - C_CAN_MSG_OBJ_TX_FIRST);
++		bytes += priv->dlc[obj - C_CAN_MSG_OBJ_TX_FIRST];
++		pkts++;
++		c_can_inval_msg_object(dev, IF_TX, obj);
  	}
- 	*lenp -= left;
-+out:
- 	*ppos += *lenp;
- 	return err;
- }
-@@ -2213,6 +2225,8 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
- 	left = *lenp;
  
- 	if (write) {
-+		if (*ppos)
-+			goto out;
- 		if (left > PAGE_SIZE - 1)
- 			left = PAGE_SIZE - 1;
- 		page = __get_free_page(GFP_TEMPORARY);
-@@ -2268,6 +2282,7 @@ free:
- 			return err ? : -EINVAL;
- 	}
- 	*lenp -= left;
-+out:
- 	*ppos += *lenp;
- 	return err;
+ 	/* restart queue if wrap-up or if queue stalled on last pkt */
+@@ -763,6 +754,12 @@ static void c_can_do_tx(struct net_devic
+ 		netif_wake_queue(dev);
+ 
+ 	spin_unlock_bh(&priv->xmit_lock);
++
++	if (pkts) {
++		stats->tx_bytes += bytes;
++		stats->tx_packets += pkts;
++		can_led_event(dev, CAN_LED_EVENT_TX);
++	}
  }
--- 
-1.7.9.5
+ 
+ /*
+
 
