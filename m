@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551AbaCROBL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:01:11 -0400
-Received: from canardo.mork.no ([148.122.252.1]:51071 "EHLO canardo.mork.no"
+	id S1755634AbaCROCZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 10:02:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35994 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755490AbaCROBJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:01:09 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: v3.14-rc1+: new error: "nsc-ircc, Wrong chip version ff"
-Organization: m
-References: <1395006095.2002.8.camel@x41>
-Date: Tue, 18 Mar 2014 15:00:46 +0100
-In-Reply-To: <1395006095.2002.8.camel@x41> (Paul Bolle's message of "Sun, 16
-	Mar 2014 22:41:35 +0100")
-Message-ID: <87ppljip2p.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130009 (Ma Gnus v0.9) Emacs/23.4 (gnu/linux)
+	id S1754142AbaCROCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 10:02:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,678,1389772800"; 
+   d="scan'208";a="501189389"
+Date: Tue, 18 Mar 2014 10:00:34 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: "Zuckerman, Boris" <borisz@hp.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Kani, Toshimitsu" <toshi.kani@hp.com>,
+        "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [RFC PATCH] Support map_pages() for DAX
+Message-ID: <20140318140034.GH6091@linux.intel.com>
+References: <4C30833E5CDF444D84D942543DF65BDA625BD721@G4W3303.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C30833E5CDF444D84D942543DF65BDA625BD721@G4W3303.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle <pebolle@tiscali.nl> writes:
+On Tue, Mar 18, 2014 at 01:10:44PM +0000, Zuckerman, Boris wrote:
+> X86 cache lines are much smaller than a page. Cache lined are flushed "naturally", but we do not know about that.
+> How many Dirty pages do we anticipate? What is the performance cost of msync()? Is that higher, if we do page-based accounting?
 
-> Rafael,
->
-> 0) Ever since v3.14-rc1 I've noticed two new boot messages on an,
-> outdated, ThinkPad X41:
->     nsc-ircc, Found chip at base=0x164e
->     nsc-ircc, Wrong chip version ff
+The number of dirty pages is going to depend on the workload.  The problem
+with looking at today's workloads as an approximation of what workloads
+will look like is that people will optimise their software for persistent
+memory once persistent memory becomes more widely available.  So all
+we can do is point out "hey, you have a lot of dirty pages, maybe you'd
+like to change your algorithms".
 
-Looks like that driver calls request_region for its "fir_base" IO ports
-too late.
+> Reasons and frequency of msync():
+> Atomicity: needs barriers, happens frequently, leaves relatively small number of Dirty pages. Here the cost is probably smaller. 
+> Durability of application updates: issued infrequently, leaves many Dirty pages. The cost could be high, right?
 
-Parts of nsc_ircc_open:
+We have two ways on x86 to implement msync.  One is to flush every
+cacheline and the other is to flush the entire cache.  If the user asks
+to flush a terabyte of memory, it's clearly cheaper to flush the cache.
+If the user asks to flush 64 bytes, we should clearly just flush a single
+line.  Somewhere in-between there's a cross-over point, and that's going
+to depend on the size of the CPU's cache, the nature of the workload,
+and a few other factors.  I'm not worrying about where that is right now,
+because we can't make that decision without first tracking which pages
+are dirty and which are clean.
 
-..
-        IRDA_MESSAGE("%s, Found chip at base=0x%03x\n", driver_name,
-                     info->cfg_base);
+> Let's assume that at some point we get CPU/Persistent Memory Controller
+> combinations that support atomicity of multiple updates in hardware. Would
+> you need to mark pages Dirty in such cases? If not, what is the right
+> layer build that support for x86?
 
-        if ((nsc_ircc_setup(info)) == -1)
-                return -1;
+Regardless of future hardware innovations, we need to support the
+semantics of msync().  That is, if the user calls msync(), sees that
+it has successfully synced a range of data to media, and then after a
+reboot discovers that all or part of that msync hadn't actually happened,
+we're going to have a very unhappy user on our hands.
 
-=> fails while attempting to write to info->fir_base + 3 and then read
-   from info->fir_base + 0
+If we have a write-through cache, then we don't need to implement
+dirty bit tracking.  But my impression is that write-through caches are
+significantly worse performing than write-back, so I don't intend to
+optimise for them.
 
-..
-        /* Initialize IO */
-        self->io.cfg_base  = info->cfg_base;
-        self->io.fir_base  = info->fir_base;
-        self->io.irq       = info->irq;
-        self->io.fir_ext   = CHIP_IO_EXTENT;
-        self->io.dma       = info->dma;
-        self->io.fifo_size = 32;
-        
-        /* Reserve the ioports that we need */
-        ret = request_region(self->io.fir_base, self->io.fir_ext, driver_name);
-
-Maybe reorder this a bit, requesting the fir_base IO ports before
-calling nsc_ircc_setup?  You'll have to reorder the error cleanups too.
-
-
-> The first is printed at info level, so I would have ignored it, but the
-> second is printed at error level.
->
-> 1) I've finally managed to bisect these messages to commit 202317a573b2
-> ("ACPI / scan: Add acpi_device objects for all device nodes in the
-> namespace"). That's a rather big commit, so I've not even bothered to
-> try to revert it on top on v3.14-rc6.
-
-My guess is that you've got some pnp device now claiming the FIR IO
-ports.  cat /proc/ioports may help you find out what to look for?
-
-
-Bjørn
+If there's some fancy new hardware that lets you do an update of multiple
+cachelines atomically and persistently, then I guess the software will
+be calling that instead of msync(), so the question about whether msync()
+would need to flush the cachelines for that page won't actually arise.
