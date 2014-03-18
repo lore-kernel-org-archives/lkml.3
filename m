@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792AbaCROS1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:18:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44044 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755417AbaCROS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:18:26 -0400
-Date: Tue, 18 Mar 2014 11:18:11 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 3/5] tools lib traceevent: use else-if cascade, not
- separate ifs
-Message-ID: <20140318141811.GC3585@infradead.org>
-References: <1395095198-20034-1-git-send-email-artagnon@gmail.com>
- <1395095198-20034-4-git-send-email-artagnon@gmail.com>
- <87d2hkrl32.fsf@sejong.aot.lge.com>
- <20140318131048.GA3585@infradead.org>
- <20140318093006.16517a08@gandalf.local.home>
+	id S1755981AbaCROSr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 10:18:47 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:52683 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755919AbaCROSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 10:18:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140318093006.16517a08@gandalf.local.home>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <CALkWK0mODh_R9p10q2VPcJK4qnmNuJfQJm5wv2Rr=+cn+X-LDQ@mail.gmail.com>
+References: <1395095198-20034-1-git-send-email-artagnon@gmail.com>
+ <1395095198-20034-3-git-send-email-artagnon@gmail.com> <87ha6wrl8h.fsf@sejong.aot.lge.com>
+ <CALkWK0mODh_R9p10q2VPcJK4qnmNuJfQJm5wv2Rr=+cn+X-LDQ@mail.gmail.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Tue, 18 Mar 2014 23:18:24 +0900
+X-Google-Sender-Auth: TZwn_ZKPFfvvXNDRNxNx3HRjk-A
+Message-ID: <CAM9d7ciC4RF_12cVxnJ-yLcwkHQf-bT+h38-imCib1UgHxsa=g@mail.gmail.com>
+Subject: Re: [PATCH 2/5] tools lib traceevent: handle the '->' operator
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Mar 18, 2014 at 09:30:06AM -0400, Steven Rostedt escreveu:
-> On Tue, 18 Mar 2014 10:10:48 -0300 Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> > Em Tue, Mar 18, 2014 at 05:02:09PM +0900, Namhyung Kim escreveu:
-> > > On Mon, 17 Mar 2014 18:26:36 -0400, Ramkumar Ramachandra wrote:
-> > > > When token cannot be more than one value, it seems wasteful to go
-> > > > through all the strcmp() calls. Use an else-if cascade instead.
+Hi Ramkumar,
 
-> > > I think the end result will be same since it returns from inside the
-> > > block, right?
-> > 
-> > Exactly :-)
-> > 
-> > We could have it changed to something like:
-> > 
-> > 	if (strcmp()) {
-> > 		ret = bla();
-> > 		goto out_free_token;
-> > 	}
-> > .
-> > .
-> > .
-> > out_free_token:
-> > 	free_token(token);
-> > 	return ret;
+On Tue, Mar 18, 2014 at 11:12 PM, Ramkumar Ramachandra
+<artagnon@gmail.com> wrote:
+> Hi Namhyung,
+>
+> On Tue, Mar 18, 2014 at 3:58 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+>> Hmm.. AFAIK we don't support the '->' operator so I think it's an error
+>> in the callsite.  Where do you see the message though?  I couldn't find
+>> it on my setup.
+>>
+>> I'd also like to add following patch to see the location of parse
+>> failure easily.
+>
+> I applied your patch and ran 'perf test'. I get:
+>
+>   Warning: [i915:i915_gem_evict_vm] unknown op '->'
+>
+> So, where should we dig to find this callsite?
 
-> Honestly, I prefer the original, thus I would add a NAK to this patch.
+/sys/kernel/debug/tracing/events/i915/i915_gen_evict_vm/format :)
 
-No problem with that, if I had written that code, I'd prefer the gotos,
-but that is kinda personal preference.
 
-Yeah, I'd nack that patch as well, changes nothing.
-
-- Arnaldo
+Thanks,
+Namhyung
