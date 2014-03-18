@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090AbaCRO11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:27:27 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:45429 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755995AbaCRO1Y (ORCPT
+	id S1756119AbaCRO1p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 10:27:45 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42781 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008AbaCRO1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:27:24 -0400
+	Tue, 18 Mar 2014 10:27:22 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: gleb@kernel.org, mtosatti@redhat.com
-Subject: [PATCH 4/4] KVM: ioapic: reinject pending interrupts on KVM_SET_IRQCHIP
-Date: Tue, 18 Mar 2014 15:27:09 +0100
-Message-Id: <1395152829-22694-5-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 3/4] KVM: ioapic: extract body of kvm_ioapic_set_irq
+Date: Tue, 18 Mar 2014 15:27:08 +0100
+Message-Id: <1395152829-22694-4-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1395152829-22694-1-git-send-email-pbonzini@redhat.com>
 References: <1395152829-22694-1-git-send-email-pbonzini@redhat.com>
@@ -20,54 +20,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the previous patches, an interrupt whose bit is set in the IRR
-register will never be in the LAPIC's IRR and has never been injected
-on the migration source.  So inject it on the destination.
-
-This fixes migration of Windows guests without HPET (they use the RTC
-to trigger the scheduler tick, and lose it after migration).
+We will reuse it to process a nonzero IRR that is passed to KVM_SET_IRQCHIP.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- virt/kvm/ioapic.c | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ virt/kvm/ioapic.c | 63 ++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 39 insertions(+), 24 deletions(-)
 
 diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-index 7a573f1bb79e..63fb432ab502 100644
+index 25e16a6898ed..7a573f1bb79e 100644
 --- a/virt/kvm/ioapic.c
 +++ b/virt/kvm/ioapic.c
-@@ -201,6 +201,19 @@ out:
- 	return ret;
+@@ -163,6 +163,44 @@ static bool rtc_irq_check_coalesced(struct kvm_ioapic *ioapic)
+ 	return false;
  }
  
-+void kvm_ioapic_inject_all(struct kvm_ioapic *ioapic, unsigned long irr)
++static int ioapic_set_irq(struct kvm_ioapic *ioapic, unsigned int irq,
++		int level, bool line_status)
 +{
-+	u32 idx;
++	union kvm_ioapic_redirect_entry entry;
++	u32 mask = 1 << irq;
++	u32 old_irr;
++	int edge, ret;
 +
-+	rtc_irq_eoi_tracking_reset(ioapic);
-+	for_each_set_bit(idx, &irr, 32) {
-+		printk("ioapic_service for GSI %d\n", idx);
-+		ioapic_set_irq(ioapic, idx, 1, true);
++	entry = ioapic->redirtbl[irq];
++	edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
++
++	if (!level) {
++		ioapic->irr &= ~mask;
++		ret = 1;
++		goto out;
 +	}
-+	kvm_rtc_eoi_tracking_restore_all(ioapic);
-+}
 +
++	if (irq == RTC_GSI && line_status &&
++		rtc_irq_check_coalesced(ioapic)) {
++		ret = 0;
++		goto out;
++	}
++
++	old_irr = ioapic->irr;
++	ioapic->irr |= mask;
++	if ((edge && old_irr == ioapic->irr) ||
++	    (!edge && entry.fields.remote_irr)) {
++		ret = 0;
++		goto out;
++	}
++
++	ret = ioapic_service(ioapic, irq, line_status);
++
++out:
++	trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
++	return ret;
++}
 +
  static void update_handled_vectors(struct kvm_ioapic *ioapic)
  {
  	DECLARE_BITMAP(handled_vectors, 256);
-@@ -601,9 +614,10 @@ int kvm_set_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
+@@ -308,38 +346,15 @@ static int ioapic_service(struct kvm_ioapic *ioapic, int irq, bool line_status)
+ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
+ 		       int level, bool line_status)
+ {
+-	u32 old_irr;
+-	u32 mask = 1 << irq;
+-	union kvm_ioapic_redirect_entry entry;
+ 	int ret, irq_level;
+ 
+ 	BUG_ON(irq < 0 || irq >= IOAPIC_NUM_PINS);
  
  	spin_lock(&ioapic->lock);
- 	memcpy(ioapic, state, sizeof(struct kvm_ioapic_state));
-+	ioapic->irr = 0;
- 	update_handled_vectors(ioapic);
- 	kvm_vcpu_request_scan_ioapic(kvm);
--	kvm_rtc_eoi_tracking_restore_all(ioapic);
-+	kvm_ioapic_inject_all(ioapic, state->irr);
+-	old_irr = ioapic->irr;
+ 	irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
+ 					 irq_source_id, level);
+-	entry = ioapic->redirtbl[irq];
+-	if (!irq_level) {
+-		ioapic->irr &= ~mask;
+-		ret = 1;
+-	} else {
+-		int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
++	ret = ioapic_set_irq(ioapic, irq, irq_level, line_status);
+ 
+-		if (irq == RTC_GSI && line_status &&
+-			rtc_irq_check_coalesced(ioapic)) {
+-			ret = 0; /* coalesced */
+-			goto out;
+-		}
+-		ioapic->irr |= mask;
+-		if ((edge && old_irr != ioapic->irr) ||
+-		    (!edge && !entry.fields.remote_irr))
+-			ret = ioapic_service(ioapic, irq, line_status);
+-		else
+-			ret = 0; /* report coalesced interrupt */
+-	}
+-out:
+-	trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
  	spin_unlock(&ioapic->lock);
- 	return 0;
- }
+ 
+ 	return ret;
 -- 
 1.8.3.1
+
 
