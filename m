@@ -1,117 +1,556 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357AbaCROzp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 10:55:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42830 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932219AbaCROzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 10:55:40 -0400
-Message-ID: <53286ABF.3040408@ti.com>
-Date: Tue, 18 Mar 2014 17:48:15 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [linux-next][regression] [PATCH] percpu: add preemption checks
- to __this_cpu ops
-References: <53285FE7.5010203@ti.com> <alpine.DEB.2.10.1403180922050.17965@nuc>
-In-Reply-To: <alpine.DEB.2.10.1403180922050.17965@nuc>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932452AbaCRO4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 10:56:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.24]:52020 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932385AbaCRO4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 10:56:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        Sekhar Nori <nsekhar@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 2/3] mfd: remove obsolete ti-ssp driver
+Date: Tue, 18 Mar 2014 15:56:00 +0100
+Message-Id: <1395154561-1199121-3-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395154561-1199121-1-git-send-email-arnd@arndb.de>
+References: <1395154561-1199121-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:OF/ztEGPjtWZOkrNwKZjYOR/rneoJbWF9qDsTprPXZR
+ Ob20qwHhxxIL/DzBqmCt+RmX0cfGxIkeXfKHc99Gua70HPP3dH
+ 2BQycGNgAJXzgvvsPQRjFQD6joPk74g8LvbMhA9qJEQB4VJPwQ
+ GIoLe61vAE6zqFv80vJHXeH/uEmd1RnkklKZ+jJqXC0+UZDORA
+ xz50rJJ0u7YuLDcmZpy/BgzPE0HQLNdT9wgQ8alFJ8TDcm2AHQ
+ UaQ4SuB+4zYakDRwp7lqly5oDZ+0abC8ZdNT3krXzSd4c3jVeC
+ LD0uCus+farPwKAaqulA/Lou3CREXKrzcmUasvGXC8ZVyTaX2K
+ IK6Oa6EuDFNEh68KoBzmY5+48w2viEqdZtNoj2WlT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2014 04:37 PM, Christoph Lameter wrote:
-> On Tue, 18 Mar 2014, Grygorii Strashko wrote:
->
->> diff --git a/lib/smp_processor_id.c b/lib/smp_processor_id.c
->> index a270dce..73a2004 100644
->> --- a/lib/smp_processor_id.c
->> +++ b/lib/smp_processor_id.c
->> @@ -58,9 +58,6 @@ EXPORT_SYMBOL(debug_smp_processor_id);
->>
->>   notrace void __this_cpu_preempt_check(const char *op)
->>   {
->> -       char text[40];
->> -
->> -       snprintf(text, sizeof(text), "__this_cpu_%s()", op);
->> -       check_preemption_disabled(text);
->> +       check_preemption_disabled(op);
->>   }
->>   EXPORT_SYMBOL(__this_cpu_preempt_check);
->
-> So it looks like there is an early this cpu operation in a context that
-> cannot handle snprintf. But the checks in check_preemption_disabled()
-> avoid processing there so that works.
+The tnetv107x platform is getting removed, so this driver
+is not needed any more.
 
-Just to be sure that I've described time point of issue correctly:
-[    2.161746] dwc3 2690000.dwc3: failed to initialize core
-[    2.167255] dwc3: probe of 2690000.dwc3 failed with error -38
-[    2.259687] Freeing unused kernel memory: 280K (c0678000 - c06be000)
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Sekhar Nori <nsekhar@ti.com>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/Kconfig  |  11 --
+ drivers/mfd/Makefile |   1 -
+ drivers/mfd/ti-ssp.c | 465 ---------------------------------------------------
+ 3 files changed, 477 deletions(-)
+ delete mode 100644 drivers/mfd/ti-ssp.c
 
-Please press Enter to activate this console.
-^^^ system stall here
-
-
-Any way, I can boot and console works fine with your change :)
-Thanks.
-
-Tested-by: Grygorii Strashko <grygorii.strashko@ti.com>
-
->
-> We could fix this by moving the string concatenation operation into
-> the check function.
->
-> Index: linux/lib/smp_processor_id.c
-> ===================================================================
-> --- linux.orig/lib/smp_processor_id.c	2014-03-18 09:36:31.330450525 -0500
-> +++ linux/lib/smp_processor_id.c	2014-03-18 09:36:37.822315534 -0500
-> @@ -7,7 +7,8 @@
->   #include <linux/kallsyms.h>
->   #include <linux/sched.h>
->
-> -notrace static unsigned int check_preemption_disabled(char *what)
-> +notrace static unsigned int check_preemption_disabled(const char *what1,
-> +							const char *what2)
->   {
->   	int this_cpu = raw_smp_processor_id();
->
-> @@ -38,8 +39,8 @@
->   	if (!printk_ratelimit())
->   		goto out_enable;
->
-> -	printk(KERN_ERR "BUG: using %s in preemptible [%08x] code: %s/%d\n",
-> -		what, preempt_count() - 1, current->comm, current->pid);
-> +	printk(KERN_ERR "BUG: using %s%s() in preemptible [%08x] code: %s/%d\n",
-> +		what1, what2, preempt_count() - 1, current->comm, current->pid);
->
->   	print_symbol("caller is %s\n", (long)__builtin_return_address(0));
->   	dump_stack();
-> @@ -52,15 +53,12 @@
->
->   notrace unsigned int debug_smp_processor_id(void)
->   {
-> -	return check_preemption_disabled("smp_processor_id()");
-> +	return check_preemption_disabled("smp_processor_id","");
->   }
->   EXPORT_SYMBOL(debug_smp_processor_id);
->
->   notrace void __this_cpu_preempt_check(const char *op)
->   {
-> -	char text[40];
-> -
-> -	snprintf(text, sizeof(text), "__this_cpu_%s()", op);
-> -	check_preemption_disabled(text);
-> +	check_preemption_disabled("__this_cpu_", op);
->   }
->   EXPORT_SYMBOL(__this_cpu_preempt_check);
->
-
-
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 49bb445..e0f61e3 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -774,17 +774,6 @@ config MFD_PALMAS
+ 	  If you say yes here you get support for the Palmas
+ 	  series of PMIC chips from Texas Instruments.
+ 
+-config MFD_TI_SSP
+-	tristate "TI Sequencer Serial Port support"
+-	depends on ARCH_DAVINCI_TNETV107X
+-	select MFD_CORE
+-	---help---
+-	  Say Y here if you want support for the Sequencer Serial Port
+-	  in a Texas Instruments TNETV107X SoC.
+-
+-	  To compile this driver as a module, choose M here: the
+-	  module will be called ti-ssp.
+-
+ config TPS6105X
+ 	tristate "TI TPS61050/61052 Boost Converters"
+ 	depends on I2C
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 5aea5ef..40e2a6d 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -21,7 +21,6 @@ obj-$(CONFIG_HTC_I2CPLD)	+= htc-i2cpld.o
+ 
+ obj-$(CONFIG_MFD_DAVINCI_VOICECODEC)	+= davinci_voicecodec.o
+ obj-$(CONFIG_MFD_DM355EVM_MSP)	+= dm355evm_msp.o
+-obj-$(CONFIG_MFD_TI_SSP)	+= ti-ssp.o
+ obj-$(CONFIG_MFD_TI_AM335X_TSCADC)	+= ti_am335x_tscadc.o
+ 
+ obj-$(CONFIG_MFD_STA2X11)	+= sta2x11-mfd.o
+diff --git a/drivers/mfd/ti-ssp.c b/drivers/mfd/ti-ssp.c
+deleted file mode 100644
+index a542457..0000000
+--- a/drivers/mfd/ti-ssp.c
++++ /dev/null
+@@ -1,465 +0,0 @@
+-/*
+- * Sequencer Serial Port (SSP) driver for Texas Instruments' SoCs
+- *
+- * Copyright (C) 2010 Texas Instruments Inc
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/errno.h>
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/slab.h>
+-#include <linux/err.h>
+-#include <linux/init.h>
+-#include <linux/wait.h>
+-#include <linux/clk.h>
+-#include <linux/interrupt.h>
+-#include <linux/device.h>
+-#include <linux/spinlock.h>
+-#include <linux/platform_device.h>
+-#include <linux/delay.h>
+-#include <linux/io.h>
+-#include <linux/sched.h>
+-#include <linux/mfd/core.h>
+-#include <linux/mfd/ti_ssp.h>
+-
+-/* Register Offsets */
+-#define REG_REV		0x00
+-#define REG_IOSEL_1	0x04
+-#define REG_IOSEL_2	0x08
+-#define REG_PREDIV	0x0c
+-#define REG_INTR_ST	0x10
+-#define REG_INTR_EN	0x14
+-#define REG_TEST_CTRL	0x18
+-
+-/* Per port registers */
+-#define PORT_CFG_2	0x00
+-#define PORT_ADDR	0x04
+-#define PORT_DATA	0x08
+-#define PORT_CFG_1	0x0c
+-#define PORT_STATE	0x10
+-
+-#define SSP_PORT_CONFIG_MASK	(SSP_EARLY_DIN | SSP_DELAY_DOUT)
+-#define SSP_PORT_CLKRATE_MASK	0x0f
+-
+-#define SSP_SEQRAM_WR_EN	BIT(4)
+-#define SSP_SEQRAM_RD_EN	BIT(5)
+-#define SSP_START		BIT(15)
+-#define SSP_BUSY		BIT(10)
+-#define SSP_PORT_ASL		BIT(7)
+-#define SSP_PORT_CFO1		BIT(6)
+-
+-#define SSP_PORT_SEQRAM_SIZE	32
+-
+-static const int ssp_port_base[]   = {0x040, 0x080};
+-static const int ssp_port_seqram[] = {0x100, 0x180};
+-
+-struct ti_ssp {
+-	struct resource		*res;
+-	struct device		*dev;
+-	void __iomem		*regs;
+-	spinlock_t		lock;
+-	struct clk		*clk;
+-	int			irq;
+-	wait_queue_head_t	wqh;
+-
+-	/*
+-	 * Some of the iosel2 register bits always read-back as 0, we need to
+-	 * remember these values so that we don't clobber previously set
+-	 * values.
+-	 */
+-	u32			iosel2;
+-};
+-
+-static inline struct ti_ssp *dev_to_ssp(struct device *dev)
+-{
+-	return dev_get_drvdata(dev->parent);
+-}
+-
+-static inline int dev_to_port(struct device *dev)
+-{
+-	return to_platform_device(dev)->id;
+-}
+-
+-/* Register Access Helpers, rmw() functions need to run locked */
+-static inline u32 ssp_read(struct ti_ssp *ssp, int reg)
+-{
+-	return __raw_readl(ssp->regs + reg);
+-}
+-
+-static inline void ssp_write(struct ti_ssp *ssp, int reg, u32 val)
+-{
+-	__raw_writel(val, ssp->regs + reg);
+-}
+-
+-static inline void ssp_rmw(struct ti_ssp *ssp, int reg, u32 mask, u32 bits)
+-{
+-	ssp_write(ssp, reg, (ssp_read(ssp, reg) & ~mask) | bits);
+-}
+-
+-static inline u32 ssp_port_read(struct ti_ssp *ssp, int port, int reg)
+-{
+-	return ssp_read(ssp, ssp_port_base[port] + reg);
+-}
+-
+-static inline void ssp_port_write(struct ti_ssp *ssp, int port, int reg,
+-				  u32 val)
+-{
+-	ssp_write(ssp, ssp_port_base[port] + reg, val);
+-}
+-
+-static inline void ssp_port_rmw(struct ti_ssp *ssp, int port, int reg,
+-				u32 mask, u32 bits)
+-{
+-	ssp_rmw(ssp, ssp_port_base[port] + reg, mask, bits);
+-}
+-
+-static inline void ssp_port_clr_bits(struct ti_ssp *ssp, int port, int reg,
+-				     u32 bits)
+-{
+-	ssp_port_rmw(ssp, port, reg, bits, 0);
+-}
+-
+-static inline void ssp_port_set_bits(struct ti_ssp *ssp, int port, int reg,
+-				     u32 bits)
+-{
+-	ssp_port_rmw(ssp, port, reg, 0, bits);
+-}
+-
+-/* Called to setup port clock mode, caller must hold ssp->lock */
+-static int __set_mode(struct ti_ssp *ssp, int port, int mode)
+-{
+-	mode &= SSP_PORT_CONFIG_MASK;
+-	ssp_port_rmw(ssp, port, PORT_CFG_1, SSP_PORT_CONFIG_MASK, mode);
+-
+-	return 0;
+-}
+-
+-int ti_ssp_set_mode(struct device *dev, int mode)
+-{
+-	struct ti_ssp *ssp = dev_to_ssp(dev);
+-	int port = dev_to_port(dev);
+-	int ret;
+-
+-	spin_lock(&ssp->lock);
+-	ret = __set_mode(ssp, port, mode);
+-	spin_unlock(&ssp->lock);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(ti_ssp_set_mode);
+-
+-/* Called to setup iosel2, caller must hold ssp->lock */
+-static void __set_iosel2(struct ti_ssp *ssp, u32 mask, u32 val)
+-{
+-	ssp->iosel2 = (ssp->iosel2 & ~mask) | val;
+-	ssp_write(ssp, REG_IOSEL_2, ssp->iosel2);
+-}
+-
+-/* Called to setup port iosel, caller must hold ssp->lock */
+-static void __set_iosel(struct ti_ssp *ssp, int port, u32 iosel)
+-{
+-	unsigned val, shift = port ? 16 : 0;
+-
+-	/* IOSEL1 gets the least significant 16 bits */
+-	val = ssp_read(ssp, REG_IOSEL_1);
+-	val &= 0xffff << (port ? 0 : 16);
+-	val |= (iosel & 0xffff) << (port ? 16 : 0);
+-	ssp_write(ssp, REG_IOSEL_1, val);
+-
+-	/* IOSEL2 gets the most significant 16 bits */
+-	val = (iosel >> 16) & 0x7;
+-	__set_iosel2(ssp, 0x7 << shift, val << shift);
+-}
+-
+-int ti_ssp_set_iosel(struct device *dev, u32 iosel)
+-{
+-	struct ti_ssp *ssp = dev_to_ssp(dev);
+-	int port = dev_to_port(dev);
+-
+-	spin_lock(&ssp->lock);
+-	__set_iosel(ssp, port, iosel);
+-	spin_unlock(&ssp->lock);
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(ti_ssp_set_iosel);
+-
+-int ti_ssp_load(struct device *dev, int offs, u32* prog, int len)
+-{
+-	struct ti_ssp *ssp = dev_to_ssp(dev);
+-	int port = dev_to_port(dev);
+-	int i;
+-
+-	if (len > SSP_PORT_SEQRAM_SIZE)
+-		return -ENOSPC;
+-
+-	spin_lock(&ssp->lock);
+-
+-	/* Enable SeqRAM access */
+-	ssp_port_set_bits(ssp, port, PORT_CFG_2, SSP_SEQRAM_WR_EN);
+-
+-	/* Copy code */
+-	for (i = 0; i < len; i++) {
+-		__raw_writel(prog[i], ssp->regs + offs + 4*i +
+-			     ssp_port_seqram[port]);
+-	}
+-
+-	/* Disable SeqRAM access */
+-	ssp_port_clr_bits(ssp, port, PORT_CFG_2, SSP_SEQRAM_WR_EN);
+-
+-	spin_unlock(&ssp->lock);
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(ti_ssp_load);
+-
+-int ti_ssp_raw_read(struct device *dev)
+-{
+-	struct ti_ssp *ssp = dev_to_ssp(dev);
+-	int port = dev_to_port(dev);
+-	int shift = port ? 27 : 11;
+-
+-	return (ssp_read(ssp, REG_IOSEL_2) >> shift) & 0xf;
+-}
+-EXPORT_SYMBOL(ti_ssp_raw_read);
+-
+-int ti_ssp_raw_write(struct device *dev, u32 val)
+-{
+-	struct ti_ssp *ssp = dev_to_ssp(dev);
+-	int port = dev_to_port(dev), shift;
+-
+-	spin_lock(&ssp->lock);
+-
+-	shift = port ? 22 : 6;
+-	val &= 0xf;
+-	__set_iosel2(ssp, 0xf << shift, val << shift);
+-
+-	spin_unlock(&ssp->lock);
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(ti_ssp_raw_write);
+-
+-static inline int __xfer_done(struct ti_ssp *ssp, int port)
+-{
+-	return !(ssp_port_read(ssp, port, PORT_CFG_1) & SSP_BUSY);
+-}
+-
+-int ti_ssp_run(struct device *dev, u32 pc, u32 input, u32 *output)
+-{
+-	struct ti_ssp *ssp = dev_to_ssp(dev);
+-	int port = dev_to_port(dev);
+-	int ret;
+-
+-	if (pc & ~(0x3f))
+-		return -EINVAL;
+-
+-	/* Grab ssp->lock to serialize rmw on ssp registers */
+-	spin_lock(&ssp->lock);
+-
+-	ssp_port_write(ssp, port, PORT_ADDR, input >> 16);
+-	ssp_port_write(ssp, port, PORT_DATA, input & 0xffff);
+-	ssp_port_rmw(ssp, port, PORT_CFG_1, 0x3f, pc);
+-
+-	/* grab wait queue head lock to avoid race with the isr */
+-	spin_lock_irq(&ssp->wqh.lock);
+-
+-	/* kick off sequence execution in hardware */
+-	ssp_port_set_bits(ssp, port, PORT_CFG_1, SSP_START);
+-
+-	/* drop ssp lock; no register writes beyond this */
+-	spin_unlock(&ssp->lock);
+-
+-	ret = wait_event_interruptible_locked_irq(ssp->wqh,
+-						  __xfer_done(ssp, port));
+-	spin_unlock_irq(&ssp->wqh.lock);
+-
+-	if (ret < 0)
+-		return ret;
+-
+-	if (output) {
+-		*output = (ssp_port_read(ssp, port, PORT_ADDR) << 16) |
+-			  (ssp_port_read(ssp, port, PORT_DATA) &  0xffff);
+-	}
+-
+-	ret = ssp_port_read(ssp, port, PORT_STATE) & 0x3f; /* stop address */
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(ti_ssp_run);
+-
+-static irqreturn_t ti_ssp_interrupt(int irq, void *dev_data)
+-{
+-	struct ti_ssp *ssp = dev_data;
+-
+-	spin_lock(&ssp->wqh.lock);
+-
+-	ssp_write(ssp, REG_INTR_ST, 0x3);
+-	wake_up_locked(&ssp->wqh);
+-
+-	spin_unlock(&ssp->wqh.lock);
+-
+-	return IRQ_HANDLED;
+-}
+-
+-static int ti_ssp_probe(struct platform_device *pdev)
+-{
+-	static struct ti_ssp *ssp;
+-	const struct ti_ssp_data *pdata = dev_get_platdata(&pdev->dev);
+-	int error = 0, prediv = 0xff, id;
+-	unsigned long sysclk;
+-	struct device *dev = &pdev->dev;
+-	struct mfd_cell cells[2];
+-
+-	ssp = kzalloc(sizeof(*ssp), GFP_KERNEL);
+-	if (!ssp) {
+-		dev_err(dev, "cannot allocate device info\n");
+-		return -ENOMEM;
+-	}
+-
+-	ssp->dev = dev;
+-	dev_set_drvdata(dev, ssp);
+-
+-	ssp->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!ssp->res) {
+-		error = -ENODEV;
+-		dev_err(dev, "cannot determine register area\n");
+-		goto error_res;
+-	}
+-
+-	if (!request_mem_region(ssp->res->start, resource_size(ssp->res),
+-				pdev->name)) {
+-		error = -ENOMEM;
+-		dev_err(dev, "cannot claim register memory\n");
+-		goto error_res;
+-	}
+-
+-	ssp->regs = ioremap(ssp->res->start, resource_size(ssp->res));
+-	if (!ssp->regs) {
+-		error = -ENOMEM;
+-		dev_err(dev, "cannot map register memory\n");
+-		goto error_map;
+-	}
+-
+-	ssp->clk = clk_get(dev, NULL);
+-	if (IS_ERR(ssp->clk)) {
+-		error = PTR_ERR(ssp->clk);
+-		dev_err(dev, "cannot claim device clock\n");
+-		goto error_clk;
+-	}
+-
+-	ssp->irq = platform_get_irq(pdev, 0);
+-	if (ssp->irq < 0) {
+-		error = -ENODEV;
+-		dev_err(dev, "unknown irq\n");
+-		goto error_irq;
+-	}
+-
+-	error = request_threaded_irq(ssp->irq, NULL, ti_ssp_interrupt, 0,
+-				     dev_name(dev), ssp);
+-	if (error < 0) {
+-		dev_err(dev, "cannot acquire irq\n");
+-		goto error_irq;
+-	}
+-
+-	spin_lock_init(&ssp->lock);
+-	init_waitqueue_head(&ssp->wqh);
+-
+-	/* Power on and initialize SSP */
+-	error = clk_enable(ssp->clk);
+-	if (error) {
+-		dev_err(dev, "cannot enable device clock\n");
+-		goto error_enable;
+-	}
+-
+-	/* Reset registers to a sensible known state */
+-	ssp_write(ssp, REG_IOSEL_1, 0);
+-	ssp_write(ssp, REG_IOSEL_2, 0);
+-	ssp_write(ssp, REG_INTR_EN, 0x3);
+-	ssp_write(ssp, REG_INTR_ST, 0x3);
+-	ssp_write(ssp, REG_TEST_CTRL, 0);
+-	ssp_port_write(ssp, 0, PORT_CFG_1, SSP_PORT_ASL);
+-	ssp_port_write(ssp, 1, PORT_CFG_1, SSP_PORT_ASL);
+-	ssp_port_write(ssp, 0, PORT_CFG_2, SSP_PORT_CFO1);
+-	ssp_port_write(ssp, 1, PORT_CFG_2, SSP_PORT_CFO1);
+-
+-	sysclk = clk_get_rate(ssp->clk);
+-	if (pdata && pdata->out_clock)
+-		prediv = (sysclk / pdata->out_clock) - 1;
+-	prediv = clamp(prediv, 0, 0xff);
+-	ssp_rmw(ssp, REG_PREDIV, 0xff, prediv);
+-
+-	memset(cells, 0, sizeof(cells));
+-	for (id = 0; id < 2; id++) {
+-		const struct ti_ssp_dev_data *data = &pdata->dev_data[id];
+-
+-		cells[id].id		= id;
+-		cells[id].name		= data->dev_name;
+-		cells[id].platform_data	= data->pdata;
+-	}
+-
+-	error = mfd_add_devices(dev, 0, cells, 2, NULL, 0, NULL);
+-	if (error < 0) {
+-		dev_err(dev, "cannot add mfd cells\n");
+-		goto error_enable;
+-	}
+-
+-	return 0;
+-
+-error_enable:
+-	free_irq(ssp->irq, ssp);
+-error_irq:
+-	clk_put(ssp->clk);
+-error_clk:
+-	iounmap(ssp->regs);
+-error_map:
+-	release_mem_region(ssp->res->start, resource_size(ssp->res));
+-error_res:
+-	kfree(ssp);
+-	return error;
+-}
+-
+-static int ti_ssp_remove(struct platform_device *pdev)
+-{
+-	struct device *dev = &pdev->dev;
+-	struct ti_ssp *ssp = dev_get_drvdata(dev);
+-
+-	mfd_remove_devices(dev);
+-	clk_disable(ssp->clk);
+-	free_irq(ssp->irq, ssp);
+-	clk_put(ssp->clk);
+-	iounmap(ssp->regs);
+-	release_mem_region(ssp->res->start, resource_size(ssp->res));
+-	kfree(ssp);
+-	return 0;
+-}
+-
+-static struct platform_driver ti_ssp_driver = {
+-	.probe		= ti_ssp_probe,
+-	.remove		= ti_ssp_remove,
+-	.driver		= {
+-		.name	= "ti-ssp",
+-		.owner	= THIS_MODULE,
+-	}
+-};
+-
+-module_platform_driver(ti_ssp_driver);
+-
+-MODULE_DESCRIPTION("Sequencer Serial Port (SSP) Driver");
+-MODULE_AUTHOR("Cyril Chemparathy");
+-MODULE_LICENSE("GPL");
+-MODULE_ALIAS("platform:ti-ssp");
+-- 
+1.8.3.2
 
