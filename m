@@ -1,210 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499AbaCRPrE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 11:47:04 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:36995 "EHLO
+	id S1755698AbaCRPrs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 11:47:48 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:37026 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971AbaCRPq7 (ORCPT
+	with ESMTP id S1755524AbaCRPro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 11:46:59 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-e2-53286a71d56a
-Message-id: <53286A6C.5090108@samsung.com>
-Date: Tue, 18 Mar 2014 16:46:52 +0100
+	Tue, 18 Mar 2014 11:47:44 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-88-53286a9fb481
+Message-id: <53286A9A.1040207@samsung.com>
+Date: Tue, 18 Mar 2014 16:47:38 +0100
 From: Tomasz Figa <t.figa@samsung.com>
 Organization: Samsung R&D Institute Poland
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
  Thunderbird/24.3.0
 MIME-version: 1.0
 To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "nm@ti.com" <nm@ti.com>,
-        "b.zolnierkie@samsaung.com" <b.zolnierkie@samsaung.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCHv2 8/8] devfreq: exynos4: Add busfreq driver for
- exynos4210/exynos4x12
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        rafael.j.wysocki@intel.com, nm@ti.com, b.zolnierkie@samsaung.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCHv2 0/8] devfreq: exynos4: Support dt and use common ppmu
+ driver
 References: <1394698649-20996-1-git-send-email-cw00.choi@samsung.com>
- <1394698649-20996-9-git-send-email-cw00.choi@samsung.com>
- <20140313175308.GE25870@e106331-lin.cambridge.arm.com>
- <5322AC5D.9070200@samsung.com>
- <20140314103552.GK25870@e106331-lin.cambridge.arm.com>
- <5322E04D.2060801@samsung.com> <53233DE7.2030902@samsung.com>
- <532685E0.6040405@samsung.com>
-In-reply-to: <532685E0.6040405@samsung.com>
+ <5323432E.5060005@samsung.com> <532656B1.2010907@samsung.com>
+In-reply-to: <532656B1.2010907@samsung.com>
 Content-type: text/plain; charset=ISO-8859-1; format=flowed
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4Zd3CLI1gg+XTmSw6en6zWFz/8pzV
-	Yv6Rc6wW516tZLQ42/SG3WJh2xIWi8u75rBZfO49wmgx4/w+Joul1y8yWdxuXMFm8ebHWSaL
-	CdPXslg8XvGW3eLVwTYWB36PNfPWMHqsXP6FzWPxnpdMHj+Xb2f36NuyitHj+I3tTB6fN8l5
-	bJwbGsARxWWTkpqTWZZapG+XwJXR1H6GsWCOWcXXt0cZGxhv6HQxcnJICJhIXF+4mBnCFpO4
-	cG89G4gtJLCUUWLPZZ8uRi4g+zOjxOeth1i6GDk4eAW0JB63lIDUsAioSkxq28kKYrMJqEl8
-	bngE1ssPVLKm6ToLiC0qECExd+JmsDivgKDEj8n3wOIiAhoSM/9eYQSZzyzQwiaxc/V9dpCE
-	sEC0xKXJt9kgFn9lkvg34zNYB6eAtsSFyw/BipgFrCVWTtrGCGHLS2xe85Z5AqPgLCRLZiEp
-	m4WkbAEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkFj7soNx8TGrQ4wCHIxKPLySsRrB
-	QqyJZcWVuYcYJTiYlUR4V7sDhXhTEiurUovy44tKc1KLDzEycXBKNTB6tZ1iWF5w/JdKOOMl
-	o2TbqSy7/rmfrd7FUGh7+P5lD4XUffOqtsSoMt/8ZP3P/sk/1X8bNDg7KsWZ9b/EzNZZeU27
-	+VFhfE/3gukP+roerNhWOGsH741EN4drR0+miYWG3S8sevSsqTZoyYE1ksK7zi3c57H+au8t
-	n++ybWmyqS0enDeevqtRYinOSDTUYi4qTgQA7UaMopMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t/xq7rzszSCDU49FrTo6PnNYnH9y3NW
+	i/lHzrFanHu1ktHibNMbdouFbUtYLC7vmsNm8bn3CKPFjPP7mCyWXr/IZHG7cQWbxZsfZ5ks
+	Jkxfy2LxeMVbdotXB9tYHPg91sxbw+ixcvkXNo/Fe14yefxcvp3do2/LKkaP4ze2M3l83iTn
+	sXFuaABHFJdNSmpOZllqkb5dAlfGzFUlBSelK65d2srawPhftIuRk0NCwETi8voFjBC2mMSF
+	e+vZuhi5OIQEljJKfOvazgqSEBL4zCjx+Y4YiM0roCXR+XsCWJxFQFVi2qYD7CA2m4CaxOeG
+	R2wgNj9QzZqm6ywgtqhAhMTciZvZIHoFJX5MvgcWFxHQkJj59wrYYmaBr0wSN+cxgdjCAiES
+	tw4dgTqilVHiQftfsASngLbEloWHmSAarCVWTtoG1SwvsXnNW+YJjIKzkOyYhaRsFpKyBYzM
+	qxhFU0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCIu3LDsbFx6wOMQpwMCrx8ErGagQLsSaWFVfm
+	HmKU4GBWEuFd7Q4U4k1JrKxKLcqPLyrNSS0+xMjEwSnVwChRtquoOnzPjbyDd5a+d1rd+iD0
+	1Oc9L4wfrKpxy2d40z/jscqLsKAHire2Cx+5/ip6QeT6Bed292hKFs7bapr5/fl/jyblpptX
+	3R/d3h34Yt7VK2flqh58dhf40nPg2I4YVY6sr387AvI07966ajct9fRnwx6f69f7C9omy833
+	E+c9YPLf6k2dEktxRqKhFnNRcSIAOrtXmpICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.03.2014 06:19, Chanwoo Choi wrote:
+
+
+On 17.03.2014 02:58, Chanwoo Choi wrote:
 > Hi Tomasz,
 >
-> On 03/15/2014 02:35 AM, Tomasz Figa wrote:
->> Hi Chanwoo, Mark,
+> On 03/15/2014 02:58 AM, Tomasz Figa wrote:
+>> Hi Chanwoo,
 >>
->> On 14.03.2014 11:56, Chanwoo Choi wrote:
->>> Hi Mark,
+>> On 13.03.2014 09:17, Chanwoo Choi wrote:
+>>> This patchset support devicetree and use common ppmu driver instead of
+>>> individual code of exynos4_bus.c to remove duplicate code. Also this patchset
+>>> get the resources for busfreq from dt data by using DT helper function.
+>>> - PPMU register address
+>>> - PPMU clock
+>>> - Regulator for INT/MIF block
 >>>
->>> On 03/14/2014 07:35 PM, Mark Rutland wrote:
->>>> On Fri, Mar 14, 2014 at 07:14:37AM +0000, Chanwoo Choi wrote:
->>>>> Hi Mark,
->>>>>
->>>>> On 03/14/2014 02:53 AM, Mark Rutland wrote:
->>>>>> On Thu, Mar 13, 2014 at 08:17:29AM +0000, Chanwoo Choi wrote:
->>>>>>> This patch add busfreq driver for Exynos4210/Exynos4x12 memory interface
->>>>>>> and bus to support DVFS(Dynamic Voltage Frequency Scaling) according to PPMU
->>>>>>> counters. PPMU (Performance Profiling Monitorings Units) of Exynos4 SoC provides
->>>>>>> PPMU counters for DMC(Dynamic Memory Controller) to check memory bus utilization
->>>>>>> and then busfreq driver adjusts dynamically the operating frequency/voltage
->>>>>>> by using DEVFREQ Subsystem.
->>>>>>>
->>>>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>>>>> ---
->>>>>>>    .../devicetree/bindings/devfreq/exynos4_bus.txt    | 49 ++++++++++++++++++++++
->>>>>>>    1 file changed, 49 insertions(+)
->>>>>>>    create mode 100644 Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
->>>>>>>
->>>>>>> diff --git a/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt b/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
->>>>>>> new file mode 100644
->>>>>>> index 0000000..2a83fcc
->>>>>>> --- /dev/null
->>>>>>> +++ b/Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
->>>>>>> @@ -0,0 +1,49 @@
->>>>>>> +
->>>>>>> +Exynos4210/4x12 busfreq driver
->>>>>>> +-----------------------------
->>>>>>> +
->>>>>>> +Exynos4210/4x12 Soc busfreq driver with devfreq for Memory bus frequency/voltage
->>>>>>> +scaling according to PPMU counters of memory controllers
->>>>>>> +
->>>>>>> +Required properties:
->>>>>>> +- compatible    : should contain Exynos4 SoC type as follwoing:
->>>>>>> +          - "samsung,exynos4x12-busfreq" for Exynos4x12
->>>>>>> +          - "samsung,exynos4210-busfreq" for Exynos4210
->>>>>>
->>>>>> Is there a device called "busfreq"? What device does this binding
->>>>>> describe?
->>>>>
->>>>> I'll add detailed description of busfreq as following:
->>>>>
->>>>> "busfreq(bus frequendcy)" driver means that busfreq driver control dynamically
->>>>> memory bus frequency/voltage by checking memory bus utilization to optimize
->>>>> power-consumption. When checking memeory bus utilization, exynos4_busfreq driver
->>>>> would use PPMU(Performance Profiling Monitoring Units).
->>>>
->>>> This still sounds like a description of the _driver_, not the _device_.
->>>> The binding should describe the hardware, now the high level abstraction
->>>> that software is going to build atop of it.
->>>>
->>>> It sounds like this is a binding for the DMC PPMU?
->>>>
->>>> Is the PPMU a component of the DMC, or is it bolted on the side?
+>>> This patchset use SET_SYSTEM_SLEEP_PM_OPS macro intead of legacy method.
+>>> To remove power-leakage in suspend state, before entering suspend state,
+>>> disable ppmu clocks.
 >>>
->>> PPMU(Performance Profiling Monitoring Unit) is to profile performance event of
->>> various IP on Exynos4. Each PPMU provide perforamnce event for each IP.
->>> We can check various PPMU as following:
+>>> Changes from v1:
+>>> - Add exynos4_bus.txt documentation for devicetree guide
+>>> - Fix probe failure if CONFIG_PM_OPP is disabled
+>>> - Fix typo and resource leak(regulator/clock/memory) when happening probe failure
+>>> - Add additionally comment for PPMU usage instead of previous PPC
+>>> - Split separate patch to remove ambiguous of patch
 >>>
->>> PPMU_3D
->>> PPMU_ACP
->>> PPMU_CAMIF
->>> PPMU_CPU
->>> PPMU_DMC0
->>> PPMU_DMC1
->>> PPMU_FSYS
->>> PPMU_IMAGE
->>> PPMU_LCD0
->>> PPMU_LCD1
->>> PPMU_MFC_L
->>> PPMU_MFC_R
->>> PPMU_TV
->>> PPMU_LEFT_BUS
->>> PPMU_RIGHT_BUS
+>>> Chanwoo Choi (8):
+>>>     devfreq: exynos4: Support devicetree to get device id of Exynos4 SoC
+>>>     devfreq: exynos4: Use common ppmu driver and get ppmu address from dt data
+>>>     devfreq: exynos4: Add ppmu's clock control and code clean about regulator control
+>>>     devfreq: exynos4: Fix bug of resource leak and code clean on probe()
+>>>     devfreq: exynos4: Use SET_SYSTEM_SLEEP_PM_OPS macro
+>>>     devfreq: exynos4: Fix power-leakage of clock on suspend state
+>>>     devfreq: exynos4: Add CONFIG_PM_OPP dependency to fix probe fail
+>>>     devfreq: exynos4: Add busfreq driver for exynos4210/exynos4x12
 >>>
->>> DMC (Dynamic Memory Controller) control the operation of DRAM in Exynos4 SoC.
->>> If we need to get memory bust utilization of DMC, we can get memory bus utilization
->>> from PPMU_DMC0/PPMU_DMC1.
+>>>    .../devicetree/bindings/devfreq/exynos4_bus.txt    |  49 +++
+>>>    drivers/devfreq/Kconfig                            |   1 +
+>>>    drivers/devfreq/exynos/Makefile                    |   2 +-
+>>>    drivers/devfreq/exynos/exynos4_bus.c               | 415 ++++++++++++++-------
+>>>    4 files changed, 341 insertions(+), 126 deletions(-)
+>>>    create mode 100644 Documentation/devicetree/bindings/devfreq/exynos4_bus.txt
 >>>
->>> So, Exynos4's busfreq used two(PPMU_DMC0/PPMU_DMC1) among upper various PPMU list.
 >>
->> Well, PPMUs and DMCs are separate hardware blocks found inside Exynos SoCs. Busfreq/devfreq is just a Linux-specific abstraction responsible for collecting data using PPMUs and controlling frequencies and voltages of appropriate power planes, vdd_int responsible for powering DMC0 and DMC1 blocks in this case.
+>> I have reviewed this series and there are several comments that I'd like to ask you to address. Please see my replies to particular patches.
+>
+> OK, I'll fix it about your comment.
+>
+>>
+>> However, this driver, even after applying your series, is still far from a state that would allow it to be enabled. The most important issue is direct access to CMU registers, based on static mapping, which is not allowed on multiplatform kernels and multiplatform-awareness for drivers is currently a must.
+>>
+>> To allow this driver to be enabled, it needs to be converted to use common clock framework functions to configure all clocks, e.g. clk_set_rate(), clk_set_parent(), etc., without accessing CMU registers directly.
+>>
+>> Of course as long as the driver is effectively unusable, to keep development, we can proceed with refactoring it step-by-step and your series would be basically the first step, after addressing the review comments.
 >>
 >
-> I knew already.
+> I agree your opinion. When setting frequency of memory bus, this driver access
+> directly to CMU registers. I know it should be modified by using common clk
+> framework as your comment.
 >
->> I'm afraid that the binding you're proposing is unfortunately incorrect, because it represents the software abstraction, not the real hardware.
->
-> What is exactly incorrect part of this patch?
->
+> I'll send patch set about using common clk framework instead of CMU register
+> based on static mapping after finished the review and apply of this patch set as next step.
 
-Device tree contains information about hardware, not about OS-specific 
-drivers or subsystems. Busfreq/devfreq is not a hardware block, but a 
-Linux-specific driver, so it's not suitable to be described by DT 
-directly, especially considering the fact that in future it might be 
-replaced by or merged with another subsystem.
-
-Only PPMUs are real hardware blocks present in the SoC. In addition, a 
-SoC-level aspect of hardware description may be added, such as a list of 
-power planes. See below for explanation.
-
->>
->> Instead, this should be separated into several independent bindings:
->>
->>   - PPMU bindings to list all the PPMU instances present in the SoC and resources they need,
->>
->>   - power plane bindings, which define a power plane in which multiple IP blocks might reside, can be monitored by one or more PPMU units and frequency and voltage of which can be configured according to determined performance level. Needed resources will be clocks and regulators to scale and probably also operating points.
->>
->> Then, exynos-busfreq driver should bind to such power planes, parse necessary data from DT (list of PPMUs and IP blocks, clocks, regulators and operating points) and register a devfreq entity.
->
-> What is 'power plane'? I don't know 'power plane'.
-
-Power plane is a part of the SoC (set of IP blocks and buses) that is 
-powered by the same power source. For example in Exynos4412 a power 
-plane would be VDD_ARM, containing 4 Cortex A9 cores, two L2 cache 
-blocks, L2 cache controller, SCU, and several other blocks. Another 
-example in Exynos4412 would be VDD_INT plane, which contains MFC, 
-AudioSS, LCD0, ISP, TV, CAM and several other blocks.
-
-In addition, such power plane might contain certain facilities, such as 
-PPMU blocks, that let you estimate bus bandwidth utilization and scale 
-certain performance and power parameters of such power plane, e.g. 
-frequencies of internal buses and voltage of external regulator used to 
-power it.
-
-> If you suggest 'power plane' concept and then merge this concept to mainline,
-> After merged 'power plane' concept, I will apply 'power plane' concept to Exynos4's busfreq driver.
->
-> I prefer to handle 'power plane' concept on other patchset for Exynos4's busfreq driver.
-
-This is a necessary prerequisite for having Exynos busfreq facilities 
-described properly in device tree. This is not a concept of high level 
-generic framework, but just a concept of hardware description that can 
-be parsed by Linux drivers, such as Exynos busfreq.
-
-As I said above, a requirement is that DT does not describe 
-Linux-specific internals, but the hardware that is used by them.
+OK. I'm looking forward for patches sorting this out.
 
 Best regards,
 Tomasz
