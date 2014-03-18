@@ -1,123 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaCRLoJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 07:44:09 -0400
-Received: from forward14.mail.yandex.net ([95.108.130.92]:37995 "EHLO
-	forward14.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064AbaCRLoI (ORCPT
+	id S1754233AbaCRMAm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 08:00:42 -0400
+Received: from kvm5.telegraphics.com.au ([98.124.60.144]:60107 "EHLO
+	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659AbaCRMAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 07:44:08 -0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Preeti Murthy <preeti.lkml@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-In-Reply-To: <CAM4v1pOtUDNn_yFG3HyYbBy0VDy4qCh-Ms3jMO_+hfOVQLhw-A@mail.gmail.com>
-References: <1394835289.18748.31.camel@HP-250-G1-Notebook-PC> <CAM4v1pOtUDNn_yFG3HyYbBy0VDy4qCh-Ms3jMO_+hfOVQLhw-A@mail.gmail.com>
-Subject: Re: [PATCH 1/4] sched/rt: Sum number of all children tasks in hierarhy at rt_nr_running
+	Tue, 18 Mar 2014 08:00:40 -0400
+Date: Tue, 18 Mar 2014 23:00:12 +1100 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Joe Perches <joe@perches.com>
+cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Sam Creasey <sammy@sammy.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michael Schmitz <schmitz@debian.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-m68k@vger.kernel.org
+Subject: Re: [PATCH 00/12] scsi/NCR5380: fix debugging macros and #include
+ structure
+In-Reply-To: <1395112756.20860.1.camel@joe-AO722>
+Message-ID: <alpine.LNX.2.00.1403182208590.2018@nippy.intranet>
+References: <20140318002822.372705594@telegraphics.com.au> <1395112756.20860.1.camel@joe-AO722>
 MIME-Version: 1.0
-Message-Id: <2983961395143041@web25j.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 18 Mar 2014 15:44:01 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+On Mon, 17 Mar 2014, Joe Perches wrote:
 
-18.03.2014, 15:08, "Preeti Murthy" <preeti.lkml@gmail.com>:
-> On Sat, Mar 15, 2014 at 3:44 AM, Kirill Tkhai <tkhai@yandex.ru> wrote:
->
->> š{inc,dec}_rt_tasks used to count entities which are directly queued
->> šon rt_rq. If an entity was not a task (i.e., it is some queue), its
->> šchildren were not counted.
->
-> Its always the case that a task is queued right, never a sched entity?
+> 
+> My preference would be to change dprintk to scsi_dbg
 
-With patch applied, when sched entity is group queue, we add number of
-its child tasks instead of "1".
+Can you be more specific? I gather you're not referring to the debugging 
+routines in include/scsi/scsi_dbg.h as they aren't equivalent.
 
-> When a task is queued, the nr_running of every rt_rq in the hierarchy
-> of sched entities which are parents of this task is incremented by 1.
+Is it the name "dprintk" you object to?
 
-Only if they had not had a queued task before.
+I went looking in drivers/scsi/ for some kind of naming convention for a 
+conditional printk. There are some other variations on the theme (DEBUG, 
+PDEBUG, PERROR, etc) but dprintk() seems to be the most popular.
 
-> Similar is with dequeue of a sched_entity. If the sched_entity has
-> just 1 task on it, then its dequeued from its parent queue and its number
-> decremented for every rq in the hierarchy. But you would
-> never dequeue a sched_entity if it has more than 1 task in it. The
-> granularity of enqueue and dequeue of sched_entities is one task
-> at a time. You can extend this to enqueue and dequeue of a sched_entity
-> only if it has just one task in its queue.
-
-We do not queue entites, which are empty. In __enqueue_rt_entity():
-
-if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
-         return;
-
-Where do you see a collision? Please explain, if so.
-
-> Regards
-> Preeti U Murthy
->
->> šThere is no problem here, but now we want to count number of all tasks
->> šwhich are actually queued under the rt_rq in all the hierarhy (except
->> šthrottled rt queues).
->>
->> šEmpty queues are not able to be queued and all of the places, which
->> šuse rt_nr_running, just compare it with zero, so we do not break
->> šanything here.
->>
->> šSigned-off-by: Kirill Tkhai <tkhai@yandex.ru>
->> šCC: Peter Zijlstra <peterz@infradead.org>
->> šCC: Ingo Molnar <mingo@kernel.org>
->> š---
->> šškernel/sched/rt.c | šš15 +++++++++++++--
->> šš1 file changed, 13 insertions(+), 2 deletions(-)
->>
->> šdiff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
->> šindex d8cdf16..e4def13 100644
->> š--- a/kernel/sched/rt.c
->> š+++ b/kernel/sched/rt.c
->> š@@ -1045,12 +1045,23 @@ void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
->> šš#endif /* CONFIG_RT_GROUP_SCHED */
->>
->> ššstatic inline
->> š+unsigned int rt_se_nr_running(struct sched_rt_entity *rt_se)
->> š+{
->> š+ ššššššstruct rt_rq *group_rq = group_rt_rq(rt_se);
->> š+
->> š+ ššššššif (group_rq)
->> š+ ššššššššššššššreturn group_rq->rt_nr_running;
->> š+ ššššššelse
->> š+ ššššššššššššššreturn 1;
->> š+}
->> š+
->> š+static inline
->> ššvoid inc_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
->> šš{
->> šššššššššint prio = rt_se_prio(rt_se);
->>
->> šššššššššWARN_ON(!rt_prio(prio));
->> š- ššššššrt_rq->rt_nr_running++;
->> š+ ššššššrt_rq->rt_nr_running += rt_se_nr_running(rt_se);
->>
->> šššššššššinc_rt_prio(rt_rq, prio);
->> šššššššššinc_rt_migration(rt_se, rt_rq);
->> š@@ -1062,7 +1073,7 @@ void dec_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
->> šš{
->> šššššššššWARN_ON(!rt_prio(rt_se_prio(rt_se)));
->> šššššššššWARN_ON(!rt_rq->rt_nr_running);
->> š- ššššššrt_rq->rt_nr_running--;
->> š+ ššššššrt_rq->rt_nr_running -= rt_se_nr_running(rt_se);
->>
->> šššššššššdec_rt_prio(rt_rq, rt_se_prio(rt_se));
->> šššššššššdec_rt_migration(rt_se, rt_rq);
->>
->> š--
->> šTo unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> šthe body of a message to majordomo@vger.kernel.org
->> šMore majordomo info at šhttp://vger.kernel.org/majordomo-info.html
->> šPlease read the FAQ at šhttp://www.tux.org/lkml/
+-- 
