@@ -1,55 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563AbaCRQvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 12:51:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38224 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194AbaCRQvI (ORCPT
+	id S1756647AbaCRQwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 12:52:22 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:40311 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbaCRQwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 12:51:08 -0400
-Date: Tue, 18 Mar 2014 17:50:59 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        lsf@lists.linux-foundation.org, Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [Lsf] [LSF/MM TOPIC] Testing Large-Memory Hardware
-Message-ID: <20140318165059.GI22095@laptop.programming.kicks-ass.net>
-References: <5328753B.2050107@intel.com>
+	Tue, 18 Mar 2014 12:52:21 -0400
+Message-ID: <532879C0.7080507@gmail.com>
+Date: Tue, 18 Mar 2014 17:52:16 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5328753B.2050107@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: lkml <linux-kernel@vger.kernel.org>
+CC: mtk.manpages@gmail.com
+Subject: man-pages-3.63 is released
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 09:32:59AM -0700, Dave Hansen wrote:
-> I have a quick topic that could perhaps be addressed along with the
-> testing topic that Dave Jones proposed.  I won't be attending, but there
-> will be a couple of other Intel folks there.  This should be a fairly
-> quick thing to address.
-> 
-> Topic:
-> 
-> Fengguang Wu who runs the wonderful LKP and 0day build tests was
-> recently asking if I thought there was value in adding a large-memory
-> system, say with 1TB of RAM.  LKP is the system that generates these
-> kinds of automated bug reports and performance tests:
-> 
-> 	http://lkml.org/lkml/2014/3/9/201
-> 
-> My gut reaction was that we'd probably be better served by putting
-> resources in to systems with higher core counts rather than lots of RAM.
->  I have encountered the occasional boot bug on my 1TB system, but it's
-> far from a frequent occurrence, and even more infrequent to encounter
-> things at runtime.
-> 
-> Would folks agree with that?  What kinds of tests, benchmarks, stress
-> tests, etc... do folks run that are both valuable and can only be run on
-> a system with a large amount of actual RAM?
+Gidday,
 
-We had a sched-numa + kvm fail on really large systems the other day,
-but yeah in general such problems tend to be rare. Then again, without
-test coverage they will always be rare, for even if there were problems,
-nobody would notice :-)
+The Linux man-pages maintainer proudly announces:
+
+    man-pages-3.63 - man pages for Linux
+
+He also proudly announces that man-pages recently passed
+10,000 commits since he took over as maintainer in 2004
+(https://plus.google.com/u/0/+MichaelKerrisk/posts/SVH47FGnQCN ).
+
+
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.63
+
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.com/2014/03/man-pages-363-is-released.html
+
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
+
+A few changes in this release that may be of interest to readers of
+this list are given below.
+
+Cheers,
+
+Michael
+
+
+==================== Changes in man-pages-3.63 ====================
+
+Released: 2014-03-18, Munich
+
+
+New and rewritten pages
+-----------------------
+
+duplocale.3
+    Michael Kerrisk
+        New page documenting duplocale(3)
+
+newlocale.3
+    Michael Kerrisk  [Mike Frysinger]
+        New page documenting newlocale(3) and freelocale(3)
+
+uselocale.3
+    Michael Kerrisk
+        New page documenting uselocale(3)
+
+
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+open.2
+    Michael Kerrisk
+        Document O_DSYNC and rewrite discussion of O_SYNC
+
+proc.5
+    Michael Kerrisk
+        Document /proc/sys/kernel/random/uuid
+
+locale.7
+    Michael Kerrisk
+        Document LC_ADDRESS
+        Document LC_IDENTIFICATION
+        Document LC_MEASUREMENT
+        Document LC_NAME
+        Document LC_PAPER
+        Document LC_TELEPHONE
+
+
+Changes to individual pages
+---------------------------
+
+readahead.2
+    Phillip Susi  [Corrado Zoccolo, Gregory P. Smith, Zhu Yanhai, Michael Kerrisk, Christoph Hellwig]
+        Don't claim the call blocks until all data has been read
+            The readahead(2) man page was claiming that the call blocks until
+            all data has been read into the cache.  This is incorrect.
+
+            See https://bugzilla.kernel.org/show_bug.cgi?id=54271
+
+fts.3
+    Christoph Hellwig  [Michael Kerrisk]
+        The fts(3) API does not work with LFS builds
+            As pointed out during a recent discussion on libc-hacker the
+            fts(3) APIs can't be used with large file offsets:
+
+                https://sourceware.org/bugzilla/show_bug.cgi?id=15838
+
+core.5
+    Mike Frysinger  [Michael Kerrisk]
+        Document core_pattern %d specifier
+        Document %P core_pattern specifier
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
