@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941AbaCRFEJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 01:04:09 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:39618 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839AbaCRFEI (ORCPT
+	id S1752054AbaCRFGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 01:06:15 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:55752 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083AbaCRFGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 01:04:08 -0400
-Message-ID: <5327D3C6.70400@gmail.com>
-Date: Mon, 17 Mar 2014 23:04:06 -0600
-From: Joel Pelaez Jorge <joelpelaez@gmail.com>
-Organization: DarkSoft Foundation
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 18 Mar 2014 01:06:13 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Jingoo Han <jg1.han@samsung.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH] staging: slicoss: Fix prefer ether_addr_copy over memcpy
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53234A70.70506@gmail.com>
+References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com>
+	<CAOh2x==at2PtHRpa=-_V6O5Z9aSog4r9BDb7ixJgBZk_+vfPtg@mail.gmail.com>
+	<53231BF4.2000308@intel.com>
+	<CAKohponGN4JNwLKLjvFOPkru0=6JajOKKH=oJneDkKp=PyAmRA@mail.gmail.com>
+	<53234A70.70506@gmail.com>
+Date: Tue, 18 Mar 2014 10:36:12 +0530
+X-Google-Sender-Auth: 1wIKrXHwAy0c4suEwZeLKowkoNI
+Message-ID: <CAOh2x=n57WVOAMBsM_nPYOjjMsvWf5WB8RptoyCC63y8iab3Kg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Patrick Marlier <patrick.marlier@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl issues caused by the new 
-function: ether_addr_copy
+Hi,
 
-Signed-off-by: Joel Pelaez Jorge <joelpelaez@gmail.com>
----
-  drivers/staging/slicoss/slicoss.c |   20 ++++++++++----------
-  1 file changed, 10 insertions(+), 10 deletions(-)
+It was a long weekend in India due to some holidays and so couldn't reply.
 
-diff --git a/drivers/staging/slicoss/slicoss.c 
-b/drivers/staging/slicoss/slicoss.c
-index 12aafe3..0e0e374 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -581,15 +581,15 @@ static void slic_adapter_set_hwaddr(struct adapter 
-*adapter)
-  	struct sliccard *card = adapter->card;
+On Fri, Mar 14, 2014 at 11:59 PM, Dirk Brandewie
+<dirk.brandewie@gmail.com> wrote:
+> On 03/14/2014 10:07 AM, Viresh Kumar wrote:
+> Suspend and hotplug are two very different things and if we start
+> crossing those wires bad things are going to happen IMHO.
+>
+> In "normal" operation using the suspend path to do this work could
+> work in principal but doesn't handle the case where the user does
+>    echo 0 | sudo tee /sys/devices/system/cpu/cpuX/online
+>
+> Trying force hotplug and suspend into a common mechanism would
+> lead to a bunch of special case code or a significant rework of the
+> core code IMHO.
 
-  	if ((adapter->card) && (card->config_set)) {
--		memcpy(adapter->macaddr,
--		       card->config.MacInfo[adapter->functionnumber].macaddrA,
--		       sizeof(struct slic_config_mac));
-+		ether_addr_copy(adapter->macaddr,
-+				card->config.MacInfo[adapter->functionnumber]
-+				.macaddrA);
-  		if (is_zero_ether_addr(adapter->currmacaddr))
--			memcpy(adapter->currmacaddr, adapter->macaddr,
--			       ETH_ALEN);
-+			ether_addr_copy(adapter->currmacaddr,
-+					adapter->macaddr);
-  		if (adapter->netdev)
--			memcpy(adapter->netdev->dev_addr, adapter->currmacaddr,
--			       ETH_ALEN);
-+			ether_addr_copy(adapter->netdev->dev_addr,
-+					adapter->currmacaddr);
-  	}
-  }
+What you said is correct, we shouldn't do it. But what I am asking for
+is a bit different. The stuff we are doing in core on system suspend
+isn't actually related to suspend but only CPU online/offline.
 
-@@ -810,8 +810,8 @@ static int slic_mac_set_address(struct net_device 
-*dev, void *ptr)
-  	if (!is_valid_ether_addr(addr->sa_data))
-  		return -EINVAL;
+There are platforms which want to set CPUs to a particular frequency
+before they are taken out by disable_nonboot_cpus. And then there
+are platforms which want to do similar thing when CPUs are taken
+down with help of sysfs files. But there is a common baseline there:
+Set CPUs to a particular P-state before they are taken down.
 
--	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
--	memcpy(adapter->currmacaddr, addr->sa_data, dev->addr_len);
-+	ether_addr_copy(dev->dev_addr, addr->sa_data);
-+	ether_addr_copy(adapter->currmacaddr, addr->sa_data);
+And so I wanted to keep a common solution for both these requirements.
 
-  	slic_config_set(adapter, true);
-  	return 0;
-@@ -2313,7 +2313,7 @@ static int slic_mcast_add_list(struct adapter 
-*adapter, char *address)
-  	if (mcaddr == NULL)
-  		return 1;
+> This is guaranteed by the hardware.  Each core has its own MSR for P state
+> request.  Any coordination that is required between cores to select the
+> package P state is handled by the hardware.
 
--	memcpy(mcaddr->address, address, ETH_ALEN);
-+	ether_addr_copy(mcaddr->address, address);
-
-  	mcaddr->next = adapter->mcastaddrs;
-  	adapter->mcastaddrs = mcaddr;
--- 
-1.7.10.4
-
+I see.. Let me send some patches which I have in my mind and then we can
+decide which set looks more reasonable :)
