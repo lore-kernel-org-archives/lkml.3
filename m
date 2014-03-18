@@ -1,79 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557AbaCRSoh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 14:44:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47439 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755908AbaCRSob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 14:44:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,679,1389772800"; 
-   d="scan'208";a="501403350"
-Date: Tue, 18 Mar 2014 12:45:29 -0600 (MDT)
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-X-X-Sender: rzwisler@scrumpy
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, willy@linux.intel.com,
-        Ross Zwisler <ross.zwisler@linux.intel.com>
-Subject: Re: [PATCH v6 20/22] ext4: Add DAX functionality
-In-Reply-To: <CF4DEE22.25C8F%matthew.r.wilcox@intel.com>
-Message-ID: <alpine.OSX.2.00.1403181236280.8685@scrumpy>
-References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com> <CF4DEE22.25C8F%matthew.r.wilcox@intel.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	id S1757568AbaCRSpM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 14:45:12 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:16937 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755779AbaCRSpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 14:45:09 -0400
+Message-ID: <53289431.7020306@oracle.com>
+Date: Tue, 18 Mar 2014 14:45:05 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: linux-fsdevel <linux-fsdevel@vger.kernel.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: fs: pipe: memory corruption in inode_cache
+References: <5313E565.5030300@oracle.com>
+In-Reply-To: <5313E565.5030300@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Feb 2014, Matthew Wilcox wrote:
-> From: Ross Zwisler <ross.zwisler@linux.intel.com>
-> 
-> This is a port of the DAX functionality found in the current version of
-> ext2.
-> 
-> Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
-> Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-> [heavily tweaked]
-> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Ping? this is still showing up in -next.
 
-...
+On 03/02/2014 09:13 PM, Sasha Levin wrote:
+> Hi all,
+>
+> While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled
+> on the following spew:
+>
+> [  315.799264] =============================================================================
+> [  315.800055] BUG inode_cache (Tainted: G    B   W   ): Object padding overwritten
+> [  315.800055] -----------------------------------------------------------------------------
+> [  315.800055]
+> [  315.800055] INFO: 0xffff880229a67030-0xffff880229a67033. First byte 0x1e instead of 0x5a
+> [  315.800055] INFO: Allocated in alloc_inode+0x41/0xa0 age=2328 cpu=33 pid=9788
+> [  315.800055]  __slab_alloc+0x413/0x4d0
+> [  315.800055]  kmem_cache_alloc+0x12f/0x2e0
+> [  315.800055]  alloc_inode+0x41/0xa0
+> [  315.800055]  new_inode_pseudo+0x1b/0x70
+> [  315.800055]  get_pipe_inode+0x1c/0xf0
+> [  315.800055]  create_pipe_files+0x2c/0x170
+> [  315.800055]  __do_pipe_flags+0x41/0xf0
+> [  315.800055]  SyS_pipe2+0x2b/0xb0
+> [  315.800055]  tracesys+0xdd/0xe2
+> [  315.800055] INFO: Freed in free_inode_nonrcu+0x18/0x20 age=2516 cpu=33 pid=9819
+> [  315.800055]  __slab_free+0x41/0x5e0
+> [  315.800055]  kmem_cache_free+0x27b/0x380
+> [  315.800055]  free_inode_nonrcu+0x18/0x20
+> [  315.800055]  destroy_inode+0x4b/0x70
+> [  315.800055]  evict+0x188/0x1a0
+> [  315.800055]  iput_final+0x163/0x180
+> [  315.814864]  iput+0x4f/0x60
+> [  315.814864]  dentry_iput+0xc8/0xf0
+> [  315.814864]  d_kill+0x4e/0xc0
+> [  315.814864]  dentry_kill+0xdb/0x100
+> [  315.814864]  dput+0x10d/0x130
+> [  315.814864]  __fput+0x2a7/0x2c0
+> [  315.814864]  ____fput+0xe/0x10
+> [  315.814864]  task_work_run+0xae/0xf0
+> [  315.814864]  do_notify_resume+0x8e/0xe0
+> [  315.814864]  int_signal+0x12/0x17
+> [  315.814864] INFO: Slab 0xffffea0008a69800 objects=23 used=13 fp=0xffff880229a62568 flags=0x6fffff80004081
+> [  315.814864] INFO: Object 0xffff880229a66ae0 @offset=27360 fp=0xffff880229a66588
+> [  315.814864]
+> [  315.814864] Bytes b4 ffff880229a66ad0: 56 ff ff ff 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  V.......ZZZZZZZZ
+> [  315.814864] Object ffff880229a66ae0: 80 11 04 00 ff bf ff ff 00 00 00 00 00 00 00 00  ................
+> [  315.814864] Object ffff880229a66af0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff  ................
+> [  315.814864] Object ffff880229a66b00: 80 3b 51 88 ff ff ff ff 48 91 07 29 01 88 ff ff  .;Q.....H..)....
+> [  315.814864] Object ffff880229a66b10: f0 6c a6 29 02 88 ff ff 00 00 00 00 00 00 00 00  .l.)............
+> [  315.814864] Object ffff880229a66b20: 89 08 00 00 00 00 00 00 01 00 00 00 00 00 00 00  ................
+> [  315.814864] Object ffff880229a66b30: 00 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00  ................
+> [  315.814864] Object ffff880229a66b40: 00 87 93 03 00 00 00 00 01 00 00 00 00 00 00 00  ................
+> [  315.814864] Object ffff880229a66b50: 00 87 93 03 00 00 00 00 01 00 00 00 00 00 00 00  ................
+> [  315.814864] Object ffff880229a66b60: 00 87 93 03 00 00 00 00 12 00 12 00 ad 4e ad de  .............N..
+> [  315.814864] Object ffff880229a66b70: ff ff ff ff 00 00 00 00 ff ff ff ff ff ff ff ff  ................
+> [  315.814864] Object ffff880229a66b80: e8 4d ae 86 ff ff ff ff 00 00 00 00 00 00 00 00  .M..............
+> [  315.814864] Object ffff880229a66b90: 00 00 00 00 00 00 00 00 f7 63 77 85 ff ff ff ff  .........cw.....
+> [  315.814864] Object ffff880229a66ba0: 21 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  !...............
+> [  315.814864] Object ffff880229a66bb0: 00 00 00 00 0c 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.814864] Object ffff880229a66bc0: 60 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00  `...............
+> [  315.814864] Object ffff880229a66bd0: 00 00 00 00 ad 4e ad de ff ff ff ff 00 00 00 00  .....N..........
+> [  315.814864] Object ffff880229a66be0: ff ff ff ff ff ff ff ff 20 42 76 87 ff ff ff ff  ........ Bv.....
+> [  315.814864] Object ffff880229a66bf0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.814864] Object ffff880229a66c00: 66 fe 6b 85 ff ff ff ff 21 00 00 00 00 00 00 00  f.k.....!.......
+> [  315.814864] Object ffff880229a66c10: 00 00 00 00 00 00 00 00 18 6c a6 29 02 88 ff ff  .........l.)....
+> [  315.814864] Object ffff880229a66c20: 18 6c a6 29 02 88 ff ff 00 00 00 00 00 00 00 00  .l.)............
+> [  315.814864] Object ffff880229a66c30: 00 00 00 00 00 00 00 00 c8 6b a6 29 02 88 ff ff  .........k.)....
+> [  315.814864] Object ffff880229a66c40: f0 4d ae 86 ff ff ff ff 00 00 00 00 00 00 00 00  .M..............
+> [  315.814864] Object ffff880229a66c50: 00 00 00 00 00 00 00 00 0f 64 77 85 ff ff ff ff  .........dw.....
+> [  315.814864] Object ffff880229a66c60: 21 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  !...............
+> [  315.814864] Object ffff880229a66c70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.814864] Object ffff880229a66c80: 00 00 00 00 00 00 00 00 88 6c a6 29 02 88 ff ff  .........l.)....
+> [  315.814864] Object ffff880229a66c90: 88 6c a6 29 02 88 ff ff 98 6c a6 29 02 88 ff ff  .l.).....l.)....
+> [  315.814864] Object ffff880229a66ca0: 98 6c a6 29 02 88 ff ff a8 6c a6 29 02 88 ff ff  .l.).....l.)....
+> [  315.814864] Object ffff880229a66cb0: a8 6c a6 29 02 88 ff ff 00 00 00 00 00 00 00 00  .l.)............
+> [  315.814864] Object ffff880229a66cc0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.814864] Object ffff880229a66cd0: 00 00 00 00 00 00 00 00 ff ff ff ff 00 00 00 00  ................
+> [  315.814864] Object ffff880229a66ce0: 00 1e 66 84 ff ff ff ff 00 00 00 00 00 00 00 00  ..f.............
+> [  315.814864] Object ffff880229a66cf0: e0 6a a6 29 02 88 ff ff 00 00 00 00 20 00 00 00  .j.)........ ...
+> [  315.814864] Object ffff880229a66d00: 00 00 00 00 00 00 00 00 06 00 06 00 ad 4e ad de  .............N..
+> [  315.879593] Object ffff880229a66d10: ff ff ff ff 00 00 00 00 ff ff ff ff ff ff ff ff  ................
+> [  315.879593] Object ffff880229a66d20: 58 3a 51 88 ff ff ff ff 00 00 00 00 00 00 00 00  X:Q.............
+> [  315.879593] Object ffff880229a66d30: 00 00 00 00 00 00 00 00 a9 63 77 85 ff ff ff ff  .........cw.....
+> [  315.879593] Object ffff880229a66d40: 06 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.879593] Object ffff880229a66d50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.879593] Object ffff880229a66d60: 60 6d a6 29 02 88 ff ff 60 6d a6 29 02 88 ff ff  `m.)....`m.)....
+> [  315.879593] Object ffff880229a66d70: 01 00 00 00 00 00 00 00 00 00 00 00 ad 4e ad de  .............N..
+> [  315.879593] Object ffff880229a66d80: ff ff ff ff 00 00 00 00 ff ff ff ff ff ff ff ff  ................
+> [  315.879593] Object ffff880229a66d90: 20 42 76 87 ff ff ff ff 00 00 00 00 00 00 00 00   Bv.............
+> [  315.879593] Object ffff880229a66da0: 00 00 00 00 00 00 00 00 66 fe 6b 85 ff ff ff ff  ........f.k.....
+> [  315.879593] Object ffff880229a66db0: 06 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.879593] Object ffff880229a66dc0: c0 6d a6 29 02 88 ff ff c0 6d a6 29 02 88 ff ff  .m.).....m.)....
+> [  315.879593] Object ffff880229a66dd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.879593] Object ffff880229a66de0: 70 6d a6 29 02 88 ff ff 50 3a 51 88 ff ff ff ff  pm.)....P:Q.....
+> [  315.879593] Object ffff880229a66df0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.879593] Object ffff880229a66e00: c7 63 77 85 ff ff ff ff 06 00 00 00 00 00 00 00  .cw.............
+> [  315.879593] Object ffff880229a66e10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.879593] Object ffff880229a66e20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.879593] Object ffff880229a66e30: 60 22 66 84 ff ff ff ff da 00 02 40 00 00 00 00  `"f........@....
+> [  315.879593] Object ffff880229a66e40: c0 32 ad 86 ff ff ff ff 00 00 00 00 ad 4e ad de  .2...........N..
+> [  315.879593] Object ffff880229a66e50: ff ff ff ff 00 00 00 00 ff ff ff ff ff ff ff ff  ................
+> [  315.879593] Object ffff880229a66e60: 48 3a 51 88 ff ff ff ff 00 00 00 00 00 00 00 00  H:Q.............
+> [  315.879593] Object ffff880229a66e70: 00 00 00 00 00 00 00 00 00 ef 6c 85 ff ff ff ff  ..........l.....
+> [  315.879593] Object ffff880229a66e80: 06 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.879593] Object ffff880229a66e90: 90 6e a6 29 02 88 ff ff 90 6e a6 29 02 88 ff ff  .n.).....n.)....
+> [  315.879593] Object ffff880229a66ea0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.879593] Object ffff880229a66eb0: 00 00 00 00 00 00 00 00 b8 6e a6 29 02 88 ff ff  .........n.)....
+> [  315.914258] Object ffff880229a66ec0: b8 6e a6 29 02 88 ff ff 00 00 00 00 00 00 00 00  .n.)............
+> [  315.914258] Object ffff880229a66ed0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.914258] Object ffff880229a66ee0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> [  315.914258] Redzone ffff880229a66ef0: cc cc cc cc cc cc cc cc                          ........
+> [  315.914258] Padding ffff880229a67030: 1e 00 00 00 5a 5a 5a 5a                          ....ZZZZ
+> [  315.914258] CPU: 33 PID: 9788 Comm: trinity-c42 Tainted: G    B   W    3.14.0-rc4-next-20140228-sasha-00012-g311cf87 #40
+> [  315.914258]  ffffea0008a69800 ffff8802f278f928 ffffffff84469f23 0000000000000008
+> [  315.914258]  ffff88012b4da580 ffff8802f278f958 ffffffff812cc51a ffff880229a67030
+> [  315.914258]  000000000000005a ffffffff856cdb3f ffff880229a67033 ffff8802f278f9b8
+> [  315.914258] Call Trace:
+> [  315.914258]  [<ffffffff84469f23>] dump_stack+0x52/0x7f
+> [  315.914258]  [<ffffffff812cc51a>] print_trailer+0x13a/0x150
+> [  315.914258]  [<ffffffff812cc981>] check_bytes_and_report+0xe1/0x130
+> [  315.914258]  [<ffffffff812ceac1>] check_object+0x161/0x220
+> [  315.914258]  [<ffffffff812d29f3>] free_debug_processing+0x163/0x2e0
+> [  315.914258]  [<ffffffff81317278>] ? free_inode_nonrcu+0x18/0x20
+> [  315.914258]  [<ffffffff81317278>] ? free_inode_nonrcu+0x18/0x20
+> [  315.914258]  [<ffffffff812d2bb1>] __slab_free+0x41/0x5e0
+> [  315.914258]  [<ffffffff8447186c>] ? _raw_spin_unlock_irqrestore+0x9c/0xc0
+> [  315.914258]  [<ffffffff81b1699f>] ? __debug_check_no_obj_freed+0x15f/0x220
+> [  315.914258]  [<ffffffff81317278>] ? free_inode_nonrcu+0x18/0x20
+> [  315.914258]  [<ffffffff81317278>] ? free_inode_nonrcu+0x18/0x20
+> [  315.914258]  [<ffffffff812d4b7b>] kmem_cache_free+0x27b/0x380
+> [  315.914258]  [<ffffffff81317278>] free_inode_nonrcu+0x18/0x20
+> [  315.914258]  [<ffffffff8131799b>] destroy_inode+0x4b/0x70
+> [  315.914258]  [<ffffffff81317b48>] evict+0x188/0x1a0
+> [  315.914258]  [<ffffffff81317cc3>] iput_final+0x163/0x180
+> [  315.914258]  [<ffffffff81317d2f>] iput+0x4f/0x60
+> [  315.914258]  [<ffffffff81af5a31>] ? lockref_put_or_lock+0x11/0x40
+> [  315.914258]  [<ffffffff81311518>] dentry_iput+0xc8/0xf0
+> [  315.914258]  [<ffffffff81311e0e>] d_kill+0x4e/0xc0
+> [  315.914258]  [<ffffffff8131309c>] ? dentry_kill+0x3c/0x100
+> [  315.914258]  [<ffffffff8131313b>] dentry_kill+0xdb/0x100
+> [  315.914258]  [<ffffffff8131326d>] dput+0x10d/0x130
+> [  315.914258]  [<ffffffff812fb067>] __fput+0x2a7/0x2c0
+> [  315.914258]  [<ffffffff812fb13e>] ____fput+0xe/0x10
+> [  315.914258]  [<ffffffff8116bf9e>] task_work_run+0xae/0xf0
+> [  315.914258]  [<ffffffff8114659a>] do_exit+0x32a/0x520
+> [  315.914258]  [<ffffffff81146839>] do_group_exit+0xa9/0xe0
+> [  315.952435]  [<ffffffff8115c072>] get_signal_to_deliver+0x4e2/0x570
+> [  315.952435]  [<ffffffff8106fc3b>] do_signal+0x4b/0x120
+> [  315.952435]  [<ffffffff8118a526>] ? vtime_account_user+0x96/0xb0
+> [  315.952435]  [<ffffffff810c180f>] ? is_prefetch+0xef/0x2c0
+> [  315.952435]  [<ffffffff81268de5>] ? context_tracking_user_exit+0x195/0x1d0
+> [  315.952435]  [<ffffffff811aaf96>] ? trace_hardirqs_on_caller+0x16/0x270
+> [  315.952435]  [<ffffffff811ab1fd>] ? trace_hardirqs_on+0xd/0x10
+> [  315.952435]  [<ffffffff8106ff8a>] do_notify_resume+0x5a/0xe0
+> [  315.952435]  [<ffffffff84471ebb>] retint_signal+0x4d/0x92
+> [  315.952435] FIX inode_cache: Restoring 0xffff880229a67030-0xffff880229a67033=0x5a
+>
+>
+> Thanks,
+> Sasha
 
-> diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
-> index 594009f..dbdacef 100644
-> --- a/fs/ext4/indirect.c
-> +++ b/fs/ext4/indirect.c
-> @@ -686,15 +686,22 @@ retry:
->  			inode_dio_done(inode);
->  			goto locked;
->  		}
-> -		ret = __blockdev_direct_IO(rw, iocb, inode,
-> -				 inode->i_sb->s_bdev, iov,
-> -				 offset, nr_segs,
-> -				 ext4_get_block, NULL, NULL, 0);
-> +		if (IS_DAX(inode))
-> +			ret = dax_do_io(rw, iocb, inode, iov, offset, nr_segs,
-> +					ext4_get_block, NULL, 0);
-> +		else
-> +			ret = __blockdev_direct_IO(rw, iocb, inode,
-> +					inode->i_sb->s_bdev, iov, offset,
-> +					nr_segs, ext4_get_block, NULL, NULL, 0);
->  		inode_dio_done(inode);
->  	} else {
->  locked:
-> -		ret = blockdev_direct_IO(rw, iocb, inode, iov,
-> -				 offset, nr_segs, ext4_get_block);
-> +		if (IS_DAX(inode))
-> +			ret = dax_do_io(rw, iocb, inode, iov, offset, nr_segs,
-> +					ext4_get_block, NULL, 0);
-
-We need to pass in a DIO_LOCKING flag to this call to dax_do_io.  This flag is
-provided correctly in ext2_direct_IO which is the only other place I found
-where we have a call to dax_do_io as an alternative to blockdev_direct_IO.
-
-The other calls to dax_do_io are alternatives to __blockdev_direct_IO, which
-has an explicit flags parameter.  I believe all of these cases are being
-handled correctly.
-
-- Ross
