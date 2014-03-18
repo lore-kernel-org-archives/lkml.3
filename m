@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580AbaCRQYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 12:24:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29559 "EHLO mx1.redhat.com"
+	id S1755829AbaCRQdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 12:33:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4493 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044AbaCRQYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 12:24:12 -0400
-Date: Tue, 18 Mar 2014 17:23:19 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH RFC] sched: introduce add_wait_queue_exclusive_head
-Message-ID: <20140318162319.GB5669@redhat.com>
-References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com> <20140318133331.GA23193@laptop.programming.kicks-ass.net> <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com> <20140318140504.GD23193@laptop.programming.kicks-ass.net> <CA+a=Yy567xtU0Osz+9-hTCNrzB65vE=ErYWTq880N+uEwG2DHA@mail.gmail.com>
+	id S1755413AbaCRQdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 12:33:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,678,1389772800"; 
+   d="scan'208";a="502403359"
+Message-ID: <5328753B.2050107@intel.com>
+Date: Tue, 18 Mar 2014 09:32:59 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+a=Yy567xtU0Osz+9-hTCNrzB65vE=ErYWTq880N+uEwG2DHA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        lsf@lists.linux-foundation.org, Wu Fengguang <fengguang.wu@intel.com>
+Subject: [LSF/MM TOPIC] Testing Large-Memory Hardware
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18, Peng Tao wrote:
->
-> On Tue, Mar 18, 2014 at 10:05 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > Unless you cannot use ___wait() and really need to open-code the
-> > wait_event() stuff.
-> >
-> Lustre's private l_wait_event() stuff takes care to (un)mask
-> LUSTRE_FATAL_SIGS
+I have a quick topic that could perhaps be addressed along with the
+testing topic that Dave Jones proposed.  I won't be attending, but there
+will be a couple of other Intel folks there.  This should be a fairly
+quick thing to address.
 
-Hmm. This is off-topic but after the quick grep LUSTRE_FATAL_SIGS/etc
-looks suspicious.
+Topic:
 
-Firtsly, cfs_block_sigs/cfs_block_sigsinv/etc are not exactly right,
-they need set_current_blocked(). And you can read "old" lockless.
+Fengguang Wu who runs the wonderful LKP and 0day build tests was
+recently asking if I thought there was value in adding a large-memory
+system, say with 1TB of RAM.  LKP is the system that generates these
+kinds of automated bug reports and performance tests:
 
-And note that cfs_block_sigsinv(0) (which should block all signals)
-can't actually protect from SIGKILL (or in fact from another fatal
-signal) or SIGSTOP if the caller is multithreaded. Or ptrace, or
-freezer.
+	http://lkml.org/lkml/2014/3/9/201
 
-> and always wait in TASK_INTERRUPTIBLE state.
+My gut reaction was that we'd probably be better served by putting
+resources in to systems with higher core counts rather than lots of RAM.
+ I have encountered the occasional boot bug on my 1TB system, but it's
+far from a frequent occurrence, and even more infrequent to encounter
+things at runtime.
 
-and it seems that __wstate passed to waitq_wait/waitq_timedwait is
-simply ignored.
-
-> It looks to me that we can at least wrap l_wait_event() on top of
-> wait_event_interruptible/wait_event_timeout_interruptible.
-
-l_wait_event looks really complicated ;) but perhaps you can rewrite
-it on top of ___wait_event(), note that condition/cmd can do anything
-you want.
-
-Oleg.
-
+Would folks agree with that?  What kinds of tests, benchmarks, stress
+tests, etc... do folks run that are both valuable and can only be run on
+a system with a large amount of actual RAM?
