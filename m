@@ -1,165 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaCRMQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 08:16:37 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56203 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942AbaCRMQg (ORCPT
+	id S1754568AbaCRMS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 08:18:57 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:33712 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205AbaCRMSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 08:16:36 -0400
-Message-ID: <53283913.1070003@linux.vnet.ibm.com>
-Date: Tue, 18 Mar 2014 17:46:19 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Patrick Marlier <patrick.marlier@gmail.com>
-Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
-References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com> <CAKohponGN4JNwLKLjvFOPkru0=6JajOKKH=oJneDkKp=PyAmRA@mail.gmail.com> <53234A70.70506@gmail.com> <53656551.Rzgh2mDLCG@vostro.rjw.lan>
-In-Reply-To: <53656551.Rzgh2mDLCG@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031812-3864-0000-0000-00000D092215
+	Tue, 18 Mar 2014 08:18:53 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-fd-532839aa6ebf
+Message-id: <532839A5.8020505@samsung.com>
+Date: Tue, 18 Mar 2014 13:18:45 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        rafael.j.wysocki@intel.com, nm@ti.com, b.zolnierkie@samsaung.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCHv2 4/8] devfreq: exynos4: Fix bug of resource leak and code
+ clean on probe()
+References: <1394698649-20996-1-git-send-email-cw00.choi@samsung.com>
+ <1394698649-20996-5-git-send-email-cw00.choi@samsung.com>
+ <53234132.8080202@samsung.com> <532682A8.2030300@samsung.com>
+In-reply-to: <532682A8.2030300@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t/xK7qrLDWCDY7d5rbo6PnNYnH9y3NW
+	i/lHzrFanHu1ktHibNMbdouFbUtYLC7vmsNm8bn3CKPFjPP7mCyWXr/IZHG7cQWbxZsfZ5ks
+	Jkxfy2LxeMVbdotXB9tYHPg91sxbw+ixcvkXNo/Fe14yefxcvp3do2/LKkaP4ze2M3l83iTn
+	sXFuaABHFJdNSmpOZllqkb5dAlfG7BtXmAouqVTMW/eOpYHxpkwXIyeHhICJxN3le5ghbDGJ
+	C/fWs3UxcnEICSxllDiy/x0ThPOZUWJh8y3GLkYODl4BLYm2tVIgJouAqkTPEk6QXjYBNYnP
+	DY/YQGx+oIo1TddZQGxRgQiJuRM3g8V5BQQlfky+BxYXEdCQmPn3CiOIzSzwlUni5jwmEFtY
+	IFHi2O5pLBBrDzJK/G2eAtbMKaAt0fVpDVSDtcTKSdugbHmJzWveMk9gFJyFZMcsJGWzkJQt
+	YGRexSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESaV93MC49ZnWIUYCDUYmH9yWberAQa2JZ
+	cWXuIUYJDmYlEd79OhrBQrwpiZVVqUX58UWlOanFhxiZODilGhgnJTKZsn5cGGq+1lItZMPa
+	WannNtsZF2uWdR6Smxix84cnF7vayt8PJ169//3Aj55ZbcyCYlLCHQsZ7pl9PPl252r5kPkK
+	OnP2z7xXLaLgerWk/0XNikx15WeLVjVlM9munPR97St+weeO36Zt4b6+0yLzROPNks3HFOyn
+	f/0dZpPKkr1wJ2OYEktxRqKhFnNRcSIAMD0R9pICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2014 07:29 AM, Rafael J. Wysocki wrote:
-> On Friday, March 14, 2014 11:29:04 AM Dirk Brandewie wrote:
->> On 03/14/2014 10:07 AM, Viresh Kumar wrote:
->>> On 14 March 2014 20:40, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
->>>> Are you proposing adding cpufreq_generic_suspend() to the core I can not
->>>> find
->>>> it in the mainline code.
->>>
->>> Its already there in linux-next. I am suggesting to reuse that
->>> infrastructure with
->>> some necessary modification to support both suspend and hotplug.
+On 17.03.2014 06:05, Chanwoo Choi wrote:
+> Hi Tomasz,
+>
+> On 03/15/2014 02:49 AM, Tomasz Figa wrote:
+>> Hi Chanwoo,
 >>
->> Suspend and hotplug are two very different things and if we start
->> crossing those wires bad things are going to happen IMHO.
+>> On 13.03.2014 09:17, Chanwoo Choi wrote:
+>>> This patch fix bug about resource leak when happening probe fail and code clean
+>>> to add debug message.
+>>>
+>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>> ---
+>>>    drivers/devfreq/exynos/exynos4_bus.c | 32 ++++++++++++++++++++++++++------
+>>>    1 file changed, 26 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
+>>> index a2a3a47..152a3e9 100644
+>>> --- a/drivers/devfreq/exynos/exynos4_bus.c
+>>> +++ b/drivers/devfreq/exynos/exynos4_bus.c
+>>> @@ -1152,8 +1152,11 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+>>>            dev_err(dev, "Cannot determine the device id %d\n", data->type);
+>>>            err = -EINVAL;
+>>>        }
+>>> -    if (err)
+>>> +    if (err) {
+>>> +        dev_err(dev, "Cannot initialize busfreq table %d\n",
+>>> +                 data->type);
+>>>            return err;
+>>> +    }
+>>>
+>>>        rcu_read_lock();
+>>>        opp = dev_pm_opp_find_freq_floor(dev,
+>>> @@ -1176,7 +1179,7 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+>>>        if (IS_ERR(data->devfreq)) {
+>>>            dev_err(dev, "Failed to add devfreq device\n");
+>>>            err = PTR_ERR(data->devfreq);
+>>> -        goto err_opp;
+>>> +        goto err_devfreq;
+>>>        }
+>>>
+>>>        /*
+>>> @@ -1185,18 +1188,35 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+>>>         */
+>>>        busfreq_mon_reset(data);
+>>>
+>>> -    devfreq_register_opp_notifier(dev, data->devfreq);
+>>> +    /* Register opp_notifier for Exynos4 busfreq */
+>>> +    err = devfreq_register_opp_notifier(dev, data->devfreq);
+>>> +    if (err < 0) {
+>>> +        dev_err(dev, "Failed to register opp notifier\n");
+>>> +        goto err_notifier_opp;
+>>> +    }
+>>>
+>>> +    /* Register pm_notifier for Exynos4 busfreq */
+>>>        err = register_pm_notifier(&data->pm_notifier);
+>>>        if (err) {
+>>>            dev_err(dev, "Failed to setup pm notifier\n");
+>>> -        devfreq_remove_device(data->devfreq);
+>>> -        return err;
+>>> +        goto err_notifier_pm;
+>>>        }
+>>>
+>>>        return 0;
+>>>
+>>> -err_opp:
+>>> +err_notifier_pm:
+>>> +    devfreq_unregister_opp_notifier(dev, data->devfreq);
+>>> +err_notifier_opp:
+>>> +    /*
+>>> +     * The devfreq_remove_device() would execute finally devfreq->profile
+>>> +     * ->exit(). To avoid duplicate resource free operation, return directly
+>>> +     * before executing resource free below 'err_devfreq' goto statement.
+>>> +     */
 >>
->> In "normal" operation using the suspend path to do this work could
->> work in principal but doesn't handle the case where the user does
->>     echo 0 | sudo tee /sys/devices/system/cpu/cpuX/online
->>
->> Trying force hotplug and suspend into a common mechanism would
->> lead to a bunch of special case code or a significant rework of the
->> core code IMHO.
->>
->>
->>>
->>>>> Over that I don't think Dirk's solution is going to work if we twist
->>>>> the systems a bit.
->>>>
->>>> Could you explain what "twist the systems a bit" means?
->>>
->>> The one I explained in the below paragraph.
->>>
->>>>> For example, Dirk probably wanted to set P-STATE of every core to MIN
->>>>> when it goes down. But his solution probably doesn't do that right now.
->>>>>
->>>>
->>>> No, I wanted to set the core that was being off-lined to min P state.
->>>
->>> Sorry, probably my words were a bit confusing. I meant exactly what
->>> you just wrote. Core going down will set its freq to min.
->>>
->>>>> As exit() is called only when the policy expires or all the CPUs of that
->>>>> policy
->>>>> are down. Suppose only one CPU out of 4 goes down from a policy, then
->>>>> pstate driver would never know that happened. And that core wouldn't go
->>>>> to min state.
->>>>
->>>> My patch does not change the semantics of exit() or when it is called.  For
->>>> intel_pstate their is one cpu per policy so I moved all the cleanup to
->>>
->>> I didn't knew that its guaranteed by pstate driver. I thought it would still be
->>> hardware dependent as some cores might share clock line.
->>
->> This is guaranteed by the hardware.  Each core has its own MSR for P state
->> request.  Any coordination that is required between cores to select the
->> package P state is handled by the hardware.
->>
->>>
->>>> exit_prepare() if there were work I needed to do at CPU_POST_DEAD I would
->>>> have
->>>> continued to export the *optional* exit callback.
->>>>
->>>> The callback name exit_prepare() was probably unfortunate and might be
->>>> causing
->>>> some confusion.  I will be changing the name per Rafael's feedback.
->>>
->>> Don't know.. There is another problem here that exit_prepare() would be called
->>> for each CPU whereas exit() would be called for each policy.
->>
->> Granted but I don't see this as a problem in this case there is a 1:1
->> relationship.  If a driver chooses to use the *optional* exit_prepare() callback
->> and knows that there is a many:1 relationship between the policy and CPUs
->> then it would have to deal with it.
-> 
-> Actually, I think we should make it clear that the new callback is for
-> ->setpolicy drivers only, which will make things a bit clearer.
+>> I'm not quite sure about this. I believe that in this case devfreq->profile->exit() would be exynos4_bus_exit() and all it does is devfreq_unregister_opp_notifier(dev, data->devfreq), so all remaining resources (regulators, clocks, etc.) would get leaked.
+>
+> This patch execute following sequence to probe exynos4_busfreq.c:
+>
+> 1. Parse dt node to get resource(regulator/clock/memory address).
+> 2. Enable regulator/clock and map memory.
+> 3. Add devfreq device using devfreq_add_device().
+>     The devfreq_add_device() return devfreq instance(data->devfreq).
+> 4. Register opp_notifier using devfreq instance(data->devfreq) which is created in sequence #3.
+>
+> Case 1,
+> If an error happens in sequence #3 for registering devfreq_add_device(),
+>
+> this case can't execute devfreq->profile->exit() to free resource
+> because this case has failed to register devfreq->profile to devfreq_list.
+>
+> So, must goto 'err_devfreq' statement to free resource(regulator/clock/memory).
+>
+>
+> Case 2,
+> If an error happens in sequence #4 for registering opp_notifier,
+>
+> In contrast
+> this case can execute devfreq->profile->exit() to free resource.
+> But, After executed devfreq->profile->exit(),
+> should not execute 'err_devfreq' statement to free resource.
+> In case, will operate twice of resource.
+>
+> If my explanation is wrong, please reply your comment.
 >
 
-Agreed. As far as I understand, for ->target drivers, today we use GOV_STOP
-to stop managing the CPU going offline. And for ->setpolicy drivers, we will
-use this new callback to achieve the same goal. 
+OK, it will work indeed, however the code is barely readable with this.
 
-Regards,
-Srivatsa S. Bhat
- 
-> We seem to get caught by the difference between ->setpolicy and ->target
-> drivers on a regular basis, so it might be a good idea to make the distinction
-> more clear in the code.  I have an idea how to do that, but need some time
-> to prototype it.
->  
->>> And I strongly feel that we shouldn't give another callback here but instead
->>> just set core to a specific freq as mentioned by driver with some other field.
->>>
->>>>> I think we have two solutions here:
->>>>> - If its just about setting core a particular freq when it goes down, I
->>>>> think it
->>>>> looks a generic enough problem and so better fix core for that. Probably
->>>>> with
->>>>> help of flags field/suspend-freq (maybe renamed) and without calling
->>>>> drivers
->>>>> exit() at all..
->>>>
->>>>
->>>> ATM the only thing that needs to be done in this case is to allow
->>>> intel_pstate
->>>> to set the P state on the core when it is going done.  My solution from the
->>>> cores point of view is more generic, it allows any driver that needs to do
->>>> work
->>>> during CPU_DOWN_PREPARE to do it without adding any new logic to the core.
->>>
->>> Yeah, do we really need to give that freedom right now? Would be better
->>> to get this into core as that would be more generic and people looking to set
->>> core to some freq at shutdown wouldn't be replicating that code.
-> 
-> Question is if it needs to be more generic.
-> 
-> I honestly don't think that ->target drivers will ever do anything like it,
-> because they need the governor to "exit" before.  So we are talking about the
-> only two ->setpolicy drivers in the tree here.
-> 
->> IMHO yes and it would be hard to be more generic, if your platform needs to
->> do architecture specific during the PREPARE phase of cpu hotplug use this
->> callback or not.
+For consistency (and readability), resources acquired in platform 
+driver's .probe() should be freed in .remove() and error path of 
+.probe() should not rely on external code to do the clean-up.
+
+So, as I proposed in my previous reply:
+
 >>
->> BTW now that you have added a path where the cpufreq_suspend() could fail
->> it return a value and be checked in dpm_suspend() instead of printing an
->> error and just continuing.
-> 
-> I'm not sure what you mean?  Are you saying that it might be a good idea
-> to allow cpufreq_suspend() to return error codes on failure?
-> 
+>> I believe the correct thing to do would be to remove the .exit() callback from exynos4_devfreq_profile struct and handle all the clean-up here in error path.
+>>
 
+Best regards,
+Tomasz
