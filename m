@@ -1,92 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311AbaCRBZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 21:25:56 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:42706 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228AbaCRBZx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 21:25:53 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-79-5327a0a0fb0d
-Message-id: <5327A09F.6040404@samsung.com>
-Date: Tue, 18 Mar 2014 10:25:51 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: sre@ring0.de
-Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/4] power_supply: Add DT helper function to get
- power-supply dev from dt
-References: <1395060227-23378-1-git-send-email-cw00.choi@samsung.com>
- <20140318003818.GA17391@earth.universe>
-In-reply-to: <20140318003818.GA17391@earth.universe>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsWyRsSkRHfBAvVgg/5H4haTnrxntpi4cjKz
-	xdmmN+wWl3fNYbO43biCzWL5pwgHNo+ds+6ye2xeoeWx99APdo++LasYPT5vkgtgjeKySUnN
-	ySxLLdK3S+DKWN6ylangPEfFv7O+DYyd7F2MnBwSAiYSW672Q9liEhfurWcDsYUEljJKvL7u
-	BFOzYc8T5i5GLqD4IkaJ2fN3QDmvGCUeX2kB6+AV0JLYPWM2E4jNIqAqcWrWCkYQmw0ovv/F
-	DbAaUYEwiZXTr7BA1AtK/Jh8D8wWERCQ+Hr4IivIUGaBJkaJg/3zwZqFBZIlDu9fzgRxUr7E
-	mZmXwU7lBDppwvOrYEOZBXQk9rdOg7LlJTaveQt2nYTAIXaJq/8bWCAuEpD4NvkQkM0BlJCV
-	2HSAGeI1SYmDK26wTGAUm4XkpllIxs5CMnYBI/MqRtHUguSC4qT0IkO94sTc4tK8dL3k/NxN
-	jMBIO/3vWe8OxtsHrA8xJgOtnMgsJZqcD4zUvJJ4Q2MzIwtTE1NjI3NLM9KElcR5kx4mBQkJ
-	pCeWpGanphakFsUXleakFh9iZOLglGpgXHrrz7HqRtP+1iDdfda9KxqLb8zcUZlZ8nGuQfmJ
-	cLE9fP5tDTaS7D9ktnZuYrkdduryvlM2Hgqmvs1LVi5OC2bb0tjTdz1YqL3gojLn1LRVJw43
-	3luv1b7R7OS7p2dbA3/qRQSX7rbZ8WW3tM9Z6dJFQu75T93+Bc4WOfHOyUUh/WLeBJU8JZbi
-	jERDLeai4kQAoeU7dcoCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jAd0FC9SDDV5tErCY9OQ9s8XElZOZ
-	Lc42vWG3uLxrDpvF7cYVbBbLP0U4sHnsnHWX3WPzCi2PvYd+sHv0bVnF6PF5k1wAa1QDo01G
-	amJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0AFKCmWJOaVA
-	oYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIaxozlLVuZCs5zVPw769vA2MnexcjJISFg
-	IrFhzxNmCFtM4sK99WxdjFwcQgKLGCVmz9/BDOG8YpR4fKWFDaSKV0BLYveM2UwgNouAqsSp
-	WSsYQWw2oPj+FzfAakQFwiRWTr/CAlEvKPFj8j0wW0RAQOLr4YusIEOZBZoYJQ72zwdrFhZI
-	lji8fznYUCGBfIkzMy+DnccJdN6E51fBhjIL6Ejsb50GZctLbF7zlnkCo8AsJDtmISmbhaRs
-	ASPzKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgSH4mtYNxZYPFIUYBDkYlHt4XbOrBQqyJ
-	ZcWVuYcYJTiYlUR4l04GCvGmJFZWpRblxxeV5qQWH2JMBgbBRGYp0eR8YJLJK4k3NDYxM7I0
-	Mje0MDI2J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5OqQZGiQ9RzXVO+feiuacsXSC78qCb
-	fsjSYL5Lfzt3sto9bNAtcYgTiN3tJRHbNuv7CkmORoaX1oscZhzQe3vjR0vHvY0zHvzbf8hr
-	X5T3++Wl8UcbNyd6P56q6dHEzHhR5NtOe5cuu66/rv63y2tEP5vrJJdwmahwGHzOeM71VPxL
-	zbfv6e8XNnoqsRRnJBpqMRcVJwIA4vymPSgDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753169AbaCRBaL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 21:30:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47402 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751180AbaCRBaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Mar 2014 21:30:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,673,1389772800"; 
+   d="scan'208";a="500816970"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: RE: [RFC PATCH 2/2] ACPI: Default disable auto-serialization.
+Thread-Topic: [RFC PATCH 2/2] ACPI: Default disable auto-serialization.
+Thread-Index: AQHPQdnB7zYfPwO/T0q0D+Kd5BOXuZrl/Opg//+HvgCAAIYqQA==
+Date: Tue, 18 Mar 2014 01:29:55 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88024E1BA1@SHSMSX101.ccr.corp.intel.com>
+References: <14866.1394813101@turing-police.cc.vt.edu>
+ <5326E5E8.4070804@intel.com>
+ <1AE640813FDE7649BE1B193DEA596E88024E1AE0@SHSMSX101.ccr.corp.intel.com>
+ <2040389.QPkIWC2M7W@vostro.rjw.lan>
+In-Reply-To: <2040389.QPkIWC2M7W@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2I1UL6c001809
 
 Hi,
 
-On 03/18/2014 09:38 AM, sre@ring0.de wrote:
-> Hi,
+> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
+> Sent: Tuesday, March 18, 2014 9:13 AM
 > 
-> On Mon, Mar 17, 2014 at 09:43:43PM +0900, Chanwoo Choi wrote:
->> This patchset add DT helper function to get power-supply device from devicetree.
->> - of_power_supply_get_dev(struct device *dev, enum power_supply_dev_type type,
->> 			  int index)
->> Power-supply class provides 'power_supply_get_by_name()' to users who want to
->> find power-supply device with the name of power-supply device.
->>
->> If CONFIG_OF is enabled, device drivers which want to get power-supply device
->> would directly get the power-supply device from devicetree by using of_power_
->> supply_get_dev(). This function can be used instead of power_supply_get_by_name().
->>
->> For example,
->> [...]
+> On Tuesday, March 18, 2014 12:31:54 AM Zheng, Lv wrote:
+> > Hi, Rafael
+> >
+> > > From: Wysocki, Rafael J
+> > > Sent: Monday, March 17, 2014 8:09 PM
+> > >
+> > > On 3/17/2014 5:14 AM, Lv Zheng wrote:
+> > > > This feature enabled by the following commit is still under development.
+> > > >
+> > > >    Commit: cd52379678785b02d7a357988cfba214fdaf92f4
+> > > >    Subject: ACPICA: Add global option to disable method auto-serialization.
+> > > >    This change adds an option to disable the auto-serialization of
+> > > >    methods that create named objects.
+> > > >
+> > > > This patch disables it by default temporarily according to the bug reports.
+> > >
+> > > Well, it doesn't restore the 3.14 behavior of acpi_auto_serialize, as
+> > > far as I can say, so we can't apply it.
+> > >
+> > > I still can drop the commits related to auto-serialization from my
+> > > acpica branch.  Which commits are they?
+> >
+> > From linux-pm/bleeding-edge branch, I found this series includes the following commits:
+> >
+> > Commit: a0fd108f2da56b769472fc0095616fb370988516
+> > Author: Lv Zheng <lv.zheng@intel.com>
+> > Subject: ACPI: Rename kernel parameter "acpi_serialize" to "acpi_no_auto_serialize"
+> >
+> > Commit: 5f1cb4a92e4c4aabd139ff9ca1e11c0e2db2ac59
+> > Author: Lv Zheng <lv.zheng@intel.com>
+> > Subject: ACPICA: Remove global option to serialize all control methods.
+> >
+> > Commit: cd52379678785b02d7a357988cfba214fdaf92f4
+> > Author: Bob Moore <robert.moore@intel.com>
+> > Subject: ACPICA: Add global option to disable method auto-serialization.
+> >
+> > Commit: f56b05bd111b01141ef74568dc4d262c70295d03
+> > Author: Lv Zheng <lv.zheng@intel.com>
+> > Subject: ACPICA: Add additional named objects for the auto-serialize method scan.
+> >
+> > Commit: 27f1899350a1d6baab117c03c87f0e37730047bd
+> > Author: Bob Moore <robert.moore@intel.com>
+> > Subject: ACPICA: Add auto-serialization support for ill-behaved control methods.
+> >
+> > Reverting these commits can restore original Linux behavior.
+> > Please check.
 > 
-> include/linux/power_supply.h provides the following function already:
+> OK, I dropped the five commits above from the acpica branch.
 > 
-> struct power_supply *
-> power_supply_get_by_phandle(struct device_node *np, const char *property);
+> Please check if the current ACPICA material in the bleeding-edge branch of
+> linux-pm.git looks OK (and let me know either way).
+
+It took me some time to confirm.
+I just checked ACPICA code using the ACPICA divergence script.
+And checked the Linux side reversal in osl.c/kernel-parameter.txt.
+All seem to be OK.
+
+Best regards
+-Lv
+
 > 
-
-OK, thanks for your reply.
-
-
-Dear all,
-Ignore this patchset. I'll re-send new patchset using power_supply_get_by_phandle().
-
-Best Regards,
-Chanwoo Choi
-
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
