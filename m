@@ -1,90 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279AbaCRRXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 13:23:42 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:41866 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757237AbaCRRWz (ORCPT
+	id S1757218AbaCRRWr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 13:22:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55741 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756838AbaCRRTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 13:22:55 -0400
-From: dirk.brandewie@gmail.com
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, rjw@rjwysocki.net, patrick.marlier@gmail.com,
-        viresh.kumar@linaro.org, srivatsa.bhat@linux.vnet.ibm.com,
-        dirk.brandewie@gmail.com, Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: [PATCH 1/2] cpufreq: Add stop callback to cpufreq_driver interface
-Date: Tue, 18 Mar 2014 10:22:40 -0700
-Message-Id: <1395163361-26380-2-git-send-email-dirk.j.brandewie@intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1395163361-26380-1-git-send-email-dirk.j.brandewie@intel.com>
-References: <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com>
- <1395163361-26380-1-git-send-email-dirk.j.brandewie@intel.com>
+	Tue, 18 Mar 2014 13:19:04 -0400
+Message-Id: <20140318171127.684183642@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Tue, 18 Mar 2014 17:19:14 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Benedikt Spranger <b.spranger@linutronix.de>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org
+Subject: [patch 10/12] can: c_can: Store dlc private
+References: <20140318171007.528610837@linutronix.de>
+Content-Disposition: inline; filename=can-c_can-store-dlc-private.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+We can avoid the HW access in TX cleanup path for retrieving the DLC
+of the sent package if we store the DLC in a private array.
 
-This callback allows the driver to do clean up before the CPU is
-completely down and its state cannot be modified.  This is used
-by the intel_pstate driver to reduce the requested P state prior to
-the core going away.  This is required because the requested P state
-of the offline core is used to select the package P state. This
-effectively sets the floor package P state to the requested P state on
-the offline core.
+Ideally this should be handled in the can_echo_skb functions, but I
+leave that exercise to the CAN folks.
 
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- Documentation/cpu-freq/cpu-drivers.txt | 8 +++++++-
- drivers/cpufreq/cpufreq.c              | 3 ++-
- include/linux/cpufreq.h                | 1 +
- 3 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/net/can/c_can/c_can.c |   28 +---------------------------
+ drivers/net/can/c_can/c_can.h |   28 ++++++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 27 deletions(-)
 
-diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
-index 8b1a445..79def80 100644
---- a/Documentation/cpu-freq/cpu-drivers.txt
-+++ b/Documentation/cpu-freq/cpu-drivers.txt
-@@ -61,7 +61,13 @@ target_index		-	See below on the differences.
+Index: linux/drivers/net/can/c_can/c_can.c
+===================================================================
+--- linux.orig/drivers/net/can/c_can/c_can.c
++++ linux/drivers/net/can/c_can/c_can.c
+@@ -145,33 +145,6 @@
+ #define IF_RX			0
+ #define IF_TX			1
  
- And optionally
+-/*
+- * IFx register masks:
+- * allow easy operation on 16-bit registers when the
+- * argument is 32-bit instead
+- */
+-#define IFX_WRITE_LOW_16BIT(x)	((x) & 0xFFFF)
+-#define IFX_WRITE_HIGH_16BIT(x)	(((x) & 0xFFFF0000) >> 16)
+-
+-/* message object split */
+-#define C_CAN_NO_OF_OBJECTS	32
+-#define C_CAN_MSG_OBJ_RX_NUM	16
+-#define C_CAN_MSG_OBJ_TX_NUM	16
+-
+-#define C_CAN_MSG_OBJ_RX_FIRST	1
+-#define C_CAN_MSG_OBJ_RX_LAST	(C_CAN_MSG_OBJ_RX_FIRST + \
+-				C_CAN_MSG_OBJ_RX_NUM - 1)
+-
+-#define C_CAN_MSG_OBJ_TX_FIRST	(C_CAN_MSG_OBJ_RX_LAST + 1)
+-#define C_CAN_MSG_OBJ_TX_LAST	(C_CAN_MSG_OBJ_TX_FIRST + \
+-				C_CAN_MSG_OBJ_TX_NUM - 1)
+-
+-#define C_CAN_MSG_OBJ_RX_SPLIT	9
+-#define C_CAN_MSG_RX_LOW_LAST	(C_CAN_MSG_OBJ_RX_SPLIT - 1)
+-
+-#define C_CAN_NEXT_MSG_OBJ_MASK	(C_CAN_MSG_OBJ_TX_NUM - 1)
+-#define RECEIVE_OBJECT_BITS	0x0000ffff
+-
+ /* status interrupt */
+ #define STATUS_INTERRUPT	0x8000
  
--cpufreq_driver.exit -		A pointer to a per-CPU cleanup function.
-+cpufreq_driver.exit -		A pointer to a per-CPU cleanup
-+		    		function called during CPU_POST_DEAD
-+		    		phase of cpu hotplug process.
+@@ -537,6 +510,7 @@ static netdev_tx_t c_can_start_xmit(stru
+ 
+ 	/* prepare message object for transmission */
+ 	c_can_write_msg_object(dev, IF_TX, frame, msg_obj_no);
++	priv->dlc[msg_obj_no - C_CAN_MSG_OBJ_TX_FIRST] = frame->can_dlc;
+ 	can_put_echo_skb(skb, dev, msg_obj_no - C_CAN_MSG_OBJ_TX_FIRST);
+ 
+ 	/*
+Index: linux/drivers/net/can/c_can/c_can.h
+===================================================================
+--- linux.orig/drivers/net/can/c_can/c_can.h
++++ linux/drivers/net/can/c_can/c_can.h
+@@ -22,6 +22,33 @@
+ #ifndef C_CAN_H
+ #define C_CAN_H
+ 
++/*
++ * IFx register masks:
++ * allow easy operation on 16-bit registers when the
++ * argument is 32-bit instead
++ */
++#define IFX_WRITE_LOW_16BIT(x)	((x) & 0xFFFF)
++#define IFX_WRITE_HIGH_16BIT(x)	(((x) & 0xFFFF0000) >> 16)
 +
-+cpufreq_driver.stop -		A pointer to a per-CPU stop function
-+			    	called during CPU_DOWN_PREPARE phase of
-+				cpu hotplug process.
++/* message object split */
++#define C_CAN_NO_OF_OBJECTS	32
++#define C_CAN_MSG_OBJ_RX_NUM	16
++#define C_CAN_MSG_OBJ_TX_NUM	16
++
++#define C_CAN_MSG_OBJ_RX_FIRST	1
++#define C_CAN_MSG_OBJ_RX_LAST	(C_CAN_MSG_OBJ_RX_FIRST + \
++				C_CAN_MSG_OBJ_RX_NUM - 1)
++
++#define C_CAN_MSG_OBJ_TX_FIRST	(C_CAN_MSG_OBJ_RX_LAST + 1)
++#define C_CAN_MSG_OBJ_TX_LAST	(C_CAN_MSG_OBJ_TX_FIRST + \
++				C_CAN_MSG_OBJ_TX_NUM - 1)
++
++#define C_CAN_MSG_OBJ_RX_SPLIT	9
++#define C_CAN_MSG_RX_LOW_LAST	(C_CAN_MSG_OBJ_RX_SPLIT - 1)
++
++#define C_CAN_NEXT_MSG_OBJ_MASK	(C_CAN_MSG_OBJ_TX_NUM - 1)
++#define RECEIVE_OBJECT_BITS	0x0000ffff
++
+ enum reg {
+ 	C_CAN_CTRL_REG = 0,
+ 	C_CAN_CTRL_EX_REG,
+@@ -173,6 +200,7 @@ struct c_can_priv {
+ 	u32 __iomem *raminit_ctrlreg;
+ 	unsigned int instance;
+ 	void (*raminit) (const struct c_can_priv *priv, bool enable);
++	u32 dlc[C_CAN_MSG_OBJ_TX_NUM];
+ };
  
- cpufreq_driver.resume -		A pointer to a per-CPU resume function
- 				which is called with interrupts disabled
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index cf485d9..6e6beae 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1336,7 +1336,8 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
- 						__func__, new_cpu, cpu);
- 			}
- 		}
--	}
-+	} else if (cpufreq_driver->stop)
-+		cpufreq_driver->stop(policy);
- 
- 	return 0;
- }
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 4d89e0e..ff8db19 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -224,6 +224,7 @@ struct cpufreq_driver {
- 	int	(*bios_limit)	(int cpu, unsigned int *limit);
- 
- 	int	(*exit)		(struct cpufreq_policy *policy);
-+	int	(*stop)		(struct cpufreq_policy *policy);
- 	int	(*suspend)	(struct cpufreq_policy *policy);
- 	int	(*resume)	(struct cpufreq_policy *policy);
- 	struct freq_attr	**attr;
--- 
-1.8.3.1
+ struct net_device *alloc_c_can_dev(void);
+
 
