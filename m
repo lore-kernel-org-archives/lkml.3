@@ -1,89 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787AbaCRFDF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 01:03:05 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:62693 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193AbaCRFDD (ORCPT
+	id S1751941AbaCRFEJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 01:04:09 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:39618 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839AbaCRFEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 01:03:03 -0400
+	Tue, 18 Mar 2014 01:04:08 -0400
+Message-ID: <5327D3C6.70400@gmail.com>
+Date: Mon, 17 Mar 2014 23:04:06 -0600
+From: Joel Pelaez Jorge <joelpelaez@gmail.com>
+Organization: DarkSoft Foundation
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <1395026886-14325-1-git-send-email-djkurtz@chromium.org>
-References: <1395026886-14325-1-git-send-email-djkurtz@chromium.org>
-Date: Tue, 18 Mar 2014 14:03:01 +0900
-X-Google-Sender-Auth: 4kUfofdm3sjgLdGRXjit-UIxrrc
-Message-ID: <CAAQKjZMeeyD+6fhCaGk9qzX0oLTS=vHU86Y7gF9ZnbwcpTT7Kg@mail.gmail.com>
-Subject: Re: [PATCH] drm/exynos: Fix (more) freeing issues in exynos_drm_drv.c
-From: Inki Dae <inki.dae@samsung.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Jingoo Han <jg1.han@samsung.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [PATCH] staging: slicoss: Fix prefer ether_addr_copy over memcpy
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied.
+This patch fixes the following checkpatch.pl issues caused by the new 
+function: ether_addr_copy
 
-Thanks,
-Inki Dae
+Signed-off-by: Joel Pelaez Jorge <joelpelaez@gmail.com>
+---
+  drivers/staging/slicoss/slicoss.c |   20 ++++++++++----------
+  1 file changed, 10 insertions(+), 10 deletions(-)
 
-2014-03-17 12:28 GMT+09:00 Daniel Kurtz <djkurtz@chromium.org>:
-> The following commit [0] fixed a use-after-free, but left the subdrv open
-> in the error path.
->
-> [0] commit 6ca605f7c70895a35737435f17ae9cc5e36f1466
-> drm/exynos: Fix freeing issues in exynos_drm_drv.c
->
-> Change-Id: I452e944bf090fb11434d9e34213c890c41c15d73
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/gpu/drm/exynos/exynos_drm_drv.c | 10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-> index 215131a..c204b4e 100644
-> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
-> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-> @@ -172,20 +172,24 @@ static int exynos_drm_open(struct drm_device *dev, struct drm_file *file)
->
->         ret = exynos_drm_subdrv_open(dev, file);
->         if (ret)
-> -               goto out;
-> +               goto err_file_priv_free;
->
->         anon_filp = anon_inode_getfile("exynos_gem", &exynos_drm_gem_fops,
->                                         NULL, 0);
->         if (IS_ERR(anon_filp)) {
->                 ret = PTR_ERR(anon_filp);
-> -               goto out;
-> +               goto err_subdrv_close;
->         }
->
->         anon_filp->f_mode = FMODE_READ | FMODE_WRITE;
->         file_priv->anon_filp = anon_filp;
->
->         return ret;
-> -out:
-> +
-> +err_subdrv_close:
-> +       exynos_drm_subdrv_close(dev, file);
-> +
-> +err_file_priv_free:
->         kfree(file_priv);
->         file->driver_priv = NULL;
->         return ret;
-> --
-> 1.9.0.279.gdc9e3eb
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+diff --git a/drivers/staging/slicoss/slicoss.c 
+b/drivers/staging/slicoss/slicoss.c
+index 12aafe3..0e0e374 100644
+--- a/drivers/staging/slicoss/slicoss.c
++++ b/drivers/staging/slicoss/slicoss.c
+@@ -581,15 +581,15 @@ static void slic_adapter_set_hwaddr(struct adapter 
+*adapter)
+  	struct sliccard *card = adapter->card;
+
+  	if ((adapter->card) && (card->config_set)) {
+-		memcpy(adapter->macaddr,
+-		       card->config.MacInfo[adapter->functionnumber].macaddrA,
+-		       sizeof(struct slic_config_mac));
++		ether_addr_copy(adapter->macaddr,
++				card->config.MacInfo[adapter->functionnumber]
++				.macaddrA);
+  		if (is_zero_ether_addr(adapter->currmacaddr))
+-			memcpy(adapter->currmacaddr, adapter->macaddr,
+-			       ETH_ALEN);
++			ether_addr_copy(adapter->currmacaddr,
++					adapter->macaddr);
+  		if (adapter->netdev)
+-			memcpy(adapter->netdev->dev_addr, adapter->currmacaddr,
+-			       ETH_ALEN);
++			ether_addr_copy(adapter->netdev->dev_addr,
++					adapter->currmacaddr);
+  	}
+  }
+
+@@ -810,8 +810,8 @@ static int slic_mac_set_address(struct net_device 
+*dev, void *ptr)
+  	if (!is_valid_ether_addr(addr->sa_data))
+  		return -EINVAL;
+
+-	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
+-	memcpy(adapter->currmacaddr, addr->sa_data, dev->addr_len);
++	ether_addr_copy(dev->dev_addr, addr->sa_data);
++	ether_addr_copy(adapter->currmacaddr, addr->sa_data);
+
+  	slic_config_set(adapter, true);
+  	return 0;
+@@ -2313,7 +2313,7 @@ static int slic_mcast_add_list(struct adapter 
+*adapter, char *address)
+  	if (mcaddr == NULL)
+  		return 1;
+
+-	memcpy(mcaddr->address, address, ETH_ALEN);
++	ether_addr_copy(mcaddr->address, address);
+
+  	mcaddr->next = adapter->mcastaddrs;
+  	adapter->mcastaddrs = mcaddr;
+-- 
+1.7.10.4
+
