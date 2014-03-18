@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758235AbaCRVeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:34:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44418 "EHLO
+	id S1756803AbaCRVgP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:36:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44731 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757096AbaCRV0O (ORCPT
+	with ESMTP id S1751543AbaCRVgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:26:14 -0400
+	Tue, 18 Mar 2014 17:36:13 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Joe Mario <jmario@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/13] perf tools: Fix memory leak when synthesizing thread records
-Date: Tue, 18 Mar 2014 18:25:59 -0300
-Message-Id: <1395177965-8879-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/13] perf timechart: Fix off-by-one error in 'record' argv handling
+Date: Tue, 18 Mar 2014 18:25:53 -0300
+Message-Id: <1395177965-8879-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1395177965-8879-1-git-send-email-acme@infradead.org>
 References: <1395177965-8879-1-git-send-email-acme@infradead.org>
@@ -25,45 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-Checking default guest machine should be done before allocating event
-structures otherwise it'll leak memory.
+Since 367b315 (perf timechart: Add support for -P and -T in timechart
+recording, 2013-11-01), the 'perf timechart record' command stopped
+working:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Don Zickus <dzickus@redhat.com>
+  $ perf timechart record -- git status
+  Workload failed: No such file or directory
+
+This happens because of an off-by-one error while preparing the argv for
+cmd_record(): it attempts to execute the command 'status' and complains
+that it doesn't exist. Fix this error.
+
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Joe Mario <jmario@redhat.com>
-Link: http://lkml.kernel.org/r/87ob15tx6a.fsf@sejong.aot.lge.com
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Link: http://lkml.kernel.org/r/1394985965-2332-1-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/event.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/builtin-timechart.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index ebb48a623407..9d12aa6dd485 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -446,6 +446,9 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
- 	union perf_event *comm_event, *mmap_event, *fork_event;
- 	int err = -1;
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 25526d6eae59..d4991a235155 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -1238,7 +1238,7 @@ static int timechart__record(struct timechart *tchart, int argc, const char **ar
+ 	for (i = 0; i < old_power_args_nr; i++)
+ 		*p++ = strdup(old_power_args[i]);
  
-+	if (machine__is_default_guest(machine))
-+		return 0;
-+
- 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
- 	if (comm_event == NULL)
- 		goto out;
-@@ -458,9 +461,6 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
- 	if (fork_event == NULL)
- 		goto out_free_mmap;
+-	for (j = 1; j < (unsigned int)argc; j++)
++	for (j = 0; j < (unsigned int)argc; j++)
+ 		*p++ = argv[j];
  
--	if (machine__is_default_guest(machine))
--		return 0;
--
- 	snprintf(proc_path, sizeof(proc_path), "%s/proc", machine->root_dir);
- 	proc = opendir(proc_path);
- 
+ 	return cmd_record(rec_argc, rec_argv, NULL);
 -- 
 1.8.1.4
 
