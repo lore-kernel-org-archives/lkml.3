@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719AbaCRJCw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 05:02:52 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:37977 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735AbaCRJCm (ORCPT
+	id S1754680AbaCRJCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 05:02:50 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:56569 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754340AbaCRJCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 05:02:42 -0400
-Date: Tue, 18 Mar 2014 09:02:37 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] mfd: mc13xxx: Move definitions out of structures
-Message-ID: <20140318090237.GG25478@lee--X1>
-References: <1394867287-14074-1-git-send-email-shc_work@mail.ru>
+	Tue, 18 Mar 2014 05:02:46 -0400
+Message-ID: <53280BAC.5060404@huawei.com>
+Date: Tue, 18 Mar 2014 17:02:36 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394867287-14074-1-git-send-email-shc_work@mail.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH] cgroup: fix a failure path in create_css()
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-> ---
->  include/linux/mfd/mc13xxx.h | 22 ++++++++++++----------
->  1 file changed, 12 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
-> index a326c85..d63b1d3 100644
-> --- a/include/linux/mfd/mc13xxx.h
-> +++ b/include/linux/mfd/mc13xxx.h
-> @@ -117,10 +117,6 @@ struct mc13xxx_led_platform_data {
->  
->  #define MAX_LED_CONTROL_REGS	6
->  
-> -struct mc13xxx_leds_platform_data {
-> -	struct mc13xxx_led_platform_data *led;
-> -	int num_leds;
-> -
->  /* MC13783 LED Control 0 */
->  #define MC13783_LED_C0_ENABLE		(1 << 0)
->  #define MC13783_LED_C0_TRIODE_MD	(1 << 7)
-> @@ -169,10 +165,13 @@ struct mc13xxx_leds_platform_data {
->  /* MC34708 LED Control 0 */
+If online_css() fails, we should remove cgroup files belonging
+to css->ss.
 
-I don't see the line above in the MFD tree?
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-Which commit/branch/repo is this patch based on?
-
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 3790617..e673407 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3408,17 +3408,17 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 
+ 	err = percpu_ref_init(&css->refcnt, css_release);
+ 	if (err)
+-		goto err_free;
++		goto err_free_css;
+ 
+ 	init_css(css, ss, cgrp);
+ 
+ 	err = cgroup_populate_dir(cgrp, 1 << ss->id);
+ 	if (err)
+-		goto err_free;
++		goto err_free_percpu_ref;
+ 
+ 	err = online_css(css);
+ 	if (err)
+-		goto err_free;
++		goto err_clear_dir;
+ 
+ 	cgroup_get(cgrp);
+ 	css_get(css->parent);
+@@ -3434,8 +3434,11 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 
+ 	return 0;
+ 
+-err_free:
++err_clear_dir:
++	cgroup_clear_dir(css->cgroup, 1 << css->ss->id);
++err_free_percpu_ref:
+ 	percpu_ref_cancel_init(&css->refcnt);
++err_free_css:
+ 	ss->css_free(css);
+ 	return err;
+ }
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.0.2
