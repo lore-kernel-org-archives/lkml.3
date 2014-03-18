@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739AbaCRJn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 05:43:29 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55050 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462AbaCRJn1 (ORCPT
+	id S1754070AbaCRJpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 05:45:39 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:60195 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139AbaCRJph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 05:43:27 -0400
-Date: Tue, 18 Mar 2014 02:43:21 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: For review: open_by_name_at(2) man page
-Message-ID: <20140318094321.GA17024@infradead.org>
-References: <53271B69.3000305@gmail.com>
- <20140318090007.3adee3d0@notabene.brown>
+	Tue, 18 Mar 2014 05:45:37 -0400
+Message-ID: <532815A8.9090807@ahsoftware.de>
+Date: Tue, 18 Mar 2014 10:45:12 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140318090007.3adee3d0@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
+References: <5316FFCE.1060603@ti.com> <1394018461-757-1-git-send-email-holler@ahsoftware.de> <CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com> <5322D529.4070904@ahsoftware.de> <CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com> <5326F8C5.5090406@ti.com> <CACRpkdYZMzw31NkA4uSq+ZowzOnZgZthXhZri-eJY2Ozb8aNRQ@mail.gmail.com> <532805AE.9000806@ti.com>
+In-Reply-To: <532805AE.9000806@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 09:00:07AM +1100, NeilBrown wrote:
-> ESTALE is also returned if the filesystem does not support file-handle ->
-> file mappings.
-> On filesystems which don't provide export_operations (/sys /proc ubifs
-> romfs cramfs nfs coda ... several others) name_to_handle_at will produce a
-> generic handle using the 32 bit inode and 32 bit i_generation.
+Am 18.03.2014 09:37, schrieb Sekhar Nori:
 
-Do we?  Seems like the code is erroring out early if there are no
-export_ops?
+> It is safe - at the least it does not break anything that is already
+> working. I guess the decision to put it into -rc depends on whether you
+> consider out of tree dtbs to be a valid usecase for the kernel.
 
-> Does it?  My understanding from "man libblkid" (it is a while since I've read
-> the code) is that it either uses info in /dev/disks/by-* or reads directly
-> from the block devices (maybe using /sys to find them?) and interprets the
-> superblock to extract a UUID.
+That's all DT is about, getting rid of the necessity for in-tree 
+hw-descriptions. ;)
 
-It normally reads directly from disk, unless it has changed very
-recently.
+But I don't need any rush here, I'm just unable to understand why the 
+-rc phase isn't used for bug fixing as I believe that's what this phase 
+is for.
 
+Most people are unable to track the various -next trees, therefor many 
+failures only come up when stuff reaches mainline where it might be 
+tested by some more people. And if all bugs found in the -rc phase are 
+fixed in -next only, the -rc phase would be useless.
+
+And it just happened to me too often, that even silly bugfixes (like 
+oneliners) needed between 5 and 9 months to reach a stable kernel and 
+thus users.
+
+Regards,
+
+Alexander Holler
