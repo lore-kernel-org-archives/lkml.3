@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297AbaCRT4K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 15:56:10 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:58382 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755718AbaCRT4H (ORCPT
+	id S1757361AbaCRUBy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:01:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59649 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756501AbaCRUBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 15:56:07 -0400
-Date: Tue, 18 Mar 2014 12:56:03 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
-Subject: [GIT PULL] bcache changes for 3.15
-Message-ID: <20140318195603.GI11655@kmo>
+	Tue, 18 Mar 2014 16:01:51 -0400
+Date: Tue, 18 Mar 2014 13:03:53 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+Cc: valentina.manea.m@gmail.com, dan.carpenter@oracle.com,
+        standby24x7@gmail.com, devel@driverdev.osuosl.org,
+        chuansheng.liu@intel.com, dongxing.zhang@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: r8188eu: memory leak in rtw_free_cmd_obj if
+ command is (_Set_Drv_Extra)
+Message-ID: <20140318200353.GA24518@kroah.com>
+References: <1395152727.31547.5.camel@wxm-ubuntu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1395152727.31547.5.camel@wxm-ubuntu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens, here's the bcache changes for 3.15. Lots of bugfixes, and some refactoring
-and cleanups.
+On Tue, Mar 18, 2014 at 10:25:27AM -0400, Wang, Xiaoming wrote:
+> pcmd->parmbuf->pbuf has been allocated if command is GEN_CMD_CODE(_Set_Drv_Extra),
+> and it enqueued by rtw_enqueue_cmd. rtw_cmd_thread dequeue pcmd by rtw_dequeue_cmd.
+> The memory leak happened on this branch "if( _FAIL == rtw_cmd_filter(pcmdpriv, pcmd) )"
+> which goto post_process directly against freeing pcmd->parmbuf->pbuf in
+> rtw_drvextra_cmd_hdl which is the cmd_hdl if command is (_Set_Drv_Extra).
+> This patch free pcmd->parmbuf->pbuf on the forgotten branch to avoid memory leak.
+> 
+> Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+> Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
 
-The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
+You obviously didn't test this as it breaks the build :(
 
-  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
+{sigh}
 
-are available in the git repository at:
-
-  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.15
-
-for you to fetch changes up to cb85114956dc88b287afca2872658f562acbc302:
-
-  bcache: remove nested function usage (2014-03-18 12:39:28 -0700)
-
-----------------------------------------------------------------
-John Sheu (1):
-      bcache: remove nested function usage
-
-Kent Overstreet (21):
-      bcache: Fix another compiler warning on m68k
-      bcache: Fix flash_dev_cache_miss() for real this time
-      bcache: Fix a shutdown bug
-      bcache: Fix a lockdep splat in an error path
-      bcache: Fix a null ptr deref in journal replay
-      bcache: Fix a journalling reclaim after recovery bug
-      bcache: Fix a bug recovering from unclean shutdown
-      bcache: Fix another bug recovering from unclean shutdown
-      bcache: Fix discard granularity
-      bcache: Fix moving_pred()
-      bcache: Kill dead cgroup code
-      bcache: Better alloc tracepoints
-      bcache: Improve priority_stats
-      bcache: Add bch_keylist_init_single()
-      bcache: Add a real GC_MARK_RECLAIMABLE
-      bcache: Fix a race when freeing btree nodes
-      bcache: btree locking rework
-      bcache: Kill btree_io_wq
-      bcache: Rework btree cache reserve handling
-      bcache: Kill unused freelist
-      bcache: Kill bucket->gc_gen
-
-Nicholas Swenson (2):
-      bcache: Fix moving_gc deadlocking with a foreground write
-      bcache: stop moving_gc marking buckets that can't be moved.
-
- drivers/md/bcache/Kconfig     |   8 -
- drivers/md/bcache/alloc.c     | 173 +++++-------
- drivers/md/bcache/bcache.h    |  56 ++--
- drivers/md/bcache/bset.c      |   4 +-
- drivers/md/bcache/bset.h      |   6 +
- drivers/md/bcache/btree.c     | 592 ++++++++++++++++++++++++------------------
- drivers/md/bcache/btree.h     |  12 +-
- drivers/md/bcache/extents.c   |  36 +--
- drivers/md/bcache/journal.c   |  46 ++--
- drivers/md/bcache/journal.h   |   1 +
- drivers/md/bcache/movinggc.c  |  18 +-
- drivers/md/bcache/request.c   | 201 +-------------
- drivers/md/bcache/request.h   |  19 +-
- drivers/md/bcache/stats.c     |   3 -
- drivers/md/bcache/super.c     |  64 ++---
- drivers/md/bcache/sysfs.c     | 155 ++++++-----
- drivers/md/bcache/trace.c     |   2 +-
- include/trace/events/bcache.h |  52 ++--
- 18 files changed, 664 insertions(+), 784 deletions(-)
+Please retry after 3.15-rc1 is out.
