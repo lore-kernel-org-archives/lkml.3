@@ -1,49 +1,69 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaCPLor (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 16 Mar 2014 07:44:47 -0400
-Received: from mail-db3un0253.outbound.protection.outlook.com ([157.55.234.253]:61854
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751687AbaCPLoo convert rfc822-to-8bit (ORCPT
+	id S1754727AbaCRJVJ (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 18 Mar 2014 05:21:09 -0400
+Received: from fallback4.mail.ru ([94.100.176.42]:35489 "EHLO
+	fallback4.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238AbaCRJVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Mar 2014 07:44:44 -0400
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Loan Assistance / Credit Offer
-To: Recipients <finance03@awardfin.onmicrosoft.com>
-From: Santander Group <finance03@awardfin.onmicrosoft.com>
-Date: Sun, 16 Mar 2014 12:29:31 +0100
-Reply-To: <asloan01.loan@aol.com>
-Message-ID: <d880e894-eb71-4d02-8ce6-e5825d751167@DB3PR06MB201.eurprd06.prod.outlook.com>
-X-Originating-IP: [88.4.28.51]
-X-ClientProxiedBy: DBXPR06CA010.eurprd06.prod.outlook.com (10.255.71.155) To
- DB3PR06MB201.eurprd06.prod.outlook.com (10.141.2.16)
-X-Forefront-PRVS: 0152EBA40F
-X-Forefront-Antispam-Report: =?iso-8859-1?Q?SFV:SPM;SFS:(10019001)(979002)(6009001)(428001)(199002)(18?=
- =?iso-8859-1?Q?9002)(43066001)(74502001)(47446002)(74662001)(74316001)(55?=
- =?iso-8859-1?Q?8084003)(23756003)(69226001)(81342001)(76482001)(50466002)?=
- =?iso-8859-1?Q?(74876001)(54356001)(74366001)(74706001)(42186004)(5677600?=
- =?iso-8859-1?Q?1)(51856001)(46102001)(54316002)(49866001)(47736001)(43960?=
- =?iso-8859-1?Q?01)(81542001)(50986001)(47976001)(93516002)(86362001)(9566?=
- =?iso-8859-1?Q?6003)(76176001)(87266001)(76796001)(76786001)(77096001)(76?=
- =?iso-8859-1?Q?576001)(325944007)(33646001)(95416001)(86632001)(83072002)?=
- =?iso-8859-1?Q?(64872006)(85852003)(85306002)(89136004)(86902001)(8644200?=
- =?iso-8859-1?Q?1)(94316002)(66066001)(97336001)(77982001)(53256004)(59766?=
- =?iso-8859-1?Q?001)(56816005)(79102001)(90146001)(80022001)(87976001)(176?=
- =?iso-8859-1?Q?43785005)(97186001)(65816001)(19580395003)(19580405001)(80?=
- =?iso-8859-1?Q?976001)(93136001)(83322001)(94946001)(31696002)(63696002)(?=
- =?iso-8859-1?Q?20776003)(81816001)(47776003)(81686001)(92726001)(62346011?=
- =?iso-8859-1?Q?)(527004004)(387034003)(444684002)(446364004)(2191002)(398?=
- =?iso-8859-1?Q?264008)(19623002)(76466007)(42262001)(2141004)(83022002)(5?=
- =?iso-8859-1?Q?74254001)(567454003)(7374175004)(2757395003)(15477505002)(?=
- =?iso-8859-1?Q?969003)(989001)(999001);DIR:OUT;SFP:1501;SCL:5;SRVR:DB3PR0?=
- =?iso-8859-1?Q?6MB201;H:5715z.Home;FPR:A89B08A4.27ED4F8B.54E0DA6A.C5CF00E?=
- =?iso-8859-1?Q?A.20058;MLV:ovrspm;PTR:InfoNoRecords;A:0;MX:1;LANG:en;?=
-X-OriginatorOrg: awardfin.onmicrosoft.com
+	Tue, 18 Mar 2014 05:21:07 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?TGVlIEpvbmVz?= <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>
+Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gbWZkOiBtYzEzeHh4OiBNb3ZlIGRlZmluaXRpb25zIG91?=
+ =?UTF-8?B?dCBvZiBzdHJ1Y3R1cmVz?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [217.119.30.118]
+Date: Tue, 18 Mar 2014 13:14:51 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1395134091.369687348@f500.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <20140318090237.GG25478@lee--X1>
+References: <1394867287-14074-1-git-send-email-shc_work@mail.ru>
+ <20140318090237.GG25478@lee--X1>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by spinics.net id s2I9JlYk023240
 
-We offer all purpose loan at 3% interest rate. Contact Us for more details by Email:santanderfinancegroup@gmail.com
+Tue, 18 Mar 2014 09:02:37 +0000 –æ—Ç Lee Jones <lee.jones@linaro.org>:
+> > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> > ---
+> >  include/linux/mfd/mc13xxx.h | 22 ++++++++++++----------
+> >  1 file changed, 12 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
+> > index a326c85..d63b1d3 100644
+> > --- a/include/linux/mfd/mc13xxx.h
+> > +++ b/include/linux/mfd/mc13xxx.h
+> > @@ -117,10 +117,6 @@ struct mc13xxx_led_platform_data {
+> >  
+> >  #define MAX_LED_CONTROL_REGS	6
+> >  
+> > -struct mc13xxx_leds_platform_data {
+> > -	struct mc13xxx_led_platform_data *led;
+> > -	int num_leds;
+> > -
+> >  /* MC13783 LED Control 0 */
+> >  #define MC13783_LED_C0_ENABLE		(1 << 0)
+> >  #define MC13783_LED_C0_TRIODE_MD	(1 << 7)
+> > @@ -169,10 +165,13 @@ struct mc13xxx_leds_platform_data {
+> >  /* MC34708 LED Control 0 */
+> 
+> I don't see the line above in the MFD tree?
+> 
+> Which commit/branch/repo is this patch based on?
+
+Dependency:
+linux-next, a59ce6584d (leds: leds-mc13783: Add MC34708 LED support)
+
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/include/linux/mfd/mc13xxx.h?id=a59ce6584d566847980f9dcad5343cd9856145c8
+
+---
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
