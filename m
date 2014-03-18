@@ -1,119 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150AbaCRVSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 17:18:16 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:40608 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755126AbaCRVSL (ORCPT
+	id S1758036AbaCRVWU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 17:22:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60410 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631AbaCRVWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 17:18:11 -0400
-Date: Tue, 18 Mar 2014 22:18:07 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux PWM List <linux-pwm@vger.kernel.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux Doc List <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 1/5] Documentation: dt: Add Kona PWM binding
-Message-ID: <20140318211806.GG5917@mithrandir>
-References: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
- <1394655346-30048-2-git-send-email-tim.kryger@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4ndw/alBWmZEhfcZ"
-Content-Disposition: inline
-In-Reply-To: <1394655346-30048-2-git-send-email-tim.kryger@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 18 Mar 2014 17:22:18 -0400
+Date: Tue, 18 Mar 2014 14:22:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: kswapd using __this_cpu_add() in preemptible code
+Message-Id: <20140318142216.317bf986d10a564881791100@linux-foundation.org>
+In-Reply-To: <20140318185329.GB430@swordfish>
+References: <20140318185329.GB430@swordfish>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 18 Mar 2014 21:53:30 +0300 Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
 
---4ndw/alBWmZEhfcZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Hello gentlemen,
+> 
+> Commit 589a606f9539663f162e4a110d117527833b58a4 ("percpu: add preemption
+> checks to __this_cpu ops") added preempt check to used in __count_vm_events()
+> __this_cpu ops, causing the following kswapd warning:
+> 
+>  BUG: using __this_cpu_add() in preemptible [00000000] code: kswapd0/56
+>  caller is __this_cpu_preempt_check+0x2b/0x2d
+>  Call Trace:
+>  [<ffffffff813b8d4d>] dump_stack+0x4e/0x7a
+>  [<ffffffff8121366f>] check_preemption_disabled+0xce/0xdd
+>  [<ffffffff812136bb>] __this_cpu_preempt_check+0x2b/0x2d
+>  [<ffffffff810f622e>] inode_lru_isolate+0xed/0x197
+>  [<ffffffff810be43c>] list_lru_walk_node+0x7b/0x14c
+>  [<ffffffff810f6141>] ? iput+0x131/0x131
+>  [<ffffffff810f681f>] prune_icache_sb+0x35/0x4c
+>  [<ffffffff810e3951>] super_cache_scan+0xe3/0x143
+>  [<ffffffff810b1301>] shrink_slab_node+0x103/0x16f
+>  [<ffffffff810b19fd>] shrink_slab+0x75/0xe4
+>  [<ffffffff810b3f3d>] balance_pgdat+0x2fa/0x47f
+>  [<ffffffff810b4395>] kswapd+0x2d3/0x2fd
+>  [<ffffffff81068049>] ? __wake_up_sync+0xd/0xd
+>  [<ffffffff810b40c2>] ? balance_pgdat+0x47f/0x47f
+>  [<ffffffff81051e75>] kthread+0xd6/0xde
+>  [<ffffffff81051d9f>] ? kthread_create_on_node+0x162/0x162
+>  [<ffffffff813be5bc>] ret_from_fork+0x7c/0xb0
+>  [<ffffffff81051d9f>] ? kthread_create_on_node+0x162/0x162
+> 
+> 
+> list_lru_walk_node() seems to be the only place where __count_vm_events()
+> called with preemption enabled. remaining __count_vm_events() and
+> __count_vm_event() calls are done with preemption disabled (unless I
+> overlooked something).
 
-On Wed, Mar 12, 2014 at 01:15:42PM -0700, Tim Kryger wrote:
-> Add the binding description for the Kona PWM controller found on Broadcom=
-'s
-> mobile SoCs.
->=20
-> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-> Reviewed-by: Alex Elder <elder@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> ---
->  .../devicetree/bindings/pwm/bcm-kona-pwm.txt       | 24 ++++++++++++++++=
-++++++
->  1 file changed, 24 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
->=20
-> diff --git a/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt b/Doc=
-umentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
-> new file mode 100644
-> index 0000000..c8e2d13
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
-> @@ -0,0 +1,24 @@
-> +Broadcom Kona PWM controller device tree bindings
-> +
-> +This controller has 6 channels.
-> +
-> +Required Properties :
-> +- compatible: should be "brcm,kona-pwm"
+Christoph caught one.  How does this look?
 
-This is somewhat inconsistent because the example below clearly doesn't
-set the compatible property to "brcm,kona-pwm". Perhaps better wording
-would be:
 
-	- compatible: should contain "brcm,kona-pwm"
 
-> +- reg: physical base address and length of the controller's registers
-> +- clocks: phandle + clock specifier pair for the external clock
-> +- #pwm-cells: should be 3.  The first cell specifies the per-chip index
-> +  of the PWM to use, the second cell is the period in nanoseconds, and
-> +  the third cell is the flags.
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: fs/inode.c:inode_lru_isolate(): use atomic count_vm_events()
 
-Please use the canonical description for this:
+"percpu: add preemption checks to __this_cpu ops" added preempt check to
+used in __count_vm_events() __this_cpu ops, causing the following kswapd
+warning:
 
-	- #pwm-cells: Should be 3. See pwm.txt in this directory for a
-	  description of the cells format.
+ BUG: using __this_cpu_add() in preemptible [00000000] code: kswapd0/56
+ caller is __this_cpu_preempt_check+0x2b/0x2d
+ Call Trace:
+ [<ffffffff813b8d4d>] dump_stack+0x4e/0x7a
+ [<ffffffff8121366f>] check_preemption_disabled+0xce/0xdd
+ [<ffffffff812136bb>] __this_cpu_preempt_check+0x2b/0x2d
+ [<ffffffff810f622e>] inode_lru_isolate+0xed/0x197
+ [<ffffffff810be43c>] list_lru_walk_node+0x7b/0x14c
+ [<ffffffff810f6141>] ? iput+0x131/0x131
+ [<ffffffff810f681f>] prune_icache_sb+0x35/0x4c
 
-> +Refer to pwm/pwm.txt for generic pwm controller node properties.
+Switch from __count_vm_events() to the preempt-safe count_vm_events().
 
-With the above, this line should go away. But still: "pwm controller" ->
-"PWM controller".
+Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-Thierry
+ fs/inode.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---4ndw/alBWmZEhfcZ
-Content-Type: application/pgp-signature
+diff -puN fs/inode.c~fs-inodec-inode_lru_isolate-use-atomic-count_vm_events fs/inode.c
+--- a/fs/inode.c~fs-inodec-inode_lru_isolate-use-atomic-count_vm_events
++++ a/fs/inode.c
+@@ -722,9 +722,9 @@ inode_lru_isolate(struct list_head *item
+ 			unsigned long reap;
+ 			reap = invalidate_mapping_pages(&inode->i_data, 0, -1);
+ 			if (current_is_kswapd())
+-				__count_vm_events(KSWAPD_INODESTEAL, reap);
++				count_vm_events(KSWAPD_INODESTEAL, reap);
+ 			else
+-				__count_vm_events(PGINODESTEAL, reap);
++				count_vm_events(PGINODESTEAL, reap);
+ 			if (current->reclaim_state)
+ 				current->reclaim_state->reclaimed_slab += reap;
+ 		}
+_
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTKLgOAAoJEN0jrNd/PrOhdPoP/in+sozoaEIa6Cdl51/NuIzl
-WAN+rlNjkkwyUVm4XY87guwwdnu0scjX0Cal8PaRoxmxdFSMNcRS5AX2W8pCylZo
-9Te4RkFDnLJaXaYlcpvhevRz014HmY1tGnWdaSxySPt2jUXP3Y/d1rLZAVX9kOh6
-BpBxER71Jd6htT8BkM2OSMdCHUPDxy48WLbtiyb2zngsrChqEa4OOHQf9YRKFdQD
-SYWvQqP6gAeBTYH8amtTQjCf+4JAphlCm29ZaaMYsncbbiVKm24NXNFDTYXA8hcz
-U7su5nwwHJOFhGGdsTX+wQ/9WHItewIsqIMnysdaRAU4xZ6E00N8tSoAIrKtA6HP
-nvV5pWgpEaIDR1VKck38sNa6g1PKFJ1hDx1dHAjvKOKUxHiN8Yt4YdgAs7/NDhYP
-7xtaYS0bCukAZrQxyo6CL7rASuy45TkRC4KyIZ29IeHrW+tHXpFfT8rAI0HUTVVm
-8MxUAGyiuY+23wtSmqL9tI4l8LXvmXUk4xREYF1T9G+bQNrYvONczaY8gDNgybqc
-ga22mMCnqH7Yo0vu0Vi/eZDw1JKu3728NSGfkCAwxPi0lsbybQ03dJJMoYkYGG6K
-yfSDN1t2ei2RNmGXf81onNm5L5lU15lDvuERAc61c7/+VYk880l6gphOL1m+BiaR
-1CKE+TDQGKAv0aY/wBxt
-=z6zP
------END PGP SIGNATURE-----
-
---4ndw/alBWmZEhfcZ--
