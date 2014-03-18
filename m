@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997AbaCRUbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 16:31:44 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:52956 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757953AbaCRUbk (ORCPT
+	id S1758011AbaCRUcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 16:32:09 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:57223 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757953AbaCRUcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 16:31:40 -0400
+	Tue, 18 Mar 2014 16:32:05 -0400
+Date: Tue, 18 Mar 2014 20:31:59 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH v3 2/3] mfd: sec-core: Add of_compatible strings for
+ clock MFD cells
+Message-ID: <20140318203159.GW25478@lee--X1>
+References: <1395047958-17953-1-git-send-email-k.kozlowski@samsung.com>
+ <1395047958-17953-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Tue, 18 Mar 2014 13:31:19 -0700
-X-Google-Sender-Auth: WgljTt4KpbEVWs6qtncv5uiULqI
-Message-ID: <CAB=NE6W4pSyCU+zFKQPVFoQy5s8KGx34nEepRS0MnhnJuwf0Mg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] bridge: few enhancements and small fixes
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Stephen Hemminger <stephen@networkplumber.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395047958-17953-3-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 8:15 PM, Luis R. Rodriguez
-<mcgrof@do-not-panic.com> wrote:
-> Here's a few fixes I've been carrying around. I've now tested them
-> on as many systems / environments as I can. They should be ready.
->
-> Luis R. Rodriguez (3):
->   bridge: preserve random init MAC address
->   bridge: trigger a bridge calculation upon port changes
->   bridge: fix bridge root block on designated port
+> Add of_compatible strings for S5M8767 and S2MPS14 clock MFD cells.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/mfd/sec-core.c |    3 +++
+>  1 file changed, 3 insertions(+)
 
-Folks, let me know if there are any other questions or if you spot any
-other possible issues.
+Applied with Tomasz' Reviewed-by.
 
-  Luis
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
