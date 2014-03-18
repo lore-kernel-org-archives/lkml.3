@@ -1,303 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaCRB67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 21:58:59 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:40002 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785AbaCRB6q (ORCPT
+	id S1753374AbaCRCIp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 22:08:45 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:43066 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902AbaCRCIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 21:58:46 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2I1wL9x029365, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <chris@printf.net>, <sameo@linux.intel.com>
-CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
-        <ulf.hansson@linaro.org>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>,
-        Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH 2/2] mmc: rtsx: modify error handle and remove smatch warnings
-Date: Tue, 18 Mar 2014 10:01:45 +0800
-Message-ID: <370ba2995ab57326581bb1a0de5502d729e7d4c1.1395107222.git.micky_ching@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1395107222.git.micky_ching@realsil.com.cn>
-References: <cover.1395107222.git.micky_ching@realsil.com.cn>
+	Mon, 17 Mar 2014 22:08:43 -0400
+Message-ID: <5327AAA8.2080703@gmail.com>
+Date: Mon, 17 Mar 2014 22:08:40 -0400
+From: Alexandre Demers <alexandre.f.demers@gmail.com>
+Reply-To: alexandre.f.demers@gmail.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to kern_mount()
+ sysfs from sysfs_init()" prevents system from booting correctly
+References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com> <20140314140804.GG12613@htj.dyndns.org> <CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com> <20140317201346.GE17373@mtj.dyndns.org>
+In-Reply-To: <20140317201346.GE17373@mtj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
+By the way, I tried to get the error message, but my display had gone 
+in standby mode before it completed and it wouldn't wake up. I'll have 
+to test with an earlier 3.14 kernel (rc1 or rc2), when it was answering 
+to my wake up signal. Even though my display doesn't wake up with rc6, 
+it is still running since I can see some activities on my disk from 
+time to time.
 
-Using non-DMA dump-regs, which would be more exactly for DMA transfer failed.
+I'll be back with more info ASAP.
 
-More careful handle when cmd/data timeout, add stop(CMD12) cmd before go to
-finish request when multi-rw timeout.
+Alexandre Demers
 
-Remove some static checher warings.
-on commit: <mmc: rtsx: add support for pre_req and post_req>
-drivers/mmc/host/rtsx_pci_sdmmc.c:194 sd_finish_request()
-error: we previously assumed 'mrq' could be null (see line 158)
-drivers/mmc/host/rtsx_pci_sdmmc.c:504 sd_get_rsp()
-error: we previously assumed 'cmd' could be null (see line 434)
-drivers/mmc/host/rtsx_pci_sdmmc.c:525 sd_pre_dma_transfer()
-warn: we tested 'next' before and it was 'false'
-
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
----
- drivers/mmc/host/rtsx_pci_sdmmc.c |  118 ++++++++++++++++++++-----------------
- 1 file changed, 64 insertions(+), 54 deletions(-)
-
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index 0d8904a..d00a94e 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -81,25 +81,23 @@ static inline void sd_clear_error(struct realtek_pci_sdmmc *host)
- }
- 
- #ifdef DEBUG
-+static inline void sd_print_reg(struct realtek_pci_sdmmc *host, u16 reg)
-+{
-+	u8 val;
-+	if (rtsx_pci_read_register(host->pcr, reg, &val) < 0)
-+		dev_dbg(sdmmc_dev(host), "read 0x%04x failed\n", reg);
-+	else
-+		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", reg, val);
-+}
-+
- static void sd_print_debug_regs(struct realtek_pci_sdmmc *host)
- {
--	struct rtsx_pcr *pcr = host->pcr;
- 	u16 i;
--	u8 *ptr;
--
--	/* Print SD host internal registers */
--	rtsx_pci_init_cmd(pcr);
--	for (i = 0xFDA0; i <= 0xFDAE; i++)
--		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
--	for (i = 0xFD52; i <= 0xFD69; i++)
--		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
--	rtsx_pci_send_cmd(pcr, 100);
- 
--	ptr = rtsx_pci_get_cmd_data(pcr);
- 	for (i = 0xFDA0; i <= 0xFDAE; i++)
--		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
-+		sd_print_reg(host, i);
- 	for (i = 0xFD52; i <= 0xFD69; i++)
--		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
-+		sd_print_reg(host, i);
- }
- #else
- #define sd_print_debug_regs(host)
-@@ -125,19 +123,27 @@ static void sd_request_timeout(unsigned long host_addr)
- 	spin_lock_irqsave(&host->lock, flags);
- 
- 	if (!host->mrq) {
--		dev_err(sdmmc_dev(host), "error: no request exist\n");
--		goto out;
-+		dev_err(sdmmc_dev(host), "error: request not exist\n");
-+		spin_unlock_irqrestore(&host->lock, flags);
-+		return;
- 	}
- 
--	if (host->cmd)
-+	if (host->cmd && host->data)
-+		dev_err(sdmmc_dev(host), "error: cmd and data conflict\n");
-+
-+	if (host->cmd) {
- 		host->cmd->error = -ETIMEDOUT;
--	if (host->data)
--		host->data->error = -ETIMEDOUT;
-+		dev_dbg(sdmmc_dev(host), "timeout for cmd %d\n",
-+			host->cmd->opcode);
-+		tasklet_schedule(&host->cmd_tasklet);
-+	}
- 
--	dev_dbg(sdmmc_dev(host), "timeout for request\n");
-+	if (host->data) {
-+		host->data->error = -ETIMEDOUT;
-+		dev_dbg(sdmmc_dev(host), "timeout for data transfer\n");
-+		tasklet_schedule(&host->data_tasklet);
-+	}
- 
--out:
--	tasklet_schedule(&host->finish_tasklet);
- 	spin_unlock_irqrestore(&host->lock, flags);
- }
- 
-@@ -157,7 +163,8 @@ static void sd_finish_request(unsigned long host_addr)
- 	mrq = host->mrq;
- 	if (!mrq) {
- 		dev_err(sdmmc_dev(host), "error: no request need finish\n");
--		goto out;
-+		spin_unlock_irqrestore(&host->lock, flags);
-+		return;
- 	}
- 
- 	cmd = mrq->cmd;
-@@ -167,11 +174,6 @@ static void sd_finish_request(unsigned long host_addr)
- 		(mrq->stop && mrq->stop->error) ||
- 		(cmd && cmd->error) || (data && data->error);
- 
--	if (any_error) {
--		rtsx_pci_stop_cmd(pcr);
--		sd_clear_error(host);
--	}
--
- 	if (data) {
- 		if (any_error)
- 			data->bytes_xfered = 0;
-@@ -188,7 +190,6 @@ static void sd_finish_request(unsigned long host_addr)
- 	host->cmd = NULL;
- 	host->data = NULL;
- 
--out:
- 	spin_unlock_irqrestore(&host->lock, flags);
- 	mutex_unlock(&pcr->pcr_mutex);
- 	mmc_request_done(host->mmc, mrq);
-@@ -373,8 +374,11 @@ static void sd_send_cmd(struct realtek_pci_sdmmc *host, struct mmc_command *cmd)
- 	if (cmd->opcode == SD_SWITCH_VOLTAGE) {
- 		err = rtsx_pci_write_register(pcr, SD_BUS_STAT,
- 				0xFF, SD_CLK_TOGGLE_EN);
--		if (err < 0)
-+		if (err < 0) {
-+			rtsx_pci_write_register(pcr, SD_BUS_STAT,
-+				SD_CLK_TOGGLE_EN | SD_CLK_FORCE_STOP, 0);
- 			goto out;
-+		}
- 	}
- 
- 	rtsx_pci_init_cmd(pcr);
-@@ -436,7 +440,8 @@ static void sd_get_rsp(unsigned long host_addr)
- 
- 	if (!cmd) {
- 		dev_err(sdmmc_dev(host), "error: cmd not exist\n");
--		goto out;
-+		spin_unlock_irqrestore(&host->lock, flags);
-+		return;
- 	}
- 
- 	spin_lock(&pcr->lock);
-@@ -446,16 +451,18 @@ static void sd_get_rsp(unsigned long host_addr)
- 		err = -EINVAL;
- 	spin_unlock(&pcr->lock);
- 
--	if (err < 0)
-+	if (err < 0) {
-+		rtsx_pci_stop_cmd(host->pcr);
-+		sd_print_debug_regs(host);
-+		sd_clear_error(host);
- 		goto out;
-+	}
- 
- 	rsp_type = host->rsp_type;
- 	stat_idx = host->rsp_len;
- 
--	if (rsp_type == SD_RSP_TYPE_R0) {
--		err = 0;
-+	if (rsp_type == SD_RSP_TYPE_R0)
- 		goto out;
--	}
- 
- 	/* Eliminate returned value of CHECK_REG_CMD */
- 	ptr = rtsx_pci_get_cmd_data(pcr) + 1;
-@@ -498,14 +505,19 @@ static void sd_get_rsp(unsigned long host_addr)
- 		goto out;
- 
- 	if (cmd->data) {
--		sd_start_multi_rw(host, host->mrq);
-+		err = sd_start_multi_rw(host, host->mrq);
-+		if (err) {
-+			cmd->data->error = err;
-+			dev_err(sdmmc_dev(host),
-+				"error: start data transfer failed\n");
-+			tasklet_schedule(&host->data_tasklet);
-+		}
- 		spin_unlock_irqrestore(&host->lock, flags);
- 		return;
- 	}
- 
- out:
- 	cmd->error = err;
--
- 	tasklet_schedule(&host->finish_tasklet);
- 	spin_unlock_irqrestore(&host->lock, flags);
- }
-@@ -525,7 +537,7 @@ static int sd_pre_dma_transfer(struct realtek_pci_sdmmc *host,
- 		data->host_cookie = 0;
- 	}
- 
--	if (next || (!next && data->host_cookie != host->next_data.cookie))
-+	if (next || data->host_cookie != host->next_data.cookie)
- 		sg_count = rtsx_pci_dma_map_sg(pcr,
- 				data->sg, data->sg_len, read);
- 	else
-@@ -580,7 +592,6 @@ static int sd_start_multi_rw(struct realtek_pci_sdmmc *host,
- 	int uhs = mmc_card_uhs(card);
- 	int read = data->flags & MMC_DATA_READ;
- 	u8 cfg2, trans_mode;
--	int err;
- 	size_t data_len = data->blksz * data->blocks;
- 
- 	if (host->data)
-@@ -641,12 +652,7 @@ static int sd_start_multi_rw(struct realtek_pci_sdmmc *host,
- 	mod_timer(&host->timer, jiffies + 10 * HZ);
- 	rtsx_pci_send_cmd_no_wait(pcr);
- 
--	err = rtsx_pci_dma_transfer(pcr, data->sg, host->sg_count, read);
--	if (err < 0) {
--		data->error = err;
--		tasklet_schedule(&host->finish_tasklet);
--	}
--	return 0;
-+	return rtsx_pci_dma_transfer(pcr, data->sg, host->sg_count, read);
- }
- 
- static void sd_finish_multi_rw(unsigned long host_addr)
-@@ -660,8 +666,9 @@ static void sd_finish_multi_rw(unsigned long host_addr)
- 	spin_lock_irqsave(&host->lock, flags);
- 
- 	if (!host->data) {
--		dev_err(sdmmc_dev(host), "error: no data exist\n");
--		goto out;
-+		dev_err(sdmmc_dev(host), "error: data not exist\n");
-+		spin_unlock_irqrestore(&host->lock, flags);
-+		return;
- 	}
- 
- 	data = host->data;
-@@ -672,19 +679,22 @@ static void sd_finish_multi_rw(unsigned long host_addr)
- 	else if (pcr->trans_result != TRANS_RESULT_OK)
- 		err = -EINVAL;
- 
--	if (err < 0) {
-+	if (err < 0)
- 		data->error = err;
--		goto out;
-+
-+	if (data->error) {
-+		rtsx_pci_stop_cmd(host->pcr);
-+		sd_print_debug_regs(host);
-+		sd_clear_error(host);
-+		dev_dbg(sdmmc_dev(host), "data transfer failed %d\n",
-+			data->error);
- 	}
- 
--	if (!host->mrq->sbc && data->stop) {
-+	if (!host->mrq->sbc && data->stop)
- 		sd_send_cmd(host, data->stop);
--		spin_unlock_irqrestore(&host->lock, flags);
--		return;
--	}
-+	else
-+		tasklet_schedule(&host->finish_tasklet);
- 
--out:
--	tasklet_schedule(&host->finish_tasklet);
- 	spin_unlock_irqrestore(&host->lock, flags);
- }
- 
--- 
-1.7.9.5
-
+On Mon 17 Mar 2014 04:13:46 PM EDT, Tejun Heo wrote:
+> Hello,
+>
+> On Fri, Mar 14, 2014 at 11:48:10AM -0400, Alexandre Demers wrote:
+>> Since it takes a while before the system begins to display errors,
+>> I'll have to test it and report it later today when I'll get back from
+>> work.
+>
+> Any update?
+>
+>> Now, about the userland part, this seems a broad question... I'm using
+>> Arch Linux 64bit (updated mostly on a daily basis). But I suspect you
+>> are expecting a narrower information. Is there anything in particular
+>> you want to know?
+>
+> I was just wondering whether you were running something really exotic.
+> Doesn't seem that way.  Weird that other people aren't hitting this
+> issue.  Hmm...
+>
+> Thanks.
+>
