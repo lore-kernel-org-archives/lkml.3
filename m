@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213AbaCRK54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 06:57:56 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42327 "EHLO
+	id S1755190AbaCRK5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 06:57:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42321 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754767AbaCRK5y (ORCPT
+	by vger.kernel.org with ESMTP id S1754889AbaCRK5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 Mar 2014 06:57:54 -0400
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
@@ -13,78 +13,44 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
         sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
         patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] arizona: Correct small errors in the DT binding documentation
-Date: Tue, 18 Mar 2014 10:49:10 +0000
-Message-Id: <1395139757-6907-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 0/8] Arizona regulator updates
+Date: Tue, 18 Mar 2014 10:49:09 +0000
+Message-Id: <1395139757-6907-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1395139757-6907-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1395139757-6907-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch does not alter the binding at all it only brings the
-documentation up to date with the existing binding.
+Hi,
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- Documentation/devicetree/bindings/mfd/arizona.txt |   23 +++++++++++---------
- 1 files changed, 13 insertions(+), 10 deletions(-)
+This series of patches are small fixes/improvments to the
+Arizona regulators. The main thing added is proper device
+tree bindings for getting the regulator init_data.
 
-diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-index 0e295c9..36a0c3d 100644
---- a/Documentation/devicetree/bindings/mfd/arizona.txt
-+++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-@@ -5,9 +5,10 @@ of analogue I/O.
- 
- Required properties:
- 
--  - compatible : one of the following chip-specific strings:
--	"wlf,wm5102"
--	"wlf,wm5110"
-+  - compatible : One of the following chip-specific strings:
-+        "wlf,wm5102"
-+        "wlf,wm5110"
-+        "wlf,wm8997"
-   - reg : I2C slave address when connected using I2C, chip select number when
-     using SPI.
- 
-@@ -25,8 +26,9 @@ Required properties:
-   - #gpio-cells : Must be 2. The first cell is the pin number and the
-     second cell is used to specify optional parameters (currently unused).
- 
--  - AVDD1-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
--    SPKVDDL-supply, SPKVDDR-supply : power supplies for the device, as covered
-+  - AVDD-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply (wm5102, wm5110),
-+    CPVDD-supply, SPKVDDL-supply (wm5102, wm5110), SPKVDDR-supply (wm5102,
-+    wm5110), SPKVDD-supply (wm8997) : Power supplies for the device, as covered
-     in Documentation/devicetree/bindings/regulator/regulator.txt
- 
- Optional properties:
-@@ -46,6 +48,7 @@ codec: wm5102@1a {
- 	compatible = "wlf,wm5102";
- 	reg = <0x1a>;
- 	interrupts = <347>;
-+	interrupt-controller;
- 	#interrupt-cells = <2>;
-         interrupt-parent = <&gic>;
- 
-@@ -53,10 +56,10 @@ codec: wm5102@1a {
- 	#gpio-cells = <2>;
- 
- 	wlf,gpio-defaults = <
--		0x00000000, /* AIF1TXLRCLK */
--		0xffffffff,
--		0xffffffff,
--		0xffffffff,
--		0xffffffff,
-+		0x00000000 /* AIF1TXLRCLK */
-+		0xffffffff
-+		0xffffffff
-+		0xffffffff
-+		0xffffffff
- 	>;
- };
+I would probably suggest putting the whole series through
+the regulator tree since that is the focus of the work.
+
+Thanks,
+Charles
+
+Charles Keepax (8):
+  arizona: Correct small errors in the DT binding documentation
+  mfd: arizona: Factor out read of device tree GPIOs
+  regulator: arizona-ldo1: Move setup processing from arizona-core
+  regulator: arizona-ldo1: Add processing of init_data from device tree
+  regulator: arizona-micsupp: Add processing of init_data from device tree
+  mfd: arizona: Add MICVDD to mapped regulators
+  mfd: wm8997: Add registers for high power mode
+  regulator: arizona-ldo1: Correct default regulator init_data
+
+ Documentation/devicetree/bindings/mfd/arizona.txt |   32 ++++++---
+ drivers/mfd/arizona-core.c                        |   41 +++++++-----
+ drivers/mfd/wm8997-tables.c                       |    2 +
+ drivers/regulator/arizona-ldo1.c                  |   74 ++++++++++++++++++---
+ drivers/regulator/arizona-micsupp.c               |   47 ++++++++++++-
+ include/linux/mfd/arizona/core.h                  |    3 +
+ 6 files changed, 159 insertions(+), 40 deletions(-)
+
 -- 
 1.7.2.5
 
