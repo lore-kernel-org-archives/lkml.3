@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017AbaCRAGB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Mar 2014 20:06:01 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:53829 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841AbaCRAF7 (ORCPT
+	id S1753075AbaCRAHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Mar 2014 20:07:40 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60086 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200AbaCRAHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Mar 2014 20:05:59 -0400
-From: minyard@acm.org
-To: linux-kernel@vger.kernel.org
-Cc: Corey Minyard <cminyard@mvista.com>
-Subject: [PATCH] sched: Initialize rq->age_stamp on processor start
-Date: Mon, 17 Mar 2014 19:05:49 -0500
-Message-Id: <1395101149-10097-1-git-send-email-minyard@acm.org>
-X-Mailer: git-send-email 1.8.3.1
+	Mon, 17 Mar 2014 20:07:38 -0400
+From: Stewart Smith <stewart@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+In-Reply-To: <20140317222107.GH17373@mtj.dyndns.org>
+References: <20140312005152.9ac4063f65dbd233f5d50b4d@kernel.org> <20140312015021.GC10106@kroah.com> <20140317101611.d043a90e1cb72dcfb8bc767a@canb.auug.org.au> <20140317183333.GE10565@kroah.com> <1395088410.15098.175.camel@pasglop> <20140317215619.GA25228@kroah.com> <20140317220554.GG17373@mtj.dyndns.org> <20140317222107.GH17373@mtj.dyndns.org>
+User-Agent: Notmuch/0.16 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-redhat-linux-gnu)
+Date: Tue, 18 Mar 2014 11:07:32 +1100
+Message-ID: <87pplkgyij.fsf@river.i-did-not-set--mail-host-address--so-tickle-me>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031800-3568-0000-0000-0000051CED26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Corey Minyard <cminyard@mvista.com>
+Tejun Heo <tj@kernel.org> writes:
+> On Mon, Mar 17, 2014 at 06:05:54PM -0400, Tejun Heo wrote:
+>> I think this is being blown out of proportion.  It was a rarely used
+>> API and converting to the new one is mostly trivial which can be
+>
+> So, looked at the failed code.  The only necessary change seems to be
+> calling device_remove_file_self() in dump_ack_store() and then doing
+> kobject_put() directly afterwards, which would have been completely
+> fine as a merge fix patch.
 
-If the sched_clock time starts at a large value, the kernel will spin
-in sched_avg_update for a long time while rq->age_stamp catches up
-with rq->clock.
+I had a quick look too and this seems correct (at least if my reading on
+howto use sysfs APIs is correct).
 
-The comment in kernel/sched/clock.c says that there is no strict promise
-that it starts at zero.  So initialize rq->age_stamp when a cpu starts up
-to avoid this.
+I'm happy to post a patch somewhere - I guess it's easiest if the
+removal waits for one linus merge things cycle and then I can get fix
+and removal in? I'm not too fussed.
 
-I was seeing long delays on a simulator that didn't start the clock at
-zero.  This might also be an issue on reboots on processors that don't
-re-initialize the timer to zero on reset, and when using kexec.
+> Just to be clear, I'm not necessarily against reverting the removal of
+> the API.  The removal was based on the speculation that this isn't
+> likely to cause trouble.  The speculation was perfectly reasonable but
+> being a speculation it failed, so we take actions to remedy that and
+> we *do* want to do things that way.  Reverting the removal can sure be
+> one choice but the way that choice is being made here seems completely
+> wrong to me.  There's no technical evaluation whatsoever.  I'd really
+> hate to work in an environment where taking active trade off is
+> discouraged replaced with blind policy enforcement.
 
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
----
- kernel/sched/core.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b46131e..5be3d4a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5037,11 +5037,20 @@ static struct notifier_block migration_notifier = {
- 	.priority = CPU_PRI_MIGRATION,
- };
- 
-+static void __cpuinit set_cpu_rq_start_time(void)
-+{
-+	int cpu = smp_processor_id();
-+	struct rq *rq = cpu_rq(cpu);
-+	rq->age_stamp = sched_clock_cpu(cpu);
-+}
-+
- static int sched_cpu_active(struct notifier_block *nfb,
- 				      unsigned long action, void *hcpu)
- {
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_STARTING:
-+		set_cpu_rq_start_time();
-+		/* fall through */
- 	case CPU_DOWN_FAILED:
- 		set_cpu_active((long)hcpu, true);
- 		return NOTIFY_OK;
-@@ -6922,6 +6931,7 @@ void __init sched_init(void)
- 	init_sched_fair_class();
- 
- 	scheduler_running = 1;
-+	set_cpu_rq_start_time();
- }
- 
- #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
--- 
-1.8.3.1
+I use an API and it changes/disappears - it's a gift I have :)
 
