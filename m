@@ -1,43 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964883AbaCSNft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:35:49 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:38632 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933817AbaCSNfq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:35:46 -0400
+	id S934041AbaCSNhB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:37:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32636 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932721AbaCSNg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 09:36:59 -0400
+Date: Wed, 19 Mar 2014 09:36:53 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, fowles@inreach.com, eranian@google.com
+Subject: Re: [PATCH 02/19] perf, sort:  Add physid sorting based on mmap2 data
+Message-ID: <20140319133653.GZ25953@redhat.com>
+References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
+ <1393609388-40489-3-git-send-email-dzickus@redhat.com>
+ <20140319104515.GA7423@krava.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <53298A7D.3080400@linux.vnet.ibm.com>
-References: <2efc621827cbd96a05a3d34075154974b4816ecd.1394782795.git.viresh.kumar@linaro.org>
-	<532840FD.308@linux.vnet.ibm.com>
-	<CAKohpomhTJa06a1LSi9tK1+=6Y2MyidJSbYWuffAsU5KxVf7zw@mail.gmail.com>
-	<53296870.5010505@linux.vnet.ibm.com>
-	<CAKohpomr1s3SLs-K8+-BKguX4PyfHvSjyzd5PFjM4mJeyTj3-A@mail.gmail.com>
-	<53298A7D.3080400@linux.vnet.ibm.com>
-Date: Wed, 19 Mar 2014 19:05:45 +0530
-Message-ID: <CAKohpomQjvkAaty-nBSb=Qyxvk0RhvkwNXC9194gmYr6Vpw5WA@mail.gmail.com>
-Subject: Re: [RFC v3] cpufreq: Make sure frequency transitions are serialized
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Amit Daniel <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319104515.GA7423@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 March 2014 17:45, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-> +       bool                    transition_ongoing; /* Tracks transition status */
-> +       struct mutex            transition_lock;
-> +       wait_queue_head_t       transition_wait;
+On Wed, Mar 19, 2014 at 11:45:15AM +0100, Jiri Olsa wrote:
+> > +static int64_t
+> > +sort__physid_cmp(struct hist_entry *left, struct hist_entry *right)
+> > +{
+> > +        u64 l, r;
+> > +        struct map *l_map = left->mem_info->daddr.map;
+> > +        struct map *r_map = right->mem_info->daddr.map;
+> > +
+> > +	/* store all NULL mem maps at the bottom */
+> > +	/* shouldn't even need this check, should have stubs */
+> > +	if (!left->mem_info->daddr.map || !right->mem_info->daddr.map)
+> > +		return 1;
+> > +
+> > +        /* group event types together */
+> > +        if (left->cpumode > right->cpumode) return -1;
+> > +        if (left->cpumode < right->cpumode) return 1;
+> > +
+> > +        if (l_map->maj > r_map->maj) return -1;
+> > +        if (l_map->maj < r_map->maj) return 1;
+> > +
+> > +        if (l_map->min > r_map->min) return -1;
+> > +        if (l_map->min < r_map->min) return 1;
+> > +
+> > +        if (l_map->ino > r_map->ino) return -1;
+> > +        if (l_map->ino < r_map->ino) return 1;
+> > +
+> > +        if (l_map->ino_generation > r_map->ino_generation) return -1;
+> > +        if (l_map->ino_generation < r_map->ino_generation) return 1;
+> > +
+> > +        /*
+> > +         * Addresses with no major/minor numbers are assumed to be
+> > +         * anonymous in userspace.  Sort those on pid then address.
+> > +         *
+> > +         * The kernel and non-zero major/minor mapped areas are
+> > +         * assumed to be unity mapped.  Sort those on address then pid.
+> > +         */
+> > +
+> > +        /* al_addr does all the right addr - start + offset calculations */
+> > +        l = left->mem_info->daddr.al_addr;
+> > +        r = right->mem_info->daddr.al_addr;
+> > +
+> > +        if (l_map->maj || l_map->min || l_map->ino || l_map-> ino_generation) {
+> > +                /* mmapped areas */
+> > +
+> > +                /* hack to mark similar regions, 'right' is new entry */
+> > +                /* entries with same maj/min/ino/inogen are in same address space */
+> > +                right->color = TRUE;
+> > +
+> > +                if (l > r) return -1;
+> > +                if (l < r) return 1;
+> > +
+> > +                /* sorting by iaddr makes calculations easier later */
+> > +                if (left->mem_info->iaddr.al_addr > right->mem_info->iaddr.al_addr) return -1;
+> > +                if (left->mem_info->iaddr.al_addr < right->mem_info->iaddr.al_addr) return 1;
+> > +
+> > +                if (left->thread->pid_ > right->thread->pid_) return -1;
+> > +                if (left->thread->pid_ < right->thread->pid_) return 1;
+> > +
+> > +                if (left->thread->tid > right->thread->tid) return -1;
+> > +                if (left->thread->tid < right->thread->tid) return 1;
+> > +        } else if (left->cpumode == PERF_RECORD_MISC_KERNEL) {
+> > +                /* kernel mapped areas where 'start' doesn't matter */
+> > +
+> > +                /* hack to mark similar regions, 'right' is new entry */
+> > +                /* whole kernel region is in the same address space */
+> > +                right->color = TRUE;
+> > +
+> > +                if (l > r) return -1;
+> > +                if (l < r) return 1;
+> > +
+> > +                /* sorting by iaddr makes calculations easier later */
+> > +                if (left->mem_info->iaddr.al_addr > right->mem_info->iaddr.al_addr) return -1;
+> > +                if (left->mem_info->iaddr.al_addr < right->mem_info->iaddr.al_addr) return 1;
+> > +
+> > +                if (left->thread->pid_ > right->thread->pid_) return -1;
+> > +                if (left->thread->pid_ < right->thread->pid_) return 1;
+> > +
+> > +                if (left->thread->tid > right->thread->tid) return -1;
+> > +                if (left->thread->tid < right->thread->tid) return 1;
+> > +        } else {
+> > +                /* userspace anonymous */
+> > +                if (left->thread->pid_ > right->thread->pid_) return -1;
+> > +                if (left->thread->pid_ < right->thread->pid_) return 1;
+> > +
+> > +                if (left->thread->tid > right->thread->tid) return -1;
+> > +                if (left->thread->tid < right->thread->tid) return 1;
+> > +
+> > +	         /* hack to mark similar regions, 'right' is new entry */
+> > +                /* userspace anonymous address space is contained within pid */
+> > +                right->color = TRUE;
+> > +
+> > +                if (l > r) return -1;
+> > +                if (l < r) return 1;
+> > +
+> > +                /* sorting by iaddr makes calculations easier later */
+> > +                if (left->mem_info->iaddr.al_addr > right->mem_info->iaddr.al_addr) return -1;
+> > +                if (left->mem_info->iaddr.al_addr < right->mem_info->iaddr.al_addr) return 1;
+> > +        }
+> 
+> do you need single column for 'physid' ?
+> 
+> my first idea was to have separate sort entries for all checked entries:
+> (same way like for memory memory_sort_dimensions)
+> 
+>   - mem_info->daddr.al_addr (we already have 'addr' check)
+>   - mem_info->iaddr.al_addr
+>   - thread->pid_ (we have only 'tid' check so far)
+>   - l_map->maj, l_map->min, l_map->ino, l_map, ino_generation (we could probably group these)
+> 
+> and init sort order with:
+> 
+>    sort_order = "physid,pid,...";
+> 
+> '...' is whatever name you choose for above entries
 
-Similar to what I have done in my last version, why do you need
-transition_ongoing and transition_wait? Simply work with
-transition_lock? i.e. Acquire it for the complete transition sequence.
+The problem is (as you can see in the code above), physid is _not_ just
+one piece of data.  It is dependent on multiple things.  It is mainly
+dependent on four things:
+
+- cpumode
+- major, minor, inode, inode_generation (call it mmap2 data)
+- data address
+- pid
+
+If cpumode == KERNEL, sort in this order
+  - mmap2 data
+  - data address
+  - pid (optional)
+
+If cpumode == USERSPACE and mmap2 data != 0, sort in this order
+  - mmap2 data
+  - data address
+  - pid (optional)
+
+If cpumode == USERSAPCE and mmap2 data == 0, sort in this order
+  - pid
+  - data address
+
+Notice how sorting on the pid is different depending on the scenario.
+
+I'll agree that sorting on iaddr and tid can be filtered out as a nice to
+have.
+
+But in order to sort on physid, you really need lots of pieces.
+Otherwise, what do you consider the definition of 'physid'? :-)
+
+Cheers,
+Don
