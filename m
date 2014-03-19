@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906AbaCSWUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 18:20:20 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:49918 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756314AbaCSWUR (ORCPT
+	id S1758970AbaCSWVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 18:21:15 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37166 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755899AbaCSWVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 18:20:17 -0400
-Message-ID: <532A262B.803@cogentembedded.com>
-Date: Thu, 20 Mar 2014 02:20:11 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Rob Herring <robherring2@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Florian Fainelli <f.fainelli@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH v2a RESEND 2/2] of_mdio: Allow the DT to specify the phy
- ID and avoid autoprobing
-References: <1394658311-17769-1-git-send-email-jgunthorpe@obsidianresearch.com> <1394658311-17769-2-git-send-email-jgunthorpe@obsidianresearch.com> <CAL_Jsq+qdbiwXErkZv1zZ9rphYY9NP6zHmmjw313tMvGeSTODg@mail.gmail.com> <20140319221404.GA1154@obsidianresearch.com>
-In-Reply-To: <20140319221404.GA1154@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 19 Mar 2014 18:21:13 -0400
+Message-ID: <1395267671.2185.63.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 02/11][SCSI]mpt2sas: Added new driver module Parameter
+ disable_eedp to Disable EEDP Support
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>, jejb@kernel.org,
+        linux-scsi@vger.kernel.org, Sathya.Prakash@lsi.com,
+        Nagalakshmi.Nandigama@lsi.com, linux-kernel@vger.kernel.org,
+        sreekanthreddy0547@gmail.com
+Date: Wed, 19 Mar 2014 15:21:11 -0700
+In-Reply-To: <yq1r464wm7s.fsf@sermon.lab.mkp.net>
+References: <20140314153622.GA7947@lsi.com>
+	 <yq1r464wm7s.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, 2014-03-14 at 16:37 -0400, Martin K. Petersen wrote:
+> >>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@lsi.com> writes:
+> 
+> Sreekanth> A new mpt2sas driver module parameter 'disable_eedp' is added
+> Sreekanth> to Disable EEDP support. By default DIF support is enabled in
+> Sreekanth> the driver and this module parameter would allow users to
+> Sreekanth> turn it off.
+> 
+> Why don't you just set the prot_mask module parameter to 0?
 
-On 03/20/2014 01:14 AM, Jason Gunthorpe wrote:
+Is there an answer to this?  It's holding up your patch submission.
 
->>     The preferred multi-line comment style is:
+James
 
->> /*
->>   * bla
->>   * bla
->>   */
-
-> Sergei, the entire file use the 'net' multi-line commenting style, and
-> I have maintined that consistency with the new code.
-
-    No, you haven't followed the networking style. It is:
-
-/* bla
-  * bla
-  */
-
-while your comment used:
-
-/* bla
-  * bla */
-
-> v3 on its way.
-
-> Regards,
-> Jason
-
-WBR, Sergei
 
