@@ -1,324 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965095AbaCSNLa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:11:30 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:35120 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964872AbaCSNLZ (ORCPT
+	id S934224AbaCSNKq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:10:46 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:50149 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934203AbaCSNKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:11:25 -0400
-Message-ID: <53299776.6060305@gmail.com>
-Date: Wed, 19 Mar 2014 14:11:18 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 19 Mar 2014 09:10:41 -0400
+From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Fugang Duan <B38611@freescale.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
+        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Simon Budig <simon.budig@kernelconcepts.de>,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
+Date: Wed, 19 Mar 2014 14:09:20 +0100
+Message-Id: <1395234563-11034-3-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
+References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-To: Mike Frysinger <vapier@gentoo.org>
-CC: mtk.manpages@gmail.com,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>, NeilBrown <neilb@suse.de>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: For review: open_by_name_at(2) man page [v2]
-References: <53271B69.3000305@gmail.com> <53284233.3050800@gmail.com> <4037316.YIp1ssalrz@vapier>
-In-Reply-To: <4037316.YIp1ssalrz@vapier>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
 
-On 03/19/2014 07:42 AM, Mike Frysinger wrote:
-> On Tue 18 Mar 2014 13:55:15 Michael Kerrisk wrote:
->> The
->> .I flags
->> argument is a bit mask constructed by ORing together
->> zero or more of the following value:
->> .TP
->> .B AT_EMPTY_PATH
->> Allow
->> .I pathname
->> to be an empty string.
->> See above.
->> (which may have been obtained using the
->> .BR open (2)
->> .B O_PATH
->> flag).
->> .TP
->> .B AT_SYMLINK_FOLLOW
->> By default,
->> .BR name_to_handle_at ()
->> does not dereference
->> .I pathname
->> if it is a symbolic link.
->> The flag
->> .B AT_SYMLINK_FOLLOW
->> can be specified in
->> .I flags
->> to cause
->> .I pathname
->> to be dereferenced if it is a symbolic link.
-> 
-> this section is only talking about |flags|, and further this part is only 
-> talking about AT_SYMLINK_FOLLOW.  so this last sentence sounds super 
-> redundant.
-> how about reversing the sentence order so that both are implicit like is done 
-> in the openat() page and the description of O_NOFOLLOW ?
+Signed-off-by: Lothar Wa√ümann <LW@KARO-electronics.de>
+---
+ .../bindings/input/touchscreen/edt-ft5x06.txt      |   41 ++++++
+ drivers/input/touchscreen/edt-ft5x06.c             |  144 +++++++++++++++-----
+ 2 files changed, 154 insertions(+), 31 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
 
-I'm not sure that I completely understand you here, but I agree that this could 
-be better. I've rewritten somewhat.
-
->> .B ENOTDIR
->> The file descriptor supplied in
->> .I dirfd
->> does not refer to a directory,
->> and it it is not the case that both
-> 
-> "it" is duplicated
-
-Fixed.
-
-
->> .SS Obtaining a persistent filesystem ID
->> The mount IDs in
->> .IR /proc/self/mountinfo
->> can be reused as filesystems are unmounted and mounted.
->> Therefore, the mount ID returned by
->> .BR name_to_handle_at (3)
-> 
-> should be () and not (3)
-
-Fixed.
-
-> side note: this seems like an easy error to script for ...
-
-Yep, I've got some scripts that I run manually now and then to 
-check for this sort of stuff.
-
->> $ \fBecho 'Kannst du bitte ¸berlegen?' > cecilia.txt\fP
-> 
-> aber, ich spreche kein Deutsch :(
-> 
-> do we have a standard about sticking to english ?  i wonder if people are more 
-> likely to be confused or to appreciate it ...
-
-Fair enough. I'm too influenced by recent work on the locale pages (and 
-family conversations ;-)). I'll switch it to English
-
->> #define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \\
->>                         } while (0)
-> 
-> i wonder if err.h makes sense now that this is a man page for completely 
-> linux-specific syscalls :).  and you use _GNU_SOURCE.
-
-I'm not really convinced about using these functions, but I'll reflect 
-on it more.
-
->> int
->> main(int argc, char *argv[])
->> {
->>     struct file_handle *fhp;
->>     int mount_id, fhsize, s;
->>
->>     if (argc < 2 || strcmp(argv[1], "\-\-help") == 0) {
-> 
-> argc != 2 ?
-
-Yes, some cruft crept in.
-
->>     /* Allocate file_handle structure */
->>
->>     fhsize = sizeof(struct file_handle *);
-> 
-> pretty sure this is wrong 
-
-<blush>
-
-> as sizeof() here returns the size of a pointer, not 
-> the size of the struct.  it's why i prefer the form:
-> 
-> 	fhsize = sizeof(*fhp);
-> 
-> less typing and harder to screw up by accident.
-
-Yep, changed.
-
-> granted, the case below won't crash since the kernel only reads/writes 
-> sizeof(unsigned int) and i'm not aware of any system where that is larger than 
-> sizeof(void *), but it's still wrong :).
-> 
->>     s = name_to_handle_at(AT_FDCWD, argv[1], fhp, &mount_id, 0);
-> 
-> another personal style: create dedicated variables for each arg you unpack out 
-> of argv[1].  it's generally OK when you only take one arg, but when you get 
-> more than one, you end up flipping back and forth between the usage trying to 
-> figure out what index 1 represents instead of focusing on what the code is 
-> doing.
-> 	const char *pathname = argv[1];
-
-Yup.
-
->>     fhsize = sizeof(struct file_handle) + fhp\->handle_bytes;
-> 
-> fhsize += fhp->handle_bytes ?
-> 
-> it's the same, but i think nicer ;)
-
-Depends on your perspective. It relies on no one changing the code
-so that fhsize is modified after the earlier initialization. And
-also, with this line, I see exactly what is going on, in one place.
-I'll leave as is.
-
->>     /* Write mount ID, file handle size, and file handle to stdout,
->>        for later reuse by t_open_by_handle_at.c */
->>
->>     if (write(STDOUT_FILENO, &mount_id, sizeof(int)) != sizeof(int) ||
->>             write(STDOUT_FILENO, &fhsize, sizeof(int)) != sizeof(int) ||
->>             write(STDOUT_FILENO, fhp, fhsize) != fhsize) {
-> 
-> seems like a whole lot of code spew for a simple printf() ?  you'd have to 
-> adjust the other program to use scanf(), but seems like the end result would 
-> be nicer for users to experiment with ?
-
-Yes. I'd already reflected on exactly that and made a change to using text 
-formats.
-
->> static int
->> open_mount_path_by_id(int mount_id)
->> {
->>     char *linep;
->>     size_t lsize;
->>     char mount_path[PATH_MAX];
->>     int fmnt_id, fnd, nread;
-> 
-> could we buy a few more letters for these vars ?  i guess fmnt_id is the 
-> filesystem mount id, and fnd is "find".
-
-When I was a kid, you had to pay a dollar for each letter...
-(I've made a few changes.)
-
-> also, getline() returns a ssize_t, not an int.
-
-Fixed.
-
->>     FILE *fp;
->>
->>     fp  = fopen("/proc/self/mountinfo", "r");
-> 
-> only one space before the =
-
-Yup.
-
-> i would encourage using the "e" flag whenever possible in the hopes that 
-> someone might start using it in their own code base.
-> 
-> 	fp = fopen("/proc/self/mountinfo", "re");
-
-I'm of two minds about this. I foresee the day when I get a bug report that
-says: "Why did you use 'e' here (or O_CLOEXEC)? It's not needed". So, I'm 
-inclined to leave this.
-
->>     for (fnd = 0; !fnd ; ) {
-> 
-> in my experience, seems like a while() loop makes more sense when you're 
-> implementing a while() loop ...
-> 	fnd = 0;
-> 	while (!fnd) {
-
-Yup. ;-}.
-
->>         linep = NULL;
->>         nread = getline(&linep, &lsize, fp);
-> 
-> this works, but it's unusual when using getline() as it kind of defeats the 
-> purpose of using the dyn allocation feature.
-> 
-> 	fnd = 0;
-> 	linep = NULL;
-> 	while (!fnd) {
-> 		nread = getline(&linep, &lsize, fp);
-> 		...
-> 	}
-> 	free(linep);
-> 
-> i don't think it complicates the code much more ?
-
-Yes. Fixed.
-
->>         if (nread == \-1)
->>             break;
->>
->> 	nread = sscanf(linep, "%d %*d %*s %*s %s", &fmnt_id, mount_path);
-> 
-> indent is off here
-
-Fixed.
-
->>     return open(mount_path, O_RDONLY | O_DIRECTORY);
-> 
-> O_CLOEXEC for funsies ?
-
-See above comment.
-
->> int
->> main(int argc, char *argv[])
->> {
->>     struct file_handle *fhp;
->>     int mount_id, fd, mount_fd, fhsize;
->>     ssize_t nread;
->> #define BSIZE 1000
->>     char buf[BSIZE];
-> 
-> why not sizeof(buf) and avoid the define ?
-
-Done.
-
->>     if (argc > 1 && strcmp(argv[1], "\-\-help") == 0) {
->>         fprintf(stderr, "Usage: %s [mount\-dir]]\\n",
->>                 argv[0]);
-> 
-> how about also aborting when argc > 2 ?
-
-Yes.
-
->>     if (argc > 1)
->>         mount_fd = open(argv[1], O_RDONLY | O_DIRECTORY);
-> 
-> O_CLOEXEC ?
-
-See comment above.
-
->>     nread = read(fd, buf, BSIZE);
->>     if (nread == \-1)
->>         errExit("read");
->>     printf("Read %ld bytes\\n", (long) nread);
-> 
-> yikes, that's a bad habit to encourage.  read() returns a ssize_t, so print it 
-> out using %zd.
-
-Calling it a bad habit seems a bit too strong. It's a habit conditioned by writing 
-code that runs on systems that don't have C99. Less important these days, of course.
-I've changed it.
-
->> .SH SEE ALSO
->> .BR blkid (1),
->> .BR findfs (1),
-> 
-> i don't have a findfs(1).  i do have a findfs(8) ...
-
-Thanks. blkid(8) also, actually.
-
-Thanks for the comments, Mike.
-
-Cheers,
-
-Michael
-
-
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
+new file mode 100644
+index 0000000..e5adc76
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
+@@ -0,0 +1,41 @@
++FocalTech EDT-FT5x06 Polytouch driver
++=====================================
++
++Required properties:
++ - compatible:  "edt,edt-ft5x06"
++ - reg:         I2C slave address of the chip (0x38)
++ - interrupt-parent: a phandle pointing to the interrupt controller
++                     serving the interrupt for this chip
++ - interrupts:       interrupt specification for this chip
++
++Optional properties:
++ - reset-gpios: GPIO specification for the RESET input
++ - wake-gpios:  GPIO specification for the WAKE input
++
++ - pinctrl-names: should be "default"
++ - pinctrl-0:   a phandle pointing to the pin settings for the
++                control gpios
++
++ - threshold:   allows setting the "click"-threshold in the range
++                from 20 to 80.
++
++ - gain:        allows setting the sensitivity in the range from 0 to
++                31. Note that lower values indicate higher
++                sensitivity.
++
++ - offset:      allows setting the edge compensation in the range from
++                0 to 31.
++ - report_rate: allows setting the report rate in the range from 3 to
++                14.
++
++Example:
++	polytouch: edt-ft5x06@38 {
++		compatible = "edt,edt-ft5x06";
++		reg = <0x38>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&edt_ft5x06_pins>;
++		interrupt-parent = <&gpio2>;
++		interrupts = <5 0>;
++		reset-gpios = <&gpio2 6 1>;
++		wake-gpios = <&gpio4 9 0>;
++	};
+diff --git a/drivers/input/touchscreen/edt-ft5x06.c b/drivers/input/touchscreen/edt-ft5x06.c
+index 7b4470d..257a1c8 100644
+--- a/drivers/input/touchscreen/edt-ft5x06.c
++++ b/drivers/input/touchscreen/edt-ft5x06.c
+@@ -33,6 +33,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/slab.h>
+ #include <linux/gpio.h>
++#include <linux/of_gpio.h>
+ #include <linux/input/mt.h>
+ #include <linux/input/edt-ft5x06.h>
+ 
+@@ -65,6 +66,10 @@ struct edt_ft5x06_ts_data {
+ 	u16 num_x;
+ 	u16 num_y;
+ 
++	int reset_pin;
++	int irq_pin;
++	int wake_pin;
++
+ #if defined(CONFIG_DEBUG_FS)
+ 	struct dentry *debug_dir;
+ 	u8 *raw_buffer;
+@@ -617,24 +622,38 @@ edt_ft5x06_ts_teardown_debugfs(struct edt_ft5x06_ts_data *tsdata)
+ 
+ 
+ static int edt_ft5x06_ts_reset(struct i2c_client *client,
+-					 int reset_pin)
++			struct edt_ft5x06_ts_data *tsdata)
+ {
+ 	int error;
+ 
+-	if (gpio_is_valid(reset_pin)) {
++	if (gpio_is_valid(tsdata->wake_pin)) {
++		error = devm_gpio_request_one(&client->dev,
++					tsdata->wake_pin, GPIOF_OUT_INIT_LOW,
++					"edt-ft5x06 wake");
++		if (error) {
++			dev_err(&client->dev,
++				"Failed to request GPIO %d as wake pin, error %d\n",
++				tsdata->wake_pin, error);
++			return error;
++		}
++
++		mdelay(5);
++		gpio_set_value(tsdata->wake_pin, 1);
++	}
++	if (gpio_is_valid(tsdata->reset_pin)) {
+ 		/* this pulls reset down, enabling the low active reset */
+-		error = devm_gpio_request_one(&client->dev, reset_pin,
+-					      GPIOF_OUT_INIT_LOW,
+-					      "edt-ft5x06 reset");
++		error = devm_gpio_request_one(&client->dev,
++					tsdata->reset_pin, GPIOF_OUT_INIT_LOW,
++					"edt-ft5x06 reset");
+ 		if (error) {
+ 			dev_err(&client->dev,
+ 				"Failed to request GPIO %d as reset pin, error %d\n",
+-				reset_pin, error);
++				tsdata->reset_pin, error);
+ 			return error;
+ 		}
+ 
+ 		mdelay(50);
+-		gpio_set_value(reset_pin, 1);
++		gpio_set_value(tsdata->reset_pin, 1);
+ 		mdelay(100);
+ 	}
+ 
+@@ -675,6 +694,21 @@ static int edt_ft5x06_ts_identify(struct i2c_client *client,
+ 	    pdata->name <= edt_ft5x06_attr_##name.limit_high)		\
+ 		edt_ft5x06_register_write(tsdata, reg, pdata->name)
+ 
++#define EDT_GET_PROP(name, reg) {					\
++	const u32 *prop = of_get_property(np, #name, NULL);		\
++	if (prop)							\
++		edt_ft5x06_register_write(tsdata, reg, be32_to_cpu(*prop)); \
++}
++
++static void edt_ft5x06_ts_get_dt_defaults(struct device_node *np,
++					struct edt_ft5x06_ts_data *tsdata)
++{
++	EDT_GET_PROP(threshold, WORK_REGISTER_THRESHOLD);
++	EDT_GET_PROP(gain, WORK_REGISTER_GAIN);
++	EDT_GET_PROP(offset, WORK_REGISTER_OFFSET);
++	EDT_GET_PROP(report_rate, WORK_REGISTER_REPORT_RATE);
++}
++
+ static void
+ edt_ft5x06_ts_get_defaults(struct edt_ft5x06_ts_data *tsdata,
+ 			   const struct edt_ft5x06_platform_data *pdata)
+@@ -702,6 +736,33 @@ edt_ft5x06_ts_get_parameters(struct edt_ft5x06_ts_data *tsdata)
+ 	tsdata->num_y = edt_ft5x06_register_read(tsdata, WORK_REGISTER_NUM_Y);
+ }
+ 
++#ifdef CONFIG_OF
++static int edt_ft5x06_i2c_ts_probe_dt(struct device *dev,
++				struct edt_ft5x06_ts_data *tsdata)
++{
++	struct device_node *np = dev->of_node;
++
++	if (!np)
++		return -ENODEV;
++
++	/*
++	 * irq_pin is not needed for DT setup.
++	 * irq is associated via 'interrupts' property in DT
++	 */
++	tsdata->irq_pin = -EINVAL;
++	tsdata->reset_pin = of_get_named_gpio(np, "reset-gpios", 0);
++	tsdata->wake_pin = of_get_named_gpio(np, "wake-gpios", 0);
++
++	return 0;
++}
++#else
++static inline int edt_ft5x06_i2c_ts_probe_dt(struct device *dev,
++					struct edt_ft5x06_i2c_ts_data *tsdata)
++{
++	return -ENODEV;
++}
++#endif
++
+ static int edt_ft5x06_ts_probe(struct i2c_client *client,
+ 					 const struct i2c_device_id *id)
+ {
+@@ -714,32 +775,40 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
+ 
+ 	dev_dbg(&client->dev, "probing for EDT FT5x06 I2C\n");
+ 
++	tsdata = devm_kzalloc(&client->dev, sizeof(*tsdata), GFP_KERNEL);
++	if (!tsdata) {
++		dev_err(&client->dev, "failed to allocate driver data.\n");
++		return -ENOMEM;
++	}
++
+ 	if (!pdata) {
+-		dev_err(&client->dev, "no platform data?\n");
+-		return -EINVAL;
++		error = edt_ft5x06_i2c_ts_probe_dt(&client->dev, tsdata);
++		if (error) {
++			dev_err(&client->dev,
++				"DT probe failed and no platform data present\n");
++			return error;
++		}
++	} else {
++		tsdata->reset_pin = pdata->reset_pin;
++		tsdata->irq_pin = pdata->irq_pin;
++		tsdata->wake_pin = -EINVAL;
+ 	}
+ 
+-	error = edt_ft5x06_ts_reset(client, pdata->reset_pin);
++	error = edt_ft5x06_ts_reset(client, tsdata);
+ 	if (error)
+ 		return error;
+ 
+-	if (gpio_is_valid(pdata->irq_pin)) {
+-		error = devm_gpio_request_one(&client->dev, pdata->irq_pin,
+-					      GPIOF_IN, "edt-ft5x06 irq");
++	if (gpio_is_valid(tsdata->irq_pin)) {
++		error = devm_gpio_request_one(&client->dev, tsdata->irq_pin,
++					GPIOF_IN, "edt-ft5x06 irq");
+ 		if (error) {
+ 			dev_err(&client->dev,
+ 				"Failed to request GPIO %d, error %d\n",
+-				pdata->irq_pin, error);
++				tsdata->irq_pin, error);
+ 			return error;
+ 		}
+ 	}
+ 
+-	tsdata = devm_kzalloc(&client->dev, sizeof(*tsdata), GFP_KERNEL);
+-	if (!tsdata) {
+-		dev_err(&client->dev, "failed to allocate driver data.\n");
+-		return -ENOMEM;
+-	}
+-
+ 	input = devm_input_allocate_device(&client->dev);
+ 	if (!input) {
+ 		dev_err(&client->dev, "failed to allocate input device.\n");
+@@ -757,7 +826,11 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
+ 		return error;
+ 	}
+ 
+-	edt_ft5x06_ts_get_defaults(tsdata, pdata);
++	if (!pdata)
++		edt_ft5x06_ts_get_dt_defaults(client->dev.of_node, tsdata);
++	else
++		edt_ft5x06_ts_get_defaults(tsdata, pdata);
++
+ 	edt_ft5x06_ts_get_parameters(tsdata);
+ 
+ 	dev_dbg(&client->dev,
+@@ -787,10 +860,10 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
+ 	input_set_drvdata(input, tsdata);
+ 	i2c_set_clientdata(client, tsdata);
+ 
+-	error = devm_request_threaded_irq(&client->dev, client->irq,
+-					  NULL, edt_ft5x06_ts_isr,
+-					  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+-					  client->name, tsdata);
++	error = devm_request_threaded_irq(&client->dev, client->irq, NULL,
++					edt_ft5x06_ts_isr,
++					IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++					client->name, tsdata);
+ 	if (error) {
+ 		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
+ 		return error;
+@@ -801,19 +874,21 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
+ 		return error;
+ 
+ 	error = input_register_device(input);
+-	if (error) {
+-		sysfs_remove_group(&client->dev.kobj, &edt_ft5x06_attr_group);
+-		return error;
+-	}
++	if (error)
++		goto err_remove_attrs;
+ 
+ 	edt_ft5x06_ts_prepare_debugfs(tsdata, dev_driver_string(&client->dev));
+ 	device_init_wakeup(&client->dev, 1);
+ 
+ 	dev_dbg(&client->dev,
+-		"EDT FT5x06 initialized: IRQ pin %d, Reset pin %d.\n",
+-		pdata->irq_pin, pdata->reset_pin);
++		"EDT FT5x06 initialized: IRQ %d, WAKE pin %d, Reset pin %d.\n",
++		client->irq, tsdata->wake_pin, tsdata->reset_pin);
+ 
+ 	return 0;
++
++err_remove_attrs:
++	sysfs_remove_group(&client->dev.kobj, &edt_ft5x06_attr_group);
++	return error;
+ }
+ 
+ static int edt_ft5x06_ts_remove(struct i2c_client *client)
+@@ -857,10 +932,17 @@ static const struct i2c_device_id edt_ft5x06_ts_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, edt_ft5x06_ts_id);
+ 
++static const struct of_device_id edt_ft5x06_of_match[] = {
++	{ .compatible = "edt,edt-ft5x06", },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, edt_ft5x06_of_match);
++
+ static struct i2c_driver edt_ft5x06_ts_driver = {
+ 	.driver = {
+ 		.owner = THIS_MODULE,
+ 		.name = "edt_ft5x06",
++		.of_match_table = edt_ft5x06_of_match,
+ 		.pm = &edt_ft5x06_ts_pm_ops,
+ 	},
+ 	.id_table = edt_ft5x06_ts_id,
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.7.10.4
+
