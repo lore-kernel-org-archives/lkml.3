@@ -1,60 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933435AbaCSJkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 05:40:22 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:58953 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932191AbaCSJkU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 05:40:20 -0400
+	id S933518AbaCSJmd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 05:42:33 -0400
+Received: from mail.cs.hku.hk ([147.8.176.10]:58117 "EHLO mail.cs.hku.hk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932191AbaCSJmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 05:42:32 -0400
+Message-ID: <20140319174222.213976eu8b54ujk0@intranet.cs.hku.hk>
+Date: Wed, 19 Mar 2014 17:42:22 +0800
+From: lwcheng@cs.hku.hk
+To: linux-kernel@vger.kernel.org
+Cc: glommer@gmail.com
+Subject: [BUG] Paravirtual time accounting / IRQ time accounting
 MIME-Version: 1.0
-In-Reply-To: <87a9cn4kot.fsf@devron.myhome.or.jp>
-References: <1393769349-3540-1-git-send-email-linkinjeon@gmail.com>
-	<87a9cn4kot.fsf@devron.myhome.or.jp>
-Date: Wed, 19 Mar 2014 18:40:20 +0900
-Message-ID: <CAKYAXd8Rnkv98wjV4Z1CEoRG+xFmmq2iz96Vt5dxnaJc_SySFA@mail.gmail.com>
-Subject: Re: [PATCH v4 3/6] fat: zero out seek range on _fat_get_block
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Dynamic Internet Messaging Program (DIMP) H3 (1.1.4)
+X-cs-MailScanner-Information: Please contact the ISP for more information
+X-cs-MailScanner-ID: s2J9gNG5017889
+X-cs-MailScanner: Found to be clean
+X-cs-MailScanner-SpamCheck: not spam, SpamAssassin (not cached, score=-1.01,
+	required 6, autolearn=disabled, ALL_TRUSTED -1.00,
+	T_RP_MATCHES_RCVD -0.01)
+X-cs-MailScanner-From: lwcheng@cs.hku.hk
+X-cs-MailScanner-Watermark: 1395826944.05029@/poInFt4JBACJ1K7tY3JOg
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-18 23:59 GMT+09:00, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> +static void check_fallocated_region(struct inode *inode, sector_t
->> iblock,
->> +		unsigned long *max_blocks, struct buffer_head *bh_result)
->> +{
->> +	struct super_block *sb = inode->i_sb;
->> +	sector_t last_block, disk_block;
->> +	const unsigned long blocksize = sb->s_blocksize;
->> +	const unsigned char blocksize_bits = sb->s_blocksize_bits;
->> +
->> +	last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
->> +		>> blocksize_bits;
->> +	disk_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
->> +		>> blocksize_bits;
->> +	if (iblock >= last_block && iblock <= disk_block) {
->
-Hi OGAWA.
-> Maybe off-by-one error. If iblock == disk_block, phys should not be set
-> by fat_bmap()?
-Yes, right, iblock == disk_block case is not needed in this condition
-because fat_bmap don't set to phys when iblock==diskblock.(phys will
-be 0)
-So I will change it like this.
+In consolidated environments, when there are multiple virtual machines (VMs)
+running on one CPU core, timekeeping will be a problem to the guest OS.
+Here, I report my findings about Linux process scheduler.
 
-if (iblock >= last_block && iblock < disk_block) {
 
-And I will fix your review comments in other patches.
+Description
+------------
+Linux CFS relies on rq->clock_task to charge each task, determine  
+vruntime, etc.
 
-Thanks for review!
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+When CONFIG_IRQ_TIME_ACCOUNTING is enabled, the time spent on serving IRQ
+will be excluded from updating rq->clock_task.
+When CONFIG_PARAVIRT_TIME_ACCOUNTING is enabled, the time stolen by  
+the hypervisor
+will also be excluded from updating rq->clock_task.
+
+With "both" CONFIG_IRQ_TIME_ACCOUNTING and  
+CONFIG_PARAVIRT_TIME_ACCOUNTING enabled,
+I put three KVM guests on one core and run hackbench in each guest. I  
+find that
+in the guests, rq->clock_task stays *unchanged*. The malfunction  
+embarrasses CFS.
+------------
+
+
+Analysis
+------------
+[src/kernel/sched/core.c]
+static void update_rq_clock_task(struct rq *rq, s64 delta)
+{
+     ... ...
+#ifdef CONFIG_IRQ_TIME_ACCOUNTING
+     irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
+     ... ...
+     rq->prev_irq_time += irq_delta;
+     delta -= irq_delta;
+#endif
+
+#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
+     if (static_key_false((&paravirt_steal_rq_enabled))) {
+         steal = paravirt_steal_clock(cpu_of(rq));
+         steal -= rq->prev_steal_time_rq;
+         ... ...
+         rq->prev_steal_time_rq += steal;
+         delta -= steal;
+     }
+#endif
+
+     rq->clock_task += delta;
+     ... ...
+}
+--
+"delta" -> the intended increment to rq->clock_task
+"irq_delta" -> the time spent on serving IRQ (hard + soft)
+"steal" -> the time stolen by the underlying hypervisor
+--
+"irq_delta" is calculated based on sched_clock_cpu(), which is vulnerable
+to VM scheduling delays. "irq_delta" can include part or whole of "steal".
+I observe that [irq_delta + steal >> delta].
+As a result, "delta" becomes zero. That is why rq->clock_task stops.
+------------
+
+Please confirm this bug. Thanks.
+
+
+Luwei Cheng
+--
+CS student
+The University of Hong Kong
