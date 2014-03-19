@@ -1,178 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758920AbaCSQqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:46:11 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:53446 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538AbaCSQqJ (ORCPT
+	id S964996AbaCSQq5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:46:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43530 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932996AbaCSQqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:46:09 -0400
+	Wed, 19 Mar 2014 12:46:52 -0400
+Date: Wed, 19 Mar 2014 09:48:55 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, mmarek@suse.cz,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cocci@systeme.lip6.fr" <cocci@systeme.lip6.fr>,
+        Andreea Bernat <bernat.ada@gmail.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Coccicheck: Remove memcpy to struct assignment test
+Message-ID: <20140319164855.GB27142@kroah.com>
+References: <1395177092-3023-1-git-send-email-peter.senna@gmail.com>
+ <1395230578.12633.21.camel@thorin>
+ <CA+MoWDoSYu-aSp39vBe7DmayH2iqagHNYP9BC7LefajMXk+FnQ@mail.gmail.com>
+ <1395237927.12633.29.camel@thorin>
 MIME-Version: 1.0
-In-Reply-To: <CACVXFVO2rR+H7X2Xv_d-U0NeikT4dR97ffQ7PuV7+i0fN=_k3w@mail.gmail.com>
-References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <CACVXFVOqBuCcQC6ku0abqstkgJWGe21ZztB-eTsyDwsvDvXNZw@mail.gmail.com>
- <CAErSpo4ngU60XQCD=DbFJbqNOMkOwwhHB1oau1mmr7rJQQ2+pg@mail.gmail.com>
- <CACVXFVMz+6DaSgT0EHeVfyBOsXfWDYnZQ0wy7pwcey5ahM6rUA@mail.gmail.com>
- <20140318002700.GA22356@google.com> <CACVXFVNbzjYa7dJpH+k-F02Cap7yBBi7TkngjVu_KthXw-WKJA@mail.gmail.com>
- <CACVXFVO2rR+H7X2Xv_d-U0NeikT4dR97ffQ7PuV7+i0fN=_k3w@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 19 Mar 2014 10:45:48 -0600
-Message-ID: <CAErSpo5qsosqLXdkS2__d2J7sM4T2nBfO1ewKg1=kFri3mcdrQ@mail.gmail.com>
-Subject: Re: [PATCH 8/9] PCI: Ignore BAR contents when firmware left decoding disabled
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Pekka Enberg <penberg@kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395237927.12633.29.camel@thorin>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 10:52 PM, Ming Lei <tom.leiming@gmail.com> wrote:
-> Hi,
->
-> Looks Sasha fixed the problem in lkvm tool[1].
->
-> Sasha, looks we both saw the problem, but from technical
-> view, I am wondering if the fix is correct, because PCI spec.
-> requires that the IO/MMIO bits in COMMAND register should
-> be cleared after reset, maybe there are some potential problem
-> in lkvm pci emulation.
+On Wed, Mar 19, 2014 at 03:05:27PM +0100, Bernd Petrovitsch wrote:
+> Hi!
+> 
+> On Mit, 2014-03-19 at 14:39 +0100, Peter Senna Tschudin wrote:
+> > On Wed, Mar 19, 2014 at 1:02 PM, Bernd Petrovitsch
+> > <bernd@petrovitsch.priv.at> wrote:
+> > > On Die, 2014-03-18 at 22:11 +0100, Peter Senna Tschudin wrote:
+> > >> The Coccinelle script scripts/coccinelle/misc/memcpy-assign.cocci look
+> > >> for opportunities to replace a call to memcpy by a struct assignment.
+> > >> This patch removes memcpy-assign.cocci as it is not clear that this
+> > >> convention has an impact on the generated code.
+> > >
+> > > Using struct assignment keeps the type check and is just for this reason
+> > > always preferable over memcpy().
+> > What about the assignment hiding that a potentially large memcpy is
+> > happening instead of just a pointer assignment?
+> 
+> It makes no difference if you copy 2KB with a struct assignment or with
+> a memcpy(). IMHO most probably each and every C compiler produces the
+> same code for both cases.
 
-I think I'm going to revert this patch ([2], "Ignore BAR contents when
-firmware left decoding disabled").  The main reason for that patch was
-to try for a consistent way of figuring out whether BARs are valid
-that we could use on all architectures, but I think we can do it in a
-better way.
+Really?  We have a much different memcpy() function than gcc provides
+for some arches.
 
-That said, this kvm change should not be necessary.  We *should* be
-able to take any PCI device and initialize it from power-on state
-without any dependencies on what the BIOS left in the BARs or the
-command register.  As far as I can tell, the PCI core actually worked
-fine in this case (we assigned valid addresses to the devices), but
-something else blew up.  If I revert that patch, it will cover up
-whatever this other bug is, but it would be much better to figure out
-what it is and fix is.
+> And - more important - I assume that people which actually read the code
+> (to understand the code) also know if the variables there are
+> pointers/ints or a (somewhat large) struct (if only one see an field
+> access in the struct, it should be pretty clear).
+> I don't think it makes actually much sense trying to read source without
+> that ....
 
-You said earlier that "The memory allocation failure is caused by
-mistaken value read from pci address after the device is failed to
-enable."  Can you elaborate on that?  Are you saying that something
-tried to read from a region mapped by a BAR even though
-pci_enable_device() failed?  That would be a programming error, of
-course.  If you have any more details about exactly where this
-happened, that would help a lot in finding the problem.
+You want to make it painfully obvious exactly what the code is doing so
+that I can fix your bugs.  And you can fix mine.  If I see two variables
+being assigned to each other I'll initially assume that they are just
+pointers and not care about them.  But if it's doing a 64Kb memcpy,
+maybe that's not a good thing to be doing at that point in the code.
 
-Bjorn
+That's why I don't like these "implicit" memcpy() calls, it hides what
+is going on for no good reason.
 
-[2] http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/commit/?id=5c89a9ee943d5e
+Can someone please just remove the check from the kernel as I'm getting
+tired of rejecting patches that do this...
 
-> [1],  commit 6478ce1416aacf1ce35530f79ea035f89fb21e90
-> Author: Sasha Levin <sasha.levin@oracle.com>
-> Date:   Wed Mar 5 23:08:16 2014 -0500
->
->     kvm tools: mark our PCI card as PIO and MMIO able
->
->
-> Thanks,
-> --
-> Ming Lei
->
-> On Wed, Mar 19, 2014 at 11:32 AM, Ming Lei <tom.leiming@gmail.com> wrote:
->> On Tue, Mar 18, 2014 at 8:27 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>> On Fri, Mar 14, 2014 at 09:48:35AM +0800, Ming Lei wrote:
->>>> On Fri, Mar 14, 2014 at 12:08 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>> > On Thu, Mar 13, 2014 at 2:51 AM, Ming Lei <tom.leiming@gmail.com> wrote:
->>>> >> Hi Bjorn,
->>>> >>
->>>> >> I found this patch broke virtio-pci devices.
->>>> >
->>>> > Thanks a lot for testing this.
->>>> >
->>>> >> On Thu, Feb 27, 2014 at 3:37 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>> >>> Don't rely on BAR contents when the command register says the BAR is
->>>> >>> disabled.
->>>> >>>
->>>> >>> If we receive a PCI device from firmware (or a hot-added device that was
->>>> >>> just powered up) with the MEMORY or IO enable bits in the PCI command
->>>> >>> register cleared, there's no reason to believe the BARs contain valid
->>>> >>> addresses.
->>>> >>
->>>> >> From PCI LOCAL BUS SPECIFICATION, REV. 3.0, both
->>>> >> PCI_COMMAND_IO and PCI_COMMAND_MEM should be
->>>> >> cleared after reset, so looks the patch sets IORESOURCE_UNSET
->>>> >> too early because PCI drivers may call pci_enable_device()
->>>> >> (->pci_enable_resources()) to enable the two bits of
->>>> >> PCI_COMMAND explicitly.
->>>> >
->>>> > The point is that it's not safe to enable those two bits unless we're
->>>> > certain that the BARs they control contain valid values that don't
->>>> > conflict with anything else in the system.
->>>> >
->>>> > Maybe we should only set IORESOURCE_UNSET when we find a conflict or a
->>>> > BAR that's not contained by an upstream bridge window, and we should
->>>> > try to reallocate then.  I'm pretty sure we do that at least in some
->>>> > cases, but it would probably simplify things if we did it more
->>>> > consistently, and maybe we shouldn't set it at all here in
->>>> > __pci_read_base().
->>>>
->>>> I think so because __pci_read_base() is called in device emulation
->>>> path.
->>>
->>> Which path is this?  I don't know anything about virtio-pci, and I only see
->>> calls to __pci_read_base() from:
->>>
->>>   sriov_init()
->>>   pci_sriov_resource_alignment()
->>>   pci_read_bases()
->>>
->>>> > But I'd like to understand your situation better, so can you provide
->>>> > more details, please?  Complete before/after dmesg logs would go a
->>>> > long way toward illustrating the problem you're seeing.
->>>>
->>>> Please see the two attachment log. The memory allocation failure
->>>> is caused by mistaken value read from pci address after the device
->>>> is failed to enable.
->>>
->>> Your logs are harder than necessary to compare because one has a lot more
->>> debug turned on than the other.
->>>
->>> In the failing case, we ignore all the initial BAR values, but we do assign
->>> values to all of them later:
->>>
->>>   pci 0000:00:00.0: can't claim BAR 0 [mem size 0x00000400]: no address assigned
->>>   pci 0000:00:00.0: can't claim BAR 1 [io  size 0x0400]: no address assigned
->>>   ...
->>>   pci 0000:00:00.0: BAR 0: assigned [mem 0x40000000-0x400003ff]
->>>   pci 0000:00:00.0: BAR 1: assigned [io  0x1000-0x13ff]
->>>   ...
->>>
->>> The newly-assigned values look valid, and as far as I can tell, they should
->>> work.  Do you know why they don't?  Is there an assumption somewhere that
->>> we never change BAR values?
->>
->> I don't know the cause, maybe it is related with the hypervisor
->> implementation.
->>
->>>
->>> Even if we don't need to ignore BAR values in as many cases as we do, it
->>> should be legal to ignore them and reassign them, so I want to understand
->>> what's going on here before reverting this.
->>>
->>> Is there an easy way I can reproduce the problem on my own box?
->>
->> It is not quite difficult, you can build a lkvm following the README in
->> below link and test -next tree on the small kvm hypervisor:
->>
->>      https://github.com/penberg/linux-kvm/blob/master/tools/kvm/README
->>
->> Thanks,
->> --
->> Ming Lei
->
->
->
-> --
-> Ming Lei
+thanks,
+
+greg k-h
