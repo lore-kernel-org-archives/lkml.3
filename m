@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965160AbaCSNLl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:11:41 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36889 "EHLO
+	id S965175AbaCSNLt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:11:49 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36916 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965080AbaCSNLh (ORCPT
+	with ESMTP id S964995AbaCSNLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:11:37 -0400
-Date: Wed, 19 Mar 2014 13:11:31 +0000
+	Wed, 19 Mar 2014 09:11:47 -0400
+Date: Wed, 19 Mar 2014 13:11:42 +0000
 From: Mark Brown <broonie@kernel.org>
 To: Sachin Kamat <sachin.kamat@linaro.org>
 Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com, sbkim73@samsung.com
-Message-ID: <20140319131131.GI11706@sirena.org.uk>
+Message-ID: <20140319131142.GJ11706@sirena.org.uk>
 References: <1393912018-15780-1-git-send-email-sachin.kamat@linaro.org>
+ <1393912018-15780-2-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eJYtPRuVoi7CX1t8"
+	protocol="application/pgp-signature"; boundary="b0T1S56dfvmV3Vu7"
 Content-Disposition: inline
-In-Reply-To: <1393912018-15780-1-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1393912018-15780-2-git-send-email-sachin.kamat@linaro.org>
 X-Cookie: Turn the other cheek.
 User-Agent: Mutt/1.5.22 (2013-10-16)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: s2mps11: Use of_get_child_by_name
+Subject: Re: [PATCH 2/2] regulator: s2mps11: Add missing of_node_put
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,36 +31,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---eJYtPRuVoi7CX1t8
+--b0T1S56dfvmV3Vu7
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Mar 04, 2014 at 11:16:57AM +0530, Sachin Kamat wrote:
-> of_find_node_by_name walks the allnodes list, and can thus walk
-> outside of the parent node. Use of_get_child_by_name instead.
+On Tue, Mar 04, 2014 at 11:16:58AM +0530, Sachin Kamat wrote:
+> Add of_node_put to decrement the ref count.
 
 Applied, thanks.
 
---eJYtPRuVoi7CX1t8
+--b0T1S56dfvmV3Vu7
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTKZd/AAoJELSic+t+oim9364QAIC+UeZJHJ5PM1BGIOGY1grZ
-05dfORPkiLiOqufSUbr2pWFDqg9/RciAOi1DtTE3rP1enweYzMQ7tTpFRr5/LT7k
-+IbpC8GlN4Nq8QWrrADvmOyXyi2iuMpp/NCZSsaC2dFFhRlKL6p9rUOOqaECp1vW
-+wpFhnr+yOlrAW5/lrEfG+2/zJDvMqRA9ZwJ1BX7RMt1mK5AhFlT1PaPiZQMQw3C
-w6xtJLtj+a5sPgyBxvaMI75mnBTqwHdBdjklGlEnEAqLd8I5bmI6vJqde3UOPkJ1
-tbjOcv3AEbs8AyBgZORvh4344V9f8s/A0wR2/MsKlzk9itxSgCWTNVKLCF9qp+8B
-62eEDdeP6Kzzmo+b4ADhnu95vPGvx5UY/VpM/oDbENUOA3iJhWv6JoHl7DwIxkga
-KTec3Lv+F30EAOGB2ucjnoq7+QSzcQDmt8TK8ewh8PZMc+f6WxrMa+sL9Wzs5b/z
-Zey/ZmNJhy65f7ia+3j1IqUIpHYl/t2hSx6GA+kw8E/oWcXDBVfobRABYG3Txqbf
-qD0uvj5DWwRTRFYvgk+kZo1PDSoNBr2qwXpL0dHTWLSbutVhtASSTROiX1NlqTfU
-+4s9wocMqgXrlbJNsDF2Bwxs3TfPK+50AM5H9mbLcfIFE7yQ2r898Yulf6quzp2o
-A376oj8jCCq13Tw0UlU2
-=7lOJ
+iQIcBAEBAgAGBQJTKZeLAAoJELSic+t+oim9AVYP/3cxa7T4NUFeFEU81ekQCGDj
+XGQRcYlmlUu22oXzavAGKqamzyeONRdaq/OvjQO+LHbtx4sClnGZ1rHxd6iBSbDK
+rAPR7MrReXgVtXx97w2BKcIodF81WRLrzhGRIrcviUiRGVXEXmNGYn1QNXiRWu3G
+uDZ+tTx/yl6YKbGrYY35ZhpYlGX03/P/Bx5pc3gIrb+va+SfilsZ10DMirzUrw41
+0l4wihZoFvHvYqlOzw3ST8TaEkZd7VfuHxXtZlEYLh9ugoL6XsZ9mC1EFQtdqtig
+KJvsi8tjQX9U7o9VVM9qfacupySUOMU4DXkg4mW2bwAWnmi8cWkRGpXva5NwLpjg
+6Vu/gh4FAZQy7wwiDri1MpvG57kg/VrTDcjGB3LpZLNjuMk08Yp/c9tESTBFU7Cw
+5GWV+Pwh+BTJkXqdJkL5ThGbgtONtJfu0DFYKGlxsks+jV1/8BWSgq6Cnp5Hu3pM
+LIZ/JBf7ykCRrZLI7ABxxNfLN+MiDzdNc/9EKTPyqGSIjPEimiZy5EUXvxRD5K5c
+4DG0JSxmAiBFrQ26LWVq/tDJIIVDIK3ONzbxhPbOugSQCmjoKvSFoPWF2wwB9H7r
+sA0WN5DYAGj70eU9mMgrULDV6MgYQ0gSya+fMWtVV33yzVshe1/5xygGoS0701IW
+hZj+E2FgNa+/Thw6jeIq
+=/SWM
 -----END PGP SIGNATURE-----
 
---eJYtPRuVoi7CX1t8--
+--b0T1S56dfvmV3Vu7--
