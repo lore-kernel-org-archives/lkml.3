@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079AbaCSUSu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 16:18:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5160 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754687AbaCSUSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 16:18:49 -0400
-Date: Wed, 19 Mar 2014 16:18:38 -0400
-From: Dave Jones <davej@redhat.com>
-To: Teodora Baluta <teobaluta@gmail.com>
-Cc: linux-kernel@vger.kernel.org, peter.p.waskiewicz.jr@intel.com
-Subject: Re: [RFC] QR encoding for Oops messages
-Message-ID: <20140319201838.GA11403@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Teodora Baluta <teobaluta@gmail.com>, linux-kernel@vger.kernel.org,
-	peter.p.waskiewicz.jr@intel.com
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755196AbaCSUZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 16:25:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38687 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691AbaCSUZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 16:25:04 -0400
+Date: Wed, 19 Mar 2014 16:24:59 -0400 (EDT)
+Message-Id: <20140319.162459.897793286761249454.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: jesse@nicira.com, pshelar@nicira.com, tgraf@redhat.com,
+        dev@openvswitch.org, pablo@netfilter.org, kaber@trash.net,
+        kadlec@blackhole.kfki.hu, edumazet@google.com, dborkman@redhat.com,
+        therbert@google.com, jasowang@redhat.com, fw@strlen.de,
+        joe@perches.com, horms@verge.net.au, jiri@resnulli.us, mst@redhat.com,
+        Paul.Durrant@citrix.com, JBeulich@suse.com,
+        herbert@gondor.apana.org.au, mszeredi@suse.cz,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, xen-devel@lists.xenproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] core, nfqueue, openvswitch: Orphan frags in
+ skb_zerocopy and handle errors
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1395177455-2077-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1395177455-2077-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Mar 2014 13:25:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 02:59:47PM -0700, Teodora Baluta wrote:
- > This feature encodes Oops messages into a QR barcode that is scannable by
- > any device with a camera.
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Tue, 18 Mar 2014 21:17:35 +0000
 
- ...
+> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+> orphan them. Also, it doesn't handle errors, so this patch takes care of that
+> as well.
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> ---
+>  net/openvswitch/datapath.c |    6 ++++++
 
- >  include/linux/print_oops.h |   11 +
- >  include/linux/qrencode.h   |  546 +++++++++++++
- >  kernel/Makefile            |    1 +
- >  kernel/panic.c             |    5 +
- >  kernel/print_oops.c        |  173 +++++
- >  kernel/printk/printk.c     |    9 +-
- >  lib/Kconfig                |    5 +
- >  lib/Kconfig.debug          |   11 +
- >  lib/Makefile               |    3 +
- >  lib/qr/Makefile            |    6 +
- >  lib/qr/bitstream.c         |  233 ++++++
- >  lib/qr/bitstream.h         |   37 +
- >  lib/qr/mask.c              |  320 ++++++++
- >  lib/qr/mask.h              |   39 +
- >  lib/qr/mmask.c             |  175 +++++
- >  lib/qr/mmask.h             |   36 +
- >  lib/qr/mqrspec.c           |  259 +++++++
- >  lib/qr/mqrspec.h           |  155 ++++
- >  lib/qr/qrencode.c          |  871 +++++++++++++++++++++
- >  lib/qr/qrencode.h          |  546 +++++++++++++
- >  lib/qr/qrinput.c           | 1834 ++++++++++++++++++++++++++++++++++++++++++++
- >  lib/qr/qrinput.h           |  129 ++++
- >  lib/qr/qrspec.c            |  543 +++++++++++++
- >  lib/qr/qrspec.h            |  178 +++++
- >  lib/qr/rscode.c            |  325 ++++++++
- >  lib/qr/rscode.h            |   38 +
- >  lib/qr/split.c             |  331 ++++++++
- >  lib/qr/split.h             |   44 ++
- >  28 files changed, 6860 insertions(+), 3 deletions(-)
+Something is seriously wrong with the diffstat generated for
+your submission, please fix this and resubmit.
 
-That's a ton of code we're adding into one of the most fragile parts of the kernel.
-
-A lot of what libqrencode does would seem to be superfluous to the requirements
-here, as we don't output kernel oopses in kanji for eg, and won't care about
-multiple versions of the qr spec.
-
-How much of this could we drop ?
-
-	Dave
+Thank you.
 
