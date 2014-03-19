@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759390AbaCSX1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 19:27:18 -0400
-Received: from kvm5.telegraphics.com.au ([98.124.60.144]:51012 "EHLO
+	id S1759438AbaCSX1W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 19:27:22 -0400
+Received: from kvm5.telegraphics.com.au ([98.124.60.144]:51020 "EHLO
 	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756662AbaCSX1N (ORCPT
+	with ESMTP id S1759400AbaCSX1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 19:27:13 -0400
-Message-Id: <20140319123516.851802050@telegraphics.com.au>
+	Wed, 19 Mar 2014 19:27:19 -0400
+Message-Id: <20140319123517.152624382@telegraphics.com.au>
 User-Agent: quilt/0.50-1
-Date: Wed, 19 Mar 2014 23:35:17 +1100
+Date: Wed, 19 Mar 2014 23:35:18 +1100
 From: Finn Thain <fthain@telegraphics.com.au>
 To: "James E.J. Bottomley" <JBottomley@parallels.com>,
         <linux-scsi@vger.kernel.org>
@@ -17,79 +17,125 @@ Cc: Sam Creasey <sammy@sammy.net>, Russell King <linux@arm.linux.org.uk>,
         Michael Schmitz <schmitz@debian.org>, Joe Perches <joe@perches.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-m68k@vger.kernel.org>
-Subject: [PATCH v2 01/12] scsi/NCR5380: remove unused BOARD_NORMAL and BOARD_NCR53C400
+Subject: [PATCH v2 02/12] scsi/NCR5380: remove redundant HOSTS_C macro tests
 References: <20140319123516.542623278@telegraphics.com.au>
-Content-Disposition: inline; filename=ncr5380-BOARD-macros
+Content-Disposition: inline; filename=ncr5380-HOSTS_C-macro
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BOARD_NORMAL is completely unused and BOARD_NCR53C400 is used only by
-g_NCR5380 internally. Remove the unused definitions.
+HOSTS_C is always undefined. There is no hosts.c anymore.
 
 Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
 
 ---
- drivers/scsi/arm/cumana_1.c |    3 ---
- drivers/scsi/arm/oak.c      |    3 ---
- drivers/scsi/mac_scsi.h     |    3 ---
- drivers/scsi/sun3_scsi.h    |    3 ---
- 4 files changed, 12 deletions(-)
+ drivers/scsi/g_NCR5380.h |    3 ---
+ drivers/scsi/mac_scsi.h  |    3 ---
+ drivers/scsi/pas16.h     |    3 ---
+ drivers/scsi/sun3_scsi.h |    3 ---
+ drivers/scsi/t128.h      |    3 ---
+ 5 files changed, 15 deletions(-)
 
-Index: linux-m68k/drivers/scsi/arm/cumana_1.c
+Index: linux-m68k/drivers/scsi/g_NCR5380.h
 ===================================================================
---- linux-m68k.orig/drivers/scsi/arm/cumana_1.c	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/arm/cumana_1.c	2014-03-19 23:34:36.000000000 +1100
-@@ -36,9 +36,6 @@
- 	void __iomem *base;		\
- 	void __iomem *dma
+--- linux-m68k.orig/drivers/scsi/g_NCR5380.h	2014-03-19 23:23:02.000000000 +1100
++++ linux-m68k/drivers/scsi/g_NCR5380.h	2014-03-19 23:34:39.000000000 +1100
+@@ -58,8 +58,6 @@ static const char* generic_NCR5380_info(
+ #define CAN_QUEUE 16
+ #endif
  
--#define BOARD_NORMAL	0
--#define BOARD_NCR53C400	1
+-#ifndef HOSTS_C
 -
- #include "../NCR5380.h"
+ #define __STRVAL(x) #x
+ #define STRVAL(x) __STRVAL(x)
  
- void cumanascsi_setup(char *str, int *ints)
-Index: linux-m68k/drivers/scsi/arm/oak.c
-===================================================================
---- linux-m68k.orig/drivers/scsi/arm/oak.c	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/arm/oak.c	2014-03-19 23:34:36.000000000 +1100
-@@ -37,9 +37,6 @@
- #define NCR5380_implementation_fields	\
- 	void __iomem *base
+@@ -131,7 +129,6 @@ static const char* generic_NCR5380_info(
+ #define BOARD_NCR53C400A 2
+ #define BOARD_DTC3181E	3
  
--#define BOARD_NORMAL	0
--#define BOARD_NCR53C400	1
--
- #include "../NCR5380.h"
+-#endif /* else def HOSTS_C */
+ #endif /* ndef ASM */
+ #endif /* GENERIC_NCR5380_H */
  
- #undef START_DMA_INITIATOR_RECEIVE_REG
 Index: linux-m68k/drivers/scsi/mac_scsi.h
 ===================================================================
---- linux-m68k.orig/drivers/scsi/mac_scsi.h	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/mac_scsi.h	2014-03-19 23:34:36.000000000 +1100
-@@ -75,9 +75,6 @@
+--- linux-m68k.orig/drivers/scsi/mac_scsi.h	2014-03-19 23:34:36.000000000 +1100
++++ linux-m68k/drivers/scsi/mac_scsi.h	2014-03-19 23:34:39.000000000 +1100
+@@ -51,8 +51,6 @@
+ 
+ #include <scsi/scsicam.h>
+ 
+-#ifndef HOSTS_C
+-
+ #define NCR5380_implementation_fields \
+     int port, ctrl
+ 
+@@ -75,7 +73,6 @@
  #define NCR5380_show_info macscsi_show_info
  #define NCR5380_write_info macscsi_write_info
  
--#define BOARD_NORMAL	0
--#define BOARD_NCR53C400	1
--
- #endif /* ndef HOSTS_C */
+-#endif /* ndef HOSTS_C */
  #endif /* ndef ASM */
  #endif /* MAC_NCR5380_H */
+ 
+Index: linux-m68k/drivers/scsi/pas16.h
+===================================================================
+--- linux-m68k.orig/drivers/scsi/pas16.h	2014-03-19 23:23:02.000000000 +1100
++++ linux-m68k/drivers/scsi/pas16.h	2014-03-19 23:34:39.000000000 +1100
+@@ -129,8 +129,6 @@ static int pas16_bus_reset(Scsi_Cmnd *);
+ #define CAN_QUEUE 32 
+ #endif
+ 
+-#ifndef HOSTS_C
+-
+ #define NCR5380_implementation_fields \
+     volatile unsigned short io_port
+ 
+@@ -171,6 +169,5 @@ static int pas16_bus_reset(Scsi_Cmnd *);
+    
+ #define PAS16_IRQS 0xd4a8 
+ 
+-#endif /* else def HOSTS_C */
+ #endif /* ndef ASM */
+ #endif /* PAS16_H */
 Index: linux-m68k/drivers/scsi/sun3_scsi.h
 ===================================================================
---- linux-m68k.orig/drivers/scsi/sun3_scsi.h	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/sun3_scsi.h	2014-03-19 23:34:36.000000000 +1100
-@@ -108,9 +108,6 @@ static int sun3scsi_release (struct Scsi
- #define NCR5380_dma_read_setup(instance, data, count) sun3scsi_dma_setup(data, count, 0)
- #define NCR5380_dma_residual sun3scsi_dma_residual
+--- linux-m68k.orig/drivers/scsi/sun3_scsi.h	2014-03-19 23:34:36.000000000 +1100
++++ linux-m68k/drivers/scsi/sun3_scsi.h	2014-03-19 23:34:39.000000000 +1100
+@@ -82,8 +82,6 @@ static int sun3scsi_release (struct Scsi
+ #define SUN3_SCSI_NAME "Sun3 NCR5380 SCSI"
+ #endif
  
--#define BOARD_NORMAL	0
--#define BOARD_NCR53C400	1
+-#ifndef HOSTS_C
 -
- /* additional registers - mainly DMA control regs */
- /* these start at regbase + 8 -- directly after the NCR regs */
- struct sun3_dma_regs {
+ #define NCR5380_implementation_fields \
+     int port, ctrl
+ 
+@@ -371,6 +369,5 @@ struct sun3_udc_regs {
+ 
+ 
+ 
+-#endif /* ndef HOSTS_C */
+ #endif /* SUN3_NCR5380_H */
+ 
+Index: linux-m68k/drivers/scsi/t128.h
+===================================================================
+--- linux-m68k.orig/drivers/scsi/t128.h	2014-03-19 23:23:02.000000000 +1100
++++ linux-m68k/drivers/scsi/t128.h	2014-03-19 23:34:39.000000000 +1100
+@@ -107,8 +107,6 @@ static int t128_bus_reset(struct scsi_cm
+ #define CAN_QUEUE 32
+ #endif
+ 
+-#ifndef HOSTS_C
+-
+ #define NCR5380_implementation_fields \
+     void __iomem *base
+ 
+@@ -148,6 +146,5 @@ static int t128_bus_reset(struct scsi_cm
+ 
+ #define T128_IRQS 0xc4a8
+ 
+-#endif /* else def HOSTS_C */
+ #endif /* ndef ASM */
+ #endif /* T128_H */
 
