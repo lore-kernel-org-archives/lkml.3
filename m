@@ -1,119 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788AbaCSH5B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 03:57:01 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59141 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485AbaCSH47 (ORCPT
+	id S1756501AbaCSH67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 03:58:59 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:62944 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755463AbaCSH66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 03:56:59 -0400
-Date: Wed, 19 Mar 2014 00:56:58 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] blk-mq: add a exit_request method
-Message-ID: <20140319075658.GB25529@infradead.org>
-References: <20140317131827.793657833@bombadil.infradead.org>
- <20140317131941.477238509@bombadil.infradead.org>
- <CACVXFVNx=s1na1o7cPgjqL2rMcT73gVjmUOYyZdzE3KQ+MZH9Q@mail.gmail.com>
+	Wed, 19 Mar 2014 03:58:58 -0400
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: benjamin.romer@unisys.com, david.kershner@unisys.com, jkc@redhat.com,
+        sparmaintainer@unisys.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: unisys: replace kzalloc/kfree with UISMALLOC/UISFREE
+Date: Wed, 19 Mar 2014 16:58:52 +0900
+Message-ID: <2899750.XG86R9S8KF@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVNx=s1na1o7cPgjqL2rMcT73gVjmUOYyZdzE3KQ+MZH9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 01:22:07PM +0800, Ming Lei wrote:
-> exit_request definition is missed.
 
-oops that accidentally went into another commit.
+It doesn't need to trace status of buffer when buffers are
+allocated/deallocated. So stuff of tracing memory status
+are removed. And also UISMALLOC/UISFREE macro are removed
+completetly. just use kzalloc/kfree.
 
-New version below:
-
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
-From: Christoph Hellwig <hch@infradead.org>
-Subject: blk-mq: add a exit_request method
+ drivers/staging/unisys/include/uisutils.h |    6 --
+ drivers/staging/unisys/uislib/uislib.c    |  109 +++-------------------------
+ drivers/staging/unisys/uislib/uisutils.c  |    5 +-
+ 3 files changed, 14 insertions(+), 106 deletions(-)
 
-This gives drivers an easy way to free any ressources allocated in
-->init_request.
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index c2ce99b..c7e723e 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1000,6 +1000,16 @@ static void blk_mq_free_rq_map(struct blk_mq_hw_ctx *hctx)
- {
- 	struct page *page;
- 
-+	if (hctx->rqs && hctx->queue->mq_ops->exit_request) {
-+		int i;
-+
-+		for (i = 0; i < hctx->queue_depth; i++) {
-+			if (!hctx->rqs[i])
-+				continue;
-+			hctx->queue->mq_ops->exit_request(hctx, hctx->rqs[i]);
-+		}
-+	}
-+
- 	while (!list_empty(&hctx->page_list)) {
- 		page = list_first_entry(&hctx->page_list, struct page, lru);
- 		list_del_init(&page->lru);
-@@ -1332,7 +1342,7 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_reg *reg,
- 	}
- 
- 	if (blk_mq_init_hw_queues(q, reg, driver_data))
--		goto err_flush_rq;
-+		goto err_flush_rq_init;
- 
- 	blk_mq_map_swqueue(q);
- 
-@@ -1342,6 +1352,9 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_reg *reg,
- 
- 	return q;
- 
-+err_flush_rq_init:
-+	if (reg->ops->exit_request)
-+		reg->ops->exit_request(NULL, q->flush_rq);
- err_flush_rq:
- 	kfree(q->flush_rq);
- err_hw:
-@@ -1387,6 +1400,9 @@ void blk_mq_free_queue(struct request_queue *q)
- 	mutex_lock(&all_q_mutex);
- 	list_del_init(&q->all_q_node);
- 	mutex_unlock(&all_q_mutex);
-+
-+	if (q->mq_ops->exit_request)
-+		q->mq_ops->exit_request(NULL, q->flush_rq);
+diff --git a/drivers/staging/unisys/include/uisutils.h b/drivers/staging/unisys/include/uisutils.h
+index 81b5d9b..1c6d872 100644
+--- a/drivers/staging/unisys/include/uisutils.h
++++ b/drivers/staging/unisys/include/uisutils.h
+@@ -340,12 +340,6 @@ static inline unsigned int Issue_VMCALL_FATAL_BYE_BYE(void)
  }
  
- /* Basically redo blk_mq_init_queue with queue frozen */
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index 4d34957..ff194f8 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -68,6 +68,7 @@ typedef int (init_hctx_fn)(struct blk_mq_hw_ctx *, void *, unsigned int);
- typedef void (exit_hctx_fn)(struct blk_mq_hw_ctx *, unsigned int);
- typedef int (init_request_fn)(void *, struct blk_mq_hw_ctx *,
- 		struct request *, unsigned int);
-+typedef void (exit_request_fn)(struct blk_mq_hw_ctx *, struct request *);
+ #define UIS_DAEMONIZE(nam)
+-void *uislib_malloc(size_t siz, gfp_t gfp, U8 contiguous, char *fn, int ln);
+-#define UISMALLOC(siz, gfp) uislib_malloc(siz, gfp, 1, __FILE__, __LINE__)
+-#define UISVMALLOC(siz) uislib_malloc(siz, 0, 0, __FILE__, __LINE__)
+-void uislib_free(void *p, size_t siz, U8 contiguous, char *fn, int ln);
+-#define UISFREE(p, siz) uislib_free(p, siz, 1, __FILE__, __LINE__)
+-#define UISVFREE(p, siz) uislib_free(p, siz, 0, __FILE__, __LINE__)
+ void *uislib_cache_alloc(struct kmem_cache *cur_pool, char *fn, int ln);
+ #define UISCACHEALLOC(cur_pool) uislib_cache_alloc(cur_pool, __FILE__, __LINE__)
+ void uislib_cache_free(struct kmem_cache *cur_pool, void *p, char *fn, int ln);
+diff --git a/drivers/staging/unisys/uislib/uislib.c b/drivers/staging/unisys/uislib/uislib.c
+index 1737f3a..c0eaa15 100644
+--- a/drivers/staging/unisys/uislib/uislib.c
++++ b/drivers/staging/unisys/uislib/uislib.c
+@@ -316,7 +316,7 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+ 	size =
+ 	    sizeof(struct bus_info) +
+ 	    (deviceCount * sizeof(struct device_info *));
+-	bus = UISMALLOC(size, GFP_ATOMIC);
++	bus = kzalloc(size, GFP_ATOMIC | __GFP_NORETRY);
+ 	if (!bus) {
+ 		LOGERR("CONTROLVM_BUS_CREATE Failed: kmalloc for bus failed.\n");
+ 		POSTCODE_LINUX_3(BUS_CREATE_FAILURE_PC, busNo,
+@@ -324,8 +324,6 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+ 		return CONTROLVM_RESP_ERROR_KMALLOC_FAILED;
+ 	}
  
- struct blk_mq_ops {
- 	/*
-@@ -104,8 +105,10 @@ struct blk_mq_ops {
- 	/*
- 	 * Called for every command allocated by the block layer to allow
- 	 * the driver to set up driver specific data.
-+	 * Ditto for exit/teardown.
+-	memset(bus, 0, size);
+-
+ 	/* Currently by default, the bus Number is the GuestHandle.
+ 	 * Configure Bus message can override this.
  	 */
- 	init_request_fn		*init_request;
-+	exit_request_fn		*exit_request;
- };
+@@ -359,7 +357,7 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+ 		       bus->busNo);
+ 		POSTCODE_LINUX_3(BUS_CREATE_FAILURE_PC, bus->busNo,
+ 				 POSTCODE_SEVERITY_ERR);
+-		UISFREE(bus, size);
++		kfree(bus);
+ 		return CONTROLVM_RESP_ERROR_ALREADY_DONE;
+ 	}
+ 	if ((msg->cmd.createBus.channelAddr != 0)
+@@ -380,14 +378,14 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+ 		cmd.add_vbus.busTypeGuid = msg->cmd.createBus.busDataTypeGuid;
+ 		cmd.add_vbus.busInstGuid = msg->cmd.createBus.busInstGuid;
+ 		if (!VirtControlChanFunc) {
+-			UISFREE(bus, size);
++			kfree(bus);
+ 			LOGERR("CONTROLVM_BUS_CREATE Failed: virtpci callback not registered.");
+ 			POSTCODE_LINUX_3(BUS_CREATE_FAILURE_PC, bus->busNo,
+ 					 POSTCODE_SEVERITY_ERR);
+ 			return CONTROLVM_RESP_ERROR_VIRTPCI_DRIVER_FAILURE;
+ 		}
+ 		if (!VirtControlChanFunc(&cmd)) {
+-			UISFREE(bus, size);
++			kfree(bus);
+ 			LOGERR("CONTROLVM_BUS_CREATE Failed: virtpci GUEST_ADD_VBUS returned error.");
+ 			POSTCODE_LINUX_3(BUS_CREATE_FAILURE_PC, bus->busNo,
+ 					 POSTCODE_SEVERITY_ERR);
+@@ -485,9 +483,7 @@ destroy_bus(CONTROLVM_MESSAGE *msg, char *buf)
+ 		bus->pBusChannel = NULL;
+ 	}
  
- enum {
+-	UISFREE(bus,
+-		sizeof(struct bus_info) +
+-		(bus->deviceCount * sizeof(struct device_info *)));
++	kfree(bus);
+ 	return CONTROLVM_RESP_SUCCESS;
+ }
+ 
+@@ -507,7 +503,7 @@ create_device(CONTROLVM_MESSAGE *msg, char *buf)
+ 	POSTCODE_LINUX_4(DEVICE_CREATE_ENTRY_PC, devNo, busNo,
+ 			 POSTCODE_SEVERITY_INFO);
+ 
+-	dev = UISMALLOC(sizeof(struct device_info), GFP_ATOMIC);
++	dev = kzalloc(sizeof(struct device_info), GFP_ATOMIC | __GFP_NORETRY);
+ 	if (!dev) {
+ 		LOGERR("CONTROLVM_DEVICE_CREATE Failed: kmalloc for dev failed.\n");
+ 		POSTCODE_LINUX_4(DEVICE_CREATE_FAILURE_PC, devNo, busNo,
+@@ -515,7 +511,6 @@ create_device(CONTROLVM_MESSAGE *msg, char *buf)
+ 		return CONTROLVM_RESP_ERROR_KMALLOC_FAILED;
+ 	}
+ 
+-	memset(dev, 0, sizeof(struct device_info));
+ 	dev->channelTypeGuid = msg->cmd.createDevice.dataTypeGuid;
+ 	dev->intr = msg->cmd.createDevice.intr;
+ 	dev->channelAddr = msg->cmd.createDevice.channelAddr;
+@@ -688,7 +683,7 @@ Away:
+ 		dev->chanptr = NULL;
+ 	}
+ 
+-	UISFREE(dev, sizeof(struct device_info));
++	kfree(dev);
+ 	return result;
+ }
+ 
+@@ -917,7 +912,7 @@ destroy_device(CONTROLVM_MESSAGE *msg, char *buf)
+ 				LOGINF("destroy_device, doing iounmap");
+ 				uislib_iounmap(dev->chanptr);
+ 			}
+-			UISFREE(dev, sizeof(struct device_info));
++			kfree(dev);
+ 			bus->device[devNo] = NULL;
+ 			break;
+ 		}
+@@ -1343,69 +1338,7 @@ uislib_client_delete_vnic(U32 busNo)
+ 	return 1;
+ }
+ EXPORT_SYMBOL_GPL(uislib_client_delete_vnic);
+-
+-				/* end client_delete_vnic */
+-
+-static atomic_t Malloc_BytesInUse = ATOMIC_INIT(0);
+-static atomic_t Malloc_BuffersInUse = ATOMIC_INIT(0);
+-static atomic_t Malloc_FailuresAlloc = ATOMIC_INIT(0);
+-static atomic_t Malloc_FailuresFree = ATOMIC_INIT(0);
+-static atomic_t Malloc_TotalMallocs = ATOMIC_INIT(0);
+-static atomic_t Malloc_TotalFrees = ATOMIC_INIT(0);
+-
+-void *
+-uislib_malloc(size_t siz, gfp_t gfp, U8 contiguous, char *fn, int ln)
+-{
+-	void *p = NULL;
+-
+-	if (contiguous == 0) {
+-		/* Allocate non-contiguous memory, such as in the
+-		* add_vnic and add_vhba methods where we are rebooting
+-		* the guest, for example.  Otherwise the contiguous
+-		* memory allocation attempt results in an
+-		* out-of-memory crash in the IOVM...
+-		*/
+-		p = vmalloc(siz);
+-	} else {
+-		/* __GFP_NORETRY means "ok to fail", meaning kmalloc()
+-		* can return NULL.  If you do NOT specify
+-		* __GFP_NORETRY, Linux will go to extreme measures to
+-		* get memory for you (like, invoke oom killer), which
+-		* will probably cripple the system.
+-		*/
+-		p = kmalloc(siz, gfp | __GFP_NORETRY);
+-	}
+-	if (p == NULL) {
+-		LOGERR("uislib_malloc failed to alloc %d bytes @%s:%d",
+-		       (int) siz, fn, ln);
+-		atomic_inc(&Malloc_FailuresAlloc);
+-		return NULL;
+-	}
+-	atomic_add((int) (siz), &Malloc_BytesInUse);
+-	atomic_inc(&Malloc_BuffersInUse);
+-	atomic_inc(&Malloc_TotalMallocs);	/* will eventually overflow */
+-	return p;
+-}
+-EXPORT_SYMBOL_GPL(uislib_malloc);
+-
+-void
+-uislib_free(void *p, size_t siz, U8 contiguous, char *fn, int ln)
+-{
+-	if (p == NULL) {
+-		LOGERR("uislib_free NULL pointer @%s:%d", fn, ln);
+-		atomic_inc(&Malloc_FailuresFree);
+-		return;
+-	}
+-
+-	if (contiguous == 0)
+-		vfree(p);
+-	else
+-		kfree(p);
+-	atomic_sub((int) (siz), &Malloc_BytesInUse);
+-	atomic_dec(&Malloc_BuffersInUse);
+-	atomic_inc(&Malloc_TotalFrees);	/* will eventually overflow */
+-}
+-EXPORT_SYMBOL_GPL(uislib_free);
++/* end client_delete_vnic */
+ 
+ void *
+ uislib_cache_alloc(struct kmem_cache *cur_pool, char *fn, int ln)
+@@ -1605,24 +1538,6 @@ info_proc_read_helper(char **buff, int *buff_len)
+ 	}
+ 	read_unlock(&BusListLock);
+ 
+-	if (PLINE("Malloc bytes in use: %d\n",
+-		 atomic_read(&Malloc_BytesInUse)) < 0)
+-		goto err_done;
+-	if (PLINE("Malloc buffers in use: %d\n",
+-		  atomic_read(&Malloc_BuffersInUse)) < 0)
+-		goto err_done;
+-	if (PLINE("Malloc allocation failures: %d\n",
+-		  atomic_read(&Malloc_FailuresAlloc)) < 0)
+-		goto err_done;
+-	if (PLINE("Malloc free failures: %d\n",
+-		  atomic_read(&Malloc_FailuresFree)) < 0)
+-		goto err_done;
+-	if (PLINE("Malloc total mallocs: %u (may overflow)\n",
+-		  (unsigned) atomic_read(&Malloc_TotalMallocs)) < 0)
+-		goto err_done;
+-	if (PLINE("Malloc total frees: %u (may overflow)\n",
+-		  (unsigned) atomic_read(&Malloc_TotalFrees)) < 0)
+-		goto err_done;
+ 	if (PLINE("UisUtils_Registered_Services: %d\n",
+ 		  atomic_read(&UisUtils_Registered_Services)) < 0)
+ 		goto err_done;
+@@ -1655,7 +1570,7 @@ info_proc_read(struct file *file, char __user *buf, size_t len, loff_t *offset)
+ /* *start = buf; */
+ 	if (ProcReadBuffer == NULL) {
+ 		DBGINF("ProcReadBuffer == NULL; allocating buffer.\n.");
+-		ProcReadBuffer = UISVMALLOC(PROC_READ_BUFFER_SIZE);
++		ProcReadBuffer = vmalloc(PROC_READ_BUFFER_SIZE);
+ 
+ 		if (ProcReadBuffer == NULL) {
+ 			LOGERR("failed to allocate buffer to provide proc data.\n");
+@@ -1691,7 +1606,7 @@ platformnumber_proc_read(struct file *file, char __user *buf,
+ 	if (pos > 0 || !len)
+ 		return 0;
+ 
+-	vbuf = kzalloc(len, GFP_KERNEL);
++	vbuf = kzalloc(len, GFP_KERNEL | __GFP_NORETRY);
+ 	if (!vbuf)
+ 		return -ENOMEM;
+ 
+@@ -2486,7 +2401,7 @@ uislib_mod_exit(void)
+ 		remove_proc_entry(DIR_PROC_ENTRY, NULL);
+ 
+ 	if (ProcReadBuffer) {
+-		UISVFREE(ProcReadBuffer, PROC_READ_BUFFER_SIZE);
++		vfree(ProcReadBuffer);
+ 		ProcReadBuffer = NULL;
+ 	}
+ 
+diff --git a/drivers/staging/unisys/uislib/uisutils.c b/drivers/staging/unisys/uislib/uisutils.c
+index 208b7ea..b07b09a 100644
+--- a/drivers/staging/unisys/uislib/uisutils.c
++++ b/drivers/staging/unisys/uislib/uisutils.c
+@@ -291,10 +291,9 @@ ReqHandlerAdd(GUID switchTypeGuid,
+ {
+ 	ReqHandlerInfo_t *rc = NULL;
+ 
+-	rc = UISMALLOC(sizeof(*rc), GFP_ATOMIC);
++	rc = kzalloc(sizeof(*rc), GFP_ATOMIC | __GFP_NORETRY);
+ 	if (!rc)
+ 		return NULL;
+-	memset(rc, 0, sizeof(*rc));
+ 	rc->switchTypeGuid = switchTypeGuid;
+ 	rc->controlfunc = controlfunc;
+ 	rc->min_channel_bytes = min_channel_bytes;
+@@ -342,7 +341,7 @@ ReqHandlerDel(GUID switchTypeGuid)
+ 		    (&entry->switchTypeGuid, &switchTypeGuid,
+ 		     sizeof(GUID)) == 0) {
+ 			list_del(lelt);
+-			UISFREE(entry, sizeof(*entry));
++			kfree(entry);
+ 			rc++;
+ 		}
+ 	}
+-- 
+1.7.4.4
+
+
