@@ -1,137 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562AbaCSGIt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 02:08:49 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:55692 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755262AbaCSGIp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 02:08:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <532840FD.308@linux.vnet.ibm.com>
-References: <2efc621827cbd96a05a3d34075154974b4816ecd.1394782795.git.viresh.kumar@linaro.org>
-	<532840FD.308@linux.vnet.ibm.com>
-Date: Wed, 19 Mar 2014 11:38:45 +0530
-Message-ID: <CAKohpomhTJa06a1LSi9tK1+=6Y2MyidJSbYWuffAsU5KxVf7zw@mail.gmail.com>
-Subject: Re: [RFC V2] cpufreq: make sure frequency transitions are serialized
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754305AbaCSGUn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 02:20:43 -0400
+Received: from ozlabs.org ([203.10.76.45]:33871 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751313AbaCSGUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 02:20:42 -0400
+Date: Wed, 19 Mar 2014 17:20:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: linux-next: build failure after merge of the final tree
+ (wireless-next tree related)
+Message-Id: <20140319172035.b4e7c4043b486d8eeaa0534a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__19_Mar_2014_17_20_35_+1100_siFwPu9=VL_Yui1F"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 March 2014 18:20, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> On 03/14/2014 01:13 PM, Viresh Kumar wrote:
->> +     if ((state != CPUFREQ_PRECHANGE) && (state != CPUFREQ_POSTCHANGE))
->
-> Wait a min, when is this condition ever true? I mean, what else can
-> 'state' ever be, apart from CPUFREQ_PRECHANGE and POSTCHANGE?
+--Signature=_Wed__19_Mar_2014_17_20_35_+1100_siFwPu9=VL_Yui1F
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There were two more 'unused' states available:
-CPUFREQ_RESUMECHANGE and CPUFREQ_SUSPENDCHANGE
+Hi all,
 
-I have sent a patch to remove them now and this code would go away..
+After merging the final tree, today's linux-next build (powerpc allyesconfi=
+g)
+failed like this:
 
->> +             return notify_transition_for_each_cpu(policy, freqs, state);
->> +
->> +     /* Serialize pre-post notifications */
->> +     mutex_lock(&policy->transition_lock);
->
-> Nope, this is definitely not the way to go, IMHO. We should enforce that
-> the *callers* serialize the transitions, something like this:
->
->         cpufreq_transition_lock();
->
->         cpufreq_notify_transition(CPUFREQ_PRECHANGE);
->
->         //Perform the frequency change
->
->         cpufreq_notify_transition(CPUFREQ_POSTCHANGE);
->
->         cpufreq_transition_unlock();
->
-> That's it!
->
-> [ We can either introduce a new "transition" lock or perhaps even reuse
-> the cpufreq_driver_lock if it fits... but the point is, the _caller_ has
-> to perform the locking; trying to be smart inside cpufreq_notify_transition()
-> is a recipe for headache :-( ]
->
-> Is there any problem with this approach due to which you didn't take
-> this route?
+drivers/net/wireless/iwlwifi/mvm/debugfs.c: In function 'iwl_dbgfs_fw_error=
+_dump_release':
+drivers/net/wireless/iwlwifi/mvm/debugfs.c:161:2: error: implicit declarati=
+on of function 'vfree' [-Werror=3Dimplicit-function-declaration]
+  vfree(file->private_data);
+  ^
 
-I didn't wanted drivers to handle this as core must make sure things are in
-order. Over that it would have helped by not pasting redundant code
-everywhere..
+Caused by commit 1bd3cbc1a0e9 ("iwlwifi: mvm: send udev event upon
+firmware error to dump logs") from the wireless-next tree.  See Rule 1
+from Documentation/SubmitChecklist.
 
-Drivers are anyway going to call cpufreq_notify_transition(), why increase
-burden on them?
+I have reverted that commit (and commit cdb00563fe2c ("iwlwifi: mvm: BT
+Coex - add debugfs hook to set BT Tx priority") that may depend on it)
+for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->> +     if (unlikely(WARN_ON(!policy->transition_ongoing &&
->> +                             (state == CPUFREQ_POSTCHANGE)))) {
->> +             mutex_unlock(&policy->transition_lock);
->> +             return;
->> +     }
->> +
->> +     if (state == CPUFREQ_PRECHANGE) {
->> +             while (policy->transition_ongoing) {
->> +                     mutex_unlock(&policy->transition_lock);
->> +                     /* TODO: Can we do something better here? */
->> +                     cpu_relax();
->> +                     mutex_lock(&policy->transition_lock);
->
-> If the caller takes care of the synchronization, we can avoid
-> these sorts of acrobatics ;-)
+--Signature=_Wed__19_Mar_2014_17_20_35_+1100_siFwPu9=VL_Yui1F
+Content-Type: application/pgp-signature
 
-If we are fine with taking a mutex for the entire transition, then
-we can avoid above kind of acrobatics by just taking the mutex
-from PRECHANGE and leaving it at POSTCHANGE..
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-It will look like this then, hope this looks fine :)
+iQIcBAEBCAAGBQJTKTc3AAoJEMDTa8Ir7ZwV7J0P/ijg3uCXHHnjVuX3a29oMWtB
+iAyxUMmABClnq3KDTsT+OkPMcUEqUfIt1Ho9NolDG2S2CV/f9o+GzTr7Hh8cEduL
+EVUtHZk5AMp2+hFn0j65Vg+sxmUxHOVerk+LET3+gxBztPi1XZaNy+SZ8PDzzPdc
+qafOR8hQVt5+MPlpvx9UJm68Rh22yrdYBexa+j6UlG2fjhm1OZlisahZmPOYKY+p
+JmpYPwNuUSg6uomT5oT2Af9StfK/XgKnvMnxAJtY1g07D7WoiFbevBWAvzIbYDl8
+LoQ2LCMQBnRxWk9K0xtxdhHsbkgkOIciBgZkcj8JOskGHgyq27MJnXhZaHo/siqe
+Fv5CneFlsuBEYCTIaDPxD6fFh1qIELnpQdZRvIUzWfnvJ+di5BVKYvJ+FSH56JOY
+/F+7Q18O1x+EOW3upz5VlUPnOb+dAooIXTDugGkCISgv6n+1kZp+2Cr16dC/TaY9
+Nr5Piv5gN8yMbbAo9BIXuOswmPnzOV9PR9472JGu9kVp2eErtUBodk+pezinP8QW
+Cw6g6NpSadeKp/BPbY1k5v/I2Y8dZeyBTYftb1T3pxSINBiH53snYxSBpF6xrQhn
+ZM/1N80fFSKpK1xII6oclizzM/WAqlvnfctcynp09NpWH5FDtb9F0tslvQEFcR5K
+oT0myRe6gycAaiB7BmGI
+=IrVT
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 2677ff1..3b9eac4 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -335,8 +335,15 @@ static void __cpufreq_notify_transition(struct
-cpufreq_policy *policy,
- void cpufreq_notify_transition(struct cpufreq_policy *policy,
-                struct cpufreq_freqs *freqs, unsigned int state)
- {
-+       if (state == CPUFREQ_PRECHANGE)
-+               mutex_lock(&policy->transition_lock);
-+
-+       /* Send notifications */
-        for_each_cpu(freqs->cpu, policy->cpus)
-                __cpufreq_notify_transition(policy, freqs, state);
-+
-+       if (state == CPUFREQ_POSTCHANGE)
-+               mutex_unlock(&policy->transition_lock);
- }
- EXPORT_SYMBOL_GPL(cpufreq_notify_transition);
-
-@@ -983,6 +990,7 @@ static struct cpufreq_policy *cpufreq_policy_alloc(void)
-
-        INIT_LIST_HEAD(&policy->policy_list);
-        init_rwsem(&policy->rwsem);
-+       mutex_init(&policy->transition_lock);
-
-        return policy;
-
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 31c431e..5f9209a 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -104,6 +104,7 @@ struct cpufreq_policy {
-         *     __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
-         */
-        struct rw_semaphore     rwsem;
-+       struct mutex            transition_lock;
- };
+--Signature=_Wed__19_Mar_2014_17_20_35_+1100_siFwPu9=VL_Yui1F--
