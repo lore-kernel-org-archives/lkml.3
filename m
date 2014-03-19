@@ -1,112 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758413AbaCSJEH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 05:04:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44327 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758141AbaCSJED (ORCPT
+	id S1758612AbaCSJGl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 05:06:41 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:16499 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758352AbaCSJGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 05:04:03 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: devicetree@vger.kernel.org
-Cc: Rob Herring <robh+dt@kernel.org>,
-        "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>,
-        linux-kernel@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH] Documentation: Add device tree bindings for DA9063 PMIC
-Date: Wed, 19 Mar 2014 10:03:56 +0100
-Message-Id: <1395219836-25018-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.9.0
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 19 Mar 2014 05:06:36 -0400
+X-AuditID: cbfee68e-b7f566d000002344-a7-53295e160595
+Date: Wed, 19 Mar 2014 18:06:28 +0900
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: Re: [PATCH v11 13/27] iommu/exynos: support for device tree
+Message-id: <20140319180628.5eecd7347c24f1e697aaaa6a@samsung.com>
+In-reply-to: <53286557.6070808@samsung.com>
+References: <20140314140935.e0652b58ce16591b54d0e10b@samsung.com>
+ <53230695.9080606@samsung.com>
+ <20140318195210.14c953a70498f634032f35b7@samsung.com>
+ <53286557.6070808@samsung.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t8zY12xOM1ggyVXOCzu3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
+	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
+	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4Mro336NuWA3d0X31IOMDYztnF2MHBwSAiYSLev5uhg5
+	gUwxiQv31rN1MXJxCAksY5SYs/w3K0TCROJR9ylGiMR0RokN85rZQRJCApOZJM48swWxWQRU
+	JU7+7GYEsdkEtCRWzz0OZosIqEhcPjUdrJlZoJFV4tH9ZWDNwgIuEg+abjKD2LwCjhJLm/aD
+	beMU0JZo7nvADLFgN6NE0wpXiCssJC40dbBD1AtK/Jh8jwXEZgZatnlbEyuELS+xec1bZoj6
+	hRwS868ZQxwnIPFt8iEWiI9lJTYdgCqRlDi44gbLBEaxWUimzkIydRaSqQsYmVcxiqYWJBcU
+	J6UXGekVJ+YWl+al6yXn525ihER63w7GmwesDzEmA62cyCwlmpwPTBR5JfGGxmZGFqYmpsZG
+	5pZmpAkrifMuepgUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFRzf3RZFnBZzob2nUnnFFP
+	/Mkb/ZLtWa79nj35z+IPZvm9kE3SE7HqTRFOeObq6DinKEuNIWf7NpWihzmbZl3fPXEbx5kf
+	J39svyvwwfWk6N7qlY8unphwfr3bw4lf1om5+x9i4eg4KPJ3S4zkPo7oRxbOygqOSRITCyZo
+	8Dqw1IgZOmkb9WUosRRnJBpqMRcVJwIA6rNZoAoDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGKsWRmVeSWpSXmKPExsVy+t9jQV2xOM1ggzmLmS3u3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
+	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
+	ch5Xjp5hCuCMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAH6QEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY0b/9GnPBbu6K
+	7qkHGRsY2zm7GDk5JARMJB51n2KEsMUkLtxbz9bFyMUhJDCdUWLDvGZ2kISQwGQmiTPPbEFs
+	FgFViZM/u8Ea2AS0JFbPPQ5miwioSFw+NZ0RpJlZoJFV4tH9ZWDNwgIuEg+abjKD2LwCjhJL
+	m/azgticAtoSzX0PmCEW7GaUaFrhCnGFhcSFpg52iHpBiR+T77GA2MxAyzZva2KFsOUlNq95
+	yzyBUWAWkrJZSMpmISlbwMi8ilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4lTyT2sG4ssHi
+	EKMAB6MSD++BKI1gIdbEsuLK3EOMEhzMSiK8wneBQrwpiZVVqUX58UWlOanFhxiTgcExkVlK
+	NDkfmObySuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoGRo+3G
+	ggP/si9XHJDq9H+vtlh9fsLJs8e2OWdv69LTfjRt2V8RLuUn8xid7s7vMTrw+ZBXrWretRdr
+	D13fXDTFKOGd2B6B3ouPuj/c/Pvou5tV64PEHa5LpM5tCd7RZDzBVcPlN2fOtqf1Dk9Cj/jO
+	2+Nz3JnbPaLG/ZzjN+aXh9dfv2fTmX9eT4mlOCPRUIu5qDgRAIGE2ElpAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree binding documentation for the Dialog Semiconductors
-DA9063 PMIC and its regulator nodes.
+On Tue, 18 Mar 2014 16:25:11 +0100, Tomasz Figa wrote:
+> On 18.03.2014 11:52, Cho KyongHo wrote:
+> > On Fri, 14 Mar 2014 14:39:33 +0100, Tomasz Figa wrote:
+> >>> @@ -557,11 +558,23 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
+> >>>    	return 0;
+> >>>    }
+> >>>
+> >>> -static struct platform_driver exynos_sysmmu_driver = {
+> >>> -	.probe		= exynos_sysmmu_probe,
+> >>> -	.driver		= {
+> >>> +#ifdef CONFIG_OF
+> >>> +static struct of_device_id sysmmu_of_match[] __initconst = {
+> >>> +	{ .compatible	= "samsung,sysmmu-v1", },
+> >>> +	{ .compatible	= "samsung,sysmmu-v2", },
+> >>> +	{ .compatible	= "samsung,sysmmu-v3.1", },
+> >>> +	{ .compatible	= "samsung,sysmmu-v3.2", },
+> >>> +	{ .compatible	= "samsung,sysmmu-v3.3", },
+> >>
+> >> Do you need all these compatible strings? I mean, are there any
+> >> implementation differences that can't be identified by reading IP
+> >> registers, such as REG_MMU_VERSION?
+> >>
+> >
+> > Unfortunately, there is a SoC which overrides REG_MMU_VERSION with
+> > a value for RTL designers and it is not related to System MMU
+> > versions.
+> 
+> OK.
+> 
+> What about having a generic compatible string for Samsung SysMMU then, 
+> but an additional property that can override the version to account for 
+> such brokenness? If not provided, the version would be read from 
+> REG_MMU_VERSION.
+> 
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- .../devicetree/bindings/mfd/da9063-i2c.txt         | 68 ++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/da9063-i2c.txt
+Yes it is one of possible idea.
+Let me think what better way is.
 
-diff --git a/Documentation/devicetree/bindings/mfd/da9063-i2c.txt b/Documentation/devicetree/bindings/mfd/da9063-i2c.txt
-new file mode 100644
-index 0000000..776b662
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/da9063-i2c.txt
-@@ -0,0 +1,68 @@
-+* Dialog DA9063 Power Management Integrated Circuit (PMIC)
-+
-+Required properties:
-+- compatible : Should be "dialog,da9063"
-+- interrupt-parent : phandle pointing to the interrupt controller
-+- interrupts : interrupt number and flags in interrupt-parent
-+  for the chip IRQ line. Interrupt bindings are documented here:
-+  Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-+
-+Sub-nodes:
-+- regulators : Contain the regulator nodes. The DA9063 regulators are
-+  bound using their names as listed below:
-+
-+    bcore1     : regulator BCORE1
-+    bcore2     : regulator BCORE2
-+    bpro       : regulator BPRO
-+    bmem       : regulator BMEM
-+    bio        : regulator BIO
-+    bperi      : regulator BPERI
-+    ldo1       : regulator LDO1
-+    ldo2       : regulator LDO4
-+    ldo3       : regulator LDO3
-+    ldo4       : regulator LDO4
-+    ldo5       : regulator LDO5
-+    ldo6       : regulator LDO6
-+    ldo7       : regulator LDO7
-+    ldo8       : regulator LDO8
-+    ldo9       : regulator LDO9
-+    ldo10      : regulator LDO10
-+    ldo11      : regulator LDO11
-+
-+  The PMIC can also be configured to merge both bcore1/2 into a single
-+  supply and to merge bmem and bio into a single supply. In this case,
-+  the following regulators are bound instead of bcore1/2 and bpro/bmem:
-+
-+    bcores-merged   : merged regulators BCORE1, BCORE2
-+    bmem-bio-merged : merged regulators BMEM, BIO
-+
-+  See Documentation/devicetree/bindings/regulator/regulator.txt for
-+  binding details of individual regulator device nodes.
-+
-+
-+Examples:
-+
-+&i2c1 {
-+	status = "okay";
-+
-+	pmic@58 {
-+		compatible = "dialog,da9063";
-+		reg = <0x58>;
-+		interrupt-parent = <&gpio4>;
-+		interrupts = <17 0x8>; /* active-low GPIO4_17 */
-+
-+		regulators {
-+			bcore1 {
-+				regulator-min-microvolt = <300000>;
-+				regulator-max-microvolt = <1570000>;
-+			};
-+
-+			bcore2 {
-+				regulator-min-microvolt = <300000>;
-+				regulator-max-microvolt = <1570000>;
-+			};
-+
-+			/* ... */
-+		};
-+	};
-+};
--- 
-1.9.0
+Thank you.
 
+KyongHo
