@@ -1,65 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaCSTBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 15:01:25 -0400
-Received: from imap.thunk.org ([74.207.234.97]:43666 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758AbaCSTBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 15:01:23 -0400
-Date: Wed, 19 Mar 2014 15:01:19 -0400
-From: tytso@mit.edu
-To: Nilesh More <nilesh99999@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Page cache corruption with mount/unmount of USB with Fat file
- system
-Message-ID: <20140319190119.GC16906@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Nilesh More <nilesh99999@gmail.com>,
-	linux-kernel@vger.kernel.org
-References: <CAMbOQaVjS3Gzg0iJrxjyb3SD5sA1mm-gZeGEqaTG_B5z4-_pGg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMbOQaVjS3Gzg0iJrxjyb3SD5sA1mm-gZeGEqaTG_B5z4-_pGg@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1752457AbaCSTHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 15:07:53 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:35331 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395AbaCSTHu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 15:07:50 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Hugh Dickins <hughd@google.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Matthew Wilcox <matthew@wil.cx>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        =?UTF-8?q?Kristian=20H=C3=B8gsberg?= <krh@bitplanet.net>,
+        john.stultz@linaro.org, Greg Kroah-Hartman <greg@kroah.com>,
+        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        dri-devel@lists.freedesktop.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH 0/6] File Sealing & memfd_create()
+Date: Wed, 19 Mar 2014 20:06:45 +0100
+Message-Id: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 12:05:44AM +0530, Nilesh More wrote:
-> Hi all,
-> 
-> First of all sorry for the lengthy mail but I did not want to miss out
-> on any details.
-> 
-> The following issue that I am reporting occurs when I plugin the USB
-> drive on android tablet with USB mount support. Please note that this
-> issue may or may not occur the first time I hotplug the USB drive. It
-> might require couple of hotplug/hotunplug to see this issue. If
-> anybody has/gets any clue about the possible root cause, please let me
-> know.
+Hi
 
-And I'll repeat the comments I made a few weeks ago.  Last time you
-reported this, you included a dmesg output which included this:
+This series introduces the concept of "file sealing". Sealing a file restricts
+the set of allowed operations on the file in question. Multiple seals are
+defined and each seal will cause a different set of operations to return EPERM
+if it is set. The following seals are introduced:
 
-> [ 413.607849] usb 2-1.1: USB disconnect, device number 12
-> [ 414.022630] EXT4-fs error (device mmcblk0p20): ext4_readdir:227: inode
-> #81827: block 328308: comm installd...
+ * SEAL_SHRINK: If set, the inode size cannot be reduced
+ * SEAL_GROW: If set, the inode size cannot be increased
+ * SEAL_WRITE: If set, the file content cannot be modified
 
-Are you seeing the same thing?  If so, the fundamental high level
-issue is that the USB driver is reporting a device disconnect,
-presumably of a USB device different from the one that you just
-plugged in.   Are you still seeing this?
+Unlike existing techniques that provide similar protection, sealing allows
+file-sharing without any trust-relationship. This is enforced by rejecting seal
+modifications if you don't own an exclusive reference to the given file. So if
+you own a file-descriptor, you can be sure that no-one besides you can modify
+the seals on the given file. This allows mapping shared files from untrusted
+parties without the fear of the file getting truncated or modified by an
+attacker.
 
-If so, it's important if you want to root cause this issue to
-determine why the USB disconnect is happening, and not try to comment
-out the page invalidations which happens *after* the USB device is
-reported as disconnected.
+Several use-cases exist that could make great use of sealing:
 
-If I had to guess, it's probably some hardware issue where when you
-plug in a USB device that draws too much power, it's destablizing the
-USB bus and causing some other USB device to report a disconnect.
+  1) Graphics Compositors
+     If a graphics client creates a memory-backed render-buffer and passes a
+     file-decsriptor to it to the graphics server for display, the server
+     _has_ to setup SIGBUS handlers whenever mapping the given file. Otherwise,
+     the client might run ftruncate() or O_TRUNC on the on file in parallel,
+     thus crashing the server.
+     With sealing, a compositor can reject any incoming file-descriptor that
+     does _not_ have SEAL_SHRINK set. This way, any memory-mappings are
+     guaranteed to stay accessible. Furthermore, we still allow clients to
+     increase the buffer-size in case they want to resize the render-buffer for
+     the next frame. We also allow parallel writes so the client can render new
+     frames into the same buffer (client is responsible of never rendering into
+     a front-buffer if you want to avoid artifacts).
 
-    	    	    	       	   	  - Ted
+     Real use-case: Wayland wl_shm buffers can be transparently converted
+
+  2) Geneal-purpose IPC
+     IPC mechanisms that do not require a mutual trust-relationship (like dbus)
+     cannot do zero-copy so far. With sealing, zero-copy can be easily done by
+     sharing a file-descriptor that has SEAL_SHRINK | SEAL_GROW | SEAL_WRITE
+     set. This way, the source can store sensible data in the file, seal the
+     file and then pass it to the destination. The destination verifies these
+     seals are set and then can parse the message in-line.
+     Note that these files are usually one-shot files. Without any
+     trust-relationship, a destination can notify the source that it released a
+     file again, but a source can never rely on it. So unless the destination
+     releases the file, a source cannot clear the seals for modification again.
+     However, this is inherent to situations without any trust-relationship.
+
+     Real use-case: kdbus messages already use a similar interface and can be
+                    transparently converted to use these seals
+
+Other similar use-cases exist (eg., audio), but these two I am personally
+working on. Interest in this interface has been raised from several other camps
+and I've put respective maintainers into CC. If more information on these
+use-cases is needed, I think they can give some insights.
+
+The API introduced by this patchset is:
+
+ * fcntl() extension:
+   Two new fcntl() commands are added that allow retrieveing (SHMEM_GET_SEALS)
+   and setting (SHMEM_SET_SEALS) seals on a file. Only shmfs implements them so
+   far and there is no intention to implement them on other file-systems.
+   All shmfs based files support sealing.
+
+   Patch 2/6
+
+ * memfd_create() syscall:
+   The new memfd_create() syscall is a public frontend to the shmem_file_new()
+   interface in the kernel. It avoids the need of a local shmfs mount-point (as
+   requested by android people) and acts more like MAP_ANON than O_TMPFILE.
+
+   Patch 3/6
+
+The other 4 patches are cleanups, self-tests and docs.
+
+The commit-messages explain the API extensions in detail. Man-page proposals
+are also provided. Last but not least, the extensive self-tests document the
+intended behavior, in case it is still not clear.
+
+Technically, sealing and memfd_create() are independent, but the described
+use-cases would greatly benefit from the combination of both. Hence, I merged
+them into the same series. Please also note that this series is based on earlier
+works (ashmem, memfd, shmgetfd, ..) and unifies these attempts.
+
+Comments welcome!
+
+Thanks
+David
+
+David Herrmann (4):
+  fs: fix i_writecount on shmem and friends
+  shm: add sealing API
+  shm: add memfd_create() syscall
+  selftests: add memfd_create() + sealing tests
+
+David Herrmann (2): (man-pages)
+  fcntl.2: document SHMEM_SET/GET_SEALS commands
+  memfd_create.2: add memfd_create() man-page
+
+ arch/x86/syscalls/syscall_32.tbl           |   1 +
+ arch/x86/syscalls/syscall_64.tbl           |   1 +
+ fs/fcntl.c                                 |  12 +-
+ fs/file_table.c                            |  27 +-
+ include/linux/shmem_fs.h                   |  17 +
+ include/linux/syscalls.h                   |   1 +
+ include/uapi/linux/fcntl.h                 |  13 +
+ include/uapi/linux/memfd.h                 |   9 +
+ kernel/sys_ni.c                            |   1 +
+ mm/shmem.c                                 | 267 +++++++-
+ tools/testing/selftests/Makefile           |   1 +
+ tools/testing/selftests/memfd/.gitignore   |   2 +
+ tools/testing/selftests/memfd/Makefile     |  29 +
+ tools/testing/selftests/memfd/memfd_test.c | 972 +++++++++++++++++++++++++++++
+ 14 files changed, 1338 insertions(+), 15 deletions(-)
+ create mode 100644 include/uapi/linux/memfd.h
+ create mode 100644 tools/testing/selftests/memfd/.gitignore
+ create mode 100644 tools/testing/selftests/memfd/Makefile
+ create mode 100644 tools/testing/selftests/memfd/memfd_test.c
+
+-- 
+1.9.0
+
