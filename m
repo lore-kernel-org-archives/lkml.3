@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845AbaCSA1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 20:27:09 -0400
+	id S1758604AbaCSA0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 20:26:17 -0400
 Received: from mailout1.samsung.com ([203.254.224.24]:38115 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758489AbaCSA0R (ORCPT
+	with ESMTP id S1754539AbaCSA0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 20:26:17 -0400
-X-AuditID: cbfee690-b7f266d00000287c-6e-5328e425e919
+	Tue, 18 Mar 2014 20:26:15 -0400
+X-AuditID: cbfee68e-b7f566d000002344-9c-5328e4256e87
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 1/5] f2fs: introduce get_dirty_dents for readability
-Date: Wed, 19 Mar 2014 09:24:21 +0900
-Message-id: <1395188665-4175-1-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 3/5] f2fs: increase pages_skipped when skipping writepages
+Date: Wed, 19 Mar 2014 09:24:23 +0900
+Message-id: <1395188665-4175-3-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zA13VJxrBBmdmcllc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbFz6U+2gibeisYr
-	l5kbGH9wdTFyckgImEhc7bnGAmGLSVy4t56ti5GLQ0hgGaPEsk9b2WCKZt5dywSRWMQocbvz
-	HCOE08kk8aztHlAVBwebgLbE5v0GIA0iAswSC6aeB6thFpjAKPF/0XuwFcICLhJrNn5iBrFZ
-	BFQlfn7YCWbzCrhJLFq2jB1im7bEtucTwZolBO6zSdxbf54VokFA4tvkQywgyyQEZCU2HWCG
-	qJeUOLjiBssERsEFjAyrGEVTC5ILipPSi0z0ihNzi0vz0vWS83M3MUKCcMIOxnsHrA8xJgON
-	m8gsJZqcDwzivJJ4Q2MzIwtTE1NjI3NLM9KElcR51R4lBQkJpCeWpGanphakFsUXleakFh9i
-	ZOLglGpgDHexFjvhvJwnMoGX202wJHq9Vsk123DO2bNWnJT/kez/8PCp5lN1316b/tisf+Tk
-	ySme/2e6csWxTpq+d6X+a85pPx/l3XnE8NWI0zjmXd6vlVoXcsy+V/Epvr3HKrBr3/+/CwQj
-	ts049yu+/s0Fgcl2SVbZp91UT11auEhvWXJWuu3lR4t/XVViKc5INNRiLipOBAC8Xti8WAIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jAV3VJxrBBt9Ps1lc3/WXyeLSIneL
+In-reply-to: <1395188665-4175-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1395188665-4175-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t8zI13VJxrBBmu/m1hc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfHqXE7BGbGKVwuE
+	GhjPCXUxcnJICJhIPL65iwnCFpO4cG89WxcjF4eQwDJGiemfDrPCFL1YcocJIrGIUeLVnqfM
+	EE4nk8S9+QtYuhg5ONgEtCU27zcAaRARYJZYMPU8I0gNs8AERon/i96zgCSEBbwkXvZcApvK
+	IqAqMXf7PjCbV8BNYu3ebywQ27Qltj2fyAhicwq4S3y5ewYsLgRUs+v1cbArJAS+s0ncPHEF
+	apCAxLfJh8COkBCQldh0gBlijqTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKRXnJhbXJqXrpec
+	n7uJERKwfTsYbx6wPsSYDDRuIrOUaHI+MODzSuINjc2MLExNTI2NzC3NSBNWEudd9DApSEgg
+	PbEkNTs1tSC1KL6oNCe1+BAjEwenVANj/9nAJ4/tBbfv5vUzqN8gXsyjKyvIXMD65vHNfpeT
+	bgdlJsh+vbbCOC5/3n2NTyaKnY9yPofYxpfmm5uttYmKZvu+a/aiDeeCfvOcm6efzvhnSYvU
+	mYPSXT3xvg63/DuYeCIdbfuV06r8w/hvxO/JnFm83+95d+3nPVM9pm/Ifj5H54f9CxklluKM
+	REMt5qLiRACEVWVxbgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t9jAV3VJxrBBmvXGFpc3/WXyeLSIneL
 	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
 	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5ixc+lPtoIm3orGK5eZGxh/cHUxcnJICJhIzLy7lgnCFpO4cG89WxcjF4eQ
-	wCJGidud5xghnE4miWdt94AyHBxsAtoSm/cbgDSICDBLLJh6HqyGWWACo8T/Re9ZQBLCAi4S
-	azZ+YgaxWQRUJX5+2Alm8wq4SSxatowdYpu2xLbnExknMHIvYGRYxSiaWpBcUJyUnmuoV5yY
-	W1yal66XnJ+7iREc4s+kdjCubLA4xCjAwajEw3sgSiNYiDWxrLgy9xCjBAezkgiv8F2gEG9K
-	YmVValF+fFFpTmrxIcZkoO0TmaVEk/OB8ZdXEm9obGJmZGlkZmFkYm5OmrCSOO+BVutAIYH0
-	xJLU7NTUgtQimC1MHJxSDYxKN/NaP9tLcXz9Y7jrX/X0/mVPfdIU1JYsSdzAvtJmU8SRSpu6
-	mIyKp27PN8sIbhS7umlPbtq/6Zxtpi8ONi5lMz+17l7kAfcFM6e6dUxU+StrzyKx5ovFJ6kr
-	xpExanunV52RVDAU0uqyDhOZepYtbv/uCF7xO2Vc3N7sO3ImKnMqXE9WEVBiKc5INNRiLipO
-	BABt56a1tQIAAA==
+	SBBcj5EBGkhYx5jx6lxOwRmxilcLhBoYzwl1MXJySAiYSLxYcocJwhaTuHBvPVsXIxeHkMAi
+	RolXe54yQzidTBL35i9g6WLk4GAT0JbYvN8ApEFEgFliwdTzjCA1zAITGCX+L3rPApIQFvCS
+	eNlziRXEZhFQlZi7fR+YzSvgJrF27zcWiG3aEtueT2QEsTkF3CW+3D0DFhcCqtn1+jjTBEbe
+	BYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGC4+GZ9A7GVQ0WhxgFOBiVeHgPRGkEC7Em
+	lhVX5h5ilOBgVhLhFb4LFOJNSaysSi3Kjy8qzUktPsSYDHTVRGYp0eR8YKzmlcQbGpuYGVka
+	mVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVANjPrPik4JFqS1eVWsKxVMfCD97
+	r+IcvybK4V3mja7nInZrl39VE1YXeDktvSt0Nf+r7eV+6y+fDL1nGWci0b/Oi6/92Cf+rrl2
+	Djnt679Y8x+fVDxd1G65asZ0VT3PLdu8HuYlTympzbZzlOmT0Sp9m1eYarPn9pm/aX9/7v6x
+	QzXN44L9VGslluKMREMt5qLiRAA3L2DWywIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -45,57 +48,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The get_dirty_dents gives us the number of dirty dentry pages.
+This patch increases pages_skipped when skipping writepages.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/checkpoint.c | 2 +-
- fs/f2fs/f2fs.h       | 5 +++++
- fs/f2fs/inode.c      | 2 +-
- 3 files changed, 7 insertions(+), 2 deletions(-)
+ fs/f2fs/checkpoint.c | 11 ++++++-----
+ fs/f2fs/data.c       |  6 +++++-
+ fs/f2fs/node.c       |  6 +++++-
+ 3 files changed, 16 insertions(+), 7 deletions(-)
 
 diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 911b6f9..4c0e98d 100644
+index 1f52b70..aef32f3 100644
 --- a/fs/f2fs/checkpoint.c
 +++ b/fs/f2fs/checkpoint.c
-@@ -619,7 +619,7 @@ void remove_dirty_dir_inode(struct inode *inode)
- 		return;
+@@ -190,12 +190,9 @@ static int f2fs_write_meta_pages(struct address_space *mapping,
+ 	int nrpages = nr_pages_to_skip(sbi, META);
+ 	long written;
  
- 	spin_lock(&sbi->dir_inode_lock);
--	if (atomic_read(&F2FS_I(inode)->dirty_dents)) {
-+	if (get_dirty_dents(inode)) {
- 		spin_unlock(&sbi->dir_inode_lock);
- 		return;
- 	}
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 292cc3c..59fac1a 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -704,6 +704,11 @@ static inline int get_pages(struct f2fs_sb_info *sbi, int count_type)
- 	return atomic_read(&sbi->nr_pages[count_type]);
+-	if (wbc->for_kupdate)
+-		return 0;
+-
+ 	/* collect a number of dirty meta pages and write together */
+-	if (get_pages(sbi, F2FS_DIRTY_META) < nrpages)
+-		return 0;
++	if (wbc->for_kupdate || get_pages(sbi, F2FS_DIRTY_META) < nrpages)
++		goto skip_write;
+ 
+ 	/* if mounting is failed, skip writing node pages */
+ 	mutex_lock(&sbi->cp_mutex);
+@@ -203,6 +200,10 @@ static int f2fs_write_meta_pages(struct address_space *mapping,
+ 	mutex_unlock(&sbi->cp_mutex);
+ 	wbc->nr_to_write -= written;
+ 	return 0;
++
++skip_write:
++	wbc->pages_skipped += get_pages(sbi, F2FS_DIRTY_META);
++	return 0;
  }
  
-+static inline int get_dirty_dents(struct inode *inode)
-+{
-+	return atomic_read(&F2FS_I(inode)->dirty_dents);
-+}
+ long sync_meta_pages(struct f2fs_sb_info *sbi, enum page_type type,
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index e3b7cfa..3bc3809 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -870,7 +870,7 @@ static int f2fs_write_data_pages(struct address_space *mapping,
+ 
+ 	if (S_ISDIR(inode->i_mode) && wbc->sync_mode == WB_SYNC_NONE &&
+ 			get_dirty_dents(inode) < nr_pages_to_skip(sbi, DATA))
+-		return 0;
++		goto skip_write;
+ 
+ 	if (wbc->nr_to_write < MAX_DESIRED_PAGES_WP) {
+ 		desired_nrtw = MAX_DESIRED_PAGES_WP;
+@@ -892,6 +892,10 @@ static int f2fs_write_data_pages(struct address_space *mapping,
+ 
+ 	wbc->nr_to_write -= excess_nrtw;
+ 	return ret;
 +
- static inline int get_blocktype_secs(struct f2fs_sb_info *sbi, int block_type)
- {
- 	unsigned int pages_per_sec = sbi->segs_per_sec *
-diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
-index d518e37..0d8e4a2 100644
---- a/fs/f2fs/inode.c
-+++ b/fs/f2fs/inode.c
-@@ -273,7 +273,7 @@ void f2fs_evict_inode(struct inode *inode)
- 			inode->i_ino == F2FS_META_INO(sbi))
- 		goto no_delete;
++skip_write:
++	wbc->pages_skipped += get_dirty_dents(inode);
++	return 0;
+ }
  
--	f2fs_bug_on(atomic_read(&F2FS_I(inode)->dirty_dents));
-+	f2fs_bug_on(get_dirty_dents(inode));
- 	remove_dirty_dir_inode(inode);
+ static int f2fs_write_begin(struct file *file, struct address_space *mapping,
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index cb514f1..7cc146b 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1209,7 +1209,7 @@ static int f2fs_write_node_pages(struct address_space *mapping,
  
- 	if (inode->i_nlink || is_bad_inode(inode))
+ 	/* collect a number of dirty node pages and write together */
+ 	if (get_pages(sbi, F2FS_DIRTY_NODES) < nr_pages_to_skip(sbi, NODE))
+-		return 0;
++		goto skip_write;
+ 
+ 	/* if mounting is failed, skip writing node pages */
+ 	wbc->nr_to_write = 3 * max_hw_blocks(sbi);
+@@ -1218,6 +1218,10 @@ static int f2fs_write_node_pages(struct address_space *mapping,
+ 	wbc->nr_to_write = nr_to_write - (3 * max_hw_blocks(sbi) -
+ 						wbc->nr_to_write);
+ 	return 0;
++
++skip_write:
++	wbc->pages_skipped += get_pages(sbi, F2FS_DIRTY_NODES);
++	return 0;
+ }
+ 
+ static int f2fs_set_node_page_dirty(struct page *page)
 -- 
 1.8.4.474.g128a96c
 
