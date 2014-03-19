@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934139AbaCSQYW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:24:22 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:43162 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932996AbaCSQYT (ORCPT
+	id S934215AbaCSQY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:24:59 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38767 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933824AbaCSQY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:24:19 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        tony.luck@intel.com, fenghua.yu@intel.com, schwidefsky@de.ibm.com,
-        james.hogan@imgtec.com, cmetcalf@tilera.com, benh@kernel.crashing.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
-Cc: dietmar.eggemann@arm.com, preeti@linux.vnet.ibm.com,
-        linaro-kernel@lists.linaro.org,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v3 6/6] sched: powerpc: Add SD_SHARE_POWERDOMAIN for SMT level
-Date: Wed, 19 Mar 2014 17:22:45 +0100
-Message-Id: <1395246165-31150-7-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1395246165-31150-1-git-send-email-vincent.guittot@linaro.org>
-References: <1395246165-31150-1-git-send-email-vincent.guittot@linaro.org>
+	Wed, 19 Mar 2014 12:24:57 -0400
+Message-ID: <5329C4CC.2000200@oracle.com>
+Date: Wed, 19 Mar 2014 12:24:44 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND -mm 2/2] mm/mempolicy.c: add comment in queue_pages_hugetlb()
+References: <1395196179-4075-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1395196179-4075-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1395196179-4075-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the power domain dependency at SMT level of Power8 but keep the flag
-clear at CPU level. The goal is to consolidate tasks on the threads of a
-core up to a level as explained by Preeti:
-"On powerpc we would want to clear the SD_SHARE_POWERDOMAIN flag at the CPU
-domain. On Power8, considering we have 8 threads per core, we would want to
-consolidate tasks atleast upto 4 threads without significant performance
-impact before spilling over to the other cores. By doing so, besides making
-use of the higher power of the core we could do cpuidle management at the
-core level for the remaining idle cores as a result of this consolidation."
+On 03/18/2014 10:29 PM, Naoya Horiguchi wrote:
+> We have a race where we try to migrate an invalid page, resulting in
+> hitting VM_BUG_ON_PAGE in isolate_huge_page().
+> queue_pages_hugetlb() is OK to fail, so let's check !PageHeadHuge to keep
+> invalid hugepage from queuing.
+>
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>   mm/mempolicy.c | 11 +++++++++++
+>   1 file changed, 11 insertions(+)
+>
+> diff --git v3.14-rc7-mmotm-2014-03-18-16-37.orig/mm/mempolicy.c v3.14-rc7-mmotm-2014-03-18-16-37/mm/mempolicy.c
+> index 9d2ef4111a4c..ae6e2d9dc855 100644
+> --- v3.14-rc7-mmotm-2014-03-18-16-37.orig/mm/mempolicy.c
+> +++ v3.14-rc7-mmotm-2014-03-18-16-37/mm/mempolicy.c
+> @@ -530,6 +530,17 @@ static int queue_pages_hugetlb(pte_t *pte, unsigned long addr,
+>   	if (!pte_present(entry))
+>   		return 0;
+>   	page = pte_page(entry);
+> +
+> +	/*
+> +	 * Trinity found that page could be a non-hugepage. This is an
+> +	 * unexpected behavior, but it's not clear how this problem happens.
+> +	 * So let's simply skip such corner case. Page migration can often
+> +	 * fail for various reasons, so it's ok to just skip the address
+> +	 * unsuitable to hugepage migration.
+> +	 */
+> +	if (!PageHeadHuge(page))
+> +		return 0;
+> +
+>   	nid = page_to_nid(page);
+>   	if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
+>   		return 0;
+>
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
- arch/powerpc/kernel/smp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I have to say that I really dislike this method of solving the issue.
 
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index c9cade5..fbbac3c 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -759,7 +759,7 @@ int setup_profiling_timer(unsigned int multiplier)
- /* cpumask of CPUs with asymetric SMT dependancy */
- static const int powerpc_smt_flags(void)
- {
--	int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
-+	int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN;
- 
- 	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
- 		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
--- 
-1.9.0
+I think it's something fine to do for testing, but this will just hide this issue
+and will let it sneak upstream. I'm really not sure if the trace I've reported is
+the only codepath that would trigger it, so if we let it sneak upstream we're risking
+of someone hitting it some other way.
 
+
+Thanks,
+Sasha
