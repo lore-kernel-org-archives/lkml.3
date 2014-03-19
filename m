@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaCSF4U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 01:56:20 -0400
-Received: from ozlabs.org ([203.10.76.45]:43415 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752733AbaCSF4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 01:56:15 -0400
-Date: Wed, 19 Mar 2014 16:56:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: linux-next: manual merge of the random tree with Linus' tree
-Message-Id: <20140319165608.739527f179d25c63ebb583ea@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__19_Mar_2014_16_56_08_+1100_SjfipRG2h5olfvbE"
+	id S1754270AbaCSF5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 01:57:41 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.246]:62696 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750825AbaCSF5i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 01:57:38 -0400
+Message-ID: <532931C3.4080909@atmel.com>
+Date: Wed, 19 Mar 2014 13:57:23 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: <nicolas.ferre@atmel.com>, Boris BREZILLON <b.brezillon@overkiz.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/8] ASoC: atmel: document clock properties of the wm8904
+ driver
+References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <1395049541-28128-8-git-send-email-voice.shen@atmel.com> <20140317115518.GD11706@sirena.org.uk>
+In-Reply-To: <20140317115518.GD11706@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_Mar_2014_16_56_08_+1100_SjfipRG2h5olfvbE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Mark,
 
-Hi Theodore,
+On 03/17/2014 07:55 PM, Mark Brown wrote:
+> On Mon, Mar 17, 2014 at 05:45:40PM +0800, Bo Shen wrote:
+>
+>>     - compatible: "atmel,asoc-wm8904"
+>>     - atmel,model: The user-visible name of this sound complex.
+>> +  - clocks: A list of clocks needed by the wm8904 chip.
+>> +  - clock-output-names: Driver related clock names. Shall contain "pck0".
+>
+> If this is a clock for the CODEC it should be documented as part of the
+> binding for the CODEC and connected to the CODEC in the device tree
+> rather than being part of a machine driver binding.
 
-Today's linux-next merge of the random tree got a conflict in
-arch/x86/include/asm/archrandom.h between commit 5bfce5ef55cb ("x86,
-kaslr: Provide randomness functions") from Linus' tree and commits
-e3be36e60bdc ("x86, random: Enable the RDSEED instruction") and
-91a60dc7aa88 ("random: Add arch_has_random[_seed]()") from the random tree.
+This is a optional clock for CODEC which depends on hardware design. 
+There are 3 options for this clock, wm8904 as an example.
+1. Using internal FLL, so won't use this clock.
+2. Using external oscillator, no need to retrieve this clock.
+3. Using SoC provide this clock (we use this case).
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+After considering these 3 options, if we put this into CODEC driver to 
+do it, I think it will be more complicate to do logic judgement. Do you 
+think so?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+And, in machine driver, it will depends on the clock option to decide 
+whether to call snd_soc_dai_set_pll and snd_soc_dai_set_sysclk.
 
-diff --cc arch/x86/include/asm/archrandom.h
-index e6a92455740e,c7ed4a61e928..000000000000
---- a/arch/x86/include/asm/archrandom.h
-+++ b/arch/x86/include/asm/archrandom.h
-@@@ -39,20 -42,16 +42,30 @@@
- =20
-  #ifdef CONFIG_ARCH_RANDOM
- =20
- +/* Instead of arch_get_random_long() when alternatives haven't run. */
- +static inline int rdrand_long(unsigned long *v)
- +{
- +	int ok;
- +	asm volatile("1: " RDRAND_LONG "\n\t"
- +		     "jc 2f\n\t"
- +		     "decl %0\n\t"
- +		     "jnz 1b\n\t"
- +		     "2:"
- +		     : "=3Dr" (ok), "=3Da" (*v)
- +		     : "0" (RDRAND_RETRY_LOOPS));
- +	return ok;
- +}
- +
-+ /* A single attempt at RDSEED */
-+ static inline bool rdseed_long(unsigned long *v)
-+ {
-+ 	unsigned char ok;
-+ 	asm volatile(RDSEED_LONG "\n\t"
-+ 		     "setc %0"
-+ 		     : "=3Dqm" (ok), "=3Da" (*v));
-+ 	return ok;
-+ }
-+=20
-  #define GET_RANDOM(name, type, rdrand, nop)			\
-  static inline int name(type *v)					\
-  {								\
-@@@ -80,15 -95,14 +109,21 @@@ GET_SEED(arch_get_random_seed_int, unsi
-  GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP3);
-  GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP3);
- =20
-+ GET_SEED(arch_get_random_seed_long, unsigned long, RDSEED_LONG, ASM_NOP4);
-+ GET_SEED(arch_get_random_seed_int, unsigned int, RDSEED_INT, ASM_NOP4);
-+=20
-  #endif /* CONFIG_X86_64 */
- =20
-+ #define arch_has_random()	static_cpu_has(X86_FEATURE_RDRAND)
-+ #define arch_has_random_seed()	static_cpu_has(X86_FEATURE_RDSEED)
-+=20
- +#else
- +
- +static inline int rdrand_long(unsigned long *v)
- +{
- +	return 0;
- +}
- +
-  #endif  /* CONFIG_ARCH_RANDOM */
- =20
-  extern void x86_init_rdrand(struct cpuinfo_x86 *c);
+And also the <Documentation/soud/alsa/soc/machine.txt> mentions the 
+machine drivers responsibility (one is for clocking) as following:
+--->8---
+The ASoC machine (or board) driver is the code that glues together all the
+component drivers (e.g. codecs, platforms and DAIs). It also describes the
+relationships between each componnent which include audio paths, GPIOs,
+interrupts, clocking, jacks and voltage regulators.
+---8<---
 
---Signature=_Wed__19_Mar_2014_16_56_08_+1100_SjfipRG2h5olfvbE
-Content-Type: application/pgp-signature
+So, I think put this into machine driver will be better. Do you have any 
+other idea? Or if I misunderstand something, please point it out.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Thanks.
 
-iQIcBAEBCAAGBQJTKTF9AAoJEMDTa8Ir7ZwV+tAQAIJaMQhrs5uTkfxmhPLd6rzX
-OFElO6hsHd4IyJFNAEoQRj3v6vVImiEk9+3dY304v1aXIthFGg4g5FNRUXheJLvF
-quYz9fsE8g2713Bq9Hu7OCQio07ePzIUaGNKpHY3AU+rHbSnaxZh4FcenBIlU1th
-AO3PHATnfxgxHlC9jbfASgiDNRZC4qgIHt5Lg7u64MZx45nStWSruOKFOX24Y6xn
-r3/DzEU27jXzy5PE3bcsciNL8k8cSiJcvknptz5n6DDKNzyC+2GrDSoZ9iaBLoKn
-N9S1A0U7NZjxwjVi+QmcGK9gNsvF02huox2MtQsIQlNW9trDZOYoy9lV1uQSr/AP
-b2DPjgzXwqYkvQN5SE1/hPcAi20Z+Wwh3G6Gdjv4KqcByVjcHBvRwjleibldDhkK
-PGhvT0wLlxdfV4p3kNyIPY7Q6Yk8ORHPtchxBt6CqHs9DhfOiAfylSWQ6161iwja
-ovnFfpLThMxc+nX+lFB2DNnCTTQMijz+xRS9EhWMo0auAYZgJ7JTzDefpI2gCh4Q
-TFgW9ppraQddQhvyHwrU+IqrHdEKff7g1QKpulrdUCzpttM7knj1TtTUpRihYym8
-0kwW0q2U5LM9BaoYps3hOs7KvjUOvjfQgaKKUOgbPTI3BUVBe6K4O/XtDoeCpcmR
-a7KOg4bLX6vOkn0Iw7fD
-=8sX9
------END PGP SIGNATURE-----
-
---Signature=_Wed__19_Mar_2014_16_56_08_+1100_SjfipRG2h5olfvbE--
+Best Regards,
+Bo Shen
