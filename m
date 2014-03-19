@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396AbaCSUaN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 16:30:13 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38772 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaCSUaL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 16:30:11 -0400
-Date: Wed, 19 Mar 2014 16:30:09 -0400 (EDT)
-Message-Id: <20140319.163009.460997858507816239.davem@davemloft.net>
-To: monamagarwal123@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eddie.wai@broadcom.com, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH] rcu: Replace rcu_assign_pointer(x, NULL) with
- RCU_INIT_POINTER(x, NULL)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1395180150-18548-1-git-send-email-monamagarwal123@gmail.com>
-References: <1395180150-18548-1-git-send-email-monamagarwal123@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+	id S1755693AbaCSUar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 16:30:47 -0400
+Received: from ozlabs.org ([203.10.76.45]:43021 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755574AbaCSUap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 16:30:45 -0400
+Date: Thu, 20 Mar 2014 07:30:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Nicolin Chen <Guangyu.Chen@freescale.com>,
+        "Jean-Francois Moine" <moinejf@free.fr>
+Subject: Re: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20140320073039.0ca391a3b8bbc47274ca1efc@canb.auug.org.au>
+In-Reply-To: <20140319101701.GU11706@sirena.org.uk>
+References: <20140319121000.ccea7c0440649976ae722abd@canb.auug.org.au>
+	<20140319101701.GU11706@sirena.org.uk>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Mar 2014 13:30:11 -0700 (PDT)
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__20_Mar_2014_07_30_39_+1100_e.KRfo4++RjW1O/S"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__20_Mar_2014_07_30_39_+1100_e.KRfo4++RjW1O/S
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Many of your patches, such as this one, all have the same exact
-subject line.
+Hi Mark,
 
-This makes it impossible to scan the subject lines and have some
-idea what area a commit makes changes.
+On Wed, 19 Mar 2014 10:17:01 +0000 Mark Brown <broonie@kernel.org> wrote:
+>
+> Sorry, it's fixed already - your fetch must've raced with my fix last
+> night.
 
-I would really suggest that you use a subject prefix that references
-the driver or subsystem, so for this one:
+No worries, that can happen since I fetch all the trees before I start
+merging.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Subject: [PATCH N/M] infiniband: Use rcu_assign_pointer(x, NULL instead) of RCU_INIT_POINTER(x, NULL)
+--Signature=_Thu__20_Mar_2014_07_30_39_+1100_e.KRfo4++RjW1O/S
+Content-Type: application/pgp-signature
 
-and likewise for all of your other patches.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTKf5zAAoJEMDTa8Ir7ZwVSmcP/2khdopLpkekEgsoaHU76ZLQ
+IPS8HYCps7Z0kpjPO9isArFzsiK5gk3IbIb341qTIqPAtDDATSohffCFMVNNxa3+
+xXX2OlUC97xjtnYdcRgcI5ufOVX/lQ6X60VDAVRH2Y9BPTjXIUylp+NPFnLDCzxw
+EKm3FssFzY645aRzuX+M/eDfgnvxLVET969iwLUAtQ5OfaECqXNwMfRGzpv4fklc
+VRgXQqlFmcfd8frfuQsDDPYpYbcGPe/Jm/sUuK/t+yVMOtZUkUH/jNgoYWSqQy1v
+ddGM6LebI0IKpqwHdqUXp3r2a92+vZIMxvsZIB8/lmLHV4grxs4HdcIiXoNMtyTk
+EbbNYEyuwyQc0Jq4RzspLeasCa+ErEdBB3pFtHLdGqmsFasdtPHTHJN8JQg1qFvJ
+iT/tulqGFGBFVyAScxwThswTS6suw7mPUkqFl9gl0Duu+5l+mOb6PCKvhx2CzRq7
+X6WLZUBwkffO4Iqjr6h35kJZx10UcSu0q0ELOXqXPzQuslvC0aaopSYNEvwjS/4n
+g8XkBjTLufzAHXsvHXYBFDIrfOxGyqS5UDrlbZEpAjbiU/0AGu2isftxU/9QMevv
+LsScQ1MkPlWdgCklKfB+l4QhRktp4wr9hicC0I/BSlAuhS67IcR762FPIeoTMQp0
+PiSe58QJlqg1yPozzwTs
+=qe4n
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__20_Mar_2014_07_30_39_+1100_e.KRfo4++RjW1O/S--
