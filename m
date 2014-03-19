@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934152AbaCSOEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 10:04:08 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51441 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933380AbaCSOEH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 10:04:07 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Patrick Marlier <patrick.marlier@gmail.com>
-Subject: Re: [PATCH 0/2] Add exit_prepare callback to the cpufreq_driver interface.
-Date: Wed, 19 Mar 2014 15:19:36 +0100
-Message-ID: <19131121.D211TBerqb@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53296AD0.5090908@linux.vnet.ibm.com>
-References: <1394732168-12638-1-git-send-email-dirk.j.brandewie@intel.com> <CAKohpomLW17B=Sk42tczzDF+VGwn7hT521osWPi5TcgqpCPZ_w@mail.gmail.com> <53296AD0.5090908@linux.vnet.ibm.com>
+	id S934179AbaCSOGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 10:06:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22133 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933380AbaCSOGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 10:06:04 -0400
+Date: Wed, 19 Mar 2014 15:05:57 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, fowles@inreach.com, eranian@google.com
+Subject: Re: [PATCH 15/19] perf, c2c: Add callchain support
+Message-ID: <20140319140557.GH1449@krava.brq.redhat.com>
+References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
+ <1393609388-40489-16-git-send-email-dzickus@redhat.com>
+ <20140319130035.GC7423@krava.brq.redhat.com>
+ <20140319135328.GB25953@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319135328.GB25953@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 19, 2014 03:30:48 PM Srivatsa S. Bhat wrote:
-> On 03/19/2014 10:33 AM, Viresh Kumar wrote:
-> > On 18 March 2014 17:46, Srivatsa S. Bhat
-> > <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> >> Agreed. As far as I understand, for ->target drivers, today we use GOV_STOP
-> >> to stop managing the CPU going offline. And for ->setpolicy drivers, we will
-> >> use this new callback to achieve the same goal.
+On Wed, Mar 19, 2014 at 09:53:28AM -0400, Don Zickus wrote:
+> On Wed, Mar 19, 2014 at 02:00:35PM +0100, Jiri Olsa wrote:
+> > On Fri, Feb 28, 2014 at 12:43:04PM -0500, Don Zickus wrote:
 > > 
-> > So a better question would be: What's the purpose of ->stop() call for a policy?
+> > SNIP
+> > 
+> > >  
+> > > +static int
+> > > +opt_callchain_cb(const struct option *opt, const char *arg, int unset)
+> > > +{
+> > > +	struct perf_c2c *c2c = (struct perf_c2c *)opt->value;
+> > > +	char *tok, *tok2;
+> > > +	char *endptr;
+> > 
+> > 
+> > this still needs to be shared with report code, but
+> > I'm guessing V2 was about moving to hist_entry-ies
 > 
-> Ideally, it should remove the outgoing CPU from the policy and "stop managing
-> that CPU", whatever that means to the driver (for intel_pstate, it means
-> setting it to min P state and destroying the timer).
-> 
-> > Stop managing CPUs of that policy?
-> 
-> Stop managing only the particular CPU going offline. IOW, we should somehow
-> communicate to the ->stop() callback that we are taking CPU 'x' offline.
-> 
-> If adding a ->stop() callback in the cpufreq_driver is not the best way to
-> achieve it, then lets think of an alternative. The way I look at it, this
-> new mechanism what we want, should allow ->setpolicy drivers to do what the
-> GOV_STOP will do for regular drivers. That is, allow it to "shutdown the
-> CPU from a cpufreq perspective", whatever that means to the driver.
-> We can think of a completely different way of achieving it, if ->stop()
-> is not suitable for that purpose.
+> I guess I don't understand this?  I don't use the report code.  Is there
+> another way I can get this?
 
-I agree.
+opt_callchain_cb is same as parse_callchain_opt function,
+the argument parsing code could be shared
 
-That said, for the intel_pstate case ->stop() as proposed by Dirk is demonstrably
-sufficient and there are no other ->setpolicy drivers in sight wanting or needing
-anything else.
-
-So to me, (1) the new ->stop() should *only* be called for ->setpolicy drivers,
-because the purpose of it should be to "allow ->setpolicy drivers to do what the
-GOV_STOP will do for regular drivers" as you put it above, and (2) some code in
-the original intel_pstate's ->exit() may/should stay in there (instead of being
-moved to the new ->stop()), which is the only possibly remaining issue here.
-
-The whole discussion about possibly re-using ->stop() for ->target drivers goes
-in a totally wrong direction, because *if* ->target drivers need a new callback
-to be executed around where ->stop() is called for ->setpolicy drivers, *then*
-that has to be a *different* callback.
-
-And by the way, ->get() in fact has a different meaning for ->setpolicy drivers,
-so it would be good to consider logical separation of ->setpolicy and ->target
-drivers so that each kind has its own separate set of callbacks with no overlaps.
-That would make it easier to avoid breakage resulting from changes made with
-->setpolicy drivers that also affect ->target drivers in unpredictable ways and
-the other way around.
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+jirka
