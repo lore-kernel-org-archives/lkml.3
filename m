@@ -1,95 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaCSTva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 15:51:30 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46088 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902AbaCSTv2 (ORCPT
+	id S1754722AbaCSTza (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 15:55:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44429 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753953AbaCSTz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 15:51:28 -0400
-Message-ID: <5329F53B.3020800@wwwdotorg.org>
-Date: Wed, 19 Mar 2014 13:51:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 19 Mar 2014 15:55:29 -0400
+Date: Wed, 19 Mar 2014 20:55:20 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Dilger, Andreas" <andreas.dilger@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Peng Tao <bergwolf@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "Drokin, Oleg" <oleg.drokin@intel.com>
+Subject: Re: [PATCH RFC] sched: introduce add_wait_queue_exclusive_head
+Message-ID: <20140319195520.GF8557@laptop.programming.kicks-ass.net>
+References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com>
+ <20140318133331.GA23193@laptop.programming.kicks-ass.net>
+ <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com>
+ <20140318140504.GD23193@laptop.programming.kicks-ass.net>
+ <CA+a=Yy567xtU0Osz+9-hTCNrzB65vE=ErYWTq880N+uEwG2DHA@mail.gmail.com>
+ <20140318162319.GB5669@redhat.com>
+ <CA+a=Yy51Ex=UdsCRn8Ty_s4XR4xbOZ_YAf3tejb=JyTgQ_QzRA@mail.gmail.com>
+ <20140319173330.GA11923@redhat.com>
+ <CF4F4C6F.9A880%andreas.dilger@intel.com>
 MIME-Version: 1.0
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Alan <gnomes@lxorguk.ukuu.org.uk>
-CC: Stephen Warren <swarren@nvidia.com>, Jingoo Han <jg1.han@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH V4] serial/uart/8250: Add tunable RX interrupt trigger
- I/F of FIFO buffers
-References: <20140319101556.22672.8782.stgit@yunodevel>
-In-Reply-To: <20140319101556.22672.8782.stgit@yunodevel>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CF4F4C6F.9A880%andreas.dilger@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2014 04:15 AM, Yoshihiro YUNOMAE wrote:
-> Add tunable RX interrupt trigger I/F of FIFO buffers.
-> Serial devices are used as not only message communication devices but control
-> or sending communication devices. For the latter uses, normally small data
-> will be exchanged, so user applications want to receive data unit as soon as
-> possible for real-time tendency. If we have a sensor which sends a 1 byte data
-> each time and must control a device based on the sensor feedback, the RX
-> interrupt should be triggered for each data.
-> 
-> According to HW specification of serial UART devices, RX interrupt trigger
-> can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
-> in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
-> the trigger to only 8bytes.
+On Wed, Mar 19, 2014 at 07:44:29PM +0000, Dilger, Andreas wrote:
+> The original reason for l_wait_event() not using TASK_UNINTERRUPTIBLE
+> is to avoid the load on the server continually being "num_service_threads"
+> regardless of whether they are actually doing something or not.  We
+> added various cases for periodic wakeups and such afterward.
 
-> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-> index 69932b7..fc17fb2 100644
-> --- a/drivers/tty/serial/8250/8250_core.c
-> +++ b/drivers/tty/serial/8250/8250_core.c
-> @@ -531,11 +531,10 @@ static void serial8250_clear_fifos(struct uart_8250_port *p)
->  
->  void serial8250_clear_and_reinit_fifos(struct uart_8250_port *p)
->  {
-> -	unsigned char fcr;
-> -
->  	serial8250_clear_fifos(p);
-> -	fcr = uart_config[p->port.type].fcr;
-> -	serial_out(p, UART_FCR, fcr);
-> +	if (!p->fcr)
-> +		p->fcr = uart_config[p->port.type].fcr;
+Hmm, maybe we should finally do the TASK_IDLE thing;
 
-Rather than sprinkling this initialization all over the place, can't the
-fcr value be set up one time, when the port is first created?
+  https://lkml.org/lkml/2013/11/12/710
 
-> +static int convert_fcr2val(struct uart_8250_port *up, unsigned char fcr)
-> +{
-> +	unsigned char trig_raw = fcr & UART_FCR_TRIGGER_MASK;
-> +
-> +	switch (up->port.type) {
-> +	case PORT_16550A:
-> +		if (trig_raw == UART_FCR_R_TRIG_00)
-> +			return 1;
-> +		else if (trig_raw == UART_FCR_R_TRIG_01)
-> +			return 4;
-> +		else if (trig_raw == UART_FCR_R_TRIG_10)
-> +			return 8;
-> +		else if (trig_raw == UART_FCR_R_TRIG_11)
-> +			return 14;
-> +		break;
-> +	}
-> +	return -EOPNOTSUPP;
-> +}
-
-Rather than implementing this translation inside this one function
-(well, and convert_val2rxtrig() too), perhaps it would make sense to put
-the values into uart_config[] and just look them up here. That would
-better isolate the type-specific data into one place.
-
-The comment right before UART_FCR_R_TRIG_00 in
-include/uapi/linux/serial_reg.h might help when filling in any extra
-fields in uart_config[].
+Oleg?
