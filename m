@@ -1,78 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757795AbaCSWiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 18:38:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49714 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaCSWix (ORCPT
+	id S1759078AbaCSWkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 18:40:09 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:39728 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755864AbaCSWkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 18:38:53 -0400
-Date: Wed, 19 Mar 2014 15:38:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [percpu]  BUG: using __this_cpu_add() in preemptible [00000000]
- code: init/1
-Message-Id: <20140319153851.34dfdf97616422b159dc153b@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.10.1403180942030.17965@nuc>
-References: <20140307090911.GA18207@localhost>
-	<alpine.DEB.2.10.1403071124140.21846@nuc>
-	<alpine.DEB.2.10.1403180942030.17965@nuc>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Mar 2014 18:40:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <1395267324-5788-2-git-send-email-jgunthorpe@obsidianresearch.com>
+References: <1395267324-5788-1-git-send-email-jgunthorpe@obsidianresearch.com>
+	<1395267324-5788-2-git-send-email-jgunthorpe@obsidianresearch.com>
+Date: Wed, 19 Mar 2014 17:40:05 -0500
+Message-ID: <CAL_Jsq+cZ=SW-LtTvKwrWQYo7aV0XLXpvT2022EnAvFeDr+Zmg@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] of_mdio: Allow the DT to specify the phy ID and
+ avoid autoprobing
+From: Rob Herring <robherring2@gmail.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Rob Herring <robh+dt@kernel.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014 09:43:27 -0500 (CDT) Christoph Lameter <cl@linux.com> wrote:
-
-> Anyways the statistics in slub should be low impact and able to
-> be placed anywhere. So I think we need this patch to avoid
-> the preemption checks begin triggered.
-> 
-> 
-> Subject: SLUB: Use raw_cpu_inc for incrementing statistics
-> 
-> Statistics are not critical to the operation of the allocation
-> but should also not cause too much overhead.
-> 
-> __this_cpu_inc now checks if preemption is disabled and triggers.
-> Use raw_cpu_inc to avoid the checks. Using this_cpu_ops may cause
-> interrupt disable/enable sequences on various arches which may
-> significantly impact allocator performance.
-> 
-> ...
+On Wed, Mar 19, 2014 at 5:15 PM, Jason Gunthorpe
+<jgunthorpe@obsidianresearch.com> wrote:
+> This makes the generic of_mdiobus_register parse the DT compatible string for
+> the pattern ethernet-phy-idAAAA.BBBB. If present it should be a value that
+> matches the phy-id register normally readable through MDIO.
 >
-> --- linux.orig/mm/slub.c	2014-03-07 14:10:30.142777022 -0600
-> +++ linux/mm/slub.c	2014-03-18 09:39:15.675035324 -0500
-> @@ -224,7 +224,7 @@
->  static inline void stat(const struct kmem_cache *s, enum stat_item si)
->  {
->  #ifdef CONFIG_SLUB_STATS
-> -	__this_cpu_inc(s->cpu_slab->stat[si]);
-> +	raw_cpu_inc(s->cpu_slab->stat[si]);
->  #endif
+> When the ID is given the phy autoprobing is defeated and the phy is
+> created directly.
+>
+> This is necessary to support phy's that cannot be autoprobed when
+> of_mdiobus_register is called. Specifically, my case has the phy in reset at
+> of_mdiobus_register, the reset is only released once the ethernet driver
+> starts, before it attaches to the phy.
+>
+> Tested on ARM Kirkwood with phy id 0x01410e90 (Marvell 88E1318)
+>
+> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+
+Despite the outrageous commenting style issues:
+
+Acked-by: Rob Herring <robh@kernel.org>
+
+
+> ---
+>  drivers/of/of_mdio.c | 23 ++++++++++++++++++++++-
+>  1 file changed, 22 insertions(+), 1 deletion(-)
+>
+> For net-next
+>
+> v3:
+>  - Use of_property_for_each_string as per Rob Herring
+>  - Rebase+retest against 3.14-rc7
+>
+> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+> index 5b3c24f..9a95831 100644
+> --- a/drivers/of/of_mdio.c
+> +++ b/drivers/of/of_mdio.c
+> @@ -43,6 +43,23 @@ static void of_set_phy_supported(struct phy_device *phydev, u32 max_speed)
+>         }
 >  }
-
-Please always consider how the code will appear to a naive reader. 
-That reader won't know why raw_ is being used here, so we should
-provide an explanation.
-
---- a/mm/slub.c~slub-use-raw_cpu_inc-for-incrementing-statistics-fix
-+++ a/mm/slub.c
-@@ -224,6 +224,10 @@ static inline void memcg_propagate_slab_
- static inline void stat(const struct kmem_cache *s, enum stat_item si)
- {
- #ifdef CONFIG_SLUB_STATS
-+	/*
-+	 * The rmw is racy on a preemptible kernel but this is acceptable, so
-+	 * avoid this_cpu_add()'s irq-disable overhead.
-+	 */
- 	raw_cpu_inc(s->cpu_slab->stat[si]);
- #endif
- }
-_
-
+>
+> +/* Extract the clause 22 phy ID from the compatible string of the form
+> + * ethernet-phy-idAAAA.BBBB */
+> +static int of_get_phy_id(struct device_node *device, u32 *phy_id)
+> +{
+> +       struct property *prop;
+> +       const char *cp;
+> +       unsigned int upper, lower;
+> +
+> +       of_property_for_each_string(device, "compatible", prop, cp) {
+> +               if (sscanf(cp, "ethernet-phy-id%4x.%4x", &upper, &lower) == 2) {
+> +                       *phy_id = ((upper & 0xFFFF) << 16) | (lower & 0xFFFF);
+> +                       return 0;
+> +               }
+> +       }
+> +       return -EINVAL;
+> +}
+> +
+>  static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *child,
+>                                    u32 addr)
+>  {
+> @@ -50,11 +67,15 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
+>         bool is_c45;
+>         int rc;
+>         u32 max_speed = 0;
+> +       u32 phy_id;
+>
+>         is_c45 = of_device_is_compatible(child,
+>                                          "ethernet-phy-ieee802.3-c45");
+>
+> -       phy = get_phy_device(mdio, addr, is_c45);
+> +       if (!is_c45 && !of_get_phy_id(child, &phy_id))
+> +               phy = phy_device_create(mdio, addr, phy_id, 0, NULL);
+> +       else
+> +               phy = get_phy_device(mdio, addr, is_c45);
+>         if (!phy || IS_ERR(phy))
+>                 return 1;
+>
+> --
+> 1.8.1.2
+>
