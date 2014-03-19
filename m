@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758908AbaCSCNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 22:13:10 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37958 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758511AbaCSCNJ (ORCPT
+	id S1758934AbaCSCOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 22:14:07 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:39094 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758161AbaCSCOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 22:13:09 -0400
-Date: Tue, 18 Mar 2014 19:12:14 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: bad rss-counter message in 3.14rc5
-In-Reply-To: <5328F3B4.1080208@oracle.com>
-Message-ID: <alpine.LSU.2.11.1403181906140.3318@eggly.anvils>
-References: <20140311045109.GB12551@redhat.com> <20140310220158.7e8b7f2a.akpm@linux-foundation.org> <20140311053017.GB14329@redhat.com> <20140311132024.GC32390@moon> <531F0E39.9020100@oracle.com> <20140311134158.GD32390@moon> <20140311142817.GA26517@redhat.com>
- <20140311143750.GE32390@moon> <20140311171045.GA4693@redhat.com> <20140311173603.GG32390@moon> <20140311173917.GB4693@redhat.com> <alpine.LSU.2.11.1403181703470.7055@eggly.anvils> <5328F3B4.1080208@oracle.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Tue, 18 Mar 2014 22:14:04 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140318091656.GQ25546@laptop.programming.kicks-ass.net>
+References: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
+	<baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
+	<tip-40e2d7f9b5dae048789c64672bf3027fbb663ffa@git.kernel.org>
+	<1395102010.2474.21.camel@buesod1.americas.hpqcorp.net>
+	<20140318091656.GQ25546@laptop.programming.kicks-ass.net>
+Date: Tue, 18 Mar 2014 19:14:04 -0700
+X-Google-Sender-Auth: nQ4cOLHp8eOSPIv9n-Crlv1EZL0
+Message-ID: <CAGQ1y=4q5ayY4fFV=_u4+mn196WEoxw=p0JMyHGFrWt94Xbgxg@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86 idle: Repair large-server 50-watt idle-power regression
+From: Jason Low <jason.low2@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, hpa@linux.intel.com,
+        len.brown@intel.com, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014, Sasha Levin wrote:
-> On 03/18/2014 08:38 PM, Hugh Dickins wrote:
-> > On Tue, 11 Mar 2014, Dave Jones wrote:
-> > > On Tue, Mar 11, 2014 at 09:36:03PM +0400, Cyrill Gorcunov wrote:
-> > >   > On Tue, Mar 11, 2014 at 01:10:45PM -0400, Dave Jones wrote:
-> > >   > >  >
-> > >   > >  > Dave, iirc trinity can write log file pointing which exactly
-> > > syscall sequence
-> > >   > >  > was passed, right? Share it too please.
-> > >   > >
-> > >   > > Hm, I may have been mistaken, and the damage was done by a previous
-> > > run.
-> > >   > > I went from being able to reproduce it almost instantly to now not
-> > > being able
-> > >   > > to reproduce it at all.  Will keep trying.
-> > >   >
-> > >   > Sasha already gave a link to the syscalls sequence, so no rush.
-> > > 
-> > > It'd be nice to get a more concise reproducer, his list had a little of
-> > > everything in there.
-> > 
-> > I've so far failed to find any explanation for your swapops.h BUG;
-> > but believe I have identified one cause for "Bad rss-counter"s.
-> > 
-> > My hunch is that the swapops.h BUG is "nearby", but I just cannot
-> > fit it together (the swapops.h BUG comes when rmap cannot find all
-> > all the migration entries it inserted earlier: it's a very useful
-> > BUG for validating rmap).
-> > 
-> > Untested patch below: I can't quite say Reported-by, because it may
-> > not even be one that you and Sasha have been seeing; but I'm hopeful,
-> > remap_file_pages is in the list.
-> > 
-> > Please give this a try, preferably on 3.14-rc or earlier: I've never
-> > seen "Bad rss-counter"s there myself (trinity uses remap_file_pages
-> > a lot more than most of us); but have seen them on mmotm/next, so
-> > some other trigger is coming up there, I'll worry about that once
-> > it reaches 3.15-rc.
-> 
-> The patch fixed the "Bad rss-counter" errors I've been seeing both in
-> 3.14-rc7 and -next.
+On Tue, Mar 18, 2014 at 2:16 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Mar 17, 2014 at 05:20:10PM -0700, Davidlohr Bueso wrote:
+>> On Thu, 2013-12-19 at 11:51 -0800, tip-bot for Len Brown wrote:
+>> > Commit-ID:  40e2d7f9b5dae048789c64672bf3027fbb663ffa
+>> > Gitweb:     http://git.kernel.org/tip/40e2d7f9b5dae048789c64672bf3027fbb663ffa
+>> > Author:     Len Brown <len.brown@intel.com>
+>> > AuthorDate: Wed, 18 Dec 2013 16:44:57 -0500
+>> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
+>> > CommitDate: Thu, 19 Dec 2013 11:47:39 -0800
+>> >
+>> > x86 idle: Repair large-server 50-watt idle-power regression
+>>
+>> FYI this commit can cause some non trivial performance regressions for
+>> larger core count systems. While not surprising because of the nature of
+>> the change, having intel_idle do more cacheline invalidations, I still
+>> wanted to let you guys know. For instance, on a 160 core Westmere
+>> system, aim7 throughput can go down in a number of tests, anywhere from
+>> -10% to -25%.
+>>
+>> I guess it comes down to one of those performance vs energy things. And
+>> sure, max_cstate can be set to overcome this, but it's still something
+>> that was previously taken for granted.
+>
+> -10% to -25% seems a lot for a single cacheline flush. Also I would
+> expect the expected idle time to be very short while running aim7. So
+> could it be the cacheflush is actually taking longer than the expected
+> idle time?
 
-Great, thanks a lot, Sasha.  I was afraid that you'd hit those swapops
-BUGs, which seemed perhaps to be paired with these; but glad to hear
-a positive.  Let's see how Dave fares.  (I've not forgotten shmem
-fallocate, by the way, but those probably aren't as high on my agenda
-as you'd like.)
-
-Hugh
+Can we consider conditionally skipping the cacheline flush if the
+approximate average CPU idle time is very short, for instance,
+something along the lines of skipping if CPU average idle time <
+(sched migration cost or "cacheline_flush_penalty")?
