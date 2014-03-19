@@ -1,77 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758738AbaCSC5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 22:57:03 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:33818 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543AbaCSC5B (ORCPT
+	id S1758901AbaCSDEF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 23:04:05 -0400
+Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:39681 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752497AbaCSDED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 22:57:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.11.1403181928370.3499@eggly.anvils>
-References: <20140311045109.GB12551@redhat.com>
-	<20140310220158.7e8b7f2a.akpm@linux-foundation.org>
-	<20140311053017.GB14329@redhat.com>
-	<20140311132024.GC32390@moon>
-	<531F0E39.9020100@oracle.com>
-	<20140311134158.GD32390@moon>
-	<20140311142817.GA26517@redhat.com>
-	<20140311143750.GE32390@moon>
-	<20140311171045.GA4693@redhat.com>
-	<20140311173603.GG32390@moon>
-	<20140311173917.GB4693@redhat.com>
-	<alpine.LSU.2.11.1403181703470.7055@eggly.anvils>
-	<CA+55aFx0ZyCVrkosgTongBrNX6mJM4B8+QZQE1p0okk8ubbv7g@mail.gmail.com>
-	<alpine.LSU.2.11.1403181848380.3318@eggly.anvils>
-	<CA+55aFxVG7HLmsvCzoiA7PBRPvX3utRfyVGrBs6gVLZ-fUCuPQ@mail.gmail.com>
-	<alpine.LSU.2.11.1403181928370.3499@eggly.anvils>
-Date: Tue, 18 Mar 2014 19:57:00 -0700
-X-Google-Sender-Auth: Pn_gr7WW8EM-J_jhDu24QaoPyjs
-Message-ID: <CA+55aFyjXdfsGniSHvCg83KCB-BD4SYNrJ+dcpr-8bnHsoet_Q@mail.gmail.com>
-Subject: Re: bad rss-counter message in 3.14rc5
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Dave Jones <davej@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Bob Liu <bob.liu@oracle.com>, Konstantin Khlebnikov <koct9i@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 18 Mar 2014 23:04:03 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3653:3865:3866:3867:3868:3871:3872:3874:4321:4605:5007:7652:7903:8957:9592:10004:10400:10848:11026:11232:11473:11658:11914:12043:12291:12295:12438:12517:12519:12555:12683:13161:13229:14093:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: stem11_2303304d57b3c
+X-Filterd-Recvd-Size: 3689
+Message-ID: <1395198239.8649.16.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Improve octal permissions test speed
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 18 Mar 2014 20:03:59 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 7:37 PM, Hugh Dickins <hughd@google.com> wrote:
->
-> For 3.15, and probably 3.16 too, we should keep in place whatever
-> partial accommodations we have for the case (such as allowing for
-> anon and swap in fremap's zap_pte), in case we do need to revert;
-> but clean those away later on.  (Not many, I think: it was mainly
-> a guilty secret that VM accounting didn't really hold together.)
+The current octal permissions test is very slow.
 
-Absolutely. See if it works to just stop doing that special COW, and
-then later on, if we have decided "nobody even noticed", we can remove
-the hacks we have to support the fact that shared mappings sometimes
-have anon pages in them.
+When commit 3fc9249967
+("checkpatch: add checks for constant non-octal permissions")
+was added, processing time approximately tripled.
 
-> :)  That fits with what I heard of HP-UX mmap,
-> but I never had the pleasure of dealing with it.
+Regain almost all of the performance by not looping through all the
+possible functions unless the line contains one of the functions.
 
-They had purely virtually indexed caches, making coherency
-"interesting". Together with a VM based on some really old BSD VM code
-that everybody else had thrown out, and that didn't allow you to unmap
-things partially etc. So HPUX mmap really didn't work, not even for
-non-shared mmap's.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+There's probably some perl "join('|', foo)" that would
+simplify and remove the initial foreach loop, but I don't
+know what it might be off the top of my head.  Andy?
 
-I think they fixed the interfaces in HP-UX 11. But not being coherent
-meant that the shared mappings tended to still have trouble. nntp
-largely died, but was replaced with the cyrus imapd that played
-similar games.
+ scripts/checkpatch.pl | 51 +++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 31 insertions(+), 20 deletions(-)
 
-At least out mmap was always coherent. Even in MAP_PRIVATE, and with
-regards to both write() system calls and other mmap PROT_WRITE users.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index d44e440..ec65c54 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -388,6 +388,13 @@ our @mode_permission_funcs = (
+ 	["(?:CLASS|DEVICE|SENSOR)_ATTR", 2],
+ );
+ 
++#Create a search pattern for all these functions to speed up a loop below
++our $mode_perms_search = "";
++foreach my $entry (@mode_permission_funcs) {
++	$mode_perms_search .= '|' if ($mode_perms_search ne "");
++	$mode_perms_search .= $entry->[0];
++}
++
+ our $allowed_asm_includes = qr{(?x:
+ 	irq|
+ 	memory
+@@ -4540,26 +4547,30 @@ sub process {
+ 			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
+ 		}
+ 
+-		foreach my $entry (@mode_permission_funcs) {
+-			my $func = $entry->[0];
+-			my $arg_pos = $entry->[1];
+-
+-			my $skip_args = "";
+-			if ($arg_pos > 1) {
+-				$arg_pos--;
+-				$skip_args = "(?:\\s*$FuncArg\\s*,\\s*){$arg_pos,$arg_pos}";
+-			}
+-			my $test = "\\b$func\\s*\\(${skip_args}([\\d]+)\\s*[,\\)]";
+-			if ($^V && $^V ge 5.10.0 &&
+-			    $line =~ /$test/) {
+-				my $val = $1;
+-				$val = $6 if ($skip_args ne "");
+-
+-				if ($val !~ /^0$/ &&
+-				    (($val =~ /^$Int$/ && $val !~ /^$Octal$/) ||
+-				     length($val) ne 4)) {
+-					ERROR("NON_OCTAL_PERMISSIONS",
+-					      "Use 4 digit octal (0777) not decimal permissions\n" . $herecurr);
++# Mode permission misuses where it seems decimal should be octal
++# This uses a shortcut match to avoid unnecessary uses of a slow foreach loop
++		if ($^V && $^V ge 5.10.0 &&
++		    $line =~ /$mode_perms_search/) {
++			foreach my $entry (@mode_permission_funcs) {
++				my $func = $entry->[0];
++				my $arg_pos = $entry->[1];
++
++				my $skip_args = "";
++				if ($arg_pos > 1) {
++					$arg_pos--;
++					$skip_args = "(?:\\s*$FuncArg\\s*,\\s*){$arg_pos,$arg_pos}";
++				}
++				my $test = "\\b$func\\s*\\(${skip_args}([\\d]+)\\s*[,\\)]";
++				if ($line =~ /$test/) {
++					my $val = $1;
++					$val = $6 if ($skip_args ne "");
++
++					if ($val !~ /^0$/ &&
++					    (($val =~ /^$Int$/ && $val !~ /^$Octal$/) ||
++					     length($val) ne 4)) {
++						ERROR("NON_OCTAL_PERMISSIONS",
++						      "Use 4 digit octal (0777) not decimal permissions\n" . $herecurr);
++					}
+ 				}
+ 			}
+ 		}
 
-Except when we had bugs. Shared mmap really isn't very simple to get right.
 
-                 Linus
