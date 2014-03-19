@@ -1,190 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759467AbaCSX1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 19:27:30 -0400
-Received: from kvm5.telegraphics.com.au ([98.124.60.144]:51027 "EHLO
-	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759400AbaCSX11 (ORCPT
+	id S1759506AbaCSX1k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 19:27:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50101 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759400AbaCSX1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 19:27:27 -0400
-Message-Id: <20140319123517.452453292@telegraphics.com.au>
-User-Agent: quilt/0.50-1
-Date: Wed, 19 Mar 2014 23:35:19 +1100
-From: Finn Thain <fthain@telegraphics.com.au>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>
-Cc: Sam Creasey <sammy@sammy.net>, Russell King <linux@arm.linux.org.uk>,
-        Michael Schmitz <schmitz@debian.org>, Joe Perches <joe@perches.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-m68k@vger.kernel.org>
-Subject: [PATCH v2 03/12] scsi/NCR5380: remove old CVS keywords
-References: <20140319123516.542623278@telegraphics.com.au>
-Content-Disposition: inline; filename=ncr5380-remove-cvs-keywords
+	Wed, 19 Mar 2014 19:27:32 -0400
+Date: Wed, 19 Mar 2014 16:27:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
+Subject: Re: linux-next: manual merge of the akpm-current tree with the tip
+ tree
+Message-Id: <20140319162729.9b9f322b171140548b25c7af@linux-foundation.org>
+In-Reply-To: <20140317093602.GY27965@twins.programming.kicks-ass.net>
+References: <20140317203124.3b947e0799cc8142df5e4a2e@canb.auug.org.au>
+	<20140317093602.GY27965@twins.programming.kicks-ass.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+On Mon, 17 Mar 2014 10:36:02 +0100 Peter Zijlstra <peterz@infradead.org> wrote:
 
+> On Mon, Mar 17, 2014 at 08:31:24PM +1100, Stephen Rothwell wrote:
+> > Hi Andrew,
+> > 
+> > Today's linux-next merge of the akpm-current tree got a conflict in
+> > kernel/locking/Makefile between commit fb0527bd5ea9 ("locking/mutexes:
+> > Introduce cancelable MCS lock for adaptive spinning") from the  tree and
+> > commit 4dc0fe493027 ("lglock: map to spinlock when !CONFIG_SMP") from the
+> > akpm-current tree.
+> > 
+> > I fixed it up (see below) and can carry the fix as necessary (no action
+> > is required).
+> 
+> I'm a bit sad of not having seen that lglock patch at all.
+
+Here 'tis:
+
+From: Josh Triplett <josh@joshtriplett.org>
+Subject: lglock: map to spinlock when !CONFIG_SMP
+
+When the system has only one CPU, lglock is effectively a spinlock; map it
+directly to spinlock to eliminate the indirection and duplicate code.
+
+In addition to removing overhead, this drops 1.6k of code with a defconfig
+modified to have !CONFIG_SMP, and 1.1k with a minimal config.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: David Howells <dhowells@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/scsi/NCR5380.c   |    2 --
- drivers/scsi/NCR5380.h   |    4 ----
- drivers/scsi/g_NCR5380.c |    4 ----
- drivers/scsi/g_NCR5380.h |    4 ----
- drivers/scsi/mac_scsi.c  |    4 ----
- drivers/scsi/mac_scsi.h  |    4 ----
- drivers/scsi/sun3_scsi.c |    4 ----
- drivers/scsi/sun3_scsi.h |    4 ----
- drivers/scsi/t128.c      |    4 ----
- drivers/scsi/t128.h      |    4 ----
- 10 files changed, 38 deletions(-)
 
-Index: linux-m68k/drivers/scsi/NCR5380.c
-===================================================================
---- linux-m68k.orig/drivers/scsi/NCR5380.c	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/NCR5380.c	2014-03-19 23:34:41.000000000 +1100
-@@ -27,8 +27,6 @@
-  */
+ include/linux/lglock.h  |   16 ++++++++++++++++
+ kernel/locking/Makefile |    3 ++-
+ 2 files changed, 18 insertions(+), 1 deletion(-)
+
+diff -puN include/linux/lglock.h~lglock-map-to-spinlock-when-config_smp include/linux/lglock.h
+--- a/include/linux/lglock.h~lglock-map-to-spinlock-when-config_smp
++++ a/include/linux/lglock.h
+@@ -25,6 +25,8 @@
+ #include <linux/cpu.h>
+ #include <linux/notifier.h>
  
- /*
-- * $Log: NCR5380.c,v $
--
-  * Revision 1.10 1998/9/2	Alan Cox
-  *				(alan@lxorguk.ukuu.org.uk)
-  * Fixed up the timer lockups reported so far. Things still suck. Looking 
-Index: linux-m68k/drivers/scsi/NCR5380.h
-===================================================================
---- linux-m68k.orig/drivers/scsi/NCR5380.h	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/NCR5380.h	2014-03-19 23:34:41.000000000 +1100
-@@ -21,10 +21,6 @@
-  * 1+ (800) 334-5454
-  */
++#ifdef CONFIG_SMP
++
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ #define LOCKDEP_INIT_MAP lockdep_init_map
+ #else
+@@ -57,4 +59,18 @@ void lg_local_unlock_cpu(struct lglock *
+ void lg_global_lock(struct lglock *lg);
+ void lg_global_unlock(struct lglock *lg);
  
--/*
-- * $Log: NCR5380.h,v $
-- */
--
- #ifndef NCR5380_H
- #define NCR5380_H
++#else
++/* When !CONFIG_SMP, map lglock to spinlock */
++#define lglock spinlock
++#define DEFINE_LGLOCK(name) DEFINE_SPINLOCK(name)
++#define DEFINE_STATIC_LGLOCK(name) static DEFINE_SPINLOCK(name)
++#define lg_lock_init(lg, name) spin_lock_init(lg)
++#define lg_local_lock spin_lock
++#define lg_local_unlock spin_unlock
++#define lg_local_lock_cpu(lg, cpu) spin_lock(lg)
++#define lg_local_unlock_cpu(lg, cpu) spin_unlock(lg)
++#define lg_global_lock spin_lock
++#define lg_global_unlock spin_unlock
++#endif
++
+ #endif
+diff -puN kernel/locking/Makefile~lglock-map-to-spinlock-when-config_smp kernel/locking/Makefile
+--- a/kernel/locking/Makefile~lglock-map-to-spinlock-when-config_smp
++++ a/kernel/locking/Makefile
+@@ -1,5 +1,5 @@
  
-Index: linux-m68k/drivers/scsi/g_NCR5380.c
-===================================================================
---- linux-m68k.orig/drivers/scsi/g_NCR5380.c	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/g_NCR5380.c	2014-03-19 23:34:41.000000000 +1100
-@@ -78,10 +78,6 @@
-  *     
-  */
+-obj-y += mutex.o semaphore.o rwsem.o lglock.o mcs_spinlock.o
++obj-y += mutex.o semaphore.o rwsem.o mcs_spinlock.o
  
--/*
-- * $Log: generic_NCR5380.c,v $
-- */
--
- /* settings for DTC3181E card with only Mustek scanner attached */
- #define USLEEP
- #define USLEEP_POLL	1
-Index: linux-m68k/drivers/scsi/g_NCR5380.h
-===================================================================
---- linux-m68k.orig/drivers/scsi/g_NCR5380.h	2014-03-19 23:34:39.000000000 +1100
-+++ linux-m68k/drivers/scsi/g_NCR5380.h	2014-03-19 23:34:41.000000000 +1100
-@@ -25,10 +25,6 @@
-  * 1+ (800) 334-5454
-  */
- 
--/*
-- * $Log: generic_NCR5380.h,v $
-- */
--
- #ifndef GENERIC_NCR5380_H
- #define GENERIC_NCR5380_H
- 
-Index: linux-m68k/drivers/scsi/mac_scsi.c
-===================================================================
---- linux-m68k.orig/drivers/scsi/mac_scsi.c	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/mac_scsi.c	2014-03-19 23:34:41.000000000 +1100
-@@ -25,10 +25,6 @@
-  * 1+ (800) 334-5454
-  */
- 
--/*
-- * $Log: mac_NCR5380.c,v $
-- */
--
- #include <linux/types.h>
- #include <linux/stddef.h>
- #include <linux/ctype.h>
-Index: linux-m68k/drivers/scsi/mac_scsi.h
-===================================================================
---- linux-m68k.orig/drivers/scsi/mac_scsi.h	2014-03-19 23:34:39.000000000 +1100
-+++ linux-m68k/drivers/scsi/mac_scsi.h	2014-03-19 23:34:41.000000000 +1100
-@@ -22,10 +22,6 @@
-  * 1+ (800) 334-5454
-  */
- 
--/*
-- * $Log: cumana_NCR5380.h,v $
-- */
--
- #ifndef MAC_NCR5380_H
- #define MAC_NCR5380_H
- 
-Index: linux-m68k/drivers/scsi/sun3_scsi.c
-===================================================================
---- linux-m68k.orig/drivers/scsi/sun3_scsi.c	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/sun3_scsi.c	2014-03-19 23:34:41.000000000 +1100
-@@ -45,10 +45,6 @@
-  * USLEEP - enable support for devices that don't disconnect.  Untested.
-  */
- 
--/*
-- * $Log: sun3_NCR5380.c,v $
-- */
--
- #define AUTOSENSE
- 
- #include <linux/types.h>
-Index: linux-m68k/drivers/scsi/sun3_scsi.h
-===================================================================
---- linux-m68k.orig/drivers/scsi/sun3_scsi.h	2014-03-19 23:34:39.000000000 +1100
-+++ linux-m68k/drivers/scsi/sun3_scsi.h	2014-03-19 23:34:41.000000000 +1100
-@@ -29,10 +29,6 @@
-  * 1+ (800) 334-5454
-  */
- 
--/*
-- * $Log: cumana_NCR5380.h,v $
-- */
--
- #ifndef SUN3_NCR5380_H
- #define SUN3_NCR5380_H
- 
-Index: linux-m68k/drivers/scsi/t128.c
-===================================================================
---- linux-m68k.orig/drivers/scsi/t128.c	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/t128.c	2014-03-19 23:34:41.000000000 +1100
-@@ -102,10 +102,6 @@
-  * 15 9-11
-  */
-  
--/*
-- * $Log: t128.c,v $
-- */
--
- #include <linux/signal.h>
- #include <linux/io.h>
- #include <linux/blkdev.h>
-Index: linux-m68k/drivers/scsi/t128.h
-===================================================================
---- linux-m68k.orig/drivers/scsi/t128.h	2014-03-19 23:34:39.000000000 +1100
-+++ linux-m68k/drivers/scsi/t128.h	2014-03-19 23:34:41.000000000 +1100
-@@ -34,10 +34,6 @@
-  * 1+ (800) 334-5454
-  */
- 
--/*
-- * $Log: t128.h,v $
-- */
--
- #ifndef T128_H
- #define T128_H
- 
+ ifdef CONFIG_FUNCTION_TRACER
+ CFLAGS_REMOVE_lockdep.o = -pg
+@@ -14,6 +14,7 @@ ifeq ($(CONFIG_PROC_FS),y)
+ obj-$(CONFIG_LOCKDEP) += lockdep_proc.o
+ endif
+ obj-$(CONFIG_SMP) += spinlock.o
++obj-$(CONFIG_SMP) += lglock.o
+ obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
+ obj-$(CONFIG_RT_MUTEXES) += rtmutex.o
+ obj-$(CONFIG_DEBUG_RT_MUTEXES) += rtmutex-debug.o
+_
 
