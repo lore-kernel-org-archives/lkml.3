@@ -1,133 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793AbaCSJKq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 05:10:46 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:45722 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757582AbaCSJKl (ORCPT
+	id S1758837AbaCSJKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 05:10:53 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:37516 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758802AbaCSJKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 05:10:41 -0400
-Message-ID: <53295ED0.7070304@gmail.com>
-Date: Wed, 19 Mar 2014 10:09:36 +0100
+	Wed, 19 Mar 2014 05:10:49 -0400
+Message-ID: <53295ECE.5020303@gmail.com>
+Date: Wed, 19 Mar 2014 10:09:34 +0100
 From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
 To: NeilBrown <neilb@suse.de>
-CC: mtk.manpages@gmail.com,
+CC: mtk.manpages@gmail.com, Christoph Hellwig <hch@infradead.org>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
         Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
         lkml <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: For review: open_by_name_at(2) man page [v2]
-References: <53271B69.3000305@gmail.com>	<53284233.3050800@gmail.com> <20140319151349.33a76023@notabene.brown>
-In-Reply-To: <20140319151349.33a76023@notabene.brown>
+        Andreas Dilger <adilger@dilger.ca>
+Subject: Re: For review: open_by_name_at(2) man page
+References: <53271B69.3000305@gmail.com>	<20140318090007.3adee3d0@notabene.brown>	<20140318094321.GA17024@infradead.org>	<53283DFB.6040105@gmail.com> <20140319092427.0812263c@notabene.brown>
+In-Reply-To: <20140319092427.0812263c@notabene.brown>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC =+ Al Viro]
-
 Hi Neil,
 
-On 03/19/2014 05:13 AM, NeilBrown wrote:
-> On Tue, 18 Mar 2014 13:55:15 +0100 "Michael Kerrisk (man-pages)"
+On 03/18/2014 11:24 PM, NeilBrown wrote:
+> On Tue, 18 Mar 2014 13:37:15 +0100 "Michael Kerrisk (man-pages)"
 > <mtk.manpages@gmail.com> wrote:
 > 
->> Hi Aneesh, (and others)
+>> On 03/18/2014 10:43 AM, Christoph Hellwig wrote:
+>>> On Tue, Mar 18, 2014 at 09:00:07AM +1100, NeilBrown wrote:
+>>>> ESTALE is also returned if the filesystem does not support file-handle ->
+>>>> file mappings.
+>>>> On filesystems which don't provide export_operations (/sys /proc ubifs
+>>>> romfs cramfs nfs coda ... several others) name_to_handle_at will produce a
+>>>> generic handle using the 32 bit inode and 32 bit i_generation.
+>>>
+>>> Do we?  Seems like the code is erroring out early if there are no
+>>> export_ops?
 >>
->> After integrating review comments from NeilBown and Christoph Hellwig,
->> here is draft 2 of a man page I've written for name_to_handle_at(2) and
->> open_by_name_at(2). Especially thanks to Neil's comments, several parts
->> of the page underwent a substantial rewrite. Would you be willing to 
->> review it please, and let me know of any corrections/improvements?
-
-[various typos you reported fixed now.]
-
->> .TP
->> .B AT_EMPTY_PATH
->> Allow
->> .I pathname
->> to be an empty string.
->> See above.
->> (which may have been obtained using the
->> .BR open (2)
->> .B O_PATH
->> flag).
+>> It appears to me that Neil's statement isn't correct, at least for /proc
+>> and /sys (see my other mail, to Neil). I'm unsure about whether it is true
+>> for some of those other FSes thought.
 > 
-> What "may have been obtained" ??
-
-Crufty text. gone now.
-
->> The
->> .I flags
->> argument
->> is as for
->> .BR open (2).
->> .\" FIXME: Confirm that the following is intended behavior.
->> .\"        (It certainly seems to be the behavior, from experimenting.)
->> If
->> .I handle
->> refers to a symbolic link, the caller must specify the
->> .B O_PATH
->> flag, and the symbolic link is not dereferenced (the
->> .B O_NOFOLLOW
->> flag, if specified, is ignored).
 > 
-> It certainly sounds like reasonable behaviour.  I cannot comment on intention
-> though.
-> Are you bothered that O_PATH is needed for symlinks?  
-
-No.
-
-> An fd on a symlink is a
-> sufficiently unusual thing that it seems reasonable for a programmer to
-> explicitly say they are expecting one.
-
-I think the point is this: If you have a file handle for a symlink, then
-you can't follow the symlink, which is why you must specify O_PATH and
-O_NOFOLLOW becomes irrelevant. I'm curious about the rationale though.
-I suspect it's something like: the process receiving the handle doesn't
-have enough information for the symlink to be interpreted, I think because
-it can;t reliably determine what directory the link lives in.
-Possibly Al Viro or Aneesh can confirm.
-
->> In the event of an error, both system calls return \-1 and set
->> .I errno
->> to indicate the cause of the error.
->> .SH ERRORS
->> .BR name_to_handle_at ()
->> and
->> .BR open_by_handle_at ()
->> can fail for the same errors as
->> .BR openat (2).
->> In addition, they can fail with the errors noted below.
+> Indeed, I was wrong.
 > 
-> Should you mention EFAULT if mount_id or handle are not valid pointers?
-
-Done.
-
->> Not all filesystem types support the translation of pathnames to
->> file handles.
->> .\" FIXME NeilBrown noted:
->> .\"    ESTALE is also returned if the filesystem does not support
->> .\"    file-handle -> file mappings.
->> .\"    On filesystems which don't provide export_operations (/sys /proc
->> .\"    ubifs romfs cramfs nfs coda ... several others) name_to_handle_at
->> .\"    will produce a generic handle using the 32 bit inode and 32 bit
->> .\"    i_generation. open_by_name_at given this (or any) filehandle
->> .\"    will fail with ESTALE.
->> .\" However, on /proc and /sys, at least, name_to_handle_at() fails with
->> .\" EOPNOTSUPP. Are there really filesystems that can deliver ESTALE (the
->> .\" same error as for an invalid file handle) in the above circumstances?
+> I was looking at
 > 
-> This is all wrong - discard it :-)
+> int exportfs_encode_inode_fh(struct inode *inode, struct fid *fid,
+> 			     int *max_len, struct inode *parent)
+> {
+> 	const struct export_operations *nop = inode->i_sb->s_export_op;
+> 
+> 	if (nop && nop->encode_fh)
+> 		return nop->encode_fh(inode, fid->raw, max_len, parent);
+> 
+> 	return export_encode_fh(inode, fid, max_len, parent);
+> }
+> 
+> 
+> which uses a default if there is no 'nop'.
+> 
+> However do_sys_name_to_handle() contains
+> 
+> 	if (!path->dentry->d_sb->s_export_op ||
+> 	    !path->dentry->d_sb->s_export_op->fh_to_dentry)
+> 		return -EOPNOTSUPP;
+> 
+> long before export_encode_inode_fh() gets called.  So the default isn't used.
 
-Yup. Gone now ;-).
+Okay.
+
+> I would have thought that exportfs_encode_inode_fh would never get called if
+> there were no s_export_op pointer - certainly name_to_handle_at and nfsd
+> would never call it in that case.
+> However it seems that
+> 
+>     This routine will be used to generate a file handle in fdinfo output for
+>     inotify subsystem, where if no s_export_op present the general
+>     export_encode_fh should be used.  Thus add a test if s_export_op present
+>     inside exportfs_encode_fh itself.
+> 
+> according to
+> 
+> commit ab49bdecc3ebb46ab661f5f05d5c5ea9606406c6
+> Author: Cyrill Gorcunov <gorcunov@openvz.org>
+> Date:   Mon Dec 17 16:05:06 2012 -0800
+> 
+> 
+> I guess that means that you can extract filehandles from /proc/self/fdinfo/$FD
+> when $FD is an inotify fd which is watching the particular file.....  I
+> wouldn't have expected that, but maybe it is a good idea.
+
+Yes, it does--I tested it, and it works! I was unaware of this feature,
+though I'm not sure that I'll add anything to a man page just yet.
+
+> So yes: if the filesystem doesn't support filehandles you get EOPNOTSUPP.
+> So if you get ESTALE from open_by_handle_at(), then it really is a stale
+> handle.  Sorry for the confusion.
+
+Yup, I've updated the page now.
 
 Cheers,
 
