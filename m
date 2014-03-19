@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965096AbaCSNqA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:46:00 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57292 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933817AbaCSNp6 (ORCPT
+	id S965136AbaCSNqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:46:43 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41088 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932721AbaCSNqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:45:58 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Patrick Marlier <patrick.marlier@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: Re: [PATCH v3 0/2] Add stop callback to the cpufreq_driver interface.
-Date: Wed, 19 Mar 2014 15:01:28 +0100
-Message-ID: <2106941.8EeNr4veQS@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohpomc9YrBrG2SJFUuixDTNY6qVhq6X39Qv+=j73dFGxQTdQ@mail.gmail.com>
-References: <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com> <5240506.FBRh89S9Lg@vostro.rjw.lan> <CAKohpomc9YrBrG2SJFUuixDTNY6qVhq6X39Qv+=j73dFGxQTdQ@mail.gmail.com>
+	Wed, 19 Mar 2014 09:46:40 -0400
+Date: Wed, 19 Mar 2014 13:46:25 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jyri Sarha <jsarha@ti.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>, <alsa-devel@alsa-project.org>,
+        <devicetree@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Message-ID: <20140319134625.GN11706@sirena.org.uk>
+References: <cover.1394883134.git.moinejf@free.fr>
+ <d054780a0edf4b2338a52e48bff9144e19aa614f.1394883134.git.moinejf@free.fr>
+ <20140317164339.GR11706@sirena.org.uk>
+ <20140318091728.1d2240ca@armhf>
+ <53296CB7.1000909@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YAMuP2N37TMqsqKK"
+Content-Disposition: inline
+In-Reply-To: <53296CB7.1000909@ti.com>
+X-Cookie: Turn the other cheek.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 4/4] ASoC: simple-card: Add DT documentation for
+ multi-DAI links
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 19, 2014 11:03:56 AM Viresh Kumar wrote:
-> On 19 March 2014 06:23, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Tuesday, March 18, 2014 12:25:14 PM Dirk Brandewie wrote:
-> >> On 03/18/2014 12:08 PM, Srivatsa S. Bhat wrote:
-> >> > On 03/18/2014 10:52 PM, dirk.brandewie@gmail.com wrote:
-> >> >> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> >> >>
-> >> >
-> >> > I don't mean to nitpick, but generally its easier to deal with
-> >> > patchsets if you post the subsequent versions in fresh email threads.
-> >> > Otherwise it can get a bit muddled along with too many other email
-> >> > discussions in the same thread :-(
-> >> >
-> >> >> Changes:
-> >> >> v2->v3
-> >> >> Changed the calling of the ->stop() callback to be conditional on the
-> >> >> core being the last core controlled by a given policy.
-> >> >>
-> >> >
-> >> > Wait, why? I'm sorry if I am not catching up with the discussions on
-> >> > this issue quickly enough, but I don't see why we should make it
-> >> > conditional on _that_. I thought we agreed that we should make it
-> >> > conditional in the sense that ->stop() should be invoked only for
-> >> > ->setpolicy drivers, right?
-> >>
-> >> This was done at Viresh's suggestion since thought there might be value
-> >> for ->target drivers.
-> >>
-> >> Any of the options work for me
-> >>     called only for set_policy scaling drivers
-> >
-> > And that's what we should do *today* in my opinion, unless we want to add
-> > it to any ->target() drivers *right* now.  Do we want that?
-> 
-> We don't have a platform right now that might want to use it, but people
-> are doing this during suspend and so there is a high possibility that they
-> will use it while normal cpu offline as well..
-> 
-> This is what I think:
-> - We are adding a new callback to struct cpufreq_driver..
-> - We have a classic case here because a driver (set-policy ones) is both a
-> driver and governor. And that's why its special..
-> - All we want here is to give drivers a chance to do something useful on the
-> CPUs that are going down..
-> - There is nothing like GOV_STOP for setpolicy drivers as we never needed
-> it and if we really want that, probably we better register setpolicy drivers as
-> governors as well (only to a level where they would get GOV_START|STOP|etc)
-> callbacks and nothing else.
-> - And so I wanted the ->stop() callback to be more about the driver than the
-> governor.
-> - And because a policy contains only the CPUs that share clock line, its
-> only required to call stop() for last CPU of the policy.
 
-So you're still insisting on putting ->setpolicy and ->target drivers into one
-bag, which in my opinion is a mistake.  Moreover, it has always been a mistake.
+--YAMuP2N37TMqsqKK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Let's add ->stop() (or whatever to call it) *specifically* for ->setpolicy
-drivers, so that the meaning of it is entirely clear.  And *if* any ->target
-drivers need a similar callback, let's add it for them *separately* (just as
-a different callback pointer).
+On Wed, Mar 19, 2014 at 12:08:55PM +0200, Jyri Sarha wrote:
 
-Yes, we'll potentially waste a pointer size worth of storage this way, but then
-it will be clear who's supposed to use those new callbacks and when.
+> While we are at it we could update the bitclock-master and frame-master
+> syntax to be like this:
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> bitclock-master = "cpu"
+> frame-master = "codec"
+
+> With the above explicit definition all the daifmt settings could be defined
+> in link level. For backwards compatibility we could still define that
+> omitting the value equals "codec" and omitting the property equals "cpu".
+
+It seems it'd be a bit more idiomatic to do that with a phandle rather
+than with a string in order to allow extensions for things like TDM (the
+I2S to mono speaker driver use case for example).
+
+--YAMuP2N37TMqsqKK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTKZ+uAAoJELSic+t+oim9CuwP/1KTlhb26QwK5jKyfD9gviXE
+pVQRXQQ0lY8D4bpW5SQFJvBq02Zcut+dZu/SMwCmKgEv55pFU9NY694pdNBKfmR0
+oFB+BMIh/lFBO8+ob18x3nUff0zZx2oLazAt2iD8Lf0aQJNuwjd4WYJTyvlHZ6pd
+Af9XXsmHmOn4K6nzZLyt8LZB13Qrapexol9YzPJ/E4kittDU6ntc6p4PlVeD0kW5
+s7cL7+AHY0yZ1MmJESNhx87PFjxf5iGrUsC4pgJASvvNMqBecD2nBYHsfsuD0nZj
+5tJvmRk88vPxxpMxiupoOomotQUBCbsbffmgDldQETR+OEv+UHXZmBvhJUY1YCFj
+RiG/3NsWNsbY5Fcm7dkMtSDFrz6PmvoWEFEpLbbCe5TauUyNty4N49LvuL5Fx8BB
+RdQ+5quc4Cw602NB/26E/vbplFEBWuFHr5kwAlMT+2kAhyVIqD28PtfpfvXvtcrv
+6CQRSCqcYSviSiZYyXeX19jF9OuJ0zPTx2moz2p2Z/TFmcxpEAqnIO6CGavxz6Z2
+fdOqKuCgAcwSEr8H+0uDrPaYwP2Q8KrOdGMoF0qFl88wr4el5pMAflvbxwMSepvU
+60lgwna9IlhY4gU5cKKlWjH0Bh4ikSI6u+usAhLwG9fKYhG6iZsNgrv2zWfkKLNC
+sYjB9lC6xAlh9Idp1drR
+=90SH
+-----END PGP SIGNATURE-----
+
+--YAMuP2N37TMqsqKK--
