@@ -1,176 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964799AbaCSLAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 07:00:00 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41395 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933367AbaCSK75 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 06:59:57 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Rob Herring <robh@kernel.org>, Joe Perches <joe@perches.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH v2] Documentation: dt: list all compatible strings for at91
-Date: Wed, 19 Mar 2014 11:59:20 +0100
-Message-Id: <1395226760-11446-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1759168AbaCSLEk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 07:04:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56856 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759105AbaCSLEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 07:04:39 -0400
+Date: Wed, 19 Mar 2014 12:04:36 +0100
+From: Jan Kara <jack@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bob Liu <bob.liu@oracle.com>, Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: bad rss-counter message in 3.14rc5
+Message-ID: <20140319110436.GF26358@quack.suse.cz>
+References: <20140311142817.GA26517@redhat.com>
+ <20140311143750.GE32390@moon>
+ <20140311171045.GA4693@redhat.com>
+ <20140311173603.GG32390@moon>
+ <20140311173917.GB4693@redhat.com>
+ <alpine.LSU.2.11.1403181703470.7055@eggly.anvils>
+ <CA+55aFx0ZyCVrkosgTongBrNX6mJM4B8+QZQE1p0okk8ubbv7g@mail.gmail.com>
+ <alpine.LSU.2.11.1403181848380.3318@eggly.anvils>
+ <CA+55aFxVG7HLmsvCzoiA7PBRPvX3utRfyVGrBs6gVLZ-fUCuPQ@mail.gmail.com>
+ <alpine.LSU.2.11.1403181928370.3499@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1403181928370.3499@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoids getting the newly introduced warning:
-WARNING: DT compatible string "atmel,at91sam9g45-adc" appears un-documented -- check ./Documentation/devicetree/bindings/
-+				compatible = "atmel,at91sam9g45-adc";
+On Tue 18-03-14 19:37:01, Hugh Dickins wrote:
+> On Tue, 18 Mar 2014, Linus Torvalds wrote:
+> > On Tue, Mar 18, 2014 at 7:06 PM, Hugh Dickins <hughd@google.com> wrote:
+> > >
+> > > I'd love that, if we can get away with it now: depends very
+> > > much on whether we then turn out to break userspace or not.
+> > 
+> > Right. I suspect we can, though, but it's one of those "we can try it
+> > and see". Remind me early in the 3.15 merge window, and we can just
+> > turn the "force" case into an error case and see if anybody hollers.
+> 
+> Super, I'll do that, thanks.
+> 
+> For 3.15, and probably 3.16 too, we should keep in place whatever
+> partial accommodations we have for the case (such as allowing for
+> anon and swap in fremap's zap_pte), in case we do need to revert;
+> but clean those away later on.  (Not many, I think: it was mainly
+> a guilty secret that VM accounting didn't really hold together.)
+  Different drivers actually use the 'force' argument of get_user_pages() a
+lot on userspace provided buffers (AFAIU because they want to tell the
+kernel HW is going to write to that memory so they want to prepare for it).
+It is hard to imagine someone will use this for MAP_SHARED pages (or what
+that would be supposed to achieve) but sometimes userspace is surprisingly
+inventive... Just something to be aware of...
 
-Introduced by:
-bff5da433525 checkpatch: add DT compatible string documentation checks
-
-Cc: Rob Herring <robh@kernel.org>
-Cc: Joe Perches <joe@perches.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Andy Whitcroft <apw@canonical.com>
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
----
-
-Changes in v2:
- - add the devicetree maintainers in copy
- - acked by Nicolas
-
- Documentation/devicetree/bindings/arm/atmel-aic.txt      |  3 +--
- Documentation/devicetree/bindings/arm/atmel-at91.txt     | 10 ++++------
- Documentation/devicetree/bindings/dma/atmel-dma.txt      |  2 +-
- Documentation/devicetree/bindings/gpio/gpio_atmel.txt    |  2 +-
- Documentation/devicetree/bindings/iio/adc/at91_adc.txt   |  4 ++--
- Documentation/devicetree/bindings/serial/atmel-usart.txt | 10 ++++------
- 6 files changed, 13 insertions(+), 18 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/arm/atmel-aic.txt b/Documentation/devicetree/bindings/arm/atmel-aic.txt
-index 2742e9cfd6b1..95f75fd097ba 100644
---- a/Documentation/devicetree/bindings/arm/atmel-aic.txt
-+++ b/Documentation/devicetree/bindings/arm/atmel-aic.txt
-@@ -1,8 +1,7 @@
- * Advanced Interrupt Controller (AIC)
- 
- Required properties:
--- compatible: Should be "atmel,<chip>-aic"
--  <chip> can be "at91rm9200" or "sama5d3"
-+- compatible: "atmel,at91rm9200-aic", "atmel,sama5d3-aic"
- - interrupt-controller: Identifies the node as an interrupt controller.
- - interrupt-parent: For single AIC system, it is an empty property.
- - #interrupt-cells: The number of cells to define the interrupts. It should be 3.
-diff --git a/Documentation/devicetree/bindings/arm/atmel-at91.txt b/Documentation/devicetree/bindings/arm/atmel-at91.txt
-index 16f60b41c147..e79a33315e4f 100644
---- a/Documentation/devicetree/bindings/arm/atmel-at91.txt
-+++ b/Documentation/devicetree/bindings/arm/atmel-at91.txt
-@@ -14,8 +14,7 @@ System Timer (ST) required properties:
-   shared across all System Controller members.
- 
- TC/TCLIB Timer required properties:
--- compatible: Should be "atmel,<chip>-tcb".
--  <chip> can be "at91rm9200" or "at91sam9x5"
-+- compatible: "atmel,at91rm9200-tcb", "atmel,at91sam9x5-tcb"
- - reg: Should contain registers location and length
- - interrupts: Should contain all interrupts for the TC block
-   Note that you can specify several interrupt cells if the TC
-@@ -46,8 +45,7 @@ One interrupt per TC channel in a TC block:
- 	};
- 
- RSTC Reset Controller required properties:
--- compatible: Should be "atmel,<chip>-rstc".
--  <chip> can be "at91sam9260" or "at91sam9g45"
-+- compatible: "atmel,at91sam9260-rstc", "atmel,at91sam9g45-rstc"
- - reg: Should contain registers location and length
- 
- Example:
-@@ -80,8 +78,8 @@ Examples:
- SHDWC Shutdown Controller
- 
- required properties:
--- compatible: Should be "atmel,<chip>-shdwc".
--  <chip> can be "at91sam9260", "at91sam9rl" or "at91sam9x5".
-+- compatible: "atmel,at91sam9260-shdwc", "atmel,at91sam9rl-shdwc",
-+	"atmel,at91sam9x5-shdwc"
- - reg: Should contain registers location and length
- 
- optional properties:
-diff --git a/Documentation/devicetree/bindings/dma/atmel-dma.txt b/Documentation/devicetree/bindings/dma/atmel-dma.txt
-index f69bcf5a6343..410bff989949 100644
---- a/Documentation/devicetree/bindings/dma/atmel-dma.txt
-+++ b/Documentation/devicetree/bindings/dma/atmel-dma.txt
-@@ -1,7 +1,7 @@
- * Atmel Direct Memory Access Controller (DMA)
- 
- Required properties:
--- compatible: Should be "atmel,<chip>-dma".
-+- compatible: "atmel,at91sam9rl-dma", "atmel,at91sam9g45-dma"
- - reg: Should contain DMA registers location and length.
- - interrupts: Should contain DMA interrupt.
- - #dma-cells: Must be <2>, used to represent the number of integer cells in
-diff --git a/Documentation/devicetree/bindings/gpio/gpio_atmel.txt b/Documentation/devicetree/bindings/gpio/gpio_atmel.txt
-index 85f8c0d084fa..1fa10565adcc 100644
---- a/Documentation/devicetree/bindings/gpio/gpio_atmel.txt
-+++ b/Documentation/devicetree/bindings/gpio/gpio_atmel.txt
-@@ -1,7 +1,7 @@
- * Atmel GPIO controller (PIO)
- 
- Required properties:
--- compatible: "atmel,<chip>-gpio", where <chip> is at91rm9200 or at91sam9x5.
-+- compatible: "atmel,at91rm9200-gpio", "atmel,at91rm9x5-gpio"
- - reg: Should contain GPIO controller registers location and length
- - interrupts: Should be the port interrupt shared by all the pins.
- - #gpio-cells: Should be two.  The first cell is the pin number and
-diff --git a/Documentation/devicetree/bindings/iio/adc/at91_adc.txt b/Documentation/devicetree/bindings/iio/adc/at91_adc.txt
-index 82061c7e4fea..ac26cc13dd9f 100644
---- a/Documentation/devicetree/bindings/iio/adc/at91_adc.txt
-+++ b/Documentation/devicetree/bindings/iio/adc/at91_adc.txt
-@@ -1,8 +1,8 @@
- * AT91's Analog to Digital Converter (ADC)
- 
- Required properties:
--  - compatible: Should be "atmel,<chip>-adc"
--    <chip> can be "at91sam9260", "at91sam9g45" or "at91sam9x5"
-+  - compatible: "atmel,at91sam9260-adc", "atmel,at91sam9rl-adc",
-+  		"atmel,at91sam9g45-adc", "atmel,at91sam9x5-adc",
-   - reg: Should contain ADC registers location and length
-   - interrupts: Should contain the IRQ line for the ADC
-   - atmel,adc-channels-used: Bitmask of the channels muxed and enabled for this
-diff --git a/Documentation/devicetree/bindings/serial/atmel-usart.txt b/Documentation/devicetree/bindings/serial/atmel-usart.txt
-index 9c5d19ac935c..ebc5b0cb7669 100644
---- a/Documentation/devicetree/bindings/serial/atmel-usart.txt
-+++ b/Documentation/devicetree/bindings/serial/atmel-usart.txt
-@@ -1,9 +1,7 @@
- * Atmel Universal Synchronous Asynchronous Receiver/Transmitter (USART)
- 
- Required properties:
--- compatible: Should be "atmel,<chip>-usart"
--  The compatible <chip> indicated will be the first SoC to support an
--  additional mode or an USART new feature.
-+- compatible: Should be "atmel,at91rm9200-usart", "atmel,at91sam9260-usart",
- - reg: Should contain registers location and length
- - interrupts: Should contain interrupt
- - clock-names: tuple listing input clock names.
-@@ -19,9 +17,9 @@ Optional properties:
- 		Refer to dma.txt and atmel-dma.txt for details.
- 	- dma-names: "rx" for RX channel, "tx" for TX channel.
- 
--<chip> compatible description:
--- at91rm9200:  legacy USART support
--- at91sam9260: generic USART implementation for SAM9 SoCs
-+compatible description:
-+- atmel,at91rm9200-usart:  legacy USART support
-+- atmel,at91sam9260-usart: generic USART implementation for SAM9 SoCs
- 
- Example:
- - use PDC:
+								Honza
 -- 
-1.8.3.2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
