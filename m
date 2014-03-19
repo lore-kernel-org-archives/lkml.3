@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349AbaCSXW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 19:22:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50087 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964AbaCSXW0 (ORCPT
+	id S1758525AbaCSXZT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 19:25:19 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:45317 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755129AbaCSXZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 19:22:26 -0400
-Date: Wed, 19 Mar 2014 16:22:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Andrey Vagin <avagin@openvz.org>,
-        linux-kernel@vger.kernel.org, criu@openvz.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] proc: show mnt_id in fdinfo files
-Message-Id: <20140319162225.81388fb08ae413ded0abc14e@linux-foundation.org>
-In-Reply-To: <20140317115013.GA26250@moon>
-References: <1395052750-8525-1-git-send-email-avagin@openvz.org>
-	<5326DCD2.1040303@parallels.com>
-	<20140317115013.GA26250@moon>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Mar 2014 19:25:17 -0400
+Message-ID: <532A2759.1000708@semaphore.gr>
+Date: Thu, 20 Mar 2014 01:25:13 +0200
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: Remove unnecessary braces
+References: <532A0D0C.50507@semaphore.gr> <93042283.W9rbzHbJB2@vostro.rjw.lan>
+In-Reply-To: <93042283.W9rbzHbJB2@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Mar 2014 15:50:13 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-
-> On Mon, Mar 17, 2014 at 03:30:26PM +0400, Pavel Emelyanov wrote:
-> > On 03/17/2014 02:39 PM, Andrey Vagin wrote:
-> > > Currently we don't have a way how to determing from which mount point
-> > > file has been opened. This information is required for proper dumping
-> > > and restoring file descriptos due to presence of mount namespaces. It's
-> > > possible, that two file descriptors are opened using the same paths, but
-> > > one fd references mount point from one namespace while the other fd --
-> > > from other namespace.
-> > > 
-> > > Cc: Al Viro <viro@zeniv.linux.org.uk>
-> > > Cc: Oleg Nesterov <oleg@redhat.com>
-> > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-> > > Cc: Pavel Emelyanov <xemul@parallels.com>
-> > > Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> > 
-> > These IDs are already shown in the /proc/$pid/mountinfo, and for some FSs
-> > can be obtained via path_to_handle_at(), so this patch just makes it work
-> > for any FS and speeds things up.
-> > 
-> > Acked-by: Pavel Emelyanov <xemul@parallels.com>
+On 20/03/2014 12:45 πμ, Rafael J. Wysocki wrote:
+> On Wednesday, March 19, 2014 11:33:00 PM Stratos Karafotis wrote:
+>> Remove 3 sets of unnecessary braces
+>>
+>> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+>> ---
+>>  drivers/cpufreq/cpufreq.c | 11 ++++-------
+>>  1 file changed, 4 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index 1eafd8c..ca3c01f 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -1325,17 +1325,16 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+>>  	cpus = cpumask_weight(policy->cpus);
+>>  	up_read(&policy->rwsem);
+>>  
+>> -	if (cpu != policy->cpu) {
+>> +	if (cpu != policy->cpu)
+>>  		sysfs_remove_link(&dev->kobj, "cpufreq");
+>> -	} else if (cpus > 1) {
 > 
-> I think Documentation/filesystems/proc.txt should be updated on top.
+> These braces aren't in fact unnecessary, they are in accordance with CodingStyle.
+> 
+>> +	else if (cpus > 1) {
+>>  		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu);
+>>  		if (new_cpu >= 0) {
+>>  			update_policy_cpu(policy, new_cpu);
+>>  
+>> -			if (!cpufreq_suspended) {
+>> +			if (!cpufreq_suspended)
+>>  				pr_debug("%s: policy Kobject moved to cpu: %d from: %d\n",
+>>  					 __func__, new_cpu, cpu);
+>> -			}
+>>  		}
+>>  	}
+>>  
+>> @@ -2158,11 +2157,9 @@ int cpufreq_update_policy(unsigned int cpu)
+>>  		if (!policy->cur) {
+>>  			pr_debug("Driver did not initialize current freq\n");
+>>  			policy->cur = new_policy.cur;
+>> -		} else {
+>> -			if (policy->cur != new_policy.cur && has_target())
+>> +		} else if (policy->cur != new_policy.cur && has_target())
+> 
+> And here too.
+> 
+>>  				cpufreq_out_of_sync(cpu, policy->cur,
+>>  								new_policy.cur);
+>> -		}
+>>  	}
+>>  
+>>  	ret = cpufreq_set_policy(policy, &new_policy);
+>>
+> 
 
-Yes please.
+I'm sorry for the inconvenience. I read again the CodingStyle (more carefully :) ).
+I'm sending the corrected patch with the single case of unnecessary braces.
 
-It would be nice to see example output in the changelog as well please.
+Thanks,
+Stratos
+
+------------------------8<-----------------------
+Remove unnecessary braces from a single statement.
+
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
+ drivers/cpufreq/cpufreq.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index e3aa9de..220c4a9 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1330,10 +1330,9 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+ 		if (new_cpu >= 0) {
+ 			update_policy_cpu(policy, new_cpu);
+ 
+-			if (!cpufreq_suspended) {
++			if (!cpufreq_suspended)
+ 				pr_debug("%s: policy Kobject moved to cpu: %d from: %d\n",
+ 					 __func__, new_cpu, cpu);
+-			}
+ 		}
+ 	}
+ 
+-- 
+1.8.5.3
+
+
