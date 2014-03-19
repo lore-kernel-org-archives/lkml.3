@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965631AbaCSQFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:05:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42802 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965600AbaCSQFE (ORCPT
+	id S965651AbaCSQHC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:07:02 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:40143 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933953AbaCSQG7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:05:04 -0400
-Date: Wed, 19 Mar 2014 09:07:07 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Joe Perches <joe@perches.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, fes@google.com,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] virtio-blk: make the queue depth configurable
-Message-ID: <20140319160707.GA19820@kroah.com>
-References: <1394818263-29947-1-git-send-email-tytso@mit.edu>
- <1394818720.3253.1.camel@joe-AO722>
- <20140314180258.GA29201@thunk.org>
- <87y509scl3.fsf@rustcorp.com.au>
- <1395032434.2556.10.camel@joe-AO722>
- <1395041214.2556.17.camel@joe-AO722>
- <87zjkmr8w1.fsf@rustcorp.com.au>
+	Wed, 19 Mar 2014 12:06:59 -0400
+Date: Wed, 19 Mar 2014 17:07:10 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Jyri Sarha <jsarha@ti.com>
+Cc: Mark Brown <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
+        <devicetree@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: Re: [PATCH v3 4/4] ASoC: simple-card: Add DT documentation for
+ multi-DAI links
+Message-ID: <20140319170710.19fc5a1d@armhf>
+In-Reply-To: <53296CB7.1000909@ti.com>
+References: <cover.1394883134.git.moinejf@free.fr>
+	<d054780a0edf4b2338a52e48bff9144e19aa614f.1394883134.git.moinejf@free.fr>
+	<20140317164339.GR11706@sirena.org.uk>
+	<20140318091728.1d2240ca@armhf>
+	<53296CB7.1000909@ti.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87zjkmr8w1.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 05:07:50PM +1030, Rusty Russell wrote:
-> Joe Perches <joe@perches.com> writes:
-> > On Sun, 2014-03-16 at 22:00 -0700, Joe Perches wrote:
-> >> On Mon, 2014-03-17 at 14:25 +1030, Rusty Russell wrote:
-> >> 
-> >> > Erk, our tests are insufficient.  Testbuilding an allmodconfig with this
-> >> > now:
-> >> 
-> >> Good idea.
-> >> 
-> >> > diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-> >> []
-> >> > @@ -188,6 +188,9 @@ struct kparam_array
-> >> >  	/* Default value instead of permissions? */			\
-> >> >  	static int __param_perm_check_##name __attribute__((unused)) =	\
-> >> >  	BUILD_BUG_ON_ZERO((perm) < 0 || (perm) > 0777 || ((perm) & 2))	\
-> >> > +	/* User perms >= group perms >= other perms. */			\
-> >> > +	+ BUILD_BUG_ON_ZERO(((perm) >> 6) < (((perm) >> 3) & 7))	\
-> >> > +	+ BUILD_BUG_ON_ZERO((((perm) >> 3) & 7) < ((perm) & 7))		\
-> >> >  	+ BUILD_BUG_ON_ZERO(sizeof(""prefix) > MAX_PARAM_PREFIX_LEN);	\
-> >> >  	static const char __param_str_##name[] = prefix #name;		\
-> >> >  	static struct kernel_param __moduleparam_const __param_##name	\
-> >> 
-> >> It might make sense to separate this octal permissions
-> >> test into a new macro for other checks in macros like
-> >> CLASS_ATTR, DEVICE_ATTR, SENSOR_ATTR and SENSOR_ATTR_2.
-> 
-> OK, I took your bikeshed and re-painted it below.
-> 
-> > #define VERIFY_OCTAL_PERMISSIONS(perms)					\
-> > ({									\
-> > 	if (__builtin_constant_p(perms)) {				\
-> > 		BUILD_BUG_ON((perms) < 0);				\
-> > 		BUILD_BUG_ON((perms) > 0777);				\
-> > 		/* User perms >= group perms >= other perms */		\
-> > 		BUILD_BUG_ON(((perms) >> 6) < (((perms) >> 3) & 7));	\
-> > 		BUILD_BUG_ON((((perms) >> 3) & 7) < ((perms) & 7));	\
-> > 	}								\
-> > 	;								\
-> > })
-> 
-> Subject: VERIFY_OCTAL_PERMISSIONS: stricter checking for sysfs perms.
-> 
-> Summary of http://lkml.org/lkml/2014/3/14/363 :
-> 
->   Ted: module_param(queue_depth, int, 444)
->   Joe: 0444!
->   Rusty: User perms >= group perms >= other perms?
->   Joe: CLASS_ATTR, DEVICE_ATTR, SENSOR_ATTR and SENSOR_ATTR_2?
-> 
-> Side effect of stricter permissions means removing the unnecessary
-> S_IFREG from drivers/pci/slot.c.
-> 
-> Suggested-by: Joe Perches <joe@perches.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+On Wed, 19 Mar 2014 12:08:55 +0200
+Jyri Sarha <jsarha@ti.com> wrote:
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> sound {
+> 	compatible = "simple-audio-card";
+> 	simple-audio-card,name = "Simple Audio";
+> 	simple-audio-card,widgets = ...
+> 	simple-audio-card,routing = ...
+> 
+> 	simple-audio-card,dai-link@0 {		/* I2S - codec */
+> 		format = "i2s";
+> 		bitclock-master = "codec";
+> 		frame-master = "codec";
+> 		bitclock-inversion = <1>;
+> 		simple-audio-card,cpu {
+> 			sound-dai = <&audio1 0>;
+> 			bitclock-inversion = <0>;
+> 		};
+> 		simple-audio-card,codec {
+> 			sound-dai = <&codec 0>;
+> 			system-clock-frequency = <12000000>;
+> 		};
+> 	};
+> ...
+> 
+> I can participate in the implementation too.
 
+Thanks. I will prepare the multi DAI links and send you the first
+patches.
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
