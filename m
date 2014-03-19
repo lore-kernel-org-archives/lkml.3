@@ -1,104 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280AbaCSAnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 20:43:19 -0400
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:40416 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756662AbaCSAnR (ORCPT
+	id S933465AbaCSAq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 20:46:28 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:36655 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933312AbaCSAq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 20:43:17 -0400
-Message-ID: <5328E802.3030901@lab.ntt.co.jp>
-Date: Wed, 19 Mar 2014 09:42:42 +0900
-From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 18 Mar 2014 20:46:26 -0400
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        xen-devel@lists.xenproject.org, mcgrof@suse.com,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        bridge@lists.linux-foundation.org
-Subject: Re: [PATCH 1/3] bridge: preserve random init MAC address
-References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com> <1394680527-28970-2-git-send-email-mcgrof@do-not-panic.com>
-In-Reply-To: <1394680527-28970-2-git-send-email-mcgrof@do-not-panic.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
+In-Reply-To: <1395154016-26709-1-git-send-email-jolsa@redhat.com>
+References: <1395154016-26709-1-git-send-email-jolsa@redhat.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Wed, 19 Mar 2014 00:46:06 +0000
+X-Google-Sender-Auth: wgMhGnI6dWgG_kb8_KXpysxG9l0
+Message-ID: <CAM9d7ciA_R42RQgYtHSnbmuDFMZtu3_D5S-eJ0Q+1zh91krTaA@mail.gmail.com>
+Subject: Re: [PATCH 0/6] perf tools: Share map groups within process
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/03/13 12:15), Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> 
-> As it is now if you add create a bridge it gets started
-> with a random MAC address and if you then add a net_device
-> as a slave but later kick it out you end up with a zero
-> MAC address. Instead preserve the original random MAC
-> address and use it.
-> 
-> If you manually set the bridge address that will always
-> be respected. This change only takes effect if at the time
-> of computing the new root port we determine we have found
-> no candidates.
-> 
-> Cc: Stephen Hemminger <stephen@networkplumber.org>
-> Cc: bridge@lists.linux-foundation.org
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: xen-devel@lists.xenproject.org
-> Cc: kvm@vger.kernel.org
-> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
-> ---
->  net/bridge/br_device.c  | 1 +
->  net/bridge/br_private.h | 1 +
->  net/bridge/br_stp_if.c  | 3 +++
->  3 files changed, 5 insertions(+)
-> 
-> diff --git a/net/bridge/br_device.c b/net/bridge/br_device.c
-> index b063050..5f13eac 100644
-> --- a/net/bridge/br_device.c
-> +++ b/net/bridge/br_device.c
-> @@ -368,6 +368,7 @@ void br_dev_setup(struct net_device *dev)
->  	br->bridge_id.prio[1] = 0x00;
->  
->  	ether_addr_copy(br->group_addr, eth_reserved_addr_base);
-> +	ether_addr_copy(br->random_init_addr, dev->dev_addr);
->  
->  	br->stp_enabled = BR_NO_STP;
->  	br->group_fwd_mask = BR_GROUPFWD_DEFAULT;
-> diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
-> index e1ca1dc..32a06da 100644
-> --- a/net/bridge/br_private.h
-> +++ b/net/bridge/br_private.h
-> @@ -240,6 +240,7 @@ struct net_bridge
->  	unsigned long			bridge_hello_time;
->  	unsigned long			bridge_forward_delay;
->  
-> +	u8				random_init_addr[ETH_ALEN];
->  	u8				group_addr[ETH_ALEN];
->  	u16				root_port;
->  
-> diff --git a/net/bridge/br_stp_if.c b/net/bridge/br_stp_if.c
-> index 189ba1e..4c9ad45 100644
-> --- a/net/bridge/br_stp_if.c
-> +++ b/net/bridge/br_stp_if.c
-> @@ -239,6 +239,9 @@ bool br_stp_recalculate_bridge_id(struct net_bridge *br)
->  	if (ether_addr_equal(br->bridge_id.addr, addr))
->  		return false;	/* no change */
->  
-> +	if (ether_addr_equal(addr, br_mac_zero))
-> +		addr = br->random_init_addr;
-> +
->  	br_stp_change_bridge_id(br, addr);
->  	return true;
->  }
+Hi Jiri,
 
-nit,
-If the last detached port happens to have the same addr as
-random_init_addr, this seems to call br_stp_change_bridge_id() even
-though bridge_id is not changed.
+On Tue, Mar 18, 2014 at 2:46 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> hi,
+> this patchset moves thread's map_groups to be dynamically
+> allocated and shared within process threads.
+>
+> The main benefit would be to be able to look up memory
+> map from any thread that belongs to the process.
+>
+> This implements one of the solution ideas for issue
+> described by Don in following thread:
+> http://marc.info/?l=linux-kernel&m=139403876017159&w=2
+>
+> RFC changes:
+>   - added automated test for thread map groups get/put methods
+>   - fix reference count for case described by Namhyung
+>   - rename the mmap-events.c test to mmap-thread-lookup.c
+>   - added PROT_EXEC to mmap call in tests/mmap-thread-lookup.c
+>     as it's not implied by default on all archs (Namhyung)
+>   - lazy mg allocation in thread__find_addr_map (Namhyung)
+>   - fix compilation failures (Arnaldo)
 
-Shouldn't the assignment of random_init_addr be done before the check of
-"no change"?
+Looks good to me!
 
-Toshiaki Makita
+Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
