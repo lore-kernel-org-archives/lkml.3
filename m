@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581AbaCSS7W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 14:59:22 -0400
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:34958 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943AbaCSS7U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 14:59:20 -0400
-From: Alec Berg <alecaberg@chromium.org>
-To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Vincent Palatin <vpalatin@chromium.org>,
-        olof@lixom.net, Alec Berg <alecaberg@chromium.org>
-Subject: [PATCH] iio: querying buffer scan_mask should return 0/1
-Date: Wed, 19 Mar 2014 11:50:44 -0700
-Message-Id: <1395255044-20173-1-git-send-email-alecaberg@chromium.org>
-X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
+	id S1751514AbaCSTBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 15:01:25 -0400
+Received: from imap.thunk.org ([74.207.234.97]:43666 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750758AbaCSTBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 15:01:23 -0400
+Date: Wed, 19 Mar 2014 15:01:19 -0400
+From: tytso@mit.edu
+To: Nilesh More <nilesh99999@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Page cache corruption with mount/unmount of USB with Fat file
+ system
+Message-ID: <20140319190119.GC16906@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Nilesh More <nilesh99999@gmail.com>,
+	linux-kernel@vger.kernel.org
+References: <CAMbOQaVjS3Gzg0iJrxjyb3SD5sA1mm-gZeGEqaTG_B5z4-_pGg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMbOQaVjS3Gzg0iJrxjyb3SD5sA1mm-gZeGEqaTG_B5z4-_pGg@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ensure that querying the IIO buffer scan_mask returns a value of
-0 or 1. Currently querying the scan mask has the value returned
-by test_bit(), which returns either true or false. For some
-architectures test_bit() may return -1 for true, which will appear
-to return an error when returning from iio_scan_mask_query().
+On Thu, Mar 20, 2014 at 12:05:44AM +0530, Nilesh More wrote:
+> Hi all,
+> 
+> First of all sorry for the lengthy mail but I did not want to miss out
+> on any details.
+> 
+> The following issue that I am reporting occurs when I plugin the USB
+> drive on android tablet with USB mount support. Please note that this
+> issue may or may not occur the first time I hotplug the USB drive. It
+> might require couple of hotplug/hotunplug to see this issue. If
+> anybody has/gets any clue about the possible root cause, please let me
+> know.
 
-Additionally, it's important for the sysfs interface to consistently
-return the same thing when querying the scan_mask.
+And I'll repeat the comments I made a few weeks ago.  Last time you
+reported this, you included a dmesg output which included this:
 
-Signed-off-by: Alec Berg <alecaberg@chromium.org>
----
- drivers/iio/industrialio-buffer.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+> [ 413.607849] usb 2-1.1: USB disconnect, device number 12
+> [ 414.022630] EXT4-fs error (device mmcblk0p20): ext4_readdir:227: inode
+> #81827: block 328308: comm installd...
 
-diff --git a/drivers/iio/industrialio-buffer.c b/drivers/iio/industrialio-buffer.c
-index c67d83b..fe25042 100644
---- a/drivers/iio/industrialio-buffer.c
-+++ b/drivers/iio/industrialio-buffer.c
-@@ -165,7 +165,8 @@ static ssize_t iio_scan_el_show(struct device *dev,
- 	int ret;
- 	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
- 
--	ret = test_bit(to_iio_dev_attr(attr)->address,
-+	/* Ensure ret is 0 or 1. */
-+	ret = !!test_bit(to_iio_dev_attr(attr)->address,
- 		       indio_dev->buffer->scan_mask);
- 
- 	return sprintf(buf, "%d\n", ret);
-@@ -866,7 +867,8 @@ int iio_scan_mask_query(struct iio_dev *indio_dev,
- 	if (!buffer->scan_mask)
- 		return 0;
- 
--	return test_bit(bit, buffer->scan_mask);
-+	/* Ensure return value is 0 or 1. */
-+	return !!test_bit(bit, buffer->scan_mask);
- };
- EXPORT_SYMBOL_GPL(iio_scan_mask_query);
- 
--- 
-1.9.0.279.gdc9e3eb
+Are you seeing the same thing?  If so, the fundamental high level
+issue is that the USB driver is reporting a device disconnect,
+presumably of a USB device different from the one that you just
+plugged in.   Are you still seeing this?
 
+If so, it's important if you want to root cause this issue to
+determine why the USB disconnect is happening, and not try to comment
+out the page invalidations which happens *after* the USB device is
+reported as disconnected.
+
+If I had to guess, it's probably some hardware issue where when you
+plug in a USB device that draws too much power, it's destablizing the
+USB bus and causing some other USB device to report a disconnect.
+
+    	    	    	       	   	  - Ted
