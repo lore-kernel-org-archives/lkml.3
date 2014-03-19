@@ -1,89 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782AbaCSUid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 16:38:33 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:65260 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaCSUib (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 16:38:31 -0400
+	id S1755265AbaCSUiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 16:38:52 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:35674 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752136AbaCSUiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 16:38:50 -0400
+X-IronPort-AV: E=Sophos;i="4.97,688,1389744000"; 
+   d="scan'208";a="113045610"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Jesse Gross <jesse@nicira.com>, <pshelar@nicira.com>, <tgraf@redhat.com>,
+        <dev@openvswitch.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
+        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
+        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>, <netfilter-devel@vger.kernel.org>,
+        <netfilter@vger.kernel.org>, <coreteam@netfilter.org>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
+Date: Wed, 19 Mar 2014 20:38:36 +0000
+Message-ID: <1395261516-305-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20140319201838.GA11403@redhat.com>
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
-	<20140319201838.GA11403@redhat.com>
-Date: Wed, 19 Mar 2014 22:38:30 +0200
-Message-ID: <CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-From: =?ISO-8859-2?B?VGVvZG9yYSBC42x1/uM=?= <teobaluta@gmail.com>
-To: Dave Jones <davej@redhat.com>, Teodora Baluta <teobaluta@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 10:18 PM, Dave Jones <davej@redhat.com> wrote:
-> On Mon, Mar 17, 2014 at 02:59:47PM -0700, Teodora Baluta wrote:
->  > This feature encodes Oops messages into a QR barcode that is scannable by
->  > any device with a camera.
->
->  ...
->
->  >  include/linux/print_oops.h |   11 +
->  >  include/linux/qrencode.h   |  546 +++++++++++++
->  >  kernel/Makefile            |    1 +
->  >  kernel/panic.c             |    5 +
->  >  kernel/print_oops.c        |  173 +++++
->  >  kernel/printk/printk.c     |    9 +-
->  >  lib/Kconfig                |    5 +
->  >  lib/Kconfig.debug          |   11 +
->  >  lib/Makefile               |    3 +
->  >  lib/qr/Makefile            |    6 +
->  >  lib/qr/bitstream.c         |  233 ++++++
->  >  lib/qr/bitstream.h         |   37 +
->  >  lib/qr/mask.c              |  320 ++++++++
->  >  lib/qr/mask.h              |   39 +
->  >  lib/qr/mmask.c             |  175 +++++
->  >  lib/qr/mmask.h             |   36 +
->  >  lib/qr/mqrspec.c           |  259 +++++++
->  >  lib/qr/mqrspec.h           |  155 ++++
->  >  lib/qr/qrencode.c          |  871 +++++++++++++++++++++
->  >  lib/qr/qrencode.h          |  546 +++++++++++++
->  >  lib/qr/qrinput.c           | 1834 ++++++++++++++++++++++++++++++++++++++++++++
->  >  lib/qr/qrinput.h           |  129 ++++
->  >  lib/qr/qrspec.c            |  543 +++++++++++++
->  >  lib/qr/qrspec.h            |  178 +++++
->  >  lib/qr/rscode.c            |  325 ++++++++
->  >  lib/qr/rscode.h            |   38 +
->  >  lib/qr/split.c             |  331 ++++++++
->  >  lib/qr/split.h             |   44 ++
->  >  28 files changed, 6860 insertions(+), 3 deletions(-)
->
-> That's a ton of code we're adding into one of the most fragile parts of the kernel.
->
-> A lot of what libqrencode does would seem to be superfluous to the requirements
-> here, as we don't output kernel oopses in kanji for eg, and won't care about
-> multiple versions of the qr spec.
+skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+orphan them. Also, it doesn't handle errors, so this patch takes care of that
+as well.
 
-That's true. I didn't do that much cleanup in the library afraid of
-breaking something and focused that I get this done one way or
-another. Indeed, the library is userspace and is made to be versatile
-rather than small.
-
->
-> How much of this could we drop ?
-
-There are two things to do: remove all the other modes except binary
-(kanji, numerical, etc.) and use the Reed Solomon encode/decode in the
-lib/reed_solomon/ folder as not to have redundacy. So to say, quite a
-lot.
-
-Thanks,
-
--- 
-Teodora
-
->
->         Dave
->
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 03db95a..35c4e85 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2508,8 +2508,8 @@ int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
+ 		    unsigned int flags);
+ void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
+ unsigned int skb_zerocopy_headlen(const struct sk_buff *from);
+-void skb_zerocopy(struct sk_buff *to, const struct sk_buff *from,
+-		  int len, int hlen);
++int skb_zerocopy(struct sk_buff *to, const struct sk_buff *from,
++		 int len, int hlen);
+ void skb_split(struct sk_buff *skb, struct sk_buff *skb1, const u32 len);
+ int skb_shift(struct sk_buff *tgt, struct sk_buff *skb, int shiftlen);
+ void skb_scrub_packet(struct sk_buff *skb, bool xnet);
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 3f14c63..60f623c 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2127,25 +2127,36 @@ EXPORT_SYMBOL_GPL(skb_zerocopy_headlen);
+  *
+  *	The `hlen` as calculated by skb_zerocopy_headlen() specifies the
+  *	headroom in the `to` buffer.
++ *
++ *	Return value:
++ *	0: everything is OK
++ *	-ENOMEM: couldn't orphan frags of from due to lack of memory
++ *	-EFAULT: skb_copy_bits() found some problem with geometry
+  */
+-void
++int
+ skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ {
+ 	int i, j = 0;
+ 	int plen = 0; /* length of skb->head fragment */
++	int ret;
+ 	struct page *page;
+ 	unsigned int offset;
+ 
+ 	BUG_ON(!from->head_frag && !hlen);
+ 
+ 	/* dont bother with small payloads */
+-	if (len <= skb_tailroom(to)) {
+-		skb_copy_bits(from, 0, skb_put(to, len), len);
+-		return;
++	if (len <= skb_tailroom(to))
++		return skb_copy_bits(from, 0, skb_put(to, len), len);
++
++	if (unlikely(skb_orphan_frags(to, GFP_ATOMIC))) {
++		skb_tx_error(to);
++		return -ENOMEM;
+ 	}
+ 
+ 	if (hlen) {
+-		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		if (unlikely(ret))
++			return ret;
+ 		len -= hlen;
+ 	} else {
+ 		plen = min_t(int, skb_headlen(from), len);
+@@ -2173,6 +2184,8 @@ skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ 		j++;
+ 	}
+ 	skb_shinfo(to)->nr_frags = j;
++
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(skb_zerocopy);
+ 
+diff --git a/net/netfilter/nfnetlink_queue_core.c b/net/netfilter/nfnetlink_queue_core.c
+index f072fe8..ea02d16 100644
+--- a/net/netfilter/nfnetlink_queue_core.c
++++ b/net/netfilter/nfnetlink_queue_core.c
+@@ -488,7 +488,8 @@ nfqnl_build_packet_message(struct net *net, struct nfqnl_instance *queue,
+ 		nla->nla_type = NFQA_PAYLOAD;
+ 		nla->nla_len = nla_attr_size(data_len);
+ 
+-		skb_zerocopy(skb, entskb, data_len, hlen);
++		if (skb_zerocopy(skb, entskb, data_len, hlen))
++			goto nla_put_failure;
+ 	}
+ 
+ 	nlh->nlmsg_len = skb->len;
+diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
+index c53fe0c..9a9f668 100644
+--- a/net/openvswitch/datapath.c
++++ b/net/openvswitch/datapath.c
+@@ -464,7 +464,9 @@ static int queue_userspace_packet(struct datapath *dp, struct sk_buff *skb,
+ 	}
+ 	nla->nla_len = nla_attr_size(skb->len);
+ 
+-	skb_zerocopy(user_skb, skb, skb->len, hlen);
++	err = skb_zerocopy(user_skb, skb, skb->len, hlen);
++	if (err)
++		goto out;
+ 
+ 	/* Pad OVS_PACKET_ATTR_PACKET if linear copy was performed */
+ 	if (!(dp->user_features & OVS_DP_F_UNALIGNED)) {
