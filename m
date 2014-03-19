@@ -1,77 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323AbaCSHuQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 03:50:16 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:62229 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757041AbaCSHuO (ORCPT
+	id S1757542AbaCSHv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 03:51:56 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:28726 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757420AbaCSHvy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 03:50:14 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-0c-53294c331fae
-Message-id: <1395215408.18730.2.camel@AMDC1943>
-Subject: Re: [PATCH v3 1/3] clk: s2mps11: Add support for S2MPS14 clocks
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Date: Wed, 19 Mar 2014 08:50:08 +0100
-In-reply-to: <20140319001643.30995.46947@quantum>
-References: <1395047958-17953-1-git-send-email-k.kozlowski@samsung.com>
- <1395047958-17953-2-git-send-email-k.kozlowski@samsung.com>
- <20140319001643.30995.46947@quantum>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsVy+t/xq7rGPprBBtN261lsnLGe1eJs0xt2
-	i/tfjzJabHp8jdXi8q45bBYzzu9jslh75C67xdMJF9ksTv7pZbQ43c1qcXHFFyaL9TNes1i0
-	/93LZjFn+jsmBz6PO9f2sHnMOxnosXlJvUffllWMHp83yQWwRnHZpKTmZJalFunbJXBlLL+d
-	UHCXvWLXE6UGxsVsXYycHBICJhJT/rSxQ9hiEhfurQeKc3EICSxllLg0YyYjhPOZUWLamj+M
-	IFW8AvoSvZcegNnCAh4SM2b/AOtmEzCW2Lx8CdhUEQEtiW0HWsEmMQtMZ5FY8GklWBGLgKrE
-	ocmvmUBsTgFDiRsnrjJBbFjDKHGo7SIzSIJZQF1i0rxFzBA3KUnsbu9kh4jLS2xe85YZ4gpB
-	iR+T77FMYBSYhaRlFpKyWUjKFjAyr2IUTS1NLihOSs811CtOzC0uzUvXS87P3cQIiZMvOxgX
-	H7M6xCjAwajEwysZqxEsxJpYVlyZe4hRgoNZSYRX+C5QiDclsbIqtSg/vqg0J7X4ECMTB6dU
-	A6Nu4pyZEhk+4t1d3NOvCr7eY/Nibvsuq8Npj0TmdrPEt+57v1qVv3ZS70rfnbHLPraUbmUz
-	D8iJWnbg6Jv5c6ffSbO37IlcnWnT9/F3zPr2T9f3nuFOOaP1znfmcruVDzpOfjv66YeL4A6R
-	szZM95dekT8c1pQZY9joZjF9scgnKQNNIfHV962UWIozEg21mIuKEwFkDaK+cQIAAA==
+	Wed, 19 Mar 2014 03:51:54 -0400
+X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8QS9ij0PRv0OgBX++PB3K3G/7rbhwz
+X-RZG-CLASS-ID: mo00
+From: Stephan Mueller <smueller@chronox.de>
+To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Cc: aquini@redhat.com, jeremy.wayne.powell@gmail.com
+Subject: Re: [PATCH v2 1/6] SP800-90A Deterministic Random Bit Generator
+Date: Wed, 19 Mar 2014 08:51:45 +0100
+Message-ID: <34882876.HnRfi0MJtt@myon.chronox.de>
+User-Agent: KMail/4.12.3 (Linux/3.13.6-200.fc20.x86_64; KDE/4.12.3; x86_64; ; )
+In-Reply-To: <3662681.npTzbSq3ye@myon.chronox.de>
+References: <2396177.vxvG2ljJL8@myon.chronox.de> <5770301.bQ9lKffXf3@myon.chronox.de> <3662681.npTzbSq3ye@myon.chronox.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-18 at 17:16 -0700, Mike Turquette wrote:
-> Quoting Krzysztof Kozlowski (2014-03-17 02:19:16)
-> > This patch adds support for S2MPS14 PMIC clocks (BT and AP) to the
-> > s2mps11 clock driver.
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-> > Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> 
-> This does not apply cleanly to to clk tree trip, nor does it compile
-> after manually merging due to changes introducing
-> linux/mfd/samsung/s2mps14.h.
-> 
-> The changes look OK to me so maybe Lee can take it with my Ack?
-> 
-> Acked-by: Mike Turquette <mturquette@linaro.org>
-> 
+Am Montag, 17. März 2014, 08:34:06 schrieb Stephan Mueller:
 
-Hi,
+> +static int drbg_seed(struct drbg_state *drbg, struct drbg_string *pers,
+> +		     bool reseed)
+> +{
+> +	int ret = 0;
+> +	unsigned char *entropy = NULL;
+> +	size_t entropylen = 0;
+> +	struct drbg_string data1;
+> +	struct drbg_string *data2;
+> +
+> +	/* 9.1 / 9.2 / 9.3.1 step 3 */
+> +	if (pers && pers->len > (drbg_max_addtl(drbg)))
+> +		return -EINVAL;
+> +
+> +	if (drbg->test_data) {
+> +		data1.buf = drbg->test_data->testentropy->buf;
+> +		data1.len = drbg->test_data->testentropy->len;
+> +		data1.next = NULL;
+> +	} else {
+> +		/* Gather entropy equal to the security strength of the DRBG.
+> +		 * With a derivation function, a nonce is required in addition
+> +		 * to the entropy. A nonce must be at least 1/2 of the 
+security
+> +		 * strength of the DRBG in size. Thus, entropy * nonce is 3/2
+> +		 * of the strength. The consideration of a nonce is only
+> +		 * applicable during initial seeding. */
+> +		entropylen = (drbg_sec_strength(drbg->core->flags) / 8);
 
-Thanks for the Ack. The patch depends on Tushar Behera's patches:
- - [PATCH V2 0/2] Add support for clocks in S5M8767
-   http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27264
-which are waiting for some time. Both patchsets should be pulled
-together.
+drbg_sec_strength returns the strength in bytes, thus the division by 8 must 
+be removed
 
-Best regards,
-Krzysztof
+> +		if (!entropylen)
+> +			return -EFAULT;
+> +		if (!reseed)
+> +			/* make sure we round up strength/2 in
+> +			 * case it is not divisible by 2 */
+> +			entropylen = ((entropylen + 1) / 2) * 3;
+> +
+> +		entropy = kzalloc(entropylen, GFP_KERNEL);
+> +		if (!entropy)
+> +			return -ENOMEM;
+> +		get_random_bytes(entropy, entropylen);
+> +		drbg_string_fill(&data1, entropy, entropylen);
+> +	}
+> +
+> +	/* concatenation of entropy with personalization str / addtl input) */
+> +	if (pers && 0 < pers->len) {
+> +		data2 = pers;
+> +		data2->next = NULL;
+> +		data1.next = data2;
+> +	}
+> +
+> +	ret = drbg->d_ops->update(drbg, &data1, reseed);
+> +	if (ret)
+> +		goto out;
+> +
+> +	drbg->seeded = true;
+> +	/* 10.1.1.2 / 10.1.1.3 step 5 */
+> +	drbg->reseed_ctr = 1;
+> +
+> +out:
+> +	if (entropy)
+> +		kzfree(entropy);
+> +	return ret;
+> +}
+> +
 
+[...] 
+> +static unsigned int drbg_generate(struct drbg_state *drbg,
+> +				  unsigned char *buf, unsigned int buflen,
+> +				  struct drbg_string *addtl)
+> +{
+> +	unsigned int len = 0;
+> +	struct drbg_state *shadow = NULL;
+> +
+> +	if (0 == buflen || !buf)
+> +		return 0;
+> +	if (addtl && NULL == addtl->buf && 0 < addtl->len)
+> +		return 0;
+> +
+> +	if (drbg_make_shadow(drbg, &shadow))
+> +		return 0;
+> +	/* 9.3.1 step 2 */
+> +	if (buflen > (drbg_max_request_bytes(shadow)))
+> +		goto err;
+> +	/* 9.3.1 step 3 is implicit with the chosen DRBG */
+> +	/* 9.3.1 step 4 */
+> +	if (addtl && addtl->len > (drbg_max_addtl(shadow)))
+> +		goto err;
+> +	/* 9.3.1 step 5 is implicit with the chosen DRBG */
+> +	/* 9.3.1 step 6 and 9 supplemented by 9.3.2 step c -- the spec is a
+> +	 * bit convoluted here, we make it simpler */
+> +	if ((drbg_max_requests(shadow)) < shadow->reseed_ctr)
+> +		shadow->seeded = false;
+> +
+> +	/* allocate cipher handle */
+> +	if (shadow->d_ops->crypto_init && shadow->d_ops->crypto_init(shadow))
+> +		goto err;
+> +
+> +	if (shadow->pr || !shadow->seeded) {
+> +		/* 9.3.1 steps 7.1 through 7.3 */
+> +		if (drbg_seed(shadow, addtl, true))
+> +			goto err;
+> +		/* 9.3.1 step 7.4 */
+> +		addtl = NULL;
+> +	}
+> +	/* 9.3.1 step 8 and 10 */
+> +	len = drbg->d_ops->generate(shadow, buf, buflen, addtl);
+
+This needs to be shadow->d_ops
+> +
+> +	/* 10.1.1.4 step 6, 10.1.2.5 step 7, 10.2.1.5.2 step 7 */
+> +	shadow->reseed_ctr++;
+> +
+> +err:
+> +	if (shadow->d_ops->crypto_fini)
+> +		shadow->d_ops->crypto_fini(shadow);
+> +	drbg_restore_shadow(drbg, &shadow);
+> +	return len;
+> +}
+
+Ciao
+Stephan
