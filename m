@@ -1,162 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758646AbaCSXoE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 19:44:04 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:11783 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755750AbaCSXoB convert rfc822-to-8bit (ORCPT
+	id S1759347AbaCSXpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 19:45:30 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46136 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755757AbaCSXp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 19:44:01 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 19 Mar 2014 16:38:31 -0700
-From: Arun Shamanna Lakshmi <aruns@nvidia.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Songhee Baek <sbaek@nvidia.com>
-Date: Wed, 19 Mar 2014 16:44:00 -0700
-Subject: RE: [PATCH] ASoC: Add support for multi register mux
-Thread-Topic: [PATCH] ASoC: Add support for multi register mux
-Thread-Index: Ac9DBjlvf/hFfIKwTpuE+uWjBYyROAAxszJw
-Message-ID: <781A12BB53C15A4BB37291FDE08C03F3A05CB21E46@HQMAIL02.nvidia.com>
-References: <1395186692-11735-1-git-send-email-aruns@nvidia.com>
- <20140318235941.GT11706@sirena.org.uk>
-In-Reply-To: <20140318235941.GT11706@sirena.org.uk>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 19 Mar 2014 19:45:29 -0400
+Date: Wed, 19 Mar 2014 20:44:59 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: dedekind1@gmail.com, dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] UBI: block: Avoid disk size integer overflow
+Message-ID: <20140319234459.GA5566@arch.cereza>
+References: <1395241074-15506-1-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395241074-15506-1-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If each bit of a 32 bit register maps to an input of a mux, then with the current 'soc_enum' structure we cannot have more than 64 inputs for the mux (because of reg and reg2 only).
-In such cases, we need more than 2 registers to select the input of the mux. This is referred to as 'multi register mux' 
+Hi Richard,
 
-For instance, the audio xbar (AXBAR) module acts as a mux selecting various inputs (reference: Tegra K1 manual).
+First of all, thanks a lot for tracking this down!
 
-The number of such inputs increases with future Tegra chips and so will be the need to control multiple registers per mux in DAPM.  We have 2 options to achieve that.
+On Mar 19, Richard Weinberger wrote:
+> This patch fixes the issue that on very large UBI volumes
+> UBI block does not work correctly.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  drivers/mtd/ubi/block.c | 19 +++++++++++++++----
+>  1 file changed, 15 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/mtd/ubi/block.c b/drivers/mtd/ubi/block.c
+> index 9ef7df7..8887d4b 100644
+> --- a/drivers/mtd/ubi/block.c
+> +++ b/drivers/mtd/ubi/block.c
+> @@ -379,7 +379,7 @@ int ubiblock_create(struct ubi_volume_info *vi)
+>  {
+>  	struct ubiblock *dev;
+>  	struct gendisk *gd;
+> -	int disk_capacity;
+> +	u64 disk_capacity;
+>  	int ret;
+>  
 
-Option 1: Using custom get and put functions something similar to below inside AXBAR tegra driver.
+Perhaps we can calculate the capacity before allocating the struct,
+so the error is simpler?
 
-	int tegra_xbar_get_value_enum(struct snd_kcontrol *kcontrol,
-				struct snd_ctl_elem_value *ucontrol)
-	{
-		struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
-		struct snd_soc_dapm_widget *widget = wlist->widgets[0];
-		struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
-		unsigned int reg_val, mux, find, reg_idx;
-		unsigned int num_regs = 3, regs[3];
+>  	/* Check that the volume isn't already handled */
+> @@ -413,7 +413,12 @@ int ubiblock_create(struct ubi_volume_info *vi)
+>  	gd->first_minor = dev->ubi_num * UBI_MAX_VOLUMES + dev->vol_id;
+>  	gd->private_data = dev;
+>  	sprintf(gd->disk_name, "ubiblock%d_%d", dev->ubi_num, dev->vol_id);
+> -	disk_capacity = (vi->size * vi->usable_leb_size) >> 9;
+> +	disk_capacity = ((u64)vi->size * vi->usable_leb_size) >> 9;
+> +	if ((sector_t)disk_capacity != disk_capacity) {
+> +		ubi_err("block: disk capacity %llu too large", disk_capacity);
 
-		/* control 3 registers that has a common STRIDE */
-		regs[0] = e-> reg;
-		regs[1] = regs[0] + MUX_REG_STRIDE;
-		regs[2] = regs[1] + MUX_REG_STRIDE;
+Do we absolutely need to print an error to the console (not all drivers
+print errors on every error condition)? Isn't it clear enough from the errno?
 
-		for (mux = 0; mux < e->max; mux++) {
-			find = 0;
-			for (reg_idx = 0; reg_idx < num_regs; reg_idx++) {
-				regmap_read(widget->codec->control_data,
-						regs[reg_idx], &reg_val);
-				if (reg_val ==  e->values[mux * num_regs + reg_idx])
-					find++;
-			}
-			if (find == num_regs)
-				break;
-		}
-		ucontrol->value.enumerated.item[0] = mux;
-		return 0;
-	}
+If we really want to print something, I suggest something like:
+"block: volume too large, cannot create", "block: volume too large to create".
 
-	int tegra_xbar_put_value_enum(struct snd_kcontrol *kcontrol,
-				struct snd_ctl_elem_value *ucontrol)
-	{
-		struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
-		struct snd_soc_dapm_widget *widget = wlist->widgets[0];
-		struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
-		unsigned int value, mux, old, reg_idx;
-		struct snd_soc_dapm_update update;
-		   unsigned int num_regs = 3, regs[3], masks[3] = { 0xf1f03ff, 0x3f30031f, 0xff1cf313};
-		int wi;
+> +		ret = -E2BIG;
 
-		regs[0] = e-> reg;
-		regs[1] = regs[0] + MUX_REG_STRIDE;
-		regs[2] = regs[1] + MUX_REG_STRIDE;
+Should we use E2BIG (Parameter list too large) or EFBIG (File too large)?
 
-		if (ucontrol->value.enumerated.item[0] > e->max - 1)
-			return -EINVAL;
+I don't really like the error that's printed by ubiblock on the first case:
+"Parameter list too large". Maybe "File too large" is a bit better?
 
-		mux = ucontrol->value.enumerated.item[0];
+> +		goto out_free_dev;
+> +	}
+>  	set_capacity(gd, disk_capacity);
+>  	dev->gd = gd;
+>  
+> @@ -500,7 +505,7 @@ int ubiblock_remove(struct ubi_volume_info *vi)
+>  static void ubiblock_resize(struct ubi_volume_info *vi)
+>  {
+>  	struct ubiblock *dev;
+> -	int disk_capacity;
+> +	u64 disk_capacity;
+>  
+>  	/*
+>  	 * Need to lock the device list until we stop using the device,
+> @@ -515,7 +520,13 @@ static void ubiblock_resize(struct ubi_volume_info *vi)
+>  	}
+>  
+>  	mutex_lock(&dev->dev_mutex);
+> -	disk_capacity = (vi->size * vi->usable_leb_size) >> 9;
+> +	disk_capacity = ((u64)vi->size * vi->usable_leb_size) >> 9;
+> +	if ((sector_t)disk_capacity != disk_capacity) {
+> +		ubi_err("block: disk capacity %llu too large", disk_capacity);
+> +		mutex_unlock(&dev->dev_mutex);
 
-		for (reg_idx = 0; reg_idx < num_regs; reg_idx++) {
-			value = e->values[ucontrol->value.enumerated.item[0] * num_regs + reg_idx];
-			regmap_read(widget->codec->control_data, regs[reg_idx], &old);
+We can get rid of this mutex_unlock if we take it after getting the capacity.
 
-			if (value != old) {
-				for (wi = 0; wi < wlist->num_widgets; wi++) {
-					widget = wlist->widgets[wi];
-					widget->value = value;
-					update.kcontrol = kcontrol;
-					update.widget = widget;
-					update.reg = regs[reg_idx];
-					update.mask = masks[reg_idx];
-					update.val = value;
-					widget->dapm->update = &update;
-					snd_soc_dapm_mux_update_power(widget, kcontrol, mux, e);
-					widget->dapm->update = NULL;
-				}
-			}
-		}
-		return 0;
-	}
-
-Option 2: Modify soc_enum structure and make 'reg' variable as reg[MAX_REG]
-
-This would also mean that we should edit all the macros in soc.h, soc-dapm.c and soc-core.c to use 'reg[0]' instead of 'reg'
-Our goal is to eventually add support to do multi register mux in get and put handlers inside soc-dapm.c upstream.
-
-With Option1, we don't need to change any code in upstream as each register among the multiple registers has a common STRIDE (address offset). Thus, option1 is not generic enough.
-If you suggest Option1, we wanted to check if upstream will be okay with such a structure. (it will be tegra specific though).
-
-With Option2, it  becomes easy to add new macros for multi register mux in soc.h and then, add new get and put handlers in dapm.c
-
-Thanks,
-Arun
-
------Original Message-----
-From: Mark Brown [mailto:broonie@kernel.org] 
-Sent: Tuesday, March 18, 2014 5:00 PM
-To: Arun Shamanna Lakshmi
-Cc: lgirdwood@gmail.com; perex@perex.cz; tiwai@suse.de; alsa-devel@alsa-project.org; linux-kernel@vger.kernel.org; Songhee Baek
-Subject: Re: [PATCH] ASoC: Add support for multi register mux
-
-* PGP Signed by an unknown key
-
-On Tue, Mar 18, 2014 at 04:51:32PM -0700, Arun Shamanna Lakshmi wrote:
-
-> Currently soc_enum structure supports only 2 registers (reg, reg2) for 
-> kcontrol. However, it is possible to have multiple registers per mux. 
-> This change allows us to control these multiple registers.
-
-I'd want to see a user along with this and...
-
-> @@ -1093,6 +1093,9 @@ struct soc_enum {
->  	unsigned int mask;
->  	const char * const *texts;
->  	const unsigned int *values;
-> +	unsigned int *regs;
-> +	unsigned int *masks;
-> +	unsigned int num_regs;
-
-...it duplicates and generally isn't joined up with the existing members of the structure, and has no support in the helpers (for example, converting the existing stereo controls to be two element arrays which I'd expect to see).  Helpers would count as users here.
-
-Note that we don't support double register enums or muxes - only numerical controls are supported.  It's not clear what a multi-register enum would mean.
-
-* Unknown Key
-* 0x7EA229BD
+Maybe you can clean the locks first, and then do this fix?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
