@@ -1,66 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662AbaCSVpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 17:45:31 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:53086 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794AbaCSVp3 (ORCPT
+	id S1757511AbaCSVqD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 17:46:03 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:61770 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008AbaCSVqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 17:45:29 -0400
-Date: Wed, 19 Mar 2014 21:45:24 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Vince Hsu <vinceh@nvidia.com>
-Subject: Re: [PATCH] mfd: as3722: make FUSE7_REG readable
-Message-ID: <20140319214524.GB20260@lee--X1>
-References: <1393951832-2638-1-git-send-email-swarren@wwwdotorg.org>
- <20140305015539.GK10579@lee--X1>
- <5329C133.60900@wwwdotorg.org>
- <20140319170138.GK31687@lee--X1>
- <20140319170437.GA18095@lee--X1>
- <5329D037.4030008@wwwdotorg.org>
+	Wed, 19 Mar 2014 17:46:00 -0400
+Date: Wed, 19 Mar 2014 17:45:56 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH cgroup/for-3.15] cgroup: fix cgroup_taskset walking order
+Message-ID: <20140319214556.GD3656@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5329D037.4030008@wwwdotorg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>>> From: Stephen Warren <swarren@nvidia.com>
-> >>>>>
-> >>>>> The FUSE7_REG register is not currently marked readable. This causes
-> >>>>> as3722_sd0_is_low_voltage() to emit an error during boot, and assume
-> >>>>> the range of the SD0 regulator:
-> >>>>>
-> >>>>> as3722-regulator as3722-regulator: Reg 0xa7 read failed: -5
-> ...
-> >>>> Applied to MFD -next (v3.15).
-> >>>
-> >>> I don't see this in next-20140319; did it get dropped somewhere, or was
-> >>> your branch not pushed out?
-> >>
-> >> Ah, thanks for the reminder.
-> >>
-> >> I moved the MFD tree from linaro.org to kernel.org, but failed to let
-> >> Stephen know. I'll do so now.
-> > 
-> > Whoops. No, you're Stephen. I meant Andrew.
-> 
-> I think you did mean Stephen (Rothwell) :-)
+>From 1b9aba49eab5e85b0d3de8ba630cda6d68546297 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Wed, 19 Mar 2014 17:43:21 -0400
 
-I do.
+cgroup_taskset is used to track and iterate target tasks while
+migrating a task or process and should guarantee that the first task
+iterated is the task group leader if a process is being migrated.
 
-That's who I emailed, but I didn't want to correct myself twice. :)
+b3dc094e9390 ("cgroup: use css_set->mg_tasks to track target tasks
+during migration") replaced flex array cgroup_taskset->tc_array with
+css_set->mg_tasks list to remove process size limit and dynamic
+allocation during migration; unfortunately, it incorrectly used list
+operations which don't preserve order breaking the guarantee that
+cgroup_taskset_first() returns the leader for a process target.
 
+Fix it by using order preserving list operations.  Note that as
+multiple src_csets may map to a single dst_cset, the iteration order
+may change across cgroup_task_migrate(); however, the leader is still
+guaranteed to be the first entry.
+
+The switch to list_splice_tail_init() at the end of cgroup_migrate()
+isn't strictly necessary.  Let's still do it for consistency.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Li, as the merge window is right around the corner, I think it'd be
+best to apply this one ASAP.  Applied to cgroup/for-3.15.
+
+Thanks.
+
+ kernel/cgroup.c | 24 +++++++++++++++++++-----
+ 1 file changed, 19 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 37b6d53..98a8045 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1761,7 +1761,14 @@ static void cgroup_task_migrate(struct cgroup *old_cgrp,
+ 
+ 	get_css_set(new_cset);
+ 	rcu_assign_pointer(tsk->cgroups, new_cset);
+-	list_move(&tsk->cg_list, &new_cset->mg_tasks);
++
++	/*
++	 * Use move_tail so that cgroup_taskset_first() still returns the
++	 * leader after migration.  This works because cgroup_migrate()
++	 * ensures that the dst_cset of the leader is the first on the
++	 * tset's dst_csets list.
++	 */
++	list_move_tail(&tsk->cg_list, &new_cset->mg_tasks);
+ 
+ 	/*
+ 	 * We just gained a reference on old_cset by taking it from the
+@@ -1936,9 +1943,16 @@ static int cgroup_migrate(struct cgroup *cgrp, struct task_struct *leader,
+ 		if (!cset->mg_src_cgrp)
+ 			goto next;
+ 
+-		list_move(&task->cg_list, &cset->mg_tasks);
+-		list_move(&cset->mg_node, &tset.src_csets);
+-		list_move(&cset->mg_dst_cset->mg_node, &tset.dst_csets);
++		/*
++		 * cgroup_taskset_first() must always return the leader.
++		 * Take care to avoid disturbing the ordering.
++		 */
++		list_move_tail(&task->cg_list, &cset->mg_tasks);
++		if (list_empty(&cset->mg_node))
++			list_add_tail(&cset->mg_node, &tset.src_csets);
++		if (list_empty(&cset->mg_dst_cset->mg_node))
++			list_move_tail(&cset->mg_dst_cset->mg_node,
++				       &tset.dst_csets);
+ 	next:
+ 		if (!threadgroup)
+ 			break;
+@@ -1999,7 +2013,7 @@ out_release_tset:
+ 	down_write(&css_set_rwsem);
+ 	list_splice_init(&tset.dst_csets, &tset.src_csets);
+ 	list_for_each_entry_safe(cset, tmp_cset, &tset.src_csets, mg_node) {
+-		list_splice_init(&cset->mg_tasks, &cset->tasks);
++		list_splice_tail_init(&cset->mg_tasks, &cset->tasks);
+ 		list_del_init(&cset->mg_node);
+ 	}
+ 	up_write(&css_set_rwsem);
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.5.3
+
