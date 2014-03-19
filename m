@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791AbaCSBEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 21:04:49 -0400
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:40691 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758366AbaCSBEp (ORCPT
+	id S1758800AbaCSBGI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 21:06:08 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:59027 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758366AbaCSBGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 21:04:45 -0400
-Message-ID: <5328ED25.1040900@lab.ntt.co.jp>
-Date: Wed, 19 Mar 2014 10:04:37 +0900
-From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 18 Mar 2014 21:06:05 -0400
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        bridge@lists.linux-foundation.org
-Subject: Re: [PATCH 1/3] bridge: preserve random init MAC address
-References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com> <1394680527-28970-2-git-send-email-mcgrof@do-not-panic.com> <5328E802.3030901@lab.ntt.co.jp> <CAB=NE6X2eZFLWBN1acf=d75T_K2YM_OK3oaXEPu-hwpUJEmwkg@mail.gmail.com>
-In-Reply-To: <CAB=NE6X2eZFLWBN1acf=d75T_K2YM_OK3oaXEPu-hwpUJEmwkg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
+In-Reply-To: <CAAYSxhri0evgrbCPew6-MTXVmpzm7Oa6TpmJTSGZpTcV=876HQ@mail.gmail.com>
+References: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
+	<1394655346-30048-3-git-send-email-tim.kryger@linaro.org>
+	<20140318215231.GH5917@mithrandir>
+	<CAAYSxhri0evgrbCPew6-MTXVmpzm7Oa6TpmJTSGZpTcV=876HQ@mail.gmail.com>
+Date: Tue, 18 Mar 2014 18:06:03 -0700
+Message-ID: <CAAYSxhpW-N7UdpsGE7JHvOJxQcvURRPdAOhiVkK=4EHc7E03gQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/5] pwm: kona: Introduce Kona PWM controller support
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux Doc List <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/03/19 9:50), Luis R. Rodriguez wrote:
-> On Tue, Mar 18, 2014 at 5:42 PM, Toshiaki Makita
-> <makita.toshiaki@lab.ntt.co.jp> wrote:
->> nit,
->> If the last detached port happens to have the same addr as
->> random_init_addr, this seems to call br_stp_change_bridge_id() even
->> though bridge_id is not changed.
-> 
-> Ah good point.
-> 
->> Shouldn't the assignment of random_init_addr be done before the check of
->> "no change"?
-> 
-> Good question, should we even allow two ports to have the same MAC
-> address or should we complain and refuse to add it? If so that should
-> mean we should also have to monitor any manual address changes or
-> events for address changes on the ports.
+On Tue, Mar 18, 2014 at 4:47 PM, Tim Kryger <tim.kryger@linaro.org> wrote:
+> On Tue, Mar 18, 2014 at 2:52 PM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+>> On Wed, Mar 12, 2014 at 01:15:43PM -0700, Tim Kryger wrote:
 
-This was recently discussed by Stephen and me.
-I'm thinking it should be allowed.
+>>> +
+>>> +     /* There is polarity support in HW but it is easier to manage in SW */
+>>> +     if (pwm->polarity == PWM_POLARITY_INVERSED)
+>>> +             duty_ns = period_ns - duty_ns;
+>>
+>> No, this is wrong. You're not actually changing the *polarity* here.
+>
+> Please elaborate.  I don't understand what is wrong here.
+>
+> Does polarity influence the output while a PWM is disabled?
+>
 
-http://marc.info/?l=linux-netdev&m=139182743919257&w=2
+>>> +static int kona_pwmc_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
+>>> +                               enum pwm_polarity polarity)
+>>> +{
+>>> +     /*
+>>> +      * The framework only allows the polarity to be changed when a PWM is
+>>> +      * disabled so no immediate action is required here.  When a channel is
+>>> +      * enabled, the polarity gets handled as part of the re-config step.
+>>> +      */
+>>> +
+>>> +     return 0;
+>>> +}
+>>
+>> See above. If you don't want to implement the hardware support for
+>> inversed polarity, then simply don't implement this.
+>
+> I had originally planned to omit polarity support but because it
+> affects the binding (which is treated as ABI), it wouldn't be possible
+> to add it in later without defining a new compatible string.
 
-Toshiaki Makita
+I would like to get this right but it occurred to me that there may be
+a way to defer the implementation of this feature without disrupting
+the binding.
 
-> 
-> Stephen?
-> 
->   Luis
+Would it be acceptable to continue using #pwm-cells = <3> and
+of_pwm_xlate_with_flags but return -EINVAL from kona_pwmc_set_polarity
+if PWM_POLARITY_INVERSED is specified?
