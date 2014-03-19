@@ -1,34 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538AbaCSIg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 04:36:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54711 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713AbaCSIgy (ORCPT
+	id S932791AbaCSIh1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 04:37:27 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:36688 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932595AbaCSIhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 04:36:54 -0400
-Date: Wed, 19 Mar 2014 09:36:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, joe@perches.com, mingo@kernel.org,
-        tglx@linutronix.de, heiko.carstens@de.ibm.com
-Subject: Re: [PATCH 00/17 for-tip V3] A series patches about sched priority.
-Message-ID: <20140319083644.GL22095@laptop.programming.kicks-ass.net>
-References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
+	Wed, 19 Mar 2014 04:37:23 -0400
+Date: Wed, 19 Mar 2014 08:37:18 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: sec-core: Fix I2C dummy device resource leak on
+ probe failure
+Message-ID: <20140319083718.GA31687@lee--X1>
+References: <1395147470-24817-1-git-send-email-k.kozlowski@samsung.com>
+ <CAK9yfHx=3KR0WyrtmZXbYJ3MXM9vAsCzh=EKORfiifzhL2Ud8Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK9yfHx=3KR0WyrtmZXbYJ3MXM9vAsCzh=EKORfiifzhL2Ud8Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> On 18 March 2014 18:27, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> > Dummy I2C device allocated in sec_pmic_probe() leaked if
+> > devm_regmap_init_i2c() failed. Unregister it before returning from
+> > probe.
+> >
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> 
+> Looks good.
+> Reviewed-by: Sachin Kamat <sachin.kamat@linaro.org>
 
-I picked up all except:
+Applied with Sachin's Ack.
 
- 2 - whcih I don't think should go through a scheduler tree
- 6 - its tools/ bits, the changelog wasn't clear if the MIN/MAX_NICE
-      macros were uapi visible and I couldn't be bothered to figure it out.
- 8 - I don't like the pointless macro
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
