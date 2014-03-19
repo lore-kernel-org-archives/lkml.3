@@ -1,44 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964941AbaCSMjY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 08:39:24 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:42613 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964865AbaCSMjW (ORCPT
+	id S933877AbaCSMmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 08:42:06 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:21987 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932721AbaCSMmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 08:39:22 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: broonie@kernel.org, lgirdwood@gmail.com, sachin.kamat@linaro.org
-Subject: [PATCH 1/1] regulator: max8660: Fix brace alignment
-Date: Wed, 19 Mar 2014 18:02:58 +0530
-Message-Id: <1395232378-26320-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 19 Mar 2014 08:42:03 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f796d000005a13-b7-53299098455f
+Content-transfer-encoding: 8BIT
+Message-id: <1395232919.15174.7.camel@AMDC1943>
+Subject: Re: [PATCH] mfd: sec-core: Fix uninitialized 'regmap_rtc' on S2MPA01
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>, broonie@kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 19 Mar 2014 13:41:59 +0100
+In-reply-to: <20140319091404.GF31687@lee--X1>
+References: <20140318110947.GR25478@lee--X1>
+ <1395148286-32002-1-git-send-email-k.kozlowski@samsung.com>
+ <20140319091404.GF31687@lee--X1>
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t/xK7ozJmgGG9zvULeY+vAJm8X8I+dY
+	Le5/PcpocXnXHDaLk396GR1YPTat6mTzuHNtD5vH501yAcxRXDYpqTmZZalF+nYJXBmzrz1j
+	KWjgrLi//TJbA+NU9i5GTg4JAROJi++es0LYYhIX7q1n62Lk4hASWMoo8Xl1J1iCV0BQ4sfk
+	eyxdjBwczALyEkcuZYOEmQXUJSbNW8QMUf+ZUWLb1xYWiHp9iZ1Hp4LZwgK+EotaJ4HZbALG
+	EpuXL2EDmSMioCJx7o05xMgqiRPbpUBMFgFViXfbPUCKOQV0JRbv3sYOMb2XUeJJw0aok5Uk
+	drd3sk9gFJiF5LhZCMfNQnLcAkbmVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxghYftlB+Pi
+	Y1aHGAU4GJV4eCVjNYKFWBPLiitzDzFKcDArifC29msGC/GmJFZWpRblxxeV5qQWH2Jk4uCU
+	amB0Z/27KE5qkqxY4OE308SPrvjzQlJDy6MrY2c6r4jbpierKqIz9j4PrQmY4JfKZdG+plbE
+	VrrmlP9svYCbBRMmHTv1sf97xYM5nSuYrk3dqjlzQmGU8cZtRRoy5opnOpK+CGj9qPrk7iu9
+	850k828lr9OmL1c4ivqdfvWv9kL3X43W3et6Mu4osRRnJBpqMRcVJwIAI80uXzkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the "};" to next line as is the general coding practice.
+On Wed, 2014-03-19 at 09:14 +0000, Lee Jones wrote:
+> > Initialize the 'regmap_rtc' on S2MPA01 to some sane value. Sane at least
+> > for S5M87X chipsets, not S2MPS/S2MPA but it won't be used because
+> > rtc-s5m driver does not support S2MPA01.
+> > 
+> > This fixes following error:
+> > drivers/mfd/sec-core.c:342:45: warning: ‘regmap_rtc’ may be used uninitialized in this function [-Wuninitialized]
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > ---
+> >  drivers/mfd/sec-core.c |    7 +++++++
+> >  1 file changed, 7 insertions(+)
+> 
+> Please don't send patches in the middle of threads like this (v2's are
+> a different story as it saves on re-sending entire patch-sets), as I
+> very nearly missed it.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/regulator/max8660.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+OK, I understand. I put it in the middle because it was a follow up of
+your immutable branch ib-mfd-regulator-3.15 (merging mine S2MPS14 and
+Sachin's S2MPA01).
 
-diff --git a/drivers/regulator/max8660.c b/drivers/regulator/max8660.c
-index aabfb3b2407c..2fc411188794 100644
---- a/drivers/regulator/max8660.c
-+++ b/drivers/regulator/max8660.c
-@@ -86,7 +86,8 @@ struct max8660 {
- static int max8660_write(struct max8660 *max8660, u8 reg, u8 mask, u8 val)
- {
- 	static const u8 max8660_addresses[MAX8660_N_REGS] = {
--	  0x10, 0x12, 0x20, 0x23, 0x24, 0x29, 0x2a, 0x32, 0x33, 0x39, 0x80 };
-+	 0x10, 0x12, 0x20, 0x23, 0x24, 0x29, 0x2a, 0x32, 0x33, 0x39, 0x80
-+	};
- 
- 	int ret;
- 	u8 reg_val = (max8660->shadow_regs[reg] & mask) | val;
--- 
-1.7.9.5
+> 
+> We already have drivers doing similar things so I'll apply this as a
+> temporary fix, but please find something a little less 'hacky' to
+> supersede it _soon_.
+
+Sure, I just sent a patch for it.
+
+Best regards,
+Krzysztof
 
