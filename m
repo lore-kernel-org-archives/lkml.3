@@ -1,103 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758569AbaCSAVr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 20:21:47 -0400
-Received: from [192.147.44.131] ([192.147.44.131]:33088 "EHLO
-	us-mx2.synaptics.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756119AbaCSAVo (ORCPT
+	id S1758388AbaCSAX7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 20:23:59 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:45970 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756851AbaCSAX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 20:21:44 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Tue, 18 Mar 2014 17:06:51 -0700
-Message-ID: <5328E306.5040405@synaptics.com>
-Date: Tue, 18 Mar 2014 17:21:26 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 18 Mar 2014 20:23:57 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Andrew Duggan <aduggan@synaptics.com>,
-        Vincent Huang <vincent.huang@tw.synaptics.com>,
-        Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/11] Input: synaptics-rmi4 - do not update configuration
- in rmi_f01_probe()
-References: <1392269277-16391-1-git-send-email-dmitry.torokhov@gmail.com> <1392269277-16391-3-git-send-email-dmitry.torokhov@gmail.com>
-In-Reply-To: <1392269277-16391-3-git-send-email-dmitry.torokhov@gmail.com>
-X-Originating-IP: [10.3.20.103]
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140319001826.GA13475@bbox>
+References: <1394779070-8545-1-git-send-email-minchan@kernel.org>
+ <5328888C.7030402@mit.edu> <20140319001826.GA13475@bbox>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 18 Mar 2014 17:23:37 -0700
+Message-ID: <CALCETrUsgVgKDRjqY=7avbvowkNSn-CWJ3L9zti1SCOYgrY3UA@mail.gmail.com>
+Subject: Re: [RFC 0/6] mm: support madvise(MADV_FREE)
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Jason Evans <je@fb.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2014 09:27 PM, Dmitry Torokhov wrote:
-> Do not write configuration data in probe(), we have config() for that.
-
-I've just submitted a patch to correctly call config() after probe(). 
-So this becomes...
-
-Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
-
+On Tue, Mar 18, 2014 at 5:18 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Hello,
 >
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->   drivers/input/rmi4/rmi_f01.c | 18 ------------------
->   1 file changed, 18 deletions(-)
+> On Tue, Mar 18, 2014 at 10:55:24AM -0700, Andy Lutomirski wrote:
+>> On 03/13/2014 11:37 PM, Minchan Kim wrote:
+>> > This patch is an attempt to support MADV_FREE for Linux.
+>> >
+>> > Rationale is following as.
+>> >
+>> > Allocators call munmap(2) when user call free(3) if ptr is
+>> > in mmaped area. But munmap isn't cheap because it have to clean up
+>> > all pte entries, unlinking a vma and returns free pages to buddy
+>> > so overhead would be increased linearly by mmaped area's size.
+>> > So they like madvise_dontneed rather than munmap.
+>> >
+>> > "dontneed" holds read-side lock of mmap_sem so other threads
+>> > of the process could go with concurrent page faults so it is
+>> > better than munmap if it's not lack of address space.
+>> > But the problem is that most of allocator reuses that address
+>> > space soonish so applications see page fault, page allocation,
+>> > page zeroing if allocator already called madvise_dontneed
+>> > on the address space.
+>> >
+>> > For avoidng that overheads, other OS have supported MADV_FREE.
+>> > The idea is just mark pages as lazyfree when madvise called
+>> > and purge them if memory pressure happens. Otherwise, VM doesn't
+>> > detach pages on the address space so application could use
+>> > that memory space without above overheads.
+>>
+>> I must be missing something.
+>>
+>> If the application issues MADV_FREE and then writes to the MADV_FREEd
+>> range, the kernel needs to know that the pages are no longer safe to
+>> lazily free.  This would presumably happen via a page fault on write.
+>> For that to happen reliably, the kernel has to write protect the pages
+>> when MADV_FREE is called, which in turn requires flushing the TLBs.
 >
-> diff --git a/drivers/input/rmi4/rmi_f01.c b/drivers/input/rmi4/rmi_f01.c
-> index 897d8ac..976aba3 100644
-> --- a/drivers/input/rmi4/rmi_f01.c
-> +++ b/drivers/input/rmi4/rmi_f01.c
-> @@ -303,12 +303,6 @@ static int rmi_f01_initialize(struct rmi_function *fn)
->   		if (pdata->power_management.doze_interval) {
->   			data->device_control.doze_interval =
->   				pdata->power_management.doze_interval;
-> -			error = rmi_write(rmi_dev, data->doze_interval_addr,
-> -					data->device_control.doze_interval);
-> -			if (error < 0) {
-> -				dev_err(&fn->dev, "Failed to configure F01 doze interval register.\n");
-> -				return error;
-> -			}
->   		} else {
->   			error = rmi_read(rmi_dev, data->doze_interval_addr,
->   					&data->device_control.doze_interval);
-> @@ -324,12 +318,6 @@ static int rmi_f01_initialize(struct rmi_function *fn)
->   		if (pdata->power_management.wakeup_threshold) {
->   			data->device_control.wakeup_threshold =
->   				pdata->power_management.wakeup_threshold;
-> -			error = rmi_write(rmi_dev, data->wakeup_threshold_addr,
-> -					data->device_control.wakeup_threshold);
-> -			if (error < 0) {
-> -				dev_err(&fn->dev, "Failed to configure F01 wakeup threshold register.\n");
-> -				return error;
-> -			}
->   		} else {
->   			error = rmi_read(rmi_dev, data->wakeup_threshold_addr,
->   					&data->device_control.wakeup_threshold);
-> @@ -347,12 +335,6 @@ static int rmi_f01_initialize(struct rmi_function *fn)
->   		if (pdata->power_management.doze_holdoff) {
->   			data->device_control.doze_holdoff =
->   				pdata->power_management.doze_holdoff;
-> -			error = rmi_write(rmi_dev, data->doze_holdoff_addr,
-> -					data->device_control.doze_holdoff);
-> -			if (error < 0) {
-> -				dev_err(&fn->dev, "Failed to configure F01 doze holdoff register.\n");
-> -				return error;
-> -			}
->   		} else {
->   			error = rmi_read(rmi_dev, data->doze_holdoff_addr,
->   					&data->device_control.doze_holdoff);
+> It could be done by pte_dirty bit check. Of course, if some architectures
+> don't support it by H/W, pte_mkdirty would make it CoW as you said.
+
+If the page already has dirty PTEs, then you need to clear the dirty
+bits and flush TLBs so that other CPUs notice that the PTEs are clean,
+I think.
+
+Also, this has very odd semantics wrt reading the page after MADV_FREE
+-- is reading the page guaranteed to un-free it?
+
+>>
+>> How does this end up being faster than munmap?
 >
+> MADV_FREE doesn't need to return back the pages into page allocator
+> compared to MADV_DONTNEED and the overhead is not small when I measured
+> that on my machine.(Roughly, MADV_FREE's cost is half of DONTNEED through
+> avoiding involving page allocator.)
+>
+> But I'd like to clarify that it's not MADV_FREE's goal that syscall
+> itself should be faster than MADV_DONTNEED but major goal is to
+> avoid unnecessary page fault + page allocation + page zeroing +
+> garbage swapout.
 
+This sounds like it might be better solved by trying to make munmap or
+MADV_DONTNEED faster.  Maybe those functions should lazily give pages
+back to the buddy allocator.
 
--- 
-
-Christopher Heiny
-Senior Staff Firmware Engineer
-Synaptics Incorporated
+--Andy
