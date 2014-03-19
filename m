@@ -1,133 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759076AbaCSDcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 23:32:54 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:37726 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759044AbaCSDcW (ORCPT
+	id S933523AbaCSDh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 23:37:59 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:63076 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497AbaCSDh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 23:32:22 -0400
-From: behanw@converseincode.com
-To: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        dwmw2@infradead.org, pageexec@freemail.hu,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>,
-        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: [PATCH v3] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
-Date: Tue, 18 Mar 2014 20:32:13 -0700
-Message-Id: <1395199933-4686-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <CABikg9x+Z95bHcDc6iu5hBvRNO-ibM8-34_qA+OA_FjB52SPMw@mail.gmail.com>
-References: <CABikg9x+Z95bHcDc6iu5hBvRNO-ibM8-34_qA+OA_FjB52SPMw@mail.gmail.com>
+	Tue, 18 Mar 2014 23:37:57 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140318201056.7b876394@nehalam.linuxnetplumber.net>
+References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
+ <1394680527-28970-2-git-send-email-mcgrof@do-not-panic.com> <20140318201056.7b876394@nehalam.linuxnetplumber.net>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 18 Mar 2014 20:37:35 -0700
+X-Google-Sender-Auth: HYyH6VJWHbRUUS-obNQvbYQ0Tt4
+Message-ID: <CAB=NE6UgOL_d3MYyhqiLAZw-TLsf4wDu3NTW3+Zv1rJ6Exkdhg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] bridge: preserve random init MAC address
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
+        bridge@lists.linux-foundation.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+On Tue, Mar 18, 2014 at 8:10 PM, Stephen Hemminger
+<stephen@networkplumber.org> wrote:
+> On Wed, 12 Mar 2014 20:15:25 -0700
+> "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
+>
+>> As it is now if you add create a bridge it gets started
+>> with a random MAC address and if you then add a net_device
+>> as a slave but later kick it out you end up with a zero
+>> MAC address. Instead preserve the original random MAC
+>> address and use it.
+>
+> What is supposed to happen is that the recalculate chooses
+> the lowest MAC address of the slaves. If there are no slaves
+> it might as well just calculate a new random value. There is
+> not great merit in preserving the original defunct address.
 
-Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
-compliant equivalent. This is the original VLAIS struct.
+OK I'll go and add some changes for this then.
 
-struct {
-	struct aead_request     req;
-	u8                      priv[crypto_aead_reqsize(tfm)];
-} aead_req;
-
-This patch instead allocates the appropriate amount of memory using an char
-array.
-
-The new code can be compiled with both gcc and clang.
-
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
----
- net/mac80211/aes_ccm.c | 40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
-
-diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
-index 7c7df47..20521f9 100644
---- a/net/mac80211/aes_ccm.c
-+++ b/net/mac80211/aes_ccm.c
-@@ -23,12 +23,14 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 			       u8 *data, size_t data_len, u8 *mic)
- {
- 	struct scatterlist assoc, pt, ct[2];
--	struct {
--		struct aead_request	req;
--		u8			priv[crypto_aead_reqsize(tfm)];
--	} aead_req;
- 
--	memset(&aead_req, 0, sizeof(aead_req));
-+	char aead_req_data[sizeof(struct aead_request) +
-+		crypto_aead_reqsize(tfm)]
-+		__aligned(__alignof__(struct aead_request));
-+
-+	struct aead_request *aead_req = (void *) aead_req_data;
-+
-+	memset(aead_req, 0, sizeof(aead_req_data));
- 
- 	sg_init_one(&pt, data, data_len);
- 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
-@@ -36,23 +38,25 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 	sg_set_buf(&ct[0], data, data_len);
- 	sg_set_buf(&ct[1], mic, IEEE80211_CCMP_MIC_LEN);
- 
--	aead_request_set_tfm(&aead_req.req, tfm);
--	aead_request_set_assoc(&aead_req.req, &assoc, assoc.length);
--	aead_request_set_crypt(&aead_req.req, &pt, ct, data_len, b_0);
-+	aead_request_set_tfm(aead_req, tfm);
-+	aead_request_set_assoc(aead_req, &assoc, assoc.length);
-+	aead_request_set_crypt(aead_req, &pt, ct, data_len, b_0);
- 
--	crypto_aead_encrypt(&aead_req.req);
-+	crypto_aead_encrypt(aead_req);
- }
- 
- int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 			      u8 *data, size_t data_len, u8 *mic)
- {
- 	struct scatterlist assoc, pt, ct[2];
--	struct {
--		struct aead_request	req;
--		u8			priv[crypto_aead_reqsize(tfm)];
--	} aead_req;
- 
--	memset(&aead_req, 0, sizeof(aead_req));
-+	char aead_req_data[sizeof(struct aead_request) +
-+				crypto_aead_reqsize(tfm) +
-+				CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
-+
-+	struct aead_request *aead_req = (void *) aead_req_data;
-+
-+	memset(aead_req, 0, sizeof(aead_req_data));
- 
- 	sg_init_one(&pt, data, data_len);
- 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
-@@ -60,12 +64,12 @@ int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 	sg_set_buf(&ct[0], data, data_len);
- 	sg_set_buf(&ct[1], mic, IEEE80211_CCMP_MIC_LEN);
- 
--	aead_request_set_tfm(&aead_req.req, tfm);
--	aead_request_set_assoc(&aead_req.req, &assoc, assoc.length);
--	aead_request_set_crypt(&aead_req.req, ct, &pt,
-+	aead_request_set_tfm(aead_req, tfm);
-+	aead_request_set_assoc(aead_req, &assoc, assoc.length);
-+	aead_request_set_crypt(aead_req, ct, &pt,
- 			       data_len + IEEE80211_CCMP_MIC_LEN, b_0);
- 
--	return crypto_aead_decrypt(&aead_req.req);
-+	return crypto_aead_decrypt(aead_req);
- }
- 
- struct crypto_aead *ieee80211_aes_key_setup_encrypt(const u8 key[])
--- 
-1.8.3.2
-
+  Luis
