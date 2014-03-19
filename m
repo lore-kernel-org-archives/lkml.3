@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933859AbaCSL1k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 07:27:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41640 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932602AbaCSL1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 07:27:37 -0400
-Message-ID: <53297F1D.2050203@ti.com>
-Date: Wed, 19 Mar 2014 13:27:25 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1759082AbaCSLc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 07:32:59 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:43270 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758612AbaCSLc6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 07:32:58 -0400
+Date: Wed, 19 Mar 2014 12:32:54 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
+        acme@infradead.org, eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH 4/4] perf/x86/uncore: modularize Intel uncore driver
+Message-ID: <20140319113254.GA18351@gmail.com>
+References: <1395133004-23205-1-git-send-email-zheng.z.yan@intel.com>
+ <1395133004-23205-4-git-send-email-zheng.z.yan@intel.com>
+ <20140319084917.GE27632@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: <balbi@ti.com>, <dmitry.torokhov@gmail.com>, <jcbian@pixcir.com.cn>,
-        <dmurphy@ti.com>, <mugunthanvnm@ti.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 4/8] Input: pixcir_i2c_ts: Use Type-B Multi-Touch protocol
-References: <1393428486-15001-1-git-send-email-rogerq@ti.com> <1393428486-15001-5-git-send-email-rogerq@ti.com> <531B3331.9050008@euromail.se> <531D7E66.1070300@ti.com> <20140310163701.GA30397@saruman.home>
-In-Reply-To: <20140310163701.GA30397@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319084917.GE27632@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Henrik,
 
-On 03/10/2014 06:37 PM, Felipe Balbi wrote:
-> On Mon, Mar 10, 2014 at 10:57:10AM +0200, Roger Quadros wrote:
->> Hi Henrik,
->>
->> On 03/08/2014 05:11 PM, Henrik Rydberg wrote:
->>> Hi Roger,
->>>
->>> the MT implementation seems mostly fine, just one curiosity:
->>>
->>>>  static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
->>>>  {
->>>>  	struct pixcir_i2c_ts_data *tsdata = dev_id;
->>>>  	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
->>>> +	struct pixcir_report_data report;
->>>>  
->>>>  	while (!tsdata->exiting) {
->>>> -		pixcir_ts_poscheck(tsdata);
->>>> -
->>>> -		if (gpio_get_value(pdata->gpio_attb))
->>>> +		/* parse packet */
->>>> +		pixcir_ts_parse(tsdata, &report);
->>>> +
->>>> +		/* report it */
->>>> +		pixcir_ts_report(tsdata, &report);
->>>> +
->>>> +		if (gpio_get_value(pdata->gpio_attb)) {
->>>> +			if (report.num_touches) {
->>>> +				/*
->>>> +				 * Last report with no finger up?
->>>> +				 * Do it now then.
->>>> +				 */
->>>> +				input_mt_sync_frame(tsdata->input);
->>>> +				input_sync(tsdata->input);
->>>
->>> Why is this special handling needed?
->>
->> This is needed because the controller doesn't always report when all fingers
->> have left the screen. e.g. report might contain 3 fingers touched and then
->> gpio_attb line is de-asserted. There's no report with 0 fingers touched even
->> if the user's fingers have left the screen. So we never detect a BUTTON_UP.
->>
->> Without this s/w workaround we observe side effects like buttons being pressed
->> but not released. To me it looks like a bug in the controller.
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Tue, Mar 18, 2014 at 04:56:44PM +0800, Yan, Zheng wrote:
+> > This patch adds support for building Intel uncore driver as module.
+> > It adds clean-up code and config option for the Intel uncore driver
+> > 
+> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> > ---
+> >  arch/x86/Kconfig                              |  7 ++++
+> >  arch/x86/configs/i386_defconfig               |  1 +
+> >  arch/x86/configs/x86_64_defconfig             |  1 +
+> >  arch/x86/kernel/cpu/Makefile                  |  3 +-
+> >  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 48 ++++++++++++++++++++++++---
+> >  5 files changed, 55 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > index 0af5250..8e4e247 100644
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -1103,6 +1103,13 @@ config X86_CPUID
+> >  	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
+> >  	  /dev/cpu/31/cpuid.
+> >  
+> > +config X86_INTEL_UNCORE
+> > +	tristate "Intel uncore performance monitoring support"
+> > +	depends on CPU_SUP_INTEL
+> > +	---help---
+> > +	  This adds a driver to access the Uncore performance monitoring Units
+> > +	  of Intel processors.
+> > +
 > 
-> the other way would be to *also* use IRQF_TRIGGER_RISING, then you get
-> an IRQ when fingers leave the screen. No ?
-> 
+> Ingo do you agree with this config option placement?
 
-If you are OK with my explanation and the patches, could you please Ack them? Thanks.
+Yeah, the modularization looks mostly good to me, but its name should 
+lie within the PERF namespace, i.e. CONFIG_PERF_PMU_X86_INTEL_UNCORE=y.
 
-cheers,
--roger
+Thanks,
+
+	Ingo
