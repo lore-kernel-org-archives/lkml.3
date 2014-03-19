@@ -1,127 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490AbaCSVRP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 17:17:15 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:38276 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384AbaCSVRM convert rfc822-to-8bit (ORCPT
+	id S1754533AbaCSVXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 17:23:50 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26709 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaCSVXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 17:17:12 -0400
+	Wed, 19 Mar 2014 17:23:46 -0400
+Message-ID: <532A0AB9.5050907@oracle.com>
+Date: Wed, 19 Mar 2014 17:23:05 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CACV2jQD=4Gq48Ug8hm=7Kaw=PtOUaND5aJN2N3+K4iOQ8rtBog@mail.gmail.com>
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
-	<20140319201838.GA11403@redhat.com>
-	<CAAsK9AGumcqE3qoEycjqmFdn3ERvpPx41WwZe0YRUv+1sf0rxA@mail.gmail.com>
-	<CACV2jQD=4Gq48Ug8hm=7Kaw=PtOUaND5aJN2N3+K4iOQ8rtBog@mail.gmail.com>
-Date: Wed, 19 Mar 2014 22:17:11 +0100
-X-Google-Sender-Auth: FKQECAjnY_mO8G3AqL2bUvQonsI
-Message-ID: <CAAsK9AEQOJjiMJeQ8LTwCTj1O0PttJNxJSr4EsgArbm26neHpw@mail.gmail.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-From: Levente Kurusa <levex@linux.com>
-To: =?ISO-8859-2?B?VGVvZG9yYSBC42x1/uM=?= <teobaluta@gmail.com>
-Cc: Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ming Lei <tom.leiming@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH 8/9] PCI: Ignore BAR contents when firmware left decoding
+ disabled
+References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com> <20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com> <20140319185423.GA5514@google.com> <CAErSpo42K6W8b+7A7dyxUp-rNQttMQY7jcbpgyGv9sctyAqJCA@mail.gmail.com>
+In-Reply-To: <CAErSpo42K6W8b+7A7dyxUp-rNQttMQY7jcbpgyGv9sctyAqJCA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/19/2014 05:16 PM, Bjorn Helgaas wrote:
+> On Wed, Mar 19, 2014 at 12:54 PM, Bjorn Helgaas<bhelgaas@google.com>  wrote:
+>> >[+cc Ming, Rusty, Pekka, Sasha]
+>> >...
+>> >I plan to replace this patch with the following, which only sets
+>> >IORESOURCE_UNSET when we already have been clearing the bus region start
+>> >address.  (This probably should have been a separate patch to begin with,
+>> >mea culpa.)
+>> >
+>> >This is intended for the v3.15 merge window, so I made the minimal change
+>> >to reduce risk.
+> I put this patch in my pci/resource branch and re-merged it into my
+> "next" branch.  This rebased both pci/resource and next, which is
+> unfortunate, but I think it's the cleanest and least risky way at this
+> point.
 
-2014-03-19 21:50 GMT+01:00 Teodora Bãluþã <teobaluta@gmail.com>:
-> On Wed, Mar 19, 2014 at 10:28 PM, Levente Kurusa <levex@linux.com> wrote:
->> Hi,
->>
->> 2014-03-19 21:18 GMT+01:00 Dave Jones <davej@redhat.com>:
->>> On Mon, Mar 17, 2014 at 02:59:47PM -0700, Teodora Baluta wrote:
->>>  > This feature encodes Oops messages into a QR barcode that is scannable by
->>>  > any device with a camera.
->>>
->>>  ...
->>>
->>>  >  include/linux/print_oops.h |   11 +
->>>  >  include/linux/qrencode.h   |  546 +++++++++++++
->>>  >  kernel/Makefile            |    1 +
->>>  >  kernel/panic.c             |    5 +
->>>  >  kernel/print_oops.c        |  173 +++++
->>>  >  kernel/printk/printk.c     |    9 +-
->>>  >  lib/Kconfig                |    5 +
->>>  >  lib/Kconfig.debug          |   11 +
->>>  >  lib/Makefile               |    3 +
->>>  >  lib/qr/Makefile            |    6 +
->>>  >  lib/qr/bitstream.c         |  233 ++++++
->>>  >  lib/qr/bitstream.h         |   37 +
->>>  >  lib/qr/mask.c              |  320 ++++++++
->>>  >  lib/qr/mask.h              |   39 +
->>>  >  lib/qr/mmask.c             |  175 +++++
->>>  >  lib/qr/mmask.h             |   36 +
->>>  >  lib/qr/mqrspec.c           |  259 +++++++
->>>  >  lib/qr/mqrspec.h           |  155 ++++
->>>  >  lib/qr/qrencode.c          |  871 +++++++++++++++++++++
->>>  >  lib/qr/qrencode.h          |  546 +++++++++++++
->>>  >  lib/qr/qrinput.c           | 1834 ++++++++++++++++++++++++++++++++++++++++++++
->>>  >  lib/qr/qrinput.h           |  129 ++++
->>>  >  lib/qr/qrspec.c            |  543 +++++++++++++
->>>  >  lib/qr/qrspec.h            |  178 +++++
->>>  >  lib/qr/rscode.c            |  325 ++++++++
->>>  >  lib/qr/rscode.h            |   38 +
->>>  >  lib/qr/split.c             |  331 ++++++++
->>>  >  lib/qr/split.h             |   44 ++
->>>  >  28 files changed, 6860 insertions(+), 3 deletions(-)
->>
->> This idea is certainly great.
->>
->> However, there are quite a few problems with the code in terms of code style and
->> other terms as well. I am not sure how could we help you make this code
->> appliable, but it would be great if you put up a branch somewhere. This way
->> I could send you a few commits that do some fixups.
->
-> Wow, that'd be great! I have set up my clone of the kernel source up
-> on gitlab [0] and github [1]. I will update the remote branch asap (I
-> made some coding style fixups that aren't present on github/gitlab
-> right now, only in a remote branch). Is this ok?
+Thanks for pointing out the issue Ming. I must admit that I haven't referred
+to the PCI spec when sending in my "fix" since the upstream patch sort of
+made sense. OTOH, you can't really call the kvm tool PCI implementation spec
+compliant :)
 
-Yea, that's fine. Push your changes and send me a ping once you
-are done. I will most likely send you a pull request on github though.
+Pekka, we can either revert my patch completely since the issue won't ever be
+visible (since the pci tree got rebase) or just keep it in. Let me know what you
+prefer.
 
->
->>
->>>
->>> That's a ton of code we're adding into one of the most fragile parts of the kernel.
->>
->> Indeed, this should get split up.
->>
->>>
->>> A lot of what libqrencode does would seem to be superfluous to the requirements
->>> here, as we don't output kernel oopses in kanji for eg, and won't care about
->>> multiple versions of the qr spec.
->>>
->>> How much of this could we drop ?
->>
->> A lot, most likely.
->
-> Indeed.
->
->>
->> Also, I wonder if we could do the same for panic()?
->> I hate it when I receive a panic and I have no idea what's the cause
->> since my display is filled up with the stack trace.
->
-> Most likely panic is harder to do for reasons discussed in this thread here [2].
->
 
-Yes I see.
-
->
-> [0] https://gitlab.com/teobaluta/opw
-> [1] https://github.com/teobaluta/qr-linux-kernel
-> [2] https://lwn.net/Articles/503677/
->
-> Thanks,
-> Teodora
->>
->> --
->> Regards,
->> Levente Kurusa
+Thanks,
+Sasha
