@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928AbaCSWHR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 18:07:17 -0400
-Received: from www85.your-server.de ([213.133.104.85]:48223 "EHLO
-	www85.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757418AbaCSWHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 18:07:14 -0400
-From: Olaf Dietsche <olaf--list.linux-kernel@olafdietsche.de>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Serge Hallyn <serge.hallyn@canonical.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 3.8: access permission filesystem
-References: <87k3bqnflm.fsf@olafdietsche.de> <874n2t6get.fsf@xmission.com>
-Date: Wed, 19 Mar 2014 23:07:07 +0100
-Message-ID: <874n2tonas.fsf@olafdietsche.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1756907AbaCSWOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 18:14:12 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:38572 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754030AbaCSWOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 18:14:10 -0400
+Date: Wed, 19 Mar 2014 16:14:04 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2a RESEND 2/2] of_mdio: Allow the DT to specify the phy
+ ID and avoid autoprobing
+Message-ID: <20140319221404.GA1154@obsidianresearch.com>
+References: <1394658311-17769-1-git-send-email-jgunthorpe@obsidianresearch.com>
+ <1394658311-17769-2-git-send-email-jgunthorpe@obsidianresearch.com>
+ <CAL_Jsq+qdbiwXErkZv1zZ9rphYY9NP6zHmmjw313tMvGeSTODg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Authenticated-Sender: olaf@olafdietsche.de
+Content-Disposition: inline
+In-Reply-To: <CAL_Jsq+qdbiwXErkZv1zZ9rphYY9NP6zHmmjw313tMvGeSTODg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
+On Wed, Mar 12, 2014 at 04:35:54PM -0500, Rob Herring wrote:
 
-> Olaf Dietsche <olaf--list.linux-kernel@olafdietsche.de> writes:
->
->> I am in the process of catching up with the last two years or so.
->> Right now, I am at the changes involving user namespaces.
->>
->> I have two possible implementations, both working equally well in a
->> shared environment. Since I am not familiar with namespaces in general
->> and user namespaces in particular, I would like you to look over the
->> patches and tell me, what you think.
->>
->> Are the patches good so far? Are there are any things I missed and must
->> consider? Maybe, I am completely off track? Anything else?
->>
->> I included both patches inline below. The patches are also available as
->> separate branches at github 
->>
->> https://github.com/olafdietsche/linux-accessfs/tree/tmp-user-ns-1
->> https://github.com/olafdietsche/linux-accessfs/tree/tmp-user-ns-2
->>
->> I am leaning toward the second patch. Although it is a little bit longer
->> than the first one, it involves no user id conversions.
->
-> Using kuid's and kgid's throughout as your second patch does is best.
-> Conversion is only needed on normal filesystems because they have a
-> backing store and reside on disk.  As accessfs appears not to have
-> backing store, storing things with kuid's and kgid's is the preferred
-> method.
->
-> Your first patch is buggy as it uses current_user_ns().  Something a
-> filesystem in general should not care about.
+> > Florian, do you know what path to mainline a this patch should take?
+> 
+> Via David's net tree.
 
-I have seen similar uses in other filesystems like ext3, jfs or
-debugfs. What would be the correct way to use make_kuid() or make_gid()?
+Thanks
 
-> I don't see anything wrong with your second patch.
+> > +       cp = of_get_property(device, "compatible", &cplen);
+> > +       if (cp == NULL)
+> > +               return -EINVAL;
+> > +       while (cplen > 0) {
+> 
+> This can all be:
+> 
+>   of_property_for_each_string(device, "compatible", prop, cp)
 
-Thanks a lot for this fast response and your guidance. So, I will dump
-the first and continue with the second patch.
+Done
 
-> From what little I understand of accessfs, I expect you will want to
-> play with and come up to speed on namespaces, as namespaces change
-> the universe of objects you will be dealing with, in some subtle
-> but interesting ways.  At least assuming anyone in who uses accessfs
-> is going to be using more than a single container.
->
-> Eric
+On Thu, Mar 13, 2014 at 01:46:18AM +0300, Sergei Shtylyov wrote:
+>    The preferred multi-line comment style is:
+> 
+> /*
+>  * bla
+>  * bla
+>  */
+> 
 
-Regards, Olaf
+Sergei, the entire file use the 'net' multi-line commenting style, and
+I have maintined that consistency with the new code.
+
+v3 on its way.
+
+Regards,
+Jason
