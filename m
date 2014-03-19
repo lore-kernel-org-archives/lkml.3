@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333AbaCSVAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 17:00:12 -0400
-Received: from mail-ob0-f201.google.com ([209.85.214.201]:40486 "EHLO
-	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755129AbaCSVAH (ORCPT
+	id S1756924AbaCSVBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 17:01:19 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:63961 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935AbaCSVAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 17:00:07 -0400
+	Wed, 19 Mar 2014 17:00:10 -0400
 From: Ben Chan <benchan@chromium.org>
 To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>
@@ -14,45 +14,87 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         David Miller <davem@davemloft.net>,
         =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         Greg Suarez <gsuarez@smithmicro.com>
-Subject: [PATCH net-next v4 0/2] adjust MTU as indicated by MBIM extended functional descriptor
-Date: Wed, 19 Mar 2014 14:00:04 -0700
-Message-Id: <1395262806-19237-1-git-send-email-benchan@chromium.org>
+Subject: [PATCH net-next v4 2/2] net: cdc_ncm: respect operator preferred MTU reported by MBIM
+Date: Wed, 19 Mar 2014 14:00:06 -0700
+Message-Id: <1395262806-19237-3-git-send-email-benchan@chromium.org>
 X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395262806-19237-1-git-send-email-benchan@chromium.org>
+References: <1395262806-19237-1-git-send-email-benchan@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MBIM extended functional descriptor, defined in "Universal Serial Bus
-Communications Class Subclass Specification for Mobile Broadband Interface
-Model, Revision 1.0, Errata-1" by USB-IF, indicates the operator preferred MTU
-value via a wMTU field.
+According to "Universal Serial Bus Communications Class Subclass
+Specification for Mobile Broadband Interface Model, Revision 1.0,
+Errata-1" published by USB-IF, the wMTU field of the MBIM extended
+functional descriptor indicates the operator preferred MTU for IP data
+streams.
 
-This patch set ensures that the initial MTU value set by cdc_ncm on a MBIM net
-device does not exceed the wMTU value, provided the MBIM device exposes a MBIM
-extended functional descriptor.
+This patch modifies cdc_ncm_setup to ensure that the MTU value set on
+the usbnet device does not exceed the operator preferred MTU indicated
+by wMTU if the MBIM device exposes a MBIM extended functional
+descriptor.
 
-* Changelog
-v2: Fixed a le16_to_cpu conversion issue in patch 2/2 pointed out by
-    Bjørn Mork <bjorn@mork.no>
-v3: No code changes. Resubmitted to include patch 1/2 as suggested by
-    David Miller <davem@davemloft.net>
-v4: No code changes. Resubmitted as suggested by David Miller:
-    - Added a summary of the patch set
-    - Carried the ACK from Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    - Added a specified the tree (net-next) to apply the patch set to
+Signed-off-by: Ben Chan <benchan@chromium.org>
+---
+ drivers/net/usb/cdc_ncm.c   | 17 +++++++++++++++++
+ include/linux/usb/cdc_ncm.h |  1 +
+ 2 files changed, 18 insertions(+)
 
-Ben Chan (2):
-  USB: cdc: add MBIM extended functional descriptor structure
-  net: cdc_ncm: respect operator preferred MTU reported by MBIM
-
- drivers/net/usb/cdc_ncm.c    | 17 +++++++++++++++++
- include/linux/usb/cdc_ncm.h  |  1 +
- include/uapi/linux/usb/cdc.h | 12 ++++++++++++
- 3 files changed, 30 insertions(+)
-
+diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
+index dbff290..e8711a8 100644
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -74,6 +74,7 @@ static int cdc_ncm_setup(struct usbnet *dev)
+ 	u8 iface_no;
+ 	int err;
+ 	int eth_hlen;
++	u16 mbim_mtu;
+ 	u16 ntb_fmt_supported;
+ 	__le16 max_datagram_size;
+ 
+@@ -261,6 +262,14 @@ out:
+ 	/* set MTU to max supported by the device if necessary */
+ 	if (dev->net->mtu > ctx->max_datagram_size - eth_hlen)
+ 		dev->net->mtu = ctx->max_datagram_size - eth_hlen;
++
++	/* do not exceed operater preferred MTU */
++	if (ctx->mbim_extended_desc) {
++		mbim_mtu = le16_to_cpu(ctx->mbim_extended_desc->wMTU);
++		if (mbim_mtu != 0 && mbim_mtu < dev->net->mtu)
++			dev->net->mtu = mbim_mtu;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -399,6 +408,14 @@ int cdc_ncm_bind_common(struct usbnet *dev, struct usb_interface *intf, u8 data_
+ 			ctx->mbim_desc = (const struct usb_cdc_mbim_desc *)buf;
+ 			break;
+ 
++		case USB_CDC_MBIM_EXTENDED_TYPE:
++			if (buf[0] < sizeof(*(ctx->mbim_extended_desc)))
++				break;
++
++			ctx->mbim_extended_desc =
++				(const struct usb_cdc_mbim_extended_desc *)buf;
++			break;
++
+ 		default:
+ 			break;
+ 		}
+diff --git a/include/linux/usb/cdc_ncm.h b/include/linux/usb/cdc_ncm.h
+index c3fa807..bdf05fb 100644
+--- a/include/linux/usb/cdc_ncm.h
++++ b/include/linux/usb/cdc_ncm.h
+@@ -93,6 +93,7 @@ struct cdc_ncm_ctx {
+ 
+ 	const struct usb_cdc_ncm_desc *func_desc;
+ 	const struct usb_cdc_mbim_desc *mbim_desc;
++	const struct usb_cdc_mbim_extended_desc *mbim_extended_desc;
+ 	const struct usb_cdc_ether_desc *ether_desc;
+ 
+ 	struct usb_interface *control;
 -- 
 1.9.0.279.gdc9e3eb
 
