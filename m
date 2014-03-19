@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758802AbaCSWgk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 18:36:40 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:36999 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755549AbaCSWgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 18:36:39 -0400
-Date: Wed, 19 Mar 2014 16:36:33 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH v2a RESEND 2/2] of_mdio: Allow the DT to specify the phy
- ID and avoid autoprobing
-Message-ID: <20140319223633.GC1154@obsidianresearch.com>
-References: <1394658311-17769-1-git-send-email-jgunthorpe@obsidianresearch.com>
- <1394658311-17769-2-git-send-email-jgunthorpe@obsidianresearch.com>
- <CAL_Jsq+qdbiwXErkZv1zZ9rphYY9NP6zHmmjw313tMvGeSTODg@mail.gmail.com>
- <20140319221404.GA1154@obsidianresearch.com>
- <532A262B.803@cogentembedded.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532A262B.803@cogentembedded.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1757795AbaCSWiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 18:38:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49714 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794AbaCSWix (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 18:38:53 -0400
+Date: Wed, 19 Mar 2014 15:38:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [percpu]  BUG: using __this_cpu_add() in preemptible [00000000]
+ code: init/1
+Message-Id: <20140319153851.34dfdf97616422b159dc153b@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.10.1403180942030.17965@nuc>
+References: <20140307090911.GA18207@localhost>
+	<alpine.DEB.2.10.1403071124140.21846@nuc>
+	<alpine.DEB.2.10.1403180942030.17965@nuc>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 02:20:11AM +0300, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 03/20/2014 01:14 AM, Jason Gunthorpe wrote:
-> 
-> >>    The preferred multi-line comment style is:
-> 
-> >>/*
-> >>  * bla
-> >>  * bla
-> >>  */
-> 
-> >Sergei, the entire file use the 'net' multi-line commenting style, and
-> >I have maintined that consistency with the new code.
-> 
->    No, you haven't followed the networking style. It is:
-> 
-> /* bla
->  * bla
->  */
-> 
-> while your comment used:
-> 
-> /* bla
->  * bla */
+On Tue, 18 Mar 2014 09:43:27 -0500 (CDT) Christoph Lameter <cl@linux.com> wrote:
 
-Oh Ok - but the latter is the used by the majority of pre-existing
-comments..
+> Anyways the statistics in slub should be low impact and able to
+> be placed anywhere. So I think we need this patch to avoid
+> the preemption checks begin triggered.
+> 
+> 
+> Subject: SLUB: Use raw_cpu_inc for incrementing statistics
+> 
+> Statistics are not critical to the operation of the allocation
+> but should also not cause too much overhead.
+> 
+> __this_cpu_inc now checks if preemption is disabled and triggers.
+> Use raw_cpu_inc to avoid the checks. Using this_cpu_ops may cause
+> interrupt disable/enable sequences on various arches which may
+> significantly impact allocator performance.
+> 
+> ...
+>
+> --- linux.orig/mm/slub.c	2014-03-07 14:10:30.142777022 -0600
+> +++ linux/mm/slub.c	2014-03-18 09:39:15.675035324 -0500
+> @@ -224,7 +224,7 @@
+>  static inline void stat(const struct kmem_cache *s, enum stat_item si)
+>  {
+>  #ifdef CONFIG_SLUB_STATS
+> -	__this_cpu_inc(s->cpu_slab->stat[si]);
+> +	raw_cpu_inc(s->cpu_slab->stat[si]);
+>  #endif
+>  }
 
-I thought the convention on stuff like this was to stick with the
-existing style?
+Please always consider how the code will appear to a naive reader. 
+That reader won't know why raw_ is being used here, so we should
+provide an explanation.
 
-Do you think it is worth a v4? If so, which style is appropriate?
-There is one other pre-existing comment that uses net.
+--- a/mm/slub.c~slub-use-raw_cpu_inc-for-incrementing-statistics-fix
++++ a/mm/slub.c
+@@ -224,6 +224,10 @@ static inline void memcg_propagate_slab_
+ static inline void stat(const struct kmem_cache *s, enum stat_item si)
+ {
+ #ifdef CONFIG_SLUB_STATS
++	/*
++	 * The rmw is racy on a preemptible kernel but this is acceptable, so
++	 * avoid this_cpu_add()'s irq-disable overhead.
++	 */
+ 	raw_cpu_inc(s->cpu_slab->stat[si]);
+ #endif
+ }
+_
 
-Regards,
-Jason
