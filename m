@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758999AbaCSCoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 22:44:08 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:15309 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758253AbaCSCoE (ORCPT
+	id S1759046AbaCSCqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 22:46:10 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:21072 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757970AbaCSCqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 22:44:04 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-12-53290471276d
-Message-id: <53290471.105@samsung.com>
-Date: Wed, 19 Mar 2014 11:44:01 +0900
+	Tue, 18 Mar 2014 22:46:07 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-a1-532904ecfd59
+Message-id: <532904EC.3090101@samsung.com>
+Date: Wed, 19 Mar 2014 11:46:04 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
  Thunderbird/17.0.2
@@ -21,42 +21,42 @@ Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
         ijc+devicetree@hellion.org.uk, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCHv2 3/8] devfreq: exynos4: Add ppmu's clock control and code
- clean about regulator control
+Subject: Re: [PATCHv2 4/8] devfreq: exynos4: Fix bug of resource leak and code
+ clean on probe()
 References: <1394698649-20996-1-git-send-email-cw00.choi@samsung.com>
- <1394698649-20996-4-git-send-email-cw00.choi@samsung.com>
- <53233F78.8020500@samsung.com> <5326632A.8030801@samsung.com>
- <53268F48.8060704@samsung.com> <53282A60.2010301@samsung.com>
-In-reply-to: <53282A60.2010301@samsung.com>
+ <1394698649-20996-5-git-send-email-cw00.choi@samsung.com>
+ <53234132.8080202@samsung.com> <532682A8.2030300@samsung.com>
+ <532839A5.8020505@samsung.com>
+In-reply-to: <532839A5.8020505@samsung.com>
 Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsWyRsSkWLeQRTPY4OItQ4uOnt8sFvOPnGO1
-	OPdqJaPF2aY37BYL25awWFzeNYfN4nPvEUaLGef3MVksvX6RyeJ24wo2izc/zjJZTJi+lsXi
-	8Yq37BavDraxWKyf8ZrFgd9jzbw1jB4rl39h81i85yWTx8/l29k9+rasYvQ4fmM7k8fnTXIe
-	G+eGBnBEcdmkpOZklqUW6dslcGU8OfSOseC3RcWd3k2MDYxrtLoYOTkkBEwkWk8+ZYSwxSQu
-	3FvP1sXIxSEksJRRYs+lS8wwRW3NE5ghEtMZJS7sus0K4bxilFj14R1YFa+AmsSpdd0sXYwc
-	HCwCqhLHt2WChNkEtCT2v7jBBmKLCoRJrJx+hQWiXFDix+R7YLaIgIrE5VPTwa5gFvjKJHFz
-	HhOILSyQJzFr028miF2NTBJzVi8BG8QpoC2xb91RdogGHYn9rdPYIGx5ic1r3kJdPZdDYtr6
-	ZBCbRUBA4tvkQ2C3SQjISmw6AFUiKXFwxQ2WCYxis5CcNAvJ1FlIpi5gZF7FKJpakFxQnJRe
-	ZKpXnJhbXJqXrpecn7uJERjjp/89m7iD8f4B60OMyUArJzJLiSbnA1NEXkm8obGZkYWpiamx
-	kbmlGWnCSuK86Y+SgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwdu4KaOj+xF7d0ZOeFsAR
-	xpTmNKGs1POmZWL3NNOJS+6uNjH651q5evk3cde+1p8WurtS+W+0Xejn2jG5THvF4Z8561v+
-	T1jFuaf+9qUzaw7c1J0w69GRv7JzJkvMC/79dfeC2LxvwsuvvX/ja+zY4zNH3Pma/dUjd9gm
-	Cny72piutv1BTlmkhRJLcUaioRZzUXEiAPyqIZEHAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEKsWRmVeSWpSXmKPExsVy+t9jQd1CFs1gg2Nb1S06en6zWMw/co7V
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsWyRsSkRPcNi2awwbkVShYdPb9ZLOYfOcdq
+	ce7VSkaLs01v2C0Wti1hsbi8aw6bxefeI4wWM87vY7JYev0ik8XtxhVsFm9+nGWymDB9LYvF
+	4xVv2S1eHWxjsVg/4zWLA7/HmnlrGD1WLv/C5rF4z0smj5/Lt7N79G1Zxehx/MZ2Jo/Pm+Q8
+	Ns4NDeCI4rJJSc3JLEst0rdL4MqYdPAfW8FxtYqGU+4NjKvluhg5OSQETCTam7axQthiEhfu
+	rWfrYuTiEBJYyijx+u8VFpiihStbGSESixgl5v1dwwzhvGKU+LznPFgVr4CWxKFpx5lAbBYB
+	VYll8x+D2WxA8f0vbrCB2KICYRIrp1+BqheU+DH5HpgtIqAicfnUdEYQm1ngK5PEzXlgvcIC
+	iRLHdk9jgVj2iFGi/cZ9sASngLbE3gXnWSEadCT2t05jg7DlJTaveQt2nYTAVA6J+/tXskNc
+	JCDxbfIhoEkcQAlZiU0HmCFek5Q4uOIGywRGsVlIbpqFZOwsJGMXMDKvYhRNLUguKE5KLzLW
+	K07MLS7NS9dLzs/dxAiM8tP/nvXvYLx7wPoQYzLQyonMUqLJ+cAkkVcSb2hsZmRhamJqbGRu
+	aUaasJI47/2HSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGG2v7xKfLtLMMdX6Ru4CjUnR
+	FapsK5Yt2ZTGufbXj/PCijnzBDnkDoS9E/r2fUVTVrJY86KXnO1vs1nMuWWT3in5FmwOOLF/
+	d9kNwQtZVuuPbJjw/coPzymnZlmyetb6v+HNXN3lc0DoVKCBg+aJT7Oe/ZX5XFsWpSPA7Vz/
+	+3tXvS5rw42ja5RYijMSDbWYi4oTAVdlEAkIAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEKsWRmVeSWpSXmKPExsVy+t9jAd03LJrBBo3/xS06en6zWMw/co7V
 	4tyrlYwWZ5vesFssbFvCYnF51xw2i8+9RxgtZpzfx2Sx9PpFJovbjSvYLN78OMtkMWH6WhaL
 	xyveslu8OtjGYrF+xmsWB36PNfPWMHqsXP6FzWPxnpdMHj+Xb2f36NuyitHj+I3tTB6fN8l5
 	bJwbGsAR1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuW
-	mQN0vZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYx48mhd4wFvy0q7vRu
-	YmxgXKPVxcjJISFgItHWPIEZwhaTuHBvPVsXIxeHkMB0RokLu26zQjivGCVWfXgHVsUroCZx
-	al03SxcjBweLgKrE8W2ZIGE2AS2J/S9usIHYogJhEiunX2GBKBeU+DH5HpgtIqAicfnUdEYQ
-	m1ngK5PEzXlMILawQJ7ErE2/mSB2NTJJzFm9BGwQp4C2xL51R9khGnQk9rdOY4Ow5SU2r3nL
-	PIFRYBaSHbOQlM1CUraAkXkVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnAKeSa1g3Flg8Uh
-	RgEORiUe3gNRGsFCrIllxZW5hxglOJiVRHiF7wKFeFMSK6tSi/Lji0pzUosPMSYDQ2Ais5Ro
-	cj4wveWVxBsam5gZWRqZG1oYGZuTJqwkznug1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA2PJS+eE
-	tCOSfzYdU1I4L/I9+z1TYOZ9+TdZn9QjSt2/KqZ435XpO+ymrH52M5e3tm7jeuNr5pv3FCxO
-	5HyXLcT9X++txL8V+toSwlfPPY7SXTprQvTpmJV71N5MrlprpCTfFt72PJp5RTjj5v3XRBVe
-	+rB0a3ydUloXMv+mtYHvze3b8lLyPZVYijMSDbWYi4oTAQkINqBlAwAA
+	mQN0vZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYxY9LBf2wFx9UqGk65
+	NzCuluti5OSQEDCRWLiylRHCFpO4cG89WxcjF4eQwCJGiXl/1zBDOK8YJT7vOc8CUsUroCVx
+	aNpxJhCbRUBVYtn8x2A2G1B8/4sbbCC2qECYxMrpV6DqBSV+TL4HZosIqEhcPjUdbBuzwFcm
+	iZvzwHqFBRIlju2exgKx7BGjRPuN+2AJTgFtib0LzrNCNOhI7G+dxgZhy0tsXvOWeQKjwCwk
+	O2YhKZuFpGwBI/MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOAU8kx6B+OqBotDjAIcjEo8
+	vAeiNIKFWBPLiitzDzFKcDArifAK3wUK8aYkVlalFuXHF5XmpBYfYkwGBsFEZinR5Hxgessr
+	iTc0NjEzsjQyN7QwMjYnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBsatTCGTjbKTgnyn
+	X/xuevnrwq6VIt/W6C2rKGrONFN2Cs/NinYMPdHD/rs43v/0ts2sohGhLIr1/0KEHp+Mu5MQ
+	+8Y9NLIwSKqTMc8xJzT8g8m/VJXLKk9iFf/dtJ91x2ti7/WHrDl+9zqZ5oTGz3u3tFJSUtzB
+	6OTvCt4X5fYBC/aHHly1UImlOCPRUIu5qDgRAG7rOjNlAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -66,228 +66,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Tomasz,
 
-On 03/18/2014 08:13 PM, Tomasz Figa wrote:
-> Hi Chanwoo,
-> 
-> On 17.03.2014 06:59, Chanwoo Choi wrote:
+On 03/18/2014 09:18 PM, Tomasz Figa wrote:
+> On 17.03.2014 06:05, Chanwoo Choi wrote:
 >> Hi Tomasz,
 >>
->> On 03/17/2014 11:51 AM, Chanwoo Choi wrote:
->>> Hi Tomasz,
+>> On 03/15/2014 02:49 AM, Tomasz Figa wrote:
+>>> Hi Chanwoo,
 >>>
->>> On 03/15/2014 02:42 AM, Tomasz Figa wrote:
->>>> Hi Chanwoo,
+>>> On 13.03.2014 09:17, Chanwoo Choi wrote:
+>>>> This patch fix bug about resource leak when happening probe fail and code clean
+>>>> to add debug message.
 >>>>
->>>> On 13.03.2014 09:17, Chanwoo Choi wrote:
->>>>> There are not the clock controller of ppmudmc0/1. This patch control the clock
->>>>> of ppmudmc0/1 which is used for monitoring memory bus utilization.
->>>>>
->>>>> Also, this patch code clean about regulator control and free resource
->>>>> when calling exit/remove function.
->>>>>
->>>>> For example,
->>>>> busfreq@106A0000 {
->>>>>      compatible = "samsung,exynos4x12-busfreq";
->>>>>
->>>>>      /* Clock for PPMUDMC0/1 */
->>>>>      clocks = <&clock CLK_PPMUDMC0>, <&clock CLK_PPMUDMC1>;
->>>>>      clock-names = "ppmudmc0", "ppmudmc1";
->>>>>
->>>>>      /* Regulator for MIF/INT block */
->>>>>      vdd_mif-supply = <&buck1_reg>;
->>>>>      vdd_int-supply = <&buck3_reg>;
->>>>> };
->>>>>
->>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>>> ---
+>>>>    drivers/devfreq/exynos/exynos4_bus.c | 32 ++++++++++++++++++++++++++------
+>>>>    1 file changed, 26 insertions(+), 6 deletions(-)
+>>>>
+>>>> diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
+>>>> index a2a3a47..152a3e9 100644
+>>>> --- a/drivers/devfreq/exynos/exynos4_bus.c
+>>>> +++ b/drivers/devfreq/exynos/exynos4_bus.c
+>>>> @@ -1152,8 +1152,11 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+>>>>            dev_err(dev, "Cannot determine the device id %d\n", data->type);
+>>>>            err = -EINVAL;
+>>>>        }
+>>>> -    if (err)
+>>>> +    if (err) {
+>>>> +        dev_err(dev, "Cannot initialize busfreq table %d\n",
+>>>> +                 data->type);
+>>>>            return err;
+>>>> +    }
+>>>>
+>>>>        rcu_read_lock();
+>>>>        opp = dev_pm_opp_find_freq_floor(dev,
+>>>> @@ -1176,7 +1179,7 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+>>>>        if (IS_ERR(data->devfreq)) {
+>>>>            dev_err(dev, "Failed to add devfreq device\n");
+>>>>            err = PTR_ERR(data->devfreq);
+>>>> -        goto err_opp;
+>>>> +        goto err_devfreq;
+>>>>        }
+>>>>
+>>>>        /*
+>>>> @@ -1185,18 +1188,35 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+>>>>         */
+>>>>        busfreq_mon_reset(data);
+>>>>
+>>>> -    devfreq_register_opp_notifier(dev, data->devfreq);
+>>>> +    /* Register opp_notifier for Exynos4 busfreq */
+>>>> +    err = devfreq_register_opp_notifier(dev, data->devfreq);
+>>>> +    if (err < 0) {
+>>>> +        dev_err(dev, "Failed to register opp notifier\n");
+>>>> +        goto err_notifier_opp;
+>>>> +    }
+>>>>
+>>>> +    /* Register pm_notifier for Exynos4 busfreq */
+>>>>        err = register_pm_notifier(&data->pm_notifier);
+>>>>        if (err) {
+>>>>            dev_err(dev, "Failed to setup pm notifier\n");
+>>>> -        devfreq_remove_device(data->devfreq);
+>>>> -        return err;
+>>>> +        goto err_notifier_pm;
+>>>>        }
+>>>>
+>>>>        return 0;
+>>>>
+>>>> -err_opp:
+>>>> +err_notifier_pm:
+>>>> +    devfreq_unregister_opp_notifier(dev, data->devfreq);
+>>>> +err_notifier_opp:
+>>>> +    /*
+>>>> +     * The devfreq_remove_device() would execute finally devfreq->profile
+>>>> +     * ->exit(). To avoid duplicate resource free operation, return directly
+>>>> +     * before executing resource free below 'err_devfreq' goto statement.
+>>>> +     */
+>>>
+>>> I'm not quite sure about this. I believe that in this case devfreq->profile->exit() would be exynos4_bus_exit() and all it does is devfreq_unregister_opp_notifier(dev, data->devfreq), so all remaining resources (regulators, clocks, etc.) would get leaked.
 >>
->> I modify this patch according your comment as following:
+>> This patch execute following sequence to probe exynos4_busfreq.c:
 >>
->> Best Regards,
->> Chanwoo Choi
+>> 1. Parse dt node to get resource(regulator/clock/memory address).
+>> 2. Enable regulator/clock and map memory.
+>> 3. Add devfreq device using devfreq_add_device().
+>>     The devfreq_add_device() return devfreq instance(data->devfreq).
+>> 4. Register opp_notifier using devfreq instance(data->devfreq) which is created in sequence #3.
 >>
->>> From c8f2fbc4c1166ec02fb2ad46164bc7ed9118721b Mon Sep 17 00:00:00 2001
->> From: Chanwoo Choi <cw00.choi@samsung.com>
->> Date: Fri, 14 Mar 2014 12:05:54 +0900
->> Subject: [PATCH] devfreq: exynos4: Add ppmu's clock control and code clean
->>   about regulator control
+>> Case 1,
+>> If an error happens in sequence #3 for registering devfreq_add_device(),
 >>
->> There are not the clock controller of ppmudmc0/1. This patch control the clock
->> of ppmudmc0/1 which is used for monitoring memory bus utilization.
+>> this case can't execute devfreq->profile->exit() to free resource
+>> because this case has failed to register devfreq->profile to devfreq_list.
 >>
->> Also, this patch code clean about regulator control and free resource
->> when calling exit/remove function.
+>> So, must goto 'err_devfreq' statement to free resource(regulator/clock/memory).
 >>
->> For example,
->> busfreq@106A0000 {
->>     compatible = "samsung,exynos4x12-busfreq";
 >>
->>     /* Clock for PPMUDMC0/1 */
->>     clocks = <&clock CLK_PPMUDMC0>, <&clock CLK_PPMUDMC1>;
->>     clock-names = "ppmudmc0", "ppmudmc1";
+>> Case 2,
+>> If an error happens in sequence #4 for registering opp_notifier,
 >>
->>     /* Regulator for MIF/INT block */
->>     vdd_mif-supply = <&buck1_reg>;
->>     vdd_int-supply = <&buck3_reg>;
->> };
+>> In contrast
+>> this case can execute devfreq->profile->exit() to free resource.
+>> But, After executed devfreq->profile->exit(),
+>> should not execute 'err_devfreq' statement to free resource.
+>> In case, will operate twice of resource.
 >>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> ---
->>   drivers/devfreq/exynos/exynos4_bus.c | 97 +++++++++++++++++++++++++++++++-----
->>   1 file changed, 84 insertions(+), 13 deletions(-)
+>> If my explanation is wrong, please reply your comment.
 >>
->> diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
->> index 4c630fb..3956bcc 100644
->> --- a/drivers/devfreq/exynos/exynos4_bus.c
->> +++ b/drivers/devfreq/exynos/exynos4_bus.c
->> @@ -62,6 +62,11 @@ enum exynos_ppmu_idx {
->>       PPMU_END,
->>   };
->>
->> +static const char *exynos_ppmu_clk_name[] = {
->> +    [PPMU_DMC0]    = "ppmudmc0",
->> +    [PPMU_DMC1]    = "ppmudmc1",
->> +};
->> +
->>   #define EX4210_LV_MAX    LV_2
->>   #define EX4x12_LV_MAX    LV_4
->>   #define EX4210_LV_NUM    (LV_2 + 1)
->> @@ -86,6 +91,7 @@ struct busfreq_data {
->>       struct regulator *vdd_mif; /* Exynos4412/4212 only */
->>       struct busfreq_opp_info curr_oppinfo;
->>       struct exynos_ppmu ppmu[PPMU_END];
->> +    struct clk *clk_ppmu[PPMU_END];
->>
->>       struct notifier_block pm_notifier;
->>       struct mutex lock;
->> @@ -724,6 +730,17 @@ static void exynos4_bus_exit(struct device *dev)
->>       struct busfreq_data *data = dev_get_drvdata(dev);
->>       int i;
->>
->> +    /*
->> +     * Un-map memory map and disable regulator/clocks
->> +     * to prevent power leakage.
->> +     */
->> +    regulator_disable(data->vdd_int);
->> +    if (data->type == TYPE_BUSF_EXYNOS4x12)
->> +        regulator_disable(data->vdd_mif);
->> +
->> +    for (i = 0; i < PPMU_END; i++)
->> +        clk_disable_unprepare(data->clk_ppmu[i]);
->> +
->>       for (i = 0; i < PPMU_END; i++)
->>           iounmap(data->ppmu[i].hw_base);
->>   }
->> @@ -989,6 +1006,7 @@ static int exynos4_busfreq_parse_dt(struct busfreq_data *data)
->>   {
->>       struct device *dev = data->dev;
->>       struct device_node *np = dev->of_node;
->> +    const char **clk_name = exynos_ppmu_clk_name;
->>       int i, ret = 0;
->>
->>       if (!np) {
->> @@ -1006,8 +1024,67 @@ static int exynos4_busfreq_parse_dt(struct busfreq_data *data)
->>           }
->>       }
->>
->> +    for (i = 0; i < PPMU_END; i++) {
->> +        data->clk_ppmu[i] = devm_clk_get(dev, clk_name[i]);
->> +        if (IS_ERR(data->clk_ppmu[i])) {
->> +            dev_warn(dev, "Failed to get %s clock\n", clk_name[i]);
 > 
-> dev_err() since this is an error.
+> OK, it will work indeed, however the code is barely readable with this.
+> 
+> For consistency (and readability), resources acquired in platform driver's .probe() should be freed in .remove() and error path of .probe() should not rely on external code to do the clean-up.
+> 
+> So, as I proposed in my previous reply:
 
-OK, I'll fix it.
+OK, I'll modify it according to your previous comment.
 
 > 
->> +            goto err_clocks;
->> +        }
->> +
->> +        ret = clk_prepare_enable(data->clk_ppmu[i]);
->> +        if (ret < 0) {
->> +            dev_warn(dev, "Failed to enable %s clock\n", clk_name[i]);
-> 
-> Ditto.
-
-OK, I'll fix it.
-
-> 
->> +            data->clk_ppmu[i] = NULL;
->> +            goto err_clocks;
->> +        }
->> +    }
->> +
->> +    /* Get regulator to control voltage of int block */
->> +    data->vdd_int = devm_regulator_get(dev, "vdd_int");
->> +    if (IS_ERR(data->vdd_int)) {
->> +        dev_err(dev, "Failed to get the regulator of vdd_int\n");
->> +        ret = PTR_ERR(data->vdd_int);
->> +        goto err_clocks;
->> +    }
->> +    ret = regulator_enable(data->vdd_int);
->> +    if (ret < 0) {
->> +        dev_err(dev, "Failed to enable regulator of vdd_int\n");
->> +        goto err_clocks;
->> +    }
->> +
->> +    switch (data->type) {
->> +    case TYPE_BUSF_EXYNOS4210:
->> +        break;
-> 
-> Do you need to use switch here? Wouldn't a simple if (data->type == TYPE_BUSF_EXYNOS4x12) work as well, resulting with simpler code?
-
-OK, I'll fix it.
-
-> 
-> However I would expect this code to be completely removed, after defining DT bindings in a way allowing you to completely drop such SoC type enums. Please see my other reply for explanation of Exynos power plane DT bindings concept.
-
-OK, I agree your suggestion about Exynos power plane DT bindings concept.
-
-I'll apply "Exynos power plane" to exynos4 busfreq driver on next step
-after defining Exynos power plane DT bindings.
-
-> 
->> +    case TYPE_BUSF_EXYNOS4x12:
->> +        /* Get regulator to control voltage of mif blk if Exynos4x12 */
->> +        data->vdd_mif = devm_regulator_get(dev, "vdd_mif");
->> +        if (IS_ERR(data->vdd_mif)) {
->> +            dev_err(dev, "Failed to get the regulator vdd_mif\n");
->> +            ret = PTR_ERR(data->vdd_mif);
->> +            goto err_regulator;
->> +        }
->> +        ret = regulator_enable(data->vdd_mif);
->> +        if (ret < 0) {
->> +            dev_err(dev, "Failed to enable regulator of vdd_mif\n");
->> +            goto err_regulator;
->> +        }
->> +        break;
->> +    default:
->> +        dev_err(dev, "Unknown device type : %d\n", data->type);
->> +        return -EINVAL;
->> +    };
->> +
->>       return 0;
->>
->> +err_regulator:
->> +    regulator_disable(data->vdd_int);
->> +err_clocks:
->> +    for (i = 0; i < PPMU_END; i++) {
->> +        if (IS_ERR(data->clk_ppmu[i]))
->> +            continue;
->> +        else
-> 
-> if (!IS_ERR(...))
-> 
->> +            clk_disable_unprepare(data->clk_ppmu[i]);
->> +    }
-> 
-> Otherwise looks good.
-
-Thanks for your review.
+>>>
+>>> I believe the correct thing to do would be to remove the .exit() callback from exynos4_devfreq_profile struct and handle all the clean-up here in error path.
+>>>
 
 Best Regards,
 Chanwoo Choi
-
-
-
-
-
+ 
