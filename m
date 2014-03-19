@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758894AbaCSBs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 21:48:56 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50628 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758874AbaCSBsz (ORCPT
+	id S1758912AbaCSBtK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 21:49:10 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:54095 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758874AbaCSBtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 21:48:55 -0400
+	Tue, 18 Mar 2014 21:49:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <5328F62E.3040603@gmail.com>
-References: <1395124359-11744-1-git-send-email-namhyung@kernel.org>
- <53286118.9070606@gmail.com> <CAM9d7cj8dptEDj+08G86_prE7sr85RHm4RtuNA1R6vBEQWyL5w@mail.gmail.com>
- <5328F62E.3040603@gmail.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Wed, 19 Mar 2014 01:48:34 +0000
-X-Google-Sender-Auth: Yq91Dl-ZnVGExzt-_vRXL-8QGv4
-Message-ID: <CAM9d7cjsOhY9tPb3Hf2epnPEVbg3Pz8Y=0Axkxajm7y0-+70Cg@mail.gmail.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add -F option for specifying
- output fields (v2)
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <1395139290-4207-1-git-send-email-ben.dooks@codethink.co.uk>
+References: <1395139290-4207-1-git-send-email-ben.dooks@codethink.co.uk>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 19 Mar 2014 10:48:45 +0900
+Message-ID: <CAAVeFuLJOSikb3pXffbC7Y4LDKXd-PQ_cadtT1q=TLCyWVh=MA@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: check if gpio_desc pointer is error or NULL
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: linux-kernel@lists.codethink.co.uk,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 1:43 AM, David Ahern <dsahern@gmail.com> wrote:
-> On 3/18/14, 7:30 PM, Namhyung Kim wrote:
->>
->> Hi David,
->>
->> On Tue, Mar 18, 2014 at 3:07 PM, David Ahern <dsahern@gmail.com> wrote:
->>>
->>> On 3/18/14, 12:32 AM, Namhyung Kim wrote:
->>>>
->>>>
->>>> This is a patchset implementing -F/--field option to setup output
->>>> field/column as Ingo requested.  It depends on my perf/percentage
->>>> patchset (with minor updates) [1].
->>>
->>>
->>>
->>> perf-report should be consistent with perf-script which uses --fields.
->>
->>
->> Right.  Did you mean s/--field/--fields/ then?
+On Tue, Mar 18, 2014 at 7:41 PM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
+> Some of the gpiod_ calls take a pointer to a gpio_desc as their
+> argument but only check to see if it is NULL to validate the
+> input.
 >
+> Calls such as devm_gpiod_get() return an error-pointer if they
+> fail, so doing the following will not work:
 >
-> yes. consistency is huge.
+>         gpio = devm_gpiod_get(...);
+>         gpiod_direction_output(gpio, 0);
+>
+> The sequence produces an OOPS like:
+>
+>         Unable to handle kernel paging request at virtual address fffffffe
+>
+> Change all calls that check for !desc to use IS_ERR_OR_NULL() to
+> avoid these issues.
 
-Okay, I'll keep that in mind.  Actually I wasn't aware of the
-'perf-script --fields' when working on this. :)
+This change is certainly correct from a semantics point of view. Maybe
+I'd argue that the burden is on the caller to check that gpiod_get()
+returns a valid GPIO descriptor, but having extra security doesn't
+hurt. However my problem with this change in its current form is that
+it will hide such forgetfulnesses by making functions like
+gpiod_get_value() fail silently instead of triggering a oops.
 
-Thanks,
-Namhyung
+Could you make sure that any call of a gpiolib function on a non-valid
+descriptor raises at least a message in the console, and while you are
+at it harmonize the way these messages are output? Right now we are
+using pr_debug(), pr_warn() or WARN_ON() depending on the location. I
+would say that using an invalid GPIO descriptor is offending enough
+that it should trigger a stack dump at every attempt.
