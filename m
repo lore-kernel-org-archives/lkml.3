@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965007AbaCSMzh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 08:55:37 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34955 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933482AbaCSMzb (ORCPT
+	id S965061AbaCSM4A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 08:56:00 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:59631 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965020AbaCSMz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 08:55:31 -0400
-Date: Wed, 19 Mar 2014 12:55:23 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20140319125523.GE11706@sirena.org.uk>
-References: <1394797919-24642-1-git-send-email-sachin.kamat@linaro.org>
- <20140318110947.GR25478@lee--X1>
+	Wed, 19 Mar 2014 08:55:59 -0400
+Date: Wed, 19 Mar 2014 13:55:55 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
+        acme@infradead.org, eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH 4/4] perf/x86/uncore: modularize Intel uncore driver
+Message-ID: <20140319125555.GA19317@gmail.com>
+References: <1395133004-23205-1-git-send-email-zheng.z.yan@intel.com>
+ <1395133004-23205-4-git-send-email-zheng.z.yan@intel.com>
+ <20140319084917.GE27632@laptop.programming.kicks-ass.net>
+ <20140319113254.GA18351@gmail.com>
+ <20140319114247.GI27632@laptop.programming.kicks-ass.net>
+ <20140319115323.GA18672@gmail.com>
+ <20140319124431.GN27632@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="v5AHGbzes1vG2y0k"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140318110947.GR25478@lee--X1>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [GIT PULL] mfd: regulator: S2MPA01 device support IB for Mark
- Brown
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140319124431.GN27632@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---v5AHGbzes1vG2y0k
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-On Tue, Mar 18, 2014 at 11:09:47AM +0000, Lee Jones wrote:
+> On Wed, Mar 19, 2014 at 12:53:23PM +0100, Ingo Molnar wrote:
+> > >
+> > > Ah; but do you want this config option hidden in the "Processor 
+> > > type and features" menu or would they be better in "General 
+> > > setup/Kernel Performance Events and Counters" ?
+> > 
+> > What's your preference? There's a vali argument for both: the 
+> > uncore driver is part of the CPU, but it's also a perf driver.
+> 
+> My initial thought was having it in the perf menu because that's 
+> relatively easy to find and not big and cluttered (yet) like the 
+> arch menu is.
+> 
+> I actually had to double check I had the right patches applied 
+> because I couldn't find it the first time.
 
-> are available in the git repository at:
+Okay, agreed, lets do it that way. It's also the better choice UI 
+wise: arguably people will associate this driver with 'perf', not with 
+CPU features.
 
->   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git ib-mfd-regulator-3.15
+Thanks,
 
-Pulled now, thanks - please use signed tags for pull requests, it's the
-standard thing now and gets your changelog in the pull automatically
-which is nice.
-
---v5AHGbzes1vG2y0k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTKZO4AAoJELSic+t+oim9b3YP/3XoZGRgZpt+8qmp5NPZo6yI
-qp6amiI5sRv7gQIm8phsh1EiNIJLHG74XHPvYNt1yFlSEjlQoZ8TnbGLtwC6Sl9I
-9WPZdJXVLCDrZm5akCkBsaWV4rbFrKRfOisvAumPNmcTi+YHinsLPihWGAXE2hKQ
-jSIFls+y1i6hcreWSiGFQK5pM3e8jthBFJN/d/shWEG/o3+IU9pSdUMsm7M5xi0l
-PdXxW5Qsb/qee/INqH+KPHnUcOsqfXYC8/8yTp+/zGXLPmcqh6WKdEWt2HRfFsAi
-bOui1rO/nZOCmt4S/4mMysIlQjw9l55S5Y6K3u10d9Tz7shHcjRJrXmASI/NPoEn
-AP8UxbIDJm3/bCLx1QalH816fPZb/Frpby/NQ7Jg9UrB7RqDa7Kktsm3BXV78JAg
-2Fm4XtOPnbdfueXxf9wmpOXaGpRVqPJJzmF6X3l1ICfmbNgR1LU3m0z3Muq+HGJM
-DJCE87R9oK1BNMqYkj+wRstYCzJJilfToPmRL9pDdv4y2KkcglXJBSm7ggyXguqP
-//qlWsWaTVKBf/GlY8X9T5HGAM7/0RZSlDJl3i2BZ5d2GVgw0xPhWfzKuaMnMPv0
-ZSOVE+4CyooBuWtmFYCrRlGePtnVP0ZDaXE7yjvZWgiXL1Q+hk8Alv8BK31UbQnI
-7AU8q3NvDiMnrm1AnXiQ
-=sCh+
------END PGP SIGNATURE-----
-
---v5AHGbzes1vG2y0k--
+	Ingo
