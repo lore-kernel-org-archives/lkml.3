@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934324AbaCSREX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 13:04:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44156 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933574AbaCSREW (ORCPT
+	id S934342AbaCSREq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 13:04:46 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:60954 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933574AbaCSREn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 13:04:22 -0400
-Date: Wed, 19 Mar 2014 10:06:25 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] extcon next for 3.15
-Message-ID: <20140319170625.GA3770@kroah.com>
-References: <53294CE9.8030301@samsung.com>
+	Wed, 19 Mar 2014 13:04:43 -0400
+Date: Wed, 19 Mar 2014 17:04:37 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Vince Hsu <vinceh@nvidia.com>
+Subject: Re: [PATCH] mfd: as3722: make FUSE7_REG readable
+Message-ID: <20140319170437.GA18095@lee--X1>
+References: <1393951832-2638-1-git-send-email-swarren@wwwdotorg.org>
+ <20140305015539.GK10579@lee--X1>
+ <5329C133.60900@wwwdotorg.org>
+ <20140319170138.GK31687@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53294CE9.8030301@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140319170138.GK31687@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 04:53:13PM +0900, Chanwoo Choi wrote:
-> Dear Greg,
+> > >> From: Stephen Warren <swarren@nvidia.com>
+> > >>
+> > >> The FUSE7_REG register is not currently marked readable. This causes
+> > >> as3722_sd0_is_low_voltage() to emit an error during boot, and assume
+> > >> the range of the SD0 regulator:
+> > >>
+> > >> as3722-regulator as3722-regulator: Reg 0xa7 read failed: -5
+> > >>
+> > >> Fixes: d4807ad2c4c0 ("regmap: Check readable regs in _regmap_read")
+> > >> [exposed the bug, by checking for readability]
+> > >> Fixes: 762a8ee80897 ("regulator: as3722: detect SD0 low-voltage mode")
+> > >> [left out this register from the readable list]
+> > >> Cc: Mark Brown <broonie@linaro.org>
+> > >> Cc: Michal Simek <michal.simek@xilinx.com>
+> > >> Cc: Andrew Bresticker <abrestic@chromium.org>
+> > >> Cc: Vince Hsu <vinceh@nvidia.com>
+> > >> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> > >> ---
+> > >> Note: I believe the regmap commit mentioned above is for 3.15, whereas
+> > >> the as3722 commit is in at least 3.14. So, this only needs to be applied
+> > >> for 3.15, but might make sense to go into earlier kernels, at your
+> > >> discretion.
+> > > 
+> > > Applied to MFD -next (v3.15).
+> > 
+> > I don't see this in next-20140319; did it get dropped somewhere, or was
+> > your branch not pushed out?
 > 
-> This is extcon-next full request for v3.15. I add detailed description of this
-> pull request on below. Please pull extcon with following updates.
+> Ah, thanks for the reminder.
 > 
-> This patchset is rebased on 'Linux 3-14-rc5' because char-misc-next is based on
-> 'Linux 3-14-rc5'.
-> 
-> Best Regards,
-> Chanwoo Choi
-> 
-> The following changes since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
-> 
->   Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-for-3.15
+> I moved the MFD tree from linaro.org to kernel.org, but failed to let
+> Stephen know. I'll do so now.
 
-Pulled and pushed out, thanks.
+Whoops. No, you're Stephen. I meant Andrew.
 
-greg k-h
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
