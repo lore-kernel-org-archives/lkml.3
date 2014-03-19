@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906AbaCSCWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 22:22:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:32089 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758484AbaCSCWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 22:22:06 -0400
-X-IronPort-AV: E=Sophos;i="4.97,682,1389715200"; 
-   d="scan'208";a="9722370"
-Message-ID: <5328FED8.7090007@cn.fujitsu.com>
-Date: Wed, 19 Mar 2014 10:20:08 +0800
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1758945AbaCSCXW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 22:23:22 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58475 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757623AbaCSCXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 22:23:21 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
-Subject: Re: [PATCH 1/3 Resend] tracing: Use inline task_nice() to get rid
- of an open coded implementation of it.
-References: <cover.1394619587.git.yangds.fnst@cn.fujitsu.com> <6188b0062bdba8e3170b09c88fac6004a8f6fa7c.1394619587.git.yangds.fnst@cn.fujitsu.com> <20140318221533.45c479bd@gandalf.local.home>
-In-Reply-To: <20140318221533.45c479bd@gandalf.local.home>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/19 10:19:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/19 10:19:07,
-	Serialize complete at 2014/03/19 10:19:07
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <20140318162319.GB5669@redhat.com>
+References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com>
+ <20140318133331.GA23193@laptop.programming.kicks-ass.net> <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com>
+ <20140318140504.GD23193@laptop.programming.kicks-ass.net> <CA+a=Yy567xtU0Osz+9-hTCNrzB65vE=ErYWTq880N+uEwG2DHA@mail.gmail.com>
+ <20140318162319.GB5669@redhat.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Wed, 19 Mar 2014 10:22:59 +0800
+Message-ID: <CA+a=Yy51Ex=UdsCRn8Ty_s4XR4xbOZ_YAf3tejb=JyTgQ_QzRA@mail.gmail.com>
+Subject: Re: [PATCH RFC] sched: introduce add_wait_queue_exclusive_head
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2014 10:15 AM, Steven Rostedt wrote:
-> On Wed, 12 Mar 2014 18:26:42 +0800
-> Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
->
->> Function task_nice() was reimplemented as inline function, we can use it here
->> to replace the open coded implementation.
+On Wed, Mar 19, 2014 at 12:23 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 03/18, Peng Tao wrote:
 >>
->> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
->> cc: Steven Rostedt <rostedt@goodmis.org>
->> ---
->>   kernel/trace/trace.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
->> index 815c878..dba0e3d 100644
->> --- a/kernel/trace/trace.c
->> +++ b/kernel/trace/trace.c
->> @@ -1003,7 +1003,7 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
->>   	else
->>   		max_data->uid = task_uid(tsk);
->>   
->> -	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
->> +	max_data->nice = task_nice(tsk);
-> task_nice() is still an extern function in mainline, and this is the
-> tracing side. I rather wait till it becomes inline in Linus's tree
-> before I take this.
-
-Sounds reasonable to me.
-
-Thanx.
+>> On Tue, Mar 18, 2014 at 10:05 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> >
+>> > Unless you cannot use ___wait() and really need to open-code the
+>> > wait_event() stuff.
+>> >
+>> Lustre's private l_wait_event() stuff takes care to (un)mask
+>> LUSTRE_FATAL_SIGS
 >
-> -- Steve
+> Hmm. This is off-topic but after the quick grep LUSTRE_FATAL_SIGS/etc
+> looks suspicious.
 >
->>   	max_data->policy = tsk->policy;
->>   	max_data->rt_priority = tsk->rt_priority;
->>   
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Firtsly, cfs_block_sigs/cfs_block_sigsinv/etc are not exactly right,
+> they need set_current_blocked(). And you can read "old" lockless.
 >
+It seems that set_current_blocked() is not exported. Can we ask to export it?
 
+And looking at other similar places like coda_block_signals(), it
+doesn't call set_current_blocked() either. So it needs
+set_current_blocked() as well.
+
+> And note that cfs_block_sigsinv(0) (which should block all signals)
+> can't actually protect from SIGKILL (or in fact from another fatal
+> signal) or SIGSTOP if the caller is multithreaded. Or ptrace, or
+> freezer.
+>
+>> and always wait in TASK_INTERRUPTIBLE state.
+>
+> and it seems that __wstate passed to waitq_wait/waitq_timedwait is
+> simply ignored.
+>
+Yes. That needs to be dropped.
+
+>> It looks to me that we can at least wrap l_wait_event() on top of
+>> wait_event_interruptible/wait_event_timeout_interruptible.
+>
+> l_wait_event looks really complicated ;) but perhaps you can rewrite
+> it on top of ___wait_event(), note that condition/cmd can do anything
+> you want.
+>
+Yeah, I meant to say __wait_event(). Thanks for correcting me.
+
+Thanks,
+Tao
