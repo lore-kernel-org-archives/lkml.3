@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaCSRyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 13:54:32 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37047 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaCSRya (ORCPT
+	id S1751725AbaCSR7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 13:59:00 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:61479 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729AbaCSR64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 13:54:30 -0400
-Date: Wed, 19 Mar 2014 13:54:28 -0400 (EDT)
-Message-Id: <20140319.135428.665886252770597921.davem@davemloft.net>
-To: peterz@infradead.org
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        mingo@kernel.org, will.deacon@arm.com, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 26/31] arch,sparc: Convert smp_mb__*
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140319065205.163413133@infradead.org>
-References: <20140319064729.660482086@infradead.org>
-	<20140319065205.163413133@infradead.org>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Mar 2014 10:54:30 -0700 (PDT)
+	Wed, 19 Mar 2014 13:58:56 -0400
+Date: Wed, 19 Mar 2014 13:58:52 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>, linux-ide@vger.kernel.org,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Jim Davis <jim.epost@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH -next] libata.h: add stub for ata_sas_port_resume
+Message-ID: <20140319175852.GD19874@htj.dyndns.org>
+References: <5329D7F1.4030400@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5329D7F1.4030400@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Wed, 19 Mar 2014 07:47:55 +0100
-
-> sparc32: fully relies on asm-generic/barrier.h and thus can use its
-> 	 implementation.
+On Wed, Mar 19, 2014 at 10:46:25AM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
 > 
-> sparc64: is strongly ordered and its atomic ops imply a full barrier,
-> 	 implement the new primitives using barrier().
+> Fix build error when CONFIG_PM is not enabled by adding a stub
+> function in <linux/libata.h>.
 > 
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> drivers/scsi/libsas/sas_ata.c: In function 'sas_resume_sata':
+> drivers/scsi/libsas/sas_ata.c:756:3: error: implicit declaration of function 'ata_sas_port_resume' [-Werror=implicit-function-declaration]
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> ---
+>  include/linux/libata.h |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> --- linux-next-20140319.orig/include/linux/libata.h
+> +++ linux-next-20140319/include/linux/libata.h
+> @@ -1148,6 +1148,9 @@ static inline void ata_sas_port_suspend(
+>  static inline void ata_sas_port_async_resume(struct ata_port *ap)
+>  {
+>  }
+> +static inline void ata_sas_port_resume(struct ata_port *ap)
+> +{
+> +}
+>  #endif
+>  extern int ata_ratelimit(void);
+>  extern void ata_msleep(struct ata_port *ap, unsigned int msecs);
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Applied to libata/for-3.15.
+
+Thanks.
+
+-- 
+tejun
