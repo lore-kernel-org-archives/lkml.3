@@ -1,134 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793AbaCSK5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 06:57:24 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60482 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758484AbaCSK5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 06:57:23 -0400
-Message-ID: <53297729.3040708@linux.vnet.ibm.com>
-Date: Wed, 19 Mar 2014 16:23:29 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1758992AbaCSK5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 06:57:47 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25701 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758484AbaCSK5p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 06:57:45 -0400
+Date: Wed, 19 Mar 2014 10:57:06 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: Re: [PATCH v2 11/15] arm64: add EFI stub
+Message-ID: <20140319105706.GE2214@arm.com>
+References: <1394750828-16351-1-git-send-email-leif.lindholm@linaro.org>
+ <1394750828-16351-12-git-send-email-leif.lindholm@linaro.org>
+ <20140318120919.GG13200@arm.com>
+ <1395153629.2967.10.camel@deneb.redhat.com>
+ <20140318182826.GC20497@arm.com>
+ <1395178831.2967.29.camel@deneb.redhat.com>
 MIME-Version: 1.0
-To: Kirill Tkhai <tkhai@yandex.ru>
-CC: Preeti Murthy <preeti.lkml@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 1/4] sched/rt: Sum number of all children tasks in hierarhy
- at rt_nr_running
-References: <1394835289.18748.31.camel@HP-250-G1-Notebook-PC> <CAM4v1pOtUDNn_yFG3HyYbBy0VDy4qCh-Ms3jMO_+hfOVQLhw-A@mail.gmail.com> <2983961395143041@web25j.yandex.ru>
-In-Reply-To: <2983961395143041@web25j.yandex.ru>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031910-0320-0000-0000-000002B95BD9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395178831.2967.29.camel@deneb.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2014 05:14 PM, Kirill Tkhai wrote:
+On Tue, Mar 18, 2014 at 09:40:31PM +0000, Mark Salter wrote:
+> On Tue, 2014-03-18 at 18:28 +0000, Catalin Marinas wrote:
+> > If UEFI doesn't handle the caches, the only thing left to EFI_STUB is to
+> > flush by MVA. We don't need to flush the whole DRAM (and I would even
+> > recommend it) but at least the relevant kernel code/data touched with
+> > the MMU disabled.
 > 
+> So, it goes like this:
 > 
-> 18.03.2014, 15:08, "Preeti Murthy" <preeti.lkml@gmail.com>:
->> On Sat, Mar 15, 2014 at 3:44 AM, Kirill Tkhai <tkhai@yandex.ru> wrote:
->>
->>>  {inc,dec}_rt_tasks used to count entities which are directly queued
->>>  on rt_rq. If an entity was not a task (i.e., it is some queue), its
->>>  children were not counted.
->>
->> Its always the case that a task is queued right, never a sched entity?
+>   1) UEFI calls stub with MMU/Caches on. Stub/kernel can be anywhere.
+>   2) Stub runs and relocates kernel to the desired runtime location
+>      but continues to execute from wherever UEFI loaded it until just
+>      after ExitBootServices().
+>   3) After ExitBootServices, efi_entry() returns relocated entry point
+>      for kernel to efi_stub_entry() in efi-entry.S where the Dcache and
+>      MMU are turned off, the __flush_dcache_all is called, then the
+>      code jumps to the kernel proper entry point.
 > 
-> With patch applied, when sched entity is group queue, we add number of
-> its child tasks instead of "1".
-> 
->> When a task is queued, the nr_running of every rt_rq in the hierarchy
->> of sched entities which are parents of this task is incremented by 1.
-> 
-> Only if they had not had a queued task before.
-> 
->> Similar is with dequeue of a sched_entity. If the sched_entity has
->> just 1 task on it, then its dequeued from its parent queue and its number
->> decremented for every rq in the hierarchy. But you would
->> never dequeue a sched_entity if it has more than 1 task in it. The
->> granularity of enqueue and dequeue of sched_entities is one task
->> at a time. You can extend this to enqueue and dequeue of a sched_entity
->> only if it has just one task in its queue.
-> 
-> We do not queue entites, which are empty. In __enqueue_rt_entity():
-> 
-> if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
->          return;
-> 
-> Where do you see a collision? Please explain, if so.
+> It isn't clear to me if UEFI does cache flushing at ExitBootServices
+> time, but even so, at least stack use will get cached between then and
+> the kernel entry point. The stub could conceivably get its hands on the
+> EFI memmap and invalidate dcache using address ranges from UEFI memory
+> descriptors so maybe that is the way we should do it.
 
-Ok I went through the patchset more closely and I understand it better
-now. So this patchset targets the throttled rt runqueues specifically. I
-am sorry I missed this focal point. So this patch looks good to me.
+I think the stub just needs to flush the relocated kernel image, ensure
+it is sync with the memory. Additional flushing can be done by the
+kernel for bits it writes (like page tables, code patching etc). We can
+enter the kernel with the SCTLR.I bit set, so it can allocate in an
+unified cache already and D-cache maintenance would be needed anyway.
 
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> 
->> Regards
->> Preeti U Murthy
->>
->>>  There is no problem here, but now we want to count number of all tasks
->>>  which are actually queued under the rt_rq in all the hierarhy (except
->>>  throttled rt queues).
->>>
->>>  Empty queues are not able to be queued and all of the places, which
->>>  use rt_nr_running, just compare it with zero, so we do not break
->>>  anything here.
->>>
->>>  Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
->>>  CC: Peter Zijlstra <peterz@infradead.org>
->>>  CC: Ingo Molnar <mingo@kernel.org>
->>>  ---
->>>   kernel/sched/rt.c |   15 +++++++++++++--
->>>   1 file changed, 13 insertions(+), 2 deletions(-)
->>>
->>>  diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
->>>  index d8cdf16..e4def13 100644
->>>  --- a/kernel/sched/rt.c
->>>  +++ b/kernel/sched/rt.c
->>>  @@ -1045,12 +1045,23 @@ void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
->>>   #endif /* CONFIG_RT_GROUP_SCHED */
->>>
->>>   static inline
->>>  +unsigned int rt_se_nr_running(struct sched_rt_entity *rt_se)
->>>  +{
->>>  +       struct rt_rq *group_rq = group_rt_rq(rt_se);
->>>  +
->>>  +       if (group_rq)
->>>  +               return group_rq->rt_nr_running;
->>>  +       else
->>>  +               return 1;
->>>  +}
->>>  +
->>>  +static inline
->>>   void inc_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
->>>   {
->>>          int prio = rt_se_prio(rt_se);
->>>
->>>          WARN_ON(!rt_prio(prio));
->>>  -       rt_rq->rt_nr_running++;
->>>  +       rt_rq->rt_nr_running += rt_se_nr_running(rt_se);
->>>
->>>          inc_rt_prio(rt_rq, prio);
->>>          inc_rt_migration(rt_se, rt_rq);
->>>  @@ -1062,7 +1073,7 @@ void dec_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
->>>   {
->>>          WARN_ON(!rt_prio(rt_se_prio(rt_se)));
->>>          WARN_ON(!rt_rq->rt_nr_running);
->>>  -       rt_rq->rt_nr_running--;
->>>  +       rt_rq->rt_nr_running -= rt_se_nr_running(rt_se);
->>>
->>>          dec_rt_prio(rt_rq, rt_se_prio(rt_se));
->>>          dec_rt_migration(rt_se, rt_rq);
->>>
->>>  --
->>>  To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>  the body of a message to majordomo@vger.kernel.org
->>>  More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>  Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Another aspect in the booting document is that we require any external
+cache to be disabled. I think on ARMv8 with a more transparent external
+cache we can relax this (Applied's SoC already does this). Otherwise,
+since external cache enabling is usually a secure operation, we would
+need some SoC specific code just for this early during boot and I'd like
+to avoid it.
 
+-- 
+Catalin
