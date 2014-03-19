@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934215AbaCSQY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:24:59 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38767 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933824AbaCSQY5 (ORCPT
+	id S934243AbaCSQZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:25:27 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:37523 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934019AbaCSQYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:24:57 -0400
-Message-ID: <5329C4CC.2000200@oracle.com>
-Date: Wed, 19 Mar 2014 12:24:44 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND -mm 2/2] mm/mempolicy.c: add comment in queue_pages_hugetlb()
-References: <1395196179-4075-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1395196179-4075-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1395196179-4075-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 19 Mar 2014 12:24:15 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        tony.luck@intel.com, fenghua.yu@intel.com, schwidefsky@de.ibm.com,
+        james.hogan@imgtec.com, cmetcalf@tilera.com, benh@kernel.crashing.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
+Cc: dietmar.eggemann@arm.com, preeti@linux.vnet.ibm.com,
+        linaro-kernel@lists.linaro.org,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v3 4/6] sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
+Date: Wed, 19 Mar 2014 17:22:43 +0100
+Message-Id: <1395246165-31150-5-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1395246165-31150-1-git-send-email-vincent.guittot@linaro.org>
+References: <1395246165-31150-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2014 10:29 PM, Naoya Horiguchi wrote:
-> We have a race where we try to migrate an invalid page, resulting in
-> hitting VM_BUG_ON_PAGE in isolate_huge_page().
-> queue_pages_hugetlb() is OK to fail, so let's check !PageHeadHuge to keep
-> invalid hugepage from queuing.
->
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->   mm/mempolicy.c | 11 +++++++++++
->   1 file changed, 11 insertions(+)
->
-> diff --git v3.14-rc7-mmotm-2014-03-18-16-37.orig/mm/mempolicy.c v3.14-rc7-mmotm-2014-03-18-16-37/mm/mempolicy.c
-> index 9d2ef4111a4c..ae6e2d9dc855 100644
-> --- v3.14-rc7-mmotm-2014-03-18-16-37.orig/mm/mempolicy.c
-> +++ v3.14-rc7-mmotm-2014-03-18-16-37/mm/mempolicy.c
-> @@ -530,6 +530,17 @@ static int queue_pages_hugetlb(pte_t *pte, unsigned long addr,
->   	if (!pte_present(entry))
->   		return 0;
->   	page = pte_page(entry);
-> +
-> +	/*
-> +	 * Trinity found that page could be a non-hugepage. This is an
-> +	 * unexpected behavior, but it's not clear how this problem happens.
-> +	 * So let's simply skip such corner case. Page migration can often
-> +	 * fail for various reasons, so it's ok to just skip the address
-> +	 * unsuitable to hugepage migration.
-> +	 */
-> +	if (!PageHeadHuge(page))
-> +		return 0;
-> +
->   	nid = page_to_nid(page);
->   	if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
->   		return 0;
->
+A new flag SD_SHARE_POWERDOMAIN is created to reflect whether groups of CPUs
+in a sched_domain level can or not reach different power state. As an example,
+the flag should be cleared at CPU level if groups of cores can be power gated
+independently. This information can be used in the load balance decision or to
+add load balancing level between group of CPUs that can power gate
+independantly.
+This flag is part of the topology flags that can be set by arch.
 
-I have to say that I really dislike this method of solving the issue.
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ include/linux/sched.h |  1 +
+ kernel/sched/core.c   | 10 +++++++---
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
-I think it's something fine to do for testing, but this will just hide this issue
-and will let it sneak upstream. I'm really not sure if the trace I've reported is
-the only codepath that would trigger it, so if we let it sneak upstream we're risking
-of someone hitting it some other way.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 6479de4..7048369 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -861,6 +861,7 @@ enum cpu_idle_type {
+ #define SD_BALANCE_WAKE		0x0010  /* Balance on wakeup */
+ #define SD_WAKE_AFFINE		0x0020	/* Wake task to waking CPU */
+ #define SD_SHARE_CPUPOWER	0x0080	/* Domain members share cpu power */
++#define SD_SHARE_POWERDOMAIN	0x0100	/* Domain members share power domain */
+ #define SD_SHARE_PKG_RESOURCES	0x0200	/* Domain members share cpu pkg resources */
+ #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
+ #define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 0b51ee3..29b0c90 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5298,7 +5298,8 @@ static int sd_degenerate(struct sched_domain *sd)
+ 			 SD_BALANCE_FORK |
+ 			 SD_BALANCE_EXEC |
+ 			 SD_SHARE_CPUPOWER |
+-			 SD_SHARE_PKG_RESOURCES)) {
++			 SD_SHARE_PKG_RESOURCES |
++			 SD_SHARE_POWERDOMAIN)) {
+ 		if (sd->groups != sd->groups->next)
+ 			return 0;
+ 	}
+@@ -5329,7 +5330,8 @@ sd_parent_degenerate(struct sched_domain *sd, struct sched_domain *parent)
+ 				SD_BALANCE_EXEC |
+ 				SD_SHARE_CPUPOWER |
+ 				SD_SHARE_PKG_RESOURCES |
+-				SD_PREFER_SIBLING);
++				SD_PREFER_SIBLING |
++				SD_SHARE_POWERDOMAIN);
+ 		if (nr_node_ids == 1)
+ 			pflags &= ~SD_SERIALIZE;
+ 	}
+@@ -5938,6 +5940,7 @@ static int sched_domains_curr_level;
+  * SD_SHARE_CPUPOWER      - describes SMT topologies
+  * SD_SHARE_PKG_RESOURCES - describes shared caches
+  * SD_NUMA                - describes NUMA topologies
++ * SD_SHARE_POWERDOMAIN   - describes shared power domain
+  *
+  * Odd one out:
+  * SD_ASYM_PACKING        - describes SMT quirks
+@@ -5946,7 +5949,8 @@ static int sched_domains_curr_level;
+ 	(SD_SHARE_CPUPOWER |		\
+ 	 SD_SHARE_PKG_RESOURCES |	\
+ 	 SD_NUMA |			\
+-	 SD_ASYM_PACKING)
++	 SD_ASYM_PACKING |		\
++	 SD_SHARE_POWERDOMAIN)
+ 
+ static struct sched_domain *
+ sd_init(struct sched_domain_topology_level *tl, int cpu)
+-- 
+1.9.0
 
-
-Thanks,
-Sasha
