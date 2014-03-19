@@ -1,72 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759347AbaCSKRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 06:17:14 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44293 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758999AbaCSKRM (ORCPT
+	id S1759279AbaCSKTc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 06:19:32 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:56306 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756193AbaCSKT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 06:17:12 -0400
-Date: Wed, 19 Mar 2014 10:17:01 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Nicolin Chen <Guangyu.Chen@freescale.com>,
-        "Jean-Francois Moine" <moinejf@free.fr>
-Message-ID: <20140319101701.GU11706@sirena.org.uk>
-References: <20140319121000.ccea7c0440649976ae722abd@canb.auug.org.au>
+	Wed, 19 Mar 2014 06:19:29 -0400
+Message-ID: <53296F2B.3010406@atmel.com>
+Date: Wed, 19 Mar 2014 11:19:23 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RuZRL+GX2sd4FWYD"
-Content-Disposition: inline
-In-Reply-To: <20140319121000.ccea7c0440649976ae722abd@canb.auug.org.au>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build failure after merge of the sound-asoc tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Jonathan Cameron <jic23@kernel.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        ARM Maintainers <arm@kernel.org>
+CC: <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-input@vger.kernel.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 00/15] iio: adc: at91 cleanups and atmel_tsadcc removal
+References: <1394040940-18246-1-git-send-email-alexandre.belloni@free-electrons.com> <5325EDAF.4060003@kernel.org>
+In-Reply-To: <5325EDAF.4060003@kernel.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 16/03/2014 19:30, Jonathan Cameron :
+> On 05/03/14 17:35, Alexandre Belloni wrote:
+>> This patch set is a followup of my previous series: iio: adc: at91 fixes
+>>
+>> I'm sorry it is so long, I made sure this is bissectable.
+> It's a nice series, don't apologise for doing things right!
+> 
+> Clearly there are a few outstanding snippets from the reviews so far, but we
+> are getting to the point where we need to agree on a path for this.  I'm
+> happy to take the whole series through the IIO tree if Dmitry and the at91
+> maintainers are happy with that.  If it is considered two invasive form the
+> atmel side then I'm perfectly happy with someone to take it through the relevant
+> platform tree instead.
 
---RuZRL+GX2sd4FWYD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Jonathan, Dmitry,
 
-On Wed, Mar 19, 2014 at 12:10:00PM +1100, Stephen Rothwell wrote:
-> Hi all,
->=20
-> After merging the sound-asoc tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+Considering the amount of AT91 files touched by this series, I would
+like to take everything through Atmel's git tree and later on arm-soc.
 
-Sorry, it's fixed already - your fetch must've raced with my fix last
-night.
 
---RuZRL+GX2sd4FWYD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> I'm obviously not going to pick it up at all until it has a complete set
+> of at91 maintainer acks though!
+> 
+> Realistically it's missed the coming merge window anyway, so we have a fair
+> bit of time.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Yes, I will review Alexandre's v2 series.
 
-iQIcBAEBAgAGBQJTKW6aAAoJELSic+t+oim9GSoQAJ2raYipevFF3PSU9S76DkJw
-UHzppgubEAp8rDUoNIpxbgI65cg1TogLnlLxXynL/wks34f0dnt2458uuGZoSkkE
-+TM0tBnYmai8TxPm8ExG86hI+RVlfwl0dxrt9sRPvPj6au837tmmzUwOTSgtXTGA
-R4tB3FSjDnDQzf3LpeXQ7M2szhkL9uNyrAsMtmYBvkzrqwzw9e/Ez/dGWSiDsZG1
-ROmRHBr9tP751ly6/SMyhhT843keeXI7xuJjPj5+N5B+CJ6PdNIZm/hWWreuTrol
-hi59iCR3M3PkmAc5YGlSytdERbAOVZEOG6FZjNyqic6ak99xAhcDPu1xUX+uqrXK
-CVKlf9dcHd/0DDTzkuZ84VH0KDI72GvMQ6NZ40kn9DKrC7Yl3Ml05Cks5m3FJyW2
-5U6K6p2fOYJF9GRXj+a+D6PZE4OGYxj5g1C9E+h7ifkwdm2gfjWwIYxiVPTZeKaG
-fDeEXX6iE7LRHmYNVX2jL4q7n1CvqIx7OTTVUhkcHD3OpjrQkL1Rk0xCjfjo1uPJ
-9WLbF7D971jInVmwAxsIZHj++CZKuXPGOX1275g2apE/NhAaibneZ3mFGbeI71jz
-Fadw4eZfWgbaXoB9j7Rdw08Mcof8C3A+aaA7W1pAGoVeND52mydtYbKXtCPgL759
-G1pfGsR/Enh48JuOTkmK
-=bHPC
------END PGP SIGNATURE-----
+Thanks a lot for your review and for having thought about the path that
+these patches would take.
 
---RuZRL+GX2sd4FWYD--
+Bye,
+
+
+> Jonathan
+>>
+>> 1-3) The first 3 patches are cleaning up the patform_data used for at91_adc.
+>>
+>> 4-5) Then touchscreen support for older ADCs is added, this allows to use that
+>>       for the sam9m10g45ek.
+>>
+>> 6) Following those modifications, the mach/at91_adc.h is not used anywhere but
+>>     in the at91_adc driver so it is remove and its content (register definitions)
+>>     placed directly in the driver.
+>>
+>> 7-9) at91sam9rl support is added to at91_adc and is used for the at91sam9rl
+>>       based boards.
+>>
+>> 10-11) Prepare the atmel_tsadcc removal by switching sam9rl and sam9g45 to use
+>>         only at91_adc instead of atmel_tsadcc.
+>>
+>> 12-15) atmel_tsadcc removal
+>>
+>>
+>> Alexandre Belloni (15):
+>>    ARM: at91: sam9g45: remove unused platform_data
+>>    ARM: at91: sam9260: remove unused platform_data
+>>    iio: adc: at91: cleanup platform_data
+>>    iio: adc: at91_adc: Add support for touchscreens without TSMR
+>>    ARM: at91: sam9m10g45ek: Add touchscreen support through at91_adc
+>>    iio: adc: at91: remove unused include from include/mach
+>>    iio: adc: at91: add sam9rl support
+>>    ARM: at91: sam9rl: add at91_adc to support adc and touchscreen
+>>    ARM: at91: sam9rlek add touchscreen support through at91_adc
+>>    ARM: at91: sam9g45: switch from atmel_tsadcc to at91_adc
+>>    ARM: at91: sam9rl: switch from atmel_tsadcc to at91_adc
+>>    ARM: at91: remove atmel_tsadcc platform_data
+>>    ARM: at91: remove atmel_tsadcc from sama5_defconfig
+>>    Input: atmel_tsadcc: remove driver
+>>    ARM: at91/dt: at91-cosino_mega2560 remove useless tsadcc node
+>>
+>>   MAINTAINERS                                |   6 -
+>>   arch/arm/boot/dts/at91-cosino_mega2560.dts |   5 -
+>>   arch/arm/configs/at91sam9g45_defconfig     |   3 +-
+>>   arch/arm/configs/at91sam9rl_defconfig      |   3 +-
+>>   arch/arm/configs/sama5_defconfig           |   1 -
+>>   arch/arm/mach-at91/at91sam9260_devices.c   |  10 -
+>>   arch/arm/mach-at91/at91sam9g45.c           |   2 +-
+>>   arch/arm/mach-at91/at91sam9g45_devices.c   |  63 +----
+>>   arch/arm/mach-at91/at91sam9rl.c            |   7 +
+>>   arch/arm/mach-at91/at91sam9rl_devices.c    |  83 +++++--
+>>   arch/arm/mach-at91/board-sam9m10g45ek.c    |  16 +-
+>>   arch/arm/mach-at91/board-sam9rlek.c        |  16 +-
+>>   arch/arm/mach-at91/board.h                 |   3 -
+>>   arch/arm/mach-at91/include/mach/at91_adc.h | 107 ---------
+>>   drivers/iio/adc/at91_adc.c                 | 339 +++++++++++++++++++++++----
+>>   drivers/input/touchscreen/Kconfig          |  12 -
+>>   drivers/input/touchscreen/Makefile         |   1 -
+>>   drivers/input/touchscreen/atmel_tsadcc.c   | 358 -----------------------------
+>>   include/linux/platform_data/at91_adc.h     |  27 +--
+>>   include/linux/platform_data/atmel.h        |   7 -
+>>   20 files changed, 380 insertions(+), 689 deletions(-)
+>>   delete mode 100644 arch/arm/mach-at91/include/mach/at91_adc.h
+>>   delete mode 100644 drivers/input/touchscreen/atmel_tsadcc.c
+>>
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+
+
+-- 
+Nicolas Ferre
