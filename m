@@ -1,126 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965742AbaCSQOx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:14:53 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:37435 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964900AbaCSQOv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:14:51 -0400
+	id S965749AbaCSQQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:16:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42184 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964900AbaCSQQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 12:16:46 -0400
+Date: Wed, 19 Mar 2014 12:16:42 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Shaohua Li <shli@kernel.org>
+Cc: axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        agk@redhat.com
+Subject: Re: [patch v3]DM: dm-insitu-comp: a compressed DM target for SSD
+Message-ID: <20140319161641.GA16421@redhat.com>
+References: <20140218101304.GA24889@kernel.org>
+ <20140307075733.GB21790@kernel.org>
+ <20140310135256.GA28665@redhat.com>
+ <20140314094008.GA2386@kernel.org>
+ <20140314224444.GA18027@redhat.com>
+ <20140317095653.GA1014@kernel.org>
+ <20140317200039.GC3269@redhat.com>
+ <20140318074145.GA14397@kernel.org>
+ <20140318212842.GA10850@redhat.com>
+ <20140319014557.GA1631@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <5329B63F.9090800@arm.com>
-References: <1395165409-18055-1-git-send-email-vincent.guittot@linaro.org>
- <1395165409-18055-3-git-send-email-vincent.guittot@linaro.org>
- <53297F10.3050106@arm.com> <20140319124149.GM27632@laptop.programming.kicks-ass.net>
- <CAKfTPtDF27X_QJAYEdkb3q6HbULeT4N9t+ChDpdWST+15sndOw@mail.gmail.com> <5329B63F.9090800@arm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 19 Mar 2014 17:14:30 +0100
-Message-ID: <CAKfTPtCttOU-ANJohxxNJax0OQzZduDQ-VJuM8Qz48w-LUGB2g@mail.gmail.com>
-Subject: Re: [PATCH v2 2/7] sched: rework of sched_domain topology definition
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319014557.GA1631@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 March 2014 16:22, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
-> On 19/03/14 13:33, Vincent Guittot wrote:
-> [...]
->
->>>> Is there a way to check that MC and GMC have to have
->>>> SD_SHARE_PKG_RESOURCES set so that this can't happen unnoticed?
->>>
->>> So from the core codes perspective those names mean less than nothing.
->>> Its just a string to carry along for us meat-bags. The string isn't even
->>> there when !SCHED_DEBUG.
->>>
->>> So from this codes POV you told it it had a domain without PKGSHARE,
->>> that's fine.
->>>
->>> That said; yeah the thing isn't the prettiest piece of code. But it has
->>> the big advantage of being the one place where we convert topology into
->>> behaviour.
->>
->> We might add a check of the child in sd_init to ensure that the child
->> has at least some properties of the current level.
->> I mean that if a level has got the SD_SHARE_PKG_RESOURCES flag, its
->> child must also have it. The same for SD_SHARE_CPUPOWER and
->> SD_ASYM_PACKING.
->>
->> so we can add something like the below in sd_init
->>
->> child_flags = SD_SHARE_PKG_RESOURCES | SD_SHARE_CPUPOWER | SD_ASYM_PACKING
->> flags = sd->flags & child_flags
->> if (sd->child)
->>    child_flags &= sd->child->flags
->> child_flags &= flags
->> if (flags != child_flags)
->>     pr_info("The topology description looks strange \n");
->
-> I tried it with my faulty set-up on TC2 and I get the info message for
-> the GMC level for all CPU's in sd_init.
->
-> I had to pass an 'struct sched_domain *child' pointer into sd_init()
-> from build_sched_domain() because inside sd_init() sd->child is always NULL.
+On Tue, Mar 18 2014 at  9:45pm -0400,
+Shaohua Li <shli@kernel.org> wrote:
 
-ah yes... the child is set after the call to sd_init so we don't have
-access to the child
+> On Tue, Mar 18, 2014 at 05:28:43PM -0400, Mike Snitzer wrote:
+> > On Tue, Mar 18 2014 at  3:41am -0400,
+> > Shaohua Li <shli@kernel.org> wrote:
+> > 
+> > > On Mon, Mar 17, 2014 at 04:00:40PM -0400, Mike Snitzer wrote:
+> > > > 
+> > > > I folded your changes in, and then committed a patch ontop that cleans
+> > > > some code up.  But added 2 FIXMEs that still speak to pretty fundamental
+> > > > problems with the architecture of the dm-insitu-comp target, see:
+> > > > https://git.kernel.org/cgit/linux/kernel/git/snitzer/linux.git/commit/?h=for-3.15-insitu-comp&id=8565ab6b04837591d03c94851c2f9f9162ce12f4
+> > > > 
+> > > > Unfortunately the single insitu_comp_wq workqueue that all insitu-comp
+> > > > targets are to share isn't a workable solution.  Each target needs to
+> > > > have resource isolation from other targets (imagine insitu-comp used for
+> > > > multiple SSDs).  This is important for suspend too because you'll need
+> > > > to flush/stop the workqueue.
+> > > 
+> > > Is this just because of suspend? I didn't see fundamental reason why the
+> > > workqueue can't be shared even for several targets.
+> > 
+> > I'm not seeing how you are guaranteeing that all queued work is
+> > completed during suspend.  insitu_comp_queue_req() just calls
+> > queue_work_on().
+> > 
+> > BTW, queue_work_on()'s comment above its implementation says:
+> > "We queue the work to a specific CPU, the caller must ensure it can't go
+> > away." -- you're not able to insure a cpu isn't hotplugged so... but I
+> > also see you've used it in your raid5 perf improvement changes so you
+> > obviously have experience with using this interface.
+> 
+> Good point, I did miss this. the raid5 case hold a lock, while this case
+> doesn't. A fix is attached below.
 
->
-> So one of the requirements of this approach is that a child level like
-> GMC (which could potentially replace its parent level or otherwise is
-> destroyed itself) has to specify all flags of its parent level (MC)?
+I've pushed it to the branch.
+ 
+> > > > You introduced a state machine for tracking suspending, suspended,
+> > > > resumed.  This really isn't necessary.  During suspend you need to
+> > > > flush_workqueue().  On resume you shouldn't need to do anything special.
+> > > > 
+> > > > As I noted in the commit, the thin and cache targets can serve as
+> > > > references for how you can manage the workqueue across suspend/resume
+> > > > and the lifetime of these workqueues relative to .ctr and .dtr.
+> > > 
+> > > As far as I checking the code, .postsuspend is called after all requests are
+> > > finished. This already guarantees no pending requests running in insitu-comp
+> > > workqueue.
+> > 
+> > I could easily be missing something obvious, but I don't see where that
+> > guarantee is implemented.
+> 
+> Alright, so this is the divergence. dm_suspend() calls dm_wait_for_completion()
+> and then dm_table_postsuspend_targets(). As far as I understand,
+> dm_wait_for_completion() will wait all pending requests to finish. The comments
+> declaim this too. Am I missing anything?
+> 
+> Basically the two kinds of IO. IO requests from upper layer, which
+> dm_wait_for_completion() will guarantee they are finished. Metadata IO
+> requests, which .postsuspend should make sure they are finished.
 
-yes among the 3 flags that i mention because we have simple
-parent/child relation for this 3 flags
+OK, I see.  You don't have the notion of a transaction, that I can see,
+so this this begs the question: what kind of crash consistency/recovery
+are you providing?  Seems that the metadata writeback support is
+allowing for more potential for lost data on a crash.
 
->
-> What about SD_NUMA in child_flags? SD_ASYM_PACKING is also a little bit
+Also, it isn't clear how you're coping with the potential for a crash
+while updating a extent (when metadata bits are borrowed from the tail,
+etc).  Without transaction a block (or extent of blocks) could be
+partially updated, how are you guaranteeing the corresponding data is
+either entirely old or new?  The compressed nature of this data makes a
+requirement for atomic updates to occur here.  Are you somehow
+leveraging Fusion-io SSD to provide such guarantee?
 
-SD_NUMA doesn't follow the same rule
+So effectively there are concerns about data integrity of this target
+that need answering.  Unfortunately I'm running low on time I can
+dedicate to continued review of this target and need to transition to
+other priorities.
 
-> different than SD_SHARE_PKG_RESOURCES or SD_SHARE_CPUPOWER because it's
-> not used in the if ... else statement.
+> > > Doing a workqueue flush isn't required. The writeback thread is
+> > > running in background and waiting for requests completion can't guarantee the
+> > > thread isn't running, so we must make sure it is safely parked.
+> > 
+> > Sure, but you don't need a state machine to do that.  The DM core takes
+> > care of calling these hooks, so you just need to stop the writeback
+> > thread during suspend and (re)start/kick it on resume (preresume).
+> 
+> Yep, I need wait the writeback thread finish all pending metadata IO, the state
+> machine works well here.
 
-It's not a matter of being in a if else statement but more a topology
-dependency.
-
->
-> But I'm afraid this only works for this specific case of the MC/GMC
-
-This also works if a level with SD_SHARE_CPUPOWER flag is declared in
-the table after a level without the flag which doesn't make sense
-AFAIK.
-
-> layer and is not scalable. If sd->child is a level for which you don't
-> want to potentially destroy itself or its parent, then you would get
-> false alarms. IMHO, sd_init() has no information for which pair of
-> adjacent levels it should apply this check and for which not. Do I miss
-> something here?
-
-This check could apply on all level.
-
-Vincent
-
->
-> -- Dietmar
->
->>
->> Vincent
->>
->
->
+I see what you've done, I get that you're using the state machine to
+wait but I still contend it isn't needed.  Like I said before, just
+stop writeback in suspend and restart on resume.  No state is needed.
