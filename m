@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511AbaCSVqD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 17:46:03 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:61770 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756008AbaCSVqA (ORCPT
+	id S1756924AbaCSVrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 17:47:42 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:35030 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754882AbaCSVrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 17:46:00 -0400
-Date: Wed, 19 Mar 2014 17:45:56 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH cgroup/for-3.15] cgroup: fix cgroup_taskset walking order
-Message-ID: <20140319214556.GD3656@mtj.dyndns.org>
+	Wed, 19 Mar 2014 17:47:41 -0400
+Date: Wed, 19 Mar 2014 21:47:36 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
+        James Ralston <james.d.ralston@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/8] mfd: lpc_ich: Fix ACPI enable bitmask
+Message-ID: <20140319214736.GC20260@lee--X1>
+References: <1394487298-14459-1-git-send-email-ptyser@xes-inc.com>
+ <20140313151601.GA4479@roeck-us.net>
+ <20140313152534.GC10356@lee--X1>
+ <20140313225040.GK28504@lee--X1>
+ <53223964.2080408@roeck-us.net>
+ <20140314102934.GA3432@lee--X1>
+ <20140319171748.GA3842@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140319171748.GA3842@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 1b9aba49eab5e85b0d3de8ba630cda6d68546297 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Wed, 19 Mar 2014 17:43:21 -0400
+> > > >>>>The original bitmask of 0x10 was incorrect and would result in a write
+> > > >>>>to a reserved read-only bit instead of enabling the ACPI I/O
+> > > >>>>region.  Update it to the proper value of 0x80.
+> > > >>>>
+> > > >>>>Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+> > > >>>>Tested-by: Rajat Jain <rajatjain@juniper.net>
+> > > >>>>Cc: Guenter Roeck <linux@roeck-us.net>
+> > > >>>>Cc: James Ralston <james.d.ralston@intel.com>
+> > > >>>>Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > > >>>>Cc: Lee Jones <lee.jones@linaro.org>
+> > > >>>
+> > > >>>Who is going to pick up this series ?
+> > > >>
+> > > >>I will, once I've completed the review.
+> > > >
+> > > >Okay review complete, phew!
+> > > >
+> > > >Guenter, How do you want to play this? Do you want me to create an
+> > > >immutable branch for you to pull from?
+> > > >
+> > > 
+> > > I'll be happy if I can pull it from -next. Is it going to be there
+> > > anytime soon ?
+> > 
+> > Well I pushed an updated version of the MFD today, so it should appear
+> > in -next this evening.
+> > 
+> Hi Lee,
+> 
+> for some reason I still don't see the patches in linux-next, even though I see
+> them in your mfd-next branch. Any idea what is happening ? Is it possible
+> that Stephen picks up a different mfd-next tree ?
 
-cgroup_taskset is used to track and iterate target tasks while
-migrating a task or process and should guarantee that the first task
-iterated is the task group leader if a process is being migrated.
+Yes, that's exactly what was happening.
 
-b3dc094e9390 ("cgroup: use css_set->mg_tasks to track target tasks
-during migration") replaced flex array cgroup_taskset->tc_array with
-css_set->mg_tasks list to remove process size limit and dynamic
-allocation during migration; unfortunately, it incorrectly used list
-operations which don't preserve order breaking the guarantee that
-cgroup_taskset_first() returns the leader for a process target.
+I emailed Stephen a few hours ago to rectify the situation.
 
-Fix it by using order preserving list operations.  Note that as
-multiple src_csets may map to a single dst_cset, the iteration order
-may change across cgroup_task_migrate(); however, the leader is still
-guaranteed to be the first entry.
-
-The switch to list_splice_tail_init() at the end of cgroup_migrate()
-isn't strictly necessary.  Let's still do it for consistency.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Li, as the merge window is right around the corner, I think it'd be
-best to apply this one ASAP.  Applied to cgroup/for-3.15.
-
-Thanks.
-
- kernel/cgroup.c | 24 +++++++++++++++++++-----
- 1 file changed, 19 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 37b6d53..98a8045 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1761,7 +1761,14 @@ static void cgroup_task_migrate(struct cgroup *old_cgrp,
- 
- 	get_css_set(new_cset);
- 	rcu_assign_pointer(tsk->cgroups, new_cset);
--	list_move(&tsk->cg_list, &new_cset->mg_tasks);
-+
-+	/*
-+	 * Use move_tail so that cgroup_taskset_first() still returns the
-+	 * leader after migration.  This works because cgroup_migrate()
-+	 * ensures that the dst_cset of the leader is the first on the
-+	 * tset's dst_csets list.
-+	 */
-+	list_move_tail(&tsk->cg_list, &new_cset->mg_tasks);
- 
- 	/*
- 	 * We just gained a reference on old_cset by taking it from the
-@@ -1936,9 +1943,16 @@ static int cgroup_migrate(struct cgroup *cgrp, struct task_struct *leader,
- 		if (!cset->mg_src_cgrp)
- 			goto next;
- 
--		list_move(&task->cg_list, &cset->mg_tasks);
--		list_move(&cset->mg_node, &tset.src_csets);
--		list_move(&cset->mg_dst_cset->mg_node, &tset.dst_csets);
-+		/*
-+		 * cgroup_taskset_first() must always return the leader.
-+		 * Take care to avoid disturbing the ordering.
-+		 */
-+		list_move_tail(&task->cg_list, &cset->mg_tasks);
-+		if (list_empty(&cset->mg_node))
-+			list_add_tail(&cset->mg_node, &tset.src_csets);
-+		if (list_empty(&cset->mg_dst_cset->mg_node))
-+			list_move_tail(&cset->mg_dst_cset->mg_node,
-+				       &tset.dst_csets);
- 	next:
- 		if (!threadgroup)
- 			break;
-@@ -1999,7 +2013,7 @@ out_release_tset:
- 	down_write(&css_set_rwsem);
- 	list_splice_init(&tset.dst_csets, &tset.src_csets);
- 	list_for_each_entry_safe(cset, tmp_cset, &tset.src_csets, mg_node) {
--		list_splice_init(&cset->mg_tasks, &cset->tasks);
-+		list_splice_tail_init(&cset->mg_tasks, &cset->tasks);
- 		list_del_init(&cset->mg_node);
- 	}
- 	up_write(&css_set_rwsem);
 -- 
-1.8.5.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
