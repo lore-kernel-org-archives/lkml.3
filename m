@@ -1,145 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758374AbaCSXfk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 19:35:40 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:46825 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964AbaCSXfi (ORCPT
+	id S1758646AbaCSXoE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 19:44:04 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:11783 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755750AbaCSXoB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 19:35:38 -0400
+	Wed, 19 Mar 2014 19:44:01 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 19 Mar 2014 16:38:31 -0700
+From: Arun Shamanna Lakshmi <aruns@nvidia.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Songhee Baek <sbaek@nvidia.com>
+Date: Wed, 19 Mar 2014 16:44:00 -0700
+Subject: RE: [PATCH] ASoC: Add support for multi register mux
+Thread-Topic: [PATCH] ASoC: Add support for multi register mux
+Thread-Index: Ac9DBjlvf/hFfIKwTpuE+uWjBYyROAAxszJw
+Message-ID: <781A12BB53C15A4BB37291FDE08C03F3A05CB21E46@HQMAIL02.nvidia.com>
+References: <1395186692-11735-1-git-send-email-aruns@nvidia.com>
+ <20140318235941.GT11706@sirena.org.uk>
+In-Reply-To: <20140318235941.GT11706@sirena.org.uk>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-In-Reply-To: <20140319152521.04fe6665c67efe0c6a70d8a5@linux-foundation.org>
-References: <1395163080-6290-1-git-send-email-keescook@chromium.org>
-	<1395163080-6290-2-git-send-email-keescook@chromium.org>
-	<20140319152521.04fe6665c67efe0c6a70d8a5@linux-foundation.org>
-Date: Wed, 19 Mar 2014 16:35:37 -0700
-X-Google-Sender-Auth: E_zQlkNP-2QJ77WfKMcIKz0Q208
-Message-ID: <CAGXu5jJH3RKTZJq0Yy71DeCMAGJpgOPnvtixSpGzSYn4MyG8WA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] sysctl: fix incorrect write position handling
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Aaron Tomlin <atomlin@redhat.com>, Andrew Shewmaker <agshew@gmail.com>,
-        Li Zefan <lizefan@huawei.com>, Dario Faggioli <raistlin@linux.it>,
-        Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 3:25 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 18 Mar 2014 10:17:59 -0700 Kees Cook <keescook@chromium.org> wrote:
->
->> When writing to a sysctl string, each write, regardless of VFS position,
->> began writing the string from the start. This meant the contents of
->> the last write to the sysctl controlled the string contents instead of
->> the first:
->>
->> open("/proc/sys/kernel/modprobe", O_WRONLY)   = 1
->> write(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"..., 4096) = 4096
->> write(1, "/bin/true", 9)                = 9
->> close(1)                                = 0
->>
->> $ cat /proc/sys/kernel/modprobe
->> /bin/true
->
-> Yes, procfs writes have always been weird.
->
-> Why are we fixing this?
+If each bit of a 32 bit register maps to an input of a mux, then with the current 'soc_enum' structure we cannot have more than 64 inputs for the mux (because of reg and reg2 only).
+In such cases, we need more than 2 registers to select the input of the mux. This is referred to as 'multi register mux' 
 
-This misbehavior was featured in an exploit against Chrome OS. While
-it's not in itself a vulnerability, it's a weirdness that isn't on the
-mind of most auditors. "This filter looks correct, it wouldn't resolve
-to a real path." doesn't apply here, since the size of the write and
-the contents of the final write are what matter when writing to
-procfs.
+For instance, the audio xbar (AXBAR) module acts as a mux selecting various inputs (reference: Tegra K1 manual).
 
-> Perhaps there's an existing application which holds an fd open
-> and periodically writes to it expecting some result.  This patch
-> would break such an app?
->
->
-> And what about something like this?
->
-> while true
-> do
->         echo 1
->         sleep 60
-> done > /proc/sys/vm/drop_caches
+The number of such inputs increases with future Tegra chips and so will be the need to control multiple registers per mux in DAPM.  We have 2 options to achieve that.
 
-Yes, my current change would break this. I could remove the changes to
-the numeric values?
+Option 1: Using custom get and put functions something similar to below inside AXBAR tegra driver.
 
-> To be consistent with the proposed alteration to string writes, this
-> would have to write 1 then change that to 11 then to 111.  Or
-> something, makes my head spin.
+	int tegra_xbar_get_value_enum(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+	{
+		struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
+		struct snd_soc_dapm_widget *widget = wlist->widgets[0];
+		struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+		unsigned int reg_val, mux, find, reg_idx;
+		unsigned int num_regs = 3, regs[3];
 
-Well, no, the procfs writes stop processing at newlines.
+		/* control 3 registers that has a common STRIDE */
+		regs[0] = e-> reg;
+		regs[1] = regs[0] + MUX_REG_STRIDE;
+		regs[2] = regs[1] + MUX_REG_STRIDE;
 
->> Expected behaviour would be to have the sysctl be "AAAA..." capped at
->> maxlen (in this case KMOD_PATH_LEN: 256), instead of truncating to the
->> contents of the second write. Similarly, multiple short writes would not
->> append to the sysctl.
->
-> So if we do
->
-> (
->         echo foo
->         echo bar
-> ) > /proc/sys/kernel/modprobe
->
-> we get foo and later we get foobar?
+		for (mux = 0; mux < e->max; mux++) {
+			find = 0;
+			for (reg_idx = 0; reg_idx < num_regs; reg_idx++) {
+				regmap_read(widget->codec->control_data,
+						regs[reg_idx], &reg_val);
+				if (reg_val ==  e->values[mux * num_regs + reg_idx])
+					find++;
+			}
+			if (find == num_regs)
+				break;
+		}
+		ucontrol->value.enumerated.item[0] = mux;
+		return 0;
+	}
 
-No. Currently you get "bar" due to line endings. After, the change, it
-would only be "foo" since the file position would be beyond "foo"
-(buffer holds 3 bytes, write wrote 4 (with newline), so the next write
-would be ignored).
+	int tegra_xbar_put_value_enum(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+	{
+		struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
+		struct snd_soc_dapm_widget *widget = wlist->widgets[0];
+		struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+		unsigned int value, mux, old, reg_idx;
+		struct snd_soc_dapm_update update;
+		   unsigned int num_regs = 3, regs[3], masks[3] = { 0xf1f03ff, 0x3f30031f, 0xff1cf313};
+		int wi;
 
->> This fixes the unexpected behavior for strings, and disallows non-zero
->> file position when writing numeric sysctls (similar to what is already
->> done when reading from non-zero file positions).
->
-> So my script which writes drop_caches will break?
+		regs[0] = e-> reg;
+		regs[1] = regs[0] + MUX_REG_STRIDE;
+		regs[2] = regs[1] + MUX_REG_STRIDE;
 
-Yes, it would. When considering this, it seemed to me that people
-would write such a script as:
+		if (ucontrol->value.enumerated.item[0] > e->max - 1)
+			return -EINVAL;
 
-while true
-do
-    echo 1 > /proc/sys/vm/drop_caches
-    sleep 60
-done
+		mux = ucontrol->value.enumerated.item[0];
 
-The behavior is pretty weird, and it seems like something we should
-fix. My specific case is to fix the situation of writing garbage
-followed by real information and allowing the write length size to
-dictate what is being thrown away.
+		for (reg_idx = 0; reg_idx < num_regs; reg_idx++) {
+			value = e->values[ucontrol->value.enumerated.item[0] * num_regs + reg_idx];
+			regmap_read(widget->codec->control_data, regs[reg_idx], &old);
 
-I wonder if there is a solution here involving the existing
-acknowledgement of \0 or \n in string writes? The case I want to stop
-lacked \0 or \n until the end ("AAAA..../bin/true\n") but the
-write-length chunking meant the garbage part got thrown away instead
-of correctly appending.
+			if (value != old) {
+				for (wi = 0; wi < wlist->num_widgets; wi++) {
+					widget = wlist->widgets[wi];
+					widget->value = value;
+					update.kcontrol = kcontrol;
+					update.widget = widget;
+					update.reg = regs[reg_idx];
+					update.mask = masks[reg_idx];
+					update.val = value;
+					widget->dapm->update = &update;
+					snd_soc_dapm_mux_update_power(widget, kcontrol, mux, e);
+					widget->dapm->update = NULL;
+				}
+			}
+		}
+		return 0;
+	}
 
-Should \0 and \n really mean "start again" here, and that and "open"
-should be the only thing that rewinds the buffer to index 0? That way
-"(echo foo; echo bar) > /proc/..." works as "bar", but "(echo -n foo;
-echo bar) > /proc/..." results in "foobar". I'm not sure that's any
-less an unexpected behavior, though.
+Option 2: Modify soc_enum structure and make 'reg' variable as reg[MAX_REG]
 
--Kees
+This would also mean that we should edit all the macros in soc.h, soc-dapm.c and soc-core.c to use 'reg[0]' instead of 'reg'
+Our goal is to eventually add support to do multi register mux in get and put handlers inside soc-dapm.c upstream.
 
--- 
-Kees Cook
-Chrome OS Security
+With Option1, we don't need to change any code in upstream as each register among the multiple registers has a common STRIDE (address offset). Thus, option1 is not generic enough.
+If you suggest Option1, we wanted to check if upstream will be okay with such a structure. (it will be tegra specific though).
+
+With Option2, it  becomes easy to add new macros for multi register mux in soc.h and then, add new get and put handlers in dapm.c
+
+Thanks,
+Arun
+
+-----Original Message-----
+From: Mark Brown [mailto:broonie@kernel.org] 
+Sent: Tuesday, March 18, 2014 5:00 PM
+To: Arun Shamanna Lakshmi
+Cc: lgirdwood@gmail.com; perex@perex.cz; tiwai@suse.de; alsa-devel@alsa-project.org; linux-kernel@vger.kernel.org; Songhee Baek
+Subject: Re: [PATCH] ASoC: Add support for multi register mux
+
+* PGP Signed by an unknown key
+
+On Tue, Mar 18, 2014 at 04:51:32PM -0700, Arun Shamanna Lakshmi wrote:
+
+> Currently soc_enum structure supports only 2 registers (reg, reg2) for 
+> kcontrol. However, it is possible to have multiple registers per mux. 
+> This change allows us to control these multiple registers.
+
+I'd want to see a user along with this and...
+
+> @@ -1093,6 +1093,9 @@ struct soc_enum {
+>  	unsigned int mask;
+>  	const char * const *texts;
+>  	const unsigned int *values;
+> +	unsigned int *regs;
+> +	unsigned int *masks;
+> +	unsigned int num_regs;
+
+...it duplicates and generally isn't joined up with the existing members of the structure, and has no support in the helpers (for example, converting the existing stereo controls to be two element arrays which I'd expect to see).  Helpers would count as users here.
+
+Note that we don't support double register enums or muxes - only numerical controls are supported.  It's not clear what a multi-register enum would mean.
+
+* Unknown Key
+* 0x7EA229BD
