@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933953AbaCSNSi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:18:38 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35978 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933896AbaCSNEC (ORCPT
+	id S933988AbaCSNS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:18:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42094 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933881AbaCSNEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:04:02 -0400
-Date: Wed, 19 Mar 2014 13:03:48 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Message-ID: <20140319130348.GG11706@sirena.org.uk>
-References: <1394187052-591-1-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8INPLRapBWUpgqwG"
-Content-Disposition: inline
-In-Reply-To: <1394187052-591-1-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 0/3] regulator: s2mps11: Add support for S2MPS14
- regulators
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 19 Mar 2014 09:04:01 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>, linux-leds@vger.kernel.org,
+        linux-pwm@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 05/16] ARM: at91: at91sam9rl: switch to generic PWM framework
+Date: Wed, 19 Mar 2014 14:03:18 +0100
+Message-Id: <1395234209-15546-6-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395234209-15546-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1395234209-15546-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Switch to the pwm/pwm-atmel driver instead of misc/atmel_pwm
 
---8INPLRapBWUpgqwG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/at91sam9rl.c         |  1 +
+ arch/arm/mach-at91/at91sam9rl_devices.c | 11 ++---------
+ 2 files changed, 3 insertions(+), 9 deletions(-)
 
-On Fri, Mar 07, 2014 at 11:10:49AM +0100, Krzysztof Kozlowski wrote:
-> Hi,
->=20
-> This patchset adds support for the S2MPS14 device to the s2mps11 regulator
-> driver. It's a subset of previously sent patches for S2MPS14 device:
-> http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27194/focus=3D1649=
-217
-> along with one new patch:
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index 4d2006351d1d..bc035a9ff53c 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -199,6 +199,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("pclk", "fffc4000.ssc", &ssc1_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9g20.0", &twi0_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9g20.1", &twi1_clk),
++	CLKDEV_CON_DEV_ID(NULL, "at91sam9rl-pwm", &pwm_clk),
+ 	CLKDEV_CON_ID("pioA", &pioA_clk),
+ 	CLKDEV_CON_ID("pioB", &pioB_clk),
+ 	CLKDEV_CON_ID("pioC", &pioC_clk),
+diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
+index 9ccae034119c..a396d6d56ffe 100644
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+@@ -797,9 +797,7 @@ static void __init at91_add_device_watchdog(void) {}
+  *  PWM
+  * --------------------------------------------------------------------*/
+ 
+-#if defined(CONFIG_ATMEL_PWM)
+-static u32 pwm_mask;
+-
++#if IS_ENABLED(CONFIG_PWM_ATMEL)
+ static struct resource pwm_resources[] = {
+ 	[0] = {
+ 		.start	= AT91SAM9RL_BASE_PWMC,
+@@ -814,11 +812,8 @@ static struct resource pwm_resources[] = {
+ };
+ 
+ static struct platform_device at91sam9rl_pwm0_device = {
+-	.name	= "atmel_pwm",
++	.name	= "at91sam9rl-pwm",
+ 	.id	= -1,
+-	.dev	= {
+-		.platform_data		= &pwm_mask,
+-	},
+ 	.resource	= pwm_resources,
+ 	.num_resources	= ARRAY_SIZE(pwm_resources),
+ };
+@@ -837,8 +832,6 @@ void __init at91_add_device_pwm(u32 mask)
+ 	if (mask & (1 << AT91_PWM3))
+ 		at91_set_B_periph(AT91_PIN_PD8, 1);	/* enable PWM3 */
+ 
+-	pwm_mask = mask;
+-
+ 	platform_device_register(&at91sam9rl_pwm0_device);
+ }
+ #else
+-- 
+1.8.3.2
 
-Applied all, thanks.
-
---8INPLRapBWUpgqwG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTKZWxAAoJELSic+t+oim96RcP/j6Yp7wU+jJ8RMPrBfxQYzIP
-zk9I+s9oxpLAAj2ZvX0ergze30yQUbVKxWMke3y+3dBPndgwitpj1nYCRq1vcrJC
-c+QZDmzOj8kFZivZNCroZ0O4zzR4vLFOX+qHR+n7tp6Rx+ytdOtNKKMF/759uQZs
-OxSs2LYJx0+82Lf+MPjRCNhbbAov4B7nwtrCIybWu77UpcWcwrI212jnOX6+Zl3k
-mc1/EZ+UUQjhF3vYUAzNfo+7QySGIm2Po0qZDYFPyOWDOm5IaLO8hBhhTutOlbEL
-3efj+rXpr6EsD6WAi0rn0ViuNnfqJkiX7FVUhmnndxopK1RBanBg2HBj0qw0dz8i
-aiyAS/4A5OPhnZ94Tc/BpWk9b2kshxplb4kQZi6kfkyQO/w/Xg1HKa3hHe4JYJMU
-q0OV2qr3dT5JYbLYyh2/qV89m69cFVINUib6Sswg4w62k7gnOLSJsn5cY0QgwbC9
-yXh9mvWOWk7nNA7KwlVP2CHMN7vGJ2kGCbnt6AuoYwwHj+nixIOZInjoFe0qnp1L
-FK/0+3mGUSqjeHjI6Ns/9Ry6EEELcv+HNuU37SCGeeFaZCLZHaPJGLFHK9cMHwbr
-DZbTDFcg41ZDZRwWW3gsRnxRcMSy71RvUvYq0ZMcxFf7AI1gSbfOVer/4OLsU2Sx
-4aIrdnMSB8WJzWHfmFDY
-=m+2D
------END PGP SIGNATURE-----
-
---8INPLRapBWUpgqwG--
