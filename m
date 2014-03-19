@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759544AbaCSX14 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 19:27:56 -0400
-Received: from kvm5.telegraphics.com.au ([98.124.60.144]:51061 "EHLO
+	id S933977AbaCSX2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 19:28:21 -0400
+Received: from kvm5.telegraphics.com.au ([98.124.60.144]:51096 "EHLO
 	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759499AbaCSX1w (ORCPT
+	with ESMTP id S933518AbaCSX2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 19:27:52 -0400
-Message-Id: <20140319123518.642821564@telegraphics.com.au>
+	Wed, 19 Mar 2014 19:28:17 -0400
+Message-Id: <20140319123519.842734137@telegraphics.com.au>
 User-Agent: quilt/0.50-1
-Date: Wed, 19 Mar 2014 23:35:23 +1100
+Date: Wed, 19 Mar 2014 23:35:27 +1100
 From: Finn Thain <fthain@telegraphics.com.au>
 To: "James E.J. Bottomley" <JBottomley@parallels.com>,
         <linux-scsi@vger.kernel.org>
@@ -17,210 +17,116 @@ Cc: Sam Creasey <sammy@sammy.net>, Russell King <linux@arm.linux.org.uk>,
         Michael Schmitz <schmitz@debian.org>, Joe Perches <joe@perches.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-m68k@vger.kernel.org>
-Subject: [PATCH v2 07/12] scsi/NCR5380: adopt NCR5380_dprint() and NCR5380_dprint_phase()
+Subject: [PATCH v2 11/12] scsi/NCR5380: reduce depth of sun3_scsi nested includes
 References: <20140319123516.542623278@telegraphics.com.au>
-Content-Disposition: inline; filename=ncr5380-debug-macros-substitute-NCRPRINT
+Content-Disposition: inline; filename=ncr5380-sun3-includes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All NCR5380 drivers already include the NCR5380.h header. Better to
-adopt those macros rather than have three variations on them.
+Move the #include "NCR5380.h" out of the sun3_scsi.h header file and into
+the driver .c files, like all the other NCR5380 drivers in the tree.
 
-Moreover, the macros in NCR5380.h are preferable anyway: the atari_NCR5380
-and sun3_NCR5380 versions are inflexible. For example, they can't accomodate
-NCR5380_dprint(NDEBUG_MAIN | NDEBUG_QUEUES, ...)
-
-Replace the NCR_PRINT* macros from atari_NCR5380.h and sun3_NCR5380.h with
-the equivalent macros from NCR5380.h.
+This improves uniformity and reduces the depth of nested includes. The
+sequence of #include's, #define's and #if's no longer does my head in.
 
 Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
 
 ---
- drivers/scsi/atari_NCR5380.c |   22 +++++++++++-----------
- drivers/scsi/sun3_NCR5380.c  |   22 +++++++++++-----------
- 2 files changed, 22 insertions(+), 22 deletions(-)
 
-Index: linux-m68k/drivers/scsi/atari_NCR5380.c
+Here's a graph showing the present #include structure.
+
+
+      sun3_scsi_vme.c  ----->  sun3_scsi.h  ----->  NCR5380.h
+
+              |                    ^
+              '--------------------|----.
+                                   |    |
+                  .----------------'    |
+                  |                     v
+
+          sun3_scsi.c  ----->  sun3_NCR5380.c
+
+
+And here's the situation at the end of this patch series, after moving the
+#includes with this patch, and merging sun3_scsi.c and sun3_scsi_vme with
+the next patch.
+
+
+                           sun3_scsi.h
+
+                               ^
+                               |
+                               |
+
+    sun3_scsi_vme.c  ----->  sun3_scsi.c  ----->  sun3_NCR5380.c
+
+                                   |
+                                   |
+                                   v
+
+                               NCR5380.h
+
+
+The final structure (see the next patch) of sun3_scsi_vme mirrors that of
+g_NCR5380_mmio.c, and the final structure of sun3_scsi mirrors that of all
+the other NCR5380 drivers.
+
+BTW, both sun3_scsi.c and sun3_scsi_vme.c also #include "initio.h"
+but I've sent a separate patch to address this.
+
+---
+ drivers/scsi/sun3_scsi.c     |    1 +
+ drivers/scsi/sun3_scsi.h     |    8 +++-----
+ drivers/scsi/sun3_scsi_vme.c |    1 +
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+Index: linux-m68k/drivers/scsi/sun3_scsi.c
 ===================================================================
---- linux-m68k.orig/drivers/scsi/atari_NCR5380.c	2014-03-19 23:23:02.000000000 +1100
-+++ linux-m68k/drivers/scsi/atari_NCR5380.c	2014-03-19 23:34:43.000000000 +1100
-@@ -739,8 +739,8 @@ static void NCR5380_print_status(struct
- 	Scsi_Cmnd *ptr;
- 	unsigned long flags;
+--- linux-m68k.orig/drivers/scsi/sun3_scsi.c	2014-03-19 23:34:44.000000000 +1100
++++ linux-m68k/drivers/scsi/sun3_scsi.c	2014-03-19 23:34:45.000000000 +1100
+@@ -72,6 +72,7 @@
+ #include "initio.h"
+ #include <scsi/scsi_host.h>
+ #include "sun3_scsi.h"
++#include "NCR5380.h"
  
--	NCR_PRINT(NDEBUG_ANY);
--	NCR_PRINT_PHASE(NDEBUG_ANY);
-+	NCR5380_dprint(NDEBUG_ANY, instance);
-+	NCR5380_dprint_phase(NDEBUG_ANY, instance);
+ /* #define OLDDMA */
  
- 	hostdata = (struct NCR5380_hostdata *)instance->hostdata;
- 
-@@ -1268,7 +1268,7 @@ static irqreturn_t NCR5380_intr(int irq,
- 	INT_PRINTK("scsi%d: BASR=%02x\n", HOSTNO, basr);
- 	/* dispatch to appropriate routine if found and done=0 */
- 	if (basr & BASR_IRQ) {
--		NCR_PRINT(NDEBUG_INTR);
-+		NCR5380_dprint(NDEBUG_INTR, instance);
- 		if ((NCR5380_read(STATUS_REG) & (SR_SEL|SR_IO)) == (SR_SEL|SR_IO)) {
- 			done = 0;
- 			ENABLE_IRQ();
-@@ -1396,7 +1396,7 @@ static int NCR5380_select(struct Scsi_Ho
- 	unsigned long flags;
- 
- 	hostdata->restart_select = 0;
--	NCR_PRINT(NDEBUG_ARBITRATION);
-+	NCR5380_dprint(NDEBUG_ARBITRATION, instance);
- 	ARB_PRINTK("scsi%d: starting arbitration, id = %d\n", HOSTNO,
- 		   instance->this_id);
- 
-@@ -1617,7 +1617,7 @@ static int NCR5380_select(struct Scsi_Ho
- 			printk(KERN_ERR "scsi%d: weirdness\n", HOSTNO);
- 			if (hostdata->restart_select)
- 				printk(KERN_NOTICE "\trestart select\n");
--			NCR_PRINT(NDEBUG_ANY);
-+			NCR5380_dprint(NDEBUG_ANY, instance);
- 			NCR5380_write(SELECT_ENABLE_REG, hostdata->id_mask);
- 			return -1;
- 		}
-@@ -1742,7 +1742,7 @@ static int NCR5380_transfer_pio(struct S
- 		/* Check for phase mismatch */
- 		if ((tmp & PHASE_MASK) != p) {
- 			PIO_PRINTK("scsi%d: phase mismatch\n", HOSTNO);
--			NCR_PRINT_PHASE(NDEBUG_PIO);
-+			NCR5380_dprint_phase(NDEBUG_PIO, instance);
- 			break;
- 		}
- 
-@@ -1764,18 +1764,18 @@ static int NCR5380_transfer_pio(struct S
- 		if (!(p & SR_IO)) {
- 			if (!((p & SR_MSG) && c > 1)) {
- 				NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE | ICR_ASSERT_DATA);
--				NCR_PRINT(NDEBUG_PIO);
-+				NCR5380_dprint(NDEBUG_PIO, instance);
- 				NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
- 					      ICR_ASSERT_DATA | ICR_ASSERT_ACK);
- 			} else {
- 				NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
- 					      ICR_ASSERT_DATA | ICR_ASSERT_ATN);
--				NCR_PRINT(NDEBUG_PIO);
-+				NCR5380_dprint(NDEBUG_PIO, instance);
- 				NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
- 					      ICR_ASSERT_DATA | ICR_ASSERT_ATN | ICR_ASSERT_ACK);
- 			}
- 		} else {
--			NCR_PRINT(NDEBUG_PIO);
-+			NCR5380_dprint(NDEBUG_PIO, instance);
- 			NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE | ICR_ASSERT_ACK);
- 		}
- 
-@@ -1997,7 +1997,7 @@ static void NCR5380_information_transfer
- 			phase = (tmp & PHASE_MASK);
- 			if (phase != old_phase) {
- 				old_phase = phase;
--				NCR_PRINT_PHASE(NDEBUG_INFORMATION);
-+				NCR5380_dprint_phase(NDEBUG_INFORMATION, instance);
- 			}
- 
- 			if (sink && (phase != PHASE_MSGOUT)) {
-@@ -2451,7 +2451,7 @@ static void NCR5380_information_transfer
- 				break;
- 			default:
- 				printk("scsi%d: unknown phase\n", HOSTNO);
--				NCR_PRINT(NDEBUG_ANY);
-+				NCR5380_dprint(NDEBUG_ANY, instance);
- 			} /* switch(phase) */
- 		} /* if (tmp * SR_REQ) */
- 	} /* while (1) */
-Index: linux-m68k/drivers/scsi/sun3_NCR5380.c
+Index: linux-m68k/drivers/scsi/sun3_scsi.h
 ===================================================================
---- linux-m68k.orig/drivers/scsi/sun3_NCR5380.c	2014-03-19 23:34:42.000000000 +1100
-+++ linux-m68k/drivers/scsi/sun3_NCR5380.c	2014-03-19 23:34:43.000000000 +1100
-@@ -681,8 +681,8 @@ static void NCR5380_print_status(struct
- 	Scsi_Cmnd *ptr;
- 	unsigned long flags;
+--- linux-m68k.orig/drivers/scsi/sun3_scsi.h	2014-03-19 23:34:45.000000000 +1100
++++ linux-m68k/drivers/scsi/sun3_scsi.h	2014-03-19 23:34:45.000000000 +1100
+@@ -29,8 +29,8 @@
+  * 1+ (800) 334-5454
+  */
  
--	NCR_PRINT(NDEBUG_ANY);
--	NCR_PRINT_PHASE(NDEBUG_ANY);
-+	NCR5380_dprint(NDEBUG_ANY, instance);
-+	NCR5380_dprint_phase(NDEBUG_ANY, instance);
+-#ifndef SUN3_NCR5380_H
+-#define SUN3_NCR5380_H
++#ifndef SUN3_SCSI_H
++#define SUN3_SCSI_H
  
- 	hostdata = (struct NCR5380_hostdata *)instance->hostdata;
+ #define SUN3SCSI_PUBLIC_RELEASE 1
  
-@@ -1192,7 +1192,7 @@ static irqreturn_t NCR5380_intr (int irq
-     INT_PRINTK("scsi%d: BASR=%02x\n", HOSTNO, basr);
-     /* dispatch to appropriate routine if found and done=0 */
-     if (basr & BASR_IRQ) {
--	NCR_PRINT(NDEBUG_INTR);
-+	NCR5380_dprint(NDEBUG_INTR, instance);
- 	if ((NCR5380_read(STATUS_REG) & (SR_SEL|SR_IO)) == (SR_SEL|SR_IO)) {
- 	    done = 0;
- //	    ENABLE_IRQ();
-@@ -1334,7 +1334,7 @@ static int NCR5380_select(struct Scsi_Ho
-     unsigned long flags;
+@@ -182,7 +182,5 @@ struct sun3_udc_regs {
  
-     hostdata->restart_select = 0;
--    NCR_PRINT(NDEBUG_ARBITRATION);
-+    NCR5380_dprint(NDEBUG_ARBITRATION, instance);
-     ARB_PRINTK("scsi%d: starting arbitration, id = %d\n", HOSTNO,
- 	       instance->this_id);
+ #define VME_DATA24 0x3d00
  
-@@ -1555,7 +1555,7 @@ static int NCR5380_select(struct Scsi_Ho
- 	    printk(KERN_ERR "scsi%d: weirdness\n", HOSTNO);
- 	    if (hostdata->restart_select)
- 		printk(KERN_NOTICE "\trestart select\n");
--	    NCR_PRINT(NDEBUG_ANY);
-+	    NCR5380_dprint(NDEBUG_ANY, instance);
- 	    NCR5380_write(SELECT_ENABLE_REG, hostdata->id_mask);
- 	    return -1;
- 	}
-@@ -1681,7 +1681,7 @@ static int NCR5380_transfer_pio( struct
- 	/* Check for phase mismatch */	
- 	if ((tmp & PHASE_MASK) != p) {
- 	    PIO_PRINTK("scsi%d: phase mismatch\n", HOSTNO);
--	    NCR_PRINT_PHASE(NDEBUG_PIO);
-+	    NCR5380_dprint_phase(NDEBUG_PIO, instance);
- 	    break;
- 	}
+-#include "NCR5380.h"
+-
+-#endif /* SUN3_NCR5380_H */
++#endif /* SUN3_SCSI_H */
  
-@@ -1704,18 +1704,18 @@ static int NCR5380_transfer_pio( struct
- 	    if (!((p & SR_MSG) && c > 1)) {
- 		NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE | 
- 		    ICR_ASSERT_DATA);
--		NCR_PRINT(NDEBUG_PIO);
-+		NCR5380_dprint(NDEBUG_PIO, instance);
- 		NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE | 
- 			ICR_ASSERT_DATA | ICR_ASSERT_ACK);
- 	    } else {
- 		NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
- 		    ICR_ASSERT_DATA | ICR_ASSERT_ATN);
--		NCR_PRINT(NDEBUG_PIO);
-+		NCR5380_dprint(NDEBUG_PIO, instance);
- 		NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE | 
- 		    ICR_ASSERT_DATA | ICR_ASSERT_ATN | ICR_ASSERT_ACK);
- 	    }
- 	} else {
--	    NCR_PRINT(NDEBUG_PIO);
-+	    NCR5380_dprint(NDEBUG_PIO, instance);
- 	    NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE | ICR_ASSERT_ACK);
- 	}
+Index: linux-m68k/drivers/scsi/sun3_scsi_vme.c
+===================================================================
+--- linux-m68k.orig/drivers/scsi/sun3_scsi_vme.c	2014-03-19 23:34:44.000000000 +1100
++++ linux-m68k/drivers/scsi/sun3_scsi_vme.c	2014-03-19 23:34:45.000000000 +1100
+@@ -42,6 +42,7 @@
+ #include "initio.h"
+ #include <scsi/scsi_host.h>
+ #include "sun3_scsi.h"
++#include "NCR5380.h"
  
-@@ -1927,7 +1927,7 @@ static void NCR5380_information_transfer
- 	    phase = (tmp & PHASE_MASK); 
-  	    if (phase != old_phase) {
- 		old_phase = phase;
--		NCR_PRINT_PHASE(NDEBUG_INFORMATION);
-+		NCR5380_dprint_phase(NDEBUG_INFORMATION, instance);
- 	    }
+ extern int sun3_map_test(unsigned long, char *);
  
- 	    if(phase == PHASE_CMDOUT) {
-@@ -2412,7 +2412,7 @@ static void NCR5380_information_transfer
- 		break;
- 	    default:
- 		printk("scsi%d: unknown phase\n", HOSTNO);
--		NCR_PRINT(NDEBUG_ANY);
-+		NCR5380_dprint(NDEBUG_ANY, instance);
- 	    } /* switch(phase) */
- 	} /* if (tmp * SR_REQ) */ 
-     } /* while (1) */
 
