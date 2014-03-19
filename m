@@ -1,189 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbaCSTOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 15:14:55 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41901 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaCSTOx convert rfc822-to-8bit (ORCPT
+	id S1754104AbaCSTPO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 15:15:14 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51901 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaCSTPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 15:14:53 -0400
-Message-ID: <5329ECB5.9020002@arm.com>
-Date: Wed, 19 Mar 2014 19:15:01 +0000
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 19 Mar 2014 15:15:10 -0400
+Date: Wed, 19 Mar 2014 19:14:59 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jyri Sarha <jsarha@ti.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>, <alsa-devel@alsa-project.org>,
+        <devicetree@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Message-ID: <20140319191459.GV11706@sirena.org.uk>
+References: <cover.1394883134.git.moinejf@free.fr>
+ <d054780a0edf4b2338a52e48bff9144e19aa614f.1394883134.git.moinejf@free.fr>
+ <20140317164339.GR11706@sirena.org.uk>
+ <20140318091728.1d2240ca@armhf>
+ <53296CB7.1000909@ti.com>
+ <20140319134625.GN11706@sirena.org.uk>
+ <5329E2A6.2040605@ti.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Vincent Guittot <vincent.guittot@linaro.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC 0/6] rework sched_domain topology description
-References: <1394003906-11630-1-git-send-email-vincent.guittot@linaro.org> <5317B092.7070805@arm.com> <CAKfTPtDGbT717Y5F1GoBgr4pnvApG5Gphu2Me_bAFrM0+qsfAg@mail.gmail.com> <53186A8A.9060406@arm.com> <CAKfTPtCspVk+X3O23ikTt3MZUHVrrp21PyhmrcLF-GwW3OjOqA@mail.gmail.com> <531B0FDA.2040302@arm.com> <20140311131719.GY9987@twins.programming.kicks-ass.net> <532060E7.7010203@arm.com> <20140317115225.GZ9987@twins.programming.kicks-ass.net>
-In-Reply-To: <20140317115225.GZ9987@twins.programming.kicks-ass.net>
-X-OriginalArrivalTime: 19 Mar 2014 19:15:02.0056 (UTC) FILETIME=[87000A80:01CF43A7]
-X-MC-Unique: 114031919145101601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="54Got1pG2ocoWGyS"
+Content-Disposition: inline
+In-Reply-To: <5329E2A6.2040605@ti.com>
+X-Cookie: Turn the other cheek.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 4/4] ASoC: simple-card: Add DT documentation for
+ multi-DAI links
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/03/14 11:52, Peter Zijlstra wrote:
-> On Wed, Mar 12, 2014 at 01:28:07PM +0000, Dietmar Eggemann wrote:
-[...]
->> By making it robust, I guess you mean that the core scheduler has to
->> check that the provided set-ups are sane, something like the following
->> code snippet in sd_init()
->>
->> if (WARN_ONCE(tl->sd_flags & ~TOPOLOGY_SD_FLAGS,
->> 		"wrong sd_flags in topology description\n"))
->> 	tl->sd_flags &= ~TOPOLOGY_SD_FLAGS;
->>
->> but for per cpu set-up's.
-> 
-> So a domain is principally a group of CPUs with the same properties.
-> However per-cpu domain attributes allows you to specify different domain
-> properties within the one domain mask.
-> 
-> That's completely broken.
-> 
-> So the way to validate something like that would be:
-> 
-> 	cpu = cpumask_first(tl->mask());
-> 	flags = tl->flags(cpu);
-> 
-> 	for (;cpu = cpumask_next(cpu, tl->mask()), cpu < nr_cpu_ids;)
-> 		BUG_ON(tl->flags(cpu) != flags);
-> 
-> Or something along those lines.
 
-I tried this idea inside sd_init() on top of Vincent's V3 and it's doing
-its job. 
+--54Got1pG2ocoWGyS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> But for me its far easier to think in the simple one domain one flags
-> scenario. The whole degenerate folding is a very simple optimization
-> simply removing redundant levels.
-> 
+On Wed, Mar 19, 2014 at 08:32:06PM +0200, Jyri Sarha wrote:
+> On 03/19/2014 03:46 PM, Mark Brown wrote:
 
-For me, the approach with the 'int cpu' parameter in the flag function is
-easier to understand. One of the things I had to grasp though was the fact that
-we can only specify SD_SHARE_FOO flags and not SD_NOT_SHARE_FOO per domain.
+> >It seems it'd be a bit more idiomatic to do that with a phandle rather
+> >than with a string in order to allow extensions for things like TDM (the
+> >I2S to mono speaker driver use case for example).
 
--- >8 --
+> You mean a like this:
 
-Subject: [PATCH] sched: check that the sd_flags are consistent in one domain
+> sound {
 
----
- arch/arm/kernel/topology.c |   13 +++++++++----
- include/linux/sched.h      |    6 +++---
- kernel/sched/core.c        |   11 +++++++++--
- 3 files changed, 21 insertions(+), 9 deletions(-)
+>         bitclock-master = <&codec 0>
+>         frame-master = <&codec 0>;
+>         bitclock-inversion = <1>;
+>         simple-audio-card,cpu {
 
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 71e1fec6d31a..425f133c690d 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -275,15 +275,20 @@ void store_cpu_topology(unsigned int cpuid)
- 		cpu_topology[cpuid].socket_id, mpidr);
- }
- 
--static inline const int cpu_corepower_flags(void)
-+//static inline const int cpu_corepower_flags(void)
-+//{
-+//	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
-+//}
-+
-+static inline const int arm_cpu_core_flags(int cpu)
- {
--	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
-+	return (cpu < 2) ? SD_SHARE_PKG_RESOURCES : SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
- }
- 
- static struct sched_domain_topology_level arm_topology[] = {
- #ifdef CONFIG_SCHED_MC
--	{ cpu_corepower_mask, cpu_corepower_flags, SD_INIT_NAME(GMC) },
--	{ cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },
-+//	{ cpu_corepower_mask, cpu_corepower_flags, SD_INIT_NAME(GMC) },
-+	{ cpu_coregroup_mask, arm_cpu_core_flags, SD_INIT_NAME(MC) },
- #endif
- 	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
- 	{ NULL, },
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 05ce264e5144..45e5aa3d3e80 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -870,14 +870,14 @@ enum cpu_idle_type {
- #define SD_NUMA			0x4000	/* cross-node balancing */
- 
- #ifdef CONFIG_SCHED_SMT
--static inline const int cpu_smt_flags(void)
-+static inline const int cpu_smt_flags(int cpu)
- {
-        return SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
- }
- #endif
- 
- #ifdef CONFIG_SCHED_MC
--static inline const int cpu_core_flags(void)
-+static inline const int cpu_core_flags(int cpu)
- {
-        return SD_SHARE_PKG_RESOURCES;
- }
-@@ -990,7 +990,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
- bool cpus_share_cache(int this_cpu, int that_cpu);
- 
- typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
--typedef const int (*sched_domain_flags_f)(void);
-+typedef const int (*sched_domain_flags_f)(int cpu);
- 
- #define SDTL_OVERLAP   0x01
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f2ee6c72b13a..6b8ba837977c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5968,7 +5968,7 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
-        sd_weight = cpumask_weight(tl->mask(cpu));
- 
-        if (tl->sd_flags)
--               sd_flags = (*tl->sd_flags)();
-+               sd_flags = (*tl->sd_flags)(cpu);
-        if (WARN_ONCE(sd_flags & ~TOPOLOGY_SD_FLAGS,
-                        "wrong sd_flags in topology description\n"))
-                sd_flags &= ~TOPOLOGY_SD_FLAGS;
-@@ -6044,9 +6044,16 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
-                sd->idle_idx = 1;
-        }
- 
-+       if (tl->sd_flags) {
-+	       int flags = (*tl->sd_flags)(cpumask_first(tl->mask(cpu)));
-+
-+	       for (;cpu = cpumask_next(cpu, tl->mask(cpu)), cpu < nr_cpu_ids;)
-+		       BUG_ON((*tl->sd_flags)(cpu) != flags);
-+       }
-+
-        sd->private = &tl->data;
- 
--	return sd;
-+       return sd;
- }
- 
- /*
--- 
-1.7.9.5
+Possibly referring to the subnodes rather than the device but yeah.
 
+--54Got1pG2ocoWGyS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTKeywAAoJELSic+t+oim9vU8QAJ5fb26dxr/Hq5PtcpeSMBw8
+2+q5W9c5G/mRWp3r0REU0PyQ/pFQ88Jay0OIPEWf1HmNFK1NZyIpn2qdgaYHSeNB
+nRDIAJ0egcHio0wfpH2fbgrxjAYdcMf4NLtL4HSLd6goG1JkAZ+VTHERYMljyGF3
+Puhw/9Z317k4F/IF/enas1pbCY/HeUGTNpLxKQhFdcOfel1EPeMHuBH4NnNEiY49
+2I4emKep9ON2vHMnPDIH9pKZQnbpcUUgmzs4TTI5Iy390SYUXfAGLdykWeHqD8DM
+AZ4FYDBrfIgcBK4M/v6wNaR9yPXQefOhLgef7hF8EW+qyMh8L0/PqDntpvFQZdOR
+aoCFkVNy0E7cXCpoq4pA+W9dLG954GZPTDnmOTvpB3z2JOFSxqXJw2jrT+iGPUHv
+QzgBKarCg2v9F2RvT2+wu4DBzIPrEMwe6irqK4Ja/eiFqnJUHF/jx2mWC/INowwe
+WSZWLGgFWpK9bm7dM+n9alGbG8Cf/6QjL3Dzi6Lmxsv47vkL6W7BS/tH8nSd7Pqd
+qT3+HHPDrJj4lzfKAvsQeEYSnM/fbNDU6kqmAiaQKRZP+m4DRvHYdGEtWuEMgfh2
+Es/Qtmd7xEbaU7ohzmwetecP8m2rNzfNIQhIjAGVDL4BauOIvq01gc5R/iBQBK2P
+6z75yGYpbGfJarBtMUqh
+=A9ow
+-----END PGP SIGNATURE-----
 
-
+--54Got1pG2ocoWGyS--
