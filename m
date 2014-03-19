@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaCSRsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 13:48:47 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:58485 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445AbaCSRsp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 13:48:45 -0400
+	id S1752369AbaCSRuC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 13:50:02 -0400
+Received: from albireo.enyo.de ([46.237.207.196]:49603 "EHLO albireo.enyo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750742AbaCSRt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 13:49:58 -0400
+X-Greylist: delayed 463 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Mar 2014 13:49:58 EDT
+From: Florian Weimer <fw@deneb.enyo.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jmorris\@namei.org" <jmorris@namei.org>,
+        "keescook\@chromium.org" <keescook@chromium.org>,
+        "linux-security-module\@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hpa\@zytor.com" <hpa@zytor.com>,
+        "jwboyer\@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+References: <1394746248.27846.3.camel@x230>
+	<20140313232140.03bdaac3@alan.etchedpixels.co.uk>
+	<1394762250.6416.24.camel@x230.lan>
+	<20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
+	<1394801518.6416.38.camel@x230.lan>
+	<20140314170655.0ce398a3@alan.etchedpixels.co.uk>
+	<1394820664.26846.18.camel@x230.mview.int.nebula.com>
+	<20140314214806.54a3d031@alan.etchedpixels.co.uk>
+	<1394834193.1286.11.camel@x230>
+	<20140314220840.29a12171@alan.etchedpixels.co.uk>
+	<20140314231832.GA653@thunk.org>
+Date: Wed, 19 Mar 2014 18:49:49 +0100
+In-Reply-To: <20140314231832.GA653@thunk.org> (Theodore Ts'o's message of
+	"Fri, 14 Mar 2014 19:18:32 -0400")
+Message-ID: <87eh1y84ea.fsf@mid.deneb.enyo.de>
 MIME-Version: 1.0
-In-Reply-To: <871txysnw2.fsf@rustcorp.com.au>
-References: <1394841445-16142-1-git-send-email-venkateshs@google.com>
-	<1394854471-25700-1-git-send-email-tytso@mit.edu>
-	<87siqhu048.fsf@rustcorp.com.au>
-	<20140317054053.GF14162@thunk.org>
-	<871txysnw2.fsf@rustcorp.com.au>
-Date: Wed, 19 Mar 2014 10:48:44 -0700
-Message-ID: <CAHdzE-_cAndCNhBM1N0RpjQDhoh3Snas-eza4rYN33Rf69PXyw@mail.gmail.com>
-Subject: Re: [PATCH] virtio-blk: make the queue depth the max supportable by
- the hypervisor
-From: Venkatesh Srinivas <venkateshs@google.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: tytso@mit.edu, Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org,
-        Frank Swiderski <fes@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And I rewrote it substantially, mainly to take
-> VIRTIO_RING_F_INDIRECT_DESC into account.
->
-> As QEMU sets the vq size for PCI to 128, Venkatash's patch wouldn't
-> have made a change.  This version does (since QEMU also offers
-> VIRTIO_RING_F_INDIRECT_DESC.
+* Theodore Ts'o:
 
-That divide-by-2 produced the same queue depth as the prior
-computation in QEMU was deliberate -- but raising it to 128 seems
-pretty reasonable.
+> Right now, even though Lenovo laptops are shipping with Windows
+> 8. UEFI secure boot is not made mandatory (although it is on enough to
+> brick the laptop when it runs into bugs wwith the UEFI BIOS code,
+> sigh).  But sooner or later, UEFI secure boot will be on by default,
+> and then if Linux distros don't have kernels where the installer can
+> be run without needing to twiddle BIOS settings, it might make it
+> harder for the "Year of the Desktop" to come about.
 
-Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
+Windows 8 logo devices already enable Secure Boot by default.
 
--- vs;
+One aspect which makes all this really tricky is that Microsoft is
+watching what we're doing and will keep raising the bar, probably not
+with the intent to lock us out completely, but sufficiently high to
+make things quite annoying.  For example, any certificate-signing
+certificate in the boot process needs to be an EV CA certificate,
+which comes with fairly stringent requirements that are quite costly
+to implement.
+
+So any restrictions we implement as a good-will gesture will
+eventually come back to haunt us.
