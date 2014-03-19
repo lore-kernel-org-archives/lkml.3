@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965011AbaCSMrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 08:47:43 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34016 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933597AbaCSMrj (ORCPT
+	id S964928AbaCSMsf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 08:48:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33155 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933482AbaCSMse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 08:47:39 -0400
-Date: Wed, 19 Mar 2014 12:47:31 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20140319124731.GD11706@sirena.org.uk>
-References: <1395232378-26320-1-git-send-email-sachin.kamat@linaro.org>
+	Wed, 19 Mar 2014 08:48:34 -0400
+Date: Wed, 19 Mar 2014 13:48:41 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT pull] timer fix for 3.14
+Message-ID: <alpine.DEB.2.02.1403191344490.18573@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k0qyr4WYEW/fdTc0"
-Content-Disposition: inline
-In-Reply-To: <1395232378-26320-1-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] regulator: max8660: Fix brace alignment
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
---k0qyr4WYEW/fdTc0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+please pull the latest timers-urgent-for-linus git tree from:
 
-On Wed, Mar 19, 2014 at 06:02:58PM +0530, Sachin Kamat wrote:
-> Move the "};" to next line as is the general coding practice.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
-Applied, thanks.
+A single bugfix:
 
---k0qyr4WYEW/fdTc0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ * Let the scheduler clock on Vybrid SoCs count forward.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJTKZHgAAoJELSic+t+oim9xSoP/2+LKENFHJ1iSMZp5+10fJbI
-7aqKTVBj+MVw8YKqGFsrlJ00NI7GLtUttcopKtrlgiQvQDrisTPbykJdCkCU8vlI
-TyyevuYSXqIR2DGY7gkj5MHD53X3hPwqJ8GxiicvbEs5X0pydN9dOwSW1cLP/mae
-faIqLDynokk68MCnVtxeLajoIYha2dBQLmZrcxGTrjN4MEieBDq2AbEmWQaEfRUi
-ssCTFebXW9CDseYIx4H/DqiwMQV7CIcgfRtp5O9tdu3JlhZNPFcHmiKM0c505BGZ
-7NrND+GHLrSKFXUnq+NfKHuZ172Q/OGwpqpPdjD/lSuStkvF9UuLEC1PHvwtFCrj
-usag+Pofu0edEgl3TK40wle9Lsegwh/QJjBFFnYudlbT63c8Lu5KNzTOk1f4+78/
-VMqmDJfgM0ONuJGQ72lY3I920BPXSnz9bZZFXWRdb7hx8H/qwqEGtCwSEsI33pim
-cp/MH7J23z4nY9hfdxe6e3azqnXE0BTi2nsY5eTSewZ72CiHdhgBVsV/lUAnuxnh
-ZyDt8QQ5iLweD1+VP3iJF6R2Kf9LciAgnaHHhZSj2exKTbWio5Pg3JmE7RGolUpp
-dzOwpQuJRZwdNQXLWVPOIBTpvpu4/7c12c8mkQqvRmayj6Af/wmEMDIw3SZDNMk/
-+/NBtlBp65VmPZRhxjd4
-=6SZs
------END PGP SIGNATURE-----
+	tglx
 
---k0qyr4WYEW/fdTc0--
+------------------>
+Stefan Agner (1):
+      clocksource: vf_pit_timer: use complement for sched_clock reading
+
+
+ drivers/clocksource/vf_pit_timer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clocksource/vf_pit_timer.c b/drivers/clocksource/vf_pit_timer.c
+index 02821b0..a918bc4 100644
+--- a/drivers/clocksource/vf_pit_timer.c
++++ b/drivers/clocksource/vf_pit_timer.c
+@@ -54,7 +54,7 @@ static inline void pit_irq_acknowledge(void)
+ 
+ static u64 pit_read_sched_clock(void)
+ {
+-	return __raw_readl(clksrc_base + PITCVAL);
++	return ~__raw_readl(clksrc_base + PITCVAL);
+ }
+ 
+ static int __init pit_clocksource_init(unsigned long rate)
