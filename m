@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758718AbaCSBZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 21:25:38 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:47214 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758530AbaCSBZh (ORCPT
+	id S1758819AbaCSB10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 21:27:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62947 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757980AbaCSB1Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 21:25:37 -0400
-Date: Tue, 18 Mar 2014 21:25:35 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Ben Widawsky <ben@bwidawsk.net>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, stable <stable@vger.kernel.org>
-Subject: [PATCH v2] drm/i915: Do not dereference pointers from ring buffer
- in evict event
-Message-ID: <20140318212535.13348855@gandalf.local.home>
-In-Reply-To: <20140318195007.GJ30571@phenom.ffwll.local>
-References: <20140318112737.2192898a@gandalf.local.home>
-	<20140318113136.02d2e08b@gandalf.local.home>
-	<20140318195007.GJ30571@phenom.ffwll.local>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 18 Mar 2014 21:27:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,681,1389772800"; 
+   d="scan'208";a="501623143"
+From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Chew, Kean Ho" <kean.ho.chew@intel.com>,
+        "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] pwm: add support for Intel Low Power Subsystem PWM
+Thread-Topic: [PATCH v2] pwm: add support for Intel Low Power Subsystem PWM
+Thread-Index: AQHPQr8XoOKYPqnxMka3HgVtjsxWsZrnnitw
+Date: Wed, 19 Mar 2014 01:25:34 +0000
+Message-ID: <604BF5F4C5D71041942BC7E84ED659EA01568555@PGSMSX103.gar.corp.intel.com>
+References: <1393599057-26451-1-git-send-email-chiau.ee.chew@intel.com>
+ <20140318152855.GA7237@mithrandir>
+In-Reply-To: <20140318152855.GA7237@mithrandir>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.206]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TP_printk() should never dereference any pointers, because the ring
-buffer can be read at some unknown time in the future. If a device no
-longer exists, it can cause a kernel oops. This also makes this
-event useless when saving the ring buffer in userspaces tools such as
-perf and trace-cmd.
+> On Fri, Feb 28, 2014 at 10:50:57PM +0800, Chew Chiau Ee wrote:
+> > From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >
+> > Add support for Intel Low Power I/O subsystem PWM controllers found on
+> > Intel BayTrail SoC.
+> >
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > Signed-off-by: Chew, Kean Ho <kean.ho.chew@intel.com>
+> > Signed-off-by: Chang, Rebecca Swee Fun
+> > <rebecca.swee.fun.chang@intel.com>
+> > Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+> > ---
+> >  drivers/pwm/Kconfig    |   10 +++
+> >  drivers/pwm/Makefile   |    1 +
+> >  drivers/pwm/pwm-lpss.c |  179
+> > ++++++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 190 insertions(+), 0 deletions(-)  create mode
+> > 100644 drivers/pwm/pwm-lpss.c
+> 
+> Sorry for taking so long to get back to you on this. Things have been somewhat
+> crazy lately.
+> 
+> This generally looks very good, but I found two issues that escaped last time.
+> See below.
+>
+> > diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
+> [...]
+> > +static int pwm_lpss_config(struct pwm_chip *chip, struct pwm_device *pwm,
+> > +			   int duty_ns, int period_ns)
+> > +{
+> > +	struct pwm_lpss_chip *lpwm = to_lpwm(chip);
+> > +	u8 on_time_div;
+> > +	unsigned long c = clk_get_rate(lpwm->clk);
+> > +	unsigned long long base_unit, freq = NSECS_PER_SEC;
+> > +	u32 ctrl;
+> > +
+> > +	do_div(freq, period_ns);
+> > +
+> > +	/* The equation is: base_unit = ((freq / c) * 65536) + correction */
+> > +	base_unit = freq * 65536;
+> > +	do_div(base_unit, c);
+> 
+> clk_get_rate() can return 0, so perhaps it would be safer to check for the
+> validity of c before dividing by it. This will probably never happen for your
+> driver or platform, but people may look at your driver for inspiration at some
+> point, so it should still be handling this correctly.
 
-The i915_gem_evict_vm dereferences the vm pointer which may also not
-exist when the ring buffer is read sometime in the future.
+Agreed. Will update the code accordingly.
 
-Link: http://lkml.kernel.org/r/1395095198-20034-3-git-send-email-artagnon@gmail.com
-Reported-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: stable@vger.kernel.org # 3.13+
-Fixes: bcccff847d1f "drm/i915: trace vm eviction instead of everything"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
-v2 - fixed build bug. This time tested on a box with an i915.
+> > +MODULE_DESCRIPTION("PWM driver for Intel LPSS");
+> MODULE_AUTHOR("Mika
+> > +Westerberg <mika.westerberg@linux.intel.com>");
+> > +MODULE_LICENSE("GPLv2");
+> 
+> I think this needs to be "GPL v2".
 
-diff --git a/drivers/gpu/drm/i915/i915_trace.h b/drivers/gpu/drm/i915/i915_trace.h
-index 6e580c9..783ae08 100644
---- a/drivers/gpu/drm/i915/i915_trace.h
-+++ b/drivers/gpu/drm/i915/i915_trace.h
-@@ -238,14 +238,16 @@ TRACE_EVENT(i915_gem_evict_vm,
- 	    TP_ARGS(vm),
- 
- 	    TP_STRUCT__entry(
-+			     __field(u32, dev)
- 			     __field(struct i915_address_space *, vm)
- 			    ),
- 
- 	    TP_fast_assign(
-+			   __entry->dev = vm->dev->primary->index;
- 			   __entry->vm = vm;
- 			  ),
- 
--	    TP_printk("dev=%d, vm=%p", __entry->vm->dev->primary->index, __entry->vm)
-+	    TP_printk("dev=%d, vm=%p", __entry->dev, __entry->vm)
- );
- 
- TRACE_EVENT(i915_gem_ring_sync_to,
+Ok. Will update this as well.
+
+Thanks for your review!
+
+> 
+> Thierry
