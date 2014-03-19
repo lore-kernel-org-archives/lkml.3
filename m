@@ -1,110 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866AbaCSRxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 13:53:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37131 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752513AbaCSRxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 13:53:42 -0400
-Date: Wed, 19 Mar 2014 18:52:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        JBottomley@parallels.com, Nagalakshmi.Nandigama@lsi.com,
-        Sreekanth.Reddy@lsi.com, rientjes@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org
-Subject: Re: [v3.13][v3.14][Regression] kthread:makekthread_create()killable
-Message-ID: <20140319175253.GB11923@redhat.com>
-References: <20140316162512.GA9467@redhat.com> <201403172138.GFB43278.OOOFFSQLVHJMtF@I-love.SAKURA.ne.jp> <20140317142246.GA27453@redhat.com> <201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp> <20140318171620.GA10636@redhat.com> <201403192049.BBI39025.OVFMOOJtFSHFQL@I-love.SAKURA.ne.jp> <5329C22A.5070206@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5329C22A.5070206@canonical.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753166AbaCSRyc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 13:54:32 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37047 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898AbaCSRya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 13:54:30 -0400
+Date: Wed, 19 Mar 2014 13:54:28 -0400 (EDT)
+Message-Id: <20140319.135428.665886252770597921.davem@davemloft.net>
+To: peterz@infradead.org
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        mingo@kernel.org, will.deacon@arm.com, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 26/31] arch,sparc: Convert smp_mb__*
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140319065205.163413133@infradead.org>
+References: <20140319064729.660482086@infradead.org>
+	<20140319065205.163413133@infradead.org>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Mar 2014 10:54:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19, Joseph Salisbury wrote:
->
-> On 03/19/2014 07:49 AM, Tetsuo Handa wrote:
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 19 Mar 2014 07:47:55 +0100
 
-Hmm. Apparently I missed this email from Tetsuo. I'll reply here.
+> sparc32: fully relies on asm-generic/barrier.h and thus can use its
+> 	 implementation.
+> 
+> sparc64: is strongly ordered and its atomic ops imply a full barrier,
+> 	 implement the new primitives using barrier().
+> 
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-> > Oleg Nesterov wrote:
-> >
-> >> And btw, it is not clear to me if in this case device initialization really
-> >> needs more than 30 seconds... My understanding is probably wrong, so please
-> >> correct me. But it seems that before your "make kthread_create() killable"
-> >>
-> >> 	- probe hangs
-> >>
-> >> 	- SIGKILL wakes it up
-> >>
-> >> 	- so I assume that the probe was interrupted and didn't finish
-> >> 	  correctly ???
-> >>
-> >> 	- initialization continues, does scsi_host_alloc(), etc, and
-> >> 	  everything works fine even if probe was interrupted?
-> >>
-> > I confirmed that device initialization really took more than 30 seconds
-> > ( comments #51 and #52 ).
-
-Thanks. However I still think this needs more investigation. May be I'll
-write another email, but given that maintainers do not care...
-
-> >> So perhaps that probe should not hang and this should be fixed too ?
-> >> Do you know where exactly it hangs? And where it is woken up by SIGKILL ?
-> >> Or I totally misunderstood ?
-> > The probe did not hang.
-
-It doesn't hang forever. Otherwise see above.
-
-> > SIGKILL affected only wait_for_completion_killable()
-> > in kthread_create_on_node() called by mptsas_probe() via scsi_host_alloc().
-
-This wad already clear,
-
-> > Thus, the probe was interrupted because kthread_run() returned an error.
-
-No, #51 / #52 can't prove this. I think that kthread_run() or even
-scsi_host_alloc() was called with fatal_signal_pending(). What did the probe
-task do before? This is not clear. But again, see above.
-
-> >> Ah, I see, you mean that kmalloc() can do this every time. No, this should
-> >> not happen or we have another problem.
-> > Then, what happens if somebody does
-> >
-> >   while (1)
-> >       kill(pid, SIGKILL);
-> >
-> > where pid is the process calling kthread_run() from the "for (;;)" loop in
-> > scsi_host_alloc()?
-
-Nothing good. So what?
-
-Tetsuo, how many time I should repeat that I only tried to suggest the
-temporary dirty hack to close the regression ? ;)
-
-And once again, I agree with any change in scsi_host_alloc/etc, I suggested
-this (pseudo) code for example.
-
-> >> Dear maintainers, we need your help.
-> >>
-> > Right. We found that we can fix this problem by updating systemd-udevd to
-> > support longer timeout ( comment #53 ). Joseph, would you consult systemd
-> > maintainers?
->
-> Thanks everyone for reviewing this bug.  Message sent to systemd mailing
-> list:
-> http://lists.freedesktop.org/archives/systemd-devel/2014-March/018006.html
-
-OK, good, thanks.
-
-But please do not forget that the kernel crashes. Whatever else we do, this
-should be fixed anyway. And this should be fixed in driver.
-
-Oleg.
-
+Acked-by: David S. Miller <davem@davemloft.net>
