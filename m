@@ -1,106 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936AbaCSGZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 02:25:51 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50038 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145AbaCSGZt (ORCPT
+	id S1753411AbaCSGbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 02:31:33 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:49354 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388AbaCSGbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 02:25:49 -0400
-Message-ID: <53293782.9060708@linux.vnet.ibm.com>
-Date: Wed, 19 Mar 2014 11:51:54 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 19 Mar 2014 02:31:31 -0400
+Message-ID: <532939A0.9000901@gmail.com>
+Date: Wed, 19 Mar 2014 08:30:56 +0200
+From: Emmanuel Grumbach <egrumbach@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        dietmar.eggemann@arm.com, tony.luck@intel.com, fenghua.yu@intel.com,
-        schwidefsky@de.ibm.com, james.hogan@imgtec.com, cmetcalf@tilera.com,
-        benh@kernel.crashing.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 5/7] sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
-References: <1395165409-18055-1-git-send-email-vincent.guittot@linaro.org> <1395165409-18055-6-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1395165409-18055-6-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031906-9332-0000-0000-000000289D32
+To: John Linville <linville@tuxdriver.com>
+CC: linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: pull request: iwlwifi 2014-03-19
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="akECqil6ulS61mWo0cQVX5iPiaPgaGCCL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--akECqil6ulS61mWo0cQVX5iPiaPgaGCCL
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On 03/18/2014 11:26 PM, Vincent Guittot wrote:
-> A new flag SD_SHARE_POWERDOMAIN is created to reflect whether groups of CPUs
-> in a sched_domain level can or not reach different power state. As an example,
-> the flag should be cleared at CPU level if groups of cores can be power gated
-> independently. This information can be used to add load balancing level between
-> group of CPUs than can power gate independantly. The default behavior of the
-> scheduler is to spread tasks across CPUs and groups of CPUs so the flag is set
-> into all sched_domains.
+Hi John,
 
-I don't see this flag being set either in sd_init() or in
-default_topology[]. Should not the default_topology[] flag setting
-routines set this flag at every level of sched domain along with other
-topology flags, unless the arch wants to override it?
+This fixes the build failure faced by Stephen:
 
-Regards
-Preeti U Murthy
-> This flag is part of the topology flags that can be set by arch.
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  include/linux/sched.h | 1 +
->  kernel/sched/core.c   | 9 ++++++---
->  2 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 6479de4..7048369 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -861,6 +861,7 @@ enum cpu_idle_type {
->  #define SD_BALANCE_WAKE		0x0010  /* Balance on wakeup */
->  #define SD_WAKE_AFFINE		0x0020	/* Wake task to waking CPU */
->  #define SD_SHARE_CPUPOWER	0x0080	/* Domain members share cpu power */
-> +#define SD_SHARE_POWERDOMAIN	0x0100	/* Domain members share power domain */
->  #define SD_SHARE_PKG_RESOURCES	0x0200	/* Domain members share cpu pkg resources */
->  #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
->  #define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 0b51ee3..224ec3b 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5298,7 +5298,8 @@ static int sd_degenerate(struct sched_domain *sd)
->  			 SD_BALANCE_FORK |
->  			 SD_BALANCE_EXEC |
->  			 SD_SHARE_CPUPOWER |
-> -			 SD_SHARE_PKG_RESOURCES)) {
-> +			 SD_SHARE_PKG_RESOURCES |
-> +			 SD_SHARE_POWERDOMAIN)) {
->  		if (sd->groups != sd->groups->next)
->  			return 0;
->  	}
-> @@ -5329,7 +5330,8 @@ sd_parent_degenerate(struct sched_domain *sd, struct sched_domain *parent)
->  				SD_BALANCE_EXEC |
->  				SD_SHARE_CPUPOWER |
->  				SD_SHARE_PKG_RESOURCES |
-> -				SD_PREFER_SIBLING);
-> +				SD_PREFER_SIBLING |
-> +				SD_SHARE_POWERDOMAIN);
->  		if (nr_node_ids == 1)
->  			pflags &= ~SD_SERIALIZE;
->  	}
-> @@ -5946,7 +5948,8 @@ static int sched_domains_curr_level;
->  	(SD_SHARE_CPUPOWER |		\
->  	 SD_SHARE_PKG_RESOURCES |	\
->  	 SD_NUMA |			\
-> -	 SD_ASYM_PACKING)
-> +	 SD_ASYM_PACKING |		\
-> +	 SD_SHARE_POWERDOMAIN)
-> 
->  static struct sched_domain *
->  sd_init(struct sched_domain_topology_level *tl, int cpu)
-> 
+drivers/net/wireless/iwlwifi/mvm/debugfs.c: In function 'iwl_dbgfs_fw_err=
+or_dump_release':
+drivers/net/wireless/iwlwifi/mvm/debugfs.c:161:2: error: implicit declara=
+tion of function 'vfree' [-Werror=3Dimplicit-function-declaration]
+  vfree(file->private_data);
+  ^
 
+Please pull.
+
+
+The following changes since commit a82dda6cd492b8c88952be6f6527f3656f7ac5=
+85:
+
+  iwlwifi: mvm: disable uAPSD due to bugs in the firmware (2014-03-18 21:=
+15:42 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi-next.git =
+for-john
+
+for you to fetch changes up to 192c80a2499cf2571924081c646262036d841484:
+
+  iwlwifi: mvm: add missing include (2014-03-19 08:25:05 +0200)
+
+----------------------------------------------------------------
+Emmanuel Grumbach (1):
+      iwlwifi: mvm: add missing include
+
+ drivers/net/wireless/iwlwifi/mvm/debugfs.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+
+--akECqil6ulS61mWo0cQVX5iPiaPgaGCCL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTKTmyAAoJEC0Llv5uNjIBlyoP/A3+ZDd3tgEjB8QtX5LeXOn6
+Y9/1NvNMxiVQdctBbGooDiq73ORNH1K2oEzSMOrGTemWK9vI6vZQt0EyAC1O+5Ub
+eLdGs42tZMekCYaWog8GV9huyBoKqYEkDB1Fc/zQjogXGtKQl5TRTFX5vGuUslZs
+tC+/zwGrJoViZLKjhfy9lBchNOzF4R+KRNJTTjfE4SZqp2Y3WFTk/kRkC1eiS2gj
+sTK+ROIJfZ2L1VNwJXjjDUrpTMLwoKYRBemv0pfYsDwySb/RbDg93AxyG9Eq0+9O
+w8G64LtMtTk70PW3J6vJUf+rT4MPw2qpWCz8imygdEtSfCIRA2L5qriMvzY1VXyx
+3+fXj3IIhHw8vQ2ymVkgMUUvcnsgzfyYrFPQlvcrJJZetqWcVaN6879UBpGn+/r/
+hid4HEJ60/oCsiFcCLeJLd2Sg5FdDwizf7vSQtgQRdyfXzmi8hW9x1oxaIm6ME8F
+Pt3ZtrXrHi+ZxIhO0UDaEayQTtN/E+sC+/VsKzaT4zfNMrYe7sfGupKNjxCbHuKE
+lEI91qOar9HSGxDYfFZzztAYk6xKL31mcf9SpEDrDYRQQjdRgnuWV/qVNNdDcCJh
+AaAJJBAoB/3MA3p1u0Ep2yLeN0ngYYO2/U/Q9GOL6aS4h2tRgpVcUj3JKLoOvd1T
+he1soIv6cyVxVKTqJZSm
+=eGku
+-----END PGP SIGNATURE-----
+
+--akECqil6ulS61mWo0cQVX5iPiaPgaGCCL--
