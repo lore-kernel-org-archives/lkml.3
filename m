@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794AbaCSTWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 15:22:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33417 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751445AbaCSTWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 15:22:48 -0400
-Date: Wed, 19 Mar 2014 15:22:44 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, axboe@fb.com
-Subject: Re: block: free q->flush_rq in blk_init_allocated_queue error paths.
-Message-ID: <20140319192244.GA17654@redhat.com>
-References: <20140318010053.D08A2660CC5@gitolite.kernel.org>
- <20140319191221.GA10034@redhat.com>
+	id S1752262AbaCST24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 15:28:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33988 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934AbaCST2y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 15:28:54 -0400
+Message-ID: <5329EFF0.6030400@wwwdotorg.org>
+Date: Wed, 19 Mar 2014 13:28:48 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140319191221.GA10034@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: Rob Herring <robherring2@gmail.com>, Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Subject: Re: [PATCH] of: Make of_find_node_by_path() handle /aliases
+References: <1395179549-31345-1-git-send-email-pantelis.antoniou@konsulko.com>
+In-Reply-To: <1395179549-31345-1-git-send-email-pantelis.antoniou@konsulko.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19 2014 at  3:12pm -0400,
-Dave Jones <davej@redhat.com> wrote:
-
-> Commit 7982e90c3a ("block: fix q->flush_rq NULL pointer crash on dm-mpath flush")
-> moved an allocation to blk_init_allocated_queue(), but neglected to free
-> that allocation on the error paths that follow.
+On 03/18/2014 03:52 PM, Pantelis Antoniou wrote:
+> Make of_find_node_by_path() handle aliases as prefixes.
 > 
-> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+> Originally by David Daney <ddaney@caviumnetworks.com>, but
+> reworked according to remark by Grant Likely.
+> 
+> Handles all cases without allocating memory as requested by
+> Grant Likely <grant.likely@linaro.org>
 
-Ngh.. thanks Dave!
-
-/me hangs his head in shame...
-
-Acked-by: Mike Snitzer <snitzer@redhat.com>
-
-Jens, really sorry about this oversight.  I can take it on the chin and
-pick this up for Linus to take this week from linux-dm.git.  Your call.
+Why not just introduce a new function of_find_node_by_alias()? A single
+unified function would make sense if the function did something like:
+(1) find my path, and return if found (2) if not found, fall back to
+searching /aliases. However, since this modified function takes 2
+separate formats of input path based on whether it should search for an
+alias or not, it seems like 2 separate functions would be a better API.
+Perhaps the new API should simply be a wrapper around
+of_find_node_by_path, once the alias has been found?
