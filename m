@@ -1,100 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924AbaCSVBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 17:01:19 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:63961 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755935AbaCSVAK (ORCPT
+	id S1754533AbaCSVBw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 17:01:52 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:62312 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756749AbaCSVBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 17:00:10 -0400
-From: Ben Chan <benchan@chromium.org>
-To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, Oliver Neukum <oliver@neukum.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Miller <davem@davemloft.net>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Suarez <gsuarez@smithmicro.com>
-Subject: [PATCH net-next v4 2/2] net: cdc_ncm: respect operator preferred MTU reported by MBIM
-Date: Wed, 19 Mar 2014 14:00:06 -0700
-Message-Id: <1395262806-19237-3-git-send-email-benchan@chromium.org>
-X-Mailer: git-send-email 1.9.0.279.gdc9e3eb
-In-Reply-To: <1395262806-19237-1-git-send-email-benchan@chromium.org>
-References: <1395262806-19237-1-git-send-email-benchan@chromium.org>
+	Wed, 19 Mar 2014 17:01:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <1395179549-31345-1-git-send-email-pantelis.antoniou@konsulko.com>
+References: <1395179549-31345-1-git-send-email-pantelis.antoniou@konsulko.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 19 Mar 2014 21:00:55 +0000
+X-Google-Sender-Auth: NePbeMs7M1kyh9sShaxaCRLJPq0
+Message-ID: <CACxGe6uceSmCznZxh5NoWTRTMCnN-nNi2NH9PLPx5C4O5Y7G7w@mail.gmail.com>
+Subject: Re: [PATCH] of: Make of_find_node_by_path() handle /aliases
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to "Universal Serial Bus Communications Class Subclass
-Specification for Mobile Broadband Interface Model, Revision 1.0,
-Errata-1" published by USB-IF, the wMTU field of the MBIM extended
-functional descriptor indicates the operator preferred MTU for IP data
-streams.
+On Tue, Mar 18, 2014 at 9:52 PM, Pantelis Antoniou
+<pantelis.antoniou@konsulko.com> wrote:
+> Make of_find_node_by_path() handle aliases as prefixes.
+>
+> Originally by David Daney <ddaney@caviumnetworks.com>, but
+> reworked according to remark by Grant Likely.
+>
+> Handles all cases without allocating memory as requested by
+> Grant Likely <grant.likely@linaro.org>
+>
+> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 
-This patch modifies cdc_ncm_setup to ensure that the MTU value set on
-the usbnet device does not exceed the operator preferred MTU indicated
-by wMTU if the MBIM device exposes a MBIM extended functional
-descriptor.
+I posted a patch that does the same thing with a different method just
+a few days ago:
 
-Signed-off-by: Ben Chan <benchan@chromium.org>
----
- drivers/net/usb/cdc_ncm.c   | 17 +++++++++++++++++
- include/linux/usb/cdc_ncm.h |  1 +
- 2 files changed, 18 insertions(+)
+http://www.spinics.net/lists/devicetree/msg26336.html
 
-diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
-index dbff290..e8711a8 100644
---- a/drivers/net/usb/cdc_ncm.c
-+++ b/drivers/net/usb/cdc_ncm.c
-@@ -74,6 +74,7 @@ static int cdc_ncm_setup(struct usbnet *dev)
- 	u8 iface_no;
- 	int err;
- 	int eth_hlen;
-+	u16 mbim_mtu;
- 	u16 ntb_fmt_supported;
- 	__le16 max_datagram_size;
- 
-@@ -261,6 +262,14 @@ out:
- 	/* set MTU to max supported by the device if necessary */
- 	if (dev->net->mtu > ctx->max_datagram_size - eth_hlen)
- 		dev->net->mtu = ctx->max_datagram_size - eth_hlen;
-+
-+	/* do not exceed operater preferred MTU */
-+	if (ctx->mbim_extended_desc) {
-+		mbim_mtu = le16_to_cpu(ctx->mbim_extended_desc->wMTU);
-+		if (mbim_mtu != 0 && mbim_mtu < dev->net->mtu)
-+			dev->net->mtu = mbim_mtu;
-+	}
-+
- 	return 0;
- }
- 
-@@ -399,6 +408,14 @@ int cdc_ncm_bind_common(struct usbnet *dev, struct usb_interface *intf, u8 data_
- 			ctx->mbim_desc = (const struct usb_cdc_mbim_desc *)buf;
- 			break;
- 
-+		case USB_CDC_MBIM_EXTENDED_TYPE:
-+			if (buf[0] < sizeof(*(ctx->mbim_extended_desc)))
-+				break;
-+
-+			ctx->mbim_extended_desc =
-+				(const struct usb_cdc_mbim_extended_desc *)buf;
-+			break;
-+
- 		default:
- 			break;
- 		}
-diff --git a/include/linux/usb/cdc_ncm.h b/include/linux/usb/cdc_ncm.h
-index c3fa807..bdf05fb 100644
---- a/include/linux/usb/cdc_ncm.h
-+++ b/include/linux/usb/cdc_ncm.h
-@@ -93,6 +93,7 @@ struct cdc_ncm_ctx {
- 
- 	const struct usb_cdc_ncm_desc *func_desc;
- 	const struct usb_cdc_mbim_desc *mbim_desc;
-+	const struct usb_cdc_mbim_extended_desc *mbim_extended_desc;
- 	const struct usb_cdc_ether_desc *ether_desc;
- 
- 	struct usb_interface *control;
--- 
-1.9.0.279.gdc9e3eb
+The above patch also has the advantage of being a more efficient search.
 
+g.
+
+> ---
+>  drivers/of/base.c | 69 +++++++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 65 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 7083fad..19bcdb4 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -773,22 +773,83 @@ EXPORT_SYMBOL(of_get_child_by_name);
+>  /**
+>   *     of_find_node_by_path - Find a node matching a full OF path
+>   *     @path:  The full path to match
+> + *     @path: Either the full path to match, or if the path does not
+> + *            start with '/', the name of a property of the /aliases
+> + *            node (an alias).  In the case of an alias, the node
+> + *            matching the alias' value will be returned.
+> + *
+> + *     Valid paths:
+> + *             /foo/bar        Full path
+> + *             foo             Valid alias
+> + *             foo/bar         Valid alias + relative path
+>   *
+>   *     Returns a node pointer with refcount incremented, use
+>   *     of_node_put() on it when done.
+>   */
+>  struct device_node *of_find_node_by_path(const char *path)
+>  {
+> -       struct device_node *np = of_allnodes;
+> +       struct device_node *np = NULL;
+> +       int len;
+> +       const char *p = NULL;
+> +       struct property *prop;
+>         unsigned long flags;
+>
+> +       /* under lock (not very nice) */
+>         raw_spin_lock_irqsave(&devtree_lock, flags);
+> -       for (; np; np = np->allnext) {
+> -               if (np->full_name && (of_node_cmp(np->full_name, path) == 0)
+> -                   && of_node_get(np))
+> +
+> +       len = strlen(path);
+> +
+> +       /* path begins with an alias */
+> +       if (path[0] != '/') {
+> +
+> +               /* now find the relative path (if any)*/
+> +               p = strchr(path, '/');
+> +               if (p != NULL)
+> +                       len = p - path;
+> +
+> +               /* of_aliases must not be NULL */
+> +               if (!of_aliases)
+> +                       goto out;
+> +
+> +               /* find matching alias */
+> +               for_each_property_of_node(of_aliases, prop)
+> +                       if (strlen(prop->name) == len &&
+> +                                       strncmp(prop->name, path, len) == 0)
+> +                               break;
+> +
+> +               /* not found; bail */
+> +               if (prop == NULL)
+> +                       goto out;
+> +
+> +               path = prop->value;
+> +       }
+> +
+> +       /* path lookup */
+> +       for_each_of_allnodes(np) {
+> +
+> +               if (!np->full_name)
+> +                       continue;
+> +
+> +               if (p == NULL) {
+> +                       /* full component */
+> +                       if (strcasecmp(np->full_name, path) != 0)
+> +                               continue;
+> +               } else {
+> +                       /* last component (including '/') */
+> +                       if (strncasecmp(np->full_name, path, len) != 0)
+> +                               continue;
+> +
+> +                       if (strcasecmp(np->full_name + len, p) != 0)
+> +                               continue;
+> +               }
+> +
+> +               if (of_node_get(np))
+>                         break;
+>         }
+> +
+> +out:
+>         raw_spin_unlock_irqrestore(&devtree_lock, flags);
+> +
+>         return np;
+>  }
+>  EXPORT_SYMBOL(of_find_node_by_path);
+> --
+> 1.7.12
+>
