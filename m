@@ -1,167 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934247AbaCSOGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 10:06:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61818 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933380AbaCSOGP (ORCPT
+	id S964979AbaCSOGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 10:06:25 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:3137 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933380AbaCSOGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 10:06:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dinh Nguyen <dinh.linux@gmail.com>
-Cc: Dinh Nguyen <dinguyen@altera.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>, arm@kernel.org,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: stmmac-socfpga breakage in arm-soc
-Date: Wed, 19 Mar 2014 15:05:57 +0100
-Message-ID: <4337501.shzGE38xmF@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53299CA8.607@gmail.com>
-References: <201403191333.01095.arnd@arndb.de> <53299CA8.607@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:E4Jumt6DngBbQGcHX6asg6Jkqtlvbc8Yhw7oacKnIo8
- yjExUvz51DStK6oiCCI/3yGH1DpnrHBzQXRzWr4Kl7LtHfsqKg
- z0hZH1gFC3DfIDLm250P+mGfbW7eEZLMpoUQ/iAuU4gST4Rk7W
- js7G+p3YWezKiJwMny3tg9kTxJJy1obkXlzRV6RJ+n54ZVgx/l
- 8NHz+cKNTzqIcGY3gI32hWqdX2oAIuNc9zr9w1q3eAl/2Kg/fb
- JHygTbQ+vcYF8oTYDQZW779YAE16uOA2sHzvmU+wkvzTCwW/ag
- Z7DPt9MEcMK08TDsHa4cZmmCE8/porJi+ZF7IIwH9ITHFOGJ+P
- qev+S2dYij5WDuc2zmqM=
+	Wed, 19 Mar 2014 10:06:20 -0400
+Message-ID: <1395237927.12633.29.camel@thorin>
+Subject: Re: [PATCH] Coccicheck: Remove memcpy to struct assignment test
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, mmarek@suse.cz,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cocci@systeme.lip6.fr" <cocci@systeme.lip6.fr>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andreea Bernat <bernat.ada@gmail.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        kernel-janitors@vger.kernel.org
+Date: Wed, 19 Mar 2014 15:05:27 +0100
+In-Reply-To: <CA+MoWDoSYu-aSp39vBe7DmayH2iqagHNYP9BC7LefajMXk+FnQ@mail.gmail.com>
+References: <1395177092-3023-1-git-send-email-peter.senna@gmail.com>
+	 <1395230578.12633.21.camel@thorin>
+	 <CA+MoWDoSYu-aSp39vBe7DmayH2iqagHNYP9BC7LefajMXk+FnQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at 1290; Body=11 Fuz1=11
+	Fuz2=11
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	*  0.1 AWL AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 March 2014 08:33:28 Dinh Nguyen wrote:
-> On 03/19/2014 07:33 AM, Arnd Bergmann wrote:
+Hi!
+
+On Mit, 2014-03-19 at 14:39 +0100, Peter Senna Tschudin wrote:
+> On Wed, Mar 19, 2014 at 1:02 PM, Bernd Petrovitsch
+> <bernd@petrovitsch.priv.at> wrote:
+> > On Die, 2014-03-18 at 22:11 +0100, Peter Senna Tschudin wrote:
+> >> The Coccinelle script scripts/coccinelle/misc/memcpy-assign.cocci look
+> >> for opportunities to replace a call to memcpy by a struct assignment.
+> >> This patch removes memcpy-assign.cocci as it is not clear that this
+> >> convention has an impact on the generated code.
 > >
-> > * Replaced the parent/child DT nodes with a combined node
-> > * Renamed the device node from 'ethernet0' to 'ethernet'
-> >    as the standard name.
-> > * Removed interrupt-names and clock-names properties that
-> >    are not documented in the binding and not used.
-> > * Added a new DWMAC_SOCFPGA Kconfig symbol to control
-> >    compilation of this driver
-> 
-> The v1 of this patch had this had this Kconfig symbol and is
-> similar to your proposed fix.
-> 
-> http://marc.info/?l=linux-netdev&m=139167062725242&w=2
+> > Using struct assignment keeps the type check and is just for this reason
+> > always preferable over memcpy().
+> What about the assignment hiding that a potentially large memcpy is
+> happening instead of just a pointer assignment?
 
-I don't understand. So you got parts of it right at first, but then
-changed it in a different way from what Peppe asked you to do?
+It makes no difference if you copy 2KB with a struct assignment or with
+a memcpy(). IMHO most probably each and every C compiler produces the
+same code for both cases.
 
-> > diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> > index 8fb32a8..46aef510 100644
-> > --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> > +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> > @@ -38,6 +38,9 @@ static const struct of_device_id stmmac_dt_ids[] = {
-> >   	{ .compatible = "st,stih416-dwmac", .data = &sti_gmac_data},
-> >   	{ .compatible = "st,stid127-dwmac", .data = &sti_gmac_data},
-> >   #endif
-> > +#ifdef CONFIG_DWMAC_SOCFPGA
-> > +	{ .compatible = "altr,socfpga-stmmac", .data = &socfpga_gmac_data },
-> > +#endif
-> >   	/* SoC specific glue layers should come before generic bindings */
-> >   	{ .compatible = "st,spear600-gmac"},
-> >   	{ .compatible = "snps,dwmac-3.610"},
-> 
-> 
-> If it's okay with you Arnd, can I take this patch and add on top of it 
-> as it is also breaking dtb builds:
-> 
-> Error: arch/arm/boot/dts/socfpga_arria5_socdk.dts:51.2-3 label or path, 
-> 'ethernet1', not found
-> FATAL ERROR: Syntax error parsing input tree
-> Error: arch/arm/boot/dts/socfpga_cyclone5_socdk.dts:44.2-3 label or 
-> path, 'ethernet1', not found
-> FATAL ERROR: Syntax error parsing input tree
-> make[1]: *** [arch/arm/boot/dts/socfpga_arria5_socdk.dtb] Error 1
-> make[1]: *** Waiting for unfinished jobs....
-> make[1]: *** [arch/arm/boot/dts/socfpga_cyclone5_socdk.dtb] Error 1
-> Error: arch/arm/boot/dts/socfpga_cyclone5_sockit.dts:44.2-3 label or 
-> path, 'ethernet1', not found
-> FATAL ERROR: Syntax error parsing input tree
-> make[1]: *** [arch/arm/boot/dts/socfpga_cyclone5_sockit.dtb] Error 1
-> Error: arch/arm/boot/dts/socfpga_vt.dts:92.2-3 label or path, 
-> 'ethernet0', not found
+And - more important - I assume that people which actually read the code
+(to understand the code) also know if the variables there are
+pointers/ints or a (somewhat large) struct (if only one see an field
+access in the struct, it should be pretty clear).
+I don't think it makes actually much sense trying to read source without
+that ....
 
-I have found the same problems and fixed it up locally already with
-the additional change below.
-
-	Arnd
-
-
-diff --git a/arch/arm/boot/dts/socfpga_arria5_socdk.dts b/arch/arm/boot/dts/socfpga_arria5_socdk.dts
-index 2d6b38b..a87ee1c 100644
---- a/arch/arm/boot/dts/socfpga_arria5_socdk.dts
-+++ b/arch/arm/boot/dts/socfpga_arria5_socdk.dts
-@@ -46,11 +46,8 @@
- 	};
- };
- 
--&ethernet1 {
--	status = "okay";
--};
--
- &gmac1 {
-+	status = "okay";
- 	phy-mode = "rgmii";
- 
- 	rxd0-skew-ps = <0>;
-diff --git a/arch/arm/boot/dts/socfpga_cyclone5_socdk.dts b/arch/arm/boot/dts/socfpga_cyclone5_socdk.dts
-index 26c63a0..ae16d97 100644
---- a/arch/arm/boot/dts/socfpga_cyclone5_socdk.dts
-+++ b/arch/arm/boot/dts/socfpga_cyclone5_socdk.dts
-@@ -39,11 +39,8 @@
- 	};
- };
- 
--&ethernet1 {
--	status = "okay";
--};
--
- &gmac1 {
-+	status = "okay";
- 	phy-mode = "rgmii";
- 
- 	rxd0-skew-ps = <0>;
-diff --git a/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts b/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
-index 469bb5c..b79e2a2 100644
---- a/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
-+++ b/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
-@@ -39,11 +39,8 @@
- 	};
- };
- 
--&ethernet1 {
--	status = "okay";
--};
--
- &gmac1 {
-+	status = "okay";
- 	phy-mode = "rgmii";
- 
- 	rxd0-skew-ps = <0>;
-diff --git a/arch/arm/boot/dts/socfpga_vt.dts b/arch/arm/boot/dts/socfpga_vt.dts
-index 91f6ccf..0f33f2f 100644
---- a/arch/arm/boot/dts/socfpga_vt.dts
-+++ b/arch/arm/boot/dts/socfpga_vt.dts
-@@ -87,10 +87,7 @@
- 	};
- };
- 
--&ethernet0 {
--        status = "okay";
--};
--
- &gmac0 {
-+        status = "okay";
- 	phy-mode = "gmii";
- };
+	Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
