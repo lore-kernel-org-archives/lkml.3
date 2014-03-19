@@ -1,72 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965051AbaCSMur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 08:50:47 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:18001 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933482AbaCSMup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 08:50:45 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-55-532992a2e6f2
-Message-id: <1395233441.15174.8.camel@AMDC1943>
-Subject: Re: [PATCH-next] mfd/rtc: s5m: Do not allocate RTC I2C dummy and
- regmap for unsupported chipsets
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, Sachin Kamat <sachin.kamat@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Date: Wed, 19 Mar 2014 13:50:41 +0100
-In-reply-to: <20140319124720.GH31687@lee--X1>
-References: <1395232095-7103-1-git-send-email-k.kozlowski@samsung.com>
- <20140319124720.GH31687@lee--X1>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xq7qLJmkGG8yeYm6x5OJVdouNM9az
-	WpxtesNucf/rUUaLy7vmsFns7+xgtDj5p5fR4nQ3q8XFFV+YLNbPeM3iwOWxZ+JJNo871/aw
-	ecw7GejRt2UVo8f0eT+ZPD5vkgtgi+KySUnNySxLLdK3S+DK2L9yE1PBPs6KDU9WsDYwbmfv
-	YuTkkBAwkVh5dy8rhC0mceHeerYuRi4OIYGljBJ3t+xngXA+M0o8f9LDDFLFK6Av8fvQJCCb
-	g0NYIFviwREPkDCbgLHE5uVL2EDCIgIqEufemIO0Mgs8YZJ4e60HbAGLgKrEgbmzwWxOAV2J
-	BxuawUYKCWRK/F/5mw3EZhZQl5g0bxEzxEFKErvbO9kh4vISm9e8hTpBUOLH5HssExgFZiFp
-	mYWkbBaSsgWMzKsYRVNLkwuKk9JzjfSKE3OLS/PS9ZLzczcxQiLh6w7GpcesDjEKcDAq8fBK
-	xGoEC7EmlhVX5h5ilOBgVhLhbe3XDBbiTUmsrEotyo8vKs1JLT7EyMTBKdXAuOjaMq45t05/
-	TD1UGMEm4nilqH7pJNH1r4+td/9kwVhYfaVSSSfdLYjz3oGXNZf3+/m2HVcK23PHbUf+clPV
-	qROFC1SD/KJLFHbmz7rwqnxSbOxmCwnOJb/f/EpRWp5ZV5W4X8NyIZNuzbkvT/nTrq00WHNB
-	1ZprjWux+8r2kNkTcjViaxVeK7EUZyQaajEXFScCAL81TAFiAgAA
+	id S964939AbaCSMza (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 08:55:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5992 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933482AbaCSMz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 08:55:28 -0400
+Date: Wed, 19 Mar 2014 13:54:56 +0100
+From: Igor Mammedov <imammedo@redhat.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, bp@suse.de, paul.gortmaker@windriver.com,
+        JBeulich@suse.com, drjones@redhat.com, toshi.kani@hp.com,
+        x86@kernel.org, riel@redhat.com, gong.chen@linux.intel.com
+Subject: Re: [PATCH 0/3] x86: fix hang when AP bringup is too slow
+Message-ID: <20140319135456.4a74a2ea@nial.usersys.redhat.com>
+In-Reply-To: <532984A9.8080001@redhat.com>
+References: <1394720720-8484-1-git-send-email-imammedo@redhat.com>
+	<53283A3F.6040302@redhat.com>
+	<20140318194951.17fd61ea@thinkpad>
+	<532984A9.8080001@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-19 at 12:47 +0000, Lee Jones wrote:
-> > The rtc-s5m driver does not support all of S2M and S5M chipsets
-> > supported by main MFD sec-core driver. For such chipsets unsupported by
-> > rtc-s5m, the MFD sec-core driver initialized regmap with default config.
-> > This config in such cases wouldn't work at all.
-> > 
-> > The main MFD sec-core driver shouldn't initialize regmap for child
-> > drivers which is not used by them and even not valid.
-> > 
-> > Move the allocation of RTC I2C dummy device and initialization of RTC
-> > regmap from main MFD sec-core driver to the rtc-s5m driver. The rtc-s5m
-> > driver will use proper regmap config for supported devices.
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  drivers/mfd/sec-core.c           |   53 +--------------------------
-> >  drivers/rtc/rtc-s5m.c            |   75 +++++++++++++++++++++++++++++++++++---
-> >  include/linux/mfd/samsung/core.h |    3 --
-> >  3 files changed, 71 insertions(+), 60 deletions(-)
+On Wed, 19 Mar 2014 07:51:05 -0400
+Prarit Bhargava <prarit@redhat.com> wrote:
+
 > 
-> It's a bit late in the cycle for this kind of change. Would you mind
-> re-sending after the v3.15 merge window please?
+> 
+> On 03/18/2014 02:49 PM, Igor Mammedov wrote:
+> > On Tue, 18 Mar 2014 08:21:19 -0400
+> > Prarit Bhargava <prarit@redhat.com> wrote:
+> > 
+> >>
+> >>
+> >> On 03/13/2014 10:25 AM, Igor Mammedov wrote:
+> >>> Hang is observed on virtual machines during CPU hotplug,
+> >>> especially in big guests with many CPUs. (It happens more
+> >>> often if host is over-committed).
+> >>>
+> >>
+> >> Hey Igor, I like this better than the previous version.  Thanks for taking into
+> >> account the possible races in this code.
+> >>
+> >> A quick question on system behaviour.  As you know I've been more concerned
+> >> lately with error handling, etc., through the cpu hotplug code as we've seen
+> >> several customer reports of silent failures or cascading failures in the cpu
+> >> hotplug code when users have been attempting to perform physical hotplug.
+> >>
+> >> After your patches have been applied, in theory the following can happen:
+> >>
+> >> The master CPU is completing the AP cpu's bring up.  The AP cpu is doing (sorry
+> >> for the cut-and-paste),
+> >>
+> >> void cpu_init(void)
+> >> {
+> >>         int cpu = smp_processor_id();
+> >>         struct task_struct *curr = current;
+> >>         struct tss_struct *t = &per_cpu(init_tss, cpu);
+> >>         struct thread_struct *thread = &curr->thread;
+> >>
+> >>         /*
+> >>          * wait till the master CPU completes it's STARTUP sequence,
+> >>          * and decides to wait till this AP boots
+> >>          */
+> >>         while (!cpumask_test_cpu(cpu, cpu_callout_mask)) {
+> >>                 cpu_relax();
+> >>                 if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID)
+> >>                         halt();
+> >>         }
+> >>
+> >> and is spinning on cpu_relax().  Suppose something goes wrong and the softlockup
+> >> watchdog fires on the AP cpu:
+> >>
+> >> 1.  Can it? :) ie) will the softlockup fire at this point of the AP init?  Okay,
+> >> I'm being really lazy and not looking at the code ;)
+> > It shouldn't, CPU is in pristine state and just came from boot trampoline at
+> > this point without interrupts configured yet.
+> 
+> Okay, not a big problem.
+> 
+> > 
+> >>
+> >> 2.  Is there anything we can do in this code to notify the user of a problem?
+> >> Even a pr_crit() here I think would help to indicate what went wrong; it might
+> >> be useful for future debugging in this area to have some sort of output.  I
+> >> think a WARN() or BUG() is necessary here as there are several calls to cpu_init().
+> > Do you mean something like this:
+> > 
+> > +		if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID) {
+> > +                       WARN(1);
+> > +			halt();
+> > +               }
+> 
+> Yeah, maybe WARN_ON(1, "some comment") though.
+printk at so early stage might be cause issues, since it is quite complex.
+Its' disabling/enabling irqs, calls *_delay_*() functions and takes locks.
+The last is especially dangerous because if AP is shot down by another
+INIT/SIPI, system will hang on next printk if locks were acquired by AP
+at that time.
+That case is possible if master CPU has got errors during wakeup_ap() and
+failed cpu_up() then it was unplugged + plugged via ACPI and attempted
+to be onlined again. 
 
-Sure, no problem.
+It's much safer not to do anything complex at AP start-up so early.
 
-Best regards,
-Krzysztof
+BTW:
+when AP reaches halt() line, failure is not silent. the master CPU might
+print error message if debug level logging is active:
+see arch/x86/kernel/smpboot.c:native_cpu_up()
+...
+        if (err) {
+                pr_debug("do_boot_cpu failed %d\n", err);
+                return -EIO;
+        }
+...
+
+perhaps we should change pr_debug to pr_crit here to make it more visible.
+something like:
+
+@@ -858,7 +858,7 @@ int native_cpu_up(unsigned int cpu, struct task_struct *tidle)
+ 
+        err = do_boot_cpu(apicid, cpu, tidle);
+        if (err) {
+-               pr_debug("do_boot_cpu failed %d\n", err);
++               pr_crit("do_boot_cpu failed(%d) to wakeup CPU#%u\n", err, cpu);
+                return -EIO;
+        }
+
+
+> 
+> > 
+> >>
+> >> 3.  Change this comment:
+> >>
+> >>          * wait till the master CPU completes it's STARTUP sequence,
+> >>          * and decides to wait till this AP boots
+> >>
+> >> to
+> >>
+> >> 	/* wait for the master CPU to complete this cpu's STARTUP. */ ?
+> > well, that is not quite the same as above, comment should underline that
+> > AP waits for ACK from master CPU before continuing with this AP initialization.
+> > 
+> > How about:
+> > /* wait for ACK from master CPU before continuing with AP initialization */
+> 
+> Awesome :)
+> 
+> P.
+> 
+> > 
+> >>
+> >> Apologies for the late review,
+> >>
+> >> P.
+> > 
+> > 
 
