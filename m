@@ -1,74 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934157AbaCSNXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:23:32 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933771AbaCSNXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:23:31 -0400
-Message-ID: <53299A41.9050701@nod.at>
-Date: Wed, 19 Mar 2014 14:23:13 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S965078AbaCSNYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:24:19 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:50166 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934024AbaCSNYQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 09:24:16 -0400
+From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [PATCHv3 1/3] pwm: make the PWM_POLARITY flag in DTB optional
+Date: Wed, 19 Mar 2014 14:22:53 +0100
+Message-Id: <1395235375-12925-2-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1395235375-12925-1-git-send-email-LW@KARO-electronics.de>
+References: <1395235375-12925-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: dedekind1@gmail.com, dwmw2@infradead.org, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] UBI: block: Implement kernel_param_ops->get()
-References: <1395225803-25037-1-git-send-email-richard@nod.at> <1395225803-25037-2-git-send-email-richard@nod.at> <20140319131543.GA529@arch.cereza>
-In-Reply-To: <20140319131543.GA529@arch.cereza>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 19.03.2014 14:15, schrieb Ezequiel Garcia:
-> Hi Richard,
-> 
-> On Mar 19, Richard Weinberger wrote:
->> The ->get() function is not optional.
->>
-> 
-> [..]
->>  static struct kernel_param_ops ubiblock_param_ops = {
->>  	.set    = ubiblock_set_param,
->> +	.get	= param_get_charp,
->>  };
->>  module_param_cb(block, &ubiblock_param_ops, NULL, 0);
-> 
-> The comment for the function says they are both optional:
-> 
-> /**
->  * module_param_cb - general callback for a module/cmdline parameter
->  * @name: a valid C identifier which is the parameter name.
->  * @ops: the set & get operations for this parameter.
->  * @perm: visibility in sysfs.
->  *
->  * The ops can have NULL set or get functions.
->  */
-> 
-> This has no visibility in sysfs, so I can't see how having a NULL
-> get() is a problem. What's the issue you're trying to fix here?
-> 
-> Maybe I'm missing something?
-> 
+Change the pwm chip driver registration, so that a chip driver that
+supports polarity inversion can still be used with DTBs that don't
+provide the 'PWM_POLARITY' flag.
 
-Maybe I've misread the struct.
+This is done to provide polarity inversion support for the pwm-imx
+driver without having to modify all existing DTS files.
 
-struct kernel_param_ops {
-        /* How the ops should behave */
-        unsigned int flags;
-        /* Returns 0, or -errno.  arg is in kp->arg. */
-        int (*set)(const char *val, const struct kernel_param *kp);
-        /* Returns length written or -errno.  Buffer is 4k (ie. be short!) */
-        int (*get)(char *buffer, const struct kernel_param *kp);
-        /* Optional function to free kp->arg when module unloaded. */
-        void (*free)(void *arg);
-};
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ drivers/pwm/core.c |   46 ++++++++++++++++------------------------------
+ 1 file changed, 16 insertions(+), 30 deletions(-)
 
-To me it looks like only ->free is optional.
+diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+index a804713..dc15543 100644
+--- a/drivers/pwm/core.c
++++ b/drivers/pwm/core.c
+@@ -131,12 +131,12 @@ static int pwm_device_request(struct pwm_device *pwm, const char *label)
+ 	return 0;
+ }
+ 
+-struct pwm_device *
+-of_pwm_xlate_with_flags(struct pwm_chip *pc, const struct of_phandle_args *args)
++struct pwm_device *of_pwm_xlate(struct pwm_chip *pc,
++				const struct of_phandle_args *args)
+ {
+ 	struct pwm_device *pwm;
+ 
+-	if (pc->of_pwm_n_cells < 3)
++	if (pc->of_pwm_n_cells < 2)
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	if (args->args[0] >= pc->npwm)
+@@ -148,6 +148,9 @@ of_pwm_xlate_with_flags(struct pwm_chip *pc, const struct of_phandle_args *args)
+ 
+ 	pwm_set_period(pwm, args->args[1]);
+ 
++	if (pc->of_pwm_n_cells < 3)
++		return pwm;
++
+ 	if (args->args[2] & PWM_POLARITY_INVERTED)
+ 		pwm_set_polarity(pwm, PWM_POLARITY_INVERSED);
+ 	else
+@@ -155,27 +158,14 @@ of_pwm_xlate_with_flags(struct pwm_chip *pc, const struct of_phandle_args *args)
+ 
+ 	return pwm;
+ }
+-EXPORT_SYMBOL_GPL(of_pwm_xlate_with_flags);
+ 
+-static struct pwm_device *
+-of_pwm_simple_xlate(struct pwm_chip *pc, const struct of_phandle_args *args)
++struct pwm_device *
++of_pwm_xlate_with_flags(struct pwm_chip *pc,
++			const struct of_phandle_args *args)
+ {
+-	struct pwm_device *pwm;
+-
+-	if (pc->of_pwm_n_cells < 2)
+-		return ERR_PTR(-EINVAL);
+-
+-	if (args->args[0] >= pc->npwm)
+-		return ERR_PTR(-EINVAL);
+-
+-	pwm = pwm_request_from_chip(pc, args->args[0], NULL);
+-	if (IS_ERR(pwm))
+-		return pwm;
+-
+-	pwm_set_period(pwm, args->args[1]);
+-
+-	return pwm;
++	return of_pwm_xlate(pc, args);
+ }
++EXPORT_SYMBOL_GPL(of_pwm_xlate_with_flags);
+ 
+ static void of_pwmchip_add(struct pwm_chip *chip)
+ {
+@@ -183,8 +173,11 @@ static void of_pwmchip_add(struct pwm_chip *chip)
+ 		return;
+ 
+ 	if (!chip->of_xlate) {
+-		chip->of_xlate = of_pwm_simple_xlate;
+-		chip->of_pwm_n_cells = 2;
++		chip->of_xlate = of_pwm_xlate;
++		if (chip->ops->set_polarity)
++			chip->of_pwm_n_cells = 3;
++		else
++			chip->of_pwm_n_cells = 2;
+ 	}
+ 
+ 	of_node_get(chip->dev->of_node);
+@@ -536,13 +529,6 @@ struct pwm_device *of_pwm_get(struct device_node *np, const char *con_id)
+ 		goto put;
+ 	}
+ 
+-	if (args.args_count != pc->of_pwm_n_cells) {
+-		pr_debug("%s: wrong #pwm-cells for %s\n", np->full_name,
+-			 args.np->full_name);
+-		pwm = ERR_PTR(-EINVAL);
+-		goto put;
+-	}
+-
+ 	pwm = pc->of_xlate(pc, &args);
+ 	if (IS_ERR(pwm))
+ 		goto put;
+-- 
+1.7.10.4
 
-Thanks,
-//richard
