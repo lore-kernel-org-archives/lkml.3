@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934030AbaCSNHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:07:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34198 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933771AbaCSNHj (ORCPT
+	id S965244AbaCSNP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:15:59 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:19443 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965229AbaCSNP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:07:39 -0400
-Date: Wed, 19 Mar 2014 06:07:02 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-fhv9lhzdjxgp9w3w3668lsfw@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols:
-  Apply all filters to an addr_location
-Git-Commit-ID: 466fa7647413665dcba46c4f7f2b4a9808426989
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Wed, 19 Mar 2014 09:15:56 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-b3-5329988978b2
+Message-id: <1395234951.7642.1.camel@AMDC1943>
+Subject: Re: [PATCH v3 2/3] mfd: sec-core: Add of_compatible strings for clock
+ MFD cells
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Date: Wed, 19 Mar 2014 14:15:51 +0100
+In-reply-to: <20140318203159.GW25478@lee--X1>
+References: <1395047958-17953-1-git-send-email-k.kozlowski@samsung.com>
+ <1395047958-17953-3-git-send-email-k.kozlowski@samsung.com>
+ <20140318203159.GW25478@lee--X1>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t/xK7qdMzSDDWY8NbPYOGM9q8XZpjfs
+	Fve/HmW02PT4GqvF5V1z2CxmnN/HZLH2yF12i6cTLrJZnPzTy2hxupvV4uKKL0wW62e8ZrFo
+	/7uXzWLO9HdMDnwed67tYfOYdzLQY/OSeo++LasYPT5vkgtgjeKySUnNySxLLdK3S+DKaD60
+	kaXgHEtF0webBsYXzF2MnBwSAiYSR/p7WCFsMYkL99azdTFycQgJLGWU2LtpBzOE85lRYnnr
+	XKAqDg5eAT2JHR+UQRqEBaIkZkztARvEJmAssXn5EjaQEhEBFYlzb8xBWpkF5rJIbOh/ClbD
+	IqAqMX/fG7AaTgFdiVv9/BDjVzBK/F52kw2khllAXWLSvEVQxylJ7G7vZIeIy0tsXvMWLM4r
+	ICjxY/I9lgmMArOQtMxCUjYLSdkCRuZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCEx8mUH
+	4+JjVocYBTgYlXh4JWM1goVYE8uKK3MPMUpwMCuJ8P6aohksxJuSWFmVWpQfX1Sak1p8iJGJ
+	g1OqgVHrVoD+PZNzFhNNHtZcn/yJweDmuX+/Et4eZbyy+HQ/u3O8lNTplUWR4uYB/WsVVjKp
+	FoiFXK689sVGZFfL5x1Xa0/v9AvPS5spsaVK9ndyuKPEki2OR/w0tZnmeh0PZV4pGerlzVxa
+	OTlE6Il0X0/xIvkbN/a5ONxwWHCp6s3703maZxstPZVYijMSDbWYi4oTAYLqh4pvAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  466fa7647413665dcba46c4f7f2b4a9808426989
-Gitweb:     http://git.kernel.org/tip/466fa7647413665dcba46c4f7f2b4a9808426989
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Mon, 17 Mar 2014 17:12:27 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 18 Mar 2014 18:16:58 -0300
+On Tue, 2014-03-18 at 20:31 +0000, Lee Jones wrote:
+> > Add of_compatible strings for S5M8767 and S2MPS14 clock MFD cells.
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > ---
+> >  drivers/mfd/sec-core.c |    3 +++
+> >  1 file changed, 3 insertions(+)
+> 
+> Applied with Tomasz' Reviewed-by.
 
-perf symbols: Apply all filters to an addr_location
+Thanks! One minor thing - I see that Tomasz' Review-by got lost when the
+patch was applied to your tree:
+https://git.kernel.org/cgit/linux/kernel/git/lee/mfd.git/commit/?h=for-mfd-next&id=09f8c0a07044bb8ac5085fcbcf82468173a1666d.
 
-Instead of bailing out as soon as we find a filter that applies, go on
-checking all of them so that we can zoom in/out filters.
+Best regards,
+Krzysztof
 
-We also need to make sure we only update al->filtered after
-thread__find_addr_map(), because there is where al->filtered gets
-initialized to zero.
-
-This will increase the cost of processing when all we don't need this
-toggling, but will provide flexibility for the TUI and GTK+ interfaces,
-that will incur in creating the hist_entries just once.
-
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-fhv9lhzdjxgp9w3w3668lsfw@git.kernel.org
-[ yanked this out of a previous patch ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/event.c | 14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
-
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 0da09db..ebb48a6 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -793,11 +793,6 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 	if (thread == NULL)
- 		return -1;
- 
--	if (thread__is_filtered(thread)) {
--		al->filtered |= (1 << HIST_FILTER__THREAD);
--		goto out_filtered;
--	}
--
- 	dump_printf(" ... thread: %s:%d\n", thread__comm_str(thread), thread->tid);
- 	/*
- 	 * Have we already created the kernel maps for this machine?
-@@ -815,6 +810,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 	dump_printf(" ...... dso: %s\n",
- 		    al->map ? al->map->dso->long_name :
- 			al->level == 'H' ? "[hypervisor]" : "<not found>");
-+
-+	if (thread__is_filtered(thread))
-+		al->filtered |= (1 << HIST_FILTER__THREAD);
-+
- 	al->sym = NULL;
- 	al->cpu = sample->cpu;
- 
-@@ -828,7 +827,6 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 				strlist__has_entry(symbol_conf.dso_list,
- 						   dso->long_name))))) {
- 			al->filtered |= (1 << HIST_FILTER__DSO);
--			goto out_filtered;
- 		}
- 
- 		al->sym = map__find_symbol(al->map, al->addr,
-@@ -839,11 +837,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 		(!al->sym || !strlist__has_entry(symbol_conf.sym_list,
- 						al->sym->name))) {
- 		al->filtered |= (1 << HIST_FILTER__SYMBOL);
--		goto out_filtered;
- 	}
- 
- 	return 0;
--
--out_filtered:
--	return 0;
- }
