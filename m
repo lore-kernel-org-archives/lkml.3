@@ -1,148 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265AbaCSUiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 16:38:52 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:35674 "EHLO SMTP.CITRIX.COM"
+	id S1755639AbaCSUjl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 16:39:41 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:7923 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752136AbaCSUiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 16:38:50 -0400
+	id S1755379AbaCSUji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 16:39:38 -0400
 X-IronPort-AV: E=Sophos;i="4.97,688,1389744000"; 
-   d="scan'208";a="113045610"
+   d="scan'208";a="113045791"
+Message-ID: <532A0085.6070104@citrix.com>
+Date: Wed, 19 Mar 2014 20:39:33 +0000
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Jesse Gross <jesse@nicira.com>, <pshelar@nicira.com>, <tgraf@redhat.com>,
-        <dev@openvswitch.org>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
-        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
-        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Miklos Szeredi <mszeredi@suse.cz>, <netfilter-devel@vger.kernel.org>,
-        <netfilter@vger.kernel.org>, <coreteam@netfilter.org>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
-        Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
-Date: Wed, 19 Mar 2014 20:38:36 +0000
-Message-ID: <1395261516-305-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: David Miller <davem@davemloft.net>
+CC: <jesse@nicira.com>, <pshelar@nicira.com>, <tgraf@redhat.com>,
+        <dev@openvswitch.org>, <pablo@netfilter.org>, <kaber@trash.net>,
+        <kadlec@blackhole.kfki.hu>, <edumazet@google.com>,
+        <dborkman@redhat.com>, <therbert@google.com>, <jasowang@redhat.com>,
+        <fw@strlen.de>, <joe@perches.com>, <horms@verge.net.au>,
+        <jiri@resnulli.us>, <mst@redhat.com>, <Paul.Durrant@citrix.com>,
+        <JBeulich@suse.com>, <herbert@gondor.apana.org.au>, <mszeredi@suse.cz>,
+        <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
+        <coreteam@netfilter.org>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kvm@vger.kernel.org>
+Subject: Re: [PATCH] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
+ and handle errors
+References: <1395177455-2077-1-git-send-email-zoltan.kiss@citrix.com> <20140319.162459.897793286761249454.davem@davemloft.net>
+In-Reply-To: <20140319.162459.897793286761249454.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.80.2.133]
 X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
-orphan them. Also, it doesn't handle errors, so this patch takes care of that
-as well.
+On 19/03/14 20:24, David Miller wrote:
+> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Date: Tue, 18 Mar 2014 21:17:35 +0000
+>
+>> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+>> orphan them. Also, it doesn't handle errors, so this patch takes care of that
+>> as well.
+>>
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> ---
+>>   net/openvswitch/datapath.c |    6 ++++++
+>
+> Something is seriously wrong with the diffstat generated for
+> your submission, please fix this and resubmit.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 03db95a..35c4e85 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2508,8 +2508,8 @@ int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
- 		    unsigned int flags);
- void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
- unsigned int skb_zerocopy_headlen(const struct sk_buff *from);
--void skb_zerocopy(struct sk_buff *to, const struct sk_buff *from,
--		  int len, int hlen);
-+int skb_zerocopy(struct sk_buff *to, const struct sk_buff *from,
-+		 int len, int hlen);
- void skb_split(struct sk_buff *skb, struct sk_buff *skb1, const u32 len);
- int skb_shift(struct sk_buff *tgt, struct sk_buff *skb, int shiftlen);
- void skb_scrub_packet(struct sk_buff *skb, bool xnet);
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 3f14c63..60f623c 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2127,25 +2127,36 @@ EXPORT_SYMBOL_GPL(skb_zerocopy_headlen);
-  *
-  *	The `hlen` as calculated by skb_zerocopy_headlen() specifies the
-  *	headroom in the `to` buffer.
-+ *
-+ *	Return value:
-+ *	0: everything is OK
-+ *	-ENOMEM: couldn't orphan frags of from due to lack of memory
-+ *	-EFAULT: skb_copy_bits() found some problem with geometry
-  */
--void
-+int
- skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
- {
- 	int i, j = 0;
- 	int plen = 0; /* length of skb->head fragment */
-+	int ret;
- 	struct page *page;
- 	unsigned int offset;
- 
- 	BUG_ON(!from->head_frag && !hlen);
- 
- 	/* dont bother with small payloads */
--	if (len <= skb_tailroom(to)) {
--		skb_copy_bits(from, 0, skb_put(to, len), len);
--		return;
-+	if (len <= skb_tailroom(to))
-+		return skb_copy_bits(from, 0, skb_put(to, len), len);
-+
-+	if (unlikely(skb_orphan_frags(to, GFP_ATOMIC))) {
-+		skb_tx_error(to);
-+		return -ENOMEM;
- 	}
- 
- 	if (hlen) {
--		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-+		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-+		if (unlikely(ret))
-+			return ret;
- 		len -= hlen;
- 	} else {
- 		plen = min_t(int, skb_headlen(from), len);
-@@ -2173,6 +2184,8 @@ skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
- 		j++;
- 	}
- 	skb_shinfo(to)->nr_frags = j;
-+
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(skb_zerocopy);
- 
-diff --git a/net/netfilter/nfnetlink_queue_core.c b/net/netfilter/nfnetlink_queue_core.c
-index f072fe8..ea02d16 100644
---- a/net/netfilter/nfnetlink_queue_core.c
-+++ b/net/netfilter/nfnetlink_queue_core.c
-@@ -488,7 +488,8 @@ nfqnl_build_packet_message(struct net *net, struct nfqnl_instance *queue,
- 		nla->nla_type = NFQA_PAYLOAD;
- 		nla->nla_len = nla_attr_size(data_len);
- 
--		skb_zerocopy(skb, entskb, data_len, hlen);
-+		if (skb_zerocopy(skb, entskb, data_len, hlen))
-+			goto nla_put_failure;
- 	}
- 
- 	nlh->nlmsg_len = skb->len;
-diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
-index c53fe0c..9a9f668 100644
---- a/net/openvswitch/datapath.c
-+++ b/net/openvswitch/datapath.c
-@@ -464,7 +464,9 @@ static int queue_userspace_packet(struct datapath *dp, struct sk_buff *skb,
- 	}
- 	nla->nla_len = nla_attr_size(skb->len);
- 
--	skb_zerocopy(user_skb, skb, skb->len, hlen);
-+	err = skb_zerocopy(user_skb, skb, skb->len, hlen);
-+	if (err)
-+		goto out;
- 
- 	/* Pad OVS_PACKET_ATTR_PACKET if linear copy was performed */
- 	if (!(dp->user_features & OVS_DP_F_UNALIGNED)) {
+Sorry, I've turned off diffstat in guilt a while ago, but this patch had 
+an old version of it. I've resent it.
+
+Zoli
+
