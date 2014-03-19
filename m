@@ -1,36 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933941AbaCSNtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:49:16 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:44276 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932721AbaCSNtO (ORCPT
+	id S933994AbaCSNuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:50:55 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:58390 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933951AbaCSNux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:49:14 -0400
+	Wed, 19 Mar 2014 09:50:53 -0400
+Date: Wed, 19 Mar 2014 14:50:47 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        mingo@kernel.org, will.deacon@arm.com, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 23/31] arch,s390: Convert smp_mb__*
+Message-ID: <20140319135047.GG4223@osiris>
+References: <20140319064729.660482086@infradead.org>
+ <20140319065205.008359711@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <2106941.8EeNr4veQS@vostro.rjw.lan>
-References: <1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com>
-	<5240506.FBRh89S9Lg@vostro.rjw.lan>
-	<CAKohpomc9YrBrG2SJFUuixDTNY6qVhq6X39Qv+=j73dFGxQTdQ@mail.gmail.com>
-	<2106941.8EeNr4veQS@vostro.rjw.lan>
-Date: Wed, 19 Mar 2014 19:19:13 +0530
-Message-ID: <CAKohpomkFQ0PhYja8eKC_NvX+Jc7JpDp8gpHFCDHWeeUQADwcQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/2] Add stop callback to the cpufreq_driver interface.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Patrick Marlier <patrick.marlier@gmail.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319065205.008359711@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031913-2966-0000-0000-00000AA1F6D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 March 2014 19:31, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> Let's add ->stop() (or whatever to call it) *specifically* for ->setpolicy
-> drivers
+On Wed, Mar 19, 2014 at 07:47:52AM +0100, Peter Zijlstra wrote:
+> As per the existing implementation; implement the new one using
+> smp_mb().
+> 
+> AFAICT the s390 compare-and-swap does imply a barrier, however there
+> are some immediate ops that seem to be singly-copy atomic and do not
+> imply a barrier. One such is the "ni" op (which would be
+> and-immediate) which is used for the constant clear_bit
+> implementation. Therefore s390 needs full barriers for the
+> {before,after} atomic ops.
 
-setpolicy_stop() ? I know that's a bad name :)
+That is correct... and made me look again into the recent bitops and
+atomic changes I made.
+Looks like I missed to add some mandatory memory barriers. Oh well.
+
