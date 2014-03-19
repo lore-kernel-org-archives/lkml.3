@@ -1,123 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933836AbaCSLvV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 07:51:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13599 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933380AbaCSLvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 07:51:20 -0400
-Message-ID: <532984A9.8080001@redhat.com>
-Date: Wed, 19 Mar 2014 07:51:05 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+	id S933865AbaCSLx2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 07:53:28 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:59993 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933574AbaCSLx1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 07:53:27 -0400
+Date: Wed, 19 Mar 2014 12:53:23 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
+        acme@infradead.org, eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH 4/4] perf/x86/uncore: modularize Intel uncore driver
+Message-ID: <20140319115323.GA18672@gmail.com>
+References: <1395133004-23205-1-git-send-email-zheng.z.yan@intel.com>
+ <1395133004-23205-4-git-send-email-zheng.z.yan@intel.com>
+ <20140319084917.GE27632@laptop.programming.kicks-ass.net>
+ <20140319113254.GA18351@gmail.com>
+ <20140319114247.GI27632@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Igor Mammedov <imammedo@redhat.com>
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, bp@suse.de, paul.gortmaker@windriver.com,
-        JBeulich@suse.com, drjones@redhat.com, toshi.kani@hp.com,
-        x86@kernel.org, riel@redhat.com, gong.chen@linux.intel.com
-Subject: Re: [PATCH 0/3] x86: fix hang when AP bringup is too slow
-References: <1394720720-8484-1-git-send-email-imammedo@redhat.com> <53283A3F.6040302@redhat.com> <20140318194951.17fd61ea@thinkpad>
-In-Reply-To: <20140318194951.17fd61ea@thinkpad>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319114247.GI27632@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-On 03/18/2014 02:49 PM, Igor Mammedov wrote:
-> On Tue, 18 Mar 2014 08:21:19 -0400
-> Prarit Bhargava <prarit@redhat.com> wrote:
+> On Wed, Mar 19, 2014 at 12:32:54PM +0100, Ingo Molnar wrote:
+> > 
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Tue, Mar 18, 2014 at 04:56:44PM +0800, Yan, Zheng wrote:
+> > > > This patch adds support for building Intel uncore driver as module.
+> > > > It adds clean-up code and config option for the Intel uncore driver
+> > > > 
+> > > > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> > > > ---
+> > > >  arch/x86/Kconfig                              |  7 ++++
+> > > >  arch/x86/configs/i386_defconfig               |  1 +
+> > > >  arch/x86/configs/x86_64_defconfig             |  1 +
+> > > >  arch/x86/kernel/cpu/Makefile                  |  3 +-
+> > > >  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 48 ++++++++++++++++++++++++---
+> > > >  5 files changed, 55 insertions(+), 5 deletions(-)
+> > > > 
+> > > > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > > > index 0af5250..8e4e247 100644
+> > > > --- a/arch/x86/Kconfig
+> > > > +++ b/arch/x86/Kconfig
+> > > > @@ -1103,6 +1103,13 @@ config X86_CPUID
+> > > >  	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
+> > > >  	  /dev/cpu/31/cpuid.
+> > > >  
+> > > > +config X86_INTEL_UNCORE
+> > > > +	tristate "Intel uncore performance monitoring support"
+> > > > +	depends on CPU_SUP_INTEL
+> > > > +	---help---
+> > > > +	  This adds a driver to access the Uncore performance monitoring Units
+> > > > +	  of Intel processors.
+> > > > +
+> > > 
+> > > Ingo do you agree with this config option placement?
+> > 
+> > Yeah, the modularization looks mostly good to me, but its name 
+> > should lie within the PERF namespace, i.e. 
+> > CONFIG_PERF_PMU_X86_INTEL_UNCORE=y.
 > 
->>
->>
->> On 03/13/2014 10:25 AM, Igor Mammedov wrote:
->>> Hang is observed on virtual machines during CPU hotplug,
->>> especially in big guests with many CPUs. (It happens more
->>> often if host is over-committed).
->>>
->>
->> Hey Igor, I like this better than the previous version.  Thanks for taking into
->> account the possible races in this code.
->>
->> A quick question on system behaviour.  As you know I've been more concerned
->> lately with error handling, etc., through the cpu hotplug code as we've seen
->> several customer reports of silent failures or cascading failures in the cpu
->> hotplug code when users have been attempting to perform physical hotplug.
->>
->> After your patches have been applied, in theory the following can happen:
->>
->> The master CPU is completing the AP cpu's bring up.  The AP cpu is doing (sorry
->> for the cut-and-paste),
->>
->> void cpu_init(void)
->> {
->>         int cpu = smp_processor_id();
->>         struct task_struct *curr = current;
->>         struct tss_struct *t = &per_cpu(init_tss, cpu);
->>         struct thread_struct *thread = &curr->thread;
->>
->>         /*
->>          * wait till the master CPU completes it's STARTUP sequence,
->>          * and decides to wait till this AP boots
->>          */
->>         while (!cpumask_test_cpu(cpu, cpu_callout_mask)) {
->>                 cpu_relax();
->>                 if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID)
->>                         halt();
->>         }
->>
->> and is spinning on cpu_relax().  Suppose something goes wrong and the softlockup
->> watchdog fires on the AP cpu:
->>
->> 1.  Can it? :) ie) will the softlockup fire at this point of the AP init?  Okay,
->> I'm being really lazy and not looking at the code ;)
-> It shouldn't, CPU is in pristine state and just came from boot trampoline at
-> this point without interrupts configured yet.
+> Ah; but do you want this config option hidden in the "Processor type 
+> and features" menu or would they be better in "General setup/Kernel 
+> Performance Events and Counters" ?
 
-Okay, not a big problem.
+What's your preference? There's a vali argument for both: the uncore 
+driver is part of the CPU, but it's also a perf driver.
 
-> 
->>
->> 2.  Is there anything we can do in this code to notify the user of a problem?
->> Even a pr_crit() here I think would help to indicate what went wrong; it might
->> be useful for future debugging in this area to have some sort of output.  I
->> think a WARN() or BUG() is necessary here as there are several calls to cpu_init().
-> Do you mean something like this:
-> 
-> +		if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID) {
-> +                       WARN(1);
-> +			halt();
-> +               }
+Thanks,
 
-Yeah, maybe WARN_ON(1, "some comment") though.
-
-> 
->>
->> 3.  Change this comment:
->>
->>          * wait till the master CPU completes it's STARTUP sequence,
->>          * and decides to wait till this AP boots
->>
->> to
->>
->> 	/* wait for the master CPU to complete this cpu's STARTUP. */ ?
-> well, that is not quite the same as above, comment should underline that
-> AP waits for ACK from master CPU before continuing with this AP initialization.
-> 
-> How about:
-> /* wait for ACK from master CPU before continuing with AP initialization */
-
-Awesome :)
-
-P.
-
-> 
->>
->> Apologies for the late review,
->>
->> P.
-> 
-> 
+	Ingo
