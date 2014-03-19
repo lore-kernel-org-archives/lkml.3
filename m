@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945AbaCSCXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 22:23:22 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58475 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757623AbaCSCXV (ORCPT
+	id S1759005AbaCSCYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 22:24:15 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:45626 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758156AbaCSCYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 22:23:21 -0400
+	Tue, 18 Mar 2014 22:24:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140318162319.GB5669@redhat.com>
-References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com>
- <20140318133331.GA23193@laptop.programming.kicks-ass.net> <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com>
- <20140318140504.GD23193@laptop.programming.kicks-ass.net> <CA+a=Yy567xtU0Osz+9-hTCNrzB65vE=ErYWTq880N+uEwG2DHA@mail.gmail.com>
- <20140318162319.GB5669@redhat.com>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Wed, 19 Mar 2014 10:22:59 +0800
-Message-ID: <CA+a=Yy51Ex=UdsCRn8Ty_s4XR4xbOZ_YAf3tejb=JyTgQ_QzRA@mail.gmail.com>
-Subject: Re: [PATCH RFC] sched: introduce add_wait_queue_exclusive_head
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
+In-Reply-To: <alpine.LSU.2.11.1403181848380.3318@eggly.anvils>
+References: <20140311045109.GB12551@redhat.com>
+	<20140310220158.7e8b7f2a.akpm@linux-foundation.org>
+	<20140311053017.GB14329@redhat.com>
+	<20140311132024.GC32390@moon>
+	<531F0E39.9020100@oracle.com>
+	<20140311134158.GD32390@moon>
+	<20140311142817.GA26517@redhat.com>
+	<20140311143750.GE32390@moon>
+	<20140311171045.GA4693@redhat.com>
+	<20140311173603.GG32390@moon>
+	<20140311173917.GB4693@redhat.com>
+	<alpine.LSU.2.11.1403181703470.7055@eggly.anvils>
+	<CA+55aFx0ZyCVrkosgTongBrNX6mJM4B8+QZQE1p0okk8ubbv7g@mail.gmail.com>
+	<alpine.LSU.2.11.1403181848380.3318@eggly.anvils>
+Date: Tue, 18 Mar 2014 19:24:13 -0700
+X-Google-Sender-Auth: -fy6gPvZfkbmUNl7X1fFlnUl6K8
+Message-ID: <CA+55aFxVG7HLmsvCzoiA7PBRPvX3utRfyVGrBs6gVLZ-fUCuPQ@mail.gmail.com>
+Subject: Re: bad rss-counter message in 3.14rc5
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Dave Jones <davej@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bob Liu <bob.liu@oracle.com>, Konstantin Khlebnikov <koct9i@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 12:23 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 03/18, Peng Tao wrote:
->>
->> On Tue, Mar 18, 2014 at 10:05 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> >
->> > Unless you cannot use ___wait() and really need to open-code the
->> > wait_event() stuff.
->> >
->> Lustre's private l_wait_event() stuff takes care to (un)mask
->> LUSTRE_FATAL_SIGS
+On Tue, Mar 18, 2014 at 7:06 PM, Hugh Dickins <hughd@google.com> wrote:
 >
-> Hmm. This is off-topic but after the quick grep LUSTRE_FATAL_SIGS/etc
-> looks suspicious.
->
-> Firtsly, cfs_block_sigs/cfs_block_sigsinv/etc are not exactly right,
-> they need set_current_blocked(). And you can read "old" lockless.
->
-It seems that set_current_blocked() is not exported. Can we ask to export it?
+> I'd love that, if we can get away with it now: depends very
+> much on whether we then turn out to break userspace or not.
 
-And looking at other similar places like coda_block_signals(), it
-doesn't call set_current_blocked() either. So it needs
-set_current_blocked() as well.
+Right. I suspect we can, though, but it's one of those "we can try it
+and see". Remind me early in the 3.15 merge window, and we can just
+turn the "force" case into an error case and see if anybody hollers.
 
-> And note that cfs_block_sigsinv(0) (which should block all signals)
-> can't actually protect from SIGKILL (or in fact from another fatal
-> signal) or SIGSTOP if the caller is multithreaded. Or ptrace, or
-> freezer.
->
->> and always wait in TASK_INTERRUPTIBLE state.
->
-> and it seems that __wstate passed to waitq_wait/waitq_timedwait is
-> simply ignored.
->
-Yes. That needs to be dropped.
+> If I remember correctly, it's been that way since early days,
+> in case ptrace were used to put a breakpoint into a MAP_SHARED
+> mapping of an executable: to prevent that modification from
+> reaching the file, if the file happened to be opened O_RDWR.
+> Usually it's not open for writing, and mapped MAP_PRIVATE anyway.
 
->> It looks to me that we can at least wrap l_wait_event() on top of
->> wait_event_interruptible/wait_event_timeout_interruptible.
->
-> l_wait_event looks really complicated ;) but perhaps you can rewrite
-> it on top of ___wait_event(), note that condition/cmd can do anything
-> you want.
->
-Yeah, I meant to say __wait_event(). Thanks for correcting me.
+Yes, it's been that way since the very beginning, I think it goes back
+pretty much as far as MAP_SHARED does.
 
-Thanks,
-Tao
+We used to play lots of games wrt MAP_SHARED - in fact I think we used
+to silently turn a MAP_SHARED RO mapping into MAP_PRIVATE because for
+the longest time there was no "true" writable MAP_SHARED at all, but
+we did have a coherent MAP_PRIVATE and something like the indexer for
+nntpd wanted a read-only shared mapping of the nntp spool or something
+like that. I forget the details, it's a _loong_ time ago.
+
+So the whole "force turns a MAP_SHARED page into MAP_PRIVATE" all used
+to make a lot more sense in that kind of situation, when MAP_SHARED vs
+MAP_PRIVATE was much less of a black-and-white thing.
+
+I really suspect nobody cares wrt ptrace, especially since presumably
+other systems haven't had those kinds of games (although who knows -
+HP-UX in particular had some of the shittiest mmap() implementations
+on the planet - it made even the original Linux mmap hacks look like a
+thing of pure beauty in comparison).
+
+              Linus
