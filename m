@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965106AbaCSQsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:48:08 -0400
-Received: from yotta.elopez.com.ar ([31.220.24.173]:59895 "EHLO
-	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932602AbaCSQsF (ORCPT
+	id S965430AbaCSQtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:49:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43667 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965238AbaCSQti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:48:05 -0400
-Message-ID: <5329CA2A.8030309@elopez.com.ar>
-Date: Wed, 19 Mar 2014 13:47:38 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 19 Mar 2014 12:49:38 -0400
+Date: Wed, 19 Mar 2014 09:51:38 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: "suresh.gupta@freescale.com" <suresh.gupta@freescale.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in platform
+ device id
+Message-ID: <20140319165138.GC27142@kroah.com>
+References: <1394719531-27062-1-git-send-email-suresh.gupta@freescale.com>
+ <20140313152628.GI4599@saruman.home>
+ <71f42b215c58414d8bfa7efb968dadbf@BN1PR03MB251.namprd03.prod.outlook.com>
+ <20140315014015.GD31520@saruman.home>
+ <bb1e5245113c424abd45e6dad2d0cba4@BN1PR03MB251.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Dinh Nguyen <dinh.linux@gmail.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dinh Nguyen <dinguyen@altera.com>
-Subject: Re: stmmac-socfpga breakage in arm-soc
-References: <201403191333.01095.arnd@arndb.de> <4337501.shzGE38xmF@wuerfel> <5329AAE1.7030705@gmail.com> <29079107.ja9Hu9mMY0@wuerfel>
-In-Reply-To: <29079107.ja9Hu9mMY0@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <bb1e5245113c424abd45e6dad2d0cba4@BN1PR03MB251.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Wed, Mar 19, 2014 at 02:25:25PM +0000, suresh.gupta@freescale.com wrote:
+> Hi
+> 
+> > -----Original Message-----
+> > From: Felipe Balbi [mailto:balbi@ti.com]
+> > Sent: Saturday, March 15, 2014 7:10 AM
+> > To: Gupta Suresh-B42813
+> > Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
+> > linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in
+> > platform device id
+> > 
+> > On Fri, Mar 14, 2014 at 08:52:19PM +0000, suresh.gupta@freescale.com
+> > wrote:
+> > > Hi,
+> > > Thanks for reviewing my patches.
+> > > Please find my comments inline
+> > >
+> > > -----Original Message-----
+> > > From: Felipe Balbi [mailto:balbi@ti.com]
+> > > Sent: Thursday, March 13, 2014 8:56 PM
+> > > To: Gupta Suresh-B42813
+> > > Cc: balbi@ti.com; gregkh@linuxfoundation.org;
+> > > linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Gupta
+> > > Suresh-B42813
+> > > Subject: Re: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in
+> > > platform device id
+> > >
+> > > On Thu, Mar 13, 2014 at 07:35:31PM +0530, Suresh Gupta wrote:
+> > > > From: Suresh Gupta <B42813@freescale.com>
+> > > >
+> > > > 	Add FSL USB Gadget entry in platform device id table
+> > >
+> > > why this tab ?
+> > > [SuresH] I will remove it in next version.
+> > >
+> > > > Signed-off-by: Suresh Gupta <B42813@freescale.com>
+> > > > ---
+> > > >  drivers/usb/gadget/fsl_udc_core.c | 2 ++
+> > > >  1 file changed, 2 insertions(+)
+> > > >
+> > > > diff --git a/drivers/usb/gadget/fsl_udc_core.c
+> > > > b/drivers/usb/gadget/fsl_udc_core.c
+> > > > index b7dea4e..35b20e6 100644
+> > > > --- a/drivers/usb/gadget/fsl_udc_core.c
+> > > > +++ b/drivers/usb/gadget/fsl_udc_core.c
+> > > > @@ -2654,6 +2654,8 @@ static const struct platform_device_id
+> > fsl_udc_devtype[] = {
+> > > >  	}, {
+> > > >  		.name = "imx-udc-mx51",
+> > > >  	}, {
+> > > > +		.name = "fsl-usb2-udc",
+> > >
+> > > why aren't you just using chipidea ?
+> > > [SuresH] This is our legacy driver for all previous and existing ppc
+> > > socs. Many of our customers are already using this, and we need to
+> > > support them on this driver. We do have plans to shift to chipidea,
+> > > but after some time.
+> > 
+> > cool, you already have plans, so we will see a new glue layer for v3.16
+> > right ? Which means I don't need to take this patch either.
+> > 
+> we do have plans, but in remote future. Right now, we need to support
+> customers on the present legacy driver. We'll phase out this driver 
+> slowly when we integrate chipidea. At this time I would request you 
+> to please accept this patch
 
-El 19/03/14 11:58, Arnd Bergmann escribió:
-(snip)
-> diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
-> index 5748351..19d5648 100644
-> --- a/Documentation/devicetree/bindings/net/stmmac.txt
-> +++ b/Documentation/devicetree/bindings/net/stmmac.txt
-> @@ -31,6 +31,10 @@ Optional properties:
->   - reset-names: Should contain the reset signal name "stmmaceth", if a
->   	reset phandle is given
->   - max-frame-size: See ethernet.txt file in the same directory
-> +- clocks: If present, the first clock should be the GMAC main clock,
-> +  further clocks may be specified in derived bindings
-> +- clock-names: One name for each entry in the clocks property, the
-> +  first one should be "stmmaceth".
->
->   Examples:
->
-> @@ -43,4 +47,6 @@ Examples:
->   		mac-address = [000000000000]; /* Filled in by U-Boot */
->   		max-frame-size = <3800>;
->   		phy-mode = "gmii";
-> +		clocks = <&clock>;
-> +		clock-names = "stmmaceth">
+Even if Felipe takes the patch, I'll reject it as you should be doing
+the correct thing here, and if it's accepted, it will never be
+changed...
 
-There's a small typo there on the ;
-
-Cheers,
-
-Emilio
+greg k-h
