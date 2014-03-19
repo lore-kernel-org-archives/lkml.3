@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758783AbaCSX0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 19:26:55 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:44263 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756333AbaCSX0x (ORCPT
+	id S1759160AbaCSX1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 19:27:09 -0400
+Received: from kvm5.telegraphics.com.au ([98.124.60.144]:51001 "EHLO
+	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756333AbaCSX1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 19:26:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <531908b6.44f8440a.03ab.0cce@mx.google.com>
-References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>
-	<1394016605-24120-2-git-send-email-sebastian.capella@linaro.org>
-	<531908b6.44f8440a.03ab.0cce@mx.google.com>
-Date: Wed, 19 Mar 2014 16:26:52 -0700
-Message-ID: <CADHgK6ssL=0XcM_shGmb9z1T3w5L5OWEJgs-v9VyT3=USwY4FQ@mail.gmail.com>
-Subject: Re: [PATCH v7 1/2] ARM: avoid tracers in soft_restart
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: Sebastian Capella <sebastian.capella@linaro.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Steven Capper <steve.capper@linaro.org>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Robin Holt <robin.m.holt@gmail.com>, Will Deacon <will.deacon@arm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 19 Mar 2014 19:27:06 -0400
+Message-Id: <20140319123516.542623278@telegraphics.com.au>
+User-Agent: quilt/0.50-1
+Date: Wed, 19 Mar 2014 23:35:16 +1100
+From: Finn Thain <fthain@telegraphics.com.au>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>
+Cc: Sam Creasey <sammy@sammy.net>, Russell King <linux@arm.linux.org.uk>,
+        Michael Schmitz <schmitz@debian.org>, Joe Perches <joe@perches.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-m68k@vger.kernel.org>
+Subject: [PATCH v2 00/12] scsi/NCR5380: fix debugging macros and #include structure
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 March 2014 15:45, Sebastian Capella <sebastian.capella@linaro.org> wrote:
-> Quoting Sebastian Capella (2014-03-05 02:50:04)
->> Use of tracers in local_irq_disable is causes recursive aborts when
->> called with irqs disabled and using a temporary stack (hibernation).
->> Replace local_irq_disable with raw_local_irq_disable instead to
->> avoid tracers.
 
-> I have not heard any feedback on this change, since V3 of the
-> patchset.
-> Is everyone ok with this as it is?
-> Thomas, thanks for proposing this, is this looking ok to you?
+This patch series addresses several issues with NCR5380 drivers:
 
-ping
+1. The complex network of #include directives.
 
-I haven't received any further communication / acks on this particular
-patch, since Russell's ~approval below:
+2. Three inconsistent implementations of the core driver all attempting
+   to share the same macro definitions in NCR5380.h.
 
-On 26 February 2014 15:37, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> Great, I'm happy with this now.  I assume that the plan is to submit this
->  to my patch system when everyone's given their fill of acks?
+3. Broken debugging code.
 
-Is this ok as it is?
+In the past these issues have led to compiler warnings and ugly hacks to
+fix build failures.
 
-Thanks,
+This patch series fixes the debugging code by reducing the divergence
+between the various core driver implementations.
 
-Sebastian
+The final two patches in the series further reduce divergence by refactoring
+sun3_scsi.c and sun3_scsi_vme.c so that they follow the same structure as
+the other NCR5380 drivers.
+
+By the end of this patch series over 800 net lines of code have been
+removed. This is mostly duplicated code that's easily eliminated once the
+debugging code is made consistent (and some dead code is removed).
+
+Better uniformity and less duplication should assist future work such as
+modernization and trivial clean-up.
+
+To make code review easier I've tried to keep these patches succinct and
+free of extraneous changes. Though I did run checkpatch.pl, I've ignored
+whitespace issues in existing code. I will send separate patches for
+whitespace clean-up of NCR5380 drivers.
+
+All NCR5380 drivers have been compile-tested with this patch series:
+  arm/cumana_1.c
+  arm/oak.c
+  atari_scsi.c
+  dmx3191d.c
+  dtc.c
+  g_NCR5380.c
+  g_NCR5380_mmio.c
+  mac_scsi.c
+  pas16.c
+  sun3_scsi.c
+  sun3_scsi_vme.c
+  t128.c
+
+I've successfully regression tested this patch series using mac_scsi on a 
+PowerBook 180. The debugging macros are now usable again.
+
+-- 
+
+
+
