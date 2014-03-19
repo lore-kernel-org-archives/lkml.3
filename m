@@ -1,175 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934041AbaCSNhB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:37:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32636 "EHLO mx1.redhat.com"
+	id S934084AbaCSNiY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:38:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28204 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932721AbaCSNg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:36:59 -0400
-Date: Wed, 19 Mar 2014 09:36:53 -0400
+	id S932721AbaCSNiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 09:38:23 -0400
+Date: Wed, 19 Mar 2014 09:38:15 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
         jmario@redhat.com, fowles@inreach.com, eranian@google.com
-Subject: Re: [PATCH 02/19] perf, sort:  Add physid sorting based on mmap2 data
-Message-ID: <20140319133653.GZ25953@redhat.com>
+Subject: Re: [PATCH 04/19] perf: Allow ability to map cpus to nodes easily
+Message-ID: <20140319133815.GA25953@redhat.com>
 References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
- <1393609388-40489-3-git-send-email-dzickus@redhat.com>
- <20140319104515.GA7423@krava.brq.redhat.com>
+ <1393609388-40489-5-git-send-email-dzickus@redhat.com>
+ <20140319124827.GB7423@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140319104515.GA7423@krava.brq.redhat.com>
+In-Reply-To: <20140319124827.GB7423@krava.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 11:45:15AM +0100, Jiri Olsa wrote:
-> > +static int64_t
-> > +sort__physid_cmp(struct hist_entry *left, struct hist_entry *right)
+On Wed, Mar 19, 2014 at 01:48:27PM +0100, Jiri Olsa wrote:
+> On Fri, Feb 28, 2014 at 12:42:53PM -0500, Don Zickus wrote:
+> > This patch figures out the max number of cpus and nodes that are on the
+> 
+> SNIP
+> 
+> > +
+> > +int cpu_map__setup_cpunode_map(void)
 > > +{
-> > +        u64 l, r;
-> > +        struct map *l_map = left->mem_info->daddr.map;
-> > +        struct map *r_map = right->mem_info->daddr.map;
+> > +	struct dirent *dent1, *dent2;
+> > +	DIR *dir1, *dir2;
+> > +	unsigned int cpu, mem;
+> > +	char buf[PATH_MAX];
 > > +
-> > +	/* store all NULL mem maps at the bottom */
-> > +	/* shouldn't even need this check, should have stubs */
-> > +	if (!left->mem_info->daddr.map || !right->mem_info->daddr.map)
-> > +		return 1;
+> > +	/* initialize globals */
+> > +	if (init_cpunode_map())
+> > +		return -1;
 > > +
-> > +        /* group event types together */
-> > +        if (left->cpumode > right->cpumode) return -1;
-> > +        if (left->cpumode < right->cpumode) return 1;
+> > +	dir1 = opendir(PATH_SYS_NODE);
+> > +	if (!dir1)
+> > +		return 0;
 > > +
-> > +        if (l_map->maj > r_map->maj) return -1;
-> > +        if (l_map->maj < r_map->maj) return 1;
+> > +	/* walk tree and setup map */
+> > +	while ((dent1 = readdir(dir1)) != NULL) {
+> > +		if (dent1->d_type != DT_DIR ||
+> > +		    sscanf(dent1->d_name, "node%u", &mem) < 1)
+> > +			continue;
 > > +
-> > +        if (l_map->min > r_map->min) return -1;
-> > +        if (l_map->min < r_map->min) return 1;
+> > +		snprintf(buf, PATH_MAX, "%s/%s", PATH_SYS_NODE, dent1->d_name);
+> > +		dir2 = opendir(buf);
+> > +		if (!dir2)
+> > +			continue;
+> > +		while ((dent2 = readdir(dir2)) != NULL) {
+> > +			if (dent2->d_type != DT_LNK ||
+> > +			    sscanf(dent2->d_name, "cpu%u", &cpu) < 1)
+> > +				continue;
+> > +			cpunode_map[cpu] = mem;
+> > +		}
+> > +		closedir(dir2);
+> > +	}
+> > +	closedir(dir1);
+> > +	return 0;
+> > +}
 > > +
-> > +        if (l_map->ino > r_map->ino) return -1;
-> > +        if (l_map->ino < r_map->ino) return 1;
+> > diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+> > index b123bb9..d6fde2b 100644
+> > --- a/tools/perf/util/cpumap.h
+> > +++ b/tools/perf/util/cpumap.h
+> > @@ -4,6 +4,9 @@
+> >  #include <stdio.h>
+> >  #include <stdbool.h>
+> >  
+> > +#include "perf.h"
+> > +#include "util/debug.h"
 > > +
-> > +        if (l_map->ino_generation > r_map->ino_generation) return -1;
-> > +        if (l_map->ino_generation < r_map->ino_generation) return 1;
+> >  struct cpu_map {
+> >  	int nr;
+> >  	int map[];
+> > @@ -46,4 +49,36 @@ static inline bool cpu_map__empty(const struct cpu_map *map)
+> >  	return map ? map->map[0] == -1 : true;
+> >  }
+> >  
+> > +int max_cpu_num;
+> > +int max_node_num;
+> > +int *cpunode_map;
 > > +
-> > +        /*
-> > +         * Addresses with no major/minor numbers are assumed to be
-> > +         * anonymous in userspace.  Sort those on pid then address.
-> > +         *
-> > +         * The kernel and non-zero major/minor mapped areas are
-> > +         * assumed to be unity mapped.  Sort those on address then pid.
-> > +         */
+> > +int cpu_map__setup_cpunode_map(void);
 > > +
-> > +        /* al_addr does all the right addr - start + offset calculations */
-> > +        l = left->mem_info->daddr.al_addr;
-> > +        r = right->mem_info->daddr.al_addr;
+> > +static inline int cpu_map__max_node(void)
+> > +{
+> > +	if (unlikely(!max_node_num))
+> > +		pr_debug("cpu_map not initiailzed\n");
 > > +
-> > +        if (l_map->maj || l_map->min || l_map->ino || l_map-> ino_generation) {
-> > +                /* mmapped areas */
+> > +	return max_node_num;
+> > +}
 > > +
-> > +                /* hack to mark similar regions, 'right' is new entry */
-> > +                /* entries with same maj/min/ino/inogen are in same address space */
-> > +                right->color = TRUE;
+> > +static inline int cpu_map__max_cpu(void)
+> > +{
+> > +	if (unlikely(!max_cpu_num))
+> > +		pr_debug("cpu_map not initiailzed\n");
 > > +
-> > +                if (l > r) return -1;
-> > +                if (l < r) return 1;
+> > +	return max_cpu_num;
+> > +}
 > > +
-> > +                /* sorting by iaddr makes calculations easier later */
-> > +                if (left->mem_info->iaddr.al_addr > right->mem_info->iaddr.al_addr) return -1;
-> > +                if (left->mem_info->iaddr.al_addr < right->mem_info->iaddr.al_addr) return 1;
+> > +static inline int cpu_map__get_node(int cpu)
+> > +{
+> > +	if (unlikely(cpunode_map == NULL)) {
+> > +		pr_debug("cpu_map not initialized\n");
+> > +		return -1;
+> > +	}
 > > +
-> > +                if (left->thread->pid_ > right->thread->pid_) return -1;
-> > +                if (left->thread->pid_ < right->thread->pid_) return 1;
-> > +
-> > +                if (left->thread->tid > right->thread->tid) return -1;
-> > +                if (left->thread->tid < right->thread->tid) return 1;
-> > +        } else if (left->cpumode == PERF_RECORD_MISC_KERNEL) {
-> > +                /* kernel mapped areas where 'start' doesn't matter */
-> > +
-> > +                /* hack to mark similar regions, 'right' is new entry */
-> > +                /* whole kernel region is in the same address space */
-> > +                right->color = TRUE;
-> > +
-> > +                if (l > r) return -1;
-> > +                if (l < r) return 1;
-> > +
-> > +                /* sorting by iaddr makes calculations easier later */
-> > +                if (left->mem_info->iaddr.al_addr > right->mem_info->iaddr.al_addr) return -1;
-> > +                if (left->mem_info->iaddr.al_addr < right->mem_info->iaddr.al_addr) return 1;
-> > +
-> > +                if (left->thread->pid_ > right->thread->pid_) return -1;
-> > +                if (left->thread->pid_ < right->thread->pid_) return 1;
-> > +
-> > +                if (left->thread->tid > right->thread->tid) return -1;
-> > +                if (left->thread->tid < right->thread->tid) return 1;
-> > +        } else {
-> > +                /* userspace anonymous */
-> > +                if (left->thread->pid_ > right->thread->pid_) return -1;
-> > +                if (left->thread->pid_ < right->thread->pid_) return 1;
-> > +
-> > +                if (left->thread->tid > right->thread->tid) return -1;
-> > +                if (left->thread->tid < right->thread->tid) return 1;
-> > +
-> > +	         /* hack to mark similar regions, 'right' is new entry */
-> > +                /* userspace anonymous address space is contained within pid */
-> > +                right->color = TRUE;
-> > +
-> > +                if (l > r) return -1;
-> > +                if (l < r) return 1;
-> > +
-> > +                /* sorting by iaddr makes calculations easier later */
-> > +                if (left->mem_info->iaddr.al_addr > right->mem_info->iaddr.al_addr) return -1;
-> > +                if (left->mem_info->iaddr.al_addr < right->mem_info->iaddr.al_addr) return 1;
-> > +        }
+> > +	return cpunode_map[cpu];
+> > +}
 > 
-> do you need single column for 'physid' ?
+> cool, maybe above function names should not have 'cpu_map..',
+> it's like pure cpu-ish stuff, maybe:
 > 
-> my first idea was to have separate sort entries for all checked entries:
-> (same way like for memory memory_sort_dimensions)
+>   setup_cpunode_map
+>   cpu__max_node
+>   cpu__max_cpu
+>   cpu__get_node
 > 
->   - mem_info->daddr.al_addr (we already have 'addr' check)
->   - mem_info->iaddr.al_addr
->   - thread->pid_ (we have only 'tid' check so far)
->   - l_map->maj, l_map->min, l_map->ino, l_map, ino_generation (we could probably group these)
-> 
-> and init sort order with:
-> 
->    sort_order = "physid,pid,...";
-> 
-> '...' is whatever name you choose for above entries
+> or something like that ;-)
 
-The problem is (as you can see in the code above), physid is _not_ just
-one piece of data.  It is dependent on multiple things.  It is mainly
-dependent on four things:
-
-- cpumode
-- major, minor, inode, inode_generation (call it mmap2 data)
-- data address
-- pid
-
-If cpumode == KERNEL, sort in this order
-  - mmap2 data
-  - data address
-  - pid (optional)
-
-If cpumode == USERSPACE and mmap2 data != 0, sort in this order
-  - mmap2 data
-  - data address
-  - pid (optional)
-
-If cpumode == USERSAPCE and mmap2 data == 0, sort in this order
-  - pid
-  - data address
-
-Notice how sorting on the pid is different depending on the scenario.
-
-I'll agree that sorting on iaddr and tid can be filtered out as a nice to
-have.
-
-But in order to sort on physid, you really need lots of pieces.
-Otherwise, what do you consider the definition of 'physid'? :-)
+Sure.  That works for me. :-)
 
 Cheers,
 Don
