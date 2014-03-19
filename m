@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934043AbaCSNvi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:51:38 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:34904 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933853AbaCSNvg (ORCPT
+	id S934122AbaCSNwL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:52:11 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:37873 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933853AbaCSNwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:51:36 -0400
-MIME-Version: 1.0
-Date: Wed, 19 Mar 2014 13:51:36 +0000
-Message-ID: <CAAbCkmKHrKHAQqjE96J=TU2ndrCrhjg6j-x2YZGUY-odWMmyBg@mail.gmail.com>
-Subject: Testing 1 hard disk in 3 different usb enclosures: kernel reports 3
- different "numbers of sectors"
-From: Jaime T <enopatch@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 19 Mar 2014 09:52:09 -0400
+Message-ID: <1395237113.4142.5.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH v3] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
+From: Johannes Berg <johannes@sipsolutions.net>
+To: behanw@converseincode.com
+Cc: linville@tuxdriver.com, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        dwmw2@infradead.org, pageexec@freemail.hu,
+        Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>,
+        =?ISO-8859-1?Q?Vin=EDcius?= Tinti <viniciustinti@gmail.com>,
+        Mark Charlebois <charlebm@gmail.com>
+Date: Wed, 19 Mar 2014 14:51:53 +0100
+In-Reply-To: <1395199933-4686-1-git-send-email-behanw@converseincode.com> (sfid-20140319_043225_892297_337F53BC)
+References: <CABikg9x+Z95bHcDc6iu5hBvRNO-ibM8-34_qA+OA_FjB52SPMw@mail.gmail.com>
+	 <1395199933-4686-1-git-send-email-behanw@converseincode.com>
+	 (sfid-20140319_043225_892297_337F53BC)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I'm confused.
 
-I'd like to use my 1TB Seagate hard disk on my linux box, and I've
-tested it using 3 different usb-sata enclosures. Here are the syslog
-entries when I plug it in:
+On Tue, 2014-03-18 at 20:32 -0700, behanw@converseincode.com wrote:
 
-kernel: [10611.884111] usb 1-1: new high-speed USB device number 23
-using ehci_hcd
-kernel: [10612.017588] usb 1-1: New USB device found, idVendor=14cd,
-idProduct=6116
-kernel: [10612.017596] usb 1-1: New USB device strings: Mfr=1,
-Product=3, SerialNumber=2
-kernel: [10612.017602] usb 1-1: Product: USB Mass Storage Device
-kernel: [10612.017607] usb 1-1: Manufacturer: Generic
-kernel: [10612.017612] usb 1-1: SerialNumber: 116AC2101219
-kernel: [10612.018116] scsi25 : usb-storage 1-1:1.0
-kernel: [10613.017043] scsi 25:0:0:0: Direct-Access        Mass
-Storage Device        PQ: 0 ANSI: 0
-kernel: [10613.019553] sd 25:0:0:0: Attached scsi generic sg2 type 0
-kernel: [10613.019646] sd 25:0:0:0: [sdb] 1953525166 512-byte logical
-blocks: (1.00 TB/931 GiB)
 
-kernel: [10730.084090] usb 1-1: new high-speed USB device number 24
-using ehci_hcd
-kernel: [10730.225053] usb 1-1: New USB device found, idVendor=152d,
-idProduct=2509
-kernel: [10730.225061] usb 1-1: New USB device strings: Mfr=1,
-Product=11, SerialNumber=3
-kernel: [10730.225067] usb 1-1: Product: Usb production
-kernel: [10730.225072] usb 1-1: Manufacturer: JMicron
-kernel: [10730.225077] usb 1-1: SerialNumber: 20120912000A
-kernel: [10730.225912] scsi26 : usb-storage 1-1:1.0
-kernel: [10731.224882] scsi 26:0:0:0: Direct-Access     Jmicron  Corp.
-                PQ: 0 ANSI: 2 CCS
-kernel: [10731.226702] sd 26:0:0:0: Attached scsi generic sg2 type 0
-kernel: [10731.227818] sd 26:0:0:0: [sdb] 1953524995 512-byte logical
-blocks: (1.00 TB/931 GiB)
+>  	struct scatterlist assoc, pt, ct[2];
+> -	struct {
+> -		struct aead_request	req;
+> -		u8			priv[crypto_aead_reqsize(tfm)];
+> -	} aead_req;
+>  
+> -	memset(&aead_req, 0, sizeof(aead_req));
+> +	char aead_req_data[sizeof(struct aead_request) +
+> +		crypto_aead_reqsize(tfm)]
+> +		__aligned(__alignof__(struct aead_request));
 
-kernel: [10837.176146] usb 1-2: new high-speed USB device number 25
-using ehci_hcd
-kernel: [10837.309203] usb 1-2: New USB device found, idVendor=152d,
-idProduct=2339
-kernel: [10837.309212] usb 1-2: New USB device strings: Mfr=1,
-Product=2, SerialNumber=5
-kernel: [10837.309218] usb 1-2: Product: USB to ATA/ATAPI Bridge
-kernel: [10837.309223] usb 1-2: Manufacturer: JMicron
-kernel: [10837.309228] usb 1-2: SerialNumber: 29FCA11600FF
-kernel: [10837.310184] scsi27 : usb-storage 1-2:1.0
-kernel: [10838.308908] scsi 27:0:0:0: Direct-Access     ST1000LM 024
-HN-M101MBB        PQ: 0 ANSI: 2 CCS
-kernel: [10838.310727] sd 27:0:0:0: Attached scsi generic sg2 type 0
-kernel: [10838.311867] sd 27:0:0:0: [sdb] 1953525168 512-byte logical
-blocks: (1.00 TB/931 GiB)
+This looks fine, though I'd argue the blank lines before/after it
+shouldn't be there, and the indentation should be a bit different, but I
+was willing to clean that up.
 
-So Linux (v3.10.25) is reporting 3 different sizes/numbers of sectors
-for the same single hard disk. Could this be a problem with regards to
-possible future data corruption, or is it something that I can safely
-ignore?
+>  int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+>  			      u8 *data, size_t data_len, u8 *mic)
+>  {
+>  	struct scatterlist assoc, pt, ct[2];
+> -	struct {
+> -		struct aead_request	req;
+> -		u8			priv[crypto_aead_reqsize(tfm)];
+> -	} aead_req;
+>  
+> -	memset(&aead_req, 0, sizeof(aead_req));
+> +	char aead_req_data[sizeof(struct aead_request) +
+> +				crypto_aead_reqsize(tfm) +
+> +				CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
 
-Many thanks, Jaime
+But why does the second instance use a completely different size/align?
+
+johannes
+
