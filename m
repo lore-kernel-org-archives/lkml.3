@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965078AbaCSNYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:24:19 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:50166 "EHLO
+	id S965123AbaCSNYc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:24:32 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:50171 "EHLO
 	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934024AbaCSNYQ (ORCPT
+	with ESMTP id S965084AbaCSNY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:24:16 -0400
+	Wed, 19 Mar 2014 09:24:29 -0400
 From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
 To: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
         linux-pwm@vger.kernel.org,
         =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCHv3 1/3] pwm: make the PWM_POLARITY flag in DTB optional
-Date: Wed, 19 Mar 2014 14:22:53 +0100
-Message-Id: <1395235375-12925-2-git-send-email-LW@KARO-electronics.de>
+Subject: [PATCHv3 3/3] pwm: imx: support output polarity inversion
+Date: Wed, 19 Mar 2014 14:22:55 +0100
+Message-Id: <1395235375-12925-4-git-send-email-LW@KARO-electronics.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1395235375-12925-1-git-send-email-LW@KARO-electronics.de>
 References: <1395235375-12925-1-git-send-email-LW@KARO-electronics.de>
@@ -24,109 +24,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the pwm chip driver registration, so that a chip driver that
-supports polarity inversion can still be used with DTBs that don't
-provide the 'PWM_POLARITY' flag.
-
-This is done to provide polarity inversion support for the pwm-imx
-driver without having to modify all existing DTS files.
+The i.MX pwm unit on i.MX27 and newer SoCs provides a configurable
+output polarity. This patch adds support to utilize this feature where
+available.
 
 Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
 ---
- drivers/pwm/core.c |   46 ++++++++++++++++------------------------------
- 1 file changed, 16 insertions(+), 30 deletions(-)
+ drivers/pwm/pwm-imx.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index a804713..dc15543 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -131,12 +131,12 @@ static int pwm_device_request(struct pwm_device *pwm, const char *label)
- 	return 0;
- }
+diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+index 52aac5e..a43410a 100644
+--- a/drivers/pwm/pwm-imx.c
++++ b/drivers/pwm/pwm-imx.c
+@@ -138,6 +138,8 @@ static int imx_pwm_config_v2(struct pwm_chip *chip,
  
--struct pwm_device *
--of_pwm_xlate_with_flags(struct pwm_chip *pc, const struct of_phandle_args *args)
-+struct pwm_device *of_pwm_xlate(struct pwm_chip *pc,
-+				const struct of_phandle_args *args)
- {
- 	struct pwm_device *pwm;
+ 	if (test_bit(PWMF_ENABLED, &pwm->flags))
+ 		cr |= MX3_PWMCR_EN;
++	if (pwm->polarity == PWM_POLARITY_INVERSED)
++		cr |= MX3_PWMCR_POUTC;
  
--	if (pc->of_pwm_n_cells < 3)
-+	if (pc->of_pwm_n_cells < 2)
- 		return ERR_PTR(-EINVAL);
+ 	writel(cr, imx->mmio_base + MX3_PWMCR);
  
- 	if (args->args[0] >= pc->npwm)
-@@ -148,6 +148,9 @@ of_pwm_xlate_with_flags(struct pwm_chip *pc, const struct of_phandle_args *args)
- 
- 	pwm_set_period(pwm, args->args[1]);
- 
-+	if (pc->of_pwm_n_cells < 3)
-+		return pwm;
-+
- 	if (args->args[2] & PWM_POLARITY_INVERTED)
- 		pwm_set_polarity(pwm, PWM_POLARITY_INVERSED);
+@@ -156,6 +158,11 @@ static void imx_pwm_set_enable_v2(struct pwm_chip *chip, bool enable)
  	else
-@@ -155,27 +158,14 @@ of_pwm_xlate_with_flags(struct pwm_chip *pc, const struct of_phandle_args *args)
+ 		val &= ~MX3_PWMCR_EN;
  
- 	return pwm;
++	if (chip->pwms[0].polarity == PWM_POLARITY_INVERSED)
++		val |= MX3_PWMCR_POUTC;
++	else
++		val &= ~MX3_PWMCR_POUTC;
++
+ 	writel(val, imx->mmio_base + MX3_PWMCR);
  }
--EXPORT_SYMBOL_GPL(of_pwm_xlate_with_flags);
  
--static struct pwm_device *
--of_pwm_simple_xlate(struct pwm_chip *pc, const struct of_phandle_args *args)
-+struct pwm_device *
-+of_pwm_xlate_with_flags(struct pwm_chip *pc,
-+			const struct of_phandle_args *args)
- {
--	struct pwm_device *pwm;
--
--	if (pc->of_pwm_n_cells < 2)
--		return ERR_PTR(-EINVAL);
--
--	if (args->args[0] >= pc->npwm)
--		return ERR_PTR(-EINVAL);
--
--	pwm = pwm_request_from_chip(pc, args->args[0], NULL);
--	if (IS_ERR(pwm))
--		return pwm;
--
--	pwm_set_period(pwm, args->args[1]);
--
--	return pwm;
-+	return of_pwm_xlate(pc, args);
+@@ -199,6 +206,17 @@ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 	clk_disable_unprepare(imx->clk_per);
  }
-+EXPORT_SYMBOL_GPL(of_pwm_xlate_with_flags);
  
- static void of_pwmchip_add(struct pwm_chip *chip)
- {
-@@ -183,8 +173,11 @@ static void of_pwmchip_add(struct pwm_chip *chip)
- 		return;
++static int imx_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
++				enum pwm_polarity polarity)
++{
++	struct imx_chip *imx = to_imx_chip(chip);
++
++	dev_dbg(imx->chip.dev, "%s: polarity set to %s\n", __func__,
++		polarity == PWM_POLARITY_INVERSED ? "inverted" : "normal");
++
++	return 0;
++}
++
+ static struct pwm_ops imx_pwm_ops = {
+ 	.enable = imx_pwm_enable,
+ 	.disable = imx_pwm_disable,
+@@ -210,6 +228,7 @@ struct imx_pwm_data {
+ 	int (*config)(struct pwm_chip *chip,
+ 		struct pwm_device *pwm, int duty_ns, int period_ns);
+ 	void (*set_enable)(struct pwm_chip *chip, bool enable);
++	unsigned output_polarity:1;
+ };
  
- 	if (!chip->of_xlate) {
--		chip->of_xlate = of_pwm_simple_xlate;
--		chip->of_pwm_n_cells = 2;
-+		chip->of_xlate = of_pwm_xlate;
-+		if (chip->ops->set_polarity)
-+			chip->of_pwm_n_cells = 3;
-+		else
-+			chip->of_pwm_n_cells = 2;
- 	}
+ static struct imx_pwm_data imx_pwm_data_v1 = {
+@@ -220,6 +239,7 @@ static struct imx_pwm_data imx_pwm_data_v1 = {
+ static struct imx_pwm_data imx_pwm_data_v2 = {
+ 	.config = imx_pwm_config_v2,
+ 	.set_enable = imx_pwm_set_enable_v2,
++	.output_polarity = 1,
+ };
  
- 	of_node_get(chip->dev->of_node);
-@@ -536,13 +529,6 @@ struct pwm_device *of_pwm_get(struct device_node *np, const char *con_id)
- 		goto put;
- 	}
+ static const struct of_device_id imx_pwm_dt_ids[] = {
+@@ -272,6 +292,11 @@ static int imx_pwm_probe(struct platform_device *pdev)
+ 		return PTR_ERR(imx->mmio_base);
  
--	if (args.args_count != pc->of_pwm_n_cells) {
--		pr_debug("%s: wrong #pwm-cells for %s\n", np->full_name,
--			 args.np->full_name);
--		pwm = ERR_PTR(-EINVAL);
--		goto put;
--	}
--
- 	pwm = pc->of_xlate(pc, &args);
- 	if (IS_ERR(pwm))
- 		goto put;
+ 	data = of_id->data;
++	if (data->output_polarity) {
++		dev_dbg(&pdev->dev, "PWM supports output inversion\n");
++		imx_pwm_ops.set_polarity = imx_pwm_set_polarity;
++	}
++
+ 	imx->config = data->config;
+ 	imx->set_enable = data->set_enable;
+ 
 -- 
 1.7.10.4
 
