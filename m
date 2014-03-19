@@ -1,63 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759162AbaCSP6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 11:58:19 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:32890 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756139AbaCSP6R (ORCPT
+	id S1759340AbaCSQCa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:02:30 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:53048 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757750AbaCSQC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 11:58:17 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-7d-5329be914bf9
-Message-id: <5329BE8C.8000508@samsung.com>
-Date: Wed, 19 Mar 2014 16:58:04 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Leela Krishna Amudala <leelakrishna.a@gmail.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-pm@vger.kernel.org, Naveen Krishna <naveenkrishna.ch@gmail.com>,
-        rui.zhang@intel.com, eduardo.valentin@ti.com,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+	Wed, 19 Mar 2014 12:02:28 -0400
+Date: Wed, 19 Mar 2014 16:01:49 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        amit.daniel@samsung.com, Kukjin Kim <kgene.kim@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "cpgs ." <cpgs@samsung.com>
-Subject: Re: [PATCH v11 0/4] thermal: samsung: Clean up and add support for
- Exynos5420
-References: <1384238132-24515-1-git-send-email-ch.naveen@samsung.com>
- <1386657640-21481-1-git-send-email-ch.naveen@samsung.com>
- <CAL1wa8fj+pYN7EOkh0nggkwss2U9pJhGEoaA7TG+7oy0LK3zFQ@mail.gmail.com>
-In-reply-to: <CAL1wa8fj+pYN7EOkh0nggkwss2U9pJhGEoaA7TG+7oy0LK3zFQ@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t/xy7oT92kGG3Q261s0XA2x2DhjPavF
-	3eeHGS1eHtK0mH/kHKvFmv0/mSx6F1xls5i9/jqLxeVdc9gsPvceYbSYcX4fk8Wibf+ZLZ48
-	7GNz4PXYOesuu8fiPS+ZPPq2rGL0OH5jO5PH501yAaxRXDYpqTmZZalF+nYJXBlL9s1gKmhh
-	qri66wN7A+Nxxi5GTg4JAROJKd/WMEPYYhIX7q1n62Lk4hASWMoocWbqbTaQhJDAZ0aJHftK
-	QGxeAS2Jqzems4LYLAKqEj8ePGACsdkE1CQ+NzwCq+cHqlnTdJ0FxBYViJCYO3EzG0SvoMSP
-	yffA4iICGRKT/91gBVnGLHCMWeLM8nlgQ4WBGr5vOsMCsfgEo8SKw3EgNqdAsER/0yOwS5kF
-	rCVWTtrGCGHLS2xe85Z5AqPgLCQ7ZiEpm4WkbAEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT8
-	3E2MkLj5soNx8TGrQ4wCHIxKPLwr9mgGC7EmlhVX5h5ilOBgVhLhfQUS4k1JrKxKLcqPLyrN
-	SS0+xMjEwSnVwBjW/GPLX67GxgVW04+UPklfmKopPGfd4U2/lB7e646/s2nW3DnLOFeqpPi/
-	5qn6tDzgMNPf+HuS9rv3S0lXNf6euutZztWzB6fp6D8/Un/WXKTxMQvjzh/Sj7bPbv33Zb+x
-	c2nARp8I2RMdebqH58s+Nu6a3Hs/xI2PV+Hv44mVUXbfTBfF8f9XYinOSDTUYi4qTgQAFbmv
-	vHkCAAA=
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: Re: [PATCH v2 11/15] arm64: add EFI stub
+Message-ID: <20140319160149.GF2214@arm.com>
+References: <1394750828-16351-1-git-send-email-leif.lindholm@linaro.org>
+ <1394750828-16351-12-git-send-email-leif.lindholm@linaro.org>
+ <20140318120919.GG13200@arm.com>
+ <1395153629.2967.10.camel@deneb.redhat.com>
+ <20140318182826.GC20497@arm.com>
+ <1395178831.2967.29.camel@deneb.redhat.com>
+ <20140319105706.GE2214@arm.com>
+ <1395241998.2967.52.camel@deneb.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395241998.2967.52.camel@deneb.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Leela,
+On Wed, Mar 19, 2014 at 03:13:18PM +0000, Mark Salter wrote:
+> On Wed, 2014-03-19 at 10:57 +0000, Catalin Marinas wrote:
+> > On Tue, Mar 18, 2014 at 09:40:31PM +0000, Mark Salter wrote:
+> > > On Tue, 2014-03-18 at 18:28 +0000, Catalin Marinas wrote:
+> > > > If UEFI doesn't handle the caches, the only thing left to EFI_STUB is to
+> > > > flush by MVA. We don't need to flush the whole DRAM (and I would even
+> > > > recommend it) but at least the relevant kernel code/data touched with
+> > > > the MMU disabled.
+> > > 
+> > > So, it goes like this:
+> > > 
+> > >   1) UEFI calls stub with MMU/Caches on. Stub/kernel can be anywhere.
+> > >   2) Stub runs and relocates kernel to the desired runtime location
+> > >      but continues to execute from wherever UEFI loaded it until just
+> > >      after ExitBootServices().
+> > >   3) After ExitBootServices, efi_entry() returns relocated entry point
+> > >      for kernel to efi_stub_entry() in efi-entry.S where the Dcache and
+> > >      MMU are turned off, the __flush_dcache_all is called, then the
+> > >      code jumps to the kernel proper entry point.
+> > > 
+> > > It isn't clear to me if UEFI does cache flushing at ExitBootServices
+> > > time, but even so, at least stack use will get cached between then and
+> > > the kernel entry point. The stub could conceivably get its hands on the
+> > > EFI memmap and invalidate dcache using address ranges from UEFI memory
+> > > descriptors so maybe that is the way we should do it.
+> > 
+> > I think the stub just needs to flush the relocated kernel image, ensure
+> > it is sync with the memory. Additional flushing can be done by the
+> > kernel for bits it writes (like page tables, code patching etc). We can
+> > enter the kernel with the SCTLR.I bit set, so it can allocate in an
+> > unified cache already and D-cache maintenance would be needed anyway.
+> 
+> How about this?
+> 
+> diff --git a/arch/arm64/kernel/efi-entry.S b/arch/arm64/kernel/efi-entry.S
+> index 83bfb72..ed480b2 100644
+> --- a/arch/arm64/kernel/efi-entry.S
+> +++ b/arch/arm64/kernel/efi-entry.S
+> @@ -52,11 +52,19 @@ ENTRY(efi_stub_entry)
+>  	 * efi_entry() will have relocated the kernel image if necessary
+>  	 * and we return here with device tree address in x0 and the kernel
+>  	 * entry point stored at *image_addr. Save those values in registers
+> -	 * which are preserved by __flush_dcache_all.
+> +	 * which are callee preserved.
+>  	 */
+> -	ldr	x1, [sp, #16]
+>  	mov	x20, x0
+> -	mov	x21, x1
+> +	ldr	x0, [sp, #16]
+> +	mov	x21, x0
 
-On 19.03.2014 12:19, Leela Krishna Amudala wrote:
-> Hi All,
->
-> I didn't see this series in mainline, Any comments for this ?
+BTW, some comments to make it easier to review the code later about
+what's at [sp, #16].
 
-Naveen had posted v12 of this series and I believe all the patches got 
-my Reviewed-by.
+> +
+> +	adrp	x1, _text
+> +	add	x1, x1, #:lo12:_text
+> +	adrp	x2, _edata
+> +	add	x2, x2, #:lo12:_edata
+> +	sub	x1, x2, x1
+> +
+> +	bl	__flush_dcache_area
 
-Best regards,
-Tomasz
+Looks fine. We also need a "ic ialluis", is any other part of EFI_STUB
+invalidating the I-cache?
+
+We need a patch to invalidate the D-cache for areas of memory that the
+kernel touches but I'll do this as a separate patch.
+
+-- 
+Catalin
