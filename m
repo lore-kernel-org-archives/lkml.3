@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964820AbaCSK17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 06:27:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46838 "EHLO
+	id S933793AbaCSK2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 06:28:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46829 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933772AbaCSK1i (ORCPT
+	by vger.kernel.org with ESMTP id S933759AbaCSK1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 06:27:38 -0400
+	Wed, 19 Mar 2014 06:27:37 -0400
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: broonie@kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
         sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
         ckeepax@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] regulator: arizona-ldo1: Add processing of init_data from device tree
-Date: Wed, 19 Mar 2014 10:18:57 +0000
-Message-Id: <1395224338-3709-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/5] regulator: arizona-ldo1: Move setup processing from arizona-core
+Date: Wed, 19 Mar 2014 10:18:56 +0000
+Message-Id: <1395224338-3709-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1395224338-3709-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 References: <1395224338-3709-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
@@ -23,119 +23,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It is more idiomatic to process things relating to the regulator in its
+driver. This patch moves both processing of device tree relating to the
+regulator and checking if the regulator is external from arizona-core
+into the regulator driver.
+
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- Documentation/devicetree/bindings/mfd/arizona.txt |    7 +++
- drivers/regulator/arizona-ldo1.c                  |   46 +++++++++++++++++++-
- 2 files changed, 50 insertions(+), 3 deletions(-)
+ drivers/mfd/arizona-core.c       |   12 +++---------
+ drivers/regulator/arizona-ldo1.c |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-index 36a0c3d..9d54c70 100644
---- a/Documentation/devicetree/bindings/mfd/arizona.txt
-+++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-@@ -42,6 +42,13 @@ Optional properties:
-     the chip default will be used.  If present exactly five values must
-     be specified.
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 333621e..c5fe3bb 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -539,7 +539,6 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
+ 	int ret, i;
  
-+  - ldo1 : Initial data for the LDO1 regulator, as covered in
-+    Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+  - DCVDD-supply : Power supply, only needs to be specified if DCVDD is being
-+    externally supplied. As covered in
-+    Documentation/devicetree/bindings/regulator/regulator.txt
-+
- Example:
+ 	arizona_of_get_named_gpio(arizona, "wlf,reset", true, &pdata->reset);
+-	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
  
- codec: wm5102@1a {
-diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
-index 3ac4b95..7a0d8e4 100644
---- a/drivers/regulator/arizona-ldo1.c
-+++ b/drivers/regulator/arizona-ldo1.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/gpio.h>
- #include <linux/slab.h>
- 
-@@ -179,19 +180,56 @@ static const struct regulator_init_data arizona_ldo1_default = {
- };
- 
- #ifdef CONFIG_OF
--static int arizona_ldo1_of_get_pdata(struct arizona *arizona)
-+static int arizona_ldo1_of_get_pdata(struct arizona *arizona,
-+				     struct regulator_config *config)
- {
- 	struct arizona_pdata *pdata = &arizona->pdata;
-+	struct arizona_ldo1 *ldo1 = config->driver_data;
-+	struct device_node *init_node, *dcvdd_node;
-+	struct regulator_init_data *init_data;
- 
- 	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
- 
-+	init_node = of_get_child_by_name(arizona->dev->of_node, "ldo1");
-+	dcvdd_node = of_parse_phandle(arizona->dev->of_node, "DCVDD-supply", 0);
-+
-+	if (init_node) {
-+		config->of_node = init_node;
-+
-+		init_data = of_get_regulator_init_data(arizona->dev, init_node);
-+
-+		if (init_data) {
-+			init_data->consumer_supplies = &ldo1->supply;
-+			init_data->num_consumer_supplies = 1;
-+
-+			if (dcvdd_node && dcvdd_node != init_node)
-+				arizona->external_dcvdd = true;
-+
-+			pdata->ldo1 = init_data;
-+		}
-+	} else if (dcvdd_node) {
-+		arizona->external_dcvdd = true;
-+	}
-+
-+	of_node_put(dcvdd_node);
-+
- 	return 0;
- }
-+
-+static void arizona_ldo1_of_put_pdata(struct regulator_config *config)
-+{
-+	of_node_put(config->of_node);
-+}
- #else
--static inline int arizona_ldo1_of_get_pdata(struct arizona *arizona)
-+static inline int arizona_ldo1_of_get_pdata(struct arizona *arizona,
-+					    struct regulator_config *config)
- {
- 	return 0;
- }
-+
-+static inline void arizona_ldo1_of_put_pdata(struct regulator_config *config)
-+{
-+}
- #endif
- 
- static int arizona_ldo1_probe(struct platform_device *pdev)
-@@ -235,7 +273,7 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
- 	config.driver_data = ldo1;
- 	config.regmap = arizona->regmap;
- 
--	ret = arizona_ldo1_of_get_pdata(arizona);
-+	ret = arizona_ldo1_of_get_pdata(arizona, &config);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -261,6 +299,8 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
- 		return ret;
+ 	ret = of_property_read_u32_array(arizona->dev->of_node,
+ 					 "wlf,gpio-defaults",
+@@ -671,6 +670,9 @@ int arizona_dev_init(struct arizona *arizona)
+ 		return -EINVAL;
  	}
  
-+	arizona_ldo1_of_put_pdata(&config);
++	/* Mark DCVDD as external, LDO1 driver will clear if internal */
++	arizona->external_dcvdd = true;
 +
- 	platform_set_drvdata(pdev, ldo1);
+ 	ret = mfd_add_devices(arizona->dev, -1, early_devs,
+ 			      ARRAY_SIZE(early_devs), NULL, 0, NULL);
+ 	if (ret != 0) {
+@@ -870,14 +872,6 @@ int arizona_dev_init(struct arizona *arizona)
+ 			     arizona->pdata.gpio_defaults[i]);
+ 	}
  
- 	return 0;
+-	/*
+-	 * LDO1 can only be used to supply DCVDD so if it has no
+-	 * consumers then DCVDD is supplied externally.
+-	 */
+-	if (arizona->pdata.ldo1 &&
+-	    arizona->pdata.ldo1->num_consumer_supplies == 0)
+-		arizona->external_dcvdd = true;
+-
+ 	pm_runtime_set_autosuspend_delay(arizona->dev, 100);
+ 	pm_runtime_use_autosuspend(arizona->dev);
+ 	pm_runtime_enable(arizona->dev);
+diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+index b1033d3..3ac4b95 100644
+--- a/drivers/regulator/arizona-ldo1.c
++++ b/drivers/regulator/arizona-ldo1.c
+@@ -178,6 +178,22 @@ static const struct regulator_init_data arizona_ldo1_default = {
+ 	.num_consumer_supplies = 1,
+ };
+ 
++#ifdef CONFIG_OF
++static int arizona_ldo1_of_get_pdata(struct arizona *arizona)
++{
++	struct arizona_pdata *pdata = &arizona->pdata;
++
++	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
++
++	return 0;
++}
++#else
++static inline int arizona_ldo1_of_get_pdata(struct arizona *arizona)
++{
++	return 0;
++}
++#endif
++
+ static int arizona_ldo1_probe(struct platform_device *pdev)
+ {
+ 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
+@@ -186,6 +202,8 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 	struct arizona_ldo1 *ldo1;
+ 	int ret;
+ 
++	arizona->external_dcvdd = false;
++
+ 	ldo1 = devm_kzalloc(&pdev->dev, sizeof(*ldo1), GFP_KERNEL);
+ 	if (!ldo1)
+ 		return -ENOMEM;
+@@ -216,6 +234,11 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 	config.dev = arizona->dev;
+ 	config.driver_data = ldo1;
+ 	config.regmap = arizona->regmap;
++
++	ret = arizona_ldo1_of_get_pdata(arizona);
++	if (ret < 0)
++		return ret;
++
+ 	config.ena_gpio = arizona->pdata.ldoena;
+ 
+ 	if (arizona->pdata.ldo1)
+@@ -223,6 +246,13 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 	else
+ 		config.init_data = &ldo1->init_data;
+ 
++	/*
++	 * LDO1 can only be used to supply DCVDD so if it has no
++	 * consumers then DCVDD is supplied externally.
++	 */
++	if (config.init_data->num_consumer_supplies == 0)
++		arizona->external_dcvdd = true;
++
+ 	ldo1->regulator = devm_regulator_register(&pdev->dev, desc, &config);
+ 	if (IS_ERR(ldo1->regulator)) {
+ 		ret = PTR_ERR(ldo1->regulator);
 -- 
 1.7.2.5
 
