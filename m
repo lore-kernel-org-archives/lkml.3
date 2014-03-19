@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965385AbaCSOZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 10:25:51 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:63407 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965241AbaCSOZs (ORCPT
+	id S965396AbaCSO0V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 10:26:21 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:36314 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965242AbaCSOZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 10:25:48 -0400
-Date: Wed, 19 Mar 2014 10:25:44 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.15] cgroup: prepare for the default
- unified hierarchy
-Message-ID: <20140319142544.GA19874@htj.dyndns.org>
-References: <1394740213-17626-1-git-send-email-tj@kernel.org>
+	Wed, 19 Mar 2014 10:25:41 -0400
+Message-ID: <5329A8E1.7090201@converseincode.com>
+Date: Wed, 19 Mar 2014 07:25:37 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394740213-17626-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: linville@tuxdriver.com, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        dwmw2@infradead.org, pageexec@freemail.hu,
+        =?UTF-8?B?SmFuLVNpbW9uIE3Dtmxs?= =?UTF-8?B?ZXI=?= <dl9pf@gmx.de>,
+        =?UTF-8?B?Vmluw61jaXVzIFRpbnRp?= <viniciustinti@gmail.com>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH v3] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
+References: <CABikg9x+Z95bHcDc6iu5hBvRNO-ibM8-34_qA+OA_FjB52SPMw@mail.gmail.com>	 <1395199933-4686-1-git-send-email-behanw@converseincode.com>	 (sfid-20140319_043225_892297_337F53BC) <1395237113.4142.5.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1395237113.4142.5.camel@jlt4.sipsolutions.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 03:50:02PM -0400, Tejun Heo wrote:
-> The planned unified hierarchy is just around the corner.  We're gonna
-> repurpose the dummy hierarchy to serve as the default unified
-> hierarchy.  Controllers which aren't attached to other hierarchies are
-> already automatically bound to the dummy hierarchy; however, the dummy
-> hierarchy is minimally initialized during boot and can't currently act
-> as a full hierarchy.
-> 
-> This patchset gradually turns the dummy hierarchy into fully
-> functional default one and makes it mountable via selecting
-> sane_behavior without any subsystems specified.  While this patchset
-> does make the default hierarchy mountable, the unified hierarchy
-> functionality isn't implemented yet and cgroup creation in the default
-> hierarchy is rejected for now.
-> 
-> This lays down all the boilerplate work for the unified hierarchy.
-> The next patchset will implement the actual unified functionality.
-> 
-> This patchset contains the following eleven patches.
-> 
->  0001-cgroup-cgroup-subsys-should-be-cleared-after-the-css.patch
->  0002-cgroup-relocate-setting-of-CGRP_DEAD.patch
->  0003-cgroup-reorganize-cgroup-bootstrapping.patch
->  0004-cgroup-use-cgroup_setup_root-to-initialize-cgroup_du.patch
->  0005-cgroup-remove-NULL-checks-from-pr_cont_-cgroup_-name.patch
->  0006-cgroup-treat-cgroup_dummy_root-as-an-equivalent-hier.patch
->  0007-cgroup-move-subsys_mask-from-cgroupfs_root-to-cgroup.patch
->  0008-cgroup-rename-cgroup_dummy_root-and-related-names.patch
->  0009-cgroup-drop-const-from-buffer-of-cftype-write_string.patch
->  0010-cgroup-make-cgrp_dfl_root-mountable.patch
->  0011-cgroup-implement-CFTYPE_ONLY_ON_DFL.patch
+On 03/19/14 06:51, Johannes Berg wrote:
+> I'm confused.
+>
+> On Tue, 2014-03-18 at 20:32 -0700, behanw@converseincode.com wrote:
+>
+>
+>>   	struct scatterlist assoc, pt, ct[2];
+>> -	struct {
+>> -		struct aead_request	req;
+>> -		u8			priv[crypto_aead_reqsize(tfm)];
+>> -	} aead_req;
+>>   
+>> -	memset(&aead_req, 0, sizeof(aead_req));
+>> +	char aead_req_data[sizeof(struct aead_request) +
+>> +		crypto_aead_reqsize(tfm)]
+>> +		__aligned(__alignof__(struct aead_request));
+> This looks fine, though I'd argue the blank lines before/after it
+> shouldn't be there, and the indentation should be a bit different, but I
+> was willing to clean that up.
+Will fix.
 
-Applied 0002-0011 to libata/for-3.15.  0001 has the possibility to
-make css iterators malfunction as they don't exect the csses to be
-NULL.  It will be applied after iterators are updated to handle NULL
-csses.
+>>   int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
+>>   			      u8 *data, size_t data_len, u8 *mic)
+>>   {
+>>   	struct scatterlist assoc, pt, ct[2];
+>> -	struct {
+>> -		struct aead_request	req;
+>> -		u8			priv[crypto_aead_reqsize(tfm)];
+>> -	} aead_req;
+>>   
+>> -	memset(&aead_req, 0, sizeof(aead_req));
+>> +	char aead_req_data[sizeof(struct aead_request) +
+>> +				crypto_aead_reqsize(tfm) +
+>> +				CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
+> But why does the second instance use a completely different size/align?
+Because I neglected to update it in both places. Sorry. Will fix.
 
-Thanks.
+Behan
 
 -- 
-tejun
+Behan Webster
+behanw@converseincode.com
+
