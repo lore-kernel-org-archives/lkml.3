@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202AbaCSU2U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 16:28:20 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:51840 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574AbaCSU2R (ORCPT
+	id S1755524AbaCSU2p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 16:28:45 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:56997 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121AbaCSU2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 16:28:17 -0400
+	Wed, 19 Mar 2014 16:28:43 -0400
+Date: Wed, 19 Mar 2014 16:28:39 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-cifs@vger.kernel.org, Steve French <sfrench@samba.org>,
+        Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Thomas Gleixner <tglx@linutronix.de>, uobergfe@redhat.com
+Subject: Re: [RFC PATCH] cifs: Fix possible deadlock with cifs and work queues
+Message-ID: <20140319202839.GA3656@mtj.dyndns.org>
+References: <20140319151252.16ed3ac6@gandalf.local.home>
+ <20140319193407.GA11257@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <20140319201838.GA11403@redhat.com>
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
-	<20140319201838.GA11403@redhat.com>
-Date: Wed, 19 Mar 2014 21:28:16 +0100
-X-Google-Sender-Auth: 1UeOc07cnJVDa5ZMKiSmVPYcRHE
-Message-ID: <CAAsK9AGumcqE3qoEycjqmFdn3ERvpPx41WwZe0YRUv+1sf0rxA@mail.gmail.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-From: Levente Kurusa <levex@linux.com>
-To: Dave Jones <davej@redhat.com>, Teodora Baluta <teobaluta@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        peter.p.waskiewicz.jr@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319193407.GA11257@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello, Steven, Peter.
 
-2014-03-19 21:18 GMT+01:00 Dave Jones <davej@redhat.com>:
-> On Mon, Mar 17, 2014 at 02:59:47PM -0700, Teodora Baluta wrote:
->  > This feature encodes Oops messages into a QR barcode that is scannable by
->  > any device with a camera.
->
->  ...
->
->  >  include/linux/print_oops.h |   11 +
->  >  include/linux/qrencode.h   |  546 +++++++++++++
->  >  kernel/Makefile            |    1 +
->  >  kernel/panic.c             |    5 +
->  >  kernel/print_oops.c        |  173 +++++
->  >  kernel/printk/printk.c     |    9 +-
->  >  lib/Kconfig                |    5 +
->  >  lib/Kconfig.debug          |   11 +
->  >  lib/Makefile               |    3 +
->  >  lib/qr/Makefile            |    6 +
->  >  lib/qr/bitstream.c         |  233 ++++++
->  >  lib/qr/bitstream.h         |   37 +
->  >  lib/qr/mask.c              |  320 ++++++++
->  >  lib/qr/mask.h              |   39 +
->  >  lib/qr/mmask.c             |  175 +++++
->  >  lib/qr/mmask.h             |   36 +
->  >  lib/qr/mqrspec.c           |  259 +++++++
->  >  lib/qr/mqrspec.h           |  155 ++++
->  >  lib/qr/qrencode.c          |  871 +++++++++++++++++++++
->  >  lib/qr/qrencode.h          |  546 +++++++++++++
->  >  lib/qr/qrinput.c           | 1834 ++++++++++++++++++++++++++++++++++++++++++++
->  >  lib/qr/qrinput.h           |  129 ++++
->  >  lib/qr/qrspec.c            |  543 +++++++++++++
->  >  lib/qr/qrspec.h            |  178 +++++
->  >  lib/qr/rscode.c            |  325 ++++++++
->  >  lib/qr/rscode.h            |   38 +
->  >  lib/qr/split.c             |  331 ++++++++
->  >  lib/qr/split.h             |   44 ++
->  >  28 files changed, 6860 insertions(+), 3 deletions(-)
+On Wed, Mar 19, 2014 at 08:34:07PM +0100, Peter Zijlstra wrote:
+> The way I understand workqueues is that we cannot guarantee concurrency
+> like this. It tries, but there's no guarantee.
 
-This idea is certainly great.
+So, the guarantee is that if a workqueue has WQ_MEM_RECLAIM, it'll
+always have at least one worker thread working on it, so workqueues
+which may be depended upon during memory reclaim should have the flag
+set and must not require more than single level of concurrency to make
+forward progress.  Workqueues w/o memory reclaim set depend on the
+fact that eventually memory will be reclaimed and enough number of
+workers necessary to make forward progress will be made available.
 
-However, there are quite a few problems with the code in terms of code style and
-other terms as well. I am not sure how could we help you make this code
-appliable, but it would be great if you put up a branch somewhere. This way
-I could send you a few commits that do some fixups.
+> WQ_MAX_ACTIVE seems to be a hard upper limit of concurrent workers. So
+> given 511 other blocked works, the described problem will always happen.
 
->
-> That's a ton of code we're adding into one of the most fragile parts of the kernel.
+That actually is per-workqueue limit and workqueue core will try to
+create as many workers as possible to satisfy the demanded
+concurrency.  ie. having two workqueues with the same max_active means
+that the total number of workers may reach 2 * max_active; however,
+this is no guarantee.  If the system is under memory pressure and the
+workqueues don't have MEM_RECLAIM set, they may not get any
+concurrency until more memory is made available.
 
-Indeed, this should get split up.
+> Creating another workqueue doesn't actually create more threads.
 
->
-> A lot of what libqrencode does would seem to be superfluous to the requirements
-> here, as we don't output kernel oopses in kanji for eg, and won't care about
-> multiple versions of the qr spec.
->
-> How much of this could we drop ?
+It looks like the issue Steven is describing is caused by having a
+dependency chain longer than 1 through rwsem in a MEM_RECLAIM
+workqueue.  Moving the write work items to a separate workqueue breaks
+the r-w-r chain and ensures that forward progress can be made with
+single level of concurrency on both workqueues, so, yeah, it looks
+like the correct fix to me.  It it scarily subtle tho and quite likely
+to present in other code paths too. :(
 
-A lot, most likely.
+Thanks.
 
-Also, I wonder if we could do the same for panic()?
-I hate it when I receive a panic and I have no idea what's the cause
-since my display is filled up with the stack trace.
-
---
-Regards,
-Levente Kurusa
+-- 
+tejun
