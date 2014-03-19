@@ -1,97 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964923AbaCSMZt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 08:25:49 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:51462 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932721AbaCSMZM (ORCPT
+	id S964943AbaCSM0U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 08:26:20 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:60764 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964928AbaCSM0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 08:25:12 -0400
-Message-ID: <53298D9F.7060205@gmail.com>
-Date: Wed, 19 Mar 2014 13:29:19 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>
-CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/3] ARM: dts: berlin2q: add the Marvell Armada 1500
- pro
-References: <1395153167-21029-1-git-send-email-antoine.tenart@free-electrons.com> <1395153167-21029-2-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1395153167-21029-2-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 19 Mar 2014 08:26:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <1395179560-31384-1-git-send-email-pantelis.antoniou@konsulko.com>
+References: <1395179560-31384-1-git-send-email-pantelis.antoniou@konsulko.com>
+Date: Wed, 19 Mar 2014 07:26:16 -0500
+Message-ID: <CAL_Jsq+cpgnTYUxe1FRgVDak963y3E5_EFqc=fBM-3hq4wgqbg@mail.gmail.com>
+Subject: Re: [PATCH] OF: Add [__]of_find_node_by_full_name
+From: Rob Herring <robherring2@gmail.com>
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2014 03:32 PM, Antoine Ténart wrote:
-> Adds initial support for the Marvell Armada 1500 pro (BG2Q) SoC (Berlin family).
-> The SoC has nodes for cpu, l2 cache controller, interrupt controllers, local
-> timer, apb timers and uarts for now.
+On Tue, Mar 18, 2014 at 4:52 PM, Pantelis Antoniou
+<pantelis.antoniou@konsulko.com> wrote:
+> __of_find_node_by_full_name recursively searches for a matching node
+> with the given full name without taking any locks.
 >
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> of_find_node_by_full_name takes locks and takes a reference on the
+> matching node.
+>
+> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 > ---
->   arch/arm/boot/dts/berlin2q.dtsi | 224 ++++++++++++++++++++++++++++++++++++++++
->   1 file changed, 224 insertions(+)
->   create mode 100644 arch/arm/boot/dts/berlin2q.dtsi
+>  drivers/of/base.c  | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of.h |  4 ++++
+>  2 files changed, 62 insertions(+)
 >
-> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-> new file mode 100644
-> index 000000000000..aa90c273fdf2
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/berlin2q.dtsi
-[...]
-> +	smclk: sysmgr-clock {
-> +		compatible = "fixed-clock";
-> +		#clock-cells = <0>;
-> +		clock-frequency = <25000000>;
-> +	};
-[...]
-> +		apb@fc0000 {
-> +			compatible = "simple-bus";
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 19bcdb4..08156e6 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1142,6 +1142,64 @@ static void *of_find_property_value_of_size(const struct device_node *np,
+>  }
+>
+>  /**
+> + * __of_find_node_by_full_name - Find a node with the full name recursively
+> + * @node:      Root of the tree to perform the search
+> + * @full_name: Full name of the node to find.
+> + *
+> + * Find a node with the give full name by recursively following any of
+> + * the child node links.
+> + * Returns the matching node, or NULL if not found.
+> + * Note that the devtree lock is not taken, so this function is only
+> + * safe to call on either detached trees, or when devtree lock is already
+> + * taken.
+> + */
+> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
+> +               const char *full_name)
+> +{
+> +       struct device_node *child, *found;
 > +
-> +			ranges = <0 0xfc0000 0x10000>;
-> +			interrupt-parent = <&sic>;
+> +       if (node == NULL)
+
+Just !node is preferred.
+
+> +               return NULL;
 > +
-> +			uart0: uart@9000 {
-> +				compatible = "snps,dw-apb-uart";
-> +				reg = <0x9000 0x100>;
-> +				interrupt-parent = <&sic>;
-> +				interrupts = <8>;
-> +				clock-frequency = <25000000>;
-> +				reg-shift = <2>;
-> +				status = "disabled";
-> +			};
+> +       /* check */
+> +       if (of_node_cmp(node->full_name, full_name) == 0)
+> +               return node;
 > +
-> +			uart1: uart@a000 {
-> +				compatible = "snps,dw-apb-uart";
-> +				reg = <0xa000 0x100>;
-> +				interrupt-parent = <&sic>;
-> +				interrupts = <9>;
-> +				clock-frequency = <25000000>;
-> +				reg-shift = <2>;
-> +				status = "disabled";
-> +			};
+> +       __for_each_child_of_node(node, child) {
+> +               found = __of_find_node_by_full_name(child, full_name);
+> +               if (found != NULL)
 
-Antoine,
+"if (found)" is preferred.
 
-I have tentatively applied this to berlin/dt with a small fixup we
-discussed on IRC:
+> +                       return found;
+> +       }
+> +
+> +       return NULL;
+> +}
+> +EXPORT_SYMBOL(__of_find_node_by_full_name);
 
-uart0/uart1 clock-frequency = <foo>; replaced by clocks = <&smclk>;
+Does this need to be exported?
 
-For now, as I don't have a non-github repo yet, you'll find the
-branches on:
+In any case, use EXPORT_SYMBOL_GPL.
 
-https://github.com/shesselba/linux-berlin.git
+> +
+> +/**
+> + * of_find_node_by_full_name - Find a node with the full name recursively
+> + * @node:      Root of the tree to perform the search
+> + * @full_name: Full name of the node to find.
+> + *
+> + * Find a node with the give full name by recursively following any of
+> + * the child node links.
+> + * Returns the matching node (with a ref taken), or NULL if not found.
+> + */
+> +struct device_node *of_find_node_by_full_name(struct device_node *node,
+> +               const char *full_name)
+> +{
+> +       unsigned long flags;
+> +       struct device_node *np;
+> +
+> +       raw_spin_lock_irqsave(&devtree_lock, flags);
+> +       np = of_find_node_by_full_name(node, full_name);
 
-There is also a for-next branch that will become be part of linux/next
-as soon as I figured out how to request it being pulled.
+Don't you need __of_find_node_by_full_name here.
 
-Sebastian
-
+> +       of_node_get(np);
+> +       raw_spin_unlock_irqrestore(&devtree_lock, flags);
+> +
+> +       return np;
+> +}
+> +EXPORT_SYMBOL(of_find_node_by_full_name);
+> +
+> +/**
+>   * of_property_read_u32_index - Find and read a u32 from a multi-value property.
+>   *
+>   * @np:                device node from which the property value is to be read.
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index a8b9dad..bef3d5b 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -223,6 +223,10 @@ extern struct device_node *of_find_matching_node_and_match(
+>
+>  extern struct device_node *of_find_node_by_path(const char *path);
+>  extern struct device_node *of_find_node_by_phandle(phandle handle);
+> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
+> +                                               const char *full_name);
+> +struct device_node *of_find_node_by_full_name(struct device_node *node,
+> +                                               const char *full_name);
+>  extern struct device_node *of_get_parent(const struct device_node *node);
+>  extern struct device_node *of_get_next_parent(struct device_node *node);
+>  extern struct device_node *of_get_next_child(const struct device_node *node,
+> --
+> 1.7.12
+>
