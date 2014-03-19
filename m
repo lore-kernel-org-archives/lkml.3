@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758470AbaCSItY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 04:49:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54920 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757067AbaCSItV (ORCPT
+	id S932996AbaCSIvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 04:51:53 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:49327 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932670AbaCSIvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 04:49:21 -0400
-Date: Wed, 19 Mar 2014 09:49:17 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH 4/4] perf/x86/uncore: modularize Intel uncore driver
-Message-ID: <20140319084917.GE27632@laptop.programming.kicks-ass.net>
-References: <1395133004-23205-1-git-send-email-zheng.z.yan@intel.com>
- <1395133004-23205-4-git-send-email-zheng.z.yan@intel.com>
+	Wed, 19 Mar 2014 04:51:49 -0400
+Date: Wed, 19 Mar 2014 08:51:44 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: Alexander Shiyan <shc_work@mail.ru>, lkml <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] mfd: mc13xxx: Move definitions out of structures
+Message-ID: <20140319085144.GB31687@lee--X1>
+References: <1394867287-14074-1-git-send-email-shc_work@mail.ru>
+ <1395134091.369687348@f500.i.mail.ru>
+ <20140318092735.GK25478@lee--X1>
+ <1395135226.132641029@f500.i.mail.ru>
+ <20140318094022.GL25478@lee--X1>
+ <CAK5ve-+RtBC33R6Kvy8b8ducXUE4=PcJtNrURAvA3fdU_7+SZA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1395133004-23205-4-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK5ve-+RtBC33R6Kvy8b8ducXUE4=PcJtNrURAvA3fdU_7+SZA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 04:56:44PM +0800, Yan, Zheng wrote:
-> This patch adds support for building Intel uncore driver as module.
-> It adds clean-up code and config option for the Intel uncore driver
-> 
-> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> ---
->  arch/x86/Kconfig                              |  7 ++++
->  arch/x86/configs/i386_defconfig               |  1 +
->  arch/x86/configs/x86_64_defconfig             |  1 +
->  arch/x86/kernel/cpu/Makefile                  |  3 +-
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 48 ++++++++++++++++++++++++---
->  5 files changed, 55 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 0af5250..8e4e247 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1103,6 +1103,13 @@ config X86_CPUID
->  	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
->  	  /dev/cpu/31/cpuid.
->  
-> +config X86_INTEL_UNCORE
-> +	tristate "Intel uncore performance monitoring support"
-> +	depends on CPU_SUP_INTEL
-> +	---help---
-> +	  This adds a driver to access the Uncore performance monitoring Units
-> +	  of Intel processors.
-> +
+On Tue, 18 Mar 2014, Bryan Wu wrote:
 
-Ingo do you agree with this config option placement?
+> On Tue, Mar 18, 2014 at 2:40 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> >> > > > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> >> > > > > ---
+> >> > > > >  include/linux/mfd/mc13xxx.h | 22 ++++++++++++----------
+> >> > > > >  1 file changed, 12 insertions(+), 10 deletions(-)
+> >> > > > >
+> >> > > > > diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
+> >> > > > > index a326c85..d63b1d3 100644
+> >> > > > > --- a/include/linux/mfd/mc13xxx.h
+> >> > > > > +++ b/include/linux/mfd/mc13xxx.h
+> >> > > > > @@ -117,10 +117,6 @@ struct mc13xxx_led_platform_data {
+> >> > > > >
+> >> > > > >  #define MAX_LED_CONTROL_REGS 6
+> >> > > > >
+> >> > > > > -struct mc13xxx_leds_platform_data {
+> >> > > > > -     struct mc13xxx_led_platform_data *led;
+> >> > > > > -     int num_leds;
+> >> > > > > -
+> >> > > > >  /* MC13783 LED Control 0 */
+> >> > > > >  #define MC13783_LED_C0_ENABLE                (1 << 0)
+> >> > > > >  #define MC13783_LED_C0_TRIODE_MD     (1 << 7)
+> >> > > > > @@ -169,10 +165,13 @@ struct mc13xxx_leds_platform_data {
+> >> > > > >  /* MC34708 LED Control 0 */
+> >> > > >
+> >> > > > I don't see the line above in the MFD tree?
+> >> > > >
+> >> > > > Which commit/branch/repo is this patch based on?
+> >> > >
+> >> > > Dependency:
+> >> > > linux-next, a59ce6584d (leds: leds-mc13783: Add MC34708 LED support)
+> >> > >
+> >> > > https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/include/linux/mfd/mc13xxx.h?id=a59ce6584d566847980f9dcad5343cd9856145c8
+> >> >
+> >> > Ah, you can't do that, as it will cause conflicts and Linus will
+> >> > likely get upset.
+> >>
+> >> So what do we do now? What is the solution?
+> >
+> > Don't worry about it. Bryan and I should be able to sort something out.
+> 
+> I lost the context here.
+> 
+> I merged Alexander's patch as a59ce6584d566847980f9dcad5343cd9856145c8
+> which modified the mc13xxx.h. But all things are related to LED driver
+> and only add several lines. Next time I will ask Lee to give an review
+> and ack.
+> 
+> So probably this patch has to wait for
+> a59ce6584d566847980f9dcad5343cd9856145c8 merged.
+
+Yes, I think this is the best idea.
+
+Alexander, can you re-send this patch with my Ack after the next merge
+window please?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
