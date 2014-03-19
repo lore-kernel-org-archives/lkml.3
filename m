@@ -1,77 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758885AbaCSBdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 21:33:23 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:56976 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758871AbaCSBdV (ORCPT
+	id S933129AbaCSBll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 21:41:41 -0400
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:59514 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758493AbaCSBlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 21:33:21 -0400
+	Tue, 18 Mar 2014 21:41:39 -0400
+X-Greylist: delayed 525 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Mar 2014 21:41:39 EDT
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Tue, 18 Mar 2014 21:32:51 -0400
+To: linux-kernel@vger.kernel.org
+Cc: Len Sorensen <lsorense@csclub.uwaterloo.ca>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Occational random segfault on Cortex-A15 when exiting SIGCHLD
+ handler.
+Message-ID: <20140319013251.GG17765@csclub.uwaterloo.ca>
 MIME-Version: 1.0
-In-Reply-To: <20140314141302.393cfdf96dd7b82eee3f700e@samsung.com>
-References: <20140314141302.393cfdf96dd7b82eee3f700e@samsung.com>
-Date: Tue, 18 Mar 2014 18:33:20 -0700
-X-Google-Sender-Auth: r9LV43Wzg106u0M4r6mt8k9R4aU
-Message-ID: <CANEJEGu=yDfYi-gH7W7h7up2gd7MxBOg9bz4konLoe-UGf4RYA@mail.gmail.com>
-Subject: Re: [PATCH v11 24/27] iommu/exynos: use exynos-iommu specific typedef
-From: Grant Grundler <grundler@chromium.org>
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 10:13 PM, Cho KyongHo <pullip.cho@samsung.com> wrote:
-> This commit introduces sysmmu_pte_t for page table entries and
-> sysmmu_iova_t vor I/O virtual address that is manipulated by
-> exynos-iommu driver. The purpose of the typedef is to remove
-> dependencies to the driver code from the change of CPU architecture
-> from 32 bit to 64 bit.
+I have been trying to track down the cause of some random segfaults for
+the last couple of weeks.  They were mostly showing up in one particular
+program (confdc which is part of confd from tail-f, but is essentially
+just the erlang 14 VM with some erlang modules running and the segfault
+is happening in the main erlang code).  I have also seen occasional
+segfaults in gcc and even gdb.
 
-hi Cho,
-I noticed this before but understood this code was only compiled for
-ILP-32 programming model. I'm assuming that is going to change in the
-not-to-distant future. Good. :)
+The system is a dra7xx-evm from TI (so an eval board for
+the next OMAP5 chip), running a 3.8.13 based kernel from
+git://git.omapzoom.org/kernel/omap.git (they are working on mainlining
+the patches, but that's not done yet as far as I can tell) branch
+p-ti-linux-3.8.y
 
->
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> ---
->  drivers/iommu/exynos-iommu.c |  103 ++++++++++++++++++++++--------------------
->  1 file changed, 54 insertions(+), 49 deletions(-)
->
-> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> index e375501..6e716cc 100644
-> --- a/drivers/iommu/exynos-iommu.c
-> +++ b/drivers/iommu/exynos-iommu.c
-> @@ -56,19 +56,19 @@
->  #define lv2ent_large(pent) ((*(pent) & 3) == 1)
->
->  #define section_phys(sent) (*(sent) & SECT_MASK)
-> -#define section_offs(iova) ((iova) & 0xFFFFF)
-> +#define section_offs(iova) ((sysmmu_iova_t)(iova) & 0xFFFFF)
+The CPU has dual Cortex-A15 at 1.5GHz.  Core revision is r2p2.
 
-The cast will mask abuses of iova. Define section_offs as a static
-function and GCC can type check iova parameter to make sure it's a
-sysmmu_iova_t.
-Thoughts?
+The userspace is Debian Wheezy armhf.  Running the exact same code
+(except the kernel) on a cubox never segfaults.  I initially wondered if
+the hardware had a problem, but the failures seem too consistent to be
+a random hardware failure, and nothing else ever seems to get corrupted.
 
-I was thinking "((iova) & (sysmmu_iova_t) 0XFFFFF)" might do what you
-want but it doesn't warn on abuse that I tried. I believe GCC knows
-the upper bits are being ignored.
+The gdb backtraces from failures so far all indicated that there is a
+segfault when exiting the SIGCHLD handler, which given it is happening
+in multiple different programs seems like it can't just be a coincidence.
 
-cheers,
-grant
+Some example traces:
+
+gdb dying after running it a few thousand times with the same arguments
+and not failing:
+
+(wheezydev)root@omap5:~/rmf# gdb `which gdb` ./core
+GNU gdb (GDB) 7.4.1-debian
+Copyright (C) 2012 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "arm-linux-gnueabihf".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /usr/bin/gdb...done.
+[New LWP 11964]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/arm-linux-gnueabihf/libthread_db.so.1".
+Core was generated by `gdb /usr/lib/confd/bin/confd mibs/core'.
+Program terminated with signal 11, Segmentation fault.
+#0  0x00000000 in ?? ()
+(gdb) where
+#0  0x00000000 in ?? ()
+#1  0x00095a1e in sigchld_handler (signo=<error reading variable: Cannot access memory at address 0xb6bddc34>) at /root/gdb-7.4.1+dfsg/gdb/linux-nat.c:5530
+Backtrace stopped: previous frame inner to this frame (corrupt stack?)
+(gdb)
+
+The code in question there is:
+
+5511 /* SIGCHLD handler that serves two purposes: In non-stop/async mode,
+5512    so we notice when any child changes state, and notify the
+5513    event-loop; it allows us to use sigsuspend in linux_nat_wait_1
+5514    above to wait for the arrival of a SIGCHLD.  */
+5515
+5516 static void
+5517 sigchld_handler (int signo)
+5518 {
+5519   int old_errno = errno;
+5520
+5521   if (debug_linux_nat)
+5522     ui_file_write_async_safe (gdb_stdlog,
+5523                               "sigchld\n", sizeof ("sigchld\n") - 1);
+5524
+5525   if (signo == SIGCHLD
+5526       && linux_nat_event_pipe[0] != -1)
+5527     async_file_mark (); /* Let the event loop know that there are
+5528                            events to handle.  */
+5529
+5530   errno = old_errno;
+5531 }
+
+And from the erlang/confd case:
+
+(wheezydev)root@omap5:~/rmf# gdb /usr/lib/confd/bin/confd mibs/core
+GNU gdb (GDB) 7.4.1-debian
+Copyright (C) 2012 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "arm-linux-gnueabihf".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /usr/lib/confd/bin/confd...done.
+[New LWP 29581]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/arm-linux-gnueabihf/libthread_db.so.1".
+Core was generated by `/usr/lib/confd/bin/confd -B -- -root /usr/lib/confd -progname confd -- -home /r'.
+Program terminated with signal 11, Segmentation fault.
+#0  0x00000000 in ?? ()
+(gdb) where
+#0  0x00000000 in ?? ()
+#1  0x000b95ea in onchld (signum=<optimized out>) at sys/unix/sys.c:1150
+#2  <signal handler called>
+#3  0x000efd4c in __udivsi3 ()
+#4  0x000efdf0 in __aeabi_uidivmod ()
+#5  0x000efdf0 in __aeabi_uidivmod ()
+Backtrace stopped: previous frame identical to this frame (corrupt stack?)
+
+The code there is:
+1138 #if (defined(SIG_SIGSET) || defined(SIG_SIGNAL))
+1139 static RETSIGTYPE onchld(void)
+1140 #else
+1141 static RETSIGTYPE onchld(int signum)
+1142 #endif
+1143 {
+1144 #if CHLDWTHR
+1145     ASSERT(0); /* We should *never* catch a SIGCHLD signal */
+1146 #elif defined(ERTS_SMP)
+1147     smp_sig_notify('C');
+1148 #else
+1149     children_died = 1;
+1150     ERTS_CHK_IO_INTR(1); /* Make sure we don't sleep in poll */
+1151 #endif
+1152 }
+
+CHLDWTHR and ERTS_SMP are NOT defined/true in this case, so the last
+lines are the ones in use.
+
+I have tried to use strace on the process, and every call is exactly
+the same between a working run and a segfaulting run, up until SIGCHLD
+is received, and then on some runs it segfaults without making any
+syscalls first.
+
+I have tried slowing the CPU from 1.5GHz to 1.0GHz, which made no difference.
+
+I tried running with maxcpus=1, which also made no difference.
+
+I tried upgrading libc from 2.13 Debian wheezy) to 2.18 (Debian Jessie,
+as well as the libgcc as well, and it made no difference either.
+
+gdb seems to segfault maybe 1 in 1000 times.  confd segfaults more like
+1 in 20 times so it is particularly good at triggering whatever the
+problem is.
+
+As I said, I have run the same code on a cubox (Marvell Armada 510 which
+is a single core JP4 at 800MHz as far as I recall), and tail-f has run
+it on a pandaboard (Quad Cortex-A9 as far as I know), and none of those
+have ever had any of these segfaults.  I have seen it on every single
+board we have of the dra7xx-evm boards.
+
+Does anyone have a hint as to where to go next on tracking this down?
+
+-- 
+Len Sorensen
