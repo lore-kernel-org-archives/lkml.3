@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758054AbaCSWyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 18:54:15 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53382 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaCSWyM (ORCPT
+	id S933377AbaCSW4N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 18:56:13 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41564 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121AbaCSW4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 18:54:12 -0400
-Date: Wed, 19 Mar 2014 23:54:10 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: Reorder maintainer addresses for PM and
- ACPI
-Message-ID: <20140319225409.GA22342@amd.pavel.ucw.cz>
-References: <1744772.yf52reTAmC@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1744772.yf52reTAmC@vostro.rjw.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 19 Mar 2014 18:56:12 -0400
+From: Mathieu Maret <mathieu.maret@gmail.com>
+To: pe1dnn@amsat.org, gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Mathieu Maret <mathieu.maret@gmail.com>
+Subject: [PATCHv2 4/5] staging: wlags49_h2: Correct macro style in wl_netdev.c
+Date: Wed, 19 Mar 2014 23:56:14 +0100
+Message-Id: <1395269774-31576-1-git-send-email-mathieu.maret@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-03-20 00:00:14, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@rjwysocki.net>
-> 
-> For a few subsystems I am the person who actually applies patches
-> and people don't CC me on patch submissions, because my address is
-> not the first one in the given MAINTAINERS item.
-> 
-> Reorder PM and ACPI maintainer addresses in MAINTAINERS to make
-> the probability of that a bit smaller.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@rjwysocki.net>
+Multi statement macro should use do{}while(0)
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
+patch v2 does not break compilation
+---
+ drivers/staging/wlags49_h2/wl_netdev.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-(And keep up good work :-).
-
+diff --git a/drivers/staging/wlags49_h2/wl_netdev.c b/drivers/staging/wlags49_h2/wl_netdev.c
+index 255d291..0e553ae 100644
+--- a/drivers/staging/wlags49_h2/wl_netdev.c
++++ b/drivers/staging/wlags49_h2/wl_netdev.c
+@@ -107,9 +107,11 @@
+  * macros
+  ******************************************************************************/
+ #define BLOCK_INPUT(buf, len) \
+-    desc->buf_addr = buf; \
+-    desc->BUF_SIZE = len; \
+-    status = hcf_rcv_msg(&(lp->hcfCtx), desc, 0)
++	do { \
++		desc->buf_addr = buf; \
++		desc->BUF_SIZE = len; \
++		status = hcf_rcv_msg(&(lp->hcfCtx), desc, 0); \
++	} while (0)
+ 
+ #define BLOCK_INPUT_DMA(buf, len) memcpy( buf, desc_next->buf_addr, pktlen )
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.0
+
