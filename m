@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845AbaCSUSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 16:18:37 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:47499 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754687AbaCSUSg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 16:18:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140319180323.GG14929@pd.tnic>
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
-	<20140319180323.GG14929@pd.tnic>
-Date: Wed, 19 Mar 2014 22:18:35 +0200
-Message-ID: <CACV2jQCeDsJ_ekMPumrfcrEHsYfgH0v1E1aYBB6SzA0qDm_dWw@mail.gmail.com>
+	id S1755079AbaCSUSu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 16:18:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5160 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754687AbaCSUSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 16:18:49 -0400
+Date: Wed, 19 Mar 2014 16:18:38 -0400
+From: Dave Jones <davej@redhat.com>
+To: Teodora Baluta <teobaluta@gmail.com>
+Cc: linux-kernel@vger.kernel.org, peter.p.waskiewicz.jr@intel.com
 Subject: Re: [RFC] QR encoding for Oops messages
-From: =?ISO-8859-2?B?VGVvZG9yYSBC42x1/uM=?= <teobaluta@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <20140319201838.GA11403@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Teodora Baluta <teobaluta@gmail.com>, linux-kernel@vger.kernel.org,
+	peter.p.waskiewicz.jr@intel.com
+References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 8:03 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Mar 17, 2014 at 02:59:47PM -0700, Teodora Baluta wrote:
->> This feature encodes Oops messages into a QR barcode that is scannable by
->> any device with a camera.
->>
->> If the config option for this feature is enabled, then when an Oops is
->> in progress, the printk() calls' strings are buffered. When the Oops
->> finishes, the buffer is compressed, encoded into a QR and then displayed
->> to frame buffer. The compression is done with zlib from lib/.
->>
->> Current issues:
->>  * the QR code is sometimes displayed on top of the console text,
->>    sometimes under it, thus making it unscannable
->>  * the compression rate could be better than what zlib offers
->>  * not tested for Oops messages issued from several CPUs
->>
->> As far as decoding is concerned, there are a lot of apps on mobile devices
->> that decode QR codes (just text mostly). In order to make this work, an
->> app which also decodes the QR code is needed. I will be working the next
->> couple of weeks on an Android app which scans the Oops encoding QR and
->> sends it to a server which keeps track of these Oopses that are sent to
->> it making a sort of stream of the latest Oopses. Any thoughts on what the best
->> workflow would be are more than welcomed.
->>
->> Also, if there are any suggestions on how to solve some of the issues,
->> they are more than welcomed.
->
-> Definitely a great idea. Which tree is the patch against?
->
-> Thanks.
+On Mon, Mar 17, 2014 at 02:59:47PM -0700, Teodora Baluta wrote:
+ > This feature encodes Oops messages into a QR barcode that is scannable by
+ > any device with a camera.
 
-I started working from Linus's source tree that's up on github. To be
-more exact, version 3.14.0-rc2.
+ ...
 
-Thank you for taking interest in this!
+ >  include/linux/print_oops.h |   11 +
+ >  include/linux/qrencode.h   |  546 +++++++++++++
+ >  kernel/Makefile            |    1 +
+ >  kernel/panic.c             |    5 +
+ >  kernel/print_oops.c        |  173 +++++
+ >  kernel/printk/printk.c     |    9 +-
+ >  lib/Kconfig                |    5 +
+ >  lib/Kconfig.debug          |   11 +
+ >  lib/Makefile               |    3 +
+ >  lib/qr/Makefile            |    6 +
+ >  lib/qr/bitstream.c         |  233 ++++++
+ >  lib/qr/bitstream.h         |   37 +
+ >  lib/qr/mask.c              |  320 ++++++++
+ >  lib/qr/mask.h              |   39 +
+ >  lib/qr/mmask.c             |  175 +++++
+ >  lib/qr/mmask.h             |   36 +
+ >  lib/qr/mqrspec.c           |  259 +++++++
+ >  lib/qr/mqrspec.h           |  155 ++++
+ >  lib/qr/qrencode.c          |  871 +++++++++++++++++++++
+ >  lib/qr/qrencode.h          |  546 +++++++++++++
+ >  lib/qr/qrinput.c           | 1834 ++++++++++++++++++++++++++++++++++++++++++++
+ >  lib/qr/qrinput.h           |  129 ++++
+ >  lib/qr/qrspec.c            |  543 +++++++++++++
+ >  lib/qr/qrspec.h            |  178 +++++
+ >  lib/qr/rscode.c            |  325 ++++++++
+ >  lib/qr/rscode.h            |   38 +
+ >  lib/qr/split.c             |  331 ++++++++
+ >  lib/qr/split.h             |   44 ++
+ >  28 files changed, 6860 insertions(+), 3 deletions(-)
 
---
-Teodora
+That's a ton of code we're adding into one of the most fragile parts of the kernel.
 
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+A lot of what libqrencode does would seem to be superfluous to the requirements
+here, as we don't output kernel oopses in kanji for eg, and won't care about
+multiple versions of the qr spec.
+
+How much of this could we drop ?
+
+	Dave
+
