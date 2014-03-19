@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964905AbaCSMT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 08:19:57 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:16380 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932721AbaCSMTz (ORCPT
+	id S964911AbaCSMZD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 08:25:03 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2877 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932721AbaCSMZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 08:19:55 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-78-53298b683478
-Message-id: <53298B63.40005@samsung.com>
-Date: Wed, 19 Mar 2014 13:19:47 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] clk: samsung: add new Kconfig for Samsung common
- clock options
-References: <1394598781-3848-1-git-send-email-pankaj.dubey@samsung.com>
- <1394598781-3848-2-git-send-email-pankaj.dubey@samsung.com>
-In-reply-to: <1394598781-3848-2-git-send-email-pankaj.dubey@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCLMWRmVeSWpSXmKPExsVy+t/xa7oZ3ZrBBmfvaVpsenyN1eLyrjls
-	FjPO72OyWLT1C7sDi8fmJfUefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfFuRzN7wS2OiokN
-	/UwNjP3sXYycHBICJhJTF9xihLDFJC7cW88GYgsJLGWUeLDWFML+zCjRvywExOYV0JB4fqQd
-	rJ5FQFWi88BcJhCbTUBN4nPDI7BefgEtiTVN11lAbFGBCIm5EzezQfQKSvyYfA8ozsUhIjCN
-	UeL6jEawI4QFYiQaNn1nBEkICbQySrx/9ghsKqeAh8TdAx/AipgFrCVWTtrGCGHLS2xe85Z5
-	AqPALCSDZyEpm4WkbAEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkJD9uoNx6TGrQ4wC
-	HIxKPLwSsRrBQqyJZcWVuYcYJTiYlUR4D9VrBgvxpiRWVqUW5ccXleakFh9iZOLglGpgLDNZ
-	f9bLmTfJqTwvUy8rbxtrWvCX/sJN+7JyT1s9VryXlB/msOffjxXZt6tUjaaKcOrsj398mPOY
-	lvG73xa7rj9JtLEUPfvmZlpGSK6H8IKq9mnLn5RVX5Je5az+n3PX/3rdU/M/aew21Jt3wWHG
-	33UG85Y7Tbvz8P+v66dMso4+nvy5JdbjjxJLcUaioRZzUXEiAJ02mvI3AgAA
+	Wed, 19 Mar 2014 08:25:00 -0400
+X-Greylist: delayed 1119 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Mar 2014 08:24:59 EDT
+Message-ID: <1395230578.12633.21.camel@thorin>
+Subject: Re: [PATCH] Coccicheck: Remove memcpy to struct assignment test
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Julia.Lawall@lip6.fr, Gilles.Muller@lip6.fr, nicolas.palix@imag.fr,
+        mmarek@suse.cz, linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr,
+        gregkh@linuxfoundation.org, bernat.ada@gmail.com,
+        elezegarcia@gmail.com, kernel-janitors@vger.kernel.org
+Date: Wed, 19 Mar 2014 13:02:58 +0100
+In-Reply-To: <1395177092-3023-1-git-send-email-peter.senna@gmail.com>
+References: <1395177092-3023-1-git-send-email-peter.senna@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at 1290; Body=11 Fuz1=11
+	Fuz2=11
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	*  0.1 AWL AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+On Die, 2014-03-18 at 22:11 +0100, Peter Senna Tschudin wrote:
+> The Coccinelle script scripts/coccinelle/misc/memcpy-assign.cocci look
+> for opportunities to replace a call to memcpy by a struct assignment.
+> This patch removes memcpy-assign.cocci as it is not clear that this
+> convention has an impact on the generated code.
 
-On 12.03.2014 05:32, Pankaj Dubey wrote:
-> This patch adds new Kconfig file for adding new config option
-> as COMMON_CLK_SAMSUNG for Samsung common clock. This patch also
-> moves S3C24XX specific clock options here in this file.
->
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->   drivers/clk/samsung/Kconfig |   11 +++++++++++
->   1 file changed, 11 insertions(+)
->   create mode 100644 drivers/clk/samsung/Kconfig
->
-> diff --git a/drivers/clk/samsung/Kconfig b/drivers/clk/samsung/Kconfig
-> new file mode 100644
-> index 0000000..26eb446
-> --- /dev/null
-> +++ b/drivers/clk/samsung/Kconfig
-> @@ -0,0 +1,11 @@
-> +config COMMON_CLK_SAMSUNG
-> +	bool
-> +	select COMMON_CLK
-> +
-> +config S3C2412_COMMON_CLK
-> +	bool
-> +	select COMMON_CLK_SAMSUNG
-> +
-> +config S3C2443_COMMON_CLK
-> +	bool
-> +	select COMMON_CLK_SAMSUNG
->
+Using struct assignment keeps the type check and is just for this reason
+always preferable over memcpy().
 
-This patch adds S3C2412_COMMON_CLK and S3C2443_COMMON_CLK to 
-drivers/clk/samsung/Kconfig, but they are still present in 
-arch/arm/mach-s3c24xx/Kconfig, so after this patch there are duplicate 
-definitions.
+Kind regards,
+	Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
-Best regards,
-Tomasz
