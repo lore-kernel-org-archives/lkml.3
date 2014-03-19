@@ -1,95 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933926AbaCSQvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:51:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43678 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933682AbaCSQvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:51:36 -0400
-Date: Wed, 19 Mar 2014 09:53:40 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mathieu Maret <mathieu.maret@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org, pe1dnn@amsat.org
-Subject: Re: [PATCH 4/5] staging: wlags49_h2: Correct macro style in
- wl_netdev.c
-Message-ID: <20140319165340.GA27769@kroah.com>
-References: <1395217235-2979-1-git-send-email-mathieu.maret@gmail.com>
- <1395217235-2979-4-git-send-email-mathieu.maret@gmail.com>
- <20140319153637.GA19407@kroah.com>
- <CA+6LquBzTYau34Xrq7j6OitZ0kFw7gvYepdTYJ9697r9XZNcSw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+6LquBzTYau34Xrq7j6OitZ0kFw7gvYepdTYJ9697r9XZNcSw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S934006AbaCSQwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:52:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58591 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932602AbaCSQwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 12:52:20 -0400
+Message-ID: <1395247612.2967.53.camel@deneb.redhat.com>
+Subject: Re: [PATCH v2 11/15] arm64: add EFI stub
+From: Mark Salter <msalter@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Date: Wed, 19 Mar 2014 12:46:52 -0400
+In-Reply-To: <20140319160149.GF2214@arm.com>
+References: <1394750828-16351-1-git-send-email-leif.lindholm@linaro.org>
+	 <1394750828-16351-12-git-send-email-leif.lindholm@linaro.org>
+	 <20140318120919.GG13200@arm.com>
+	 <1395153629.2967.10.camel@deneb.redhat.com>
+	 <20140318182826.GC20497@arm.com>
+	 <1395178831.2967.29.camel@deneb.redhat.com> <20140319105706.GE2214@arm.com>
+	 <1395241998.2967.52.camel@deneb.redhat.com> <20140319160149.GF2214@arm.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 05:42:43PM +0100, Mathieu Maret wrote:
+On Wed, 2014-03-19 at 16:01 +0000, Catalin Marinas wrote:
+> On Wed, Mar 19, 2014 at 03:13:18PM +0000, Mark Salter wrote:
+> > On Wed, 2014-03-19 at 10:57 +0000, Catalin Marinas wrote:
+> > > On Tue, Mar 18, 2014 at 09:40:31PM +0000, Mark Salter wrote:
+> > > > On Tue, 2014-03-18 at 18:28 +0000, Catalin Marinas wrote:
+> > > > > If UEFI doesn't handle the caches, the only thing left to EFI_STUB is to
+> > > > > flush by MVA. We don't need to flush the whole DRAM (and I would even
+> > > > > recommend it) but at least the relevant kernel code/data touched with
+> > > > > the MMU disabled.
+> > > > 
+> > > > So, it goes like this:
+> > > > 
+> > > >   1) UEFI calls stub with MMU/Caches on. Stub/kernel can be anywhere.
+> > > >   2) Stub runs and relocates kernel to the desired runtime location
+> > > >      but continues to execute from wherever UEFI loaded it until just
+> > > >      after ExitBootServices().
+> > > >   3) After ExitBootServices, efi_entry() returns relocated entry point
+> > > >      for kernel to efi_stub_entry() in efi-entry.S where the Dcache and
+> > > >      MMU are turned off, the __flush_dcache_all is called, then the
+> > > >      code jumps to the kernel proper entry point.
+> > > > 
+> > > > It isn't clear to me if UEFI does cache flushing at ExitBootServices
+> > > > time, but even so, at least stack use will get cached between then and
+> > > > the kernel entry point. The stub could conceivably get its hands on the
+> > > > EFI memmap and invalidate dcache using address ranges from UEFI memory
+> > > > descriptors so maybe that is the way we should do it.
+> > > 
+> > > I think the stub just needs to flush the relocated kernel image, ensure
+> > > it is sync with the memory. Additional flushing can be done by the
+> > > kernel for bits it writes (like page tables, code patching etc). We can
+> > > enter the kernel with the SCTLR.I bit set, so it can allocate in an
+> > > unified cache already and D-cache maintenance would be needed anyway.
+> > 
+> > How about this?
+> > 
+> > diff --git a/arch/arm64/kernel/efi-entry.S b/arch/arm64/kernel/efi-entry.S
+> > index 83bfb72..ed480b2 100644
+> > --- a/arch/arm64/kernel/efi-entry.S
+> > +++ b/arch/arm64/kernel/efi-entry.S
+> > @@ -52,11 +52,19 @@ ENTRY(efi_stub_entry)
+> >  	 * efi_entry() will have relocated the kernel image if necessary
+> >  	 * and we return here with device tree address in x0 and the kernel
+> >  	 * entry point stored at *image_addr. Save those values in registers
+> > -	 * which are preserved by __flush_dcache_all.
+> > +	 * which are callee preserved.
+> >  	 */
+> > -	ldr	x1, [sp, #16]
+> >  	mov	x20, x0
+> > -	mov	x21, x1
+> > +	ldr	x0, [sp, #16]
+> > +	mov	x21, x0
 > 
-> Le 19 mars 2014 16:34, "Greg KH" <gregkh@linuxfoundation.org> a écrit :
-> >
-> > On Wed, Mar 19, 2014 at 09:20:34AM +0100, Mathieu Maret wrote:
-> > > Multi statement macro should use do{}while(0)
-> > >
-> > > Signed-off-by: Mathieu Maret <mathieu.maret@gmail.com>
-> > > ---
-> > >  drivers/staging/wlags49_h2/wl_netdev.c | 8 +++++---
-> > >  1 file changed, 5 insertions(+), 3 deletions(-)
-> > >
-> > > diff --git a/drivers/staging/wlags49_h2/wl_netdev.c b/drivers/staging/
-> wlags49_h2/wl_netdev.c
-> > > index 255d291..6455956 100644
-> > > --- a/drivers/staging/wlags49_h2/wl_netdev.c
-> > > +++ b/drivers/staging/wlags49_h2/wl_netdev.c
-> > > @@ -107,9 +107,11 @@
-> > >   * macros
-> > >  
-> ******************************************************************************/
-> > >  #define BLOCK_INPUT(buf, len) \
-> > > -    desc->buf_addr = buf; \
-> > > -    desc->BUF_SIZE = len; \
-> > > -    status = hcf_rcv_msg(&(lp->hcfCtx), desc, 0)
-> > > +     do { \
-> > > +             desc->buf_addr = buf; \
-> > > +             desc->BUF_SIZE = len; \
-> > > +             status = hcf_rcv_msg(&(lp->hcfCtx), desc, 0) \
-> A ";" is missing here
-> > > +     } while (0)
-> > >
-> > >  #define BLOCK_INPUT_DMA(buf, len) memcpy( buf, desc_next->buf_addr, pktlen
-> )
-> > >
-> >
-> > You didn't test-build the code after making this change, as this patch
-> > breaks the build into lots of tiny pieces :(
-> >
-> > Please ALWAYS test your patches.
-> >
-> > I've applied the first 3 patches, please fix this one up (if it's even
-> > possible, hint, I don't think it is...) and resend the remaining
-> > patches.
-> >
-> > thanks,
-> >
-> > greg k-h
-> Hi,
+> BTW, some comments to make it easier to review the code later about
+> what's at [sp, #16].
+
+Okay.
+
 > 
-> Very sorry for that. I've mess something in my config file and this file is not
-> compiled ...  So newbie ...
+> > +
+> > +	adrp	x1, _text
+> > +	add	x1, x1, #:lo12:_text
+> > +	adrp	x2, _edata
+> > +	add	x2, x2, #:lo12:_edata
+> > +	sub	x1, x2, x1
+> > +
+> > +	bl	__flush_dcache_area
 > 
-> Anyway, it's still very strange, because this macro is not used.
-> The error may come from the fact that the last line miss a ";"
+> Looks fine. We also need a "ic ialluis", is any other part of EFI_STUB
+> invalidating the I-cache?
 
-If the macro isn't used, just delete it then :)
+No. I will add it.
 
-> When fixed I should repost with "patch V2" in the subject?
 
-Please do so.
 
-thanks,
-
-greg k-h
