@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758982AbaCSCRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 22:17:37 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:38183 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758017AbaCSCRg (ORCPT
+	id S1758388AbaCSCUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 22:20:14 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:36792 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543AbaCSCUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 22:17:36 -0400
+	Tue, 18 Mar 2014 22:20:12 -0400
+Date: Tue, 18 Mar 2014 19:19:09 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Jones <davej@redhat.com>
+cc: Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: bad rss-counter message in 3.14rc5
+In-Reply-To: <20140319021131.GA30018@redhat.com>
+Message-ID: <alpine.LSU.2.11.1403181918130.3423@eggly.anvils>
+References: <531F0E39.9020100@oracle.com> <20140311134158.GD32390@moon> <20140311142817.GA26517@redhat.com> <20140311143750.GE32390@moon> <20140311171045.GA4693@redhat.com> <20140311173603.GG32390@moon> <20140311173917.GB4693@redhat.com>
+ <alpine.LSU.2.11.1403181703470.7055@eggly.anvils> <5328F3B4.1080208@oracle.com> <20140319020602.GA29787@redhat.com> <20140319021131.GA30018@redhat.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140318154724.GA5669@redhat.com>
-References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com>
- <20140318133331.GA23193@laptop.programming.kicks-ass.net> <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com>
- <20140318140504.GD23193@laptop.programming.kicks-ass.net> <20140318154724.GA5669@redhat.com>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Wed, 19 Mar 2014 10:17:09 +0800
-Message-ID: <CA+a=Yy4WPO9FQwqzDygz6AadT6xbOMEa_puwosZ6WFN17uCncw@mail.gmail.com>
-Subject: Re: [PATCH RFC] sched: introduce add_wait_queue_exclusive_head
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 11:47 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 03/18, Peter Zijlstra wrote:
->>
->> I think we can avoid the entire function if we add
->> WQ_FLAG_LIFO and make prepare_to_wait_event() DTRT.
->
-> Agreed, this looks very natural.
->
-> prepare_to_wait_event(WQ_FLAG_LIFO) should probably skip all "flags == 0"
-> entries before list_add(). Given that it is supposed that the users won't
-> mix exclusive and !exclusive, perhaps the additional list_for_each() won't
-> hurt?
->
-So please allow me to summary and define the semantics of wait/wake_up
-w.r.t. this.
+On Tue, 18 Mar 2014, Dave Jones wrote:
+> On Tue, Mar 18, 2014 at 10:06:02PM -0400, Dave Jones wrote:
+>  > On Tue, Mar 18, 2014 at 09:32:36PM -0400, Sasha Levin wrote:
+>  >  
+>  >  > > Untested patch below: I can't quite say Reported-by, because it may
+>  >  > > not even be one that you and Sasha have been seeing; but I'm hopeful,
+>  >  > > remap_file_pages is in the list.
+>  >  > >
+>  >  > > Please give this a try, preferably on 3.14-rc or earlier: I've never
+>  >  > > seen "Bad rss-counter"s there myself (trinity uses remap_file_pages
+>  >  > > a lot more than most of us); but have seen them on mmotm/next, so
+>  >  > > some other trigger is coming up there, I'll worry about that once
+>  >  > > it reaches 3.15-rc.
+>  >  > 
+>  >  > The patch fixed the "Bad rss-counter" errors I've been seeing both in
+>  >  > 3.14-rc7 and -next.
+>  >  
+>  > It's looking good here too so far. I'll leave it running overnight to be sure.
+> 
+> Of course, that isn't going to happen. Immediately after posting this, I hit the
+> swapops bug.  Patch does seem to have cured the bad rss counters though.
 
-prepare_to_wait_event(0): task is added at the head of the queue.
+Another positive on the rss counters, great, thanks Dave.
+That encourages me to think again on the swapops BUG, but no promises.
 
-prepare_to_wait_event(WQ_FLAG_LIFO): task is added at the head of
-exclusive queue head
-
-prepare_to_wait_event(WQ_FLAG_EXCLUSIVE): task is added at the tail of the queue
-
-Maybe we should rename the flags to WQ_FLAG_EXCLUSIVE_FIFO and
-WQ_FLAG_EXCLUSIVE_LIFO?
-
->> Then we only need to teach ___wait() about this; and I suppose we could
->> make .exclusive=-1 be the LIFO flag.
->
-> Or we can change ___wait_event()
->
->         -       if (exclusive)                                                  \
->         -               __wait.flags = WQ_FLAG_EXCLUSIVE;                       \
->         -       else                                                            \
->         -               __wait.flags = 0;                                       \
->         +       __wait.flags = exclusive;                                       \
->
-> and obviously change the callers. Perhaps this argument should be renamed
-> then.
->
-Current __wait.flags allows possible extension to the existing
-interface. If we change it to __wait.flags = exclusive, we drop the
-future extensibility. Is it acceptable?
-
-Thanks,
-Tao
-
-> But I am fine either way, just I like the idea to extend the current
-> interface.
->
-> Oleg.
->
+Hugh
