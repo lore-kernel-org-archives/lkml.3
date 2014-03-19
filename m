@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340AbaCSIEn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 04:04:43 -0400
+	id S1757799AbaCSIGf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 04:06:35 -0400
 Received: from mailout2.samsung.com ([203.254.224.25]:64435 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250AbaCSIEL (ORCPT
+	with ESMTP id S1750825AbaCSIEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 04:04:11 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-66-53294f6d4cf8
+	Wed, 19 Mar 2014 04:04:01 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-56-53294f6d3125
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 1/5] f2fs: avoid to drop nat entries due to the negative
- nr_shrink
-Date: Wed, 19 Mar 2014 17:02:05 +0900
-Message-id: <1395216129-13656-1-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 5/5] f2fs: change reclaim rate in percentage
+Date: Wed, 19 Mar 2014 17:02:09 +0900
+Message-id: <1395216129-13656-5-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zQ91cf81gg0VrOCyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyjj59DJrwV7Wiobn
-	1xkbGA+ydDFyckgImEgc6njBDGGLSVy4t56ti5GLQ0hgGaPElCM7GGGKGrtfsEMkpjNKTL33
-	iBnC6WSSWDjtJpDDwcEmoC2xeb8BSIOIALPEgqnnGUFqmAUmMEr8X/QebJ2wQIjE2t1fWUFs
-	FgFViQWT97GD2LwC7hINl9azQ2zTltj2fCJYs4TAfTaJDxOmsEE0CEh8m3yIBWSZhICsxKYD
-	UGdLShxccYNlAqPgAkaGVYyiqQXJBcVJ6UWGesWJucWleel6yfm5mxghQdi7g/H2AetDjMlA
-	4yYyS4km5wODOK8k3tDYzMjC1MTU2Mjc0ow0YSVx3qSHSUFCAumJJanZqakFqUXxRaU5qcWH
-	GJk4OKUaGGc0S+S1Kn4R+M9yfq1UrPj7UFaj5E9HQr1TF7GltP3Z88WNRS958YZHht+miW7O
-	KTp6e6nJM/eXViWzfspwy7sG5udm+77i7KnZrxG7way+2uNl6fI7P+0mzffb+y6dQWYqZyR7
-	4f6+z3XSXV2TLRxOZ8pW5i6ZvN8qObvA7VfSvMn6q8MNlViKMxINtZiLihMBC3+WHlgCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jQd1cf81gg49vWSyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8w4+fQya8Fe1oqG59cZGxgPsnQxcnJICJhINHa/YIewxSQu3FvP1sXIxSEk
-	MJ1RYuq9R8wQTieTxMJpN4EcDg42AW2JzfsNQBpEBJglFkw9zwhSwywwgVHi/6L3YFOFBUIk
-	1u7+ygpiswioSiyYvA9sA6+Au0TDpfVQ27Qltj2fyDiBkXsBI8MqRtHUguSC4qT0XEO94sTc
-	4tK8dL3k/NxNjOAQfya1g3Flg8UhRgEORiUe3gNRGsFCrIllxZW5hxglOJiVRHiF7wKFeFMS
-	K6tSi/Lji0pzUosPMSYDbZ/ILCWanA+Mv7ySeENjEzMjSyMzCyMTc3PShJXEeQ+0WgcKCaQn
-	lqRmp6YWpBbBbGHi4JRqYJwnP71QwMRqU3PGzRNTQxZPbl1Yvsnz88HbGvPEZ0Y15WjMUGTj
-	0g0W1ZuVtbBa039Peh7vV6+70bNtuqZ99z+76EBr8Hbz7yuSVBI/8WQH7NJ7dLmQTfPvon/h
-	lw1m2F87k7RNX21HeWIeH//j22ePX7o7sX7pXK++K/d2vrgU7K9UeZ9rxnQlluKMREMt5qLi
-	RAC/EY7+tQIAAA==
+In-reply-to: <1395216129-13656-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1395216129-13656-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t8zQ91cf81gg/7rqhbXd/1lsri0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEdx2aSk5mSWpRbp2yVwZXztPcdScEq0ouP0
+	UeYGxpmCXYycHBICJhL7nl1lgbDFJC7cW8/WxcjFISSwjFHiQvN1oAQHWFH3eV+I+HRGiV3L
+	d7BAOJ1MEns/nGQHKWIT0JbYvN8AZJCIALPEgqnnGUFqmAUmMEr8X/QebIOwgI3E3XnXmEFs
+	FgFViTcLfoPZvALuEhdfL2SDuEJbYtvziYwgNqeAh8ShmxfAaoSAap6+vQK2WELgN5vEyfY3
+	UIMEJL5NPgR1qazEpgPMEHMkJQ6uuMEygVF4ASPDKkbR1ILkguKk9CJjveLE3OLSvHS95Pzc
+	TYyQkO3fwXj3gPUhxmSgcROZpUST84Ehn1cSb2hsZmRhamJqbGRuaUaasJI47/2HSUFCAumJ
+	JanZqakFqUXxRaU5qcWHGJk4OKUaGFv5r3X7V0+65yTcZeUtsexwrvsiz9tNRX8EZnMw776W
+	ytpmoDnv+2buvbzvvn48GbI7cFL9Y/sdZgn/XH6EMHvNzZ6zRnt5lxXjXQ5HtrNvLkrP3trx
+	9lf90oLjd57/nPzm6YXeTo1iSdUFT4M3zmk1mJ223mvyWwZV74qgubqF2ze//WfZflyJpTgj
+	0VCLuag4EQB+MkT1bwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQd1cf81gg85JShbXd/1lsri0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
+	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
+	EgTXY2SABhLWMWZ87T3HUnBKtKLj9FHmBsaZgl2MHBwSAiYS3ed9uxg5gUwxiQv31rN1MXJx
+	CAlMZ5TYtXwHC4TTySSx98NJdpAGNgFtic37DUAaRASYJRZMPc8IUsMsMIFR4v+i9ywgCWEB
+	G4m7864xg9gsAqoSbxb8BrN5BdwlLr5eyAaxTVti2/OJjCA2p4CHxKGbF8BqhIBqnr69wjKB
+	kXcBI8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOCIeCa1g3Flg8UhRgEORiUe3gNRGsFC
+	rIllxZW5hxglOJiVRHiF7wKFeFMSK6tSi/Lji0pzUosPMSYDXTWRWUo0OR8YrXkl8YbGJmZG
+	lkZmFkYm5uakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLEwSnVwFghLLTsv7SUcZ/T/Sqzniwn
+	w27++Pnsh+/u4BMVYnNQu7Su8P68/LW6pUczH5hpO37zu7ghQPvqjPQNu450t2adjmg6Nj/4
+	8PHJH2Ji7Ct8FN6vvcqZfrtt29fy/PMaPadnuameatvpE7lS3HJidrOa6JN627myu55N7Oxa
+	OmHRzZ8fj83amqTEUpyRaKjFXFScCACAKFImzAIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -46,27 +48,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The try_to_free_nats should not receive the negative nr_shrink.
-Otherwise, it can drop all the nat entries by the while loop.
+It is more reasonable to determine the reclaiming rate of prefree segments
+according to the volume size, which is set to 5% by default.
+For example, if the volume is 128GB, the prefree segments are reclaimed
+when the number reaches to 6.4GB.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/node.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/filesystems/f2fs.txt | 8 +++++---
+ fs/f2fs/segment.c                  | 3 ++-
+ fs/f2fs/segment.h                  | 2 +-
+ 3 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 707fd20..04450a5 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -208,7 +208,7 @@ int try_to_free_nats(struct f2fs_sb_info *sbi, int nr_shrink)
- {
- 	struct f2fs_nm_info *nm_i = NM_I(sbi);
+diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
+index f415b9f..2f6d021 100644
+--- a/Documentation/filesystems/f2fs.txt
++++ b/Documentation/filesystems/f2fs.txt
+@@ -169,9 +169,11 @@ Files in /sys/fs/f2fs/<devname>
  
--	if (nm_i->nat_cnt <= NM_WOUT_THRESHOLD)
-+	if (nm_i->nat_cnt <= NM_WOUT_THRESHOLD || nr_shrink <= 0)
- 		return 0;
+  reclaim_segments             This parameter controls the number of prefree
+                               segments to be reclaimed. If the number of prefree
+-			      segments is larger than this number, f2fs tries to
+-			      conduct checkpoint to reclaim the prefree segments
+-			      to free segments. By default, 100 segments, 200MB.
++			      segments is larger than the number of segments
++			      in the proportion to the percentage over total
++			      volume size, f2fs tries to conduct checkpoint to
++			      reclaim the prefree segments to free segments.
++			      By default, 5% over total # of segments.
  
- 	write_lock(&nm_i->nat_tree_lock);
+  max_small_discards	      This parameter controls the number of discard
+ 			      commands that consist small blocks less than 2MB.
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 6c5a4f0..e7ff23a 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -1758,7 +1758,8 @@ int build_segment_manager(struct f2fs_sb_info *sbi)
+ 	sm_info->ovp_segments = le32_to_cpu(ckpt->overprov_segment_count);
+ 	sm_info->main_segments = le32_to_cpu(raw_super->segment_count_main);
+ 	sm_info->ssa_blkaddr = le32_to_cpu(raw_super->ssa_blkaddr);
+-	sm_info->rec_prefree_segments = DEF_RECLAIM_PREFREE_SEGMENTS;
++	sm_info->rec_prefree_segments = sm_info->main_segments *
++					DEF_RECLAIM_PREFREE_SEGMENTS / 100;
+ 	sm_info->ipu_policy = F2FS_IPU_DISABLE;
+ 	sm_info->min_ipu_util = DEF_MIN_IPU_UTIL;
+ 
+diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+index 9fc46ee..7091204 100644
+--- a/fs/f2fs/segment.h
++++ b/fs/f2fs/segment.h
+@@ -14,7 +14,7 @@
+ #define NULL_SEGNO			((unsigned int)(~0))
+ #define NULL_SECNO			((unsigned int)(~0))
+ 
+-#define DEF_RECLAIM_PREFREE_SEGMENTS	100	/* 200MB of prefree segments */
++#define DEF_RECLAIM_PREFREE_SEGMENTS	5	/* 5% over total segments */
+ 
+ /* L: Logical segment # in volume, R: Relative segment # in main area */
+ #define GET_L2R_SEGNO(free_i, segno)	(segno - free_i->start_segno)
 -- 
 1.8.4.474.g128a96c
 
