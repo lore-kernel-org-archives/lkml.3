@@ -1,116 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758259AbaCSAIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 20:08:50 -0400
-Received: from smtprelay0130.hostedemail.com ([216.40.44.130]:34537 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755163AbaCSAIt (ORCPT
+	id S1758325AbaCSAJc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 20:09:32 -0400
+Received: from [216.32.180.30] ([216.32.180.30]:8708 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1755163AbaCSAJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 20:08:49 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2691:2828:2898:3138:3139:3140:3141:3142:3354:3653:3865:3866:3867:3868:3871:3874:4321:4605:5007:7652:7903:8957:10004:10026:10400:10848:11026:11232:11658:11914:12043:12291:12346:12438:12517:12519:12555:12683:13019:13255:14093:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: nest95_69e69f7d80634
-X-Filterd-Recvd-Size: 4009
-Message-ID: <1395187726.26549.15.camel@joe-AO722>
-Subject: [PATCH V2] checkpatch: Reduce false positives for "Missing blank
- line after declarations" test
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 18 Mar 2014 17:08:46 -0700
-In-Reply-To: <1395086635.2556.28.camel@joe-AO722>
-References: <1395081926.2556.27.camel@joe-AO722>
-	 <1395086635.2556.28.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Mar 2014 20:09:31 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z551biz98dI936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1de2h1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25cch25f6h2605h262fh2668h1155h)
+Date: Wed, 19 Mar 2014 08:08:22 +0800
+From: Chenhui Zhao <chenhui.zhao@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <leoli@freescale.com>, <Jason.Jin@freescale.com>
+Subject: Re: [PATCH 7/9] fsl: add EPU FSM configuration for deep sleep
+Message-ID: <20140319000822.GA9735@localhost.localdomain>
+References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
+ <1394168285-32275-7-git-send-email-chenhui.zhao@freescale.com>
+ <1394582923.13761.81.camel@snotra.buserror.net>
+ <20140312083410.GF4706@localhost.localdomain>
+ <1394837469.12479.134.camel@snotra.buserror.net>
+ <20140317102727.GB6204@localhost.localdomain>
+ <1395184882.12479.253.camel@snotra.buserror.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1395184882.12479.253.camel@snotra.buserror.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the false positives of this test by checking
-previous lines for known macros that declare variables.
+On Tue, Mar 18, 2014 at 06:21:22PM -0500, Scott Wood wrote:
+> On Mon, 2014-03-17 at 18:27 +0800, Chenhui Zhao wrote:
+> > On Fri, Mar 14, 2014 at 05:51:09PM -0500, Scott Wood wrote:
+> > > On Wed, 2014-03-12 at 16:34 +0800, Chenhui Zhao wrote:
+> > > > On Tue, Mar 11, 2014 at 07:08:43PM -0500, Scott Wood wrote:
+> > > > > On Fri, 2014-03-07 at 12:58 +0800, Chenhui Zhao wrote:
+> > > > > > +	/* Configure the EPU Counters */
+> > > > > > +	epu_write(EPCCR15, 0x92840000);
+> > > > > > +	epu_write(EPCCR14, 0x92840000);
+> > > > > > +	epu_write(EPCCR12, 0x92840000);
+> > > > > > +	epu_write(EPCCR11, 0x92840000);
+> > > > > > +	epu_write(EPCCR10, 0x92840000);
+> > > > > > +	epu_write(EPCCR9, 0x92840000);
+> > > > > > +	epu_write(EPCCR8, 0x92840000);
+> > > > > > +	epu_write(EPCCR5, 0x92840000);
+> > > > > > +	epu_write(EPCCR4, 0x92840000);
+> > > > > > +	epu_write(EPCCR2, 0x92840000);
+> > > > > > +
+> > > > > > +	/* Configure the SCUs Inputs */
+> > > > > > +	epu_write(EPSMCR15, 0x76000000);
+> > > > > > +	epu_write(EPSMCR14, 0x00000031);
+> > > > > > +	epu_write(EPSMCR13, 0x00003100);
+> > > > > > +	epu_write(EPSMCR12, 0x7F000000);
+> > > > > > +	epu_write(EPSMCR11, 0x31740000);
+> > > > > > +	epu_write(EPSMCR10, 0x65000030);
+> > > > > > +	epu_write(EPSMCR9, 0x00003000);
+> > > > > > +	epu_write(EPSMCR8, 0x64300000);
+> > > > > > +	epu_write(EPSMCR7, 0x30000000);
+> > > > > > +	epu_write(EPSMCR6, 0x7C000000);
+> > > > > > +	epu_write(EPSMCR5, 0x00002E00);
+> > > > > > +	epu_write(EPSMCR4, 0x002F0000);
+> > > > > > +	epu_write(EPSMCR3, 0x2F000000);
+> > > > > > +	epu_write(EPSMCR2, 0x6C700000);
+> > > > > 
+> > > > > Where do these magic numbers come from?  Which chips are they valid for?
+> > > > 
+> > > > They are for T1040. Can be found in the RCPM chapter of T1040RM.
+> > > 
+> > > Then put in a comment to that effect, including what part of the RCPM
+> > > chapter.
+> > > 
+> > > How do you plan to handle the addition of another SoC with different
+> > > values?
+> > > 
+> > > -Scott
+> > 
+> > Had thought that using an array to put these values (pairs of offset and value)
+> > and passing the array to the function.
+> 
+> Arrays are better than a long sequence of function calls in any case.
+> 
+> > However, luckily T104x and LS1 have same values for these registers
+> > according to the current Reference Manuals.
+> 
+> If it's likely that the values will remain the same on all chips for the
+> near future, then a fancy mechanism to select the array to use can wait
+> -- but you should still use an array, and have a comment acknowledging
+> the possibility of needing to accommodate different values in the
+> future.
+> 
+> -Scott
 
-Add c90 keywords and test those too.
+OK. Will use an array to pass the values.
 
-Comment the specific tests done a bit better.
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
-
-V2: I believe this one works better.
-    Don't allow "else if" to be an $Ident $Ident match
-    Skip bitfield continuations too
-
- scripts/checkpatch.pl | 36 ++++++++++++++++++++++++++++++------
- 1 file changed, 30 insertions(+), 6 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d44e440..93beee8 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -303,6 +303,7 @@ our $Operators	= qr{
- 			=>|->|<<|>>|<|>|!|~|
- 			&&|\|\||,|\^|\+\+|--|&|\||$Arithmetic
- 		  }x;
-+our $c90_Keywords = qr{do|for|while|if|else|return|goto|continue|switch|default|case|break}x;
- 
- our $NonptrType;
- our $NonptrTypeWithAttr;
-@@ -388,6 +389,11 @@ our @mode_permission_funcs = (
- 	["(?:CLASS|DEVICE|SENSOR)_ATTR", 2],
- );
- 
-+our $declaration_macros = qr{(?x:
-+	(?:$Storage\s+)?(?:DECLARE|DEFINE)_[A-Z]+\s*\(|
-+	(?:$Storage\s+)?LIST_HEAD\s*\(
-+)};
-+
- our $allowed_asm_includes = qr{(?x:
- 	irq|
- 	memory
-@@ -2251,14 +2257,32 @@ sub process {
- 		}
- 
- # check for missing blank lines after declarations
--		if ($prevline =~ /^\+\s+$Declare\s+$Ident/ &&
--		    !($prevline =~ /(?:$Compare|$Assignment|$Operators)\s*$/ ||
--		      $prevline =~ /(?:\{\s*|\\)$/) &&		#extended lines
--		    $sline =~ /^\+\s+/ &&			#Not at char 1
-+		if ($sline =~ /^\+\s+\S/ &&			#Not at char 1
-+			# actual declarations
-+		    ($prevline =~ /^\+\s+$Declare\s+$Ident\s*[=,;\[]/ ||
-+			# foo bar; where foo is some local typedef or #define
-+		     $prevline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
-+			# known declaration macros
-+		     $prevline =~ /^\+\s+$declaration_macros/) &&
-+			# for "else if" which can look like "$Ident $Ident"
-+		    !($prevline =~ /^\+\s+$c90_Keywords\b/ ||
-+			# other possible extensions of declaration lines
-+		      $prevline =~ /(?:$Compare|$Assignment|$Operators)\s*$/ ||
-+			# not starting a section or a macro "\" extended line
-+		      $prevline =~ /(?:\{\s*|\\)$/) &&
-+			# looks like a declaration
- 		    !($sline =~ /^\+\s+$Declare/ ||
--		      $sline =~ /^\+\s+$Ident\s+$Ident/ ||	#eg: typedef foo
-+			# foo bar; where foo is some local typedef or #define
-+		      $sline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
-+			# known declaration macros
-+		      $sline =~ /^\+\s+$declaration_macros/ ||
-+			# start of struct or union or enum
- 		      $sline =~ /^\+\s+(?:union|struct|enum|typedef)\b/ ||
--		      $sline =~ /^\+\s+(?:$|[\{\}\.\#\"\?\:\(])/ ||
-+			# start or end of block or continuation of declaration
-+		      $sline =~ /^\+\s+(?:$|[\{\}\.\#\"\?\:\(\[])/ ||
-+			# bitfield continuation
-+		      $sline =~ /^\+\s+$Ident\s*:\s*\d+\s*[,;]/ ||
-+			# other possible extensions of declaration lines
- 		      $sline =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/)) {
- 			WARN("SPACING",
- 			     "Missing a blank line after declarations\n" . $hereprev);
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
-
+-Chenhui
 
