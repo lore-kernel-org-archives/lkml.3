@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934266AbaCSQ0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:26:11 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:49681 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934001AbaCSQYN (ORCPT
+	id S1759279AbaCSQa3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:30:29 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55938 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755374AbaCSQa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:24:13 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        tony.luck@intel.com, fenghua.yu@intel.com, schwidefsky@de.ibm.com,
-        james.hogan@imgtec.com, cmetcalf@tilera.com, benh@kernel.crashing.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
-Cc: dietmar.eggemann@arm.com, preeti@linux.vnet.ibm.com,
-        linaro-kernel@lists.linaro.org,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v3 3/6] sched: powerpc: create a dedicated topology table
-Date: Wed, 19 Mar 2014 17:22:42 +0100
-Message-Id: <1395246165-31150-4-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1395246165-31150-1-git-send-email-vincent.guittot@linaro.org>
-References: <1395246165-31150-1-git-send-email-vincent.guittot@linaro.org>
+	Wed, 19 Mar 2014 12:30:28 -0400
+From: Christopher Covington <cov@codeaurora.org>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: Alexander Kartashov <alekskartashov@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Christopher Covington <cov@codeaurora.org>
+Subject: [PATCH v2] arm64: Fix __range_ok macro
+Date: Wed, 19 Mar 2014 12:29:37 -0400
+Message-Id: <1395246577-22120-1-git-send-email-cov@codeaurora.org>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1394059289-3972-1-git-send-email-cov@codeaurora.org>
+References: <1394059289-3972-1-git-send-email-cov@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a dedicated topology table for handling asymetric feature of powerpc.
+Without this, the following scenario is incorrectly determined
+to be invalid.
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+addr 0x7f_ffffe000 size 8192 addr_limit 0x80_00000000
+
+This behavior was observed while trying to vmsplice the stack
+as part of a CRIU dump of a process on a system started with the
+norandmaps kernel parameter.
+
+Signed-off-by: Christopher Covington <cov@codeaurora.org>
 ---
- arch/powerpc/kernel/smp.c | 31 +++++++++++++++++++++++--------
- include/linux/sched.h     |  2 --
- kernel/sched/core.c       |  6 ------
- 3 files changed, 23 insertions(+), 16 deletions(-)
+ arch/arm64/include/asm/uaccess.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index ac2621a..c9cade5 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -755,6 +755,28 @@ int setup_profiling_timer(unsigned int multiplier)
- 	return 0;
- }
- 
-+#ifdef CONFIG_SCHED_SMT
-+/* cpumask of CPUs with asymetric SMT dependancy */
-+static const int powerpc_smt_flags(void)
-+{
-+	int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
-+
-+	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
-+		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
-+		flags |= SD_ASYM_PACKING;
-+	}
-+	return flags;
-+}
-+#endif
-+
-+static struct sched_domain_topology_level powerpc_topology[] = {
-+#ifdef CONFIG_SCHED_SMT
-+	{ cpu_smt_mask, powerpc_smt_flags, SD_INIT_NAME(SMT) },
-+#endif
-+	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
-+	{ NULL, },
-+};
-+
- void __init smp_cpus_done(unsigned int max_cpus)
- {
- 	cpumask_var_t old_mask;
-@@ -779,15 +801,8 @@ void __init smp_cpus_done(unsigned int max_cpus)
- 
- 	dump_numa_cpu_topology();
- 
--}
-+	set_sched_topology(powerpc_topology);
- 
--int arch_sd_sibling_asym_packing(void)
--{
--	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
--		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
--		return SD_ASYM_PACKING;
--	}
--	return 0;
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4db592a..6479de4 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -868,8 +868,6 @@ enum cpu_idle_type {
- #define SD_OVERLAP		0x2000	/* sched_domains of this level overlap */
- #define SD_NUMA			0x4000	/* cross-node balancing */
- 
--extern int __weak arch_sd_sibiling_asym_packing(void);
--
- #ifdef CONFIG_SCHED_SMT
- static inline const int cpu_smt_flags(void)
- {
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f2bfa76..0b51ee3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5833,11 +5833,6 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
- 	atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
- }
- 
--int __weak arch_sd_sibling_asym_packing(void)
--{
--       return 0*SD_ASYM_PACKING;
--}
--
- /*
-  * Initializers for schedule domains
-  * Non-inlined to reduce accumulated stack pressure in build_sched_domains()
-@@ -6018,7 +6013,6 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
- 	if (sd->flags & SD_SHARE_CPUPOWER) {
- 		sd->imbalance_pct = 110;
- 		sd->smt_gain = 1178; /* ~15% */
--		sd->flags |= arch_sd_sibling_asym_packing();
- 
- 	} else if (sd->flags & SD_SHARE_PKG_RESOURCES) {
- 		sd->imbalance_pct = 117;
+diff --git a/arch/arm64/include/asm/uaccess.h b/arch/arm64/include/asm/uaccess.h
+index 7ecc2b2..5974459 100644
+--- a/arch/arm64/include/asm/uaccess.h
++++ b/arch/arm64/include/asm/uaccess.h
+@@ -83,7 +83,7 @@ static inline void set_fs(mm_segment_t fs)
+  * Returns 1 if the range is valid, 0 otherwise.
+  *
+  * This is equivalent to the following test:
+- * (u65)addr + (u65)size < (u65)current->addr_limit
++ * (u65)addr + (u65)size <= current->addr_limit
+  *
+  * This needs 65-bit arithmetic.
+  */
+@@ -91,7 +91,7 @@ static inline void set_fs(mm_segment_t fs)
+ ({									\
+ 	unsigned long flag, roksum;					\
+ 	__chk_user_ptr(addr);						\
+-	asm("adds %1, %1, %3; ccmp %1, %4, #2, cc; cset %0, cc"		\
++	asm("adds %1, %1, %3; ccmp %1, %4, #2, cc; cset %0, ls"		\
+ 		: "=&r" (flag), "=&r" (roksum)				\
+ 		: "1" (addr), "Ir" (size),				\
+ 		  "r" (current_thread_info()->addr_limit)		\
 -- 
-1.9.0
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by the Linux Foundation.
 
