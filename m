@@ -1,41 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260AbaCSTrA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 15:47:00 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:27257 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753187AbaCSTq6 (ORCPT
+	id S1754533AbaCSTrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 15:47:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44259 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754419AbaCSTrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 15:46:58 -0400
-Date: Wed, 19 Mar 2014 15:46:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
+	Wed, 19 Mar 2014 15:47:41 -0400
+Date: Wed, 19 Mar 2014 20:47:29 +0100
+From: Peter Zijlstra <peterz@infradead.org>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-cifs@vger.kernel.org, Steve French <sfrench@samba.org>,
-        Clark Williams <williams@redhat.com>,
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
+        Steve French <sfrench@samba.org>, Clark Williams <williams@redhat.com>,
         "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
         Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
         uobergfe@redhat.com
-Subject: Re: [RFC PATCH] cifs: Fix possible deadlock with cifs and work
- queues
-Message-ID: <20140319154656.61e2c9fb@gandalf.local.home>
-In-Reply-To: <20140319154339.44c327e3@gandalf.local.home>
+Subject: Re: [RFC PATCH] cifs: Fix possible deadlock with cifs and work queues
+Message-ID: <20140319194729.GB11257@laptop.programming.kicks-ass.net>
 References: <20140319151252.16ed3ac6@gandalf.local.home>
-	<20140319193407.GA11257@laptop.programming.kicks-ass.net>
-	<20140319154339.44c327e3@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+ <20140319193407.GA11257@laptop.programming.kicks-ass.net>
+ <20140319154339.44c327e3@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319154339.44c327e3@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Mar 2014 15:43:39 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
+On Wed, Mar 19, 2014 at 03:43:39PM -0400, Steven Rostedt wrote:
 > On Wed, 19 Mar 2014 20:34:07 +0100
 > Peter Zijlstra <peterz@infradead.org> wrote:
 > 
@@ -66,9 +60,9 @@ Steven Rostedt <rostedt@goodmis.org> wrote:
 > root      1111  0.0  0.0      0     0 ?        S<   15:11   0:00 [cifsiord]
 > 
 > It looks to me that it does create new threads.
-> 
 
-Or is that just the rescuer thread? I can rewrite the patch to use
-kthread_work instead too.
+Ah, I think that's because of the MEM_RECLAIM, not sure if that will
+normally participate in running works. Its been a long time since I
+looked at any of that.
 
--- Steve
+Lets wait for TJ to wake up.
