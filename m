@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965651AbaCSQHC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:07:02 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:40143 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933953AbaCSQG7 convert rfc822-to-8bit (ORCPT
+	id S965663AbaCSQI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:08:28 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60710 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964941AbaCSQI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:06:59 -0400
-Date: Wed, 19 Mar 2014 17:07:10 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Jyri Sarha <jsarha@ti.com>
-Cc: Mark Brown <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
-        <devicetree@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: Re: [PATCH v3 4/4] ASoC: simple-card: Add DT documentation for
- multi-DAI links
-Message-ID: <20140319170710.19fc5a1d@armhf>
-In-Reply-To: <53296CB7.1000909@ti.com>
-References: <cover.1394883134.git.moinejf@free.fr>
-	<d054780a0edf4b2338a52e48bff9144e19aa614f.1394883134.git.moinejf@free.fr>
-	<20140317164339.GR11706@sirena.org.uk>
-	<20140318091728.1d2240ca@armhf>
-	<53296CB7.1000909@ti.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Wed, 19 Mar 2014 12:08:26 -0400
+Date: Wed, 19 Mar 2014 09:08:22 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] blk-mq: replace blk_mq_init_commands with a
+ ->init_request method
+Message-ID: <20140319160822.GA29017@infradead.org>
+References: <20140317131827.793657833@bombadil.infradead.org>
+ <20140317131941.297853893@bombadil.infradead.org>
+ <CACVXFVMsFzyiR5gqyGk6jc0pRZP-3CZSvxr+oi36umVWJPjWZw@mail.gmail.com>
+ <20140319075428.GA25529@infradead.org>
+ <CACVXFVMgZUDjCLWOj-D3UfpmuX3hUHDLydc6FQY4qCzUyeupWw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVMgZUDjCLWOj-D3UfpmuX3hUHDLydc6FQY4qCzUyeupWw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Mar 2014 12:08:55 +0200
-Jyri Sarha <jsarha@ti.com> wrote:
+On Wed, Mar 19, 2014 at 04:48:47PM +0800, Ming Lei wrote:
+> Actually it doesn't matter because flush_rq will be reinitialized
+> before using, not like common request. And driver should only
+> initialize req->special instead of the request itself, maybe it is
+> better to document the fact.
 
-> sound {
-> 	compatible = "simple-audio-card";
-> 	simple-audio-card,name = "Simple Audio";
-> 	simple-audio-card,widgets = ...
-> 	simple-audio-card,routing = ...
-> 
-> 	simple-audio-card,dai-link@0 {		/* I2S - codec */
-> 		format = "i2s";
-> 		bitclock-master = "codec";
-> 		frame-master = "codec";
-> 		bitclock-inversion = <1>;
-> 		simple-audio-card,cpu {
-> 			sound-dai = <&audio1 0>;
-> 			bitclock-inversion = <0>;
-> 		};
-> 		simple-audio-card,codec {
-> 			sound-dai = <&codec 0>;
-> 			system-clock-frequency = <12000000>;
-> 		};
-> 	};
-> ...
-> 
-> I can participate in the implementation too.
-
-Thanks. I will prepare the multi DAI links and send you the first
-patches.
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+I'll send a blurb to document this fact with the next round of updates.
