@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965603AbaCSPqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 11:46:45 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:44940 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965160AbaCSPqH (ORCPT
+	id S965622AbaCSPrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 11:47:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37432 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965160AbaCSPrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 11:46:07 -0400
-From: dirk.brandewie@gmail.com
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, rjw@rjwysocki.net, patrick.marlier@gmail.com,
-        viresh.kumar@linaro.org, srivatsa.bhat@linux.vnet.ibm.com,
-        dirk.brandewie@gmail.com, Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: [PATCH 1/2] cpufreq: Add stop callback to cpufreq_driver interface
-Date: Wed, 19 Mar 2014 08:45:53 -0700
-Message-Id: <1395243954-28262-2-git-send-email-dirk.j.brandewie@intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1395243954-28262-1-git-send-email-dirk.j.brandewie@intel.com>
-References: <1395243954-28262-1-git-send-email-dirk.j.brandewie@intel.com>
+	Wed, 19 Mar 2014 11:47:19 -0400
+Date: Wed, 19 Mar 2014 16:47:05 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: davidlohr@hp.com, torvalds@linux-foundation.org, tglx@linutronix.de,
+        mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org,
+        paulus@samba.org
+Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
+Message-ID: <20140319154705.GB8557@laptop.programming.kicks-ass.net>
+References: <20140319152619.GB10406@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319152619.GB10406@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+On Wed, Mar 19, 2014 at 08:56:19PM +0530, Srikar Dronamraju wrote:
+> There are 332 tasks all stuck in futex_wait_queue_me().
+> I am able to reproduce this consistently.
+> 
+> Infact I can reproduce this if the java_constraint is either node, socket, system.
+> However I am not able to reproduce if java_constraint is set to core.
 
-This callback allows the driver to do clean up before the CPU is
-completely down and its state cannot be modified.  This is used
-by the intel_pstate driver to reduce the requested P state prior to
-the core going away.  This is required because the requested P state
-of the offline core is used to select the package P state. This
-effectively sets the floor package P state to the requested P state on
-the offline core.
+What's any of that mean?
 
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
----
- Documentation/cpu-freq/cpu-drivers.txt | 8 +++++++-
- drivers/cpufreq/cpufreq.c              | 3 ++-
- include/linux/cpufreq.h                | 1 +
- 3 files changed, 10 insertions(+), 2 deletions(-)
+> I ran git bisect between v3.12 and v3.14-rc6 and found that
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=b0c29f79ecea0b6fbcefc999e70f2843ae8306db
+> 
+> commit b0c29f79ecea0b6fbcefc999e70f2843ae8306db
+> Author: Davidlohr Bueso <davidlohr@hp.com>
+> Date:   Sun Jan 12 15:31:25 2014 -0800
+> 
+> futexes: Avoid taking the hb->lock if there's nothing to wake up
+> 
+> was the commit thats causing the threads to be stuck in futex.
+> 
+> I reverted b0c29f79ecea0b6fbcefc999e70f2843ae8306db on top of v3.14-rc6 and confirmed that
+> reverting the commit solved the problem.
 
-diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
-index 8b1a445..79def80 100644
---- a/Documentation/cpu-freq/cpu-drivers.txt
-+++ b/Documentation/cpu-freq/cpu-drivers.txt
-@@ -61,7 +61,13 @@ target_index		-	See below on the differences.
- 
- And optionally
- 
--cpufreq_driver.exit -		A pointer to a per-CPU cleanup function.
-+cpufreq_driver.exit -		A pointer to a per-CPU cleanup
-+		    		function called during CPU_POST_DEAD
-+		    		phase of cpu hotplug process.
-+
-+cpufreq_driver.stop -		A pointer to a per-CPU stop function
-+			    	called during CPU_DOWN_PREPARE phase of
-+				cpu hotplug process.
- 
- cpufreq_driver.resume -		A pointer to a per-CPU resume function
- 				which is called with interrupts disabled
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index cf485d9..bb20292 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1336,7 +1336,8 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
- 						__func__, new_cpu, cpu);
- 			}
- 		}
--	}
-+	} else if (cpufreq_driver->stop && cpufreq_driver->setpolicy)
-+		cpufreq_driver->stop(policy);
- 
- 	return 0;
- }
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 4d89e0e..ff8db19 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -224,6 +224,7 @@ struct cpufreq_driver {
- 	int	(*bios_limit)	(int cpu, unsigned int *limit);
- 
- 	int	(*exit)		(struct cpufreq_policy *policy);
-+	int	(*stop)		(struct cpufreq_policy *policy);
- 	int	(*suspend)	(struct cpufreq_policy *policy);
- 	int	(*resume)	(struct cpufreq_policy *policy);
- 	struct freq_attr	**attr;
--- 
-1.8.3.1
-
+Joy,.. let me look at that with ppc in mind.
