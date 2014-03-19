@@ -1,52 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965263AbaCSPC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 11:02:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35483 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964911AbaCSPC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 11:02:57 -0400
-Message-ID: <5329B17E.8060303@zytor.com>
-Date: Wed, 19 Mar 2014 08:02:22 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S965344AbaCSPFY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 11:05:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34354 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964911AbaCSPFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 11:05:22 -0400
+Date: Wed, 19 Mar 2014 16:05:29 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
+In-Reply-To: <alpine.DEB.2.10.1403191039560.18652@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.02.1403191552570.18573@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.10.1403031526210.11945@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403041620390.15963@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403181250110.14816@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403181921010.18573@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1403181523360.15687@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403182149540.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403181705000.15687@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403182218170.18573@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1403190941170.18343@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403191456120.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403191039560.18652@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-CC: Sarah Newman <srn@prgmr.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org, Ingo Molnar <mingo@redhat.com>,
-        Suresh Siddha <sbsiddha@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCHv1] x86: don't schedule when handling #NM exception
-References: <1394468273-13676-1-git-send-email-david.vrabel@citrix.com> <531DEB11.2070709@zytor.com> <531DF319.6010800@citrix.com> <53266841.6090308@prgmr.com> <1ebfa80c-4a68-4602-bc98-e5d5f0893998@email.android.com> <53266D94.70902@prgmr.com> <53266F56.9030909@zytor.com> <5326F89F.8010404@citrix.com> <20140319132156.GA12574@phenom.dumpdata.com>
-In-Reply-To: <20140319132156.GA12574@phenom.dumpdata.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2014 06:21 AM, Konrad Rzeszutek Wilk wrote:
->>
->> The following patch does the always eager allocation.  It's a fixup of
->> Suresh's original patch.
->>
+On Wed, 19 Mar 2014, Vince Weaver wrote:
+> On Wed, 19 Mar 2014, Thomas Gleixner wrote:
 > 
-> Hey Peter,
+> > On Wed, 19 Mar 2014, Vince Weaver wrote:
+> > > On Tue, 18 Mar 2014, Thomas Gleixner wrote:
+> > > your patch didn't seem to print anything additional the first time throug.
+> > > 
+> > > I then tried the trace command you suggested, but I'm getting an empty
+> > > ftrace buffer which possibly means I don't have enough ftrace kernel 
+> > > options enabled.
+> > > 
+> > > Here's the most recent boot crash.
+> > > 
+> > > [    5.367069] ODEBUG: Info active (active state 0) object type: timer_list hint:           (null)
+> > 
+> > Stupid me. We get the hint from the wreckaged object ....
+> > 
+> > A hopefully better approach is the delta patch below.
 > 
-> I think this is the solution you were looking for?
+> with that applied on top:
 > 
-> Or are there some other subtle issues that you think lurk around?
-> 
+> [    5.342681] Invalid timer base: tmr ffff880117740150 tmr->base           (null) base ffff880118618000
+> [    5.352786] ------------[ cut here ]------------
+> [    5.357911] WARNING: CPU: 4 PID: 0 at lib/debugobjects.c:260 debug_print_object+0x8c/0xb0()
+> [    5.367023] ODEBUG: Info active (active state 0) object type: timer_list hint:           (null) delayed_work_timer_fn+0x0/0x20
 
-Ah, I managed to miss it (mostly because it was buried *inside* another
-email and didn't change the subject line... I really dislike that mode
-of delivering a patch.
+Good, we have at least a point where we can gather useful
+information. The timer belongs to a delayed work. The work itself is
+tracked via debug objects as well. So we can get that as well. Delta
+patch below.
 
-Let me see if the issues have been fixed.  Still wondering if there is a
-way we can get away without the boot_func hack...
+Thanks,
 
-	-hpa
+	tglx
+------
+
+Index: linux-2.6/lib/debugobjects.c
+===================================================================
+--- linux-2.6.orig/lib/debugobjects.c
++++ linux-2.6/lib/debugobjects.c
+@@ -14,6 +14,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/slab.h>
+ #include <linux/hash.h>
++#include <linux/workqueue.h>
+ 
+ #define ODEBUG_HASH_BITS	14
+ #define ODEBUG_HASH_SIZE	(1 << ODEBUG_HASH_BITS)
+@@ -400,6 +401,20 @@ void debug_object_info(void *addr, struc
+ 		debug_print_object(obj, "Info");
+ 
+ 	raw_spin_unlock_irqrestore(&db->lock, flags);
++
++	addr = container_of(addr, struct delayed_work, timer);
++
++	db = get_bucket((unsigned long) addr);
++
++	raw_spin_lock_irqsave(&db->lock, flags);
++
++	obj = lookup_object(addr, db);
++	if (!obj)
++		pr_err("Object unknown %p\n", addr);
++	else
++		debug_print_object(obj, "Info");
++
++	raw_spin_unlock_irqrestore(&db->lock, flags);
+ }
+ 
+ /**
+@@ -452,6 +467,7 @@ int debug_object_activate(void *addr, st
+ 		}
+ 		if (!obj->hint)
+ 			obj->hint = descr->debug_hint ?	descr->debug_hint(addr) : NULL;
++
+ 		raw_spin_unlock_irqrestore(&db->lock, flags);
+ 		return ret;
+ 	}
+
+
 
 
