@@ -1,116 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758901AbaCSDEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 23:04:05 -0400
-Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:39681 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752497AbaCSDED (ORCPT
+	id S1758992AbaCSDIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 23:08:23 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:56367 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757970AbaCSDIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 23:04:03 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3653:3865:3866:3867:3868:3871:3872:3874:4321:4605:5007:7652:7903:8957:9592:10004:10400:10848:11026:11232:11473:11658:11914:12043:12291:12295:12438:12517:12519:12555:12683:13161:13229:14093:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stem11_2303304d57b3c
-X-Filterd-Recvd-Size: 3689
-Message-ID: <1395198239.8649.16.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Improve octal permissions test speed
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 18 Mar 2014 20:03:59 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Mar 2014 23:08:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140317131941.297853893@bombadil.infradead.org>
+References: <20140317131827.793657833@bombadil.infradead.org>
+	<20140317131941.297853893@bombadil.infradead.org>
+Date: Wed, 19 Mar 2014 11:08:20 +0800
+Message-ID: <CACVXFVMsFzyiR5gqyGk6jc0pRZP-3CZSvxr+oi36umVWJPjWZw@mail.gmail.com>
+Subject: Re: [PATCH 3/4] blk-mq: replace blk_mq_init_commands with a
+ ->init_request method
+From: Ming Lei <tom.leiming@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current octal permissions test is very slow.
+On Mon, Mar 17, 2014 at 9:18 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> Bedides a simpler and cleared interface this also allows to initialize the
+> flush_rq properly.  The interface for that is still a bit messy as we don't
+> have a hw_ctx available for the flush request, but that's something that
+> should be fixable with a little work once the demand arises.
+>
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> ---
+>  block/blk-mq.c             |   65 +++++++++++++++++++++-----------------------
+>  drivers/block/virtio_blk.c |   22 +++++++--------
+>  include/linux/blk-mq.h     |    9 +++++-
+>  3 files changed, 50 insertions(+), 46 deletions(-)
+>
+> diff --git a/block/blk-mq.c b/block/blk-mq.c
+> index e3284f6..c2ce99b 100644
+> --- a/block/blk-mq.c
+> +++ b/block/blk-mq.c
+> @@ -996,33 +996,6 @@ static void blk_mq_hctx_notify(void *data, unsigned long action,
+>         blk_mq_put_ctx(ctx);
+>  }
+>
+> -static void blk_mq_init_hw_commands(struct blk_mq_hw_ctx *hctx,
+> -                                   void (*init)(void *, struct blk_mq_hw_ctx *,
+> -                                       struct request *, unsigned int),
+> -                                   void *data)
+> -{
+> -       unsigned int i;
+> -
+> -       for (i = 0; i < hctx->queue_depth; i++) {
+> -               struct request *rq = hctx->rqs[i];
+> -
+> -               init(data, hctx, rq, i);
+> -       }
+> -}
+> -
+> -void blk_mq_init_commands(struct request_queue *q,
+> -                         void (*init)(void *, struct blk_mq_hw_ctx *,
+> -                                       struct request *, unsigned int),
+> -                         void *data)
+> -{
+> -       struct blk_mq_hw_ctx *hctx;
+> -       unsigned int i;
+> -
+> -       queue_for_each_hw_ctx(q, hctx, i)
+> -               blk_mq_init_hw_commands(hctx, init, data);
+> -}
+> -EXPORT_SYMBOL(blk_mq_init_commands);
+> -
+>  static void blk_mq_free_rq_map(struct blk_mq_hw_ctx *hctx)
+>  {
+>         struct page *page;
+> @@ -1050,10 +1023,12 @@ static size_t order_to_size(unsigned int order)
+>  }
+>
+>  static int blk_mq_init_rq_map(struct blk_mq_hw_ctx *hctx,
+> -                             unsigned int reserved_tags, int node)
+> +               struct blk_mq_reg *reg, void *driver_data, int node)
+>  {
+> +       unsigned int reserved_tags = reg->reserved_tags;
+>         unsigned int i, j, entries_per_page, max_order = 4;
+>         size_t rq_size, left;
+> +       int error;
+>
+>         INIT_LIST_HEAD(&hctx->page_list);
+>
+> @@ -1102,14 +1077,23 @@ static int blk_mq_init_rq_map(struct blk_mq_hw_ctx *hctx,
+>                 for (j = 0; j < to_do; j++) {
+>                         hctx->rqs[i] = p;
+>                         blk_mq_rq_init(hctx, hctx->rqs[i]);
+> +                       if (reg->ops->init_request) {
+> +                               error = reg->ops->init_request(driver_data,
+> +                                               hctx, hctx->rqs[i], i);
+> +                               if (error)
+> +                                       goto err_rq_map;
+> +                       }
+> +
+>                         p += rq_size;
+>                         i++;
+>                 }
+>         }
+>
+> -       if (i < (reserved_tags + BLK_MQ_TAG_MIN))
+> +       if (i < (reserved_tags + BLK_MQ_TAG_MIN)) {
+> +               error = -ENOMEM;
+>                 goto err_rq_map;
+> -       else if (i != hctx->queue_depth) {
+> +       }
+> +       if (i != hctx->queue_depth) {
+>                 hctx->queue_depth = i;
+>                 pr_warn("%s: queue depth set to %u because of low memory\n",
+>                                         __func__, i);
+> @@ -1117,12 +1101,14 @@ static int blk_mq_init_rq_map(struct blk_mq_hw_ctx *hctx,
+>
+>         hctx->tags = blk_mq_init_tags(hctx->queue_depth, reserved_tags, node);
+>         if (!hctx->tags) {
+> -err_rq_map:
+> -               blk_mq_free_rq_map(hctx);
+> -               return -ENOMEM;
+> +               error = -ENOMEM;
+> +               goto err_rq_map;
+>         }
+>
+>         return 0;
+> +err_rq_map:
+> +       blk_mq_free_rq_map(hctx);
+> +       return error;
+>  }
+>
+>  static int blk_mq_init_hw_queues(struct request_queue *q,
+> @@ -1155,7 +1141,7 @@ static int blk_mq_init_hw_queues(struct request_queue *q,
+>                                                 blk_mq_hctx_notify, hctx);
+>                 blk_mq_register_cpu_notifier(&hctx->cpu_notifier);
+>
+> -               if (blk_mq_init_rq_map(hctx, reg->reserved_tags, node))
+> +               if (blk_mq_init_rq_map(hctx, reg, driver_data, node))
+>                         break;
+>
+>                 /*
+> @@ -1334,6 +1320,17 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_reg *reg,
+>         if (!q->flush_rq)
+>                 goto err_hw;
+>
+> +       if (reg->ops->init_request) {
+> +               blk_rq_init(q, q->flush_rq);
+> +               if (reg->cmd_size)
+> +                       q->flush_rq->special =
+> +                               blk_mq_rq_to_pdu(q->flush_rq);
+> +
+> +               if (reg->ops->init_request(driver_data,
+> +                               NULL, q->flush_rq, -1))
+> +                       goto err_flush_rq;
+> +       }
 
-When commit 3fc9249967
-("checkpatch: add checks for constant non-octal permissions")
-was added, processing time approximately tripled.
+The above looks a bit weird because q->flush_rq is invisible to
+driver and should always be initialized no matter if driver defines
+its .init_request callback or not.
 
-Regain almost all of the performance by not looping through all the
-possible functions unless the line contains one of the functions.
+> +
+>         if (blk_mq_init_hw_queues(q, reg, driver_data))
+>                 goto err_flush_rq;
+>
+> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+> index b1cb3f4..a2e925b 100644
+> --- a/drivers/block/virtio_blk.c
+> +++ b/drivers/block/virtio_blk.c
+> @@ -474,11 +474,22 @@ static const struct device_attribute dev_attr_cache_type_rw =
+>         __ATTR(cache_type, S_IRUGO|S_IWUSR,
+>                virtblk_cache_type_show, virtblk_cache_type_store);
+>
+> +static int virtblk_init_request(void *data, struct blk_mq_hw_ctx *hctx,
+> +               struct request *rq, unsigned int nr)
+> +{
+> +       struct virtio_blk *vblk = data;
+> +       struct virtblk_req *vbr = rq->special;
+> +
+> +       sg_init_table(vbr->sg, vblk->sg_elems);
+> +       return 0;
+> +}
+> +
+>  static struct blk_mq_ops virtio_mq_ops = {
+>         .queue_rq       = virtio_queue_rq,
+>         .map_queue      = blk_mq_map_queue,
+>         .alloc_hctx     = blk_mq_alloc_single_hw_queue,
+>         .free_hctx      = blk_mq_free_single_hw_queue,
+> +       .init_request   = virtblk_init_request,
+>         .complete       = virtblk_request_done,
+>  };
+>
+> @@ -490,15 +501,6 @@ static struct blk_mq_reg virtio_mq_reg = {
+>         .flags          = BLK_MQ_F_SHOULD_MERGE,
+>  };
+>
+> -static void virtblk_init_vbr(void *data, struct blk_mq_hw_ctx *hctx,
+> -                            struct request *rq, unsigned int nr)
+> -{
+> -       struct virtio_blk *vblk = data;
+> -       struct virtblk_req *vbr = rq->special;
+> -
+> -       sg_init_table(vbr->sg, vblk->sg_elems);
+> -}
+> -
+>  static int virtblk_probe(struct virtio_device *vdev)
+>  {
+>         struct virtio_blk *vblk;
+> @@ -562,8 +564,6 @@ static int virtblk_probe(struct virtio_device *vdev)
+>                 goto out_put_disk;
+>         }
+>
+> -       blk_mq_init_commands(q, virtblk_init_vbr, vblk);
+> -
+>         q->queuedata = vblk;
+>
+>         virtblk_name_format("vd", index, vblk->disk->disk_name, DISK_NAME_LEN);
+> diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
+> index 2ff2e8d..cac10e1 100644
+> --- a/include/linux/blk-mq.h
+> +++ b/include/linux/blk-mq.h
+> @@ -66,6 +66,8 @@ typedef struct blk_mq_hw_ctx *(alloc_hctx_fn)(struct blk_mq_reg *,unsigned int);
+>  typedef void (free_hctx_fn)(struct blk_mq_hw_ctx *, unsigned int);
+>  typedef int (init_hctx_fn)(struct blk_mq_hw_ctx *, void *, unsigned int);
+>  typedef void (exit_hctx_fn)(struct blk_mq_hw_ctx *, unsigned int);
+> +typedef int (init_request_fn)(void *, struct blk_mq_hw_ctx *,
+> +               struct request *, unsigned int);
+>
+>  struct blk_mq_ops {
+>         /*
+> @@ -98,6 +100,12 @@ struct blk_mq_ops {
+>          */
+>         init_hctx_fn            *init_hctx;
+>         exit_hctx_fn            *exit_hctx;
+> +
+> +       /*
+> +        * Called for every command allocated by the block layer to allow
+> +        * the driver to set up driver specific data.
+> +        */
+> +       init_request_fn         *init_request;
+>  };
+>
+>  enum {
+> @@ -117,7 +125,6 @@ enum {
+>  struct request_queue *blk_mq_init_queue(struct blk_mq_reg *, void *);
+>  int blk_mq_register_disk(struct gendisk *);
+>  void blk_mq_unregister_disk(struct gendisk *);
+> -void blk_mq_init_commands(struct request_queue *, void (*init)(void *data, struct blk_mq_hw_ctx *, struct request *, unsigned int), void *data);
+>
+>  void blk_mq_flush_plug_list(struct blk_plug *plug, bool from_schedule);
+>
+> --
+> 1.7.10.4
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-There's probably some perl "join('|', foo)" that would
-simplify and remove the initial foreach loop, but I don't
-know what it might be off the top of my head.  Andy?
 
- scripts/checkpatch.pl | 51 +++++++++++++++++++++++++++++++--------------------
- 1 file changed, 31 insertions(+), 20 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d44e440..ec65c54 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -388,6 +388,13 @@ our @mode_permission_funcs = (
- 	["(?:CLASS|DEVICE|SENSOR)_ATTR", 2],
- );
- 
-+#Create a search pattern for all these functions to speed up a loop below
-+our $mode_perms_search = "";
-+foreach my $entry (@mode_permission_funcs) {
-+	$mode_perms_search .= '|' if ($mode_perms_search ne "");
-+	$mode_perms_search .= $entry->[0];
-+}
-+
- our $allowed_asm_includes = qr{(?x:
- 	irq|
- 	memory
-@@ -4540,26 +4547,30 @@ sub process {
- 			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
- 		}
- 
--		foreach my $entry (@mode_permission_funcs) {
--			my $func = $entry->[0];
--			my $arg_pos = $entry->[1];
--
--			my $skip_args = "";
--			if ($arg_pos > 1) {
--				$arg_pos--;
--				$skip_args = "(?:\\s*$FuncArg\\s*,\\s*){$arg_pos,$arg_pos}";
--			}
--			my $test = "\\b$func\\s*\\(${skip_args}([\\d]+)\\s*[,\\)]";
--			if ($^V && $^V ge 5.10.0 &&
--			    $line =~ /$test/) {
--				my $val = $1;
--				$val = $6 if ($skip_args ne "");
--
--				if ($val !~ /^0$/ &&
--				    (($val =~ /^$Int$/ && $val !~ /^$Octal$/) ||
--				     length($val) ne 4)) {
--					ERROR("NON_OCTAL_PERMISSIONS",
--					      "Use 4 digit octal (0777) not decimal permissions\n" . $herecurr);
-+# Mode permission misuses where it seems decimal should be octal
-+# This uses a shortcut match to avoid unnecessary uses of a slow foreach loop
-+		if ($^V && $^V ge 5.10.0 &&
-+		    $line =~ /$mode_perms_search/) {
-+			foreach my $entry (@mode_permission_funcs) {
-+				my $func = $entry->[0];
-+				my $arg_pos = $entry->[1];
-+
-+				my $skip_args = "";
-+				if ($arg_pos > 1) {
-+					$arg_pos--;
-+					$skip_args = "(?:\\s*$FuncArg\\s*,\\s*){$arg_pos,$arg_pos}";
-+				}
-+				my $test = "\\b$func\\s*\\(${skip_args}([\\d]+)\\s*[,\\)]";
-+				if ($line =~ /$test/) {
-+					my $val = $1;
-+					$val = $6 if ($skip_args ne "");
-+
-+					if ($val !~ /^0$/ &&
-+					    (($val =~ /^$Int$/ && $val !~ /^$Octal$/) ||
-+					     length($val) ne 4)) {
-+						ERROR("NON_OCTAL_PERMISSIONS",
-+						      "Use 4 digit octal (0777) not decimal permissions\n" . $herecurr);
-+					}
- 				}
- 			}
- 		}
-
-
+Thanks,
+-- 
+Ming Lei
