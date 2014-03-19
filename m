@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933926AbaCSNEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:04:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:42075 "EHLO
+	id S965284AbaCSNRX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:17:23 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42104 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933804AbaCSND6 (ORCPT
+	with ESMTP id S933905AbaCSNEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:03:58 -0400
+	Wed, 19 Mar 2014 09:04:04 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org,
@@ -20,9 +20,9 @@ Cc: linux-arm-kernel@lists.infradead.org,
         Jingoo Han <jg1.han@samsung.com>, linux-leds@vger.kernel.org,
         linux-pwm@vger.kernel.org, linux-fbdev@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 01/16] ARM: at91: at91sam9g45: switch to generic PWM framework
-Date: Wed, 19 Mar 2014 14:03:14 +0100
-Message-Id: <1395234209-15546-2-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH 09/16] avr32/at32ap: switch to the generic PWM framework
+Date: Wed, 19 Mar 2014 14:03:22 +0100
+Message-Id: <1395234209-15546-10-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395234209-15546-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1395234209-15546-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -34,59 +34,41 @@ Switch to the pwm/pwm-atmel driver instead of misc/atmel_pwm
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/at91sam9g45.c         |  1 +
- arch/arm/mach-at91/at91sam9g45_devices.c | 11 ++---------
- 2 files changed, 3 insertions(+), 9 deletions(-)
+ arch/avr32/mach-at32ap/at32ap700x.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-index 3c519a7a938f..2d3c6e1ac158 100644
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ b/arch/arm/mach-at91/at91sam9g45.c
-@@ -250,6 +250,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID(NULL, "atmel_sha", &aestdessha_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "atmel_tdes", &aestdessha_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "atmel_aes", &aestdessha_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91sam9rl-pwm", &pwm_clk),
- 	/* more usart lookup table for DT entries */
- 	CLKDEV_CON_DEV_ID("usart", "ffffee00.serial", &mck),
- 	CLKDEV_CON_DEV_ID("usart", "fff8c000.serial", &usart0_clk),
-diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-index 87135a61357d..25ba920cbe84 100644
---- a/arch/arm/mach-at91/at91sam9g45_devices.c
-+++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-@@ -1332,9 +1332,7 @@ static void __init at91_add_device_watchdog(void) {}
-  *  PWM
-  * --------------------------------------------------------------------*/
- 
--#if defined(CONFIG_ATMEL_PWM) || defined(CONFIG_ATMEL_PWM_MODULE)
--static u32 pwm_mask;
--
-+#if IS_ENABLED(CONFIG_PWM_ATMEL)
- static struct resource pwm_resources[] = {
- 	[0] = {
- 		.start	= AT91SAM9G45_BASE_PWMC,
-@@ -1349,11 +1347,8 @@ static struct resource pwm_resources[] = {
+diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
+index a1f4d1e91b52..db85b5ec3351 100644
+--- a/arch/avr32/mach-at32ap/at32ap700x.c
++++ b/arch/avr32/mach-at32ap/at32ap700x.c
+@@ -1553,7 +1553,7 @@ static struct resource atmel_pwm0_resource[] __initdata = {
+ 	IRQ(24),
  };
+ static struct clk atmel_pwm0_mck = {
+-	.name		= "pwm_clk",
++	.name		= "at91sam9rl-pwm",
+ 	.parent		= &pbb_clk,
+ 	.mode		= pbb_clk_mode,
+ 	.get_rate	= pbb_clk_get_rate,
+@@ -1568,7 +1568,7 @@ struct platform_device *__init at32_add_device_pwm(u32 mask)
+ 	if (!mask)
+ 		return NULL;
  
- static struct platform_device at91sam9g45_pwm0_device = {
--	.name	= "atmel_pwm",
-+	.name	= "at91sam9rl-pwm",
- 	.id	= -1,
--	.dev	= {
--		.platform_data		= &pwm_mask,
--	},
- 	.resource	= pwm_resources,
- 	.num_resources	= ARRAY_SIZE(pwm_resources),
- };
-@@ -1372,8 +1367,6 @@ void __init at91_add_device_pwm(u32 mask)
- 	if (mask & (1 << AT91_PWM3))
- 		at91_set_B_periph(AT91_PIN_PD0, 1);	/* enable PWM3 */
+-	pdev = platform_device_alloc("atmel_pwm", 0);
++	pdev = platform_device_alloc("at91sam9rl-pwm", 0);
+ 	if (!pdev)
+ 		return NULL;
  
--	pwm_mask = mask;
+@@ -1576,9 +1576,6 @@ struct platform_device *__init at32_add_device_pwm(u32 mask)
+ 				ARRAY_SIZE(atmel_pwm0_resource)))
+ 		goto out_free_pdev;
+ 
+-	if (platform_device_add_data(pdev, &mask, sizeof(mask)))
+-		goto out_free_pdev;
 -
- 	platform_device_register(&at91sam9g45_pwm0_device);
- }
- #else
+ 	pin_mask = 0;
+ 	if (mask & (1 << 0))
+ 		pin_mask |= (1 << 28);
 -- 
 1.8.3.2
 
