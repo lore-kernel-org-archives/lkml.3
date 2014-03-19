@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309AbaCSUZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 16:25:35 -0400
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:55514 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212AbaCSUZc (ORCPT
+	id S1755202AbaCSU2U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 16:28:20 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:51840 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574AbaCSU2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 16:25:32 -0400
-Date: Wed, 19 Mar 2014 17:25:23 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 3/9] perf hists: Add support for showing relative
- percentage
-Message-ID: <20140319202523.GH6482@ghostprotocols.net>
-References: <1394437440-11609-1-git-send-email-namhyung@kernel.org>
- <1394437440-11609-4-git-send-email-namhyung@kernel.org>
- <20140318200837.GG6482@ghostprotocols.net>
- <CAM9d7cgkpFr7z+CXwYxaPJtssr6CRA7uX-Z6tpLAQ2qoic4FOg@mail.gmail.com>
+	Wed, 19 Mar 2014 16:28:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM9d7cgkpFr7z+CXwYxaPJtssr6CRA7uX-Z6tpLAQ2qoic4FOg@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140319201838.GA11403@redhat.com>
+References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
+	<20140319201838.GA11403@redhat.com>
+Date: Wed, 19 Mar 2014 21:28:16 +0100
+X-Google-Sender-Auth: 1UeOc07cnJVDa5ZMKiSmVPYcRHE
+Message-ID: <CAAsK9AGumcqE3qoEycjqmFdn3ERvpPx41WwZe0YRUv+1sf0rxA@mail.gmail.com>
+Subject: Re: [RFC] QR encoding for Oops messages
+From: Levente Kurusa <levex@linux.com>
+To: Dave Jones <davej@redhat.com>, Teodora Baluta <teobaluta@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        peter.p.waskiewicz.jr@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Mar 19, 2014 at 12:18:00AM +0000, Namhyung Kim escreveu:
-> Hi Arnaldo,
-> 
-> On Tue, Mar 18, 2014 at 8:08 PM, Arnaldo Carvalho de Melo
-> <acme@ghostprotocols.net> wrote:
-> > Em Mon, Mar 10, 2014 at 04:43:54PM +0900, Namhyung Kim escreveu:
-> >> @@ -695,12 +695,17 @@ static void hists__remove_entry_filter(struct hists *hists, struct hist_entry *h
-> >>       if (h->filtered)
-> >>               return;
-> >>
-> >> -     ++hists->nr_entries;
-> >> -     if (h->ms.unfolded)
-> >> +     hists->nr_entries++;
-> >> +     hists->nr_non_filtered_entries++;
-> >
-> > Why not keep existing practice? prefix or suffix generates the same
-> > code, changing it from prefix to suffix increment just adds noise to the
-> > patch :-\
-> 
-> Argh, sorry - I couldn't resist changing it.  Won't do that in the future. :-/
+Hi,
 
-We should strive to be as minimalistic as possible. Reviewing is hard,
-we shouldn't make it harder :-)
+2014-03-19 21:18 GMT+01:00 Dave Jones <davej@redhat.com>:
+> On Mon, Mar 17, 2014 at 02:59:47PM -0700, Teodora Baluta wrote:
+>  > This feature encodes Oops messages into a QR barcode that is scannable by
+>  > any device with a camera.
+>
+>  ...
+>
+>  >  include/linux/print_oops.h |   11 +
+>  >  include/linux/qrencode.h   |  546 +++++++++++++
+>  >  kernel/Makefile            |    1 +
+>  >  kernel/panic.c             |    5 +
+>  >  kernel/print_oops.c        |  173 +++++
+>  >  kernel/printk/printk.c     |    9 +-
+>  >  lib/Kconfig                |    5 +
+>  >  lib/Kconfig.debug          |   11 +
+>  >  lib/Makefile               |    3 +
+>  >  lib/qr/Makefile            |    6 +
+>  >  lib/qr/bitstream.c         |  233 ++++++
+>  >  lib/qr/bitstream.h         |   37 +
+>  >  lib/qr/mask.c              |  320 ++++++++
+>  >  lib/qr/mask.h              |   39 +
+>  >  lib/qr/mmask.c             |  175 +++++
+>  >  lib/qr/mmask.h             |   36 +
+>  >  lib/qr/mqrspec.c           |  259 +++++++
+>  >  lib/qr/mqrspec.h           |  155 ++++
+>  >  lib/qr/qrencode.c          |  871 +++++++++++++++++++++
+>  >  lib/qr/qrencode.h          |  546 +++++++++++++
+>  >  lib/qr/qrinput.c           | 1834 ++++++++++++++++++++++++++++++++++++++++++++
+>  >  lib/qr/qrinput.h           |  129 ++++
+>  >  lib/qr/qrspec.c            |  543 +++++++++++++
+>  >  lib/qr/qrspec.h            |  178 +++++
+>  >  lib/qr/rscode.c            |  325 ++++++++
+>  >  lib/qr/rscode.h            |   38 +
+>  >  lib/qr/split.c             |  331 ++++++++
+>  >  lib/qr/split.h             |   44 ++
+>  >  28 files changed, 6860 insertions(+), 3 deletions(-)
 
-Cleanup/cosmetic patches, when deemed necessary should be done
-separatetly and stated as such.
- 
-> > Also, this is why I was asking about nr_entries and total_period being
-> > invariant, looking at this function we can see it is _not_ invariant, as
-> > when we apply/remove filters we touch them.
-> >
-> > This is why I made the comment (in a private conversation) about having
-> > a invariant_total_period invariant_nr_entries pair (I think I used some
-> > other naming) while knowing that the existing variables nr_entries and
-> > total_period are actually subjected to the filters being used.
-> >
-> > I.e. to avoid confusion we need to make total_entries and nr_entries
-> > never change when a filter is applied, touching only two new variables
-> > for non_filtered total_period and nr_entries.
-> >
-> > I'll try doing it if you don't do it first, but will first process some
-> > more patches and submit what I already processed.
-> 
-> Please see the next patch 4/9 ("perf report: Add --percentage option")
-> doing that.  What I did in this patch is just adding new
-> non_filtered_* fields and not changing existing behavior.  And in the
-> next patch, the total_period and nr_entries will become invariant.
-> 
-> Do you want to split the patch 4/9 or merge a part of it into this?
+This idea is certainly great.
 
-The point is that I don't look at all the patches (nor should I, I
-think) to figure out what one wants to do after a series is applied.
+However, there are quite a few problems with the code in terms of code style and
+other terms as well. I am not sure how could we help you make this code
+appliable, but it would be great if you put up a branch somewhere. This way
+I could send you a few commits that do some fixups.
 
-So each patch should stand on its own, each one should be meaningful
-without requiring reading what is coming next.
+>
+> That's a ton of code we're adding into one of the most fragile parts of the kernel.
 
-- Arnaldo
+Indeed, this should get split up.
+
+>
+> A lot of what libqrencode does would seem to be superfluous to the requirements
+> here, as we don't output kernel oopses in kanji for eg, and won't care about
+> multiple versions of the qr spec.
+>
+> How much of this could we drop ?
+
+A lot, most likely.
+
+Also, I wonder if we could do the same for panic()?
+I hate it when I receive a panic and I have no idea what's the cause
+since my display is filled up with the stack trace.
+
+--
+Regards,
+Levente Kurusa
