@@ -1,99 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaCSSVs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 14:21:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51976 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782AbaCSSVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 14:21:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,687,1389772800"; 
-   d="scan'208";a="502183191"
-Message-ID: <1395252855.21554.1.camel@dwillia2-mobl2.amr.corp.intel.com>
-Subject: Re: [PATCH -next] libata.h: add stub for ata_sas_port_resume
-From: Dan Williams <dan.j.williams@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>, linux-ide@vger.kernel.org,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Jim Davis <jim.epost@gmail.com>
-Date: Wed, 19 Mar 2014 11:14:15 -0700
-In-Reply-To: <20140319175852.GD19874@htj.dyndns.org>
-References: <5329D7F1.4030400@infradead.org>
-	 <20140319175852.GD19874@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1751599AbaCSSXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 14:23:51 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37701 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaCSSXr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 14:23:47 -0400
+Message-ID: <5329E0B0.2040708@codeaurora.org>
+Date: Wed, 19 Mar 2014 11:23:44 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCHv4 2/2] arm: Get rid of meminfo
+References: <1392761733-32628-1-git-send-email-lauraa@codeaurora.org> <1392761733-32628-3-git-send-email-lauraa@codeaurora.org> <20140312085401.GB21483@n2100.arm.linux.org.uk> <53205CA1.1090502@ti.com> <20140312133806.GH21483@n2100.arm.linux.org.uk> <53208693.0@ti.com>
+In-Reply-To: <53208693.0@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-19 at 13:58 -0400, Tejun Heo wrote:
-> On Wed, Mar 19, 2014 at 10:46:25AM -0700, Randy Dunlap wrote:
-> > From: Randy Dunlap <rdunlap@infradead.org>
-> > 
-> > Fix build error when CONFIG_PM is not enabled by adding a stub
-> > function in <linux/libata.h>.
-> > 
-> > drivers/scsi/libsas/sas_ata.c: In function 'sas_resume_sata':
-> > drivers/scsi/libsas/sas_ata.c:756:3: error: implicit declaration of function 'ata_sas_port_resume' [-Werror=implicit-function-declaration]
-> > 
-> > Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> > Reported-by: Jim Davis <jim.epost@gmail.com>
-> > ---
-> >  include/linux/libata.h |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > --- linux-next-20140319.orig/include/linux/libata.h
-> > +++ linux-next-20140319/include/linux/libata.h
-> > @@ -1148,6 +1148,9 @@ static inline void ata_sas_port_suspend(
-> >  static inline void ata_sas_port_async_resume(struct ata_port *ap)
-> >  {
-> >  }
-> > +static inline void ata_sas_port_resume(struct ata_port *ap)
-> > +{
-> > +}
-> >  #endif
-> >  extern int ata_ratelimit(void);
-> >  extern void ata_msleep(struct ata_port *ap, unsigned int msecs);
-> 
-> Applied to libata/for-3.15.
-> 
-> Thanks.
+On 3/12/2014 9:08 AM, Grygorii Strashko wrote:
+> On 03/12/2014 03:38 PM, Russell King - ARM Linux wrote:
+>> On Wed, Mar 12, 2014 at 03:09:53PM +0200, Grygorii Strashko wrote:
+>>> Hi Russell,
+>>>
+>>> On 03/12/2014 10:54 AM, Russell King - ARM Linux wrote:
+>>>> On Tue, Feb 18, 2014 at 02:15:33PM -0800, Laura Abbott wrote:
+>>>>> memblock is now fully integrated into the kernel and is the prefered
+>>>>> method for tracking memory. Rather than reinvent the wheel with
+>>>>> meminfo, migrate to using memblock directly instead of meminfo as
+>>>>> an intermediate.
+>>>>>
+>>>>> Acked-by: Jason Cooper <jason@lakedaemon.net>
+>>>>> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+>>>>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>>> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>>>>> Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>>>>> Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
+>>>>> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+>>>>
+>>>> Laura,
+>>>>
+>>>> This patch causes a bunch of platforms to no longer boot - imx6solo with
+>>>> 1GB of RAM boots, imx6q with 2GB of RAM doesn't.  Versatile Express doesn't.
+>>>>
+>>>> The early printk messages don't reveal anything too interesting:
+>>>>
+>>>> Booting Linux on physical CPU 0x0
+>>>> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #630 SMP Wed Mar 12 01:13:36 GMT 2014
+>>>> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
+>>>> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+>>>> Machine model: SolidRun Cubox-i Dual/Quad
+>>>> cma: CMA: reserved 64 MiB at 8c000000
+>>>> Memory policy: Data cache writealloc
+>>>> <hang>
+>>>>
+>>>> vs.
+>>>>
+>>>> Booting Linux on physical CPU 0x0
+>>>> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #631 SMP Wed Mar 12 01:15:37 GMT 2014
+>>>> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
+>>>> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+>>>> Machine model: SolidRun Cubox-i Dual/Quad
+>>>> cma: CMA: reserved 64 MiB at 3b800000
+>>>> Memory policy: Data cache writealloc
+>>>> On node 0 totalpages: 524288
+>>>> free_area_init_node: node 0, pgdat c09d0240, node_mem_map ea7d8000
+>>>>      Normal zone: 1520 pages used for memmap
+>>>>      Normal zone: 0 pages reserved
+>>>>      Normal zone: 194560 pages, LIFO batch:31
+>>>>      HighMem zone: 2576 pages used for memmap
+>>>>      HighMem zone: 329728 pages, LIFO batch:31
+>>>> ...
+>>>>
+>>>> The only obvious difference is the address of that CMA reservation,
+>>>> CMA shouldn't make a difference here - but I suspect that other
+>>>> allocations which need to be in lowmem probably aren't.
+>>>>
+>>>
+>>> Could it be possible to enable memblock debug by adding "memblock=debug"
+>>> in cmdline?
+>>
+>> Here's with Laura's patch:
+>>
+>> Uncompressing Linux... done, booting the kernel.
+>> Booting Linux on physical CPU 0x0
+>> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #633 SMP Wed Mar 12 12:56:15 GMT 2014
+>> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
+>> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+>> Machine model: SolidRun Cubox-i Dual/Quad
+>> memblock_reserve: [0x00000010008240-0x0000001112c1f7] flags 0x0 arm_memblock_init+0x28/0x1a8
+>> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_memblock_init+0x108/0x1a8
+>> memblock_reserve: [0x00000010004000-0x00000010007fff] flags 0x0 arm_mm_memblock_reserve+0x1c/0x24
+>> memblock_reserve: [0x00000018000000-0x0000001800b07f] flags 0x0 arm_dt_memblock_reserve+0x2c/0x70
+>> memblock_reserve: [0x00000018000000-0x0000001800afff] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
+>> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
+>> memblock_reserve: [0x0000008c000000-0x0000008fffffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+>> cma: CMA: reserved 64 MiB at 8c000000
+>> MEMBLOCK configuration:
+>>    memory size = 0x80000000 reserved size = 0x52fda50
+>>    memory.cnt  = 0x1
+>>    memory[0x0]   [0x00000010000000-0x0000008fffffff], 0x80000000 bytes flags: 0x06
+>>    reserved.cnt  = 0x5
+>>    reserved[0x0] [0x00000010004000-0x00000010007fff], 0x4000 bytes flags: 0x0
+>>    reserved[0x1] [0x00000010008240-0x0000001112c1f7], 0x1123fb8 bytes flags: 0x0
+>>    reserved[0x2] [0x00000018000000-0x0000001800b07f], 0xb080 bytes flags: 0x0
+>>    reserved[0x3] [0x00000020000040-0x000000201caa57], 0x1caa18 bytes flags: 0x0
+>>    reserved[0x4] [0x0000008c000000-0x0000008fffffff], 0x4000000 bytes flags: 0x0
+>> Memory policy: Data cache writealloc
+>> memblock_reserve: [0x0000008bffffd8-0x0000008bffffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+>>
+>> Here's without:
+>>
+>> Booting Linux on physical CPU 0x0
+>> Linux version 3.14.0-rc6+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.6.4 (GCC) ) #635 SMP Wed Mar 12 13:22:15 GMT 2014
+>> CPU: ARMv7 Processor [412fc09a] revision 10 (ARMv7), cr=10c53c7d
+>> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+>> Machine model: SolidRun Cubox-i Dual/Quad
+>> memblock_reserve: [0x00000010008240-0x0000001112c277] flags 0x0 arm_memblock_init+0x54/0x1d4
+>> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_memblock_init+0x134/0x1d4
+>> memblock_reserve: [0x00000010004000-0x00000010007fff] flags 0x0 arm_mm_memblock_reserve+0x1c/0x24
+>> memblock_reserve: [0x00000018000000-0x0000001800b07f] flags 0x0 arm_dt_memblock_reserve+0x2c/0x70
+>> memblock_reserve: [0x00000018000000-0x0000001800afff] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
+>> memblock_reserve: [0x00000020000040-0x000000201caa57] flags 0x0 arm_dt_memblock_reserve+0x68/0x70
+>> memblock_reserve: [0x0000003b800000-0x0000003f7fffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+>> cma: CMA: reserved 64 MiB at 3b800000
+>> MEMBLOCK configuration:
+>>    memory size = 0x80000000 reserved size = 0x52fdad0
+>>    memory.cnt  = 0x1
+>>    memory[0x0]     [0x00000010000000-0x0000008fffffff], 0x80000000 bytes flags: 0x0
+>>    reserved.cnt  = 0x5
+>>    reserved[0x0]   [0x00000010004000-0x00000010007fff], 0x4000 bytes flags: 0x0
+>>    reserved[0x1]   [0x00000010008240-0x0000001112c277], 0x1124038 bytes flags: 0x0
+>>    reserved[0x2]   [0x00000018000000-0x0000001800b07f], 0xb080 bytes flags: 0x0
+>>    reserved[0x3]   [0x00000020000040-0x000000201caa57], 0x1caa18 bytes flags: 0x0
+>>    reserved[0x4]   [0x0000003b800000-0x0000003f7fffff], 0x4000000 bytes flags: 0x0
+>> Memory policy: Data cache writealloc
+>> memblock_reserve: [0x0000003b7fffd8-0x0000003b7fffff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+>> memblock_reserve: [0x0000003b7fe000-0x0000003b7fefff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+>> memblock_reserve: [0x0000003b7fd000-0x0000003b7fdfff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+>> memblock_reserve: [0x0000003b7fc000-0x0000003b7fcfff] flags 0x0 memblock_alloc_base_nid+0x40/0x54
+>> ...
+>>
+>> So it looks like allocations which must come from lowmem aren't being
+>> limited to lowmem.
+>>
+>> Try booting a machine with 2G of RAM with page offset set to 3GB and
+>> highmem enabled - it will fail as per the above.
+>>
+>> In fact, if we look at sanity_check_meminfo() post that patch, it's
+>> clearly wrong:
+>>
+>>           for_each_memblock(memory, reg) {
+>>                   phys_addr_t block_start = reg->base;
+>>                   phys_addr_t block_end = reg->base + reg->size;
+>>                   phys_addr_t size_limit = reg->size;
+>>
+>>                   if (reg->base >= vmalloc_limit)
+>>                           highmem = 1;
+>>                   else
+>>                           size_limit = vmalloc_limit - reg->base;
+>> ...
+>>                   if (!highmem) {
+>>                           if (block_end > arm_lowmem_limit)
+>>                                   arm_lowmem_limit = block_end;
+>
+> In v3, above was
+> 		arm_lowmem_limit = reg->base + size_limit;
+>
+> so, it has worked somehow, even arm_lowmem_limit can point on non
+> existed address. It was changed because of my comment - sorry.
+>
+> I think, it should be smth like:
+> if (!highmem) {
+> 	if (block_end > arm_lowmem_limit)
+> 		if (reg->size > size_limit)
+> 			arm_lowmem_limit = vmalloc_limit;
+> 		else
+> 			arm_lowmem_limit = block_end;
+>
+> I've created and attached the patch which allows me to boot on keystone.
+>
+>> ...
+>>                   }
+>
+> regards,
+> -grygorii
+>
+>  From 3a210330f15c4cfc6728d83b28750c696d9eaefb Mon Sep 17 00:00:00 2001
+> From: Grygorii Strashko <x0174654@uglx0174654.(none)>
+> Date: Wed, 12 Mar 2014 18:04:02 +0200
+> Subject: [PATCH] arm: get rid of meminfo: fix lowmem_limit calculation
+>
+> Signed-off-by: Grygorii Strashko <x0174654@uglx0174654.(none)>
+> ---
+>   arch/arm/mm/mmu.c |   10 +++++++---
+>   1 file changed, 7 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> index c3ae96c..f8b5175 100644
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -1096,8 +1096,12 @@ void __init sanity_check_meminfo(void)
+>   		}
+>
+>   		if (!highmem) {
+> -			if (block_end > arm_lowmem_limit)
+> -				arm_lowmem_limit = block_end;
+> +			if (block_end > arm_lowmem_limit) {
+> +				if (reg->size > size_limit)
+> +					arm_lowmem_limit = vmalloc_limit;
+> +				else
+> +					arm_lowmem_limit = block_end;
+> +			}
+>
+>
+>   			/*
+> @@ -1117,7 +1121,7 @@ void __init sanity_check_meminfo(void)
+>   				if (!IS_ALIGNED(block_start, SECTION_SIZE))
+>   					memblock_limit = block_start;
+>   				else if (!IS_ALIGNED(block_end, SECTION_SIZE))
+> -					memblock_limit = block_end;
+> +					memblock_limit = arm_lowmem_limit;
+>   			}
+>
+>   		}
+>
 
-Agh, my mistake... one more incremental fixlet:
+Thanks Grygorii and Russell. v5 is on my TODO list for either later this 
+week or next.
 
-8<--------------
-Subject: libata: remove unused ata_sas_port_async_resume() stub
+Laura
 
-From: Dan Williams <dan.j.williams@intel.com>
-
-Commit bc6e7c4b0d1a "libata, libsas: kill pm_result and related cleanup"
-renamed ata_sas_port_async_resume() to ata_sas_port_resume(), but missed
-a CONFIG_PM=n stub conversion.  Randy fixed that up in commit
-a5a6569959fc "libata.h: add stub for ata_sas_port_resume", but missed
-the deletion of the now unused ata_sas_port_async_resume() routine.
-
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- include/linux/libata.h |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index 52723789b991..1de36be64df4 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -1145,9 +1145,6 @@ extern void ata_sas_port_resume(struct ata_port *ap);
- static inline void ata_sas_port_suspend(struct ata_port *ap)
- {
- }
--static inline void ata_sas_port_async_resume(struct ata_port *ap)
--{
--}
- static inline void ata_sas_port_resume(struct ata_port *ap)
- {
- }
-
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
