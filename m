@@ -1,83 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965136AbaCSNqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:46:43 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41088 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932721AbaCSNqk (ORCPT
+	id S965165AbaCSNqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:46:45 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58735 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932721AbaCSNqn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:46:40 -0400
-Date: Wed, 19 Mar 2014 13:46:25 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jyri Sarha <jsarha@ti.com>
-Cc: Jean-Francois Moine <moinejf@free.fr>, <alsa-devel@alsa-project.org>,
-        <devicetree@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Message-ID: <20140319134625.GN11706@sirena.org.uk>
-References: <cover.1394883134.git.moinejf@free.fr>
- <d054780a0edf4b2338a52e48bff9144e19aa614f.1394883134.git.moinejf@free.fr>
- <20140317164339.GR11706@sirena.org.uk>
- <20140318091728.1d2240ca@armhf>
- <53296CB7.1000909@ti.com>
+	Wed, 19 Mar 2014 09:46:43 -0400
+Message-ID: <53299FCB.1070109@arm.com>
+Date: Wed, 19 Mar 2014 13:46:51 +0000
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YAMuP2N37TMqsqKK"
-Content-Disposition: inline
-In-Reply-To: <53296CB7.1000909@ti.com>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 4/4] ASoC: simple-card: Add DT documentation for
- multi-DAI links
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Vincent Guittot <vincent.guittot@linaro.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH v2 2/7] sched: rework of sched_domain topology definition
+References: <1395165409-18055-1-git-send-email-vincent.guittot@linaro.org> <1395165409-18055-3-git-send-email-vincent.guittot@linaro.org> <53297F10.3050106@arm.com> <20140319124149.GM27632@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140319124149.GM27632@laptop.programming.kicks-ass.net>
+X-OriginalArrivalTime: 19 Mar 2014 13:46:53.0352 (UTC) FILETIME=[AF9E3A80:01CF4379]
+X-MC-Unique: 114031913464105601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 19/03/14 12:41, Peter Zijlstra wrote:
+> 
+> The keyboard deity gave us delete, please apply graciously when replying
+> to large emails.
 
---YAMuP2N37TMqsqKK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sorry about that, will do next time.
 
-On Wed, Mar 19, 2014 at 12:08:55PM +0200, Jyri Sarha wrote:
+> 
+> On Wed, Mar 19, 2014 at 11:27:12AM +0000, Dietmar Eggemann wrote:
+>> On 18/03/14 17:56, Vincent Guittot wrote:
+>>> +       if (sd->flags & SD_SHARE_CPUPOWER) {
+>>> +               sd->imbalance_pct = 110;
+>>> +               sd->smt_gain = 1178; /* ~15% */
+>>> +               sd->flags |= arch_sd_sibling_asym_packing();
+>>> +
+>>> +       } else if (sd->flags & SD_SHARE_PKG_RESOURCES) {
+>>> +               sd->imbalance_pct = 117;
+>>> +               sd->cache_nice_tries = 1;
+>>> +               sd->busy_idx = 2;
+>>> +
+>>> +#ifdef CONFIG_NUMA
+>>> +       } else if (sd->flags & SD_NUMA) {
+>>> +               sd->cache_nice_tries = 2;
+>>> +               sd->busy_idx = 3;
+>>> +               sd->idle_idx = 2;
+>>> +
+>>> +               sd->flags |= SD_SERIALIZE;
+>>> +               if (sched_domains_numa_distance[tl->numa_level] > RECLAIM_DISTANCE) {
+>>> +                       sd->flags &= ~(SD_BALANCE_EXEC |
+>>> +                                      SD_BALANCE_FORK |
+>>> +                                      SD_WAKE_AFFINE);
+>>> +               }
+>>> +
+>>> +#endif
+>>> +       } else {
+>>> +               sd->flags |= SD_PREFER_SIBLING;
+>>> +               sd->cache_nice_tries = 1;
+>>> +               sd->busy_idx = 2;
+>>> +               sd->idle_idx = 1;
+>>> +       }
+>>
+>> This 'if ... else statement' is still a weak point from the perspective
+>> of making the code robust:
+> 
+> <snip>
+> 
+>> Is there a way to check that MC and GMC have to have
+>> SD_SHARE_PKG_RESOURCES set so that this can't happen unnoticed?
+> 
+> So from the core codes perspective those names mean less than nothing.
+> Its just a string to carry along for us meat-bags. The string isn't even
+> there when !SCHED_DEBUG.
+> 
+> So from this codes POV you told it it had a domain without PKGSHARE,
+> that's fine.
 
-> While we are at it we could update the bitclock-master and frame-master
-> syntax to be like this:
+I see your point. So what we want to avoid is to enable archs to create
+different (per-cpu) set-ups inside a domain (as a specific set of cpu's
+from a viewpoint of a cpu) but misconfiguration of the whole domain is a
+different story. Got it!
 
-> bitclock-master = "cpu"
-> frame-master = "codec"
+> 
+> That said; yeah the thing isn't the prettiest piece of code. But it has
+> the big advantage of being the one place where we convert topology into
+> behaviour.
+> 
 
-> With the above explicit definition all the daifmt settings could be defined
-> in link level. For backwards compatibility we could still define that
-> omitting the value equals "codec" and omitting the property equals "cpu".
 
-It seems it'd be a bit more idiomatic to do that with a phandle rather
-than with a string in order to allow extensions for things like TDM (the
-I2S to mono speaker driver use case for example).
-
---YAMuP2N37TMqsqKK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTKZ+uAAoJELSic+t+oim9CuwP/1KTlhb26QwK5jKyfD9gviXE
-pVQRXQQ0lY8D4bpW5SQFJvBq02Zcut+dZu/SMwCmKgEv55pFU9NY694pdNBKfmR0
-oFB+BMIh/lFBO8+ob18x3nUff0zZx2oLazAt2iD8Lf0aQJNuwjd4WYJTyvlHZ6pd
-Af9XXsmHmOn4K6nzZLyt8LZB13Qrapexol9YzPJ/E4kittDU6ntc6p4PlVeD0kW5
-s7cL7+AHY0yZ1MmJESNhx87PFjxf5iGrUsC4pgJASvvNMqBecD2nBYHsfsuD0nZj
-5tJvmRk88vPxxpMxiupoOomotQUBCbsbffmgDldQETR+OEv+UHXZmBvhJUY1YCFj
-RiG/3NsWNsbY5Fcm7dkMtSDFrz6PmvoWEFEpLbbCe5TauUyNty4N49LvuL5Fx8BB
-RdQ+5quc4Cw602NB/26E/vbplFEBWuFHr5kwAlMT+2kAhyVIqD28PtfpfvXvtcrv
-6CQRSCqcYSviSiZYyXeX19jF9OuJ0zPTx2moz2p2Z/TFmcxpEAqnIO6CGavxz6Z2
-fdOqKuCgAcwSEr8H+0uDrPaYwP2Q8KrOdGMoF0qFl88wr4el5pMAflvbxwMSepvU
-60lgwna9IlhY4gU5cKKlWjH0Bh4ikSI6u+usAhLwG9fKYhG6iZsNgrv2zWfkKLNC
-sYjB9lC6xAlh9Idp1drR
-=90SH
------END PGP SIGNATURE-----
-
---YAMuP2N37TMqsqKK--
