@@ -1,135 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934084AbaCSNiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:38:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932721AbaCSNiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:38:23 -0400
-Date: Wed, 19 Mar 2014 09:38:15 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jmario@redhat.com, fowles@inreach.com, eranian@google.com
-Subject: Re: [PATCH 04/19] perf: Allow ability to map cpus to nodes easily
-Message-ID: <20140319133815.GA25953@redhat.com>
-References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
- <1393609388-40489-5-git-send-email-dzickus@redhat.com>
- <20140319124827.GB7423@krava.brq.redhat.com>
+	id S934123AbaCSNic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:38:32 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51896 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934091AbaCSNi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 09:38:29 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Amit Daniel <amit.daniel@samsung.com>
+Subject: Re: [RFC V2] cpufreq: make sure frequency transitions are serialized
+Date: Wed, 19 Mar 2014 14:53:59 +0100
+Message-ID: <10055939.1CZiP7vyp7@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAKohpomr1s3SLs-K8+-BKguX4PyfHvSjyzd5PFjM4mJeyTj3-A@mail.gmail.com>
+References: <2efc621827cbd96a05a3d34075154974b4816ecd.1394782795.git.viresh.kumar@linaro.org> <53296870.5010505@linux.vnet.ibm.com> <CAKohpomr1s3SLs-K8+-BKguX4PyfHvSjyzd5PFjM4mJeyTj3-A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140319124827.GB7423@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 01:48:27PM +0100, Jiri Olsa wrote:
-> On Fri, Feb 28, 2014 at 12:42:53PM -0500, Don Zickus wrote:
-> > This patch figures out the max number of cpus and nodes that are on the
+On Wednesday, March 19, 2014 03:39:16 PM Viresh Kumar wrote:
+> On 19 March 2014 15:20, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> > No, its not about burden. Its about the elegance of the design. We should
+> > not be overly "smart" in the cpufreq core. Hiding the synchronization inside
+> > the cpufreq core only encourages people to write buggy code in their drivers.
 > 
-> SNIP
+> What kind of buggy code can be there? They are supposed to call notifiers
+> in the order mentioned and so it shouldn't be a problem at all.. Don't know..
 > 
-> > +
-> > +int cpu_map__setup_cpunode_map(void)
-> > +{
-> > +	struct dirent *dent1, *dent2;
-> > +	DIR *dir1, *dir2;
-> > +	unsigned int cpu, mem;
-> > +	char buf[PATH_MAX];
-> > +
-> > +	/* initialize globals */
-> > +	if (init_cpunode_map())
-> > +		return -1;
-> > +
-> > +	dir1 = opendir(PATH_SYS_NODE);
-> > +	if (!dir1)
-> > +		return 0;
-> > +
-> > +	/* walk tree and setup map */
-> > +	while ((dent1 = readdir(dir1)) != NULL) {
-> > +		if (dent1->d_type != DT_DIR ||
-> > +		    sscanf(dent1->d_name, "node%u", &mem) < 1)
-> > +			continue;
-> > +
-> > +		snprintf(buf, PATH_MAX, "%s/%s", PATH_SYS_NODE, dent1->d_name);
-> > +		dir2 = opendir(buf);
-> > +		if (!dir2)
-> > +			continue;
-> > +		while ((dent2 = readdir(dir2)) != NULL) {
-> > +			if (dent2->d_type != DT_LNK ||
-> > +			    sscanf(dent2->d_name, "cpu%u", &cpu) < 1)
-> > +				continue;
-> > +			cpunode_map[cpu] = mem;
-> > +		}
-> > +		closedir(dir2);
-> > +	}
-> > +	closedir(dir1);
-> > +	return 0;
-> > +}
-> > +
-> > diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-> > index b123bb9..d6fde2b 100644
-> > --- a/tools/perf/util/cpumap.h
-> > +++ b/tools/perf/util/cpumap.h
-> > @@ -4,6 +4,9 @@
-> >  #include <stdio.h>
-> >  #include <stdbool.h>
-> >  
-> > +#include "perf.h"
-> > +#include "util/debug.h"
-> > +
-> >  struct cpu_map {
-> >  	int nr;
-> >  	int map[];
-> > @@ -46,4 +49,36 @@ static inline bool cpu_map__empty(const struct cpu_map *map)
-> >  	return map ? map->map[0] == -1 : true;
-> >  }
-> >  
-> > +int max_cpu_num;
-> > +int max_node_num;
-> > +int *cpunode_map;
-> > +
-> > +int cpu_map__setup_cpunode_map(void);
-> > +
-> > +static inline int cpu_map__max_node(void)
-> > +{
-> > +	if (unlikely(!max_node_num))
-> > +		pr_debug("cpu_map not initiailzed\n");
-> > +
-> > +	return max_node_num;
-> > +}
-> > +
-> > +static inline int cpu_map__max_cpu(void)
-> > +{
-> > +	if (unlikely(!max_cpu_num))
-> > +		pr_debug("cpu_map not initiailzed\n");
-> > +
-> > +	return max_cpu_num;
-> > +}
-> > +
-> > +static inline int cpu_map__get_node(int cpu)
-> > +{
-> > +	if (unlikely(cpunode_map == NULL)) {
-> > +		pr_debug("cpu_map not initialized\n");
-> > +		return -1;
-> > +	}
-> > +
-> > +	return cpunode_map[cpu];
-> > +}
+> > Why don't we go with what Rafael suggested? We can have dedicated
+> > begin_transition() and end_transition() calls to demarcate the frequency
+> > transitions. That way, it makes it very clear how the synchronization is
+> > done. Of course, these functions would be provided (exported) by the cpufreq
+> > core, by implementing them using locks/counters/whatever.
+> >
+> > Basically what I'm arguing against, is the idea of having the cpufreq
+> > core figure out what the driver _intended_ to do, from inside the
+> > cpufreq_notify_transition() call.
+> >
+> > What I would prefer instead is to have the cpufreq driver do something
+> > like this:
+> >
+> > cpufreq_freq_transition_begin();
+> >
+> > cpufreq_notify_transition(CPUFREQ_PRECHANGE);
 > 
-> cool, maybe above function names should not have 'cpu_map..',
-> it's like pure cpu-ish stuff, maybe:
-> 
->   setup_cpunode_map
->   cpu__max_node
->   cpu__max_cpu
->   cpu__get_node
-> 
-> or something like that ;-)
+> Why do we need two routines then? What about doing notification from
+> inside cpufreq_freq_transition_begin()?
 
-Sure.  That works for me. :-)
+We can do that in my opinion.
 
-Cheers,
-Don
+> This is a burden for driver writers, who don't normally understand the
+> relevance of these calls in detail and may think, only the first one is
+> enough or the second one is..
+> 
+> Its better if they simply let the core that they are starting to do transitions,
+> i.e. cpufreq_freq_transition_begin() and then the core should send
+> notifications.
+> 
+> > //perform the frequency change
+> >
+> > cpufreq_notify_transition(CPUFREQ_POSTCHANGE);
+> >
+> > cpufreq_freq_transition_end();
+> >
+> > [ASYNC_NOTIFICATION drivers will invoke the last two functions in a
+> > separate context/thread.]
+> 
+> Same for the last two routines and yes they would be called from
+> separate thread for ASYNC_NOTIFICATION drivers..
+
+That'd be fine by me in principle.
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
