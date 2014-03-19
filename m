@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934167AbaCSNJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:09:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34277 "EHLO
+	id S934065AbaCSNHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:07:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34221 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933939AbaCSNI6 (ORCPT
+	with ESMTP id S934049AbaCSNHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:08:58 -0400
-Date: Wed, 19 Mar 2014 06:08:31 -0700
-From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
-Message-ID: <tip-b68eebd1c2a539256e373123cdefabfd1986bfe2@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
-        tglx@linutronix.de, artagnon@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, jolsa@redhat.com, dsahern@gmail.com,
-        tglx@linutronix.de, artagnon@gmail.com
-In-Reply-To: <1395169804-1293-1-git-send-email-artagnon@gmail.com>
-References: <1395169804-1293-1-git-send-email-artagnon@gmail.com>
+	Wed, 19 Mar 2014 09:07:48 -0400
+Date: Wed, 19 Mar 2014 06:07:13 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-xeyhkepu7plw716lrtb0zlnu@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Update some code references in design.txt
-Git-Commit-ID: b68eebd1c2a539256e373123cdefabfd1986bfe2
+Subject: [tip:perf/core] perf report: Merge al->filtered with hist_entry->
+ filtered
+Git-Commit-ID: 2c86c7ca760634f09dcbd76069e5102b4de6f8f1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,84 +34,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b68eebd1c2a539256e373123cdefabfd1986bfe2
-Gitweb:     http://git.kernel.org/tip/b68eebd1c2a539256e373123cdefabfd1986bfe2
-Author:     Ramkumar Ramachandra <artagnon@gmail.com>
-AuthorDate: Tue, 18 Mar 2014 15:10:04 -0400
+Commit-ID:  2c86c7ca760634f09dcbd76069e5102b4de6f8f1
+Gitweb:     http://git.kernel.org/tip/2c86c7ca760634f09dcbd76069e5102b4de6f8f1
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Mon, 17 Mar 2014 18:18:54 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 18 Mar 2014 18:17:06 -0300
+CommitDate: Tue, 18 Mar 2014 18:16:59 -0300
 
-perf tools: Update some code references in design.txt
+perf report: Merge al->filtered with hist_entry->filtered
 
-Update the names of some functions and enums in design.txt. The document
-still has some stale information, but the motivation behind this patch
-is to allow a developer to quickly grep and learn about the associated
-structures.
+I.e. don't drop al->filtered entries, create the hist_entries and use
+its ->filtered bitmap, that is kept with the same semantics for its
+bitmap, leaving the filtering to be done at the hist_entry level, i.e.
+in the UIs.
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+This will allow zooming in/out the filters.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1395169804-1293-1-git-send-email-artagnon@gmail.com
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-xeyhkepu7plw716lrtb0zlnu@git.kernel.org
+[ yanked this out of a previous patch ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/design.txt | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ tools/perf/builtin-report.c | 2 +-
+ tools/perf/util/hist.c      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/design.txt b/tools/perf/design.txt
-index 63a0e6f..a28dca2 100644
---- a/tools/perf/design.txt
-+++ b/tools/perf/design.txt
-@@ -18,7 +18,7 @@ underlying hardware counters.
- Performance counters are accessed via special file descriptors.
- There's one file descriptor per virtual counter used.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index c47bf58..a74059f 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -231,7 +231,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 		return -1;
+ 	}
  
--The special file descriptor is opened via the perf_event_open()
-+The special file descriptor is opened via the sys_perf_event_open()
- system call:
+-	if (al.filtered || (rep->hide_unresolved && al.sym == NULL))
++	if (rep->hide_unresolved && al.sym == NULL)
+ 		return 0;
  
-    int sys_perf_event_open(struct perf_event_attr *hw_event_uptr,
-@@ -82,7 +82,7 @@ machine-specific.
- If 'raw_type' is 0, then the 'type' field says what kind of counter
- this is, with the following encoding:
- 
--enum perf_event_types {
-+enum perf_type_id {
- 	PERF_TYPE_HARDWARE		= 0,
- 	PERF_TYPE_SOFTWARE		= 1,
- 	PERF_TYPE_TRACEPOINT		= 2,
-@@ -95,7 +95,7 @@ specified by 'event_id':
-  * Generalized performance counter event types, used by the hw_event.event_id
-  * parameter of the sys_perf_event_open() syscall:
-  */
--enum hw_event_ids {
-+enum perf_hw_id {
- 	/*
- 	 * Common hardware events, generalized by the kernel:
- 	 */
-@@ -129,7 +129,7 @@ software events, selected by 'event_id':
-  * physical and sw events of the kernel (and allow the profiling of them as
-  * well):
-  */
--enum sw_event_ids {
-+enum perf_sw_ids {
- 	PERF_COUNT_SW_CPU_CLOCK		= 0,
- 	PERF_COUNT_SW_TASK_CLOCK	= 1,
- 	PERF_COUNT_SW_PAGE_FAULTS	= 2,
-@@ -230,7 +230,7 @@ these events are recorded in the ring-buffer (see below).
- The 'comm' bit allows tracking of process comm data on process creation.
- This too is recorded in the ring-buffer (see below).
- 
--The 'pid' parameter to the perf_event_open() system call allows the
-+The 'pid' parameter to the sys_perf_event_open() system call allows the
- counter to be specific to a task:
- 
-  pid == 0: if the pid parameter is zero, the counter is attached to the
-@@ -260,7 +260,7 @@ The 'flags' parameter is currently unused and must be zero.
- 
- The 'group_fd' parameter allows counter "groups" to be set up.  A
- counter group has one counter which is the group "leader".  The leader
--is created first, with group_fd = -1 in the perf_event_open call
-+is created first, with group_fd = -1 in the sys_perf_event_open call
- that creates it.  The rest of the group members are created
- subsequently, with group_fd giving the fd of the group leader.
- (A single counter on its own is created with group_fd = -1 and is
+ 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 9507f33..f38590d 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -422,7 +422,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 			.weight = weight,
+ 		},
+ 		.parent = sym_parent,
+-		.filtered = symbol__parent_filter(sym_parent),
++		.filtered = symbol__parent_filter(sym_parent) | al->filtered,
+ 		.hists	= hists,
+ 		.branch_info = bi,
+ 		.mem_info = mi,
