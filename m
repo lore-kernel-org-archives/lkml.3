@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698AbaCSGYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 02:24:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:52880 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755261AbaCSGYo convert rfc822-to-8bit (ORCPT
+	id S1755936AbaCSGZv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 02:25:51 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50038 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145AbaCSGZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 02:24:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,683,1389772800"; 
-   d="scan'208";a="502819693"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "John W. Linville" <linville@tuxdriver.com>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: linux-next: build failure after merge of the final tree
- (wireless-next tree related)
-Thread-Topic: linux-next: build failure after merge of the final tree
- (wireless-next tree related)
-Thread-Index: AQHPQztoDV5ydIQ7XkyEAxRe0zKzqZrn8MCA
-Date: Wed, 19 Mar 2014 06:23:55 +0000
-Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB303DB4940@HASMSX103.ger.corp.intel.com>
-References: <20140319172035.b4e7c4043b486d8eeaa0534a@canb.auug.org.au>
-In-Reply-To: <20140319172035.b4e7c4043b486d8eeaa0534a@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Mar 2014 02:25:49 -0400
+Message-ID: <53293782.9060708@linux.vnet.ibm.com>
+Date: Wed, 19 Mar 2014 11:51:54 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        dietmar.eggemann@arm.com, tony.luck@intel.com, fenghua.yu@intel.com,
+        schwidefsky@de.ibm.com, james.hogan@imgtec.com, cmetcalf@tilera.com,
+        benh@kernel.crashing.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 5/7] sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
+References: <1395165409-18055-1-git-send-email-vincent.guittot@linaro.org> <1395165409-18055-6-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <1395165409-18055-6-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14031906-9332-0000-0000-000000289D32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc allyesconfig)
-> failed like this:
-> 
-> drivers/net/wireless/iwlwifi/mvm/debugfs.c: In function
-> 'iwl_dbgfs_fw_error_dump_release':
-> drivers/net/wireless/iwlwifi/mvm/debugfs.c:161:2: error: implicit declaration
-> of function 'vfree' [-Werror=implicit-function-declaration]
->   vfree(file->private_data);
->   ^
+Hi Vincent,
 
-Sorry for that - patch on the way.
+On 03/18/2014 11:26 PM, Vincent Guittot wrote:
+> A new flag SD_SHARE_POWERDOMAIN is created to reflect whether groups of CPUs
+> in a sched_domain level can or not reach different power state. As an example,
+> the flag should be cleared at CPU level if groups of cores can be power gated
+> independently. This information can be used to add load balancing level between
+> group of CPUs than can power gate independantly. The default behavior of the
+> scheduler is to spread tasks across CPUs and groups of CPUs so the flag is set
+> into all sched_domains.
 
+I don't see this flag being set either in sd_init() or in
+default_topology[]. Should not the default_topology[] flag setting
+routines set this flag at every level of sched domain along with other
+topology flags, unless the arch wants to override it?
+
+Regards
+Preeti U Murthy
+> This flag is part of the topology flags that can be set by arch.
 > 
-> Caused by commit 1bd3cbc1a0e9 ("iwlwifi: mvm: send udev event upon
-> firmware error to dump logs") from the wireless-next tree.  See Rule 1
-> from Documentation/SubmitChecklist.
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  include/linux/sched.h | 1 +
+>  kernel/sched/core.c   | 9 ++++++---
+>  2 files changed, 7 insertions(+), 3 deletions(-)
 > 
-> I have reverted that commit (and commit cdb00563fe2c ("iwlwifi: mvm: BT
-> Coex - add debugfs hook to set BT Tx priority") that may depend on it)
-> for today.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 6479de4..7048369 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -861,6 +861,7 @@ enum cpu_idle_type {
+>  #define SD_BALANCE_WAKE		0x0010  /* Balance on wakeup */
+>  #define SD_WAKE_AFFINE		0x0020	/* Wake task to waking CPU */
+>  #define SD_SHARE_CPUPOWER	0x0080	/* Domain members share cpu power */
+> +#define SD_SHARE_POWERDOMAIN	0x0100	/* Domain members share power domain */
+>  #define SD_SHARE_PKG_RESOURCES	0x0200	/* Domain members share cpu pkg resources */
+>  #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
+>  #define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 0b51ee3..224ec3b 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5298,7 +5298,8 @@ static int sd_degenerate(struct sched_domain *sd)
+>  			 SD_BALANCE_FORK |
+>  			 SD_BALANCE_EXEC |
+>  			 SD_SHARE_CPUPOWER |
+> -			 SD_SHARE_PKG_RESOURCES)) {
+> +			 SD_SHARE_PKG_RESOURCES |
+> +			 SD_SHARE_POWERDOMAIN)) {
+>  		if (sd->groups != sd->groups->next)
+>  			return 0;
+>  	}
+> @@ -5329,7 +5330,8 @@ sd_parent_degenerate(struct sched_domain *sd, struct sched_domain *parent)
+>  				SD_BALANCE_EXEC |
+>  				SD_SHARE_CPUPOWER |
+>  				SD_SHARE_PKG_RESOURCES |
+> -				SD_PREFER_SIBLING);
+> +				SD_PREFER_SIBLING |
+> +				SD_SHARE_POWERDOMAIN);
+>  		if (nr_node_ids == 1)
+>  			pflags &= ~SD_SERIALIZE;
+>  	}
+> @@ -5946,7 +5948,8 @@ static int sched_domains_curr_level;
+>  	(SD_SHARE_CPUPOWER |		\
+>  	 SD_SHARE_PKG_RESOURCES |	\
+>  	 SD_NUMA |			\
+> -	 SD_ASYM_PACKING)
+> +	 SD_ASYM_PACKING |		\
+> +	 SD_SHARE_POWERDOMAIN)
+> 
+>  static struct sched_domain *
+>  sd_init(struct sched_domain_topology_level *tl, int cpu)
+> 
+
