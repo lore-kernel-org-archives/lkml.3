@@ -1,347 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934224AbaCSNKq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:10:46 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:50149 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934203AbaCSNKl (ORCPT
+	id S965185AbaCSNNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:13:10 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:18874 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964914AbaCSNNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:10:41 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Fugang Duan <B38611@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Simon Budig <simon.budig@kernelconcepts.de>,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
-Date: Wed, 19 Mar 2014 14:09:20 +0100
-Message-Id: <1395234563-11034-3-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
-References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 19 Mar 2014 09:13:04 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-53-532997dcdff2
+Message-id: <532997D7.6090608@samsung.com>
+Date: Wed, 19 Mar 2014 14:12:55 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: Re: [PATCH v11 17/27] iommu/exynos: remove calls to Runtime PM API
+ functions
+References: <20140314140843.ba055f28dd7ed59c46088029@samsung.com>
+ <5322FD14.5090602@samsung.com>
+ <20140318185605.0380c8dfe6559c06183092e5@samsung.com>
+ <532861BE.7020601@samsung.com>
+ <20140319100304.5e26fa43ccdfc29178b058e1@samsung.com>
+In-reply-to: <20140319100304.5e26fa43ccdfc29178b058e1@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42I5/e/4Zd070zWDDWZ94bG4c/ccq8X8I0Di
+	1ZEfTBYL9ltbdM7ewG7Ru+Aqm8Wmx9dYLS7vmsNmMeP8PiaLCys2slv86z3IaDFl0WFWi8Nv
+	2lktTv7pZbSYeWsNiwO/x5OD85g8ZjdcZPH4d7ifyePOtT1sHpuX1HtMvrGc0aNvyypGj8+b
+	5DyuHD3DFMAZxWWTkpqTWZZapG+XwJVxqNOu4KRFxcvjJg2MR3S7GDk5JARMJFa/Xs4MYYtJ
+	XLi3nq2LkYtDSGApo8TE0/OZIJzPjBJ7dj1hBKniFdCSuPD/LWsXIwcHi4CqxPUWCZAwm4Ca
+	xOeGR2wgNj9QyZqm6ywgtqhAhMTciZvZIFoFJX5MvgcWFxHQkPh8ZT0ryHxmgUZWiUf3l7GD
+	JIQFwiVO3fjIAre4+fhuJpAEp4CTxJtHy1lBbGYBa4mVk7YxQtjyEpvXvGWewCg4C8mSWUjK
+	ZiEpW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJOK+7GBcfMzqEKMAB6MSD69krEaw
+	EGtiWXFl7iFGCQ5mJRHeX1M0g4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUwzv3KZ6nqbvlV0O7o
+	ZZnd6rNdjsvxlReeSW4/FPDmxhGJs49rfv6P4rijsontefx0LVYtzmkBShkG3NmCka/CJJTM
+	w7g7pz7USFjfZjX3dp7h5GLu2wZPIu1MwlmWXtpXMufuI/vAe6+YirmPJ9681b2j925ww/mn
+	1kxcB2u/upodN+DKWHNDiaU4I9FQi7moOBEAGe8M1ZYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 19.03.2014 02:03, Cho KyongHo wrote:
+> On Tue, 18 Mar 2014 16:09:50 +0100, Tomasz Figa wrote:
+>> On 18.03.2014 10:56, Cho KyongHo wrote:
+>>> On Fri, 14 Mar 2014 13:59:00 +0100, Tomasz Figa wrote:
+>>>> Hi KyongHo,
+>>>>
+>>>> On 14.03.2014 06:08, Cho KyongHo wrote:
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- .../bindings/input/touchscreen/edt-ft5x06.txt      |   41 ++++++
- drivers/input/touchscreen/edt-ft5x06.c             |  144 +++++++++++++++-----
- 2 files changed, 154 insertions(+), 31 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
+[snip]
 
-diff --git a/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
-new file mode 100644
-index 0000000..e5adc76
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
-@@ -0,0 +1,41 @@
-+FocalTech EDT-FT5x06 Polytouch driver
-+=====================================
-+
-+Required properties:
-+ - compatible:  "edt,edt-ft5x06"
-+ - reg:         I2C slave address of the chip (0x38)
-+ - interrupt-parent: a phandle pointing to the interrupt controller
-+                     serving the interrupt for this chip
-+ - interrupts:       interrupt specification for this chip
-+
-+Optional properties:
-+ - reset-gpios: GPIO specification for the RESET input
-+ - wake-gpios:  GPIO specification for the WAKE input
-+
-+ - pinctrl-names: should be "default"
-+ - pinctrl-0:   a phandle pointing to the pin settings for the
-+                control gpios
-+
-+ - threshold:   allows setting the "click"-threshold in the range
-+                from 20 to 80.
-+
-+ - gain:        allows setting the sensitivity in the range from 0 to
-+                31. Note that lower values indicate higher
-+                sensitivity.
-+
-+ - offset:      allows setting the edge compensation in the range from
-+                0 to 31.
-+ - report_rate: allows setting the report rate in the range from 3 to
-+                14.
-+
-+Example:
-+	polytouch: edt-ft5x06@38 {
-+		compatible = "edt,edt-ft5x06";
-+		reg = <0x38>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&edt_ft5x06_pins>;
-+		interrupt-parent = <&gpio2>;
-+		interrupts = <5 0>;
-+		reset-gpios = <&gpio2 6 1>;
-+		wake-gpios = <&gpio4 9 0>;
-+	};
-diff --git a/drivers/input/touchscreen/edt-ft5x06.c b/drivers/input/touchscreen/edt-ft5x06.c
-index 7b4470d..257a1c8 100644
---- a/drivers/input/touchscreen/edt-ft5x06.c
-+++ b/drivers/input/touchscreen/edt-ft5x06.c
-@@ -33,6 +33,7 @@
- #include <linux/debugfs.h>
- #include <linux/slab.h>
- #include <linux/gpio.h>
-+#include <linux/of_gpio.h>
- #include <linux/input/mt.h>
- #include <linux/input/edt-ft5x06.h>
- 
-@@ -65,6 +66,10 @@ struct edt_ft5x06_ts_data {
- 	u16 num_x;
- 	u16 num_y;
- 
-+	int reset_pin;
-+	int irq_pin;
-+	int wake_pin;
-+
- #if defined(CONFIG_DEBUG_FS)
- 	struct dentry *debug_dir;
- 	u8 *raw_buffer;
-@@ -617,24 +622,38 @@ edt_ft5x06_ts_teardown_debugfs(struct edt_ft5x06_ts_data *tsdata)
- 
- 
- static int edt_ft5x06_ts_reset(struct i2c_client *client,
--					 int reset_pin)
-+			struct edt_ft5x06_ts_data *tsdata)
- {
- 	int error;
- 
--	if (gpio_is_valid(reset_pin)) {
-+	if (gpio_is_valid(tsdata->wake_pin)) {
-+		error = devm_gpio_request_one(&client->dev,
-+					tsdata->wake_pin, GPIOF_OUT_INIT_LOW,
-+					"edt-ft5x06 wake");
-+		if (error) {
-+			dev_err(&client->dev,
-+				"Failed to request GPIO %d as wake pin, error %d\n",
-+				tsdata->wake_pin, error);
-+			return error;
-+		}
-+
-+		mdelay(5);
-+		gpio_set_value(tsdata->wake_pin, 1);
-+	}
-+	if (gpio_is_valid(tsdata->reset_pin)) {
- 		/* this pulls reset down, enabling the low active reset */
--		error = devm_gpio_request_one(&client->dev, reset_pin,
--					      GPIOF_OUT_INIT_LOW,
--					      "edt-ft5x06 reset");
-+		error = devm_gpio_request_one(&client->dev,
-+					tsdata->reset_pin, GPIOF_OUT_INIT_LOW,
-+					"edt-ft5x06 reset");
- 		if (error) {
- 			dev_err(&client->dev,
- 				"Failed to request GPIO %d as reset pin, error %d\n",
--				reset_pin, error);
-+				tsdata->reset_pin, error);
- 			return error;
- 		}
- 
- 		mdelay(50);
--		gpio_set_value(reset_pin, 1);
-+		gpio_set_value(tsdata->reset_pin, 1);
- 		mdelay(100);
- 	}
- 
-@@ -675,6 +694,21 @@ static int edt_ft5x06_ts_identify(struct i2c_client *client,
- 	    pdata->name <= edt_ft5x06_attr_##name.limit_high)		\
- 		edt_ft5x06_register_write(tsdata, reg, pdata->name)
- 
-+#define EDT_GET_PROP(name, reg) {					\
-+	const u32 *prop = of_get_property(np, #name, NULL);		\
-+	if (prop)							\
-+		edt_ft5x06_register_write(tsdata, reg, be32_to_cpu(*prop)); \
-+}
-+
-+static void edt_ft5x06_ts_get_dt_defaults(struct device_node *np,
-+					struct edt_ft5x06_ts_data *tsdata)
-+{
-+	EDT_GET_PROP(threshold, WORK_REGISTER_THRESHOLD);
-+	EDT_GET_PROP(gain, WORK_REGISTER_GAIN);
-+	EDT_GET_PROP(offset, WORK_REGISTER_OFFSET);
-+	EDT_GET_PROP(report_rate, WORK_REGISTER_REPORT_RATE);
-+}
-+
- static void
- edt_ft5x06_ts_get_defaults(struct edt_ft5x06_ts_data *tsdata,
- 			   const struct edt_ft5x06_platform_data *pdata)
-@@ -702,6 +736,33 @@ edt_ft5x06_ts_get_parameters(struct edt_ft5x06_ts_data *tsdata)
- 	tsdata->num_y = edt_ft5x06_register_read(tsdata, WORK_REGISTER_NUM_Y);
- }
- 
-+#ifdef CONFIG_OF
-+static int edt_ft5x06_i2c_ts_probe_dt(struct device *dev,
-+				struct edt_ft5x06_ts_data *tsdata)
-+{
-+	struct device_node *np = dev->of_node;
-+
-+	if (!np)
-+		return -ENODEV;
-+
-+	/*
-+	 * irq_pin is not needed for DT setup.
-+	 * irq is associated via 'interrupts' property in DT
-+	 */
-+	tsdata->irq_pin = -EINVAL;
-+	tsdata->reset_pin = of_get_named_gpio(np, "reset-gpios", 0);
-+	tsdata->wake_pin = of_get_named_gpio(np, "wake-gpios", 0);
-+
-+	return 0;
-+}
-+#else
-+static inline int edt_ft5x06_i2c_ts_probe_dt(struct device *dev,
-+					struct edt_ft5x06_i2c_ts_data *tsdata)
-+{
-+	return -ENODEV;
-+}
-+#endif
-+
- static int edt_ft5x06_ts_probe(struct i2c_client *client,
- 					 const struct i2c_device_id *id)
- {
-@@ -714,32 +775,40 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
- 
- 	dev_dbg(&client->dev, "probing for EDT FT5x06 I2C\n");
- 
-+	tsdata = devm_kzalloc(&client->dev, sizeof(*tsdata), GFP_KERNEL);
-+	if (!tsdata) {
-+		dev_err(&client->dev, "failed to allocate driver data.\n");
-+		return -ENOMEM;
-+	}
-+
- 	if (!pdata) {
--		dev_err(&client->dev, "no platform data?\n");
--		return -EINVAL;
-+		error = edt_ft5x06_i2c_ts_probe_dt(&client->dev, tsdata);
-+		if (error) {
-+			dev_err(&client->dev,
-+				"DT probe failed and no platform data present\n");
-+			return error;
-+		}
-+	} else {
-+		tsdata->reset_pin = pdata->reset_pin;
-+		tsdata->irq_pin = pdata->irq_pin;
-+		tsdata->wake_pin = -EINVAL;
- 	}
- 
--	error = edt_ft5x06_ts_reset(client, pdata->reset_pin);
-+	error = edt_ft5x06_ts_reset(client, tsdata);
- 	if (error)
- 		return error;
- 
--	if (gpio_is_valid(pdata->irq_pin)) {
--		error = devm_gpio_request_one(&client->dev, pdata->irq_pin,
--					      GPIOF_IN, "edt-ft5x06 irq");
-+	if (gpio_is_valid(tsdata->irq_pin)) {
-+		error = devm_gpio_request_one(&client->dev, tsdata->irq_pin,
-+					GPIOF_IN, "edt-ft5x06 irq");
- 		if (error) {
- 			dev_err(&client->dev,
- 				"Failed to request GPIO %d, error %d\n",
--				pdata->irq_pin, error);
-+				tsdata->irq_pin, error);
- 			return error;
- 		}
- 	}
- 
--	tsdata = devm_kzalloc(&client->dev, sizeof(*tsdata), GFP_KERNEL);
--	if (!tsdata) {
--		dev_err(&client->dev, "failed to allocate driver data.\n");
--		return -ENOMEM;
--	}
--
- 	input = devm_input_allocate_device(&client->dev);
- 	if (!input) {
- 		dev_err(&client->dev, "failed to allocate input device.\n");
-@@ -757,7 +826,11 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
- 		return error;
- 	}
- 
--	edt_ft5x06_ts_get_defaults(tsdata, pdata);
-+	if (!pdata)
-+		edt_ft5x06_ts_get_dt_defaults(client->dev.of_node, tsdata);
-+	else
-+		edt_ft5x06_ts_get_defaults(tsdata, pdata);
-+
- 	edt_ft5x06_ts_get_parameters(tsdata);
- 
- 	dev_dbg(&client->dev,
-@@ -787,10 +860,10 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
- 	input_set_drvdata(input, tsdata);
- 	i2c_set_clientdata(client, tsdata);
- 
--	error = devm_request_threaded_irq(&client->dev, client->irq,
--					  NULL, edt_ft5x06_ts_isr,
--					  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
--					  client->name, tsdata);
-+	error = devm_request_threaded_irq(&client->dev, client->irq, NULL,
-+					edt_ft5x06_ts_isr,
-+					IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-+					client->name, tsdata);
- 	if (error) {
- 		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
- 		return error;
-@@ -801,19 +874,21 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
- 		return error;
- 
- 	error = input_register_device(input);
--	if (error) {
--		sysfs_remove_group(&client->dev.kobj, &edt_ft5x06_attr_group);
--		return error;
--	}
-+	if (error)
-+		goto err_remove_attrs;
- 
- 	edt_ft5x06_ts_prepare_debugfs(tsdata, dev_driver_string(&client->dev));
- 	device_init_wakeup(&client->dev, 1);
- 
- 	dev_dbg(&client->dev,
--		"EDT FT5x06 initialized: IRQ pin %d, Reset pin %d.\n",
--		pdata->irq_pin, pdata->reset_pin);
-+		"EDT FT5x06 initialized: IRQ %d, WAKE pin %d, Reset pin %d.\n",
-+		client->irq, tsdata->wake_pin, tsdata->reset_pin);
- 
- 	return 0;
-+
-+err_remove_attrs:
-+	sysfs_remove_group(&client->dev.kobj, &edt_ft5x06_attr_group);
-+	return error;
- }
- 
- static int edt_ft5x06_ts_remove(struct i2c_client *client)
-@@ -857,10 +932,17 @@ static const struct i2c_device_id edt_ft5x06_ts_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, edt_ft5x06_ts_id);
- 
-+static const struct of_device_id edt_ft5x06_of_match[] = {
-+	{ .compatible = "edt,edt-ft5x06", },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, edt_ft5x06_of_match);
-+
- static struct i2c_driver edt_ft5x06_ts_driver = {
- 	.driver = {
- 		.owner = THIS_MODULE,
- 		.name = "edt_ft5x06",
-+		.of_match_table = edt_ft5x06_of_match,
- 		.pm = &edt_ft5x06_ts_pm_ops,
- 	},
- 	.id_table = edt_ft5x06_ts_id,
--- 
-1.7.10.4
+>>>>> @@ -637,11 +708,14 @@ static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
+>>>>>
+>>>>>     	spin_lock_irqsave(&priv->lock, flags);
+>>>>>
+>>>>> -	list_for_each_entry(data, &priv->clients, node) {
+>>>>> -		while (!exynos_sysmmu_disable(data->dev))
+>>>>> +	list_for_each_entry(owner, &priv->clients, client) {
+>>>>> +		while (!exynos_sysmmu_disable(owner->dev))
+>>>>>     			; /* until System MMU is actually disabled */
+>>>>
+>>>> What about using list_for_each_entry_safe() and calling list_del_init()
+>>>> here directly?
+>>>>
+>>>
+>>> That require another variable to be defined.
+>>
+>> Is it a problem?
+>>
+> That is not a problem.
+> But I think using list_for_each_entry() is not a problem likewise.
+>
+>>> I just wanted to avoid that because I think it is prettier.
+>>> Moreover, list_del_init() below the empty while() clause may make
+>>> the source code readers misunderstood..
+>>
+>> This raises another question, why the loop above is even needed.
+>> exynos_sysmmu_disable() should make sure that SYSMMU is actually
+>> disabled, without any need for looping like this.
+>
+> Some driver needs enabling sysmmu to be counted due to its complex structure.
+> It can be also removed by the driver with an extra effort
+> but the reality is important.
 
+My comment was not about the need to have reference counting, as this is 
+a common design pattern, but rather that there should be a low level 
+power control function, which simply disables the IOMMU, without the 
+need to loop through existing references.
+
+Actually there is already such function - __sysmmu_disable_nocount() - 
+so the code could look like:
+
+	list_for_each_entry_safe(owner, n, &priv->clients, client) {
+		__sysmmu_disable_nocount(owner->dev);
+		list_del_init(&owner->client);
+	}
+
+As for reference counting in this use case in general, as far as I'm 
+looking through the whole driver code, there is no other usage of this 
+reference counting than exynos_iommu_attach_device() and 
+exynos_iommu_detach_device(). Assuming that there is just a single 
+master for each SYSMMU, I don't see why reference counting is even 
+needed, as you can't bind a device to IOMMU multiple times.
+
+> Device driver is not only for the scholarship but also for the real use.
+
+Huh? I'm not sure what kind of comment is this.
+
+>
+>>>>>     	}
+>>>>>
+>>>>> +	while (!list_empty(&priv->clients))
+>>>>> +		list_del_init(priv->clients.next);
+>>>>> +
+>>>>>     	spin_unlock_irqrestore(&priv->lock, flags);
+>>>>>
+>>>>>     	for (i = 0; i < NUM_LV1ENTRIES; i++)
+>>
+>> [snip]
+>>
+>>>>> +static int sysmmu_hook_driver_register(struct notifier_block *nb,
+>>>>> +					unsigned long val,
+>>>>> +					void *p)
+>>>>> +{
+>>>>> +	struct device *dev = p;
+>>>>> +
+>>>>> +	switch (val) {
+>>>>> +	case BUS_NOTIFY_BIND_DRIVER:
+>>>>> +	{
+>>>>> +		struct exynos_iommu_owner *owner;
+>>>>
+>>>> Please move this variable to the top of the function and drop the braces
+>>>> around case blocks.
+>>>
+>>> I don't think it is required because this function is modified
+>>> by the following patches.
+>>
+>> OK, if so, and similar issue is not present after further patches.
+>>
+>>>
+>>>>
+>>>>> +
+>>>>> +		/* No System MMU assigned. See exynos_sysmmu_probe(). */
+>>>>> +		if (dev->archdata.iommu == NULL)
+>>>>> +			break;
+>>>>
+>>>> This looks strange... (see below)
+>>>>
+>>>> Also this looks racy. There are no guarantees about device probing
+>>>> order, so you may end up with master devices being probed before the
+>>>> IOMMUs. Deferred probing should be used to handle this correctly.
+>>>
+>>> System MMU driver must be probed earlier than the drivers of master devices
+>>> because the drivers may want to use System MMU for their initial task.
+>>
+>> As I said, there are no guarantees about platform device probe order in
+>> Linux kernel. Code must be designed to check whether required
+>> dependencies are met and if not, deferred probing must be used.
+>>
+>
+> I told that System MMU driver must be probed earlier.
+> That's why exynos_iommu_init() is called by subsys_initcall level.
+> I also noticed that it must be promoted to arch_initcall for some driver.
+>
+
+No. Proper Linux drivers must support deferred probing mechanism and 
+there should be no assumptions about probing orders. Using other 
+initcall level than module_initcall for particular drivers is strongly 
+discouraged.
+
+>>>>
+>>>>> +
+>>>>> +		owner = devm_kzalloc(dev, sizeof(*owner), GFP_KERNEL);
+>>>>> +		if (!owner) {
+>>>>> +			dev_err(dev, "No Memory for exynos_iommu_owner\n");
+>>>>> +			return -ENOMEM;
+>>>>> +		}
+>>>>> +
+>>>>> +		owner->dev = dev;
+>>>>> +		INIT_LIST_HEAD(&owner->client);
+>>>>> +		owner->sysmmu = dev->archdata.iommu;
+>>>>> +
+>>>>> +		dev->archdata.iommu = owner;
+>>>>
+>>>> I don't understand what is happening here in this case statement. There
+>>>> is already something assigned to dev->archdata.iommu, but this code
+>>>> reassigns something else to this field. This means that you attempt to
+>>>> use the same field to store pointers to objects of different types,
+>>>> which I believe is broken, because you have no way to check what kind of
+>>>> object is currently pointed by such (void *) pointer.
+>>>>
+>>>
+>>> exynos_sysmmu_probe() assigns the device descriptor of the probing System MMU
+>>> to archdata.iommu of its master device. The assignment is just a marker that
+>>> the device is a master device of a System MMU.
+>>> If dev->archdata.iommu has a value in the case of BUS_NOTIFY_BIND_DRIVER,
+>>> the 'dev' is a master devices of a System MMU. Then sysmmu_hook_driver_register()
+>>> assigns the data structure to handle System MMU to dev->archdata.iommu.
+>>
+>> Which is wrong (or even if you don't consider it wrong, it is ugly),
+>> because one (void *) pointer in the same object is used to store
+>> pointers to two completely different types.
+>
+> archdata.iommu has a pointer to sysmmu descriptor for a very short time
+> during booting time to build complete data structure to handle System MMU.
+> It is it also a matter?
+
+Yes. It is a serious issue from code readability point of view, as you 
+don't know what kind of object pointed by this pointer to expect when 
+reading the driver.
+
+Keep in mind that readability is one of the key factors affecting driver 
+maintainability which is important if the driver is intended to be kept 
+in mainline for many Linux kernel releases, adding support for new 
+hardware variants and keeping the driver in good shape over future 
+kernel changes (e.g. large refactors of upper layers, such as IOMMU 
+subsystem).
+
+>
+> Anyway, this style of initialization just maintained to make the driver work
+> with the old design. It is changed with the following patches.
+
+OK. If this is just a temporary step, then I guess we can ignore this 
+issue. I just noted that such usage is a problem in general.
+
+Best regards,
+Tomasz
