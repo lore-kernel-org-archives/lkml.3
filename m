@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270AbaCSF5l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 01:57:41 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:62696 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750825AbaCSF5i (ORCPT
+	id S1752621AbaCSGCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 02:02:47 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:63822 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaCSGCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 01:57:38 -0400
-Message-ID: <532931C3.4080909@atmel.com>
-Date: Wed, 19 Mar 2014 13:57:23 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 19 Mar 2014 02:02:46 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: <nicolas.ferre@atmel.com>, Boris BREZILLON <b.brezillon@overkiz.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] ASoC: atmel: document clock properties of the wm8904
- driver
-References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <1395049541-28128-8-git-send-email-voice.shen@atmel.com> <20140317115518.GD11706@sirena.org.uk>
-In-Reply-To: <20140317115518.GD11706@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+In-Reply-To: <CAJe_ZhcM6d0ODTsOsuUwLwWSWE_hyCufmwW8_hxnqPdMQ2ukSg@mail.gmail.com>
+References: <1395168169-28978-1-git-send-email-jaswinder.singh@linaro.org>
+	<1395168335-29119-1-git-send-email-jaswinder.singh@linaro.org>
+	<CAKrE-KcorYUZOpUOaU7qcBbyJ+FHUFZN_r+paMrL7gq+052RwQ@mail.gmail.com>
+	<CAJe_ZhcM6d0ODTsOsuUwLwWSWE_hyCufmwW8_hxnqPdMQ2ukSg@mail.gmail.com>
+Date: Wed, 19 Mar 2014 11:32:44 +0530
+Message-ID: <CAKrE-KcsbOHG=MdVNckLOUK+T_nEcq_Eim97j_48SS7Y00tRVA@mail.gmail.com>
+Subject: Re: [PATCHv4 2/5] mailbox: Introduce framework for mailbox
+From: Girish KS <girishks2000@gmail.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Anna, Suman" <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Craig McGeachie <slapdau@yahoo.com.au>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On 03/17/2014 07:55 PM, Mark Brown wrote:
-> On Mon, Mar 17, 2014 at 05:45:40PM +0800, Bo Shen wrote:
+On Wed, Mar 19, 2014 at 10:50 AM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+> On 19 March 2014 09:30, Girish KS <girishks2000@gmail.com> wrote:
+>> On Wed, Mar 19, 2014 at 12:15 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
 >
->>     - compatible: "atmel,asoc-wm8904"
->>     - atmel,model: The user-visible name of this sound complex.
->> +  - clocks: A list of clocks needed by the wm8904 chip.
->> +  - clock-output-names: Driver related clock names. Shall contain "pck0".
+>>> +int mbox_send_message(struct mbox_chan *chan, void *mssg)
+>>> +{
+>>> +       int t;
+>>> +
+>>> +       if (!chan || !chan->cl)
+>>> +               return -EINVAL;
+>>> +
+>>> +       t = _add_to_rbuf(chan, mssg);
+>>> +       if (t < 0) {
+>>> +               pr_err("Try increasing MBOX_TX_QUEUE_LEN\n");
+>>> +               return t;
+>>> +       }
+>>> +
+>>> +       _msg_submit(chan);
+>>> +
+>>> +       if (chan->txdone_method == TXDONE_BY_POLL)
+>>> +               poll_txdone((unsigned long)chan->con);
+>>
+>> I came across a panic in the complete function. When i traced bact the
+>> call sequence it was
+>> When a client sets chan->cl->tx_block = true, and polling is enabled
+>> for controller.
+>> 1.Client sends the message with  mbox_send_message. This function as
+>> seen above will call __msg_submit (this calls the controller specific
+>> send function).
+>> 2. Since the tx method is polling the above condition is satisfied and
+>> calls the poll_txdone function.
+>> 3. In this poll function, the tx_tick function is invoked.
+>> 4. In this tick function since the client has enabled the tx_block it
+>> calls the notify function complete(&chan->tx_complete);
+>> 5. Here there is a panic. because the complete is called before
+>> initialization. init_completion needs to be called but not called.
+>>
+> Are you sure you have applied the patch "[PATCHv4 4/5] mailbox: Fix TX
+> completion init" ?
+
+I was missing it. I was using your old patch set
+
 >
-> If this is a clock for the CODEC it should be documented as part of the
-> binding for the CODEC and connected to the CODEC in the device tree
-> rather than being part of a machine driver binding.
-
-This is a optional clock for CODEC which depends on hardware design. 
-There are 3 options for this clock, wm8904 as an example.
-1. Using internal FLL, so won't use this clock.
-2. Using external oscillator, no need to retrieve this clock.
-3. Using SoC provide this clock (we use this case).
-
-After considering these 3 options, if we put this into CODEC driver to 
-do it, I think it will be more complicate to do logic judgement. Do you 
-think so?
-
-And, in machine driver, it will depends on the clock option to decide 
-whether to call snd_soc_dai_set_pll and snd_soc_dai_set_sysclk.
-
-And also the <Documentation/soud/alsa/soc/machine.txt> mentions the 
-machine drivers responsibility (one is for clocking) as following:
---->8---
-The ASoC machine (or board) driver is the code that glues together all the
-component drivers (e.g. codecs, platforms and DAIs). It also describes the
-relationships between each componnent which include audio paths, GPIOs,
-interrupts, clocking, jacks and voltage regulators.
----8<---
-
-So, I think put this into machine driver will be better. Do you have any 
-other idea? Or if I misunderstand something, please point it out.
-
-Thanks.
-
-Best Regards,
-Bo Shen
+> Thanks
+> Jassi
