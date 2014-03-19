@@ -1,100 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758819AbaCSDVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 23:21:16 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:62423 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497AbaCSDVP (ORCPT
+	id S1759022AbaCSDcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 23:32:16 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:36404 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497AbaCSDcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 23:21:15 -0400
-Date: Tue, 18 Mar 2014 20:20:15 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Suleiman Souhlal <suleiman@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: performance regression due to commit e82e0561("mm: vmscan: obey
- proportional scanning requirements for kswapd")
-In-Reply-To: <20140318063822.GS29270@yliu-dev.sh.intel.com>
-Message-ID: <alpine.LSU.2.11.1403182012350.975@eggly.anvils>
-References: <20140218080122.GO26593@yliu-dev.sh.intel.com> <20140312165447.GO10663@suse.de> <alpine.LSU.2.11.1403130516050.10128@eggly.anvils> <20140314142103.GV10663@suse.de> <alpine.LSU.2.11.1403152040380.21540@eggly.anvils>
- <20140318063822.GS29270@yliu-dev.sh.intel.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Tue, 18 Mar 2014 23:32:14 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140318002700.GA22356@google.com>
+References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	<20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	<CACVXFVOqBuCcQC6ku0abqstkgJWGe21ZztB-eTsyDwsvDvXNZw@mail.gmail.com>
+	<CAErSpo4ngU60XQCD=DbFJbqNOMkOwwhHB1oau1mmr7rJQQ2+pg@mail.gmail.com>
+	<CACVXFVMz+6DaSgT0EHeVfyBOsXfWDYnZQ0wy7pwcey5ahM6rUA@mail.gmail.com>
+	<20140318002700.GA22356@google.com>
+Date: Wed, 19 Mar 2014 11:32:12 +0800
+Message-ID: <CACVXFVNbzjYa7dJpH+k-F02Cap7yBBi7TkngjVu_KthXw-WKJA@mail.gmail.com>
+Subject: Re: [PATCH 8/9] PCI: Ignore BAR contents when firmware left decoding disabled
+From: Ming Lei <tom.leiming@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014, Yuanhan Liu wrote:
-> On Sat, Mar 15, 2014 at 08:56:10PM -0700, Hugh Dickins wrote:
-> > On Fri, 14 Mar 2014, Mel Gorman wrote:
-> > > 
-> > > You say it's already been tested for months but it would be nice if the
-> > > workload that generated this thread was also tested.
-> > 
-> > Yes indeed: Yuanhan, do you have time to try this patch for your
-> > testcase?  I'm hoping it will prove at least as effective as your
-> > own suggested patch, but please let us know what you find - thanks.
-> 
-> Hi Hugh,
-> 
-> Sure, and sorry to tell you that this patch introduced another half
-> performance descrease from avg 60 MB/s to 30 MB/s in this testcase.
+On Tue, Mar 18, 2014 at 8:27 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Fri, Mar 14, 2014 at 09:48:35AM +0800, Ming Lei wrote:
+>> On Fri, Mar 14, 2014 at 12:08 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> > On Thu, Mar 13, 2014 at 2:51 AM, Ming Lei <tom.leiming@gmail.com> wrote:
+>> >> Hi Bjorn,
+>> >>
+>> >> I found this patch broke virtio-pci devices.
+>> >
+>> > Thanks a lot for testing this.
+>> >
+>> >> On Thu, Feb 27, 2014 at 3:37 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> >>> Don't rely on BAR contents when the command register says the BAR is
+>> >>> disabled.
+>> >>>
+>> >>> If we receive a PCI device from firmware (or a hot-added device that was
+>> >>> just powered up) with the MEMORY or IO enable bits in the PCI command
+>> >>> register cleared, there's no reason to believe the BARs contain valid
+>> >>> addresses.
+>> >>
+>> >> From PCI LOCAL BUS SPECIFICATION, REV. 3.0, both
+>> >> PCI_COMMAND_IO and PCI_COMMAND_MEM should be
+>> >> cleared after reset, so looks the patch sets IORESOURCE_UNSET
+>> >> too early because PCI drivers may call pci_enable_device()
+>> >> (->pci_enable_resources()) to enable the two bits of
+>> >> PCI_COMMAND explicitly.
+>> >
+>> > The point is that it's not safe to enable those two bits unless we're
+>> > certain that the BARs they control contain valid values that don't
+>> > conflict with anything else in the system.
+>> >
+>> > Maybe we should only set IORESOURCE_UNSET when we find a conflict or a
+>> > BAR that's not contained by an upstream bridge window, and we should
+>> > try to reallocate then.  I'm pretty sure we do that at least in some
+>> > cases, but it would probably simplify things if we did it more
+>> > consistently, and maybe we shouldn't set it at all here in
+>> > __pci_read_base().
+>>
+>> I think so because __pci_read_base() is called in device emulation
+>> path.
+>
+> Which path is this?  I don't know anything about virtio-pci, and I only see
+> calls to __pci_read_base() from:
+>
+>   sriov_init()
+>   pci_sriov_resource_alignment()
+>   pci_read_bases()
+>
+>> > But I'd like to understand your situation better, so can you provide
+>> > more details, please?  Complete before/after dmesg logs would go a
+>> > long way toward illustrating the problem you're seeing.
+>>
+>> Please see the two attachment log. The memory allocation failure
+>> is caused by mistaken value read from pci address after the device
+>> is failed to enable.
+>
+> Your logs are harder than necessary to compare because one has a lot more
+> debug turned on than the other.
+>
+> In the failing case, we ignore all the initial BAR values, but we do assign
+> values to all of them later:
+>
+>   pci 0000:00:00.0: can't claim BAR 0 [mem size 0x00000400]: no address assigned
+>   pci 0000:00:00.0: can't claim BAR 1 [io  size 0x0400]: no address assigned
+>   ...
+>   pci 0000:00:00.0: BAR 0: assigned [mem 0x40000000-0x400003ff]
+>   pci 0000:00:00.0: BAR 1: assigned [io  0x1000-0x13ff]
+>   ...
+>
+> The newly-assigned values look valid, and as far as I can tell, they should
+> work.  Do you know why they don't?  Is there an assumption somewhere that
+> we never change BAR values?
 
-Thanks a lot for trying it out.  I had been hoping that everything
-would be wonderful, and I wouldn't have think at all about what's
-going on.  You have made me sad :( but I can't blame your honesty!
+I don't know the cause, maybe it is related with the hypervisor
+implementation.
 
-I'll have to think a little after all, about your test, and Mel's
-pertinent questions: I'll come back to you, nothing to say right now.
+>
+> Even if we don't need to ignore BAR values in as many cases as we do, it
+> should be legal to ignore them and reassign them, so I want to understand
+> what's going on here before reverting this.
+>
+> Is there an easy way I can reproduce the problem on my own box?
 
-Hugh
+It is not quite difficult, you can build a lkvm following the README in
+below link and test -next tree on the small kvm hypervisor:
 
-> 
-> Moreover, the dd throughput for each process was steady before, however,
-> it's quite bumpy from 20 MB/s to 40 MB/s w/ this patch applied, and thus
-> got a avg of 30 MB/s:
-> 
->     11327188992 bytes (11 GB) copied, 300.014 s, 37.8 MB/s
->     1809373+0 records in
->     1809372+0 records out
->     7411187712 bytes (7.4 GB) copied, 300.008 s, 24.7 MB/s
->     3068285+0 records in
->     3068284+0 records out
->     12567691264 bytes (13 GB) copied, 300.001 s, 41.9 MB/s
->     1883877+0 records in
->     1883876+0 records out
->     7716356096 bytes (7.7 GB) copied, 300.002 s, 25.7 MB/s
->     1807674+0 records in
->     1807673+0 records out
->     7404228608 bytes (7.4 GB) copied, 300.024 s, 24.7 MB/s
->     1796473+0 records in
->     1796472+0 records out
->     7358349312 bytes (7.4 GB) copied, 300.008 s, 24.5 MB/s
->     1905655+0 records in
->     1905654+0 records out
->     7805558784 bytes (7.8 GB) copied, 300.016 s, 26.0 MB/s
->     2819168+0 records in
->     2819167+0 records out
->     11547308032 bytes (12 GB) copied, 300.025 s, 38.5 MB/s
->     1848381+0 records in
->     1848380+0 records out
->     7570964480 bytes (7.6 GB) copied, 300.005 s, 25.2 MB/s
->     3023133+0 records in
->     3023132+0 records out
->     12382748672 bytes (12 GB) copied, 300.024 s, 41.3 MB/s
->     1714585+0 records in
->     1714584+0 records out
->     7022936064 bytes (7.0 GB) copied, 300.011 s, 23.4 MB/s
->     1835132+0 records in
->     1835131+0 records out
->     7516696576 bytes (7.5 GB) copied, 299.998 s, 25.1 MB/s
->     1733341+0 records in
->     
-> 
-> 	--yliu
-> 
+     https://github.com/penberg/linux-kvm/blob/master/tools/kvm/README
+
+Thanks,
+-- 
+Ming Lei
