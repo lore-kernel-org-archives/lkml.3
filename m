@@ -1,72 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964844AbaCSLmy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 07:42:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58439 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933768AbaCSLmx (ORCPT
+	id S964872AbaCSLof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 07:44:35 -0400
+Received: from mail-am1hn0249.outbound.protection.outlook.com ([157.56.112.249]:42477
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S964847AbaCSLoc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 07:42:53 -0400
-Date: Wed, 19 Mar 2014 12:42:47 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
-        acme@infradead.org, eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH 4/4] perf/x86/uncore: modularize Intel uncore driver
-Message-ID: <20140319114247.GI27632@laptop.programming.kicks-ass.net>
-References: <1395133004-23205-1-git-send-email-zheng.z.yan@intel.com>
- <1395133004-23205-4-git-send-email-zheng.z.yan@intel.com>
- <20140319084917.GE27632@laptop.programming.kicks-ass.net>
- <20140319113254.GA18351@gmail.com>
+	Wed, 19 Mar 2014 07:44:32 -0400
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140319113254.GA18351@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Do you need a Loan? Contact Santander Finance
+To: Recipients <finance04@finance545.onmicrosoft.com>
+From: Santander Group <finance04@finance545.onmicrosoft.com>
+Date: Wed, 19 Mar 2014 12:14:17 +0100
+Reply-To: <santafinance@aol.com>
+Message-ID: <bb0b1a81-8109-4fbb-8246-ef919ee7f375@AM3PR06MB404.eurprd06.prod.outlook.com>
+X-Originating-IP: [80.30.123.214]
+X-ClientProxiedBy: AMSPR03CA007.eurprd03.prod.outlook.com (10.242.77.145) To
+ AM3PR06MB404.eurprd06.prod.outlook.com (10.242.110.152)
+X-Forefront-PRVS: 01559F388D
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(6009001)(6039001)(428001)(199002)(189002)(93136001)(53416003)(87266001)(47736001)(49866001)(4396001)(50986001)(47976001)(76176001)(80022001)(66066001)(95666003)(74662001)(325944007)(76482001)(17643785005)(92726001)(47446002)(43066001)(223583001)(74502001)(77096001)(56776001)(65816001)(86902001)(81686001)(80976001)(87976001)(81816001)(76576001)(76786001)(51856001)(46102001)(54316002)(76796001)(83322001)(33646001)(19580395003)(19580405001)(85306002)(86372001)(97186001)(86362001)(77982001)(64872006)(74366001)(59766001)(74316001)(89136004)(47776003)(23756003)(94316002)(86442001)(97336001)(79102001)(81342001)(53256004)(85852003)(93516002)(42186004)(54356001)(31696002)(81542001)(86632001)(94946001)(95416001)(56816005)(90146001)(83072002)(50466002)(63696002)(74706001)(74876001)(69226001)(20776003)(558084003)(70512003);DIR:OUT;SFP:1501;SCL:5;SRVR:AM3PR06MB404;H:5715z.local.lan;FPR:A89B08A4.27ED4F8B.54E0DA6A.C5CF00EA.20058;MLV:ovrspm;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: finance545.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 12:32:54PM +0100, Ingo Molnar wrote:
-> 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Tue, Mar 18, 2014 at 04:56:44PM +0800, Yan, Zheng wrote:
-> > > This patch adds support for building Intel uncore driver as module.
-> > > It adds clean-up code and config option for the Intel uncore driver
-> > > 
-> > > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> > > ---
-> > >  arch/x86/Kconfig                              |  7 ++++
-> > >  arch/x86/configs/i386_defconfig               |  1 +
-> > >  arch/x86/configs/x86_64_defconfig             |  1 +
-> > >  arch/x86/kernel/cpu/Makefile                  |  3 +-
-> > >  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 48 ++++++++++++++++++++++++---
-> > >  5 files changed, 55 insertions(+), 5 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> > > index 0af5250..8e4e247 100644
-> > > --- a/arch/x86/Kconfig
-> > > +++ b/arch/x86/Kconfig
-> > > @@ -1103,6 +1103,13 @@ config X86_CPUID
-> > >  	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
-> > >  	  /dev/cpu/31/cpuid.
-> > >  
-> > > +config X86_INTEL_UNCORE
-> > > +	tristate "Intel uncore performance monitoring support"
-> > > +	depends on CPU_SUP_INTEL
-> > > +	---help---
-> > > +	  This adds a driver to access the Uncore performance monitoring Units
-> > > +	  of Intel processors.
-> > > +
-> > 
-> > Ingo do you agree with this config option placement?
-> 
-> Yeah, the modularization looks mostly good to me, but its name should 
-> lie within the PERF namespace, i.e. CONFIG_PERF_PMU_X86_INTEL_UNCORE=y.
-
-Ah; but do you want this config option hidden in the "Processor type and
-features" menu or would they be better in "General setup/Kernel
-Performance Events and Counters" ?
-
-
+We offer all purpose loan at 3% interest rate. Contact Us for more details by Email:santanderfinancegroup@gmail.com
