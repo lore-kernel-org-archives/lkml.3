@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965430AbaCSQtk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:49:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43667 "EHLO
+	id S933926AbaCSQvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:51:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43678 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965238AbaCSQti (ORCPT
+	with ESMTP id S933682AbaCSQvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:49:38 -0400
-Date: Wed, 19 Mar 2014 09:51:38 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: "suresh.gupta@freescale.com" <suresh.gupta@freescale.com>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in platform
- device id
-Message-ID: <20140319165138.GC27142@kroah.com>
-References: <1394719531-27062-1-git-send-email-suresh.gupta@freescale.com>
- <20140313152628.GI4599@saruman.home>
- <71f42b215c58414d8bfa7efb968dadbf@BN1PR03MB251.namprd03.prod.outlook.com>
- <20140315014015.GD31520@saruman.home>
- <bb1e5245113c424abd45e6dad2d0cba4@BN1PR03MB251.namprd03.prod.outlook.com>
+	Wed, 19 Mar 2014 12:51:36 -0400
+Date: Wed, 19 Mar 2014 09:53:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mathieu Maret <mathieu.maret@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org, pe1dnn@amsat.org
+Subject: Re: [PATCH 4/5] staging: wlags49_h2: Correct macro style in
+ wl_netdev.c
+Message-ID: <20140319165340.GA27769@kroah.com>
+References: <1395217235-2979-1-git-send-email-mathieu.maret@gmail.com>
+ <1395217235-2979-4-git-send-email-mathieu.maret@gmail.com>
+ <20140319153637.GA19407@kroah.com>
+ <CA+6LquBzTYau34Xrq7j6OitZ0kFw7gvYepdTYJ9697r9XZNcSw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <bb1e5245113c424abd45e6dad2d0cba4@BN1PR03MB251.namprd03.prod.outlook.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+6LquBzTYau34Xrq7j6OitZ0kFw7gvYepdTYJ9697r9XZNcSw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 02:25:25PM +0000, suresh.gupta@freescale.com wrote:
-> Hi
+On Wed, Mar 19, 2014 at 05:42:43PM +0100, Mathieu Maret wrote:
 > 
-> > -----Original Message-----
-> > From: Felipe Balbi [mailto:balbi@ti.com]
-> > Sent: Saturday, March 15, 2014 7:10 AM
-> > To: Gupta Suresh-B42813
-> > Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
-> > linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in
-> > platform device id
-> > 
-> > On Fri, Mar 14, 2014 at 08:52:19PM +0000, suresh.gupta@freescale.com
-> > wrote:
-> > > Hi,
-> > > Thanks for reviewing my patches.
-> > > Please find my comments inline
+> Le 19 mars 2014 16:34, "Greg KH" <gregkh@linuxfoundation.org> a écrit :
+> >
+> > On Wed, Mar 19, 2014 at 09:20:34AM +0100, Mathieu Maret wrote:
+> > > Multi statement macro should use do{}while(0)
 > > >
-> > > -----Original Message-----
-> > > From: Felipe Balbi [mailto:balbi@ti.com]
-> > > Sent: Thursday, March 13, 2014 8:56 PM
-> > > To: Gupta Suresh-B42813
-> > > Cc: balbi@ti.com; gregkh@linuxfoundation.org;
-> > > linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Gupta
-> > > Suresh-B42813
-> > > Subject: Re: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in
-> > > platform device id
+> > > Signed-off-by: Mathieu Maret <mathieu.maret@gmail.com>
+> > > ---
+> > >  drivers/staging/wlags49_h2/wl_netdev.c | 8 +++++---
+> > >  1 file changed, 5 insertions(+), 3 deletions(-)
 > > >
-> > > On Thu, Mar 13, 2014 at 07:35:31PM +0530, Suresh Gupta wrote:
-> > > > From: Suresh Gupta <B42813@freescale.com>
-> > > >
-> > > > 	Add FSL USB Gadget entry in platform device id table
+> > > diff --git a/drivers/staging/wlags49_h2/wl_netdev.c b/drivers/staging/
+> wlags49_h2/wl_netdev.c
+> > > index 255d291..6455956 100644
+> > > --- a/drivers/staging/wlags49_h2/wl_netdev.c
+> > > +++ b/drivers/staging/wlags49_h2/wl_netdev.c
+> > > @@ -107,9 +107,11 @@
+> > >   * macros
+> > >  
+> ******************************************************************************/
+> > >  #define BLOCK_INPUT(buf, len) \
+> > > -    desc->buf_addr = buf; \
+> > > -    desc->BUF_SIZE = len; \
+> > > -    status = hcf_rcv_msg(&(lp->hcfCtx), desc, 0)
+> > > +     do { \
+> > > +             desc->buf_addr = buf; \
+> > > +             desc->BUF_SIZE = len; \
+> > > +             status = hcf_rcv_msg(&(lp->hcfCtx), desc, 0) \
+> A ";" is missing here
+> > > +     } while (0)
 > > >
-> > > why this tab ?
-> > > [SuresH] I will remove it in next version.
+> > >  #define BLOCK_INPUT_DMA(buf, len) memcpy( buf, desc_next->buf_addr, pktlen
+> )
 > > >
-> > > > Signed-off-by: Suresh Gupta <B42813@freescale.com>
-> > > > ---
-> > > >  drivers/usb/gadget/fsl_udc_core.c | 2 ++
-> > > >  1 file changed, 2 insertions(+)
-> > > >
-> > > > diff --git a/drivers/usb/gadget/fsl_udc_core.c
-> > > > b/drivers/usb/gadget/fsl_udc_core.c
-> > > > index b7dea4e..35b20e6 100644
-> > > > --- a/drivers/usb/gadget/fsl_udc_core.c
-> > > > +++ b/drivers/usb/gadget/fsl_udc_core.c
-> > > > @@ -2654,6 +2654,8 @@ static const struct platform_device_id
-> > fsl_udc_devtype[] = {
-> > > >  	}, {
-> > > >  		.name = "imx-udc-mx51",
-> > > >  	}, {
-> > > > +		.name = "fsl-usb2-udc",
-> > >
-> > > why aren't you just using chipidea ?
-> > > [SuresH] This is our legacy driver for all previous and existing ppc
-> > > socs. Many of our customers are already using this, and we need to
-> > > support them on this driver. We do have plans to shift to chipidea,
-> > > but after some time.
-> > 
-> > cool, you already have plans, so we will see a new glue layer for v3.16
-> > right ? Which means I don't need to take this patch either.
-> > 
-> we do have plans, but in remote future. Right now, we need to support
-> customers on the present legacy driver. We'll phase out this driver 
-> slowly when we integrate chipidea. At this time I would request you 
-> to please accept this patch
+> >
+> > You didn't test-build the code after making this change, as this patch
+> > breaks the build into lots of tiny pieces :(
+> >
+> > Please ALWAYS test your patches.
+> >
+> > I've applied the first 3 patches, please fix this one up (if it's even
+> > possible, hint, I don't think it is...) and resend the remaining
+> > patches.
+> >
+> > thanks,
+> >
+> > greg k-h
+> Hi,
+> 
+> Very sorry for that. I've mess something in my config file and this file is not
+> compiled ...  So newbie ...
+> 
+> Anyway, it's still very strange, because this macro is not used.
+> The error may come from the fact that the last line miss a ";"
 
-Even if Felipe takes the patch, I'll reject it as you should be doing
-the correct thing here, and if it's accepted, it will never be
-changed...
+If the macro isn't used, just delete it then :)
+
+> When fixed I should repost with "patch V2" in the subject?
+
+Please do so.
+
+thanks,
 
 greg k-h
