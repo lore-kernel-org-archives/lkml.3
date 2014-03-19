@@ -1,81 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758800AbaCSBGI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 21:06:08 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:59027 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758366AbaCSBGF (ORCPT
+	id S1758736AbaCSBJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 21:09:38 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:41593 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758552AbaCSBJf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 21:06:05 -0400
+	Tue, 18 Mar 2014 21:09:35 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAAYSxhri0evgrbCPew6-MTXVmpzm7Oa6TpmJTSGZpTcV=876HQ@mail.gmail.com>
-References: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
-	<1394655346-30048-3-git-send-email-tim.kryger@linaro.org>
-	<20140318215231.GH5917@mithrandir>
-	<CAAYSxhri0evgrbCPew6-MTXVmpzm7Oa6TpmJTSGZpTcV=876HQ@mail.gmail.com>
-Date: Tue, 18 Mar 2014 18:06:03 -0700
-Message-ID: <CAAYSxhpW-N7UdpsGE7JHvOJxQcvURRPdAOhiVkK=4EHc7E03gQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/5] pwm: kona: Introduce Kona PWM controller support
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux PWM List <linux-pwm@vger.kernel.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux Doc List <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "Sangbeom Kim" <sbkim73@samsung.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Lee Jones" <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1395047958-17953-2-git-send-email-k.kozlowski@samsung.com>
+Cc: "Tushar Behera" <tushar.behera@linaro.org>,
+        "Yadwinder Singh Brar" <yadi.brar@samsung.com>,
+        "Sachin Kamat" <sachin.kamat@linaro.org>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>,
+        "Tomasz Figa" <t.figa@samsung.com>,
+        "Krzysztof Kozlowski" <k.kozlowski@samsung.com>
+References: <1395047958-17953-1-git-send-email-k.kozlowski@samsung.com>
+ <1395047958-17953-2-git-send-email-k.kozlowski@samsung.com>
+Message-ID: <20140319010929.30995.16105@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v3 1/3] clk: s2mps11: Add support for S2MPS14 clocks
+Date: Tue, 18 Mar 2014 18:09:29 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 4:47 PM, Tim Kryger <tim.kryger@linaro.org> wrote:
-> On Tue, Mar 18, 2014 at 2:52 PM, Thierry Reding
-> <thierry.reding@gmail.com> wrote:
->> On Wed, Mar 12, 2014 at 01:15:43PM -0700, Tim Kryger wrote:
+Quoting Krzysztof Kozlowski (2014-03-17 02:19:16)
+> This patch adds support for S2MPS14 PMIC clocks (BT and AP) to the
+> s2mps11 clock driver.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
->>> +
->>> +     /* There is polarity support in HW but it is easier to manage in SW */
->>> +     if (pwm->polarity == PWM_POLARITY_INVERSED)
->>> +             duty_ns = period_ns - duty_ns;
->>
->> No, this is wrong. You're not actually changing the *polarity* here.
->
-> Please elaborate.  I don't understand what is wrong here.
->
-> Does polarity influence the output while a PWM is disabled?
->
+Taken into clk-next.
 
->>> +static int kona_pwmc_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
->>> +                               enum pwm_polarity polarity)
->>> +{
->>> +     /*
->>> +      * The framework only allows the polarity to be changed when a PWM is
->>> +      * disabled so no immediate action is required here.  When a channel is
->>> +      * enabled, the polarity gets handled as part of the re-config step.
->>> +      */
->>> +
->>> +     return 0;
->>> +}
->>
->> See above. If you don't want to implement the hardware support for
->> inversed polarity, then simply don't implement this.
->
-> I had originally planned to omit polarity support but because it
-> affects the binding (which is treated as ABI), it wouldn't be possible
-> to add it in later without defining a new compatible string.
+Regards,
+Mike
 
-I would like to get this right but it occurred to me that there may be
-a way to defer the implementation of this feature without disrupting
-the binding.
-
-Would it be acceptable to continue using #pwm-cells = <3> and
-of_pwm_xlate_with_flags but return -EINVAL from kona_pwmc_set_polarity
-if PWM_POLARITY_INVERSED is specified?
+> ---
+>  drivers/clk/Kconfig       |    8 +++---
+>  drivers/clk/clk-s2mps11.c |   61 ++++++++++++++++++++++++++++++++++-----------
+>  2 files changed, 50 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 6f56d3a4f010..8f9ce8ba036d 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -65,12 +65,12 @@ config COMMON_CLK_SI570
+>           clock generators.
+>  
+>  config COMMON_CLK_S2MPS11
+> -       tristate "Clock driver for S2MPS11/S5M8767 MFD"
+> +       tristate "Clock driver for S2MPS1X/S5M8767 MFD"
+>         depends on MFD_SEC_CORE
+>         ---help---
+> -         This driver supports S2MPS11/S5M8767 crystal oscillator clock. These
+> -         multi-function devices have 3 fixed-rate oscillators, clocked at
+> -         32KHz each.
+> +         This driver supports S2MPS11/S2MPS14/S5M8767 crystal oscillator
+> +         clock. These multi-function devices have two (S2MPS14) or three
+> +         (S2MPS11, S5M8767) fixed-rate oscillators, clocked at 32KHz each.
+>  
+>  config CLK_TWL6040
+>         tristate "External McPDM functional clock from twl6040"
+> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+> index 508875535e1e..8dafb552274f 100644
+> --- a/drivers/clk/clk-s2mps11.c
+> +++ b/drivers/clk/clk-s2mps11.c
+> @@ -1,7 +1,7 @@
+>  /*
+>   * clk-s2mps11.c - Clock driver for S2MPS11.
+>   *
+> - * Copyright (C) 2013 Samsung Electornics
+> + * Copyright (C) 2013,2014 Samsung Electornics
+>   *
+>   * This program is free software; you can redistribute  it and/or modify it
+>   * under  the terms of  the GNU General  Public License as published by the
+> @@ -13,10 +13,6 @@
+>   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>   * GNU General Public License for more details.
+>   *
+> - * You should have received a copy of the GNU General Public License
+> - * along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> - *
+>   */
+>  
+>  #include <linux/module.h>
+> @@ -27,6 +23,7 @@
+>  #include <linux/clk-provider.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/mfd/samsung/s2mps11.h>
+> +#include <linux/mfd/samsung/s2mps14.h>
+>  #include <linux/mfd/samsung/s5m8767.h>
+>  #include <linux/mfd/samsung/core.h>
+>  
+> @@ -125,7 +122,21 @@ static struct clk_init_data s2mps11_clks_init[S2MPS11_CLKS_NUM] = {
+>         },
+>  };
+>  
+> -static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev)
+> +static struct clk_init_data s2mps14_clks_init[S2MPS11_CLKS_NUM] = {
+> +       [S2MPS11_CLK_AP] = {
+> +               .name = "s2mps14_ap",
+> +               .ops = &s2mps11_clk_ops,
+> +               .flags = CLK_IS_ROOT,
+> +       },
+> +       [S2MPS11_CLK_BT] = {
+> +               .name = "s2mps14_bt",
+> +               .ops = &s2mps11_clk_ops,
+> +               .flags = CLK_IS_ROOT,
+> +       },
+> +};
+> +
+> +static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev,
+> +               struct clk_init_data *clks_init)
+>  {
+>         struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+>         struct device_node *clk_np;
+> @@ -145,9 +156,12 @@ static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev)
+>         if (!clk_table)
+>                 return ERR_PTR(-ENOMEM);
+>  
+> -       for (i = 0; i < S2MPS11_CLKS_NUM; i++)
+> +       for (i = 0; i < S2MPS11_CLKS_NUM; i++) {
+> +               if (!clks_init[i].name)
+> +                       continue; /* Skip clocks not present in some devices */
+>                 of_property_read_string_index(clk_np, "clock-output-names", i,
+> -                               &s2mps11_clks_init[i].name);
+> +                               &clks_init[i].name);
+> +       }
+>  
+>         return clk_np;
+>  }
+> @@ -158,6 +172,7 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>         struct s2mps11_clk *s2mps11_clks, *s2mps11_clk;
+>         struct device_node *clk_np = NULL;
+>         unsigned int s2mps11_reg;
+> +       struct clk_init_data *clks_init;
+>         int i, ret = 0;
+>         u32 val;
+>  
+> @@ -168,25 +183,33 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>  
+>         s2mps11_clk = s2mps11_clks;
+>  
+> -       clk_np = s2mps11_clk_parse_dt(pdev);
+> -       if (IS_ERR(clk_np))
+> -               return PTR_ERR(clk_np);
+> -
+>         switch (platform_get_device_id(pdev)->driver_data) {
+>         case S2MPS11X:
+>                 s2mps11_reg = S2MPS11_REG_RTC_CTRL;
+> +               clks_init = s2mps11_clks_init;
+> +               break;
+> +       case S2MPS14X:
+> +               s2mps11_reg = S2MPS14_REG_RTCCTRL;
+> +               clks_init = s2mps14_clks_init;
+>                 break;
+>         case S5M8767X:
+>                 s2mps11_reg = S5M8767_REG_CTRL1;
+> +               clks_init = s2mps11_clks_init;
+>                 break;
+>         default:
+>                 dev_err(&pdev->dev, "Invalid device type\n");
+>                 return -EINVAL;
+>         };
+>  
+> +       clk_np = s2mps11_clk_parse_dt(pdev, clks_init);
+> +       if (IS_ERR(clk_np))
+> +               return PTR_ERR(clk_np);
+> +
+>         for (i = 0; i < S2MPS11_CLKS_NUM; i++, s2mps11_clk++) {
+> +               if (!clks_init[i].name)
+> +                       continue; /* Skip clocks not present in some devices */
+>                 s2mps11_clk->iodev = iodev;
+> -               s2mps11_clk->hw.init = &s2mps11_clks_init[i];
+> +               s2mps11_clk->hw.init = &clks_init[i];
+>                 s2mps11_clk->mask = 1 << i;
+>                 s2mps11_clk->reg = s2mps11_reg;
+>  
+> @@ -220,8 +243,12 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>         }
+>  
+>         if (clk_table) {
+> -               for (i = 0; i < S2MPS11_CLKS_NUM; i++)
+> +               for (i = 0; i < S2MPS11_CLKS_NUM; i++) {
+> +                       /* Skip clocks not present on S2MPS14 */
+> +                       if (!clks_init[i].name)
+> +                               continue;
+>                         clk_table[i] = s2mps11_clks[i].clk;
+> +               }
+>  
+>                 clk_data.clks = clk_table;
+>                 clk_data.clk_num = S2MPS11_CLKS_NUM;
+> @@ -250,14 +277,18 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
+>         struct s2mps11_clk *s2mps11_clks = platform_get_drvdata(pdev);
+>         int i;
+>  
+> -       for (i = 0; i < S2MPS11_CLKS_NUM; i++)
+> +       for (i = 0; i < S2MPS11_CLKS_NUM; i++) {
+> +               if (!s2mps11_clks[i].lookup)
+> +                       continue; /* Skip clocks not present in some devices */
+>                 clkdev_drop(s2mps11_clks[i].lookup);
+> +       }
+>  
+>         return 0;
+>  }
+>  
+>  static const struct platform_device_id s2mps11_clk_id[] = {
+>         { "s2mps11-clk", S2MPS11X},
+> +       { "s2mps14-clk", S2MPS14X},
+>         { "s5m8767-clk", S5M8767X},
+>         { },
+>  };
+> -- 
+> 1.7.9.5
+> 
