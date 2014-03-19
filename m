@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965517AbaCSP2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 11:28:38 -0400
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:42976 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965001AbaCSP2h (ORCPT
+	id S965530AbaCSPcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 11:32:10 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:47262 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965001AbaCSPcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 11:28:37 -0400
-Date: Wed, 19 Mar 2014 16:28:32 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Nicolas Pitre <nico@fluxnic.net>, linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: mvsdio: unhandled interrupt, mmc writes queuing up
-Message-ID: <20140319162832.1f5caae0@neptune.home>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 19 Mar 2014 11:32:07 -0400
+Message-ID: <5329B873.7070100@intel.com>
+Date: Wed, 19 Mar 2014 08:32:03 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: dirk.j.brandewie@intel.com,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Patrick Marlier <patrick.marlier@gmail.com>
+Subject: Re: [PATCH v2 2/2] intel_pstate: Set core to min P state during core
+ offline
+References: <16035918.jZXKnQ3yiq@vostro.rjw.lan>	<1394831037-15553-1-git-send-email-dirk.j.brandewie@intel.com>	<1394831037-15553-3-git-send-email-dirk.j.brandewie@intel.com>	<CAOh2x=kFC5cwdYVgFCwNgqZAwWaE-CFQoyYizBuv1W6MOnQ9DA@mail.gmail.com>	<53285FDB.40102@gmail.com>	<532895DF.2090100@linux.vnet.ibm.com>	<5328A21C.3010909@intel.com> <CAKohpomM5s0v+442Pyg2HFguJs3tXKTNWFnHCfJmRJpTPvY=3A@mail.gmail.com>
+In-Reply-To: <CAKohpomM5s0v+442Pyg2HFguJs3tXKTNWFnHCfJmRJpTPvY=3A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/18/2014 10:20 PM, Viresh Kumar wrote:
+> On 19 March 2014 01:14, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
+>> There was no problem per se.  In stop() all I really needed to do is stop
+>> the
+>> timer and set the P state to MIN.
+>>
+>> At init time I need to allocate memory and start timer.  If stopping the
+>> timer
+>> and deallocating memory are separated then I need code in init() to detect
+>> this case.
+>
+> Sorry, I didn't understood what exactly is special here :(
+>
+> If we return failure from CPU_POST_DEAD for some reason without
+> calling exit() then you will have memory leak in your init() as we are
+> allocating memory without checking if we already have that (nothing wrong
+> in it though as other parts of kernel should handle things properly here).
 
-Since upgrading my Sheevaplug from 3.7.2 to 3.13.6 (FDT) I'm seeing
-  mvsdio f1090000.mvsdio: unhandled interrupt status=0x8810 en=0x0000 pio=0
-at varied timings.
+No.  If you got the CPU_POST_DEAD callback CPU_DOWN_PREPARE has already
+succeeded.  init() is called on the CPU_ONLINE and CPU_DOWN_FAILED path.
+
+The issue is there is a two part teardown that can fail and the teardown
+fail will be followed by a call to init().
+
+If the timer is not running (stopped in stop()) then there is no reason to
+have the memory around. If CPU_DOWN_PREPARE happens followed by CPU_DOWN_FAILED
+then intel_pstate is ready for init() to be called with no special case
+code.  This maintains the semantics the core expects.
 
 
-In addition to that, kernel seems excessively busy doing writeback via
-workqueue (without success?):
-[14909.275124] kworker/u2:2    R running      0  2001      2 0x00000000
-[14909.275137] Workqueue: writeback bdi_writeback_workfn (flush-179:0)
-[14909.275157] [<c0351df8>] (__schedule+0x180/0x38c) from [<c0034a24>] (__cond_resched+0x24/0x34)
-[14909.275172] [<c0034a24>] (__cond_resched+0x24/0x34) from [<c0034a70>] (__cond_resched_lock+0x3c/0x44)
-[14909.275187] [<c0034a70>] (__cond_resched_lock+0x3c/0x44) from [<c00b8a2c>] (writeback_sb_inodes+0x2b0/0x348)
-[14909.275201] [<c00b8a2c>] (writeback_sb_inodes+0x2b0/0x348) from [<c00b8b34>] (__writeback_inodes_wb+0x70/0xac)
-[14909.275214] [<c00b8b34>] (__writeback_inodes_wb+0x70/0xac) from [<c00b8cf0>] (wb_writeback+0x180/0x190)
-[14909.275228] [<c00b8cf0>] (wb_writeback+0x180/0x190) from [<c00b91c0>] (bdi_writeback_workfn+0x144/0x324)
-[14909.275243] [<c00b91c0>] (bdi_writeback_workfn+0x144/0x324) from [<c00286b8>] (process_one_work+0x104/0x358)
-[14909.275258] [<c00286b8>] (process_one_work+0x104/0x358) from [<c0028ce8>] (worker_thread+0x134/0x38c)
-[14909.275273] [<c0028ce8>] (worker_thread+0x134/0x38c) from [<c002dec4>] (kthread+0xb0/0xcc)
-[14909.275287] [<c002dec4>] (kthread+0xb0/0xcc) from [<c0009490>] (ret_from_fork+0x14/0x24)
-(eating about 50% CPU time with variations between 10% and 90%)
+>
+> Probably the situation would be exactly same if we divide the exit path into
+> stop and exit routines, which I still feel is the right way forward. Because
+> ideally cpufreq shouldn't call init() if it hasn't called exit() (If
+> it is doing that
+> right now then its wrong and can be fixed). And so you must do the cleanup
+> in exit()..
+>
 
-Dirty pages accumulate and calls to `sync` do not write those back
-to storage.
+The core *is* doing this on the CPU_DOWN_FAILED path ATM.
 
+On the CPU_DOWN_FAILED path the core should be undoing the work it did in the
+CPU_DOWN_PREPARE path this would require another callback to drivers to let
+them "restart" after a call to stop() as well.
 
-Any idea what it could be and how to fix it?
+I don't think it is worth that level of effort IMHO.
 
-I get same results with 3.14-rc7.
-
-Bruno
+--Dirk
