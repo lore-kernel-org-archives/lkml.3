@@ -1,115 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934282AbaCSOT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 10:19:58 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:39019 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933380AbaCSOTz (ORCPT
+	id S965206AbaCSOUX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 10:20:23 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:40181 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933380AbaCSOUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 10:19:55 -0400
-Date: Wed, 19 Mar 2014 15:19:24 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Jingoo Han <jg1.han@samsung.com>, linux-leds@vger.kernel.org,
-        linux-pwm@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 10/16] avr32: MRMT: use generic leds_pwm driver
-Message-ID: <20140319141924.GB20872@samfundet.no>
-References: <1395234209-15546-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1395234209-15546-11-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 19 Mar 2014 10:20:21 -0400
+Message-ID: <5329A7A1.20606@gmail.com>
+Date: Wed, 19 Mar 2014 09:20:17 -0500
+From: Dinh Nguyen <dinh.linux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395234209-15546-11-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Dinh Nguyen <dinguyen@altera.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>, arm@kernel.org,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: stmmac-socfpga breakage in arm-soc
+References: <201403191333.01095.arnd@arndb.de> <53299CA8.607@gmail.com> <4337501.shzGE38xmF@wuerfel>
+In-Reply-To: <4337501.shzGE38xmF@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Wed 19 Mar 2014 14:03:23 +0100 or thereabout, Alexandre Belloni wrote:
-> Switch to the generic leds_pwm driver instead of leds-atmel-pwm.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-I do not have this add-on board either, so I can only provide compile tests
-myself.
+On 03/19/2014 09:05 AM, Arnd Bergmann wrote:
+> On Wednesday 19 March 2014 08:33:28 Dinh Nguyen wrote:
+>> On 03/19/2014 07:33 AM, Arnd Bergmann wrote:
+>>>
+>>> * Replaced the parent/child DT nodes with a combined node
+>>> * Renamed the device node from 'ethernet0' to 'ethernet'
+>>>     as the standard name.
+>>> * Removed interrupt-names and clock-names properties that
+>>>     are not documented in the binding and not used.
+>>> * Added a new DWMAC_SOCFPGA Kconfig symbol to control
+>>>     compilation of this driver
+>>
+>> The v1 of this patch had this had this Kconfig symbol and is
+>> similar to your proposed fix.
+>>
+>> http://marc.info/?l=linux-netdev&m=139167062725242&w=2
+>
+> I don't understand. So you got parts of it right at first, but then
+> changed it in a different way from what Peppe asked you to do?
+>
 
-> ---
->  arch/avr32/boards/atngw100/mrmt.c | 35 +++++++++++++++++++++++------------
->  1 file changed, 23 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/avr32/boards/atngw100/mrmt.c b/arch/avr32/boards/atngw100/mrmt.c
-> index 1ba09e4c02b1..134e94c3d504 100644
-> --- a/arch/avr32/boards/atngw100/mrmt.c
-> +++ b/arch/avr32/boards/atngw100/mrmt.c
-> @@ -17,6 +17,8 @@
->  #include <linux/types.h>
->  #include <linux/fb.h>
->  #include <linux/leds.h>
-> +#include <linux/pwm.h>
-> +#include <linux/leds_pwm.h>
->  #include <linux/input.h>
->  #include <linux/gpio_keys.h>
->  #include <linux/atmel_serial.h>
-> @@ -155,21 +157,29 @@ static struct platform_device rmt_ts_device = {
->  
->  #ifdef CONFIG_BOARD_MRMT_BL_PWM
->  /* PWM LEDs: LCD Backlight, etc */
-> -static struct gpio_led rmt_pwm_led[] = {
-> -	/* here the "gpio" is actually a PWM channel */
-> -	{ .name = "backlight",	.gpio = PWM_CH_BL, },
-> +static struct pwm_lookup pwm_lookup[] = {
-> +	PWM_LOOKUP("at91sam9rl-pwm", PWM_CH_BL, "leds_pwm", "ds1"),
->  };
->  
-> -static struct gpio_led_platform_data rmt_pwm_led_data = {
-> -	.num_leds	= ARRAY_SIZE(rmt_pwm_led),
-> -	.leds		= rmt_pwm_led,
-> +static struct led_pwm pwm_leds[] = {
-> +	{
-> +		.name = "backlight",
-> +		.max_brightness = 255,
-> +		.pwm_period_ns  = 5000,
-> +		.active_low = 1,
-> +	},
-> +};
-> +
-> +static struct led_pwm_platform_data pwm_data = {
-> +	.num_leds       = ARRAY_SIZE(pwm_leds),
-> +	.leds           = pwm_leds,
->  };
->  
-> -static struct platform_device rmt_pwm_led_dev = {
-> -	.name		= "leds-atmel-pwm",
-> -	.id		= -1,
-> -	.dev		= {
-> -		.platform_data	= &rmt_pwm_led_data,
-> +static struct platform_device leds_pwm = {
-> +	.name   = "leds_pwm",
-> +	.id     = -1,
-> +	.dev    = {
-> +		.platform_data = &pwm_data,
->  	},
->  };
->  #endif
-> @@ -325,7 +335,8 @@ static int __init mrmt1_init(void)
->  #ifdef CONFIG_BOARD_MRMT_BL_PWM
->  	/* Use PWM for Backlight controls */
->  	at32_add_device_pwm(1 << PWM_CH_BL);
-> -	platform_device_register(&rmt_pwm_led_dev);
-> +	pwm_add_table(pwm_lookup, ARRAY_SIZE(pwm_lookup));
-> +	platform_device_register(&leds_pwm);
->  #else
->  	/* Backlight always on */
->  	udelay( 1 );
--- 
-mvh
-Hans-Christian Egtvedt
+Peppe asked me to remove DWMAC_SOCFPGA Koption and take the dwmac-sti.c
+file as an example, which I did. The original patch for dwmac-sti.c had 
+just a CONFIG_ARCH_STI Kconfig option and not CONFIG_DWMAC_STI.
+
+http://marc.info/?l=linux-netdev&m=138426461307138&w=2
+
+I'm sorry I did not follow the later versions of dwmac-sti.c.
+
+>>> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>>> index 8fb32a8..46aef510 100644
+>>> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>>> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>>> @@ -38,6 +38,9 @@ static const struct of_device_id stmmac_dt_ids[] = {
+>>>    	{ .compatible = "st,stih416-dwmac", .data = &sti_gmac_data},
+>>>    	{ .compatible = "st,stid127-dwmac", .data = &sti_gmac_data},
+>>>    #endif
+>>> +#ifdef CONFIG_DWMAC_SOCFPGA
+>>> +	{ .compatible = "altr,socfpga-stmmac", .data = &socfpga_gmac_data },
+>>> +#endif
+>>>    	/* SoC specific glue layers should come before generic bindings */
+>>>    	{ .compatible = "st,spear600-gmac"},
+>>>    	{ .compatible = "snps,dwmac-3.610"},
+>>
+>>
+>> If it's okay with you Arnd, can I take this patch and add on top of it
+>> as it is also breaking dtb builds:
+>>
+>> Error: arch/arm/boot/dts/socfpga_arria5_socdk.dts:51.2-3 label or path,
+>> 'ethernet1', not found
+>> FATAL ERROR: Syntax error parsing input tree
+>> Error: arch/arm/boot/dts/socfpga_cyclone5_socdk.dts:44.2-3 label or
+>> path, 'ethernet1', not found
+>> FATAL ERROR: Syntax error parsing input tree
+>> make[1]: *** [arch/arm/boot/dts/socfpga_arria5_socdk.dtb] Error 1
+>> make[1]: *** Waiting for unfinished jobs....
+>> make[1]: *** [arch/arm/boot/dts/socfpga_cyclone5_socdk.dtb] Error 1
+>> Error: arch/arm/boot/dts/socfpga_cyclone5_sockit.dts:44.2-3 label or
+>> path, 'ethernet1', not found
+>> FATAL ERROR: Syntax error parsing input tree
+>> make[1]: *** [arch/arm/boot/dts/socfpga_cyclone5_sockit.dtb] Error 1
+>> Error: arch/arm/boot/dts/socfpga_vt.dts:92.2-3 label or path,
+>> 'ethernet0', not found
+>
+> I have found the same problems and fixed it up locally already with
+> the additional change below.
+>
+
+Thanks,
+Dinh
+
+> 	Arnd
+>
+>
+> diff --git a/arch/arm/boot/dts/socfpga_arria5_socdk.dts b/arch/arm/boot/dts/socfpga_arria5_socdk.dts
+> index 2d6b38b..a87ee1c 100644
+> --- a/arch/arm/boot/dts/socfpga_arria5_socdk.dts
+> +++ b/arch/arm/boot/dts/socfpga_arria5_socdk.dts
+> @@ -46,11 +46,8 @@
+>   	};
+>   };
+>
+> -&ethernet1 {
+> -	status = "okay";
+> -};
+> -
+>   &gmac1 {
+> +	status = "okay";
+>   	phy-mode = "rgmii";
+>
+>   	rxd0-skew-ps = <0>;
+> diff --git a/arch/arm/boot/dts/socfpga_cyclone5_socdk.dts b/arch/arm/boot/dts/socfpga_cyclone5_socdk.dts
+> index 26c63a0..ae16d97 100644
+> --- a/arch/arm/boot/dts/socfpga_cyclone5_socdk.dts
+> +++ b/arch/arm/boot/dts/socfpga_cyclone5_socdk.dts
+> @@ -39,11 +39,8 @@
+>   	};
+>   };
+>
+> -&ethernet1 {
+> -	status = "okay";
+> -};
+> -
+>   &gmac1 {
+> +	status = "okay";
+>   	phy-mode = "rgmii";
+>
+>   	rxd0-skew-ps = <0>;
+> diff --git a/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts b/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
+> index 469bb5c..b79e2a2 100644
+> --- a/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
+> +++ b/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
+> @@ -39,11 +39,8 @@
+>   	};
+>   };
+>
+> -&ethernet1 {
+> -	status = "okay";
+> -};
+> -
+>   &gmac1 {
+> +	status = "okay";
+>   	phy-mode = "rgmii";
+>
+>   	rxd0-skew-ps = <0>;
+> diff --git a/arch/arm/boot/dts/socfpga_vt.dts b/arch/arm/boot/dts/socfpga_vt.dts
+> index 91f6ccf..0f33f2f 100644
+> --- a/arch/arm/boot/dts/socfpga_vt.dts
+> +++ b/arch/arm/boot/dts/socfpga_vt.dts
+> @@ -87,10 +87,7 @@
+>   	};
+>   };
+>
+> -&ethernet0 {
+> -        status = "okay";
+> -};
+> -
+>   &gmac0 {
+> +        status = "okay";
+>   	phy-mode = "gmii";
+>   };
+>
