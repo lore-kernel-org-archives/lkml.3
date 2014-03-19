@@ -1,231 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758736AbaCSBJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 21:09:38 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:41593 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758552AbaCSBJf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 21:09:35 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        "Sangbeom Kim" <sbkim73@samsung.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Lee Jones" <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1395047958-17953-2-git-send-email-k.kozlowski@samsung.com>
-Cc: "Tushar Behera" <tushar.behera@linaro.org>,
-        "Yadwinder Singh Brar" <yadi.brar@samsung.com>,
-        "Sachin Kamat" <sachin.kamat@linaro.org>,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>,
-        "Tomasz Figa" <t.figa@samsung.com>,
-        "Krzysztof Kozlowski" <k.kozlowski@samsung.com>
-References: <1395047958-17953-1-git-send-email-k.kozlowski@samsung.com>
- <1395047958-17953-2-git-send-email-k.kozlowski@samsung.com>
-Message-ID: <20140319010929.30995.16105@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v3 1/3] clk: s2mps11: Add support for S2MPS14 clocks
-Date: Tue, 18 Mar 2014 18:09:29 -0700
+	id S1758805AbaCSBKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 21:10:09 -0400
+Received: from ozlabs.org ([203.10.76.45]:55365 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758552AbaCSBKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 21:10:06 -0400
+Date: Wed, 19 Mar 2014 12:10:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolin Chen <Guangyu.Chen@freescale.com>,
+        "Jean-Francois Moine" <moinejf@free.fr>
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20140319121000.ccea7c0440649976ae722abd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__19_Mar_2014_12_10_00_+1100_pmTAvu+dtHT+U2AM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Krzysztof Kozlowski (2014-03-17 02:19:16)
-> This patch adds support for S2MPS14 PMIC clocks (BT and AP) to the
-> s2mps11 clock driver.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+--Signature=_Wed__19_Mar_2014_12_10_00_+1100_pmTAvu+dtHT+U2AM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Taken into clk-next.
+Hi all,
 
-Regards,
-Mike
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-> ---
->  drivers/clk/Kconfig       |    8 +++---
->  drivers/clk/clk-s2mps11.c |   61 ++++++++++++++++++++++++++++++++++-----------
->  2 files changed, 50 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 6f56d3a4f010..8f9ce8ba036d 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -65,12 +65,12 @@ config COMMON_CLK_SI570
->           clock generators.
->  
->  config COMMON_CLK_S2MPS11
-> -       tristate "Clock driver for S2MPS11/S5M8767 MFD"
-> +       tristate "Clock driver for S2MPS1X/S5M8767 MFD"
->         depends on MFD_SEC_CORE
->         ---help---
-> -         This driver supports S2MPS11/S5M8767 crystal oscillator clock. These
-> -         multi-function devices have 3 fixed-rate oscillators, clocked at
-> -         32KHz each.
-> +         This driver supports S2MPS11/S2MPS14/S5M8767 crystal oscillator
-> +         clock. These multi-function devices have two (S2MPS14) or three
-> +         (S2MPS11, S5M8767) fixed-rate oscillators, clocked at 32KHz each.
->  
->  config CLK_TWL6040
->         tristate "External McPDM functional clock from twl6040"
-> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-> index 508875535e1e..8dafb552274f 100644
-> --- a/drivers/clk/clk-s2mps11.c
-> +++ b/drivers/clk/clk-s2mps11.c
-> @@ -1,7 +1,7 @@
->  /*
->   * clk-s2mps11.c - Clock driver for S2MPS11.
->   *
-> - * Copyright (C) 2013 Samsung Electornics
-> + * Copyright (C) 2013,2014 Samsung Electornics
->   *
->   * This program is free software; you can redistribute  it and/or modify it
->   * under  the terms of  the GNU General  Public License as published by the
-> @@ -13,10 +13,6 @@
->   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->   * GNU General Public License for more details.
->   *
-> - * You should have received a copy of the GNU General Public License
-> - * along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> - *
->   */
->  
->  #include <linux/module.h>
-> @@ -27,6 +23,7 @@
->  #include <linux/clk-provider.h>
->  #include <linux/platform_device.h>
->  #include <linux/mfd/samsung/s2mps11.h>
-> +#include <linux/mfd/samsung/s2mps14.h>
->  #include <linux/mfd/samsung/s5m8767.h>
->  #include <linux/mfd/samsung/core.h>
->  
-> @@ -125,7 +122,21 @@ static struct clk_init_data s2mps11_clks_init[S2MPS11_CLKS_NUM] = {
->         },
->  };
->  
-> -static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev)
-> +static struct clk_init_data s2mps14_clks_init[S2MPS11_CLKS_NUM] = {
-> +       [S2MPS11_CLK_AP] = {
-> +               .name = "s2mps14_ap",
-> +               .ops = &s2mps11_clk_ops,
-> +               .flags = CLK_IS_ROOT,
-> +       },
-> +       [S2MPS11_CLK_BT] = {
-> +               .name = "s2mps14_bt",
-> +               .ops = &s2mps11_clk_ops,
-> +               .flags = CLK_IS_ROOT,
-> +       },
-> +};
-> +
-> +static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev,
-> +               struct clk_init_data *clks_init)
->  {
->         struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
->         struct device_node *clk_np;
-> @@ -145,9 +156,12 @@ static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev)
->         if (!clk_table)
->                 return ERR_PTR(-ENOMEM);
->  
-> -       for (i = 0; i < S2MPS11_CLKS_NUM; i++)
-> +       for (i = 0; i < S2MPS11_CLKS_NUM; i++) {
-> +               if (!clks_init[i].name)
-> +                       continue; /* Skip clocks not present in some devices */
->                 of_property_read_string_index(clk_np, "clock-output-names", i,
-> -                               &s2mps11_clks_init[i].name);
-> +                               &clks_init[i].name);
-> +       }
->  
->         return clk_np;
->  }
-> @@ -158,6 +172,7 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
->         struct s2mps11_clk *s2mps11_clks, *s2mps11_clk;
->         struct device_node *clk_np = NULL;
->         unsigned int s2mps11_reg;
-> +       struct clk_init_data *clks_init;
->         int i, ret = 0;
->         u32 val;
->  
-> @@ -168,25 +183,33 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
->  
->         s2mps11_clk = s2mps11_clks;
->  
-> -       clk_np = s2mps11_clk_parse_dt(pdev);
-> -       if (IS_ERR(clk_np))
-> -               return PTR_ERR(clk_np);
-> -
->         switch (platform_get_device_id(pdev)->driver_data) {
->         case S2MPS11X:
->                 s2mps11_reg = S2MPS11_REG_RTC_CTRL;
-> +               clks_init = s2mps11_clks_init;
-> +               break;
-> +       case S2MPS14X:
-> +               s2mps11_reg = S2MPS14_REG_RTCCTRL;
-> +               clks_init = s2mps14_clks_init;
->                 break;
->         case S5M8767X:
->                 s2mps11_reg = S5M8767_REG_CTRL1;
-> +               clks_init = s2mps11_clks_init;
->                 break;
->         default:
->                 dev_err(&pdev->dev, "Invalid device type\n");
->                 return -EINVAL;
->         };
->  
-> +       clk_np = s2mps11_clk_parse_dt(pdev, clks_init);
-> +       if (IS_ERR(clk_np))
-> +               return PTR_ERR(clk_np);
-> +
->         for (i = 0; i < S2MPS11_CLKS_NUM; i++, s2mps11_clk++) {
-> +               if (!clks_init[i].name)
-> +                       continue; /* Skip clocks not present in some devices */
->                 s2mps11_clk->iodev = iodev;
-> -               s2mps11_clk->hw.init = &s2mps11_clks_init[i];
-> +               s2mps11_clk->hw.init = &clks_init[i];
->                 s2mps11_clk->mask = 1 << i;
->                 s2mps11_clk->reg = s2mps11_reg;
->  
-> @@ -220,8 +243,12 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
->         }
->  
->         if (clk_table) {
-> -               for (i = 0; i < S2MPS11_CLKS_NUM; i++)
-> +               for (i = 0; i < S2MPS11_CLKS_NUM; i++) {
-> +                       /* Skip clocks not present on S2MPS14 */
-> +                       if (!clks_init[i].name)
-> +                               continue;
->                         clk_table[i] = s2mps11_clks[i].clk;
-> +               }
->  
->                 clk_data.clks = clk_table;
->                 clk_data.clk_num = S2MPS11_CLKS_NUM;
-> @@ -250,14 +277,18 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
->         struct s2mps11_clk *s2mps11_clks = platform_get_drvdata(pdev);
->         int i;
->  
-> -       for (i = 0; i < S2MPS11_CLKS_NUM; i++)
-> +       for (i = 0; i < S2MPS11_CLKS_NUM; i++) {
-> +               if (!s2mps11_clks[i].lookup)
-> +                       continue; /* Skip clocks not present in some devices */
->                 clkdev_drop(s2mps11_clks[i].lookup);
-> +       }
->  
->         return 0;
->  }
->  
->  static const struct platform_device_id s2mps11_clk_id[] = {
->         { "s2mps11-clk", S2MPS11X},
-> +       { "s2mps14-clk", S2MPS14X},
->         { "s5m8767-clk", S5M8767X},
->         { },
->  };
-> -- 
-> 1.7.9.5
-> 
+sound/soc/generic/simple-card.c: In function 'asoc_simple_card_parse_of':
+sound/soc/generic/simple-card.c:188:47: error: 'struct simple_card_data' ha=
+s no member named 'daifmt'
+   ret =3D asoc_simple_card_sub_parse_of(np, priv->daifmt,
+                                               ^
+sound/soc/generic/simple-card.c:201:47: error: 'struct simple_card_data' ha=
+s no member named 'daifmt'
+   ret =3D asoc_simple_card_sub_parse_of(np, priv->daifmt,
+                                               ^
+
+Caused by commit 56556f333ae3 ("ASoC: simple-card: overwrite cpu_dai->fmt
+with codec_dai->fmt"). daifmt was removed from struct simple_card_data in
+commit c56c4d74c6f9 ("ASoC: simple-card: Simplify code").
+
+I have used the sound-asoc tree from next-20140318 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__19_Mar_2014_12_10_00_+1100_pmTAvu+dtHT+U2AM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTKO5sAAoJEMDTa8Ir7ZwVcn0P/3wBmaLWB6DNN6wrpc5rc1SI
+wDRBAPccWyr8wwGxgfbgiNmZw2l+b66D0ccHugU/8Hnvy8mliFv5kYvN+3NhP/lK
+I6XHsFKRtiktaIhQ+4ECvlqWCm4QSbMIUIwC+aXQujAyjGBMs2p2hVjKjv64vOH/
+p9QSvYvqlVJ1iJq2qrCtQuWgu8zYJXFyCEvkgJROhUmbKXaR8GrnXk03YpZlV7Cc
+cmobPbztuCwjR9gQgERGNwdGrAa4vo9U1GLhtjRrNHPX0j0fOIR/OiRMPyXt3Rad
+9ZcZseoYc/iDCEIPovunX9bCGp/UtjkqFGvwB7yoSQSQQLtud7CP6n4Fzcbog2Yf
+hSaBWC8ArtxOaJm3FVFkXRV8VFCuz4WP+45LLOgN8kqFWB7DeQNvjTZiTCFsh7O2
+lRSrmBG5xoknRtUcYLYF0hOZSlVJuU8h9OXsbUeVaPtb+gNJYWVxxPVGhroi9HHp
+4wdfyxoc/euSTM6ZJ+m4HwPphiDVE2qe74q+HeTgjl/lAHyUml/xbS9+wyttWNi/
+IjuIG5Xn98ZhpM3voDSPQra51ZUQRe6/H/86i/1z8CQuQGPpqfyA7MGtF9hXGDUE
+epCvpzq+thrzfmIk4RxCdH5n1EvPmb6MVyEZhIzUuqH9ACeymyZYq6Up6ZaCfqJv
+0Mbd4y+iN7R915al3nNM
+=L2li
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__19_Mar_2014_12_10_00_+1100_pmTAvu+dtHT+U2AM--
