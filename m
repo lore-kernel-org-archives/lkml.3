@@ -1,77 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129AbaCSVQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 17:16:41 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:62658 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104AbaCSVQi (ORCPT
+	id S1755490AbaCSVRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 17:17:15 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:38276 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384AbaCSVRM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 17:16:38 -0400
+	Wed, 19 Mar 2014 17:17:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140319185423.GA5514@google.com>
-References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com> <20140319185423.GA5514@google.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 19 Mar 2014 15:16:17 -0600
-Message-ID: <CAErSpo42K6W8b+7A7dyxUp-rNQttMQY7jcbpgyGv9sctyAqJCA@mail.gmail.com>
-Subject: Re: [PATCH 8/9] PCI: Ignore BAR contents when firmware left decoding disabled
-To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ming Lei <tom.leiming@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Pekka Enberg <penberg@kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CACV2jQD=4Gq48Ug8hm=7Kaw=PtOUaND5aJN2N3+K4iOQ8rtBog@mail.gmail.com>
+References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
+	<20140319201838.GA11403@redhat.com>
+	<CAAsK9AGumcqE3qoEycjqmFdn3ERvpPx41WwZe0YRUv+1sf0rxA@mail.gmail.com>
+	<CACV2jQD=4Gq48Ug8hm=7Kaw=PtOUaND5aJN2N3+K4iOQ8rtBog@mail.gmail.com>
+Date: Wed, 19 Mar 2014 22:17:11 +0100
+X-Google-Sender-Auth: FKQECAjnY_mO8G3AqL2bUvQonsI
+Message-ID: <CAAsK9AEQOJjiMJeQ8LTwCTj1O0PttJNxJSr4EsgArbm26neHpw@mail.gmail.com>
+Subject: Re: [RFC] QR encoding for Oops messages
+From: Levente Kurusa <levex@linux.com>
+To: =?ISO-8859-2?B?VGVvZG9yYSBC42x1/uM=?= <teobaluta@gmail.com>
+Cc: Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 12:54 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc Ming, Rusty, Pekka, Sasha]
-> ...
-> I plan to replace this patch with the following, which only sets
-> IORESOURCE_UNSET when we already have been clearing the bus region start
-> address.  (This probably should have been a separate patch to begin with,
-> mea culpa.)
->
-> This is intended for the v3.15 merge window, so I made the minimal change
-> to reduce risk.
+Hi,
 
-I put this patch in my pci/resource branch and re-merged it into my
-"next" branch.  This rebased both pci/resource and next, which is
-unfortunate, but I think it's the cleanest and least risky way at this
-point.
+2014-03-19 21:50 GMT+01:00 Teodora Bãluþã <teobaluta@gmail.com>:
+> On Wed, Mar 19, 2014 at 10:28 PM, Levente Kurusa <levex@linux.com> wrote:
+>> Hi,
+>>
+>> 2014-03-19 21:18 GMT+01:00 Dave Jones <davej@redhat.com>:
+>>> On Mon, Mar 17, 2014 at 02:59:47PM -0700, Teodora Baluta wrote:
+>>>  > This feature encodes Oops messages into a QR barcode that is scannable by
+>>>  > any device with a camera.
+>>>
+>>>  ...
+>>>
+>>>  >  include/linux/print_oops.h |   11 +
+>>>  >  include/linux/qrencode.h   |  546 +++++++++++++
+>>>  >  kernel/Makefile            |    1 +
+>>>  >  kernel/panic.c             |    5 +
+>>>  >  kernel/print_oops.c        |  173 +++++
+>>>  >  kernel/printk/printk.c     |    9 +-
+>>>  >  lib/Kconfig                |    5 +
+>>>  >  lib/Kconfig.debug          |   11 +
+>>>  >  lib/Makefile               |    3 +
+>>>  >  lib/qr/Makefile            |    6 +
+>>>  >  lib/qr/bitstream.c         |  233 ++++++
+>>>  >  lib/qr/bitstream.h         |   37 +
+>>>  >  lib/qr/mask.c              |  320 ++++++++
+>>>  >  lib/qr/mask.h              |   39 +
+>>>  >  lib/qr/mmask.c             |  175 +++++
+>>>  >  lib/qr/mmask.h             |   36 +
+>>>  >  lib/qr/mqrspec.c           |  259 +++++++
+>>>  >  lib/qr/mqrspec.h           |  155 ++++
+>>>  >  lib/qr/qrencode.c          |  871 +++++++++++++++++++++
+>>>  >  lib/qr/qrencode.h          |  546 +++++++++++++
+>>>  >  lib/qr/qrinput.c           | 1834 ++++++++++++++++++++++++++++++++++++++++++++
+>>>  >  lib/qr/qrinput.h           |  129 ++++
+>>>  >  lib/qr/qrspec.c            |  543 +++++++++++++
+>>>  >  lib/qr/qrspec.h            |  178 +++++
+>>>  >  lib/qr/rscode.c            |  325 ++++++++
+>>>  >  lib/qr/rscode.h            |   38 +
+>>>  >  lib/qr/split.c             |  331 ++++++++
+>>>  >  lib/qr/split.h             |   44 ++
+>>>  >  28 files changed, 6860 insertions(+), 3 deletions(-)
+>>
+>> This idea is certainly great.
+>>
+>> However, there are quite a few problems with the code in terms of code style and
+>> other terms as well. I am not sure how could we help you make this code
+>> appliable, but it would be great if you put up a branch somewhere. This way
+>> I could send you a few commits that do some fixups.
+>
+> Wow, that'd be great! I have set up my clone of the kernel source up
+> on gitlab [0] and github [1]. I will update the remote branch asap (I
+> made some coding style fixups that aren't present on github/gitlab
+> right now, only in a remote branch). Is this ok?
 
-Bjorn
+Yea, that's fine. Push your changes and send me a ping once you
+are done. I will most likely send you a pull request on github though.
 
-> PCI: Mark 64-bit resource as IORESOURCE_UNSET if we only support 32-bit
 >
-> From: Bjorn Helgaas <bhelgaas@google.com>
+>>
+>>>
+>>> That's a ton of code we're adding into one of the most fragile parts of the kernel.
+>>
+>> Indeed, this should get split up.
+>>
+>>>
+>>> A lot of what libqrencode does would seem to be superfluous to the requirements
+>>> here, as we don't output kernel oopses in kanji for eg, and won't care about
+>>> multiple versions of the qr spec.
+>>>
+>>> How much of this could we drop ?
+>>
+>> A lot, most likely.
 >
-> If we don't support 64-bit addresses, i.e., CONFIG_PHYS_ADDR_T_64BIT is not
-> set, we can't deal with BARs above 4GB.  In this case we already pretend
-> the BAR contained zero; this patch also sets IORESOURCE_UNSET so we can try
-> to reallocate it later.
+> Indeed.
 >
-> I don't think this is exactly correct: what we care about here are *bus*
-> addresses, not CPU addresses, so the tests of sizeof(resource_size_t)
-> probably should be on sizeof(dma_addr_t) instead.  But this is what's been
-> in -next, so we'll fix that later.
+>>
+>> Also, I wonder if we could do the same for panic()?
+>> I hate it when I receive a panic and I have no idea what's the cause
+>> since my display is filled up with the stack trace.
 >
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> ---
->  drivers/pci/probe.c |    1 +
->  1 file changed, 1 insertion(+)
+> Most likely panic is harder to do for reasons discussed in this thread here [2].
 >
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 6e34498ec9f0..78335efbbb74 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -252,6 +252,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
->                         /* Address above 32-bit boundary; disable the BAR */
->                         pci_write_config_dword(dev, pos, 0);
->                         pci_write_config_dword(dev, pos + 4, 0);
-> +                       res->flags |= IORESOURCE_UNSET;
->                         region.start = 0;
->                         region.end = sz64;
->                         bar_disabled = true;
+
+Yes I see.
+
+>
+> [0] https://gitlab.com/teobaluta/opw
+> [1] https://github.com/teobaluta/qr-linux-kernel
+> [2] https://lwn.net/Articles/503677/
+>
+> Thanks,
+> Teodora
+>>
+>> --
+>> Regards,
+>> Levente Kurusa
